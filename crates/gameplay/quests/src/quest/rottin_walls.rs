@@ -108,41 +108,66 @@ pub(crate) fn callbacks() -> [Callback; 6] {
     })
 }
 
-/// Retain the exact pre-hammer pin for characters who already accepted Disrepair.
+/// Retain both shipped definitions for characters who already started Disrepair.
 pub(super) fn retain_predecessor(catalogue: &mut super::QuestStateCatalogue) -> Result<(), String> {
-    let tracks: Vec<_> = catalogue
-        .tracks
-        .values()
-        .filter(|track| track.quest == QUEST)
-        .cloned()
-        .map(|mut track| {
-            if track.key == super::classic_talk::ROTTIN_WALLCOUNT {
-                track.max = 0;
-            }
-            track
-        })
-        .collect();
-    let defaults = tracks
-        .iter()
-        .map(|track| (track.key.clone(), track.initial))
-        .collect();
-    let transitions = catalogue
-        .transitions
-        .values()
-        .filter(|transition| transition.quest == QUEST && !transition.key.starts_with(PREFIX))
-        .cloned()
-        .collect();
-    let predecessor =
-        super::QuestStateCatalogue::new(catalogue.content_revision(), tracks, transitions)
-            .map_err(|error| format!("{error:?}"))?;
-    let hash = predecessor
-        .definition_hash(QUEST)
-        .ok_or("Rottin predecessor definition")?;
-    catalogue
-        .predecessors
-        .entry(QUEST.into())
-        .or_default()
-        .push(super::NpcDefinitionPredecessor { hash, defaults });
+    use super::classic_talk::ROTTIN_WALLCOUNT;
+
+    let legacy_track = |key: &str| {
+        !matches!(
+            key,
+            "oteryn:quest-progress/crystalserver/kv/handyman-task"
+                | "oteryn:quest-progress/crystalserver/kv/lucky-loop-task"
+                | "oteryn:quest-progress/crystalserver/kv/nest-timer"
+                | "oteryn:quest-progress/crystalserver/kv/rottinwood-corpsecount"
+                | "oteryn:quest-progress/crystalserver/kv/rottinwood-trap-count"
+                | "oteryn:quest-progress/rottin-wood/net-replacements"
+        )
+    };
+    for before_hammer in [true, false] {
+        let tracks: Vec<_> = catalogue
+            .tracks
+            .values()
+            .filter(|track| track.quest == QUEST && legacy_track(&track.key))
+            .cloned()
+            .map(|mut track| {
+                if before_hammer && track.key == ROTTIN_WALLCOUNT {
+                    track.max = 0;
+                }
+                track
+            })
+            .collect();
+        let defaults = tracks
+            .iter()
+            .map(|track| (track.key.clone(), track.initial))
+            .collect();
+        let transitions = catalogue
+            .transitions
+            .values()
+            .filter(|transition| {
+                transition.quest == QUEST
+                    && !transition
+                        .key
+                        .starts_with("oteryn:quest-reward/rottin-wood/")
+                    && (!before_hammer || !transition.key.starts_with(PREFIX))
+                    && transition
+                        .effects
+                        .iter()
+                        .all(|effect| legacy_track(&effect.track))
+            })
+            .cloned()
+            .collect();
+        let predecessor =
+            super::QuestStateCatalogue::new(catalogue.content_revision(), tracks, transitions)
+                .map_err(|error| format!("{error:?}"))?;
+        let hash = predecessor
+            .definition_hash(QUEST)
+            .ok_or("Rottin predecessor definition")?;
+        catalogue
+            .predecessors
+            .entry(QUEST.into())
+            .or_default()
+            .push(super::NpcDefinitionPredecessor { hash, defaults });
+    }
     Ok(())
 }
 

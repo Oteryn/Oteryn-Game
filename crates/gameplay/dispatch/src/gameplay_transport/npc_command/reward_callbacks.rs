@@ -110,7 +110,7 @@ pub(super) fn prepare(
         intent,
         runtime,
         |context, topic, _, tracks| {
-            let text = intent.text.trim().to_ascii_lowercase();
+            let text = callback_keyword(&context.2, &intent.text);
             let meets_level = |minimum: Option<u32>| {
                 minimum.is_none_or(|minimum| inventory.is_some_and(|facts| facts.level >= minimum))
             };
@@ -132,10 +132,17 @@ pub(super) fn prepare(
                 })
             };
             if phase == Phase::Rewards {
+                let topic = if context.2 == oteryn_gameplay_quests::quest::classic_talk::ROTTIN
+                    && text == "mission"
+                {
+                    0
+                } else {
+                    topic.number
+                };
                 let matching_stage = callbacks.iter().filter(|c| {
                     c.carried_item.is_none()
                         && c.npc == context.2
-                        && c.topic == topic.number
+                        && c.topic == topic
                         && c.keywords.contains(&text)
                         && eligible(&c.storage)
                         && c.state_ops
@@ -183,6 +190,9 @@ pub(super) fn prepare(
                     return Some(choice);
                 }
                 return None;
+            }
+            if context.2 == oteryn_gameplay_quests::quest::classic_talk::ROTTIN {
+                return rottin_dialogue(topic, &text, tracks);
             }
             if let Some(offer) = offers
                 .offers
@@ -350,5 +360,48 @@ pub(super) fn unhandled_confirmation(
                 && (callback.topic == topic || requested)
                 && callback.keywords.contains(&text)
         })
+    })
+}
+
+fn callback_keyword(npc: &str, text: &str) -> String {
+    use oteryn_gameplay_quests::quest::classic_talk;
+    if npc == classic_talk::ROTTIN {
+        return classic_talk::rottin_keyword(text)
+            .unwrap_or_default()
+            .into();
+    }
+    text.trim().to_ascii_lowercase()
+}
+
+fn rottin_dialogue(
+    topic: &Topic,
+    text: &str,
+    tracks: &std::collections::BTreeMap<String, i64>,
+) -> Option<Choice> {
+    use oteryn_gameplay_quests::quest::{classic_dialogue, classic_talk};
+    let topic = u8::try_from(topic.number)
+        .ok()
+        .map(classic_talk::Topic::Rottin);
+    let selected = classic_talk::choose(classic_talk::ROTTIN, text, topic, tracks)?;
+    if selected.deferred {
+        return None;
+    }
+    let reply = selected
+        .branches
+        .iter()
+        .map(|branch| classic_dialogue::reply(classic_talk::ROTTIN, branch))
+        .collect::<Option<Vec<_>>>()?
+        .into_iter()
+        .flatten()
+        .cloned()
+        .collect();
+    let next_topic = match selected.topic {
+        Some(classic_talk::Topic::Rottin(topic)) => u16::from(topic),
+        _ => 0,
+    };
+    Some(Choice {
+        transition: selected.transition.map(str::to_owned),
+        next_topic: Some(Topic::from(next_topic)),
+        reply,
     })
 }

@@ -9,15 +9,12 @@ use crate::gameplay_transport::item_view::ItemKey;
 use crate::map::overlay::TilePos;
 use crate::map::view::MapFacts;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
-use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bindings};
 use oteryn_protocol_oteryn::creature_push::{CreaturePushDisposition, CreaturePushIntent};
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
 };
 use oteryn_protocol_oteryn::world_spatial::ActorPosition;
-use serde_json::json;
-use sha2::{Digest, Sha256};
 use tokio::io::DuplexStream;
 
 const MISSION: &str =
@@ -34,129 +31,13 @@ const NETS: &str = "oteryn:quest-progress/crystalserver/kv/rottinwood-trap-count
 const EARLY_NET: &str = "oteryn:quest-callback/rottin-wood/place-net";
 const FINAL_NET: &str = "oteryn:quest-callback/rottin-wood/final-net";
 
-pub(super) fn catalogue(
-    wave: bool,
-    blocked_merchant_spawn: bool,
-) -> TestResult<QuestStateCatalogue> {
-    let quest = "oteryn:quest.rottin_wood_and_the_married_men_quest";
-    let source = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rottin_wood_and_married_men/actions_corpse.lua:3-36";
-    let mut authored = json!({
-        "schema": 1,
-        "quests": [{
-            "quest": quest,
-            "recipe_sha256": Sha256::digest(source.as_bytes()).iter().map(|byte| format!("{byte:02x}")).collect::<String>(),
-            "tracks": [
-                {"key": MISSION, "initial": 1, "minimum": 0, "maximum": 2},
-                {"key": CAPTURES, "initial": if wave { 0 } else { 4 }, "minimum": 0, "maximum": 5}
-            ],
-            "sources": [source],
-            "stages":[{
-                "key":"loot-merchant", "completes":false,
-                "trigger":{"kind":"map_use","callback":{
-                    "key": LOOT, "quest": quest, "trigger": "use",
-                    "selector": {"appearance": 12189},
-                    "reversible": false, "requires_world_admission": true,
-                    "passages": [], "offerings": [], "return_on_failure": false,
-                    "storage": [
-                        {"track": MISSION, "minimum":1, "maximum":1, "set":1, "preserve":true},
-                        {"track": CAPTURES, "minimum":0, "maximum":4, "set":5, "add":1}
-                    ],
-                    "activation": {"track": CAPTURES, "minimum":0, "maximum":4},
-                    "effects": {"loot_merchant": true, "item_reward":{"item":"oteryn:item.tibia.i3035","count":1}},
-                    "sources": [source]
-                }}
-            }]
-        }]
-    });
-    if !wave {
-        authored["quests"][0]["tracks"]
-            .as_array_mut()
-            .ok_or("fixture tracks")?
-            .push(json!({"key": QUESTLINE, "initial": 5, "minimum": 0, "maximum": 6}));
-        let donor =
-            "201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:117-127";
-        authored["quests"][0]["stages"]
-            .as_array_mut()
-            .ok_or("fixture stages")?
-            .push(json!({
-                "key": "bushwhacking-turn-in", "completes": false,
-                "trigger": {"kind": "npc_dialogue", "callback": {
-                    "key": TURN_IN, "quest": quest, "npc": ROTTIN,
-                    "keywords": ["mission"], "topic": 0, "next_topic": 0,
-                    "storage": [
-                        {"track": MISSION, "minimum": 1, "maximum": 1, "set": 2},
-                        {"track": QUESTLINE, "minimum": 5, "maximum": 5, "set": 6}
-                    ],
-                    "requires": [{"track": CAPTURES, "minimum": 5, "maximum": 5}],
-                    "take": [], "give": {"item": "oteryn:item.tibia.i3035", "count": 5},
-                    "outfit": null, "achievement": MERRY_ADVENTURES, "experience": 1000,
-                    "reply": ["Thanks for helping us."], "sources": [donor]
-                }}
-            }));
-    }
-    if wave {
-        let donor = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rottin_wood_and_married_men/actions_trap.lua:65-123";
-        let track = json!({"key":NETS,"initial":3,"minimum":0,"maximum":5});
-        authored["quests"][0]["tracks"]
-            .as_array_mut()
-            .ok_or("fixture tracks")?
-            .push(track);
-        let at = |x, y| json!({"x":x,"y":y,"floor":-7});
-        let first_spawn = if blocked_merchant_spawn {
-            (5, 2)
-        } else {
-            (2, 4)
-        };
-        let monsters: Vec<_> = [first_spawn, (3, 4), (4, 4), (5, 4), (3, 5), (4, 5), (5, 5)]
-            .into_iter().map(|(x,y)| json!({"position":at(x,y),"creature":"oteryn:creature.travelling_merchant"})).collect();
-        let stages = authored["quests"][0]["stages"]
-            .as_array_mut()
-            .ok_or("fixture stages")?;
-        stages.push(json!({
-            "key":"place-net", "completes":false,
-            "trigger":{"kind":"map_use","callback":{
-                "key": EARLY_NET, "quest": quest, "trigger": "use",
-                "selector": {"appearance":10480},
-                "reversible": false, "requires_world_admission": true,
-                "passages": [], "offerings": [], "return_on_failure": false,
-                "item_on_target": {"item":"oteryn:item.tibia.i12186","count":1,"selected_instance":true},
-                "storage": [
-                    {"track":MISSION,"minimum":1,"maximum":1,"set":1,"preserve":true},
-                    {"track":NETS,"minimum":0,"maximum":3,"set":4,"add":1}
-                ],
-                "activation":{"track":NETS,"minimum":0,"maximum":3},
-                "effects":{"place_item":12187},
-                "sources": [donor]
-            }}
-        }));
-        stages.push(json!({
-            "key":"final-net", "completes":false,
-            "trigger":{"kind":"map_use","callback":{
-                "key": FINAL_NET, "quest": quest, "trigger": "use",
-                "selector": {"position":at(3,2),"appearance":10480},
-                "reversible": false, "requires_world_admission": true,
-                "passages": [], "offerings": [], "return_on_failure": false,
-                "teleport": at(2,3),
-                "item_on_target": {"item":"oteryn:item.tibia.i12186","count":1,"selected_instance":true},
-                "storage": [
-                    {"track":MISSION,"minimum":1,"maximum":1,"set":1,"preserve":true},
-                    {"track":NETS,"minimum":4,"maximum":4,"set":5,"add":1}
-                ],
-                "activation":{"track":NETS,"minimum":4,"maximum":4},
-                "effects": {
-                    "place_item":12187, "merchant_entrance":at(4,2),
-                    "encounter":{
-                        "minimum_level":0,"players":[],"monsters":monsters,
-                        "room_min":at(2,2),"room_max":at(5,5),
-                        "timing":{"spawn_after_ms":1,"reset_after_ms":300000}
-                    }
-                },
-                "sources": [donor]
-            }}
-        }));
-    }
-    let bindings = Bindings::parse(&serde_json::to_vec(&authored)?)?;
-    Ok(bindings.attach(&QuestStateCatalogue::empty("content-1").ok_or("empty catalogue")?)?)
+pub(super) async fn seed(h: &Harness, wave: bool) -> TestResult {
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_secs();
+    super::rottin_rewards_fixtures::seed_tracks(h, &[
+        (MISSION, 1), (QUESTLINE, 5), (CAPTURES, if wave { 0 } else { 4 }),
+        (NETS, if wave { 3 } else { 0 }),
+        ("oteryn:quest-progress/crystalserver/kv/nest-timer", i64::try_from(now)?),
+    ]).await
 }
 
 pub(super) async fn exercise(
@@ -299,7 +180,7 @@ pub(super) async fn exercise_mission(
         .await;
     assert_eq!(
         talk(owner, &admitted, npc, 1703, "mission").await?,
-        ["Thanks for helping us."]
+        super::rottin_rewards_fixtures::source_reply("line-119")?
     );
     assert_eq!(
         super::rottin_rewards_fixtures::experience(h).await?,
@@ -379,25 +260,30 @@ pub(super) async fn exercise_wave(
     expected_merchants: usize,
 ) -> TestResult {
     let actor = admitted.runtime_actor.ok_or("tool user")?;
+    owner.active_generation
+        .and_then(|generation| generation.native_gameplay())
+        .ok_or("active creature policies")?
+        .install_companion_policies(&mut *owner.runtime.lock().await)
+        .map_err(super::fixture::debug)?;
     let map = owner.bundle_map().ok_or("map")?;
     let early = TilePos {
-        x: 3,
-        y: 3,
+        x: 32659,
+        y: 32182,
         floor: -7,
     };
     let pos = TilePos {
-        x: 3,
-        y: 2,
+        x: 32660,
+        y: 32182,
         floor: -7,
     };
     let entrance = TilePos {
-        x: 4,
-        y: 2,
+        x: 32662,
+        y: 32190,
         floor: -7,
     };
     let ordinary_ground = TilePos {
-        x: 2,
-        y: 3,
+        x: 32658,
+        y: 32181,
         floor: -7,
     };
     assert!(
@@ -462,7 +348,7 @@ pub(super) async fn exercise_wave(
         .await
         .read_actor_position(actor)
         .map_err(super::fixture::debug)?;
-    assert_eq!(snapshot.position(), at(2, 3));
+    assert_eq!(snapshot.position(), at(32660, 32193));
     let receipts: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key IN ($1, $2)",
     )

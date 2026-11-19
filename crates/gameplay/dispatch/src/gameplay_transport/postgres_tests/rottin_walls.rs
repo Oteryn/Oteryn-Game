@@ -28,7 +28,7 @@ const TARGET: Position = Position {
     y: 32216,
     floor: -7,
 };
-const START: Position = Position {
+pub(super) const START: Position = Position {
     x: 32647,
     y: 32217,
     floor: -7,
@@ -197,7 +197,7 @@ fn rottin_hammer_repairs_counts_and_resets_postgres() -> TestResult {
     result
 }
 
-fn world(
+pub(super) fn world(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use super::l6_world_pickups_fixtures::{ExpectedTile, NativeCrop, native_scene_with_appearances};

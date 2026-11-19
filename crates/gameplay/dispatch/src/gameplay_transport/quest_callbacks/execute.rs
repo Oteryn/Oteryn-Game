@@ -217,12 +217,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Occupied;
         }
-        if let Some(broken) =
-            super::super::mount_taming::quest_objects::rottin_wall_repair(callback)
-            && after.appearance_id != broken
-        {
-            return UseDisposition::NothingToUse;
-        }
         let before = after;
         if let Some(pair) = callback.lever {
             after.appearance_id = pair[usize::from(!close)];
