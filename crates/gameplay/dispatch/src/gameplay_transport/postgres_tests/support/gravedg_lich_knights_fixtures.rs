@@ -100,12 +100,20 @@ pub(super) async fn exercise(
     let partner_actor = partner.runtime_actor.ok_or("admitted partner")?;
     let (nictros, baeloc) = {
         let runtime = owner.runtime.lock().await;
-        for actor in [player, partner_actor] {
+        for (actor, session) in [
+            (player, admitted.game_session_id),
+            (partner_actor, partner.game_session_id),
+        ] {
             let at = runtime
                 .read_actor_position(actor)
                 .map_err(debug)?
                 .position();
             assert_eq!((at.x, at.y), (116, 117));
+            assert_eq!(
+                owner.switch_encounter_lock(&runtime, actor, session),
+                Some(oteryn_protocol_oteryn::channel_switch::SwitchLock::Event),
+                "the active Sirs encounter locks each entrant to the channel"
+            );
         }
         let actors = runtime.current_live_creature_census().map_err(debug)?;
         let find = |name: &str| {
