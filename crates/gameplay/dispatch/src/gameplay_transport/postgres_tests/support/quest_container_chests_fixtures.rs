@@ -558,6 +558,19 @@ fn scenario_case(
                     .find(|row| row.key.as_str() == claim)
                     .ok_or("production Forgemaster claim")?;
                 forgemaster::assert_production_choices(&claim.placements)?;
+                let map = owner.bundle_map().ok_or("Forgemaster bundle map")?;
+                for placement in &claim.placements {
+                    assert!(
+                        crate::gameplay_transport::native_claim_reward::admits_forgemaster_claim(
+                            map,
+                            claim,
+                            placement,
+                            owner.quest_catalogue.as_deref(),
+                        ),
+                        "production Forgemaster reward callback rejected: {:?}",
+                        placement.reward_callback
+                    );
+                }
             }
             let alternate = target_at(chest.0 - 2)?;
             assert_eq!(

@@ -17,6 +17,8 @@ const START: TilePos = TilePos {
 const LEVER: TilePos = TilePos { x: 34058, y: 32394, floor: -14 };
 const STAGING: TilePos = TilePos { y: LEVER.y + 1, ..LEVER };
 const ARENA_ENTRY: MovementLocalPosition = MovementLocalPosition { x: 34034, y: 32340, floor: 14 };
+const WICKED_TRACK: &str =
+    "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked";
 
 const PORTAL: TilePos = TilePos { x: 34041, ..START };
 const FORGE: TilePos = TilePos {
@@ -346,6 +348,27 @@ async fn two_player_exit(
         .await?
         .0
         .current_character_lease();
+    // The second player starts one hard win away from qualifying for the key.
+    for (track, value) in [
+        ("hard_kills", 9_i64),
+        ("kill_arbaziloth/questline", 2),
+        ("questlog", 1),
+        ("forgemaster_door/questline", 1),
+    ] {
+        let inserted = sqlx::query(
+            "INSERT INTO game_character_quest_tracks
+                (character_id, track_key, quest_key, value, committed_character_revision)
+             SELECT character_id, $2, $3, $4, character_revision
+             FROM game_character_roots WHERE character_id = encode($1, 'hex')::uuid",
+        )
+        .bind(second_lease.character_id().as_bytes().as_slice())
+        .bind(format!("{WICKED_TRACK}/{track}"))
+        .bind("oteryn:quest.no_rest_for_the_wicked_quest")
+        .bind(value)
+        .execute(&h.pool)
+        .await?;
+        assert_eq!(inserted.rows_affected(), 1);
+    }
     let native = owner.active_generation.and_then(|g| g.native_gameplay())
         .ok_or("production native policies")?;
     let mut runtime = owner.runtime.lock().await;
@@ -522,7 +545,7 @@ async fn two_player_exit(
         owner.drain_kill_rewards(session).await,
         DrainOutcome::Drained
     );
-    for lease in [first_lease, second_lease] {
+    for (lease, hard_kills, door_stage) in [(first_lease, 1, 1), (second_lease, 10, 2)] {
         let character = oteryn_gameplay_domain::domain::CharacterId::from_bytes(
             *lease.character_id().as_bytes(),
         )
@@ -532,17 +555,22 @@ async fn two_player_exit(
             .read_character_quest_state(owner.character, character)
             .await
             .map_err(debug)?;
-        let track = "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked";
-        assert_eq!(rows.tracks().get(&format!("{track}/hard_kills")), Some(&1));
+        assert_eq!(
+            rows.tracks().get(&format!("{WICKED_TRACK}/hard_kills")),
+            Some(&hard_kills)
+        );
         assert_eq!(
             rows.tracks()
-                .get(&format!("{track}/kill_arbaziloth/questline")),
+                .get(&format!("{WICKED_TRACK}/kill_arbaziloth/questline")),
             Some(&2)
         );
-        assert_eq!(rows.tracks().get(&format!("{track}/questlog")), Some(&1));
         assert_eq!(
-            rows.tracks().get(&format!("{track}/forgemaster_door/questline")),
+            rows.tracks().get(&format!("{WICKED_TRACK}/questlog")),
             Some(&1)
+        );
+        assert_eq!(
+            rows.tracks().get(&format!("{WICKED_TRACK}/forgemaster_door/questline")),
+            Some(&door_stage)
         );
     }
     for (actor, session) in players {
