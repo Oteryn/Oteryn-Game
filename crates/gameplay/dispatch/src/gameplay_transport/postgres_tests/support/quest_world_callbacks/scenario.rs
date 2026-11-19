@@ -357,7 +357,12 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if ice_iskan || barbarian_sven || barbarian_fine || barbarian_buddel || buddel_ring {
+    let mut callback = if ice_iskan
+        || barbarian_sven
+        || barbarian_fine
+        || barbarian_buddel
+        || buddel_ring
+    {
         super::super::authored_world_rewards_fixtures::placeholder(trigger)?
     } else if m03_use {
         super::super::qengine_m03_use_fixtures::callback()?
@@ -935,7 +940,11 @@ fn scenario_case(
             });
         world(&physical, trigger)?
     } else if barbarian_buddel || buddel_ring {
-        world_with_cells(&callback, trigger, &super::super::qcx62_buddel_fixtures::ARRIVAL_CELLS)?
+        world_with_cells(
+            &callback,
+            trigger,
+            &super::super::qcx62_buddel_fixtures::ARRIVAL_CELLS,
+        )?
     } else if ice_tools {
         let native = callback.selector.native.ok_or("carried-tool native placement")?;
         world_ordinal(&callback, trigger, native.appearance, native.ordinal)?
@@ -1787,8 +1796,9 @@ fn scenario_case(
             ));
         }
         if qm48 {
-            owner.quest_catalogue =
-                Some(std::sync::Arc::new(super::super::qm48_mammoth_fixtures::catalogue(&callback)?));
+            owner.quest_catalogue = Some(std::sync::Arc::new(
+                super::super::qm48_mammoth_fixtures::catalogue(&callback)?,
+            ));
         }
         if mead {
             owner.quest_catalogue = Some(std::sync::Arc::new(super::super::l6_mead_fixtures::catalogue(
@@ -2595,32 +2605,62 @@ fn scenario_case(
             .await?;
         } else if ice_chakoya {
             Box::pin(super::super::qcx60_chakoya_fixtures::exercise(
-                &mut owner, &mut admitted, &h,
-            )).await?;
+                &mut owner,
+                &mut admitted,
+                &h,
+            ))
+            .await?;
         } else if ice_tools {
             Box::pin(super::super::qcx60_carried_tools_fixtures::exercise(
-                &mut owner, &mut admitted, &h, name, &callback,
-            )).await?;
+                &mut owner,
+                &mut admitted,
+                &h,
+                name,
+                &callback,
+            ))
+            .await?;
         } else if ice_iskan {
             Box::pin(super::super::qcx62_iskan_fixtures::exercise(
-                &mut owner, &mut admitted, &h, &authority,
-            )).await?;
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+            ))
+            .await?;
         } else if barbarian_sven {
             Box::pin(super::super::qcx62_sven_fixtures::exercise(
-                &mut owner, &mut admitted, &h, &authority, trigger,
-            )).await?;
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                trigger,
+            ))
+            .await?;
         } else if barbarian_fine {
             Box::pin(super::super::qcx62_sven_fine_fixtures::exercise(
-                &mut owner, &mut admitted, &h, &authority, trigger,
-            )).await?;
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                trigger,
+            ))
+            .await?;
         } else if barbarian_buddel {
             Box::pin(super::super::qcx62_buddel_fixtures::exercise(
-                &mut owner, &mut admitted, &h, trigger,
-            )).await?;
+                &mut owner,
+                &mut admitted,
+                &h,
+                trigger,
+            ))
+            .await?;
         } else if buddel_ring {
             Box::pin(super::super::qcx62_buddel_ring_fixtures::exercise(
-                &mut owner, &mut admitted, &h, trigger,
-            )).await?;
+                &mut owner,
+                &mut admitted,
+                &h,
+                trigger,
+            ))
+            .await?;
         } else if name == "engitem-native-seal-paint" {
             Box::pin(super::super::engitem_seal_paint_fixtures::exercise(
                 &mut owner,
