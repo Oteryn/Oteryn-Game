@@ -119,23 +119,24 @@ pub(super) async fn apply(
             return Err(DurabilityError::InvalidStoredState);
         }
     }
-    // One transaction bind plus four per stack: seven rows use 29 parameters.
-    for (input_chunk, id_chunk) in inputs.chunks(7).zip(ids.chunks(7)) {
+    if let [input] = inputs
+        && input.replacement.is_some()
+    {
+        change_input(tx, input, &transaction.to_string()).await?;
+        return Ok(true);
+    }
+    // One transaction bind plus three per stack: ten rows use 31 parameters.
+    for (input_chunk, id_chunk) in inputs.chunks(10).zip(ids.chunks(10)) {
         let mut update = QueryBuilder::<Postgres>::new(
-            "UPDATE game_item_instances i SET \
-             quantity=CASE WHEN v.replacement IS NULL THEN i.quantity-v.used ELSE i.quantity END, \
-             lifecycle=CASE WHEN v.replacement IS NULL AND i.quantity=v.used THEN 2 ELSE 1 END, \
-             definition_production_key=coalesce(v.replacement,i.definition_production_key),last_transaction_id=",
+            "UPDATE game_item_instances i SET quantity=i.quantity-v.used,lifecycle=CASE WHEN i.quantity=v.used THEN 2 ELSE 1 END,last_transaction_id=",
         );
         update.push_bind(transaction).push(" FROM (");
         update.push_values(input_chunk.iter().zip(id_chunk), |mut row, (input, id)| {
             row.push_bind(*id)
                 .push_bind(i64::from(input.count))
-                .push_bind(input.quantity)
-                .push_bind(&input.replacement)
-                .push_unseparated("::text");
+                .push_bind(input.quantity);
         });
-        update.push(") AS v(item,used,before_quantity,replacement) WHERE i.item_instance_id=v.item AND i.lifecycle=1 AND i.quantity=v.before_quantity");
+        update.push(") AS v(item,used,before_quantity) WHERE i.item_instance_id=v.item AND i.lifecycle=1 AND i.quantity=v.before_quantity");
         if update.build().execute(&mut **tx).await?.rows_affected() != input_chunk.len() as u64 {
             return Err(DurabilityError::InvalidStoredState);
         }
@@ -144,11 +145,7 @@ pub(super) async fn apply(
         let removed: Vec<_> = inputs
             .iter()
             .zip(&ids)
-            .filter(|(input, _)| {
-                input.kind == kind
-                    && input.replacement.is_none()
-                    && input.quantity == i64::from(input.count)
-            })
+            .filter(|(input, _)| input.kind == kind && input.quantity == i64::from(input.count))
             .map(|(_, id)| *id)
             .collect();
         if removed.is_empty() {
