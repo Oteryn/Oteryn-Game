@@ -47,7 +47,7 @@ EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "6b6a5a3101e090663adcbec2b32a268e1f8a57fb
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "1a1f98f8f2df7b981fa6a85f0f4bf3ac218247121ab330bf5348a703ce0b1e0d"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "b3423b858c7cad5c2814cef0708819f41c4b5bb328bae5450d202c2e18a92631"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "e2b004fc0c0eb68b9954587223b9d0f08d9f404a"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "55c403a1e0c53972efb287720aa53650b8520a73"
 EXPECTED_POST_MERGE_RUST_SHA256 = "0393a1f9243c6134a5c3814983b099b4eb0ca04acf1cb6eb068d86b5b8df2ac6"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
@@ -685,7 +685,7 @@ def main() -> int:
                 "    if: needs.candidate.outputs.server_qualification != 'false'\n",
                 "EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}",
                 "python3 tools/qualification/node_boot/matrix.py plan --set pr > \"$RUNNER_TEMP/shards.json\"",
-                "\"$RUNNER_TEMP/shards.json\")\" = 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05\n",
+                "\"$RUNNER_TEMP/shards.json\")\" = 6d04b52a16145723eedb0c56640ad052dbd26e94\n",
                 'echo "7135b31f6acc0ebc2626b80823f0a67c7afed41ef509900ad3b14437dce1c373  .github/workflows/node-boot-build.yml" | sha256sum -c -',
                 'echo "56029b4b5706f4983c262d65982abcbe029eaff9c30c408bd583561639722ed7  tools/qualification/node_boot/prebuilt.py" | sha256sum -c -',
             ),
@@ -725,7 +725,7 @@ def main() -> int:
                 "    name: Merge Queue / Server Seam over TCP+TLS\n",
                 "    if: needs.candidate.outputs.server_qualification != 'false'\n",
                 "EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}",
-                "ref: 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05",
+                "ref: 6d04b52a16145723eedb0c56640ad052dbd26e94",
                 "WP5_QUALIFICATION=seam bash tools/qualification/wp5_s3b/run.sh | tee \"$evidence\"",
                 "grep -Fxq 'S3B_RESULT=SEAM_PASS' \"$evidence\"",
             ),

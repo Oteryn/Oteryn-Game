@@ -76,25 +76,33 @@ pub(in crate::gameplay_transport) async fn initialize_build(
     .map_err(debug)?;
     let after = crate::durability::character_build::convert_vocation(&formula, &before, vocation)
         .map_err(debug)?;
-    let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
-    slot.commit_build(
-        owner.root,
-        owner.character,
-        owner.holder,
-        fence,
-        crate::durability::character_build::BuildChangeRequest {
-            occurrence: crate::durability::character_build::BuildOccurrence::from_bytes(id(seed))
+    if before != after {
+        let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+        slot.commit_build(
+            owner.root,
+            owner.character,
+            owner.holder,
+            fence,
+            crate::durability::character_build::BuildChangeRequest {
+                occurrence: crate::durability::character_build::BuildOccurrence::from_bytes(id(
+                    seed,
+                ))
                 .map_err(debug)?,
-            cause: crate::durability::character_build::BuildCause::VocationChoice,
-            before,
-            after: after.clone(),
-            pruned_stance: None,
-        },
-        &formula,
-        None,
-    )
-    .await
-    .map_err(debug)?;
+                cause: if before.vocation() == "none" {
+                    crate::durability::character_build::BuildCause::VocationChoice
+                } else {
+                    crate::durability::character_build::BuildCause::VocationTrial
+                },
+                before,
+                after: after.clone(),
+                pruned_stance: None,
+            },
+            &formula,
+            None,
+        )
+        .await
+        .map_err(debug)?;
+    }
     let crate::gameplay_transport::CastFactsLoad::Ready { facts, .. } =
         crate::gameplay_transport::load_character_cast_facts(
             owner.root,

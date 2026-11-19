@@ -318,6 +318,8 @@ pub struct Encounter {
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub enum EncounterPhase {
+    #[serde(rename = "court_warlock")]
+    CourtWarlock,
     #[serde(rename = "cults_boss_phase_closures")]
     Cults,
 }
@@ -786,6 +788,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
         || (operations > 0
             && ((!personal_encounter
                 && !super::personal_trial::admitted(callback)
+                && !super::court_warlock::exact(callback)
                 && (!lever
                     || (effects.scene.is_none()
                         && effects.party_transfer.is_none()
@@ -845,8 +848,10 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_from: BTreeSet<_> = encounter.players.iter().map(|p| p.from).collect();
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
-        let source_party = encounter.phase == Some(EncounterPhase::Cults);
-        if (encounter.minimum_level == 0 && !source_party)
+        let source_party = encounter.phase.is_some();
+        let delayed = encounter.phase == Some(EncounterPhase::CourtWarlock);
+        if (delayed && !super::court_warlock::exact(callback))
+            || (encounter.minimum_level == 0 && !source_party)
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()
@@ -867,7 +872,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 !(1..=if encounter.phase.is_some() { 16 } else { 8 })
                     .contains(&encounter.players.len())
             }
-            || !(1..=if encounter.phase.is_some() { 16 } else { 8 })
+            || !(usize::from(!delayed)..=if encounter.phase.is_some() { 16 } else { 8 })
                 .contains(&encounter.monsters.len())
             || (encounter.phase.is_some() && encounter.timing.is_some())
             || (callback.reversible && !source_party)

@@ -4,12 +4,9 @@ use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 
 use crate::content::channel_content_pin::ChannelContentPin;
-
 use crate::durability::character_build::{
-    BuildCause, BuildChangeRequest, BuildCommitOutcome, BuildOccurrence, DurableBuildState,
-    convert_vocation,
+    BuildCause, BuildChangeRequest, BuildCommitOutcome, BuildOccurrence, convert_vocation,
 };
-
 use crate::durability::character_progression::{
     ExperienceAwardRequest, ExperienceCommitOutcome, ExperienceRewardOccurrence,
 };
@@ -275,12 +272,13 @@ pub(super) fn scenario(earned: bool) -> TestResult {
                 ExperienceCommitOutcome::Committed(_)
             ));
             let formula = native.training_formula().ok_or("formula")?;
-            let build = convert_vocation(
-                formula,
-                &DurableBuildState::default(),
-                &party.stations[station].vocation,
-            )
-            .map_err(debug)?;
+            let before = h
+                .root
+                .read_character_build_state(&authority, fence.character_id)
+                .await
+                .map_err(debug)?;
+            let build = convert_vocation(formula, &before, &party.stations[station].vocation)
+                .map_err(debug)?;
             assert!(matches!(
                 h.root
                     .commit_character_build(
@@ -292,8 +290,12 @@ pub(super) fn scenario(earned: bool) -> TestResult {
                                 190 + u8::try_from(station)?
                             ))
                             .map_err(debug)?,
-                            cause: BuildCause::VocationChoice,
-                            before: DurableBuildState::default(),
+                            cause: if before.vocation() == "none" {
+                                BuildCause::VocationChoice
+                            } else {
+                                BuildCause::VocationTrial
+                            },
+                            before,
                             after: build.clone(),
                             pruned_stance: None,
                         },
@@ -537,12 +539,15 @@ pub(super) fn scenario(earned: bool) -> TestResult {
             .fetch_one(&h.pool)
             .await?;
         assert_eq!(xp, 4);
-        let builds: i64 = sqlx::query_scalar(
-            "SELECT count(*) FROM game_character_build_receipts WHERE cause='vocation_choice'",
+        let builds: Vec<(String, i64)> = sqlx::query_as(
+            "SELECT cause,count(*) FROM game_character_build_receipts GROUP BY cause ORDER BY cause",
         )
-        .fetch_one(&h.pool)
+        .fetch_all(&h.pool)
         .await?;
-        assert_eq!(builds, 4);
+        assert_eq!(
+            builds,
+            vec![("vocation_choice".into(), 1), ("vocation_trial".into(), 3)]
+        );
         if earned {
             super::desert_earned_route_fixtures::earn(&mut owner, &mut admitted, &h).await?;
         }
@@ -792,7 +797,7 @@ async fn create_peer(
             .await?;
     let operation = id(80 + member);
     let source = serde_json::json!({
-        "contract_version":3,
+        "contract_version":4,
         "variant":"OPERATOR_CONTROL_PLANE_BOOTSTRAP",
         "issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY",
         "issuer_decision_id":crate::gameplay_transport::canonical_uuid(&id(90+member)),
@@ -802,7 +807,7 @@ async fn create_peer(
         "account_id":account,
         "target_world_id":crate::gameplay_transport::canonical_uuid(&id(42)),
         "requested_name":format!("Desert A{}",char::from(b'a'+member)),
-        "requested_sex":"Male",
+        "requested_sex":"Male","requested_vocation":"Monk",
         "interpretation_context":{"profile_revision":"profile-1","ruleset_revision":"ruleset-1","content_revision":"content-1","starter_template_revision":"starter-1"},
         "issued_at_source":now.to_string(),
         "expires_at_source":(now+120).to_string(),
