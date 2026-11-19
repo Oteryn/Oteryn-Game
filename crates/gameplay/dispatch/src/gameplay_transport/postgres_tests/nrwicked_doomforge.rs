@@ -440,6 +440,8 @@ async fn two_player_exit(
     };
     let credits =
         grizzly_kills::capture_encounter_admission(owner, &runtime, &players).map_err(debug)?;
+    // Scope the reservation guard so it is dropped before the next await.
+    let (entered, boss) = {
     let mut active = states
         .encounter_phases
         .reserve(&mut runtime, 1)
@@ -483,7 +485,8 @@ async fn two_player_exit(
         )
         .map_err(debug)?;
     active.push(phase);
-    drop(active);
+    (entered, boss)
+    };
     assert_eq!(entered.len(), 2);
     assert!(entered.iter().all(|snapshot| snapshot.position() == start));
     for (phase, health) in [100, 80, 60, 40].into_iter().enumerate() {
