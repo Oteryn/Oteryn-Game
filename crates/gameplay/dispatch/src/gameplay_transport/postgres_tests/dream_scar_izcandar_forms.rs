@@ -198,6 +198,7 @@ pub(super) async fn exercise(
         .try_into()
         .map_err(|_| "winter form")?;
     assert!(live(owner, BASE).await?.is_empty());
+    assert_eq!(initial.actor_local_id(), winter.actor_local_id());
     let health = {
         let mut runtime = owner.runtime.lock().await;
         assert!(runtime.companion_snapshot(initial).is_err());
@@ -221,6 +222,7 @@ pub(super) async fn exercise(
         .try_into()
         .map_err(|_| "interim base form")?;
     assert_ne!(initial, interim);
+    assert_eq!(winter.actor_local_id(), interim.actor_local_id());
     {
         let runtime = owner.runtime.lock().await;
         assert!(runtime.companion_snapshot(winter).is_err());
@@ -231,6 +233,7 @@ pub(super) async fn exercise(
         .await?
         .try_into()
         .map_err(|_| "summer form")?;
+    assert_eq!(interim.actor_local_id(), summer.actor_local_id());
     {
         let runtime = owner.runtime.lock().await;
         assert!(runtime.companion_snapshot(interim).is_err());

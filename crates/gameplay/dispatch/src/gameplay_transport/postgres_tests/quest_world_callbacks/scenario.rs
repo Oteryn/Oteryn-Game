@@ -1679,6 +1679,8 @@ fn scenario_case(
                 4
             } else if name == faceless_bane_phase::LIMITED_SLOTS {
                 4 // Two entrants, the boss, and one available spectre slot.
+            } else if izcandar {
+                3 // Two entrants and the boss fill the carrier while its forms change.
             } else if matches!(name, haunted_tomb_roll::NO_SLOT | lucifuga_bait_spawn::NO_SLOT) {
                 1 // The admitted character occupies the only carrier slot.
             } else if callback.effects.encounter.is_some() {

@@ -100,15 +100,14 @@ fn replace_form(
     at: MovementLocalPosition,
 ) -> Result<ExactActorRef, CarrierError> {
     let health = health.min(runtime.companion_policy(key)?.maximum_health);
-    let (_, replacement) = runtime.commit_quest_creature_spawn_with_owner(
-        &[(key, health, at)],
-        |runtime, actors| {
-            let [replacement] = actors else {
-                return Err(CarrierError::PlanConflict);
-            };
-            runtime.remove_encounter_actor(boss)?;
-            Ok(*replacement)
-        },
-    )?;
+    // Crystal creaturescripts_izcandar.lua:20-25,37-47 removes the old form
+    // before creating the next. Retire it inside the carrier transaction so its
+    // slot is available and a failed admission restores the original form.
+    let (_, replacement) = runtime.commit_quest_creature_spawn_with_owner(&[], |runtime, _| {
+        runtime.remove_encounter_actor(boss)?;
+        let replacement = runtime.admit_encounter_actor(key, health, at)?;
+        runtime.install_creature_policy(replacement, key)?;
+        Ok(replacement)
+    })?;
     Ok(replacement)
 }
