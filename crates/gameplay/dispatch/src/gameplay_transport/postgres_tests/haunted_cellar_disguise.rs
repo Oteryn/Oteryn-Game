@@ -101,6 +101,10 @@ pub(super) fn catalogue(
     }
     let document = serde_json::json!({"schema":1,"callbacks":callbacks}).to_string();
     let base = world_callbacks::with_fixture_world_document(&base, &document)?;
+    Ok(Arc::new(with_item_self_binding(&base)?))
+}
+
+pub(super) fn with_item_self_binding(base: &QuestStateCatalogue) -> TestResult<QuestStateCatalogue> {
     let disguise = serde_json::json!({"schema":1,"tracks":[],"callbacks":[{
         "key":"oteryn:quest-reward/dream-courts/haunted-cellar-disguise",
         "quest":QUEST,"npc":"oteryn:npc.stricken_soul","keywords":["ectoplasm"],"topic":0,"next_topic":0,
@@ -113,11 +117,9 @@ pub(super) fn catalogue(
         "reply":["You pour all of the ectoplasm over yourself. Without the bucket you cannot stabilise it, you need to hurry until it dissolves!"],
         "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_dream_courts/actions_strange_bucket.lua:53-65"]
     }]}).to_string();
-    Ok(Arc::new(
-        oteryn_gameplay_quests::quest::reward_callbacks::with_fixture_item_self_document(
-            &base, &disguise,
-        )?,
-    ))
+    Ok(oteryn_gameplay_quests::quest::reward_callbacks::with_fixture_item_self_document(
+        base, &disguise,
+    )?)
 }
 
 /// The existing disjoint STEP phases express Crystal movements_slime_looktype.lua:17-18.

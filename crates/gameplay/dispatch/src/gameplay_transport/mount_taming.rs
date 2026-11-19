@@ -13,7 +13,7 @@ use crate::durability::item_use::mount_taming::MountTamingRequest;
 use crate::durability::item_use::{ItemUseError, ItemUseFlaskPlan, ItemUseKind, ItemUseRequest};
 use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, ExactActorRef};
 use oteryn_protocol_oteryn::world_object::{
-    UseDisposition, UseIntent, UseTarget, encode_item_use_intent,
+    MapUseTarget, UseDisposition, UseIntent, UseTarget, encode_item_use_intent,
 };
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
@@ -52,7 +52,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         item_target: Option<ItemKey>,
         visible: bool,
     ) -> Result<Option<UseOutcome>, ()> {
-        if intent.use_with_map_item.is_some() {
+        // A literal base object belongs to the World callback owner. The same
+        // item may have an unrelated self-use arm (Crystal strange bucket).
+        if matches!(intent.use_with_map_item, Some(MapUseTarget::Item(_))) {
             let corpse = match item_target {
                 Some(ItemKey::Instance(id)) => Some(id),
                 _ => None,
@@ -64,7 +66,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Ok(Some(result));
             }
         }
-        if intent.use_with_map_item.is_some()
+        if matches!(intent.use_with_map_item, Some(MapUseTarget::Item(_)))
             && let Some(result) = self
                 .use_carried_quest_item_with_target(actor, command, &intent, source, item_target)
                 .await?
@@ -95,9 +97,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         intent: &UseIntent,
         source: Option<ItemKey>,
     ) -> Result<Option<UseOutcome>, ()> {
-        let Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Object(target)) =
-            &intent.use_with_map_item
-        else {
+        let Some(MapUseTarget::Object(target)) = &intent.use_with_map_item else {
             return Ok(None);
         };
         let source = match (&intent.target, source) {

@@ -19,6 +19,7 @@ use oteryn_protocol_oteryn::world_object::{
 use std::sync::Arc;
 
 pub(super) const FILLED: &str = "haunted-cellar-ectoplasm-filled";
+pub(super) const FULL_BUCKET: &str = "haunted-cellar-ectoplasm-full-bucket";
 pub(super) const SPENT: &str = "haunted-cellar-ectoplasm-spent";
 const QUEST: &str = "oteryn:quest.the_dream_courts_quest";
 const STARTED: &str =
@@ -88,9 +89,8 @@ pub(super) fn catalogue(
         .with_fixture_transition(world_callbacks::primary_transition(callback)?)
         .map_err(debug)?;
     let document = serde_json::json!({"schema":1,"callbacks":[callback]}).to_string();
-    Ok(Arc::new(world_callbacks::with_fixture_world_document(
-        &base, &document,
-    )?))
+    let base = world_callbacks::with_fixture_world_document(&base, &document)?;
+    Ok(Arc::new(super::haunted_cellar_disguise::with_item_self_binding(&base)?))
 }
 
 #[test]
@@ -111,20 +111,33 @@ fn haunted_cellar_failure_roll_keeps_the_exact_carried_bucket_and_spends_the_egg
     super::kill_reward_e2e::scenario_thread::run(SPENT, || scenario(SPENT, EGG, false))
 }
 
+#[test]
+fn haunted_cellar_full_bucket_with_self_disguise_binding_still_spends_the_target_egg() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(FULL_BUCKET, || scenario(FULL_BUCKET, EGG, false))
+}
+
 pub(super) async fn exercise(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     harness: &Harness,
     fence: CurrentCharacterGameplayFence,
     callback: &Callback,
-    won: bool,
+    name: &str,
 ) -> TestResult {
+    let won = name == FILLED;
+    // Crystal actions_strange_bucket.lua:30-59 still spends the egg when the
+    // selected bucket is already at the terminal stage, even on a high draw.
+    let input = if name == FULL_BUCKET { PARTIAL } else { EMPTY };
     input_item(
         owner,
         fence.item_fence(),
         &Offering {
             position: EGG,
-            item: EMPTY.into(),
+            item: input.into(),
             count: 1,
         },
         39,
@@ -133,7 +146,7 @@ pub(super) async fn exercise(
     .await?;
     let original: String = sqlx::query_scalar(
         "SELECT item_instance_id::text FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1",
-    ).bind(EMPTY).fetch_one(&harness.pool).await?;
+    ).bind(input).fetch_one(&harness.pool).await?;
     let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
     let outcome = slot
         .commit_quest_transition(
@@ -177,8 +190,8 @@ pub(super) async fn exercise(
         .and_then(|g| g.native_gameplay())
         .and_then(|n| n.item_index())
         .ok_or("item index")?
-        .definition_ref("Item", EMPTY, "definition-r1")
-        .ok_or("empty bucket definition")?;
+        .definition_ref("Item", input, "definition-r1")
+        .ok_or("selected bucket definition")?;
     let payload = |expected_revision| {
         encode_item_use_intent(&UseIntent {
             target: UseTarget::Item(std::num::NonZeroU64::MIN),
@@ -212,7 +225,7 @@ pub(super) async fn exercise(
             );
             (ordinal, draw)
         })
-        .find(|&(_, draw)| if won { draw >= 5 } else { draw == 0 })
+        .find(|&(_, draw)| if name == SPENT { draw == 0 } else { draw >= 5 })
         .ok_or("fixture roll occurrence")?;
     let mut submitted = owner.owner_now().get();
     for ordinal in first..=command {
@@ -252,7 +265,7 @@ pub(super) async fn exercise(
     let current: String = sqlx::query_scalar(
         "SELECT definition_production_key FROM game_item_instances WHERE item_instance_id=$1::uuid AND lifecycle=1",
     ).bind(original).fetch_one(&harness.pool).await?;
-    assert_eq!(current, if won { PARTIAL } else { EMPTY });
+    assert_eq!(current, if won { PARTIAL } else { input });
     let proofs: (i64, i64) = sqlx::query_as(
         "SELECT (SELECT count(*) FROM game_quest_callback_consumptions WHERE transition_key=$1),
                 (SELECT count(*) FROM game_quest_world_tool_reads WHERE transition_key=$1)",
