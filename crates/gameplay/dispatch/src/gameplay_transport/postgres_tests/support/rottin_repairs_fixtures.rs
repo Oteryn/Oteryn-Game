@@ -25,75 +25,8 @@ pub(super) fn generation(
     crate::content::ContentActivationController,
     crate::content::NativeEntryContentPin,
 )> {
-    use serde_json::Value;
-    use std::{fs::File, io::BufReader, path::Path};
-
-    let mut input =
+    let input =
         super::death_ml_loss_composed_fixtures::production_input_with_source("content-1", None)?;
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-    let imported: Value = serde_json::from_reader(BufReader::new(File::open(
-        root.join("imports/crystalserver/bindings/items.json"),
-    )?))?;
-    let binding = imported["bindings"]
-        .as_array()
-        .and_then(|rows| rows.iter().find(|row| row["target"]["key"] == HAMMER))
-        .ok_or("Crystal hammer binding")?;
-    let definitions: Value = serde_json::from_reader(BufReader::new(File::open(
-        root.join("content/items/definitions/items-21000-21499.json"),
-    )?))?;
-    let definition = definitions["records"]
-        .as_array()
-        .and_then(|rows| {
-            rows.iter()
-                .map(|row| &row["definition"])
-                .find(|row| row["identity"]["key"] == HAMMER)
-        })
-        .ok_or("canonical hammer definition")?;
-
-    // The Content session owns the production admission. Exercise the mint's
-    // real carrying-capacity check with the imported hammer still in custody.
-    let pin = input.item_profiles.as_mut().ok_or("item profiles")?;
-    let mut profiles: Value = serde_json::from_slice(&pin.bytes)?;
-    let records = profiles["records"]
-        .as_array_mut()
-        .ok_or("item profile rows")?;
-    let hammer_id: u32 = binding["external_id"]
-        .as_str()
-        .ok_or("hammer source ID")?
-        .parse()?;
-    let position = records
-        .iter()
-        .position(|record| {
-            record["production_binding"]["external_id"]
-                .as_str()
-                .and_then(|id| id.parse::<u32>().ok())
-                .is_some_and(|id| id > hammer_id)
-        })
-        .ok_or("hammer profile insertion point")?;
-    records.insert(
-        position,
-        json!({
-            "authoring": {"item": binding["target"]},
-            "semantics": definition["semantics"],
-            "attributes": {},
-            "admission": {
-                "materializable": true,
-                "stack_class": "NonStackable",
-                "legal_destinations": ["CharacterInventory", "Ground"]
-            },
-            "production_definition": {
-                "family": "Item",
-                "production_key": HAMMER,
-                "revision_ref": binding["target"]["revision"]
-            },
-            "production_binding": binding
-        }),
-    );
-    pin.bytes = serde_json::to_vec(&profiles)?;
-    pin.sha256 = Sha256::digest(&pin.bytes)
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect();
     crate::content::native_gameplay::test_support::try_activate_input(world, &input)
         .map_err(super::fixture::debug)
 }
