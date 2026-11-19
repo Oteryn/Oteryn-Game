@@ -547,10 +547,14 @@ def main() -> int:
         mutations += 2
         assert validate(original.replace(plan, "", 1)) != 0, (archive, plan)
         mutations += 1
-    for verification in ('verify_archive lib-1', 'verify_archive lib-2', 'verify_archive lib-3',
-                         'unset OTERYN_TEST_POSTGRES_ADMIN_URL'):
+    for verification in (
+        'python3 tools/ci/pg_archive_affinity.py route "$PG_ARCHIVES" "$JOB_INDEX" "$JOB_TOTAL"',
+        '          name: mq-postgres-test-archives-${{ steps.affinity.outputs.archive }}',
+        'python3 tools/ci/pg_archive_affinity.py verify "$RUNNER_TEMP" mq',
+        'unset OTERYN_TEST_POSTGRES_ADMIN_URL',
+    ):
         assert original.count(verification) == 1, verification
-        assert validate(original.replace(verification, 'true # ' + verification, 1)) != 0
+        assert validate(original.replace(verification, "", 1)) != 0, verification
         mutations += 1
     for compile_step in ("        run: rustup toolchain install 1.100.0 --profile minimal\n",):
         partitions = core.indented_yaml_mapping_block(original, "durability_postgres", 2)
