@@ -251,7 +251,8 @@ pub(super) fn scenario(
         let repeat_reward = seed == "rottin_weighted_repeat";
         let short_reward = seed == "rottin_weighted_short";
         let weighted_reward = seed == "rottin_weighted_reward" || repeat_reward || short_reward;
-        let recipe_only = seed == "rottin_lucky_charm_recipe";
+        let mission_recipe = seed == "rottin_lucky_charm_mission_recipe";
+        let recipe_only = mission_recipe || seed == "rottin_lucky_charm_recipe";
         let craft_charms = recipe_only || weighted_reward;
         let h = if merchant_loot || merchant_wave || craft_charms || repair {
             Harness::create_quest_reward(admin, seed, false).await?
@@ -433,9 +434,15 @@ pub(super) fn scenario(
             deps.initialize(&owner).await;
             owner.admit_quest_session(&admitted).await;
             if craft_charms {
-                super::rottin_rewards_fixtures::craft_charms(
-                    &owner, &admitted, &h, if short_reward { 6 } else { 7 },
-                ).await?;
+                use super::rottin_rewards_fixtures::{START_MISSION, START_TASK, craft_charms};
+                let (count, start_transition) = if mission_recipe {
+                    (1, START_MISSION)
+                } else if short_reward {
+                    (6, START_TASK)
+                } else {
+                    (7, START_TASK)
+                };
+                craft_charms(&owner, &admitted, &h, count, start_transition).await?;
             }
             if merchant_wave {
                 let expected_merchants = if blocked_merchant_spawn { 6 } else { 7 };

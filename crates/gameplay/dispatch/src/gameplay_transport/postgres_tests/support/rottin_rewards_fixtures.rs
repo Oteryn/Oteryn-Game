@@ -18,7 +18,9 @@ const QUEST: &str = "oteryn:quest.rottin_wood_and_the_married_men_quest";
 const TRACK: &str =
     "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/task01";
 const COOLDOWN: &str = "oteryn:quest-progress/crystalserver/kv/lucky-loop-task";
-const START_TASK: &str =
+pub(super) const START_MISSION: &str =
+    "oteryn:quest-transition/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission01/npc_1";
+pub(super) const START_TASK: &str =
     "oteryn:quest-transition/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/task01/npc_1";
 const ACHIEVEMENT: &str = "oteryn:achievement/bunny_slipped";
 const PAYOUT: &str = "oteryn:quest-reward/rottin-wood/lucky-loop";
@@ -118,6 +120,7 @@ pub(super) async fn craft_charms(
     admitted: &AdmittedSession,
     h: &Harness,
     count: i64,
+    start_transition: &str,
 ) -> TestResult {
     super::item_look_fixtures::seed_main_backpack(h, &[(RIBBON, count), (FOOT, count)]).await?;
     let quest_fence = owner
@@ -200,7 +203,7 @@ pub(super) async fn craft_charms(
             owner.holder,
             quest_fence,
             QuestTransitionRequest {
-                transition_key: START_TASK.into(),
+                transition_key: start_transition.into(),
                 cause: QuestCause::Command(CommandRef::new(
                     admitted.game_session_id,
                     CommandId::new(1600).map_err(debug)?,
@@ -245,6 +248,8 @@ pub(super) async fn craft_charms(
     let receipts: (i64, i64) = sqlx::query_as(
         "SELECT count(*), count(*) FILTER (WHERE recipe=$2 AND consume_source
            AND source_item_instance_id=encode($3,'hex')::uuid
+           AND (before_item->>'quantity')::bigint=$6::bigint-(command_id-1602)
+           AND (ingredient_before_item->>'quantity')::bigint=$6::bigint-(command_id-1602)
            AND ingredient_item_instance_id=encode($4,'hex')::uuid
            AND ingredient_consumed_quantity=1
            AND jsonb_array_length(outputs)=1
@@ -257,6 +262,7 @@ pub(super) async fn craft_charms(
     .bind(ribbon_id.as_slice())
     .bind(foot_id.as_slice())
     .bind(CHARM)
+    .bind(count)
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(receipts, (count, count));

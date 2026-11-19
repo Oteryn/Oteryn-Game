@@ -3,6 +3,20 @@ use super::TestResult;
 use super::creature_push_fixtures::scenario;
 
 #[test]
+fn rottin_lucky_charm_recipe_accepts_active_first_mission_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| scenario("rottin_lucky_charm_mission_recipe", false, None))?
+        .join()
+        .map_err(|_| "Rottin mission recipe PostgreSQL thread panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
 fn rottin_lucky_charm_recipe_consumes_ribbon_and_foot_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
