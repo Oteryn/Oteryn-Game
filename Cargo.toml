@@ -208,3 +208,11 @@ overflow-checks = true
 opt-level = 2
 debug-assertions = true
 overflow-checks = true
+
+# Build the full dispatch lib-test with one Cargo job on 16 GiB runners.
+# Two jobs can still exhaust memory during LLVM codegen with this profile.
+# See docs/reference/dispatch-lib-test-memory.md for measurements and CI settings.
+[profile.test.package.oteryn-gameplay-dispatch]
+debug = 0
+incremental = false
+codegen-units = 256
