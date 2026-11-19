@@ -3806,6 +3806,9 @@
           "family": "Item",
           "key": "candidate:item/3460",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Tools"
         }
       },
       "semantics": {
@@ -3924,15 +3927,17 @@
         }
       },
       "attributes": {
-        "spell_augments": [],
-        "speed_bonus": 0,
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -12684,6 +12689,9 @@
           "family": "Item",
           "key": "candidate:item/12171",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -12803,15 +12811,17 @@
         }
       },
       "attributes": {
-        "spell_augments": [],
-        "speed_bonus": 0,
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -12846,6 +12856,9 @@
           "family": "Item",
           "key": "candidate:item/12173",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -12965,15 +12978,17 @@
         }
       },
       "attributes": {
-        "spell_augments": [],
-        "speed_bonus": 0,
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
