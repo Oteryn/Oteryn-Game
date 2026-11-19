@@ -746,6 +746,7 @@ async fn retaliation_scenario(
     player: ExactActorRef,
 ) -> TestResult {
     let fence = admitted.item_fence.ok_or("axe item fence")?;
+    super::item_look::seed_main_backpack_for(h, fence.character_id.as_bytes(), 70, &[]).await?;
     super::quest_world_callbacks::input_item(
         owner,
         fence,
@@ -798,6 +799,7 @@ async fn retaliation_scenario(
     let peer_actor = peer.runtime_actor.ok_or("peer actor")?;
     let peer_fence = peer.item_fence.ok_or("peer axe item fence")?;
     assert_ne!(peer_fence.character_id, fence.character_id);
+    super::item_look::seed_main_backpack_for(h, peer_fence.character_id.as_bytes(), 73, &[]).await?;
     super::quest_world_callbacks::input_item(
         owner,
         peer_fence,
