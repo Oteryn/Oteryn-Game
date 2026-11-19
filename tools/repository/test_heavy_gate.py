@@ -54,6 +54,7 @@ class PostgresLibraryArchiveTests(unittest.TestCase):
                     self.assertEqual(
                         json.loads(outputs["archives"]), (["e2e"] if server in packages else []) + library_archives,
                     )
+                    self.assertEqual(outputs["multiple"], str(len(json.loads(outputs["archives"])) > 1).lower())
                     for archive in library_archives:
                         env = dict(
                             os.environ, RUNNER_TEMP=directory, ARCHIVE=archive, LIB_PACKAGES=outputs["library"],
@@ -113,7 +114,7 @@ class PostgresLibraryArchiveTests(unittest.TestCase):
                 actual = Counter()
                 for index in range(total):
                     env = dict(os.environ, RUNNER_TEMP=directory, LABEL=str(index + 1),
-                               JOB_INDEX=str(index), JOB_TOTAL=str(total))
+                               JOB_INDEX=str(index), JOB_TOTAL=str(total), PG_AFFINITY="false")
                     subprocess.run(["bash", "-c", script], cwd=ROOT, env=env, check=True,
                                    capture_output=True, text=True)
                     for filters in plan.glob("*.filters"):
@@ -481,7 +482,9 @@ class HeavyGateTests(unittest.TestCase):
         step = job.split("      - name: Stage the reviewed PostgreSQL planner\n", 1)[1]
         run = textwrap.dedent(step.split("        run: |\n", 1)[1].split("\n      -", 1)[0])
         relative = Path("tools/ci/plan_pg_partitions.py")
+        affinity_relative = relative.with_name("pg_archive_affinity.py")
         expected = (ROOT / relative).read_bytes()
+        expected_affinity = (ROOT / affinity_relative).read_bytes()
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             checkout = root / "checkout"
@@ -502,11 +505,22 @@ class HeavyGateTests(unittest.TestCase):
             git("add", str(relative))
             git("commit", "-qm", "protected planner")
             base = git("rev-parse", "HEAD")
+            helper = checkout / affinity_relative
+            helper.write_bytes(expected_affinity)
+            git("add", str(affinity_relative))
+            git("commit", "-qm", "reviewed affinity helper")
+            modern = git("rev-parse", "HEAD")
+            helper.write_text("print('altered helper')")
+            git("commit", "-qam", "tampered affinity helper")
+            tampered_helper = git("rev-parse", "HEAD")
+            git("checkout", "--detach", "-q", modern)
             planner.write_text("print('altered')")
             git("commit", "-qam", "tampered candidate")
-            tampered = git("rev-parse", "HEAD")
-            for revision, wanted in ((legacy, "false"), (base, "true"), (tampered, None)):
-                with self.subTest(mode=wanted):
+            tampered_planner = git("rev-parse", "HEAD")
+            for revision, wanted in ((legacy, "current_ci=false"), (base, "current_ci=true"),
+                                     (modern, "current_ci=true\naffinity=true"),
+                                     (tampered_helper, None), (tampered_planner, None)):
+                with self.subTest(revision=revision, mode=wanted):
                     git("checkout", "--detach", "-q", revision)
                     temp = root / revision
                     temp.mkdir()
@@ -519,8 +533,13 @@ class HeavyGateTests(unittest.TestCase):
                     self.assertEqual(git("rev-parse", "HEAD"), revision)
                     self.assertEqual(result.returncode == 0, wanted is not None, result.stdout + result.stderr)
                     if wanted is not None:
-                        self.assertEqual(output.read_text().strip(), f"current_ci={wanted}")
+                        self.assertEqual(output.read_text().strip(), wanted)
                         self.assertEqual((temp / "pg-planner/plan_pg_partitions.py").read_bytes(), expected)
+                        archived_helper = temp / "pg-planner" / affinity_relative.name
+                        if revision == modern:
+                            self.assertEqual(archived_helper.read_bytes(), expected_affinity)
+                        else:
+                            self.assertFalse(archived_helper.exists())
 
     def test_single_archive_downloads_verify_in_either_supported_layout(self):
         job = indented_yaml_mapping_block(self.text, "durability_postgres", 2)

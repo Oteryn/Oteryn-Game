@@ -47,7 +47,7 @@ EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "6b6a5a3101e090663adcbec2b32a268e1f8a57fb
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "1a1f98f8f2df7b981fa6a85f0f4bf3ac218247121ab330bf5348a703ce0b1e0d"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "b3423b858c7cad5c2814cef0708819f41c4b5bb328bae5450d202c2e18a92631"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "1de3f58c155660d9bf1dec97119231f9f991a3a4"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "e2b004fc0c0eb68b9954587223b9d0f08d9f404a"
 EXPECTED_POST_MERGE_RUST_SHA256 = "0393a1f9243c6134a5c3814983b099b4eb0ca04acf1cb6eb068d86b5b8df2ac6"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
@@ -607,6 +607,7 @@ def main() -> int:
                 '--binaries-metadata "$meta/target/nextest/binaries-metadata.json" --message-format json',
                 'sha256sum head-sha workspace "pg-$ARCHIVE.tar.zst" "pg-$ARCHIVE.json" > SHA256SUMS',
                 "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
+                "name: mq-postgres-test-inventory-${{ matrix.archive }}",
                 "          if-no-files-found: error\n",
             ),
             "durability_postgres": (
@@ -618,16 +619,16 @@ def main() -> int:
                 "NEXTEST_SHA256: 682c21b777c333e96fd532e114d3a5a894e0729ab88d94c0a9f20f8419695428",
                 'echo "${NEXTEST_SHA256}  ${archive}" | sha256sum -c -',
                 "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
-                "pattern: mq-postgres-test-archives-*",
-                'echo "$digest  SHA256SUMS" | sha256sum -c -',
-                'sha256sum head-sha workspace "pg-$archive.tar.zst" "pg-$archive.json" | cmp - SHA256SUMS',
-                'verify_archive e2e "$E2E_SHA256"',
-                'verify_archive lib "$LIB_SHA256"',
-                'verify_archive lib-1 "$DISPATCH_1_SHA256"',
-                'verify_archive lib-2 "$DISPATCH_2_SHA256"',
-                'verify_archive lib-3 "$DISPATCH_3_SHA256"',
-                'test "$(cat head-sha)" = "$EXPECTED_SHA"',
+                "pattern: mq-postgres-test-inventory-*",
+                "name: mq-postgres-test-archives-${{ steps.affinity.outputs.archive }}",
+                "echo 'db285d452e0cb5814a95f0c8b25ab969af5ee9637fd051a1a0fdbcb8221cb64a  tools/ci/pg_archive_affinity.py' | sha256sum -c -",
+                'python3 tools/ci/pg_archive_affinity.py route "$PG_ARCHIVES" "$JOB_INDEX" "$JOB_TOTAL"',
+                'python3 tools/ci/pg_archive_affinity.py verify "$RUNNER_TEMP" mq',
+                '"$PG_ARCHIVES" "$SELECTED_ARCHIVE" "$EXPECTED_SHA" "$GITHUB_WORKSPACE" tools/ci/plan_pg_partitions.py',
+                'test "$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_SHA"',
                 'test "$LABEL" = "$((JOB_INDEX + 1))"',
+                'JOB_INDEX="${ARCHIVE_INDEX:?missing archive worker index}"',
+                'JOB_TOTAL="${ARCHIVE_TOTAL:?missing archive worker count}"',
                 'echo "1d26d89fd1faff1752d47a7f2ae59dde980f8683fa791b85da35f92b79607321  tools/ci/plan_pg_partitions.py" | sha256sum -c -',
                 'python3 tools/ci/plan_pg_partitions.py "$plan" "$JOB_INDEX" "$JOB_TOTAL"',
                 'mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-e2e.filters"',

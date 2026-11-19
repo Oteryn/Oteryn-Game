@@ -940,6 +940,19 @@ jobs:
           sha256sum head-sha workspace "pg-$ARCHIVE.tar.zst" "pg-$ARCHIVE.json" > SHA256SUMS
           echo "${ARCHIVE//-/_}_sha256=$(sha256sum SHA256SUMS | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
 
+      - name: Upload PostgreSQL test inventory
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mq-postgres-test-inventory-${{ matrix.archive }}
+          path: |
+            ${{ runner.temp }}/pg-archives/head-sha
+            ${{ runner.temp }}/pg-archives/workspace
+            ${{ runner.temp }}/pg-archives/SHA256SUMS
+            ${{ runner.temp }}/pg-archives/pg-${{ matrix.archive }}.json
+          if-no-files-found: error
+          retention-days: 1
+          overwrite: true
+
       - name: Upload PostgreSQL test archive
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -958,7 +971,7 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: read
-    # Each partition runs a disjoint planned share of the archives built once by durability_postgres_build;
+    # Each partition runs a disjoint share of one archive built by durability_postgres_build;
     # together the thirty-six run every registered E2E target and PostgreSQL-backed library test exactly once.
     # These jobs install no toolchain and restore no cache: they cannot compile.
     strategy:
@@ -982,6 +995,7 @@ jobs:
           --health-retries 20
     env:
       OTERYN_TEST_POSTGRES_ADMIN_URL: postgresql://oteryn_test_admin:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/postgres
+      PG_ARCHIVES: '["e2e","lib","lib-1","lib-2","lib-3"]'
     steps:
       # The test binaries read repository files through their compile-time CARGO_MANIFEST_DIR, so each
       # partition checks out the same candidate at the same workspace path as the build job.
@@ -1010,48 +1024,8 @@ jobs:
           tar -xzf "$archive" -C "$RUNNER_TEMP/nextest-bin"
           echo "$RUNNER_TEMP/nextest-bin" >> "$GITHUB_PATH"
 
-      - name: Download PostgreSQL test archives
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          pattern: mq-postgres-test-archives-*
-          merge-multiple: false
-          path: ${{ runner.temp }}/pg-download
-
-      - name: Verify archives were built for this candidate
-        env:
-          EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
-          E2E_SHA256: ${{ needs.durability_postgres_build.outputs.e2e_sha256 }}
-          LIB_SHA256: ${{ needs.durability_postgres_build.outputs.lib_sha256 }}
-          DISPATCH_1_SHA256: ${{ needs.durability_postgres_build.outputs.lib_1_sha256 }}
-          DISPATCH_2_SHA256: ${{ needs.durability_postgres_build.outputs.lib_2_sha256 }}
-          DISPATCH_3_SHA256: ${{ needs.durability_postgres_build.outputs.lib_3_sha256 }}
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/pg-archives" "$RUNNER_TEMP/pg-plan"
-          verify_archive() {
-            local archive="$1" digest="$2"
-            (
-              cd "$RUNNER_TEMP/pg-download/mq-postgres-test-archives-$archive"
-              [[ "$digest" =~ ^[0-9a-f]{64}$ ]]
-              echo "$digest  SHA256SUMS" | sha256sum -c -
-              sha256sum head-sha workspace "pg-$archive.tar.zst" "pg-$archive.json" | cmp - SHA256SUMS
-              test "$(cat head-sha)" = "$EXPECTED_SHA"
-              test "$(cat workspace)" = "$GITHUB_WORKSPACE"
-              mv "pg-$archive.tar.zst" "$RUNNER_TEMP/pg-archives/"
-              mv "pg-$archive.json" "$RUNNER_TEMP/pg-plan/"
-            )
-          }
-          verify_archive e2e "$E2E_SHA256"
-          verify_archive lib "$LIB_SHA256"
-          verify_archive lib-1 "$DISPATCH_1_SHA256"
-          verify_archive lib-2 "$DISPATCH_2_SHA256"
-          verify_archive lib-3 "$DISPATCH_3_SHA256"
-          test "$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_SHA"
-
-      # Every partition plans from the same digest-bound inventory. Duration estimates
-      # affect balance only; each runnable case is assigned to exactly one partition.
-      - name: Plan partition
-        id: partition
+      - name: Select the PostgreSQL partition archive
+        id: affinity
         env:
           LABEL: ${{ matrix.partition }}
           JOB_INDEX: ${{ strategy.job-index }}
@@ -1060,11 +1034,58 @@ jobs:
           set -euo pipefail
           [[ "$JOB_INDEX" =~ ^[0-9]+$ && "$JOB_TOTAL" =~ ^[1-9][0-9]*$ ]]
           test "$LABEL" = "$((JOB_INDEX + 1))"
+          echo 'db285d452e0cb5814a95f0c8b25ab969af5ee9637fd051a1a0fdbcb8221cb64a  tools/ci/pg_archive_affinity.py' | sha256sum -c -
+          python3 tools/ci/pg_archive_affinity.py route "$PG_ARCHIVES" "$JOB_INDEX" "$JOB_TOTAL"
+
+      - name: Download PostgreSQL test inventories
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: mq-postgres-test-inventory-*
+          merge-multiple: false
+          path: ${{ runner.temp }}/pg-inventories
+
+      - name: Download the selected PostgreSQL test archive
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: mq-postgres-test-archives-${{ steps.affinity.outputs.archive }}
+          path: ${{ runner.temp }}/pg-selected
+
+      - name: Verify archives were built for this candidate
+        env:
+          EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
+          SELECTED_ARCHIVE: ${{ steps.affinity.outputs.archive }}
+          E2E_SHA256: ${{ needs.durability_postgres_build.outputs.e2e_sha256 }}
+          LIB_SHA256: ${{ needs.durability_postgres_build.outputs.lib_sha256 }}
+          LIB_1_SHA256: ${{ needs.durability_postgres_build.outputs.lib_1_sha256 }}
+          LIB_2_SHA256: ${{ needs.durability_postgres_build.outputs.lib_2_sha256 }}
+          LIB_3_SHA256: ${{ needs.durability_postgres_build.outputs.lib_3_sha256 }}
+        run: |
+          set -euo pipefail
+          test "$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_SHA"
+          echo "1d26d89fd1faff1752d47a7f2ae59dde980f8683fa791b85da35f92b79607321  tools/ci/plan_pg_partitions.py" | sha256sum -c -
+          python3 tools/ci/pg_archive_affinity.py verify "$RUNNER_TEMP" mq \
+            "$PG_ARCHIVES" "$SELECTED_ARCHIVE" "$EXPECTED_SHA" "$GITHUB_WORKSPACE" tools/ci/plan_pg_partitions.py
+
+      # Only the assigned archive's verified inventory can contribute runnable filters.
+      - name: Plan partition
+        id: partition
+        env:
+          LABEL: ${{ matrix.partition }}
+          JOB_INDEX: ${{ strategy.job-index }}
+          JOB_TOTAL: ${{ strategy.job-total }}
+          ARCHIVE_INDEX: ${{ steps.affinity.outputs.index }}
+          ARCHIVE_TOTAL: ${{ steps.affinity.outputs.total }}
+        run: |
+          set -euo pipefail
+          [[ "$JOB_INDEX" =~ ^[0-9]+$ && "$JOB_TOTAL" =~ ^[1-9][0-9]*$ ]]
+          test "$LABEL" = "$((JOB_INDEX + 1))"
           plan="$RUNNER_TEMP/pg-plan"
+          JOB_INDEX="${ARCHIVE_INDEX:?missing archive worker index}"
+          JOB_TOTAL="${ARCHIVE_TOTAL:?missing archive worker count}"
           # Verify the reviewed planner before it chooses which tests to run.
           echo "1d26d89fd1faff1752d47a7f2ae59dde980f8683fa791b85da35f92b79607321  tools/ci/plan_pg_partitions.py" | sha256sum -c -
           python3 tools/ci/plan_pg_partitions.py "$plan" "$JOB_INDEX" "$JOB_TOTAL" \
-            tools/ci/pg_test_durations.json
+            tools/ci/pg_test_durations.json --optional-archives
 
       - name: Run registered PostgreSQL E2E targets
         run: |
