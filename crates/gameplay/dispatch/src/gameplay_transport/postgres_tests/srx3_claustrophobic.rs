@@ -9,12 +9,12 @@ fn srx3_claustrophobic_actual_world_step_starts_source_raid_postgres() -> TestRe
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("srx3-claustrophobic-world", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-claustrophobic-world", || {
         run(async |admin| {
             reset();
             // Crystal201189f soul_war.lua:141-146; the first raid rejects
             // arrivals FROM y=31050, not the actual northern ingress used here.
-            let scene = super::srx3_soul_war_world_fixture::source_world(MovementLocalPosition {
+            let scene = super::srx3_soul_war_world_fixture_fixtures::source_world(MovementLocalPosition {
                 x: 34013,
                 y: 31048,
                 floor: 9,
@@ -32,8 +32,8 @@ fn srx3_claustrophobic_actual_world_step_starts_source_raid_postgres() -> TestRe
                 false,
             )
             .await?;
-            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-            super::house_transfer::prepare_owned_session(&h).await?;
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::house_transfer_fixtures::prepare_owned_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root

@@ -78,9 +78,9 @@ fn private_messages_postgres_cross_node_wire_delivery_replay_and_world_boundary(
                     let mut recipient = second.admitted;
                     recipient.continuity.selected_capabilities = admitted.continuity.selected_capabilities;
                     use oteryn_protocol_oteryn::guild::GuildIntent;
-                    let guild = super::guild_bank::guild(&owner, &mut admitted, GuildIntent::Found { name: "Channel Guild".into() }).await?.guild;
-                    super::guild_bank::guild(&owner, &mut admitted, GuildIntent::Invite { guild, name: world::RECIPIENT_NAME.into() }).await?;
-                    super::guild_bank::guild(&target, &mut recipient, GuildIntent::Join { guild }).await?;
+                    let guild = super::guild_bank_fixtures::guild(&owner, &mut admitted, GuildIntent::Found { name: "Channel Guild".into() }).await?.guild;
+                    super::guild_bank_fixtures::guild(&owner, &mut admitted, GuildIntent::Invite { guild, name: world::RECIPIENT_NAME.into() }).await?;
+                    super::guild_bank_fixtures::guild(&target, &mut recipient, GuildIntent::Join { guild }).await?;
                     target.chat_party_admit(recipient).await;
                     target.guild_chat_admit(recipient).await;
                     let ring = RelayKeyRing::new(vec![RelayKey::new(1, 0, [19; 32])]).map_err(debug)?;

@@ -1,4 +1,3 @@
-//! Find the retained deep Minotaur Hell room without claiming corpse rewards.
 use super::*;
 
 #[test]
@@ -7,10 +6,10 @@ fn m01b_minotaur_native_hell_entry_credits_once_and_replays() -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::super::kill_reward_e2e::scenario_thread::run(
+    let result = super::super::kill_reward_e2e_fixtures::scenario_thread::run(
         "m01b-minotaur-hell-entry",
         move || {
-            super::super::quest_world_callbacks::scenario(
+            super::super::quest_world_callbacks_fixtures::scenario(
                 "m01b/minotaur-hell/s1/minohell1",
                 Position {
                     x: 32131,
@@ -27,34 +26,4 @@ fn m01b_minotaur_native_hell_entry_credits_once_and_replays() -> TestResult {
         result.is_ok()
     );
     result
-}
-
-pub(super) fn world(
-    native: &crate::content::native_gameplay::NativeGameplayState,
-) -> TestResult<crate::map::boot::BundleWorld> {
-    use super::super::l6_world_pickups::{ExpectedTile, NativeCrop, native_crop};
-    native_crop(
-        native,
-        NativeCrop {
-            bytes: include_bytes!(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/../../../content/world/placements/region-z12-x125-y125.b3"
-            )),
-            region: (12, 125, 125),
-            bounds: (32131, 32066, 32133, 32067),
-            start: (32132, 32066),
-            expected: vec![
-                ExpectedTile {
-                    position: (32131, 32066),
-                    ids: vec![351],
-                    counted_entry: None,
-                },
-                ExpectedTile {
-                    position: (32132, 32066),
-                    ids: vec![351],
-                    counted_entry: None,
-                },
-            ],
-        },
-    )
 }

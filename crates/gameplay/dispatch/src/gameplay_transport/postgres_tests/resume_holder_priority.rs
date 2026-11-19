@@ -1,6 +1,6 @@
 //! Resume retains holder preference before Activity/House routing selects a scope.
 use super::fixture::{Harness, debug, id};
-use super::kill_reward_e2e::scenario_thread::run_async as run;
+use super::kill_reward_e2e_fixtures::scenario_thread::run_async as run;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::durability::{DurabilityError, ROOT_RECOVERY_WINDOW};

@@ -63,7 +63,7 @@ fn scenario(stage: &Stage) -> TestResult {
 
 async fn case(h: &Harness, stage: &Stage) -> TestResult {
     *stage.lock().map_err(|_| "stage lock")? = "admission/handoff";
-    let entered = super::activity_runtime::enter_fixture(h).await?;
+    let entered = super::activity_runtime_fixtures::enter_fixture(h).await?;
     let current = entered.fence.game_session_id;
     let (generation,revoked):(Option<String>,bool)=sqlx::query_as("SELECT admission_security_generation::text,security_revoked FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid")
                     .bind(current.as_bytes().as_slice()).fetch_one(&h.pool).await?;
@@ -88,7 +88,7 @@ async fn case(h: &Harness, stage: &Stage) -> TestResult {
         .read_return_placement(&authority, &h.node, entered.fence)
         .await?
         .ok_or("return placement")?;
-    let credential = super::house_transfer::RecoverySource::token(246)?;
+    let credential = super::house_transfer_fixtures::RecoverySource::token(246)?;
     let kid = crate::foundation::fnd04_verifier::fresh_grant_signing_key_id(&credential)
         .ok_or("recovery key")?;
     entered
@@ -112,7 +112,7 @@ async fn case(h: &Harness, stage: &Stage) -> TestResult {
         .verified_at()
         .checked_add(1)
         .ok_or("fixed decision clock")?;
-    let _clock = super::preadmission::FrozenAdmissionClock::install(h, now).await?;
+    let _clock = super::preadmission_fixtures::FrozenAdmissionClock::install(h, now).await?;
     *stage.lock().map_err(|_| "stage lock")? = "capture";
     assert!(matches!(
         h.root

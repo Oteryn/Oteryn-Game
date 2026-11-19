@@ -73,7 +73,7 @@ fn waterfall_access_steps_preserve_quest_state() -> TestResult {
                 ),
             ] {
                 let position = |(x, y, floor)| Position { x, y, floor };
-                super::quest_world_callbacks::stateless_scenario(
+                super::quest_world_callbacks_fixtures::stateless_scenario(
                     name,
                     position(from),
                     position(to),

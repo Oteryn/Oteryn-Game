@@ -9,7 +9,7 @@ fn run_ground_case(corrupted: bool, followup: bool) -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("srx3-gaz-minion-ground", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-gaz-minion-ground", move || {
         run(async |admin| {
             reset();
             let scene = super::srx3_activity_source_fixture::SourceScene::new(
@@ -39,8 +39,8 @@ fn run_ground_case(corrupted: bool, followup: bool) -> TestResult {
             let h =
                 Harness::create_with_admission_seed(admin, "srx3_gaz_minion_ground", false, false)
                     .await?;
-            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-            super::house_transfer::prepare_owned_session(&h).await?;
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::house_transfer_fixtures::prepare_owned_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -54,7 +54,7 @@ fn run_ground_case(corrupted: bool, followup: bool) -> TestResult {
                 &scene,
                 crate::content::bosses::activity_template::PinnedActivitySourceRoom::BrainHead,
             )?;
-            super::boss_activity::issue_content_and_reset(&h, pin).await?;
+            super::boss_activity_fixtures::issue_content_and_reset(&h, pin).await?;
             let mut admitted = deps.admitted;
             super::srx3_activity_source_fixture::prepare_player(&h, &owner, &mut admitted, 500)
                 .await?;
@@ -183,7 +183,7 @@ fn run_ground_case(corrupted: bool, followup: bool) -> TestResult {
                 // A committed copied Item is not yet the death FIFO's terminal
                 // completion. Finish those exact stages at this fixed clock
                 // before a later expiry may pass the older lethal boundary.
-                super::srx3_native_source_cast::drain_source_death(
+                super::srx3_native_source_cast_fixtures::drain_source_death(
                     &owner,
                     image,
                     oteryn_simulation_determinism::SemanticTimeMicros::from_micros(death_at),

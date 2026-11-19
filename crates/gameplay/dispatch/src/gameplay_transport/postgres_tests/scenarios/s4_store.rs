@@ -1,5 +1,5 @@
 //! S4: Platform purchase -> durable Inbox -> backpack -> depot -> successor admission.
-use super::super::store::{
+use super::super::store_fixtures::{
     platform_answer, platform_balance, platform_bytes, platform_intent, sha256,
 };
 use super::*;

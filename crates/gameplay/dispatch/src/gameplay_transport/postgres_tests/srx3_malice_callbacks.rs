@@ -15,7 +15,7 @@ fn srx3_malice_actual_source_entry_cage_and_retained_buff_postgres() -> TestResu
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("srx3-malice-native", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-malice-native", || {
         run(async |admin| {
             reset();
             // Crystal201189f lib/quests/soul_war.lua:332-354: literal first
@@ -40,8 +40,8 @@ fn srx3_malice_actual_source_entry_cage_and_retained_buff_postgres() -> TestResu
             sqlx::query("INSERT INTO game_character_soul_war(character_id,teleport_access,defeated_bosses,first_taint_at,megalomania_completed,final_reward_claimed) VALUES(encode($1,'hex')::uuid,true,0,NULL,false,false)")
                 .bind(id(41).as_slice()).execute(&mut *historical).await?;
             historical.commit().await?;
-            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-            super::house_transfer::prepare_owned_session(&h).await?;
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::house_transfer_fixtures::prepare_owned_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -51,7 +51,7 @@ fn srx3_malice_actual_source_entry_cage_and_retained_buff_postgres() -> TestResu
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &evidence.evidence;
             install_scene(&mut owner, &scene, PinnedActivitySourceRoom::GoshnarsMalice)?;
-            super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+            super::boss_activity_fixtures::issue_content_and_reset(&h, &scene.pin).await?;
             let mut admitted = deps.admitted;
             admitted.continuity.selected_capabilities = SelectedCapabilities::select(
                 BUNDLE_WORLD_OFFERED_CAPABILITIES,
@@ -70,9 +70,9 @@ fn srx3_malice_actual_source_entry_cage_and_retained_buff_postgres() -> TestResu
             )
             .ok_or("actual native boss capabilities")?;
             prepare_player(&h, &owner, &mut admitted, 1999).await?;
-            let instance = super::activity_runtime::allocate_ready_instance(&h, 214).await?;
+            let instance = super::activity_runtime_fixtures::allocate_ready_instance(&h, 214).await?;
             let mut frames = Vec::new();
-            let (_, reply, barrier) = super::boss_activity::exchange_capture(
+            let (_, reply, barrier) = super::boss_activity_fixtures::exchange_capture(
                 &owner,
                 &mut admitted,
                 "oteryn:creature.goshnar_s_malice",
