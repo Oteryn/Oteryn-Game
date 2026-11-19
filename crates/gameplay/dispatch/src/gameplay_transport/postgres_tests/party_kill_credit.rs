@@ -383,6 +383,8 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
             "Crystal201189f killing_in_the_name_of/creaturescripts_monster_kill.lua:18-56"
         }
         Case::Ordered => {
+            counter["gate"] = json!(TRACK);
+            counter["gate_value"] = json!(0);
             counter["set_to_maximum"] = json!(true);
             counter["maximum"] = json!(1);
             "Crystal201189f the_secret_library_quest/creaturescripts_kill.lua:10-39"
@@ -396,6 +398,7 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
         counter["key"] = json!("oteryn:quest-transition/native-kills/qcredit-fixture-cave-rat");
         counter["creature"] = json!(CAVE_RAT);
         if case == Case::Ordered {
+            counter["gate_maximum"] = json!(2);
             counter["maximum"] = json!(3);
         } else {
             counter["track"] = json!(PREOWNED_OUTFIT_TRACK);
@@ -753,6 +756,16 @@ fn run(admin: String, case: Case) -> TestResult {
             }
         }
         if case == Case::Ordered {
+            death(
+                &owner,
+                &players,
+                RAT,
+                MovementLocalPosition { x: at.x + 1, ..at },
+                case,
+                115,
+            )
+            .await?;
+            assert_tracks(&h.pool, [1, 1, 0]).await?;
             death(
                 &owner,
                 &players,

@@ -64,6 +64,9 @@ pub struct KillCounter {
     pub track: String,
     pub gate: String,
     pub gate_value: i64,
+    /// Inclusive upper bound when the donor accepts several predecessor values.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub gate_maximum: Option<i64>,
     #[serde(default)]
     pub minimum: i64,
     pub maximum: i64,
@@ -97,18 +100,34 @@ pub struct KillCounter {
 }
 
 impl KillCounter {
+    pub(crate) fn gate_bounds(&self) -> (i64, i64) {
+        (self.gate_value, self.gate_maximum.unwrap_or(self.gate_value))
+    }
+
+    fn gate_comparison(&self) -> QuestComparison {
+        let (min, max) = self.gate_bounds();
+        if min == max {
+            QuestComparison::Eq(min)
+        } else {
+            QuestComparison::Between(min, max)
+        }
+    }
+
     pub(super) fn validate(&self, quest: &BoundQuest) -> Result<(), String> {
         let count = quest.tracks.iter().find(|track| track.key == self.track);
         let gate = quest.tracks.iter().find(|track| track.key == self.gate);
+        let (gate_min, gate_max) = self.gate_bounds();
         if super::super::native_kills::counter(&self.key).is_some()
             || !super::super::valid_quest_key(&self.key)
             || !self.key.starts_with(super::super::native_kills::PREFIX)
             || !super::super::valid_quest_key(&self.creature)
             || !self.creature.starts_with("oteryn:creature.")
+            || gate_min > gate_max
             || self.track == self.gate
                 && (!self.set_to_maximum
                     || self.advance_gate_to.is_some()
-                    || !(self.minimum..self.maximum).contains(&self.gate_value))
+                    || gate_min < self.minimum
+                    || gate_max >= self.maximum)
             || self.minimum >= self.maximum
             || self.first_defeat_outfit.as_ref().is_some_and(|reward| {
                 self.track != self.gate
@@ -167,7 +186,8 @@ impl KillCounter {
             || count
                 .is_none_or(|track| track.minimum > self.minimum || track.maximum < self.maximum)
             || gate.is_none_or(|track| {
-                !(track.minimum..=track.maximum).contains(&self.gate_value)
+                gate_min < track.minimum
+                    || gate_max > track.maximum
                     || self
                         .advance_gate_to
                         .is_some_and(|value| !(track.minimum..=track.maximum).contains(&value))
@@ -212,7 +232,7 @@ impl KillCounter {
             // the_thieves_guild_quest/creaturescripts_nomad_kill.lua:2-7 advance one exact stage.
             return vec![QuestEffect {
                 track: self.track.clone(),
-                from: QuestComparison::Eq(self.gate_value),
+                from: self.gate_comparison(),
                 effect: QuestEffectKind::Set(self.maximum),
             }];
         }
@@ -228,7 +248,7 @@ impl KillCounter {
         vec![
             QuestEffect {
                 track: self.gate.clone(),
-                from: QuestComparison::Eq(self.gate_value),
+                from: self.gate_comparison(),
                 effect: self
                     .advance_gate_to
                     .map_or(QuestEffectKind::Add(0), |value| {
@@ -274,6 +294,7 @@ impl KillCounter {
             track: &self.track,
             gate: &self.gate,
             gate_value: self.gate_value,
+            gate_bounds: self.gate_bounds(),
             minimum: self.minimum,
             maximum: self.maximum,
             death_area: self.death_area,

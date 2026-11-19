@@ -11,6 +11,7 @@ pub struct CounterRef<'a> {
     pub track: &'a str,
     pub gate: &'a str,
     pub gate_value: i64,
+    pub gate_bounds: (i64, i64),
     pub minimum: i64,
     pub maximum: i64,
     pub death_area: Option<crate::quest::authored_bindings::kills::DeathArea>,
@@ -32,6 +33,7 @@ impl Counter {
             track: self.track,
             gate: self.gate,
             gate_value: self.gate_value(),
+            gate_bounds: self.gate_bounds(),
             minimum: 0,
             maximum: self.maximum,
             death_area: None,
@@ -94,7 +96,8 @@ pub fn active_for(catalogue: &QuestStateCatalogue, tracks: &BTreeMap<String, i64
                 };
                 let observed_gate = tracks.get(&counter.gate).copied().unwrap_or(gate.initial);
                 let observed_count = tracks.get(&counter.track).copied().unwrap_or(count.initial);
-                if observed_gate == counter.gate_value
+                let (gate_min, gate_max) = counter.gate_bounds();
+                if (gate_min..=gate_max).contains(&observed_gate)
                     && (counter.minimum..counter.maximum).contains(&observed_count)
                 {
                     active.push(counter.key.clone());
