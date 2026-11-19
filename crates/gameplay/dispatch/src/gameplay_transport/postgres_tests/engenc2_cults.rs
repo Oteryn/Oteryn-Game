@@ -100,14 +100,14 @@ pub(super) fn encounter_scenario(
             let h = Harness::create_with_admission_seed(admin, tag, true, false).await?;
             prepare_current_session(&h).await?;
             let mut callback = callback()?;
-            if drume.is_some() {
-                super::drume_battlefield::bind(&mut callback)?;
+            if let Some(exit_case) = drume {
+                super::drume_battlefield::bind(&mut callback, exit_case)?;
             }
-            let trigger = Position {
+            let trigger = callback.selector.native.as_ref().map_or(Position {
                 x: 100,
                 y: 100,
                 floor: -7,
-            };
+            }, |native| native.position);
             let world = if let Some(battlefield) = callback.effects.battlefield {
                 super::quest_world_callbacks::world_with_cells(
                     &callback,
@@ -323,8 +323,9 @@ pub(super) fn encounter_scenario(
                     .is_some(),
                 "admitted quest snapshot"
             );
-            let key =
-                oteryn_world_bundle::bundle::placement_key(-7, 100, 100, 1).ok_or("lever key")?;
+            let key = oteryn_world_bundle::bundle::placement_key(
+                trigger.floor, trigger.x, trigger.y, 1,
+            ).ok_or("lever key")?;
             let mut placement = world.base().digest().to_vec();
             placement.extend_from_slice(&key.to_be_bytes());
             if let Some((actor, session)) = second {

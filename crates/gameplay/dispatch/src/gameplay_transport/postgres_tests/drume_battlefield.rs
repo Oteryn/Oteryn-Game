@@ -30,6 +30,10 @@ const USURPER: &str = "oteryn:creature.usurper_commander";
 const DRUME: &str = "oteryn:creature.drume";
 const KESAR: &str = "oteryn:creature.kesar";
 const TIMEOUT_MS: u32 = 1_200_000;
+// Crystal action_drume.lua:12,39-41,130 and items.xml:58504-58507.
+// The B3 region z06-x126-y126 retains the bare rope at (32456,32508,-6),
+// ordinal 1, one tile west of the first staging position.
+pub(super) const ROPE: Position = Position { x: 99, y: 100, floor: -7 };
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum ExitCase {
@@ -84,7 +88,7 @@ fn drume_lever_replaces_vacated_battlefield_before_timeout() -> TestResult {
 }
 
 #[test]
-fn drume_scheduled_clear_ejects_both_players_without_commander_deaths() -> TestResult {
+fn drume_untagged_rope_starts_skirmish_and_scheduler_ejects_both_players() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -94,8 +98,14 @@ fn drume_scheduled_clear_ejects_both_players_without_commander_deaths() -> TestR
     encounter_scenario(false, Some(ExitCase::ScheduledTimeout))
 }
 
-pub(super) fn bind(callback: &mut Callback) -> TestResult {
+pub(super) fn bind(callback: &mut Callback, exit: ExitCase) -> TestResult {
     let mut json = serde_json::to_value(&*callback)?;
+    if exit == ExitCase::ScheduledTimeout {
+        json["selector"] = serde_json::json!({
+            "native": {"position": ROPE, "ordinal": 1, "appearance": 31366},
+        });
+        json["lever"] = serde_json::Value::Null;
+    }
     json["effects"]["battlefield"] = serde_json::json!({
         "exit": EXIT,
         "captain": CAPTAIN,
