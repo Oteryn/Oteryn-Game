@@ -1,4 +1,11 @@
 // Keep delegated lane futures off the shared scenario stack as the integration grows.
+use super::super::{
+    albinius_ice_portal_fixtures, encounter_death_replacements_fixtures,
+    ferumbras_crystal_reset_fixtures, first_dragon_descendant_fixtures,
+    forgotten_temple_portal_fixtures, quest_definition_predecessors_fixtures,
+    questpc7_ferumbras_fixtures, shulgrax_flower_pattern_fixtures,
+    warzone_portal_cooldown_fixtures, zamulosh_monster_step_fixtures,
+};
 use super::*;
 
 pub(crate) fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> TestResult {

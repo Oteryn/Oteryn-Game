@@ -73,6 +73,17 @@ pub(super) fn callback() -> TestResult<Callback> {
         })
     });
     let late_area = serde_json::json!({"minimum":ROOM_MIN,"maximum":ROOM_MAX});
+    let death_phases = serde_json::json!({"terminal":SHELL,"crystal_circuit":{
+        "defeated":RIFT_INVADER,"charges_per_crystal":CHARGE_COUNT,
+        "dormant_appearance":DORMANT_CRYSTAL,"charged_appearance":CHARGED_CRYSTAL,
+        "crystals":crystals,"retire":BOSS,"spawn":SPLINTER,
+        "boss_position":BOSS_AT,"charged_effect":CRYSTAL_EFFECT,
+        "vortex":{"appearance":VORTEX,"duration_ms":VORTEX_MS,
+            "consume_creature":ESSENCE,"consume_effect":POOF,"threshold":VORTEX_THRESHOLD,"spawn":DESTABILIZED}
+    },"replacements":[
+        {"defeated":SPLINTER,"observe_deaths_in":late_area,"spawn":[{"creature":ESSENCE}]},
+        {"defeated":DESTABILIZED,"observe_deaths_in":late_area,"spawn":[{"creature":SHELL,"position":BOSS_AT}]}
+    ]});
     let document = serde_json::json!({"schema":1,"callbacks":[{
         "key":"oteryn:quest-callback/ferumbras/final-fight",
         "quest":"oteryn:quest.ferumbras_ascension_quest",
@@ -84,17 +95,7 @@ pub(super) fn callback() -> TestResult<Callback> {
             "encounter":{
                 "minimum_level":0,"players":players,"monsters":monsters,
                 "room_min":ROOM_MIN,"room_max":ROOM_MAX,"shared_staging":true,
-                "death_phases":{"terminal":SHELL,"crystal_circuit":{
-                    "defeated":RIFT_INVADER,"charges_per_crystal":CHARGE_COUNT,
-                    "dormant_appearance":DORMANT_CRYSTAL,"charged_appearance":CHARGED_CRYSTAL,
-                    "crystals":crystals,"retire":BOSS,"spawn":SPLINTER,
-                    "boss_position":BOSS_AT,"charged_effect":CRYSTAL_EFFECT,
-                    "vortex":{"appearance":VORTEX,"duration_ms":VORTEX_MS,
-                        "consume_creature":ESSENCE,"consume_effect":POOF,"threshold":VORTEX_THRESHOLD,"spawn":DESTABILIZED}
-                },"replacements":[
-                    {"defeated":SPLINTER,"observe_deaths_in":late_area,"spawn":[{"creature":ESSENCE}]},
-                    {"defeated":DESTABILIZED,"observe_deaths_in":late_area,"spawn":[{"creature":SHELL,"position":BOSS_AT}]}
-                ]}
+                "death_phases": death_phases
             }
         },
         "sources":[

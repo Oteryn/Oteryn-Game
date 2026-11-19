@@ -46,7 +46,7 @@ fn row(
 
 fn successor(base: &QuestStateCatalogue) -> TestResult<QuestStateCatalogue> {
     let mut program: Value = serde_json::from_str(include_str!(
-        "../../../../../../content/dialogues/quest-rules-supplemental/questpc2-albinius.json"
+        "../../../../../../../content/dialogues/quest-rules-supplemental/questpc2-albinius.json"
     ))?;
     program["source_files"]
         .as_array_mut()
