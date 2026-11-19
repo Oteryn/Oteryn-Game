@@ -176,9 +176,10 @@ pub(super) fn terminal_callback(name: &str, lever: Position) -> TestResult<Callb
         }},
         "sources":[DEATH_SOURCE,"crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_using_crystals.lua:371-398,437-519"]
     }]});
-    let [callback] = oteryn_gameplay_quests::quest::world_callbacks::parse(&document.to_string())?
-        .try_into()
-        .map_err(|_| "one Warzone exit binding")?;
+    let [callback] =
+        oteryn_gameplay_quests::quest::world_callbacks::parse_fixture(&document.to_string())?
+            .try_into()
+            .map_err(|_| "one Warzone exit binding")?;
     Ok(callback)
 }
 

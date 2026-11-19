@@ -171,9 +171,10 @@ pub(super) fn callback(name: &str, lever: Position) -> TestResult<Callback> {
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_flower_bowl.lua:3-18"
             ]
         }]});
-        let [callback] = oteryn_gameplay_quests::quest::world_callbacks::parse(&data.to_string())?
-            .try_into()
-            .map_err(|_| "one Flower Bowl phase callback")?;
+        let [callback] =
+            oteryn_gameplay_quests::quest::world_callbacks::parse_fixture(&data.to_string())?
+                .try_into()
+                .map_err(|_| "one Flower Bowl phase callback")?;
         return Ok(callback);
     }
     if name == FALLEN {
@@ -227,9 +228,10 @@ pub(super) fn callback(name: &str, lever: Position) -> TestResult<Callback> {
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_first_dragon/bosses/fallen_challenger.lua:19"
             ]
         }]});
-        let [callback] = oteryn_gameplay_quests::quest::world_callbacks::parse(&data.to_string())?
-            .try_into()
-            .map_err(|_| "one Fallen Challenger phase callback")?;
+        let [callback] =
+            oteryn_gameplay_quests::quest::world_callbacks::parse_fixture(&data.to_string())?
+                .try_into()
+                .map_err(|_| "one Fallen Challenger phase callback")?;
         return Ok(callback);
     }
     if matches!(name, LORE | LORE_ROUTE) {
@@ -300,9 +302,10 @@ pub(super) fn callback(name: &str, lever: Position) -> TestResult<Callback> {
         }},
         "sources":sources
     }]});
-    let [callback] = oteryn_gameplay_quests::quest::world_callbacks::parse(&data.to_string())?
-        .try_into()
-        .map_err(|_| "one phase callback")?;
+    let [callback] =
+        oteryn_gameplay_quests::quest::world_callbacks::parse_fixture(&data.to_string())?
+            .try_into()
+            .map_err(|_| "one phase callback")?;
     Ok(callback)
 }
 
@@ -357,9 +360,10 @@ fn lore_callback(name: &str, lever: Position) -> TestResult<Callback> {
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bound_astral_power.lua:1-6,15-26"
         ]
     }]});
-    let [callback] = oteryn_gameplay_quests::quest::world_callbacks::parse(&data.to_string())?
-        .try_into()
-        .map_err(|_| "one Lore Keeper callback")?;
+    let [callback] =
+        oteryn_gameplay_quests::quest::world_callbacks::parse_fixture(&data.to_string())?
+            .try_into()
+            .map_err(|_| "one Lore Keeper callback")?;
     Ok(callback)
 }
 
@@ -398,9 +402,10 @@ fn energy_callback(name: &str, lever: Position) -> TestResult<Callback> {
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/forgotten_knowledge/creaturescripts_energy_prism.lua:2-10"
         ]
     }]});
-    let [callback] = oteryn_gameplay_quests::quest::world_callbacks::parse(&data.to_string())?
-        .try_into()
-        .map_err(|_| "one Energy callback")?;
+    let [callback] =
+        oteryn_gameplay_quests::quest::world_callbacks::parse_fixture(&data.to_string())?
+            .try_into()
+            .map_err(|_| "one Energy callback")?;
     Ok(callback)
 }
 

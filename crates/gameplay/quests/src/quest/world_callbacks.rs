@@ -897,6 +897,12 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
     parse_with_provenance(text, false)
 }
 
+/// Validate a callback fixture through the same parser used by the runtime catalogue.
+#[cfg(any(test, feature = "test-support"))]
+pub fn parse_fixture(text: &str) -> Result<Vec<Callback>, String> {
+    parse(text)
+}
+
 fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, String> {
     let document: Document = serde_json::from_str(text).map_err(|e| e.to_string())?;
     if document.schema != 1 || document.callbacks.len() > MAX_CALLBACKS {

@@ -39,9 +39,10 @@ pub(super) fn callback() -> TestResult<Callback> {
         "effects":{"generated_item_requirements":requirements},
         "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/actions_flower_puzzle_lever.lua:1-11,29-37,63-66"]
     }]});
-    let [callback] = oteryn_gameplay_quests::quest::world_callbacks::parse(&data.to_string())?
-        .try_into()
-        .map_err(|_| "one Shulgrax lever callback")?;
+    let [callback] =
+        oteryn_gameplay_quests::quest::world_callbacks::parse_fixture(&data.to_string())?
+            .try_into()
+            .map_err(|_| "one Shulgrax lever callback")?;
     Ok(callback)
 }
 
@@ -106,9 +107,10 @@ pub(super) fn cycle_callback() -> TestResult<Callback> {
         }},
         "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/movements_flower_puzzle.lua:74-79,125-161"]
     }]});
-    let [callback] = oteryn_gameplay_quests::quest::world_callbacks::parse(&data.to_string())?
-        .try_into()
-        .map_err(|_| "one Shulgrax switch callback")?;
+    let [callback] =
+        oteryn_gameplay_quests::quest::world_callbacks::parse_fixture(&data.to_string())?
+            .try_into()
+            .map_err(|_| "one Shulgrax switch callback")?;
     Ok(callback)
 }
 
@@ -192,9 +194,10 @@ pub(super) fn portal_callback() -> TestResult<Callback> {
             "refusal_step_from_source":{"direction":"south","distance":1}},
         "sources":[PORTAL_SOURCE]
     }]});
-    let [callback] = oteryn_gameplay_quests::quest::world_callbacks::parse(&document.to_string())?
-        .try_into()
-        .map_err(|_| "one Shulgrax portal callback")?;
+    let [callback] =
+        oteryn_gameplay_quests::quest::world_callbacks::parse_fixture(&document.to_string())?
+            .try_into()
+            .map_err(|_| "one Shulgrax portal callback")?;
     Ok(callback)
 }
 

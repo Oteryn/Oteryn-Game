@@ -100,9 +100,10 @@ pub(super) fn access_callback() -> TestResult<Callback> {
         "success_message":"What was wrong is not necessarily right now. Nevertheless you nade it further.",
         "failure_message":"You don't have access to this teleport yet.","sources":[ACCESS_SOURCE]
     }]});
-    let [callback] = oteryn_gameplay_quests::quest::world_callbacks::parse(&document.to_string())?
-        .try_into()
-        .map_err(|_| "one Zamulosh access callback")?;
+    let [callback] =
+        oteryn_gameplay_quests::quest::world_callbacks::parse_fixture(&document.to_string())?
+            .try_into()
+            .map_err(|_| "one Zamulosh access callback")?;
     Ok(callback)
 }
 
@@ -292,9 +293,10 @@ pub(super) fn habitat_callback() -> TestResult<Callback> {
         }},
         "sources":[HABITAT_SOURCE]
     }]});
-    let [callback] = oteryn_gameplay_quests::quest::world_callbacks::parse(&document.to_string())?
-        .try_into()
-        .map_err(|_| "one grass habitat callback")?;
+    let [callback] =
+        oteryn_gameplay_quests::quest::world_callbacks::parse_fixture(&document.to_string())?
+            .try_into()
+            .map_err(|_| "one grass habitat callback")?;
     Ok(callback)
 }
 
@@ -306,9 +308,10 @@ fn habitat_close_callback() -> TestResult<Callback> {
         "reversible":false,"passages":[],"storage":[],"offerings":[],"return_on_failure":false,
         "effects":{"transform":9125},"sources":[HABITAT_SOURCE]
     }]});
-    let [callback] = oteryn_gameplay_quests::quest::world_callbacks::parse(&document.to_string())?
-        .try_into()
-        .map_err(|_| "one grass habitat closing callback")?;
+    let [callback] =
+        oteryn_gameplay_quests::quest::world_callbacks::parse_fixture(&document.to_string())?
+            .try_into()
+            .map_err(|_| "one grass habitat closing callback")?;
     Ok(callback)
 }
 
@@ -561,9 +564,10 @@ pub(super) fn callback(name: &str) -> TestResult<Callback> {
         })
     };
     let data = serde_json::json!({"schema":1,"callbacks":[row]});
-    let [callback] = oteryn_gameplay_quests::quest::world_callbacks::parse(&data.to_string())?
-        .try_into()
-        .map_err(|_| "one Zamulosh callback")?;
+    let [callback] =
+        oteryn_gameplay_quests::quest::world_callbacks::parse_fixture(&data.to_string())?
+            .try_into()
+            .map_err(|_| "one Zamulosh callback")?;
     Ok(callback)
 }
 

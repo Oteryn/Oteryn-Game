@@ -6,7 +6,7 @@ use super::{
 };
 use oteryn_gameplay_quests::quest::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition,
-    definition_predecessors, npc_rules::NpcRuleCatalog, world_callbacks::Position,
+    definition_predecessors, npc_rules::NpcRuleCatalog,
 };
 use serde_json::{Value, json};
 use std::sync::Arc;

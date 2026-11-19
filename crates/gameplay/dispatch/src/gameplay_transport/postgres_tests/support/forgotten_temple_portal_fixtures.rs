@@ -49,9 +49,10 @@ pub(super) fn callback() -> TestResult<Callback> {
             "refusal_effect_on_landing":TELEPORT,"refusal_effect_on_source":TELEPORT},
         "sources":[SOURCE]
     }]});
-    let [callback] = oteryn_gameplay_quests::quest::world_callbacks::parse(&document.to_string())?
-        .try_into()
-        .map_err(|_| "one temple callback")?;
+    let [callback] =
+        oteryn_gameplay_quests::quest::world_callbacks::parse_fixture(&document.to_string())?
+            .try_into()
+            .map_err(|_| "one temple callback")?;
     Ok(callback)
 }
 
