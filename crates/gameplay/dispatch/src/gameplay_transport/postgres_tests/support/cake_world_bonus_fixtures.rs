@@ -99,19 +99,27 @@ pub(super) async fn assert_house_regeneration(
     admitted: crate::gameplay_transport::connection::AdmittedSession,
     actor: crate::foundation::ExactActorRef,
 ) -> TestResult {
+    use crate::gameplay_transport::connection::FreshAdmissionAuthority;
     use oteryn_gameplay_domain::domain::condition::{ConditionValues, ConflictKey};
     use std::sync::atomic::Ordering;
 
     let session = admitted.game_session_id;
     let fence = admitted.item_fence.ok_or("House item fence")?;
-    {
+    let food = {
         let runtime = owner.runtime.lock().await;
         let mut states = owner.states.spell_states.lock().await;
         let state = states
             .house_state_mut(&runtime, actor, session, fence)
             .ok_or("native House spell state")?;
         state.restore_saved_vitals(1, 0);
-    }
+        crate::spell::actor_conditions::eat_food(state, 60, owner.owner_now().get() / 1_000)
+            .map_err(super::fixture::debug)?;
+        state
+            .owned_conditions()
+            .get(ConflictKey::FoodRegeneration)
+            .cloned()
+            .ok_or("scheduled ordinary food regeneration")?
+    };
     let ordinary = owner
         .observe_actor_vitals(actor, session)
         .await
@@ -136,7 +144,7 @@ pub(super) async fn assert_house_regeneration(
     .await?;
 
     owner
-        .tick_actor_vitals(actor, session)
+        .tick_vitals(actor, session)
         .await
         .ok_or("House vitals during Cake window")?;
     let (started_at, health_interval_ms, mana_interval_ms) = {
@@ -162,27 +170,41 @@ pub(super) async fn assert_house_regeneration(
         };
         (effect.started_at(), health_interval_ms, mana_interval_ms)
     };
-    let interval = health_interval_ms.min(mana_interval_ms);
-    let due = started_at + u64::from(interval) * 1_000;
-    owner.states.test_owner_time.store(due, Ordering::Relaxed);
-    let before = owner
-        .tick_actor_vitals(actor, session)
-        .await
-        .ok_or("House vitals before pulse")?;
-    assert_eq!((before.1.health, before.1.mana), (1, 0));
+    let mut intervals = [health_interval_ms, mana_interval_ms];
+    intervals.sort_unstable();
+    let mut vitals = (1, 0);
+    for (index, interval) in intervals.into_iter().enumerate() {
+        if index == 1 && interval == intervals[0] {
+            break;
+        }
+        let due = started_at + u64::from(interval) * 1_000;
+        // The test clock stores the requested microsecond plus one.
+        owner.states.test_owner_time.store(due, Ordering::Relaxed);
+        let before = owner
+            .tick_vitals(actor, session)
+            .await
+            .ok_or("House vitals before pulse")?;
+        assert_eq!((before.1.health, before.1.mana), vitals);
 
-    owner.states.test_owner_time.store(due + 1, Ordering::Relaxed);
-    let after = owner
-        .tick_actor_vitals(actor, session)
-        .await
-        .ok_or("House vitals after pulse")?;
+        owner.states.test_owner_time.store(due + 1, Ordering::Relaxed);
+        let after = owner
+            .tick_vitals(actor, session)
+            .await
+            .ok_or("House vitals after pulse")?;
+        vitals.0 += u32::from(interval.is_multiple_of(health_interval_ms));
+        vitals.1 += u32::from(interval.is_multiple_of(mana_interval_ms));
+        assert_eq!((after.1.health, after.1.mana), vitals);
+        assert!(after.0 > before.0);
+    }
+    let runtime = owner.runtime.lock().await;
+    let mut states = owner.states.spell_states.lock().await;
+    let state = states
+        .house_state_mut(&runtime, actor, session, fence)
+        .ok_or("native House spell state after Cake pulses")?;
     assert_eq!(
-        (after.1.health, after.1.mana),
-        (
-            1 + u32::from(interval == health_interval_ms),
-            u32::from(interval == mana_interval_ms),
-        ),
+        state.owned_conditions().get(ConflictKey::FoodRegeneration),
+        Some(&food),
+        "the House vitals tick advances only Cake regeneration",
     );
-    assert!(after.0 > before.0);
     Ok(())
 }

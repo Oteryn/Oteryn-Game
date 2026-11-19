@@ -62,6 +62,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut states = self.states.spell_states.lock().await;
         if permit.is_some()
             && !states.has_pending_spell_commit(actor, session)
+            && runtime
+                .assert_house_actor_spell_unreserved(actor, session)
+                .is_ok()
             && runtime.house_player_writes_fenced(actor, session) == Ok(false)
             && let Some(state) = states.house_state_mut(&runtime, actor, session, fence)
         {

@@ -1165,6 +1165,16 @@ async fn scenario(
             // Dropping the read reservation requeues the same death for the real drain.
         };
         assert!(died_at_unix_ms > 0);
+        let initially_active: bool = sqlx::query_scalar(
+            "SELECT game_cake_bonus_at(encode($1,'hex')::uuid,
+                                       to_timestamp($2::bigint::double precision / 1000))",
+        )
+        .bind(world.as_bytes().as_slice())
+        .bind(died_at_unix_ms)
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(initially_active, cake_xp_active, "window at the queued death");
+
         // Move the durable window across the drain without waiting a week.
         // Verify that the fixture straddled the actual queued death timestamp.
         let (active_at_kill, active_at_drain): (bool, bool) = sqlx::query_as(
