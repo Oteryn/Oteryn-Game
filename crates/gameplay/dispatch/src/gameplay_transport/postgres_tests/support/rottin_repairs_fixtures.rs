@@ -14,26 +14,21 @@ const REPAIR: &str = "oteryn:quest-callback/rottin-repair-42501";
 const DISREPAIR: &str = "oteryn:quest-reward/rottin-wood/disrepair";
 const HANDYMAN: &str = "oteryn:quest-reward/rottin-wood/handyman";
 const COOLDOWN: &str = "oteryn:quest-progress/crystalserver/kv/handyman-task";
-
-pub(super) fn generation(
-    world: crate::foundation::WorldId,
-) -> TestResult<(
-    crate::content::ContentActivationController,
-    crate::content::NativeEntryContentPin,
-)> {
-    let input =
-        super::death_ml_loss_composed_fixtures::production_input_with_source("content-1", None)?;
-    crate::content::native_gameplay::test_support::try_activate_input(world, &input)
-        .map_err(super::fixture::debug)
-}
+const QUESTLINE: &str =
+    "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/questline";
 
 pub(super) async fn seed(h: &Harness, handyman: bool) -> TestResult {
     let (track, stage) = if handyman { ("task02", 4) } else { ("mission02", 3) };
     seed_tracks(
         h,
-        &[(&format!("{ROTTIN_STATE}{track}"), 1), (&format!("{ROTTIN_STATE}questline"), stage),
-          (WALLS, 4), (COOLDOWN, 1)],
-    ).await
+        &[
+            (&format!("{ROTTIN_STATE}{track}"), 1),
+            (QUESTLINE, stage),
+            (WALLS, 4),
+            (COOLDOWN, 1),
+        ],
+    )
+    .await
 }
 
 pub(super) async fn exercise(
@@ -48,8 +43,16 @@ pub(super) async fn exercise(
         y: 32216,
         floor: -7,
     };
-    let source_id = *owner.bundle_map().ok_or("repair map")?.overlay.base()
-        .tile(wall.x, wall.y, wall.floor).ok_or("wall tile")?.ids().get(2).ok_or("wall source")?;
+    let source_id = *owner
+        .bundle_map()
+        .ok_or("repair map")?
+        .overlay
+        .base()
+        .tile(wall.x, wall.y, wall.floor)
+        .ok_or("wall tile")?
+        .ids()
+        .get(2)
+        .ok_or("wall source")?;
     assert_eq!(
         use_quest_tool(owner, admitted, wall, 2, 1602, 71).await?,
         UseDisposition::Committed
@@ -109,13 +112,24 @@ pub(super) async fn exercise(
         source_reply(if handyman { "line-279" } else { "line-182" })?
     );
     assert_eq!(experience(h).await?, before_xp + 500);
-    let paid: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM game_quest_reward_sources WHERE transition_key=$1 AND mint_transaction_id IS NOT NULL",
+    let completed_track = format!("{ROTTIN_STATE}{}", if handyman { "task02" } else { "mission02" });
+    let (paid, platinum, completion, questline): (i64, i64, i64, i64) = sqlx::query_as(
+        "SELECT
+         (SELECT count(*) FROM game_quest_reward_sources
+          WHERE transition_key=$1 AND mint_transaction_id IS NOT NULL),
+         (SELECT COALESCE(sum(item.quantity),0)::bigint FROM game_quest_reward_sources AS reward
+          JOIN game_item_instances AS item ON item.minted_transaction_id=reward.mint_transaction_id
+          WHERE reward.transition_key=$1 AND item.definition_production_key='oteryn:item.tibia.i3035'
+            AND item.lifecycle=1),
+         (SELECT value FROM game_character_quest_tracks WHERE track_key=$2),
+         (SELECT value FROM game_character_quest_tracks WHERE track_key=$3)",
     )
     .bind(if handyman { HANDYMAN } else { DISREPAIR })
+    .bind(completed_track)
+    .bind(QUESTLINE)
     .fetch_one(&h.pool)
     .await?;
-    assert_eq!(paid, 1);
+    assert_eq!((paid, platinum, completion, questline), (1, 5, 2, 4));
     if handyman {
         let stamp: i64 =
             sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
@@ -126,6 +140,8 @@ pub(super) async fn exercise(
             stamp > 1,
             "reward advances Handyman's shared cooldown clock"
         );
+    } else {
+        super::rottin_bushwhacking_fixtures::accept(owner, &admitted, h, npc).await?;
     }
     Ok(())
 }

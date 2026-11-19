@@ -15,6 +15,7 @@ use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
 };
 use oteryn_protocol_oteryn::world_spatial::ActorPosition;
+use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use tokio::io::DuplexStream;
 
 const MISSION: &str =
@@ -23,6 +24,7 @@ const CAPTURES: &str = "oteryn:quest-progress/crystalserver/kv/rottinwood-corpse
 const QUESTLINE: &str =
     "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/questline";
 const ROTTIN: &str = "oteryn:npc.rottin_wood";
+const START: &str = "oteryn:quest-reward/rottin-wood/start-bushwhacking";
 const TURN_IN: &str = "oteryn:quest-reward/rottin-wood/bushwhacking";
 const MERRY_ADVENTURES: &str = "oteryn:achievement/merry_adventures";
 const LOOT: &str = "oteryn:quest-callback/rottin-wood/loot-merchant";
@@ -30,6 +32,44 @@ const LOOT: &str = "oteryn:quest-callback/rottin-wood/loot-merchant";
 const NETS: &str = "oteryn:quest-progress/crystalserver/kv/rottinwood-trap-count";
 const EARLY_NET: &str = "oteryn:quest-callback/rottin-wood/place-net";
 const FINAL_NET: &str = "oteryn:quest-callback/rottin-wood/final-net";
+
+pub(super) async fn accept(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    h: &Harness,
+    npc: EntityRef,
+) -> TestResult {
+    use super::rottin_rewards_fixtures::source_reply;
+
+    assert_eq!(
+        talk(owner, admitted, npc, 1609, "mission").await?,
+        source_reply("line-111")?
+    );
+    assert_eq!(
+        talk(owner, admitted, npc, 1610, "yes").await?,
+        source_reply("line-197")?
+    );
+    assert_eq!(
+        talk(owner, admitted, npc, 1611, "yes").await?,
+        source_reply("line-205")?
+    );
+    let state: (i64, i64, i64) = sqlx::query_as(
+        "SELECT
+         (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),
+         (SELECT value FROM game_character_quest_tracks WHERE track_key=$2),
+         (SELECT COALESCE(sum(item.quantity),0)::bigint FROM game_quest_reward_sources AS reward
+          JOIN game_item_instances AS item ON item.minted_transaction_id=reward.mint_transaction_id
+          WHERE reward.transition_key=$3 AND item.definition_production_key='oteryn:item.tibia.i12186'
+            AND item.lifecycle=1)",
+    )
+    .bind(MISSION)
+    .bind(QUESTLINE)
+    .bind(START)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(state, (1, 5, 5));
+    Ok(())
+}
 
 pub(super) async fn seed(h: &Harness, wave: bool) -> TestResult {
     let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_secs();
