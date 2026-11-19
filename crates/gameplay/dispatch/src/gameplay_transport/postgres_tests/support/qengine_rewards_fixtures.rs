@@ -1223,8 +1223,7 @@ pub(super) async fn exercise(
             });
     }
     seed(owner, admitted, &setup, 9000).await?;
-    let [npc] =
-        super::classic_quests_fixtures::install(owner, admitted, [callback.npc.as_str()]).await?;
+    let [npc] = super::classic_quests_fixtures::install(owner, admitted, [callback.npc.as_str()]).await?;
     let mut selected = admitted
         .continuity
         .selected_capabilities
@@ -1268,8 +1267,7 @@ pub(super) async fn exercise(
         assert_eq!(counts(h).await?, before);
         for s in &callback.storage {
             assert_eq!(
-                super::classic_quests_fixtures::progress(owner, admitted, authority, &s.track)
-                    .await?,
+                super::classic_quests_fixtures::progress(owner, admitted, authority, &s.track).await?,
                 s.minimum
             );
         }
@@ -1605,8 +1603,7 @@ pub(super) async fn exercise(
         assert_eq!(retained.3, after.3);
         for s in &callback.storage {
             assert_eq!(
-                super::classic_quests_fixtures::progress(owner, admitted, authority, &s.track)
-                    .await?,
+                super::classic_quests_fixtures::progress(owner, admitted, authority, &s.track).await?,
                 s.set
             );
         }

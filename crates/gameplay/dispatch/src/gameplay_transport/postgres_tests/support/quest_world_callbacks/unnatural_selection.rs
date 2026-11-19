@@ -76,11 +76,7 @@ pub(in super::super) async fn exercise(
 ) -> TestResult {
     // This literal route contains diagonal STEP commands; negotiate their real wire capability.
     let offered = owner.offered_capabilities();
-    let mut pending = admitted
-        .continuity
-        .selected_capabilities
-        .as_slice()
-        .to_vec();
+    let mut pending = admitted.continuity.selected_capabilities.as_slice().to_vec();
     pending.extend([
         oteryn_protocol_oteryn::world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1,
         oteryn_protocol_oteryn::world_spatial::CAPABILITY_PACED_MOVEMENT_V1,
@@ -93,12 +89,9 @@ pub(in super::super) async fn exercise(
             pending.extend_from_slice(capability.requires);
         }
     }
-    admitted.continuity.selected_capabilities =
-        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
-            offered,
-            &supported.into_iter().collect::<Vec<_>>(),
-        )
-        .ok_or("dance diagonal capabilities must be offered")?;
+    admitted.continuity.selected_capabilities = crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+        offered, &supported.into_iter().collect::<Vec<_>>(),
+    ).ok_or("dance diagonal capabilities must be offered")?;
     let actor = admitted.runtime_actor.ok_or("dance actor")?;
     owner
         .runtime

@@ -44,8 +44,8 @@ fn scenario_case(
     let marziel_blood = name.starts_with(super::super::marziel_blood_step_fixtures::NAME);
     let engenc_asura = name.starts_with("engenc-asura-native-");
     let carrot = name.starts_with("m07-carrot-");
-    let ring_offering = name == "m07-ring-offering"
-        || name == super::super::m07_dreamer_ring_lost_ack_fixtures::NAME;
+    let ring_offering =
+        name == "m07-ring-offering" || name == super::super::m07_dreamer_ring_lost_ack_fixtures::NAME;
     let m07_too_hot = name.starts_with("m07/too-hot-column-");
     let m07_repair = name.starts_with("m07/machinery-repair-");
     let m07_machinery = name.starts_with("m07/machinery-");
@@ -1819,8 +1819,8 @@ fn scenario_case(
             ));
         }
         if qm48 {
-            owner.quest_catalogue = Some(std::sync::Arc::new(
-                super::super::qm48_mammoth_fixtures::catalogue(
+            owner.quest_catalogue =
+                Some(std::sync::Arc::new(super::super::qm48_mammoth_fixtures::catalogue(
                     owner.quest_catalogue.as_ref().ok_or("mammoth catalogue")?,
                     &callback,
                 )?,
@@ -2182,8 +2182,7 @@ fn scenario_case(
             )
             .await?;
         } else if elvenbane {
-            super::super::elvenbane_native_goals_fixtures::exercise(&mut owner, &mut admitted, &h)
-                .await?;
+            super::super::elvenbane_native_goals_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc2-rotten-source-items" {
             super::super::questpc2_rotten_source_items_fixtures::exercise(
                 &mut owner,
@@ -2300,8 +2299,7 @@ fn scenario_case(
                 drop(seal);
                 return h.cleanup().await;
             }
-        } else if let Some(source_id) = super::super::l6_treasure_rewards_fixtures::source_id(name)
-        {
+        } else if let Some(source_id) = super::super::l6_treasure_rewards_fixtures::source_id(name) {
             Box::pin(super::super::l6_treasure_rewards_fixtures::exercise(
                 &mut owner,
                 &mut admitted,
@@ -2714,11 +2712,9 @@ fn scenario_case(
         } else if name == "qengine-rewards-smith-story" {
             super::super::questpc7_smith_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "qengine-rewards-hot-corpses" {
-            super::super::questpc7_hot_corpses_fixtures::exercise(&mut owner, &mut admitted, &h)
-                .await?;
+            super::super::questpc7_hot_corpses_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "qengine-rewards-goblin-slug" {
-            super::super::questpc7_goblin_slug_fixtures::exercise(&mut owner, &mut admitted, &h)
-                .await?;
+            super::super::questpc7_goblin_slug_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "qengine-rewards-goblin-perfume-items" {
             super::super::questpc7_goblin_fixtures::exercise_perfume_items(
                 &mut owner,
@@ -2737,22 +2733,17 @@ fn scenario_case(
             )
             .await?;
         } else if name == "qengine-rewards-goblin-trunks" {
-            super::super::questpc7_goblin_fixtures::exercise_trunks(&mut owner, &mut admitted, &h)
-                .await?;
+            super::super::questpc7_goblin_fixtures::exercise_trunks(&mut owner, &mut admitted, &h).await?;
         } else if name == "qengine-rewards-goblin-pond" {
-            super::super::questpc7_goblin_fixtures::exercise_pond(&mut owner, &mut admitted, &h)
-                .await?;
+            super::super::questpc7_goblin_fixtures::exercise_pond(&mut owner, &mut admitted, &h).await?;
         } else if name == "qengine-rewards-goblin-signs" {
-            super::super::questpc7_goblin_fixtures::exercise_signs(&mut owner, &mut admitted, &h)
-                .await?;
+            super::super::questpc7_goblin_fixtures::exercise_signs(&mut owner, &mut admitted, &h).await?;
         } else if name == "qengine-rewards-goblin-intro" {
             super::super::questpc7_goblin_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "qengine-rewards-feaster-thaian" {
-            super::super::questpc7_feaster_thaian_fixtures::exercise(&mut owner, &mut admitted, &h)
-                .await?;
+            super::super::questpc7_feaster_thaian_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if feaster {
-            super::super::questpc7_feaster_fixtures::exercise(&mut owner, &mut admitted, &h)
-                .await?;
+            super::super::questpc7_feaster_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "qengine-rewards-forgotten-story" {
             super::super::questpc7_forgotten_story_fixtures::exercise(
                 &mut owner,
@@ -2761,19 +2752,15 @@ fn scenario_case(
             )
             .await?;
         } else if name == "qengine-rewards-heart-story" {
-            super::super::questpc7_heart_story_fixtures::exercise(&mut owner, &mut admitted, &h)
-                .await?;
+            super::super::questpc7_heart_story_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "qengine-rewards-grimvale-story" {
-            super::super::questpc7_grimvale_story_fixtures::exercise(&mut owner, &mut admitted, &h)
-                .await?;
+            super::super::questpc7_grimvale_story_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "qengine-rewards-grimvale-contacts" {
-            super::super::questpc7_grimvale_fixtures::contacts(&mut owner, &mut admitted, &h)
-                .await?;
+            super::super::questpc7_grimvale_fixtures::contacts(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-grave" {
             super::super::questpc7_grave_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-ferumbras" {
-            super::super::questpc7_ferumbras_fixtures::exercise(&mut owner, &mut admitted, &h)
-                .await?;
+            super::super::questpc7_ferumbras_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-hero" {
             super::super::questpc7_hero_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-hydra" {
@@ -2789,16 +2776,13 @@ fn scenario_case(
                 .execute(&h.pool)
                 .await?;
             owner.reset_epoch = hydra_reset_drain.epoch();
-            super::super::questpc7_hydra_fixtures::replenishment(&mut owner, &mut admitted, &h)
-                .await?;
+            super::super::questpc7_hydra_fixtures::replenishment(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-hoist-story" {
-            super::super::questpc7_hoist_story_fixtures::exercise(&mut owner, &mut admitted, &h)
-                .await?;
+            super::super::questpc7_hoist_story_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-tokens" {
             super::super::questpc7_tokens_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name.starts_with("questpc7-hidden-") {
-            super::super::questpc7_native_deaths_fixtures::exercise(&mut owner, &mut admitted, &h)
-                .await?;
+            super::super::questpc7_native_deaths_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
             if name == "questpc7-hidden-story" {
                 super::super::questpc7_native_deaths_fixtures::reward(
                     &mut owner,
@@ -3228,11 +3212,9 @@ fn scenario_case(
             )
             .await?;
         } else if name == "authored-wrath-opening" {
-            super::super::questpc8_wrath_opening_fixtures::exercise(&mut owner, &mut admitted, &h)
-                .await?;
+            super::super::questpc8_wrath_opening_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "authored-winterlight" {
-            super::super::questpc8_winterlight_fixtures::exercise(&mut owner, &mut admitted, &h)
-                .await?;
+            super::super::questpc8_winterlight_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "authored-venore" {
             super::super::questpc8_venore_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "authored-venore-supplies" {

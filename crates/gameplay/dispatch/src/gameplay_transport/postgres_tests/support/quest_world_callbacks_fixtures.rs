@@ -16,8 +16,7 @@ use std::collections::BTreeMap;
 
 pub(super) fn callback(name: &str) -> TestResult<Callback> {
     // The Stampede entry is an authored binding of the content catalogue.
-    if name == "m01b/asura-palace/s1/entry" || name == super::m01c_stampede_entry_fixtures::CALLBACK
-    {
+    if name == "m01b/asura-palace/s1/entry" || name == super::m01c_stampede_entry_fixtures::CALLBACK {
         let label = if name == super::m01c_stampede_entry_fixtures::CALLBACK {
             "content-1"
         } else {
@@ -30,9 +29,7 @@ pub(super) fn callback(name: &str) -> TestResult<Callback> {
             .find(|callback| callback.key.ends_with(name))
             .ok_or_else(|| "authored Asura callback".into());
     }
-    if name == "engitem-native-seal-paint"
-        || name == super::engitem_seal_paint_lost_ack_fixtures::NAME
-    {
+    if name == "engitem-native-seal-paint" || name == super::engitem_seal_paint_lost_ack_fixtures::NAME {
         return oteryn_gameplay_quests::quest::ice_islands_seals::callbacks::definition(
             super::engitem_seal_paint_fixtures::SEALS[0],
         )
@@ -768,10 +765,7 @@ fn world_cells_with_exit(
                 cells.entry((-15, x, y)).or_default();
             }
         }
-        for (appearance, position) in super::l6_ancient_tombs_fixtures::INSTRUMENTS
-            .into_iter()
-            .skip(1)
-        {
+        for (appearance, position) in super::l6_ancient_tombs_fixtures::INSTRUMENTS.into_iter().skip(1) {
             let palette = u32::try_from(data.manifest.palette.len())?;
             data.manifest.palette.push(bundle::PaletteEntry {
                 key: format!("oteryn:terrain.tibia.i{appearance}"),
