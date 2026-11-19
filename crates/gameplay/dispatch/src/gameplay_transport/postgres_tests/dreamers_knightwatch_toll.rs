@@ -20,6 +20,7 @@ use std::sync::Arc;
 
 pub(super) const NIGHTMARE: &str = "knightwatch-nightmare";
 pub(super) const BROTHERHOOD: &str = "knightwatch-brotherhood";
+pub(super) const RETAINED_UID: &str = "knightwatch-retained-uid";
 const RANKS: [&str; 2] = [
     "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
     "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
@@ -42,11 +43,16 @@ const EXIT: Position = Position {
     floor: -1,
 };
 
-pub(super) fn binding() -> TestResult<Callback> {
+pub(super) fn binding(name: &str) -> TestResult<Callback> {
+    let selector = if name == RETAINED_UID {
+        serde_json::json!({"unique":3054,"position":PORTAL,"appearance":1949})
+    } else {
+        serde_json::json!({"native":{"position":PORTAL,"ordinal":1,"appearance":1949}})
+    };
     Ok(serde_json::from_value(serde_json::json!({
         "key":"oteryn:quest-callback/ranked-toll/knightwatch-3054",
         "quest":"oteryn:quest.dreamer_s_challenge_quest","trigger":"step_in",
-        "selector":{"native":{"position":PORTAL,"ordinal":1,"appearance":1949}},
+        "selector":selector,
         "teleport":EXIT,"requires_world_admission":true,"return_on_failure":true,
         "reversible":false,"passages":[],"offerings":[],"storage":[],
         "item_on_target":{"item":PEARL,"count":1,"on_step":true},
@@ -108,6 +114,17 @@ fn knightwatch_step_debits_one_pearl_for_brotherhood_rank_only_after_admission()
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(BROTHERHOOD, || {
         scenario(BROTHERHOOD, PORTAL, false)
+    })
+}
+
+#[test]
+fn knightwatch_retained_portal_uid_debits_once_for_an_eligible_faction() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(RETAINED_UID, || {
+        scenario(RETAINED_UID, PORTAL, false)
     })
 }
 

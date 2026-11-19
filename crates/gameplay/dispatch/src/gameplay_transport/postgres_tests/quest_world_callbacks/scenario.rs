@@ -386,7 +386,10 @@ fn scenario_case(
     use super::super::dreamers_color_grid;
     let color_grid = dreamers_color_grid::matches(name);
     use super::super::dreamers_knightwatch_toll;
-    let knightwatch = matches!(name, dreamers_knightwatch_toll::NIGHTMARE | dreamers_knightwatch_toll::BROTHERHOOD);
+    let knightwatch = matches!(
+        name,
+        dreamers_knightwatch_toll::BROTHERHOOD | dreamers_knightwatch_toll::NIGHTMARE | dreamers_knightwatch_toll::RETAINED_UID
+    );
     use super::super::dreamers_stone_offerings;
     let stone_offerings = matches!(name, dreamers_stone_offerings::PREFIX | dreamers_stone_offerings::FULL);
     use super::super::dreamers_stone_exit;
@@ -410,7 +413,7 @@ fn scenario_case(
     } else if haunted_cellar {
         haunted_cellar_disguise::binding()?
     } else if knightwatch {
-        dreamers_knightwatch_toll::binding()?
+        dreamers_knightwatch_toll::binding(name)?
     } else if stone_offerings {
         dreamers_stone_offerings::binding()?
     } else if board_supply {
