@@ -241,7 +241,7 @@ fn portal_fixture(
     }
     manifest.palette.push(portal);
     if let Some(native) = native {
-        for key in ["oteryn:item.tibia.i1858", "oteryn:item.tibia.i8911"] {
+        for key in ["oteryn:item.tibia.i2342", "oteryn:item.tibia.i8911"] {
             let definition = crate::map::boot::native_item_definition(Some(native), key)
                 .ok_or("production lever stack item")?;
             manifest.palette.push(bundle::PaletteEntry {
