@@ -1,7 +1,5 @@
 use super::*;
-use crate::content::native_gameplay::NativeGameplayInput;
-use serde_json::{Value, json};
-use sha2::{Digest, Sha256};
+use serde_json::json;
 
 pub(super) const CLAIM: &str = "oteryn:reward-claim.nrwicked-forgemaster";
 const ACCESS_CALLBACK: &str = "oteryn:quest-reward/nrwicked-forgemaster-key";
@@ -35,59 +33,6 @@ pub(super) fn selectors() -> impl Iterator<Item = (u16, u16)> {
         };
         (x, uid)
     })
-}
-
-pub(super) fn provision_items(input: &mut NativeGameplayInput) -> TestResult {
-    let profiles = input.item_profiles.as_mut().ok_or("item profiles")?;
-    let mut items: Value = serde_json::from_slice(&profiles.bytes)?;
-    let bindings: Value = serde_json::from_str(include_str!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../../../imports/crystalserver/bindings/items.json"
-    )))?;
-    let canonical: Value = serde_json::from_str(include_str!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../../../content/items/definitions/items-27000-27499.json"
-    )))?;
-    let additional: Value = serde_json::from_str(include_str!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../../../content/items/definitions/items-27500-27999.json"
-    )))?;
-    let rows = items["records"].as_array_mut().ok_or("profile rows")?;
-    for reward in REWARDS {
-        let key = key(reward);
-        let exact = bindings["bindings"]
-            .as_array()
-            .ok_or("Crystal bindings")?
-            .iter()
-            .find(|r| r["target"]["key"] == key)
-            .ok_or("Crystal reward identity")?;
-        let item = canonical["records"]
-            .as_array()
-            .ok_or("canonical items")?
-            .iter()
-            .chain(
-                additional["records"]
-                    .as_array()
-                    .ok_or("additional canonical items")?,
-            )
-            .find(|r| r["definition"]["identity"]["key"] == key)
-            .ok_or("canonical reward definition")?;
-        rows.push(json!({
-            "production_definition": {"family":"Item","production_key":key,"revision_ref":"definition-r1"},
-            "production_binding": exact,
-            "production_binding_qualification": null,
-            "authoring": {"item":exact["target"]},
-            "attributes": {"speed_bonus":0,"spell_augments":[]},
-            "admission": {"materializable":true,"stack_class":"NonStackable","legal_destinations":["CharacterInventory"]},
-            "semantics":item["definition"]["semantics"]
-        }));
-    }
-    profiles.bytes = serde_json::to_vec(&items)?;
-    profiles.sha256 = Sha256::digest(&profiles.bytes)
-        .iter()
-        .map(|b| format!("{b:02x}"))
-        .collect();
-    Ok(())
 }
 
 fn callback_key(uid: u16) -> String {
@@ -270,4 +215,92 @@ pub(super) async fn claim_count(harness: &Harness) -> TestResult<i64> {
     .bind(CLAIM)
     .fetch_one(&harness.pool)
     .await?)
+}
+
+pub(super) const SERVED_CHEST: (u16, u16, i8) = (34101, 32346, -14);
+
+pub(super) fn production_chests(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    use crate::map::{boot, overlay::TilePos};
+    use oteryn_world_bundle::{bundle, sector, writer};
+
+    let (bytes, mut pins) = boot::tests::bundle();
+    let mut manifest = bundle::read(&bytes)?.manifest;
+    let (chosen, y, floor) = SERVED_CHEST;
+    let (west, east) = (34085, 34108);
+    manifest.world = bundle::Extent {
+        min_x: west, min_y: y - 1, max_x: east + 1, max_y: y + 1, floors: vec![floor],
+    };
+    manifest.palette.truncate(1);
+    for id in [2187, 6381, 6385, 2472] {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let definition = boot::native_item_definition(Some(native), &key).ok_or("chest tile definition")?;
+        manifest.palette.push(bundle::PaletteEntry {
+            key, family: bundle::Family::Item, id: definition.reference.get() - 1, terrain: None,
+        });
+    }
+    let mut sectors = std::collections::BTreeMap::<_, Vec<_>>::new();
+    let stack_item = |palette| sector::Item { palette, depth: 0, attrs: Default::default() };
+    for row in [y - 1, y] {
+        for x in west..=east {
+            let mut items = vec![stack_item(0)];
+            if row == y && (34087..=34107).contains(&x) && x % 2 == 1 {
+                if x == 34107 {
+                    items.extend([stack_item(2), stack_item(3)]);
+                } else {
+                    items.push(stack_item(1));
+                }
+                items.push(stack_item(4));
+            }
+            sectors.entry((x / 32, row / 32)).or_default().push(sector::Tile {
+                x, y: row, flags: 0, house: 0, zones: vec![], items,
+            });
+        }
+    }
+    let mut sectors: Vec<_> = sectors.into_iter().map(|((sx, sy), tiles)| {
+        bundle::Sector { floor, sx, sy, tiles }
+    }).collect();
+    sectors.sort_by_key(bundle::order);
+    let bytes = writer::write(&manifest, &sectors, &Default::default())?;
+    pins.digest = bundle::read(&bytes)?.digest;
+    let base = crate::map::load(&bytes, &pins).map_err(debug)?;
+    boot::boot(
+        &bytes,
+        &boot::BootPins {
+            map_revision: crate::map::overlay::map_revision(&base),
+            bundle: pins,
+            start: TilePos { x: chosen - 1, y, floor },
+        },
+        crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,
+        crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
+        |key| boot::native_item_definition(Some(native), key),
+    ).map_err(|error| debug(error).into())
+}
+
+pub(super) async fn ask_for_key(
+    h: &Harness,
+    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &crate::gameplay_transport::connection::AdmittedSession,
+    character: oteryn_gameplay_domain::domain::CharacterId,
+) -> TestResult {
+    use super::super::classic_quests_fixtures::{install, talk};
+    const NPC: &str = "oteryn:npc.the_forgemaster";
+    const HARD_KILLS: &str = "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/hard_kills";
+
+    let [npc] = install(owner, admitted, [NPC]).await?;
+    talk(owner, admitted, npc, 10, "hi").await?;
+    for (track, value) in [(HARD_KILLS, 10_i64), (DOOR_STAGE, 2)] {
+        let inserted = sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+            .bind(character.as_bytes().as_slice()).bind(track).bind(QUEST).bind(value)
+            .execute(&h.pool).await?;
+        assert_eq!(inserted.rows_affected(), 1);
+    }
+    owner.refresh_quest_session(admitted.game_session_id, true).await;
+    let lines = talk(owner, admitted, npc, 11, "key").await?;
+    assert!(lines.iter().any(|line| line.contains("chamber is now accessible")));
+    let rows = owner.root.read_character_quest_state(owner.character, character).await.map_err(debug)?;
+    assert_eq!(rows.tracks().get(ACCESS), Some(&1));
+    assert_eq!(rows.tracks().get(DOOR_STAGE), Some(&3));
+    Ok(())
 }
