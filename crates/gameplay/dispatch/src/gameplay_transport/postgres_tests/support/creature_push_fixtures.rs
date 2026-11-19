@@ -251,7 +251,9 @@ pub(super) fn scenario(
         let repeat_reward = seed == "rottin_weighted_repeat";
         let short_reward = seed == "rottin_weighted_short";
         let weighted_reward = seed == "rottin_weighted_reward" || repeat_reward || short_reward;
-        let h = if merchant_loot || merchant_wave || weighted_reward || repair {
+        let recipe_only = seed == "rottin_lucky_charm_recipe";
+        let craft_charms = recipe_only || weighted_reward;
+        let h = if merchant_loot || merchant_wave || craft_charms || repair {
             Harness::create_quest_reward(admin, seed, false).await?
         } else {
             Harness::create_with_admission_seed(admin, seed, true, false).await?
@@ -337,7 +339,7 @@ pub(super) fn scenario(
                 },
             )
             .ok_or("push combat room")?;
-        if merchant_loot || merchant_wave || repair || weighted_reward {
+        if merchant_loot || merchant_wave || repair || craft_charms {
             sqlx::query(
                 "INSERT INTO game_control_scope_grants VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)",
             )
@@ -415,8 +417,12 @@ pub(super) fn scenario(
             admitted.continuity.selected_capabilities.as_slice(),
             &[4, 6, 13, 82]
         );
-        if weighted_reward || merchant_loot || merchant_wave || repair {
-            if weighted_reward {
+        if craft_charms || merchant_loot || merchant_wave || repair {
+            if recipe_only {
+                let shipped = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                    .map_err(debug)?;
+                owner.quest_catalogue = Some(std::sync::Arc::new(shipped.catalogue().clone()));
+            } else if weighted_reward {
                 owner.quest_catalogue =
                     Some(std::sync::Arc::new(super::rottin_rewards_fixtures::catalogue(repeat_reward)?));
             }
@@ -426,7 +432,7 @@ pub(super) fn scenario(
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
             owner.admit_quest_session(&admitted).await;
-            if weighted_reward {
+            if craft_charms {
                 super::rottin_rewards_fixtures::craft_charms(
                     &owner, &admitted, &h, if short_reward { 6 } else { 7 },
                 ).await?;
@@ -442,7 +448,7 @@ pub(super) fn scenario(
                 super::rottin_repairs_fixtures::exercise(&mut owner, admitted, &h, handyman).await?;
             } else if short_reward {
                 super::rottin_rewards_fixtures::refuse_short_hand_in(&mut owner, &admitted, &h).await?;
-            } else {
+            } else if weighted_reward {
                 super::rottin_rewards_fixtures::exercise(&mut owner, &mut admitted, &h, repeat_reward)
                     .await?;
             }
