@@ -266,6 +266,26 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     let Some((pos, ordinal)) = crate::map::view::placement_of(key) else {
         return false;
     };
+    if callback.effects.portal_reset_passable.is_some() {
+        // Crystal movement_tic_teleport.lua:2,27-33,48-50 replaces the
+        // traversed portal with a crack. Only the current open form can fire.
+        let live_appearance = map
+            .overlay
+            .base()
+            .tile(pos.x, pos.y, pos.floor)
+            .and_then(|base| {
+                base.ids()
+                    .iter()
+                    .zip(base.depths())
+                    .filter(|(_, depth)| **depth == 0)
+                    .nth(usize::from(ordinal))
+            })
+            .and_then(|(&id, _)| map.facts.base_entry(pos, ordinal, id))
+            .map(|entry| entry.appearance_id);
+        if live_appearance.is_none() || live_appearance != callback.selector.appearance {
+            return false;
+        }
+    }
     // These source-bound World ingresses retain no startup UID/AID in B3.
     // An appearance elsewhere in the stack cannot impersonate their source.
     let source_ordinal = match callback.key.as_str() {
