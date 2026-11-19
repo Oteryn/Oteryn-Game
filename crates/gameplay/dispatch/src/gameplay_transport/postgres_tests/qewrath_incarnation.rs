@@ -1,7 +1,10 @@
 //! Crystal 201189f8 actions_mission10_a_message_of_freedom_sceptre.lua:16-19,
 //! creaturescripts_bosses_kill.lua:20-34.
-use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::debug};
-use crate::foundation::{CommandId, CommandRef, OwnerDamageCommand};
+use super::{
+    AdmittedSession, ComposedFreshAdmission, TestResult,
+    fixture::{Harness, debug, id},
+};
+use crate::foundation::{CommandId, CommandRef, GameSessionId, OwnerDamageCommand};
 use crate::gameplay_transport::kill_reward::{self, KillSink};
 use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::{
@@ -17,6 +20,7 @@ use sha2::{Digest, Sha256};
 use std::sync::Arc;
 
 pub(super) const NAME: &str = "qewrath-incarnation";
+const AWAKEN: &str = "oteryn:quest-callback/wrath/awaken-fury";
 const QUEST: &str = "oteryn:quest.wrath_of_the_emperor_quest";
 const MISSION: &str = "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission10";
 const STATUE: Position = Position {
@@ -25,6 +29,7 @@ const STATUE: Position = Position {
     floor: -15,
 };
 const SPAWN: Position = Position { x: 33052, ..STATUE };
+const CLEAR: Position = Position { x: 33054, ..STATUE };
 const CREATURE: &str = "oteryn:creature.fury_of_the_emperor";
 const SCEPTRE: &str = "oteryn:item.tibia.i11362";
 const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/actions_mission10_a_message_of_freedom_sceptre.lua:16-19";
@@ -41,7 +46,7 @@ fn sceptre_awakens_the_statue_and_only_its_exact_incarnation_death_restores_it()
 }
 fn fixture() -> TestResult<Bindings> {
     let row = json!({
-        "key":"oteryn:quest-callback/wrath/awaken-fury","quest":QUEST,"trigger":"use",
+        "key":AWAKEN,"quest":QUEST,"trigger":"use",
         "selector":{"position":STATUE,"unique":3193,"appearance":11427},
         "reversible":false,"passages":[],"offerings":[],"return_on_failure":false,
         "requires_world_admission":true,"storage":[
@@ -75,6 +80,7 @@ pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
+    h: &Harness,
 ) -> TestResult {
     let base = QuestStateCatalogue::empty("content-1").ok_or("quest catalogue")?;
     owner.quest_catalogue = Some(Arc::new(fixture()?.attach(&base)?));
@@ -118,6 +124,55 @@ pub(super) async fn exercise(
         .and_then(|n| n.item_index())
         .and_then(|i| i.definition_ref("Item", SCEPTRE, "definition-r1"))
         .ok_or("sceptre reference")?;
+    let partner_session = GameSessionId::decode(&id(51)).map_err(debug)?;
+    let partner = {
+        let mut runtime = owner.runtime.lock().await;
+        let reserved = runtime.reserve_fresh_session(partner_session).map_err(debug)?;
+        let partner = runtime.commit_fresh_session(reserved).map_err(debug)?;
+        runtime
+            .initialize_source_pinned_lab_player_position(
+                partner,
+                partner_session,
+                super::quest_world_callbacks::local(SPAWN),
+            )
+            .map_err(debug)?;
+        partner
+    };
+    let (next, blocked, _) = super::item_craft::exchange(
+        owner,
+        *admitted,
+        admitted.continuity.next_command_id,
+        &intent,
+        Some(reference),
+    )
+    .await?;
+    *admitted = next;
+    assert_eq!(blocked, UseDisposition::Occupied);
+    assert_eq!(map.facts.object_revision(key), 0);
+    let receipts: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+    )
+    .bind(AWAKEN)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(receipts, 0, "a blocked spawn cannot settle the statue USE");
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let expected = runtime.read_actor_position(partner).map_err(debug)?;
+        assert_eq!(expected.position(), super::quest_world_callbacks::local(SPAWN));
+        let closed = crate::map::floor::BundleDoors(&map.facts);
+        let step = crate::map::floor::prepare_quest_encounter_ejection(
+            &runtime,
+            owner.movement_cells(),
+            partner,
+            partner_session,
+            expected,
+            super::quest_world_callbacks::local(CLEAR),
+            &closed,
+        )
+        .map_err(debug)?;
+        runtime.commit_source_step(step).map_err(debug)?;
+    }
     let (next, disposition, _) = super::item_craft::exchange(
         owner,
         *admitted,
@@ -225,5 +280,9 @@ pub(super) async fn exercise(
         assert_eq!(appearance(), Some(expected_appearance));
         assert_eq!(map.facts.object_revision(key), revision);
     }
+    assert_eq!(
+        runtime.read_actor_position(partner).map_err(debug)?.position(),
+        super::quest_world_callbacks::local(CLEAR)
+    );
     Ok(())
 }

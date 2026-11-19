@@ -4,6 +4,7 @@ use super::*;
 use crate::content::NativeEntryMovementCells;
 use crate::map::view::{EntryFacts, MapFacts};
 use oteryn_gameplay_quests::quest::world_callbacks::EncounterMonster;
+use oteryn_protocol_oteryn::world_object::UseDisposition;
 
 #[derive(Debug)]
 struct Awakening {
@@ -22,52 +23,83 @@ struct Awakening {
 #[derive(Debug, Default)]
 pub(in crate::gameplay_transport) struct AwakenedCreatures(Mutex<Vec<Awakening>>);
 
+pub(in crate::gameplay_transport) struct PreparedAwakening<'a> {
+    creature: (&'a str, i64, MovementLocalPosition),
+    source: u64,
+    active_revision: u64,
+    original: EntryFacts,
+    cells: NativeEntryMovementCells,
+}
+
 impl AwakenedCreatures {
     #[allow(
         clippy::too_many_arguments,
-        reason = "the same turn owns the physical actor and its source revision"
+        reason = "the same owner turn prepares the spawn and its exact map restoration"
     )]
-    pub(in crate::gameplay_transport) fn publish(
+    pub(in crate::gameplay_transport) fn prepare<'a>(
         &self,
-        runtime: &mut ChannelRuntimeV1,
-        spawn: &EncounterMonster,
+        runtime: &ChannelRuntimeV1,
+        spawn: &'a EncounterMonster,
         cells: NativeEntryMovementCells,
         source: u64,
         revision: u64,
         original: EntryFacts,
-        transform: impl FnOnce() -> bool,
-    ) -> Result<(), CarrierError> {
-        let mut active = self.0.lock().map_err(|_| CarrierError::PlanConflict)?;
-        let scope = runtime.encounter_owner_scope();
-        active.retain(|entry| entry.scope == scope);
-        if active.len() >= MAX_ENCOUNTERS || active.iter().any(|entry| entry.source == source) {
-            return Err(CarrierError::PlanConflict);
-        }
-        active
-            .try_reserve(1)
-            .map_err(|_| CarrierError::AllocationFailed)?;
-        let active_revision = revision.checked_add(1).ok_or(CarrierError::PlanConflict)?;
+    ) -> Result<PreparedAwakening<'a>, UseDisposition> {
         let at = MovementLocalPosition {
             x: i32::from(spawn.position.x),
             y: i32::from(spawn.position.y),
             floor: -i16::from(spawn.position.floor),
         };
-        if !placement(&cells, runtime, at) || !runtime.native_summon_cell_free(at) {
-            return Err(CarrierError::PlanConflict);
+        if !placement(&cells, runtime, at) {
+            return Err(UseDisposition::NotPossible);
         }
-        let health = runtime.companion_policy(&spawn.creature)?.maximum_health;
-        let spawned = runtime.commit_quest_creature_spawn_with_projection(
-            &[(spawn.creature.as_str(), health, at)],
-            transform,
-        )?;
-        active.push(Awakening {
-            actor: spawned[0],
-            scope,
+        if !runtime.native_summon_cell_free(at) {
+            return Err(UseDisposition::Occupied);
+        }
+        let health = runtime
+            .companion_policy(&spawn.creature)
+            .map_err(|_| UseDisposition::Rejected)?
+            .maximum_health;
+        let active_revision = revision.checked_add(1).ok_or(UseDisposition::Exhausted)?;
+        let mut active = self.0.lock().map_err(|_| UseDisposition::Rejected)?;
+        let scope = runtime.encounter_owner_scope();
+        active.retain(|entry| entry.scope == scope);
+        if active.iter().any(|entry| entry.source == source) {
+            return Err(UseDisposition::Occupied);
+        }
+        if active.len() >= MAX_ENCOUNTERS {
+            return Err(UseDisposition::Exhausted);
+        }
+        active
+            .try_reserve(1)
+            .map_err(|_| UseDisposition::Exhausted)?;
+        Ok(PreparedAwakening {
+            creature: (spawn.creature.as_str(), health, at),
             source,
             active_revision,
-            dead: false,
             original,
             cells,
+        })
+    }
+
+    // Preparation and publication run under the same Channel runtime turn.
+    pub(in crate::gameplay_transport) fn publish(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        prepared: PreparedAwakening<'_>,
+        transform: impl FnOnce() -> bool,
+    ) -> Result<(), CarrierError> {
+        let mut active = self.0.lock().map_err(|_| CarrierError::PlanConflict)?;
+        let spawned =
+            runtime.commit_quest_creature_spawn_with_projection(&[prepared.creature], transform)?;
+        active.push(Awakening {
+            actor: spawned[0],
+            scope: runtime.encounter_owner_scope(),
+            source: prepared.source,
+            active_revision: prepared.active_revision,
+            dead: false,
+            original: prepared.original,
+            cells: prepared.cells,
         });
         Ok(())
     }

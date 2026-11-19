@@ -230,6 +230,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseDisposition::Occupied;
         }
         let before = after;
+        let awakening = if let Some(spawn) = &callback.effects.awakened_creature {
+            let Some(native) = self.active_generation.and_then(|g| g.native_gameplay()) else {
+                return UseDisposition::Rejected;
+            };
+            if native.install_companion_policies(runtime).is_err() {
+                return UseDisposition::Rejected;
+            }
+            // The statue and its incarnation publish together. Refuse an
+            // unavailable spawn before committing the selected-tool receipt.
+            match states.encounter_phases.awakened.prepare(
+                runtime,
+                spawn,
+                self.movement_cells().clone(),
+                key,
+                expected_revision,
+                before,
+            ) {
+                Ok(prepared) => Some(prepared),
+                Err(disposition) => return disposition,
+            }
+        } else {
+            None
+        };
         // Crystal 201189f8 actions_mission03_the_keeper.lua:10–16: the
         // terminal offering summons at a fixed cell and leaves the plant intact.
         let offering_spawn = if let Some(spawn) = &callback.effects.offering_spawn {
@@ -1652,19 +1675,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if let Some(effect) = spawn.magic {
                     map.facts.emit_movement_effect(tile(spawn.position), effect);
                 }
-            } else if let Some(spawn) = &callback.effects.awakened_creature {
+            } else if let Some(prepared) = awakening {
                 if states
                     .encounter_phases
                     .awakened
-                    .publish(
-                        runtime,
-                        spawn,
-                        self.movement_cells().clone(),
-                        key,
-                        expected_revision,
-                        before,
-                        apply_scene,
-                    )
+                    .publish(runtime, prepared, apply_scene)
                     .is_err()
                 {
                     return UseDisposition::Rejected;

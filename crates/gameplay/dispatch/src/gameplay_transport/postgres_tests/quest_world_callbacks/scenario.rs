@@ -2495,7 +2495,7 @@ fn scenario_case(
         } else if name == super::super::qewrath_incarnation_remains::NAME {
             Box::pin(super::super::qewrath_incarnation_remains::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if name == super::super::qewrath_incarnation::NAME {
-            Box::pin(super::super::qewrath_incarnation::exercise(&mut owner, &mut admitted)).await?;
+            Box::pin(super::super::qewrath_incarnation::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if name == super::super::qewrath_herald_escape::NAME {
             Box::pin(super::super::qewrath_herald_escape::exercise(&mut owner, &mut admitted)).await?;
         } else if matches!(name, super::super::qewrath_herald_sweep::NAME | super::super::qewrath_herald_sweep::FIELD_NAME) {
