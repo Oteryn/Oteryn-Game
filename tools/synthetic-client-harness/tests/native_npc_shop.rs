@@ -178,7 +178,7 @@ fn position(x: i32) -> ActorPosition {
     ActorPosition {
         x,
         y: 200,
-        floor: -2,
+        floor: 2,
     }
 }
 fn actor(x: i32) -> WorldSpatialEntity {

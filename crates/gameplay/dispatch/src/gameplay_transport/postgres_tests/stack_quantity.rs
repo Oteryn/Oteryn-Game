@@ -401,7 +401,7 @@ async fn exchange_with_boss_fences(
                 (true, false) => ItemMoveDestination::Ground(WorldTilePosition {
                     x: 6,
                     y: 0,
-                    floor: -7,
+                    floor: 7,
                 }),
                 (false, _) => ItemMoveDestination::MainBackpack,
             };

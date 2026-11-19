@@ -103,12 +103,12 @@ fn fixture() -> Result<Fixture, BoxError> {
         ActorPosition {
             x: 101,
             y: 99,
-            floor: 1,
+            floor: 6,
         },
         ActorPosition {
             x: 100,
             y: 99,
-            floor: 0,
+            floor: 7,
         },
     ];
     let vitals = [vitals(150, 50), vitals(150, 0)];

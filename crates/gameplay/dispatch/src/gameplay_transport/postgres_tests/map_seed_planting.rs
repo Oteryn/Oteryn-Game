@@ -753,7 +753,7 @@ async fn drop_exchange(
         WorldTilePosition {
             x: 7,
             y: 0,
-            floor: -7,
+            floor: 7,
         },
     )
     .await

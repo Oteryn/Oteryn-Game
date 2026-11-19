@@ -106,7 +106,7 @@ fn native_minimap_click_reaches_the_server_walk_path()
                         commands,
                         outbox,
                     ));
-                    let mut view = PlayView::new(TileCoord::new(100, 200), -7, &[])?;
+                    let mut view = PlayView::new(TileCoord::new(100, 200), own.floor, &[])?;
                     tokio::time::timeout(Duration::from_secs(5), async {
                         loop {
                             view.tick(&link).map_err(|e| format!("{e:?}"))?;

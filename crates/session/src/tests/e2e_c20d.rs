@@ -41,7 +41,7 @@ fn replays_temple_respawn_payloads_and_rejects_invalid_vitals() -> Result<(), Bo
             (
                 encode_world_spatial(&observation),
                 actor_spell::encode_actor_vitals(&vitals).map_err(|error| format!("{error:?}"))?,
-                "32369 32238 -7 150 150\n".into(),
+                "32369 32238 7 150 150\n".into(),
             )
         };
         let observation = world_spatial::decode_world_spatial(&spatial_payload)

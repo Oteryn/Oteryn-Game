@@ -2591,8 +2591,8 @@ async fn projected_field_count(
             if item.definition == oteryn_protocol_oteryn::world_map::MapDefinition::Item(reference)
             {
                 assert_eq!(
-                    tile.position.floor, -7,
-                    "runtime floor converts to the bundle floor once"
+                    tile.position.floor, 7,
+                    "the map snapshot publishes the Global floor"
                 );
                 count += 1;
             }

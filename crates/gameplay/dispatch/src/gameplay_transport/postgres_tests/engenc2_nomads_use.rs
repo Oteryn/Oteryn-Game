@@ -314,7 +314,7 @@ fn scenario(mode: Scenario) -> TestResult {
                         destination: ItemMoveDestination::Ground(WorldTilePosition {
                             x: 33216,
                             y: 32854,
-                            floor: -9,
+                            floor: 9,
                         }),
                     },
                     selection,

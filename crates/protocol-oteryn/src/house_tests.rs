@@ -225,7 +225,7 @@ fn house_metadata_encoder_rejects_invalid_geometry() {
             name: "Home".into(),
             size: 25,
             beds: 2,
-            entrance: (100, 110, -7),
+            entrance: (100, 110, 7),
         }),
         house: "h".into(),
         kind: HouseKind::PrivateHouse,
@@ -241,11 +241,11 @@ fn house_metadata_encoder_rejects_invalid_geometry() {
     };
     assert!(encode_house_page(std::slice::from_ref(&row), None, true).is_ok());
     if let Some(details) = &mut row.details {
-        details.entrance.2 = 1;
+        details.entrance.2 = 16;
     }
     assert!(encode_house_page(std::slice::from_ref(&row), None, true).is_err());
     if let Some(details) = &mut row.details {
-        details.entrance.2 = -7;
+        details.entrance.2 = 7;
         details.size = 0;
     }
     assert!(encode_house_page(std::slice::from_ref(&row), None, true).is_err());

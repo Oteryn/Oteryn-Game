@@ -29,10 +29,10 @@ fn map(floor: i16, epoch: u64) -> WorldMapViewSnapshot {
         y: 200,
         floor,
     };
-    let floors = if floor == 0 {
-        vec![0]
+    let floors: &[i16] = if floor == SURFACE_FLOOR {
+        &[SURFACE_FLOOR]
     } else {
-        vec![-10, -9, -8, -6]
+        &[10, 9, 8, 6]
     };
     WorldMapViewSnapshot {
         header: MapViewHeader {
@@ -40,12 +40,12 @@ fn map(floor: i16, epoch: u64) -> WorldMapViewSnapshot {
             bundle_digest: [2; 32],
             reset_epoch: epoch,
             origin,
-            first_visible_floor: if floor == 0 { 0 } else { -8 },
+            first_visible_floor: first_visible_floor_start(floor),
         },
         tiles: floors
-            .into_iter()
-            .map(|floor| {
-                let shift = i32::from(floor - origin.floor);
+            .iter()
+            .map(|&floor| {
+                let shift = i32::from(origin.floor - floor);
                 MapTile {
                     position: ActorPosition {
                         x: origin.x + shift,
@@ -114,10 +114,10 @@ async fn peer(mut server: DuplexStream) -> Result<(), Error> {
         })?,
     )
     .await?;
-    snapshot(&mut server, 40, &map(0, 1), true).await?;
+    snapshot(&mut server, 40, &map(SURFACE_FLOOR, 1), true).await?;
     read_frame(&mut server).await?;
-    snapshot(&mut server, 41, &map(-8, 2), false).await?;
-    for (command, sequence, revision, floor) in [(7, 42, 1, -8), (8, 44, 2, 0)] {
+    snapshot(&mut server, 41, &map(8, 2), false).await?;
+    for (command, sequence, revision, floor) in [(7, 42, 1, 8), (8, 44, 2, SURFACE_FLOOR)] {
         if command == 8 {
             read_frame(&mut server).await?;
         }
@@ -142,7 +142,7 @@ async fn peer(mut server: DuplexStream) -> Result<(), Error> {
         )
         .await?;
     }
-    snapshot(&mut server, 46, &map(0, 3), false).await?;
+    snapshot(&mut server, 46, &map(SURFACE_FLOOR, 3), false).await?;
     let mut rest = vec![];
     let _ = server.read_to_end(&mut rest).await;
     Ok(())
@@ -181,7 +181,7 @@ fn native_floor_transition_replaces_window_and_keeps_playing() -> Result<(), Err
                         .visible_panels
                         .retain(|panel| panel != "minimap");
                     view.set_preferences(preferences)?;
-                    for (floor, sprites) in [(-8, 4), (0, 2)] {
+                    for (floor, sprites) in [(8, 4), (SURFACE_FLOOR, 2)] {
                         link.request(StepDir::North);
                         tokio::time::timeout(Duration::from_secs(5), async {
                             loop {

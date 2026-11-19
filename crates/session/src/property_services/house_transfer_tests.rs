@@ -132,7 +132,7 @@ fn pc04_house_transfer_codec_refuses_malformed_and_roundtrips_boundaries() -> Re
         connection_generation: 1,
         lease_generation: 1,
         selection: vec![86],
-        position: [i32::MIN, i32::MAX, -8],
+        position: [i32::MIN, i32::MAX, 15],
     };
     let payload = wire::encode_house_transfer_ack(&ack).map_err(|e| format!("{e:?}"))?;
     assert_eq!(
