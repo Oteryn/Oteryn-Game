@@ -127,6 +127,14 @@ async fn exercise_world(
     cave: Option<CaveRoom>,
 ) -> TestResult {
     let keep_cave_monsters = cave == Some(CaveRoom::OccupiedEntry);
+    let buff = buff.map(|buff| {
+        // Crystal movements_strangely_glowing_mark.lua:18,26.
+        let message = match buff.benefit {
+            StepBenefit::Heal { .. } => "The mythic fires beneath your feet heal you.",
+            StepBenefit::Speed { .. } => "The mythic fires beneath your feet gave you speed.",
+        };
+        (buff, message)
+    });
     let mut source = boss.map_or(
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hidden_threats/movement-cave_spider_room.lua:31-58",
         |room| room.source
@@ -169,12 +177,13 @@ async fn exercise_world(
                 serde_json::json!(ROOM.x);
         }
     }
-    if let Some(buff) = buff {
+    if let Some((buff, message)) = buff {
         callback_json["storage"] = serde_json::json!([]);
         callback_json["state_operations"] = serde_json::json!([{
             "track":TRACK,"from":{"kind":"elapsed_at_least","seconds":61},"effect":{"kind":"set_now"}
         }]);
         callback_json["effects"] = serde_json::json!({"step_buff":buff});
+        callback_json["success_message"] = serde_json::json!(message);
         callback_json["return_on_failure"] = serde_json::json!(false);
         callback_json["failure_teleport"] = serde_json::Value::Null;
     }
@@ -291,6 +300,8 @@ async fn exercise_world(
             owner.offered_capabilities(),
             &[CAPABILITY_BOSS_ENCOUNTER_V1],
         ).ok_or("boss cooldown capability")?;
+    }
+    if boss.is_some() || buff.is_some() {
         owner.states.chat.admit(admitted.game_session_id, "Grimvale visitor", owner.owner_now());
     }
     let fence = owner
@@ -351,7 +362,9 @@ async fn exercise_world(
     deps.initialize(&owner).await;
     owner.admit_quest_session(&admitted).await;
 
-    if let Some(buff) = buff {
+    if let Some((buff, message)) = buff {
+        use oteryn_protocol_oteryn::chat::ChatLine;
+
         let session = admitted.game_session_id;
         {
             let runtime = deps.runtime.lock().await;
@@ -364,6 +377,7 @@ async fn exercise_world(
                 .ok_or("mark actor")?
                 .set_health_for_test(1);
         }
+        let mut first_clock = None;
         for (command, direction, now) in [
             (1, StepDirection::East, 1_000_000),
             (2, StepDirection::West, 31_000_000),
@@ -373,7 +387,7 @@ async fn exercise_world(
                 .states
                 .test_owner_time
                 .store(now + 1, Ordering::Relaxed);
-            let reply = wire(
+            let (reply, mut feedback) = wire_with_feedback(
                 &owner,
                 &mut admitted,
                 command,
@@ -385,6 +399,22 @@ async fn exercise_world(
                 oteryn_protocol_oteryn::world_spatial::decode_step_result(&reply).map_err(debug)?,
                 StepDisposition::Moved
             );
+            feedback.extend(owner.states.chat.drain(session));
+            if command == 1 {
+                assert!(matches!(feedback.as_slice(), [ChatLine::Private { text, .. }] if text == message));
+            } else {
+                assert!(feedback.is_empty(), "the mark must stay silent during cooldown");
+            }
+            assert_eq!(movement_effect_count(&owner, local(ENTRY), buff.magic_effect)?, 1);
+            let clock = sqlx::query_as::<_, (i64, i64)>(
+                "SELECT value, committed_character_revision FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2",
+            ).bind(id(41).as_slice()).bind(TRACK).fetch_one(&h.pool).await?;
+            assert!(clock.0 > 9);
+            if let Some(first) = first_clock {
+                assert_eq!(clock, first, "steps in cooldown must preserve the first receipt");
+            } else {
+                first_clock = Some(clock);
+            }
             let runtime = deps.runtime.lock().await;
             let mut states = owner.states.spell_states.lock().await;
             let current = states
@@ -419,10 +449,6 @@ async fn exercise_world(
                 }
             }
         }
-        let count = sqlx::query_scalar::<_, i64>(
-            "SELECT count(*) FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND value>9",
-        ).bind(id(41).as_slice()).bind(TRACK).fetch_one(&h.pool).await?;
-        assert_eq!(count, 1);
         return Ok(());
     }
 
@@ -613,7 +639,7 @@ async fn exercise_world(
     if boss.is_none() {
         assert_eq!(read_progress().await?, 10);
         assert_eq!(
-            teleport_effect_count(&owner, local(ENTRY))?,
+            movement_effect_count(&owner, local(ENTRY), 11)?,
             if keep_cave_monsters { 2 } else { 1 },
             "Cave Spider emits one departure cue per committed teleport"
         );
@@ -845,13 +871,14 @@ fn assert_teleport_effect(
     owner: &super::ComposedFreshAdmission<'_, '_, '_>,
     place: crate::foundation::MovementLocalPosition,
 ) -> TestResult {
-    assert_eq!(teleport_effect_count(owner, place)?, 1);
+    assert_eq!(movement_effect_count(owner, place, 11)?, 1);
     Ok(())
 }
 
-fn teleport_effect_count(
+fn movement_effect_count(
     owner: &super::ComposedFreshAdmission<'_, '_, '_>,
     place: crate::foundation::MovementLocalPosition,
+    effect_id: u16,
 ) -> TestResult<usize> {
     let map = owner.bundle_map().ok_or("room map")?;
     let effects = map.facts.movement_effects_since(0);
@@ -862,7 +889,7 @@ fn teleport_effect_count(
     };
     Ok(effects
         .iter()
-        .filter(|(_, position, effect)| *position == at && *effect == 11)
+        .filter(|(_, position, effect)| *position == at && *effect == effect_id)
         .count())
 }
 
