@@ -92,3 +92,65 @@ pub(super) async fn assert_regeneration(
     }
     Ok(())
 }
+
+pub(super) async fn assert_house_regeneration(
+    h: &super::fixture::Harness,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: crate::gameplay_transport::connection::AdmittedSession,
+    actor: crate::foundation::ExactActorRef,
+) -> TestResult {
+    use oteryn_gameplay_domain::domain::condition::{ConditionValues, ConflictKey};
+    use std::sync::atomic::Ordering;
+
+    let session = admitted.game_session_id;
+    let fence = admitted.item_fence.ok_or("House item fence")?;
+    {
+        let runtime = owner.runtime.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
+        let state = states.house_state_mut(&runtime, actor, session, fence)
+            .ok_or("native House spell state")?;
+        state.restore_saved_vitals(1, 0);
+    }
+    let ordinary = owner.observe_actor_vitals(actor, session).await.ok_or("House vitals")?;
+    assert_eq!((ordinary.1.health, ordinary.1.mana), (1, 0));
+
+    let world = admitted.world_id;
+    sqlx::query("INSERT INTO game_cake_world_progress(world_id,event_year)
+        VALUES(encode($1,'hex')::uuid,2026)")
+        .bind(world.as_bytes().as_slice()).execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_cake_phases(world_id,event_year,stage,layer,bonus_activated_at,bonus_until)
+        VALUES(encode($1,'hex')::uuid,2026,3,4,statement_timestamp(),
+               statement_timestamp()+interval '604800 seconds')")
+        .bind(world.as_bytes().as_slice()).execute(&h.pool).await?;
+
+    owner.tick_actor_vitals(actor, session).await.ok_or("House vitals during Cake window")?;
+    let (due, health_gain, mana_gain) = {
+        let runtime = owner.runtime.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
+        let state = states.house_state_mut(&runtime, actor, session, fence)
+            .ok_or("native House spell state")?;
+        let effect = state.owned_conditions().get(ConflictKey::Recovery)
+            .ok_or("real House vitals tick must install the Cake condition")?;
+        assert_eq!(effect.definition().key(), "world.cake.regeneration");
+        let ConditionValues::SpellRegeneration {
+            health_gain, health_interval_ms, mana_gain, mana_interval_ms, ..
+        } = effect.definition().values() else {
+            return Err("expected Cake spell regeneration".into());
+        };
+        let interval = health_interval_ms.min(mana_interval_ms);
+        (
+            effect.started_at() + u64::from(interval) * 1_000,
+            if interval == health_interval_ms { health_gain } else { 0 },
+            if interval == mana_interval_ms { mana_gain } else { 0 },
+        )
+    };
+    owner.states.test_owner_time.store(due, Ordering::Relaxed);
+    let before = owner.tick_actor_vitals(actor, session).await.ok_or("House vitals before pulse")?;
+    assert_eq!((before.1.health, before.1.mana), (1, 0));
+    owner.states.test_owner_time.store(due + 1, Ordering::Relaxed);
+    let after = owner.tick_actor_vitals(actor, session).await.ok_or("House vitals after pulse")?;
+    assert!(health_gain + mana_gain > 0);
+    assert_eq!((after.1.health, after.1.mana), (1 + health_gain, mana_gain));
+    assert!(after.0 > before.0);
+    Ok(())
+}
