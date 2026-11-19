@@ -1881,8 +1881,16 @@ impl DurabilityRoot {
                         }
                     };
 
-                    // A native death reads its mission gate; it must not move that mission epoch.
-                    if native.is_some() {changes.retain(|change|change.before!=change.after);}
+                    // A source death may still award a cosmetic or extend a boss cooldown
+                    // when its sole progress value stays the same. Its receipt carries that
+                    // progress value so the same-transaction effect remains replayable.
+                    let keep_source_progress = source_death.as_ref().is_some_and(|rule| {
+                        rule.effects.len() == 1 && (rule.delivery.is_some() || rule.cooldown.is_some())
+                    });
+                    // An ordinary native death reads its mission gate without moving its epoch.
+                    if native.is_some() && !keep_source_progress {
+                        changes.retain(|change| change.before != change.after);
+                    }
                     if let Some(rule) = source_death.as_ref() {
                         super::source_deaths::apply_delivery(&mut tx, fence, &request, rule, &changes).await?;
                         if let Some(cooldown) = &rule.cooldown {
