@@ -156,6 +156,7 @@ class SourceQuestRewards(unittest.TestCase):
             before = self.build(held_items)
             variants_before = variant.derive(plain.ROOT, held_items, plain.stack_problem)
         self.assertEqual({key for key in before if before[key] != after[key]}, {
+            'oteryn:reward-claim.kv.ghoulroom1', 'oteryn:reward-claim.kv.silveramulet',
             'oteryn:reward-claim.kv.timering3', 'oteryn:reward-claim.kv.trollcave1',
             'oteryn:reward-claim.kv.weddingring1',
         })

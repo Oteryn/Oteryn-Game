@@ -70,7 +70,7 @@ class ContainerNativeTests(unittest.TestCase):
         self.assertEqual(recipe['placements'][0]['unique_id'], 6067)
         self.assertEqual([(c['item']['key'], c['count']) for c in recipe['placements'][0]['contents']],
                          [('oteryn:item.tibia.i3098', 1), ('oteryn:item.tibia.i3085', 1),
-                          ('oteryn:item.tibia.i3028', 7), ('oteryn:item.tibia.i3320', 1)])
+                          ('oteryn:item.tibia.i3028', 7)])  # Global: axe only in fireaxe2
         self.assertFalse(held_items['oteryn:item.tibia.i3085']['materializable'])
         self.assertEqual(items['oteryn:item.tibia.i3085']['semantics']['charges']['value']['count']['value'], 200)
         changed = copy.deepcopy(claim)
@@ -151,7 +151,8 @@ class ContainerNativeTests(unittest.TestCase):
             definition = next(d for d in self.rows if d['identity']['key'].endswith(suffix))
             before = copy.deepcopy(definition)
             with self.subTest(claim=suffix):
-                native = container_native.derive(definition, self.fluid_items(), plain.stack_problem)
+                items = container_native.claim_items(definition['provenance']['pilot_key'], self.fluid_items())
+                native = container_native.derive(definition, items, plain.stack_problem)
                 self.assertIsNotNone(native)
                 self.assertEqual(native['source_difference'], choice)
                 self.assertEqual([p['unique_id'] for p in native['placements']], uids)
@@ -170,7 +171,7 @@ class ContainerNativeTests(unittest.TestCase):
         definition = next(d for d in self.rows if d['identity']['key'].endswith('kv.goblintemple2'))
         for mutation in ('hold', 'source', 'quantity', 'position', 'uid', 'identity', 'fluid', 'charges', 'unadmitted'):
             changed = copy.deepcopy(definition)
-            items = self.fluid_items()
+            items = container_native.claim_items(definition['provenance']['pilot_key'], self.fluid_items())
             if mutation == 'hold':
                 changed['data_holds'].append({'category': 'source', 'code': 'UNRESOLVED'})
             elif mutation == 'source':
@@ -294,7 +295,11 @@ class ContainerNativeTests(unittest.TestCase):
             self.assertIsNotNone(recipe)
             row = recipe['placements'][0]
             self.assertLessEqual(len(row['contents']), min(row['capacity'], 20))
-        native = [d for d in self.rows if container_native.derive(d, self.items, plain.stack_problem)]
+        native = []
+        for d in self.rows:
+            items = container_native.claim_items(d['provenance']['pilot_key'], self.items)
+            if container_native.derive(d, items, plain.stack_problem):
+                native.append(d)
         ornament = next(d for d in self.rows
                         if d['identity']['key'] == 'oteryn:reward-claim.kv.ornamentedshield')
         self.assertIsNone(container_native.derive(ornament, self.items, plain.stack_problem))

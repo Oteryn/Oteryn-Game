@@ -303,6 +303,7 @@ fn m35_fire_axe_two_floor_rewards_complete_only_after_both_in_either_order() -> 
     Ok(())
 }
 // Crystal 201189f8 chest.lua:1078-1087: complete bag, not a 200-item necklace stack.
+// Tibia Global (Fire Axe Quest/Spoiler rev 855030): the axe is only in the Pile of Bones.
 #[test]
 fn m35_fire_axe_bag_grants_all_children_without_finishing_on_first_chest() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -498,14 +499,9 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                 );
             }
         }
-        let world = if matches!(case, Case::FireAxeAll) {
-            source_world_spatial(
-                chest,
-                &[
-                    (33078, 31656, -11, 6067, 2472),
-                    (33084, 31650, -12, 6036, 4024),
-                ],
-            )?
+        let fire_axe = matches!(case, Case::FireAxeAll | Case::FireAxeBag);
+        let world = if fire_axe {
+            super::qready1_reward_claims::retained_world(chest, native)?
         } else if matches!(case, Case::EmperorCookies) {
             source_world_spatial(
                 chest,
@@ -536,10 +532,22 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
         } else {
             source_world_choices(chest, choices, appearance)?
         };
-        let bound = crate::content::world_reward_claims::bind_embedded_reward_claims(
+        let mut bound = crate::content::world_reward_claims::bind_embedded_reward_claims(
             world.base().as_ref(),
             &|_| true,
         )?;
+        if fire_axe {
+            let is_fire_axe_claim = |key: &str| {
+                key == "oteryn:reward-claim.kv.fireaxe1"
+                    || (matches!(case, Case::FireAxeAll)
+                        && key == "oteryn:reward-claim.kv.fireaxe2")
+            };
+            bound
+                .served
+                .retain(|claim| is_fire_axe_claim(claim.key.as_str()));
+            bound.unbound.retain(|p| is_fire_axe_claim(&p.claim));
+            bound.left_out.retain(|(key, _)| is_fire_axe_claim(key));
+        }
         for claim in &bound.served {
             let mint_transition =
                 oteryn_gameplay_quests::quest::completion_sets::mint_transition_for_claim(
@@ -799,8 +807,26 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                 destination,
             )
             .await?;
-            let key =
-                oteryn_world_bundle::bundle::placement_key(floor, x, y, 1).ok_or("placement")?;
+            let key = if fire_axe {
+                let key = bound
+                    .served
+                    .iter()
+                    .flat_map(|claim| &claim.placements)
+                    .find(|p| (p.cell.x, p.cell.y, p.cell.floor) == (x, y, floor))
+                    .ok_or("shipped Fire Axe placement")?
+                    .bundle_placement_key;
+                let (_, ordinal) =
+                    crate::map::view::placement_of(key).ok_or("placement ordinal")?;
+                let unique = world
+                    .base()
+                    .tile(x, y, floor)
+                    .and_then(|tile| tile.unique(ordinal))
+                    .ok_or("shipped Fire Axe UID")?;
+                assert_eq!(unique.unique, choices[position_index].1);
+                key
+            } else {
+                oteryn_world_bundle::bundle::placement_key(floor, x, y, 1).ok_or("placement")?
+            };
             let mut placement = world.base().digest().to_vec();
             placement.extend_from_slice(&key.to_be_bytes());
             let target = WorldObjectTarget {
@@ -1148,7 +1174,6 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                         ("oteryn:item.tibia.i3028".to_owned(), 7),
                         ("oteryn:item.tibia.i3085".to_owned(), 1),
                         ("oteryn:item.tibia.i3098".to_owned(), 1),
-                        ("oteryn:item.tibia.i3320".to_owned(), 1),
                     ]
                 } else {
                     Vec::new()
