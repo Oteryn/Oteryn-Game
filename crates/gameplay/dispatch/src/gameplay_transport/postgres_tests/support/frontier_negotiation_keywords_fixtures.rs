@@ -2,7 +2,7 @@
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::debug};
 use oteryn_gameplay_quests::quest::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack,
-    QuestTransition, npc_rules::NpcRuleCatalog, world_callbacks::Position,
+    QuestTransition, npc_rules::NpcRuleCatalog,
 };
 use serde_json::json;
 use std::sync::Arc;
