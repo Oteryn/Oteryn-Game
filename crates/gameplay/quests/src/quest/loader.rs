@@ -377,7 +377,7 @@ pub(super) fn lower_embedded_quest_state(
             }
         }
     }
-    super::rottin_walls::retain_predecessor(&mut lowered.catalogue)
+    super::rottin_walls::retain_predecessors(&mut lowered.catalogue)
         .map_err(QuestLoadError::Json)?;
     restrict_runtime_scope(lowered, content_revision)
 }

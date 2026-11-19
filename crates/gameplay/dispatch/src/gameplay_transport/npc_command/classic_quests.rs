@@ -99,6 +99,10 @@ pub(super) fn prepare(
         previous.as_ref().map(|p| p.topic),
         &tracks,
     )?;
+    // A Rottin branch owned by classic dialogue supersedes any prior reward offer.
+    if context.2 == classic_talk::ROTTIN && !state.quest_dialogue.retire_for_source(&context) {
+        return Some(Step::Held);
+    }
     if choice.deferred {
         return Some(Step::Refused);
     }

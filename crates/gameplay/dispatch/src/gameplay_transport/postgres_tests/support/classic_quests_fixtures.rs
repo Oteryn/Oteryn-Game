@@ -358,10 +358,6 @@ pub(super) async fn exercise_rottin(
     h: &Harness,
     authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult {
-    use crate::durability::quest_state::{
-        QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
-    };
-    use crate::foundation::{CommandId, CommandRef};
     const TRACK: &str =
         "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/";
     let [rottin] = install(owner, admitted, [ROTTIN]).await?;
@@ -371,21 +367,15 @@ pub(super) async fn exercise_rottin(
         progress(owner, admitted, authority, &format!("{TRACK}questline")).await?,
         0
     );
-    // Establish only the test's prior completed mission through its existing
-    // source transition; this is not a production path around the deferred hand-in.
-    let fence = owner
-        .current_quest_fence(admitted.game_session_id)
-        .await
-        .map_err(|()| "fence")?
-        .ok_or("fence")?;
-    let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
-    let result = slot.commit_quest_transition(owner.root, owner.character, owner.holder, fence,
-        QuestTransitionRequest {
-            transition_key: "oteryn:quest-transition/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/questline/npc_1".into(),
-            cause: QuestCause::Command(CommandRef::new(admitted.game_session_id, CommandId::new(1702).map_err(debug)?)),
-        }, owner.quest_catalogue.as_ref().ok_or("catalogue")?.clone()).await.map_err(debug)?;
-    assert!(matches!(result, QuestTransitionOutcome::Committed(_)));
-    drop(slot);
+    // Stage the completed Lucky Charms history. The payout now owns both
+    // progress tracks and the older state-only command cannot write them.
+    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+        h,
+        owner,
+        admitted,
+        &[(format!("{TRACK}questline"), 2), (format!("{TRACK}mission01"), 2)],
+        167,
+    ).await?;
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
@@ -421,7 +411,6 @@ pub(super) async fn exercise_rottin(
         .fetch_one(&h.pool).await?;
     assert_eq!(receipts, 1);
     // The donor refuses an incomplete repair without changing state or money.
-    // A completed repair's combined reward remains deferred to its shared owner.
     talk(owner, admitted, rottin, 1706, "mission").await?;
     owner.clock_origin = owner
         .clock_origin

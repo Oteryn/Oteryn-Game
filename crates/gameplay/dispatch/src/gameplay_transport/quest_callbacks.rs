@@ -277,6 +277,15 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     let Some((pos, ordinal)) = crate::map::view::placement_of(key) else {
         return false;
     };
+    // Crystal actions_trap.lua bounds the encounter and its cleanup to this clearing.
+    if callback.effects.place_item == Some(12187)
+        && (ordinal != 0
+            || pos.floor != -7
+            || !(32651..=32668).contains(&pos.x)
+            || !(32178..=32190).contains(&pos.y))
+    {
+        return false;
+    }
     // These source-bound World ingresses retain no startup UID/AID in B3.
     // An appearance elsewhere in the stack cannot impersonate their source.
     let source_ordinal = match callback.key.as_str() {

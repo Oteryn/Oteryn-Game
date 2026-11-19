@@ -25,8 +25,8 @@ IDS = {21897, 21898, 21899, 21901, 21902, 21905, 21906, 30168, 30169, 37002, 370
 CUSTODY_PROMOTIONS = {5805, 5806}
 # Closed source qualification admits zero speed only for these three native Items.
 SOURCE_KNOWN_SPEED_IDS = frozenset({2833, 5805, 5806})
-# Rottin Wood: carried hammer, handcrafted ribbon and rabbit's foot lucky charm.
-IDS |= {3460, 12171, 12173}
+# Rottin Wood: repair hammer, charm materials, carried net and rare hunting horn.
+IDS |= {3460, 12171, 12173, 12186, 12260}
 # M12 selected daily harvest: existing Juicy Roots identity, exact portable facts.
 IDS |= {21291}
 # M13: source-pinned carried Guardcatcher and each Perfume Gatherer stage.

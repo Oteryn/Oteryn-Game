@@ -24,10 +24,10 @@ use tokio::io::{AsyncWriteExt, DuplexStream};
 
 /// Grass 0..=12 x 0..=8 on floor 7 (Tibia-keyed, so every tile has spell facts); a wall at (5, 2); every tile with x >= 8 is a protection zone.
 pub(super) fn bundle(trap: Option<u16>) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_for(trap, false)
+    bundle_for(trap, false, None)
 }
 
-fn bundle_for(trap: Option<u16>, repair: bool) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
+fn bundle_for(trap: Option<u16>, repair: bool, wave: Option<bool>) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
     use oteryn_world_bundle::sector::{Attrs, Item, Tile};
     use oteryn_world_bundle::writer::{
         self as writer, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector,
@@ -44,6 +44,15 @@ fn bundle_for(trap: Option<u16>, repair: bool) -> TestResult<(Vec<u8>, crate::ma
             blocks_projectile: None,
         }),
     };
+    let (origin_x, origin_y, width, height) = if wave.is_some() {
+        let (x, y) = super::rottin_bushwhacking_fixtures::WAVE_ORIGIN;
+        (x, y, 20, 18)
+    } else if repair {
+        let wall = super::rottin_repairs_fixtures::WALL;
+        (wall.x - 3, wall.y - 2, 13, 9)
+    } else {
+        (0, 0, 13, 9)
+    };
     let mut manifest = Manifest {
         subareas: Default::default(),
         format: writer::FORMAT.into(),
@@ -58,10 +67,10 @@ fn bundle_for(trap: Option<u16>, repair: bool) -> TestResult<(Vec<u8>, crate::ma
             ..Identity::default()
         },
         world: Extent {
-            min_x: 0,
-            min_y: 0,
-            max_x: 32,
-            max_y: 32,
+            min_x: origin_x,
+            min_y: origin_y,
+            max_x: origin_x + width,
+            max_y: origin_y + height,
             floors: vec![-7],
         },
         palette: vec![
@@ -129,11 +138,18 @@ fn bundle_for(trap: Option<u16>, repair: bool) -> TestResult<(Vec<u8>, crate::ma
     } else {
         None
     };
-    let mut tiles = Vec::new();
-    for y in 0..=8 {
-        for x in 0..=12 {
+    let mut sectors = std::collections::BTreeMap::<_, Vec<_>>::new();
+    use oteryn_world_bundle::sector::SECTOR_SIZE;
+    for y in 0..height {
+        for x in 0..width {
+            let (world_x, world_y) = (origin_x + x, origin_y + y);
+            let trap_site = if wave.is_some() {
+                super::rottin_bushwhacking_fixtures::WAVE_NETS.contains(&(world_x, world_y))
+            } else {
+                matches!((x, y), (3, 2) | (3, 3))
+            };
             let mut palettes = vec![if let Some(id) = trap_ground
-                && matches!((x, y), (3, 2) | (3, 3))
+                && trap_site
             {
                 id
             } else if (x, y) == (3, 5) {
@@ -147,16 +163,19 @@ fn bundle_for(trap: Option<u16>, repair: bool) -> TestResult<(Vec<u8>, crate::ma
                 palettes.push(if trap == 12368 { 5 } else { 3 });
             }
             if repair && (x, y) == (3, 2) {
-                palettes.push(7);
+                palettes.extend([3, 7]);
             }
-            if (x, y) == (5, 2) {
+            if (wave.is_none() && (x, y) == (5, 2))
+                || (wave == Some(true)
+                    && (world_x, world_y) == super::rottin_bushwhacking_fixtures::BLOCKED_SPAWN)
+            {
                 palettes.push(1);
             }
-            tiles.push(Tile {
-                x,
-                y,
+            sectors.entry((world_y / SECTOR_SIZE, world_x / SECTOR_SIZE)).or_default().push(Tile {
+                x: world_x,
+                y: world_y,
                 // Tile flag bit 0 is the protection zone (map/spell_tiles.rs).
-                flags: u32::from(x >= 8),
+                flags: u32::from(wave.is_none() && x >= 8),
                 house: 0,
                 zones: vec![],
                 items: palettes
@@ -170,17 +189,10 @@ fn bundle_for(trap: Option<u16>, repair: bool) -> TestResult<(Vec<u8>, crate::ma
             });
         }
     }
-    let bytes = writer::write(
-        &manifest,
-        &[Sector {
-            floor: -7,
-            sx: 0,
-            sy: 0,
-            tiles,
-        }],
-        &Default::default(),
-    )
-    .map_err(debug)?;
+    let sectors: Vec<_> = sectors.into_iter()
+        .map(|((sy, sx), tiles)| Sector { floor: -7, sx, sy, tiles })
+        .collect();
+    let bytes = writer::write(&manifest, &sectors, &Default::default()).map_err(debug)?;
     let digest = writer::read(&bytes).map_err(debug)?.digest;
     Ok((
         bytes,
@@ -245,13 +257,17 @@ pub(super) fn scenario(
     run(async |admin| {
         let handyman = seed == "rottin_handyman";
         let repair = seed == "rottin_repairs" || handyman;
+        let accept_bushwhacking = seed == "rottin_bushwhacking_acceptance";
         let merchant_loot = seed == "rottin_merchant_loot";
         let blocked_merchant_spawn = seed == "rottin_merchant_wave_blocked";
         let merchant_wave = seed == "rottin_merchant_wave" || blocked_merchant_spawn;
         let repeat_reward = seed == "rottin_weighted_repeat";
         let short_reward = seed == "rottin_weighted_short";
+        let lucky_charms = seed == "rottin_lucky_charms";
         let weighted_reward = seed == "rottin_weighted_reward" || repeat_reward || short_reward;
-        let h = if merchant_loot || merchant_wave || weighted_reward || repair {
+        let rottin = merchant_loot || merchant_wave || weighted_reward || repair
+            || lucky_charms || accept_bushwhacking;
+        let h = if rottin {
             Harness::create_quest_reward(admin, seed, false).await?
         } else {
             Harness::create_with_admission_seed(admin, seed, true, false).await?
@@ -262,7 +278,7 @@ pub(super) fn scenario(
             super::item_look_fixtures::seed_main_backpack(&h, &[("oteryn:item.tibia.i12186", 1); 2]).await?;
         } else if repair {
             super::item_look_fixtures::seed_main_backpack(&h, &[("oteryn:item.tibia.i3460", 1)]).await?;
-        } else if merchant_loot {
+        } else if merchant_loot || lucky_charms || accept_bushwhacking {
             super::item_look_fixtures::seed_main_backpack(&h, &[]).await?;
         }
         prepare_current_session(&h).await?;
@@ -276,32 +292,38 @@ pub(super) fn scenario(
             .await
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
-        let (controller, pin) = if repair {
-            super::rottin_repairs_fixtures::generation(deps.admitted.world_id)?
-        } else {
+        let (controller, pin) =
             super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
-            )?
-        };
+            )?;
         let active = controller.active().ok_or("active")?;
         deps.room = pin.qualified_room().clone();
-        let (bytes, pins) = bundle_for(trap, repair)?;
+        let start = if merchant_wave {
+            let (x, y) = super::rottin_bushwhacking_fixtures::WAVE_START;
+            TilePos { x, y, floor: -7 }
+        } else if repair {
+            let wall = super::rottin_repairs_fixtures::WALL;
+            TilePos { x: wall.x - 1, ..wall }
+        } else {
+            TilePos { x: 2, y: 2, floor: -7 }
+        };
+        let runtime_start = at(i32::from(start.x), i32::from(start.y));
+        let (bytes, pins) = bundle_for(trap, repair, merchant_wave.then_some(blocked_merchant_spawn))?;
         let base = crate::map::load(&bytes, &pins).map_err(debug)?;
         let world = boot(
             &bytes,
             &BootPins {
                 map_revision: crate::map::overlay::map_revision(&base),
                 bundle: pins,
-                start: TilePos {
-                    x: 2,
-                    y: 2,
-                    floor: -7,
-                },
+                start,
             },
             deps.admitted.world_id,
             deps.admitted.channel_id,
             |key| {
+                if matches!(key, "oteryn:item.tibia.i12187" | "oteryn:item.tibia.i12189" | "oteryn:item.tibia.i3682") {
+                    return crate::map::boot::native_item_definition(active.native_gameplay(), key);
+                }
                 Some(crate::map::facts::ItemDefinition {
                     reference: std::num::NonZeroU32::new(match key {
                         "oteryn:item.tibia.i3944" => 4,
@@ -309,9 +331,6 @@ pub(super) fn scenario(
                         "oteryn:item.tibia.i12368" => 6,
                         "oteryn:item.tibia.i12369" => 7,
                         "oteryn:item.tibia.i12183" => 8,
-                        "oteryn:item.tibia.i12187" => 9,
-                        "oteryn:item.tibia.i12189" => 10,
-                        "oteryn:item.tibia.i3682" => 11,
                         "oteryn:item.tibia.i6474" => 12,
                         _ => return None,
                     })?,
@@ -333,13 +352,13 @@ pub(super) fn scenario(
                 pin.frame_binding().digest(),
                 world.map_revision_digest(),
                 crate::content::NativeEntryStart {
-                    x: 2,
-                    y: 2,
-                    floor: 7,
+                    x: runtime_start.x,
+                    y: runtime_start.y,
+                    floor: runtime_start.floor,
                 },
             )
             .ok_or("push combat room")?;
-        if merchant_loot || merchant_wave || repair {
+        if rottin {
             sqlx::query(
                 "INSERT INTO game_control_scope_grants VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)",
             )
@@ -363,7 +382,7 @@ pub(super) fn scenario(
             active.identity().client_artifact_digest(),
             pin.frame_binding().digest(),
             world.map_revision_digest(),
-            (2, 2, 7),
+            (runtime_start.x, runtime_start.y, runtime_start.floor),
         );
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             deps.admitted.world_id,
@@ -395,14 +414,17 @@ pub(super) fn scenario(
             )
             .map_err(debug)?;
         runtime
-            .initialize_pinned_test_position(deps.actor, at(2, 2))
+            .initialize_pinned_test_position(deps.actor, runtime_start)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
-        if merchant_loot || merchant_wave {
+        if rottin {
             owner.quest_catalogue = Some(std::sync::Arc::new(
-                super::rottin_bushwhacking_fixtures::catalogue(merchant_wave, blocked_merchant_spawn)?,
+                oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                    .map_err(debug)?
+                    .catalogue()
+                    .clone(),
             ));
         }
         owner.movement_cells = (&cells).into();
@@ -417,18 +439,21 @@ pub(super) fn scenario(
             admitted.continuity.selected_capabilities.as_slice(),
             &[4, 6, 13, 82]
         );
-        if weighted_reward || merchant_loot || merchant_wave || repair {
-            if weighted_reward {
-                owner.quest_catalogue =
-                    Some(std::sync::Arc::new(super::rottin_rewards_fixtures::catalogue(repeat_reward)?));
-            }
-            if repair {
-                owner.quest_catalogue = Some(std::sync::Arc::new(super::rottin_repairs_fixtures::catalogue(handyman)?));
-            }
+        if rottin {
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
             owner.admit_quest_session(&admitted).await;
-            if merchant_wave {
+            if weighted_reward {
+                super::rottin_rewards_fixtures::seed_loop_prerequisites(&h, &owner, &admitted, repeat_reward).await?;
+            } else if repair {
+                super::rottin_repairs_fixtures::seed_prerequisites(&h, &owner, &admitted, handyman).await?;
+            } else if merchant_wave || merchant_loot {
+                super::rottin_bushwhacking_fixtures::seed_prerequisites(&h, &owner, &admitted, merchant_wave).await?;
+            }
+            owner.refresh_quest_session(admitted.game_session_id, false).await;
+            if accept_bushwhacking {
+                super::rottin_bushwhacking_fixtures::accept(&mut owner, &admitted, &h).await?;
+            } else if merchant_wave {
                 let expected_merchants = if blocked_merchant_spawn { 6 } else { 7 };
                 super::rottin_bushwhacking_fixtures::exercise_wave(
                     &mut owner, admitted, &h, expected_merchants,
@@ -437,6 +462,8 @@ pub(super) fn scenario(
                 super::rottin_bushwhacking_fixtures::exercise_mission(&mut owner, admitted, &h).await?;
             } else if repair {
                 super::rottin_repairs_fixtures::exercise(&mut owner, admitted, &h, handyman).await?;
+            } else if lucky_charms {
+                super::rottin_rewards_fixtures::accept_lucky_charms(&mut owner, &admitted, &h).await?;
             } else if short_reward {
                 super::rottin_rewards_fixtures::refuse_short_hand_in(&mut owner, &admitted, &h).await?;
             } else {

@@ -1,0 +1,225 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/rottin-wood/final-net",
+      "quest": "oteryn:quest.rottin_wood_and_the_married_men_quest",
+      "trigger": "use",
+      "selector": {
+        "appearance": 10480
+      },
+      "reversible": false,
+      "requires_world_admission": true,
+      "passages": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission03",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/kv/rottinwood-trap-count",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5,
+          "add": 1
+        }
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/crystalserver/kv/rottinwood-trap-count",
+        "minimum": 4,
+        "maximum": 4
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rottin_wood_and_married_men/actions_trap.lua:87-121"
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i12186",
+        "count": 1,
+        "selected_instance": true
+      },
+      "teleport": {
+        "x": 32660,
+        "y": 32193,
+        "floor": -7
+      },
+      "effects": {
+        "place_item": 12187,
+        "merchant_entrance": {
+          "x": 32662,
+          "y": 32190,
+          "floor": -7
+        },
+        "encounter": {
+          "minimum_level": 0,
+          "players": [],
+          "monsters": [
+            {
+              "position": {
+                "x": 32656,
+                "y": 32182,
+                "floor": -7
+              },
+              "creature": "oteryn:creature.travelling_merchant"
+            },
+            {
+              "position": {
+                "x": 32660,
+                "y": 32181,
+                "floor": -7
+              },
+              "creature": "oteryn:creature.travelling_merchant"
+            },
+            {
+              "position": {
+                "x": 32661,
+                "y": 32184,
+                "floor": -7
+              },
+              "creature": "oteryn:creature.travelling_merchant"
+            },
+            {
+              "position": {
+                "x": 32662,
+                "y": 32181,
+                "floor": -7
+              },
+              "creature": "oteryn:creature.travelling_merchant"
+            },
+            {
+              "position": {
+                "x": 32657,
+                "y": 32185,
+                "floor": -7
+              },
+              "creature": "oteryn:creature.travelling_merchant"
+            },
+            {
+              "position": {
+                "x": 32658,
+                "y": 32183,
+                "floor": -7
+              },
+              "creature": "oteryn:creature.travelling_merchant"
+            },
+            {
+              "position": {
+                "x": 32663,
+                "y": 32186,
+                "floor": -7
+              },
+              "creature": "oteryn:creature.travelling_merchant"
+            }
+          ],
+          "room_min": {
+            "x": 32651,
+            "y": 32178,
+            "floor": -7
+          },
+          "room_max": {
+            "x": 32668,
+            "y": 32190,
+            "floor": -7
+          },
+          "timing": {
+            "spawn_after_ms": 1,
+            "reset_after_ms": 300000
+          }
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/rottin-wood/loot-merchant",
+      "quest": "oteryn:quest.rottin_wood_and_the_married_men_quest",
+      "trigger": "use",
+      "selector": {
+        "appearance": 12189
+      },
+      "reversible": false,
+      "requires_world_admission": true,
+      "passages": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission03",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/kv/rottinwood-corpsecount",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 5,
+          "add": 1
+        }
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/crystalserver/kv/rottinwood-corpsecount",
+        "minimum": 0,
+        "maximum": 4
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rottin_wood_and_married_men/actions_corpse.lua:9-36"
+      ],
+      "effects": {
+        "loot_merchant": true,
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3035",
+          "count": 1
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/rottin-wood/place-net",
+      "quest": "oteryn:quest.rottin_wood_and_the_married_men_quest",
+      "trigger": "use",
+      "selector": {
+        "appearance": 10480
+      },
+      "reversible": false,
+      "requires_world_admission": true,
+      "passages": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission03",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/kv/rottinwood-trap-count",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 4,
+          "add": 1
+        }
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/crystalserver/kv/rottinwood-trap-count",
+        "minimum": 0,
+        "maximum": 3
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rottin_wood_and_married_men/actions_trap.lua:65-86"
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i12186",
+        "count": 1,
+        "selected_instance": true
+      },
+      "effects": {
+        "place_item": 12187
+      }
+    }
+  ]
+}

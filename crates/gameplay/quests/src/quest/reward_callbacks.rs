@@ -472,6 +472,11 @@ impl RewardCallback {
         // Repeatable source trades spend exact admitted inputs and produce a
         // native backpack MINT in the same fenced transaction.
         temporal_payment::guarded(self)
+            || (self.per_occurrence_mint
+                && self.state_ops.iter().any(|operation| {
+                    matches!(&operation.from, StateCondition::ElapsedAtLeast { seconds } if *seconds > 0)
+                        && matches!(operation.effect, StateMutation::SetNow)
+                }))
             || (self.repeatable
                 && (!self.take.is_empty() || self.fee.is_some())
                 && (self.give.is_some() || self.experience.is_some()))
@@ -539,6 +544,7 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/qd-sams-old-backpack.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-steal-from-thieves.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/rottin-wood.json"),
     include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),
 ];
 

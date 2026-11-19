@@ -108,41 +108,82 @@ pub(crate) fn callbacks() -> [Callback; 6] {
     })
 }
 
-/// Retain the exact pre-hammer pin for characters who already accepted Disrepair.
-pub(super) fn retain_predecessor(catalogue: &mut super::QuestStateCatalogue) -> Result<(), String> {
+/// Retain both shipped Rottin pins for characters with progress before payout wiring.
+pub(super) fn retain_predecessors(
+    catalogue: &mut super::QuestStateCatalogue,
+) -> Result<(), String> {
+    const ADDED_TRACKS: &[&str] = &[
+        "oteryn:quest-progress/crystalserver/kv/handyman-task",
+        "oteryn:quest-progress/crystalserver/kv/lucky-loop-rewarded",
+        "oteryn:quest-progress/crystalserver/kv/lucky-loop-task",
+        "oteryn:quest-progress/crystalserver/kv/nest-timer",
+        "oteryn:quest-progress/crystalserver/kv/rottinwood-corpsecount",
+        "oteryn:quest-progress/crystalserver/kv/rottinwood-trap-count",
+    ];
     let tracks: Vec<_> = catalogue
         .tracks
         .values()
-        .filter(|track| track.quest == QUEST)
+        .filter(|track| track.quest == QUEST && !ADDED_TRACKS.contains(&track.key.as_str()))
         .cloned()
-        .map(|mut track| {
-            if track.key == super::classic_talk::ROTTIN_WALLCOUNT {
-                track.max = 0;
-            }
-            track
-        })
         .collect();
-    let defaults = tracks
+    // Prior Rottin had six plain repair transitions and no reward or World plan
+    // markers. Keep the generic donor journal transitions in both predecessors.
+    let transitions: Vec<_> = catalogue
+        .transitions
+        .values()
+        .filter(|transition| {
+            transition.quest == QUEST
+                && ![
+                    "oteryn:quest-callback/rottin-wood/",
+                    "oteryn:quest-reward/rottin-wood/",
+                    "oteryn:quest-reward-rule/",
+                    "oteryn:quest-world-plan/",
+                ]
+                .iter()
+                .any(|prefix| transition.key.starts_with(prefix))
+        })
+        .cloned()
+        .collect();
+    let defaults: std::collections::BTreeMap<_, _> = tracks
         .iter()
         .map(|track| (track.key.clone(), track.initial))
         .collect();
-    let transitions = catalogue
-        .transitions
-        .values()
-        .filter(|transition| transition.quest == QUEST && !transition.key.starts_with(PREFIX))
-        .cloned()
-        .collect();
-    let predecessor =
-        super::QuestStateCatalogue::new(catalogue.content_revision(), tracks, transitions)
-            .map_err(|error| format!("{error:?}"))?;
-    let hash = predecessor
-        .definition_hash(QUEST)
-        .ok_or("Rottin predecessor definition")?;
-    catalogue
-        .predecessors
-        .entry(QUEST.into())
-        .or_default()
-        .push(super::NpcDefinitionPredecessor { hash, defaults });
+    let with_hammer = super::QuestStateCatalogue::new(
+        catalogue.content_revision(),
+        tracks.clone(),
+        transitions.clone(),
+    )
+    .map_err(|error| format!("{error:?}"))?;
+    let before_hammer = super::QuestStateCatalogue::new(
+        catalogue.content_revision(),
+        tracks
+            .into_iter()
+            .map(|mut track| {
+                if track.key == super::classic_talk::ROTTIN_WALLCOUNT {
+                    track.max = 0;
+                }
+                track
+            })
+            .collect(),
+        transitions
+            .into_iter()
+            .filter(|transition| !transition.key.starts_with(PREFIX))
+            .collect(),
+    )
+    .map_err(|error| format!("{error:?}"))?;
+    for predecessor in [before_hammer, with_hammer] {
+        let hash = predecessor
+            .definition_hash(QUEST)
+            .ok_or("Rottin predecessor definition")?;
+        catalogue
+            .predecessors
+            .entry(QUEST.into())
+            .or_default()
+            .push(super::NpcDefinitionPredecessor {
+                hash,
+                defaults: defaults.clone(),
+            });
+    }
     Ok(())
 }
 
