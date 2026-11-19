@@ -46,6 +46,7 @@ enum Case {
     WindowResetDeparted,
     Area,
     PartyArea,
+    PartyCounter,
     DefeatTime,
     FirstDefeatOutfit,
     Summon,
@@ -125,6 +126,14 @@ fn summon_owner_credit_requires_binding_opt_in() -> TestResult {
         return Ok(());
     };
     run(admin, Case::Summon)
+}
+
+#[test]
+fn active_party_rat_counter_stops_after_five_deaths() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::PartyCounter)
 }
 
 #[test]
@@ -378,6 +387,13 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
                 {"minimum":[at.x+1, at.y, at.floor], "maximum":[at.x+2, at.y, at.floor]}
             ]);
             "Crystal201189f the_great_dragon_hunt_quest/creaturescripts_the_great_dragon_hunt.lua:1-25"
+        }
+        Case::PartyCounter => {
+            counter
+                .as_object_mut()
+                .ok_or("kill counter")?
+                .remove("damage_credit");
+            "Crystal 201189f8 the_rookie_guard/mission03_rational_request.lua:5-15"
         }
         Case::Summon => {
             "Crystal201189f killing_in_the_name_of/creaturescripts_monster_kill.lua:18-56"
@@ -714,8 +730,8 @@ fn run(admin: String, case: Case) -> TestResult {
             return h.cleanup().await;
         }
 
-        if case == Case::PartyArea {
-            exercise_positioned_party(&owner, &players, at, &h.pool).await?;
+        if matches!(case, Case::PartyArea | Case::PartyCounter) {
+            exercise_party(&owner, &players, at, &h.pool, case).await?;
             drop(owner);
             drop(authority);
             drop(seal);
@@ -843,11 +859,12 @@ fn run(admin: String, case: Case) -> TestResult {
 
 /// Crystal 201189f8 creaturescripts_the_great_dragon_hunt.lua:12-25,
 /// functions.lua:1064-1072 and data/libs/functions/party.lua Participants.
-async fn exercise_positioned_party(
+async fn exercise_party(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     players: &[Player],
     at: MovementLocalPosition,
     pool: &sqlx::PgPool,
+    case: Case,
 ) -> TestResult {
     use crate::foundation::{PartyMemberSnapshot, PartyPresence, PartySnapshot};
     let world = owner.world_id.as_bytes();
@@ -884,12 +901,33 @@ async fn exercise_positioned_party(
         observed_database_micros: now,
     }).map_err(debug)?;
     let attackers = [players[0], players[2]];
-    for (offset, ordinal, expected) in [
-        (3, 150, [0, 0, 0]), (1, 151, [1, 1, 0]),
-    ] {
-        death(owner, &attackers, RAT, MovementLocalPosition { x: at.x + offset, ..at }, Case::PartyArea, ordinal).await?;
-        assert_eq!(owner.drain_kill_rewards(players[1].session).await, DrainOutcome::Drained);
-        assert_tracks(pool, expected).await?;
+    let steps: &[(i32, u64, i64)] = if case == Case::PartyCounter {
+        &[
+            (1, 150, 1),
+            (1, 151, 2),
+            (1, 152, 3),
+            (1, 153, 4),
+            (1, 154, 5),
+            (1, 155, 5),
+        ]
+    } else {
+        &[(3, 150, 0), (1, 151, 1)]
+    };
+    for &(offset, ordinal, expected) in steps {
+        death(
+            owner,
+            &attackers,
+            RAT,
+            MovementLocalPosition { x: at.x + offset, ..at },
+            case,
+            ordinal,
+        )
+        .await?;
+        assert_eq!(
+            owner.drain_kill_rewards(players[1].session).await,
+            DrainOutcome::Drained
+        );
+        assert_tracks(pool, [expected, expected, 0]).await?;
     }
     Ok(())
 }
