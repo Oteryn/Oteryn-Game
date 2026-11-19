@@ -536,7 +536,12 @@ fn scenario(admin: String, case: Case) -> TestResult {
         )
         .await?;
         match case {
-            Case::Waves | Case::Victory | Case::VictoryBeforeTimeout | Case::VictoryWithoutProgress | Case::DeathAtTimeout => {
+            Case::Waves
+            | Case::Victory
+            | Case::VictoryBeforeTimeout
+            | Case::VictoryWithPendingReflection
+            | Case::VictoryWithoutProgress
+            | Case::DeathAtTimeout => {
                 wave_scenario(&h, &owner, &mut admitted, deps.actor, case).await?
             }
             Case::SurvivalStep => survival_step_scenario(&owner, &mut admitted, deps.actor).await?,
@@ -953,7 +958,14 @@ async fn wave_scenario(
                 owner.owner_now(),
             ));
             assert!(!runtime.contains_live_creature(*terminal));
-            assert!(runtime.borrow_combat_death().projected_death_at_ms(*terminal).is_err());
+            assert_eq!(states.equipment_reflection_kills.len(), 1);
+            assert_eq!(states.equipment_reflection_kills[0].0, *terminal);
+            assert!(
+                runtime
+                    .borrow_combat_death()
+                    .projected_death_at_ms(*terminal)
+                    .is_err()
+            );
         } else {
             project_wave_death(owner, *terminal, b"terminal-wave").await?;
         }
