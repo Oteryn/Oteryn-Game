@@ -132,6 +132,29 @@ class Diagnostics(unittest.TestCase):
                 self.assertEqual((diagnostics / name).read_text(), f'Error: "{REASON}"\nAuthorization: Bearer [REDACTED]\n')
                 self.assertEqual((diagnostics / name).stat().st_mode & 0o777, 0o600)
 
+    def test_node_boot_harness_failure_retains_and_prints_redacted_log(self):
+        root = Path(__file__).resolve().parents[3]
+        with tempfile.TemporaryDirectory() as directory:
+            work = Path(directory)
+            diagnostics = work / "diagnostics"
+            diagnostics.mkdir(mode=0o700)
+            (work / "portal-harness.log").write_text(
+                "[harness] public listener not ready\npassword=private-value\n"
+            )
+            completed = subprocess.run(
+                ["bash", "-c", 'source "$1"; node_log="$WORK/node.log"; '
+                 'trap game_platform_cleanup EXIT; game_platform_fail platform harness_not_ready',
+                 "bash", str(root / "tools/qualification/game_platform/lifecycle.sh")],
+                env={**os.environ, "GAME_SOURCE": str(root), "WORK": str(work),
+                     "NODE_BOOT_LIFECYCLE": "native_reference", "NODE_BOOT_FAILURE_LOG_DIR": str(diagnostics),
+                     "GAME_PLATFORM_RESULT_FILE": str(work / "result")},
+                capture_output=True, check=False, text=True,
+            )
+            expected = "[harness] public listener not ready\npassword=[REDACTED]\n"
+            self.assertEqual(completed.returncode, 1)
+            self.assertEqual(completed.stdout, expected)
+            self.assertEqual((diagnostics / "portal-harness.log").read_text(), expected)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -6,6 +6,7 @@ use oteryn_gameplay_entities::carrier::Slot;
 use oteryn_gameplay_entities::{CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId};
 use oteryn_gameplay_foundation::foundation::{RuntimeScopeRefV1, ScopeOwnershipGeneration};
 
+pub mod court_warlock;
 pub mod cults;
 pub mod gates;
 #[cfg(test)]
