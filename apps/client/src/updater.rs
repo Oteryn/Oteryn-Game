@@ -1,5 +1,6 @@
 //! T005 maintenance caller. Only a build-pinned TUF target may install bytes.
 mod install;
+mod launcher;
 mod login;
 #[cfg(windows)]
 pub use login::login_update_requested;
@@ -25,20 +26,34 @@ pub fn pinned_root(channel: &str) -> &'static [u8] {
         _ => &[],
     }
 }
-/// A release pointer may name the accepted opaque Platform release ID or an installer slot.
+const MAX_SLOT_LENGTH: usize = 64;
+
+/// A release slot may name an opaque Platform release or a manual installer release.
 pub fn release_directory(value: &str) -> bool {
+    release_id_from_slot(value).is_some()
+}
+
+fn release_id_from_slot(value: &str) -> Option<&str> {
     let (id, slot) = value
         .split_once('~')
-        .map_or((value, None), |(a, b)| (a, Some(b)));
-    !id.is_empty()
-        && id.len() <= 160
-        && id != "."
-        && id != ".."
+        .map_or((value, None), |(id, slot)| (id, Some(slot)));
+    (value.len() <= MAX_SLOT_LENGTH
+        && !id.is_empty()
+        && !id.starts_with('.')
+        && !id.ends_with('.')
+        && !id.contains("..")
         && id
             .bytes()
-            .all(|b| b.is_ascii_alphanumeric() || b"-_.+".contains(&b))
-        && slot.is_none_or(|s| !s.is_empty() && !s.starts_with('0') && s.parse::<u32>().is_ok())
+            .all(|byte| byte.is_ascii_alphanumeric() || b"-_.+".contains(&byte))
+        && slot.is_none_or(|slot| {
+            !slot.is_empty()
+                && !slot.starts_with('0')
+                && slot.bytes().all(|byte| byte.is_ascii_digit())
+                && slot.parse::<u32>().is_ok()
+        }))
+    .then_some(id)
 }
+
 fn compiled_platform() -> &'static str {
     if cfg!(windows) {
         "windows"
@@ -110,15 +125,20 @@ async fn maintain_release(
     update.download(&package).await?;
     if action == Action::Verify {
         let current = current.trim();
-        if !release_directory(current)
-            || current.split('~').next() != Some(&update.policy.current_release_id)
-        {
+        if release_id_from_slot(current) != Some(&update.policy.current_release_id) {
             return Err(UpdateError::Unavailable);
         }
         verify_archive(&package, &directory.join("releases").join(current))?;
         return Ok("Verified installed release against the current signed package.".into());
     }
-    let installed = install::install(&package, directory, &update.policy.current_release_id)?;
+    let launcher_path = directory.join(launcher::LAUNCHER_EXECUTABLE);
+    let launcher = cfg!(windows).then_some(launcher_path.as_path());
+    let installed = install::install(
+        &package,
+        directory,
+        &update.policy.current_release_id,
+        launcher,
+    )?;
     if gate.is_some() {
         return Ok(lfmt!(
             "Installed verified release {installed}. Oteryn will restart when you close this message.",

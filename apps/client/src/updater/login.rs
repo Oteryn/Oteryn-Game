@@ -1,13 +1,13 @@
 //! Handoff from the refused client to its pinned updater and the launcher.
 use super::pinned_root;
 #[cfg(windows)]
-use super::{Action, maintain_release, release_directory, window};
+use super::{Action, launcher::LAUNCHER_EXECUTABLE, maintain_release, release_directory, window};
 use oteryn_platform_client::native_login::UpdatePointer;
 use oteryn_platform_client::updates::UpdateError;
 #[cfg(windows)]
 use std::path::Path;
 
-/// Use the running build's pinned root even when its launcher predates this gate.
+/// Use the running build's pinned root for the gate update.
 pub(crate) fn start_login_update(update: &UpdatePointer) -> Result<(), UpdateError> {
     let channel = update.update_channel.as_str();
     require_update_root(pinned_root(channel))?;
@@ -48,7 +48,7 @@ fn login_install_directory(exe: &Path) -> Option<&Path> {
     (release_directory(slot.file_name()?.to_str()?)
         && releases.file_name()? == "releases"
         && directory.join("current.txt").is_file()
-        && directory.join("oteryn-launcher.exe").is_file())
+        && directory.join(LAUNCHER_EXECUTABLE).is_file())
     .then_some(directory)
 }
 
@@ -90,7 +90,7 @@ pub fn login_update_requested() -> Option<std::process::ExitCode> {
             ))?;
             // The old client exited and maintain_release released the setup mutex.
             window::show_report(&message);
-            std::process::Command::new(directory.join("oteryn-launcher.exe"))
+            std::process::Command::new(directory.join(LAUNCHER_EXECUTABLE))
                 .spawn()
                 .map_err(|_| UpdateError::Unavailable)?;
             Ok::<(), UpdateError>(())

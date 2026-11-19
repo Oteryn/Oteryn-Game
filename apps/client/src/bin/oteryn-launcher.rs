@@ -52,25 +52,6 @@ impl Display for LaunchError {
     }
 }
 
-/// `<release_id>` of any client version, or `<release_id>~<n>`, `n` a decimal integer from 1
-/// without leading zeros. A failed upgrade to another version keeps the previous release active
-/// behind the new launcher, so the pointer is not bound to this launcher's version.
-fn is_release_directory_name(value: &str) -> bool {
-    let (release_id, suffix) = match value.split_once('~') {
-        Some((release_id, suffix)) => (release_id, Some(suffix)),
-        None => (value, None),
-    };
-    let suffix_valid = suffix.is_none_or(|suffix| {
-        !suffix.is_empty()
-            && !suffix.starts_with('0')
-            && suffix.bytes().all(|digit| digit.is_ascii_digit())
-            && suffix.parse::<u32>().is_ok()
-    });
-    suffix_valid
-        && (oteryn_client::is_contract_release_id(release_id)
-            || oteryn_client::updater::release_directory(release_id))
-}
-
 /// The release directory name `current.txt` holds; one trailing line ending is accepted.
 fn parse_pointer(contents: &[u8]) -> Result<&str, LaunchError> {
     let contents = contents
@@ -79,7 +60,7 @@ fn parse_pointer(contents: &[u8]) -> Result<&str, LaunchError> {
         .unwrap_or(contents);
     std::str::from_utf8(contents)
         .ok()
-        .filter(|value| is_release_directory_name(value))
+        .filter(|value| oteryn_client::updater::release_directory(value))
         .ok_or(LaunchError::MalformedPointer)
 }
 
@@ -288,6 +269,9 @@ mod tests {
             "..".to_owned(),
             format!("{RELEASE}~0"),
             format!("{RELEASE}~01"),
+            format!("{RELEASE}~+1"),
+            "a".repeat(65),
+            "rel..a".to_owned(),
             format!("{RELEASE}~"),
             format!("{RELEASE}~1~2"),
             format!("{RELEASE}~99999999999"),
