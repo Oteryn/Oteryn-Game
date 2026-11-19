@@ -166,7 +166,7 @@ fn source_spawn_case_with_gaz_heal(
                 drop(states);
                 drop(runtime);
                 if selected && created {break;}
-                now = next_native_melee_deadline(&owner).await?;
+                now = next_native_melee_deadline(&owner).await?.max(now + 2_000_000);
             }
             assert!(selected,"actual native scheduler must select {ability}");
             assert!(created,"selected {ability} must admit actual source child {child} through the production callback owner");
