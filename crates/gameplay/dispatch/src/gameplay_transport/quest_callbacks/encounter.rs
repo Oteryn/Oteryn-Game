@@ -645,17 +645,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let blocked =
                 super::super::pvp_live::pz_blocked(states, who, member_session, self.owner_now());
-            let Ok(proof) = crate::map::floor::prepare_quest_encounter_entry(
-                runtime,
-                &self.movement_cells,
-                who,
-                member_session,
-                expected,
-                local(member.to),
-                blocked,
-                &closed,
-                encounter.linked_arrival.is_some() || callback.effects.position_forms.is_some(),
-            ) else {
+            let Ok(Ok(proof)) = runtime.inspect_quest_replacement(&retired, |staged| {
+                crate::map::floor::prepare_quest_encounter_entry(
+                    staged,
+                    &self.movement_cells,
+                    who,
+                    member_session,
+                    expected,
+                    local(member.to),
+                    blocked,
+                    &closed,
+                    encounter.linked_arrival.is_some() || callback.effects.position_forms.is_some(),
+                )
+            }) else {
                 return UseDisposition::NotPossible;
             };
             players.push((who, member_session, expected));

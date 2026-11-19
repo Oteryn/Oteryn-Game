@@ -85,20 +85,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }) {
             return UseDisposition::Rejected;
         }
+        // Crystal actions_portal_brain_head.lua:56-69,120-130 resets for a
+        // new admission. An ingress can reach the portal before the scheduled
+        // vacancy census, but its cooldown check must leave that roster intact.
+        let abandoned = existing.filter(|_| occupants == 0);
+        let existing = existing.filter(|_| abandoned.is_none());
+        let retired = abandoned.map_or_else(Vec::new, |index| visits[index].creatures.clone());
         let doors = crate::map::floor::BundleDoors(&map.facts);
         let blocked =
             super::super::super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
-        let Ok(proof) = crate::map::floor::prepare_quest_encounter_entry(
-            runtime,
-            self.movement_cells(),
-            actor,
-            session,
-            expected,
-            local(member.to),
-            blocked,
-            &doors,
-            true,
-        ) else {
+        let Ok(Ok(proof)) = runtime.inspect_quest_replacement(&retired, |staged| {
+            crate::map::floor::prepare_quest_encounter_entry(
+                staged,
+                self.movement_cells(),
+                actor,
+                session,
+                expected,
+                local(member.to),
+                blocked,
+                &doors,
+                true,
+            )
+        }) else {
             return UseDisposition::NotPossible;
         };
         let deadline = |ms| now.checked_add(u64::from(ms) * 1_000);
@@ -108,12 +116,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) else {
             return UseDisposition::Exhausted;
         };
-        // Crystal actions_portal_brain_head.lua:56-69,120-130 resets for a
-        // new admission. An ingress can reach the portal before the scheduled
-        // vacancy census, but its cooldown check must leave that roster intact.
-        let abandoned = existing.filter(|_| occupants == 0);
-        let existing = existing.filter(|_| abandoned.is_none());
-        let retired = abandoned.map_or_else(Vec::new, |index| visits[index].creatures.clone());
         let can_add_visit = abandoned.is_some()
             || visits.len() < super::super::timed_encounter::MAX_TIMED_ENCOUNTERS;
         let mut monsters = Vec::new();

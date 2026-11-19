@@ -206,6 +206,23 @@ impl ChannelRuntimeV1 {
         .map(|_| ())
     }
 
+    /// Read landing conditions with the previous encounter roster staged for
+    /// removal. The prepared movement proof still checks the live carrier at
+    /// commit, after that same roster has been retired inside the transaction.
+    pub fn inspect_quest_replacement<T>(
+        &mut self,
+        retire: &[ExactActorRef],
+        inspect: impl FnOnce(&Self) -> T,
+    ) -> Result<T, CarrierError> {
+        if retire.is_empty() {
+            return Ok(inspect(self));
+        }
+        let before = self.carrier.clone();
+        let result = self.retire_quest_roster(retire).map(|()| inspect(self));
+        self.carrier = before;
+        result
+    }
+
     pub fn commit_quest_encounter_entry_with_roster<P: SourceStepCommitProof>(
         &mut self,
         players: Vec<P>,
@@ -327,9 +344,6 @@ impl ChannelRuntimeV1 {
         if players.is_empty() || players.len() > 16 || monsters.is_empty() || monsters.len() > 16 {
             return Err(CarrierError::PlanConflict);
         }
-        for proof in &players {
-            proof.validate_current(self)?;
-        }
         let mut snapshots = Vec::new();
         snapshots
             .try_reserve(players.len())
@@ -338,10 +352,9 @@ impl ChannelRuntimeV1 {
         // The exclusive runtime owner prevents an observer from seeing these staged slots.
         let before = self.carrier.clone();
         let result = (|| {
-            for &actor in retire {
-                if self.contains_live_creature(actor) {
-                    self.remove_encounter_actor(actor)?;
-                }
+            self.retire_quest_roster(retire)?;
+            for proof in &players {
+                proof.validate_current(self)?;
             }
             let mut actors = Vec::new();
             actors
@@ -365,6 +378,15 @@ impl ChannelRuntimeV1 {
             self.carrier = before;
         }
         result
+    }
+
+    fn retire_quest_roster(&mut self, roster: &[ExactActorRef]) -> Result<(), CarrierError> {
+        for &actor in roster {
+            if self.contains_live_creature(actor) {
+                self.remove_encounter_actor(actor)?;
+            }
+        }
+        Ok(())
     }
 
     /// Publish a bounded group relocation and its source map projection together.
