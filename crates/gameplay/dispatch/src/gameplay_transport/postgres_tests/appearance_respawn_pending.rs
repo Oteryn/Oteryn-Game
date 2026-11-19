@@ -14,7 +14,7 @@ fn appearance_projection_defers_while_the_observer_respawn_is_pending_postgres()
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::item_look::large_stack(scenario)
+    super::item_look_fixtures::large_stack(scenario)
 }
 
 fn scenario() -> TestResult {
@@ -114,11 +114,11 @@ fn appearance_projection_skips_a_peer_whose_respawn_is_pending_postgres() -> Tes
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::item_look::large_stack(peer_scenario)
+    super::item_look_fixtures::large_stack(peer_scenario)
 }
 
 fn peer_scenario() -> TestResult {
-    use super::appearance_change_postgres::observer_visibility_tests;
+    use super::appearance_change_postgres_fixtures::observer_visibility_tests;
     run(async |admin| {
         let harness = Harness::create_appearance(admin, "appearance_peer_respawn").await?;
         prepare_current_session(&harness).await?;

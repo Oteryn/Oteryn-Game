@@ -36,8 +36,8 @@ fn resume_frames(delay_loss_publication: bool) -> TestResult {
                 let h =
                     Harness::create_with_admission_seed(admin, "seam_resume_frames", false, false)
                         .await?;
-                let recovery = super::house_transfer::RecoverySource::start(&h).await?;
-                super::house_transfer::prepare_owned_session(&h).await?;
+                let recovery = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+                super::house_transfer_fixtures::prepare_owned_session(&h).await?;
                 let seal = h.recovery.seal_current().map_err(debug)?;
                 let authority = h
                     .root
@@ -106,7 +106,7 @@ fn resume_frames(delay_loss_publication: bool) -> TestResult {
                 );
                 owner.states.command_ingress.admit(admitted.game_session_id);
                 for generation in [2, 3] {
-                    let token = super::house_transfer::RecoverySource::token(generation as u8)?;
+                    let token = super::house_transfer_fixtures::RecoverySource::token(generation as u8)?;
                     let attempt = ResumeAttempt {
                         game_session_id: admitted.game_session_id,
                         recovery_material: token.as_bytes(),

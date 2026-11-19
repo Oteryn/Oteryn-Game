@@ -68,7 +68,11 @@ pub fn choose(
     // Source npc_handler.lua:446-451 consumes registered KeywordHandler/Focus
     // messages before this default callback. Captured lore remains source-only:
     // interception must preserve the old topic and cannot manufacture a writer.
-    if keyword_handler_intercepts(npc, text)? || super::quests_2_focus::intercepts(text) {
+    // Global spoiler revision 1202454 uses "map" to request the Tired Tree mission.
+    let tree_map = npc == "oteryn:npc.tired_tree" && text.trim().eq_ignore_ascii_case("map");
+    if (!tree_map && keyword_handler_intercepts(npc, text)?)
+        || super::quests_2_focus::intercepts(text)
+    {
         return None;
     }
     let topic = topic.filter(|current| current.npc == npc);
@@ -94,6 +98,8 @@ pub fn choose(
             // npc/alkestios.lua:61-111, including source elseif precedence.
             if contains(text, "mission") {
                 return match animals {
+                    // Global spoiler revision 1202454 opens the offer with "mission".
+                    ..1 if text.trim().eq_ignore_ascii_case("mission") => Some(answer(80, 1, None)),
                     1 if value(&format!("{BASE}mission01/poacher_chest")) == 1 => {
                         Some(answer(63, topic.map_or(0, |t| t.step), None))
                     }
@@ -152,8 +158,8 @@ pub fn choose(
             }
         }
         "oteryn:npc.ghostly_wolf" => {
-            // npc/ghostly_wolf.lua:66-95.
-            if contains(text, "mission") {
+            // Global spoiler revision 1202454 reports the laid fur with "whelp".
+            if contains(text, "mission") || (animals >= 9 && contains(text, "whelp")) {
                 return Some(match animals {
                     5 => answer(68, 1, None),
                     9 => answer(
@@ -277,7 +283,7 @@ pub fn choose(
         "oteryn:npc.tired_tree" => {
             // npc/tired_tree.lua:64-87. Story conclusion also mints map24944.
             let tired = value(&format!("{BASE}mission04/tired_tree"));
-            if contains(text, "mission") {
+            if contains(text, "mission") || tree_map {
                 if tired < 1 && value(&format!("{BASE}mission04/tooth_fairy")) == 2 {
                     return Some(answer(66, 1, None));
                 }
@@ -409,7 +415,8 @@ pub fn choose(
         "oteryn:npc.dancing_fairy" => {
             // npc/dancing_fairy.lua:56-82. Source topic1 has no writer in this
             // NPC; do not fabricate a route to its otherwise unreachable yes.
-            if contains(text, "spell") {
+            // Global spoiler revision 1202454 accepts "fishtail" for the spell.
+            if contains(text, "spell") || contains(text, "fishtail") {
                 return Some(if couple == 1 && value(COUPLE_PROGRESS) == 1 {
                     answer(
                         58,

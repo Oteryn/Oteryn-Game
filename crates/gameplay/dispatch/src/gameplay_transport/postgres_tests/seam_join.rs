@@ -62,7 +62,7 @@ fn seam_join_tracker_snapshot_retries_busy_holder_without_progression() -> TestR
 
 #[test]
 fn seam_join_spell_catalog_retries_busy_holder_without_losing_knowledge() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("seam-spell-catalog", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("seam-spell-catalog", || {
         run(async |admin| {
             let h = Harness::create_with_admission_seed(admin, "seam_spell_catalog", false, false)
                 .await?;
@@ -123,7 +123,7 @@ fn seam_join_spell_catalog_retries_busy_holder_without_losing_knowledge() -> Tes
 
 #[test]
 fn seam_join_named_entities_retry_busy_holder_before_chat_open() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("seam-named-entities", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("seam-named-entities", || {
         run(async |admin| {
             let h = Harness::create_with_admission_seed(admin, "seam_named_entities", true, false)
                 .await?;
@@ -176,7 +176,7 @@ fn seam_join_named_entities_retry_busy_holder_before_chat_open() -> TestResult {
 
 #[test]
 fn seam_input_house_transfer_guard_retries_busy_holder_before_dispatch() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("seam-house-input", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("seam-house-input", || {
         run(async |admin| {
             let h = Harness::create_with_admission_seed(admin, "seam_house_input", false, false)
                 .await?;

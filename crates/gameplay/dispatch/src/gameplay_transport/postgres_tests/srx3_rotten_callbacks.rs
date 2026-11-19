@@ -1,4 +1,8 @@
 //! Actual pinned Murcion entry and native scheduler; no invented boss/catalogue.
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
+use super::srx3_rotten_callbacks_fixtures::{publish_native_fixture_player_source};
+
 use super::fixture::{Harness, debug, run};
 use super::srx3_activity_source_fixture::{SourceScene, install_scene, prepare_player};
 use super::{Dependencies, TestResult, reset};
@@ -7,8 +11,7 @@ use crate::foundation::{MovementLocalPosition, RuntimeScopeRefV1};
 use crate::gameplay_transport::capabilities::{
     BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
 };
-use crate::map::boot::BundleCollisionIndexExt;
-use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+
 use oteryn_protocol_oteryn::boss_encounter as wire;
 
 #[test]
@@ -193,7 +196,7 @@ fn run_murcion_source_entry_checks(
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run("srx3-murcion-native", move || {
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-murcion-native", move || {
         run(async |admin| {
             reset();
             // Crystal scripts/quests/rotten_blood_quest/rotten_murcion.lua:
@@ -220,7 +223,7 @@ fn run_murcion_source_entry_checks(
             };
             let destination_scene = SourceScene::new(source_room, origin)?;
             let published_scene = if published_world {
-                Some(super::srx3_soul_war_world_fixture::source_world(origin)?)
+                Some(super::srx3_soul_war_world_fixture_fixtures::source_world(origin)?)
             } else {
                 None
             };
@@ -228,8 +231,8 @@ fn run_murcion_source_entry_checks(
             let deps: Dependencies = scene.dependencies()?;
             let h = Harness::create_with_admission_seed(admin, "srx3_murcion_native", false, false)
                 .await?;
-            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-            super::house_transfer::prepare_owned_session(&h).await?;
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::house_transfer_fixtures::prepare_owned_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -247,7 +250,7 @@ fn run_murcion_source_entry_checks(
                 .activity_runtimes
                 .register_source_room(source_room, &destination_scene.room)
                 .map_err(|_| "register authentic Murcion destination capture")?;
-            super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+            super::boss_activity_fixtures::issue_content_and_reset(&h, &scene.pin).await?;
             let mut admitted = deps.admitted;
             admitted.continuity.selected_capabilities = SelectedCapabilities::select(
                 BUNDLE_WORLD_OFFERED_CAPABILITIES,
@@ -314,11 +317,11 @@ fn run_murcion_source_entry_checks(
                 .remember(admitted)
                 .map_err(|_| "remember resealed actual source connection")?;
 
-            let instance = super::activity_runtime::allocate_ready_instance(&h, 213)
+            let instance = super::activity_runtime_fixtures::allocate_ready_instance(&h, 213)
                 .await
                 .map_err(|error| format!("ready activity allocation: {error}"))?;
             let mut frames = Vec::new();
-            let (_, reply, barrier) = super::boss_activity::exchange_capture(
+            let (_, reply, barrier) = super::boss_activity_fixtures::exchange_capture(
                 &owner,
                 &mut admitted,
                 boss_key,
@@ -856,7 +859,7 @@ fn run_rotten_native_lethal_case_checks(
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run("srx3-rotten-child-xp", move || {
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-rotten-child-xp", move || {
         run(async move |admin| {
             let scene = SourceScene::new(
                 PinnedActivitySourceRoom::Murcion,
@@ -881,12 +884,12 @@ fn run_rotten_native_lethal_case_checks(
             let h =
                 Harness::create_with_admission_seed(admin, "srx3_rotten_child_xp", false, false)
                     .await?;
-            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-            super::house_transfer::prepare_owned_session(&h).await?;
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::house_transfer_fixtures::prepare_owned_session(&h).await?;
             if check_plain_ground {
                 // Imported historical equipped source backpack, before the
                 // fresh recovery seal; every new pickup guard stays active.
-                super::item_look::seed_main_backpack(&h, &[]).await?;
+                super::item_look_fixtures::seed_main_backpack(&h, &[]).await?;
             }
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
@@ -897,7 +900,7 @@ fn run_rotten_native_lethal_case_checks(
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &evidence.evidence;
             install_scene(&mut owner, &scene, PinnedActivitySourceRoom::Murcion)?;
-            super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+            super::boss_activity_fixtures::issue_content_and_reset(&h, &scene.pin).await?;
             if check_source_step {
                 let catalogue =
                     oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
@@ -1027,7 +1030,7 @@ fn run_rotten_native_lethal_case_checks(
                     );
                     child.actor
                 };
-                super::srx3_native_source_cast::drain_source_death(&owner, child, now).await?;
+                super::srx3_native_source_cast_fixtures::drain_source_death(&owner, child, now).await?;
                 assert_eq!(
                     owner.drain_kill_rewards(admitted.game_session_id).await,
                     crate::gameplay_transport::kill_reward::DrainOutcome::Drained
@@ -1480,7 +1483,7 @@ async fn create_second_symbol_corpse(
         );
         child
     };
-    super::srx3_native_source_cast::drain_source_death(owner, child, now).await?;
+    super::srx3_native_source_cast_fixtures::drain_source_death(owner, child, now).await?;
     assert_eq!(
         owner.drain_kill_rewards(admitted.game_session_id).await,
         crate::gameplay_transport::kill_reward::DrainOutcome::Drained
@@ -1494,7 +1497,7 @@ fn srx3_primal_actual_instance_publishes_current_hazard_source_icon_postgres() -
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run("srx3-primal-source-icon", || {
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-primal-source-icon", || {
         run(async |admin| {
             reset();
             let scene = SourceScene::new(
@@ -1509,8 +1512,8 @@ fn srx3_primal_actual_instance_publishes_current_hazard_source_icon_postgres() -
             let h =
                 Harness::create_with_admission_seed(admin, "srx3_primal_source_icon", false, false)
                     .await?;
-            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-            super::house_transfer::prepare_owned_session(&h).await?;
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::house_transfer_fixtures::prepare_owned_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -1520,7 +1523,7 @@ fn srx3_primal_actual_instance_publishes_current_hazard_source_icon_postgres() -
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &evidence.evidence;
             install_scene(&mut owner, &scene, PinnedActivitySourceRoom::Primal)?;
-            super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+            super::boss_activity_fixtures::issue_content_and_reset(&h, &scene.pin).await?;
             let mut admitted = deps.admitted;
             admitted.continuity.selected_capabilities=SelectedCapabilities::select(
                 BUNDLE_WORLD_OFFERED_CAPABILITIES,
@@ -1528,9 +1531,9 @@ fn srx3_primal_actual_instance_publishes_current_hazard_source_icon_postgres() -
                   oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_NATIVE_CREATURE_ICONS_V1],
             ).ok_or("actual native creature icon capabilities")?;
             prepare_player(&h, &owner, &mut admitted, 1999).await?;
-            let instance = super::activity_runtime::allocate_ready_instance(&h, 215).await?;
+            let instance = super::activity_runtime_fixtures::allocate_ready_instance(&h, 215).await?;
             let mut frames = Vec::new();
-            let (_, reply, barrier) = super::boss_activity::exchange_capture(
+            let (_, reply, barrier) = super::boss_activity_fixtures::exchange_capture(
                 &owner,
                 &mut admitted,
                 "oteryn:creature.the_primal_menace",
@@ -1598,64 +1601,4 @@ fn srx3_primal_actual_instance_publishes_current_hazard_source_icon_postgres() -
         result.is_ok()
     );
     result
-}
-
-/// The normal owner batch must carry the same current Player DATA as a real
-/// native cast; source health callbacks may never receive a fabricated vocation.
-pub(super) async fn publish_native_fixture_player_source(
-    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
-    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
-    actor: crate::foundation::ExactActorRef,
-    command: crate::foundation::CommandRef,
-    now: u64,
-) -> TestResult {
-    let permit = owner
-        .spell_lane_permit()
-        .await
-        .ok_or("actual source lane")?;
-    let active = owner
-        .active_generation
-        .ok_or("actual source active generation")?;
-    let native = active
-        .native_gameplay()
-        .ok_or("actual source native policy")?;
-    let room = owner
-        .effective_rooms()
-        .gate_field_step_ingress()
-        .ok_or("actual source map")?;
-    let mut runtime = owner.runtime.lock().await;
-    let states = owner.states.spell_states.lock().await;
-    let mut context = (&mut *runtime, &*states, &permit);
-    owner
-        .root
-        .try_issue_semantic_pass()?
-        .run_with_context(&mut context, move |holder, deadline, context| {
-            Box::pin(async move {
-                use crate::durability::spell_item_transaction::{
-                    assert_spell_item_authority_in_transaction, begin_spell_owner_transaction,
-                };
-                let (runtime, states, permit) = context;
-                let mut tx = begin_spell_owner_transaction(holder, deadline).await?;
-                let authority = assert_spell_item_authority_in_transaction(
-                    &mut tx,
-                    permit,
-                    owner.root,
-                    owner.character,
-                    owner.holder,
-                    &fence,
-                    command,
-                    native.source_digest(),
-                )
-                .await
-                .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-                crate::gameplay_transport::soul_war_callbacks::publish_command_source(
-                    &mut tx, &authority, active, room, runtime, states, actor, now,
-                )
-                .await?;
-                tx.rollback().await?;
-                Ok(())
-            })
-        })
-        .await?;
-    Ok(())
 }

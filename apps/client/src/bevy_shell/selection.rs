@@ -4,7 +4,7 @@ use super::{
     game_ui::{GameModal, modal::ModalGuard},
     owner::HostOwner,
 };
-use crate::character_selection::SelectionAction;
+use crate::character_selection::{ChannelChoice, SelectionAction};
 use bevy::{
     input_focus::{FocusCause, InputFocus, tab_navigation::TabGroup},
     prelude::*,
@@ -251,13 +251,13 @@ pub(super) fn project(
         let row = state.selected.and_then(|index| request.rows.get(index));
         let channel = row
             .and_then(|row| state.channel.and_then(|index| row.channels.get(index)))
-            .map_or("Default channel", |channel| channel.1.as_str());
+            .map_or_else(|| "Default channel".to_owned(), ChannelChoice::label);
         let channel = add_button(
             &mut commands,
             &skin,
             request.id,
             Choice::Channel,
-            channel,
+            &channel,
             300.,
             row.is_none_or(|row| row.channels.is_empty()),
         );
@@ -406,7 +406,7 @@ fn activate(
                 channel_id: state
                     .channel
                     .and_then(|index| row.channels.get(index))
-                    .map(|channel| channel.0.clone()),
+                    .map(|channel| channel.id.clone()),
             }),
         Choice::Create => Some(SelectionAction::Create),
         Choice::Refresh => Some(SelectionAction::Refresh),

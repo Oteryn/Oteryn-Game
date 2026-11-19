@@ -29,7 +29,7 @@ fn srx3_time_guardian_actual_native_callback_swaps_distinct_source_actors_postgr
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("srx3-time-guardian", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-time-guardian", || {
         run(async |admin| {
             reset();
             let kind = PinnedActivitySourceRoom::CallbackTimeGuardian;
@@ -54,8 +54,8 @@ fn srx3_time_guardian_actual_native_callback_swaps_distinct_source_actors_postgr
                 .ok_or("actual native generation")?;
             let h = Harness::create_with_admission_seed(admin, "srx3_time_guardian", false, false)
                 .await?;
-            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-            super::house_transfer::prepare_owned_session(&h).await?;
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::house_transfer_fixtures::prepare_owned_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -65,7 +65,7 @@ fn srx3_time_guardian_actual_native_callback_swaps_distinct_source_actors_postgr
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &evidence.evidence;
             install_scene(&mut owner, &scene, kind)?;
-            super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+            super::boss_activity_fixtures::issue_content_and_reset(&h, &scene.pin).await?;
             let mut admitted = deps.admitted;
             prepare_player(&h, &owner, &mut admitted, 1999).await?;
             let (base, fire, ice) = {

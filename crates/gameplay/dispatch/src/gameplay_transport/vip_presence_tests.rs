@@ -12,6 +12,7 @@ fn session() -> Result<GameSessionId, Box<dyn std::error::Error>> {
 }
 fn row(status: Status) -> Result<VipPresenceRow, Box<dyn std::error::Error>> {
     Ok(VipPresenceRow {
+        channel: (status == Status::Online).then(|| id(7)),
         target: CharacterId::decode(&id(2)).map_err(|error| format!("{error:?}"))?,
         entry: 1,
         name: "Alice".into(),
@@ -30,6 +31,7 @@ fn read(
     };
     runtime
         .complete(session()?, plan, Some(vec![row(status)?]), at)
+        .map(|(batch, _)| batch)
         .ok_or_else(|| "expected current snapshot".into())
 }
 
@@ -80,6 +82,7 @@ fn vip_presence_periodic_reconcile_privacy_and_listener_loss_do_not_announce() -
         return Err("listener loss must invalidate online".into());
     };
     assert_eq!(lost.entries[0].status, Status::Unconfirmed);
+    assert!(wire::encode(&lost).is_ok());
     assert_eq!(lost.entries[0].confirmed_for_ms, 0);
     assert!(!lost.entries[0].announce);
     runtime.hint(row(Status::Online)?.target, true);
@@ -131,8 +134,44 @@ fn vip_presence_failed_read_unconfirms_and_unwatched_hints_allocate_nothing() ->
     };
     let failed = runtime
         .complete(session()?, plan, None, now)
+        .map(|(batch, _)| batch)
         .ok_or("failure snapshot")?;
     assert_eq!(failed.entries[0].status, Status::Unconfirmed);
+    assert!(wire::encode(&failed).is_ok());
     assert!(!failed.entries[0].announce);
+    Ok(())
+}
+
+#[test]
+fn channel_move_announcement_uses_the_authoritative_preference() -> TestResult {
+    for notify in [true, false] {
+        let runtime = VipPresenceRuntime::default();
+        let now = Instant::now();
+        let contact = |channel| {
+            Ok::<_, Box<dyn std::error::Error>>(VipPresenceRow {
+                entry: 26,
+                notify,
+                channel: Some(channel),
+                ..row(Status::Online)?
+            })
+        };
+        let Some(Refresh::Read(plan)) = runtime.begin(session()?, 1, true, now) else {
+            return Err("initial read".into());
+        };
+        let (before, moves) = runtime
+            .complete(session()?, plan, Some(vec![contact(id(7))?]), now)
+            .ok_or("initial presence")?;
+        assert!(!before.entries[0].announce);
+        assert!(moves.is_empty());
+        let at = now + CONFIRM;
+        let Some(Refresh::Read(plan)) = runtime.begin(session()?, 1, true, at) else {
+            return Err("refresh read".into());
+        };
+        let (after, moves) = runtime
+            .complete(session()?, plan, Some(vec![contact(id(8))?]), at)
+            .ok_or("updated presence")?;
+        assert_eq!(after.entries[0].announce, notify);
+        assert_eq!(moves.as_slice(), if notify { &[26][..] } else { &[] });
+    }
     Ok(())
 }

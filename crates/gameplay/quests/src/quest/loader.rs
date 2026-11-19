@@ -636,6 +636,7 @@ mod tests {
             crate::quest::world_callbacks::EMBEDDED,
             // QMECH source cohorts retain their separate registration owners.
             include_str!("../../../../../content/quests/world-callbacks/children-grease.json"),
+            include_str!("../../../../../content/quests/world-callbacks/dream-courts.json"),
             include_str!("../../../../../content/quests/world-callbacks/engenc2-cults.json"),
             include_str!("../../../../../content/quests/world-callbacks/ice-islands-seals.json"),
             include_str!("../../../../../content/quests/world-callbacks/m07-dreamer-levers.json"),
@@ -673,6 +674,9 @@ mod tests {
             include_str!("../../../../../content/quests/authored-world-callbacks.json"),
             include_str!("../../../../../content/quests/questpc7-world-callbacks.json"),
             include_str!("../../../../../content/quests/world-callbacks/feaster-phase-routes.json"),
+            include_str!(
+                "../../../../../content/quests/world-callbacks/threatened-dreams-mosaic-treasure.json"
+            ),
             include_str!("../../../../../content/quests/questl2-djinn-world.json"),
         ];
         let mut expected = std::collections::BTreeSet::new();
