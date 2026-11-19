@@ -1,3 +1,7 @@
+use super::srx3_native_source_cast_fixtures::{
+    NATIVE_TURN_TIMEOUT, drain_ready_monster_melee_at, native_melee_work_due,
+    settle_monster_melee_at as settle,
+};
 use super::{TestResult, fixture::debug};
 
 use crate::foundation::{CommandId, CommandRef, ExactActorRef};
@@ -8,13 +12,7 @@ use oteryn_gameplay_encounters::bosses::goshnars_greed::{self as model, GreedEff
 
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
-use std::future::{Future, poll_fn};
-
 use std::sync::Arc;
-
-use std::task::Poll;
-
-use std::time::Duration;
 
 pub(super) async fn exercise(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -200,17 +198,12 @@ pub(super) async fn exercise(
         .pause_greed_after_spawn_for_test(model::STRONG_SOUL)
         .map_err(debug)?;
     let mut transformed_at = None;
-    'turns: for tick in 1..=12 {
+    for tick in 1..=12 {
         let now = lethal_at + tick * 1_000_000;
         heal(owner, admitted).await?;
-        for _ in 0..24 {
-            if poll_boundary(owner, &signal, now).await? {
-                transformed_at = Some(now);
-                break 'turns;
-            }
-            if !current_work(owner, now).await? {
-                break;
-            }
+        if drive_to_boundary(owner, &signal, now).await? {
+            transformed_at = Some(now);
+            break;
         }
     }
     let transformed_at =
@@ -516,31 +509,6 @@ async fn only_actor(
     Ok(*actor)
 }
 
-async fn current_work(owner: &ComposedFreshAdmission<'_, '_, '_>, now: u64) -> TestResult<bool> {
-    let runtime = owner.runtime.lock().await;
-    let states = owner.states.spell_states.lock().await;
-    let native = owner
-        .active_generation
-        .and_then(|active| active.native_gameplay())
-        .ok_or("actual native work context")?;
-    Ok(states.native_profile_pass.has_pending()
-        || crate::gameplay_transport::source_death::next_source_work(&runtime, &states, native)
-            .map_err(debug)?
-            .is_some_and(|(_, due)| due <= now))
-}
-
-async fn settle(owner: &ComposedFreshAdmission<'_, '_, '_>, now: u64) -> TestResult {
-    for _ in 0..32 {
-        owner
-            .drain_monster_melee_at(SemanticTimeMicros::from_micros(now))
-            .await;
-        if !current_work(owner, now).await? {
-            return Ok(());
-        }
-    }
-    Err("actual original source work did not settle".into())
-}
-
 async fn heal(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
@@ -569,34 +537,35 @@ async fn reach_boundary(
     signal: &Arc<tokio::sync::Notify>,
     now: u64,
 ) -> TestResult {
-    for _ in 0..32 {
-        if poll_boundary(owner, signal, now).await? {
-            return Ok(());
-        }
+    if drive_to_boundary(owner, signal, now).await? {
+        return Ok(());
     }
     Err("actual source callback did not reach its observed boundary".into())
 }
 
-async fn poll_boundary(
+async fn drive_to_boundary(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     signal: &Arc<tokio::sync::Notify>,
     now: u64,
 ) -> TestResult<bool> {
-    let mut reached = std::pin::pin!(signal.notified());
-    let mut actual =
-        std::pin::pin!(owner.drain_monster_melee_at(SemanticTimeMicros::from_micros(now)));
-    // Returning drops the actual future, SQL transaction and runtime guards.
-    Ok(tokio::time::timeout(
-        Duration::from_secs(10),
-        poll_fn(|cx| {
-            if reached.as_mut().poll(cx).is_ready() {
-                Poll::Ready(true)
-            } else if actual.as_mut().poll(cx).is_ready() {
-                Poll::Ready(false)
-            } else {
-                Poll::Pending
+    let drive = async {
+        loop {
+            drain_ready_monster_melee_at(owner, now).await?;
+            if !native_melee_work_due(owner, now).await? {
+                return Ok(false);
             }
-        }),
-    )
-    .await?)
+            tokio::task::yield_now().await;
+        }
+    };
+    tokio::time::timeout(NATIVE_TURN_TIMEOUT, async {
+        // Keep the signal armed while driving the same semantic instant. Winning
+        // the signal branch drops the paused SQL transaction and runtime guards.
+        tokio::select! {
+            biased;
+            () = signal.notified() => Ok(true),
+            result = drive => result,
+        }
+    })
+    .await
+    .map_err(|_| "actual source callback did not reach its observed boundary")?
 }

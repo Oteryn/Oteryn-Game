@@ -1,4 +1,5 @@
 //! Source-qualified native USE crosses the real activity barrier and starts real actors.
+use super::srx3_native_source_cast_fixtures::drain_ready_monster_melee_at;
 #[path = "srx3_soulpit_native/capture.rs"]
 mod capture;
 #[path = "srx3_soulpit_native/early_exit.rs"]
@@ -297,6 +298,7 @@ fn native_soulpit_scenario_with_entry_cue(
             if fault_after_commit {
                 crate::gameplay_transport::native_activity::srx3_faults::stop_after_soulpit_commit_once();
             }
+            h.root.await_ready().await?;
             let result = if fault_after_commit { owner
                 .dispatch_soulpit_items(
                     deps.actor,
@@ -627,6 +629,7 @@ fn native_soulpit_scenario_with_entry_cue(
                 }
             );
             drop(runtime);
+            h.root.await_ready().await?;
             owner
                 .drive_shared_soulpits(owner.owner_now().get(), false)
                 .await
@@ -958,7 +961,7 @@ async fn fight_source_monster(
             .clock_origin
             .checked_sub(std::time::Duration::from_secs(3))
             .ok_or("advance native combat owner clock")?;
-        owner.drain_monster_melee().await;
+        drain_ready_monster_melee_at(owner, owner.owner_now().get()).await?;
         owner
             .drive_shared_soulpits(owner.owner_now().get(), false)
             .await
@@ -970,7 +973,7 @@ async fn fight_source_monster(
             .clock_origin
             .checked_sub(std::time::Duration::from_micros(1_600_001))
             .ok_or("actual native opponent attack window")?;
-        owner.drain_monster_melee().await;
+        drain_ready_monster_melee_at(owner, owner.owner_now().get()).await?;
         owner
             .drive_shared_soulpits(owner.owner_now().get(), false)
             .await

@@ -2,6 +2,59 @@ use super::fixture::debug;
 
 use super::TestResult;
 
+use crate::gameplay_transport::ComposedFreshAdmission;
+use oteryn_simulation_determinism::SemanticTimeMicros;
+use std::time::Duration;
+
+pub(super) const NATIVE_TURN_TIMEOUT: Duration = Duration::from_secs(10);
+
+pub(super) async fn drain_ready_monster_melee_at(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    now: u64,
+) -> TestResult {
+    // These fixtures have no Node maintenance pump. A previous pass may still
+    // be returning its holder, or cancellation may have retired it.
+    owner.root.await_ready().await?;
+    owner
+        .drain_monster_melee_at(SemanticTimeMicros::from_micros(now))
+        .await;
+    Ok(())
+}
+
+pub(super) async fn native_melee_work_due(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    now: u64,
+) -> TestResult<bool> {
+    let runtime = owner.runtime.lock().await;
+    let states = owner.states.spell_states.lock().await;
+    let native = owner
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .ok_or("actual native work context")?;
+    Ok(states.next_monster_ai_pass_us <= now
+        || states.native_profile_pass.has_pending()
+        || crate::gameplay_transport::source_death::next_source_work(&runtime, &states, native)
+            .map_err(debug)?
+            .is_some_and(|(_, due)| due <= now))
+}
+
+pub(super) async fn settle_monster_melee_at(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    now: u64,
+) -> TestResult {
+    tokio::time::timeout(NATIVE_TURN_TIMEOUT, async {
+        loop {
+            drain_ready_monster_melee_at(owner, now).await?;
+            if !native_melee_work_due(owner, now).await? {
+                return Ok(());
+            }
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .map_err(|_| "actual native work did not settle at its scheduled instant")?
+}
+
 /// One current death: at most one detached turn per copied event, its completion,
 /// and the retained uncredited corpse ACK. Never advance the source clock here.
 pub(super) async fn drain_source_death(
