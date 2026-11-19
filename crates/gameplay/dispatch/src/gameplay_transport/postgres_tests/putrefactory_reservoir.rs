@@ -87,7 +87,7 @@ pub(super) fn callback() -> TestResult<Callback> {
         "return_on_failure":false,
         "reversible":false,
         "requires_world_admission":true,
-        "sources":["Crystal 201189f8, rotten_blood_quest/creaturescripts_putrefactory-x.lua:155-224"]
+        "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/creaturescripts_putrefactory-x.lua:155-224"]
     }))?)
 }
 

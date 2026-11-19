@@ -349,6 +349,10 @@ fn scenario_case(
     let target_swap = name == "fish-napping-key-target-swap";
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
+    let forgemaster = matches!(
+        name,
+        super::super::forgemaster_chest::LOCKED | super::super::forgemaster_chest::OPEN
+    );
     let draconia_escape = name.starts_with("draconia-escape-");
     let vestibule = matches!(
         name,
@@ -361,7 +365,9 @@ fn scenario_case(
         super::super::putrefactory_reservoir::LEGACY |
         super::super::putrefactory_reservoir::PASSIVE
     );
-    let mut callback = if reservoir {
+    let mut callback = if forgemaster {
+        super::super::forgemaster_chest::callback()?
+    } else if reservoir {
         super::super::putrefactory_reservoir::callback()?
     } else if vestibule {
         super::super::step_health_loss::callback()?
@@ -2070,6 +2076,15 @@ fn scenario_case(
                 &callback,
                 name,
             )
+            .await?;
+        } else if forgemaster {
+            Box::pin(super::super::forgemaster_chest::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &callback,
+                name == super::super::forgemaster_chest::OPEN,
+            ))
             .await?;
         } else if reservoir {
             Box::pin(super::super::putrefactory_reservoir::exercise(&mut owner, &mut admitted, &h, deps.actor, name)).await?;

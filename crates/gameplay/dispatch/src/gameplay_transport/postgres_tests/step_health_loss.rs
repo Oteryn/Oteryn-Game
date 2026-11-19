@@ -85,7 +85,7 @@ pub(super) fn callback() -> TestResult<Callback> {
         "offerings":[], "return_on_failure":true, "reversible":false,
         "teleport":EJECT,
         "success_message":UNPAID,
-        "sources":["Crystal 201189f8, rotten_blood_quest/movements_blood_entrance.lua:7-44"]
+        "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/movements_blood_entrance.lua:7-44"]
     }))?)
 }
 
