@@ -89,7 +89,7 @@ fn expected_scenes() -> Result<&'static [ExpectedScene], oteryn_world_bundle::Er
                         .map_err(|error| error.to_string())?;
                     if document.tiles.is_empty()
                         || document.tiles.len() > 4096
-                        || document.native_frame.floor_transform != "native_floor=-source_z"
+                        || document.native_frame.floor_transform != "native_floor=source_z"
                         || document.native_frame.origin_x != 0
                         || document.native_frame.origin_y != 0
                     {
@@ -99,6 +99,9 @@ fn expected_scenes() -> Result<&'static [ExpectedScene], oteryn_world_bundle::Er
                     let mut sectors = BTreeSet::new();
                     for (index, tile) in document.tiles.iter().enumerate() {
                         let [x, y, z] = tile.source_position;
+                        if tile.native_position != tile.source_position {
+                            return Err("source callback position differs from Global z".into());
+                        }
                         let floor = i8::try_from(z)
                             .ok()
                             .filter(|z| (0..=15).contains(z))

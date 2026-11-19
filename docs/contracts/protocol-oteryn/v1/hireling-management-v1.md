@@ -32,7 +32,7 @@ canonical and its semantic result can be represented.
 `00 || count:u8` precedes zero to ten entries. Each entry contains identity:16bytes,
 name-byte-count:u8, ASCII name:3..18bytes, sex:u8 (1 male,2 female), look-type:u16,
 four color bytes, skill-bits:u8, outfit-bits:u16, placed:u8. A placed entry adds
-x:u16,y:u16,native-floor:i8 (-15..0). Skill bits0..3 mean Banker,Cook,Steward,Trader;
+x:u16,y:u16,Global floor i8 (0..15, ground 7). Skill bits0..3 mean Banker,Cook,Steward,Trader;
 outfit bits0..8 mean Banker,Cook,Steward,Trader,Servant,Hydra,Ferumbras,Bonelord,Dragon.
 Unused bits are zero. A complete reply is at most512 bytes. Partial entries are invalid.
 

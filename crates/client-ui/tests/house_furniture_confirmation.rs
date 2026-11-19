@@ -12,13 +12,13 @@ fn furniture_requires_review_of_exact_item_and_destination() -> Result<(), &'sta
         item: [1; 16],
         expected_revision: 2,
         acl_revision: 3,
-        position: [10, 20, -7],
+        position: [10, 20, 7],
     };
     assert!(!request(&mut panel, action.encode()));
     assert!(!panel.pending);
-    assert!(panel.feedback.contains("10, 20, floor -7"));
+    assert!(panel.feedback.contains("10, 20, floor 7"));
     let changed = Request {
-        position: [11, 20, -7],
+        position: [11, 20, 7],
         ..action
     };
     assert!(!request(&mut panel, changed.encode()));

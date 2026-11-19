@@ -74,7 +74,7 @@ mod tests {
                     &item,
                     Placement {
                         hook,
-                        ..Placement::at(x, 5, -7)
+                        ..Placement::at(x, 5, 7)
                     },
                 )
             })

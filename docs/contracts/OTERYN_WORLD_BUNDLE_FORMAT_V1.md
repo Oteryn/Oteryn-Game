@@ -1,6 +1,6 @@
-# Oteryn World Bundle format (v8; the file name keeps V1)
+# Oteryn World Bundle format v9
 
-- Format ID: `OTERYN_WORLD_BUNDLE/v8` (v1 through v7 are retired and have no reader; see "Format v2", "Format v3" and "Format v4" below)
+- Format ID `OTERYN_WORLD_BUNDLE/v9`. The reader also admits pinned v8 artifacts. Versions v1 through v7 are retired.
 - Owner: `Oteryn/Oteryn-Game`, MAP-BUNDLE-1 (ADR-0021 §5)
 - Status: **CANDIDATE.** ADR-0005 §3 requires an accepted schema contract before a runtime
   treats a serializer as a permanent format. This document is accepted together with
@@ -27,6 +27,18 @@ This document fixes the byte layout, the manifest, the checksums and digest, the
 `build_class`, versioning and the reader limits. It does not decide the in-memory model, the
 loader or the overlay (MAP-LOAD-1, MAP-OVERLAY-1).
 
+## Floor convention
+
+Version 9 stores Tibia Global z as an integer from 0 through 15, with ground
+at 7. The convention applies to the manifest extent and subareas, sector rows,
+teleport destinations, epoch layers, spawn sources and NPC placements. Floor
+ordering keeps the same physical traversal as v8: deepest floor first.
+
+The v8 reader validates historical artifacts against their original digest
+domain and signed floor layout. The Rust map-index API projects both versions
+to the same signed keys for existing overlays and storage consumers. Placement
+key numeric values and storage consumers retain their existing representation.
+
 ## 2. File layout
 
 All integers are little endian unless the payload grammar (§5) says varint.
@@ -34,7 +46,7 @@ All integers are little endian unless the payload grammar (§5) says varint.
 | Offset | Size | Field | Rule |
 |---|---|---|---|
 | 0 | 4 | magic | `"OTWB"` |
-| 4 | 2 | `format_version` u16 | `8` |
+| 4 | 2 | `format_version` u16 | `9` |
 | 6 | 2 | reserved u16 | `0` |
 | 8 | 4 | `manifest_length` u32 | at most `MAP01-BUNDLE-MANIFEST-BYTES` |
 | 12 | 4 | `sector_count` u32 | at most `MAP01-BUNDLE-SECTOR-COUNT` |
@@ -60,13 +72,13 @@ reader rejects unknown fields at every level (fail closed); a new field needs a 
 |---|---|
 | `layers` | Optional compiled epoch layers (§17), covered by the bundle digest. Omitted when empty. |
 | `subareas` | Typed client-mask admission (§15), covered by the bundle digest. |
-| `format` | `"OTERYN_WORLD_BUNDLE/v8"` |
-| `min_reader_version` | lowest reader `format_version` able to read the file; `8` |
+| `format` | `"OTERYN_WORLD_BUNDLE/v9"` |
+| `min_reader_version` | lowest reader `format_version` able to read the file, `9` |
 | `projection_class` | `"server"` (ADR-0021 §4.2). A client projection is not part of v1. |
 | `compiler_version` | set by the compiler, never by its caller: `oteryn-world-bundle-compiler/<crate version> zstd/<library version>` (§6) |
 | `build_class` | `"production"` or `"non-production"`, §8 |
 | `identity` | the compiler inputs copied unchanged: `project_format_version`, `world_schema_version`, `content_revision`, `content_lock_digest`, `min_runtime_version`, `required_capabilities` (list), `ruleset_compatibility` (list), `provenance_summary` (ADR-0005 §3, DUR-04 §9) |
-| `world` | `min_x`, `min_y`, `max_x`, `max_y` (native, half-open) and `floors`: native floors strictly ascending within `-15..0` (ADR-0021 §4.3) |
+| `world` | `min_x`, `min_y`, `max_x`, `max_y` (native, half-open) and `floors`: Global z strictly descending within `0..15` (ADR-0021 §4.3) |
 | `palette` | list of `{key, family, id, terrain}` (`terrain`: Format v2); the list index is the bundle palette index used by the payloads |
 | `draft_areas` | keys of the draft areas compiled in, sorted and unique; empty in a production bundle |
 | `skipped_provisional_keys` | provisional keys skipped in this build, sorted and unique; empty in a production bundle |
@@ -84,12 +96,12 @@ two builds of the same input produce the same palette.
 
 ## 4. Sector table
 
-One 50-byte row per non-empty sector (at least one tile), strictly ascending by
-`(floor, sy, sx)`. The row's floor must be one of the manifest's `world.floors`:
+One 50-byte row per non-empty sector (at least one tile), strictly deepest floor first, then ascending by
+`(sy, sx)`. The row's floor must be one of the manifest's `world.floors`:
 
 | Offset | Size | Field |
 |---|---|---|
-| 0 | 1 | `floor` i8, native |
+| 0 | 1 | `floor` u8, Global z |
 | 1 | 1 | reserved, `0` |
 | 2 | 2 | `sx` u16, sector x = `x / 32`, below 2048 |
 | 4 | 2 | `sy` u16, sector y = `y / 32`, below 2048 |
@@ -110,7 +122,7 @@ checksum flag set, and a declared content size equal to `raw_length`. It decompr
 
 - the item palette index points into the bundle `palette` (§3), not the World Project
   `index.json`;
-- the `teleport` floor byte holds the native floor as an `i8`, not legacy `z`.
+- the `teleport` floor byte holds Global z from 0 through 15.
 
 The grammar in short (varints are LEB128): `tile_count`, then per tile ascending by `(y, x)` the
 position delta, `control = item_count << 3 | zones << 2 | house << 1 | flags`, the present
@@ -130,7 +142,7 @@ already writes canonical varints.
 
 - **Per sector.** The table row holds the SHA-256 of the stored frame. A reader checks it before
   it decompresses the frame, so a corrupt frame never reaches the decompressor.
-- **Bundle digest.** `SHA-256("OTERYN_WORLD_BUNDLE/v8" || 0x00 || file[0 .. len − 32])`, stored
+- **Bundle digest.** `SHA-256("OTERYN_WORLD_BUNDLE/v9" || 0x00 || file[0 .. len − 32])`, stored
   as the last 32 bytes. It covers the header, the manifest (including `build_class` and the
   content revision), the tables and every frame, the spawn and NPC frames included. It is the bundle identity used for pinning
   (ADR-0021 §4.2), the Ground `map_revision` (§4.4) and `MapItemMaterialization`.
@@ -143,11 +155,11 @@ already writes canonical varints.
 A placement key names one top-level base entry of the bundle (ADR-0021 §4.2 and §4.4):
 
 ```text
-placement_key = x << 32 | y << 16 | (−floor) << 8 | ordinal        (u64)
+placement_key = x << 32 | y << 16 | z << 8 | ordinal        (u64)
 ```
 
 `ordinal` is the index of the entry among the top-level entries (depth 0) of its tile in
-payload order, below 64 (`MAP01-TILE-BASE-ENTRIES`). A floor outside `-15..0` or an ordinal of
+payload order, below 64 (`MAP01-TILE-BASE-ENTRIES`). A Global z outside `0..15` or an ordinal of
 64 or more has no key. Contents of a container have no key of
 their own; they belong to their top-level entry.
 
@@ -248,7 +260,7 @@ and closes OPEN-4; MAP-BUNDLE-1b-2 implements OPEN-1 and OPEN-2 (key resolution)
   palette is regenerated with them, those ids stay provisional donor keys (below).
 - **OPEN-3, orphan teleports. Answered (Q3 split) and implemented (1b-1).** A teleport
   attribute is compared with the Transition.Teleport record from its tile (project frame):
-  - a record to the same destination: kept, with the destination floor mapped to native;
+  - a record to the same destination: kept, with the destination floor mapped to Global z;
   - destination (0,0,0): not a teleport. The attribute is dropped with a diagnostic, and the
     entry's placement key goes into `dropped_teleports` (§3). The tile keeps its `action` and
     `unique` bindings. The list is a production release parity report, not a release blocker;
@@ -289,8 +301,8 @@ and closes OPEN-4; MAP-BUNDLE-1b-2 implements OPEN-1 and OPEN-2 (key resolution)
   every nonzero house id must be in the House family, every source entry must resolve (a key the
   resolver does not know fails even inside a skipped subtree), and every entry must keep its depth,
   attributes and palette key. The only exceptions are the rules above: subtrees under keys the
-  resolver calls provisional are skipped, (0,0,0) teleports are dropped, and teleport floors are
-  native. Every teleport is checked again against the Transition.Teleport family, and every
+  resolver calls provisional are skipped, (0,0,0) teleports are dropped, and teleport floors use
+  Global z. Every teleport is checked again against the Transition.Teleport family, and every
   record must meet its attribute. The bundle holds no other tile, `skipped_provisional_keys` is
   exactly the set of provisional keys met, and `dropped_teleports` is exactly the set of
   placement keys derived from the source. The run on #1170 head `2ffba017` (with #1160 `ee19179e` merged in) stops, as it
@@ -386,8 +398,8 @@ the sources:
 
 - `creature_count`, then per creature, strictly ascending by key: `key` (varint length and
   ASCII `0x21..=0x7E` bytes, at most 128) and `period` u8 (`0` All, `1` Night).
-- `source_count`, then per source, strictly ascending by key: `key` (as above), `floor` i8
-  (native), centre `x` and `y` (varints), `point_count` (at least 1), and per point in authored
+- `source_count`, then per source, strictly ascending by key: `key` (as above), `floor` u8
+  (Global z), centre `x` and `y` (varints), `point_count` (at least 1), and per point in authored
   order: `creature` (varint index into the creature table), `dx` and `dy` (zigzag varints, point
   minus centre), `direction` u8 (`0` north, `1` east, `2` south, `3` west) and `respawn_ms`
   (varint).
@@ -478,7 +490,7 @@ empty table.
 
 - `npc_count`, then per NPC, strictly ascending by key: `key` (varint length and ASCII
   `0x21..=0x7E` bytes, at most 128, starting `oteryn:npc.`) and `placement_count` (at least 1).
-- Per placement, strictly ascending by (`floor`, `y`, `x`): `floor` i8 (native, one of
+- Per placement, deepest floor first, then ascending by (`y`, `x`): `floor` u8 (Global z, one of
   `world.floors`), `y` and `x` (varints) and `direction` u8 (`0` north, `1` east, `2` south, `3`
   west).
 - Every placement is inside the World extent. No two placements of the bundle share a cell; the
@@ -563,7 +575,7 @@ Admission re-decodes the existing framed LZMA/BMP assets, verifies the compresse
 and decoded hashes and raw import dimensions/anchor/provenance, and requires exact
 agreement with the candidate's nonzero 32-bit pixel runs. BMP top-down and bottom-up
 orientation are handled explicitly. The source frame maps x/y unchanged and z to
-native floor `-z`. All 209 existing masks are at source z=7; no vertical projection,
+Global z. All 209 existing masks are at source z=7; no vertical projection,
 underground approximation, rectangle replacement or fallback id is admitted.
 
 Source masks must be disjoint. Native admission intersects each mask with served,
@@ -576,7 +588,7 @@ dropped at compile time. This is reachability from a subarea entry, not a promis
 that every region is reachable from the World's starting town without quest gates.
 
 Native membership is a list of half-open horizontal runs `{floor,y,begin,end,subarea}`
-sorted by `(floor,y,begin)`, disjoint across all masks. Reader and writer reject
+sorted deepest floor first, then by `(y,begin)`, disjoint across all masks. Reader and writer reject
 bad order, overlaps, out-of-world runs, unknown ids, malformed hashes, bad parents,
 and counts that disagree with the runs. Lookup is a binary search over these runs;
 unknown coverage remains unknown. The empty/default table is only for synthetic
@@ -628,7 +640,7 @@ a committed claim. It adds no wire payload or Platform authority.
 ## 16. Format v6 (C20d-W23)
 
 Version 6 carries each area's `town_id` (the source engine town id or null),
-`hometown` flag, and `temple` (native `{x,y,floor}` or null). Hometowns require
+`hometown` flag, and `temple` (Global `{x,y,floor}` or null). Hometowns require
 a positive unique town id and a temple; other areas carry neither. The catalogue
 retains the 19 hometowns admitted by the city content and the default starter
 town from the committed OTBM town sample. Runtime compatibility

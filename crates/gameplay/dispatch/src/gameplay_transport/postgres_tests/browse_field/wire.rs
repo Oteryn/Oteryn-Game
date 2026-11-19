@@ -200,7 +200,7 @@ async fn autowalk(client: &mut DuplexStream, harness: &Harness) -> TestResult {
     let opened = views(client).await?;
     assert_eq!(opened.views[0].browse.ok_or("walked field")?.position, far);
     for (command_id, position) in [
-        (2, WorldTilePosition { floor: -8, ..far }),
+        (2, WorldTilePosition { floor: 8, ..far }),
         (3, WorldTilePosition { x: 1, ..FIELD }),
     ] {
         let payload = encode_browse_field_intent(&BrowseFieldIntent::Open { position }).map_err(debug)?;

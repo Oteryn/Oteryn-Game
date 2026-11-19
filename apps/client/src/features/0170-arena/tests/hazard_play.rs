@@ -79,7 +79,7 @@ fn play(selected_only: bool) -> Result<(), Error> {
                         snapshot.selected = [1, 4];
                         snapshot.entries.clear();
                     }
-                    let payload = oteryn_session::arena::append_drome_hazards(
+                    let payload = oteryn_session::arena::append_wire_drome_hazards(
                         oteryn_session::arena::DromeResult {
                             disposition: 1,
                             phase: 2,

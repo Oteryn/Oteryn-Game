@@ -11,7 +11,7 @@ fn tutorial_current_world_compiles_twice_and_accepts_the_islet_start() -> Result
         EntryStart {
             x: 32534,
             y: 32513,
-            floor: -7,
+            floor: 7,
         },
         &registry,
     )?;
@@ -23,7 +23,7 @@ fn tutorial_entry_start_requires_ground_and_a_steppable_orthogonal_neighbour() {
     let at = EntryStart {
         x: 32534,
         y: 32513,
-        floor: -7,
+        floor: 7,
     };
     assert!(check_cells(at, &BTreeMap::new()).is_err());
     assert!(

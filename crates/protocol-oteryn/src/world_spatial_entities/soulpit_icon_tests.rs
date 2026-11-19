@@ -13,7 +13,7 @@ fn srx3_soulpit_creature_icon_field14_requires_negotiated_native_carrier()
         position: ActorPosition {
             x: 32373,
             y: 31151,
-            floor: -8,
+            floor: 8,
         },
         detail: EntityDetail::Actor {
             direction: StepDirection::South,
@@ -57,7 +57,7 @@ fn srx3_soulpit_creature_icon_refuses_wrong_category_shape_count_and_object()
         position: ActorPosition {
             x: 32373,
             y: 31151,
-            floor: -8,
+            floor: 8,
         },
         detail: EntityDetail::Actor {
             direction: StepDirection::South,
@@ -92,7 +92,7 @@ fn srx3_native_creature_icons_preserve_order_duplicate_ids_and_visible_zero()
         position: ActorPosition {
             x: 32373,
             y: 31151,
-            floor: -8,
+            floor: 8,
         },
         detail: EntityDetail::Actor {
             direction: StepDirection::South,
@@ -190,7 +190,7 @@ fn srx3_native_creature_icons_general_hazard_preserves_source_u16_points()
         position: ActorPosition {
             x: 32373,
             y: 31151,
-            floor: -8,
+            floor: 8,
         },
         detail: EntityDetail::Actor {
             direction: StepDirection::South,

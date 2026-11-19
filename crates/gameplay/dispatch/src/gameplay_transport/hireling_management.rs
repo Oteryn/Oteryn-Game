@@ -23,7 +23,7 @@ pub(super) use composed_methods;
 pub(super) async fn execute(owner:&ComposedFreshAdmission<'_,'_,'_>,admitted:AdmittedSession,command:u64,request:wire::Request)->Option<Vec<u8>>{
     if !admitted.continuity.selected_capabilities.contains(wire::CAPABILITY_HIRELING_MANAGEMENT_V1){return None}
     let fence=admitted.item_fence?;
-    let reply=match request {
+    let mut reply=match request {
         wire::Request::Projection=>{
             let actor=admitted.runtime_actor?;
             super::hireling::refresh(owner,actor,UseCommand{game_session_id:admitted.game_session_id,command_id:command,item_fence:Some(fence)}).await?;
@@ -37,5 +37,15 @@ pub(super) async fn execute(owner:&ComposedFreshAdmission<'_,'_,'_>,admitted:Adm
             super::hireling::refresh_if_house(owner,admitted.runtime_actor?,UseCommand{game_session_id:admitted.game_session_id,command_id:command,item_fence:Some(fence)}).await?;reply
         }
     };
-    reply.encode()
+    if let wire::Reply::State(entries) = &mut reply {
+        for entry in entries {
+            if let Some((_, _, floor)) = &mut entry.position {
+                if !(-15..=0).contains(floor) {
+                    return None;
+                }
+                *floor = -*floor;
+            }
+        }
+    }
+    reply.encode_wire()
 }

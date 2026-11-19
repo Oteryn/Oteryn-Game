@@ -130,7 +130,7 @@ pub(super) async fn exercise(
     let destination = oteryn_protocol_oteryn::item_view::WorldTilePosition {
         x: i32::from(TILE.x),
         y: i32::from(TILE.y),
-        floor: i16::from(TILE.floor),
+        floor: -i16::from(TILE.floor),
     };
     let (next, outcome, payload) = super::map_seed_planting_fixtures::drop_exchange_at(
         owner,

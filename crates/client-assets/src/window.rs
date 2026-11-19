@@ -174,7 +174,7 @@ impl ResolvedWindow {
 
 /// A start-floor placement; the encoded value is a stack count or, for fluids, the subtype.
 fn placement(x: i32, y: i32, encoded: Option<u8>, floor: u8) -> Placement {
-    let mut placement = Placement::at(x, y, -i32::from(floor));
+    let mut placement = Placement::at(x, y, i32::from(floor));
     placement.count = u32::from(encoded.unwrap_or(1));
     placement.sub_type = u32::from(encoded.unwrap_or(0));
     placement

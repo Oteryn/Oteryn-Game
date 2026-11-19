@@ -93,7 +93,7 @@ fn placement(
 ) -> Option<Vec<u8>> {
     let x = u16::try_from(position.x).ok()?;
     let y = u16::try_from(position.y).ok()?;
-    let z = u8::try_from(position.floor.checked_neg()?).ok()?;
+    let z = u8::try_from(position.floor).ok()?;
     let key =
         (u64::from(x) << 32) | (u64::from(y) << 16) | (u64::from(z) << 8) | u64::from(ordinal);
     let mut placement = header.bundle_digest.to_vec();

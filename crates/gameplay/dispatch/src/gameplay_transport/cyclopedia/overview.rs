@@ -70,7 +70,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let base = position.map.overlay.base();
         let step = 1u32 << query.zoom;
         if query.floor == 127 {
-            let Ok(floor) = i8::try_from(position.at.floor) else {
+            let Ok(floor) = i8::try_from(-position.at.floor) else {
                 return GuildReply::Rejected;
             };
             query.floor = floor;
@@ -92,7 +92,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .subareas
             .runs
             .iter()
-            .filter(|run| run.floor == query.floor)
+            .filter(|run| -run.floor == query.floor)
         {
             let Some(row) = u32::from(run.y)
                 .checked_sub(u32::from(query.y))
@@ -142,7 +142,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let mut markers = Vec::new();
         for (key, at) in npcs {
-            if -at.floor == i16::from(query.floor)
+            if at.floor == i16::from(query.floor)
                 && let (Ok(x), Ok(y)) = (u16::try_from(at.x), u16::try_from(at.y))
                 && inside(x, y)
             {
@@ -156,7 +156,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         for (floor, x, y, _) in base
             .tiles()
-            .filter(|(floor, x, y, _)| *floor == query.floor && inside(*x, *y))
+            .filter(|(floor, x, y, _)| -*floor == query.floor && inside(*x, *y))
         {
             let pos = crate::map::overlay::TilePos { x, y, floor };
             if position.map.floors.contains(pos) || position.map.floors.teleport(pos).is_some() {
@@ -165,7 +165,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     x,
                     y,
                     label: if let Some(to) = position.map.floors.teleport(pos) {
-                        format!("Passage to {},{},{}", to.x, to.y, to.floor)
+                        format!("Passage to {},{},{}", to.x, to.y, -to.floor)
                     } else {
                         "Floor passage".into()
                     },

@@ -1,6 +1,6 @@
 {
   "schema": "OTERYN_WORLD_PIN/v2",
-  "digest": "929aa4c238519e0aae17338982ef4324fa58cada44b97e5493c813e29cc4914c",
+  "digest": "1fd2bce378e5221b1a7aecd15879854f0071d6baebb82f56dbff5ddb832ae4f1",
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
   "content_revision": "seasonal-cake-creature-20261107-r1",
@@ -8,6 +8,6 @@
   "entry_start": {
     "x": 32534,
     "y": 32513,
-    "floor": -7
+    "floor": 7
   }
 }

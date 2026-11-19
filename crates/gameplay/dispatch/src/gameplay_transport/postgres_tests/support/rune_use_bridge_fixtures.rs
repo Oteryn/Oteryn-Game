@@ -282,7 +282,7 @@ async fn client_cast(
                 use_with_position: Some(SpellTargetPosition {
                     x: VICTIM.x,
                     y: VICTIM.y,
-                    floor: VICTIM.floor - 1,
+                    floor: 1 - VICTIM.floor,
                 }),
                 ..intent.clone()
             };
@@ -298,7 +298,7 @@ async fn client_cast(
                 use_with_position: Some(SpellTargetPosition {
                     x: VICTIM.x,
                     y: VICTIM.y,
-                    floor: VICTIM.floor,
+                    floor: -VICTIM.floor,
                 }),
                 ..intent.clone()
             };

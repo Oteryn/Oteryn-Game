@@ -98,15 +98,15 @@ fn encode_snapshot(
         .map(|fact| {
             // Adding a new durable kind must explicitly decide its negotiated wire representation.
             let oteryn_gameplay_quests::quest::map_marks::MapMarkKind::Cross = fact.marker.kind;
-            PersonalMapMark {
+            Some(PersonalMapMark {
                 key: fact.key,
                 x: fact.marker.position.x,
                 y: fact.marker.position.y,
-                floor: fact.marker.position.floor,
+                floor: fact.marker.position.floor.checked_neg()?,
                 text: fact.marker.text,
-            }
+            })
         })
-        .collect::<Vec<_>>();
+        .collect::<Option<Vec<_>>>()?;
     // PostgreSQL's database collation is not the protocol's byte ordering.
     marks.sort_by(|left, right| left.key.cmp(&right.key));
     PersonalMapMarks(marks).encode()
@@ -174,7 +174,7 @@ mod tests {
             wire.0
                 .iter()
                 .all(|mark| (mark.x, mark.y, mark.floor, mark.text.as_str())
-                    == (31948, 31924, -7, "Treasure"))
+                    == (31948, 31924, 7, "Treasure"))
         );
         assert!(
             encode_snapshot(QuestMapMarksSnapshot {

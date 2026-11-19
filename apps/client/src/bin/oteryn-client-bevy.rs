@@ -1,5 +1,9 @@
 //! Opt-in production composition; the legacy client entry point remains intact.
 fn main() -> std::process::ExitCode {
+    #[cfg(windows)]
+    if let Some(result) = oteryn_client::updater::login_update_requested() {
+        return result;
+    }
     oteryn_client::crash_report::install_hook();
     #[cfg(windows)]
     let _instance = match oteryn_client::win_mutex::acquire_client_instance() {

@@ -67,7 +67,7 @@ fn native_minimap_click_reaches_the_server_walk_path()
                     let own = ActorPosition {
                         x: 100,
                         y: 200,
-                        floor: -7,
+                        floor: 7,
                     };
                     let initial = WorldMapViewSnapshot {
                         header: MapViewHeader {
@@ -75,7 +75,7 @@ fn native_minimap_click_reaches_the_server_walk_path()
                             bundle_digest: [0; 32],
                             reset_epoch: 1,
                             origin: own,
-                            first_visible_floor: -7,
+                            first_visible_floor: 7,
                         },
                         tiles: vec![],
                     };
@@ -106,7 +106,7 @@ fn native_minimap_click_reaches_the_server_walk_path()
                         commands,
                         outbox,
                     ));
-                    let mut view = PlayView::new(TileCoord::new(100, 200), -7, &[])?;
+                    let mut view = PlayView::new(TileCoord::new(100, 200), own.floor, &[])?;
                     tokio::time::timeout(Duration::from_secs(5), async {
                         loop {
                             view.tick(&link).map_err(|e| format!("{e:?}"))?;
@@ -135,7 +135,7 @@ fn native_minimap_click_reaches_the_server_walk_path()
                         ActorPosition {
                             x: 101,
                             y: 200,
-                            floor: -7
+                            floor: 7
                         }
                     );
                     assert_eq!(view.own(), TileCoord::new(100, 200));

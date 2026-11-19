@@ -625,7 +625,7 @@ content_revision = "{pin['content_revision']}"
 production = false
 start_x = 32369
 start_y = 32238
-start_floor = -7''')
+start_floor = 7''')
 PY_WORLD
   fi
   if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform || "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
