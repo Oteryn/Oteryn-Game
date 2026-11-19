@@ -348,12 +348,12 @@ mod tests {
         let a = ActorPosition {
             x: 10,
             y: 20,
-            floor: -7,
+            floor: 7,
         };
         let b = ActorPosition {
             x: 13,
             y: 21,
-            floor: -7,
+            floor: 7,
         };
         assert_eq!(distance(a, b), 3);
     }

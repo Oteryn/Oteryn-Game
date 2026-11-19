@@ -6,7 +6,7 @@
 //! type 1 and snapshot type 1.
 //!
 //! Decoding is strict: zero or unknown enum values, unknown or repeated fields, over-bound payloads,
-//! a spell index of zero, a floor outside the int16 range, a `target_position` present without the
+//! a spell index of zero, a floor outside Global z 0..=15, a `target_position` present without the
 //! `POSITION` intent (or absent with it), a bool other than 0 or 1, a vital above its SPELL-D8 bound
 //! and a Harmony above 5 all fail closed. A standard proto3 encoder omits a scalar field holding its
 //! default value, so decoding accepts that omission and defaults the field; semantic presence is
@@ -28,10 +28,10 @@ pub const SNAPSHOT_TYPE_ACTOR_VITALS_V1: u32 = 1;
 /// Without it, field 5 fails closed as any unknown field does.
 pub const CAPABILITY_SPELL_AIM_MODE_V1: u32 = 480;
 
-/// SPELL-D7 bound. The canonical worst case is 28 bytes: `spell` (1 tag + 5-byte uint32 varint = 6),
-/// `target` (1 + 1 = 2), `target_position` (1 tag + 1 length + x 6 + y 6 + int16 floor 4 = 18) and
+/// SPELL-D7 bound. The canonical worst case is 26 bytes: `spell` (1 tag + 5-byte uint32 varint = 6),
+/// `target` (1 + 1 = 2), `target_position` (1 tag + 1 length + x 6 + y 6 + Global floor 2 = 16) and
 /// `aim_at_target` (1 + 1 = 2). WU26-14 `aim_mode` (1 + 1 = 2) excludes `aim_at_target`, so with
-/// it the worst case stays 28 bytes.
+/// it the worst case stays 26 bytes.
 pub const MAX_SPELL_CAST_INTENT_BYTES: usize = 32;
 /// A single small enum field (1 tag + 1 value byte = 2), with the same slack as
 /// `MAX_STEP_RESULT_BYTES` in `world_spatial.rs`.
@@ -49,7 +49,7 @@ pub const MAX_HARMONY: u32 = 5;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ActorSpellError {
     /// Not a valid encoding of the schema, or a value outside its declared domain (zero or unknown
-    /// enum, spell index 0, floor outside int16, Harmony above 5, bool other than 0 or 1).
+    /// enum, spell index 0, floor outside 0..=15, Harmony above 5, bool other than 0 or 1).
     Malformed,
     /// The payload is over its byte bound, or a vital is above its SPELL-D8 value bound.
     LimitExceeded,
@@ -324,11 +324,14 @@ pub(crate) fn decode_position(input: &[u8]) -> Result<SpellTargetPosition, Actor
         let value = decode_sint32(read_varint(input, &mut cursor)?)?;
         set_once(slot, value)?;
     }
-    let floor = i16::try_from(floor.unwrap_or(0)).map_err(|_| ActorSpellError::Malformed)?;
+    let floor = floor.unwrap_or(0);
+    if !(0..=15).contains(&floor) {
+        return Err(ActorSpellError::Malformed);
+    }
     Ok(SpellTargetPosition {
         x: x.unwrap_or(0),
         y: y.unwrap_or(0),
-        floor,
+        floor: floor as i16,
     })
 }
 
@@ -672,15 +675,14 @@ mod tests {
                 intent(1, position(0, 0, 0), false),
                 vec![0x08, 0x01, 0x10, 0x03, 0x1a, 0x00],
             ),
-            // Worst case, 28 bytes: spell u32::MAX = FF FF FF FF 0F; x i32::MIN -> zigzag
+            // Largest valid position: spell u32::MAX = FF FF FF FF 0F; x i32::MIN -> zigzag
             // 0xFFFFFFFF = FF FF FF FF 0F; y i32::MAX -> zigzag 0xFFFFFFFE = FE FF FF FF 0F;
-            // floor i16::MIN -> zigzag 65535 = FF FF 03; inner length 16 = 0x10; aim 20 01.
+            // floor 15 -> zigzag 30 = 1E; inner length 14 = 0x0E; aim 20 01.
             (
-                intent(u32::MAX, position(i32::MIN, i32::MAX, i16::MIN), true),
+                intent(u32::MAX, position(i32::MIN, i32::MAX, 15), true),
                 vec![
-                    0x08, 0xff, 0xff, 0xff, 0xff, 0x0f, 0x10, 0x03, 0x1a, 0x10, 0x08, 0xff, 0xff,
-                    0xff, 0xff, 0x0f, 0x10, 0xfe, 0xff, 0xff, 0xff, 0x0f, 0x18, 0xff, 0xff, 0x03,
-                    0x20, 0x01,
+                    0x08, 0xff, 0xff, 0xff, 0xff, 0x0f, 0x10, 0x03, 0x1a, 0x0e, 0x08, 0xff, 0xff,
+                    0xff, 0xff, 0x0f, 0x10, 0xfe, 0xff, 0xff, 0xff, 0x0f, 0x18, 0x1e, 0x20, 0x01,
                 ],
             ),
         ]
@@ -747,12 +749,9 @@ mod tests {
             assert_eq!(decode_spell_cast_intent(&bytes), Ok(value), "{bytes:02x?}");
         }
         // The canonical worst case stays inside the SPELL-D7 bound.
-        let worst = encode_spell_cast_intent(&intent(
-            u32::MAX,
-            position(i32::MIN, i32::MIN, i16::MIN),
-            true,
-        ));
-        assert_eq!(worst.len(), 28);
+        let worst =
+            encode_spell_cast_intent(&intent(u32::MAX, position(i32::MIN, i32::MIN, 15), true));
+        assert_eq!(worst.len(), 26);
         // Field order is not significant, and explicit proto3 defaults decode as omitted ones.
         assert_eq!(
             decode_spell_cast_intent(&[0x20, 0x01, 0x10, 0x02, 0x08, 0x07]),
@@ -768,10 +767,10 @@ mod tests {
             ]),
             Ok(intent(1, position(0, 0, 0), false))
         );
-        // The int16 floor edges are accepted: 32767 -> zigzag 65534 = FE FF 03.
+        // The deepest Global floor is accepted: 15 -> zigzag 30 = 1E.
         assert_eq!(
-            decode_spell_cast_intent(&[0x08, 0x01, 0x10, 0x03, 0x1a, 0x04, 0x18, 0xfe, 0xff, 0x03]),
-            Ok(intent(1, position(0, 0, i16::MAX), false))
+            decode_spell_cast_intent(&[0x08, 0x01, 0x10, 0x03, 0x1a, 0x02, 0x18, 0x1e]),
+            Ok(intent(1, position(0, 0, 15), false))
         );
     }
 
@@ -930,14 +929,14 @@ mod tests {
             decode_aimed_spell_cast_intent(&[0x08, 0x01, 0x10, 0x01, 0x28, 0x00]),
             Ok(aimed(1, SpellTarget::None, None))
         );
-        // The aimed worst case stays at 28 bytes, inside the SPELL-D7 bound.
+        // The aimed worst case is 26 bytes, inside the SPELL-D7 bound.
         let worst = encode_aimed_spell_cast_intent(&aimed(
             u32::MAX,
-            position(i32::MIN, i32::MIN, i16::MIN),
+            position(i32::MIN, i32::MIN, 15),
             Some(SpellAimMode::Cursor),
         ))
         .expect("aimed worst case");
-        assert_eq!(worst.len(), 28);
+        assert_eq!(worst.len(), 26);
         assert!(SCHEMA.contains("SpellAimMode aim_mode = 5;"));
     }
 

@@ -91,11 +91,11 @@ fn browse_field_native_controls_and_results() {
         selected: true,
         ..Default::default()
     };
-    assert!(native::submit(&mut p, false, ["bad", "200", "-7", "0", "0"]).is_none());
+    assert!(native::submit(&mut p, false, ["bad", "200", "7", "0", "0"]).is_none());
     assert!(!p.pending);
-    let command = native::submit(&mut p, false, ["100", "200", "-7", "0", "0"]);
+    let command = native::submit(&mut p, false, ["100", "200", "7", "0", "0"]);
     assert!(
-        matches!(command, Some(c) if c.capability == 230 && c.command_type == 440 && decode_browse_field_intent(&c.payload) == Ok(BrowseFieldIntent::Open { position: WorldTilePosition { x: 100, y: 200, floor: -7 } }))
+        matches!(command, Some(c) if c.capability == 230 && c.command_type == 440 && decode_browse_field_intent(&c.payload) == Ok(BrowseFieldIntent::Open { position: WorldTilePosition { x: 100, y: 200, floor: 7 } }))
     );
     assert!(!native::enabled(&p));
     assert!(native::result_text(&p).contains("Waiting"));

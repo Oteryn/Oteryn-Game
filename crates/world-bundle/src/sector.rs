@@ -133,6 +133,13 @@ fn mask_of(item: &Item) -> u64 {
 
 /// Encodes tiles of one sector. The caller supplies them sorted strictly ascending by (y, x).
 pub fn encode(tiles: &[Tile]) -> Result<Vec<u8>, Error> {
+    encode_with_floors(tiles, None)
+}
+
+pub(crate) fn encode_with_floors(
+    tiles: &[Tile],
+    floors: Option<crate::bundle::FloorEncoding>,
+) -> Result<Vec<u8>, Error> {
     let mut out = Vec::new();
     put(&mut out, tiles.len() as u64);
     let mut previous: i64 = -1;
@@ -188,7 +195,7 @@ pub fn encode(tiles: &[Tile]) -> Result<Vec<u8>, Error> {
             if let Some((x, y, floor)) = a.teleport {
                 put(&mut out, x.into());
                 put(&mut out, y.into());
-                out.push(floor);
+                out.push(floors.map_or(floor, |encoding| encoding.encode(floor as i8)));
             }
             a.depot.iter().for_each(|v| put(&mut out, (*v).into()));
         }
@@ -263,9 +270,19 @@ pub(crate) fn truncated() -> Error {
 /// Rejects trailing bytes and unknown attribute bits.
 pub fn decode(
     payload: &[u8],
+    sector: (u16, u16),
+    limits: TileLimits,
+    budget: &mut Budget,
+) -> Result<Vec<Tile>, Error> {
+    decode_with_floors(payload, sector, limits, budget, None)
+}
+
+pub(crate) fn decode_with_floors(
+    payload: &[u8],
     (sx, sy): (u16, u16),
     limits: TileLimits,
     budget: &mut Budget,
+    floors: Option<crate::bundle::FloorEncoding>,
 ) -> Result<Vec<Tile>, Error> {
     if sx >= 2048 || sy >= 2048 {
         return Err(Error::Format(
@@ -362,7 +379,12 @@ pub fn decode(
                     a.description = Some(r.text(limits)?);
                 }
                 if mask & TELEPORT_BIT != 0 {
-                    a.teleport = Some((r.u16("teleport x")?, r.u16("teleport y")?, r.byte()?));
+                    let (x, y, byte) = (r.u16("teleport x")?, r.u16("teleport y")?, r.byte()?);
+                    let floor = match floors {
+                        Some(encoding) => encoding.decode(byte)? as u8,
+                        None => byte,
+                    };
+                    a.teleport = Some((x, y, floor));
                 }
                 if mask & DEPOT_BIT != 0 {
                     a.depot = Some(r.u16("depot")?);

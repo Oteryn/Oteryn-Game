@@ -18,7 +18,7 @@ pub(super) async fn observe(
     let ItemKey::BrowseField { x, y, floor } = key else { return None; };
     let fence = fence?;
     let position = WorldTilePosition { x, y, floor };
-    let pos = TilePos { x: u16::try_from(x).ok()?, y: u16::try_from(y).ok()?, floor: i8::try_from(floor).ok()? };
+    let pos = TilePos { x: u16::try_from(x).ok()?, y: u16::try_from(y).ok()?, floor: i8::try_from(floor.checked_neg()?).ok()? };
     if !(-15..=0).contains(&pos.floor) || !admission.ensure_source_map_initialized().await {
         return Some(ContainerObservation::Gone);
     }
@@ -36,7 +36,7 @@ pub(super) async fn observe(
             return Some(ContainerObservation::Gone);
         }
         let at = super::bundle_map_position(&mut runtime, admission.movement_cells(), actor)?;
-        let here = WorldTilePosition { x: at.at.x, y: at.at.y, floor: at.at.floor };
+        let here = WorldTilePosition { x: at.at.x, y: at.at.y, floor: -at.at.floor };
         match browse_rules::reach(here, position) {
             browse_rules::Reach::Adjacent => {},
             browse_rules::Reach::Walk | browse_rules::Reach::WrongFloor => return Some(ContainerObservation::TooFar),

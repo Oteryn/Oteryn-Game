@@ -175,7 +175,7 @@ fn pc06_cyclopedia_map_scenario() -> Result<(), Error> {
                     }
                     let intent = Intent::Query;
                     let payload = vec![];
-                    let reply = wire::encode_result(&wire::MapResult {
+                    let reply = wire::encode_wire_result(&wire::MapResult {
                         code: 0,
                         revision: 1,
                         discovered: false,
@@ -184,7 +184,7 @@ fn pc06_cyclopedia_map_scenario() -> Result<(), Error> {
                         pool: 200,
                         epoch: 3,
                         improved: false,
-                        visible: vec![(100, 200, -7)],
+                        visible: vec![(100, 200, 7)],
                     })
                     .checked()?;
                     send(

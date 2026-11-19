@@ -409,7 +409,7 @@ pub(super) async fn drive(
             target: actor_spell::SpellTarget::Position(actor_spell::SpellTargetPosition {
                 x: 1,
                 y: 11,
-                floor: -7,
+                floor: 7,
             }),
             aim_at_target: true,
         };

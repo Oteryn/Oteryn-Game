@@ -57,7 +57,7 @@ fn cl6_forge_marks_reach_native_name_glyphs_and_clear_with_visibility() -> Resul
         "forge marks describe creatures only"
     );
     entry.entity.kind = oteryn_session::EntityKind::Creature;
-    entry.entity.position.floor = -1;
+    entry.entity.position.floor = 1;
     scene.set_presentations_from(&[entry], 0, None)?;
     assert!(scene.names.is_empty());
     scene.set_presentations_from(&[], 0, None)?;
@@ -112,7 +112,7 @@ fn live_outfit_uses_server_look_and_empty_outfit_suppresses_pixels() -> Result<(
     entry.look = Some(oteryn_session::Look::EmptyOutfit);
     scene.set_presentations_from(&[entry.clone()], 0, None)?;
     assert!(scene.actor_draws[0].1.is_empty());
-    entry.entity.position.floor = -1;
+    entry.entity.position.floor = 1;
     scene.set_presentations_from(&[entry], 0, None)?;
     assert_eq!(scene.name_count(), 0);
     Ok(())

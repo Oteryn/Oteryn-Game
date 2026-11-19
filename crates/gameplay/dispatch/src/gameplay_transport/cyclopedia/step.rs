@@ -96,7 +96,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             Ok(bytes) => {
-                if wire::decode_result(&bytes).is_ok_and(|result| {
+                if wire::decode_retained_result(&bytes).is_ok_and(|result| {
                     result.discovered && result.found == 7 && result.revision > before.get()
                 }) {
                     self.states.tutorial_sessions.notice(

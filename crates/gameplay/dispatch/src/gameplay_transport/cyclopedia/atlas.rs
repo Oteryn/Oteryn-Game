@@ -29,7 +29,7 @@ pub(super) async fn dispatch(
 }
 fn project(table: &oteryn_world_bundle::subarea::Table, request: Request) -> Option<Reply> {
     wire::encode_request(request).ok()?;
-    if request.floor == 1 {
+    if request.floor == wire::AREA_LIST {
         if request.area != 0
             && !table
                 .areas
@@ -94,7 +94,7 @@ fn project(table: &oteryn_world_bundle::subarea::Table, request: Request) -> Opt
     let runs: Vec<_> = table
         .runs
         .iter()
-        .filter(|run| run.floor == request.floor && members.contains(&run.subarea))
+        .filter(|run| -run.floor == request.floor && members.contains(&run.subarea))
         .collect();
     if runs.len() > wire::MAX_RUNS {
         return None;
@@ -185,7 +185,7 @@ mod tests {
             &table,
             Request {
                 area: 0,
-                floor: 1,
+                floor: wire::AREA_LIST,
                 after: 0,
             },
         )
@@ -198,7 +198,7 @@ mod tests {
             &table,
             Request {
                 area: 1,
-                floor: 1,
+                floor: wire::AREA_LIST,
                 after: 0,
             },
         )
@@ -211,7 +211,7 @@ mod tests {
             &table,
             Request {
                 area: 1,
-                floor: -7,
+                floor: 7,
                 after: 0,
             },
         )
@@ -228,7 +228,7 @@ mod tests {
             &table,
             Request {
                 area: 1,
-                floor: -7,
+                floor: 7,
                 after: 1,
             },
         )
@@ -241,7 +241,7 @@ mod tests {
             &table,
             Request {
                 area: 1,
-                floor: -6,
+                floor: 6,
                 after: 0,
             },
         )

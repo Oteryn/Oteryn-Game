@@ -133,7 +133,7 @@ struct PlannedTile {
 #[derive(Debug, Clone)]
 pub struct MapPlan {
     header: MapViewHeader,
-    /// The non-empty tiles in wire order `(floor, y, x)`.
+    /// The non-empty tiles in wire order, deepest floor first.
     tiles: Vec<PlannedTile>,
     entries: Vec<PlannedEntry>,
     /// The handle-bearing entries within the budget, nearest first.
@@ -219,7 +219,7 @@ fn position(pos: TilePos) -> ActorPosition {
     ActorPosition {
         x: i32::from(pos.x),
         y: i32::from(pos.y),
-        floor: i16::from(pos.floor),
+        floor: -i16::from(pos.floor),
     }
 }
 
@@ -435,8 +435,8 @@ fn plan_with_house<F: MapFacts>(
             content_generation: source.content_generation,
             bundle_digest: source.digest(),
             reset_epoch: source.reset_epoch,
-            origin: actor,
-            first_visible_floor: i16::from(first_visible_floor),
+            origin: position(at),
+            first_visible_floor: -i16::from(first_visible_floor),
         },
         tiles,
         entries,

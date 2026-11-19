@@ -158,7 +158,7 @@ fn pin(digest: &str) -> Value {
         "world_schema_version": "reference-schema-v1",
         "content_revision": reviewed_revision(),
         "production": false,
-        "entry_start": {"x": 32369, "y": 32238, "floor": -7},
+        "entry_start": {"x": 32369, "y": 32238, "floor": 7},
     })
 }
 
@@ -444,10 +444,11 @@ fn pin_check_accepts_the_reviewed_pin_and_refuses_every_drift() {
     let good = pin(&digest);
     dir.write_json(&dir.pin_file(), &good);
 
-    // Refresh migrates v1 without changing bundle identity or the reviewed entry cell.
+    // Refresh migrates v1 and its signed floor while preserving the bundle identity and entry cell.
     let mut legacy = good.clone();
     legacy["schema"] = json!("OTERYN_WORLD_PIN/v1");
     legacy["inputs_digest"] = json!("0".repeat(64));
+    legacy["entry_start"]["floor"] = json!(-7);
     dir.write_json(&dir.pin_file(), &legacy);
     let refresh = Command::new(BIN)
         .arg("pin-refresh")
@@ -456,6 +457,14 @@ fn pin_check_accepts_the_reviewed_pin_and_refuses_every_drift() {
         .expect("compiler runs");
     assert!(refresh.status.success(), "{}", stderr(&refresh));
     assert_eq!(dir.json(&dir.pin_file()), good);
+    let topology = fs::read_to_string(dir.path("deploy/synology-game/preprod-topology.toml"))
+        .expect("refreshed topology");
+    assert_eq!(
+        topology
+            .lines()
+            .find(|line| line.starts_with("start_floor = ")),
+        Some("start_floor = 7")
+    );
     let report: Value = serde_json::from_slice(&refresh.stdout).unwrap();
     assert_eq!(report["pins"][0]["digest"], digest);
 
@@ -494,6 +503,7 @@ fn pin_check_accepts_the_reviewed_pin_and_refuses_every_drift() {
     // `blocks_movement` blocks.
     let mut cells = vec![
         (5, 5, 0),
+        (32369, 32238, -7),
         (10228, 10032, 99),
         (34000, 33000, 0),
         (10228, 10032, 0),
@@ -511,7 +521,7 @@ fn pin_check_accepts_the_reviewed_pin_and_refuses_every_drift() {
                 .iter()
                 .flatten()
                 .find(|t| t.kind == TerrainKind::Ground);
-            let cell = (tile.x, tile.y, sector.floor);
+            let cell = (tile.x, tile.y, -sector.floor);
             if blocked.is_none()
                 && (terrains
                     .iter()
@@ -555,7 +565,7 @@ fn pin_check_accepts_the_reviewed_pin_and_refuses_every_drift() {
         assert!(
             !out.status.success() && stderr(&out).contains("entry_start"),
             "{x} {y} {floor} (inside bounds: {}): {}",
-            extent.contains(x, y, floor),
+            extent.contains(x, y, -floor),
             stderr(&out)
         );
     }

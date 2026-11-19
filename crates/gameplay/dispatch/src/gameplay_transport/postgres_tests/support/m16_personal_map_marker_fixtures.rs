@@ -101,7 +101,7 @@ pub(super) async fn exercise(
     let expected = vec![QuestMapMark {
         x: 31948,
         y: 31924,
-        floor: -7,
+        floor: 7,
         text: "Treasure".into(),
     }];
     let (before, delta) =
@@ -148,7 +148,7 @@ pub(super) async fn exercise(
             "oteryn:quest-reward/targuna/sterling-mark-treasure",
             31948,
             31924,
-            -7,
+            7,
             "Treasure"
         )
     );

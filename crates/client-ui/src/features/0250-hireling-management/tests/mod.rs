@@ -12,7 +12,7 @@ fn entry() -> wire::Entry {
         colors: [1, 2, 3, 4],
         skills: 15,
         outfits: 1,
-        position: Some((7, 9, -1)),
+        position: Some((7, 9, 1)),
     }
 }
 #[test]
@@ -35,7 +35,7 @@ fn hireling_management_selects_server_identity_and_sends_outfit()
             status: CommandStatus::Accepted,
             server_sequence: 1,
             payload: wire::Reply::State(vec![e.clone()])
-                .encode()
+                .encode_wire()
                 .ok_or("encode")?
         }
     ));

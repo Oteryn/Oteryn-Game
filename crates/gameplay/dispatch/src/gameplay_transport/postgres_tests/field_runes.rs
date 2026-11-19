@@ -1274,7 +1274,7 @@ async fn field_scenario_inner(
             assert!(
                 delta.tiles.iter().any(|tile| tile.position.x == start.x + 1
                     && tile.position.y == start.y
-                    && tile.position.floor == -7
+                    && tile.position.floor == start.floor
                     && tile.items.len() > 1),
                 "appearance reaches the persistent real map consumer"
             );
@@ -2591,8 +2591,8 @@ async fn projected_field_count(
             if item.definition == oteryn_protocol_oteryn::world_map::MapDefinition::Item(reference)
             {
                 assert_eq!(
-                    tile.position.floor, -7,
-                    "runtime floor converts to the bundle floor once"
+                    tile.position.floor, 7,
+                    "the map snapshot publishes the Global floor"
                 );
                 count += 1;
             }

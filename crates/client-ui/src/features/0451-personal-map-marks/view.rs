@@ -76,28 +76,28 @@ mod tests {
             key: "sterling".into(),
             x: 31948,
             y: 31924,
-            floor: -7,
+            floor: 7,
             text: "Treasure".into(),
         };
         let marks = PersonalMapMarks(vec![mark]);
         let own = TileCoord::new(20, 30);
         let anchor = TileCoord::new(31928, 31894);
         assert_eq!(
-            project(&marks, own, anchor, -7, 1),
+            project(&marks, own, anchor, 7, 1),
             vec![TileCoord::new(15, 12)]
         );
-        assert!(project(&marks, own, anchor, -8, 1).is_empty());
-        assert!(project(&marks, own, anchor, -7, 0).is_empty());
+        assert!(project(&marks, own, anchor, 8, 1).is_empty());
+        assert!(project(&marks, own, anchor, 7, 0).is_empty());
         assert_eq!(
-            project(&marks, TileCoord::new(10, 10), anchor, -7, 2),
+            project(&marks, TileCoord::new(10, 10), anchor, 7, 2),
             vec![TileCoord::new(20, 22)]
         );
-        assert!(project(&marks, TileCoord::new(0, 0), anchor, -7, 1).is_empty());
-        assert!(project(&marks, TileCoord::new(i32::MIN, 0), anchor, -7, 1).is_empty());
+        assert!(project(&marks, TileCoord::new(0, 0), anchor, 7, 1).is_empty());
+        assert!(project(&marks, TileCoord::new(i32::MIN, 0), anchor, 7, 1).is_empty());
         assert_eq!(
-            caption(&marks, own, anchor, -7),
+            caption(&marks, own, anchor, 7),
             vec!["Treasure", "31948, 31924 / 7"]
         );
-        assert!(caption(&marks, own, anchor, -8).is_empty());
+        assert!(caption(&marks, own, anchor, 8).is_empty());
     }
 }

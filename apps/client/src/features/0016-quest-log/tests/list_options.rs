@@ -149,7 +149,7 @@ fn review14_list_only_accepts_personal_map_marks() -> Result<(), String> {
     outbox.quest_result(&oteryn_session::GatedCommandResult {
         command_id: 1, status: oteryn_client_runtime::CommandStatus::Accepted, server_sequence: 1,
         payload: encode_quest_log(&QuestLog {
-            map_marks: vec![oteryn_client_runtime::quest_log::QuestMapMark { x: 100, y: 100, floor: -7, text: "Treasure".into() }],
+            map_marks: vec![oteryn_client_runtime::quest_log::QuestMapMark { x: 100, y: 100, floor: 7, text: "Treasure".into() }],
             view: Some(QuestLogView::List(list.clone())), tracked: vec![],
         }).map_err(|error| format!("{error:?}"))?,
     });

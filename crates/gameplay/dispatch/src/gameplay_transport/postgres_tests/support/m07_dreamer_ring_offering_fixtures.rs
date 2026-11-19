@@ -40,7 +40,7 @@ pub(super) async fn exercise(
     let destination = WorldTilePosition {
         x: 99,
         y: 101,
-        floor: -11,
+        floor: 11,
     };
     let keys = dreamer_death_ring::TREES.map(|p| {
         oteryn_world_bundle::bundle::placement_key(p.floor, p.x, p.y, 1).ok_or("tree key")

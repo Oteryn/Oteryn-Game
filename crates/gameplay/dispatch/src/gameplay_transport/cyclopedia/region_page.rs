@@ -17,7 +17,7 @@ pub(super) fn page(table: &Table, after: u32) -> Option<Vec<u8>> {
             x: r.begin,
             end: r.end,
             y: r.y,
-            floor: r.floor,
+            floor: -r.floor,
         })
         .collect();
     let mut ids = std::collections::BTreeSet::new();

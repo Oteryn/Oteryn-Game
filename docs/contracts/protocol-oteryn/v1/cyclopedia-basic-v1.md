@@ -22,7 +22,7 @@ The server never accepts a position, world, epoch, Premium flag or respawn facto
 code u8, Character revision u64, discovered bool u8, found u8, area percent u8,
 World pool u64,
 reset epoch u64, respawn factor u8 (1 or 2), visible count u8, then count records
-of x u16, y u16, native floor i8. At most eight records. Code 0 success, 1 invalid,
+of x u16, y u16, Global floor i8 from 0 through 15. At most eight records. Code 0 success, 1 invalid,
 2 historical Premium refusal, 3 already discovered, 4 historical no-exploration
 refusal, 5 insufficient reachable pool, 6 insufficient funds, 7 historical area-improved
 refusal. Current donations remain allowed during an active boost and fund a future
@@ -98,14 +98,14 @@ not a newly claimed official formula.
 
 Command 72 additionally accepts the explicit nine-byte opt-in body `ff 01`,
 `area:u32`, `floor:i8`, `after:u16`, all multibyte scalars little endian.
-Floor 1 lists the admitted region's children (`area=0` lists top-level regions),
-using an exclusive page offset at most 1024. Native floors -15..0 request the
+The reserved selector 127 lists the admitted region's children (`area=0` lists top-level regions),
+using an exclusive page offset at most 1024. Global floors 0..15 request the
 selected area's geometry; `after` then identifies a 1024-span page, starting at 0.
 No position, discovery completion, Premium state, POI pool or donation authority
 is supplied by this read-only extension.
 
 Atlas replies have their own strict codec and an absolute 10,264-byte bound.
-Legacy empty queries and their fixed basic-map reply codec remain unchanged.
+Legacy empty queries and the basic-map reply retain the same shape. The transport projects retained receipt floors into Global z before encoding a reply.
 
 - Kind 1: parent:u32, offset:u16, next:u16 (0=end), count:u8 (at most 16), then
   area records: id:u32, parent:u32 (0=root), name length:u16 and 1..256 UTF-8 bytes.

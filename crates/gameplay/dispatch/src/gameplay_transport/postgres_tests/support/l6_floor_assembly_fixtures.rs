@@ -337,7 +337,7 @@ pub(super) async fn exercise_at(
         oteryn_protocol_oteryn::item_view::WorldTilePosition {
             x: i32::from(altar.x),
             y: i32::from(altar.y),
-            floor: i16::from(altar.floor),
+            floor: -i16::from(altar.floor),
         },
     )
     .await?;
@@ -382,7 +382,7 @@ pub(super) async fn exercise_at(
         oteryn_protocol_oteryn::item_view::WorldTilePosition {
             x: i32::from(altar.x),
             y: i32::from(altar.y),
-            floor: i16::from(altar.floor),
+            floor: -i16::from(altar.floor),
         },
     )
     .await?;
@@ -436,7 +436,7 @@ async fn ruby_exercise(
     let destination = oteryn_protocol_oteryn::item_view::WorldTilePosition {
         x: i32::from(altar.x),
         y: i32::from(altar.y),
-        floor: i16::from(altar.floor),
+        floor: -i16::from(altar.floor),
     };
     let (next, result, payload) = super::map_seed_planting_fixtures::drop_exchange_at(
         owner,
@@ -921,7 +921,7 @@ pub(super) async fn assemble_claimed_helmet(
     let cell = WorldTilePosition {
         x: i32::from(altar.x),
         y: i32::from(altar.y),
-        floor: i16::from(altar.floor),
+        floor: -i16::from(altar.floor),
     };
     for id in 3222..=3228 {
         let definition = items

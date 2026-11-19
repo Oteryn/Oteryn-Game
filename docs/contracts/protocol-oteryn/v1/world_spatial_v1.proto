@@ -66,7 +66,7 @@ message WorldActorStepResultV1 {
 message ActorPositionV1 {
   sint32 x = 1;
   sint32 y = 2;
-  // Limited to the int16 range.
+  // Global z in 0..15 inclusive. Ground is 7. Negative floors are invalid.
   sint32 floor = 3;
 }
 

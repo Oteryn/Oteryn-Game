@@ -1,5 +1,8 @@
 # Spatial actor display names (S-ENTNAME)
 
+All actor, creature, corpse and item positions use Tibia Global z. The floor is an
+integer from 0 through 15, ground is 7, and negative floors are invalid.
+
 Capability 286 `WORLD_SPATIAL_ENTITIES_V2` requires capability 6
 `WORLD_SPATIAL_ENTITIES`. It extends the existing domain 1 snapshot/delta type 2
 entry with field 13 `display_name`; it adds no command or state domain.

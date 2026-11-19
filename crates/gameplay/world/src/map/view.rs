@@ -378,10 +378,10 @@ pub struct WindowLayout {
 impl WindowLayout {
     /// `None` for an origin floor outside the native floors.
     pub fn of(origin: TilePos) -> Option<Self> {
-        let floors = floors_in_view(i16::from(origin.floor))?;
+        let floors = floors_in_view(-i16::from(origin.floor))?;
         Some(Self {
             origin,
-            first_floor: *floors.start(),
+            first_floor: -*floors.end(),
             floors: usize::from((*floors.end() - *floors.start()) as u16) + 1,
         })
     }
@@ -515,7 +515,7 @@ fn offset(pos: TilePos, dx: i32, dy: i32, up: i32) -> Option<TilePos> {
 /// position's full composed stack through `roof`.
 pub fn first_visible_floor(actor: TilePos, roof: impl Fn(TilePos) -> RoofFacts) -> i8 {
     let f = i32::from(actor.floor);
-    let mut first = i32::from(first_visible_floor_start(i16::from(actor.floor)));
+    let mut first = -i32::from(first_visible_floor_start(-i16::from(actor.floor)));
     for (index, (dx, dy)) in [(0, 0), (0, -1), (1, 0), (0, 1), (-1, 0)]
         .into_iter()
         .enumerate()

@@ -215,8 +215,8 @@ fn bundle_bytes(
         .collect();
     let manifest = Manifest {
         subareas: Default::default(),
-        format: bundle::FORMAT.into(),
-        min_reader_version: bundle::VERSION,
+        format: bundle::LEGACY_FORMAT.into(),
+        min_reader_version: bundle::LEGACY_VERSION,
         projection_class: "server".into(),
         compiler_version: "test".into(),
         build_class: BuildClass::Production,
@@ -360,7 +360,8 @@ impl Fixture {
     /// The client's window equals a fresh snapshot at its origin.
     fn assert_client_matches_a_fresh_snapshot(&mut self) {
         let client = self.client.clone().expect("joined");
-        let origin = client.header.origin;
+        let mut origin = client.header.origin;
+        origin.floor = -origin.floor;
         let source = MapViewSource {
             overlay: &self.overlay,
             facts: &self.facts,
@@ -381,7 +382,7 @@ impl Fixture {
             .as_ref()
             .expect("joined")
             .tiles
-            .get(&tile_order(&at(pos)))
+            .get(&tile_order(&position(pos)))
     }
 
     fn hide(&mut self, pos: TilePos, ordinal: u8) {
@@ -911,7 +912,7 @@ fn the_1024_nearest_entries_carry_handles_and_a_step_resends_the_tile_that_gains
     let resent = delta
         .tiles
         .iter()
-        .find(|tile| tile.position == at(far))
+        .find(|tile| tile.position == position(far))
         .expect("the far tile is resent");
     assert!(
         resent
@@ -928,7 +929,7 @@ fn the_1024_nearest_entries_carry_handles_and_a_step_resends_the_tile_that_gains
     let resent = delta
         .tiles
         .iter()
-        .find(|tile| tile.position == at(far))
+        .find(|tile| tile.position == position(far))
         .expect("the far tile is resent");
     assert_eq!(resent.items[6].origin, MapOrigin::DisplayOnly);
     fixture.assert_client_matches_a_fresh_snapshot();
@@ -971,7 +972,7 @@ fn a_diagonal_step_sends_at_most_31_tiles_per_floor_and_matches_a_fresh_snapshot
     let view = fixture.client.as_ref().expect("joined").header;
     let update = fixture.step(tp(31, 31, -7));
     let delta = decoded_delta(&fixture, &update, &view);
-    for floor in [-7, -6] {
+    for floor in [7, 6] {
         let count = delta
             .tiles
             .iter()
@@ -1018,7 +1019,7 @@ fn a_step_onto_empty_tiles_sends_the_origin_alone() {
     let update = fixture.step(next);
     let delta = decoded_delta(&fixture, &update, &view);
     assert!(delta.tiles.is_empty() && delta.cleared.is_empty());
-    assert_eq!(delta.header.origin, at(next));
+    assert_eq!(delta.header.origin, position(next));
     fixture.assert_client_matches_a_fresh_snapshot();
 }
 
@@ -1032,7 +1033,7 @@ fn an_emptied_tile_in_view_is_cleared() {
     let update = fixture.step(ACTOR);
     let delta = decoded_delta(&fixture, &update, &view);
     assert!(delta.tiles.is_empty());
-    assert_eq!(delta.cleared, vec![at(pos)]);
+    assert_eq!(delta.cleared, vec![position(pos)]);
     assert!(fixture.client_tile(pos).is_none());
     fixture.assert_client_matches_a_fresh_snapshot();
 }
@@ -1088,7 +1089,7 @@ fn an_update_that_does_not_encode_sends_nothing_and_keeps_the_view() {
             ActorPosition {
                 x: -1,
                 y: 0,
-                floor: -7
+                floor: 7
             }
         ),
         Err(MapViewError::Position)
@@ -1232,7 +1233,7 @@ fn walking_out_of_a_house_changes_only_the_header() {
             .expect("joined")
             .header
             .first_visible_floor,
-        -7
+        7
     );
     assert!(matches!(
         fixture.step(tp(21, 20, -7)),
@@ -1245,7 +1246,7 @@ fn walking_out_of_a_house_changes_only_the_header() {
             .expect("joined")
             .header
             .first_visible_floor,
-        -7
+        7
     );
 
     let view = fixture.client.as_ref().expect("joined").header;
@@ -1257,7 +1258,7 @@ fn walking_out_of_a_house_changes_only_the_header() {
     let view = fixture.client.as_ref().expect("joined").header;
     let update = fixture.step(tp(21, 20, -7));
     let delta = decoded_delta(&fixture, &update, &view);
-    assert_eq!(delta.header.first_visible_floor, -7);
+    assert_eq!(delta.header.first_visible_floor, 7);
     fixture.assert_client_matches_a_fresh_snapshot();
 
     // A stair up sends a snapshot with the new floor's value.
@@ -1280,14 +1281,14 @@ fn an_overlay_change_that_removes_the_roof_sends_the_new_value() {
             .expect("joined")
             .header
             .first_visible_floor,
-        -7
+        7
     );
     fixture.hide(roof, 0);
     let view = fixture.client.as_ref().expect("joined").header;
     let update = fixture.step(ACTOR);
     let delta = decoded_delta(&fixture, &update, &view);
     assert_eq!(delta.header.first_visible_floor, 0);
-    assert_eq!(delta.cleared, vec![at(roof)]);
+    assert_eq!(delta.cleared, vec![position(roof)]);
     fixture.assert_client_matches_a_fresh_snapshot();
 }
 
@@ -1602,7 +1603,7 @@ fn measure_viewports<F: MapFacts>(label: &str, overlay: &ChannelOverlay, facts: 
 }
 
 /// MAP-CUTOVER-1b: the admission path of a bundle World plans domain 17 from the bundle's own
-/// overlay and facts at the runtime position, with the native floor `-z`, a snapshot at join and
+/// overlay and facts at the runtime position, with Global z, a snapshot at join and
 /// a delta after a step; a fixture World has no domain 17.
 #[test]
 fn map_cutover_a_bundle_world_plans_domain_17_at_the_runtime_position() {
@@ -1692,7 +1693,7 @@ fn map_cutover_a_bundle_world_plans_domain_17_at_the_runtime_position() {
     let coin = decoded
         .tiles
         .iter()
-        .find(|tile| tile.position == at(tp(22, 21, -7)))
+        .find(|tile| tile.position == position(tp(22, 21, -7)))
         .expect("the coin tile");
     assert_eq!(
         definitions(coin),

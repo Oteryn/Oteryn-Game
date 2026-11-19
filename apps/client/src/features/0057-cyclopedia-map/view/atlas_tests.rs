@@ -27,7 +27,7 @@ fn atlas_real_playlink_projects_regions_markers_and_navigation()
         Query::default()
     );
     let query = Query {
-        floor: -7,
+        floor: 7,
         x: 100,
         y: 200,
         zoom: 0,
@@ -46,7 +46,7 @@ fn atlas_real_playlink_projects_regions_markers_and_navigation()
             pool: 0,
             epoch: 0,
             improved: false,
-            visible: vec![(102, 202, -7)],
+            visible: vec![(102, 202, 7)],
         }),
         cells: vec![2; WIDTH * HEIGHT],
         areas: vec![
@@ -113,7 +113,7 @@ fn atlas_real_playlink_projects_regions_markers_and_navigation()
     assert!(!atlas_action(&mut p, 10));
     assert_eq!(p.atlas_layers & 1, 0);
     assert!(atlas_action(&mut p, 3));
-    assert_eq!(p.atlas_query.floor, -8);
+    assert_eq!(p.atlas_query.floor, 8);
     p.atlas.as_mut().ok_or("atlas")?.progress = None;
     assert!(atlas_detail(&p).contains("Exploration unavailable"));
     p.pending = true;
