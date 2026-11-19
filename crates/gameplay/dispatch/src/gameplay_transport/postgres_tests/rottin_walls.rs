@@ -40,7 +40,9 @@ fn rottin_hammer_repairs_counts_and_resets_postgres() -> TestResult {
         return Ok(());
     };
     drop(admin);
-    scenario_thread::run_async(async |admin| {
+    let started = std::time::Instant::now();
+    eprintln!("POSTGRES_CASE_STARTED rottin_walls");
+    let result = scenario_thread::run_async(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "rottin_walls", false, false).await?;
         super::reset();
         prepare_current_session(&h).await?;
@@ -186,7 +188,13 @@ fn rottin_hammer_repairs_counts_and_resets_postgres() -> TestResult {
         drop(authority);
         drop(seal);
         result.and(h.cleanup().await)
-    })
+    });
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED rottin_walls duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
 }
 
 fn world(

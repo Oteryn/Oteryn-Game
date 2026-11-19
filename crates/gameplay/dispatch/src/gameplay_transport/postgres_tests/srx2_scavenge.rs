@@ -35,7 +35,15 @@ fn rottin_rabbit_skinning_uses_mature_corpse_and_keeps_decay_postgres() -> TestR
         return Ok(());
     };
     drop(admin);
-    scenario_thread::run("rottin-rabbit-skinning", || scenario(true))
+    let started = std::time::Instant::now();
+    eprintln!("POSTGRES_CASE_STARTED rottin-rabbit-skinning");
+    let result = scenario_thread::run("rottin-rabbit-skinning", || scenario(true));
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED rottin-rabbit-skinning duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
 }
 
 fn scenario(rabbit: bool) -> TestResult {
