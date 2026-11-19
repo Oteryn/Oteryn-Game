@@ -145,10 +145,8 @@ pub(super) fn retain_predecessor(catalogue: &mut super::QuestStateCatalogue) -> 
             .values()
             .filter(|transition| {
                 transition.quest == QUEST
-                    && !transition
-                        .key
-                        .starts_with("oteryn:quest-reward/rottin-wood/")
-                    && (!before_hammer || !transition.key.starts_with(PREFIX))
+                    && (transition.key.starts_with("oteryn:quest-transition/")
+                        || (!before_hammer && transition.key.starts_with(PREFIX)))
                     && transition
                         .effects
                         .iter()
