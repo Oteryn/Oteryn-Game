@@ -13,14 +13,14 @@ fn srx3_poor_soul_actual_world_uncredited_corpse_accepts_current_bundle_frame_po
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("srx3-poor-soul-world-corpse", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-poor-soul-world-corpse", || {
         run(async |admin| {
             super::reset();
             // Crystal201189f world-monster.xml:36787. Select the original
             // source from the actual published bundle; do not synthesize a
             // spawn table, source callback, corpse or reward principal.
             let (scene, world, entry_pin) =
-                super::srx3_soul_war_world_fixture::source_world_with_bundle(
+                super::srx3_soul_war_world_fixture_fixtures::source_world_with_bundle(
                     MovementLocalPosition {
                         x: 33851,
                         y: 31870,
@@ -103,8 +103,8 @@ fn srx3_poor_soul_actual_world_uncredited_corpse_accepts_current_bundle_frame_po
                 false,
             )
             .await?;
-            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-            super::house_transfer::prepare_owned_session(&h).await?;
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::house_transfer_fixtures::prepare_owned_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -171,7 +171,7 @@ fn srx3_poor_soul_actual_world_uncredited_corpse_accepts_current_bundle_frame_po
                 assert_eq!(begin.frame_digest(), scene.pin.frame_binding_digest());
                 begin
             };
-            super::srx3_native_source_cast::drain_source_death(&owner, poor_soul, now).await?;
+            super::srx3_native_source_cast_fixtures::drain_source_death(&owner, poor_soul, now).await?;
             {
                 let runtime = owner.runtime.lock().await;
                 assert!(!runtime.corpse_projection_pinned(poor_soul));

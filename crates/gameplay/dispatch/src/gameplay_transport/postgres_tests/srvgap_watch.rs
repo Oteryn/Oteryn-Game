@@ -39,7 +39,7 @@ fn srvgap_watch_use_reports_world_time() -> TestResult {
             sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
             owner.states.chat.admit(deps.admitted.game_session_id, "Watch user", owner.owner_now());
             let keys = ["oteryn:item.tibia.i2906", "oteryn:item.tibia.i6091"];
-            super::item_look::seed_main_backpack(&harness, &keys.map(|key| (key, 1))).await?;
+            super::item_look_fixtures::seed_main_backpack(&harness, &keys.map(|key| (key, 1))).await?;
             let initial_items: serde_json::Value = sqlx::query_scalar("SELECT jsonb_agg(to_jsonb(i) ORDER BY item_instance_id) FROM game_item_instances i").fetch_one(&harness.pool).await?;
             for (offset, key) in keys.iter().enumerate() {
                 let source = id(71 + u8::try_from(offset)?);

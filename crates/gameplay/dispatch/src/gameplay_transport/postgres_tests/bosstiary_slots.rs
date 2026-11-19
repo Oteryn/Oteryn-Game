@@ -88,7 +88,7 @@ fn scenario() -> TestResult {
         let h = Harness::create_with_admission_seed(admin, "wb2_boss_slots", true, false).await?;
         eprintln!("WB2_P02_POSTGRES_STARTED");
         prepare_current_session(&h).await?;
-        super::charm_progression::seed(&h, &[]).await?;
+        super::charm_progression_fixtures::seed(&h, &[]).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -97,7 +97,7 @@ fn scenario() -> TestResult {
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (generation, pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
         let room = pin.qualified_room().clone();
         let (pin, _, _, _) = pin.into_channel_parts();
         let deps = Dependencies::with_content(
@@ -151,11 +151,11 @@ fn scenario() -> TestResult {
         // Earn prowess through the production kill drain and its durable owner.
         let mut facts = {
             let mut rt = owner.runtime.lock().await;
-            super::bosstiary::death(&mut rt, fence)?
+            super::bosstiary_fixtures::death(&mut rt, fence)?
         };
         facts.boosted_boss = true;
-        super::bosstiary::settle(&owner, facts, boss).await?;
-        super::bosstiary::settle(&owner, facts, boss).await?;
+        super::bosstiary_fixtures::settle(&owner, facts, boss).await?;
+        super::bosstiary_fixtures::settle(&owner, facts, boss).await?;
         let count:i64=sqlx::query_scalar("SELECT kill_count FROM game_character_bosstiary_progress WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2").bind(id(41).as_slice()).bind(&boss.key).fetch_one(&h.pool).await?;
         assert_eq!(count, 3, "boosted credit and exact occurrence replay");
         let equipped = exchange(

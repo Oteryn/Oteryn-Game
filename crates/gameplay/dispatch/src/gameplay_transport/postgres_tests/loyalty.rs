@@ -24,7 +24,7 @@ fn loyalty_skills_postgres_real_dispatch_projection_replay_and_fences() -> TestR
 }
 
 fn scenario() -> TestResult {
-    use super::cyclopedia::support::exchange;
+    use super::cyclopedia_fixtures::support::exchange;
     run(async |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "loyalty_skills", true, false).await?;
@@ -262,7 +262,7 @@ fn instance_scenario() -> TestResult {
         // This fixture uses the existing control allocator, authenticated evidence,
         // ActivityHandoffOwner and current-session reader. Retaining it keeps the
         // evidence source alive; no session/assignment/handoff rows are fabricated.
-        let entered = super::activity_runtime::enter_fixture(&h).await?;
+        let entered = super::activity_runtime_fixtures::enter_fixture(&h).await?;
         let fence = entered.fence;
         assert!(matches!(
             fence.runtime_scope,

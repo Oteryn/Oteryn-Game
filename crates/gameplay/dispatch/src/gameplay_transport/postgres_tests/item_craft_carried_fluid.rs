@@ -167,7 +167,7 @@ fn scenario(case: Case, name: &str) -> TestResult {
         let cells = map
             .movement_cells(pin.qualified_room().movement_cells())
             .map_err(debug)?;
-        let bundle_room = super::rust_lottery::bundle_action_room(
+        let bundle_room = super::rust_lottery_fixtures::bundle_action_room(
             pin.qualified_room(), &map, deps.admitted.world_id, &cells,
         )?;
         let action_room = &bundle_room;
@@ -246,7 +246,7 @@ fn scenario(case: Case, name: &str) -> TestResult {
                 entries.push(("oteryn:item.tibia.i3031", 1));
             }
         }
-        super::item_look::seed_main_backpack(&harness, &entries).await?;
+        super::item_look_fixtures::seed_main_backpack(&harness, &entries).await?;
         if matches!(case, Case::Full) {
             assert_eq!(entries.len(), 20);
             let occupied: i64 = sqlx::query_scalar(
@@ -637,7 +637,7 @@ async fn exchange_carried(
         let mut source = None;
         let mut vessel = None;
         loop {
-            let raw = super::item_look::read_frame(&mut client).await?;
+            let raw = super::item_look_fixtures::read_frame(&mut client).await?;
             let envelope = crate::foundation::decode_wire_envelope(&raw)?;
             if envelope.message_type() == crate::foundation::MessageType::SnapshotChunk {
                 let (_, domains) =
@@ -699,7 +699,7 @@ async fn exchange_carried(
         client.write_all(&frame).await?;
         client.shutdown().await?;
         loop {
-            let raw = super::item_look::read_frame(&mut client).await?;
+            let raw = super::item_look_fixtures::read_frame(&mut client).await?;
             let envelope = crate::foundation::decode_wire_envelope(&raw)?;
             if envelope.message_type() == crate::foundation::MessageType::CommandResult {
                 let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
@@ -724,7 +724,7 @@ async fn exchange_carried(
     let mut end = None;
     let mut result = None;
     // This direct connection has no node task to replenish a retired DB holder.
-    let mut maintenance = std::pin::pin!(super::item_craft::maintain_ready(owner));
+    let mut maintenance = std::pin::pin!(super::item_craft_fixtures::maintain_ready(owner));
     tokio::time::timeout(
         std::time::Duration::from_secs(30),
         std::future::poll_fn(|context| {

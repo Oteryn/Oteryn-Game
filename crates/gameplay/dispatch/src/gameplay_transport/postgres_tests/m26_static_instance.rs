@@ -20,15 +20,15 @@ fn m26_spite_postgres_static_instance_map_needs_no_channel_item_custody() -> Tes
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| scenario(admin).await)
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| scenario(admin).await)
 }
 
 async fn scenario(admin: String) -> TestResult {
     let started = Instant::now();
     super::reset();
     let h = Harness::create_with_admission_seed(admin, "m26_static_instance", true, false).await?;
-    let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-    super::house_transfer::prepare_owned_session(&h).await?;
+    let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+    super::house_transfer_fixtures::prepare_owned_session(&h).await?;
     let world = super::fixture::fence(1)?.runtime_scope.world_id();
     let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../../content/spells.manifest.json");
@@ -255,7 +255,7 @@ async fn scenario(admin: String) -> TestResult {
         .await
         .map_err(debug)?;
     }
-    super::item_look::seed_main_backpack(&h, &[]).await?;
+    super::item_look_fixtures::seed_main_backpack(&h, &[]).await?;
     sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT DO NOTHING")
         .bind(id(41).as_slice()).execute(&h.pool).await?;
     owner
@@ -266,7 +266,7 @@ async fn scenario(admin: String) -> TestResult {
         .activity_runtimes
         .remember(admitted)
         .map_err(|_| "remember origin")?;
-    super::boss_activity::issue_content_and_reset(&h, &pin).await?;
+    super::boss_activity_fixtures::issue_content_and_reset(&h, &pin).await?;
     ActivityHandoffOwner::new(h.root.clone())
         .publish_qualified_boss_rooms(&h.node, std::slice::from_ref(&template))
         .await?;
@@ -274,9 +274,9 @@ async fn scenario(admin: String) -> TestResult {
         .activity_runtimes
         .register_template(&template)
         .map_err(|_| "register source template")?;
-    let instance = super::activity_runtime::allocate_ready_instance(&h, 88).await?;
+    let instance = super::activity_runtime_fixtures::allocate_ready_instance(&h, 88).await?;
     let origin_session = admitted.game_session_id;
-    let (_, reply, barrier) = super::boss_activity::exchange_command(
+    let (_, reply, barrier) = super::boss_activity_fixtures::exchange_command(
         &owner,
         &mut admitted,
         template.boss_key(),

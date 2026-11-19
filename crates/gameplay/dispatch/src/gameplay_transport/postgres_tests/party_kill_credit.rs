@@ -579,12 +579,12 @@ struct Player {
 }
 
 fn run(admin: String, case: Case) -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run_async(async move |_| {
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async move |_| {
         let h =
             crate::bestiary_postgres_harness::Harness::create(admin, "party_kill_credit", false)
                 .await?;
         let mut deps = Dependencies::new()?;
-        let (controller, pin) = super::death_ml_loss_composed::production_generation_with_pin(
+        let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
             deps.admitted.world_id,
             "content-1",
         )?;
@@ -601,7 +601,7 @@ fn run(admin: String, case: Case) -> TestResult {
         let world = if case.has_shields() {
             let lever = shield_handoff::lever(at, case)?;
             let exit = mode_exit(at)?;
-            Some(super::quest_world_callbacks::world_with_objects(
+            Some(super::quest_world_callbacks_fixtures::world_with_objects(
                 &lever, lever.selector.position.ok_or("shield lever")?,
                 &[(exit.selector.position.ok_or("exit")?, 37000)],
                 &[shield_handoff::FIRE],
@@ -610,7 +610,7 @@ fn run(admin: String, case: Case) -> TestResult {
             let easy = mode_lever(at, false)?;
             let hard = mode_lever(at, true)?;
             let exit = mode_exit(at)?;
-            Some(super::quest_world_callbacks::world_with_objects(
+            Some(super::quest_world_callbacks_fixtures::world_with_objects(
                 &easy,
                 easy.selector.position.ok_or("easy lever")?,
                 &[
@@ -623,7 +623,7 @@ fn run(admin: String, case: Case) -> TestResult {
             let callback = window_callback(at, case)?;
             let position = callback.selector.position.ok_or("exit tile")?;
             Some(if case == Case::WindowVisual {
-                super::quest_world_callbacks::world_with_objects(
+                super::quest_world_callbacks_fixtures::world_with_objects(
                     &callback,
                     position,
                     &[],
@@ -644,14 +644,14 @@ fn run(admin: String, case: Case) -> TestResult {
                 if case == Case::WindowResetAmbiguous {
                     objects.push((*reset.positions.get(1).ok_or("second crystal")?, reset.to));
                 }
-                super::quest_world_callbacks::world_with_objects(
+                super::quest_world_callbacks_fixtures::world_with_objects(
                     &callback,
                     position,
                     &objects,
                     &[reset.to],
                 )?
             } else {
-                super::quest_world_callbacks::world(&callback, position)?
+                super::quest_world_callbacks_fixtures::world(&callback, position)?
             })
         } else {
             None

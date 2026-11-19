@@ -31,7 +31,7 @@ fn direct_corpse_claim_pays_once_and_finishes_after_all_six_bosses() -> TestResu
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run_async(async move |_| {
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async move |_| {
         let h =
             Harness::create_with_admission_seed(admin, "isle_of_evil_corpse_claim", false, false)
                 .await?;
@@ -80,7 +80,7 @@ async fn exercise(h: &Harness) -> TestResult {
         .map_err(debug)?;
     let world = Dependencies::new()?.admitted.world_id;
     let (controller, pin) =
-        super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+        super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
     let generation = controller.active().ok_or("active content")?;
     let start = pin.entry_start();
     let room = pin.qualified_room().clone();
@@ -101,8 +101,8 @@ async fn exercise(h: &Harness) -> TestResult {
         .await
         .initialize_first_entry_position(actor)
         .map_err(debug)?;
-    super::item_look::seed_main_backpack(h, &[]).await?;
-    super::questpc7_native_deaths::prepare_native_hunter(&owner, &admitted).await?;
+    super::item_look_fixtures::seed_main_backpack(h, &[]).await?;
+    super::questpc7_native_deaths_fixtures::prepare_native_hunter(&owner, &admitted).await?;
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
         .await
@@ -124,7 +124,7 @@ async fn exercise(h: &Harness) -> TestResult {
                 .map_err(debug)?
                 .maximum_health;
             let target = runtime
-                .admit_encounter_actor(&creature, health, super::quest_world_callbacks::local(at))
+                .admit_encounter_actor(&creature, health, super::quest_world_callbacks_fixtures::local(at))
                 .map_err(debug)?;
             runtime
                 .install_creature_policy(target, &creature)
@@ -132,7 +132,7 @@ async fn exercise(h: &Harness) -> TestResult {
             target
         };
         let ordinal = 1000 + 10 * u64::try_from(index)?;
-        super::questpc7_native_deaths::lethal_creature(
+        super::questpc7_native_deaths_fixtures::lethal_creature(
             &owner, &admitted, target, ordinal, &creature,
         )
         .await?;

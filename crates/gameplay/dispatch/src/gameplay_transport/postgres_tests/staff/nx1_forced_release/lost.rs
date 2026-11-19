@@ -26,7 +26,7 @@ fn lost_scenario() -> TestResult {
         let h = Harness::create_with_admission_seed(admin, "nx1_lost_kick", true, false).await?;
         prepare_current_session(&h).await?;
         h.seed_pvp_target().await?;
-        crate::gameplay_transport::monk_save::postgres_tests::appearance_change_postgres::observer_visibility_tests::admit(&h).await?;
+        crate::gameplay_transport::monk_save::postgres_tests::appearance_change_postgres_fixtures::observer_visibility_tests::admit(&h).await?;
         signing.bootstrap(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -92,7 +92,7 @@ fn lost_scenario() -> TestResult {
                 .await
                 .is_err()
         );
-        let token = super::super::house_transfer::RecoverySource::token(2)?;
+        let token = super::super::house_transfer_fixtures::RecoverySource::token(2)?;
         assert!(matches!(
             owner
                 .resume(ResumeAttempt {
