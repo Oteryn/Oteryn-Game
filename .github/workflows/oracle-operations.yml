@@ -18,17 +18,71 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: oracle-operations
-  cancel-in-progress: false
-
 jobs:
+  build_image:
+    if: github.ref == 'refs/heads/main' && inputs.action == 'deploy'
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+    env:
+      SOURCE_SHA: ${{ inputs.source_sha }}
+    steps:
+      - name: Validate source SHA
+        shell: bash
+        run: |
+          if [[ ! "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo 'Expected a full lowercase hexadecimal source SHA.' >&2
+            exit 1
+          fi
+      - name: Check out exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.source_sha }}
+          persist-credentials: false
+      - name: Build and verify arm64 Game image
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          tag="oteryn-game:$SOURCE_SHA-arm64"
+          git archive "$SOURCE_SHA" | docker build --platform linux/arm64 \
+            --file deploy/oracle/game.Dockerfile \
+            --build-arg "GAME_SOURCE_SHA=$SOURCE_SHA" \
+            --tag "$tag" --label "org.opencontainers.image.revision=$SOURCE_SHA" -
+          docker image inspect "$tag" | jq -e --arg sha "$SOURCE_SHA" \
+            'length == 1 and .[0].Architecture == "arm64" and .[0].Config.Labels["org.opencontainers.image.revision"] == $sha' >/dev/null
+          docker save -o image.tar "$tag"
+          image_size="$(stat -c %s image.tar)"
+          if (( image_size > (3 << 30) )); then
+            echo 'Game image.tar exceeds 3 GiB.' >&2
+            exit 1
+          fi
+          tar -xOf image.tar manifest.json | jq -e --arg tag "$tag" \
+            'type == "array" and length == 1 and .[0].RepoTags == [$tag]' >/dev/null
+      - name: Upload Game image
+        id: upload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: oteryn-game-image-${{ inputs.source_sha }}
+          path: image.tar
+          if-no-files-found: error
+          retention-days: 7
+          overwrite: true
+
   operate:
-    if: github.ref == 'refs/heads/main'
+    needs: build_image
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' && (inputs.action == 'status' || (inputs.action == 'deploy' && needs.build_image.result == 'success')) }}
     runs-on:
       group: game-runners
       labels: [oteryn-game, oteryn-oracle, ARM64]
     environment: preproduction
+    concurrency:
+      group: oracle-operations
+      cancel-in-progress: false
+    permissions:
+      actions: read
     timeout-minutes: 120
     env:
       EXPECTED_RUNNER_NAME: oteryn-oracle-game
@@ -38,6 +92,8 @@ jobs:
       - name: Validate target and bounded operation
         env:
           ACTUAL_RUNNER_NAME: ${{ runner.name }}
+          ARTIFACT_ID: ${{ needs.build_image.outputs.artifact-id }}
+          GITHUB_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
@@ -51,9 +107,30 @@ jobs:
           fi
           case "$OPERATION" in
             status) test -z "$SOURCE_SHA"; command=status ;;
-            deploy) [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]; command="deploy $SOURCE_SHA $GITHUB_RUN_ID $GITHUB_RUN_ATTEMPT" ;;
+            deploy)
+              [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+              [[ "$ARTIFACT_ID" =~ ^[1-9][0-9]{0,19}$ ]]
+              artifact_dir="$(mktemp -d)"
+              trap 'rm -rf -- "$artifact_dir"' EXIT
+              image_zip="$artifact_dir/image.zip"
+              zip_limit=$((1 << 30))
+              curl --disable --fail --silent --show-error --location \
+                --proto '=https' --proto-redir '=https' --max-filesize "$zip_limit" \
+                --header @- --output "$image_zip" \
+                "https://api.github.com/repos/Oteryn/Oteryn-Game/actions/artifacts/$ARTIFACT_ID/zip" <<EOF
+          Authorization: Bearer $GITHUB_TOKEN
+          EOF
+              zip_size="$(stat -c %s "$image_zip")"
+              if (( zip_size > zip_limit )); then
+                echo 'Game image artifact zip exceeds 1 GiB.' >&2
+                exit 1
+              fi
+              command="deploy-image $SOURCE_SHA $GITHUB_RUN_ID $GITHUB_RUN_ATTEMPT $ARTIFACT_ID"
+              exec < "$image_zip"
+              ;;
             *) exit 1 ;;
           esac
+          unset GITHUB_TOKEN
           # The key is constrained on the host to one component and two actions.
           # No token, runtime credential, arbitrary path or shell reaches the host.
           ssh -F /dev/null -i /home/runner/.ssh/oracle-deploy \
