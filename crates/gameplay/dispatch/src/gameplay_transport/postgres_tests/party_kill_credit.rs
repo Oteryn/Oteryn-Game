@@ -359,6 +359,9 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
             "Crystal201189f ferumbras_ascension/creaturescripts_bosses_kill.lua:58-86,136-144"
         }
         Case::DefeatTime => {
+            counter["gate"] = json!(TRACK);
+            counter["gate_value"] = json!(0);
+            counter["gate_maximum"] = json!(i64::MAX - 1);
             counter["record_defeat_time"] = json!(true);
             counter["maximum"] = json!(i64::MAX);
             "Crystal201189f ferumbras_ascension/creaturescripts_bosses_kill.lua:114-124"
@@ -390,6 +393,9 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
         Case::Area | Case::PartyArea => {
             if case == Case::PartyArea {
                 counter.as_object_mut().ok_or("kill counter")?.remove("damage_credit");
+                counter["gate"] = json!(TRACK);
+                counter["gate_value"] = json!(0);
+                counter["gate_maximum"] = json!(4);
             }
             counter["death_areas"] = json!([
                 {"minimum":[at.x, at.y, at.floor], "maximum":[at.x+1, at.y, at.floor]},
@@ -943,7 +949,7 @@ async fn exercise_party(
             (1, 155, 5),
         ]
     } else {
-        &[(3, 150, 0), (1, 151, 1)]
+        &[(3, 150, 0), (1, 151, 1), (1, 152, 2)]
     };
     for &(offset, ordinal, expected) in steps {
         death(

@@ -127,8 +127,8 @@ impl KillCounter {
             || !self.creature.starts_with("oteryn:creature.")
             || gate_min > gate_max
             || self.track == self.gate
-                && (!self.set_to_maximum
-                    || self.advance_gate_to.is_some()
+                && (self.advance_gate_to.is_some()
+                    || self.encounter_source.is_some()
                     || gate_min < self.minimum
                     || gate_max >= self.maximum)
             || self.minimum >= self.maximum
@@ -233,10 +233,15 @@ impl KillCounter {
             // Crystal201189f the_new_frontier/creaturescripts_shard_of_corruption_kill.lua:5-10,
             // an_uneasy_alliance/creaturescripts_renegade_orc_kill.lua:3-8, and
             // the_thieves_guild_quest/creaturescripts_nomad_kill.lua:2-7 advance one exact stage.
+            // Great Dragon Hunt :23-25 uses the counter itself as its only predecessor.
             return vec![QuestEffect {
                 track: self.track.clone(),
-                from: self.gate_comparison(),
-                effect: QuestEffectKind::Set(self.maximum),
+                from: if self.record_defeat_time {
+                    QuestComparison::ElapsedAtLeast(0)
+                } else {
+                    self.gate_comparison()
+                },
+                effect: self.count_effect(),
             }];
         }
         if self.encounter_source.is_some() && self.advance_gate_to.is_none() {
@@ -274,16 +279,20 @@ impl KillCounter {
                     QuestComparison::Between(self.minimum, self.maximum - 1)
                 },
                 // Crystal201189f the_secret_library_quest/creaturescripts_kill.lua:10-39.
-                effect: if self.set_to_maximum {
-                    QuestEffectKind::Set(self.maximum)
-                } else if self.record_defeat_time {
-                    // Ferumbras creaturescripts_bosses_kill.lua:114-124.
-                    QuestEffectKind::SetNow
-                } else {
-                    QuestEffectKind::Add(1)
-                },
+                effect: self.count_effect(),
             },
         ]
+    }
+
+    fn count_effect(&self) -> QuestEffectKind {
+        if self.set_to_maximum {
+            QuestEffectKind::Set(self.maximum)
+        } else if self.record_defeat_time {
+            // Ferumbras creaturescripts_bosses_kill.lua:114-124.
+            QuestEffectKind::SetNow
+        } else {
+            QuestEffectKind::Add(1)
+        }
     }
 
     pub(in crate::quest) fn counter<'a>(
