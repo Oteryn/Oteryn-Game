@@ -257,6 +257,13 @@ impl KillCounter {
     }
 
     fn counter_effects(&self) -> Vec<QuestEffect> {
+        // Ferumbras records the lethal Unix second. A second defeat at that
+        // same second has already established its cooldown and needs no write.
+        let progress_from = if self.record_defeat_time {
+            QuestComparison::ElapsedAtLeast(1)
+        } else {
+            QuestComparison::Between(self.minimum, self.maximum - 1)
+        };
         if self.track == self.gate {
             // Crystal201189f the_new_frontier/creaturescripts_shard_of_corruption_kill.lua:5-10,
             // an_uneasy_alliance/creaturescripts_renegade_orc_kill.lua:3-8, and
@@ -265,7 +272,7 @@ impl KillCounter {
             return vec![QuestEffect {
                 track: self.track.clone(),
                 from: if self.record_defeat_time {
-                    QuestComparison::ElapsedAtLeast(0)
+                    progress_from
                 } else {
                     self.gate_comparison()
                 },
@@ -301,11 +308,7 @@ impl KillCounter {
             },
             QuestEffect {
                 track: self.track.clone(),
-                from: if self.record_defeat_time {
-                    QuestComparison::ElapsedAtLeast(0)
-                } else {
-                    QuestComparison::Between(self.minimum, self.maximum - 1)
-                },
+                from: progress_from,
                 // Crystal201189f the_secret_library_quest/creaturescripts_kill.lua:10-39.
                 effect: self.count_effect(),
             },

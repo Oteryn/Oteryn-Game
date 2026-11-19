@@ -914,6 +914,28 @@ fn run(admin: String, case: Case) -> TestResult {
             }
         };
         assert_tracks(&h.pool, expected).await?;
+        if case == Case::DefeatTime {
+            // Ferumbras creaturescripts_bosses_kill.lua:114-124 has second
+            // granularity. Hold the fenced writer at the recorded second.
+            h.root.set_test_quest_clock(expected[0]).map_err(debug)?;
+            death(
+                &owner,
+                &players,
+                RAT,
+                MovementLocalPosition { x: at.x + 1, ..at },
+                case,
+                201,
+            )
+            .await?;
+            assert_tracks(&h.pool, expected).await?;
+            let receipts: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_character_quest_receipts
+                 WHERE transition_key='oteryn:quest-transition/native-kills/qcredit-fixture-rat'",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(receipts, 2, "same-second defeats need no new clock receipt");
+        }
         if case == Case::Ordered {
             // Oberon grants both achievements only to the credited damagers.
             death(
