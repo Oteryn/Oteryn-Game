@@ -351,7 +351,9 @@ fn scenario_case(
     let failure_landing = name.starts_with("conditional-failure-");
     let forgemaster = matches!(
         name,
-        super::super::forgemaster_chest::LOCKED | super::super::forgemaster_chest::OPEN
+        super::super::forgemaster_chest::LOCKED
+            | super::super::forgemaster_chest::OPEN
+            | super::super::forgemaster_chest::UNADMITTED
     );
     let draconia_escape = name.starts_with("draconia-escape-");
     let vestibule = matches!(
@@ -366,7 +368,7 @@ fn scenario_case(
         super::super::putrefactory_reservoir::PASSIVE
     );
     let mut callback = if forgemaster {
-        super::super::forgemaster_chest::callback()?
+        super::super::forgemaster_chest::callback(name)?
     } else if reservoir {
         super::super::putrefactory_reservoir::callback()?
     } else if vestibule {
@@ -2083,7 +2085,7 @@ fn scenario_case(
                 &mut admitted,
                 &h,
                 &callback,
-                name == super::super::forgemaster_chest::OPEN,
+                name,
             ))
             .await?;
         } else if reservoir {
