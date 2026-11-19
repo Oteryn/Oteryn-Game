@@ -11,6 +11,7 @@ use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue,
     world_callbacks::{self, Callback, Position},
 };
+use oteryn_protocol_oteryn::chat::{ChatLine, ChatSpeechMode};
 use oteryn_protocol_oteryn::world_spatial::{
     COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result,
     encode_step_intent,
@@ -55,9 +56,8 @@ pub(super) fn binding() -> TestResult<Callback> {
             "native":{"position":TRIGGER,"ordinal":1,"appearance":10840}},
         "requires_world_admission":true,
         "return_on_failure":true,"reversible":false,"passages":[],"offerings":[],
-        "success_message":ADMISSION_TEXT,
         "storage":[{"track":ACCESS,"minimum":1,"maximum":1,"set":1}],
-        "effects":{"magic":{"position":TRIGGER,"effect":11},"encounter":{
+        "effects":{"magic":{"position":TRIGGER,"effect":11},"player_speech":ADMISSION_TEXT,"encounter":{
             "minimum_level":0,
             "players":[{"from":TRIGGER,"to":LANDING}],
             "monsters":[{"position":at(33591,32305),"creature":KROAZUR}],
@@ -224,9 +224,19 @@ pub(super) async fn exercise(
         }).count(), 1);
     }
     let messages = owner.states.chat.drain(admitted.game_session_id);
+    let actor = admitted.runtime_actor.ok_or("actor")?;
     assert_eq!(messages.iter().filter(|line| {
-        matches!(line, oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. } if text == ADMISSION_TEXT)
+        matches!(line, ChatLine::Local { speaker, mode: ChatSpeechMode::MonsterSay, text, position, .. }
+            if speaker.identity == actor.placement_identity()
+                && speaker.generation.get() == actor.actor_local_generation()
+                && text == ADMISSION_TEXT
+                && (position.x, position.y, position.floor) == (33591, 32315, 10))
     }).count(), 1);
+    step(owner, admitted, 2, LANDING).await?;
+    assert!(!owner.states.chat.drain(admitted.game_session_id).iter().any(|line| {
+        matches!(line, ChatLine::Local { text, .. } | ChatLine::Private { text, .. }
+            if text == ADMISSION_TEXT)
+    }));
     assert_eq!(
         super::engworldchg_journals::live_creatures(owner, KROAZUR)
             .await?
@@ -258,7 +268,6 @@ pub(super) async fn exercise(
             .is_empty()
     );
 
-    let actor = admitted.runtime_actor.ok_or("actor")?;
     let map = owner.bundle_map().ok_or("map")?;
     {
         let mut runtime = owner.runtime.lock().await;
@@ -288,7 +297,8 @@ pub(super) async fn exercise(
         [TRIGGER, ORIGIN].map(|p| (p.x, p.y, p.floor, 11))
     );
     assert!(!owner.states.chat.drain(admitted.game_session_id).iter().any(|line| {
-        matches!(line, oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. } if text == ADMISSION_TEXT)
+        matches!(line, ChatLine::Local { text, .. } | ChatLine::Private { text, .. }
+            if text == ADMISSION_TEXT)
     }));
     assert!(
         super::engworldchg_journals::live_creatures(owner, KROAZUR)

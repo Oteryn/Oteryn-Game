@@ -1591,6 +1591,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
                     pending.remove(&session);
                 }
+                // Crystal movement_kroazur_room.lua:67-70 has the player
+                // speak after landing in the encounter.
+                if fresh_effects && let Some(speech) = &callback.effects.player_speech {
+                    self.states
+                        .chat
+                        .publish_quest_speech(runtime, actor, session, speech);
+                }
                 if callback.has_personal_state()
                     && let Some(message) = success_message
                 {
