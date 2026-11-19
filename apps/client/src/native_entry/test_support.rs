@@ -168,6 +168,7 @@ impl Stack {
 
     pub(crate) fn config(&self) -> NativeLoginConfig {
         NativeLoginConfig {
+            session_options: None,
             device_sessions: Default::default(),
             platform_url: self.http_url.clone(),
             gateway_url: self.http_url.clone(),

@@ -571,3 +571,19 @@ fn renaming_then_removing_an_imported_mark_does_not_reveal_the_original() -> Tes
     assert_eq!(field.value(), "Mark");
     Ok(())
 }
+
+#[test]
+fn marker_editor_closes_when_the_map_rebinds_in_the_same_session() -> TestResult {
+    let mut app = fixture()?;
+    open_marker_editor(&mut app)?;
+    let generation = app.world().non_send::<HostOwner>().generation();
+    {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        let play = owner.play.as_mut().ok_or("active minimap")?;
+        play.view.bind_minimap_world("22222222-2222-4222-8222-222222222222");
+    }
+    app.update();
+    assert_eq!(app.world().non_send::<HostOwner>().generation(), generation);
+    assert!(!app.world_mut().query::<&Text>().iter(app.world()).any(|text| text.0 == "Save mark"));
+    Ok(())
+}

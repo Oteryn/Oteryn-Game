@@ -86,7 +86,8 @@ fn transfer(
     };
     owner.settings.request_minimap_transfer(action.import, path);
     owner.settings.feedback = match owner.settings.apply_minimap_transfer(&mut play.view) {
-        Ok(_) => tr!("Minimap transfer saved").into(),
+        Ok(true) => tr!("Minimap transfer saved").into(),
+        Ok(false) => "Importing minimap…".into(),
         Err(error) => lfmt!("Minimap transfer failed: {error}", error = error),
     };
 }

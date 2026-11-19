@@ -68,6 +68,7 @@ use super::{ComposedFreshAdmission, operator_event, respawn_cell, respawn_cell_a
 use crate::domain::CharacterRevision;
 use crate::durability::DB_PASS_DEADLINE;
 use crate::durability::bed_regen::BedPremiumGate;
+use crate::durability::character_build::BuildOccurrence;
 use crate::durability::character_death::ConsumedRespawn;
 use crate::durability::character_last_position::{
     FinalLastPosition, HouseLastPosition, LAST_POSITION_WRITE_BATCH, LastPositionCell,
@@ -279,6 +280,7 @@ struct Track {
     /// stored.
     written: Option<Saved>,
     written_at: Instant,
+    trial_refill: Option<BuildOccurrence>,
     /// When the cell and vitals the stored row holds (or unchanged ones) were last captured.
     checked: Instant,
 }
@@ -362,7 +364,7 @@ struct Capture {
     house: Option<HouseLastPosition>,
     write_sequence: u64,
     at: Instant,
-    preserve_vitals: bool,
+    pending_vocation_refill: Option<BuildOccurrence>,
 }
 
 impl LastPositions {
@@ -406,6 +408,7 @@ impl LastPositions {
                     revision,
                     written,
                     written_at: now,
+                    trial_refill: None,
                     checked: now,
                 },
             );
@@ -515,6 +518,7 @@ impl LastPositions {
             });
             track.checked = Instant::now();
             track.written_at = track.checked;
+            track.trial_refill = None;
         }
     }
 }

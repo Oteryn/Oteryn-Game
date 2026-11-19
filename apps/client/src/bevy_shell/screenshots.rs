@@ -71,7 +71,7 @@ impl Writes {
 
 pub(super) struct PlayerCapture {
     pub(super) directory: String,
-    pub(super) crop: Option<WorldViewport>,
+    pub(super) game_only: bool,
     pub(super) backlog: bool,
 }
 
@@ -81,10 +81,14 @@ pub(super) fn request(
     owner: &mut HostOwner,
     generation: u64,
     request: PlayerCapture,
+    viewport: WorldViewport,
 ) {
     let PlayerCapture {
-        directory, crop, ..
+        directory,
+        game_only,
+        ..
     } = request;
+    let crop = game_only.then_some(viewport);
     owner.status = "Capturing screenshot…".into();
     let entity = readback.unwrap_or_else(|| commands.spawn(Screenshot::primary_window()).id());
     commands.entity(entity).observe(
@@ -195,3 +199,6 @@ mod audit_tests;
 mod observer_tests;
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod deferred_tests;

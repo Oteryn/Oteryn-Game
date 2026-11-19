@@ -13,27 +13,31 @@ pub(super) struct Completed {
     game_only: bool,
     at: Instant,
     result: AutomaticResult,
+    manual: bool,
 }
 
 enum AutomaticResult {
     Buffered(io::Result<Pixels>),
-    Saved(io::Result<Vec<PathBuf>>, ScreenshotBatch),
+    Saved(io::Result<Vec<PathBuf>>, ScreenshotBatch, bool),
 }
 
 impl Completed {
     pub(super) fn apply(self, owner: &mut HostOwner) {
-        if !current(owner, self.generation, self.game_only) {
+        let current = current(owner, self.generation, self.game_only);
+        if owner.generation() != self.generation || (!self.manual && !current) {
             return;
         }
         match self.result {
             AutomaticResult::Buffered(Ok(frame)) => {
                 owner.settings.buffer_screenshot(self.at, frame)
             }
-            AutomaticResult::Saved(Ok(paths), _) => {
+            AutomaticResult::Saved(Ok(paths), _, _) => {
                 owner.status = format!("Saved {} screenshot(s)", paths.len())
             }
-            AutomaticResult::Saved(Err(error), batch) => {
-                owner.settings.restore_screenshot_batch(batch);
+            AutomaticResult::Saved(Err(error), batch, consumed) => {
+                if current && consumed {
+                    owner.settings.restore_screenshot_batch(batch);
+                }
                 owner.status = format!("Screenshot failed: {error}");
             }
             AutomaticResult::Buffered(Err(error)) => {
@@ -86,10 +90,11 @@ pub(in crate::bevy_shell) fn observe(
         return None;
     }
     let game_only = owner.settings.preferences.screenshots.effective().game_only;
-    let (crop, directory) = manual.map_or((game_only.then_some(viewport), None), |request| {
+    let crop = game_only.then_some(viewport);
+    let directory = manual.map(|request| request.directory.clone());
+    if directory.is_some() {
         owner.status = "Capturing screenshot…".into();
-        (request.crop, Some(request.directory.clone()))
-    });
+    }
     let entity = commands
         .spawn(Screenshot::primary_window())
         .observe(
@@ -97,7 +102,18 @@ pub(in crate::bevy_shell) fn observe(
                   mut owner: NonSendMut<HostOwner>,
                   mut writes: NonSendMut<Writes>,
                   clock: Res<Time<Real>>| {
-                if !current(&owner, generation, game_only) || writes.is_full() {
+                if owner.generation() != generation {
+                    return;
+                }
+                let manual = directory.is_some();
+                let same_crop = current(&owner, generation, game_only);
+                if writes.is_full() {
+                    if manual {
+                        owner.status = "Screenshot failed: write queue is full".into();
+                    }
+                    return;
+                }
+                if !manual && !same_crop {
                     return;
                 }
                 let at = clock.last_update().unwrap_or(clock.startup());
@@ -105,15 +121,35 @@ pub(in crate::bevy_shell) fn observe(
                     CaptureAction::Idle => return,
                     CaptureAction::Buffer => None,
                     CaptureAction::Save => {
-                        Some(owner.settings.submit_screenshot(at, directory.clone()))
+                        if let Some(directory) = &directory {
+                            if !same_crop {
+                                let image = event.image.clone();
+                                let directory = directory.clone();
+                                writes.push(Box::new(move || {
+                                    Completion::Manual(generation, save(image, &directory, crop))
+                                }));
+                                return;
+                            }
+                            Some(
+                                owner
+                                    .settings
+                                    .manual_screenshot_batch(at, directory.clone()),
+                            )
+                        } else {
+                            Some((owner.settings.submit_screenshot(at), true))
+                        }
                     }
                 };
                 let image = event.image.clone();
                 writes.automatic = true;
                 writes.queued.push_back(Box::new(move || {
                     let pixels = pixels(image, crop);
-                    let result = if let Some(batch) = batch {
-                        AutomaticResult::Saved(pixels.and_then(|pixels| batch.save(&pixels)), batch)
+                    let result = if let Some((batch, consumed)) = batch {
+                        AutomaticResult::Saved(
+                            pixels.and_then(|pixels| batch.save(&pixels)),
+                            batch,
+                            consumed,
+                        )
                     } else {
                         AutomaticResult::Buffered(pixels)
                     };
@@ -122,6 +158,7 @@ pub(in crate::bevy_shell) fn observe(
                         game_only,
                         at,
                         result,
+                        manual,
                     })
                 }));
             },

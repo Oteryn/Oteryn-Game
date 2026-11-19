@@ -1,4 +1,6 @@
 //! The main-thread owner of the existing runtime, admitted play and preference store.
+mod device_sign_out;
+mod local_saves;
 mod options_draft;
 
 use crate::{
@@ -43,6 +45,7 @@ struct Scope {
 struct Draft {
     scope: Scope,
     values: ReferencePreferences,
+    baseline: ReferencePreferences,
 }
 pub(super) struct ActivePlay {
     pub view: PlayView,
@@ -55,9 +58,11 @@ pub(super) struct HostOwner {
     entry: Option<Reentry>,
     pub(super) controls: super::controls::Controls,
     pub play: Option<ActivePlay>,
+    retired_minimaps: Vec<crate::play::MinimapSaves>,
     pub settings: SettingsState,
     preferences_path: Option<PathBuf>,
     draft: Option<Draft>,
+    device_sign_out: Option<tokio::sync::watch::Receiver<Option<bool>>>,
     scope: Scope,
     pub phase: Phase,
     pub status: String,
@@ -98,9 +103,11 @@ impl HostOwner {
             entry: Some(Reentry::new(client)),
             controls: super::controls::Controls::new()?,
             play: None,
+            retired_minimaps: Vec::new(),
             settings: SettingsState::new(path.clone()),
             preferences_path: path,
             draft: None,
+            device_sign_out: None,
             scope: Scope {
                 character: None,
                 generation: 0,
@@ -147,7 +154,7 @@ impl HostOwner {
             self.leave("Admission did not provide a character identity.");
             return false;
         };
-        drop(self.play.take());
+        self.retire_play();
         self.change_scope(Some(character));
         view.use_shared_frontend();
         view.enable_background_minimap_save();
@@ -162,7 +169,7 @@ impl HostOwner {
     }
     fn leave(&mut self, message: &str) {
         self.arrival = None;
-        drop(self.play.take());
+        self.retire_play();
         self.change_scope(None);
         self.phase = Phase::Offline;
         self.status = format!("Offline — {message}");
@@ -221,6 +228,7 @@ impl HostOwner {
             return;
         }
         config.preference_path.clone_from(&self.preferences_path);
+        config.session_options = Some(self.settings.preferences.miscellaneous);
         config.select_character = self.selector.clone();
         self.services.configure(&mut config);
         self.selection.cancel();
@@ -250,51 +258,6 @@ impl HostOwner {
             entry.forget_native_session();
         }
     }
-    /// The login window's explicit sign-out, as the Win32 options offered it: turns
-    /// remember-device off, cancels any entry and forgets the remembered device on the
-    /// Platform the connection settings name. A normal game logout keeps the device.
-    pub fn sign_out_device(&mut self) {
-        if self.play.is_some() {
-            return;
-        }
-        let mut preferences = self.settings.preferences.clone();
-        preferences.miscellaneous.remember_device = false;
-        self.settings.apply(preferences);
-        self.selection.cancel();
-        self.services.cancel();
-        // Before the first sign-in of this process the entry has no Platform yet.
-        let configured = self.login.form.settings.config().is_ok_and(|config| {
-            self.entry
-                .as_mut()
-                .is_some_and(|entry| entry.configure(config))
-        });
-        if let Some(entry) = &mut self.entry {
-            entry.native_sign_out();
-        }
-        self.login.form.feedback(if configured {
-            "Signed out; this device is no longer remembered.".into()
-        } else {
-            "Remember-device is off. Correct the connection settings to also forget this device \
-             on the Platform."
-                .into()
-        });
-    }
-    /// Turning stay-logged-in or remember-device off in the options forgets this device on the
-    /// Platform and, as the Win32 page did, logs the character in play out.
-    fn forget_device(&mut self) {
-        if self.phase == Phase::Offline
-            && let Ok(config) = self.login.form.settings.config()
-            && let Some(entry) = &mut self.entry
-        {
-            entry.configure(config);
-        }
-        if let Some(entry) = &mut self.entry {
-            entry.native_sign_out();
-        }
-        if let Some(play) = &mut self.play {
-            play.view.logout();
-        }
-    }
     /// Opens a Platform page (support tickets, cookie policy) from the login window with the
     /// Platform the connection settings name.
     pub fn open_web_link(&mut self, link: crate::web_links::WebLink) {
@@ -318,15 +281,11 @@ impl HostOwner {
         if self.phase == Phase::Closed {
             return;
         }
+        self.poll_device_sign_out();
+        self.poll_retired_minimaps();
         let completion = self.settings.poll_background_save();
-        if let Some(previous) = completion.before_restore
-            && self
-                .draft
-                .as_ref()
-                .is_some_and(|draft| draft.values == previous)
-        {
-            let restored = self.settings.preferences.clone();
-            self.edit_preferences(|draft| *draft = restored);
+        if completion.replaced {
+            self.rebase_transferred_preferences();
         }
         if let Some(error) = completion.error {
             self.status.clone_from(&error);
@@ -367,7 +326,12 @@ impl HostOwner {
                 self.settings.feedback = error.to_string();
             }
             self.settings.sync_local_preferences(&play.link);
-            play.view.poll_background_minimap_save();
+            if let Some(result) = play.view.poll_background_minimap_save() {
+                self.settings.feedback = match result {
+                    Ok(()) => tr!("Minimap transfer saved").into(),
+                    Err(error) => lfmt!("Minimap transfer failed: {error}", error = error),
+                };
+            }
             end = play.view.tick(&play.link).err();
             if end.is_some() {
                 switch = play.link.channel_switch_target();
@@ -377,11 +341,10 @@ impl HostOwner {
             // chsw: the server released the session for a switch; enter the target Channel.
             self.leave(oteryn_client_ui::channel_switch::wait_text());
             self.arrival = target.row;
-            if self
-                .entry
-                .as_mut()
-                .is_some_and(|entry| entry.request_switch(target.character_id, target.channel_id))
-            {
+            if self.entry.as_mut().is_some_and(|entry| {
+                entry.set_session_options(self.settings.preferences.miscellaneous);
+                entry.request_switch(target.character_id, target.channel_id)
+            }) {
                 self.phase = Phase::Entering;
                 self.status = oteryn_client_ui::channel_switch::wait_text().into();
             } else {
@@ -440,10 +403,10 @@ impl HostOwner {
         };
         self.leave(message);
         if matches!(end, PlayEnd::LoggedOut)
-            && self
-                .entry
-                .as_mut()
-                .is_some_and(|entry| entry.is_entering() || entry.request_picker())
+            && self.entry.as_mut().is_some_and(|entry| {
+                entry.set_session_options(self.settings.preferences.miscellaneous);
+                entry.is_entering() || entry.request_picker()
+            })
         {
             self.phase = Phase::Entering;
         }
@@ -465,7 +428,7 @@ impl HostOwner {
         self.dialogs.clear();
         self.login.visible = false;
         self.login.bulletin.visible = false;
-        drop(self.play.take());
+        self.flush_local_saves();
         if let Some(mut entry) = self.entry.take() {
             entry.cancel_entry();
             entry.shutdown();

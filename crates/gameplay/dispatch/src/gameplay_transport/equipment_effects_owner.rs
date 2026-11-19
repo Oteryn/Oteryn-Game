@@ -740,8 +740,11 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(None);
         };
-        let fence = self
-            .current_quest_fence(expected.game_session_id)
+        let retry = super::super::AdmissionRetryBudget::for_command(self.root);
+        let fence = retry
+            .retry_durability("equipment_effects_fence", || {
+                self.current_quest_fence_durable(expected.game_session_id)
+            })
             .await
             .map_err(|_| ())?
             .ok_or(())?;
@@ -758,22 +761,13 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 return Err(());
             }
         }
-        let read = self
-            .root
-            .read_movement_equipment(
-                self.character,
-                self.holder,
-                &expected,
-                native.source_digest(),
-            )
-            .await
-            .map_err(|_| ())?;
-        if read.fence() != &expected || read.equipment().content_digest != native.source_digest() {
-            return Err(());
-        }
+        let equipment =
+            super::read_equipment_within(self, &retry, &expected, native.source_digest())
+                .await
+                .ok_or(())?;
         self.equipment_effects_from_snapshot(
             expected.game_session_id,
-            read.equipment().clone(),
+            equipment,
             fence,
             native,
             None,

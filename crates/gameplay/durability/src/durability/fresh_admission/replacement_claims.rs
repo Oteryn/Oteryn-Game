@@ -16,7 +16,7 @@ impl FreshAdmissionStore {
             journal_catalogue: None,
             channel_switch: false,
             final_position: None,
-            preserve_final_vitals: false,
+            pending_vocation_refill: None,
             final_house: None,
             house_release_node: None,
             retired_holder: None,

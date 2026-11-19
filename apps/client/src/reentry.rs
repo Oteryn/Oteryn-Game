@@ -85,9 +85,22 @@ impl Reentry {
             && previous.oauth_client_id == config.oauth_client_id
         {
             config.device_sessions = previous.device_sessions.clone();
+        } else if let Some(previous) = self
+            .revocations
+            .iter()
+            .find(|previous| previous.matches(&config))
+        {
+            previous.reuse_device(&mut config);
         }
         self.client.native_login = Some(config);
         true
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn set_session_options(&mut self, options: crate::play::MiscellaneousPreferences) {
+        if let Some(config) = &mut self.client.native_login {
+            config.session_options = Some(options);
+        }
     }
 
     /// Starts a user-requested attempt without blocking the window. Existing native entry
@@ -122,19 +135,11 @@ impl Reentry {
         self.waiting = None;
         self.last_wait_text = None;
         // Dropping the sender on a stopped runtime is handled as a public refusal by poll.
-        let revocations = self.revocations_for_entry();
+        let revocation = self.revocation_for_entry();
         let _task = self.client.runtime.spawn(async move {
             let work = async {
-                for mut revocation in revocations {
-                    let revoked = revocation
-                        .wait_for(Option::is_some)
-                        .await
-                        .is_ok_and(|result| *result == Some(true));
-                    if !revoked {
-                        return Err(GameplayEntryError::Rejected(
-                            PublicClass::SessionUnavailable,
-                        ));
-                    }
+                if let Some(mut revocation) = revocation {
+                    let _ = revocation.wait_for(Option::is_some).await;
                 }
                 match config {
                     Some(config) => {

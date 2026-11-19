@@ -57,7 +57,9 @@ pub(super) async fn authorize(
         .device_sessions
         .begin(
             client,
-            session_options(config.preference_path.as_deref()),
+            config
+                .session_options
+                .unwrap_or_else(|| session_options(config.preference_path.as_deref())),
             cancellation.clone(),
         )
         .await

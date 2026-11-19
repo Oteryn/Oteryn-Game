@@ -137,7 +137,7 @@ pub struct FreshAdmissionStore {
     /// CHAR-POSITION-0 §3.2 "At logout": the last position the terminal release writes in its
     /// own transaction, before `session_state` becomes 3. `None` writes nothing.
     final_position: Option<super::character_last_position::FinalLastPosition>,
-    preserve_final_vitals: bool,
+    pending_vocation_refill: Option<super::character_build::BuildOccurrence>,
     /// Q16: named House metadata and the same current node proof used for its final capture.
     final_house: Option<(
         super::character_last_position::HouseLastPosition,

@@ -23,6 +23,7 @@ impl std::error::Error for NativeLoginSettingError {}
 /// Native login settings with an optional character preselection.
 #[derive(Clone)]
 pub struct NativeLoginConfig {
+    pub(crate) session_options: Option<crate::play::MiscellaneousPreferences>,
     pub device_sessions: Arc<crate::device_login::DeviceLogin>,
     pub platform_url: String,
     pub gateway_url: String,
@@ -86,6 +87,7 @@ impl NativeLoginConfig {
             lookup("OTERYN_NATIVE_REMEMBERED_DEVICES_ENABLED").as_deref() == Some("true"),
         ));
         Ok(Some(Self {
+            session_options: None,
             device_sessions,
             platform_url,
             gateway_url,

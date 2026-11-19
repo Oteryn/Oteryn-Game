@@ -25,6 +25,23 @@ impl SettingsState {
             || base.clone(),
             |id| PreferenceStore::character_path(base, id),
         );
+        #[cfg(bevy_shell)]
+        if self.background_preferences {
+            let selected = self.outgoing_stores.iter().position(|store| store.at_path(&path))
+                .map(|index| self.outgoing_stores.swap_remove(index))
+                .unwrap_or_else(|| PreferenceStore::load_in_background(path.clone(), character.map(|_| base.clone())));
+            let mut preferences = selected.preferences().clone();
+            preferences.miscellaneous = self.preferences.miscellaneous;
+            if let Some(store) = self.store.replace(selected).filter(PreferenceStore::saving) {
+                self.outgoing_stores.push(store);
+            }
+            self.help_report_pending = false;
+            self.character = character;
+            self.chat_mode_seen = None;
+            self.feedback.clear();
+            self.accept_replaced(preferences);
+            return;
+        }
         let missing = !path.exists();
         let mut selected = Self::new(Some(path.clone()));
         #[cfg(bevy_shell)]

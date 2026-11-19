@@ -247,6 +247,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let native = self.active_generation?.native_gameplay()?;
         let vocation = retained.request.after.vocation();
         let definitions = newhaven_kit_definitions(native, vocation)?;
+        self.invalidate_first_vocation_position(session, actor, std::time::Instant::now());
         let result = slot
             .commit_newhaven_build(
                 self.root,

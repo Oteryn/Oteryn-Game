@@ -48,6 +48,10 @@ pub struct SettingsState {
     store: Option<PreferenceStore>,
     #[cfg(bevy_shell)]
     outgoing_stores: Vec<PreferenceStore>,
+    #[cfg(bevy_shell)]
+    background_preferences: bool,
+    #[cfg(bevy_shell)]
+    session_save: Option<bevy_tasks::Task<Result<(), String>>>,
     input: PreferenceInput,
     control_input: super::controls::ControlInput,
     control_epoch: std::time::Instant,
@@ -63,6 +67,9 @@ pub struct SettingsState {
 mod session_options;
 #[path = "settings_actions.rs"]
 mod settings_actions;
+#[cfg(bevy_shell)]
+#[path = "background_preferences.rs"]
+mod background_preferences;
 
 impl crate::play::PlayLink {
     /// A visible console owns the text context only while its composer is enabled.

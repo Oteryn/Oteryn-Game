@@ -91,7 +91,7 @@ fn activate(
     })();
     match result {
         Ok(()) => {
-            if !matches!(action, Action::Export) {
+            if !matches!(action, Action::Export) && !owner.settings.preference_transfer_pending() {
                 let saved = owner.settings.preferences.clone();
                 owner.edit_preferences(|draft| *draft = saved);
             }

@@ -251,7 +251,10 @@ async fn journey(t: Topology) -> TestResult {
     check(attempt.has_session(), "lifecycle_did_not_store_session")?;
     drop(attempt);
     portal.stop().await?;
-    lifecycle.sign_out(&offline_client).await;
+    check(
+        lifecycle.sign_out(&offline_client).await.is_err(),
+        "offline_signout_reported_remote_revocation",
+    )?;
     let attempt = lifecycle
         .begin(&offline_client, options, CancellationToken::new())
         .await

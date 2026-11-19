@@ -82,15 +82,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let runtime = self.runtime.lock().await;
         // A retained build may have committed its refill before live installation. Decide
         // which vitals are authoritative under the same guard that captures the live state.
-        let preserve_vitals = match self.states.tutorial_sessions.vocation(session) {
-            Ok(None) => false,
+        let pending_vocation_refill = match self.states.tutorial_sessions.vocation(session) {
+            Ok(None) => self.states.last_positions.tracked(session)
+                .filter(|current| current.actor == actor)
+                .and_then(|current| current.trial_refill),
             Ok(Some(retained)) => match vocation {
-                VocationCapture::Final => true,
+                VocationCapture::Final => Some(retained.request.occurrence),
                 VocationCapture::Hold => return Captured::Vocation(RetainedPosition {
                     character: retained.fence.character_id,
                     occurrence: retained.request.occurrence,
                 }),
-                VocationCapture::Recheck(occurrence) if retained.request.occurrence == occurrence => true,
+                VocationCapture::Recheck(occurrence) if retained.request.occurrence == occurrence => Some(occurrence),
                 _ => return Captured::Held,
             },
             Err(()) => return Captured::Held,
@@ -181,7 +183,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             house,
             write_sequence: placed.write_sequence,
             at: Instant::now(),
-            preserve_vitals,
+            pending_vocation_refill,
         }))
     }
 
@@ -199,6 +201,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // The initial projection and the subsequent refill both bypass the periodic cache.
             track.written = None;
             track.written_at = at;
+        }
+    }
+
+    pub(super) fn set_trial_refill(
+        &self,
+        session: GameSessionId,
+        actor: ExactActorRef,
+        occurrence: Option<BuildOccurrence>,
+    ) {
+        if let Ok(mut tracks) = self.states.last_positions.tracks.lock()
+            && let Some(track) = tracks.get_mut(&session)
+            && track.actor == actor
+        {
+            track.trial_refill = occurrence;
+            track.written = None;
+            track.written_at = Instant::now();
         }
     }
 
@@ -238,11 +256,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         match self.capture_last_position(&track, session).await {
-            Captured::At(capture) => Some(FinalLastPosition {
+            Captured::At(capture) if capture.pending_vocation_refill.is_none() => Some(FinalLastPosition {
                 record: capture.record,
                 write_sequence: capture.write_sequence,
             }),
-            Captured::Dead | Captured::Held | Captured::Vocation(_) | Captured::Gone => None,
+            _ => None,
         }
     }
 
@@ -282,12 +300,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     record: capture.record,
                     write_sequence: capture.write_sequence,
                 };
-                match capture.house {
-                    Some(house) => store.with_final_house_position(position, house, self.holder),
-                    None if capture.preserve_vitals => {
-                        store.with_final_position_preserving_vitals(position)
-                    }
-                    None => store.with_final_position(position),
+                match (capture.house, capture.pending_vocation_refill) {
+                    (Some(house), _) => store.with_final_house_position(position, house, self.holder),
+                    (None, Some(occurrence)) => store.with_final_position_pending_refill(position, occurrence),
+                    (None, None) => store.with_final_position(position),
                 }
             }
             Captured::Dead | Captured::Held | Captured::Vocation(_) | Captured::Gone => store.clone(),

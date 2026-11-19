@@ -7,6 +7,14 @@ use crate::foundation::{ExactActorRef, GameSessionId};
 use sha2::{Digest, Sha256};
 use std::collections::HashSet;
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static RETIRED_EQUIPMENT_READ: (
+        std::sync::Arc<tokio::sync::Notify>,
+        std::sync::Arc<tokio::sync::Notify>,
+    );
+}
+
 impl super::ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn stop_timed_actor(
         &self,
@@ -20,7 +28,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             .lock()
             .await
             .get(&session)
-            .is_some_and(|clock| !clock.items.is_empty());
+            .is_some_and(|clock| !clock.items.is_empty() || clock.refresh_equipment);
         let has_imbuement_clock = self
             .states
             .timed_items
@@ -60,7 +68,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             .lock()
             .await
             .get(&session)
-            .is_some_and(|clock| !clock.items.is_empty());
+            .is_some_and(|clock| !clock.items.is_empty() || clock.refresh_equipment);
         let tracked_imbuements = self
             .states
             .timed_items
@@ -293,7 +301,8 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         // An ambiguous expiry may already have burned an equipped item. Reconcile
         // its original receipt before pruning custody; absence from equipment alone
         // cannot prove whether the value-moving transaction committed.
-        let mut retired_equipment = house && clock.items.keys().any(|id| !held.contains(id));
+        let mut retired_equipment =
+            clock.refresh_equipment || (house && clock.items.keys().any(|id| !held.contains(id)));
         for (id, lane) in &clock.items {
             if !held.contains(id)
                 && let Some((request, _)) = &lane.pending
@@ -318,6 +327,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 retired_equipment = true;
             }
         }
+        clock.refresh_equipment = retired_equipment;
         if !house {
             clock.items.retain(|id, _| held.contains(id));
         }
@@ -421,6 +431,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                         == oteryn_protocol_oteryn::timed_item::TimedDisposition::Ok =>
                 {
                     retired_equipment |= result.retired;
+                    clock.refresh_equipment |= result.retired;
                     lane.at_ms = at;
                     lane.pending = None;
                 }
@@ -457,6 +468,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 .get_mut(&session)
             {
                 clock.items.retain(|id, _| held.contains(id));
+                clock.refresh_equipment = false;
             }
             return true;
         }
@@ -465,9 +477,19 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         // its initial read, also repairing a previous expiry's failed acknowledgement/read.
         let mut retired_effects = None;
         if retired_equipment {
-            let Some(equipment) = self
-                .read_clock_equipment(actor, item_fence, native.source_digest(), false)
-                .await
+            #[cfg(test)]
+            if let Ok((entered, proceed)) = RETIRED_EQUIPMENT_READ.try_with(Clone::clone) {
+                entered.notify_one();
+                proceed.notified().await;
+            }
+            let retry = super::AdmissionRetryBudget::for_command(self.root);
+            let Some(equipment) = super::equipment_move::read_equipment_within(
+                self,
+                &retry,
+                &item_fence,
+                native.source_digest(),
+            )
+            .await
             else {
                 return false;
             };
@@ -501,7 +523,10 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             return false;
         }
         let mut states = self.states.spell_states.lock().await;
-        if let Some(state) = states.get_mut(&runtime, actor, session) {
+        let Some(state) = states.get_mut(&runtime, actor, session) else {
+            return !retired_equipment;
+        };
+        {
             state.install_equipped_mana_shield(active_mana_shield);
             state.install_equipped_invisibility(invisible);
             if let Some(effects) = retired_effects {
@@ -509,6 +534,19 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     state, effects,
                 );
             }
+        }
+        drop(states);
+        drop(runtime);
+        if retired_equipment
+            && let Some(clock) = self
+                .states
+                .timed_items
+                .sessions
+                .lock()
+                .await
+                .get_mut(&session)
+        {
+            clock.refresh_equipment = false;
         }
         true
     }

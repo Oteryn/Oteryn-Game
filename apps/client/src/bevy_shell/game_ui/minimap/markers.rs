@@ -5,7 +5,7 @@ use bevy::{
     text::EditableText,
     ui_widgets::{Activate, TextInput},
 };
-type MarkerKey = (u64, (i32, i32, i16));
+type MarkerKey = (u64, (i32, i32, i16), u64);
 #[derive(Resource, Default)]
 pub(super) struct Editor {
     at: Option<MarkerKey>,
@@ -71,7 +71,11 @@ pub(super) fn click(
     if !(0..=65535).contains(&x) || !(0..=65535).contains(&y) {
         return;
     }
-    editor.open((owner.generation(), (x, y, floor)));
+    editor.open((
+        owner.generation(),
+        (x, y, floor),
+        play.view.minimap_binding_generation(),
+    ));
 }
 impl Editor {
     fn open(&mut self, key: MarkerKey) {
@@ -92,15 +96,25 @@ fn project(
     mut editor: ResMut<Editor>,
     mut focus: ResMut<InputFocus>,
 ) {
-    if editor.at.is_some_and(|key| key.0 != owner.generation()) || owner.play.is_none() {
-        editor.at = None;
-    }
-    if let Some(at) = owner
+    let binding = owner
         .play
         .as_ref()
-        .and_then(|play| play.view.take_minimap_marker_edit())
+        .map(|play| play.view.minimap_binding_generation());
+    if editor
+        .at
+        .is_some_and(|key| key.0 != owner.generation() || Some(key.2) != binding)
     {
-        editor.open((owner.generation(), at));
+        editor.at = None;
+        editor.pending = None;
+    }
+    if let Some(play) = &owner.play
+        && let Some(at) = play.view.take_minimap_marker_edit()
+    {
+        editor.open((
+            owner.generation(),
+            at,
+            play.view.minimap_binding_generation(),
+        ));
     }
     if editor.root.map(|(key, _)| key) == editor.at {
         return;
@@ -214,13 +228,15 @@ fn activate(
             editor.pending = None;
         }
         Action::Remove => {
-            let (generation, at) = control.key;
+            let (generation, at, binding) = control.key;
             if owner.generation() != generation || owner.modal_active() {
                 return;
             }
             let owner = &mut *owner;
             let Some(play) = &mut owner.play else { return };
-            if play.view.gameplay_input_blocked(&play.link) {
+            if play.view.minimap_binding_generation() != binding
+                || play.view.gameplay_input_blocked(&play.link)
+            {
                 return;
             }
             if has_world_mark(&play.view, at) {
@@ -257,7 +273,7 @@ fn finish(
     fields: Query<&EditableText, With<Field>>,
     guard: super::super::modal::ModalGuard,
 ) {
-    let (Some(entity), Some((generation, at))) = (editor.pending, editor.at) else {
+    let (Some(entity), Some((generation, at, binding))) = (editor.pending, editor.at) else {
         return;
     };
     if generation != owner.generation() || owner.modal_active() || !guard.allows(entity) {
@@ -281,7 +297,9 @@ fn finish(
     let Some(play) = &mut owner.play else {
         return;
     };
-    if play.view.gameplay_input_blocked(&play.link) {
+    if play.view.minimap_binding_generation() != binding
+        || play.view.gameplay_input_blocked(&play.link)
+    {
         return;
     }
     let label = text.value().to_string();

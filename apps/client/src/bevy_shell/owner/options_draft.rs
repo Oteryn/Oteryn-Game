@@ -13,6 +13,7 @@ impl HostOwner {
         self.draft = Some(Draft {
             scope: self.scope,
             values: self.settings.preferences.clone(),
+            baseline: self.settings.preferences.clone(),
         });
     }
     /// Global's ShowOptionsHotkeys: the options window, opened on its hotkey page.
@@ -47,6 +48,11 @@ impl HostOwner {
         self.settings.open = false;
     }
     pub fn apply(&mut self, close: bool) {
+        if self.settings.preference_transfer_pending() {
+            self.settings.feedback =
+                "Wait for the options transfer to finish before applying edits.".into();
+            return;
+        }
         let Some(draft) = self.draft.take() else {
             return;
         };
@@ -74,4 +80,73 @@ impl HostOwner {
             self.open_graphics();
         }
     }
+    pub(super) fn rebase_transferred_preferences(&mut self) {
+        if let Some(draft) = &mut self.draft {
+            let mut restored = self.settings.preferences.clone();
+            if draft.values.miscellaneous != draft.baseline.miscellaneous {
+                restored.miscellaneous = draft.values.miscellaneous;
+            }
+            match restored.rebase_edits(&draft.baseline, &draft.values) {
+                Ok(()) => {
+                    draft.baseline = self.settings.preferences.clone();
+                    draft.values = restored;
+                }
+                Err(error) => {
+                    self.settings.feedback =
+                        format!("Could not carry draft edits across the transfer: {error}");
+                    draft.baseline = self.settings.preferences.clone();
+                    draft.values = self.settings.preferences.clone();
+                }
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+#[test]
+fn restore_carries_only_edited_draft_fields_forward() -> Result<(), Box<dyn std::error::Error>> {
+    use std::time::{Duration, Instant};
+
+    bevy_tasks::IoTaskPool::get_or_init(|| {
+        bevy_tasks::TaskPoolBuilder::new().num_threads(1).build()
+    });
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("preferences.json");
+    let saved = ReferencePreferences {
+        audio_device: "From backup".into(),
+        ..Default::default()
+    };
+    crate::play::PreferenceStore::export_to(&saved, &path.with_extension("backup.json"))?;
+    let mut owner = HostOwner::new(Some(path.clone()))?;
+    owner.settings.use_background_preferences();
+    owner.open_graphics();
+    owner.settings.restore_backup()?;
+    owner.edit_preferences(|draft| draft.graphics.fullscreen = true);
+    owner.apply(false);
+    assert!(
+        owner
+            .preferences_draft()
+            .ok_or("draft")?
+            .graphics
+            .fullscreen
+    );
+    let deadline = Instant::now() + Duration::from_secs(3);
+    while owner.settings.preference_save_pending() && Instant::now() < deadline {
+        owner.poll([800, 600]);
+        std::thread::yield_now();
+    }
+    assert!(!owner.settings.preference_save_pending());
+    assert_eq!(
+        owner.preferences_draft().ok_or("draft")?.audio_device,
+        saved.audio_device
+    );
+    owner.apply(false);
+    while owner.settings.preference_save_pending() && Instant::now() < deadline {
+        owner.poll([800, 600]);
+        std::thread::yield_now();
+    }
+    let actual = crate::play::PreferenceStore::read_transfer(&path)?;
+    assert!(actual.graphics.fullscreen);
+    assert_eq!(actual.audio_device, saved.audio_device);
+    Ok(())
 }

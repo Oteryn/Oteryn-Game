@@ -12,6 +12,10 @@ impl SettingsState {
         };
         let mut map = lock(&view.minimap);
         if import {
+            #[cfg(bevy_shell)]
+            if map.start_background_import(&path)? {
+                return Ok(false);
+            }
             map.import_from(&path)?;
         } else {
             map.export_to(&path)?;

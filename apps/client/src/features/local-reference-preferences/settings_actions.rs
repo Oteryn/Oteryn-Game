@@ -2,7 +2,7 @@ use super::*;
 #[cfg(bevy_shell)]
 #[derive(Default)]
 pub(crate) struct PreferenceSaveCompletion {
-    pub(crate) before_restore: Option<ReferencePreferences>,
+    pub(crate) replaced: bool,
     pub(crate) error: Option<String>,
 }
 
@@ -123,6 +123,14 @@ impl SettingsState {
     }
 
     pub fn import_from(&mut self, path: &Path) -> io::Result<()> {
+        #[cfg(bevy_shell)]
+        if let Some(store) = &mut self.store
+            && (self.background_preferences || store.saving())
+        {
+            let source = path.to_owned();
+            store.replace_in_background(&self.preferences, move |_| PreferenceStore::read_transfer(&source));
+            return Ok(());
+        }
         self.replace_saved(PreferenceStore::read_transfer(path)?)
     }
 
@@ -133,7 +141,7 @@ impl SettingsState {
     pub fn restore_backup(&mut self) -> io::Result<()> {
         #[cfg(bevy_shell)]
         if let Some(store) = &mut self.store
-            && store.saving()
+            && (self.background_preferences || store.saving())
         {
             return store.restore_in_background(&self.preferences);
         }
@@ -154,12 +162,17 @@ impl SettingsState {
             .store
             .as_mut()
             .ok_or_else(|| io::Error::other(tr!("Preference storage is unavailable")))?;
+        #[cfg(bevy_shell)]
+        if self.background_preferences || store.saving() {
+            store.replace_in_background(&self.preferences, move |_| Ok(preferences));
+            return Ok(());
+        }
         store.replace_with_backup(preferences.clone(), &self.preferences)?;
         self.accept_replaced(preferences);
         Ok(())
     }
 
-    fn accept_replaced(&mut self, preferences: ReferencePreferences) {
+    pub(super) fn accept_replaced(&mut self, preferences: ReferencePreferences) {
         self.preferences = preferences;
         self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
         self.skills_edit = self.battle_edit;
@@ -222,6 +235,10 @@ impl SettingsState {
             store,
             #[cfg(bevy_shell)]
             outgoing_stores: Vec::new(),
+            #[cfg(bevy_shell)]
+            background_preferences: false,
+            #[cfg(bevy_shell)]
+            session_save: None,
             preferences: {
                 let mut preferences = preferences;
                 preferences.reconcile_controls(None);
@@ -384,12 +401,22 @@ impl SettingsState {
             return;
         }
         preferences.reconcile_controls(Some(&self.preferences));
-        let result = self
-            .store
-            .as_mut()
-            .ok_or_else(|| tr!("Preference storage is unavailable").to_owned())
-            .and_then(|store| store.apply(preferences.clone()).map_err(|e| e.to_string()))
-            .and_then(|()| self.save_miscellaneous(preferences.miscellaneous));
+        let result = match &mut self.store {
+            Some(store) => {
+                #[cfg(bevy_shell)]
+                if self.background_preferences || store.saving() {
+                    store.apply_in_background(preferences.clone());
+                    self.save_miscellaneous_in_background(preferences.miscellaneous)
+                } else {
+                    store.apply(preferences.clone()).map_err(|error| error.to_string())
+                        .and_then(|()| self.save_miscellaneous(preferences.miscellaneous))
+                }
+                #[cfg(not(bevy_shell))]
+                store.apply(preferences.clone()).map_err(|error| error.to_string())
+                    .and_then(|()| self.save_miscellaneous(preferences.miscellaneous))
+            }
+            None => Err(tr!("Preference storage is unavailable").to_owned()),
+        };
         // A disk error must not disable local controls for this process.
         if self.preferences.bar_actions != preferences.bar_actions {
             self.bar_actions_edit = crate::play::feature_0017_attack::view::next_edit();
@@ -445,41 +472,6 @@ impl SettingsState {
         } else {
             tr!("Preference storage is unavailable").into()
         };
-    }
-
-    #[cfg(bevy_shell)]
-    pub(crate) fn preference_save_pending(&self) -> bool {
-        self.store.as_ref().is_some_and(PreferenceStore::saving)
-    }
-
-    #[cfg(bevy_shell)]
-    pub(crate) fn poll_background_save(&mut self) -> PreferenceSaveCompletion {
-        let mut completion = PreferenceSaveCompletion::default();
-        let mut failure = None;
-        if let Some(results) = self.store.as_mut().and_then(PreferenceStore::poll_background_save) {
-            if let Some(Ok(Some(restored))) = results.last() {
-                completion.before_restore = Some(self.preferences.clone());
-                self.accept_replaced(restored.clone());
-            }
-            failure = results.into_iter().find_map(Result::err);
-            self.feedback = tr!("Applied and saved").into();
-        }
-        self.outgoing_stores.retain_mut(|store| {
-            if let Some(results) = store.poll_background_save() {
-                let error = results.into_iter().find_map(Result::err);
-                failure = failure.take().or(error);
-            }
-            store.saving()
-        });
-        if let Some(error) = failure {
-            let message = lfmt!(
-                "Applied for this session; could not save: {error}",
-                error = error
-            );
-            self.feedback.clone_from(&message);
-            completion.error = Some(message);
-        }
-        completion
     }
 
     fn capture_hud_layout(&mut self, view: &PlayView) {

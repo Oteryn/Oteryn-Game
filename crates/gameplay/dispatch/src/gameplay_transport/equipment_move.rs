@@ -239,11 +239,23 @@ pub(super) async fn read_current_equipment(
         }
         digest
     };
+    read_equipment_within(admission, &retry, &fence, digest).await
+}
+
+/// Read equipment under an already resolved active or reconnectable fence.
+pub(super) async fn read_equipment_within(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    retry: &super::AdmissionRetryBudget<'_>,
+    fence: &crate::durability::item_transfer::CurrentCharacterItemFence,
+    digest: [u8; 32],
+) -> Option<character_equipment::EquipmentSnapshot> {
+    use super::connection::AdmissionRefusal::{Rejected, Unavailable};
+    use crate::durability::DurabilityError;
     let read = retry
         .retry_unavailable(async || {
             admission
                 .root
-                .read_movement_equipment(admission.character, admission.holder, &fence, digest)
+                .read_movement_equipment(admission.character, admission.holder, fence, digest)
                 .await
                 .map_err(|error| match error {
                     character_equipment::EquipmentError::Durability(
@@ -254,7 +266,7 @@ pub(super) async fn read_current_equipment(
         })
         .await
         .ok()?;
-    if read.fence() != &fence || read.equipment().content_digest != digest {
+    if read.fence() != fence || read.equipment().content_digest != digest {
         return None;
     }
     Some(read.equipment().clone())

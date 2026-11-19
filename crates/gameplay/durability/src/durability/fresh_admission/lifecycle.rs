@@ -395,7 +395,7 @@ async fn write_final_position(
         super::character_last_position::HouseLastPosition,
         super::runtime_scope_assignment::NodeIncarnationProof,
     )>,
-    preserve_vitals: bool,
+    pending_vocation_refill: Option<super::character_build::BuildOccurrence>,
 ) -> Result<()> {
     if final_position.write_sequence == 0 {
         return Ok(());
@@ -442,10 +442,11 @@ async fn write_final_position(
         _ => return Ok(()),
     };
     let mut record = final_position.record;
-    if preserve_vitals {
+    if let Some(occurrence) = pending_vocation_refill {
         let character = crate::domain::CharacterId::from_bytes(*lease.character_id().as_bytes())
             .map_err(|_| DurabilityError::InvalidStoredState)?;
-        if let Some(stored) =
+        if super::character_last_position::committed_vocation_refill(tx, character, occurrence).await?
+            && let Some(stored) =
             super::character_last_position::load_last_position(tx, character).await?
         {
             if stored.record.cell == record.cell && stored.record.rest == record.rest {

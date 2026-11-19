@@ -102,7 +102,7 @@ pub struct Marker {
     pub label: String,
     pub color: u8,
 }
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Saved {
     version: u8,
@@ -150,6 +150,10 @@ pub struct Minimap {
     #[cfg(bevy_shell)]
     marker_save_queued: bool,
     #[cfg(bevy_shell)]
+    cache_io: background_io::CacheIo,
+    #[cfg(bevy_shell)]
+    pub(super) binding_generation: u64,
+    #[cfg(bevy_shell)]
     save_task: Option<bevy_tasks::Task<io::Result<()>>>,
     #[cfg(bevy_shell)]
     outgoing_saves: BTreeMap<PathBuf, background_save::OutgoingSave>,
@@ -185,6 +189,10 @@ impl Default for Minimap {
             background_save: false,
             #[cfg(bevy_shell)]
             marker_save_queued: false,
+            #[cfg(bevy_shell)]
+            cache_io: Default::default(),
+            #[cfg(bevy_shell)]
+            binding_generation: 0,
             #[cfg(bevy_shell)]
             save_task: None,
             #[cfg(bevy_shell)]
@@ -225,6 +233,10 @@ impl Minimap {
     }
 
     pub fn bind_world(&mut self, world: &str) {
+        #[cfg(bevy_shell)]
+        if self.world.as_deref() != Some(world) {
+            self.binding_generation = self.binding_generation.saturating_add(1);
+        }
         self.pending_edit = None;
         // Native admission calls this even when another Character enters the same World.
         self.quest_marks = Default::default();
@@ -297,6 +309,10 @@ impl Minimap {
             map.header.reset_epoch,
         );
         if self.binding != Some(binding) {
+            #[cfg(bevy_shell)]
+            {
+                self.binding_generation = self.binding_generation.saturating_add(1);
+            }
             self.pending_edit = None;
             if let Err(error) = self.save_before_rebind() {
                 self.feedback = error.to_string();
@@ -346,6 +362,9 @@ impl Minimap {
         }
         #[cfg(bevy_shell)]
         if self.background_save {
+            if self.background_io_owns_cache() || self.is_read_only() {
+                return;
+            }
             if self.save_task.is_none()
                 && let Err(error) = self.start_save()
             {
@@ -435,6 +454,10 @@ impl Minimap {
     }
 
     fn require_cache_owner(&self, path: &Path) -> io::Result<()> {
+        #[cfg(bevy_shell)]
+        if self.background_io_owns_cache() {
+            return Err(io::Error::other("Wait for minimap storage to finish"));
+        }
         match self.cache_access.get(path) {
             Some(CacheAccess::Owner { .. }) => Ok(()),
             Some(CacheAccess::ReadOnly(error)) => {
@@ -482,19 +505,12 @@ impl Minimap {
         if self.load_outgoing_save(&path) {
             return Ok(());
         }
-        if let Entry::Vacant(entry) = self.cache_access.entry(path.clone()) {
-            let access = match Saved::lock_cache(&path) {
-                Ok(lock) => CacheAccess::Owner { _lock: Arc::new(lock) },
-                Err(error) if error.kind() == io::ErrorKind::WouldBlock => {
-                    CacheAccess::ReadOnly(error)
-                }
-                Err(error) => CacheAccess::ReadOnly(io::Error::new(
-                    error.kind(),
-                    format!("Minimap storage is read-only: {error}"),
-                )),
-            };
-            entry.insert(access);
+        #[cfg(bevy_shell)]
+        if self.background_save {
+            self.load_in_background(path);
+            return Ok(());
         }
+        self.cache_access.entry(path.clone()).or_insert_with(|| CacheAccess::open(&path));
         if let Some(saved) = Saved::read_from(&path)? {
             self.cells = saved_cells(saved.cells);
             self.markers = saved.markers;
@@ -539,7 +555,10 @@ impl Drop for Minimap {
     fn drop(&mut self) {
         let _ = self.save_before_rebind();
         #[cfg(bevy_shell)]
-        self.detach_outgoing_saves();
+        {
+            self.detach_outgoing_saves();
+            self.detach_imports();
+        }
     }
 }
 #[cfg(test)]
@@ -567,3 +586,7 @@ mod native_action_tests;
 
 #[path = "state/background_save.rs"]
 mod background_save;
+
+#[cfg(bevy_shell)]
+#[path = "state/background_io.rs"]
+mod background_io;

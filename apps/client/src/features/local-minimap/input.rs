@@ -35,6 +35,16 @@ impl PlayView {
     }
 }
 
+#[cfg(bevy_shell)]
+pub(crate) struct MinimapSaves(super::state::SharedMinimap);
+
+#[cfg(bevy_shell)]
+impl MinimapSaves {
+    pub(crate) fn poll(&self) -> bool {
+        super::state::lock(&self.0).flush_background()
+    }
+}
+
 impl PlayView {
     /// Route a native screen click through the overlay before selecting the world beneath it.
     pub fn click_screen(&mut self, x: f64, y: f64) -> Result<(), oteryn_renderer::BatchError> {
@@ -55,8 +65,28 @@ impl PlayView {
     }
 
     #[cfg(bevy_shell)]
-    pub(crate) fn poll_background_minimap_save(&mut self) {
-        super::state::lock(&self.minimap).poll_background_save();
+    pub(crate) fn poll_background_minimap_save(&mut self) -> Option<std::io::Result<()>> {
+        let (loaded, imported) = {
+            let mut map = super::state::lock(&self.minimap);
+            (map.poll_background_save(), map.poll_background_import())
+        };
+        if loaded || imported.as_ref().is_some_and(Result::is_ok) {
+            let rebuilt = self.rebuild().map_err(std::io::Error::other);
+            if imported.is_some() {
+                return Some(rebuilt);
+            }
+        }
+        imported
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn minimap_saves(&self) -> MinimapSaves {
+        MinimapSaves(self.minimap.clone())
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn minimap_binding_generation(&self) -> u64 {
+        super::state::lock(&self.minimap).binding_generation
     }
 
     pub fn bind_minimap_world(&mut self, world: &str) {

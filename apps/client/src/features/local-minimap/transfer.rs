@@ -23,12 +23,20 @@ pub(super) fn cache_busy() -> io::Error {
 impl crate::play::PlayView {
     pub(crate) fn require_minimap_preferences_writer(&self) -> io::Result<()> {
         let map = lock(&self.minimap);
-        if let Some(path) = map.path()
-            && matches!(map.cache_access.get(&path), Some(CacheAccess::ReadOnly(_)))
-        {
+        if let Some(path) = map.path() {
             return map.require_cache_owner(&path);
         }
         Ok(())
+    }
+}
+
+impl CacheAccess {
+    pub(super) fn open(path: &Path) -> Self {
+        match Saved::lock_cache(path) {
+            Ok(lock) => Self::Owner { _lock: Arc::new(lock) },
+            Err(error) if error.kind() == io::ErrorKind::WouldBlock => Self::ReadOnly(error),
+            Err(error) => Self::ReadOnly(io::Error::new(error.kind(), format!("Minimap storage is read-only: {error}"))),
+        }
     }
 }
 
@@ -131,29 +139,26 @@ impl Minimap {
             io::Error::other(tr!("Join a world with minimap storage before importing"))
         })?;
         self.require_cache_owner(&active)?;
+        let saved = Self::read_import(path, self.world.as_deref(), self.binding)?;
+        saved.write_to(&active)?;
+        self.install_import(saved);
+        Ok(())
+    }
+
+    pub(super) fn read_import(path: &Path, world: Option<&str>, binding: Option<Binding>) -> io::Result<Saved> {
         let portable: Portable = read_json(std::fs::File::open(path)?)?;
-        if self.world.as_ref() != Some(&portable.world) || self.binding != Some(portable.binding) {
+        if world != Some(portable.world.as_str()) || binding != Some(portable.binding) {
             return Err(io::Error::other(tr!(
                 "This minimap belongs to a different world or content generation"
             )));
         }
         portable.saved.validate()?;
-        #[cfg(bevy_shell)]
-        if self.background_save && self.save_task.is_some() {
-            self.cells = saved_cells(portable.saved.cells);
-            self.markers = portable.saved.markers;
-            self.queue_snapshot(active, self.snapshot(self.markers.clone()))?;
-        } else {
-            portable.saved.write_to(&active)?;
-            self.cells = saved_cells(portable.saved.cells);
-            self.markers = portable.saved.markers;
-        }
-        #[cfg(not(bevy_shell))]
-        {
-            portable.saved.write_to(&active)?;
-            self.cells = saved_cells(portable.saved.cells);
-            self.markers = portable.saved.markers;
-        }
+        Ok(portable.saved)
+    }
+
+    pub(super) fn install_import(&mut self, saved: Saved) {
+        self.cells = saved_cells(saved.cells);
+        self.markers = saved.markers;
         self.load_failed = false;
         #[cfg(bevy_shell)]
         {
@@ -162,7 +167,6 @@ impl Minimap {
         self.cells_dirty = false;
         self.saved_at = Instant::now();
         self.retry_delay = Duration::from_secs(5);
-        Ok(())
     }
 }
 

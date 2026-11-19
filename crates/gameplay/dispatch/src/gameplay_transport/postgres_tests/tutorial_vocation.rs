@@ -66,6 +66,31 @@ fn retained_capture_is_not_reauthorised_after_resume() -> TestResult {
     vocation_scenario(Case::RetainedResumed)
 }
 
+#[test]
+fn uncommitted_retained_vocation_saves_live_pools_on_checkpoint_and_logout() -> TestResult {
+    vocation_scenario(Case::UncommittedPools)
+}
+
+#[test]
+fn failed_initial_vitals_projection_invalidates_the_cached_position() -> TestResult {
+    vocation_scenario(Case::FailedInitialProjection)
+}
+
+#[test]
+fn retained_vocation_with_a_gone_actor_settles_the_position_flush() -> TestResult {
+    vocation_scenario(Case::RetainedGone)
+}
+
+#[test]
+fn uncommitted_stationary_checkpoint_cannot_hide_a_later_refill() -> TestResult {
+    vocation_scenario(Case::UncommittedStationaryCache)
+}
+
+#[test]
+fn committed_dawnport_trial_pools_survive_a_live_installation_miss() -> TestResult {
+    vocation_scenario(Case::TrialRefillBeforeInstall)
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Case {
     Ordinary,
@@ -80,10 +105,15 @@ enum Case {
     RetainedStationary,
     RetainedCleared,
     RetainedResumed,
+    UncommittedPools,
+    FailedInitialProjection,
+    RetainedGone,
+    UncommittedStationaryCache,
+    TrialRefillBeforeInstall,
 }
 
 fn vocation_scenario(case: Case) -> TestResult {
-    let post_commit = matches!(case, Case::Uninstalled | Case::RetainedMovement | Case::RetainedBusy | Case::RetainedBacktrack | Case::RetainedStationary | Case::RetainedCleared | Case::RetainedResumed);
+    let post_commit = matches!(case, Case::Uninstalled | Case::RetainedMovement | Case::RetainedBusy | Case::RetainedBacktrack | Case::RetainedStationary | Case::RetainedCleared | Case::RetainedResumed | Case::UncommittedPools | Case::FailedInitialProjection | Case::RetainedGone | Case::UncommittedStationaryCache | Case::TrialRefillBeforeInstall);
     let retained = case == Case::Retained || post_commit;
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -317,6 +347,95 @@ fn vocation_scenario(case: Case) -> TestResult {
                     assert!(owner.save_first_vocation_vitals(deps.actor, session, old, &retained.request.before).await);
                     if case == Case::RetainedBacktrack {
                         move_tutorial_actor(&deps, landing.x).await?;
+                        assert_eq!(owner.write_due_last_positions(true).await, 0);
+                        let saved: i32 = sqlx::query_scalar("SELECT tile_x FROM game_character_last_positions WHERE character_id=encode($1,'hex')::uuid")
+                            .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+                        assert_eq!(saved, landing.x);
+                        drop(owner);
+                        drop(authority);
+                        drop(seal);
+                        return h.cleanup().await;
+                    }
+                    if case == Case::RetainedGone {
+                        deps.runtime.lock().await.remove_test_actor(deps.actor).map_err(debug)?;
+                        assert_eq!(owner.write_due_last_positions(true).await, 0);
+                        assert!(owner.last_position_checked_for_test(session).is_none());
+                        drop(owner);
+                        drop(authority);
+                        drop(seal);
+                        return h.cleanup().await;
+                    }
+                    if case == Case::UncommittedStationaryCache {
+                        assert_eq!(owner.write_due_last_positions(true).await, 0);
+                        assert_eq!(saved_vitals(&h).await?.0, 1);
+                        let mut slot = owner.revision_sequencer.acquire(old.character_id).await;
+                        commit_retained_npc_vocation(
+                            &mut slot, owner.root, owner.character, owner.holder, &retained, formula,
+                        ).await.map_err(debug)?;
+                        assert!(saved_vitals(&h).await?.0 > 1);
+                        owner.states.tutorial_sessions.clear_vocation(session, retained.request.occurrence);
+                        drop(slot);
+                        assert_eq!(owner.write_due_last_positions(true).await, 0);
+                        assert_eq!(saved_vitals(&h).await?.0, 1, "the refill must invalidate the prior pool sample");
+                        drop(owner);
+                        drop(authority);
+                        drop(seal);
+                        return h.cleanup().await;
+                    }
+                    if case == Case::TrialRefillBeforeInstall {
+                        use crate::durability::character_build::BuildCause;
+                        owner.states.tutorial_sessions.clear_vocation(session, retained.request.occurrence);
+                        // Trial actions above level 8 refill. Keep the current actor
+                        // wounded to stand in for a failed post-commit cast-facts read.
+                        sqlx::query("UPDATE game_character_progression_state SET level=9 WHERE character_id=encode($1,'hex')::uuid")
+                            .bind(id(41).as_slice()).execute(&h.pool).await?;
+                        let mut trial = retained.clone();
+                        trial.request.cause = BuildCause::VocationTrial;
+                        let mut slot = owner.revision_sequencer.acquire(old.character_id).await;
+                        assert!(owner.commit_dawnport_trial(deps.actor, &mut slot, &trial, formula, 9).await);
+                        drop(slot);
+                        let refill = saved_vitals(&h).await?;
+                        assert!(refill.0 > 1);
+                        move_tutorial_actor(&deps, landing.x + 1).await?;
+                        assert_eq!(owner.write_due_last_positions(true).await, 0);
+                        assert_eq!(saved_vitals(&h).await?.0, refill.0);
+                        let _ = owner.logout_session(admitted).await;
+                        assert_eq!(saved_vitals(&h).await?.0, refill.0);
+                        drop(owner);
+                        drop(authority);
+                        drop(seal);
+                        return h.cleanup().await;
+                    }
+                    if case == Case::UncommittedPools {
+                        {
+                            let runtime = owner.runtime.lock().await;
+                            let mut states = owner.states.spell_states.lock().await;
+                            states.get_mut(&runtime, deps.actor, session).ok_or("live spell state")?.set_health_for_test(2);
+                        }
+                        assert_eq!(owner.write_due_last_positions(true).await, 0);
+                        assert_eq!(saved_vitals(&h).await?.0, 2);
+                        {
+                            let runtime = owner.runtime.lock().await;
+                            let mut states = owner.states.spell_states.lock().await;
+                            states.get_mut(&runtime, deps.actor, session).ok_or("live spell state")?.set_health_for_test(3);
+                        }
+                        let _ = owner.logout_session(admitted).await;
+                        assert_eq!(saved_vitals(&h).await?.0, 3);
+                        drop(owner);
+                        drop(authority);
+                        drop(seal);
+                        return h.cleanup().await;
+                    }
+                    if case == Case::FailedInitialProjection {
+                        // Cache the local pools at A, then leave the durable row at B
+                        // as a writer that lost its acknowledgement would.
+                        owner.states.tutorial_sessions.clear_vocation(session, retained.request.occurrence);
+                        assert_eq!(owner.write_due_last_positions(true).await, 0);
+                        sqlx::query("UPDATE game_character_last_positions SET tile_x=tile_x+1, write_sequence=write_sequence+1 WHERE character_id=encode($1,'hex')::uuid")
+                            .bind(id(41).as_slice()).execute(&h.pool).await?;
+                        let holder = h.root.try_issue_semantic_pass()?;
+                        assert!(!owner.save_first_vocation_vitals(deps.actor, session, old, &retained.request.before).await);
+                        drop(holder);
                         assert_eq!(owner.write_due_last_positions(true).await, 0);
                         let saved: i32 = sqlx::query_scalar("SELECT tile_x FROM game_character_last_positions WHERE character_id=encode($1,'hex')::uuid")
                             .bind(id(41).as_slice()).fetch_one(&h.pool).await?;

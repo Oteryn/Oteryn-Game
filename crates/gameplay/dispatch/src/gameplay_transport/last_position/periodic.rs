@@ -73,7 +73,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if capture.at.saturating_duration_since(track.checked) > LAST_POSITION_WRITE_INTERVAL {
                         operator_event("last_position_interval_exceeded");
                     }
-                    if track.written == Some(Saved::of(&capture.record)) {
+                    if capture.pending_vocation_refill.is_none()
+                        && self.states.last_positions.tracked(session).is_some_and(|current| {
+                            current.actor == track.actor && current.written == Some(Saved::of(&capture.record))
+                        })
+                    {
                         self.states.last_positions.settled(session, track.actor, None, capture.at);
                     } else {
                         changed.push((session, track, PeriodicCapture::Ready(capture)));
@@ -124,12 +128,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let capture = match capture {
                 PeriodicCapture::Ready(capture) => capture,
                 PeriodicCapture::Retained(retained) => {
-                    let Captured::At(capture) = self
+                    let capture = match self
                         .capture_retained_tutorial_position(&track, session, character_id, retained)
                         .await
-                    else {
-                        failed += 1;
-                        continue;
+                    {
+                        Captured::At(capture) => capture,
+                        Captured::Dead => continue,
+                        Captured::Gone => {
+                            self.states.last_positions.forget(session);
+                            continue;
+                        }
+                        Captured::Held | Captured::Vocation(_) => {
+                            failed += 1;
+                            continue;
+                        }
                     };
                     if capture.at.saturating_duration_since(track.checked) > LAST_POSITION_WRITE_INTERVAL {
                         operator_event("last_position_interval_exceeded");
@@ -141,7 +153,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             writes.push(ScopedPeriodicLastPosition {
                 house: capture.house.clone(),
-                preserve_vitals: capture.preserve_vitals,
+                pending_vocation_refill: capture.pending_vocation_refill,
                 write: PeriodicLastPosition {
                     fence: CurrentCharacterGameplayFence {
                         character_id,
@@ -176,15 +188,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         for ((session, track, capture), outcome) in fenced.into_iter().zip(outcomes) {
             match outcome {
                 Ok(outcome) => {
-                    let saved = match outcome {
-                        LastPositionWrite::Written => Some(Saved::of(&capture.record)),
-                        LastPositionWrite::RetainedVitals(vitals) => {
-                            let mut saved = Saved::of(&capture.record);
-                            saved.vitals = vitals;
-                            Some(saved)
-                        }
-                        LastPositionWrite::Superseded | LastPositionWrite::PendingObligation => None,
-                    };
+                    // A retained capture never seeds the ordinary comparison cache.
+                    // A subsequent retry can still refill the durable pools.
+                    let saved = (outcome == LastPositionWrite::Written
+                        && capture.pending_vocation_refill.is_none())
+                        .then(|| Saved::of(&capture.record));
                     self.states.last_positions.settled(session, track.actor, saved, capture.at);
                 }
                 Err(error) => {

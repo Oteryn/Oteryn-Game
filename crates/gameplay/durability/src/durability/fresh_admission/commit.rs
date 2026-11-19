@@ -64,7 +64,7 @@ impl FreshAdmissionStore {
     ) -> Self {
         Self {
             final_position: Some(final_position),
-            preserve_final_vitals: false,
+            pending_vocation_refill: None,
             final_house: None,
             house_release_node: None,
             ..self.clone()
@@ -73,12 +73,13 @@ impl FreshAdmissionStore {
 
     /// Save the current cell and rest state while the live vocation refill is pending.
     #[must_use]
-    pub fn with_final_position_preserving_vitals(
+    pub fn with_final_position_pending_refill(
         &self,
         final_position: super::character_last_position::FinalLastPosition,
+        occurrence: super::character_build::BuildOccurrence,
     ) -> Self {
         Self {
-            preserve_final_vitals: true,
+            pending_vocation_refill: Some(occurrence),
             ..self.with_final_position(final_position)
         }
     }
@@ -93,7 +94,7 @@ impl FreshAdmissionStore {
     ) -> Self {
         Self {
             final_position: Some(position),
-            preserve_final_vitals: false,
+            pending_vocation_refill: None,
             final_house: Some((house, node.clone())),
             house_release_node: Some(node.clone()),
             ..self.clone()
@@ -175,7 +176,7 @@ impl FreshAdmissionStore {
             journal_catalogue: None,
             channel_switch: false,
             final_position: None,
-            preserve_final_vitals: false,
+            pending_vocation_refill: None,
             final_house: None,
             house_release_node: None,
             retired_holder: None,

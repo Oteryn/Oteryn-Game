@@ -371,6 +371,12 @@ fn minimap_background_save_polls_the_failed_write_and_keeps_dirty_cells()
     map.bind_world("11111111-1111-4111-8111-111111111111");
     let snapshot = joined_window(20, 20);
     map.observe(&snapshot);
+    let load_deadline = Instant::now() + Duration::from_secs(2);
+    while map.background_io_pending() && Instant::now() < load_deadline {
+        map.poll_background_save();
+        std::thread::yield_now();
+    }
+    assert!(!map.background_io_pending(), "cache load did not finish");
     let cache = map.path().ok_or("bound cache")?;
     let staging = cache.with_extension("tmp");
     std::fs::create_dir(&staging)?;
@@ -484,3 +490,6 @@ fn map_binding_change_does_not_join_the_background_save() -> Result<(), Box<dyn 
     returned?;
     Ok(())
 }
+
+#[cfg(bevy_shell)]
+include!("background_io.rs");

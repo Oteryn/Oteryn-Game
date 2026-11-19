@@ -28,6 +28,7 @@ impl vault::Vault for MemoryVault {
 fn manager(vault: Arc<MemoryVault>, folder: PathBuf) -> DeviceLogin {
     DeviceLogin {
         enabled: true,
+        forget_requested: Default::default(),
         vault,
         state: Default::default(),
         folder: Some(folder),

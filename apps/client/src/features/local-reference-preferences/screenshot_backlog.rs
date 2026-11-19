@@ -5,11 +5,12 @@ use std::{
     collections::VecDeque,
     io,
     path::{Path, PathBuf},
+    sync::Arc,
     time::{Duration, Instant},
 };
 #[derive(Default)]
 pub(in super::super) struct ScreenshotRuntime {
-    frames: VecDeque<(Instant, Pixels)>,
+    frames: VecDeque<(Instant, Arc<Pixels>)>,
     last_frame: Option<Instant>,
     last_query: Option<Instant>,
     previous: Option<Signals>,
@@ -41,13 +42,13 @@ pub(crate) enum CaptureAction {
 
 pub(crate) struct ScreenshotBatch {
     directory: String,
-    frames: VecDeque<(Instant, Pixels)>,
+    frames: VecDeque<(Instant, Arc<Pixels>)>,
 }
 
 impl ScreenshotBatch {
     pub(crate) fn save(&self, current: &Pixels) -> io::Result<Vec<PathBuf>> {
         let folder = screenshot_directory(Path::new(&self.directory))?;
-        self.frames.iter().map(|(_, frame)| frame).chain([current])
+        self.frames.iter().map(|(_, frame)| frame.as_ref()).chain([current])
             .map(|frame| frame.save_to(&folder)).collect()
     }
 }
@@ -166,7 +167,7 @@ impl SettingsState {
     pub(crate) fn buffer_screenshot(&mut self, now: Instant, pixels: Pixels) {
         self.screenshot_runtime.last_frame = Some(now);
         let frames = &mut self.screenshot_runtime.frames;
-        frames.push_back((now, pixels));
+        frames.push_back((now, Arc::new(pixels)));
         let limit = usize::from(self.preferences.screenshots.effective().backlog_frames);
         while frames.len() > limit
             || frames.iter().map(|(_, frame)| frame.rgba.len()).sum::<usize>() > 64 << 20
@@ -176,17 +177,25 @@ impl SettingsState {
     }
 
     #[cfg(bevy_shell)]
-    pub(crate) fn submit_screenshot(
-        &mut self,
-        now: Instant,
-        directory: Option<String>,
-    ) -> ScreenshotBatch {
+    pub(crate) fn submit_screenshot(&mut self, now: Instant) -> ScreenshotBatch {
         self.screenshot_runtime.last_frame = Some(now);
         self.cancel_screenshot();
-        let mut batch = self.take_screenshot_batch();
-        if let Some(directory) = directory {
-            batch.directory = directory;
-        }
-        batch
+        self.take_screenshot_batch()
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn manual_screenshot_batch(
+        &mut self,
+        now: Instant,
+        directory: String,
+    ) -> (ScreenshotBatch, bool) {
+        self.screenshot_runtime.last_frame = Some(now);
+        let consumed = !self.screenshot_requested;
+        let frames = if consumed {
+            std::mem::take(&mut self.screenshot_runtime.frames)
+        } else {
+            self.screenshot_runtime.frames.clone()
+        };
+        (ScreenshotBatch { directory, frames }, consumed)
     }
 }

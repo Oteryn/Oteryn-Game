@@ -54,7 +54,7 @@ impl Minimap {
     pub(super) fn save_before_rebind(&mut self) -> io::Result<()> {
         #[cfg(bevy_shell)]
         if self.background_save && let Some(path) = self.path() {
-            if self.cells_dirty && !self.is_read_only() {
+            if self.cells_dirty && !self.is_read_only() && !self.background_io_owns_cache() {
                 self.start_save()?;
             }
             if let Some(task) = self.save_task.take() {
@@ -95,7 +95,7 @@ impl Minimap {
     }
 
     #[cfg(bevy_shell)]
-    pub(in crate::play) fn poll_background_save(&mut self) {
+    pub(in crate::play) fn poll_background_save(&mut self) -> bool {
         if let Some(result) = self
             .save_task
             .as_mut()
@@ -122,9 +122,11 @@ impl Minimap {
         if let Some(error) = outgoing_error {
             self.feedback = lfmt!("Could not save minimap: {error}", error = error);
         }
+        let changed = self.background_save && self.poll_cache_load();
         if self.background_save {
             self.save_if_due();
         }
+        changed
     }
 
     #[cfg(bevy_shell)]
@@ -136,6 +138,21 @@ impl Minimap {
             }
             Err(error) => self.save_failed(error),
         }
+    }
+
+    #[cfg(bevy_shell)]
+    pub(in crate::play) fn flush_background(&mut self) -> bool {
+        self.poll_background_save();
+        if let Some(Err(error)) = self.poll_background_import() {
+            eprintln!("Minimap import failed: {error}");
+        }
+        if self.background_save && self.cells_dirty && !self.background_io_owns_cache() && !self.is_read_only()
+            && let Err(error) = self.start_save()
+        {
+            self.save_failed(error);
+        }
+        self.save_task.is_some() || self.outgoing_saves.values().any(|save| save.task.is_some())
+            || self.background_io_pending()
     }
 
     #[cfg(all(test, bevy_shell))]

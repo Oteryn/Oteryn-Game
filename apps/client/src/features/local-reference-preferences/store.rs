@@ -7,12 +7,20 @@ use std::{
 
 #[cfg(bevy_shell)]
 type SaveResult = io::Result<Option<ReferencePreferences>>;
+#[cfg(bevy_shell)]
+#[path = "store/rebase.rs"]
+mod rebase;
+#[cfg(bevy_shell)]
+#[path = "store/background.rs"]
+mod background;
 
 pub struct PreferenceStore {
     path: PathBuf,
     preferences: ReferencePreferences,
     #[cfg(bevy_shell)]
     save_task: Option<bevy_tasks::Task<Vec<SaveResult>>>,
+    #[cfg(bevy_shell)]
+    replacing: bool,
 }
 
 impl PreferenceStore {
@@ -111,14 +119,13 @@ impl PreferenceStore {
         preferences: ReferencePreferences,
         previous: &ReferencePreferences,
     ) -> io::Result<()> {
-        let bytes = Self::serialized(&preferences)?;
-        let previous = Self::serialized(previous)?;
         #[cfg(bevy_shell)]
         if self.saving() {
-            self.enqueue(move |path| Self::write_with_backup(&path, &bytes, &previous).map(|()| None));
-            self.preferences = preferences;
+            self.replace_in_background(previous, move |_| Ok(preferences));
             return Ok(());
         }
+        let bytes = Self::serialized(&preferences)?;
+        let previous = Self::serialized(previous)?;
         Self::write_with_backup(&self.path, &bytes, &previous)?;
         self.preferences = preferences;
         Ok(())
@@ -144,6 +151,8 @@ impl PreferenceStore {
             preferences: ReferencePreferences::default(),
             #[cfg(bevy_shell)]
             save_task: None,
+            #[cfg(bevy_shell)]
+            replacing: false,
         }
     }
 
@@ -160,6 +169,8 @@ impl PreferenceStore {
             preferences,
             #[cfg(bevy_shell)]
             save_task: None,
+            #[cfg(bevy_shell)]
+            replacing: false,
         })
     }
 
@@ -185,60 +196,6 @@ impl PreferenceStore {
             Self::read_transfer(path)?;
         }
         crate::atomic_file::replace(path, &bytes, true)
-    }
-
-    #[cfg(bevy_shell)]
-    pub(super) fn apply_in_background(&mut self, preferences: ReferencePreferences) {
-        self.preferences = preferences.clone();
-        self.enqueue(move |path| Self::write_existing(&path, &preferences).map(|()| None));
-    }
-
-    #[cfg(bevy_shell)]
-    pub(super) fn restore_in_background(&mut self, previous: &ReferencePreferences) -> io::Result<()> {
-        let backup = self.backup_path();
-        let miscellaneous = previous.miscellaneous;
-        let previous = Self::serialized(previous)?;
-        self.enqueue(move |path| {
-            let mut restored = Self::read_transfer(&backup)?;
-            restored.miscellaneous = miscellaneous;
-            Self::write_with_backup(&path, &Self::serialized(&restored)?, &previous)?;
-            Ok(Some(restored))
-        });
-        Ok(())
-    }
-
-    #[cfg(bevy_shell)]
-    fn enqueue(&mut self, save: impl FnOnce(PathBuf) -> SaveResult + Send + 'static) {
-        let path = self.path.clone();
-        let previous = self.save_task.take();
-        self.save_task = Some(bevy_tasks::IoTaskPool::get().spawn(async move {
-            let mut results = match previous {
-                Some(previous) => previous.await,
-                None => Vec::new(),
-            };
-            results.push(save(path));
-            results
-        }));
-    }
-
-    #[cfg(bevy_shell)]
-    pub(super) fn saving(&self) -> bool {
-        self.save_task.is_some()
-    }
-
-    #[cfg(bevy_shell)]
-    pub(super) fn at_path(&self, path: &Path) -> bool {
-        self.path == path
-    }
-
-    #[cfg(bevy_shell)]
-    pub(super) fn poll_background_save(&mut self) -> Option<Vec<SaveResult>> {
-        let results = bevy_tasks::futures::check_ready(self.save_task.as_mut()?)?;
-        self.save_task = None;
-        if let Some(Ok(Some(restored))) = results.last() {
-            self.preferences = restored.clone();
-        }
-        Some(results)
     }
 
     pub fn path() -> Option<PathBuf> {

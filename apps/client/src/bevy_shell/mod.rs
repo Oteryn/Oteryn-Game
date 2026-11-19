@@ -107,6 +107,7 @@ pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<(), Box<dyn std::
     let options = Options::parse(args)?;
     crate::desktop_startup::prepare(options.preferences.clone(), options.smoke);
     let mut owner = HostOwner::new(options.preferences.clone())?;
+    owner.settings.use_background_preferences();
     owner.configure_login(options.login_settings.clone(), |name| {
         std::env::var(name).ok()
     });
@@ -194,7 +195,10 @@ fn build_app(options: Options, owner: HostOwner, plugins: bevy::app::PluginGroup
     )
     .add_systems(PostUpdate, audit::write.after(bevy::ui::UiSystems::Layout))
     .init_non_send::<screenshots::Writes>()
-    .add_systems(Update, audit::capture_on_key);
+    .add_systems(
+        PostUpdate,
+        audit::capture_on_key.after(game_ui::viewport::project),
+    );
     app.init_non_send::<input::NativeInput>().add_systems(
         Update,
         input::route

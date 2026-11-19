@@ -225,7 +225,7 @@ impl DurabilityRoot {
             node,
             writes
                 .into_iter()
-                .map(|write| ScopedPeriodicLastPosition { write, house: None, preserve_vitals: false })
+                .map(|write| ScopedPeriodicLastPosition { write, house: None, pending_vocation_refill: None })
                 .collect(),
         )
         .await
@@ -275,7 +275,7 @@ async fn write_periodic(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     node: &NodeIncarnationProof,
     mut write: PeriodicLastPosition,
-    preserve_vitals: bool,
+    pending_vocation_refill: Option<super::character_build::BuildOccurrence>,
 ) -> std::result::Result<Result<LastPositionWrite>, DurabilityError> {
     if let Err(error) = validate_fence(&write.fence, &write.record) {
         return Ok(Err(error));
@@ -286,6 +286,10 @@ async fn write_periodic(
     if let Err(error) = assert_session_fence(tx, &write.fence.item_fence(), node).await? {
         return Ok(Err(error));
     }
+    let preserve_vitals = match pending_vocation_refill {
+        Some(occurrence) => committed_vocation_refill(tx, write.fence.character_id, occurrence).await?,
+        None => false,
+    };
     if preserve_vitals {
         let Some(stored) = load_last_position_in(tx, write.fence.character_id, true).await? else {
             return Ok(Err(CharacterProgressionError::MissingProgressionState));
@@ -307,6 +311,25 @@ async fn write_periodic(
         outcome
     };
     Ok(Ok(outcome))
+}
+
+/// The build receipt and refill commit in the same transaction. An occurrence
+/// retained after a refused build must not suppress a newer live health sample.
+pub(super) async fn committed_vocation_refill(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: CharacterId,
+    occurrence: super::character_build::BuildOccurrence,
+) -> std::result::Result<bool, DurabilityError> {
+    Ok(sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM game_character_build_receipts
+         WHERE build_occurrence_id = encode($1,'hex')::uuid
+           AND character_id = encode($2,'hex')::uuid
+           AND cause IN ('vocation_choice', 'vocation_trial'))",
+    )
+    .bind(occurrence.as_bytes().as_slice())
+    .bind(character.as_bytes().as_slice())
+    .fetch_one(&mut **tx)
+    .await?)
 }
 
 pub(super) fn validate_fence(
