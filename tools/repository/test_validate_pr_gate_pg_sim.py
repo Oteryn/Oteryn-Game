@@ -145,28 +145,40 @@ class QualificationPlacementTests(unittest.TestCase):
 
     def test_archive_creation_splits_before_codegen_with_the_same_package_selection(self):
         step = self.archive_step("Archive changed-crate unit tests")
-        script = 'cargo() { printf "%s\\n" "${OTERYN_DISPATCH_PG_SHARD-unset}" "$@"; }\n'
+        script = """cargo() {
+          if [[ "$3" == list ]]; then
+            printf '{"test-count":1,"rust-suites":{"dispatch":{}}}\\n'
+          else
+            printf "%s\\n" "${OTERYN_DISPATCH_TEST_ARCHIVE-unset}" "${OTERYN_DISPATCH_PG_SHARD-unset}" "$@"
+          fi
+        }
+        """
         script += self.step_script(step)
         dispatch = "package(=oteryn-gameplay-dispatch)"
         for mode, packages in (("workspace", ["--workspace"]), ("packages", ["-p", "first", "-p", "second"])):
-            for role, shard, args in (
-                ("all", "unset", ["--lib", "--bins"]),
-                ("bins", "unset", ["--bins"]),
-                ("lib-1", "1/3", ["--lib"]),
-                ("lib-2", "2/3", ["--lib", "-E", dispatch]),
-                ("lib-3", "3/3", ["--lib", "-E", dispatch]),
+            for role, scope, shard, args in (
+                ("all", "unset", "unset", ["--lib", "--bins"]),
+                ("bins", "unset", "unset", ["--bins"]),
+                ("lib-1", "unset", "1/3", ["--lib"]),
+                ("lib-2", "unset", "2/3", ["--lib", "-E", dispatch]),
+                ("lib-3", "unset", "3/3", ["--lib", "-E", dispatch]),
+                ("lib", "common", "unset", ["--lib", "-E", f"not {dispatch}"]),
+                ("dispatch-1", "dedicated", "1/3", ["--test", "oteryn-gameplay-dispatch"]),
+                ("dispatch-2", "dedicated", "2/3", ["--test", "oteryn-gameplay-dispatch"]),
+                ("dispatch-3", "dedicated", "3/3", ["--test", "oteryn-gameplay-dispatch"]),
             ):
                 with self.subTest(mode=mode, role=role), tempfile.TemporaryDirectory() as directory:
                     root = Path(directory)
                     (root / "nextest-bin").mkdir()
                     (root / "nextest-bin/cargo-nextest").touch()
                     env = dict(os.environ, ARCHIVE=role, OTERYN_DISPATCH_PG_SHARD="9/9",
+                               OTERYN_DISPATCH_TEST_ARCHIVE="stale",
                                RUNNER_TEMP=directory, RUNNER_OS="Linux", RUNNER_ARCH="X64",
                                RUST_SELECTION=json.dumps(dict(mode=mode, packages=["first", "second"])))
                     result = subprocess.check_output(["bash", "-c", script], env=env, text=True)
                     archive = root / "rust-fast-archive" / role / "unit-tests.tar.zst"
                     self.assertEqual(result.splitlines(), [
-                        shard, "+1.100.0", "nextest", "archive", "--locked", *packages, *args,
+                        scope, shard, "+1.100.0", "nextest", "archive", "--locked", *packages, *args,
                         "--archive-file", str(archive), "--zstd-level", "1",
                     ])
 
@@ -175,26 +187,43 @@ class QualificationPlacementTests(unittest.TestCase):
         source = textwrap.dedent(step.split('"$RUNNER_TEMP/rust-selection.json" <<\'PY\'\n', 1)[1]
                                  .split("          PY\n", 1)[0])
         dispatch = "oteryn-gameplay-dispatch"
-        roles = ["lib-1", "lib-2", "lib-3"]
-        for supported, mode, selected, archives in (
-            (False, "workspace", [], ["all"]),
-            (True, "workspace", [], [*roles, "bins"]),
-            (True, "packages", [dispatch], roles),
-            (True, "packages", ["other"], ["all"]),
+        old_roles = ["lib-1", "lib-2", "lib-3"]
+        new_roles = ["dispatch-1", "dispatch-2", "dispatch-3"]
+        target_path = "crates/gameplay/dispatch/src/ci_unit_archive.rs"
+        for support, mode, selected, archives in (
+            ("none", "workspace", [], ["all"]),
+            ("legacy", "workspace", [], [*old_roles, "bins"]),
+            ("legacy", "packages", [dispatch], old_roles),
+            ("dedicated", "workspace", [], ["lib", *new_roles, "bins"]),
+            ("dedicated", "packages", [dispatch], new_roles),
+            ("dedicated", "packages", [dispatch, "binary"], [*new_roles, "bins"]),
+            ("dedicated", "packages", ["other"], ["all"]),
         ):
-            with self.subTest(supported=supported, mode=mode, selected=selected), tempfile.TemporaryDirectory() as directory:
+            with self.subTest(support=support, mode=mode, selected=selected), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
-                if supported:
-                    for name in ("crates/gameplay/dispatch/build_pg_shards.rs", "tools/repository/check_dispatch_pg_shards.py"):
+                if support != "none":
+                    for name in (
+                        "crates/gameplay/dispatch/build_pg_shards.rs",
+                        "tools/repository/check_dispatch_pg_shards.py",
+                    ):
                         path = root / name
                         path.parent.mkdir(parents=True)
                         path.touch()
+                dispatch_targets = [{"kind": ["lib"], "test": True}]
+                if support == "dedicated":
+                    target = root / target_path
+                    target.parent.mkdir()
+                    target.touch()
+                    dispatch_targets.append({"name": dispatch, "kind": ["test"], "test": False,
+                                             "src_path": str(target)})
                 metadata = root / "metadata.json"
+                all_packages = [dispatch, "other", "binary"]
                 metadata.write_text(json.dumps({
-                    "workspace_members": [dispatch, "other"],
+                    "workspace_members": all_packages,
                     "packages": [
-                        {"name": dispatch, "id": dispatch, "targets": [{"kind": ["lib"], "test": True}]},
-                        {"name": "other", "id": "other", "targets": [{"kind": ["bin"], "test": False}]},
+                        {"name": dispatch, "id": dispatch, "targets": dispatch_targets},
+                        {"name": "other", "id": "other", "targets": [{"kind": ["lib"], "test": True}]},
+                        {"name": "binary", "id": "binary", "targets": [{"kind": ["bin"], "test": True}]},
                     ],
                 }))
                 selection = root / "selection.json"
@@ -205,7 +234,25 @@ class QualificationPlacementTests(unittest.TestCase):
                                cwd=root, env=env, check=True, capture_output=True)
                 selected_outputs = dict(line.split("=", 1) for line in output.read_text().splitlines())
                 self.assertEqual(json.loads(selected_outputs["archives"]), archives)
-                self.assertEqual(json.loads(selected_outputs["selection"])["packages"], sorted(selected or ["other", dispatch]))
+                self.assertEqual(json.loads(selected_outputs["selection"])["packages"], sorted(selected or all_packages))
+
+    def test_dedicated_archives_require_every_distinct_artifact_id(self):
+        script = self.step_script(self.rust_fast_step("Select unit-test artifact IDs"))
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "output"
+            env = dict(os.environ, GITHUB_OUTPUT=str(output),
+                       ARCHIVE_ROLES='["lib","dispatch-1","dispatch-2","dispatch-3","bins"]',
+                       LIB_ARTIFACT_ID="10", DISPATCH_1_ARTIFACT_ID="21", DISPATCH_2_ARTIFACT_ID="22",
+                       DISPATCH_3_ARTIFACT_ID="23", BINS_ARTIFACT_ID="30")
+            subprocess.run(["bash", "-c", script], env=env, check=True, capture_output=True)
+            self.assertEqual(output.read_text(), "ids=10,21,22,23,30\n")
+            output.unlink()
+            for invalid_id in ("", "21"):
+                with self.subTest(invalid_id=invalid_id):
+                    env["DISPATCH_2_ARTIFACT_ID"] = invalid_id
+                    rejected = subprocess.run(["bash", "-c", script], env=env, capture_output=True)
+                    self.assertNotEqual(rejected.returncode, 0)
+                    self.assertFalse(output.exists())
 
     def test_unit_test_ledger_handles_mixed_runner_images(self):
         archive_step = self.archive_step("Report archive runner identity")
@@ -300,18 +347,20 @@ class QualificationPlacementTests(unittest.TestCase):
                         "manifest_path": str(ROOT / "crates/simulation-determinism/Cargo.toml"),
                     }],
                 }))
-                for role in ("lib-1", "lib-2", "lib-3"):
+                roles = ["lib", "dispatch-1", "dispatch-2", "dispatch-3", "bins"]
+                for role in roles:
                     artifact = temp / "rust-fast-archive" / role
                     artifact.mkdir(parents=True)
-                    role_image = "different-image" if role == "lib-2" and secondary == "image-mismatch" else builder_image
+                    role_image = "different-image" if role == "dispatch-2" and secondary == "image-mismatch" else builder_image
                     (artifact / "runner-image").write_text(role_image + "\n")
                     (artifact / "runner-platform").write_text(builder_platform + "\n")
                     junit = temp / "rust-fast-extract" / role / "junit.xml"
                     junit.parent.mkdir(parents=True)
-                    if role == "lib-2" and secondary == "missing":
+                    if role == "dispatch-2" and secondary == "missing":
                         continue
-                    outcome = "<failure/>" if role == "lib-2" and secondary == "failed" else ""
-                    junit.write_text(f'<testsuite name="{name}" tests="1">'
+                    outcome = "<failure/>" if role == "dispatch-2" and secondary == "failed" else ""
+                    binary_id = f"{name}::ci_test" if role.startswith("dispatch-") else name
+                    junit.write_text(f'<testsuite name="{binary_id}" tests="1">'
                                      f'<testcase name="{role}">{outcome}</testcase></testsuite>')
                 output = temp / "output"
                 env = dict(
@@ -320,7 +369,7 @@ class QualificationPlacementTests(unittest.TestCase):
                     GITHUB_STEP_SUMMARY=str(temp / "summary"), CARGO_TARGET_DIR=directory,
                     PLAN_IMAGE=image, PLAN_PLATFORM=platform, ARCHIVE_RESULT="success",
                     ARCHIVE_IMAGE=builder_image, ARCHIVE_PLATFORM=builder_platform,
-                    ARCHIVE_ROLES='["lib-1","lib-2","lib-3"]',
+                    ARCHIVE_ROLES=json.dumps(roles),
                     ImageVersion=image, RUNNER_OS="Linux", RUNNER_ARCH="X64",
                 )
                 subprocess.run(["bash", "-c", textwrap.dedent(plan)], cwd=ROOT, env=env,
