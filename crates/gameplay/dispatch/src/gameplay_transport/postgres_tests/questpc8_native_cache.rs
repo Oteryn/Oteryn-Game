@@ -8,11 +8,11 @@ fn questpc8_mintwallin_native_cache_without_uid_mints_ruby_once() -> TestResult 
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("questpc8-native-cache", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("questpc8-native-cache", || {
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let activation =
-            super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
-        let chest = super::quest_catalogue_chests::CatalogueChest {
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
+        let chest = super::quest_catalogue_chests_fixtures::CatalogueChest {
             claim: "oteryn:reward-claim.kv.mintwallincyclops".into(),
             position: (32591, 32097, -14),
             unique: 0,
@@ -27,7 +27,7 @@ fn questpc8_mintwallin_native_cache_without_uid_mints_ruby_once() -> TestResult 
             charges: vec![],
             fluids: vec![],
         };
-        super::quest_container_chests::catalogue_scenario(&chest, &activation)
+        super::quest_container_chests_fixtures::catalogue_scenario(&chest, &activation)
     })?;
     eprintln!(
         "POSTGRES_CASE_COMPLETED questpc8_mintwallin_native_cache duration={:?}",

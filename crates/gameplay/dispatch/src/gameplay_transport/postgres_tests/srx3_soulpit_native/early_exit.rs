@@ -125,7 +125,7 @@ pub(super) async fn scenario<'a, 'f, 's>(
     let admission = player;
     let mut frames = Vec::new();
     let command = player.continuity.next_command_id;
-    let (status, result, scope, _) = super::super::guild_wire::exchange_capture(
+    let (status, result, scope, _) = super::super::guild_wire_fixtures::exchange_capture(
         &instance,
         &mut player,
         command,

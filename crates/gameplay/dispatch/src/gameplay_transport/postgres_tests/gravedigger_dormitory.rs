@@ -1,5 +1,5 @@
 //! Source-qualified dormitory admission and Servant death use the ordinary STEP and loot owners.
-use super::quest_world_callbacks::{self, tool_fixture};
+use super::quest_world_callbacks_fixtures::{self as quest_world_callbacks, tool_fixture};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::debug};
 use oteryn_gameplay_quests::quest::{
     QuestTrack, authored_bindings::Bindings,
@@ -32,7 +32,7 @@ fn dormitory_entry_commits_once_and_redirects_an_ineligible_player() -> TestResu
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("gravedigger-room", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("gravedigger-room", move || {
         dormitory_gate(admin.clone(), 0)?;
         dormitory_gate(admin, 1)
     })
@@ -43,7 +43,7 @@ fn dormitory_return_pad_sends_the_player_outside_without_writing_quest_progress(
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("gravedigger-dormitory-exit", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("gravedigger-dormitory-exit", move || {
         let pad = Position {
             x: 33015,
             y: 32441,
@@ -95,7 +95,7 @@ fn dormitory_step_spawns_the_servant_and_its_death_keeps_the_fragment_in_the_cor
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("gravedigger-servant", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("gravedigger-servant", move || {
         servant(admin.clone(), false)?;
         servant(admin, true)
     })
@@ -106,7 +106,7 @@ fn heart_and_ritual_pads_use_distinct_mission_gates_and_destinations() -> TestRe
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("gravedigger-source-pads", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("gravedigger-source-pads", move || {
         let heart = Pad {
             at: Position {
                 x: 32988,
@@ -178,7 +178,7 @@ fn ritual_exit_requires_the_completed_rite_and_returns_to_omrabas() -> TestResul
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("gravedigger-ritual-exit", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("gravedigger-ritual-exit", move || {
         let exit = Pad {
             at: Position {
                 x: 33015,
@@ -386,7 +386,7 @@ fn servant(admin: String, completed: bool) -> TestResult {
                 );
                 *servant
             };
-            super::engworldchg_journals::kill_actor(
+            super::engworldchg_journals_fixtures::kill_actor(
                 owner,
                 &admitted,
                 servant,

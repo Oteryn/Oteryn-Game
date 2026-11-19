@@ -1,5 +1,5 @@
 //! Real basket USE creates portable Ground custody and one exact timed creature.
-use super::quest_world_callbacks::{self, tool_fixture};
+use super::quest_world_callbacks_fixtures::{self as quest_world_callbacks, tool_fixture};
 use super::{TestResult, fixture::debug};
 use crate::gameplay_transport::{
     connection::{FreshAdmissionAuthority, UseCommand},
@@ -26,7 +26,7 @@ fn cat_basket_creates_a_portable_floor_toy_and_despawns_its_exact_kitty_after_te
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("foolish-cat-basket", move || scenario(admin, false))
+    super::kill_reward_e2e_fixtures::scenario_thread::run("foolish-cat-basket", move || scenario(admin, false))
 }
 
 #[test]
@@ -34,7 +34,7 @@ fn cat_basket_floor_reward_refreshes_ground_after_an_interrupted_use_acknowledge
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("foolish-cat-basket-interrupted", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("foolish-cat-basket-interrupted", move || {
         scenario(admin, true)
     })
 }

@@ -17,7 +17,7 @@ fn scenario(contended: bool) -> TestResult {
         eprintln!("SOULPIT_BOOT_POSTGRES_SKIPPED no_admin_url");
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("soulpit-boot", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("soulpit-boot", move || {
         run(async |admin| {
             let h = Harness::create_with_admission_seed(admin, "soulpit_boot", true, false).await?;
             {

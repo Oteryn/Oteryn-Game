@@ -40,7 +40,7 @@ fn resting_scenario(premium: bool, zero_streak: bool) -> TestResult {
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "daily_resting", false, false).await?;
         prepare_current_session(&h).await?;
-        super::daily_reward::epoch(&h, 1).await?;
+        super::daily_reward_fixtures::epoch(&h, 1).await?;
         // Seed a valid final projection/receipt pair, without disabling its deferred guards.
         let mut tx = h.pool.begin().await?;
         sqlx::query("INSERT INTO game_character_daily_rewards(character_id,world_id,lane_day,streak,last_claim_epoch,last_claim_day) SELECT encode($1,'hex')::uuid,world_id,2,7,reset_epoch,reset_day FROM game_world_reset_history WHERE world_id=encode($2,'hex')::uuid AND reset_epoch=1")

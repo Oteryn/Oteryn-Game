@@ -1,6 +1,9 @@
 //! Both Omrabas dialogue transitions use the shared native NPC registration and writer.
-use super::quest_world_callbacks::{self, tool_fixture};
-use super::{TestResult, fixture::debug, foolish_npc_reactions::talk};
+use super::quest_world_callbacks_fixtures::{
+    self as quest_world_callbacks,
+    tool_fixture::{self, talk},
+};
+use super::{TestResult, fixture::debug};
 use oteryn_gameplay_quests::quest::{
     authored_bindings::{Bindings, BoundQuest, Stage, Track, Trigger},
     reward_callbacks::RewardCallback,
@@ -26,7 +29,7 @@ fn omrabas_starts_the_quest_and_delivers_the_nail_case_once_through_npc_talk() -
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("gravedigger-omrabas", move || scenario(admin))
+    super::kill_reward_e2e_fixtures::scenario_thread::run("gravedigger-omrabas", move || scenario(admin))
 }
 
 fn scenario(admin: String) -> TestResult {
@@ -106,7 +109,7 @@ fn scenario(admin: String) -> TestResult {
         bindings,
         async |owner, admitted, h, fence| {
             let [npc] =
-                super::classic_quests::install_positions(owner, &admitted, [OMRABAS], [npc_at])
+                super::classic_quests_fixtures::install_positions(owner, &admitted, [OMRABAS], [npc_at])
                     .await?;
             let _clock = owner.freeze_owner_clock_for_test();
             talk(owner, admitted, fence, npc, 1, "hi").await?;

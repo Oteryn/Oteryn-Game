@@ -1,5 +1,5 @@
 //! The plain ritual-scroll USE debits both custody inputs and grants the achievement.
-use super::quest_world_callbacks::{self, tool_fixture};
+use super::quest_world_callbacks_fixtures::{self as quest_world_callbacks, tool_fixture};
 use super::{TestResult, fixture::debug};
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use oteryn_gameplay_quests::quest::{
@@ -24,7 +24,7 @@ fn plain_incantation_scroll_use_consumes_the_altar_skull_and_summons_the_ritual_
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("gravedigger-ritual", move || scenario(admin, Altar::Free))
+    super::kill_reward_e2e_fixtures::scenario_thread::run("gravedigger-ritual", move || scenario(admin, Altar::Free))
 }
 
 #[test]
@@ -32,7 +32,7 @@ fn plain_incantation_scroll_summons_ritual_chicken_next_to_occupied_altar() -> T
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("gravedigger-occupied-altar", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("gravedigger-occupied-altar", move || {
         scenario(admin, Altar::Occupied)
     })
 }
@@ -42,7 +42,7 @@ fn plain_incantation_scroll_cannot_summon_ritual_chicken_onto_stairs() -> TestRe
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("gravedigger-stair-altar", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("gravedigger-stair-altar", move || {
         scenario(admin, Altar::StairRing)
     })
 }
@@ -52,7 +52,7 @@ fn interrupted_plain_scroll_use_reconciles_custody_and_summons_one_ritual_chicke
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("gravedigger-ritual-lost-ack", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("gravedigger-ritual-lost-ack", move || {
         scenario(admin, Altar::Interrupted)
     })
 }
@@ -151,7 +151,7 @@ fn scenario(admin: String, layout: Altar) -> TestResult {
                 true,
             )
             .await?;
-            let (admitted, refusal, _) = super::item_craft::exchange(
+            let (admitted, refusal, _) = super::item_craft_fixtures::exchange(
                 owner,
                 admitted,
                 admitted.continuity.next_command_id,
@@ -212,7 +212,7 @@ fn scenario(admin: String, layout: Altar) -> TestResult {
                     std::sync::atomic::Ordering::Release,
                 );
             }
-            let result = super::item_craft::exchange(
+            let result = super::item_craft_fixtures::exchange(
                 owner,
                 admitted,
                 admitted.continuity.next_command_id,

@@ -1,5 +1,8 @@
 //! Native NPC_TALK receipts with real displayed looks, inventory and creature state.
-use super::quest_world_callbacks::{self, tool_fixture};
+use super::quest_world_callbacks_fixtures::{
+    self as quest_world_callbacks,
+    tool_fixture::{self, TalkResult, talk},
+};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::debug};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::gameplay_transport::{
@@ -37,7 +40,7 @@ fn kazzan_greeting_requires_the_current_mummy_look() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("kazzan-mummy", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("kazzan-mummy", move || {
         scenario(admin, KAZZAN_NPC, false)
     })
 }
@@ -47,7 +50,7 @@ fn wyda_cookie_hand_in_consumes_cookie_and_applies_delayed_soulfire() -> TestRes
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("wyda-soulfire", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("wyda-soulfire", move || {
         scenario(admin, WYDA_NPC, false)
     })
 }
@@ -57,7 +60,7 @@ fn wyda_soulfire_survives_interrupted_dialogue_and_busy_spell_state() -> TestRes
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("wyda-soulfire-recovery", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("wyda-soulfire-recovery", move || {
         scenario(admin, WYDA_NPC, true)
     })
 }
@@ -67,7 +70,7 @@ fn the_orc_king_first_greeting_spawns_public_guards_once() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("orc-king-guards", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("orc-king-guards", move || {
         scenario(admin, ORC_NPC, false)
     })
 }
@@ -77,7 +80,7 @@ fn the_orc_king_public_guards_survive_interrupted_greeting_and_busy_spell_state(
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("orc-king-guards-recovery", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("orc-king-guards-recovery", move || {
         scenario(admin, ORC_NPC, true)
     })
 }
@@ -218,7 +221,7 @@ fn scenario(admin: String, npc: &'static str, contend_on_recovery: bool) -> Test
         bindings,
         async |owner, admitted, h, fence| {
             let [entity] =
-                super::classic_quests::install_positions(owner, &admitted, [npc], [npc_at]).await?;
+                super::classic_quests_fixtures::install_positions(owner, &admitted, [npc], [npc_at]).await?;
             let _clock = owner.freeze_owner_clock_for_test();
             if npc == WYDA_NPC {
                 quest_world_callbacks::input_item(
@@ -386,11 +389,6 @@ fn scenario(admin: String, npc: &'static str, contend_on_recovery: bool) -> Test
     )
 }
 
-pub(super) struct TalkResult {
-    pub(super) lines: Vec<String>,
-    pub(super) inventory_changed: bool,
-}
-
 async fn recover_reaction(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
@@ -458,42 +456,6 @@ async fn recover_reaction(
     assert!(owner.resume_npc_bank(actor, command).await.is_none());
     Ok(TalkResult {
         lines: outcome.conversation.ok_or("recovered NPC dialogue")?.lines,
-        inventory_changed: outcome.inventory_changed,
-    })
-}
-
-pub(super) async fn talk(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
-    admitted: AdmittedSession,
-    fence: CurrentCharacterGameplayFence,
-    npc: EntityRef,
-    command_id: u64,
-    text: &str,
-) -> TestResult<TalkResult> {
-    owner
-        .states
-        .test_owner_time
-        .store(command_id * 2_000_000, std::sync::atomic::Ordering::Relaxed);
-    let outcome = owner
-        .npc_talk(
-            admitted.runtime_actor.ok_or("actor")?,
-            UseCommand {
-                game_session_id: admitted.game_session_id,
-                command_id,
-                item_fence: Some(fence.item_fence()),
-            },
-            NpcTalkIntent {
-                npc_actor: npc,
-                text: text.into(),
-            },
-        )
-        .await;
-    assert_eq!(outcome.disposition, NpcIntentDisposition::Ok, "{text}");
-    assert!(!outcome.unknown, "{text}");
-    Ok(TalkResult {
-        lines: outcome
-            .conversation
-            .map_or_else(Vec::new, |conversation| conversation.lines),
         inventory_changed: outcome.inventory_changed,
     })
 }

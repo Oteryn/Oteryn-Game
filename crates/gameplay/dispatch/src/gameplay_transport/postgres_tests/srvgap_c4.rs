@@ -53,7 +53,7 @@ fn reaudit_usable_item_actions() -> TestResult {
             sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
             sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
             let keys = ["oteryn:item.tibia.i16252", "oteryn:item.tibia.i16253", "oteryn:item.tibia.i23538", "oteryn:item.tibia.i6579", "oteryn:item.tibia.i37746"];
-            super::item_look::seed_main_backpack(&harness, &keys.map(|key| (key, 1))).await?;
+            super::item_look_fixtures::seed_main_backpack(&harness, &keys.map(|key| (key, 1))).await?;
             for (offset, key) in keys.iter().enumerate() {
                 let source = id(71 + u8::try_from(offset)?);
                 let intent = UseIntent {

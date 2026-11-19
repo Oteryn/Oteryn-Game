@@ -146,7 +146,7 @@ fn cell_bytes(cell: LastPositionCell) -> Vec<u8> {
 async fn scenario(h: &Harness, case: Case, reject_root_bounds: bool) -> TestResult {
     // Use the shared real admission/control fixture, choosing vocation while still
     // in its current Channel. No fabricated Instance session, assignment or receipt.
-    let (_evidence, enter) = super::activity_runtime::prepare_activity_fixture(h).await?;
+    let (_evidence, enter) = super::activity_runtime_fixtures::prepare_activity_fixture(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
         .root
@@ -988,7 +988,7 @@ async fn seed_equipment(h: &Harness, case: Case) -> TestResult {
     } else {
         &[("oteryn:item.tibia.i3031", 5)]
     };
-    super::item_look::seed_main_backpack(h, entries).await?;
+    super::item_look_fixtures::seed_main_backpack(h, entries).await?;
     // Existing fixture construction only. Every death, loss, return and retirement
     // transition below uses the genuine runtime owner with all triggers enabled.
     let mut tx = h.pool.begin().await?;

@@ -1,5 +1,5 @@
 //! An exact Slime death creates a two-second sample target for the selected Bozo flask.
-use super::quest_world_callbacks::{self, tool_fixture};
+use super::quest_world_callbacks_fixtures::{self as quest_world_callbacks, tool_fixture};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::debug};
 use crate::gameplay_transport::{
     connection::{FreshAdmissionAuthority, UseCommand},
@@ -27,7 +27,7 @@ fn only_the_original_slime_poison_gas_inside_two_seconds_fills_the_selected_flas
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("foolish-slime-gas", move || scenario(admin))
+    super::kill_reward_e2e_fixtures::scenario_thread::run("foolish-slime-gas", move || scenario(admin))
 }
 
 fn scenario(admin: String) -> TestResult {
@@ -166,7 +166,7 @@ async fn kill_slime(
             .map_err(debug)?;
         *spawn.first().ok_or("Slime")?
     };
-    super::engworldchg_journals::kill_actor(owner, admitted, actor, command).await?;
+    super::engworldchg_journals_fixtures::kill_actor(owner, admitted, actor, command).await?;
     Ok(actor)
 }
 

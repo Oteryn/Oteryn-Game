@@ -20,7 +20,7 @@ fn scrying_ball_use_consumes_mirror_and_restores_exact_shared_object_after_sixty
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("scrying-ball", move || scenario(admin, false))
+    super::kill_reward_e2e_fixtures::scenario_thread::run("scrying-ball", move || scenario(admin, false))
 }
 
 #[test]
@@ -28,7 +28,7 @@ fn scrying_ball_holds_the_selected_object_until_interrupted_use_reconciles() -> 
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("scrying-ball-lost-ack", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("scrying-ball-lost-ack", move || {
         scenario(admin, true)
     })
 }
@@ -66,8 +66,8 @@ fn scenario(admin: String, interrupted: bool) -> TestResult {
         "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/to_blind_the_enemy_quest/mirror.lua:10-21"]
     }))?;
     let world =
-        super::quest_world_callbacks::world_with_objects(&callback, trigger, &[(decoy, 132)], &[])?;
-    super::quest_world_callbacks::tool_fixture::run_world(
+        super::quest_world_callbacks_fixtures::world_with_objects(&callback, trigger, &[(decoy, 132)], &[])?;
+    super::quest_world_callbacks_fixtures::tool_fixture::run_world(
         admin,
         "scrying_ball",
         world,
@@ -80,7 +80,7 @@ fn scenario(admin: String, interrupted: bool) -> TestResult {
             max: 2,
         }],
         async move |owner, admitted, h, fence| {
-            use super::quest_world_callbacks::tool_fixture::{placement, use_held_tool, use_tool};
+            use super::quest_world_callbacks_fixtures::tool_fixture::{placement, use_held_tool, use_tool};
             let map = owner.bundle_map().ok_or("bundle map")?;
             let (key, _) = placement(map, trigger, 2)?;
             let (decoy_key, _) = placement(map, decoy, 1)?;
@@ -211,7 +211,7 @@ async fn admit_rival(
             .bind_attacker_lease(actor, fence.game_session_id, current.current_character_lease())
             .map_err(debug)?;
         runtime
-            .initialize_pinned_test_position(actor, super::quest_world_callbacks::local(position))
+            .initialize_pinned_test_position(actor, super::quest_world_callbacks_fixtures::local(position))
             .map_err(debug)?;
         actor
     };
@@ -259,7 +259,7 @@ async fn admit_rival(
         .map_err(debug)?;
     owner.admit_progression_session(&mut rival).await;
     owner.admit_quest_session(&rival).await;
-    super::quest_world_callbacks::input_item(
+    super::quest_world_callbacks_fixtures::input_item(
         owner,
         fence,
         &Offering {

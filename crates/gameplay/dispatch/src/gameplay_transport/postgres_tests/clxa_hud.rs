@@ -15,7 +15,7 @@ fn clxa_hud_postgres_general_stats_preserve_skill_values_and_stamina_boundaries(
     }
     std::thread::Builder::new().stack_size(256 << 20).spawn(|| {
         run(async |admin| {
-            use super::cyclopedia::support::exchange;
+            use super::cyclopedia_fixtures::support::exchange;
             reset();
             let h = Harness::create_with_admission_seed(admin, "clxa_hud", true, false).await?;
             eprintln!("POSTGRES_STARTED CLX-A general_stats_skill_and_stamina_boundaries");

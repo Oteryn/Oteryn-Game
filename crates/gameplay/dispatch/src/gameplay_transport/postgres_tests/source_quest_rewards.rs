@@ -1,7 +1,9 @@
 //! T..Z reward claims: source placements -> wire USE -> durable custody and replay.
 //! This certifies the reward path, not any untested access puzzle or NPC mission.
+use super::source_quest_rewards_fixtures::{legacy_world_owned};
+
 use super::fixture::{Harness, debug, id, run};
-use super::quest_callbacks::{source_world_positions, wire_use_targets_retained};
+use super::quest_callbacks_fixtures::{source_world_positions, wire_use_targets_retained};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::durability::item_mint::TypedDefinitionRef;
@@ -120,18 +122,6 @@ fn definition(key: &str) -> TypedDefinitionRef {
     }
 }
 
-/// A legacy once claim served by its exact World callback (legacy_world_claims.rs)
-/// commits through the quest writer, which needs the admitted quest session.
-pub(super) fn legacy_world_owned(claim: &str) -> TestResult<bool> {
-    use oteryn_gameplay_quests::quest::world_callbacks::{legacy_world_claim, load};
-    for callback in load()?.iter() {
-        if legacy_world_claim(callback)?.is_some_and(|binding| binding.key == claim) {
-            return Ok(true);
-        }
-    }
-    Ok(false)
-}
-
 fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
     let choices: Vec<_> = cohort
         .iter()
@@ -154,7 +144,7 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activated) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;
@@ -311,7 +301,7 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
             stale_fence.character_lease_generation += 1;
             stale.item_fence = Some(stale_fence);
             assert_eq!(
-                super::quest_callbacks::wire_uses(&owner, stale, &[1], &target).await?,
+                super::quest_callbacks_fixtures::wire_uses(&owner, stale, &[1], &target).await?,
                 [UseDisposition::Rejected],
                 "{} UID{} {}",
                 chest.claim,
@@ -344,7 +334,7 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
                 (1, StepDirection::West, at.x - 1),
                 (2, StepDirection::East, at.x),
             ] {
-                let reply = super::quest_world_callbacks::wire(
+                let reply = super::quest_world_callbacks_fixtures::wire(
                     &owner,
                     &mut stream,
                     command,
@@ -578,7 +568,7 @@ async fn walk(
         } else {
             (StepDirection::North, 0, -1)
         };
-        let reply = super::quest_world_callbacks::wire(
+        let reply = super::quest_world_callbacks_fixtures::wire(
             owner,
             stream,
             *command,

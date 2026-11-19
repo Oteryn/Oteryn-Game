@@ -1,5 +1,5 @@
 //! Knife USE couples source progress and beard custody to a public native spawn.
-use super::quest_world_callbacks::{self, tool_fixture};
+use super::quest_world_callbacks_fixtures::{self as quest_world_callbacks, tool_fixture};
 use super::{TestResult, fixture::debug};
 use oteryn_gameplay_quests::quest::{
     QuestTrack,
@@ -17,7 +17,7 @@ fn shaving_the_emperor_with_the_knife_grants_the_beard_and_spawns_one_dwarf_guar
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("foolish-dwarf-guard", move || scenario(admin))
+    super::kill_reward_e2e_fixtures::scenario_thread::run("foolish-dwarf-guard", move || scenario(admin))
 }
 
 fn scenario(admin: String) -> TestResult {

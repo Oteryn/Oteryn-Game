@@ -1,7 +1,7 @@
 //! Real USE rune wire -> native field cast -> guarded writer -> durable row/result.
-use super::death_ml_loss_composed::{current_fence, production_generation_with_pin};
+use super::death_ml_loss_composed_fixtures::{current_fence, production_generation_with_pin};
 use super::fixture::{Harness, debug, id, join_two, run};
-use super::item_look::{large_stack, read_frame, seed_main_backpack};
+use super::item_look_fixtures::{large_stack, read_frame, seed_main_backpack};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::character_build::{
     BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState, convert_vocation,

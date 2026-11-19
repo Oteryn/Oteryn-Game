@@ -40,6 +40,21 @@ Choose lenses by diff size and by what the diff touches:
   400-500 lines by file group (one crate or module per chunk). Each chunk
   gets the lenses that fit it. Every chunk still gets the whole diff as
   read-only context, so cross-file defects are not lost.
+- Every package PR, and every diff split into chunks, also gets two
+  holistic runs in the same round. Each reviews the whole diff as one unit,
+  not a chunk, and reports findings anywhere in it:
+  - `whole-integration`: how the parts interact on the integrated head:
+    shared state, duplicate or conflicting registrations, ordering of
+    handlers and migrations, a migration against another member's code,
+    contracts and fixtures against the code, generated files (quest tree,
+    pins, registries) against their sources.
+  - `whole-flows`: each player flow the diff changes, end to end (client
+    command, dispatch, rules, durability, PostgreSQL and back), with the
+    cheating-player cases: two clients at once, disconnect midway, a
+    replayed frame, a restart during a write, values at their limits.
+  Chunk runs alone are not a covered review of a package: per-chunk runs miss
+  defects between members. The delta review (second round) reruns
+  `whole-integration` over the fix commits together with the code they touch.
 
 Each lens is one Codex Cloud task (read-only, model `gpt-6.2-astra`, reasoning
 effort `high`), never `codex exec` on the PC. Name the task

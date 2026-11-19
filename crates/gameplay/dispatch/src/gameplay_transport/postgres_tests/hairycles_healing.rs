@@ -19,7 +19,7 @@ fn hairycles_checks_quest_progress_then_heals_before_fire_and_poison() -> TestRe
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("hairycles quest healing", move || scenario(admin))
+    super::kill_reward_e2e_fixtures::scenario_thread::run("hairycles quest healing", move || scenario(admin))
 }
 
 fn scenario(admin: String) -> TestResult {
@@ -162,7 +162,7 @@ fn scenario(admin: String) -> TestResult {
             )
             .map_err(|_| "quest healer fixture already installed")?;
         set_progress(&owner, &h, session, 11).await?;
-        super::npc_paid_travel::talk(&owner, &deps, npc, 1, "hi").await?;
+        super::npc_paid_travel_fixtures::talk(&owner, &deps, npc, 1, "hi").await?;
         use crate::domain::condition::{ConditionType, ConditionValues, DotElement, StatusKind};
         use oteryn_gameplay_foundation::foundation::condition::{
             ApplicationFacts, ConditionDefinition, DamageSchedule, DamageSegment,
@@ -243,7 +243,7 @@ fn scenario(admin: String) -> TestResult {
                 set_progress(&owner, &h, session, 12).await?;
             }
             owner.clock_origin -= std::time::Duration::from_secs(1);
-            let outcome = super::npc_paid_travel::talk(&owner, &deps, npc, command, text).await?;
+            let outcome = super::npc_paid_travel_fixtures::talk(&owner, &deps, npc, command, text).await?;
             if command != 3 {
                 let lines = outcome.conversation.ok_or("healing response")?.lines;
                 if matches!(command, 2 | 7) {
