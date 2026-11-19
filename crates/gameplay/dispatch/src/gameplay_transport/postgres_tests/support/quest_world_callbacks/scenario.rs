@@ -280,8 +280,10 @@ fn scenario_case(
     );
     let qengine_reward = name.starts_with("qengine-rewards-");
     let outfit_world = name.starts_with("l1-") && name.ends_with("-wardrobe");
+    let ferumbras_predecessor = name == questpc7_ferumbras_fixtures::PREDECESSOR_CASE;
+    let ferumbras = name == "questpc7-ferumbras" || ferumbras_predecessor;
     let shared_rewards = name == "questpc7-grave"
-        || matches!(name, "questpc7-ferumbras" | super::super::questpc7_ferumbras::PREDECESSOR_CASE)
+        || ferumbras
         || name == "questpc7-hero"
         || name == "questpc7-hydra"
         || name == "questpc7-hoist-story"
@@ -339,10 +341,10 @@ fn scenario_case(
                 | "questpc2-albinius-four-tomes"
                 | "questpc2-albinius-five-tomes"
                 | "questpc2-albinius-combined"
-                | super::super::albinius_ice_portal::CASE
+                | albinius_ice_portal_fixtures::CASE
                 | "questpc2-albinius-portals-exact"
                 | "questpc2-albinius-portals-combined"
-                | super::super::quest_definition_predecessors::CASE
+                | quest_definition_predecessors_fixtures::CASE
                 | "classic-rottin-disrepair"
                 | "threatened-dreams-npc"
                 | "conditional-quest-greetings"
@@ -352,34 +354,48 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let death_replacement = matches!(name, super::super::encounter_death_replacements::BOWL | super::super::encounter_death_replacements::EARTH | super::super::encounter_death_replacements::ENERGY | super::super::encounter_death_replacements::ENERGY_RECOVERY | super::super::encounter_death_replacements::ESSENCE | super::super::encounter_death_replacements::FALLEN | super::super::encounter_death_replacements::LORE | super::super::encounter_death_replacements::LORE_ROUTE | super::super::encounter_death_replacements::VICTORY);
-    let monster_step = matches!(name, super::super::zamulosh_monster_step::CASE | super::super::zamulosh_monster_step::BLOSSOM);
-    let mut callback = if name == super::super::shulgrax_flower_pattern::CYCLE {
-        super::super::shulgrax_flower_pattern::cycle_callback()?
-    } else if name == super::super::shulgrax_flower_pattern::CASE {
-        super::super::shulgrax_flower_pattern::callback()?
-    } else if name == super::super::shulgrax_flower_pattern::PORTAL_CASE {
-        super::super::shulgrax_flower_pattern::portal_callback()?
-    } else if super::super::warzone_portal_cooldown::is_victory(name) {
-        super::super::warzone_portal_cooldown::terminal_callback(name, trigger)?
+    let death_replacement = matches!(
+        name,
+        encounter_death_replacements_fixtures::BOWL
+            | encounter_death_replacements_fixtures::EARTH
+            | encounter_death_replacements_fixtures::ENERGY
+            | encounter_death_replacements_fixtures::ENERGY_RECOVERY
+            | encounter_death_replacements_fixtures::ESSENCE
+            | encounter_death_replacements_fixtures::FALLEN
+            | encounter_death_replacements_fixtures::LORE
+            | encounter_death_replacements_fixtures::LORE_ROUTE
+            | encounter_death_replacements_fixtures::VICTORY
+    );
+    let monster_step = matches!(
+        name,
+        zamulosh_monster_step_fixtures::CASE | zamulosh_monster_step_fixtures::BLOSSOM
+    );
+    let mut callback = if name == shulgrax_flower_pattern_fixtures::CYCLE {
+        shulgrax_flower_pattern_fixtures::cycle_callback()?
+    } else if name == shulgrax_flower_pattern_fixtures::CASE {
+        shulgrax_flower_pattern_fixtures::callback()?
+    } else if name == shulgrax_flower_pattern_fixtures::PORTAL_CASE {
+        shulgrax_flower_pattern_fixtures::portal_callback()?
+    } else if warzone_portal_cooldown_fixtures::is_victory(name) {
+        warzone_portal_cooldown_fixtures::terminal_callback(name, trigger)?
     } else if monster_step {
-        super::super::zamulosh_monster_step::callback(name)?
-    } else if name == super::super::zamulosh_monster_step::ACCESS {
-        super::super::zamulosh_monster_step::access_callback()?
-    } else if super::super::zamulosh_monster_step::is_habitat(name) {
-        super::super::zamulosh_monster_step::habitat_callback()?
-    } else if super::super::warzone_portal_cooldown::is_entry(name) {
-        super::super::warzone_portal_cooldown::callback(name)?
+        zamulosh_monster_step_fixtures::callback(name)?
+    } else if name == zamulosh_monster_step_fixtures::ACCESS {
+        zamulosh_monster_step_fixtures::access_callback()?
+    } else if zamulosh_monster_step_fixtures::is_habitat(name) {
+        zamulosh_monster_step_fixtures::habitat_callback()?
+    } else if warzone_portal_cooldown_fixtures::is_entry(name) {
+        warzone_portal_cooldown_fixtures::callback(name)?
     } else if death_replacement {
-        super::super::encounter_death_replacements::callback(name, trigger)?
-    } else if name == super::super::ferumbras_crystal_reset::CASE {
-        super::super::ferumbras_crystal_reset::callback()?
-    } else if name == super::super::forgotten_temple_portal::CASE {
-        super::super::forgotten_temple_portal::callback()?
-    } else if super::super::first_dragon_descendant::handles(name) {
-        super::super::first_dragon_descendant::callback(name)?
+        encounter_death_replacements_fixtures::callback(name, trigger)?
+    } else if name == ferumbras_crystal_reset_fixtures::CASE {
+        ferumbras_crystal_reset_fixtures::callback()?
+    } else if name == forgotten_temple_portal_fixtures::CASE {
+        forgotten_temple_portal_fixtures::callback()?
+    } else if first_dragon_descendant_fixtures::handles(name) {
+        first_dragon_descendant_fixtures::callback(name)?
     } else if m03_use {
-        super::super::qengine_m03_use::callback()?
+        super::super::qengine_m03_use_fixtures::callback()?
     } else if qd_world {
         super::super::qd_world_fixtures::callback(name)?
     } else if engenc_asura {
@@ -416,7 +432,7 @@ fn scenario_case(
         callback("questpc7-grimvale-entry")?
     } else if name == "questpc7-grave" {
         callback("questpc7-grave-entry")?
-    } else if matches!(name, "questpc7-ferumbras" | super::super::questpc7_ferumbras::PREDECESSOR_CASE) {
+    } else if ferumbras {
         callback("questpc7-ferumbras-entry")?
     } else if name == "questpc7-hero" {
         callback("questpc7-hero-entry")?
@@ -674,22 +690,22 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals_fixtures::require_bindings()?;
     }
-    let world = if name == super::super::shulgrax_flower_pattern::CYCLE {
-        super::super::shulgrax_flower_pattern::cycle_world(&callback)?
-    } else if name == super::super::shulgrax_flower_pattern::CASE {
-        super::super::shulgrax_flower_pattern::world(&callback)?
-    } else if super::super::zamulosh_monster_step::is_habitat(name) {
-        super::super::zamulosh_monster_step::habitat_world(&callback, name)?
-    } else if super::super::warzone_portal_cooldown::is_victory(name) {
-        super::super::warzone_portal_cooldown::portal_world(&callback, name, trigger)?
+    let world = if name == shulgrax_flower_pattern_fixtures::CYCLE {
+        shulgrax_flower_pattern_fixtures::cycle_world(&callback)?
+    } else if name == shulgrax_flower_pattern_fixtures::CASE {
+        shulgrax_flower_pattern_fixtures::world(&callback)?
+    } else if zamulosh_monster_step_fixtures::is_habitat(name) {
+        zamulosh_monster_step_fixtures::habitat_world(&callback, name)?
+    } else if warzone_portal_cooldown_fixtures::is_victory(name) {
+        warzone_portal_cooldown_fixtures::portal_world(&callback, name, trigger)?
     } else if death_replacement {
-        super::super::encounter_death_replacements::world(&callback, trigger, name)?
-    } else if name == super::super::ferumbras_crystal_reset::CASE {
-        super::super::ferumbras_crystal_reset::world(&callback)?
-    } else if name == super::super::forgotten_temple_portal::CASE {
-        super::super::forgotten_temple_portal::world(&callback)?
+        encounter_death_replacements_fixtures::world(&callback, trigger, name)?
+    } else if name == ferumbras_crystal_reset_fixtures::CASE {
+        ferumbras_crystal_reset_fixtures::world(&callback)?
+    } else if name == forgotten_temple_portal_fixtures::CASE {
+        forgotten_temple_portal_fixtures::world(&callback)?
     } else if name == "authored-wrath-crystals" {
-        super::super::questpc8_wrath_crystals::world()?
+        super::super::questpc8_wrath_crystals_fixtures::world()?
     } else if name == "nx6-wayfarer" {
         super::super::questpc8_wrath_source_dragon::world()?
     } else if name == "authored-wrath-hunt" {
@@ -831,11 +847,11 @@ fn scenario_case(
             &super::super::questpc7_grave_fixtures::objects()?,
             &[],
         )?
-    } else if matches!(name, "questpc7-ferumbras" | super::super::questpc7_ferumbras::PREDECESSOR_CASE) {
+    } else if ferumbras {
         world_with_objects(
             &callback,
             trigger,
-            &super::super::questpc7_ferumbras_fixtures::objects(),
+            &questpc7_ferumbras_fixtures::objects(),
             &[],
         )?
     } else if name == "questpc7-hero" {
@@ -1416,7 +1432,9 @@ fn scenario_case(
             "catalogue-npc-calendar" | "catalogue-npc-scoped" => Some(35),
             "questpc7-eligibility-high" => Some(1000),
             "qengine-rewards-feaster-prefix" | "qengine-rewards-feaster-thaian" => Some(250),
-            "questpc7-ferumbras" | super::super::questpc7_ferumbras::PREDECESSOR_CASE | "qengine-rewards-heart-story" => Some(150),
+            "questpc7-ferumbras"
+            | questpc7_ferumbras_fixtures::PREDECESSOR_CASE
+            | "qengine-rewards-heart-story" => Some(150),
             "questpc7-grave" => Some(250),
             "questpc7-outfits-formal" => Some(20),
             "questpc7-outfits-fiend" | "questpc7-outfits-inquisition" => Some(250),
@@ -1582,9 +1600,9 @@ fn scenario_case(
                 5
             } else if monk {
                 4
-            } else if name == super::super::encounter_death_replacements::ESSENCE {
+            } else if name == encounter_death_replacements_fixtures::ESSENCE {
                 24 // Space for three spectator waves, the opening roster and the boundary probes.
-            } else if name == super::super::ferumbras_crystal_reset::CASE {
+            } else if name == ferumbras_crystal_reset_fixtures::CASE {
                 104 // Retain the 81 Rift Invader slots while opening and completing the later phases.
             } else if callback.effects.encounter.is_some() {
                 16
@@ -1685,7 +1703,7 @@ fn scenario_case(
             || name == "qengine-rewards-heart-story"
             || name == "qengine-rewards-grimvale-story"
             || name == "questpc7-grave"
-            || matches!(name, "questpc7-ferumbras" | super::super::questpc7_ferumbras::PREDECESSOR_CASE)
+            || ferumbras
             || name == "questpc7-hero"
             || name == "questpc7-hydra"
             || name == "questpc7-hoist-story"
@@ -1739,33 +1757,45 @@ fn scenario_case(
             owner.quest_catalogue =
                 Some(super::super::draconia_escape_fixtures::catalogue(&callback, name)?);
         }
-        if name == super::super::encounter_death_replacements::VICTORY {
-            owner.quest_catalogue = Some(std::sync::Arc::new(super::super::encounter_death_replacements::reward_room_catalogue(&callback)?));
+        if name == encounter_death_replacements_fixtures::VICTORY {
+            owner.quest_catalogue = Some(std::sync::Arc::new(
+                encounter_death_replacements_fixtures::reward_room_catalogue(&callback)?,
+            ));
         }
         if engenc_asura {
             owner.quest_catalogue = Some(std::sync::Arc::new(
                 super::super::engenc_asura_dispatch_fixtures::catalogue(name)?,
             ));
         }
-        if super::super::warzone_portal_cooldown::is_entry(name) {
-            owner.quest_catalogue = Some(std::sync::Arc::new(super::super::warzone_portal_cooldown::catalogue(&callback, name)?));
-        }
-        if name == super::super::zamulosh_monster_step::ACCESS {
-            owner.quest_catalogue = Some(std::sync::Arc::new(super::super::zamulosh_monster_step::access_catalogue(&callback)?));
-        }
-        if super::super::zamulosh_monster_step::is_habitat(name) {
-            owner.quest_catalogue = Some(std::sync::Arc::new(super::super::zamulosh_monster_step::habitat_catalogue(&callback)?));
-        }
-        if name == super::super::shulgrax_flower_pattern::PORTAL_CASE {
-            owner.quest_catalogue = Some(std::sync::Arc::new(super::super::shulgrax_flower_pattern::portal_catalogue(&callback)?));
-        }
-        if super::super::first_dragon_descendant::handles(name) {
+        if warzone_portal_cooldown_fixtures::is_entry(name) {
             owner.quest_catalogue = Some(std::sync::Arc::new(
-                super::super::first_dragon_descendant::catalogue(&callback)?,
+                warzone_portal_cooldown_fixtures::catalogue(&callback, name)?,
             ));
         }
-        if name == super::super::forgotten_temple_portal::CASE {
-            owner.quest_catalogue = Some(std::sync::Arc::new(super::super::forgotten_temple_portal::catalogue(&callback)?));
+        if name == zamulosh_monster_step_fixtures::ACCESS {
+            owner.quest_catalogue = Some(std::sync::Arc::new(
+                zamulosh_monster_step_fixtures::access_catalogue(&callback)?,
+            ));
+        }
+        if zamulosh_monster_step_fixtures::is_habitat(name) {
+            owner.quest_catalogue = Some(std::sync::Arc::new(
+                zamulosh_monster_step_fixtures::habitat_catalogue(&callback)?,
+            ));
+        }
+        if name == shulgrax_flower_pattern_fixtures::PORTAL_CASE {
+            owner.quest_catalogue = Some(std::sync::Arc::new(
+                shulgrax_flower_pattern_fixtures::portal_catalogue(&callback)?,
+            ));
+        }
+        if first_dragon_descendant_fixtures::handles(name) {
+            owner.quest_catalogue = Some(std::sync::Arc::new(
+                first_dragon_descendant_fixtures::catalogue(&callback)?,
+            ));
+        }
+        if name == forgotten_temple_portal_fixtures::CASE {
+            owner.quest_catalogue = Some(std::sync::Arc::new(
+                forgotten_temple_portal_fixtures::catalogue(&callback)?,
+            ));
         }
         if m44_flower {
             owner.quest_catalogue = Some(std::sync::Arc::new(
@@ -1935,32 +1965,105 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if name == super::super::shulgrax_flower_pattern::CYCLE {
-            Box::pin(super::super::shulgrax_flower_pattern::exercise_cycle(&owner, &mut admitted, callback.clone())).await?;
-        } else if name == super::super::shulgrax_flower_pattern::CASE {
-            Box::pin(super::super::shulgrax_flower_pattern::exercise(&owner, &mut admitted, callback.clone())).await?;
-        } else if name == super::super::shulgrax_flower_pattern::PORTAL_CASE {
-            Box::pin(super::super::shulgrax_flower_pattern::exercise_portal(&owner, &mut admitted, &h, callback.clone())).await?;
-        } else if super::super::warzone_portal_cooldown::is_victory(name) {
-            Box::pin(super::super::warzone_portal_cooldown::exercise_victory(&owner, &mut admitted, &h, callback.clone(), name, trigger)).await?;
+        if name == shulgrax_flower_pattern_fixtures::CYCLE {
+            Box::pin(shulgrax_flower_pattern_fixtures::exercise_cycle(
+                &owner,
+                &mut admitted,
+                callback.clone(),
+            ))
+            .await?;
+        } else if name == shulgrax_flower_pattern_fixtures::CASE {
+            Box::pin(shulgrax_flower_pattern_fixtures::exercise(
+                &owner,
+                &mut admitted,
+                callback.clone(),
+            ))
+            .await?;
+        } else if name == shulgrax_flower_pattern_fixtures::PORTAL_CASE {
+            Box::pin(shulgrax_flower_pattern_fixtures::exercise_portal(
+                &owner,
+                &mut admitted,
+                &h,
+                callback.clone(),
+            ))
+            .await?;
+        } else if warzone_portal_cooldown_fixtures::is_victory(name) {
+            Box::pin(warzone_portal_cooldown_fixtures::exercise_victory(
+                &owner,
+                &mut admitted,
+                &h,
+                callback.clone(),
+                name,
+                trigger,
+            ))
+            .await?;
         } else if monster_step {
-            Box::pin(super::super::zamulosh_monster_step::exercise(&owner, &h, callback.clone())).await?;
-        } else if name == super::super::zamulosh_monster_step::ACCESS {
-            Box::pin(super::super::zamulosh_monster_step::exercise_access(&owner, &mut admitted, &h, callback.clone())).await?;
-        } else if super::super::zamulosh_monster_step::is_habitat(name) {
-            Box::pin(super::super::zamulosh_monster_step::exercise_habitat(&owner, &mut admitted, callback.clone(), name)).await?;
-        } else if super::super::warzone_portal_cooldown::is_entry(name) {
-            Box::pin(super::super::warzone_portal_cooldown::exercise(&owner, &mut admitted, &h, name)).await?;
+            Box::pin(zamulosh_monster_step_fixtures::exercise(
+                &owner,
+                &h,
+                callback.clone(),
+            ))
+            .await?;
+        } else if name == zamulosh_monster_step_fixtures::ACCESS {
+            Box::pin(zamulosh_monster_step_fixtures::exercise_access(
+                &owner,
+                &mut admitted,
+                &h,
+                callback.clone(),
+            ))
+            .await?;
+        } else if zamulosh_monster_step_fixtures::is_habitat(name) {
+            Box::pin(zamulosh_monster_step_fixtures::exercise_habitat(
+                &owner,
+                &mut admitted,
+                callback.clone(),
+                name,
+            ))
+            .await?;
+        } else if warzone_portal_cooldown_fixtures::is_entry(name) {
+            Box::pin(warzone_portal_cooldown_fixtures::exercise(
+                &owner,
+                &mut admitted,
+                &h,
+                name,
+            ))
+            .await?;
         } else if death_replacement {
-            Box::pin(super::super::encounter_death_replacements::exercise(&mut owner, &mut admitted, &h, callback.clone(), trigger, name)).await?;
-        } else if name == super::super::ferumbras_crystal_reset::CASE {
-            Box::pin(super::super::ferumbras_crystal_reset::exercise(&mut owner, &mut admitted, &h, callback.clone())).await?;
-        } else if super::super::first_dragon_descendant::handles(name) {
-            Box::pin(super::super::first_dragon_descendant::exercise(&mut owner, &mut admitted, &h, name)).await?;
-        } else if name == super::super::forgotten_temple_portal::CASE {
-            Box::pin(super::super::forgotten_temple_portal::exercise(&owner, &mut admitted, &h, callback.clone())).await?;
+            Box::pin(encounter_death_replacements_fixtures::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                callback.clone(),
+                trigger,
+                name,
+            ))
+            .await?;
+        } else if name == ferumbras_crystal_reset_fixtures::CASE {
+            Box::pin(ferumbras_crystal_reset_fixtures::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                callback.clone(),
+            ))
+            .await?;
+        } else if first_dragon_descendant_fixtures::handles(name) {
+            Box::pin(first_dragon_descendant_fixtures::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                name,
+            ))
+            .await?;
+        } else if name == forgotten_temple_portal_fixtures::CASE {
+            Box::pin(forgotten_temple_portal_fixtures::exercise(
+                &owner,
+                &mut admitted,
+                &h,
+                callback.clone(),
+            ))
+            .await?;
         } else if m03_use {
-            Box::pin(super::super::qengine_m03_use::exercise(
+            Box::pin(super::super::qengine_m03_use_fixtures::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
@@ -2701,9 +2804,15 @@ fn scenario_case(
         } else if name == "qengine-rewards-grimvale-contacts" {
             super::super::questpc7_grimvale_fixtures::contacts(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-grave" {
-            super::super::questpc7_grave::exercise(&mut owner, &mut admitted, &h).await?;
-        } else if matches!(name, "questpc7-ferumbras" | super::super::questpc7_ferumbras::PREDECESSOR_CASE) {
-            Box::pin(super::super::questpc7_ferumbras::exercise(&mut owner, &mut admitted, &h, name == super::super::questpc7_ferumbras::PREDECESSOR_CASE)).await?;
+            super::super::questpc7_grave_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if ferumbras {
+            Box::pin(questpc7_ferumbras_fixtures::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                ferumbras_predecessor,
+            ))
+            .await?;
         } else if name == "questpc7-hero" {
             super::super::questpc7_hero_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-hydra" {
@@ -3168,8 +3277,13 @@ fn scenario_case(
                 &authority,
             )
             .await?;
-        } else if name == super::super::albinius_ice_portal::CASE {
-            Box::pin(super::super::albinius_ice_portal::exercise(&mut owner, &mut admitted, &h)).await?;
+        } else if name == albinius_ice_portal_fixtures::CASE {
+            Box::pin(albinius_ice_portal_fixtures::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+            ))
+            .await?;
         } else if name.starts_with("questpc2-albinius-portals-") {
             super::super::questpc2_albinius_portals_fixtures::exercise(
                 &mut owner,
