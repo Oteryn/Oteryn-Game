@@ -1,10 +1,9 @@
-//! Owner option A: basic Oteryn rules, not Reference-qualified.
+//! Cyclopedia progress over POIs from an admitted native map.
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-// Oteryn defaults, not Reference-qualified: one authored area/subarea, seven
-// positions, exact-tile finding, no speed contribution, donation before random draw.
-// The seven-position target and four-tile spacing match the production discovery source.
+// The seven-position target and four-tile spacing match Crystal
+// data/scripts/discovery_system.lua:18-19. The legacy catalogue fields pin durable rows.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct BasicArea {
@@ -26,12 +25,23 @@ pub struct Point {
     pub floor: i16,
 }
 impl Point {
-    pub fn in_window(self, at: Self) -> bool {
-        // Crystal 201189f `data/scripts/discovery_system.lua:16-19,471-476`:
-        // VIEW_X=7, VIEW_Y=5; exclude the symmetric +1 box on the same floor.
+    // Crystal 201189f8, data/scripts/discovery_system.lua:16-17,472,643.
+    const VIEW_X: u32 = 7;
+    const VIEW_Y: u32 = 5;
+
+    // Keep newly generated POIs one tile beyond the viewport.
+    fn in_window(self, at: Self) -> bool {
+        self.within_view(at, 1)
+    }
+
+    pub fn in_viewport(self, at: Self) -> bool {
+        self.within_view(at, 0)
+    }
+
+    fn within_view(self, at: Self, margin: u32) -> bool {
         self.floor == at.floor
-            && (-8..=8).contains(&(i64::from(self.x) - i64::from(at.x)))
-            && (-6..=6).contains(&(i64::from(self.y) - i64::from(at.y)))
+            && self.x.abs_diff(at.x) <= Self::VIEW_X + margin
+            && self.y.abs_diff(at.y) <= Self::VIEW_Y + margin
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -103,6 +113,10 @@ impl BasicArea {
             && !value.name.is_empty())
         .then_some(value)
     }
+    pub fn max_pool_len(&self) -> usize {
+        self.pool_limit * 2
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn apply(
         &self,
@@ -114,7 +128,7 @@ impl BasicArea {
         occurrence: &[u8; 16],
     ) -> Result<bool, MapRefusal> {
         if pool.iter().enumerate().any(|(i, p)| pool[..i].contains(p))
-            || pool.len() > self.pool_limit
+            || pool.len() > self.max_pool_len()
             || state.exploration.as_ref().is_some_and(|e| {
                 !matches!(e.points.len(), 7 | 8)
                     || e.points
@@ -132,7 +146,12 @@ impl BasicArea {
             && state.exploration.is_none()
             && matches!(action, MapAction::Query | MapAction::Find)
         {
-            self.apply(state, MapAction::Start, pool, at, false, occurrence)?
+            match self.apply(state, MapAction::Start, pool, at, false, occurrence) {
+                // Crystal discovery_system.lua:578-585,766-767 keeps map and donation
+                // data available when there are too few tiles for an exploration.
+                Err(MapRefusal::InsufficientPool) if action == MapAction::Query => false,
+                result => result?,
+            }
         } else {
             false
         };
@@ -149,6 +168,7 @@ impl BasicArea {
                 let mut candidates: Vec<_> = pool
                     .iter()
                     .copied()
+                    .filter(|p| !p.in_window(at))
                     .map(|p| {
                         let mut hash = Sha256::new();
                         hash.update(b"cyclopedia_poi:oteryn-basic-v2");
@@ -156,7 +176,7 @@ impl BasicArea {
                         hash.update(p.x.to_be_bytes());
                         hash.update(p.y.to_be_bytes());
                         hash.update(p.floor.to_be_bytes());
-                        (p.in_window(at), <[u8; 32]>::from(hash.finalize()), p)
+                        (<[u8; 32]>::from(hash.finalize()), p)
                     })
                     .collect();
                 candidates.sort_unstable();
@@ -164,7 +184,7 @@ impl BasicArea {
                     return Err(MapRefusal::InsufficientPool);
                 }
                 let mut points = Vec::with_capacity(self.generated_count);
-                for (_, _, point) in &candidates {
+                for (_, point) in &candidates {
                     if points.len() < self.generated_count
                         && points.iter().all(|selected: &Point| {
                             selected.floor != point.floor
@@ -177,7 +197,7 @@ impl BasicArea {
                 }
                 // Crystal `discovery_system.lua` generatePois relaxes the spacing rule
                 // once a box is hard to fill; the remaining draws keep the same order.
-                for (_, _, point) in &candidates {
+                for (_, point) in &candidates {
                     if points.len() < self.generated_count && !points.contains(point) {
                         points.push(*point);
                     }
@@ -192,10 +212,7 @@ impl BasicArea {
                 };
                 let before = exploration.found;
                 for (index, point) in exploration.points.iter().enumerate() {
-                    if point.floor == at.floor
-                        && point.x.abs_diff(at.x) <= self.found_radius as u32
-                        && point.y.abs_diff(at.y) <= self.found_radius as u32
-                    {
+                    if point.in_viewport(at) {
                         exploration.found |= 1 << index;
                     }
                 }
@@ -219,6 +236,30 @@ impl BasicArea {
 mod tests {
     #![allow(clippy::panic)]
     use super::*;
+
+    fn visit_remaining_points(area: &BasicArea, progress: &mut MapProgress, pool: &[Point]) {
+        for _ in 0..area.generated_count {
+            let Some(exploration) = &progress.exploration else {
+                break;
+            };
+            let next = exploration
+                .points
+                .iter()
+                .copied()
+                .enumerate()
+                .find(|(index, _)| exploration.found & (1 << index) == 0);
+            let Some((_, point)) = next else {
+                panic!("completed POI run remained active");
+            };
+            assert_eq!(
+                area.apply(progress, MapAction::Find, pool, point, false, &[2; 16]),
+                Ok(true)
+            );
+        }
+        assert!(progress.discovered);
+        assert!(progress.exploration.is_none());
+    }
+
     #[test]
     fn discovery_activates_without_premium_and_reset_removes_completion() {
         let Some(area) = BasicArea::embedded() else {
@@ -241,24 +282,8 @@ mod tests {
             area.apply(&mut progress, MapAction::Query, &pool, at, false, &[1; 16]),
             Ok(true)
         );
-        let Some(exploration) = progress.exploration.as_ref() else {
-            panic!("automatic exploration")
-        };
-        let points = exploration.points.clone();
-        for point in points {
-            assert_eq!(
-                area.apply(
-                    &mut progress,
-                    MapAction::Find,
-                    &pool,
-                    point,
-                    false,
-                    &[2; 16]
-                ),
-                Ok(true)
-            );
-        }
-        assert!(progress.discovered);
+        assert!(progress.exploration.is_some(), "automatic exploration");
+        visit_remaining_points(&area, &mut progress, &pool);
         assert_eq!(
             area.apply(
                 &mut progress,
@@ -419,14 +444,7 @@ mod tests {
             panic!("shuffled exploration")
         };
         assert_eq!(exploration.found, 0);
-        for p in exploration.points.iter().take(7) {
-            assert_eq!(
-                area.apply(&mut state, MapAction::Find, &pool, *p, false, &[3; 16]),
-                Ok(true)
-            );
-        }
-        assert!(state.discovered);
-        assert!(state.exploration.is_none());
+        visit_remaining_points(&area, &mut state, &pool);
         assert_eq!(
             area.apply(&mut state, MapAction::Start, &pool, start, true, &[3; 16]),
             Err(MapRefusal::AlreadyDiscovered)

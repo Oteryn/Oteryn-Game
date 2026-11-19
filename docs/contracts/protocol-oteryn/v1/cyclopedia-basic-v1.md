@@ -2,9 +2,8 @@
 
 Owner option A, 2026-10-23; command ids 72–73, capability 57. WORLD-SRC,
 2026-11-05, replaces placeholder membership with admitted native subarea masks
-and adopts the sourced donation lifecycle. Existing bounded sampling and exact-tile
-finding remain Oteryn defaults, not full Reference parity. The feature is offered
-only when native Entry membership and a reachable candidate pool are admitted.
+and adopts the sourced donation lifecycle. The feature is offered only when native
+Entry membership and a reachable candidate pool are admitted.
 No new state domain. Generic CommandResult payloads carry the following bytes.
 
 ## Request
@@ -56,43 +55,37 @@ decisions: `docs/reference/content-prep/world-src-1105/map.md`.
 
 ## Automatic discovery and POI reset (T186/T187, 2026-11-09)
 
-Every admitted subarea is active for every character without Start or Premium.
-The first current-location query or accepted STEP materializes the character's
-private POIs; an initializing query advances the Character revision atomically.
-Accepted movement finds POIs at the server-owned position. Intent 3 remains a
-compatible explicit position check. Legacy Start initializes an absent run and is
-idempotent while one is active. Sampling prefers spaced points outside the current
-viewport; inside points and relaxed spacing allow seven POIs in dense, bounded
-subareas.
+Every admitted subarea is available to every character without Start or Premium.
+The first current-location query or accepted STEP can materialize the character's
+private POIs. An initializing query advances the Character revision atomically.
+Accepted movement finds all unseen POIs on the same floor within seven tiles
+horizontally and five vertically of the server-owned position. Intent 3 applies
+the same check explicitly. Legacy Start initializes an absent run and is
+idempotent while one is active. Sampling selects seven walkable POIs outside the
+eight-by-six tile half-extents of the starting view. Same-floor points are
+separated by at least four tiles along one axis when the bounded pool permits.
+Spacing may relax in a dense pool. With fewer than seven hidden candidates, a
+current-location query still returns progress and donation information. An
+explicit exploration attempt that requires a new roll returns code 5. Crystal
+source: `data/scripts/discovery_system.lua:16-19,460-488,578-585,643,766-767`.
 
 Shuffle resets POIs, found count and completion. A same-transaction typed reset
 receipt permits the affected canonical subarea to lose completion; other progress
 regressions remain rejected. Area percentages and completed-area census are derived
-from current subarea rows. Completion is persisted, not the resulting bonus.
+from persisted subarea completion.
 
-The seventh accepted STEP queues the completion banner through the existing
+The STEP that completes all seven POIs queues the completion banner through the existing
 capability-31 status-text channel. The capability-57 client presents completion
 and labels Shuffle as Reset POIs.
 
 ### Discovery speed query
 
-Command 6178, capability 57, has an empty request and a two-byte little-endian
-u16 reply containing the current discovery speed contribution (zero when inactive).
-The client queues it after current-location map actions and shows the confirmed
-value in the native hover tooltip and accessible panel text. Legacy 72/73 layouts
-and receipt replay remain unchanged.
-
-Owner decision 2026-11-09 (T187) sets content-defined `PARITY_PENDING` starting
-endpoints in `content/cyclopedia/discovery-speed.json`. For n fully discovered
-areas among N discoverable areas, the bonus is
-`minimum + floor((maximum-minimum)*(n-1)/(N-1))`; N=1 uses maximum.
-The contribution applies only inside a fully discovered area. The existing actor
-speed owner adds it once alongside condition and equipment contributions. Actual
-movement refreshes it before stepping and after arrival/completion; reset refreshes
-it immediately. Runtime values are rebuilt from fenced PostgreSQL progress, never
-used as an independent source of completion truth. Official news 8834 establishes
-the 100–195 envelope; the formula is the owner's enabled starting interpretation,
-not a newly claimed official formula.
+Command 6178 under capability 57 retains its empty request. The server returns
+`Rejected` with UTF-8 `Sorry, not possible.` for a valid request. Crystal
+`201189f8` completes discovery and grants milestones without changing player
+speed (`data/scripts/discovery_system.lua:528-563,605-615`). The previous
+owner-defined endpoints in `content/cyclopedia/discovery-speed.json` are
+historical data and do not contribute to movement pacing.
 
 ## Public atlas extension (O078)
 

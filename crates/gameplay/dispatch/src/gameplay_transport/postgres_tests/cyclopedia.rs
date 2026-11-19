@@ -3,6 +3,7 @@ use super::cyclopedia_fixtures::{pool, support};
 
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
+use crate::domain::cyclopedia::Point;
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
@@ -31,11 +32,48 @@ fn revision(bytes: &[u8]) -> u64 {
 fn percentage(bytes: &[u8]) -> u8 {
     bytes[11]
 }
+fn visible_points(points: &[Point], at: Point) -> u8 {
+    // Crystal discovery_system.lua:16-17,643 credits each POI inside this window.
+    points.iter().enumerate().fold(0, |found, (index, point)| {
+        if point.floor == at.floor && point.x.abs_diff(at.x) <= 7 && point.y.abs_diff(at.y) <= 5 {
+            found | (1 << index)
+        } else {
+            found
+        }
+    })
+}
+
+async fn move_fixture_actor(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    deps: &Dependencies,
+    target: MovementLocalPosition,
+) -> TestResult {
+    let mut runtime = owner.runtime.lock().await;
+    let mut movement = runtime.borrow_movement_position();
+    let mut current = movement.read(deps.actor).map_err(debug)?;
+    while current.position() != target {
+        let at = current.position();
+        let next = if at.x != target.x {
+            MovementLocalPosition {
+                x: at.x + (target.x - at.x).signum(),
+                ..at
+            }
+        } else {
+            MovementLocalPosition {
+                y: at.y + (target.y - at.y).signum(),
+                ..at
+            }
+        };
+        current = movement.commit_cardinal(current, next).map_err(debug)?;
+    }
+    Ok(())
+}
+
 #[test]
 fn cyclopedia_postgres_real_dispatch() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| scenario(false).map_err(|e| e.to_string()))?
@@ -45,9 +83,9 @@ fn cyclopedia_postgres_real_dispatch() -> TestResult {
 }
 #[test]
 fn cyclopedia_postgres_canonical_conversion_preserves_completed_legacy_progress() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| scenario(true).map_err(|e| e.to_string()))?
@@ -189,7 +227,11 @@ fn scenario(canonical: bool) -> TestResult {
             owner.cyclopedia_available(),
         );
         admitted.continuity.selected_capabilities =
-            SelectedCapabilities::select(&offers, &[4, 6, 57]).ok_or("capability selection")?;
+            SelectedCapabilities::select(
+                &offers,
+                if canonical { &[4, 6, 13, 57] } else { &[4, 6, 57] },
+            )
+            .ok_or("capability selection")?;
         // Unnegotiated clients cannot enter the handler or observe private map facts.
         let mut old = admitted;
         old.continuity.selected_capabilities = SelectedCapabilities::NONE;
@@ -253,8 +295,8 @@ fn scenario(canonical: bool) -> TestResult {
                         owner.owner_now(),
                     )
                     .map_err(debug)?,
-                195,
-                "T187: one fully discovered area contributes the content maximum"
+                0,
+                "Crystal grants no active speed contribution for legacy discovery credit"
             );
             let (_, donated) =
                 support::exchange_inventory(&owner, &mut admitted, 4, 73, &request(4, 1)).await?;
@@ -414,13 +456,37 @@ fn scenario(canonical: bool) -> TestResult {
             assert_eq!(
                 status,
                 CommandStatus::Accepted,
-                "a canonical subarea with exactly7candidates is admitted by the durable writer"
+                "a canonical subarea with exactly seven candidates is admitted by the durable writer"
             );
             assert_eq!(
                 small[9], 1,
                 "seven-candidate subarea retains its completed state"
             );
-            speed::verify(
+            let (status, no_hidden_points) =
+                support::exchange(&owner, &mut admitted, 8, 73, &request(2, 0)).await?;
+            assert_eq!(status, CommandStatus::Accepted);
+            assert_eq!(no_hidden_points[0], 5, "all seven candidates are in view");
+            assert_eq!(no_hidden_points[9], 1, "a refused reset keeps completion");
+
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query(
+                "UPDATE game_character_cyclopedia SET progress=jsonb_set(\
+                 progress, '{subareas,3,discovered}', 'false'::jsonb)",
+            )
+            .execute(&mut *tx)
+            .await?;
+            tx.commit().await?;
+            let query_id = admitted.continuity.next_command_id;
+            let (status, small) = support::exchange(&owner, &mut admitted, query_id, 72, &[]).await?;
+            assert_eq!(status, CommandStatus::Accepted);
+            assert_eq!(small[0], 0, "the map query succeeds without an exploration");
+            assert_eq!(small[9], 0, "an unsuccessful roll leaves the subarea incomplete");
+            assert_eq!(count(&small), 0, "no viewpoints were generated");
+            assert_eq!(pool(&small), 25_000_001, "the donation pool is still visible");
+            speed::completed_discovery_keeps_step_pace_and_speed_query_refuses(
                 &mut owner,
                 &deps,
                 &mut admitted,
@@ -430,6 +496,32 @@ fn scenario(canonical: bool) -> TestResult {
                 activation_pin.frame_binding().digest(),
             )
             .await?;
+            // This admitted row lies beyond the legacy prefix of 128 walkable tiles.
+            // A normal query must preserve its unfinished seven-point exploration.
+            let late_points: Vec<_> = [(12, 7), (16, 7), (20, 7), (24, 7), (28, 7), (24, 0), (28, 0)]
+                .into_iter()
+                .map(|(x, y)| serde_json::json!({"x":x,"y":y,"floor":-7}))
+                .collect();
+            let progress = serde_json::json!({"legacy":{"discovered":false,"exploration":null},"subareas":{
+                "2":{"discovered":false,"exploration":{"points":late_points,"found":1}},
+                "3":{"discovered":true,"exploration":null}
+            }});
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query("UPDATE game_character_cyclopedia SET progress=$1")
+                .bind(progress)
+                .execute(&mut *tx)
+                .await?;
+            tx.commit().await?;
+            let query_id = admitted.continuity.next_command_id;
+            let (status, view) =
+                support::exchange(&owner, &mut admitted, query_id, 72, &[]).await?;
+            assert_eq!(status, CommandStatus::Accepted);
+            assert_eq!(view[0], 0);
+            assert_eq!(count(&view), 1, "query retains discoveries on later mask rows");
+
             drop(owner);
             drop(authority);
             drop(seal);
@@ -456,6 +548,22 @@ fn scenario(canonical: bool) -> TestResult {
         let progress: crate::domain::cyclopedia::MapProgress = serde_json::from_str(&progress)?;
         let first_points = progress.exploration.ok_or("durable exploration")?.points;
         assert_eq!(first_points.len(), 7);
+        assert!(
+            first_points.iter().all(|p| {
+                p.floor == -7
+                    && (p.x.abs_diff(1) > 8 || p.y.abs_diff(0) > 6)
+                    && world
+                        .base()
+                        .subareas
+                        .resolve(p.x as u16, p.y as u16, p.floor as i8)
+                        == Some((1, 2))
+                    && world
+                        .base()
+                        .tile(p.x as u16, p.y as u16, p.floor as i8)
+                        .is_some_and(|tile| tile.walkable())
+            }),
+            "all seven points are hidden, walkable tiles in the active subarea"
+        );
         assert!(first_points.iter().enumerate().all(|(index, point)| {
             first_points[..index].iter().all(|other| {
                 point.floor != other.floor
@@ -542,7 +650,8 @@ fn scenario(canonical: bool) -> TestResult {
         let progress: crate::domain::cyclopedia::MapProgress = serde_json::from_str(&progress)?;
         let points = progress.exploration.ok_or("shuffled exploration")?.points;
         assert_ne!(points, first_points);
-        for (index, point) in points.iter().take(7).enumerate() {
+        let mut expected_found: u8 = 0;
+        for (index, point) in points.iter().enumerate() {
             {
                 let mut runtime = owner.runtime.lock().await;
                 let mut movement = runtime.borrow_movement_position();
@@ -573,24 +682,28 @@ fn scenario(canonical: bool) -> TestResult {
                 support::exchange(&owner, &mut admitted, 6 + index as u64, 73, &request(3, 0))
                     .await?;
             assert_eq!(found[0], 0);
-            assert_eq!(count(&found), index as u8 + 1);
-            assert_eq!(found[9], u8::from(index == 6));
-            assert_eq!(percentage(&found), if index == 6 { 50 } else { 0 });
+            let was_complete = expected_found.count_ones() == 7;
+            expected_found |= visible_points(&points, *point);
+            let complete = expected_found.count_ones() == 7;
+            let just_completed = complete && !was_complete;
+            assert_eq!(u32::from(count(&found)), expected_found.count_ones());
+            assert_eq!(found[9], u8::from(complete));
+            assert_eq!(percentage(&found), if complete { 50 } else { 0 });
             assert_eq!(
                 owner
                     .states
                     .tutorial_sessions
                     .take(admitted.game_session_id),
-                (index == 6).then(|| {
+                just_completed.then(|| {
                     oteryn_protocol_oteryn::tutorial_notices::TutorialNotice::StatusText(
                         "Subarea discovered! All seven points of interest found.".into(),
                     )
                 }),
-                "T187: only a committed seventh Find emits a discovery notice"
+                "T187: only the Find that completes the seven POIs emits a discovery notice"
             );
-            if index == 6 {
+            if just_completed {
                 let GuildReply::Payload(replay) = owner
-                    .cyclopedia_command(before_find, 12, 73, &request(3, 0))
+                    .cyclopedia_command(before_find, 6 + index as u64, 73, &request(3, 0))
                     .await
                 else {
                     return Err("seventh Find receipt".into());
@@ -602,7 +715,7 @@ fn scenario(canonical: bool) -> TestResult {
                         .tutorial_sessions
                         .take(admitted.game_session_id)
                         .is_none(),
-                    "T187: replaying a committed Find cannot repeat the banner"
+                    "T187: replaying the completing Find cannot repeat the banner"
                 );
             }
         }
@@ -781,20 +894,30 @@ fn scenario(canonical: bool) -> TestResult {
                 "native 60-second home delay gets the persisted factor two"
             );
         }
-        sqlx::query("INSERT INTO game_world_reset_epochs SELECT world_id,3,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month FROM game_world_reset_epochs WHERE reset_epoch=2").execute(&h.pool).await?;
-        sqlx::query("UPDATE game_world_reset_active SET reset_epoch=3")
-            .execute(&h.pool)
+        // The removed draw yielded 6/100 on day five for fixture World id(42).
+        // Day four is also unfunded, so prior-winner exclusion could not mask a random boost.
+        for unfunded_epoch in 3..=5_i64 {
+            sqlx::query("INSERT INTO game_world_reset_epochs SELECT world_id,$1::bigint,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month FROM game_world_reset_epochs WHERE reset_epoch=$1::bigint-1")
+                .bind(unfunded_epoch).execute(&h.pool).await?;
+            sqlx::query("UPDATE game_world_reset_active SET reset_epoch=$1::bigint")
+                .bind(unfunded_epoch)
+                .execute(&h.pool)
+                .await?;
+            owner.reset_epoch = u64::try_from(unfunded_epoch)?;
+            let query_id = admitted.continuity.next_command_id;
+            let (status, unfunded) =
+                support::exchange(&owner, &mut admitted, query_id, 72, &[]).await?;
+            assert_eq!(status, CommandStatus::Accepted);
+            assert_eq!(unfunded[28], 1, "unfunded epoch {unfunded_epoch}");
+            assert_eq!(pool(&unfunded), 5_000_001);
+            let (improved, winner): (bool, bool) = sqlx::query_as(
+                "SELECT improved,donation_winner FROM game_world_cyclopedia_epochs WHERE epoch=$1::bigint AND area_id=1",
+            )
+            .bind(unfunded_epoch)
+            .fetch_one(&h.pool)
             .await?;
-        owner.reset_epoch = 3;
-        let (_, epoch_three) = support::exchange(&owner, &mut admitted, 22, 72, &[]).await?;
-        assert_eq!(epoch_three[28], 1);
-        assert_eq!(pool(&epoch_three), 5_000_001);
-        let (improved, winner): (bool, bool) = sqlx::query_as(
-            "SELECT improved,donation_winner FROM game_world_cyclopedia_epochs WHERE epoch=3",
-        )
-        .fetch_one(&h.pool)
-        .await?;
-        assert_eq!((improved, winner), (false, false));
+            assert_eq!((improved, winner), (false, false));
+        }
         let reset_id = admitted.continuity.next_command_id;
         let (_, reset_pois) =
             support::exchange(&owner, &mut admitted, reset_id, 73, &request(2, 0)).await?;
@@ -821,12 +944,42 @@ fn scenario(canonical: bool) -> TestResult {
             serde_json::from_value(reset_progress)?;
         assert!(
             !reset_progress.discovered,
-            "T187: reset removes completion and speed eligibility"
+            "T187: reset removes completion"
         );
         let points = reset_progress
             .exploration
             .ok_or("reset exploration")?
             .points;
+        // From the one-tile generation margin, the query may show only the real viewport.
+        let edge = points.first().ok_or("reset POI")?;
+        let edge_side: i32 = if edge.x <= 22 { 1 } else { -1 };
+        let at = Point {
+            x: edge.x + 8 * edge_side,
+            ..*edge
+        };
+        move_fixture_actor(
+            &owner,
+            &deps,
+            MovementLocalPosition {
+                x: at.x,
+                y: at.y,
+                floor: -at.floor,
+            },
+        )
+        .await?;
+        let query_id = admitted.continuity.next_command_id;
+        let (status, view) = support::exchange(&owner, &mut admitted, query_id, 72, &[]).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert_eq!(view[0], 0);
+        assert_eq!(
+            count(&view), 0,
+            "query projects POIs without discovering them"
+        );
+        assert_eq!(
+            u32::from(view[29]),
+            visible_points(&points, at).count_ones(),
+            "the generation margin does not extend the discovery viewport"
+        );
         // Movement consumes the admitted equipment owner, unlike map-only requests.
         sqlx::query("INSERT INTO game_control_scope_grants VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
@@ -846,42 +999,31 @@ fn scenario(canonical: bool) -> TestResult {
             )
             .await
             .map_err(debug)?;
-        for (index, point) in points.iter().enumerate() {
-            let from_left = point.x > 0
-                && world
-                    .base()
-                    .tile((point.x - 1) as u16, point.y as u16, point.floor as i8)
-                    .is_some_and(|tile| tile.walkable());
-            let direction = if from_left {
-                oteryn_protocol_oteryn::world_spatial::StepDirection::East
+        let mut expected_found: u8 = 0;
+        // Approach the first POI across the exact viewport edge before visiting the rest.
+        let landings = [(edge, 8 * edge_side), (edge, 7 * edge_side)]
+            .into_iter()
+            .chain(points.iter().map(|point| {
+                let side = if point.x <= 29 { 1 } else { -1 };
+                (point, side)
+            }));
+        for (point, offset) in landings {
+            use oteryn_protocol_oteryn::world_spatial::StepDirection;
+            let direction = if offset > 0 {
+                StepDirection::West
             } else {
-                oteryn_protocol_oteryn::world_spatial::StepDirection::West
+                StepDirection::East
             };
-            {
-                let mut runtime = owner.runtime.lock().await;
-                let mut movement = runtime.borrow_movement_position();
-                let mut current = movement.read(deps.actor).map_err(debug)?;
-                let target = MovementLocalPosition {
-                    x: point.x + if from_left { -1 } else { 1 },
+            move_fixture_actor(
+                &owner,
+                &deps,
+                MovementLocalPosition {
+                    x: point.x + offset + offset.signum(),
                     y: point.y,
                     floor: -point.floor,
-                };
-                while current.position() != target {
-                    let at = current.position();
-                    let next = if at.x != target.x {
-                        MovementLocalPosition {
-                            x: at.x + (target.x - at.x).signum(),
-                            ..at
-                        }
-                    } else {
-                        MovementLocalPosition {
-                            y: at.y + (target.y - at.y).signum(),
-                            ..at
-                        }
-                    };
-                    current = movement.commit_cardinal(current, next).map_err(debug)?;
-                }
-            }
+                },
+            )
+            .await?;
             owner.clock_origin -= std::time::Duration::from_secs(2);
             // Each exchange closes its socket; the next admission restores movement state.
             deps.initialize(&owner).await;
@@ -905,19 +1047,24 @@ fn scenario(canonical: bool) -> TestResult {
             let found: Option<i32> = sqlx::query_scalar(
                 "SELECT (progress->'subareas'->'2'->'exploration'->>'found')::integer FROM game_character_cyclopedia",
             ).fetch_one(&h.pool).await?;
-            if index == 6 {
-                assert_eq!(
-                    found, None,
-                    "T186: real STEP completes exploration without Find"
-                );
-            } else {
-                assert_eq!(
-                    found.map(|bits| bits & (1 << index)),
-                    Some(1 << index),
-                    "T186: real STEP discovers a POI without Find"
-                );
+            expected_found |= visible_points(
+                &points,
+                Point {
+                    x: point.x + offset,
+                    ..*point
+                },
+            );
+            let complete = expected_found.count_ones() == 7;
+            assert_eq!(
+                found,
+                (!complete).then_some(i32::from(expected_found)),
+                "T186: real STEP credits all POIs in view without landing on their tiles"
+            );
+            if complete {
+                break;
             }
         }
+        assert_eq!(expected_found.count_ones(), 7);
         assert_eq!(
             owner
                 .states
@@ -928,7 +1075,7 @@ fn scenario(canonical: bool) -> TestResult {
                     "Subarea discovered! All seven points of interest found.".into(),
                 )
             ),
-            "T187: the seventh real STEP queues the completion banner"
+            "T187: the STEP that completes the seven POIs queues the banner"
         );
         atlas::verify(&owner, &mut admitted).await?;
         // A stale socket reserves its command before the Bank prelude refuses it, so its
