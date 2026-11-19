@@ -480,6 +480,9 @@ pub struct SharedEncounterAdmission {
 pub struct ThresholdRearm {
     pub health_percent: u8,
     pub restores: u8,
+    /// An immediate threshold crossing uses the uninitialized life counter.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub first_think_extra_restore: bool,
     pub summons: Vec<String>,
     pub release_center: Position,
     pub release_radius: u8,

@@ -58,7 +58,8 @@ pub(super) fn binding() -> TestResult<Callback> {
             "encounter":{"minimum_level":250,"players":players,
                 "room_min":at(33607,32553),"room_max":at(33627,32570),
                 "monsters":[{"position":at(33617,32561),"creature":BOSS}]},
-            "threshold_rearm":{"health_percent":20,"restores":5,"summons":SUMMONS,
+            "threshold_rearm":{"health_percent":20,"restores":4,"first_think_extra_restore":true,
+                "summons":SUMMONS,
                 "release_center":RELEASE_CENTER,"release_radius":10,
                 "exit":EXIT,"time_limit_ms":900000}
         },
@@ -212,6 +213,9 @@ pub(super) async fn exercise(
         }
         let hp = runtime.companion_snapshot(boss).map_err(debug)?.health;
         assert_eq!(hp, 35000);
+        // Crystal creaturescripts_faceless_bane.lua:11-18 initializes the
+        // life counter on a healthy think before the first threshold crossing.
+        owner.tick_quest_encounter_thresholds(&mut runtime);
         damage(&mut runtime, boss, b"before-threshold", 28000).map_err(debug)?;
         assert_eq!(runtime.live_creature_health(boss), Some(7000));
         owner.tick_quest_encounter_thresholds(&mut runtime);
@@ -256,6 +260,27 @@ pub(super) async fn exercise(
         );
         damage(&mut runtime, boss, b"after-release", 1).map_err(debug)?;
         assert_eq!(runtime.live_creature_health(boss), Some(34999));
+    }
+    // Four protected restores follow a healthy first think. Every release
+    // here enters the same production STEP callback as the first one.
+    for round in 1..4_u8 {
+        {
+            let mut runtime = owner.runtime.lock().await;
+            let health = runtime.companion_snapshot(boss).map_err(debug)?.health;
+            let occurrence = [b'r', round];
+            damage(&mut runtime, boss, &occurrence, health - 7000).map_err(debug)?;
+            owner.tick_quest_encounter_thresholds(&mut runtime);
+            assert_eq!(runtime.live_creature_health(boss), Some(35000));
+        }
+        step(owner, admitted, StepDirection::South).await?;
+        step(owner, admitted, StepDirection::North).await?;
+    }
+    {
+        let mut runtime = owner.runtime.lock().await;
+        damage(&mut runtime, boss, b"past-restore-budget", 28000).map_err(debug)?;
+        owner.tick_quest_encounter_thresholds(&mut runtime);
+        assert_eq!(runtime.live_creature_health(boss), Some(7000));
+        damage(&mut runtime, boss, b"still-vulnerable", 1).map_err(debug)?;
     }
     let due = owner
         .states

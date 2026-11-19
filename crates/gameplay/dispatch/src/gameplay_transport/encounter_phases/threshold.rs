@@ -9,6 +9,7 @@ pub(in crate::gameplay_transport) struct Threshold {
     boss: ExactActorRef,
     protected: bool,
     remaining: u8,
+    first_think_extra_restore: bool,
 }
 
 impl Threshold {
@@ -23,6 +24,7 @@ impl Threshold {
             boss,
             protected: false,
             remaining: spec.restores,
+            first_think_extra_restore: spec.first_think_extra_restore,
         }
     }
 
@@ -65,6 +67,9 @@ impl Threshold {
         if i128::from(boss.health) * 100
             > i128::from(maximum) * i128::from(self.spec.health_percent)
         {
+            // Crystal creaturescripts_faceless_bane.lua:11-26 initializes the
+            // counter to zero even when the first think does not restore health.
+            self.first_think_extra_restore = false;
             return Ok(Vec::new());
         }
         let maximum = u64::try_from(maximum).map_err(|_| CarrierError::InvalidCreatureHealth)?;
@@ -81,7 +86,13 @@ impl Threshold {
             Ok(())
         })?;
         self.protected = true;
-        self.remaining -= 1;
+        if self.first_think_extra_restore {
+            // At the threshold on the initial think, the captured -1 is used
+            // for the subsequent increment, so the normal budget starts at zero.
+            self.first_think_extra_restore = false;
+        } else {
+            self.remaining -= 1;
+        }
         let mut actors = Vec::with_capacity(self.spec.summons.len());
         for key in &self.spec.summons {
             let Ok(policy) = runtime.companion_policy(key) else {
