@@ -329,7 +329,7 @@ async fn two_player_exit(
         kill_reward::{DrainOutcome, KillSink, record_creature_kill},
     };
     use crate::gameplay_transport::connection::UseCommand;
-    use oteryn_gameplay_encounters::bosses::phase_controller::arbaziloth::BOSS;
+    use oteryn_gameplay_encounters::bosses::phase_controller::arbaziloth::{BOSS, FORGEMASTER};
     use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
     use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
     const ENRAGED: &str = "oteryn:creature.enraged_arbaziloth";
@@ -395,10 +395,20 @@ async fn two_player_exit(
     for (actor, _) in players {
         assert_eq!(runtime.read_actor_position(actor).map_err(debug)?.position(), ARENA_ENTRY);
     }
-    let boss = runtime.positioned_actor_census().map_err(debug)?.into_iter()
-        .map(|(actor, _, _)| actor)
-        .find(|actor| runtime.matches_live_creature_identity(*actor, BOSS.as_bytes()))
-        .ok_or("normal Arbaziloth spawned by lever")?;
+    let census = runtime.positioned_actor_census().map_err(debug)?;
+    let spawned = |key: &str| {
+        census.iter().find_map(|(actor, _, _)| {
+            runtime
+                .matches_live_creature_identity(*actor, key.as_bytes())
+                .then_some(*actor)
+        })
+    };
+    let boss = spawned(BOSS).ok_or("normal Arbaziloth spawned by lever")?;
+    let forgemaster = spawned(FORGEMASTER).ok_or("Forgemaster spawned by lever")?;
+    assert_eq!(
+        runtime.companion_snapshot(forgemaster).map_err(debug)?.health,
+        10_500
+    );
     let boss_home = runtime.read_actor_position(boss).map_err(debug)?.position();
     let purple_fire = || {
         facts
@@ -462,9 +472,12 @@ async fn two_player_exit(
         .map(|(actor, _, _)| actor)
         .find(|actor| runtime.matches_live_creature_identity(*actor, ENRAGED.as_bytes()))
         .ok_or("enraged replacement")?;
+    assert!(!runtime.contains_live_creature(boss));
+    assert!(!runtime.contains_live_creature(forgemaster));
     let observed = owner.owner_now();
     let now = observed.get() / 1000;
     let health = runtime.companion_snapshot(enraged).map_err(debug)?.health;
+    assert_eq!(health, 360_000);
     for (actor, session, damage) in [(other, other_session, health / 4), (first, session, health - health / 4)] {
         runtime
             .borrow_exact_actor_commit_at(now)
