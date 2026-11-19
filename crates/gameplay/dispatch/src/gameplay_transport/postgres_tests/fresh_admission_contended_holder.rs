@@ -1,6 +1,6 @@
 //! A fresh admission completes while other owners keep using the single durability holder.
 use super::fixture::{Harness, debug};
-use super::kill_reward_e2e::scenario_thread::run_async as run;
+use super::kill_reward_e2e_fixtures::scenario_thread::run_async as run;
 use super::{Dependencies, TestResult};
 use std::time::Duration;
 
@@ -14,7 +14,7 @@ fn fresh_admission_completes_while_other_owners_share_the_holder_postgres() -> T
         let h = Harness::create_with_admission_seed(admin, "fresh_holder_contended", true, false)
             .await?;
         let result: TestResult = async {
-            let source = super::house_transfer::RecoverySource::start(&h).await?;
+            let source = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
             let now = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)?
                 .as_secs();
@@ -44,7 +44,7 @@ fn fresh_admission_completes_while_other_owners_share_the_holder_postgres() -> T
             let deps = Dependencies::new()?;
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &source.evidence;
-            let token = super::house_transfer::RecoverySource::fresh_token(91)?;
+            let token = super::house_transfer_fixtures::RecoverySource::fresh_token(91)?;
             let session = GameSessionId::decode(&super::fixture::id(91)).map_err(debug)?;
             let attempt = FreshAdmissionAttempt {
                 character_id: CharacterId::decode(&super::fixture::id(41)).map_err(debug)?,
@@ -129,7 +129,7 @@ fn fresh_spell_repair_becomes_playable_without_reconnect_postgres() -> TestResul
         let h = Harness::create_with_admission_seed(admin, "fresh_spell_repair_live", true, false)
             .await?;
         let result: TestResult = async {
-            let source = super::house_transfer::RecoverySource::start(&h).await?;
+            let source = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
             let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_secs();
             let mut runtime = super::fresh_fixture::fresh::Source::new(i64::try_from(now)?)?;
             runtime.rows.retain(|row| matches!(row.key,
@@ -141,7 +141,7 @@ fn fresh_spell_repair_becomes_playable_without_reconnect_postgres() -> TestResul
             let deps = Dependencies::new()?;
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &source.evidence;
-            let token = super::house_transfer::RecoverySource::fresh_token(91)?;
+            let token = super::house_transfer_fixtures::RecoverySource::fresh_token(91)?;
             let frame = oteryn_protocol_oteryn::encode_client_bootstrap(&oteryn_protocol_oteryn::ClientBootstrapValue {
                 schema_revision: 1,
                 character_id: crate::foundation::CharacterId::decode(&super::fixture::id(41)).map_err(debug)?,

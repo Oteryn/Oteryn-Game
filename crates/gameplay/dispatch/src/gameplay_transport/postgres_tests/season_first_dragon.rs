@@ -60,8 +60,8 @@ fn scenario(victory: bool) -> TestResult {
             false,
         )
         .await?;
-        let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-        super::house_transfer::prepare_owned_session(&h).await?;
+        let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+        super::house_transfer_fixtures::prepare_owned_session(&h).await?;
         let expected = fixture::fence(1)?;
         let RuntimeScopeRefV1::Channel {
             world_id,
@@ -71,7 +71,7 @@ fn scenario(victory: bool) -> TestResult {
             return Err("source Channel".into());
         };
         let (controller, activation) =
-            super::death_ml_loss_composed::production_generation_with_pin(world_id, "content-1")?;
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world_id, "content-1")?;
         let generation = controller.active().ok_or("active gameplay")?;
         let native = generation.native_gameplay().ok_or("native gameplay")?;
         let source_room = activation.qualified_room().clone();
@@ -84,7 +84,7 @@ fn scenario(victory: bool) -> TestResult {
             })
             .ok_or("captured selected First Dragon lever")?;
         let bundle =
-            super::srvenc_source_boss::source_bundle(world_id, channel_id, native, &candidate)?;
+            super::srvenc_source_boss_fixtures::source_bundle(world_id, channel_id, native, &candidate)?;
         let cells = bundle
             .movement_cells(source_room.movement_cells())
             .map_err(debug)?;
@@ -198,7 +198,7 @@ fn scenario(victory: bool) -> TestResult {
         )
         .ok_or("boss capability")?;
         let fence = admitted.item_fence.ok_or("current source item fence")?;
-        super::item_look::seed_main_backpack(&h, &[]).await?;
+        super::item_look_fixtures::seed_main_backpack(&h, &[]).await?;
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT(character_id) DO NOTHING")
             .bind(fence.character_id.as_bytes().as_slice()).execute(&h.pool).await?;
         {
@@ -237,7 +237,7 @@ fn scenario(victory: bool) -> TestResult {
                 .is_some(),
             "the source session must bind the native content-1 progression policy"
         );
-        super::qengine_outfit_stories::earn_level(&owner, &admitted, &authority, 40).await?;
+        super::qengine_outfit_stories_fixtures::earn_level(&owner, &admitted, &authority, 40).await?;
         // Prior personal trials are historical input to this encounter, not a synthetic death.
         let canonical =
             oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
@@ -317,7 +317,7 @@ fn scenario(victory: bool) -> TestResult {
             .activity_runtimes
             .register_template(&template)
             .map_err(|_| "register source template")?;
-        super::boss_activity::issue_content_and_reset_with_runtime_pin(
+        super::boss_activity_fixtures::issue_content_and_reset_with_runtime_pin(
             &h,
             &activation_pin,
             &pin,
@@ -354,7 +354,7 @@ fn scenario(victory: bool) -> TestResult {
             published.6, 1,
             "replaying the sealed source publication is idempotent"
         );
-        let instance = super::activity_runtime::allocate_ready_instance(&h, 88).await?;
+        let instance = super::activity_runtime_fixtures::allocate_ready_instance(&h, 88).await?;
         let assignment = h
             .root
             .read_runtime_scope_assignment(instance)
@@ -370,7 +370,7 @@ fn scenario(victory: bool) -> TestResult {
         );
         let old = admitted;
         let (_, reply, barrier) =
-            super::boss_activity::exchange(&owner, &mut admitted, BOSS, true).await?;
+            super::boss_activity_fixtures::exchange(&owner, &mut admitted, BOSS, true).await?;
         let BossActivityReply::Accepted {
             handoff,
             deadline_unix_ms: Some(_),
@@ -454,7 +454,7 @@ fn scenario(victory: bool) -> TestResult {
         } else {
             h.root.advance_test_quest_clock(1201).map_err(debug)?;
         }
-        let (_, returned, barrier) = super::boss_activity::exchange_command(
+        let (_, returned, barrier) = super::boss_activity_fixtures::exchange_command(
             &owner,
             &mut admitted,
             BOSS,

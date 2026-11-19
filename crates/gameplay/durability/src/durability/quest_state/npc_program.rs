@@ -130,7 +130,9 @@ pub fn preview_with_appearance(
         player_name,
         appearance,
     };
-    let Some(source) = NpcRuleCatalog::for_catalogue(catalogue)?.admitted_for_npc(&request.npc, catalogue)? else {
+    let Some(source) =
+        NpcRuleCatalog::for_catalogue(catalogue)?.admitted_for_npc(&request.npc, catalogue)?
+    else {
         return Ok(None);
     };
     let cooking_inventory = if hot_cuisine_m42::owns(request) {
@@ -202,7 +204,10 @@ pub fn preview_with_appearance(
 
 /// Classify against a real fenced snapshot. Unlike an optimistic route preview,
 /// this never substitutes synthetic counts when the actual branch is absent.
-#[allow(clippy::too_many_arguments, reason = "the actual snapshot shares the existing source preview facts")]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the actual snapshot shares the existing source preview facts"
+)]
 pub fn preview_with_inventory(
     request: &NpcProgramRequest,
     tracks: &BTreeMap<String, i64>,
@@ -212,12 +217,26 @@ pub fn preview_with_inventory(
     player_name: Option<&str>,
     appearance: (&BTreeMap<u16, u8>, u8),
     inventory: &NpcInventorySnapshot,
-) -> std::result::Result<Option<NpcRulePlan>, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError> {
-    let Some(source) = NpcRuleCatalog::for_catalogue(catalogue)?.admitted_for_npc(&request.npc, catalogue)? else {
+) -> std::result::Result<Option<NpcRulePlan>, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError>
+{
+    let Some(source) =
+        NpcRuleCatalog::for_catalogue(catalogue)?.admitted_for_npc(&request.npc, catalogue)?
+    else {
         return Ok(None);
     };
-    evaluate_source(&source, request, tracks, catalogue, now,
-        NpcEvaluationFacts { eligibility, player_name, appearance }, Some(inventory))
+    evaluate_source(
+        &source,
+        request,
+        tracks,
+        catalogue,
+        now,
+        NpcEvaluationFacts {
+            eligibility,
+            player_name,
+            appearance,
+        },
+        Some(inventory),
+    )
 }
 
 #[derive(Clone, Copy)]

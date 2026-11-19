@@ -1,3 +1,5 @@
+use tokio::io::AsyncReadExt;
+use tokio::io::AsyncWriteExt;
 use super::*;
 use oteryn_protocol_oteryn::server_modal::{Answer, Reply};
 
@@ -6,7 +8,7 @@ fn server_modal_hireling_store_selection_dispatches_cancel_rename_and_sex_once()
     if !enabled() {
         return Ok(());
     }
-    super::super::kill_reward_e2e::scenario_thread::run("modal-hireling-store", || {
+    super::super::kill_reward_e2e_fixtures::scenario_thread::run("modal-hireling-store", || {
         super::scenario(Case::Modal)
     })
 }

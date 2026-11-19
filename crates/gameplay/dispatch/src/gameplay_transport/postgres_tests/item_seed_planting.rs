@@ -138,7 +138,7 @@ fn scenario(case: Case) -> TestResult {
         let cells = map
             .movement_cells(pin.qualified_room().movement_cells())
             .map_err(debug)?;
-        let room = super::rust_lottery::bundle_action_room(
+        let room = super::rust_lottery_fixtures::bundle_action_room(
             pin.qualified_room(),
             &map,
             deps.admitted.world_id,
@@ -199,7 +199,7 @@ fn scenario(case: Case) -> TestResult {
         if case.nested() {
             carried_entries.push((bag, 1));
         }
-        super::item_look::seed_main_backpack(&harness, &carried_entries).await?;
+        super::item_look_fixtures::seed_main_backpack(&harness, &carried_entries).await?;
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -357,7 +357,7 @@ fn scenario(case: Case) -> TestResult {
         };
         let payload = encode_item_use_intent(&intent).map_err(debug)?;
         let command = if case.nested() { 2 } else { 1 };
-        let (end, result, actual) = super::rust_lottery::exchange(
+        let (end, result, actual) = super::rust_lottery_fixtures::exchange(
             &owner,
             admitted,
             command,
@@ -424,7 +424,7 @@ fn scenario(case: Case) -> TestResult {
             .map_err(debug)?;
         }
         let (end, replayed, _) =
-            super::rust_lottery::exchange(&owner, end, command, &actual, None, None).await?;
+            super::rust_lottery_fixtures::exchange(&owner, end, command, &actual, None, None).await?;
         assert_eq!(replayed, UseDisposition::Committed);
         assert_eq!(
             sqlx::query_scalar::<_, i64>(
@@ -448,7 +448,7 @@ fn scenario(case: Case) -> TestResult {
             let grants_before:i64=sqlx::query_scalar("SELECT count(*) FROM game_account_achievements a JOIN game_character_roots c USING(account_id) WHERE c.character_id=encode($1,'hex')::uuid AND achievement_key='oteryn:achievement/preservationist'")
                 .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&harness.pool).await?;
             assert_eq!(grants_before, 1);
-            let (_, second, _) = super::rust_lottery::exchange(
+            let (_, second, _) = super::rust_lottery_fixtures::exchange(
                 &owner,
                 end,
                 command + 1,

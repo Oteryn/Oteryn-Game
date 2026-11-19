@@ -1,10 +1,12 @@
 //! PREY-DIFF production dispatch and durable transition qualification.
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+use super::prey_difficulty_fixtures::{HistoryCounters, assert_history, selected_at};
+
 use super::*;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
-use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+
 use oteryn_protocol_oteryn::prey as wire;
 use oteryn_protocol_oteryn::CommandStatus;
-use sqlx::Row;
 
 #[derive(Clone, Copy)]
 enum Case { Tier, Daily, PickAgain, Checkpoint, LapsedCheckpoint, History }
@@ -32,7 +34,7 @@ fn scenario(case: Case) -> TestResult {
         reset();
         let h = Harness::create_with_admission_seed(admin, "prey_difficulty", true, false).await?;
         prepare_current_session(&h).await?;
-        super::daily_reward::epoch(&h, 1).await?;
+        super::daily_reward_fixtures::epoch(&h, 1).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -41,7 +43,7 @@ fn scenario(case: Case) -> TestResult {
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (generation, pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
         let room = pin.qualified_room().clone();
         let (channel_pin, _, _, _) = pin.into_channel_parts();
         let deps = Dependencies::with_content(
@@ -188,7 +190,7 @@ fn scenario(case: Case) -> TestResult {
                 let after_reload = send(&reloaded, &mut admitted, &wire::Request::Query).await?;
                 assert_eq!(after_reload.slots, exhausted.slots);
                 assert_eq!(send(&reloaded, &mut admitted, &wire::Request::ListReroll { slot: 1 }).await?.status, wire::STATUS_NO_CANDIDATES);
-                super::daily_reward::epoch(&h, 2).await?;
+                super::daily_reward_fixtures::epoch(&h, 2).await?;
                 let same_draw = wire::encode_request(&wire::Request::ListReroll { slot: 1 }).map_err(debug)?;
                 let replay = reloaded.prey_command(admitted, exhausted_command, &same_draw).await;
                 let crate::gameplay_transport::guild_intent::GuildReply::Payload(replayed) = replay else { return Err("depleted draw replay refused".into()); };
@@ -212,7 +214,7 @@ fn scenario(case: Case) -> TestResult {
                 assert_paid_slot_binding(&owner, &h, admitted, &catalogue, &pick).await?;
                 let bytes = wire::encode_request(&pick).map_err(debug)?;
                 let command = admitted.continuity.next_command_id;
-                let result = super::prey::exchange(&owner, &mut admitted, &[(command, &bytes)]).await?;
+                let result = super::prey_fixtures::exchange(&owner, &mut admitted, &[(command, &bytes)]).await?;
                 assert_eq!(result[0].0, CommandStatus::Accepted);
                 let selected = wire::decode_reply(&result[0].1).map_err(debug)?;
                 let started = selected_at(&h, 1).await?;
@@ -382,66 +384,17 @@ async fn assert_runtime_history_protection(h: &Harness) -> TestResult {
     Ok(())
 }
 
-#[derive(Default)]
-pub(super) struct HistoryCounters {
-    pub(super) consumed: i64,
-    pub(super) wildcards: i64,
-    pub(super) free_rerolls: i64,
-    pub(super) gold_rerolls: i64,
-    pub(super) kills: i64,
-    pub(super) loot_gold: i64,
-    pub(super) pick_gold: i64,
-}
-
-pub(super) async fn selected_at(h: &Harness, slot: u8) -> TestResult<i64> {
-    Ok(sqlx::query_scalar("SELECT selected_at_unix_ms FROM game_character_prey_slots WHERE character_id=encode($1,'hex')::uuid AND slot=$2")
-        .bind(id(41).as_slice()).bind(i16::from(slot)).fetch_one(&h.pool).await?)
-}
-
-pub(super) async fn assert_history(
-    h: &Harness, slot: &wire::Slot, catalogue: &crate::durability::prey::PreyCatalogue,
-    started: i64, reason: &str, counters: HistoryCounters,
-) -> TestResult {
-    let row = sqlx::query("SELECT h.*,uuid_send(h.character_id) AS character_bytes,h.created_xact_id=r.created_xact_id AS atomic_receipt FROM game_character_prey_history h JOIN game_character_prey_receipts r ON r.character_id=h.character_id AND r.occurrence=h.end_occurrence WHERE h.character_id=encode($1,'hex')::uuid AND h.slot=$2 AND h.selection_epoch=$3")
-        .bind(id(41).as_slice()).bind(i16::from(slot.slot)).bind(slot.selection_epoch as i64)
-        .fetch_one(&h.pool).await?;
-    assert_eq!(row.try_get::<Vec<u8>,_>("character_bytes")?, id(41));
-    assert_eq!(row.try_get::<i16,_>("slot")?, i16::from(slot.slot));
-    assert_eq!(row.try_get::<i64,_>("selection_epoch")?, slot.selection_epoch as i64);
-    assert_eq!(row.try_get::<String,_>("creature_key")?, slot.selected);
-    assert_eq!(row.try_get::<i16,_>("tier")?, i16::from(catalogue.rules().creatures.get(&slot.selected).ok_or("selected tier")?.tier));
-    assert_eq!(row.try_get::<i16,_>("bonus_type")?, i16::from(slot.bonus));
-    assert_eq!(row.try_get::<i16,_>("grade")?, i16::from(slot.grade));
-    assert_eq!(row.try_get::<Option<i64>,_>("selected_at_unix_ms")?, Some(started));
-    let ended: i64 = row.try_get("ended_at_unix_ms")?;
-    let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint")
-        .fetch_one(&h.pool).await?;
-    assert!((started..=now).contains(&ended));
-    assert_eq!(row.try_get::<String,_>("end_reason")?, reason);
-    assert!(row.try_get::<bool,_>("atomic_receipt")?);
-    for (field, expected) in [
-        ("consumed_combat_seconds", counters.consumed),
-        ("wildcards_used", counters.wildcards),
-        ("list_rerolls_free", counters.free_rerolls),
-        ("list_rerolls_gold", counters.gold_rerolls),
-        ("chosen_kills", counters.kills),
-        ("chosen_loot_gold", counters.loot_gold),
-        ("pick_again_gold", counters.pick_gold),
-    ] { assert_eq!(row.try_get::<i64,_>(field)?, expected, "{field} for selection {}", slot.selection_epoch); }
-    Ok(())
-}
-
 async fn send(owner: &ComposedFreshAdmission<'_, '_, '_>, admitted: &mut AdmittedSession, request: &wire::Request) -> TestResult<wire::Reply> {
     let bytes = wire::encode_request(request).map_err(debug)?;
     let command = admitted.continuity.next_command_id;
-    let results = super::prey::exchange(owner, admitted, &[(command, &bytes)]).await?;
+    let results = super::prey_fixtures::exchange(owner, admitted, &[(command, &bytes)]).await?;
     assert_eq!(results[0].0, CommandStatus::Accepted);
     wire::decode_reply(&results[0].1).map_err(debug)
 }
 async fn rejected(owner: &ComposedFreshAdmission<'_, '_, '_>, admitted: &mut AdmittedSession, request: &wire::Request) -> TestResult {
     let bytes = wire::encode_request(request).map_err(debug)?;
     let command = admitted.continuity.next_command_id;
-    assert_eq!(super::prey::exchange(owner, admitted, &[(command, &bytes)]).await?[0].0, CommandStatus::Rejected); Ok(())
+    assert_eq!(super::prey_fixtures::exchange(owner, admitted, &[(command, &bytes)]).await?[0].0, CommandStatus::Rejected); Ok(())
 }
 async fn unlock_all(h: &Harness) -> TestResult {
     for slot in [2_i16,3] {

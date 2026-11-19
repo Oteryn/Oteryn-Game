@@ -38,7 +38,9 @@ impl NativeQuestDeath {
             && self.observed_revision > 0
             && matches!(request.cause, QuestCause::CreatureDeath(_))
             && match &self.source {
-                NativeDeathSource::InstanceBoss { .. } | NativeDeathSource::Party(_) | NativeDeathSource::PositionedParty { .. } => {
+                NativeDeathSource::InstanceBoss { .. }
+                | NativeDeathSource::Party(_)
+                | NativeDeathSource::PositionedParty { .. } => {
                     let position = match &self.source {
                         NativeDeathSource::PositionedParty { position, .. } => Some(*position),
                         _ => None,
@@ -107,7 +109,8 @@ impl NativeQuestDeath {
 
     pub(super) fn party(&self) -> Option<&crate::foundation::PartySnapshot> {
         match &self.source {
-            NativeDeathSource::PositionedParty { source, .. } | NativeDeathSource::Party(source)
+            NativeDeathSource::PositionedParty { source, .. }
+            | NativeDeathSource::Party(source)
             | NativeDeathSource::InstanceBoss { party: source, .. } => Some(source.as_ref()),
             NativeDeathSource::Source(_) | NativeDeathSource::Encounter(_) => None,
         }
@@ -218,7 +221,11 @@ impl NativeQuestDeath {
             .initial;
         // Character root and the track rows are already locked. A queued death
         // cannot enter a mission started or reset after its captured snapshot.
-        let (minimum, maximum) = oteryn_gameplay_quests::quest::native_kills::counter(counter.transition).map_or((counter.gate_value, counter.gate_value), |counter| counter.gate_bounds());
+        let (minimum, maximum) =
+            oteryn_gameplay_quests::quest::native_kills::counter(counter.transition)
+                .map_or((counter.gate_value, counter.gate_value), |counter| {
+                    counter.gate_bounds()
+                });
         Ok(sqlx::query_scalar("SELECT COALESCE((SELECT value BETWEEN $4::bigint AND $5::bigint AND committed_character_revision <= $3::text::numeric FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2), $6::bigint BETWEEN $4::bigint AND $5::bigint)")
             .bind(character.as_bytes().as_slice()).bind(counter.gate)
             .bind(self.observed_revision.to_string()).bind(minimum).bind(maximum).bind(initial_gate).fetch_one(&mut **tx).await?)
@@ -255,7 +262,10 @@ impl DurabilityRoot {
             None,
             Some(death.into()),
             None,
-        None, None, None,)
+            None,
+            None,
+            None,
+        )
         .await
     }
     #[allow(

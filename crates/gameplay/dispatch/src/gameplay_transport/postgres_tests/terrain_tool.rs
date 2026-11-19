@@ -1,6 +1,6 @@
 //! TOOLS-2: ordinary USE → durable terrain transform → replay/reload → database deadline.
 use super::fixture::{Harness, debug, id, run};
-use super::item_craft::exchange;
+use super::item_craft_fixtures::exchange;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
@@ -362,7 +362,7 @@ fn scenario_with_voice(
                 "real current World selection"
             );
         }
-        super::item_look::seed_main_backpack(
+        super::item_look_fixtures::seed_main_backpack(
             &harness,
             &[(shovel, 1), ("oteryn:item.tibia.i3577", 1)],
         )

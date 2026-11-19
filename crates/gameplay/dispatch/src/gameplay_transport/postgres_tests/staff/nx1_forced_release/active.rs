@@ -23,7 +23,7 @@ fn scenario() -> TestResult {
             Harness::create_with_admission_seed(admin, "nx1_forced_release", true, false).await?;
         prepare_current_session(&h).await?;
         h.seed_pvp_target().await?;
-        crate::gameplay_transport::monk_save::postgres_tests::appearance_change_postgres::observer_visibility_tests::admit(&h).await?;
+        crate::gameplay_transport::monk_save::postgres_tests::appearance_change_postgres_fixtures::observer_visibility_tests::admit(&h).await?;
         signing.bootstrap(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h

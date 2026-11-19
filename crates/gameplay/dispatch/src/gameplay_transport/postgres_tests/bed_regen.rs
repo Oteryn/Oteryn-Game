@@ -11,17 +11,17 @@ use oteryn_protocol_oteryn::actor_spell::{STATE_DOMAIN_ACTOR_VITALS, decode_acto
 
 #[test]
 fn bed_regen_admission_wire_replay_and_restart_postgres() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("bed-regen-wire", || scenario(false))
+    super::kill_reward_e2e_fixtures::scenario_thread::run("bed-regen-wire", || scenario(false))
 }
 
 #[test]
 fn bed_regen_freed_bed_limits_only_sleep_postgres() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("bed-regen-freed", || scenario(true))
+    super::kill_reward_e2e_fixtures::scenario_thread::run("bed-regen-freed", || scenario(true))
 }
 
 #[test]
 fn gr_soul_001_bed_admission_uses_current_account_premium_postgres() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("bed-regen-soul", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("bed-regen-soul", || {
         run(async |admin| {
             for (index, (promoted, account, delivered, slept, expected)) in [
                 (true, 40, true, 899, 150),
@@ -106,7 +106,7 @@ fn gr_soul_001_bed_admission_uses_current_account_premium_postgres() -> TestResu
 async fn purchase_promotion_for_bed_fixture(h: &Harness) -> TestResult {
     // The existing initialized fixture is level 50. The shared fixture supplies
     // its purse; the real purchase owner commits the fee, receipt and promotion.
-    let purchase = super::atelier::fixture::prepare(h).await?;
+    let purchase = super::atelier_fixtures::fixture::prepare(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
         .root
@@ -325,7 +325,7 @@ fn scenario(freed: bool) -> TestResult {
         let mut input = (command.len() as u32).to_be_bytes().to_vec();
         input.extend_from_slice(&command);
         let (_, output) =
-            super::weather_wire::fixture_access::serve_input(&owner, session, &input).await?;
+            super::weather_wire_fixtures::fixture_access::serve_input(&owner, session, &input).await?;
         let mut cursor = 0;
         let mut found = false;
         while cursor < output.len() {

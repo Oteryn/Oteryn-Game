@@ -15,8 +15,8 @@ pub(super) async fn scenario(admin: String) -> TestResult {
     )?;
     let deps = scene.dependencies()?;
     let h = Harness::create_with_admission_seed(admin, "native_primal_entry", false, false).await?;
-    let evidence = super::super::house_transfer::RecoverySource::start(&h).await?;
-    super::super::house_transfer::prepare_owned_session(&h).await?;
+    let evidence = super::super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+    super::super::house_transfer_fixtures::prepare_owned_session(&h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
         .root
@@ -79,8 +79,8 @@ pub(super) async fn scenario(admin: String) -> TestResult {
     // A real level499 Character must fail the literal level500 source policy.
     // No vitals/HP, source policy or gate is overridden by this fixture.
     prepare_player(&h, &owner, &mut admitted, 499).await?;
-    super::super::item_look::seed_main_backpack(&h, &[]).await?;
-    let instance = super::super::activity_runtime::allocate_ready_instance(&h, 88).await?;
+    super::super::item_look_fixtures::seed_main_backpack(&h, &[]).await?;
+    let instance = super::super::activity_runtime_fixtures::allocate_ready_instance(&h, 88).await?;
     let assignment = h
         .root
         .read_runtime_scope_assignment(instance)

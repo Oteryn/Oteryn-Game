@@ -15,7 +15,7 @@ pub(super) async fn kills_before_and_at_expiry(
     assert!(beside, "the newest daily boost starts while the Store boost runs");
     let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
     let (generation, pin) =
-        super::super::death_ml_loss_composed::production_generation_with_source(
+        super::super::death_ml_loss_composed_fixtures::production_generation_with_source(
             world,
             "content-1",
             Some(include_bytes!(

@@ -127,7 +127,8 @@ async fn exercise(h: &f::Harness, respawn: bool) -> f::TestResult {
         minimum: 2,
         maximum: 2,
     };
-    let carried = super::super::QuestCarriedUse { recipe_target: None,
+    let carried = super::super::QuestCarriedUse {
+        recipe_target: None,
         location: None,
         tracking_cycle: None,
         tracking_probe: None,

@@ -359,7 +359,8 @@ macro_rules! composed_methods {
             empty_outfit: bool,
             entities: Vec<EntityRef>,
         ) -> Option<appearance_change::observation::Observation> {
-            appearance_change::observation::observe(self, actor, session, empty_outfit, entities).await
+            appearance_change::observation::observe(self, actor, session, empty_outfit, entities)
+                .await
         }
         async fn appearance_observation_projected_result(
             &self,
@@ -367,8 +368,18 @@ macro_rules! composed_methods {
             session: GameSessionId,
             empty_outfit: bool,
             entities: Vec<EntityRef>,
-        ) -> Result<appearance_change::observation::Observation, appearance_change::observation::ObservationError> {
-            appearance_change::observation::observe_result(self, actor, session, empty_outfit, entities).await
+        ) -> Result<
+            appearance_change::observation::Observation,
+            appearance_change::observation::ObservationError,
+        > {
+            appearance_change::observation::observe_result(
+                self,
+                actor,
+                session,
+                empty_outfit,
+                entities,
+            )
+            .await
         }
         async fn appearance_change(
             &self,

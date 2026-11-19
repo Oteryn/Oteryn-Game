@@ -1,6 +1,6 @@
 //! Real Character producer -> periodic connection authority -> durable release -> quarantine.
 use super::fixture::{Harness, debug, id};
-use super::kill_reward_e2e::scenario_thread::run_async as run;
+use super::kill_reward_e2e_fixtures::scenario_thread::run_async as run;
 use super::{Dependencies, TestResult, prepare_current_session, reset, track};
 use crate::durability::character_command::account_deletion::{Config, Intent};
 use crate::durability::fresh_admission::FreshAdmissionStore;

@@ -1,11 +1,12 @@
 //! Native dispatch, active artifact, Character sex and the fenced PostgreSQL writer.
 #![allow(clippy::expect_used)]
+use super::appearance_change_postgres_fixtures::{observer_visibility_tests};
+
 #[path = "appearance_change_postgres/command_replay_tests.rs"]
 mod command_replay_tests;
 #[path = "appearance_change_postgres/native_admission_tests.rs"]
 mod native_admission_tests;
-#[path = "appearance_change_postgres/observer_visibility_tests.rs"]
-pub(super) mod observer_visibility_tests;
+
 #[path = "appearance_change_postgres/receipt_substitution_tests.rs"]
 mod receipt_substitution_tests;
 #[path = "appearance_change_postgres/temporary_appearance_tests.rs"]

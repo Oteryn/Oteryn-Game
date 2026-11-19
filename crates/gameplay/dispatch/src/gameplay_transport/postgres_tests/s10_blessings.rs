@@ -185,7 +185,7 @@ fn scenario(world_type: i16, amulet: bool) -> TestResult {
         if amulet {
             items.push(("oteryn:item.tibia.i3057", 1));
         }
-        super::item_look::seed_main_backpack(&h, &items).await?;
+        super::item_look_fixtures::seed_main_backpack(&h, &items).await?;
         let mut command = 1;
         // Twist requires another blessing or a carried amulet; Pydar requires Kawill.
         for (index, topic, expected_paid, expected_stage) in [
@@ -203,7 +203,7 @@ fn scenario(world_type: i16, amulet: bool) -> TestResult {
                 generation: actor.actor_local_generation(),
             };
             for text in ["hi", topic, "yes", "bye"] {
-                super::npc_paid_travel::talk(&owner, &deps, npc, command, text).await?;
+                super::npc_paid_travel_fixtures::talk(&owner, &deps, npc, command, text).await?;
                 command += 1;
             }
             let paid: i64 =
@@ -273,7 +273,7 @@ fn scenario(world_type: i16, amulet: bool) -> TestResult {
             };
             for text in ["hi", "blessing", "yes", "bye"] {
                 let response =
-                    super::npc_paid_travel::talk(&owner, &deps, kawill, command, text).await?;
+                    super::npc_paid_travel_fixtures::talk(&owner, &deps, kawill, command, text).await?;
                 assert!(
                     !response.inventory_changed,
                     "free preparation cannot move inventory"

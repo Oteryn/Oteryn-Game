@@ -159,16 +159,28 @@ pub(crate) async fn apply(
     {
         return Ok(false);
     }
-    let search = callback.carried_tracker.as_ref().and_then(|tracker| tracker.ground_search.as_ref());
-    if !search.map_or_else(|| probe.is_none(), |search| probe.is_some_and(|index| index < search.attempts)) {
+    let search = callback
+        .carried_tracker
+        .as_ref()
+        .and_then(|tracker| tracker.ground_search.as_ref());
+    if !search.map_or_else(
+        || probe.is_none(),
+        |search| probe.is_some_and(|index| index < search.attempts),
+    ) {
         return Ok(false);
     }
-    let cycle_key = callback.carried_tracker.as_ref().and_then(|tracker| tracker.cycle_track.as_deref());
+    let cycle_key = callback
+        .carried_tracker
+        .as_ref()
+        .and_then(|tracker| tracker.cycle_track.as_deref());
     if cycle_key.is_some() != cycle.is_some() {
         return Ok(false);
     }
     if let (Some(key), Some(cycle)) = (cycle_key, cycle) {
-        let Some(track) = catalogue.track(key).filter(|track| track.quest == callback.quest) else {
+        let Some(track) = catalogue
+            .track(key)
+            .filter(|track| track.quest == callback.quest)
+        else {
             return Ok(false);
         };
         let stored: Option<i64> = sqlx::query_scalar(
@@ -194,10 +206,21 @@ pub(crate) async fn apply(
         .fetch_one(&mut **tx)
         .await?;
         if reset != epoch.to_string()
-            || callback.server_save_hotspot.as_ref().is_some_and(|hotspot|
-                !hotspot.contains(&callback.key, world.as_bytes(), epoch, position))
+            || callback
+                .server_save_hotspot
+                .as_ref()
+                .is_some_and(|hotspot| {
+                    !hotspot.contains(&callback.key, world.as_bytes(), epoch, position)
+                })
             || callback.carried_tracker.as_ref().is_some_and(|tracker| {
-                let target = tracker.target_at(&callback.key, world.as_bytes(), fence.character_id.as_bytes(), epoch, cycle, probe.unwrap_or(0));
+                let target = tracker.target_at(
+                    &callback.key,
+                    world.as_bytes(),
+                    fence.character_id.as_bytes(),
+                    epoch,
+                    cycle,
+                    probe.unwrap_or(0),
+                );
                 !tracker.reached(position, target)
             })
         {
@@ -560,7 +583,10 @@ pub(crate) async fn apply(
     let mut plan = oteryn_gameplay_quests::quest::reward_callbacks::durable_plan(callback)
         .map_err(|_| DurabilityError::InvalidStoredState)?;
     if (callback.carried_tracker.is_some() && callback.take.is_empty())
-        || callback.corpse_target.as_ref().is_some_and(|target| target.reusable_tool)
+        || callback
+            .corpse_target
+            .as_ref()
+            .is_some_and(|target| target.reusable_tool)
     {
         // A reusable tool leaves no consumption row. Keep the exact
         // command observation on its ordinary reward receipt for replay.
