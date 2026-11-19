@@ -1766,6 +1766,13 @@ async fn character_commands_loop(
             make_decider(),
             event,
         );
+    let retained_create_publisher =
+        crate::native_admission_source::character_commands::run_retained_create_publications(
+            SystemClock::default(),
+            MtlsSource::new(descriptor.clone()),
+            make_decider(),
+            event,
+        );
     let consumer = Consumer::new(
         SystemClock::default(),
         MtlsSource::new(descriptor),
@@ -1795,7 +1802,10 @@ async fn character_commands_loop(
         }
     };
     first(
-        both(both(consumer.run(), publisher), delivery),
+        both(
+            both(consumer.run(), publisher),
+            both(delivery, retained_create_publisher),
+        ),
         stop.cancelled(),
     )
     .await;

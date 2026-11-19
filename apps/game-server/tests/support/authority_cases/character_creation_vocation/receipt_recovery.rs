@@ -1,7 +1,7 @@
 use super::*;
 use native_admission_source::SourceError;
 use native_admission_source::character_commands::{
-    CommandSource, Decider, Failure, RetainedCreateReceipt, run_account_closure_publications,
+    CommandSource, Decider, Failure, RetainedCreateReceipt, run_retained_create_publications,
 };
 use native_admission_source::descriptor::Operation;
 use native_admission_source::runtime_status::SystemClock;
@@ -25,7 +25,7 @@ impl CommandSource for Peer {
         match operation {
             Operation::ReadCharacterCommandIntentV1 => Err(Failure::NotFound),
             Operation::PublishCharacterCommandReceiptV1 => {
-                if self.publications.fetch_add(1, Ordering::SeqCst) == 0 {
+                if self.publications.fetch_add(1, Ordering::SeqCst) < 2 {
                     return Err(Failure::Unavailable);
                 }
                 self.accepted.notify_one();
@@ -39,16 +39,22 @@ struct Durable<'a, 'r, 'c> {
     root: &'a DurabilityRoot,
     authority: &'a durability::character_authority::ReconciledCharacterAuthority<'r, 'c>,
     node: &'a NodeIncarnationProof,
+    operation_id: &'a str,
+    exact_retry_reads: &'a AtomicUsize,
 }
 impl Decider for Durable<'_, '_, '_> {
     async fn next_retained_create_receipt(
         &mut self,
         after: Option<&str>,
     ) -> Result<Option<RetainedCreateReceipt>, SourceError> {
-        self.root
+        let row = self.root
             .next_retained_create_receipt(self.authority, self.node, SOURCE, after)
             .await
-            .map_err(|_| SourceError::Unavailable)
+            .map_err(|_| SourceError::Unavailable)?;
+        if after.is_some_and(|cursor| cursor < self.operation_id) {
+            self.exact_retry_reads.fetch_add(1, Ordering::Relaxed);
+        }
+        Ok(row)
     }
     async fn decide(&mut self, command: &str, operation: &str, input: Input<'_>) -> Decision {
         self.root
@@ -84,13 +90,16 @@ pub(super) async fn exercise(
             .await,
         Err(Failure::NotFound)
     ));
-    let publisher = run_account_closure_publications(
+    let exact_retry_reads = AtomicUsize::new(0);
+    let publisher = run_retained_create_publications(
         SystemClock::default(),
         peer,
         Durable {
             root,
             authority,
             node,
+            operation_id,
+            exact_retry_reads: &exact_retry_reads,
         },
         |_| {},
     );
@@ -101,11 +110,14 @@ pub(super) async fn exercise(
     }
     {
         let calls = calls.lock().map_err(|_| "publication calls poisoned")?;
-        assert_eq!(calls.len(), 3);
+        assert_eq!(calls.len(), 4);
         assert_eq!(calls[0].1.as_bytes(), receipt);
-        assert_eq!(calls[2].0, Operation::PublishCharacterCommandReceiptV1);
-        assert_eq!(calls[2].1.as_bytes(), receipt);
+        for (operation, bytes) in &calls[2..] {
+            assert_eq!(*operation, Operation::PublishCharacterCommandReceiptV1);
+            assert_eq!(bytes.as_bytes(), receipt);
+        }
     }
+    assert!(exact_retry_reads.load(Ordering::Relaxed) > 0);
     root.stop_retained_create_receipt(authority, node, operation_id).await?;
     root.stop_retained_create_receipt(authority, node, operation_id).await?;
     assert!(
@@ -114,6 +126,6 @@ pub(super) async fn exercise(
             .is_none(),
         "a fresh scan excludes the durably stopped receipt"
     );
-    eprintln!("RETAINED_CREATE_RECEIPT_PG_EXECUTED publish_failure=1 read_404=1 recovered=1");
+    eprintln!("RETAINED_CREATE_RECEIPT_PG_EXECUTED publish_failure=2 read_404=1 recovered=1");
     Ok(())
 }

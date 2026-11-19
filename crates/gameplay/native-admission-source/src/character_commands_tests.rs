@@ -909,7 +909,11 @@ struct RetainedCreateStore {
     fail_next_stop: bool,
     continuous: bool,
     incarnation_lost: bool,
-    fill_retry_queue: bool,
+    unavailable_after: Option<String>,
+    removed: BTreeSet<String>,
+    replacements: BTreeMap<String, Vec<u8>>,
+    generated_rows: u32,
+    invalid_generated: bool,
 }
 
 struct RetainedCreates {
@@ -938,63 +942,59 @@ impl Decider for RetainedCreates {
         }
         let now = store.clock.elapsed();
         store.reads_at.push(now);
-        if store.fill_retry_queue {
-            let operation_id = op(u32::try_from(self.reads).unwrap());
-            return Ok(Some(RetainedCreateReceipt {
-                body: Some(operation_id.as_bytes().to_vec()),
+        if store
+            .unavailable_after
+            .as_deref()
+            .is_some_and(|id| Some(id) == after)
+        {
+            store.unavailable_after = None;
+            return Err(SourceError::Unavailable);
+        }
+        let scan_end = after.is_none().then(|| {
+            if store.generated_rows > 0 {
+                op(store.generated_rows)
+            } else if store.continuous {
+                op(u32::MAX)
+            } else {
+                op(2)
+            }
+        });
+        if store.generated_rows > 0 {
+            let next = (1..=store.generated_rows).map(op).find(|id| {
+                after.is_none_or(|cursor| id.as_str() > cursor) && !store.stopped.contains(id)
+            });
+            return Ok(next.map(|operation_id| RetainedCreateReceipt {
+                body: (!store.invalid_generated || operation_id == op(store.generated_rows))
+                    .then(|| operation_id.as_bytes().to_vec()),
                 operation_id,
+                scan_end,
             }));
         }
         let next = [("receipt-a", op(1)), ("receipt-b", op(2))]
             .into_iter()
             .find(|(_, id)| {
-                after.is_none_or(|cursor| id.as_str() > cursor) && !store.stopped.contains(id)
+                after.is_none_or(|cursor| id.as_str() > cursor)
+                    && !store.stopped.contains(id)
+                    && !store.removed.contains(id)
             });
         Ok(match next {
             Some((body, operation_id)) => Some(RetainedCreateReceipt {
-                body: (operation_id != OP1 || self.source_authority == AUTHORITY)
-                    .then(|| body.as_bytes().to_vec()),
+                body: (operation_id != OP1 || self.source_authority == AUTHORITY).then(|| {
+                    store
+                        .replacements
+                        .get(&operation_id)
+                        .cloned()
+                        .unwrap_or_else(|| body.as_bytes().to_vec())
+                }),
                 operation_id,
+                scan_end,
             }),
             None if store.continuous => Some(RetainedCreateReceipt {
                 operation_id: op(u32::try_from(self.reads).unwrap()),
                 body: Some(b"receipt-new".to_vec()),
+                scan_end,
             }),
             None => None,
-        })
-    }
-
-    async fn retained_create_receipt(
-        &mut self,
-        operation_id: &str,
-    ) -> Result<Option<RetainedCreateReceipt>, SourceError> {
-        let store = self.store.lock().unwrap();
-        if store.incarnation_lost {
-            return Err(SourceError::Unavailable);
-        }
-        if store.stopped.iter().any(|stopped| stopped == operation_id) {
-            return Ok(None);
-        }
-        let body = if store.fill_retry_queue {
-            operation_id
-        } else if operation_id == OP1 {
-            "receipt-a"
-        } else {
-            "receipt-b"
-        };
-        Ok(Some(RetainedCreateReceipt {
-            operation_id: operation_id.into(),
-            body: Some(body.as_bytes().to_vec()),
-        }))
-    }
-
-    async fn next_closure_publication(
-        &mut self,
-    ) -> Option<super::super::account_closure::Publication> {
-        let ready = self.store.lock().unwrap().fill_retry_queue && self.reads >= 1024;
-        ready.then(|| super::super::account_closure::Publication {
-            operation: Operation::PublishAccountClosureCommandReceiptV2,
-            body: "closure-receipt".into(),
         })
     }
 
@@ -1027,7 +1027,7 @@ fn poll_retained_create_publisher(
         .build()
         .unwrap();
     let _timer_context = runtime.enter();
-    let mut run = pin!(run_account_closure_publications(
+    let mut run = pin!(run_retained_create_publications(
         clock,
         Source {
             script: Arc::new(Mutex::new(script)),
@@ -1150,7 +1150,7 @@ fn retained_create_failed_stop_allows_later_receipt_in_same_pass() {
     let operation = Operation::PublishCharacterCommandReceiptV1;
     let sent = poll_retained_create_publisher(
         store.clone(),
-        2,
+        3,
         AUTHORITY,
         VecDeque::from([
             Err(classify(409, b"")),
@@ -1168,7 +1168,7 @@ fn retained_create_failed_stop_allows_later_receipt_in_same_pass() {
         ],
     );
     let store = store.lock().unwrap();
-    assert_eq!(store.reads_at, [Duration::ZERO, Duration::ZERO]);
+    assert_eq!(store.reads_at, [Duration::ZERO, Duration::ZERO, POLL]);
     assert_eq!(store.stop_attempts_at, [Duration::ZERO, POLL]);
     assert_eq!(store.stopped, [OP1]);
     LOG.with_borrow(|log| {
@@ -1187,7 +1187,7 @@ fn retained_create_503_retries_next_poll_during_continuous_scan() {
     let operation = Operation::PublishCharacterCommandReceiptV1;
     let sent = poll_retained_create_publisher(
         store.clone(),
-        3,
+        4,
         AUTHORITY,
         VecDeque::from([
             Err(classify(503, b"")),
@@ -1207,7 +1207,7 @@ fn retained_create_503_retries_next_poll_during_continuous_scan() {
         ],
     );
     let store = store.lock().unwrap();
-    assert_eq!(store.reads_at, [Duration::ZERO, Duration::ZERO, POLL]);
+    assert_eq!(store.reads_at, [Duration::ZERO, Duration::ZERO, POLL, POLL]);
     assert!(store.stopped.is_empty());
 }
 
@@ -1252,54 +1252,56 @@ fn retained_create_transport_failure_retries_after_later_receipt() {
     retained_create_retry_allows_later_receipts(Err(Failure::Unavailable));
 }
 
-fn queued_retry_is_dropped_after(update_store: impl FnOnce(&mut RetainedCreateStore)) {
-    let store = Arc::new(Mutex::new(RetainedCreateStore::default()));
-    struct PauseAtPoll(Clock);
+struct PauseAtPoll(Clock);
 
-    impl ReportClock for PauseAtPoll {
-        fn elapsed(&self) -> Duration {
-            self.0.elapsed()
-        }
-
-        fn unix_now(&self) -> i64 {
-            self.0.unix_now()
-        }
-
-        async fn sleep(&self, duration: Duration) {
-            let mut resume = false;
-            std::future::poll_fn(|_| {
-                if std::mem::replace(&mut resume, true) {
-                    Poll::Ready(())
-                } else {
-                    Poll::Pending
-                }
-            })
-            .await;
-            self.0.sleep(duration).await;
-        }
+impl ReportClock for PauseAtPoll {
+    fn elapsed(&self) -> Duration {
+        self.0.elapsed()
     }
 
+    fn unix_now(&self) -> i64 {
+        self.0.unix_now()
+    }
+
+    async fn sleep(&self, duration: Duration) {
+        let mut resume = false;
+        std::future::poll_fn(|_| {
+            if std::mem::replace(&mut resume, true) {
+                Poll::Ready(())
+            } else {
+                Poll::Pending
+            }
+        })
+        .await;
+        self.0.sleep(duration).await;
+    }
+}
+
+fn retry_after_store_change(
+    update_store: impl FnOnce(&mut RetainedCreateStore),
+    expected_retries: &[&str],
+    polls: usize,
+) {
+    let store = Arc::new(Mutex::new(RetainedCreateStore::default()));
     let clock = PauseAtPoll(store.lock().unwrap().clock.clone());
     let sent = Arc::new(Mutex::new(Vec::new()));
-    let script = Arc::new(Mutex::new(VecDeque::from([
-        Err(Failure::Unavailable),
-        Ok(retained_create_ack()),
-    ])));
+    let mut script = VecDeque::from([Err(Failure::Unavailable), Ok(retained_create_ack())]);
+    script.extend(expected_retries.iter().map(|_| Ok(retained_create_ack())));
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_time()
         .build()
         .unwrap();
     let _timer_context = runtime.enter();
-    let mut publisher = pin!(run_account_closure_publications(
+    let mut publisher = pin!(run_retained_create_publications(
         clock,
         Source {
-            script: script.clone(),
+            script: Arc::new(Mutex::new(script)),
             sent: sent.clone(),
         },
         RetainedCreates {
             store: store.clone(),
             reads: 0,
-            read_limit: 2,
+            read_limit: usize::MAX,
             source_authority: AUTHORITY,
         },
         |_| {},
@@ -1309,105 +1311,352 @@ fn queued_retry_is_dropped_after(update_store: impl FnOnce(&mut RetainedCreateSt
     assert!(publisher.as_mut().poll(&mut cx).is_pending());
     assert_eq!(sent.lock().unwrap().len(), 2);
     update_store(&mut store.lock().unwrap());
-    assert!(publisher.as_mut().poll(&mut cx).is_pending());
+    for _ in 0..polls {
+        assert!(publisher.as_mut().poll(&mut cx).is_pending());
+    }
+    let sent = sent.lock().unwrap();
+    let operation = Operation::PublishCharacterCommandReceiptV1;
+    let mut bodies = vec!["receipt-a", "receipt-b"];
+    bodies.extend_from_slice(expected_retries);
     assert_eq!(
-        *sent.lock().unwrap(),
-        [
-            (
-                Operation::PublishCharacterCommandReceiptV1,
-                "receipt-a".into()
-            ),
-            (
-                Operation::PublishCharacterCommandReceiptV1,
-                "receipt-b".into()
-            ),
-        ]
+        *sent,
+        bodies
+            .into_iter()
+            .map(|body| (operation, body.to_owned()))
+            .collect::<Vec<_>>()
     );
 }
 
 #[test]
 fn queued_retry_is_not_sent_after_durable_stop_committed_elsewhere() {
-    queued_retry_is_dropped_after(|store| store.stopped.push(OP1.into()));
+    retry_after_store_change(|store| store.stopped.push(OP1.into()), &[], 1);
 }
 
 #[test]
 fn queued_retry_is_not_sent_after_incarnation_lost() {
-    queued_retry_is_dropped_after(|store| store.incarnation_lost = true);
+    retry_after_store_change(|store| store.incarnation_lost = true, &[], 1);
 }
 
 #[test]
-fn closure_feed_is_served_before_create_retries_when_queue_is_full() {
-    struct Timeouts {
+fn queued_retry_uses_current_bytes_and_never_substitutes_a_successor() {
+    retry_after_store_change(
+        |store| {
+            store
+                .replacements
+                .insert(OP1.into(), b"current-bytes".to_vec());
+        },
+        &["current-bytes"],
+        1,
+    );
+    retry_after_store_change(
+        |store| {
+            store.removed.insert(OP1.into());
+        },
+        &[],
+        1,
+    );
+}
+
+#[test]
+fn queued_retry_remains_eligible_after_unavailable_fenced_read() {
+    retry_after_store_change(
+        |store| {
+            store.unavailable_after = Some(op(0));
+        },
+        &["receipt-a", "receipt-b"],
+        2,
+    );
+}
+
+#[test]
+fn retained_create_nonempty_refusals_never_stop_the_receipt() {
+    for status in [404, 409] {
+        retained_create_retry_allows_later_receipts(Err(classify(status, b"unexpected body")));
+    }
+}
+
+#[test]
+fn retained_create_later_retry_gets_a_full_exchange_deadline() {
+    struct SlowFirstRetry {
         clock: Clock,
-        elapsed_per_create: Duration,
-        offers_since_full: Arc<Mutex<Vec<String>>>,
-        creates_seen: BTreeSet<String>,
-        closure_offers: usize,
+        attempts_a: usize,
+        attempts_b: usize,
+        accepted: Arc<tokio::sync::Notify>,
     }
 
-    impl CommandSource for Timeouts {
-        async fn exchange(&mut self, operation: Operation, body: &str) -> Result<Vec<u8>, Failure> {
-            if operation == Operation::PublishAccountClosureCommandReceiptV2 {
-                self.closure_offers += 1;
-                if self.closure_offers == 2 {
-                    return std::future::pending().await;
+    impl CommandSource for SlowFirstRetry {
+        async fn exchange(&mut self, _: Operation, body: &str) -> Result<Vec<u8>, Failure> {
+            if body == "receipt-a" {
+                self.attempts_a += 1;
+                if self.attempts_a > 1 {
+                    *self.clock.0.lock().unwrap() +=
+                        RETAINED_CREATE_RETRY_TIME_PER_POLL - Duration::from_nanos(1);
                 }
-                self.offers_since_full.lock().unwrap().push(body.into());
-                return Ok(br#"{"contract_version":2,"result":"accepted"}"#.to_vec());
+            } else {
+                assert_eq!(body, "receipt-b");
+                self.attempts_b += 1;
+                if self.attempts_b > 1 {
+                    // This timer expires well before the exchange deadline and
+                    // after the first retry's leftover nanosecond.
+                    tokio::time::sleep(Duration::from_millis(20)).await;
+                    self.accepted.notify_one();
+                    return Ok(retained_create_ack());
+                }
             }
-            assert_eq!(operation, Operation::PublishCharacterCommandReceiptV1);
-            if self.creates_seen.len() >= 1024 {
-                self.offers_since_full.lock().unwrap().push(body.into());
-            }
-            self.creates_seen.insert(body.into());
-            *self.clock.0.lock().unwrap() += self.elapsed_per_create;
             Err(Failure::Unavailable)
         }
     }
 
+    struct YieldingClock(Clock);
+
+    impl ReportClock for YieldingClock {
+        fn elapsed(&self) -> Duration {
+            self.0.elapsed()
+        }
+
+        fn unix_now(&self) -> i64 {
+            self.0.unix_now()
+        }
+
+        async fn sleep(&self, duration: Duration) {
+            self.0.sleep(duration).await;
+            tokio::task::yield_now().await;
+        }
+    }
+
+    let store = Arc::new(Mutex::new(RetainedCreateStore::default()));
+    let clock = store.lock().unwrap().clock.clone();
+    let accepted = Arc::new(tokio::sync::Notify::new());
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_time()
+        .build()
+        .unwrap();
+    runtime.block_on(async {
+        let mut publisher = pin!(run_retained_create_publications(
+            YieldingClock(clock.clone()),
+            SlowFirstRetry {
+                clock,
+                attempts_a: 0,
+                attempts_b: 0,
+                accepted: accepted.clone(),
+            },
+            RetainedCreates {
+                store,
+                reads: 0,
+                // Two startup rows, two exact retries and one end-of-scan probe.
+                read_limit: 5,
+                source_authority: AUTHORITY,
+            },
+            |_| {},
+        ));
+        let mut acknowledgement = pin!(accepted.notified());
+        tokio::time::timeout(
+            Duration::from_secs(2),
+            std::future::poll_fn(|cx| {
+                assert!(publisher.as_mut().poll(cx).is_pending());
+                acknowledgement.as_mut().poll(cx)
+            }),
+        )
+        .await
+        .expect("B must get its first full retry while A keeps failing");
+    });
+}
+
+#[test]
+fn retained_create_retry_rotation_and_overflow_recover_during_backlog_growth() {
+    struct SlowPeer {
+        clock: Clock,
+        calls: Arc<Mutex<Vec<String>>>,
+        overflow_retried: bool,
+    }
+
+    impl CommandSource for SlowPeer {
+        async fn exchange(&mut self, operation: Operation, body: &str) -> Result<Vec<u8>, Failure> {
+            assert_eq!(operation, Operation::PublishCharacterCommandReceiptV1);
+            self.calls.lock().unwrap().push(body.into());
+            // Simulate one failed exchange consuming the retry budget, leaving
+            // the next queue head with a fresh budget on the next poll.
+            *self.clock.0.lock().unwrap() += RETAINED_CREATE_RETRY_TIME_PER_POLL;
+            if body == op(1025) && std::mem::replace(&mut self.overflow_retried, true) {
+                return Ok(retained_create_ack());
+            }
+            Err(Failure::Unavailable)
+        }
+    }
+
+    thread_local! {
+        static OVERFLOWS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    }
+    OVERFLOWS.set(0);
+    let store = Arc::new(Mutex::new(RetainedCreateStore {
+        generated_rows: 1026,
+        ..RetainedCreateStore::default()
+    }));
+    let clock = store.lock().unwrap().clock.clone();
+    let calls = Arc::new(Mutex::new(Vec::new()));
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_time()
         .build()
         .unwrap();
     let _timer_context = runtime.enter();
-    for (elapsed_per_create, expected_retries) in [(Duration::from_secs(3), 2), (Duration::ZERO, 8)]
-    {
-        let store = Arc::new(Mutex::new(RetainedCreateStore {
-            fill_retry_queue: true,
-            ..RetainedCreateStore::default()
-        }));
-        let clock = store.lock().unwrap().clock.clone();
-        let offers = Arc::new(Mutex::new(Vec::new()));
-        let mut publisher = pin!(run_account_closure_publications(
-            clock.clone(),
-            Timeouts {
-                clock,
-                elapsed_per_create,
-                offers_since_full: offers.clone(),
-                creates_seen: BTreeSet::new(),
-                closure_offers: 0,
-            },
-            RetainedCreates {
-                store,
-                reads: 0,
-                read_limit: 1026,
-                source_authority: AUTHORITY,
-            },
-            |_| {},
-        ));
-        assert!(
-            publisher
-                .as_mut()
-                .poll(&mut Context::from_waker(Waker::noop()))
-                .is_pending()
-        );
-        let offers = offers.lock().unwrap();
-        assert_eq!(offers.first().map(String::as_str), Some("closure-receipt"));
-        let retries = &offers[1..offers.len() - 2];
-        assert_eq!(retries.len(), expected_retries);
-        assert!(retries.iter().all(|id| id <= &op(1024)));
-        assert_eq!(&offers[offers.len() - 2..], &[op(1025), op(1026)]);
+    let mut publisher = pin!(run_retained_create_publications(
+        PauseAtPoll(clock.clone()),
+        SlowPeer {
+            clock,
+            calls: calls.clone(),
+            overflow_retried: false
+        },
+        RetainedCreates {
+            store: store.clone(),
+            reads: 0,
+            read_limit: usize::MAX,
+            source_authority: AUTHORITY
+        },
+        |event| {
+            assert!(
+                event.ends_with("alarm=retained_create_retry_limit"),
+                "{event}"
+            );
+            OVERFLOWS.set(OVERFLOWS.get() + 1);
+        },
+    ));
+    let mut cx = Context::from_waker(Waker::noop());
+    for _ in 0..3 {
+        assert!(publisher.as_mut().poll(&mut cx).is_pending());
     }
+    assert_eq!(*calls.lock().unwrap(), [1, 2, 1, 3, 4, 2, 5, 6].map(op));
+
+    // First sweep through 1026 rows, one wrap poll, and a second sweep
+    // through the overflowed row. New rows arrive faster than scan capacity.
+    for _ in 3..(513 + 1 + 513) {
+        store.lock().unwrap().generated_rows += 3;
+        assert!(publisher.as_mut().poll(&mut cx).is_pending());
+    }
+    let calls = calls.lock().unwrap();
+    assert_eq!(calls.iter().filter(|body| **body == op(1025)).count(), 2);
+    assert!(OVERFLOWS.get() >= 2);
+    assert!(store.lock().unwrap().stopped.is_empty());
+}
+
+#[test]
+fn retained_create_invalid_alarm_capacity_allows_valid_rows_and_realarms_evicted_ids() {
+    thread_local! {
+        static ALARMS: std::cell::RefCell<Vec<String>> = const { std::cell::RefCell::new(Vec::new()) };
+    }
+    ALARMS.with_borrow_mut(Vec::clear);
+    let store = Arc::new(Mutex::new(RetainedCreateStore {
+        generated_rows: 1026,
+        invalid_generated: true,
+        ..RetainedCreateStore::default()
+    }));
+    let sent = poll_retained_create_publisher(
+        store.clone(),
+        1028,
+        AUTHORITY,
+        VecDeque::from([Ok(retained_create_ack())]),
+        |event| ALARMS.with_borrow_mut(|alarms| alarms.push(event.into())),
+    );
+    assert_eq!(
+        sent,
+        [(Operation::PublishCharacterCommandReceiptV1, op(1026))]
+    );
+    assert!(store.lock().unwrap().stop_attempts_at.is_empty());
+    ALARMS.with_borrow(|alarms| {
+        assert_eq!(
+            alarms
+                .iter()
+                .filter(|line| line.ends_with("alarm=invalid_retained_receipt"))
+                .count(),
+            1026
+        );
+        assert_eq!(
+            alarms
+                .iter()
+                .filter(|line| line.ends_with("alarm=retained_create_invalid_limit"))
+                .count(),
+            2
+        );
+    });
+}
+
+#[test]
+fn closure_feed_is_served_while_retained_create_platform_exchange_waits() {
+    struct ClosureFeed(std::array::IntoIter<(Operation, &'static str), 3>);
+    impl Decider for ClosureFeed {
+        async fn decide(&mut self, _: &str, _: &str, _: Input<'_>) -> Decision {
+            Decision::Transient
+        }
+
+        async fn next_closure_publication(
+            &mut self,
+        ) -> Option<super::super::account_closure::Publication> {
+            let (operation, body) = self.0.next()?;
+            Some(super::super::account_closure::Publication {
+                operation,
+                body: body.into(),
+            })
+        }
+    }
+
+    let create_calls = Arc::new(Mutex::new(Vec::new()));
+    let closure_calls = Arc::new(Mutex::new(Vec::new()));
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_time()
+        .build()
+        .unwrap();
+    let _timer_context = runtime.enter();
+    let mut creates = pin!(run_retained_create_publications(
+        PauseAtPoll(Clock::default()),
+        Source {
+            sent: create_calls.clone(),
+            script: Arc::new(Mutex::new(VecDeque::new())),
+        },
+        RetainedCreates {
+            store: Arc::new(Mutex::new(RetainedCreateStore::default())),
+            reads: 0,
+            read_limit: usize::MAX,
+            source_authority: AUTHORITY,
+        },
+        |_| {},
+    ));
+    let publications = [
+        (
+            Operation::PublishAccountClosureCommandReceiptV2,
+            "closure-receipt",
+        ),
+        (Operation::PublishAccountClosureV1, "closure-projection"),
+        (
+            Operation::PublishAccountClosureWatermarkV1,
+            "freshness-watermark",
+        ),
+    ];
+    let mut closure = pin!(run_account_closure_publications(
+        PauseAtPoll(Clock::default()),
+        Source {
+            sent: closure_calls.clone(),
+            script: Arc::new(Mutex::new(VecDeque::from(publications.map(|_| {
+                Ok(br#"{"contract_version":2,"result":"accepted"}"#.to_vec())
+            })))),
+        },
+        ClosureFeed(publications.into_iter()),
+        |_| {},
+    ));
+    let mut cx = Context::from_waker(Waker::noop());
+    for _ in &publications {
+        assert!(creates.as_mut().poll(&mut cx).is_pending());
+        assert!(closure.as_mut().poll(&mut cx).is_pending());
+    }
+    assert_eq!(
+        *create_calls.lock().unwrap(),
+        [(
+            Operation::PublishCharacterCommandReceiptV1,
+            "receipt-a".into()
+        )]
+    );
+    assert_eq!(
+        *closure_calls.lock().unwrap(),
+        publications.map(|(operation, body)| (operation, body.to_owned()))
+    );
 }
 
 #[test]

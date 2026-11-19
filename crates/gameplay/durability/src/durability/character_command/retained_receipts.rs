@@ -28,7 +28,11 @@ impl DurabilityRoot {
                 if !prove_current_incarnation(&mut tx, &proof).await? {
                     return Err(DurabilityError::Unavailable);
                 }
-                let row = sqlx::query("SELECT operation_id::text AS operation,receipt,character_id::text AS character,account_id::text AS account,world_id::text AS world,recovery_generation::text AS generation,decided_at FROM game_character_command_receipts AS r
+                let row = sqlx::query("SELECT operation_id::text AS operation,receipt,character_id::text AS character,account_id::text AS account,world_id::text AS world,recovery_generation::text AS generation,decided_at,
+                    CASE WHEN $1::text IS NULL THEN (
+                        SELECT operation_id::text FROM game_character_command_receipts
+                        ORDER BY operation_id DESC LIMIT 1
+                    ) END AS scan_end FROM game_character_command_receipts AS r
                     WHERE command='CreateCharacter' AND outcome=1
                     AND ($1::text IS NULL OR r.operation_id>$1::uuid)
                     AND NOT EXISTS (SELECT 1 FROM game_character_retained_create_receipt_stops AS s WHERE s.operation_id=r.operation_id)
@@ -76,6 +80,7 @@ impl DurabilityRoot {
                     Some(RetainedCreateReceipt {
                         body: verify().ok().map(|()| bytes),
                         operation_id: operation,
+                        scan_end: row.try_get("scan_end")?,
                     })
                 } else { None };
                 commit_semantic_transaction(tx,deadline).await?;

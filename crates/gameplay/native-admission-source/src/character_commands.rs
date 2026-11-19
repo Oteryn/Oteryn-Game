@@ -472,6 +472,8 @@ pub enum Decision {
 /// A retained operation and its verified immutable publication bytes.
 pub struct RetainedCreateReceipt {
     pub operation_id: String,
+    /// Upper UUID from the first cursor read's store snapshot, when there is no lower cursor.
+    pub scan_end: Option<String>,
     /// Absent when the row is present but its stored receipt is invalid.
     pub body: Option<Vec<u8>>,
 }
@@ -484,23 +486,6 @@ pub trait Decider: Send {
         _after: Option<&str>,
     ) -> impl Future<Output = Result<Option<RetainedCreateReceipt>, SourceError>> + Send {
         async { Ok(None) }
-    }
-
-    /// Re-read a queued operation through the same fenced, stop-aware cursor read.
-    fn retained_create_receipt(
-        &mut self,
-        operation_id: &str,
-    ) -> impl Future<Output = Result<Option<RetainedCreateReceipt>, SourceError>> + Send {
-        async move {
-            if !uuid_v7(operation_id) {
-                return Err(SourceError::Unavailable);
-            }
-            let before = preceding_uuid_v7(operation_id);
-            Ok(self
-                .next_retained_create_receipt(before.as_deref())
-                .await?
-                .filter(|receipt| receipt.operation_id == operation_id))
-        }
     }
 
     /// Durably stop publication while retaining the immutable v1 create receipt.
@@ -1077,56 +1062,85 @@ fn preceding_uuid_v7(operation_id: &str) -> Option<String> {
 const RETAINED_CREATE_RETRY_LIMIT: usize = 1024;
 const RETAINED_CREATE_RETRIES_PER_POLL: usize = 8;
 const RETAINED_CREATE_RETRY_TIME_PER_POLL: Duration = Duration::from_secs(6);
+const RETAINED_CREATE_READ_TIME: Duration = Duration::from_secs(3);
+const RETAINED_CREATE_OFFER_TIME: Duration = Duration::from_millis(super::EXCHANGE_DEADLINE_MS);
 const RETAINED_CREATE_INVALID_LIMIT: usize = 1024;
 
-fn retained_create_body(
+async fn read_retained_create(
+    decider: &mut impl Decider,
+    after: Option<&str>,
+) -> Result<Option<RetainedCreateReceipt>, SourceError> {
+    tokio::time::timeout(
+        RETAINED_CREATE_READ_TIME,
+        decider.next_retained_create_receipt(after),
+    )
+    .await
+    .map_err(|_| SourceError::Unavailable)?
+}
+
+/// Both lanes use the same fenced store operation. An exact retry must never
+/// substitute the next row if the requested ID disappeared or was stopped.
+async fn read_retained_create_retry(
+    decider: &mut impl Decider,
+    operation_id: &str,
+) -> Result<Option<RetainedCreateReceipt>, SourceError> {
+    if !uuid_v7(operation_id) {
+        return Err(SourceError::Unavailable);
+    }
+    let before = preceding_uuid_v7(operation_id);
+    Ok(read_retained_create(decider, before.as_deref())
+        .await?
+        .filter(|receipt| receipt.operation_id == operation_id))
+}
+
+#[derive(PartialEq, Eq)]
+enum RetainedOffer {
+    Skipped,
+    Settled,
+    Retry,
+}
+
+async fn offer_retained_create(
+    decider: &mut impl Decider,
+    source: &mut impl CommandSource,
     receipt: RetainedCreateReceipt,
     invalid_creates: &mut BTreeSet<String>,
     event: fn(&str),
-) -> Option<String> {
-    if invalid_creates.contains(&receipt.operation_id) {
-        return None;
-    }
-    let body = receipt.body.and_then(|bytes| String::from_utf8(bytes).ok());
-    if body.is_none() {
-        (event)(
-            "event=character_commands operation=PublishCharacterCommandReceiptV1 command=CreateCharacter receipt=invalid_stored_state alarm=invalid_retained_receipt",
-        );
-        if invalid_creates.len() == RETAINED_CREATE_INVALID_LIMIT {
-            let _ = invalid_creates.pop_first();
+) -> RetainedOffer {
+    let RetainedCreateReceipt {
+        operation_id, body, ..
+    } = receipt;
+    let Some(body) = body.and_then(|bytes| String::from_utf8(bytes).ok()) else {
+        if !invalid_creates.contains(&operation_id) {
+            (event)(
+                "event=character_commands operation=PublishCharacterCommandReceiptV1 command=CreateCharacter receipt=invalid_stored_state alarm=invalid_retained_receipt",
+            );
+            if invalid_creates.len() == RETAINED_CREATE_INVALID_LIMIT {
+                (event)(
+                    "event=character_commands command=CreateCharacter alarm=retained_create_invalid_limit",
+                );
+                // Alarm suppression is best effort. An evicted invalid ID can alarm again.
+                let _ = invalid_creates.pop_first();
+            }
+            invalid_creates.insert(operation_id);
         }
-        invalid_creates.insert(receipt.operation_id);
-    }
-    body
-}
-
-async fn offer_retained_create_receipt(
-    source: &mut impl CommandSource,
-    body: &str,
-) -> Result<(), Failure> {
-    source
-        .exchange(Operation::PublishCharacterCommandReceiptV1, body)
-        .await
-        .and_then(|raw| decode_receipt_response(&raw).map_err(|_| Failure::InvalidResponse))
-}
-
-/// Returns whether this operation needs another offer.
-async fn settle_retained_create_offer(
-    decider: &mut impl Decider,
-    operation_id: &str,
-    published: Result<(), Failure>,
-    retry_deadline: Option<tokio::time::Instant>,
-    event: fn(&str),
-) -> bool {
+        return RetainedOffer::Skipped;
+    };
+    invalid_creates.remove(&operation_id);
+    let published = tokio::time::timeout(
+        RETAINED_CREATE_OFFER_TIME,
+        source.exchange(Operation::PublishCharacterCommandReceiptV1, &body),
+    )
+    .await
+    .unwrap_or(Err(Failure::Unavailable))
+    .and_then(|raw| decode_receipt_response(&raw).map_err(|_| Failure::InvalidResponse));
     match published {
-        Ok(()) => false,
+        Ok(()) => RetainedOffer::Settled,
         Err(failure @ (Failure::NotFound | Failure::Conflict)) => {
-            let stop = decider.stop_retained_create_receipt(operation_id);
-            let stop_failed = if let Some(deadline) = retry_deadline {
-                !matches!(tokio::time::timeout_at(deadline, stop).await, Ok(Ok(())))
-            } else {
-                stop.await.is_err()
-            };
+            let stop_failed = decider
+                .stop_retained_create_receipt(&operation_id)
+                .await
+                .is_err();
             let alarm = if stop_failed {
                 "receipt_stop_write_failed"
             } else {
@@ -1136,9 +1150,13 @@ async fn settle_retained_create_offer(
                 "event=character_commands operation=PublishCharacterCommandReceiptV1 command=CreateCharacter receipt={} alarm={alarm}",
                 failure.label()
             ));
-            stop_failed
+            if stop_failed {
+                RetainedOffer::Retry
+            } else {
+                RetainedOffer::Settled
+            }
         }
-        Err(_) => true,
+        Err(_) => RetainedOffer::Retry,
     }
 }
 
@@ -1152,10 +1170,6 @@ pub async fn run_account_closure_publications<C: ReportClock, S: CommandSource, 
     event: fn(&str),
 ) {
     let mut backoff = POLL;
-    let mut create_cursor: Option<String> = None;
-    // Remember only the IDs of invalid rows encountered by this process's scan.
-    let mut invalid_creates = BTreeSet::new();
-    let mut create_retries: VecDeque<String> = VecDeque::new();
     loop {
         let mut delay = POLL;
         if let Some(publication) = decider.next_closure_publication().await {
@@ -1192,84 +1206,113 @@ pub async fn run_account_closure_publications<C: ReportClock, S: CommandSource, 
                 Err(_) => {}
             }
         }
+        clock.sleep(delay).await;
+    }
+}
+
+/// Replay committed v1 creates independently of the pending list and closure feed.
+/// The durable table is the retry source of truth. The queue only expedites offers.
+pub async fn run_retained_create_publications<C: ReportClock, S: CommandSource, D: Decider>(
+    clock: C,
+    mut source: S,
+    mut decider: D,
+    event: fn(&str),
+) {
+    let mut cursor: Option<String> = None;
+    let mut scan_end: Option<String> = None;
+    let mut invalid_creates = BTreeSet::new();
+    let mut retries: VecDeque<String> = VecDeque::new();
+    loop {
         let retry_started = clock.elapsed();
-        let mut completed_retries = Vec::new();
-        for _ in 0..create_retries.len().min(RETAINED_CREATE_RETRIES_PER_POLL) {
-            let remaining = RETAINED_CREATE_RETRY_TIME_PER_POLL
-                .saturating_sub(clock.elapsed().saturating_sub(retry_started));
-            if remaining.is_zero() {
+        let mut attempted = Vec::with_capacity(RETAINED_CREATE_RETRIES_PER_POLL);
+        for attempt in 0..retries.len().min(RETAINED_CREATE_RETRIES_PER_POLL) {
+            // Each attempt gets its full read and exchange budgets. Apply the
+            // poll budget only between attempts, so a deadline cannot pin an ID
+            // at the head or systematically truncate one queue position.
+            if attempt > 0
+                && clock.elapsed().saturating_sub(retry_started)
+                    >= RETAINED_CREATE_RETRY_TIME_PER_POLL
+            {
                 break;
             }
-            let Some(operation_id) = create_retries.pop_front() else {
+            let Some(operation_id) = retries.pop_front() else {
                 break;
             };
-            let deadline = tokio::time::Instant::now() + remaining;
-            let offer = async {
-                let receipt = decider
-                    .retained_create_receipt(&operation_id)
-                    .await
-                    .ok()??;
-                let body = retained_create_body(receipt, &mut invalid_creates, event)?;
-                Some(offer_retained_create_receipt(&mut source, &body).await)
-            };
-            let retry = match tokio::time::timeout_at(deadline, offer).await {
-                Ok(Some(published)) => {
-                    settle_retained_create_offer(
+            let retry = match read_retained_create_retry(&mut decider, &operation_id).await {
+                Ok(Some(receipt)) => {
+                    attempted.push(operation_id.clone());
+                    offer_retained_create(
                         &mut decider,
-                        &operation_id,
-                        published,
-                        Some(deadline),
+                        &mut source,
+                        receipt,
+                        &mut invalid_creates,
                         event,
                     )
                     .await
+                        == RetainedOffer::Retry
                 }
                 Ok(None) => false,
                 Err(_) => true,
             };
             if retry {
-                create_retries.push_back(operation_id);
-            } else {
-                // The scan can wrap to an operation we already processed in this poll.
-                completed_retries.push(operation_id);
+                retries.push_back(operation_id);
             }
         }
 
-        // Give the next row a chance in this poll when the first row is skipped or deferred.
+        // This cursor enumerates durable rows. Advancing it is independent
+        // of settlement, so a slow or invalid row cannot block later rows.
+        // A fixed upper UUID per sweep makes wrap independent of newer keys.
         for _ in 0..2 {
-            let receipt = match decider
-                .next_retained_create_receipt(create_cursor.as_deref())
-                .await
-            {
+            let receipt = match read_retained_create(&mut decider, cursor.as_deref()).await {
                 Ok(Some(receipt)) => receipt,
                 Ok(None) => {
-                    create_cursor = None;
+                    cursor = None;
                     break;
                 }
                 Err(_) => break,
             };
-            let operation_id = receipt.operation_id.clone();
-            create_cursor = Some(operation_id.clone());
-            if create_retries.contains(&operation_id) || completed_retries.contains(&operation_id) {
-                continue;
+            if cursor.is_none() {
+                scan_end = receipt.scan_end.clone();
             }
-            let Some(body) = retained_create_body(receipt, &mut invalid_creates, event) else {
-                continue;
-            };
-            let published = offer_retained_create_receipt(&mut source, &body).await;
-            if !settle_retained_create_offer(&mut decider, &operation_id, published, None, event)
-                .await
+            if scan_end
+                .as_ref()
+                .is_some_and(|end| receipt.operation_id > *end)
             {
+                cursor = None;
                 break;
             }
-            if create_retries.len() == RETAINED_CREATE_RETRY_LIMIT {
+            let operation_id = receipt.operation_id.clone();
+            cursor = Some(operation_id.clone());
+            if attempted.contains(&operation_id) {
+                continue;
+            }
+            let offer = offer_retained_create(
+                &mut decider,
+                &mut source,
+                receipt,
+                &mut invalid_creates,
+                event,
+            )
+            .await;
+            if offer != RetainedOffer::Retry {
+                retries.retain(|queued| queued != &operation_id);
+                if offer == RetainedOffer::Settled {
+                    break;
+                }
+                continue;
+            }
+            if retries.contains(&operation_id) {
+                continue;
+            }
+            if retries.len() == RETAINED_CREATE_RETRY_LIMIT {
                 (event)(
                     "event=character_commands operation=PublishCharacterCommandReceiptV1 command=CreateCharacter alarm=retained_create_retry_limit",
                 );
             } else {
-                create_retries.push_back(operation_id);
+                retries.push_back(operation_id);
             }
         }
-        clock.sleep(delay).await;
+        clock.sleep(POLL).await;
     }
 }
 
