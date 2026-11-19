@@ -13,6 +13,8 @@ use std::time::Duration;
 
 pub(super) const NAME: &str = "feaster-brain-head";
 pub(super) const FULL: &str = "feaster-brain-head-full";
+pub(super) const CLOSED: &str = "feaster-brain-head-closed";
+const ADMISSION_WINDOW_MS: u32 = 30_000;
 const BOSS: &str = "oteryn:creature.brain_head";
 const ADD: &str = "oteryn:creature.cerebellum";
 const DOOR: Position = at(31937, 32325);
@@ -55,7 +57,7 @@ pub(super) fn binding() -> TestResult<Callback> {
             "monsters":monsters,
             "room_min":at(31941,32313),"room_max":at(31966,32337),
             "solo_expiry":{"exit":EXIT,"time_limit_ms":300000,"cooldown_seconds":36000,
-                "shared":{"capacity":5,"join_window_ms":30000}}
+                "shared":{"capacity":5,"join_window_ms":ADMISSION_WINDOW_MS}}
         }},
         "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_brain_head.lua:1-126"]
     }))?)
@@ -80,13 +82,24 @@ fn brain_head_full_room_returns_step_to_occupied_exit_without_booking_cooldown()
     super::kill_reward_e2e::scenario_thread::run(FULL, || scenario(FULL, ALIAS, false))
 }
 
+#[test]
+fn brain_head_join_window_refuses_a_late_second_player_until_the_room_expires() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(CLOSED, || scenario(CLOSED, ALIAS, false))
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     harness: &Harness,
     fence: CurrentCharacterGameplayFence,
-    full: bool,
+    name: &str,
 ) -> TestResult {
+    let full = name == FULL;
+    let late = name == CLOSED;
     let actor = admitted.runtime_actor.ok_or("actor")?;
     // A full zone refuses entry even if all occupants are spectators.
     if full {
@@ -170,6 +183,15 @@ pub(super) async fn exercise(
     // independently fenced Character enters by the primary position.
     let mut second = second_player(owner, admitted, harness).await?;
     let second_actor = second.runtime_actor.ok_or("second player")?;
+    if late {
+        // Crystal actions_portal_brain_head.lua:81-91 seals admission after
+        // 30 seconds while the original cohort continues for another 270.
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(Duration::from_millis(u64::from(ADMISSION_WINDOW_MS)))
+            .ok_or("join-window clock")?;
+        owner.drain_quest_encounter_deadlines().await;
+    }
     let reply = wire(
         owner,
         &mut second,
@@ -190,7 +212,7 @@ pub(super) async fn exercise(
             .read_actor_position(second_actor)
             .map_err(debug)?
             .position(),
-        local(ENTRY)
+        local(if late { EXIT } else { ENTRY })
     );
     assert_eq!(live(owner, BOSS).await?.len(), 1);
     assert_eq!(live(owner, ADD).await?.len(), 8);
@@ -199,7 +221,7 @@ pub(super) async fn exercise(
             .bind(BOSS)
             .fetch_one(&harness.pool)
             .await?;
-    assert_eq!(cooled_players, 2);
+    assert_eq!(cooled_players, if late { 1 } else { 2 });
     let due = owner
         .states
         .quest_callbacks

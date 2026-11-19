@@ -362,7 +362,7 @@ fn scenario_case(
     use super::super::faceless_bane_phase;
     let faceless_bane = name == faceless_bane_phase::NAME;
     use super::super::feaster_brain_head;
-    let brain_head = matches!(name, feaster_brain_head::NAME | feaster_brain_head::FULL);
+    let brain_head = matches!(name, feaster_brain_head::CLOSED | feaster_brain_head::FULL | feaster_brain_head::NAME);
     use super::super::feaster_solo_rooms;
     let feaster_solo = matches!(name, feaster_solo_rooms::IRGIX | feaster_solo_rooms::IRGIX_RETURN | feaster_solo_rooms::UNAZ | feaster_solo_rooms::VOK);
     use super::super::haunted_cellar_disguise;
@@ -1494,7 +1494,7 @@ fn scenario_case(
             "questpc7-grave" => Some(250),
             "questpc7-outfits-formal" => Some(20),
             "questpc7-outfits-fiend" | "questpc7-outfits-inquisition" => Some(250),
-            dream_scar_izcandar_forms::NAME | faceless_bane_phase::NAME | feaster_brain_head::NAME | feaster_brain_head::FULL | feaster_solo_rooms::IRGIX
+            dream_scar_izcandar_forms::NAME | faceless_bane_phase::NAME | feaster_brain_head::CLOSED | feaster_brain_head::FULL | feaster_brain_head::NAME | feaster_solo_rooms::IRGIX
             | feaster_solo_rooms::IRGIX_RETURN | feaster_solo_rooms::UNAZ | feaster_solo_rooms::VOK
             | zarganash_linked_boss::NAME | zarganash_linked_boss::OCCUPIED_ARRIVAL => Some(250),
             _ => None,
@@ -3082,7 +3082,7 @@ fn scenario_case(
         } else if faceless_bane {
             Box::pin(faceless_bane_phase::exercise(&mut owner, &mut admitted)).await?;
         } else if brain_head {
-            Box::pin(feaster_brain_head::exercise(&mut owner, &mut admitted, &h, fence, name == feaster_brain_head::FULL)).await?;
+            Box::pin(feaster_brain_head::exercise(&mut owner, &mut admitted, &h, fence, name)).await?;
         } else if feaster_solo {
             Box::pin(feaster_solo_rooms::exercise(&mut owner, &mut admitted, &h, fence, name)).await?;
         } else if haunted_tomb {
