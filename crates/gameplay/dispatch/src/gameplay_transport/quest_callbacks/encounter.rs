@@ -1,7 +1,7 @@
 //! Source parties are the players standing on the exact staging tiles, not a social-party id.
 use super::*;
 use crate::content::{CollisionClass, LogicalCell};
-use crate::map::view::EntryFacts;
+use crate::map::{facts::QuestCallbackProjection, view::EntryFacts};
 
 pub(in crate::gameplay_transport) fn room_contains(
     encounter: &oteryn_gameplay_quests::quest::world_callbacks::Encounter,
@@ -75,6 +75,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         preflight: bool,
         cause: QuestCause,
         reservation: Option<&mut personal_encounter::Reservation<'_>>,
+        projection: Option<&QuestCallbackProjection>,
     ) -> UseDisposition {
         self.quest_encounter(
             runtime,
@@ -89,6 +90,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             preflight,
             cause,
             reservation,
+            projection,
         )
     }
 
@@ -105,6 +107,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         expected_revision: u64,
         after: EntryFacts,
         cause: QuestCause,
+        projection: Option<&QuestCallbackProjection>,
     ) -> UseDisposition {
         self.quest_encounter(
             runtime,
@@ -119,6 +122,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             true,
             cause,
             None,
+            projection,
         )
     }
 
@@ -137,6 +141,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         preflight: bool,
         cause: QuestCause,
         reservation: Option<&mut personal_encounter::Reservation<'_>>,
+        projection: Option<&QuestCallbackProjection>,
     ) -> UseDisposition {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
@@ -150,7 +155,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // Preflight checks the same guards without reserving a timer.
                 let ready = oteryn_gameplay_quests::quest::world_callbacks::personal_trial::admitted(
                     callback,
-                ) && encounter.players.is_empty()
+                )
+                    || (callback.starts_merchant_wave() && projection.is_some());
+                let ready = ready
+                    && encounter.players.is_empty()
                     && states.get(runtime, actor, session).is_some_and(|state| {
                         state.character_facts().level >= encounter.minimum_level
                     })
@@ -176,6 +184,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 key,
                 expected_revision,
                 after,
+                projection,
             );
         }
         let Ok(census) = runtime.positioned_melee_census() else {

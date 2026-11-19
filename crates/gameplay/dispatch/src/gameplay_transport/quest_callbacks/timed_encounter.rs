@@ -2,10 +2,14 @@
 use super::*;
 use crate::content::{CollisionClass, LogicalCell};
 use crate::foundation::{RuntimeScopeRefV1, ScopeOwnershipGeneration};
-use crate::map::view::EntryFacts;
+use crate::map::{
+    facts::QuestCallbackProjection,
+    view::{EntryFacts, EntrySource, MapFacts},
+};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 pub(super) const MAX_TIMED_ENCOUNTERS: usize = 64;
+const MERCHANT_CLEANUP_RETRY_US: u64 = 100_000;
 
 pub(super) struct TimedEncounter {
     callback: Callback,
@@ -19,10 +23,34 @@ pub(super) struct TimedEncounter {
     reset_at: u64,
     attempted_spawn: bool,
     spawned: Vec<ExactActorRef>,
+    merchant_loot: Option<(u64, Vec<(TilePos, u64)>)>,
 }
 impl TimedEncounter {
-    pub(super) fn source_key(&self) -> u64 {
-        self.key
+    pub(super) fn holds_source_key(&self, key: u64) -> bool {
+        self.key == key && self.merchant_loot.is_none()
+    }
+
+    pub(super) fn overlaps_merchant_wave(&self, callback: &Callback) -> bool {
+        if !self.callback.starts_merchant_wave()
+            || !callback.starts_merchant_wave()
+            || self.merchant_loot.is_some()
+        {
+            return false;
+        }
+        let Some((active, requested)) = self
+            .callback
+            .effects
+            .encounter
+            .as_ref()
+            .zip(callback.effects.encounter.as_ref())
+        else {
+            return false;
+        };
+        active.room_min.floor == requested.room_min.floor
+            && active.room_min.x <= requested.room_max.x
+            && requested.room_min.x <= active.room_max.x
+            && active.room_min.y <= requested.room_max.y
+            && requested.room_min.y <= active.room_max.y
     }
 
     pub(super) fn contains_participant(
@@ -51,7 +79,9 @@ impl TimedEncounter {
     }
 
     pub(super) fn next_due_us(&self) -> u64 {
-        if self.attempted_spawn {
+        if let Some((deadline, _)) = &self.merchant_loot {
+            *deadline
+        } else if self.attempted_spawn {
             self.reset_at
         } else {
             self.spawn_at
@@ -75,6 +105,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         key: u64,
         revision: u64,
         after: EntryFacts,
+        projection: Option<&QuestCallbackProjection>,
     ) -> UseDisposition {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
@@ -84,7 +115,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let personal =
             oteryn_gameplay_quests::quest::world_callbacks::personal_trial::admitted(callback);
-        if callback.lever.is_none() && !personal {
+        let merchant = callback.starts_merchant_wave()
+            && matches!(
+                projection,
+                Some(QuestCallbackProjection::MerchantTrap {
+                    barricade: Some(_),
+                    ..
+                })
+            );
+        if callback.lever.is_none() && !personal && !merchant {
             return UseDisposition::Rejected;
         }
         let Some(native) = self
@@ -126,15 +165,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseDisposition::Rejected;
         };
         if pending.len() >= MAX_TIMED_ENCOUNTERS
-            || pending.iter().any(|pending| pending.key == key)
+            || pending.iter().any(|pending| {
+                pending.holds_source_key(key) || pending.overlaps_merchant_wave(callback)
+            })
             || pending.try_reserve(1).is_err()
         {
             return UseDisposition::Exhausted;
         }
-        if !map
-            .facts
-            .apply_quest_callback(key, revision, after, &[], &[], false, None)
-        {
+        if !map.facts.apply_quest_callback(
+            key,
+            revision,
+            after,
+            &[],
+            &[],
+            false,
+            if merchant { projection } else { None },
+        ) {
             return UseDisposition::Rejected;
         }
         pending.push(TimedEncounter {
@@ -149,6 +195,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             reset_at,
             attempted_spawn: false,
             spawned: Vec::new(),
+            merchant_loot: None,
         });
         states.owner_wake.notify_one();
         UseDisposition::Committed
@@ -180,7 +227,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if memo.content != runtime.content_pin().server_artifact_digest()
                 || memo.map != map.overlay.base().digest()
                 || memo.scope != runtime.encounter_owner_scope()
-                || map.facts.object_revision(memo.key) != memo.revision
+                || (!memo.callback.starts_merchant_wave()
+                    && map.facts.object_revision(memo.key) != memo.revision)
             {
                 pending.remove(index);
                 continue;
@@ -193,6 +241,76 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 pending.remove(index);
                 continue;
             };
+            if let Some((due, loot)) = &mut memo.merchant_loot {
+                let Ok(records) = self.states.quest_callbacks.records.lock() else {
+                    return;
+                };
+                loot.retain(|&(pos, key)| {
+                    if records.values().any(|record| record.key == key) {
+                        return true;
+                    }
+                    !map.facts.remove_movement_item(pos, key, 12189)
+                        && super::captured_merchant(map, key).is_some()
+                });
+                if loot.is_empty() {
+                    pending.remove(index);
+                } else {
+                    *due = now.saturating_add(MERCHANT_CLEANUP_RETRY_US);
+                    index += 1;
+                }
+                continue;
+            }
+            if memo.callback.starts_merchant_wave() && now >= memo.reset_at {
+                if let Some((pos, key)) = map.facts.merchant_barricade(memo.key) {
+                    if !map.facts.remove_movement_item(pos, key, 3682) {
+                        // A reserved entrance can settle before the next cleanup turn.
+                        memo.attempted_spawn = true;
+                        memo.reset_at = now.saturating_add(MERCHANT_CLEANUP_RETRY_US);
+                        index += 1;
+                        continue;
+                    }
+                    map.facts.emit_movement_effect(pos, 46);
+                }
+                for actor in &memo.spawned {
+                    if let Some(pos) = runtime
+                        .read_actor_position(*actor)
+                        .ok()
+                        .and_then(|snapshot| native(snapshot.position()))
+                    {
+                        map.facts.emit_movement_effect(pos, 45);
+                    }
+                }
+                super::personal_trial::cleanup(&mut runtime, &mut memo.spawned);
+                let mut loot = Vec::new();
+                for x in encounter.room_min.x..=encounter.room_max.x {
+                    for y in encounter.room_min.y..=encounter.room_max.y {
+                        let pos = TilePos {
+                            x,
+                            y,
+                            floor: encounter.room_min.floor,
+                        };
+                        for entry in map.facts.movement_items(pos) {
+                            let EntrySource::Added(id) = entry.source else {
+                                continue;
+                            };
+                            let key = id.get();
+                            if entry.facts.appearance_id == 12189
+                                || (entry.facts.appearance_id == 12187
+                                    && map.facts.compare_transform_movement_item(
+                                        key,
+                                        map.facts.object_revision(key),
+                                        12189,
+                                    ))
+                            {
+                                loot.push((pos, key));
+                            }
+                        }
+                    }
+                }
+                memo.merchant_loot = Some((now.saturating_add(300_000_000), loot));
+                index += 1;
+                continue;
+            }
             let Ok(census) = runtime.current_live_creature_census() else {
                 index += 1;
                 continue;
@@ -247,6 +365,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             // Source Game.createMonster attempts once at its due instant. An occupied/full
             // room does not invent a successful spawn or retry after the source deadline.
+            let merchant_wave = memo.callback.starts_merchant_wave();
             let mut monsters = Vec::new();
             let mut admissible = true;
             for monster in &encounter.monsters {
@@ -270,6 +389,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .any(|(_, position, _)| position.position() == at)
                     })
                 {
+                    if merchant_wave {
+                        continue;
+                    }
                     admissible = false;
                     break;
                 }
@@ -279,7 +401,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 monsters.push((monster.creature.as_str(), policy.maximum_health, at));
             }
-            if admissible && let Ok(spawned) = runtime.commit_quest_creature_spawn(&monsters) {
+            if merchant_wave {
+                // Crystal attempts each of the seven placements independently.
+                for monster in monsters {
+                    if let Ok(spawned) = runtime.commit_quest_creature_spawn(&[monster]) {
+                        memo.spawned.extend(spawned);
+                    }
+                }
+            } else if admissible && let Ok(spawned) = runtime.commit_quest_creature_spawn(&monsters)
+            {
                 memo.spawned = spawned;
             }
             memo.attempted_spawn = true;

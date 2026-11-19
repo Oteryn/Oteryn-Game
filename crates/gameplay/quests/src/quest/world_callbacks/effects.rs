@@ -100,6 +100,13 @@ pub struct CallbackEffects {
     pub teleport_effect: Option<u16>,
     pub portals: Option<PortalPair>,
     pub item_cycle: Option<ItemCycle>,
+    /// Create one volatile trap at the selected world target after its item debit.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub place_item: Option<u16>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub merchant_entrance: Option<Position>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub loot_merchant: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_presence: Option<ItemPresence>,
     pub encounter: Option<Encounter>,
@@ -389,6 +396,26 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
                     .count()
                     == 1
         })
+}
+
+impl Callback {
+    /// The final net USE starts the timed merchant wave on the shared encounter owner.
+    pub fn starts_merchant_wave(&self) -> bool {
+        self.effects.place_item == Some(12187)
+            && self.trigger == Trigger::Use
+            && self.teleport.is_some()
+            && self.effects.merchant_entrance.is_some()
+            && self.effects.encounter.as_ref().is_some_and(|encounter| {
+                encounter.monsters.len() == 7
+                    && encounter
+                        .timing
+                        .is_some_and(|timing| timing.reset_after_ms == 300_000)
+                    && encounter
+                        .monsters
+                        .iter()
+                        .all(|monster| monster.creature == "oteryn:creature.travelling_merchant")
+            })
+    }
 }
 
 pub(super) fn valid(callback: &Callback) -> bool {
@@ -732,6 +759,89 @@ pub(super) fn valid(callback: &Callback) -> bool {
     }) {
         return false;
     }
+    if effects
+        .merchant_entrance
+        .is_some_and(|entrance| !pos(entrance) || !callback.starts_merchant_wave())
+    {
+        return false;
+    }
+    let mission_active = || {
+        callback.storage.iter().any(|track| {
+        track.track == "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission03"
+            && track.minimum == 1 && track.maximum == 1 && track.preserve
+    })
+    };
+    if effects.loot_merchant
+        && (callback.trigger != Trigger::Use
+            || callback.actor_kind != ActorKind::Player
+            || !callback.requires_world_admission
+            || !mission_active()
+            || callback.selector.appearance != Some(12189)
+            || callback.selector.native.is_some()
+            || callback.selector.ordinal.is_some()
+            || callback.selector.unique.is_some()
+            || callback.selector.action.is_some()
+            || callback.item_on_target.is_some()
+            || !callback.offerings.is_empty()
+            || callback.teleport.is_some()
+            || callback.lever.is_some()
+            || callback.reversible
+            || effects.place_item.is_some()
+            || !callback.storage.iter().any(|track| {
+                track.track == "oteryn:quest-progress/crystalserver/kv/rottinwood-corpsecount"
+                    && track.minimum == 0
+                    && track.maximum == 4
+                    && track.add == Some(1)
+                    && track.set == 5
+            })
+            || callback.item_reward().as_ref().is_none_or(|reward| {
+                reward.item != "oteryn:item.tibia.i3035"
+                    || reward.count != 1
+                    || !reward.contents.is_empty()
+                    || !reward.additional.is_empty()
+                    || !reward.backpack_outputs.is_empty()
+            }))
+    {
+        return false;
+    }
+    let merchant_wave = callback.starts_merchant_wave();
+    if effects.place_item.is_some_and(|appearance| {
+        appearance != 12187
+            || callback.selector.appearance != Some(10480)
+            || callback.trigger != Trigger::Use
+            || callback.actor_kind != ActorKind::Player
+            || !callback.requires_world_admission
+            || !mission_active()
+            || !callback.storage.iter().any(|track| {
+                let bounds = if merchant_wave { (4, 4, 5) } else { (0, 3, 4) };
+                track.track == "oteryn:quest-progress/crystalserver/kv/rottinwood-trap-count"
+                    && (track.minimum, track.maximum, track.set) == bounds
+                    && track.add == Some(1)
+            })
+            || callback.reversible
+            || callback.opening_only
+            || callback.item_on_target.as_ref().is_none_or(|item| {
+                item.item != "oteryn:item.tibia.i12186"
+                    || !item.selected_instance
+                    || item.reusable
+                    || item.count != 1
+                    || item.replacement.is_some()
+                    || item.target_replacement.is_some()
+                    || item.target_remove
+            })
+            || callback.lever.is_some()
+            || (callback.teleport.is_some() && !merchant_wave)
+            || !callback.passages.is_empty()
+            || (effects.encounter.is_some() && !merchant_wave)
+            || effects.item_cycle.is_some()
+            || effects.item_presence.is_some()
+            || effects.portals.is_some()
+            || effects.scene.is_some()
+            || effects.transform.is_some()
+            || effects.target_transform.is_some()
+    }) {
+        return false;
+    }
     let operations = usize::from(effects.portals.is_some())
         + usize::from(effects.item_cycle.is_some())
         + usize::from(effects.encounter.is_some())
@@ -781,12 +891,13 @@ pub(super) fn valid(callback: &Callback) -> bool {
         || (operations > 0
             && ((!personal_encounter
                 && !super::personal_trial::admitted(callback)
+                && !callback.starts_merchant_wave()
                 && (!lever
                     || (effects.scene.is_none()
                         && effects.party_transfer.is_none()
                         && callback.has_state())))
                 || !callback.passages.is_empty()
-                || callback.teleport.is_some())
+                || (callback.teleport.is_some() && !callback.starts_merchant_wave()))
             && !(effects.encounter.is_some() && super::asura_authored::admitted(callback)))
     {
         return false;
@@ -841,11 +952,11 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase == Some(EncounterPhase::Cults);
-        if (encounter.minimum_level == 0 && !source_party)
+        if (encounter.minimum_level == 0 && !source_party && !callback.starts_merchant_wave())
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()
-                    || callback.item_on_target.is_some()
+                    || (callback.item_on_target.is_some() && !callback.starts_merchant_wave())
                     || callback.experience.is_some()
                     || callback.monk_reward.is_some()
                     || callback.native_rule.is_some()

@@ -966,7 +966,9 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || (selector.position.is_none()
                 && selector.unique.is_none()
                 && selector.action.is_none()
-                && selector.native.is_none())
+                && selector.native.is_none()
+                && callback.effects.place_item.is_none()
+                && !callback.effects.loot_merchant)
             || selector.position.is_some_and(|p| !valid_pos(p))
             || selector
                 .native

@@ -737,6 +737,7 @@ async fn wardrobe(
         present: vec![],
         inventory: vec![],
         give: None,
+        weighted_rewards: Vec::new(),
         outfit: Some(reward.clone()),
         outfits: vec![],
         exact_take: false,
@@ -744,7 +745,6 @@ async fn wardrobe(
         achievement_progress: vec![],
         reply: vec![],
         failure_reply: vec![],
-
 
         sources: vec![],
     };
