@@ -294,7 +294,9 @@ fn scenario_case(
         || name == "questpc7-golden"
         || name == "questpc7-friends";
     use super::super::{myzzi_court_entry, nightmare_intruders_turn_in};
-    let classic_npc = shared_rewards
+    let myzzi = myzzi_court_entry::matches(name);
+    let classic_npc = myzzi
+        || shared_rewards
         || name.starts_with("engoutfit-")
         || qengine_reward
         || name.starts_with("npcfix-m38-mistrock")
@@ -343,7 +345,6 @@ fn scenario_case(
                 | "questpc2-albinius-portals-exact"
                 | "questpc2-albinius-portals-combined"
                 | "classic-rottin-disrepair"
-                | myzzi_court_entry::NAME
                 | nightmare_intruders_turn_in::NAME
                 | "threatened-dreams-npc"
                 | "conditional-quest-greetings"
@@ -432,8 +433,8 @@ fn scenario_case(
         dreamers_sacrifice_routes::binding(name)?
     } else if stone_exit {
         dreamers_stone_exit::binding()?
-    } else if name == myzzi_court_entry::NAME {
-        myzzi_court_entry::binding()?
+    } else if myzzi {
+        myzzi_court_entry::binding(name)?
     } else if kroazur {
         kroazur_solo_room::binding()?
     } else if lucifuga {
@@ -1912,7 +1913,7 @@ fn scenario_case(
                 owner.quest_catalogue.as_ref().ok_or("quest catalogue")?,
             )?);
         }
-        if name == myzzi_court_entry::NAME {
+        if myzzi {
             owner.quest_catalogue = Some(myzzi_court_entry::catalogue(
                 owner.quest_catalogue.as_ref().ok_or("quest catalogue")?,
                 &callback,
@@ -3326,8 +3327,8 @@ fn scenario_case(
                 &authority,
             ))
             .await?;
-        } else if name == myzzi_court_entry::NAME {
-            Box::pin(myzzi_court_entry::exercise(&mut owner, &mut admitted, &authority)).await?;
+        } else if myzzi {
+            Box::pin(myzzi_court_entry::exercise(&mut owner, &mut admitted, &authority, name)).await?;
         } else if name == nightmare_intruders_turn_in::NAME {
             Box::pin(nightmare_intruders_turn_in::exercise(
                 &mut owner,

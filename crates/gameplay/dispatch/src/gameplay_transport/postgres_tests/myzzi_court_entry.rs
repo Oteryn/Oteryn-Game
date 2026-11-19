@@ -1,5 +1,5 @@
 //! Crystal 201189f data-global/npc/myzzi.lua:67-102 and
-//! scripts/quests/the_dream_courts/movements_courts_entrance.lua:2-7,128-152.
+//! scripts/quests/the_dream_courts/movements_courts_entrance.lua:2-25,128-152.
 use super::classic_quests::{install, progress, talk};
 use super::fixture::debug;
 use super::quest_world_callbacks::{local, scenario, wire};
@@ -17,30 +17,70 @@ use oteryn_protocol_oteryn::world_spatial::{
 use serde_json::{Value, json};
 use std::sync::Arc;
 
-pub(super) const NAME: &str = "myzzi-court-entry";
 const QUEST: &str = "oteryn:quest.the_dream_courts_quest";
 const NPC: &str = "oteryn:npc.myzzi";
 const TRACK: &str = "oteryn:quest-progress/quest/u12_00/the_dream_courts/main/questline";
 const PIN: &str = "201189f871d23597b82caf88fd611454a2ddefb8";
-const ENTRY: Position = Position {
-    x: 33675,
-    y: 32147,
-    floor: -7,
-};
-const DESTINATION: Position = Position {
-    x: 32354,
-    y: 31249,
-    floor: -3,
-};
+struct CourtRoute {
+    name: &'static str,
+    key: &'static str,
+    entrance: Position,
+    destination: Position,
+    source_lines: &'static str,
+}
 
-pub(super) fn binding() -> TestResult<Callback> {
+const fn at(x: u16, y: u16, floor: i8) -> Position {
+    Position { x, y, floor }
+}
+
+const ROUTES: [CourtRoute; 4] = [
+    CourtRoute {
+        name: "myzzi-court-entry",
+        key: "winter-entrance",
+        entrance: at(33675, 32147, -7),
+        destination: at(32354, 31249, -3),
+        source_lines: "2-7",
+    },
+    CourtRoute {
+        name: "myzzi-court-winter-return",
+        key: "winter-return",
+        entrance: at(32354, 31247, -3),
+        destination: at(33675, 32149, -7),
+        source_lines: "8-13",
+    },
+    CourtRoute {
+        name: "myzzi-court-summer-entry",
+        key: "summer-entrance",
+        entrance: at(33672, 32227, -7),
+        destination: at(33584, 32209, -7),
+        source_lines: "14-19",
+    },
+    CourtRoute {
+        name: "myzzi-court-summer-return",
+        key: "summer-return",
+        entrance: at(33584, 32207, -7),
+        destination: at(33672, 32229, -7),
+        source_lines: "20-25",
+    },
+];
+
+pub(super) fn matches(name: &str) -> bool {
+    ROUTES.iter().any(|route| route.name == name)
+}
+
+fn route(name: &str) -> TestResult<&'static CourtRoute> {
+    ROUTES.iter().find(|route| route.name == name).ok_or_else(|| "Court route".into())
+}
+
+pub(super) fn binding(name: &str) -> TestResult<Callback> {
+    let route = route(name)?;
     Ok(serde_json::from_value(json!({
-        "key":"oteryn:quest-callback/dream-courts/winter-entrance",
-        "quest":QUEST, "trigger":"step_in", "selector":{"position":ENTRY,"action":23100},
-        "teleport":DESTINATION, "reversible":false, "return_on_failure":true,
+        "key":format!("oteryn:quest-callback/dream-courts/{}", route.key),
+        "quest":QUEST, "trigger":"step_in", "selector":{"position":route.entrance,"action":23100},
+        "teleport":route.destination, "reversible":false, "return_on_failure":true,
         "passages":[], "offerings":[], "effects":{"teleport_effect":11},
         "storage":[{"track":TRACK,"minimum":1,"maximum":1,"set":1,"read_only":true}],
-        "sources":[format!("crystal:{PIN}:data-global/scripts/quests/the_dream_courts/movements_courts_entrance.lua:2-7")]
+        "sources":[format!("crystal:{PIN}:data-global/scripts/quests/the_dream_courts/movements_courts_entrance.lua:{}", route.source_lines)]
     }))?)
 }
 
@@ -164,7 +204,39 @@ fn myzzi_enchantment_admits_the_winter_court_after_the_full_dialogue() -> TestRe
         return Ok(());
     };
     drop(admin);
-    super::kill_reward_e2e::scenario_thread::run(NAME, || scenario(NAME, ENTRY, false))
+    court_scenario("myzzi-court-entry")
+}
+
+#[test]
+fn myzzi_enchantment_admits_the_summer_court_after_the_full_dialogue() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    court_scenario("myzzi-court-summer-entry")
+}
+
+#[test]
+fn myzzi_enchantment_opens_the_summer_court_return_portal() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    court_scenario("myzzi-court-summer-return")
+}
+
+#[test]
+fn myzzi_enchantment_opens_the_winter_court_return_portal() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    court_scenario("myzzi-court-winter-return")
+}
+
+fn court_scenario(name: &'static str) -> TestResult {
+    let entrance = route(name)?.entrance;
+    super::kill_reward_e2e::scenario_thread::run(name, move || scenario(name, entrance, false))
 }
 
 async fn step(
@@ -199,10 +271,12 @@ pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     authority: &ReconciledCharacterAuthority<'_, '_>,
+    name: &str,
 ) -> TestResult {
+    let route = route(name)?;
     let origin = Position {
-        x: ENTRY.x - 1,
-        ..ENTRY
+        x: route.entrance.x - 1,
+        ..route.entrance
     };
     step(owner, admitted, 1, origin).await?;
     let [myzzi] = install(owner, admitted, [NPC]).await?;
@@ -217,6 +291,6 @@ pub(super) async fn exercise(
     assert_eq!(progress(owner, admitted, authority, TRACK).await?, 0);
     talk(owner, admitted, myzzi, 18, "yes").await?;
     assert_eq!(progress(owner, admitted, authority, TRACK).await?, 1);
-    step(owner, admitted, 19, DESTINATION).await?;
+    step(owner, admitted, 19, route.destination).await?;
     Ok(())
 }
