@@ -377,6 +377,7 @@ fn scenario_case(
     );
     use super::super::kroazur_solo_room;
     let kroazur = name == kroazur_solo_room::NAME;
+    let kroazur_exit = name == kroazur_solo_room::MANUAL_EXIT;
     use super::super::{dreamers_board_exit, dreamers_board_portal};
     use super::super::dreamers_board_supply;
     let board_supply = name == dreamers_board_supply::NAME;
@@ -437,6 +438,8 @@ fn scenario_case(
         myzzi_court_entry::binding(name)?
     } else if kroazur {
         kroazur_solo_room::binding()?
+    } else if kroazur_exit {
+        kroazur_solo_room::exit_binding()?
     } else if lucifuga {
         lucifuga_bait_spawn::binding()?
     } else if dreamers_wall {
@@ -1887,7 +1890,7 @@ fn scenario_case(
                 name,
             )?);
         }
-        if board_portal || dreamers_wall || izcandar || stone_exit || zarganash {
+        if board_portal || dreamers_wall || izcandar || kroazur_exit || stone_exit || zarganash {
             let binding = serde_json::json!({"schema":1,"callbacks":[&callback]}).to_string();
             owner.quest_catalogue = Some(std::sync::Arc::new(
                 oteryn_gameplay_quests::quest::world_callbacks::with_fixture_world_document(
@@ -3151,7 +3154,7 @@ fn scenario_case(
                 &owner, &mut admitted, fence, name,
             )).await?;
         } else if outfit_world
-            || callback.effects != Default::default() && !dreamers_wall
+            || callback.effects != Default::default() && !dreamers_wall && !kroazur_exit
             || callback.quest == "oteryn:quest.waterfall_quest" && stateless_destination.is_none()
         {
             Box::pin(super::super::qengine_access::exercise(

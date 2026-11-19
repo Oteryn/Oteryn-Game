@@ -158,6 +158,15 @@ pub(super) async fn exercise(
             );
         }
     }
+    if callback.key == "oteryn:quest-callback/threatened-dreams-kroazur-exit" {
+        let map = owner.bundle_map().ok_or("Kroazur exit map")?;
+        let effects = map.facts.movement_effects_since(0);
+        // Crystal movement_kroazur_room.lua:30-35 flashes both ends.
+        assert_eq!(
+            effects.iter().map(|(_, pos, effect)| (pos.x, pos.y, pos.floor, *effect)).collect::<Vec<_>>(),
+            [(33591, 32321, -10, 11), (33619, 32306, -9, 11)]
+        );
+    }
     if let Some((x, y, floor)) = expected_effect {
         let map = owner.bundle_map().ok_or("map")?;
         let effects = map.facts.movement_effects_since(0);

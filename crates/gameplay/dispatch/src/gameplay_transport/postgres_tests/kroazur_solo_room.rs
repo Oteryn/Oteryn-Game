@@ -1,6 +1,6 @@
 //! Crystal 201189f data-global/scripts/quests/threatened_dreams_quest/movement_kroazur_room.lua:3-78.
 use super::fixture::{Harness, debug};
-use super::quest_world_callbacks::{local, scenario, wire};
+use super::quest_world_callbacks::{local, scenario, stateless_scenario, wire};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::{
     character_progression::CurrentCharacterGameplayFence,
@@ -18,6 +18,7 @@ use oteryn_protocol_oteryn::world_spatial::{
 use std::{sync::Arc, time::Duration};
 
 pub(super) const NAME: &str = "kroazur-solo-room";
+pub(super) const MANUAL_EXIT: &str = "kroazur-solo-room-manual-exit";
 const KEY: &str = "oteryn:quest-callback/threatened-dreams-kroazur-entry";
 const QUEST: &str = "oteryn:quest.threatened_dreams_quest";
 const ACCESS: &str =
@@ -36,6 +37,7 @@ const ORIGIN: Position = Position {
     ..TRIGGER
 };
 const LANDING: Position = at(33591, 32315);
+const EXIT_PORTAL: Position = at(33591, 32321);
 pub(super) const EXIT: Position = Position {
     x: 33619,
     y: 32306,
@@ -66,6 +68,22 @@ pub(super) fn binding() -> TestResult<Callback> {
     }))?)
 }
 
+pub(super) fn exit_binding() -> TestResult<Callback> {
+    Ok(serde_json::from_value(serde_json::json!({
+        "key":"oteryn:quest-callback/threatened-dreams-kroazur-exit",
+        "quest":QUEST,"trigger":"step_in",
+        "selector":{"position":EXIT_PORTAL,"action":25029,"appearance":10840,
+            "native":{"position":EXIT_PORTAL,"ordinal":1,"appearance":10840}},
+        "teleport":EXIT,"return_on_failure":false,"reversible":false,
+        "passages":[],"offerings":[],"storage":[],
+        "effects":{"magic":{"position":EXIT_PORTAL,"effect":11},"teleport_effect":11},
+        "sources":[
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/threatened_dreams_quest/movement_kroazur_room.lua:30-35",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile.lua:993-999"
+        ]
+    }))?)
+}
+
 pub(super) fn catalogue(base: &QuestStateCatalogue) -> TestResult<Arc<QuestStateCatalogue>> {
     let callback = binding()?;
     let document = serde_json::json!({"schema":1,"callbacks":[callback]}).to_string();
@@ -84,6 +102,17 @@ fn kroazur_solo_step_sets_personal_cooldown_and_ejects_only_at_the_deadline() ->
     };
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(NAME, || scenario(NAME, TRIGGER, false))
+}
+
+#[test]
+fn kroazur_manual_exit_step_teleports_without_an_admission_receipt() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(MANUAL_EXIT, || {
+        stateless_scenario(MANUAL_EXIT, EXIT_PORTAL, EXIT)
+    })
 }
 
 async fn step(
