@@ -17,9 +17,20 @@ use oteryn_protocol_oteryn::world_object::{
     decode_use_intent_target, encode_item_use_intent,
 };
 
+const BOSS_CELL: MovementLocalPosition = MovementLocalPosition {
+    x: 32376,
+    y: 31144,
+    floor: 8,
+};
+
 #[test]
 fn srx3_soulpit_native_use_scope_barrier_and_spawn_postgres() -> TestResult {
     native_soulpit_scenario(false, false, false)
+}
+
+#[test]
+fn srx3_soulpit_occupied_boss_cell_still_spawns_and_awards_xp_postgres() -> TestResult {
+    run_native_soulpit_scenario(false, false, false, false, Some(BOSS_CELL))
 }
 
 #[test]
@@ -40,7 +51,7 @@ fn srx3_soulpit_native_early_exit_retires_private_encounter_postgres() -> TestRe
 
 #[test]
 fn srx3_soulpit_native_entry_delivers_source_teleport_effect_postgres() -> TestResult {
-    native_soulpit_scenario_with_entry_cue(false, false, false, true)
+    run_native_soulpit_scenario(false, false, false, true, None)
 }
 
 fn native_soulpit_scenario(
@@ -48,14 +59,15 @@ fn native_soulpit_scenario(
     retained_grace: bool,
     early_exit: bool,
 ) -> TestResult {
-    native_soulpit_scenario_with_entry_cue(fault_after_commit, retained_grace, early_exit, false)
+    run_native_soulpit_scenario(fault_after_commit, retained_grace, early_exit, false, None)
 }
 
-fn native_soulpit_scenario_with_entry_cue(
+fn run_native_soulpit_scenario(
     fault_after_commit: bool,
     retained_grace: bool,
     early_exit: bool,
     entry_cue_only: bool,
+    occupy_before_final_wave: Option<MovementLocalPosition>,
 ) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -721,6 +733,34 @@ fn native_soulpit_scenario_with_entry_cue(
                 let saved = serde_json::to_value(checkpoint.encounter.checkpoint())?;
                 let receipt: [Option<u64>;oteryn_gameplay_domain::domain::soulpit::MONSTERS_PER_WAVE] =
                     serde_json::from_value(saved["spawned_waves"][wave.to_string()].clone())?;
+                if let Some(blocked) = occupy_before_final_wave.filter(|_| wave == 4) {
+                    let runtime = registered.runtime.lock().await;
+                    assert_eq!(
+                        runtime.read_actor_position(actor).map_err(debug)?.position(),
+                        blocked
+                    );
+                    assert_eq!(
+                        receipt[6], Some(28),
+                        "wave 4 must retain the boss when its source cell is occupied"
+                    );
+                    let boss = runtime
+                        .positioned_actor_census()
+                        .map_err(debug)?
+                        .into_iter()
+                        .find(|(target, _, _)| {
+                            runtime.soulpit_variant(*target)
+                                .is_some_and(|tag| tag.monster_id == 28 && !tag.is_summon)
+                        })
+                        .ok_or("durable wave-4 boss has a physical actor")?
+                        .1
+                        .position();
+                    assert_eq!(boss.floor, blocked.floor);
+                    assert_eq!(
+                        boss.x.abs_diff(blocked.x).max(boss.y.abs_diff(blocked.y)),
+                        1,
+                        "the boss must land on a neighbour of its occupied source cell"
+                    );
+                }
                 let stacks = oteryn_gameplay_domain::domain::soulpit::wave_stacks(wave).map_err(debug)?;
                 let mut expected_counts = std::collections::BTreeMap::from([(1_u8,0_usize),(5,0),(15,0),(40,0)]);
                 for (id,stack) in receipt.into_iter().zip(stacks) {
@@ -795,6 +835,10 @@ fn native_soulpit_scenario_with_entry_cue(
                     Some(if wave == 4 { 1500 } else { 0 }),
                     "only non-summon stack40 awards1500 points through the original equipped weapon owner"
                 );
+                if wave == 4 && occupy_before_final_wave.is_some() {
+                    eprintln!("SRX3_SOULPIT_OCCUPIED_BOSS wave=4 boss_id=28 base_xp={xp}");
+                    return Ok(());
+                }
                 owner.clock_origin = instance.clock_origin;
                 if wave == 4 {
                     use oteryn_gameplay_domain::domain::soulpit::{
@@ -854,7 +898,11 @@ fn native_soulpit_scenario_with_entry_cue(
                     .map_err(|_| "source wave clearance/terminal composition")?;}
                 if wave < 4 {
                     let mut preparation = owner.runtime_view(&registered);
-                    leave_blocked_creation_cell(&mut preparation, player, wave + 1).await?;
+                    if let Some(blocked) = occupy_before_final_wave.filter(|_| wave == 3) {
+                        walk_source(&mut preparation, player, SourceWalkTarget::Cell(blocked)).await?;
+                    } else {
+                        leave_blocked_creation_cell(&mut preparation, player, wave + 1).await?;
+                    }
                     owner.clock_origin = preparation.clock_origin;
                     owner.clock_origin = owner
                         .clock_origin
@@ -1028,6 +1076,20 @@ async fn walk_source_adjacent(
     player: crate::gameplay_transport::connection::AdmittedSession,
     target: crate::foundation::ExactActorRef,
 ) -> TestResult {
+    walk_source(owner, player, SourceWalkTarget::AdjacentTo(target)).await
+}
+
+#[derive(Clone, Copy)]
+enum SourceWalkTarget {
+    AdjacentTo(crate::foundation::ExactActorRef),
+    Cell(MovementLocalPosition),
+}
+
+async fn walk_source(
+    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    player: crate::gameplay_transport::connection::AdmittedSession,
+    target: SourceWalkTarget,
+) -> TestResult {
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
     use std::collections::{BTreeSet, VecDeque};
     let actor = player
@@ -1041,14 +1103,20 @@ async fn walk_source_adjacent(
                 .map_err(debug)?
                 .position();
             let census = runtime.positioned_actor_census().map_err(debug)?;
-            let destination = census
-                .iter()
-                .find(|(a, _, _)| *a == target)
-                .ok_or("actual live navigation target")?
-                .1
-                .position();
+            let (destination, distance) = match target {
+                SourceWalkTarget::AdjacentTo(target) => {
+                    let destination = census
+                        .iter()
+                        .find(|(a, _, _)| *a == target)
+                        .ok_or("actual live navigation target")?
+                        .1
+                        .position();
+                    (destination, 1)
+                }
+                SourceWalkTarget::Cell(destination) => (destination, 0),
+            };
             assert_eq!(current.floor, destination.floor);
-            if (current.x - destination.x).abs() + (current.y - destination.y).abs() == 1 {
+            if current.x.abs_diff(destination.x) + current.y.abs_diff(destination.y) == distance {
                 return Ok(());
             }
             let occupied = census
@@ -1087,7 +1155,7 @@ async fn walk_source_adjacent(
                     }
                     seen.insert(next);
                     let first = first.unwrap_or(step);
-                    if (next.0 - destination.x).abs() + (next.1 - destination.y).abs() == 1 {
+                    if next.0.abs_diff(destination.x) + next.1.abs_diff(destination.y) == distance {
                         selected = Some(first);
                         break;
                     }

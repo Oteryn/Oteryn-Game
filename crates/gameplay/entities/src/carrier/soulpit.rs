@@ -380,8 +380,8 @@ impl ChannelActorCarrier {
         Ok(())
     }
 
-    /// Executes each donor spawn attempt once. A blocked cell or full existing carrier is
-    /// recorded as None, matching Game.createSoulPitMonster's skipped failure; no redraw.
+    /// Executes each retained spawn attempt once. The boss may land beside its fixed tile
+    /// when that tile is blocked. If placement or carrier admission fails, retain None.
     pub fn spawn_soulpit_wave(
         &mut self,
         continuity: &NamespaceContinuityGuard,
@@ -491,9 +491,42 @@ impl ChannelActorCarrier {
                 y: position.y,
                 floor: position.floor,
             };
-            if !ground_allows(position) || self.cell_occupied(context, local) {
+            let mut available = |cell: &LocalPosition| {
+                ground_allows(MovementLocalPosition {
+                    x: cell.x,
+                    y: cell.y,
+                    floor: cell.floor,
+                }) && !self.cell_occupied(context, *cell)
+            };
+            let landing = if available(&local) {
+                Some(local)
+            } else if stack == SoulpitStack::Boss {
+                // Crystal Map::placeCreature tries the eight adjacent tiles when
+                // the requested tile is refused. The retained plan still owns
+                // the preferred boss tile and its preparation cues.
+                [
+                    (-1, -1),
+                    (0, -1),
+                    (1, -1),
+                    (-1, 0),
+                    (1, 0),
+                    (-1, 1),
+                    (0, 1),
+                    (1, 1),
+                ]
+                .into_iter()
+                .map(|(dx, dy)| LocalPosition {
+                    x: local.x + dx,
+                    y: local.y + dy,
+                    ..local
+                })
+                .find(available)
+            } else {
+                None
+            };
+            let Some(local) = landing else {
                 continue;
-            }
+            };
             let maximum = maximum_health[ordinal];
             let actor = match self.admit_creature(
                 continuity,
