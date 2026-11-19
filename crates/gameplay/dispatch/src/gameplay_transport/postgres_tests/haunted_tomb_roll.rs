@@ -12,6 +12,7 @@ use oteryn_gameplay_quests::quest::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition,
     world_callbacks::{self, Callback, Position},
 };
+use oteryn_protocol_oteryn::chat::{ChatLine, ChatSpeechMode};
 use oteryn_protocol_oteryn::world_object::{
     COMMAND_TYPE_USE_INTENT, UseDisposition, WorldObjectTarget, decode_use_result,
     encode_use_intent,
@@ -34,6 +35,7 @@ const TOMB: &str = "oteryn:quest-progress/quest/u12_00/the_dream_courts/haunted_
 const KEY: &str = "oteryn:quest-callback/haunted-tomb/33081-32355";
 const BEGIN: &str = "oteryn:quest-transition/haunted-tomb-fixture/start";
 const MUMMY: &str = "oteryn:creature.mummy";
+const REWARD_SPEECH: &str = "You got a strangely ornamented key!";
 const SARCOPHAGUS: Position = Position {
     x: 33081,
     y: 32355,
@@ -54,8 +56,8 @@ pub(super) fn binding() -> TestResult<Callback> {
             {"track":STARTED,"minimum":1,"maximum":1,"set":1,"preserve":true},
             {"track":TOMB,"minimum":0,"maximum":0,"set":0,"preserve":true}
         ],
-        "success_message":"You got a strangely ornamented key!",
-        "effects":{"roll_reward":{"sides":10,"minimum_success":7,"failure_creature":MUMMY,
+        "effects":{"player_speech":REWARD_SPEECH,
+            "roll_reward":{"sides":10,"minimum_success":7,"failure_creature":MUMMY,
             "failure_effect":3,"failure_text":"The curse of disturbing this fragile, ancient peace is your price to pay!",
             "busy_text":"The opening of the last sarcophagus still haunts you. Wait some time for your spirits to return.",
             "rearm_ms":30000,"source_action":23104},
@@ -272,6 +274,7 @@ pub(super) async fn exercise(
             UseDisposition::Committed
         );
     }
+    let _ = owner.states.chat.drain(admitted.game_session_id);
     let before = owner.owner_now().get();
     let reply = wire(
         owner,
@@ -285,6 +288,15 @@ pub(super) async fn exercise(
         decode_use_result(&reply).map_err(debug)?,
         UseDisposition::Committed
     );
+    let messages = owner.states.chat.drain(admitted.game_session_id);
+    assert_eq!(messages.iter().filter(|line| matches!(line,
+        ChatLine::Local { speaker, mode: ChatSpeechMode::MonsterSay, text, .. }
+            if text == REWARD_SPEECH && speaker.identity == actor.placement_identity()
+                && speaker.generation.get() == actor.actor_local_generation()
+    )).count(), usize::from(won));
+    assert_eq!(messages.iter().filter(|line| matches!(line,
+        ChatLine::Private { text, .. } if text == &roll.failure_text
+    )).count(), usize::from(!won));
     assert_eq!(
         super::engworldchg_journals::live_creatures(owner, MUMMY)
             .await?
@@ -310,6 +322,9 @@ pub(super) async fn exercise(
         decode_use_result(&reply).map_err(debug)?,
         UseDisposition::Committed
     );
+    assert_eq!(owner.states.chat.drain(admitted.game_session_id).iter().filter(|line| matches!(line,
+        ChatLine::Private { text, .. } if text == &roll.busy_text
+    )).count(), 1);
     let rewards: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_item_instances WHERE definition_production_key=$1",
     )

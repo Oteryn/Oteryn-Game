@@ -1960,7 +1960,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(message) = success_preface {
             self.states.chat.push_quest_feedback(session, message);
         }
-        if fresh_effects && let Some(speech) = &callback.effects.player_speech {
+        // Crystal actions_sacrophagus_use.lua:33-41 announces a reward only
+        // on a winning roll. The failure has its own private feedback.
+        if fresh_effects
+            && failed_roll.is_none()
+            && let Some(speech) = &callback.effects.player_speech
+        {
             self.states
                 .chat
                 .publish_quest_speech(runtime, actor, session, speech);

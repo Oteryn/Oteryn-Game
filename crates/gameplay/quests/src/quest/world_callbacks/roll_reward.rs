@@ -47,6 +47,7 @@ impl RollReward {
             && *callback.effects
                 == super::CallbackEffects {
                     item_reward: callback.effects.item_reward.clone(),
+                    player_speech: callback.effects.player_speech.clone(),
                     roll_reward: Some(self.clone()),
                     ..Default::default()
                 }
