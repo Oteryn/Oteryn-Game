@@ -208,10 +208,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .iter()
                 .filter(|(_, pos, _)| pos.position() == local(member.from));
             let Some(&(who, expected, Some(member_session))) = occupants.next() else {
-                // Cults collects whoever stands on the five source staging tiles.
-                if encounter.phase
-                    == Some(oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::Cults)
-                {
+                // Crystal party levers collect whoever stands on their staging tiles.
+                if encounter.phase.is_some() {
                     continue;
                 }
                 return UseDisposition::Rejected;
@@ -258,7 +256,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let blocked =
                 super::super::pvp_live::pz_blocked(states, who, member_session, self.owner_now());
-            let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+            let Ok(proof) = crate::map::floor::prepare_quest_encounter_member(
                 runtime,
                 &self.movement_cells,
                 who,
@@ -267,6 +265,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 local(member.to),
                 blocked,
                 &closed,
+                encounter.phase.is_some(),
             ) else {
                 return UseDisposition::NotPossible;
             };
@@ -397,7 +396,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .map(|credits| {
                         super::super::encounter_phases::bind(
                             runtime,
-                            callback,
+                            encounter,
                             key,
                             actors,
                             &party,

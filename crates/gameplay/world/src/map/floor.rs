@@ -51,7 +51,7 @@ use oteryn_world_bundle::bundle::Family;
 pub use platform::prepare_quest_platform_rider;
 pub use quest_callback::{
     prepare_quest_callback_teleport, prepare_quest_callback_teleport_facing,
-    prepare_quest_encounter_ejection,
+    prepare_quest_encounter_ejection, prepare_quest_encounter_member,
 };
 pub use quest_callback_scene::{PreparedSceneRelocations, prepare_scene_relocations};
 pub use rope::{LadderTarget, prepare_bundle_ladder, prepare_bundle_rope};
@@ -178,12 +178,26 @@ impl FloorTable {
         pos: TilePos,
         current: impl FnOnce(u8) -> Option<u16>,
     ) -> Option<TilePos> {
-        if let Some(&(ordinal, appearance)) = self.teleport_sources.get(&pos)
-            && current(ordinal) != Some(appearance)
-        {
+        let destination = self.teleport(pos)?;
+        if let Some(&(ordinal, appearance)) = self.teleport_sources.get(&pos) {
+            if current(ordinal) != Some(appearance) {
+                return None;
+            }
+            // The retained Doomforge map portal has no action ID. Its base
+            // destination cannot grant travel independently of encounter state.
+            if self.doomforge_portal(pos).is_some() {
+                return None;
+            }
+        }
+        Some(destination)
+    }
+
+    fn doomforge_portal(&self, at: TilePos) -> Option<u8> {
+        if (at.x, at.y, at.floor) != (34041, 32330, -14) {
             return None;
         }
-        self.teleport(pos)
+        let &(ordinal, appearance) = self.teleport_sources.get(&at)?;
+        (appearance == 37000).then_some(ordinal)
     }
 
     /// How many tiles teleport.
@@ -510,7 +524,6 @@ pub fn table_of(cells: &NativeEntryMovementCells) -> Option<&FloorTable> {
 }
 
 fn current_teleport(cells: &NativeEntryMovementCells, at: TilePos) -> Option<TilePos> {
-    use crate::map::view::{MapFacts, placement_key};
     let NativeMovementCollisionIndex::Bundle(index) = cells.index() else {
         return None;
     };
@@ -518,22 +531,41 @@ fn current_teleport(cells: &NativeEntryMovementCells, at: TilePos) -> Option<Til
     if let Some(destination) = bundle.facts.phase_teleport(at) {
         return destination;
     }
-    bundle.floors.teleport_for_source(at, |ordinal| {
-        let key = placement_key(at, ordinal)?;
-        if bundle.facts.base_hidden(key) {
-            return None;
-        }
-        let tile = bundle.overlay.base().tile(at.x, at.y, at.floor)?;
-        let (&id, _) = tile
-            .ids()
-            .iter()
-            .zip(tile.depths())
-            .filter(|(_, depth)| **depth == 0)
-            .nth(usize::from(ordinal))?;
-        bundle
-            .facts
-            .base_entry(at, ordinal, id)
-            .map(|facts| facts.appearance_id)
+    bundle
+        .floors
+        .teleport_for_source(at, |ordinal| source_appearance(bundle, at, ordinal))
+}
+
+fn source_appearance(bundle: &super::boot::BundleMap, at: TilePos, ordinal: u8) -> Option<u16> {
+    use crate::map::view::{MapFacts, placement_key};
+    let key = placement_key(at, ordinal)?;
+    if bundle.facts.base_hidden(key) {
+        return None;
+    }
+    let tile = bundle.overlay.base().tile(at.x, at.y, at.floor)?;
+    let (&id, _) = tile
+        .ids()
+        .iter()
+        .zip(tile.depths())
+        .filter(|(_, depth)| **depth == 0)
+        .nth(usize::from(ordinal))?;
+    bundle
+        .facts
+        .base_entry(at, ordinal, id)
+        .map(|facts| facts.appearance_id)
+}
+
+fn is_doomforge_portal(cells: &NativeEntryMovementCells, cell: Cell) -> bool {
+    let NativeMovementCollisionIndex::Bundle(index) = cells.index() else {
+        return false;
+    };
+    let map = index.map();
+    // Crystal forge_teleport.lua returns a refused entrant to the source tile.
+    // Keep the original position instead of committing movement onto the portal.
+    pos(cell.0, cell.1, cell.2).is_some_and(|at| {
+        map.floors
+            .doomforge_portal(at)
+            .is_some_and(|ordinal| source_appearance(map, at, ordinal) == Some(37000))
     })
 }
 
@@ -543,6 +575,7 @@ pub fn is_teleport(cells: &NativeEntryMovementCells, cell: LogicalCell) -> bool 
     let authored =
         pos(cell.x, cell.y, cell.z).is_some_and(|at| current_teleport(cells, at).is_some());
     authored
+        || is_doomforge_portal(cells, (cell.x, cell.y, cell.z))
         || match cells.index() {
             NativeMovementCollisionIndex::Bundle(index) => pos(cell.x, cell.y, cell.z)
                 .is_some_and(|at| index.map().facts.quest_portal_destination(at, 0).is_some()),
@@ -648,6 +681,7 @@ pub fn prepare_bundle_step<'a>(
     let table = table_of(cells).ok_or(MovementError::NotQualified)?;
     qualify_origin(runtime, cells, actor, session, expected, Some(direction))?;
     let (destination, starts_stairhop) = destination(
+        runtime.arbaziloth_doomforge_open(),
         cells,
         table,
         expected.position(),
@@ -715,6 +749,7 @@ fn qualify_origin_control(
 }
 
 fn destination(
+    doomforge_open: bool,
     cells: &NativeEntryMovementCells,
     table: &FloorTable,
     origin: MovementLocalPosition,
@@ -732,7 +767,8 @@ fn destination(
             x: cell.0,
             y: cell.1,
             z: cell.2,
-        }) {
+        }) || (!doomforge_open && is_doomforge_portal(cells, cell))
+        {
             Ground::Blocked
         } else {
             ground(cell)
@@ -755,7 +791,22 @@ fn destination(
             }
             table.mask(cell)
         },
-        |at| current_teleport(cells, at),
+        |at| {
+            if doomforge_open
+                && is_doomforge_portal(
+                    cells,
+                    (i32::from(at.x), i32::from(at.y), -i32::from(at.floor)),
+                )
+            {
+                Some(TilePos {
+                    x: 34062,
+                    y: 32334,
+                    floor: -14,
+                })
+            } else {
+                current_teleport(cells, at)
+            }
+        },
         &|(x, y, z)| closed.suppresses_native_teleport(LogicalCell { x, y, z }),
     )
     .map_err(movement_error)?;
@@ -789,6 +840,7 @@ impl BundleStepProof<'_> {
             Some(self.direction),
         )?;
         let observed = destination(
+            runtime.arbaziloth_doomforge_open(),
             self.cells,
             self.table,
             self.expected.position(),
@@ -930,6 +982,43 @@ mod tests {
         };
         table.add_teleport(unbound, to);
         assert_eq!(table.teleport_for_source(unbound, |_| None), Some(to));
+    }
+
+    #[test]
+    fn doomforge_requires_an_encounter_portal_instead_of_raw_map_travel() {
+        let entrance = TilePos {
+            x: 34041,
+            y: 32330,
+            floor: -14,
+        };
+        let forge = TilePos {
+            x: 34062,
+            y: 32334,
+            floor: -14,
+        };
+        let mut table = FloorTable::default();
+        table.add_teleport(entrance, forge);
+        table.bind_teleport_source(entrance, 1, 37000);
+        assert_eq!(table.teleport_for_source(entrance, |_| Some(37000)), None);
+
+        let mut retargeted = FloorTable::default();
+        retargeted.add_teleport(entrance, TilePos { y: 32335, ..forge });
+        retargeted.bind_teleport_source(entrance, 1, 37000);
+        assert_eq!(
+            retargeted.teleport_for_source(entrance, |_| Some(37000)),
+            None
+        );
+
+        let other = TilePos {
+            x: 34040,
+            ..entrance
+        };
+        table.add_teleport(other, forge);
+        table.bind_teleport_source(other, 1, 37000);
+        assert_eq!(
+            table.teleport_for_source(other, |_| Some(37000)),
+            Some(forge)
+        );
     }
 
     /// A flat world of walkable cells `0..=9` square on `z` in `zs`, minus `blocked`.

@@ -6,6 +6,7 @@ use oteryn_gameplay_entities::carrier::Slot;
 use oteryn_gameplay_entities::{CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId};
 use oteryn_gameplay_foundation::foundation::{RuntimeScopeRefV1, ScopeOwnershipGeneration};
 
+pub mod arbaziloth;
 pub mod cults;
 pub mod gates;
 #[cfg(test)]
@@ -226,7 +227,7 @@ impl NativePhaseOwner {
         runtime: &mut ChannelRuntimeV1,
         role: usize,
         position: oteryn_gameplay_entities::MovementLocalPosition,
-        remove: Option<ExactActorRef>,
+        remove: &[ExactActorRef],
         decoration: Option<(&str, oteryn_gameplay_entities::MovementLocalPosition)>,
         map_admits: impl Fn(&ChannelRuntimeV1, oteryn_gameplay_entities::MovementLocalPosition) -> bool,
     ) -> Result<ExactActorRef, CarrierError> {
@@ -253,7 +254,10 @@ impl NativePhaseOwner {
         }
         let before = runtime.encounter_parts().0.clone();
         let result = (|| {
-            if let Some(actor) = remove {
+            for &actor in remove {
+                if !runtime.contains_live_creature(actor) {
+                    return Err(CarrierError::CreatureTargetMismatch);
+                }
                 runtime.remove_encounter_actor(actor)?;
             }
             let actors = runtime.commit_quest_creature_spawn(&spawns)?;

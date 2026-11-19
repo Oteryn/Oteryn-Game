@@ -1358,6 +1358,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         source: Option<item_view::ItemKey>,
         target: Option<item_view::ItemKey>,
     ) -> Result<Option<UseOutcome>, ()> {
+        if let Some(outcome) = self
+            .use_arbaziloth_rod(actor, command, &intent, source)
+            .await
+        {
+            return Ok(Some(outcome));
+        }
         self.dispatch_soul_war_source_use(actor, command, &intent, source, target)
             .await
     }

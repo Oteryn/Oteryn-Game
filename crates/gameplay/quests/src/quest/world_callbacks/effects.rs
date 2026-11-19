@@ -322,6 +322,8 @@ pub struct Encounter {
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub enum EncounterPhase {
+    #[serde(rename = "arbaziloth")]
+    Arbaziloth,
     #[serde(rename = "cults_boss_phase_closures")]
     Cults,
 }
@@ -951,7 +953,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_from: BTreeSet<_> = encounter.players.iter().map(|p| p.from).collect();
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
-        let source_party = encounter.phase == Some(EncounterPhase::Cults);
+        let source_party = encounter.phase.is_some();
         if (encounter.minimum_level == 0 && !source_party && !callback.starts_merchant_wave())
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()

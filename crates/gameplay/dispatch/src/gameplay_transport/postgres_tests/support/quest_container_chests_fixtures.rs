@@ -20,6 +20,11 @@ use oteryn_protocol_oteryn::CommandStatus;
 
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
+#[path = "quest_container_chests/forgemaster.rs"]
+mod forgemaster;
+
+pub(super) use forgemaster::AccessPolicy as ForgemasterAccessPolicy;
+
 #[derive(Clone, Copy)]
 pub(super) enum Case {
     Authored,
@@ -33,6 +38,10 @@ pub(super) enum Case {
     CrystalKey,
     FullCharge,
     Full,
+    Forgemaster,
+    ForgemasterChoices {
+        policy: ForgemasterAccessPolicy,
+    },
     Weight,
     DemonBoots,
     DemonHelmet,
@@ -102,10 +111,21 @@ fn scenario_case(
                     .collect(),
             )
         }
-        Case::Authored => (
+        Case::ForgemasterChoices { .. } => (
+            forgemaster::CLAIM,
+            forgemaster::CHEST,
+            57244,
+            "oteryn:item.tibia.i49530",
+            vec![],
+        ),
+        Case::Authored | Case::Forgemaster => (
             "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.steel_boots",
             (33313, 31574, -15),
-            0,
+            if matches!(case, Case::Forgemaster) {
+                57237
+            } else {
+                0
+            },
             "oteryn:item.tibia.i3554",
             vec![],
         ),
@@ -239,6 +259,16 @@ fn scenario_case(
         let owned_activation;
         let (controller, activated_pin) = if let Some(activation) = activation {
             activation
+        } else if matches!(case, Case::ForgemasterChoices { .. }) {
+            let mut input =
+                super::death_ml_loss_composed_fixtures::production_input_with_source("content-1", None)?;
+            forgemaster::provision_items(&mut input)?;
+            owned_activation = crate::content::native_gameplay::test_support::try_activate_input(
+                deps.admitted.world_id,
+                &input,
+            )
+            .map_err(debug)?;
+            &owned_activation
         } else {
             owned_activation = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
@@ -260,6 +290,12 @@ fn scenario_case(
                 2472,
                 matches!(case, Case::ChoiceDoor).then_some(native),
             )?
+        } else if matches!(case, Case::ForgemasterChoices { .. }) {
+            super::quest_callbacks_fixtures::source_world_choices(
+                chest,
+                &forgemaster::selectors().collect::<Vec<_>>(),
+                2472,
+            )?
         } else if let Some(chest) = catalogue {
             super::quest_catalogue_chests_fixtures::catalogue_source_world(chest)?
         } else {
@@ -275,7 +311,16 @@ fn scenario_case(
             source_world(chest, unique, appearance, 0)?
         };
         let mut authored_shard = None;
-        let report = if matches!(case, Case::Authored) {
+        let report = if matches!(case, Case::ForgemasterChoices { .. }) {
+            let shard = forgemaster::claim_shard();
+            let report = crate::content::world_reward_claims::bind_reward_claims(
+                world.base().as_ref(),
+                &[&shard],
+                &|_| true,
+            )?;
+            authored_shard = Some(shard);
+            report
+        } else if matches!(case, Case::Authored | Case::Forgemaster) {
             // Exercise an authored selector on a real map without borrowing a source UID.
             let mut definition = None;
             for shard in crate::content::world_reward_claims::REWARD_CLAIM_SHARDS {
@@ -458,6 +503,115 @@ fn scenario_case(
             })
         };
         let target = target_at(chest.0)?;
+        if let Case::ForgemasterChoices { policy } = case {
+            let digest = report
+                .served
+                .iter()
+                .find(|row| row.key.as_str() == claim)
+                .ok_or("Forgemaster claim binding")?
+                .authority_digest;
+            let mut owner = deps.owner(&harness, &authority);
+            assert!(
+                owner
+                    .states
+                    .quest_callbacks
+                    .reward_claims_fixture
+                    .set(vec![authored_shard.ok_or("Forgemaster choice shard")?])
+                    .is_ok()
+            );
+            owner.active_generation = Some(generation);
+            owner.quest_catalogue = Some(forgemaster::catalogue(digest, policy)?);
+            owner.movement_cells = (&cells).into();
+            owner.admit_progression_session(&mut admitted).await;
+            owner.admit_quest_session(&admitted).await;
+            deps.initialize(&owner).await;
+            if policy == forgemaster::AccessPolicy::Verified {
+                let before =
+                    forgemaster::use_chest(&mut owner, &admitted, deps.actor, 1, &target).await?;
+                assert_eq!(before, UseDisposition::Rejected);
+                assert_eq!(forgemaster::claim_count(&harness).await?, 0);
+            }
+            forgemaster::allow_access(&owner, &admitted).await?;
+            let result =
+                forgemaster::use_chest(&mut owner, &admitted, deps.actor, 2, &target).await?;
+            if policy != forgemaster::AccessPolicy::Verified {
+                assert_eq!(result, UseDisposition::NotPossible);
+                assert_eq!(forgemaster::claim_count(&harness).await?, 0);
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return harness.cleanup().await;
+            }
+            assert_eq!(result, UseDisposition::Committed);
+            let alternate = target_at(chest.0 - 2)?;
+            assert_eq!(
+                forgemaster::use_chest(&mut owner, &admitted, deps.actor, 3, &alternate).await?,
+                UseDisposition::Rejected
+            );
+            assert_eq!(forgemaster::claim_count(&harness).await?, 1);
+            let quest = harness
+                .root
+                .read_character_quest_state(&authority, fence.character_id)
+                .await
+                .map_err(debug)?;
+            assert_eq!(quest.tracks().get(forgemaster::CLAIMED), Some(&1));
+            let bag = harness
+                .root
+                .read_character_backpack(&authority, fence.character_id)
+                .await
+                .map_err(debug)?
+                .ok_or("Forgemaster backpack")?;
+            assert_eq!(bag.entries.len(), 1);
+            assert_eq!(bag.entries[0].item.definition.production_key, root_key);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
+        if matches!(case, Case::Forgemaster) {
+            let mut owner = deps.owner(&harness, &authority);
+            let shard = authored_shard.ok_or("unguarded claim fixture")?;
+            assert!(
+                owner
+                    .states
+                    .quest_callbacks
+                    .reward_claims_fixture
+                    .set(vec![shard])
+                    .is_ok()
+            );
+            owner.active_generation = Some(generation);
+            owner.quest_catalogue = Some(std::sync::Arc::clone(&embedded_catalogue));
+            owner.movement_cells = (&cells).into();
+            owner.admit_progression_session(&mut admitted).await;
+            owner.admit_quest_session(&admitted).await;
+            deps.initialize(&owner).await;
+            let current = owner
+                .current_quest_fence(admitted.game_session_id)
+                .await
+                .map_err(|()| "Forgemaster claim fence read failed")?
+                .ok_or("Forgemaster claim fence")?;
+            let result = owner
+                .use_world_object(
+                    deps.actor,
+                    crate::gameplay_transport::connection::UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: 1,
+                        item_fence: Some(current.item_fence()),
+                    },
+                    target,
+                )
+                .await;
+            assert_eq!(result.disposition, UseDisposition::NotPossible);
+            let writes: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_reward_claim_mint_reservations")
+                    .fetch_one(&harness.pool)
+                    .await?;
+            assert_eq!(writes, 0);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         if matches!(case, Case::ChoiceDoor) {
             {
                 let mut owner = deps.owner(&harness, &authority);

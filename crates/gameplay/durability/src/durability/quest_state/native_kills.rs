@@ -16,6 +16,10 @@ pub enum NativeDeathSource {
     },
     Encounter(super::encounter_deaths::EncounterDeathContext),
     Source(super::source_deaths::SourceDeathContext),
+    ArbazilothHard {
+        source: super::source_deaths::SourceDeathContext,
+        death: crate::foundation::CreatureDeathOccurrenceKey,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -82,7 +86,12 @@ impl NativeQuestDeath {
                 NativeDeathSource::Source(_) => {
                     self.definition_hash.is_none()
                         && oteryn_gameplay_quests::quest::source_deaths::rule(&self.transition)
-                            .is_some_and(|rule| rule.creature == self.creature)
+                            .is_some_and(|rule| rule.creature == self.creature && rule.creature != oteryn_gameplay_quests::quest::source_deaths::ARBAZILOTH_ENRAGED)
+                }
+                NativeDeathSource::ArbazilothHard { .. } => {
+                    self.definition_hash.is_none()
+                        && self.creature == oteryn_gameplay_quests::quest::source_deaths::ARBAZILOTH_ENRAGED
+                        && oteryn_gameplay_quests::quest::source_deaths::arbaziloth_hard_transitions().any(|key| key == self.transition)
                 }
             }
     }
@@ -104,7 +113,7 @@ impl NativeQuestDeath {
         match &self.source {
             NativeDeathSource::PositionedParty { source, .. } | NativeDeathSource::Party(source)
             | NativeDeathSource::InstanceBoss { party: source, .. } => Some(source.as_ref()),
-            NativeDeathSource::Source(_) | NativeDeathSource::Encounter(_) => None,
+            NativeDeathSource::Source(_) | NativeDeathSource::Encounter(_) | NativeDeathSource::ArbazilothHard { .. } => None,
         }
     }
 
@@ -140,6 +149,15 @@ impl NativeQuestDeath {
                 binding[1..].copy_from_slice(&digest);
             }
             NativeDeathSource::Source(source) => source.bind(binding),
+            NativeDeathSource::ArbazilothHard { source, death } => {
+                source.bind(binding);
+                let digest = Sha256::new().chain_update(*binding)
+                    .chain_update(b"arbaziloth-hard-death-v1")
+                    .chain_update(death.native_bytes())
+                    .finalize();
+                binding[1..].copy_from_slice(&digest);
+            }
+
             NativeDeathSource::Encounter(source) => source.bind(binding),
         }
         let mut digest = Sha256::new()
@@ -162,6 +180,15 @@ impl NativeQuestDeath {
         fence: CurrentCharacterGameplayFence,
         catalogue: &QuestStateCatalogue,
     ) -> StoredResult<bool> {
+        if let NativeDeathSource::ArbazilothHard { source, death } = &self.source {
+            if !self.permits_scope(&fence)
+                || death.runtime_scope() != fence.runtime_scope
+                || death.scope_ownership_generation() != fence.scope_ownership_generation
+            {
+                return Ok(false);
+            }
+            return source.admit(tx, fence, self).await;
+        }
         if let NativeDeathSource::Source(source) = &self.source {
             return source.admit(tx, fence, self).await;
         }

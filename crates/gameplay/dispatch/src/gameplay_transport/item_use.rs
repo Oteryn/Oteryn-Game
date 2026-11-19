@@ -3,6 +3,7 @@
 //! cooldowns) and `FULL` in the owner lane and starts the cooldown; then the one-item DUR-03
 //! transaction commits, and only a known commit applies the effect.
 
+mod arbaziloth_rod;
 #[path = "drome_cube_use.rs"]
 pub(super) mod drome_cube;
 
@@ -85,6 +86,7 @@ struct ItemUseGate {
     cube_pending: Option<Box<drome_cube::PendingCubeUse>>,
     source_pending: Option<Box<soul_war_source::PendingSourceUse>>,
     source_last: Option<(u64, [u8; 32], UseDisposition)>,
+    arbaziloth_rod_last: Option<(u64, [u8; 32], UseDisposition)>,
     essence_pending: Option<Box<rotten_essence::PendingEssenceUse>>,
     essence_last: Option<(u64, [u8; 32], [u8; 32], UseDisposition)>,
 }
@@ -270,6 +272,7 @@ impl ItemUseGates {
                 gate.last = None;
                 gate.essence_last = None;
                 gate.source_last = None;
+                gate.arbaziloth_rod_last = None;
             }
         }
     }
