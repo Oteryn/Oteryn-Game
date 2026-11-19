@@ -201,9 +201,29 @@ impl ChannelRuntimeV1 {
             monsters,
             |_, actors, _| Ok(actors.to_vec()),
             project,
-            true,
+            (&[], true),
         )
     }
+
+    /// Stage retirement of an abandoned roster inside the same carrier
+    /// transaction as a replacement visit. A preview leaves both visits untouched.
+    pub fn quest_encounter_replacing_visit<P: SourceStepCommitProof>(
+        &mut self,
+        players: Vec<P>,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        retire: &[ExactActorRef],
+        project: impl FnOnce() -> bool,
+        publish: bool,
+    ) -> Result<(Vec<MovementPositionSnapshot>, Vec<ExactActorRef>), CarrierError> {
+        self.quest_encounter_with_phase(
+            players,
+            monsters,
+            |_, actors, _| Ok(actors.to_vec()),
+            project,
+            (retire, publish),
+        )
+    }
+
     pub fn commit_quest_encounter_with_phase<P: SourceStepCommitProof, T>(
         &mut self,
         players: Vec<P>,
@@ -216,7 +236,7 @@ impl ChannelRuntimeV1 {
             monsters,
             |runtime, actors, _| bind(runtime, actors),
             project,
-            true,
+            (&[], true),
         )
     }
     /// Build the participant-bound defender owner before the map CAS; every failure rolls back.
@@ -262,7 +282,7 @@ impl ChannelRuntimeV1 {
             monsters,
             |_, actors, positions| prepare(positions.to_vec(), actors.to_vec()),
             project,
-            true,
+            (&[], true),
         )
         .map(|(_, prepared)| prepared)
     }
@@ -273,8 +293,14 @@ impl ChannelRuntimeV1 {
         project: impl FnOnce() -> bool,
         publish: bool,
     ) -> Result<Vec<MovementPositionSnapshot>, CarrierError> {
-        self.quest_encounter_with_phase(players, monsters, |_, _, _| Ok(()), project, publish)
-            .map(|(positions, ())| positions)
+        self.quest_encounter_with_phase(
+            players,
+            monsters,
+            |_, _, _| Ok(()),
+            project,
+            (&[], publish),
+        )
+        .map(|(positions, ())| positions)
     }
     fn quest_encounter_with_phase<P: SourceStepCommitProof, T>(
         &mut self,
@@ -286,7 +312,7 @@ impl ChannelRuntimeV1 {
             &[MovementPositionSnapshot],
         ) -> Result<T, CarrierError>,
         project: impl FnOnce() -> bool,
-        publish: bool,
+        (retire, publish): (&[ExactActorRef], bool),
     ) -> Result<(Vec<MovementPositionSnapshot>, T), CarrierError> {
         if players.is_empty() || players.len() > 16 || monsters.is_empty() || monsters.len() > 16 {
             return Err(CarrierError::PlanConflict);
@@ -302,6 +328,11 @@ impl ChannelRuntimeV1 {
         // The exclusive runtime owner prevents an observer from seeing these staged slots.
         let before = self.carrier.clone();
         let result = (|| {
+            for &actor in retire {
+                if self.contains_live_creature(actor) {
+                    self.remove_encounter_actor(actor)?;
+                }
+            }
             let mut actors = Vec::new();
             actors
                 .try_reserve(monsters.len())

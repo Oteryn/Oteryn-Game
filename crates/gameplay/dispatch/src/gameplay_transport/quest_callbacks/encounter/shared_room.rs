@@ -108,24 +108,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) else {
             return UseDisposition::Exhausted;
         };
-        // The donor's startOnEnter resets when the last player leaves. The
-        // next ingress may arrive before the scheduled census sees that vacancy.
-        let (existing, retired) = if let Some(index) = existing
-            && occupants == 0
-        {
-            let previous = &visits[index];
-            for actor in previous.creatures.iter().copied() {
-                if runtime.contains_live_creature(actor)
-                    && runtime.remove_encounter_actor(actor).is_err()
-                {
-                    return UseDisposition::Occupied;
-                }
-            }
-            let previous = visits.swap_remove(index);
-            (None, previous.creatures)
-        } else {
-            (existing, Vec::new())
-        };
+        // Crystal actions_portal_brain_head.lua:56-69,120-130 resets for a
+        // new admission. An ingress can reach the portal before the scheduled
+        // vacancy census, but its cooldown check must leave that roster intact.
+        let abandoned = existing.filter(|_| occupants == 0);
+        let existing = existing.filter(|_| abandoned.is_none());
+        let retired = abandoned.map_or_else(Vec::new, |index| visits[index].creatures.clone());
+        let can_add_visit = abandoned.is_some()
+            || visits.len() < super::super::timed_encounter::MAX_TIMED_ENCOUNTERS;
         let mut monsters = Vec::new();
         if existing.is_none() {
             if !map
@@ -159,9 +149,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if preflight {
             return if !monsters.is_empty()
-                && (visits.len() >= super::super::timed_encounter::MAX_TIMED_ENCOUNTERS
+                && (!can_add_visit
                     || runtime
-                        .preflight_quest_encounter_entry(vec![proof], &monsters)
+                        .quest_encounter_replacing_visit(
+                            vec![proof],
+                            &monsters,
+                            &retired,
+                            || true,
+                            false,
+                        )
                         .is_err())
             {
                 UseDisposition::Occupied
@@ -182,9 +178,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             });
             visit
         } else {
-            if visits.len() >= super::super::timed_encounter::MAX_TIMED_ENCOUNTERS
-                || visits.try_reserve(1).is_err()
-            {
+            if !can_add_visit || (abandoned.is_none() && visits.try_reserve(1).is_err()) {
                 return UseDisposition::Exhausted;
             }
             new_visit.insert(EncounterVisit {
@@ -215,7 +209,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             runtime.commit_quest_relocation(vec![proof], project)
         } else {
             runtime
-                .commit_quest_encounter_entry_with_roster(vec![proof], &monsters, project)
+                .quest_encounter_replacing_visit(vec![proof], &monsters, &retired, project, true)
                 .map(|(landings, creatures)| {
                     visit.creatures = creatures;
                     landings
@@ -231,6 +225,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             visit.participants.push((actor, session));
         }
         if let Some(visit) = new_visit {
+            if let Some(old) = abandoned {
+                visits.swap_remove(old);
+            }
             visits.push(visit);
             states.owner_wake.notify_one();
             if let Some(message) = &callback.success_message {
