@@ -24,6 +24,9 @@ pub const OFFERING_PORTAL_PREFIX: &str = "oteryn:quest-callback/offering-portal/
 pub const RANKED_TOLL_PREFIX: &str = "oteryn:quest-callback/ranked-toll/";
 pub const SOLO_ROOM_PREFIX: &str = "oteryn:quest-callback/solo-room/";
 pub const MAX_SELECTOR_POSITIONS: usize = 8;
+// Crystal 201189f actions_portal_brain_head.lua:9-42 registers 32 entrance
+// tiles for one shared visit and one occupancy window.
+const MAX_SHARED_ENCOUNTER_POSITIONS: usize = 32;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(deny_unknown_fields)]
@@ -143,7 +146,7 @@ pub struct Selector {
 impl Selector {
     #[must_use]
     pub fn matches_position(&self, position: Position) -> bool {
-        if self.position_aliases.len() >= MAX_SELECTOR_POSITIONS {
+        if self.position_aliases.len() >= MAX_SHARED_ENCOUNTER_POSITIONS {
             return false;
         }
         match self.position {
@@ -953,6 +956,18 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
     let mut keys = BTreeSet::new();
     for callback in &document.callbacks {
         let selector = &callback.selector;
+        let selector_position_limit = if callback.trigger == Trigger::StepIn
+            && callback
+                .effects
+                .encounter
+                .as_ref()
+                .and_then(|encounter| encounter.solo_expiry.as_ref())
+                .is_some_and(|expiry| expiry.shared.is_some())
+        {
+            MAX_SHARED_ENCOUNTER_POSITIONS
+        } else {
+            MAX_SELECTOR_POSITIONS
+        };
         let valid_pos = |p: Position| (-15..=0).contains(&p.floor);
         let unique_offerings: BTreeSet<_> = callback.offerings.iter().map(|o| o.position).collect();
         let unique_materials: BTreeSet<_> = callback
@@ -1017,7 +1032,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                 .native
                 .as_ref()
                 .is_some_and(|n| !valid_pos(n.position) || n.appearance == 0)
-            || selector.position_aliases.len() >= MAX_SELECTOR_POSITIONS
+            || selector.position_aliases.len() >= selector_position_limit
             || alias_positions.len() != selector.position_aliases.len()
             || selector
                 .position_aliases
