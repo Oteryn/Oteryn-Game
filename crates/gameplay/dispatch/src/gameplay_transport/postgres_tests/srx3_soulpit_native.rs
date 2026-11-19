@@ -569,7 +569,7 @@ fn run_native_soulpit_scenario(
                     destination_cue |= oteryn_protocol_oteryn::native_map_cues::decode_native_map_presentation_batch(delta.payload)
                         .map_err(debug)?.iter().any(|event| matches!(event.kind,
                             oteryn_protocol_oteryn::presentation::PresentationEventKind::MagicEffect { position, effect_id:11, .. }
-                            if position == oteryn_protocol_oteryn::world_spatial::ActorPosition{x:32373,y:31151,floor:-8}));
+                            if position == oteryn_protocol_oteryn::world_spatial::ActorPosition{x:32373,y:31151,floor:8}));
                 }
                 assert!(destination_cue, "the real entry teleport cue uses the destination Instance's native frame");
                 eprintln!("SRX3_SOULPIT NATIVE_ENTRY_CUE_COMPLETED duration={:?}", started.elapsed());
@@ -587,7 +587,7 @@ fn run_native_soulpit_scenario(
                 oteryn_protocol_oteryn::world_spatial::ActorPosition {
                     x: 32373,
                     y: 31151,
-                    floor: -8
+                    floor: 8
                 }
             );
             let mut map_view = crate::gameplay_transport::world_map::SessionMapView::default();
@@ -623,7 +623,7 @@ fn run_native_soulpit_scenario(
                 .tiles
                 .iter()
                 .find(|tile| {
-                    (tile.position.x, tile.position.y, tile.position.floor) == (32375, 31157, -8)
+                    (tile.position.x, tile.position.y, tile.position.floor) == (32375, 31157, 8)
                 })
                 .ok_or("native Instance obelisk tile")?;
             assert!(
@@ -696,8 +696,8 @@ fn run_native_soulpit_scenario(
                 entities
                     .entities
                     .iter()
-                    .all(|entity| entity.position.floor == -8),
-                "players, creatures and corpses share the native map wire frame"
+                    .all(|entity| entity.position.floor == 8),
+                "players, creatures and corpses share Global floor 8"
             );
             let bound = h
                 .root

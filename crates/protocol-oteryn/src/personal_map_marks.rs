@@ -21,7 +21,7 @@ impl PersonalMapMarks {
         let mut bytes = Vec::new();
         bytes.extend_from_slice(&u16::try_from(self.0.len()).ok()?.to_le_bytes());
         for mark in &self.0 {
-            if !(-15..=0).contains(&mark.floor) || mark.text.chars().count() > 128 {
+            if !(0..=15).contains(&mark.floor) || mark.text.chars().count() > 128 {
                 return None;
             }
             for (value, max) in [(&mark.key, 128), (&mark.text, 256)] {
@@ -99,7 +99,7 @@ mod tests {
             key: "sterling".into(),
             x: 31948,
             y: 31924,
-            floor: -7,
+            floor: 7,
             text: "Treasure".into(),
         }]);
         let bytes = value.encode().ok_or("encode")?;
@@ -114,7 +114,7 @@ mod tests {
         *unknown.last_mut().ok_or("kind")? = 2;
         assert!(PersonalMapMarks::decode(&unknown).is_none());
         let mut invalid = value.clone();
-        invalid.0[0].floor = 1;
+        invalid.0[0].floor = -1;
         assert!(invalid.encode().is_none());
         invalid = value.clone();
         invalid.0[0].text = "x".repeat(257);
@@ -132,7 +132,7 @@ mod tests {
                     key: format!("{index:0>128}"),
                     x: u16::MAX,
                     y: u16::MAX,
-                    floor: -15,
+                    floor: 15,
                     text: "é".repeat(128),
                 })
                 .collect(),

@@ -87,7 +87,7 @@ pub(super) fn details(key: &str) -> Option<wire::HouseDetails> {
         entrance: (
             metadata.entrance.x.try_into().ok()?,
             metadata.entrance.y.try_into().ok()?,
-            metadata.entrance.z.checked_neg()?.try_into().ok()?,
+            metadata.entrance.z.try_into().ok()?,
         ),
     })
 }
@@ -239,7 +239,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn house_details_use_shipped_catalogue_and_native_negative_floor()
+    fn house_details_use_shipped_catalogue_and_global_floor()
     -> Result<(), Box<dyn std::error::Error>> {
         let record = catalogue()
             .and_then(|rows| rows.first())
@@ -248,8 +248,8 @@ mod tests {
         assert_eq!(metadata.name, record.name);
         assert_eq!(metadata.size, record.size_sqm);
         assert_eq!(metadata.beds, record.beds);
-        assert_eq!(i16::from(metadata.entrance.2), -record.entrance.z);
-        assert!((-15..=0).contains(&metadata.entrance.2));
+        assert_eq!(i16::from(metadata.entrance.2), record.entrance.z);
+        assert!((0..=15).contains(&metadata.entrance.2));
         assert!(details("oteryn:house.missing").is_none());
         Ok(())
     }

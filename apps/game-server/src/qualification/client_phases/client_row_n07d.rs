@@ -37,7 +37,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .iter()
         .filter(|tile| {
             tile.ground_speed > 0
-                && tile.position.floor <= header.first_visible_floor
+                && tile.position.floor >= header.first_visible_floor
                 && in_window(header.origin, tile.position)
         })
         .count();

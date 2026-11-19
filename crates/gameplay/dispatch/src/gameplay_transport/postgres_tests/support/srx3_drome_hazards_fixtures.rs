@@ -28,7 +28,7 @@ pub(super) async fn large_hazards_receipt(
         100,
         "source engine must produce actual100 walkable marks before receipt write"
     );
-    let proof = wire::append_drome_hazards(
+    let proof = wire::append_wire_drome_hazards(
         wire::DromeResult {
             disposition: 1,
             phase: 2,
@@ -63,8 +63,10 @@ pub(super) async fn large_hazards_receipt(
     assert_eq!(received.selected, snapshot.selected);
     assert_eq!(received.entries, snapshot.entries);
     let stored:Vec<u8>=sqlx::query_scalar("SELECT reply FROM game_tibiadrome_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::numeric").bind(admitted.game_session_id.as_bytes().as_slice()).bind(command.to_string()).fetch_one(&harness.pool).await?;
+    let scalar = wire::DromeResult::decode(&payload).map_err(debug)?.encode();
+    let retained = wire::append_drome_hazards(scalar, &received).map_err(debug)?;
     assert_eq!(
-        stored, payload,
+        stored, retained,
         "field13 must be in the first immutable stored reply"
     );
     let replay = owner

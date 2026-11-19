@@ -214,11 +214,7 @@ pub(in crate::gameplay_transport) fn qualify_for_scope(
         if source_world
             .lookup(
                 room.movement_cells().scope(),
-                crate::content::LogicalCell {
-                    x,
-                    y,
-                    z: z.checked_neg().ok_or(())?,
-                },
+                crate::content::LogicalCell { x, y, z },
             )
             .is_err()
         {
@@ -262,7 +258,7 @@ pub(in crate::gameplay_transport) fn qualify_for_scope(
                 crate::content::LogicalCell {
                     x: i32::from(x),
                     y: i32::from(y),
-                    z: i32::from(floor),
+                    z,
                 },
             )
             .is_ok();
@@ -445,7 +441,7 @@ pub(in crate::gameplay_transport) fn qualify_for_scope(
         let [x, y, z] = tile.source_position;
         let before = room.movement_cells().spell_tiles().lookup(
             room.movement_cells().scope(),
-            crate::content::LogicalCell { x, y, z: -z },
+            crate::content::LogicalCell { x, y, z },
         );
         let at = crate::content::LogicalCell { x, y, z };
         let after = cells.spell_tiles().lookup(cells.scope(), at);
@@ -502,11 +498,7 @@ pub(in crate::gameplay_transport) fn qualify_for_scope(
         .ok_or_else(|| refusal(source, "sealed Source view", ()))?;
     for tile in &capture.tiles {
         let [x, y, z] = tile.source_position;
-        let source_cell = crate::content::LogicalCell {
-            x,
-            y,
-            z: z.checked_neg().ok_or(())?,
-        };
+        let source_cell = crate::content::LogicalCell { x, y, z };
         let target_cell = crate::content::LogicalCell { x, y, z };
         match room
             .movement_cells()
@@ -962,7 +954,7 @@ mod tests {
                                     LogicalCell {
                                         x: dx,
                                         y: dy,
-                                        z: -dz
+                                        z: dz
                                     }
                                 )
                                 .is_err(),
@@ -970,7 +962,7 @@ mod tests {
                         );
                     }
                 }
-                let source_cell = crate::content::LogicalCell { x, y, z: -z };
+                let source_cell = crate::content::LogicalCell { x, y, z };
                 let target_cell = crate::content::LogicalCell { x, y, z };
                 match room
                     .movement_cells()

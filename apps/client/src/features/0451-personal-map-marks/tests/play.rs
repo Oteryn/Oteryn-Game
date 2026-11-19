@@ -12,7 +12,7 @@ fn personal_map_marks_native_query_publishes_only_confirmed_sets()
         key: "sterling".into(),
         x: 31948,
         y: 31924,
-        floor: -7,
+        floor: 7,
         text: "Treasure".into(),
     }]);
     let mut result = oteryn_session::GatedCommandResult {

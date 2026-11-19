@@ -284,12 +284,12 @@ mod tests {
     use super::*;
     #[test]
     fn satellite_centres_on_player() {
-        let state = State::at((100, 200, -7));
-        assert_eq!((state.x, state.y, state.floor), (100, 200, -7));
+        let state = State::at((100, 200, 7));
+        assert_eq!((state.x, state.y, state.floor), (100, 200, 7));
     }
     #[test]
     fn satellite_zoom_bounds() {
-        let mut state = State::at((0, 0, -7));
+        let mut state = State::at((0, 0, 7));
         for _ in 0..20 {
             state.zoom(true);
         }
@@ -301,17 +301,17 @@ mod tests {
     }
     #[test]
     fn satellite_floor_change() {
-        let mut state = State::at((0, 0, -7));
+        let mut state = State::at((0, 0, 7));
         state.change_floor(true);
-        assert_eq!(state.floor, -6);
+        assert_eq!(state.floor, 6);
         state.change_floor(false);
-        assert_eq!(state.floor, -7);
+        assert_eq!(state.floor, 7);
     }
     #[test]
     fn satellite_shows_markers() {
-        let state = State::at((100, 200, -7));
-        assert_eq!(state.point(100, 200, -7), Some((240., 180.)));
-        assert_eq!(state.point(100, 200, -8), None);
+        let state = State::at((100, 200, 7));
+        assert_eq!(state.point(100, 200, 7), Some((240., 180.)));
+        assert_eq!(state.point(100, 200, 8), None);
     }
     use crate::{
         bevy_shell::owner::{ActivePlay, Phase},

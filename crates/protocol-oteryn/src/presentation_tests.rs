@@ -214,7 +214,7 @@ fn a_full_batch_round_trips_within_its_bound() {
     push_message_field(
         &mut last,
         1,
-        &encode_event(&small[MAX_PRESENTATION_EVENTS], false).expect("event"),
+        &encode_event(&small[MAX_PRESENTATION_EVENTS]).expect("event"),
     );
     over.extend_from_slice(&last);
     assert!(over.len() <= MAX_PRESENTATION_BATCH_BYTES);

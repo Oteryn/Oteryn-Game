@@ -106,7 +106,7 @@ pub(super) async fn sleep(
                     let map = decode_world_map_snapshot(domain.payload).map_err(debug)?;
                     let Some(tile) = map.tiles.iter().find(|tile| {
                         (tile.position.x, tile.position.y, tile.position.floor)
-                            == (32311, 32804, -7)
+                            == (32311, 32804, 7)
                     }) else {
                         continue;
                     };

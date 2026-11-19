@@ -37,7 +37,7 @@ pub(super) async fn verify(
     let (status, bytes) = support::exchange(owner, admitted, id, 72, &payload).await?;
     assert_eq!(status, CommandStatus::Accepted);
     let atlas = Atlas::decode(&bytes).map_err(debug)?;
-    assert_eq!(atlas.query.floor, -7);
+    assert_eq!(atlas.query.floor, 7);
     assert!(atlas.cells.contains(&2));
     assert!(atlas.areas.iter().any(|a| a.id == 2 && a.parent == 1));
     assert!(

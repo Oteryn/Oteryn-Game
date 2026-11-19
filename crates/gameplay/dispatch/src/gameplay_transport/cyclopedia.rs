@@ -299,15 +299,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
         {
-            Ok(bytes) if wire::decode_result(&bytes).is_ok() => {
-                if before_find.is_some_and(|before| {
-                    wire::decode_result(&bytes).is_ok_and(|result| {
-                        result.code == 0
-                            && result.discovered
-                            && result.found == 7
-                            && result.revision > before.get()
-                    })
-                }) {
+            Ok(bytes) => {
+                let Ok(mut result) = wire::decode_retained_result(&bytes) else {
+                    return GuildReply::Unavailable;
+                };
+                let discovered_now = before_find.is_some_and(|before| {
+                    result.code == 0
+                        && result.discovered
+                        && result.found == 7
+                        && result.revision > before.get()
+                });
+                for (_, _, floor) in &mut result.visible {
+                    *floor = -*floor;
+                }
+                let Ok(bytes) = wire::encode_wire_result(&result) else {
+                    return GuildReply::Unavailable;
+                };
+                if discovered_now {
                     self.states.tutorial_sessions.notice(
                         admitted.game_session_id,
                         oteryn_protocol_oteryn::tutorial_notices::TutorialNotice::StatusText(
@@ -325,7 +333,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 GuildReply::Payload(bytes)
             }
-            Ok(_) => GuildReply::Unavailable,
             Err(
                 CharacterProgressionError::AuthorityRejected
                 | CharacterProgressionError::InvalidInput

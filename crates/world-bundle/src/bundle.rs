@@ -1,4 +1,4 @@
-//! `OTERYN_WORLD_BUNDLE/v8`: the byte layout and the fail-closed reader. The writer lives in
+//! `OTERYN_WORLD_BUNDLE/v9`: the byte layout and the fail-closed reader. The writer lives in
 //! the compiler and applies the same `validate_*` functions.
 //!
 //! Layout (little endian), specified in `docs/contracts/OTERYN_WORLD_BUNDLE_FORMAT_V1.md`:
@@ -14,8 +14,42 @@ use crate::Error;
 use crate::sector::{self, Budget, SECTOR_SIZE, Tile, TileLimits};
 use crate::{npc, spawn};
 
-pub const FORMAT: &str = "OTERYN_WORLD_BUNDLE/v8";
-pub const VERSION: u16 = 8;
+pub const FORMAT: &str = "OTERYN_WORLD_BUNDLE/v9";
+pub const VERSION: u16 = 9;
+pub const LEGACY_FORMAT: &str = "OTERYN_WORLD_BUNDLE/v8";
+pub const LEGACY_VERSION: u16 = 8;
+
+/// The on-disk floor convention. Map-index callers retain their signed tile keys.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum FloorEncoding {
+    Signed,
+    Global,
+}
+
+impl FloorEncoding {
+    pub(crate) fn for_manifest(manifest: &Manifest) -> Result<Self, Error> {
+        match (manifest.format.as_str(), manifest.min_reader_version) {
+            (FORMAT, VERSION) => Ok(Self::Global),
+            (LEGACY_FORMAT, LEGACY_VERSION) => Ok(Self::Signed),
+            _ => Err(Error::Format("unsupported bundle format".into())),
+        }
+    }
+
+    pub(crate) fn encode(self, index_floor: i8) -> u8 {
+        match self {
+            Self::Signed => index_floor as u8,
+            Self::Global => index_floor.unsigned_abs(),
+        }
+    }
+
+    pub(crate) fn decode(self, byte: u8) -> Result<i8, Error> {
+        match self {
+            Self::Signed => Ok(byte as i8),
+            Self::Global if byte <= 15 => Ok(-(byte as i8)),
+            Self::Global => Err(Error::Format("Global floor outside 0..15".into())),
+        }
+    }
+}
 pub const MAGIC: &[u8; 4] = b"OTWB";
 /// The node's runtime-compatibility version (`identity.min_runtime_version`), not the format
 /// `VERSION`. Raise it by one only in a PR whose content needs runtime behaviour a node built
@@ -366,7 +400,12 @@ fn check(ok: bool, what: &str) -> Result<(), Error> {
 /// The bundle digest of `body` (format document §6).
 pub fn digest_of(body: &[u8]) -> [u8; 32] {
     let mut hash = Sha256::new();
-    hash.update(FORMAT.as_bytes());
+    let format = if body.get(4..6) == Some(&LEGACY_VERSION.to_le_bytes()) {
+        LEGACY_FORMAT
+    } else {
+        FORMAT
+    };
+    hash.update(format.as_bytes());
     hash.update([0]);
     hash.update(body);
     hash.finalize().into()
@@ -375,10 +414,7 @@ pub fn digest_of(body: &[u8]) -> [u8; 32] {
 /// The manifest rules the writer and the reader both apply.
 pub fn validate_manifest(m: &Manifest) -> Result<(), Error> {
     m.subareas.validate(&m.world)?;
-    check(
-        m.format == FORMAT && m.min_reader_version == VERSION,
-        "unsupported bundle format",
-    )?;
+    FloorEncoding::for_manifest(m)?;
     check(
         m.projection_class == "server",
         "projection class must be server",
@@ -635,9 +671,10 @@ pub fn visit_budgeted(
         data.len() >= HEADER + DIGEST,
         "bundle shorter than header and trailer",
     )?;
+    let version = le16(data, 4);
     check(
-        &data[..4] == MAGIC && le16(data, 4) == VERSION,
-        "not an OTERYN_WORLD_BUNDLE/v8",
+        &data[..4] == MAGIC && matches!(version, VERSION | LEGACY_VERSION),
+        "unsupported World Bundle header",
     )?;
     check(le16(data, 6) == 0, "reserved header bytes are not zero")?;
     let (body, trailer) = data.split_at(data.len() - DIGEST);
@@ -655,6 +692,11 @@ pub fn visit_budgeted(
         "sector table runs past the payloads",
     )?;
     let (manifest, layers) = decode_manifest(&data[HEADER..table])?;
+    check(
+        manifest.min_reader_version == version,
+        "header and manifest versions differ",
+    )?;
+    let floors = FloorEncoding::for_manifest(&manifest)?;
     validate_manifest(&manifest)?;
     crate::layers::validate(&manifest, &layers)?;
     let mut total_raw = 0usize;
@@ -663,7 +705,11 @@ pub fn visit_budgeted(
     let mut named = vec![false; manifest.dropped_teleports.len()];
     for row in 0..count {
         let at = table + ENTRY * row;
-        let (floor, sx, sy) = (data[at] as i8, le16(data, at + 2), le16(data, at + 4));
+        let (floor, sx, sy) = (
+            floors.decode(data[at])?,
+            le16(data, at + 2),
+            le16(data, at + 4),
+        );
         check(data[at + 1] == 0, "reserved sector byte is not zero")?;
         let (offset, length, raw_length) =
             (le32(data, at + 6), le32(data, at + 10), le32(data, at + 14));
@@ -713,7 +759,13 @@ pub fn visit_budgeted(
             floor,
             sx,
             sy,
-            tiles: sector::decode(&raw, (sx, sy), TILE_LIMITS, &mut budget)?,
+            tiles: sector::decode_with_floors(
+                &raw,
+                (sx, sy),
+                TILE_LIMITS,
+                &mut budget,
+                Some(floors),
+            )?,
         };
         validate_sector(&manifest, &sector)?;
         mark_dropped(&manifest.dropped_teleports, &sector, &mut named);
@@ -758,7 +810,7 @@ pub fn visit_budgeted(
     )?;
     let raw = zstd::bulk::decompress(frame, raw_length).map_err(zstd_error)?;
     check(raw.len() == raw_length, "spawn length differs from its row")?;
-    let spawns = spawn::decode(&raw, &manifest.world)?;
+    let spawns = spawn::decode_with_floors(&raw, &manifest.world, floors)?;
     validate_spawns(&manifest, &spawns)?;
     expected += length;
     let (offset, length, raw_length) = (
@@ -791,7 +843,7 @@ pub fn visit_budgeted(
     )?;
     let raw = zstd::bulk::decompress(frame, raw_length).map_err(zstd_error)?;
     check(raw.len() == raw_length, "NPC length differs from its row")?;
-    let npcs = npc::decode(&raw, &manifest.world)?;
+    let npcs = npc::decode_with_floors(&raw, &manifest.world, floors)?;
     validate_npcs(&manifest, &npcs)?;
     check(
         named.iter().all(|named| *named),

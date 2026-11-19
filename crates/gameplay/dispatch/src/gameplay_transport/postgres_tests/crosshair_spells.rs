@@ -330,7 +330,7 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             target: actor_spell::SpellTarget::Position(actor_spell::SpellTargetPosition {
                 x: position.x,
                 y: position.y,
-                floor: position.floor,
+                floor: position.floor.abs(),
             }),
             aim_at_target: false,
         });

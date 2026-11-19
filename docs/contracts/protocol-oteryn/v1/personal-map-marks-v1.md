@@ -8,6 +8,6 @@ Empty. Reject any byte. Current controller, connection, actor lease, Character r
 
 ## Reply
 
-ACCEPTED carries the complete current Character/current World set, ordered by unique source key: little-endian u16 count (0..256), then each key and label (u16 UTF-8 byte length followed by bytes), u16 x, u16 y, signed i8 floor (-15..0), u8 kind (1 = Cross). Key 1..128 bytes; label 1..256 bytes and at most 128 characters; neither may be blank or contain control characters. Maximum 100866 bytes. Strict decoding refuses duplicate/out-of-order keys, unknown kinds, invalid UTF-8, truncation and trailing bytes. A rejected reply is empty.
+ACCEPTED carries the complete current Character/current World set, ordered by unique source key: little-endian u16 count (0..256), then each key and label (u16 UTF-8 byte length followed by bytes), u16 x, u16 y, i8 Global floor (0..15, ground 7), u8 kind (1 = Cross). Key 1..128 bytes; label 1..256 bytes and at most 128 characters; neither may be blank or contain control characters. Maximum 100866 bytes. Strict decoding refuses duplicate/out-of-order keys, unknown kinds, invalid UTF-8, truncation and trailing bytes. A rejected reply is empty.
 
 These are immutable display facts, not client write authority. The client refreshes after admission and at a bounded five-second cadence; queries do not reset gameplay idle time. Local editable map marks stay separate. Server marks are never written to the local World-only exploration file, preventing transfer between Characters. A scope switch clears the projection until fresh facts arrive.

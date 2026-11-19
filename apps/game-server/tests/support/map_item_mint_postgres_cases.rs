@@ -1602,7 +1602,10 @@ mod map_overlay_pickup {
     /// A bundle of one sector at native floor -7, assembled byte by byte (as the MAP-LOAD-1 tests
     /// do) so a tile can hold more top-level entries than the compiler writes, and its digest.
     fn assemble(tiles: &[Tile]) -> Result<(Vec<u8>, [u8; 32]), Box<dyn StdError>> {
-        let json = serde_json::to_vec(&manifest()?)?;
+        let mut manifest = manifest()?;
+        manifest.format = bundle::LEGACY_FORMAT.into();
+        manifest.min_reader_version = bundle::LEGACY_VERSION;
+        let json = serde_json::to_vec(&manifest)?;
         let raw = sector::encode(tiles)?;
         let frame = compress(&raw)?;
         let spawn_raw = spawn::encode(&spawn::Table::default());
@@ -1611,7 +1614,7 @@ mod map_overlay_pickup {
         let npc_frame = compress(&npc_raw)?;
         let u32_of = |value: usize| (value as u32).to_le_bytes();
         let mut out = b"OTWB".to_vec();
-        out.extend_from_slice(&bundle::VERSION.to_le_bytes());
+        out.extend_from_slice(&bundle::LEGACY_VERSION.to_le_bytes());
         out.extend_from_slice(&[0, 0]);
         out.extend_from_slice(&u32_of(json.len()));
         out.extend_from_slice(&u32_of(1));

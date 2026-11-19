@@ -41,7 +41,7 @@ fn captured() -> Result<(Vec<u8>, String), Error> {
     let origin = ActorPosition {
         x: 100,
         y: 200,
-        floor: -7,
+        floor: 7,
     };
     let ground = |x| MapTile {
         position: ActorPosition { x, ..origin },
@@ -72,8 +72,8 @@ fn captured() -> Result<(Vec<u8>, String), Error> {
     Ok((
         payload,
         format!(
-            "revision=4\norigin=100,200,-7\nfirst_visible_floor={}\nreset_epoch=3\ntiles=3\nwalkable=3\n",
-            first_visible_floor_start(-7)
+            "revision=4\norigin=100,200,7\nfirst_visible_floor={}\nreset_epoch=3\ntiles=3\nwalkable=3\n",
+            first_visible_floor_start(7)
         ),
     ))
 }
@@ -207,7 +207,7 @@ fn replay() -> Result<(), Error> {
         }]
     );
     let kept = minimap.markers.clone();
-    assert!(minimap.edit_marker(x, y, 5, "Above ground".into(), 0).is_err());
+    assert!(minimap.edit_marker(x, y, -5, "Invalid floor".into(), 0).is_err());
     assert!(minimap.edit_marker(x, y, floor, "  ".into(), 0).is_err());
     assert_eq!(minimap.markers, kept);
     minimap.remove_marker(x, y, floor)?;

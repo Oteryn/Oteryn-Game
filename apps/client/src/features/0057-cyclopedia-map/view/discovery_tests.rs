@@ -109,7 +109,7 @@ fn reset_waits_for_authoritative_reply_and_snapshots_never_show_discovery_banner
                         discovered: false,
                         found: 0,
                         area_percent: 0,
-                        visible: vec![(100, 200, -7)],
+                        visible: vec![(100, 200, 7)],
                         ..completed.clone()
                     },
                 ),
@@ -139,7 +139,7 @@ fn reset_waits_for_authoritative_reply_and_snapshots_never_show_discovery_banner
                         command_id: 1,
                         server_sequence: 1,
                         status: CommandStatus::Accepted,
-                        payload: wire::encode_result(&state).map_err(|e| format!("{e:?}"))?,
+                        payload: wire::encode_wire_result(&state).map_err(|e| format!("{e:?}"))?,
                     },
                 );
                 let PlayCommand::Feature(speed) = commands.try_recv().map_err(|e| e.to_string())?

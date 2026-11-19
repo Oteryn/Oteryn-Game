@@ -633,7 +633,7 @@ fn scenario(
                     let payload = encode_item_move_intent_for(
                         &ItemMoveIntent {
                             source: items.table().handle(&item).ok_or("authored coin handle")?,
-                            destination: ItemMoveDestination::Ground(cell(6)),
+                            destination: ItemMoveDestination::Ground(WorldTilePosition { floor: 7, ..cell(6) }),
                         },
                         selection,
                     )

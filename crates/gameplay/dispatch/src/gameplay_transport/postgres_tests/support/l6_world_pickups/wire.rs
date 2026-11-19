@@ -87,7 +87,7 @@ pub(super) async fn pickup(
             .tiles
             .iter()
             .find(|tile| {
-                tile.position.x == 32437 && tile.position.y == 32174 && tile.position.floor == -15
+                tile.position.x == 32437 && tile.position.y == 32174 && tile.position.floor == 15
             })
             .ok_or("native ruby map tile")?;
         assert_eq!(

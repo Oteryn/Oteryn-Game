@@ -115,6 +115,14 @@ pub enum Reply {
 
 impl Reply {
     pub fn encode(&self) -> Option<Vec<u8>> {
+        self.encode_in(-15..=0)
+    }
+
+    pub fn encode_wire(&self) -> Option<Vec<u8>> {
+        self.encode_in(0..=15)
+    }
+
+    fn encode_in(&self, floors: std::ops::RangeInclusive<i8>) -> Option<Vec<u8>> {
         let mut out = Vec::new();
         match self {
             Self::Committed => out.push(1),
@@ -167,7 +175,7 @@ impl Reply {
                     match e.position {
                         None => out.push(0),
                         Some((x, y, floor)) => {
-                            if !(-15..=0).contains(&floor) {
+                            if !floors.contains(&floor) {
                                 return None;
                             }
                             out.push(1);
@@ -183,6 +191,14 @@ impl Reply {
     }
 
     pub fn decode(bytes: &[u8]) -> Option<Self> {
+        Self::decode_in(bytes, -15..=0)
+    }
+
+    pub fn decode_wire(bytes: &[u8]) -> Option<Self> {
+        Self::decode_in(bytes, 0..=15)
+    }
+
+    fn decode_in(bytes: &[u8], floors: std::ops::RangeInclusive<i8>) -> Option<Self> {
         if bytes.len() > MAX_REPLY_BYTES {
             return None;
         }
@@ -205,7 +221,7 @@ impl Reply {
                     return None;
                 }
                 let reply = Self::Projection(entries);
-                reply.encode()?;
+                reply.encode_in(floors)?;
                 Some(reply)
             }
             1 if tail.is_empty() => Some(Self::Committed),
@@ -264,7 +280,7 @@ impl Reply {
                     return None;
                 }
                 let reply = Self::State(entries);
-                reply.encode()?;
+                reply.encode_in(floors)?;
                 Some(reply)
             }
             _ => None,

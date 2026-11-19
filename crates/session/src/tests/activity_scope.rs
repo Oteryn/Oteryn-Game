@@ -71,7 +71,7 @@ async fn destination_projection(
         actor_position: ActorPosition {
             x,
             y: 31151,
-            floor: -8,
+            floor: 8,
         },
     });
     let overlay = encode_world_object_overlay_snapshot(&[]).map_err(|e| format!("{e:?}"))?;

@@ -338,9 +338,11 @@ impl Source {
         .map_err(fail)?;
         let p: subarea::Temple =
             serde_json::from_value(pin["entry_start"].clone()).map_err(fail)?;
+        // Pin refresh also compiles trees that still have a signed entry floor.
         let z = p
             .floor
-            .checked_neg()
+            .checked_abs()
+            .filter(|floor| *floor <= 15)
             .and_then(|z| u8::try_from(z).ok())
             .ok_or_else(|| fail("entry_start floor"))?;
         let id = source

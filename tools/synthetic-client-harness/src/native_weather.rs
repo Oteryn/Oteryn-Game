@@ -71,7 +71,7 @@ fn native_weather_update_reaches_scene_and_clears()
                         commands,
                         outbox,
                     ));
-                    let mut view = PlayView::new(TileCoord::new(0, 0), -7, &[])?;
+                    let mut view = PlayView::new(TileCoord::new(0, 0), 7, &[])?;
                     let original = view.scene().atlas().clone();
                     let initial = oteryn_renderer::weather_atlas(&original, [65, 105, 155], 48);
                     tokio::time::timeout(Duration::from_secs(5), async {
@@ -87,7 +87,7 @@ fn native_weather_update_reaches_scene_and_clears()
                     .await??;
                     // Floor changes travel through the production task and mailbox, while
                     // the weather observation remains active and unchanged.
-                    for (revision, floor) in [(1, -8), (2, -7)] {
+                    for (revision, floor) in [(1, 8), (2, 7)] {
                         send.send(SessionEvent::WorldSpatial(AppliedDelta {
                             server_sequence: revision,
                             base_revision: revision - 1,
@@ -97,7 +97,7 @@ fn native_weather_update_reaches_scene_and_clears()
                                 actor_position: ActorPosition { x: 0, y: 0, floor },
                             },
                         }))?;
-                        let expected = if floor == -8 { &original } else { &initial };
+                        let expected = if floor == 8 { &original } else { &initial };
                         tokio::time::timeout(Duration::from_secs(5), async {
                             loop {
                                 view.tick(&link).map_err(|e| format!("{e:?}"))?;

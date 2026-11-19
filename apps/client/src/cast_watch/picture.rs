@@ -49,10 +49,15 @@ impl Assets {
         let mut cell_count = 0usize;
         if let Some(camera) = picture.floor.filter(|_| !picture.ended && !picture.slate) {
             let projected = |x: i32, y: i32, floor: i16| {
-                let shift = i32::from(floor - camera);
+                let shift = i32::from(camera - floor);
                 TileCoord::new(x - shift, y - shift)
             };
-            for (&(floor, y, x), appearances) in &picture.tiles {
+            let tiles = (0..=15).rev().flat_map(|floor| {
+                picture
+                    .tiles
+                    .range((floor, 0, 0)..=(floor, u16::MAX, u16::MAX))
+            });
+            for (&(floor, y, x), appearances) in tiles {
                 let at = projected(i32::from(x), i32::from(y), floor);
                 let mut cells = Vec::new();
                 if let Some((index, sheets)) = &self.source {
@@ -78,7 +83,7 @@ impl Assets {
                 }
             }
             for &(_, x, y, look, _) in &picture.actors {
-                let floor = i16::try_from(y / 32).map_err(|_| tr!("Invalid display floor"))? - 15;
+                let floor = 15 - i16::try_from(y / 32).map_err(|_| tr!("Invalid display floor"))?;
                 let at = projected(i32::from(x), i32::from(y % 32), floor);
                 let look = if look == 1 { 128 } else { u32::from(look) };
                 let cells = self
@@ -146,8 +151,7 @@ impl Assets {
                 .filter(|_| sprites.len() < oteryn_renderer::MAX_BATCH_QUADS)
             {
                 // Presentation batches retain the playing protocol's positive depth.
-                // Crystal protocolgame.cpp:7846; map display planes use negative floors.
-                let shift = i32::from(-position.floor.saturating_abs() - camera);
+                let shift = i32::from(camera - position.floor);
                 sprites
                     .push(
                         &view,
@@ -180,9 +184,9 @@ mod tests {
         // Crystal protocolgame.cpp:8043: retain the complete public map window.
         let now = Instant::now();
         let mut picture = Picture::default();
-        picture.floor = Some(-7);
+        picture.floor = Some(7);
         for (x, y) in [(8, 10), (25, 10), (8, 23), (25, 23)] {
-            picture.tiles.insert((-7, y, x), vec![100]);
+            picture.tiles.insert((7, y, x), vec![100]);
         }
         picture.actors.push((1, 25, 23 + 8 * 32, 1, 100));
         picture.effects.push((

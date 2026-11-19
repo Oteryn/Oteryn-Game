@@ -209,7 +209,7 @@ fn item_transform_ground_rotation_real_dispatch_cycle_stale_reach_and_bindings()
                     .tiles
                     .iter()
                     .find(|tile| {
-                        tile.position.x == 6 && tile.position.y == 0 && tile.position.floor == -7
+                        tile.position.x == 6 && tile.position.y == 0 && tile.position.floor == 7
                     })
                     .and_then(|tile| tile.items.get(1))
                     .ok_or("wire chair")?;

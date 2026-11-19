@@ -44,10 +44,10 @@ pub(super) async fn execute(owner:&ComposedFreshAdmission<'_,'_,'_>,admitted:Adm
             return Some(matches!(reply,Reply::State(entries) if !entries.is_empty()));
         }
         wire::Request::Summon{x,y,floor}=>{
-            let input=HirelingLampInput::LegacySummon{x,y,floor};
+            let input=HirelingLampInput::LegacySummon{x,y,floor: -floor};
             if let Some(reply)=owner.root.read_hireling_bound_receipt(owner.character,fence,command,input.binding()).await.ok()?{refresh(owner,actor,use_command).await?;return Some(reply==Reply::Committed)}
             let state=owner.runtime.lock().await.house_actor_state(actor,admitted.game_session_id).ok()?;
-            if (state.position.x,state.position.y,state.position.floor)!=(i32::from(x),i32::from(y),-i16::from(floor)){
+            if (state.position.x,state.position.y,state.position.floor)!=(i32::from(x),i32::from(y),i16::from(floor)){
                 record_refusal(owner,use_command,input.binding(),Refusal::Conflict).await?;return Some(false)
             }
             let mut owned=owner.root.read_owned_hirelings(owner.character,owner.holder,fence,*owner.channel_id.as_bytes()).await.ok()?.into_iter().filter(|h|h.position.is_none()&&h.lamp.is_some());

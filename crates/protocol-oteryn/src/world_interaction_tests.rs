@@ -512,7 +512,7 @@ fn command_9_takes_the_ground_destination_under_capability_11_without_equipment(
         destination: ItemMoveDestination::Ground(WorldTilePosition {
             x: -1_048_576,
             y: 1_048_575,
-            floor: -32_768,
+            floor: 15,
         }),
     };
     let equip = ItemMoveIntent {

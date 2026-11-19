@@ -14,7 +14,7 @@ fn fuzz_decode_spell_cast_intent() {
                 _ => SpellTarget::Position(SpellTargetPosition {
                     x: rng.u64() as i32,
                     y: rng.u64() as i32,
-                    floor: rng.u64() as i16,
+                    floor: rng.below(16) as i16,
                 }),
             },
             aim_at_target: rng.bool(),
@@ -37,7 +37,7 @@ fn fuzz_decode_aimed_spell_cast_intent() {
                     SpellTarget::Position(SpellTargetPosition {
                         x: rng.u64() as i32,
                         y: rng.u64() as i32,
-                        floor: rng.u64() as i16,
+                        floor: rng.below(16) as i16,
                     }),
                     Some(SpellAimMode::Cursor),
                 ),

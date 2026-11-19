@@ -71,7 +71,7 @@ mod tests {
             selected: true,
             x: 100,
             y: 200,
-            floor: -7,
+            floor: 7,
             ..Default::default()
         };
         let c = open(&mut p).unwrap();
@@ -81,7 +81,7 @@ mod tests {
                 position: WorldTilePosition {
                     x: 100,
                     y: 200,
-                    floor: -7
+                    floor: 7
                 }
             }
         );
