@@ -172,6 +172,7 @@ fn source_world_position_rows(
         west,
         prefix,
         native,
+        unique_attrs,
     )
 }
 
@@ -194,7 +195,26 @@ pub(super) fn source_world_spatial(
     chest: (u16, u16, i8),
     choices: &[(u16, u16, i8, u16, u16)],
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    source_world_spatial_layout(chest, choices, 1, 2, &[], None)
+    source_world_spatial_layout(chest, choices, 1, 2, &[], None, unique_attrs)
+}
+
+fn unique_attrs(uid: u16) -> oteryn_world_bundle::sector::Attrs {
+    oteryn_world_bundle::sector::Attrs {
+        unique: (uid != 0).then_some(uid),
+        ..Default::default()
+    }
+}
+
+pub(super) fn source_world_step_actions(
+    start: (u16, u16, i8),
+    objects: &[(u16, u16, i8, u16, u16)],
+) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_spatial_layout(start, objects, 1, 2, &[], None, |action| {
+        oteryn_world_bundle::sector::Attrs {
+            action: (action != 0).then_some(action),
+            ..Default::default()
+        }
+    })
 }
 
 fn source_world_spatial_layout(
@@ -204,6 +224,7 @@ fn source_world_spatial_layout(
     west: u16,
     prefix: &[u16],
     native: Option<&crate::content::native_gameplay::NativeGameplayState>,
+    attrs: fn(u16) -> oteryn_world_bundle::sector::Attrs,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
@@ -311,7 +332,7 @@ fn source_world_spatial_layout(
                             },
                         },
                     ]
-                } else if let Some((_, _, _, unique, appearance)) = choices
+                } else if let Some((_, _, _, source_id, appearance)) = choices
                     .iter()
                     .find(|(px, py, pf, _, _)| (*px, *py, *pf) == (x, y, floor))
                 {
@@ -324,10 +345,7 @@ fn source_world_spatial_layout(
                         .chain(std::iter::once(sector::Item {
                             palette: palettes[appearance],
                             depth: 0,
-                            attrs: sector::Attrs {
-                                unique: (*unique != 0).then_some(*unique),
-                                ..Default::default()
-                            },
+                            attrs: attrs(*source_id),
                         }))
                         .collect()
                 } else {
