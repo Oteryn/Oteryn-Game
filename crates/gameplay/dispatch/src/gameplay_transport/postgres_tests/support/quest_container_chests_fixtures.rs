@@ -552,8 +552,12 @@ fn scenario_case(
             }
             assert_eq!(result, UseDisposition::Committed);
             if production_forgemaster {
-                assert_eq!(report.served.iter().find(|row| row.key.as_str() == claim)
-                    .ok_or("production Forgemaster claim")?.placements.len(), 11);
+                let claim = report
+                    .served
+                    .iter()
+                    .find(|row| row.key.as_str() == claim)
+                    .ok_or("production Forgemaster claim")?;
+                forgemaster::assert_production_choices(&claim.placements)?;
             }
             let alternate = target_at(chest.0 - 2)?;
             assert_eq!(

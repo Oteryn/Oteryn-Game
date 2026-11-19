@@ -219,6 +219,33 @@ pub(super) async fn claim_count(harness: &Harness) -> TestResult<i64> {
 
 pub(super) const SERVED_CHEST: (u16, u16, i8) = (34101, 32346, -14);
 
+pub(super) fn assert_production_choices(
+    placements: &[crate::content::world_reward_claims::BoundPlacement],
+) -> TestResult {
+    use oteryn_world_bundle::bundle::placement_key;
+
+    assert_eq!(placements.len(), REWARDS.len());
+    for ((x, uid), reward) in (34087..=34107).step_by(2).zip(57237..=57247).zip(REWARDS) {
+        let (_, y, floor) = SERVED_CHEST;
+        let ordinal = if x == 34107 { 3 } else { 2 };
+        let selector = placement_key(floor, x, y, ordinal).ok_or("Forgemaster chest selector")?;
+        let bound = placements
+            .iter()
+            .find(|bound| bound.bundle_placement_key == selector)
+            .ok_or("Forgemaster chest missing at its source selector")?;
+        assert_eq!(
+            bound.reward_callback.as_deref(),
+            Some(callback_key(uid).as_str())
+        );
+        let [item] = bound.placement.items.as_slice() else {
+            return Err("Forgemaster chest must offer exactly one item".into());
+        };
+        assert_eq!(item.item.key().as_str(), key(reward));
+        assert_eq!(item.count, 1);
+    }
+    Ok(())
+}
+
 pub(super) fn production_chests(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<crate::map::boot::BundleWorld> {
