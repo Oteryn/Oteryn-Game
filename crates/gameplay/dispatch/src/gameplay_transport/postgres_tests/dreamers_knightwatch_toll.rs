@@ -20,6 +20,8 @@ use std::sync::Arc;
 
 pub(super) const NIGHTMARE: &str = "knightwatch-nightmare";
 pub(super) const BROTHERHOOD: &str = "knightwatch-brotherhood";
+pub(super) const CARLIN: &str = "knightwatch-carlin-rank-one";
+pub(super) const KAZOORDOON: &str = "knightwatch-kazoordoon-rank-two";
 pub(super) const RETAINED_UID: &str = "knightwatch-retained-uid";
 const RANKS: [&str; 2] = [
     "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
@@ -31,32 +33,49 @@ const FACTIONS: [&str; 2] = [
 ];
 const SETUP: &str = "oteryn:quest-transition/knightwatch-fixture/rank";
 const PEARL: &str = "oteryn:item.tibia.i5021";
-const PORTAL: Position = Position {
-    x: 32815,
-    y: 32344,
-    floor: -4,
-};
-const ORIGIN: Position = Position { x: 32814, ..PORTAL };
-const EXIT: Position = Position {
-    x: 33213,
-    y: 32454,
-    floor: -1,
-};
+// Crystal movement_tower.lua:2-10 supplies the ranks and destinations.
+// data-global/startup/tables/item.lua:4220-4255 supplies the retained sources.
+const ROUTES: [(u16, Position, Position, i64); 9] = [
+    (3048, at(32822, 32344, -6), at(32360, 31782, -7), 1),
+    (3049, at(32815, 32344, -6), at(32369, 32241, -7), 1),
+    (3050, at(32818, 32347, -6), at(32750, 32344, -14), 1),
+    (3051, at(32818, 32347, -5), at(32649, 31925, -11), 2),
+    (3052, at(32815, 32344, -5), at(32732, 31634, -7), 2),
+    (3053, at(32822, 32344, -5), at(32181, 32436, -7), 2),
+    (3054, at(32815, 32344, -4), at(33213, 32454, -1), 4),
+    (3055, at(32822, 32344, -4), at(33194, 32853, -8), 4),
+    (3056, at(32819, 32347, -4), at(32417, 32139, -15), 4),
+];
+
+const fn at(x: u16, y: u16, floor: i8) -> Position {
+    Position { x, y, floor }
+}
+
+fn portal(name: &str) -> TestResult<(u16, Position, Position, i64)> {
+    let uid = match name {
+        CARLIN => 3048,
+        KAZOORDOON => 3051,
+        BROTHERHOOD | NIGHTMARE | RETAINED_UID => 3054,
+        _ => return Err("Knightwatch test route".into()),
+    };
+    ROUTES.iter().copied().find(|route| route.0 == uid).ok_or_else(|| "Knightwatch UID".into())
+}
 
 pub(super) fn binding(name: &str) -> TestResult<Callback> {
-    let selector = if name == RETAINED_UID {
-        serde_json::json!({"unique":3054,"position":PORTAL,"appearance":1949})
+    let (uid, source, exit, rank) = portal(name)?;
+    let selector = if matches!(name, BROTHERHOOD | NIGHTMARE) {
+        serde_json::json!({"native":{"position":source,"ordinal":1,"appearance":1949}})
     } else {
-        serde_json::json!({"native":{"position":PORTAL,"ordinal":1,"appearance":1949}})
+        serde_json::json!({"unique":uid,"position":source,"appearance":1949})
     };
     Ok(serde_json::from_value(serde_json::json!({
-        "key":"oteryn:quest-callback/ranked-toll/knightwatch-3054",
+        "key":format!("oteryn:quest-callback/ranked-toll/knightwatch-{uid}"),
         "quest":"oteryn:quest.dreamer_s_challenge_quest","trigger":"step_in",
         "selector":selector,
-        "teleport":EXIT,"requires_world_admission":true,"return_on_failure":true,
+        "teleport":exit,"requires_world_admission":true,"return_on_failure":true,
         "reversible":false,"passages":[],"offerings":[],"storage":[],
         "item_on_target":{"item":PEARL,"count":1,"on_step":true},
-        "effects":{"ranked_toll":{"tracks":RANKS,"minimum":4},"teleport_effect":11},
+        "effects":{"ranked_toll":{"tracks":RANKS,"minimum":rank},"teleport_effect":11},
         "sources":[
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_tower.lua:2-29",
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4220-4255"
@@ -64,8 +83,8 @@ pub(super) fn binding(name: &str) -> TestResult<Callback> {
     }))?)
 }
 
-pub(super) fn world(callback: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
-    world_cells(callback, PORTAL, 1949, 1, &[], &[], None, &[])
+pub(super) fn world(callback: &Callback, name: &str) -> TestResult<crate::map::boot::BundleWorld> {
+    world_cells(callback, portal(name)?.1, 1949, 1, &[], &[], None, &[])
 }
 
 pub(super) fn catalogue(
@@ -73,7 +92,8 @@ pub(super) fn catalogue(
     callback: &Callback,
     name: &str,
 ) -> TestResult<Arc<QuestStateCatalogue>> {
-    let index = usize::from(name == BROTHERHOOD);
+    let index = usize::from(matches!(name, BROTHERHOOD | KAZOORDOON));
+    let rank = portal(name)?.3;
     let base = base
         .with_fixture_transition(QuestTransition {
             key: SETUP.into(),
@@ -81,7 +101,7 @@ pub(super) fn catalogue(
             effects: vec![QuestEffect {
                 track: RANKS[index].into(),
                 from: QuestComparison::Eq(0),
-                effect: QuestEffectKind::Set(4),
+                effect: QuestEffectKind::Set(rank),
             }],
             world_change: None,
             completes: false,
@@ -103,7 +123,7 @@ fn knightwatch_step_debits_one_pearl_for_nightmare_rank_only_after_admission() -
         return Ok(());
     };
     drop(admin);
-    super::kill_reward_e2e::scenario_thread::run(NIGHTMARE, || scenario(NIGHTMARE, PORTAL, false))
+    tower_scenario(NIGHTMARE)
 }
 
 #[test]
@@ -112,9 +132,7 @@ fn knightwatch_step_debits_one_pearl_for_brotherhood_rank_only_after_admission()
         return Ok(());
     };
     drop(admin);
-    super::kill_reward_e2e::scenario_thread::run(BROTHERHOOD, || {
-        scenario(BROTHERHOOD, PORTAL, false)
-    })
+    tower_scenario(BROTHERHOOD)
 }
 
 #[test]
@@ -123,9 +141,30 @@ fn knightwatch_retained_portal_uid_debits_once_for_an_eligible_faction() -> Test
         return Ok(());
     };
     drop(admin);
-    super::kill_reward_e2e::scenario_thread::run(RETAINED_UID, || {
-        scenario(RETAINED_UID, PORTAL, false)
-    })
+    tower_scenario(RETAINED_UID)
+}
+
+#[test]
+fn knightwatch_carlin_takes_one_pearl_on_each_paid_rank_one_step() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    tower_scenario(CARLIN)
+}
+
+#[test]
+fn knightwatch_kazoordoon_admits_a_rank_two_brotherhood_member() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    tower_scenario(KAZOORDOON)
+}
+
+fn tower_scenario(name: &'static str) -> TestResult {
+    let (_, source, _, _) = portal(name)?;
+    super::kill_reward_e2e::scenario_thread::run(name, move || scenario(name, source, false))
 }
 
 pub(super) async fn exercise(
@@ -134,14 +173,18 @@ pub(super) async fn exercise(
     harness: &Harness,
     fence: CurrentCharacterGameplayFence,
     callback: &Callback,
+    name: &str,
 ) -> TestResult {
+    let (_, source, exit, _) = portal(name)?;
+    let origin = at(source.x - 1, source.y, source.floor);
+    let two_pearls = name == CARLIN;
     input_item(
         owner,
         fence.item_fence(),
         &Offering {
-            position: ORIGIN,
+            position: origin,
             item: PEARL.into(),
-            count: 1,
+            count: if two_pearls { 2 } else { 1 },
         },
         11,
         true,
@@ -155,7 +198,12 @@ pub(super) async fn exercise(
         .bind(&callback.key)
         .fetch_one(&harness.pool)
     };
-    for (command, expected, debits) in [(1, ORIGIN, 0), (2, EXIT, 1), (3, ORIGIN, 1)] {
+    let steps = if two_pearls {
+        &[(1, origin, 0), (2, exit, 1), (3, exit, 2), (4, origin, 2)][..]
+    } else {
+        &[(1, origin, 0), (2, exit, 1), (3, origin, 1)][..]
+    };
+    for &(command, expected, debits) in steps {
         let result = wire(
             owner,
             admitted,
@@ -203,7 +251,7 @@ pub(super) async fn exercise(
             owner
                 .refresh_quest_session(admitted.game_session_id, false)
                 .await;
-        } else if command == 2 {
+        } else if expected == exit {
             let map = owner.bundle_map().ok_or("map")?;
             let mut runtime = owner.runtime.lock().await;
             let proof = crate::map::floor::prepare_quest_callback_teleport(
@@ -212,7 +260,7 @@ pub(super) async fn exercise(
                 actor,
                 admitted.game_session_id,
                 runtime.read_actor_position(actor).map_err(debug)?,
-                local(ORIGIN),
+                local(origin),
                 false,
                 &crate::map::floor::BundleDoors(&map.facts),
             )

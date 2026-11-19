@@ -389,7 +389,7 @@ fn scenario_case(
     use super::super::dreamers_knightwatch_toll;
     let knightwatch = matches!(
         name,
-        dreamers_knightwatch_toll::BROTHERHOOD | dreamers_knightwatch_toll::NIGHTMARE | dreamers_knightwatch_toll::RETAINED_UID
+        dreamers_knightwatch_toll::BROTHERHOOD | dreamers_knightwatch_toll::CARLIN | dreamers_knightwatch_toll::KAZOORDOON | dreamers_knightwatch_toll::NIGHTMARE | dreamers_knightwatch_toll::RETAINED_UID
     );
     use super::super::dreamers_stone_offerings;
     let stone_offerings = matches!(name, dreamers_stone_offerings::PREFIX | dreamers_stone_offerings::FULL);
@@ -754,7 +754,7 @@ fn scenario_case(
     } else if haunted_cellar {
         haunted_cellar_disguise::world(&callback)?
     } else if knightwatch {
-        dreamers_knightwatch_toll::world(&callback)?
+        dreamers_knightwatch_toll::world(&callback, name)?
     } else if stone_offerings {
         dreamers_stone_offerings::world(&callback)?
     } else if board_supply {
@@ -3119,7 +3119,7 @@ fn scenario_case(
         } else if haunted_cellar {
             Box::pin(haunted_cellar_disguise::exercise(&owner, &mut admitted, &h, fence, name)).await?;
         } else if knightwatch {
-            Box::pin(dreamers_knightwatch_toll::exercise(&owner, &mut admitted, &h, fence, &callback)).await?;
+            Box::pin(dreamers_knightwatch_toll::exercise(&owner, &mut admitted, &h, fence, &callback, name)).await?;
         } else if stone_offerings {
             Box::pin(dreamers_stone_offerings::exercise(&owner, &mut admitted, &h, fence, name == dreamers_stone_offerings::FULL)).await?;
         } else if board_supply {
