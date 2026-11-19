@@ -55,7 +55,7 @@ fn body(case: Case) -> TestResult {
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activation) =
-            super::super::death_ml_loss_composed::production_generation_with_pin(
+            super::super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;
@@ -190,7 +190,7 @@ fn body(case: Case) -> TestResult {
         admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&h.pool).await?;
         if matches!(case, Case::Store) {
-            owner.store = Some(super::super::store::platform(admitted.world_id.as_bytes()));
+            owner.store = Some(super::super::store_fixtures::platform(admitted.world_id.as_bytes()));
         }
         let mut offers = owner.offered_capabilities().to_vec();
         offers =
@@ -319,7 +319,7 @@ pub(super) async fn exchange(
     payload: &[u8],
 ) -> TestResult<Vec<u8>> {
     let (status, bytes) =
-        super::super::cyclopedia::support::exchange(owner, admitted, command, kind, payload)
+        super::super::cyclopedia_fixtures::support::exchange(owner, admitted, command, kind, payload)
             .await?;
     assert!(
         matches!(
@@ -357,7 +357,7 @@ pub(super) async fn events(
     }
     let (end, output) = tokio::time::timeout(
         std::time::Duration::from_secs(30),
-        super::super::weather_wire::fixture_access::serve_input(owner, admitted, &input),
+        super::super::weather_wire_fixtures::fixture_access::serve_input(owner, admitted, &input),
     )
     .await??;
     assert!(end.contains("AdmittedThenDisconnected"), "{end}");

@@ -29,7 +29,7 @@ fn journey(case: &'static str, required: &[&str]) -> TestResult {
         Ok(())
     })?;
     // Presence never qualifies a faction: its entire native journey must run.
-    super::qengine_rewards::scenario(case)
+    super::qengine_rewards_fixtures::scenario(case)
 }
 
 #[test]

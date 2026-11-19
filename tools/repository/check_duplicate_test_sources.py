@@ -55,9 +55,9 @@ ALLOWED_DUPLICATING_TARGETS: dict[tuple[str, str], tuple[tuple[str, ...], str]] 
         )
     },
     ("oteryn-gameplay-dispatch", "oteryn_gameplay_dispatch"): (
-        ("apps/game-server/tests/support/character_revision_sequencer_postgres_cases.rs",),
-        "the library's monk-save PostgreSQL tests reuse this case file as their fixture; "
-        "durability_postgres runs its cases against PostgreSQL",
+        ("apps/game-server/tests/support/character_revision_sequencer_pg_tests.rs",),
+        "the library and durability_postgres both mount the revision fixture, "
+        "which includes this PostgreSQL case file",
     ),
 }
 

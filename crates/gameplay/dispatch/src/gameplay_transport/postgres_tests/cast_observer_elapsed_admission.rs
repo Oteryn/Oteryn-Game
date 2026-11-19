@@ -1,7 +1,7 @@
 //! Observer expiry is checked after both holder waits and an actual ban-table read.
 use super::TestResult;
 use super::fixture::{Harness, join_two};
-use super::kill_reward_e2e::scenario_thread::run_async as run;
+use super::kill_reward_e2e_fixtures::scenario_thread::run_async as run;
 use oteryn_gameplay_social::{
     cast::{
         CastOwner, Error, Settings,

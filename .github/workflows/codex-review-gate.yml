@@ -16,11 +16,13 @@ name: codex-review-gate
 # with the workflow token.
 # Reviews arrive after CI, so review and comment events re-evaluate it; resolving a
 # thread fires no workflow event, so a schedule re-evaluates every open PR.
+# Owner decision 2026-11-18: a PR carrying the `heavy-tests` label skips this gate
+# (success without a receipt); its review runs as Codex Cloud tasks before the label.
 on:
   pull_request:
     branches:
       - main
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
   pull_request_review:
     types: [submitted, edited, dismissed]
   issue_comment:
@@ -108,6 +110,16 @@ jobs:
               head = pr['head']['sha']
               if pr['state'] != 'open':
                   print(f'PR #{number} is {pr["state"]}; nothing to publish.')
+                  return
+
+              if any(label['name'] == 'heavy-tests' for label in pr.get('labels') or []):
+                  print(f'PR #{number} head={head} state=success (heavy-tests label: gate skipped)')
+                  call(f'https://api.github.com/repos/{repo}/statuses/{head}', {
+                      'state': 'success',
+                      'context': 'codex-review-gate',
+                      'description': 'Skipped: heavy-tests label (owner decision 2026-11-18)',
+                      'target_url': os.environ['RUN_URL'],
+                  }, method='POST')
                   return
 
               commits = {c['sha'] for c in pages(f'pulls/{number}/commits')}

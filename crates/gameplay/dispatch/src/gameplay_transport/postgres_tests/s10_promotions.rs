@@ -12,7 +12,7 @@ fn s10_promotions_postgres_registered_sources_charge_and_replay() -> TestResult 
         .spawn(|| {
             for npc in ["ishebad", "enpa_rudra", "emperor_rehal"] {
                 let subcase = std::time::Instant::now();
-                super::promotion_npc::run_source_promotion_scenario(npc)
+                super::promotion_npc_fixtures::run_source_promotion_scenario(npc)
                     .map_err(|error| error.to_string())?;
                 eprintln!(
                     "POSTGRES_SUBCASE_COMPLETED S10 promotion npc={npc} duration={:?}",

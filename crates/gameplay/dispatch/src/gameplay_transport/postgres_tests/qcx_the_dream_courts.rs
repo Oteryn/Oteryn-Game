@@ -120,7 +120,7 @@ fn pickup_case(name: &'static str, chest: (u16, u16, i8), ordinal: u8, item: u16
     }
     let started = std::time::Instant::now();
     let result =
-        super::kill_reward_e2e::scenario_thread::run(name, move || pickup(chest, ordinal, item));
+        super::kill_reward_e2e_fixtures::scenario_thread::run(name, move || pickup(chest, ordinal, item));
     eprintln!(
         "POSTGRES_CASE_COMPLETED {name} duration={:?} success={}",
         started.elapsed(),
@@ -142,7 +142,7 @@ fn pickup(chest: (u16, u16, i8), ordinal: u8, item: u16) -> TestResult {
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activated_pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;
@@ -249,7 +249,7 @@ fn pickup(chest: (u16, u16, i8), ordinal: u8, item: u16) -> TestResult {
             owner.admit_progression_session(&mut admitted).await;
             owner.admit_quest_session(&admitted).await;
             deps.initialize(&owner).await;
-            let results = super::quest_callbacks::wire_uses(&owner, admitted, &[1, 2], &target).await?;
+            let results = super::quest_callbacks_fixtures::wire_uses(&owner, admitted, &[1, 2], &target).await?;
             if results[0] != UseDisposition::Committed {
                 return Err(format!("source pickup USE returned {:?}", results[0]).into());
             }

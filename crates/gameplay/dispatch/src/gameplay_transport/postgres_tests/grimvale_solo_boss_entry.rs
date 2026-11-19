@@ -1,6 +1,6 @@
 use super::TestResult;
 use super::fixture::{Harness, run};
-use super::solo_quest_room_ejection::{BossRoom, exercise};
+use super::solo_quest_room_ejection_fixtures::{BossRoom, exercise};
 
 const ANCIENT_FEUD: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/grimvale/actions_portal_minis_ancient_feud.lua:1-126";
 const CURSE_SPREADS: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/grimvale/actions_portal_minis_grimvale.lua:90-134";

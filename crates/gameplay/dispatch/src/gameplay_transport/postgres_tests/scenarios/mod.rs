@@ -9,7 +9,7 @@ use crate::gameplay_transport::connection::{AdmittedSession, SessionContinuity};
 
 fn timed(name: &'static str, scenario: fn() -> TestResult) -> TestResult {
     let start = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run(name, scenario);
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run(name, scenario);
     eprintln!(
         "XMECH-E2E-1 {name} duration={:.3}s result={}",
         start.elapsed().as_secs_f64(),
@@ -644,124 +644,6 @@ async fn kill_rat(
     Err("kill drain exhausted".into())
 }
 
-pub(super) async fn mint_carried(
-    h: &Harness,
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
-    admitted: AdmittedSession,
-    key: &str,
-    quantity: u32,
-    seed: u8,
-) -> TestResult<[u8; 16]> {
-    let native = owner
-        .active_generation
-        .and_then(|g| g.native_gameplay())
-        .ok_or("native")?;
-    let index = native.item_index().ok_or("index")?;
-    let definition = crate::gameplay_transport::item_look::typed_definition(
-        index,
-        index
-            .definition_ref("Item", key, "definition-r1")
-            .ok_or("definition")?,
-    )
-    .ok_or("typed")?;
-    let backpack = crate::gameplay_transport::item_look::typed_definition(
-        index,
-        index
-            .definition_ref("Item", BACKPACK, "definition-r1")
-            .ok_or("pack")?,
-    )
-    .ok_or("pack typed")?;
-    let item_facts = generation_item_facts(native, &definition)
-        .map_err(|e| format!("mint facts {key}: {e:?}"))?;
-    let backpack_facts = generation_item_facts(native, &backpack).map_err(debug)?;
-    let fence = admitted.item_fence.ok_or("fence")?;
-    let mut mint =
-        h.root
-            .freeze_item_mint(
-                owner.character,
-                &h.node,
-                ItemMintRequest {
-                    cause: ItemMintCause::for_test(
-                        admitted.world_id,
-                        admitted.channel_id,
-                        fence.scope_ownership_generation,
-                        u32::from(seed),
-                        1,
-                        TypedDefinitionRef {
-                            family: "LootTable".into(),
-                            production_key: "fixture:xmech.loot".into(),
-                            revision_ref: "definition-r1".into(),
-                        },
-                        "fixture:purpose.xmech.loot".into(),
-                        0,
-                    ),
-                    item: definition,
-                    quantity,
-                    ground: GroundPlacement {
-                        spatial_position:
-                            crate::durability::map_item_mint_audit::map_item_spatial_position(
-                                10, 0, -7,
-                            ),
-                        corpse_ref: id(seed).to_vec(),
-                        map_revision: "map-1".into(),
-                        content_revision: "content-1".into(),
-                        native_room_placement_context: vec![1],
-                    },
-                    content_revision: "content-1".into(),
-                    ruleset_revision: "ruleset-1".into(),
-                    sim_revision: "sim-1".into(),
-                },
-            )
-            .await
-            .map_err(debug)?;
-    let permit = owner.spell_lane_permit().await.ok_or("mint lane")?;
-    let ItemMintOutcome::Committed(item) = h
-        .root
-        .commit_item_mint(&permit, owner.character, &h.node, &mut mint)
-        .await
-        .map_err(debug)?
-    else {
-        return Err("mint".into());
-    };
-    let id = item.item_instance_id;
-    let mut transfer = h
-        .root
-        .freeze_item_transfer(
-            owner.character,
-            &h.node,
-            fence,
-            ItemTransferRequest {
-                weight_generation_digest: native.source_digest(),
-                command: CommandRef::new(
-                    admitted.game_session_id,
-                    CommandId::new(1000 + u64::from(seed)).map_err(debug)?,
-                ),
-                source_item_instance_id: id,
-                destination: ItemTransferDestination::MainBackpack,
-                item: item_facts,
-                backpack: Some(backpack_facts),
-                content_revision: "content-1".into(),
-                ruleset_revision: "ruleset-1".into(),
-                sim_revision: "sim-1".into(),
-            },
-            &NativeItemWeights(native),
-        )
-        .await
-        .map_err(debug)?;
-    h.root
-        .commit_item_transfer(
-            &permit,
-            owner.character,
-            &h.node,
-            fence,
-            &mut transfer,
-            &NativeItemWeights(native),
-        )
-        .await
-        .map_err(debug)?;
-    Ok(id)
-}
-
 async fn merchant(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
@@ -944,8 +826,4 @@ fn market_ware(
         return Ok((definition, reference, id));
     }
     Err("admitted marketable ware".into())
-}
-
-pub(super) async fn quantity(h: &Harness, key: &str) -> TestResult<i64> {
-    Ok(sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$1").bind(key).fetch_one(&h.pool).await?)
 }

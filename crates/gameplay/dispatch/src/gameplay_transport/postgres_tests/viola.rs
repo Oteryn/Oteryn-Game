@@ -11,7 +11,7 @@ fn viola_mission_yes_book_handin_is_atomic_and_survives_restart() -> TestResult 
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("viola-handin", || scenario(false))?;
+    super::kill_reward_e2e_fixtures::scenario_thread::run("viola-handin", || scenario(false))?;
     eprintln!(
         "POSTGRES_CASE_COMPLETED viola_mission_yes_book_handin_is_atomic_and_survives_restart {:?}",
         started.elapsed()
@@ -24,7 +24,7 @@ fn viola_mission_yes_nested_book_refuses_full_bag_without_consuming() -> TestRes
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("viola-nested", || scenario(true))?;
+    super::kill_reward_e2e_fixtures::scenario_thread::run("viola-nested", || scenario(true))?;
     eprintln!(
         "POSTGRES_CASE_COMPLETED viola_mission_yes_nested_book_refuses_full_bag_without_consuming duration={:?}",
         started.elapsed()
@@ -43,13 +43,13 @@ fn scenario(nested: bool) -> TestResult {
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activated) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
         let native = generation.native_gameplay().ok_or("native")?;
-        let world = super::viola_book::source_world()?;
+        let world = super::viola_book_fixtures::source_world()?;
         let cells = world
             .movement_cells(activated.qualified_room().movement_cells())
             .map_err(debug)?;
@@ -134,7 +134,7 @@ fn scenario(nested: bool) -> TestResult {
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         let npc = install_source(&owner, &admitted).await?;
-        let say = super::classic_quests::talk;
+        let say = super::classic_quests_fixtures::talk;
         say(&mut owner, &admitted, npc, 900, "hi").await?;
         {
             // Contended spell state must refuse without suspending with the
@@ -229,13 +229,13 @@ fn scenario(nested: bool) -> TestResult {
         );
         let before:i64=sqlx::query_scalar("SELECT total_experience FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
         relocate(&owner, deps.actor, 32613, 32419).await?;
-        let target = super::viola_book::target(&world)?;
+        let target = super::viola_book_fixtures::target(&world)?;
         assert_eq!(
-            super::quest_callbacks::wire_uses(&owner, admitted, &[1], &target).await?,
+            super::quest_callbacks_fixtures::wire_uses(&owner, admitted, &[1], &target).await?,
             [oteryn_protocol_oteryn::world_object::UseDisposition::Committed]
         );
         if nested {
-            super::quest_world_callbacks::input_item(
+            super::quest_world_callbacks_fixtures::input_item(
                 &owner,
                 fence.item_fence(),
                 &oteryn_gameplay_quests::quest::world_callbacks::Offering {
@@ -291,7 +291,7 @@ fn scenario(nested: bool) -> TestResult {
             );
             assert_unfinished(&h, before).await?;
             relocate(&owner, deps.actor, 32613, 32419).await?;
-            super::viola_book::free_one(&owner, fence.item_fence(), 1900).await?;
+            super::viola_book_fixtures::free_one(&owner, fence.item_fence(), 1900).await?;
             relocate(&owner, deps.actor, 32570, 32507).await?;
             say(&mut owner, &admitted, npc, 104, "hi").await?;
             say(&mut owner, &admitted, npc, 105, "mission").await?;

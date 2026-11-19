@@ -2,10 +2,10 @@
 use std::sync::Arc;
 
 use super::TestResult;
-use super::archivist_vote::{FixtureItem, with_npc_items};
-use super::classic_quests::{talk, talk_with_disposition};
+use super::archivist_vote_fixtures::{FixtureItem, with_npc_items};
+use super::classic_quests_fixtures::{talk, talk_with_disposition};
 use super::fixture::{Harness, debug, id, run};
-use super::scenarios::{mint_carried, quantity};
+use super::full_world_support::{mint_carried, quantity};
 use oteryn_gameplay_quests::quest::{QuestStateCatalogue, QuestTrack, authored_bindings::Bindings};
 use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
 use serde_json::json;

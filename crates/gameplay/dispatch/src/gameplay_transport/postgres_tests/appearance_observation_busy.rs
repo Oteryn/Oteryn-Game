@@ -1,5 +1,5 @@
 //! A required appearance observation retries only a transiently busy durable holder.
-use super::appearance_change_postgres::observer_visibility_tests;
+use super::appearance_change_postgres_fixtures::observer_visibility_tests;
 use super::*;
 use crate::content::native_gameplay::test_support::cosmetics_fixture::{
     activated_with_optional_cosmetics, cosmetics_test_packet,
@@ -13,7 +13,7 @@ fn appearance_observation_retries_busy_holder_with_bounded_current_runtime_check
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("appearance-observation-busy", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("appearance-observation-busy", || {
         run(async |admin| {
             let harness = Harness::create_appearance(admin, "appearance_observation_busy").await?;
             prepare_current_session(&harness).await?;

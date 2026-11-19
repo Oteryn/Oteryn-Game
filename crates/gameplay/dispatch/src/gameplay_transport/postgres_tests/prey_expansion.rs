@@ -73,12 +73,12 @@ fn scenario(case: Case) -> TestResult {
         reset();
         let h = Harness::create_with_admission_seed(admin, "prey_expansion", true, false).await?;
         prepare_current_session(&h).await?;
-        super::daily_reward::epoch(&h, 1).await?;
+        super::daily_reward_fixtures::epoch(&h, 1).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (generation, pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
         let room = pin.qualified_room().clone();
         let (channel_pin, _, _, _) = pin.into_channel_parts();
         let deps = Dependencies::with_content(
@@ -411,7 +411,7 @@ async fn binding(
     // An authenticated Prey connection still has no public GrantExpansion action.
     let mut admitted = admitted;
     let command = admitted.continuity.next_command_id;
-    let results = super::prey::exchange(owner, &mut admitted, &[(command, &[8, 9])]).await?;
+    let results = super::prey_fixtures::exchange(owner, &mut admitted, &[(command, &[8, 9])]).await?;
     assert_eq!(results, [(CommandStatus::Rejected, Vec::new())]);
     assert_eq!(proof_counts(h, &delivery).await?, (1, 1, 1, 1, 1));
     Ok(())
@@ -477,7 +477,7 @@ async fn send(
 ) -> TestResult<wire::Reply> {
     let bytes = wire::encode_request(request).map_err(debug)?;
     let command = admitted.continuity.next_command_id;
-    let results = super::prey::exchange(owner, admitted, &[(command, &bytes)]).await?;
+    let results = super::prey_fixtures::exchange(owner, admitted, &[(command, &bytes)]).await?;
     assert_eq!(results.len(), 1);
     assert_eq!(results[0].0, CommandStatus::Accepted);
     wire::decode_reply(&results[0].1).map_err(debug)

@@ -3,15 +3,15 @@
 use std::num::NonZeroU64;
 use std::sync::Arc;
 
-use super::archivist_vote::{FixtureItem, install_fixture_item_profiles};
-use super::classic_quests::install_above;
-use super::contribution_redemption::{
+use super::archivist_vote_fixtures::{FixtureItem, install_fixture_item_profiles};
+use super::classic_quests_fixtures::install_above;
+use super::contribution_redemption_fixtures::{
     CLUSTER, FRAZZLEMAWS, GOLD, ITEM, MORTAR, NPC, SILENCERS, sandomo_catalogue,
 };
 use super::fixture::{Harness, debug, id, run};
-use super::hireling_lifecycle::cook::{Client, drive};
-use super::item_craft::exchange;
-use super::quest_world_callbacks::{input_item, world_with_objects};
+use super::hireling_lifecycle_fixtures::cook::{Client, drive};
+use super::item_craft_fixtures::exchange;
+use super::quest_world_callbacks_fixtures::{input_item, world_with_objects};
 use super::{
     AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult, prepare_current_session,
 };
@@ -102,7 +102,7 @@ async fn exercise(h: &Harness) -> TestResult {
         .await
         .map_err(debug)?;
     let world_id = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
-    let mut input = super::death_ml_loss_composed::production_input_with_source("content-1", None)?;
+    let mut input = super::death_ml_loss_composed_fixtures::production_input_with_source("content-1", None)?;
     install_fixture_item_profiles(
         &mut input,
         &[
@@ -167,7 +167,7 @@ async fn exercise(h: &Harness) -> TestResult {
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18])
             .ok_or("item map USE capabilities")?;
-    super::qd_world::select_talk_capabilities(&owner, &mut admitted, &[3, 6])?;
+    super::qd_world_fixtures::select_talk_capabilities(&owner, &mut admitted, &[3, 6])?;
     let [npc] = install_above(&owner, &admitted, [NPC]).await?;
     let fence = owner
         .current_quest_fence(admitted.game_session_id)

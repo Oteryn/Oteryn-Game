@@ -1,6 +1,6 @@
 //! Crystal 201189f8 data-global/scripts/spells/monster/the_ravager_heal.lua:6-16.
 use super::TestResult;
-use super::creature_tile_heal::{HealFixture, exercise};
+use super::creature_tile_heal_fixtures::{HealFixture, exercise};
 use super::fixture::{Harness, run};
 
 #[test]

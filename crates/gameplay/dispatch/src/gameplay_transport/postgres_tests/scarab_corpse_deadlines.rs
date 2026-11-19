@@ -3,8 +3,8 @@
 use std::{sync::Arc, time::Duration};
 
 use super::TestResult;
-use super::archivist_vote::{FixtureCorpseLoot, FixtureItem, with_npc_items_and_loot};
-use super::classic_quests::{talk, talk_with_disposition};
+use super::archivist_vote_fixtures::{FixtureCorpseLoot, FixtureItem, with_npc_items_and_loot};
+use super::classic_quests_fixtures::{talk, talk_with_disposition};
 use super::fixture::{Harness, debug, run};
 use crate::gameplay_transport::{
     connection::UseCommand,
@@ -62,7 +62,7 @@ fn case(admin: String, name: &'static str, use_: ShellUse) -> TestResult {
 }
 
 async fn exercise(h: &Harness, use_: ShellUse) -> TestResult {
-    let catalogue = Arc::new(super::tonar_scarab_shell_exchange::catalogue()?);
+    let catalogue = Arc::new(super::tonar_scarab_shell_exchange_fixtures::catalogue()?);
     let root = FixtureItem {
         id: 6024,
         name: "dead scarab",
@@ -90,7 +90,7 @@ async fn exercise(h: &Harness, use_: ShellUse) -> TestResult {
         let native = owner.active_generation.and_then(|generation| generation.native_gameplay()).ok_or("native Scarab policy")?;
         native.reward_table().row(SCARAB).map_err(debug)?;
         native.install_companion_policies(&mut *owner.runtime.lock().await).map_err(debug)?;
-        super::qengine_kill_stories::death(owner, admitted, SCARAB, 81).await?;
+        super::qengine_kill_stories_fixtures::death(owner, admitted, SCARAB, 81).await?;
 
         let (corpse, materialized, retire_at): (String, i64, i64) = sqlx::query_as(
             "SELECT item_instance_id::text,materialized_at,game_corpse_retirement_deadline(item_instance_id) \
@@ -128,13 +128,13 @@ async fn exercise(h: &Harness, use_: ShellUse) -> TestResult {
             }, LoopMove { item: ItemKey::Instance(item), count: None, target: LoopTarget::MainBackpack }).await, LoopMoveResult::Committed);
             let carried: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_container_entries WHERE item_instance_id=$1::uuid)").bind(&corpse).fetch_one(&h.pool).await?;
             assert!(carried);
-            super::tonar_scarab_shell_exchange::install_offer(owner)?;
+            super::tonar_scarab_shell_exchange_fixtures::install_offer(owner)?;
             talk(owner, admitted, tonar, 83, "hi").await?;
             talk(owner, admitted, tonar, 84, "scarab").await?;
             if use_ == ShellUse::Trade {
                 assert_eq!(talk(owner, admitted, tonar, 85, "yes").await?, ["Here is your scarab ocarina."]);
                 assert_eq!(read().await?.2, 0);
-                assert_eq!(super::scenarios::quantity(h, "oteryn:item.tibia.i43740").await?, 1);
+                assert_eq!(super::full_world_support::quantity(h, "oteryn:item.tibia.i43740").await?, 1);
                 return Ok(());
             }
         }
@@ -142,7 +142,7 @@ async fn exercise(h: &Harness, use_: ShellUse) -> TestResult {
         age(h, &corpse, 300_000).await?;
         if use_ == ShellUse::Expire {
             assert_eq!(talk_with_disposition(owner, admitted, tonar, 85, "yes", NpcIntentDisposition::Rejected).await?, ["Wait for it to decompose."]);
-            assert_eq!(super::scenarios::quantity(h, "oteryn:item.tibia.i43740").await?, 0);
+            assert_eq!(super::full_world_support::quantity(h, "oteryn:item.tibia.i43740").await?, 0);
         }
         owner.clock_origin = owner.clock_origin.checked_sub(Duration::from_secs(2)).ok_or("decay owner clock")?;
         owner.drain_source_item_deadlines().await;

@@ -26,7 +26,7 @@ fn scenario() -> TestResult {
             .await
             .map_err(debug)?;
         let deps = Dependencies::new()?;
-        let (controller, _) = super::death_ml_loss_composed::production_generation_with_pin(
+        let (controller, _) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
             deps.admitted.world_id,
             "content-1",
         )?;
@@ -112,7 +112,7 @@ fn loop_training_postgres_missing_progression_is_atomic_with_settlement() -> Tes
         prepare_current_session(&h).await?;
         let seal=h.recovery.seal_current().map_err(debug)?;let authority=h.root.open_character_authority(&seal).await.map_err(debug)?;
         let deps=Dependencies::new()?;
-        let (controller,_)=super::death_ml_loss_composed::production_generation_with_pin(deps.admitted.world_id,"content-1")?;
+        let (controller,_)=super::death_ml_loss_composed_fixtures::production_generation_with_pin(deps.admitted.world_id,"content-1")?;
         let active=controller.active().ok_or("active")?;
         let current=crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone()).current_session(deps.admitted.game_session_id).await?;
         let item=crate::gameplay_transport::item_fence_of(current).ok_or("item fence")?;

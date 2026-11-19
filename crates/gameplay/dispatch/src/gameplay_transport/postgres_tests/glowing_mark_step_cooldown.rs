@@ -1,7 +1,7 @@
 //! Crystal 201189f8 data-global/scripts/quests/grimvale/movements_strangely_glowing_mark.lua:1-28.
 use super::TestResult;
 use super::fixture::{Harness, run};
-use super::solo_quest_room_ejection::exercise_step_buff;
+use super::solo_quest_room_ejection_fixtures::exercise_step_buff;
 use oteryn_gameplay_quests::quest::world_callbacks::{StepBenefit, StepBuff};
 
 #[test]

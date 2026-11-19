@@ -2,8 +2,8 @@
 use std::sync::Arc;
 
 use super::TestResult;
-use super::archivist_vote::with_npc;
-use super::classic_quests::talk;
+use super::archivist_vote_fixtures::with_npc;
+use super::classic_quests_fixtures::talk;
 use super::fixture::{Harness, debug, id, run};
 use oteryn_gameplay_quests::quest::{QuestStateCatalogue, QuestTrack, npc_rules::NpcRuleCatalog};
 
