@@ -69,31 +69,30 @@ impl Threshold {
         }
         let maximum = u64::try_from(maximum).map_err(|_| CarrierError::InvalidCreatureHealth)?;
         let at = runtime.read_actor_position(self.boss)?.position();
-        // The donor force-spawns all three spectres on the boss's current cell.
-        let summons = self
-            .spec
-            .summons
-            .iter()
-            .map(|key| {
-                Ok((
-                    key.as_str(),
-                    runtime.companion_policy(key)?.maximum_health,
-                    at,
-                ))
-            })
-            .collect::<Result<Vec<_>, CarrierError>>()?;
         let content = runtime.content_pin().server_artifact_digest();
-        let (actors, ()) =
-            runtime.commit_quest_creature_spawn_with_owner(&summons, |runtime, _| {
-                gates::protect(runtime, &[self.boss])?;
-                runtime.commit_source_creature_heal_batch(
-                    content,
-                    &[(self.boss, creature.clone(), maximum, maximum)],
-                )?;
-                Ok(())
-            })?;
+        // Crystal creaturescripts_faceless_bane.lua:18-27 restores and
+        // protects the boss before separately attempting each force-spawn.
+        runtime.commit_quest_creature_spawn_with_owner(&[], |runtime, _| {
+            gates::protect(runtime, &[self.boss])?;
+            runtime.commit_source_creature_heal_batch(
+                content,
+                &[(self.boss, creature.clone(), maximum, maximum)],
+            )?;
+            Ok(())
+        })?;
         self.protected = true;
         self.remaining -= 1;
+        let mut actors = Vec::with_capacity(self.spec.summons.len());
+        for key in &self.spec.summons {
+            let Ok(policy) = runtime.companion_policy(key) else {
+                continue;
+            };
+            if let Ok(spawned) =
+                runtime.commit_quest_creature_spawn(&[(key.as_str(), policy.maximum_health, at)])
+            {
+                actors.extend(spawned);
+            }
+        }
         Ok(actors)
     }
 }

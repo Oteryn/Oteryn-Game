@@ -377,19 +377,23 @@ impl ChannelRuntimeV1 {
         monsters: &[(&str, i64, MovementLocalPosition)],
         project: impl FnOnce() -> bool,
     ) -> Result<Vec<ExactActorRef>, CarrierError> {
+        if monsters.is_empty() {
+            return Err(CarrierError::PlanConflict);
+        }
         self.commit_quest_creature_spawn_with_owner(monsters, |_, _| {
             project().then_some(()).ok_or(CarrierError::PlanConflict)
         })
         .map(|(actors, ())| actors)
     }
 
-    /// Stage encounter summons and their source phase in one carrier commit.
+    /// Stage an encounter phase and its optional summons in one carrier commit.
     pub fn commit_quest_creature_spawn_with_owner<T>(
         &mut self,
         monsters: &[(&str, i64, MovementLocalPosition)],
         bind: impl FnOnce(&mut Self, &[ExactActorRef]) -> Result<T, CarrierError>,
     ) -> Result<(Vec<ExactActorRef>, T), CarrierError> {
-        if monsters.is_empty() || monsters.len() > 8 {
+        self.owner_fence()?;
+        if monsters.len() > 8 {
             return Err(CarrierError::PlanConflict);
         }
         let mut actors = Vec::new();
