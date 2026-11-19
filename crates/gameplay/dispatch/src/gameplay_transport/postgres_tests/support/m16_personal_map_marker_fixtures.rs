@@ -148,7 +148,7 @@ pub(super) async fn exercise(
             "oteryn:quest-reward/targuna/sterling-mark-treasure",
             31948,
             31924,
-            -7,
+            7,
             "Treasure"
         )
     );
