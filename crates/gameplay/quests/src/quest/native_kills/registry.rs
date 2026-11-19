@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct CounterRef<'a> {
+    pub achievements: &'a [String],
     pub transition: &'a str,
     pub creature: &'a str,
     pub quest: &'a str,
@@ -28,6 +29,7 @@ pub struct CounterRef<'a> {
 impl Counter {
     fn view(&self) -> CounterRef<'_> {
         CounterRef {
+            achievements: &[],
             transition: self.transition,
             creature: self.creature,
             quest: self.quest,

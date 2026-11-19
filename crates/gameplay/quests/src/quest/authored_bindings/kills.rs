@@ -4,7 +4,7 @@ use super::BoundQuest;
 use crate::quest::reward_callbacks::OutfitReward;
 use crate::quest::{QuestComparison, QuestEffect, QuestEffectKind};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 pub const MAX_KILL_BINDINGS: usize = 128;
 
@@ -76,6 +76,9 @@ pub struct KillCounter {
     /// Secondary journal minimums applied by the same credited death.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub raise_tracks: BTreeMap<String, i64>,
+    /// Account achievements earned by this credited death.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub achievements: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub death_area: Option<DeathArea>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -144,6 +147,19 @@ impl KillCounter {
                         track.key == *key && (track.minimum..=track.maximum).contains(value)
                     })
             })
+            || self.achievements.len() > 8
+            || self.achievements.iter().any(|key| {
+                key.len() > 128
+                    || !key.strip_prefix("oteryn:achievement/").is_some_and(|tail| {
+                        !tail.is_empty()
+                            && tail.bytes().all(|byte| {
+                                byte.is_ascii_lowercase()
+                                    || byte.is_ascii_digit()
+                                    || b"_/-".contains(&byte)
+                            })
+                    })
+            })
+            || self.achievements.iter().collect::<BTreeSet<_>>().len() != self.achievements.len()
             || self.first_defeat_outfit.as_ref().is_some_and(|reward| {
                 self.track != self.gate
                     || !self.set_to_maximum
@@ -324,6 +340,7 @@ impl KillCounter {
         quest: &'a str,
     ) -> super::super::native_kills::CounterRef<'a> {
         super::super::native_kills::CounterRef {
+            achievements: &self.achievements,
             transition: &self.key,
             creature: &self.creature,
             quest,

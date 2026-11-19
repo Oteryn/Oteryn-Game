@@ -1200,11 +1200,12 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
-        let first_defeat_outfit = oteryn_gameplay_quests::quest::native_kills::counter_for(
+        let kill_counter = oteryn_gameplay_quests::quest::native_kills::counter_for(
             &catalogue,
             &request.transition_key,
-        )
-        .and_then(|counter| {
+        );
+        let kill_achievements = kill_counter.map_or_else(Vec::new, |counter| counter.achievements.to_vec());
+        let first_defeat_outfit = kill_counter.and_then(|counter| {
             Some((
                 counter.first_defeat_outfit?.clone(),
                 counter.first_defeat_outfit_message.map(str::to_owned),
@@ -2087,6 +2088,18 @@ impl DurabilityRoot {
                         let occurrence = sha2::Sha256::digest(&occurrence);
                         let keys: Vec<_> = world.achievements.iter().map(String::as_str).collect();
                         super::super::account_achievement::grant_missing(&mut tx, fence.character_id, &keys, "oteryn:quest-world-reward", &occurrence).await?;
+                    }
+                    if !kill_achievements.is_empty() {
+                        // Crystal 201189f8 the_secret_library_quest/creaturescripts_kill.lua:31-39.
+                        // Grant under the same Character fence and rollback as the death credit.
+                        let (cause, ordinal) = request.cause.key();
+                        let occurrence = serde_json::to_vec(&(cause, ordinal, &request.transition_key))
+                            .map_err(|_| DurabilityError::InvalidStoredState)?;
+                        let occurrence = Sha256::digest(&occurrence);
+                        let keys: Vec<_> = kill_achievements.iter().map(String::as_str).collect();
+                        super::super::account_achievement::grant_missing(
+                            &mut tx, fence.character_id, &keys, "oteryn:quest-kill-reward", &occurrence,
+                        ).await?;
                     }
                     let completes = catalogue.completes_after_claim_sets(transition, &stored, &changes);
                     if completes {

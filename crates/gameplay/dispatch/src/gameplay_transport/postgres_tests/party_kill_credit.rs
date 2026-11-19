@@ -24,6 +24,10 @@ const SHIELD_FIRST_WIN_TRACK: &str = "oteryn:quest-progress/qcredit-fixture/shie
 const PREOWNED_OUTFIT_TRACK: &str = "oteryn:quest-progress/qcredit-fixture/preowned-outfit";
 const FIRST_DEFEAT_LOG_TRACK: &str = "oteryn:quest-progress/qcredit-fixture/first-defeat-log";
 const FORGEMASTER_DOOR_TRACK: &str = "oteryn:quest-progress/qcredit-fixture/forgemaster-door";
+const FALCON_ACHIEVEMENTS: [&str; 2] = [
+    "oteryn:achievement/master_debater",
+    "oteryn:achievement/millennial_falcon",
+];
 // Crystal 201189f8 arbaziloth_death.lua:38-41.
 const FIRST_DEFEAT_MESSAGE: &str =
     "You have defeated Arbaziloth for the first time. You have won the Fiend Slayer Outfit.";
@@ -434,6 +438,8 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
         if case == Case::Ordered {
             counter["gate_maximum"] = json!(2);
             counter["maximum"] = json!(3);
+            counter["achievements"] = json!(FALCON_ACHIEVEMENTS);
+            counter["raise_tracks"] = json!({(EXIT): 1});
         } else {
             counter["track"] = json!(PREOWNED_OUTFIT_TRACK);
             counter["gate"] = json!(PREOWNED_OUTFIT_TRACK);
@@ -908,6 +914,33 @@ fn run(admin: String, case: Case) -> TestResult {
             }
         };
         assert_tracks(&h.pool, expected).await?;
+        if case == Case::Ordered {
+            // Oberon grants both achievements only to the credited damagers.
+            death(
+                &owner,
+                &players,
+                CAVE_RAT,
+                MovementLocalPosition { x: at.x + 1, ..at },
+                case,
+                201,
+            )
+            .await?;
+            let achievements: Vec<(sqlx::types::Uuid, String)> = sqlx::query_as(
+                "SELECT character_id, achievement_key FROM game_account_achievement_grant_requests
+                 WHERE source_kind='oteryn:quest-kill-reward' ORDER BY character_id, achievement_key",
+            )
+            .fetch_all(&h.pool)
+            .await?;
+            let expected = [60, 61]
+                .into_iter()
+                .flat_map(|character| {
+                    FALCON_ACHIEVEMENTS.map(|key| {
+                        (sqlx::types::Uuid::from_bytes(id(character)), key.to_owned())
+                    })
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(achievements, expected);
+        }
         drop(owner);
         drop(authority);
         drop(seal);

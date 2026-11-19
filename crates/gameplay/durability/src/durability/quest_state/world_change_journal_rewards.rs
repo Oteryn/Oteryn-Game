@@ -136,6 +136,7 @@ mod tests {
 
     fn counter() -> native_kills::CounterRef<'static> {
         native_kills::CounterRef {
+            achievements: &[],
             damage_credit: None,
             death_area: None,
             death_areas: &[],
