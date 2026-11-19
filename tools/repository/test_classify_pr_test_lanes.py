@@ -809,8 +809,9 @@ def test_metadata_events():
     final = core.indented_yaml_mapping_block(gate, "game_gate", 2)
     aggregate_guard = f"    if: always() && ({main_guard})\n"
     assert aggregate_guard in aggregate and aggregate_guard in final
-    assert "    name: game-gate\n" in final and "    needs: [scope, validate]\n" in final
-    assert '        run: test "$LEGACY_VALIDATE" = "success"\n' in final
+    assert "    name: game-gate\n" in final and "    needs: [scope, rust_fast_build, validate]\n" in final
+    assert '          test "$LEGACY_VALIDATE" = "success" &&\n' in final
+    assert '            [[ "$RUST_FAST_BUILD" == success || "$RUST_FAST_BUILD" == skipped ]]\n' in final
 
     # Evaluate the exact hosted concurrency expressions for overlapping runs.
     # Every run of one PR shares one group, so an edit queues behind the active
@@ -894,6 +895,7 @@ def test_aggregate():
     env = dict.fromkeys(mandatory + fast_rust, "success")
     env.update(WORLD_BUNDLE="success", RUST_REQUIRED="true", WINDOWS_REQUIRED="true")
     env.update(RUST_CLIENT_UI_REQUIRED="true", RUST_CLIENT_UI="success")
+    env.update(RUST_FAST_BUILD_REQUIRED="true", RUST_FAST_BUILD="success")
 
     def accepts(changes):
         with patch.dict(os.environ, dict(env, **changes)), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
@@ -904,6 +906,13 @@ def test_aggregate():
                 return False
 
     assert accepts({})
+    assert accepts({"RUST_FAST_BUILD_REQUIRED": "false", "RUST_FAST_BUILD": "skipped"})
+    for result in ("skipped", "failure", "cancelled", ""):
+        assert not accepts({"RUST_FAST_BUILD": result})
+    for result in ("success", "failure", "cancelled", ""):
+        assert not accepts({"RUST_FAST_BUILD_REQUIRED": "false", "RUST_FAST_BUILD": result})
+    for flag in ("", "maybe"):
+        assert not accepts({"RUST_FAST_BUILD_REQUIRED": flag, "RUST_FAST_BUILD": "skipped"})
     for result in ("skipped", "failure", "cancelled", ""):
         assert not accepts({"RUST_CLIENT_UI": result})
     for flag in ("", "maybe"):
@@ -919,6 +928,7 @@ def test_aggregate():
     assert accepts(dict.fromkeys(fast_rust, "skipped") | {
         "RUST_REQUIRED": "false", "WINDOWS_REQUIRED": "false",
         "RUST_CLIENT_UI_REQUIRED": "", "RUST_CLIENT_UI": "skipped",
+        "RUST_FAST_BUILD_REQUIRED": "", "RUST_FAST_BUILD": "skipped",
     })
     assert not accepts({"RUST_REQUIRED": "false", "WINDOWS_REQUIRED": "true"})
     for flag in ("RUST_REQUIRED", "WINDOWS_REQUIRED"):

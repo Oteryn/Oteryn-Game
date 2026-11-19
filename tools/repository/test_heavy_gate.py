@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Exercise the actual heavy-gate script and PostgreSQL runner expressions."""
+from collections import Counter
 import hashlib
 import json
 import os
@@ -15,6 +16,109 @@ from validate_repository_policy_core import indented_yaml_mapping_block
 
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW = ROOT / ".github/workflows/pr-postgres-harness.yml"
+
+
+class PostgresLibraryArchiveTests(unittest.TestCase):
+    def script(self, name):
+        step = WORKFLOW.read_text().split(f"      - name: {name}\n", 1)[1]
+        return textwrap.dedent(step.split("\n      - name:", 1)[0].split("        run: |\n", 1)[1])
+
+    def test_library_builds_archive_every_selected_package_in_both_modes(self):
+        select = self.script("Select PostgreSQL archive builds")
+        build = self.script("Archive PostgreSQL-backed library tests")
+        cargo = (
+            'cargo() { printf "%s\\n" "${OTERYN_DISPATCH_PG_SHARD-unset}" "$CARGO_BUILD_JOBS" "$@"; }\n'
+        )
+        dispatch = "oteryn-gameplay-dispatch"
+        server = "oteryn-game-server"
+        durability = "oteryn-gameplay-durability"
+        for split in (False, True):
+            for packages in ([dispatch], [durability], [server, dispatch, durability]):
+                with self.subTest(split=split, packages=packages), tempfile.TemporaryDirectory() as directory:
+                    root = Path(directory)
+                    if split:
+                        checker = root / "tools/repository/check_dispatch_pg_shards.py"
+                        checker.parent.mkdir(parents=True)
+                        checker.touch()
+                    output = root / "outputs"
+                    subprocess.run(
+                        ["bash", "-c", select], cwd=root, check=True, capture_output=True, text=True,
+                        env=dict(os.environ, LIB_PACKAGES=json.dumps(packages), GITHUB_OUTPUT=str(output)),
+                    )
+                    outputs = dict(line.split("=", 1) for line in output.read_text().splitlines())
+                    library = sorted(package for package in packages if not split or package != dispatch)
+                    shards = ["lib-1", "lib-2", "lib-3"] if split and dispatch in packages else []
+                    library_archives = (["lib"] if library else []) + shards
+                    self.assertEqual(json.loads(outputs["library"]), library)
+                    self.assertEqual(json.loads(outputs["matrix"]), ["e2e", *library_archives])
+                    self.assertEqual(
+                        json.loads(outputs["archives"]), (["e2e"] if server in packages else []) + library_archives,
+                    )
+                    for archive in library_archives:
+                        env = dict(
+                            os.environ, RUNNER_TEMP=directory, ARCHIVE=archive, LIB_PACKAGES=outputs["library"],
+                            OTERYN_DISPATCH_PG_SHARD="2/3", CARGO_BUILD_JOBS="2",
+                        )
+                        actual = subprocess.check_output(["bash", "-c", cargo + build], env=env, text=True)
+                        if archive == "lib":
+                            shard = "unset"
+                            jobs = "1" if dispatch in library else "2"
+                            args = [arg for package in library for arg in ("-p", package)]
+                        else:
+                            shard = f"{archive[-1]}/3"
+                            jobs = "2"
+                            args = ["-p", dispatch]
+                        self.assertEqual(actual.splitlines(), [
+                            shard, jobs, "+1.100.0", "nextest", "archive", "--locked", *args, "--lib",
+                            "--archive-file", f"{directory}/pg-archives/pg-{archive}.tar.zst",
+                        ])
+
+    def test_every_library_test_is_planned_once_in_both_archive_modes(self):
+        partition = indented_yaml_mapping_block(WORKFLOW.read_text(), "durability_postgres", 2)
+        total = len(re.search(r"^        partition: \[(.+)\]$", partition, re.M)[1].split(","))
+        script = self.script("Plan partition")
+        dispatch = "oteryn-gameplay-dispatch"
+        mounted_path = "gameplay_transport::monk_save::postgres_tests::"
+        ordinary = "unit::smoke"
+        explicit = mounted_path + "explicit"
+        mounted = [f"{mounted_path}mounted::case_{index}" for index in range(total)]
+        others = {"oteryn-gameplay-durability": ["postgres::durability"], "oteryn-game-server": ["postgres::server"]}
+        combined = {**others, dispatch: [ordinary, explicit, *mounted]}
+        expected = Counter(f"--filterset=binary_id(={binary}) & test(={name})"
+                           for binary, names in combined.items() for name in names)
+
+        for split in (False, True):
+            with self.subTest(split=split), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                plan = root / "pg-plan"
+                plan.mkdir()
+                planner = root / "pg-planner/plan_pg_partitions.py"
+                planner.parent.mkdir()
+                planner.write_bytes((ROOT / "tools/ci/plan_pg_partitions.py").read_bytes())
+                inventories = {"pg-lib": others if split else combined}
+                if split:
+                    for shard in range(3):
+                        # Unsharded unit tests are compiled in every dispatch archive and assigned once.
+                        dispatch_names = [ordinary, *mounted[shard::3]]
+                        if shard == 0:
+                            dispatch_names.append(explicit)
+                        inventories[f"pg-lib-{shard + 1}"] = {dispatch: dispatch_names}
+                for archive, suites in inventories.items():
+                    listing = {"rust-suites": {
+                        binary: {"binary-id": binary, "testcases": {
+                            name: {"filter-match": {"status": "matches"}} for name in names
+                        }} for binary, names in suites.items()
+                    }}
+                    (plan / f"{archive}.json").write_text(json.dumps(listing))
+                actual = Counter()
+                for index in range(total):
+                    env = dict(os.environ, RUNNER_TEMP=directory, LABEL=str(index + 1),
+                               JOB_INDEX=str(index), JOB_TOTAL=str(total))
+                    subprocess.run(["bash", "-c", script], cwd=ROOT, env=env, check=True,
+                                   capture_output=True, text=True)
+                    for filters in plan.glob("*.filters"):
+                        actual.update(filters.read_text().splitlines())
+                self.assertEqual(actual, expected)
 
 
 class HeavyGateTests(unittest.TestCase):

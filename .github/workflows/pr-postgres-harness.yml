@@ -425,7 +425,7 @@ jobs:
               --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"
           fi
 
-      # Keep swap and disable dispatch debug info for the sharded library build (owner decision
+      # Keep swap and disable dispatch debug info for the library build (owner decision
       # 2026-11-18). Other crates keep line tables so the cache restored from main stays valid.
       - name: Add swap for the library test build
         if: matrix.archive != 'e2e'
@@ -455,7 +455,14 @@ jobs:
             packages=$(jq -er '.[]' <<< "$LIB_PACKAGES")
             mapfile -t packages <<< "$packages"
             args=()
-            for package in "${packages[@]}"; do args+=(-p "$package"); done
+            for package in "${packages[@]}"; do
+              args+=(-p "$package")
+              if [[ "$package" == oteryn-gameplay-dispatch ]]; then
+                # Older heads need one full dispatch harness, so leave its rustc the runner's memory.
+                export CARGO_BUILD_JOBS=1
+              fi
+            done
+            unset OTERYN_DISPATCH_PG_SHARD
             cargo +1.100.0 nextest archive --locked "${args[@]}" --lib \
               --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
           else
