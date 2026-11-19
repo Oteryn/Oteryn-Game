@@ -1,6 +1,11 @@
 //! NBREL3: a refused guard consumes only its reserved command, never the session.
 use super::*;
 use crate::durability::DurabilityError;
+use crate::gameplay_transport::world_spatial::decode_step_result;
+use oteryn_protocol_oteryn::chat::{
+    CAPABILITY_CHAT_V1, COMMAND_TYPE_CHAT_INTENT, ChatDisposition, ChatSpeechMode,
+    decode_chat_intent_result, encode_chat_intent,
+};
 
 struct GuardAuthority {
     movement: StepAuthority,
@@ -49,13 +54,53 @@ impl FreshAdmissionAuthority for GuardAuthority {
     ) -> (StepOutcome, Option<std::time::Duration>) {
         self.movement.paced_step(actor, session, direction).await
     }
+
+    async fn chat_intent_completion(
+        &self,
+        _: ExactActorRef,
+        _: GameSessionId,
+        _: u64,
+        _: ChatIntent,
+    ) -> Option<(ChatIntentResult, Option<SpellCastOutcome>)> {
+        // An owner call would leave the command pending instead of terminalizing it.
+        None
+    }
 }
 
-fn guard_case(failure: fn() -> DurabilityError, transient: bool) -> Result<(), Box<dyn Error>> {
+fn guard_case(
+    failure: fn() -> DurabilityError,
+    transient: bool,
+    command_type: u32,
+    capabilities: &'static [u32],
+) -> Result<(), Box<dyn Error>> {
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || {
             run(async {
+                let refused = if command_type == COMMAND_TYPE_CHAT_INTENT {
+                    let payload = encode_chat_intent(&ChatIntent::Say {
+                        mode: ChatSpeechMode::Say,
+                        text: "hello".into(),
+                    })
+                    .map_err(|error| format!("{error:?}"))?;
+                    oteryn_protocol_oteryn::encode_client_command(
+                        1,
+                        &oteryn_protocol_oteryn::ClientCommandValue {
+                            command_id: 1,
+                            command_type,
+                            payload: &payload,
+                        },
+                    )?
+                } else {
+                    command(1, 1, u64::from(command_type), StepDirection::East)
+                };
+                let mut admitted = positioned()?;
+                admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                    crate::gameplay_transport::capabilities::PRODUCTION_OFFERED_CAPABILITIES,
+                    capabilities,
+                )
+                .ok_or("capability selection")?;
+                let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
                 for activity in [false, true] {
                     let authority = GuardAuthority {
                         movement: StepAuthority {
@@ -66,13 +111,12 @@ fn guard_case(failure: fn() -> DurabilityError, transient: bool) -> Result<(), B
                         activity,
                         commands: Default::default(),
                     };
-                    let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
-                    let refused = command(1, 1, step, StepDirection::East);
-                    let (end, frames) = drive_admitted(
+                    let (end, frames) = drive_session(
                         &authority,
+                        admitted,
                         &[
                             refused.clone(),
-                            refused,
+                            refused.clone(),
                             command(1, 2, step, StepDirection::North),
                         ],
                     )
@@ -97,11 +141,35 @@ fn guard_case(failure: fn() -> DurabilityError, transient: bool) -> Result<(), B
                             3,
                             "busy guard must keep the command stream open"
                         );
+                        assert_eq!(results[0].command_id, 1);
                         assert_eq!(results[0].status, CommandStatus::Rejected);
-                        assert!(results[0].payload.is_empty());
+                        match command_type {
+                            COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT => assert_eq!(
+                                decode_step_result(results[0].payload),
+                                Ok(StepDisposition::Rejected)
+                            ),
+                            COMMAND_TYPE_CHAT_INTENT
+                                if capabilities.contains(&CAPABILITY_CHAT_V1) =>
+                            {
+                                assert_eq!(
+                                    decode_chat_intent_result(results[0].payload),
+                                    Ok(ChatIntentResult {
+                                        disposition: ChatDisposition::Rejected,
+                                        wait_seconds: 0,
+                                    })
+                                );
+                            }
+                            _ => assert!(results[0].payload.is_empty()),
+                        }
+                        assert_eq!(results[1].command_id, 1);
                         assert_eq!(results[1].status, CommandStatus::DuplicateReplay);
                         assert_eq!(results[1].payload, results[0].payload);
+                        assert_eq!(results[2].command_id, 2);
                         assert_eq!(results[2].status, CommandStatus::Accepted);
+                        assert_eq!(
+                            decode_step_result(results[2].payload),
+                            Ok(StepDisposition::Blocked)
+                        );
                         assert_eq!(*authority.movement.steps.borrow(), [StepDirection::North]);
                     } else {
                         assert!(
@@ -122,16 +190,57 @@ fn guard_case(failure: fn() -> DurabilityError, transient: bool) -> Result<(), B
 
 #[test]
 fn house_transfer_guard_deadline_defers_and_replay_never_executes() -> Result<(), Box<dyn Error>> {
-    guard_case(|| DurabilityError::RootPassDeadlineExceeded, true)
+    guard_case(
+        || DurabilityError::RootPassDeadlineExceeded,
+        true,
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+        &[],
+    )
 }
 
 #[test]
 fn house_transfer_guard_unavailable_defers_and_replay_never_executes() -> Result<(), Box<dyn Error>>
 {
-    guard_case(|| DurabilityError::RootUnavailable, true)
+    guard_case(
+        || DurabilityError::RootUnavailable,
+        true,
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+        &[],
+    )
 }
 
 #[test]
 fn house_transfer_guard_fence_mismatch_disconnects() -> Result<(), Box<dyn Error>> {
-    guard_case(|| DurabilityError::Unavailable, false)
+    guard_case(
+        || DurabilityError::Unavailable,
+        false,
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+        &[],
+    )
+}
+
+#[test]
+fn selected_chat_guard_deferral_returns_typed_rejection() -> Result<(), Box<dyn Error>> {
+    guard_case(
+        || DurabilityError::RootUnavailable,
+        true,
+        COMMAND_TYPE_CHAT_INTENT,
+        &[CAPABILITY_CHAT_V1],
+    )
+}
+
+#[test]
+fn unselected_chat_and_unknown_command_keep_empty_guard_rejection() -> Result<(), Box<dyn Error>> {
+    guard_case(
+        || DurabilityError::RootUnavailable,
+        true,
+        COMMAND_TYPE_CHAT_INTENT,
+        &[],
+    )?;
+    guard_case(
+        || DurabilityError::RootUnavailable,
+        true,
+        999,
+        &[CAPABILITY_CHAT_V1],
+    )
 }
