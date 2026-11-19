@@ -136,14 +136,22 @@ mod tests {
 
     fn counter() -> native_kills::CounterRef<'static> {
         native_kills::CounterRef {
+            damage_credit: None,
             death_area: None,
+            death_areas: &[],
             encounter_source: None,
+            first_defeat_outfit: None,
+            first_defeat_outfit_message: None,
+            record_defeat_time: false,
+            required_outcome: None,
             transition: "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/dragon",
             creature: "oteryn:creature.dragon",
             quest: "oteryn:quest.authored.fire_from_the_earth_mini_world_change",
             track: "oteryn:quest-progress/world-change-journal/fire_from_the_earth/kills",
             gate: "oteryn:quest-progress/world-change-journal/fire_from_the_earth/enabled",
             gate_value: 1,
+            gate_bounds: (1, 1),
+            gate_is_progress: false,
             minimum: 0,
             maximum: 50,
         }
