@@ -66,6 +66,7 @@ jobs:
       archives: ${{ steps.archives.outputs.archives }}
       matrix: ${{ steps.archives.outputs.matrix }}
       current_ci: ${{ steps.planner.outputs.current_ci }}
+      pg_affinity: ${{ steps.planner.outputs.affinity == 'true' && steps.archives.outputs.split_dispatch == 'true' && steps.archives.outputs.multiple == 'true' && 'true' || 'false' }}
       pg_runner_mode: ${{ steps.route.outputs.mode }}
     steps:
       # Resolve once so every partition sees the same routing. auto and auto-split
@@ -140,13 +141,18 @@ jobs:
             echo 'current_ci=false' >> "$GITHUB_OUTPUT"
           fi
           printf '%s  %s\n' '1d26d89fd1faff1752d47a7f2ae59dde980f8683fa791b85da35f92b79607321' "$output/plan_pg_partitions.py" | sha256sum -c -
+          if git cat-file -e "HEAD:tools/ci/pg_archive_affinity.py" 2>/dev/null; then
+            git show "HEAD:tools/ci/pg_archive_affinity.py" > "$output/pg_archive_affinity.py"
+            printf '%s  %s\n' 'db285d452e0cb5814a95f0c8b25ab969af5ee9637fd051a1a0fdbcb8221cb64a' "$output/pg_archive_affinity.py" | sha256sum -c -
+            echo 'affinity=true' >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Upload the reviewed PostgreSQL planner
         if: steps.scope.outputs.empty == 'false'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pr-postgres-test-planner
-          path: ${{ runner.temp }}/pg-planner/plan_pg_partitions.py
+          path: ${{ runner.temp }}/pg-planner/
           if-no-files-found: error
           overwrite: true
           retention-days: 3
@@ -182,6 +188,7 @@ jobs:
               print(f'matrix={json.dumps(builds)}', file=output)
               print(f'library={json.dumps(sorted(library))}', file=output)
               print(f'split_dispatch={str(split_dispatch).lower()}', file=output)
+              print(f'multiple={str(len(archives) > 1).lower()}', file=output)
           PY
 
       - name: Verify the dispatch PostgreSQL shard inventory
@@ -507,6 +514,20 @@ jobs:
           echo "${ARCHIVE//-/_}_sha256=$(sha256sum SHA256SUMS | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
 
       # The archives are already zstd-compressed and only live for this run's partition jobs.
+      - name: Upload PostgreSQL test inventory
+        if: needs.prepare.outputs.pg_affinity == 'true' && contains(fromJSON(needs.prepare.outputs.archives), matrix.archive)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pr-postgres-test-inventory-${{ matrix.archive }}
+          path: |
+            ${{ runner.temp }}/pg-archives/head-sha
+            ${{ runner.temp }}/pg-archives/workspace
+            ${{ runner.temp }}/pg-archives/SHA256SUMS
+            ${{ runner.temp }}/pg-archives/pg-${{ matrix.archive }}.json
+          if-no-files-found: error
+          retention-days: 1
+          overwrite: true
+
       - name: Upload PostgreSQL test archives
         if: contains(fromJSON(needs.prepare.outputs.archives), matrix.archive)
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -526,7 +547,7 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: read
-    # Each partition runs a disjoint planned share of all archives; together the thirty-six run every test once.
+    # Each partition runs a disjoint share; together the thirty-six run every test once.
     # These jobs install no toolchain and restore no cache: they cannot compile.
     strategy:
       fail-fast: false
@@ -711,7 +732,68 @@ jobs:
           tar -xzf "$archive" -C "$RUNNER_TEMP/nextest-bin"
           echo "$RUNNER_TEMP/nextest-bin" >> "$GITHUB_PATH"
 
+      - name: Download the reviewed PostgreSQL planner
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: pr-postgres-test-planner
+          path: ${{ runner.temp }}/pg-planner
+
+      - name: Select the PostgreSQL partition archive
+        id: affinity
+        if: needs.prepare.outputs.pg_affinity == 'true'
+        env:
+          EXPECTED_ARCHIVES: ${{ needs.prepare.outputs.archives }}
+          LABEL: ${{ matrix.partition }}
+          JOB_INDEX: ${{ strategy.job-index }}
+          JOB_TOTAL: ${{ strategy.job-total }}
+        run: |
+          set -euo pipefail
+          [[ "$JOB_INDEX" =~ ^[0-9]+$ && "$JOB_TOTAL" =~ ^[1-9][0-9]*$ ]]
+          test "$LABEL" = "$((JOB_INDEX + 1))"
+          helper="$RUNNER_TEMP/pg-planner/pg_archive_affinity.py"
+          printf '%s  %s\n' 'db285d452e0cb5814a95f0c8b25ab969af5ee9637fd051a1a0fdbcb8221cb64a' "$helper" | sha256sum -c -
+          python3 "$helper" route "$EXPECTED_ARCHIVES" "$JOB_INDEX" "$JOB_TOTAL"
+
+      - name: Download PostgreSQL test inventories
+        if: needs.prepare.outputs.pg_affinity == 'true'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: pr-postgres-test-inventory-*
+          merge-multiple: false
+          path: ${{ runner.temp }}/pg-inventories
+
+      - name: Download the selected PostgreSQL test archive
+        if: needs.prepare.outputs.pg_affinity == 'true'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: pr-postgres-test-archives-${{ steps.affinity.outputs.archive }}
+          path: ${{ runner.temp }}/pg-selected
+
+      - name: Verify the selected PostgreSQL test archive and inventories
+        if: needs.prepare.outputs.pg_affinity == 'true'
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+          EXPECTED_ARCHIVES: ${{ needs.prepare.outputs.archives }}
+          SELECTED_ARCHIVE: ${{ steps.affinity.outputs.archive }}
+          BUILD_WORKSPACE: ${{ needs.build.outputs.workspace }}
+          E2E_SHA256: ${{ needs.build.outputs.e2e_sha256 }}
+          LIB_SHA256: ${{ needs.build.outputs.lib_sha256 }}
+          LIB_1_SHA256: ${{ needs.build.outputs.lib_1_sha256 }}
+          LIB_2_SHA256: ${{ needs.build.outputs.lib_2_sha256 }}
+          LIB_3_SHA256: ${{ needs.build.outputs.lib_3_sha256 }}
+        run: |
+          set -euo pipefail
+          test "$PG_WORKSPACE" = "$BUILD_WORKSPACE"
+          planner="$RUNNER_TEMP/pg-planner/plan_pg_partitions.py"
+          printf '%s  %s\n' '1d26d89fd1faff1752d47a7f2ae59dde980f8683fa791b85da35f92b79607321' "$planner" | sha256sum -c -
+          python3 "$RUNNER_TEMP/pg-planner/pg_archive_affinity.py" verify "$RUNNER_TEMP" pr \
+            "$EXPECTED_ARCHIVES" "$SELECTED_ARCHIVE" "$EXPECTED_SHA" "$BUILD_WORKSPACE" "$planner"
+          test "$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_SHA"
+          test "$(git -C "$PG_SOURCE" rev-parse HEAD)" = "$EXPECTED_SHA"
+          test "$("$PG_RUN" git -C "$PG_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_SHA"
+
       - name: Download PostgreSQL test archives
+        if: needs.prepare.outputs.pg_affinity != 'true'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: pr-postgres-test-archives-*
@@ -721,6 +803,7 @@ jobs:
       # Each build leg's SHA256SUMS is checked against that leg's digest output; only the archive the
       # leg was meant to build is taken from its artifact.
       - name: Verify archives were built for this head
+        if: needs.prepare.outputs.pg_affinity != 'true'
         id: verify
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
@@ -767,25 +850,26 @@ jobs:
           test "$(git -C "$PG_SOURCE" rev-parse HEAD)" = "$EXPECTED_SHA"
           test "$("$PG_RUN" git -C "$PG_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_SHA"
 
-      # Every partition plans from the same digest-bound inventory. Duration estimates
-      # affect balance only; each runnable case is assigned to exactly one partition.
-      - name: Download the reviewed PostgreSQL planner
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: pr-postgres-test-planner
-          path: ${{ runner.temp }}/pg-planner
-
+      # Each archive independently checks that its partitions cover every runnable case.
+      # Older heads still plan over their complete digest-bound inventory.
       - name: Plan partition
         id: partition
         env:
           LABEL: ${{ matrix.partition }}
           JOB_INDEX: ${{ strategy.job-index }}
           JOB_TOTAL: ${{ strategy.job-total }}
+          ARCHIVE_INDEX: ${{ steps.affinity.outputs.index }}
+          ARCHIVE_TOTAL: ${{ steps.affinity.outputs.total }}
+          PG_AFFINITY: ${{ needs.prepare.outputs.pg_affinity }}
         run: |
           set -euo pipefail
           [[ "$JOB_INDEX" =~ ^[0-9]+$ && "$JOB_TOTAL" =~ ^[1-9][0-9]*$ ]]
           test "$LABEL" = "$((JOB_INDEX + 1))"
           plan="$RUNNER_TEMP/pg-plan"
+          if [[ "$PG_AFFINITY" == true ]]; then
+            JOB_INDEX="${ARCHIVE_INDEX:?missing archive worker index}"
+            JOB_TOTAL="${ARCHIVE_TOTAL:?missing archive worker count}"
+          fi
           # Verify the reviewed planner before it chooses which tests to run.
           printf '%s  %s\n' '1d26d89fd1faff1752d47a7f2ae59dde980f8683fa791b85da35f92b79607321' "$RUNNER_TEMP/pg-planner/plan_pg_partitions.py" | sha256sum -c -
           python3 "$RUNNER_TEMP/pg-planner/plan_pg_partitions.py" "$plan" "$JOB_INDEX" "$JOB_TOTAL" \
