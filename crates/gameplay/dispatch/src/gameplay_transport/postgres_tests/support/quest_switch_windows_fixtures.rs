@@ -1,8 +1,5 @@
 use super::TestResult;
 
-
-
-
 pub(super) async fn ashmunrah(
     owner: &mut super::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut [super::AdmittedSession],
@@ -81,7 +78,6 @@ pub(super) async fn ashmunrah(
     assert_eq!(per_character, [1, 5]);
     Ok(())
 }
-
 
 pub(super) async fn reversible_passage(
     owner: &mut super::ComposedFreshAdmission<'_, '_, '_>,
@@ -200,7 +196,6 @@ use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
 pub(super) const CATHEDRAL_START: Position = at(32598, 32382, -10);
 
-
 pub(super) async fn cathedral(
     owner: &mut super::ComposedFreshAdmission<'_, '_, '_>,
     member: &mut super::AdmittedSession,
@@ -208,23 +203,33 @@ pub(super) async fn cathedral(
     pool: &sqlx::PgPool,
 ) -> TestResult {
     use super::{fixture::debug, item_craft_fixtures, quest_world_callbacks_fixtures::input_item};
-    use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
+    use crate::durability::quest_state::{
+        QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
+    };
     use crate::foundation::{CommandId, CommandRef};
-    use crate::map::{overlay::TilePos, view::{MapFacts, placement_key}};
+    use crate::map::{
+        overlay::TilePos,
+        view::{MapFacts, placement_key},
+    };
     use oteryn_gameplay_quests::quest::{
         QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition,
         authored_bindings::Bindings, world_callbacks::Offering,
     };
     use oteryn_protocol_oteryn::world_object::{
-        MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
+        MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
+        encode_item_use_intent,
     };
     use sha2::{Digest, Sha256};
-    use std::{num::NonZeroU64, sync::{Arc, atomic::Ordering}};
+    use std::{
+        num::NonZeroU64,
+        sync::{Arc, atomic::Ordering},
+    };
 
     const QUEST: &str = "oteryn:quest.the_thieves_guild_quest";
     const MISSION: &str = "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission08";
     const INPUT: &str = "oteryn:item.tibia.i7873";
-    const START_MISSION: &str = "oteryn:quest-transition/quest/u8_2/the_thieves_guild_quest/mission08/npc_1";
+    const START_MISSION: &str =
+        "oteryn:quest-transition/quest/u8_2/the_thieves_guild_quest/mission08/npc_1";
     const WALL: Position = at(32598, 32381, -10);
     const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_thieves_guild_quest/actions_note.lua:1-25";
     let callback = serde_json::json!({
@@ -254,57 +259,140 @@ pub(super) async fn cathedral(
         }],
     }))?)?;
     let base = QuestStateCatalogue::empty("content-1").ok_or("fixture quest catalogue")?;
-    let catalogue = Arc::new(bindings.attach(&base)?.with_fixture_transition(QuestTransition {
-        key: START_MISSION.into(), quest: QUEST.into(), world_change: None,
-        effects: vec![QuestEffect { track: MISSION.into(), from: QuestComparison::Any,
-                                    effect: QuestEffectKind::Set(1) }],
-        completes: false, experience: None,
-    }).map_err(debug)?);
+    let catalogue = Arc::new(
+        bindings
+            .attach(&base)?
+            .with_fixture_transition(QuestTransition {
+                key: START_MISSION.into(),
+                quest: QUEST.into(),
+                world_change: None,
+                effects: vec![QuestEffect {
+                    track: MISSION.into(),
+                    from: QuestComparison::Any,
+                    effect: QuestEffectKind::Set(1),
+                }],
+                completes: false,
+                experience: None,
+            })
+            .map_err(debug)?,
+    );
     owner.quest_catalogue = Some(Arc::clone(&catalogue));
-    let fence = owner.current_quest_fence(member.game_session_id).await
-        .map_err(|_| "Cathedral quest fence")?.ok_or("Cathedral session")?;
+    let fence = owner
+        .current_quest_fence(member.game_session_id)
+        .await
+        .map_err(|_| "Cathedral quest fence")?
+        .ok_or("Cathedral session")?;
     {
         let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
-        let outcome = slot.commit_quest_transition(
-            owner.root, owner.character, owner.holder, fence,
-            QuestTransitionRequest {
-                transition_key: START_MISSION.into(),
-                cause: QuestCause::Command(CommandRef::new(member.game_session_id, CommandId::new(901).map_err(debug)?)),
-            },
-            catalogue,
-        ).await.map_err(debug)?;
+        let outcome = slot
+            .commit_quest_transition(
+                owner.root,
+                owner.character,
+                owner.holder,
+                fence,
+                QuestTransitionRequest {
+                    transition_key: START_MISSION.into(),
+                    cause: QuestCause::Command(CommandRef::new(
+                        member.game_session_id,
+                        CommandId::new(901).map_err(debug)?,
+                    )),
+                },
+                catalogue,
+            )
+            .await
+            .map_err(debug)?;
         assert!(matches!(outcome, QuestTransitionOutcome::Committed(_)));
     }
-    owner.refresh_quest_session(member.game_session_id, false).await;
-    let fence = owner.current_quest_fence(member.game_session_id).await
-        .map_err(|_| "Cathedral item fence")?.ok_or("Cathedral session")?;
-    input_item(owner, fence.item_fence(), &Offering { position: CATHEDRAL_START, item: INPUT.into(), count: 1 }, 952, true).await?;
-    member.item_fence = Some(owner.current_quest_fence(member.game_session_id).await
-        .map_err(|_| "Cathedral carried item fence")?.ok_or("Cathedral session")?.item_fence());
-    let item = owner.active_generation.and_then(|g| g.native_gameplay()).and_then(|n| n.item_index())
-        .and_then(|i| i.definition_ref("Item", INPUT, "definition-r1")).ok_or("selected note reference")?;
-    let wall = TilePos { x: WALL.x, y: WALL.y, floor: WALL.floor };
+    owner
+        .refresh_quest_session(member.game_session_id, false)
+        .await;
+    let fence = owner
+        .current_quest_fence(member.game_session_id)
+        .await
+        .map_err(|_| "Cathedral item fence")?
+        .ok_or("Cathedral session")?;
+    input_item(
+        owner,
+        fence.item_fence(),
+        &Offering {
+            position: CATHEDRAL_START,
+            item: INPUT.into(),
+            count: 1,
+        },
+        952,
+        true,
+    )
+    .await?;
+    member.item_fence = Some(
+        owner
+            .current_quest_fence(member.game_session_id)
+            .await
+            .map_err(|_| "Cathedral carried item fence")?
+            .ok_or("Cathedral session")?
+            .item_fence(),
+    );
+    let item = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .and_then(|n| n.item_index())
+        .and_then(|i| i.definition_ref("Item", INPUT, "definition-r1"))
+        .ok_or("selected note reference")?;
+    let wall = TilePos {
+        x: WALL.x,
+        y: WALL.y,
+        floor: WALL.floor,
+    };
     let key = placement_key(wall, 1).ok_or("actual Cathedral wall")?;
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
     let payload = encode_item_use_intent(&UseIntent {
-        target: UseTarget::Item(NonZeroU64::MIN), use_with: None, use_with_position: None,
-        use_with_map_item: Some(MapUseTarget::Object(WorldObjectTarget { placement, expected_revision: map.facts.object_revision(key) })),
-    }).map_err(debug)?;
-    owner.states.test_owner_time.store(100_000_001, Ordering::Relaxed);
-    let (updated, result, _) = item_craft_fixtures::exchange(owner, *member, member.continuity.next_command_id, &payload, Some(item)).await?;
+        target: UseTarget::Item(NonZeroU64::MIN),
+        use_with: None,
+        use_with_position: None,
+        use_with_map_item: Some(MapUseTarget::Object(WorldObjectTarget {
+            placement,
+            expected_revision: map.facts.object_revision(key),
+        })),
+    })
+    .map_err(debug)?;
+    owner
+        .states
+        .test_owner_time
+        .store(100_000_001, Ordering::Relaxed);
+    let (updated, result, _) = item_craft_fixtures::exchange(
+        owner,
+        *member,
+        member.continuity.next_command_id,
+        &payload,
+        Some(item),
+    )
+    .await?;
     *member = updated;
     assert_eq!(result, UseDisposition::Committed);
-    let state = owner.root.read_character_quest_state(owner.character, fence.character_id).await.map_err(debug)?;
+    let state = owner
+        .root
+        .read_character_quest_state(owner.character, fence.character_id)
+        .await
+        .map_err(debug)?;
     assert_eq!(state.tracks().get(MISSION), Some(&2));
     let retired: Vec<(i64, i16)> = sqlx::query_as(
         "SELECT quantity, lifecycle FROM game_item_instances WHERE definition_production_key=$1",
-    ).bind(INPUT).fetch_all(pool).await?;
+    )
+    .bind(INPUT)
+    .fetch_all(pool)
+    .await?;
     assert_eq!(retired, [(0, 2)], "the selected carried note is consumed");
-    let displayed = || map.facts.movement_item_entries().iter()
-        .any(|(at, entry)| *at == wall && entry.facts.appearance_id == 7872);
+    let displayed = || {
+        map.facts
+            .movement_item_entries()
+            .iter()
+            .any(|(at, entry)| *at == wall && entry.facts.appearance_id == 7872)
+    };
     assert!(displayed());
-    let expiry = map.facts.next_movement_decay_time().ok_or("Cathedral display deadline")?;
+    let expiry = map
+        .facts
+        .next_movement_decay_time()
+        .ok_or("Cathedral display deadline")?;
     assert_eq!(expiry, 400_000_000);
     map.facts.expire_movement_items(expiry - 1);
     assert!(displayed());
@@ -320,14 +408,16 @@ const fn at(x: u16, y: u16, floor: i8) -> Position {
     Position { x, y, floor }
 }
 
-
 pub(super) async fn lord(
     owner: &mut super::ComposedFreshAdmission<'_, '_, '_>,
     members: &mut [super::AdmittedSession],
     map: &crate::map::boot::BundleMap,
     entry_pool: Option<&sqlx::PgPool>,
 ) -> TestResult {
-    use super::{annihilator_route_fixtures::use_target, fixture::debug, quest_lord_entry_fixtures as entry, quest_world_callbacks_fixtures::local};
+    use super::{
+        annihilator_route_fixtures::use_target, fixture::debug, quest_lord_entry_fixtures as entry,
+        quest_world_callbacks_fixtures::local,
+    };
     use crate::map::{
         floor::BundleDoors,
         overlay::TilePos,
@@ -434,13 +524,22 @@ pub(super) async fn lord(
         assert!(refused.contains("missing chamber window"), "{refused}");
         callbacks.push(entrance);
     }
-    let callbacks = oteryn_gameplay_quests::quest::world_callbacks::load_with_source_fixture(&callbacks)?;
+    let callbacks =
+        oteryn_gameplay_quests::quest::world_callbacks::load_with_source_fixture(&callbacks)?;
     assert!(owner.states.quest_callbacks.fixture.set(callbacks).is_ok());
     if let Some(pool) = entry_pool {
         entry::assert_entry(owner, members, map, pool).await?;
     }
-    let speech_start = map.facts.movement_speech_since(0).last().map_or(0, |(seq,_)| *seq);
-    let effect_start = map.facts.movement_effects_since(0).last().map_or(0, |(seq,_,_)| *seq);
+    let speech_start = map
+        .facts
+        .movement_speech_since(0)
+        .last()
+        .map_or(0, |(seq, _)| *seq);
+    let effect_start = map
+        .facts
+        .movement_effects_since(0)
+        .last()
+        .map_or(0, |(seq, _, _)| *seq);
 
     let target_for = |lever: Position| -> TestResult<WorldObjectTarget> {
         let tile = TilePos {
@@ -529,16 +628,40 @@ pub(super) async fn lord(
         assert_eq!(speech.len(), turn + 1 + usize::from(turn == 3));
         assert_eq!(speech[turn].1.talk_type, 36);
         assert_eq!(speech[turn].1.text, "ZOOOOOOOOM");
-        assert_eq!(speech[turn].1.position, TilePos {x:sound.x,y:sound.y,floor:sound.floor});
+        assert_eq!(
+            speech[turn].1.position,
+            TilePos {
+                x: sound.x,
+                y: sound.y,
+                floor: sound.floor
+            }
+        );
         let magic = map.facts.movement_effects_since(effect_start);
         if turn == 3 {
             assert_eq!(speech[4].1.talk_type, 37);
-            assert_eq!(speech[4].1.text, "You have 10 minutes from now on until you get teleported out.");
-            assert_eq!(speech[4].1.position, TilePos {x:33267,y:31836,floor:-12});
-            let diagonal: Vec<_> = (0..14).map(|i| (33261+i,31829+i,-12,12))
-                .chain((0..14).map(|i| (33274-i,31829+i,-12,12))).collect();
-            assert_eq!(magic.iter().map(|(_,at,effect)| (at.x,at.y,at.floor,*effect))
-                .collect::<Vec<_>>(), diagonal);
+            assert_eq!(
+                speech[4].1.text,
+                "You have 10 minutes from now on until you get teleported out."
+            );
+            assert_eq!(
+                speech[4].1.position,
+                TilePos {
+                    x: 33267,
+                    y: 31836,
+                    floor: -12
+                }
+            );
+            let diagonal: Vec<_> = (0..14)
+                .map(|i| (33261 + i, 31829 + i, -12, 12))
+                .chain((0..14).map(|i| (33274 - i, 31829 + i, -12, 12)))
+                .collect();
+            assert_eq!(
+                magic
+                    .iter()
+                    .map(|(_, at, effect)| (at.x, at.y, at.floor, *effect))
+                    .collect::<Vec<_>>(),
+                diagonal
+            );
         } else {
             assert!(magic.is_empty());
         }
@@ -571,7 +694,10 @@ pub(super) async fn lord(
         .test_owner_time
         .store(403_000_000, Ordering::Relaxed);
     owner.drain_quest_encounter_deadlines().await;
-    assert_eq!(map.facts.movement_speech_since(speech_start).len(), speeches_before_warning);
+    assert_eq!(
+        map.facts.movement_speech_since(speech_start).len(),
+        speeches_before_warning
+    );
     owner
         .states
         .test_owner_time

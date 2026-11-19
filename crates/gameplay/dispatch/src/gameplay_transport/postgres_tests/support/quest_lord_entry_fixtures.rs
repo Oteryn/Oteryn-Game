@@ -19,10 +19,30 @@ const INELIGIBLE: &str = "You need one player of each vocation having completed 
 
 pub(super) const START: Position = at(33270, 31835, -10);
 pub(super) const PARTIES: [(Position, Position, &str, &str); 4] = [
-    (at(33268,31833,-10), at(33268,31833,-12), "sorcerer", "oteryn:item.tibia.i946"),
-    (at(33268,31838,-10), at(33267,31838,-12), "druid", "oteryn:item.tibia.i947"),
-    (at(33266,31835,-10), at(33265,31835,-12), "knight", "oteryn:item.tibia.i948"),
-    (START, at(33270,31835,-12), "paladin", "oteryn:item.tibia.i942"),
+    (
+        at(33268, 31833, -10),
+        at(33268, 31833, -12),
+        "sorcerer",
+        "oteryn:item.tibia.i946",
+    ),
+    (
+        at(33268, 31838, -10),
+        at(33267, 31838, -12),
+        "druid",
+        "oteryn:item.tibia.i947",
+    ),
+    (
+        at(33266, 31835, -10),
+        at(33265, 31835, -12),
+        "knight",
+        "oteryn:item.tibia.i948",
+    ),
+    (
+        START,
+        at(33270, 31835, -12),
+        "paladin",
+        "oteryn:item.tibia.i942",
+    ),
 ];
 
 const fn at(x: u16, y: u16, floor: i8) -> Position {
@@ -57,7 +77,6 @@ pub(super) fn binding() -> TestResult<Callback> {
     }))?)
 }
 
-
 async fn seed(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     pool: &sqlx::PgPool,
@@ -66,44 +85,73 @@ async fn seed(
     progress: bool,
     item: bool,
 ) -> TestResult {
-    let fence = owner.current_quest_fence(member.game_session_id).await
-        .map_err(|_| "entry fixture fence")?.ok_or("entry fixture session")?;
+    let fence = owner
+        .current_quest_fence(member.game_session_id)
+        .await
+        .map_err(|_| "entry fixture fence")?
+        .ok_or("entry fixture session")?;
     let character = fence.character_id.as_bytes().as_slice();
     let world = owner.world_id.as_bytes().as_slice();
     let mut tx = pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
     if progress {
-        sqlx::query("INSERT INTO game_character_quest_tracks
+        sqlx::query(
+            "INSERT INTO game_character_quest_tracks
            (character_id,track_key,quest_key,value,committed_character_revision)
            SELECT character_id,$2,$3,1,character_revision FROM game_character_roots
-           WHERE character_id=encode($1,'hex')::uuid")
-            .bind(character).bind(TRACK).bind(QUEST).execute(&mut *tx).await?;
+           WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(character)
+        .bind(TRACK)
+        .bind(QUEST)
+        .execute(&mut *tx)
+        .await?;
     }
     if item {
         // Three exact donor items are retained as source definitions. Seed
         // existing custody so the real admission reads them on all four pads.
         let goods = id(231 + u8::try_from(index)?);
         let bag = id(241 + u8::try_from(index)?);
-        for (identity,key) in [(bag,"oteryn:item.tibia.i2854"),(goods,PARTIES[index].3)] {
-            sqlx::query("INSERT INTO game_item_instances
+        for (identity, key) in [(bag, "oteryn:item.tibia.i2854"), (goods, PARTIES[index].3)] {
+            sqlx::query(
+                "INSERT INTO game_item_instances
                 (item_instance_id,world_id,definition_family,definition_production_key,
                  definition_revision_ref,quantity,lifecycle,minted_transaction_id)
                 VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,
-                 'definition-r1',1,1,encode($1,'hex')::uuid)")
-                .bind(identity.as_slice()).bind(world).bind(key).execute(&mut *tx).await?;
+                 'definition-r1',1,1,encode($1,'hex')::uuid)",
+            )
+            .bind(identity.as_slice())
+            .bind(world)
+            .bind(key)
+            .execute(&mut *tx)
+            .await?;
         }
-        sqlx::query("INSERT INTO game_item_container_slots
+        sqlx::query(
+            "INSERT INTO game_item_container_slots
             (character_id,item_instance_id,world_id,placed_transaction_id)
             VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,
-                   encode($3,'hex')::uuid,encode($2,'hex')::uuid)")
-            .bind(character).bind(bag.as_slice()).bind(world).execute(&mut *tx).await?;
-        sqlx::query("INSERT INTO game_item_container_entries
+                   encode($3,'hex')::uuid,encode($2,'hex')::uuid)",
+        )
+        .bind(character)
+        .bind(bag.as_slice())
+        .bind(world)
+        .execute(&mut *tx)
+        .await?;
+        sqlx::query(
+            "INSERT INTO game_item_container_entries
             (item_instance_id,world_id,character_id,parent_item_instance_id,
              placement_ordinal,placed_transaction_id)
             VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,
-                   encode($3,'hex')::uuid,encode($4,'hex')::uuid,1,encode($1,'hex')::uuid)")
-            .bind(goods.as_slice()).bind(world).bind(character).bind(bag.as_slice())
-            .execute(&mut *tx).await?;
+                   encode($3,'hex')::uuid,encode($4,'hex')::uuid,1,encode($1,'hex')::uuid)",
+        )
+        .bind(goods.as_slice())
+        .bind(world)
+        .bind(character)
+        .bind(bag.as_slice())
+        .execute(&mut *tx)
+        .await?;
     }
     tx.commit().await?;
     Ok(())
@@ -115,7 +163,13 @@ pub(super) async fn move_member(
     position: Position,
 ) -> TestResult {
     let actor = member.runtime_actor.ok_or("entry fixture actor")?;
-    relocate(owner, actor, member.game_session_id, (position.x, position.y, position.floor.unsigned_abs())).await
+    relocate(
+        owner,
+        actor,
+        member.game_session_id,
+        (position.x, position.y, position.floor.unsigned_abs()),
+    )
+    .await
 }
 
 pub(super) async fn assert_entry(
@@ -126,27 +180,41 @@ pub(super) async fn assert_entry(
 ) -> TestResult {
     for (index, member) in members.iter().enumerate() {
         if index != 3 {
-            seed(owner,pool,member,index,true,true).await?;
+            seed(owner, pool, member, index, true, true).await?;
         }
-        move_member(owner,member,PARTIES[index].0).await?;
+        move_member(owner, member, PARTIES[index].0).await?;
     }
-    assert_eq!(use_target(owner,&mut members[3],&target(map,LEVER)?).await?,UseDisposition::Rejected);
-    assert_eq!(appearance(map,LEVER)?,2772);
-    seed(owner,pool,&members[3],3,true,false).await?;
-    assert_eq!(use_target(owner,&mut members[3],&target(map,LEVER)?).await?,UseDisposition::Rejected);
-    assert_eq!(appearance(map,LEVER)?,2772);
+    assert_eq!(
+        use_target(owner, &mut members[3], &target(map, LEVER)?).await?,
+        UseDisposition::Rejected
+    );
+    assert_eq!(appearance(map, LEVER)?, 2772);
+    seed(owner, pool, &members[3], 3, true, false).await?;
+    assert_eq!(
+        use_target(owner, &mut members[3], &target(map, LEVER)?).await?,
+        UseDisposition::Rejected
+    );
+    assert_eq!(appearance(map, LEVER)?, 2772);
     let cues = map.facts.movement_speech_since(0);
-    assert_eq!(cues.iter().map(|(_,cue)|cue.text.as_str()).collect::<Vec<_>>(),[INELIGIBLE,INELIGIBLE]);
+    assert_eq!(
+        cues.iter()
+            .map(|(_, cue)| cue.text.as_str())
+            .collect::<Vec<_>>(),
+        [INELIGIBLE, INELIGIBLE]
+    );
 
-    seed(owner,pool,&members[3],3,false,true).await?;
-    assert_party_admitted(owner,members,map).await?;
+    seed(owner, pool, &members[3], 3, false, true).await?;
+    assert_party_admitted(owner, members, map).await?;
 
     // Returning the operator outside while others remain proves the spectator
     // branch before the circuit has any timer.
-    move_member(owner,&members[3],START).await?;
-    assert_eq!(use_target(owner,&mut members[3],&target(map,LEVER)?).await?,UseDisposition::Committed);
-    assert_occupied(owner,&mut members[3],map).await?;
-    move_member(owner,&members[3],PARTIES[3].1).await?;
+    move_member(owner, &members[3], START).await?;
+    assert_eq!(
+        use_target(owner, &mut members[3], &target(map, LEVER)?).await?,
+        UseDisposition::Committed
+    );
+    assert_occupied(owner, &mut members[3], map).await?;
+    move_member(owner, &members[3], PARTIES[3].1).await?;
     Ok(())
 }
 
@@ -155,9 +223,20 @@ pub(super) async fn assert_occupied(
     operator: &mut AdmittedSession,
     map: &BundleMap,
 ) -> TestResult {
-    assert_eq!(use_target(owner,operator,&target(map,LEVER)?).await?,UseDisposition::Occupied);
-    assert_eq!(appearance(map,LEVER)?,2772);
-    assert_eq!(map.facts.movement_speech_since(0).last().ok_or("occupied room cue")?.1.text,OCCUPIED);
+    assert_eq!(
+        use_target(owner, operator, &target(map, LEVER)?).await?,
+        UseDisposition::Occupied
+    );
+    assert_eq!(appearance(map, LEVER)?, 2772);
+    assert_eq!(
+        map.facts
+            .movement_speech_since(0)
+            .last()
+            .ok_or("occupied room cue")?
+            .1
+            .text,
+        OCCUPIED
+    );
     Ok(())
 }
 
@@ -166,12 +245,20 @@ pub(super) async fn assert_party_admitted(
     members: &mut [AdmittedSession],
     map: &BundleMap,
 ) -> TestResult {
-    assert_eq!(use_target(owner,&mut members[3],&target(map,LEVER)?).await?,UseDisposition::Committed);
-    assert_eq!(appearance(map,LEVER)?,2773);
+    assert_eq!(
+        use_target(owner, &mut members[3], &target(map, LEVER)?).await?,
+        UseDisposition::Committed
+    );
+    assert_eq!(appearance(map, LEVER)?, 2773);
     let runtime = owner.runtime.lock().await;
-    for (member, (_,destination,_,_)) in members.iter().zip(PARTIES) {
-        assert_eq!(runtime.read_actor_position(member.runtime_actor.ok_or("entry actor")?)
-            .map_err(debug)?.position(),local(destination));
+    for (member, (_, destination, _, _)) in members.iter().zip(PARTIES) {
+        assert_eq!(
+            runtime
+                .read_actor_position(member.runtime_actor.ok_or("entry actor")?)
+                .map_err(debug)?
+                .position(),
+            local(destination)
+        );
     }
     Ok(())
 }

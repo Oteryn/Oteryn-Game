@@ -3,7 +3,8 @@
 use super::TestResult;
 
 #[test]
-fn coal_basin_sacrifices_only_the_arriving_split_and_replays_the_other_players_landing() -> TestResult {
+fn coal_basin_sacrifices_only_the_arriving_split_and_replays_the_other_players_landing()
+-> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
