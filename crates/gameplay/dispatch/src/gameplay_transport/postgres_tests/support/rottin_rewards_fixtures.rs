@@ -4,12 +4,19 @@ use super::fixture::{Harness, debug, id};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
 use crate::foundation::{CommandId, CommandRef};
-use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
+use crate::gameplay_transport::capabilities::SelectedCapabilities;
+use crate::gameplay_transport::connection::{
+    FreshAdmissionAuthority, UseCommand, regression_routed_item_use,
+};
 use crate::gameplay_transport::item_view::{ItemKey, SessionItemView, inventory_from_backpack};
 use oteryn_gameplay_quests::quest::QuestStateCatalogue;
 use oteryn_gameplay_quests::quest::authored_bindings::Bindings;
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
-use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseDisposition, UseIntent, UseTarget};
+use oteryn_protocol_oteryn::ClientCommandView;
+use oteryn_protocol_oteryn::world_object::{
+    CAPABILITY_ITEM_USE_V1, CAPABILITY_WORLD_INTERACTION_V1, COMMAND_TYPE_USE_INTENT, MapUseTarget,
+    UseDisposition, UseIntent, UseTarget, encode_item_use_intent,
+};
 use serde_json::json;
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
@@ -169,27 +176,41 @@ pub(super) async fn craft_charms(
     let (ribbon_id, ribbon) = operand(RIBBON)?;
     let (foot_id, foot) = operand(FOOT)?;
     let actor = admitted.runtime_actor.ok_or("recipe actor")?;
-    let use_pair = async |command_id, source, target, view: &SessionItemView| {
-        crate::gameplay_transport::mining::dispatch_map_use(
+    let mut use_session = *admitted;
+    use_session.item_fence = Some(fence);
+    use_session.continuity.selected_capabilities = SelectedCapabilities::select(
+        owner.offered_capabilities(),
+        &[4, 6, 11, 15, 18],
+    )
+    .ok_or("recipe item-use capabilities")?;
+    assert!(use_session.continuity.selected_capabilities.contains(CAPABILITY_ITEM_USE_V1));
+    assert!(use_session.continuity.selected_capabilities.contains(CAPABILITY_WORLD_INTERACTION_V1));
+    let mut view = Some(view);
+    let use_pair = async |command_id, source, target, view: &mut Option<SessionItemView>| -> TestResult<UseDisposition> {
+        let payload = encode_item_use_intent(&UseIntent {
+            target: UseTarget::Item(source),
+            use_with: None,
+            use_with_map_item: Some(MapUseTarget::Item(target)),
+            use_with_position: None,
+        })
+        .map_err(debug)?;
+        regression_routed_item_use(
             owner,
             actor,
-            UseCommand {
-                game_session_id: admitted.game_session_id,
+            use_session,
+            ClientCommandView {
                 command_id,
-                item_fence: Some(fence),
+                command_type: COMMAND_TYPE_USE_INTENT,
+                payload: &payload,
             },
-            UseIntent {
-                target: UseTarget::Item(source),
-                use_with: None,
-                use_with_map_item: Some(MapUseTarget::Item(target)),
-                use_with_position: None,
-            },
-            Some(view),
+            view,
         )
         .await
+        .map(|outcome| outcome.disposition)
+        .ok_or_else(|| "no recipe item-use result".into())
     };
     assert_eq!(
-        use_pair(1599, ribbon, foot, &view).await.ok_or("inactive recipe")?.disposition,
+        use_pair(1599, ribbon, foot, &mut view).await?,
         UseDisposition::NothingToUse
     );
     // Use the source-lowered start transition. Dialogue coverage lives in the NPC lane.
@@ -215,23 +236,23 @@ pub(super) async fn craft_charms(
         .map_err(debug)?;
     assert!(matches!(started, QuestTransitionOutcome::Committed(_)), "{started:?}");
     assert_eq!(
-        use_pair(1601, foot, ribbon, &view).await.ok_or("reversed recipe")?.disposition,
+        use_pair(1601, foot, ribbon, &mut view).await?,
         UseDisposition::NothingToUse
     );
     for command_id in 1602..1602 + u64::try_from(count)? {
         assert_eq!(
-            use_pair(command_id, ribbon, foot, &view).await.ok_or("ribbon on foot")?.disposition,
+            use_pair(command_id, ribbon, foot, &mut view).await?,
             UseDisposition::Committed
         );
     }
     // A resumed session no longer resolves either consumed handle.
-    let resumed_view = SessionItemView::resume(Default::default());
+    let mut resumed_view = Some(SessionItemView::resume(Default::default()));
     assert_eq!(
-        use_pair(1602, ribbon, foot, &resumed_view).await.ok_or("recipe replay")?.disposition,
+        use_pair(1602, ribbon, foot, &mut resumed_view).await?,
         UseDisposition::Committed
     );
     assert_eq!(
-        use_pair(1602, foot, ribbon, &resumed_view).await.ok_or("changed recipe replay")?.disposition,
+        use_pair(1602, foot, ribbon, &mut resumed_view).await?,
         UseDisposition::Rejected
     );
     let quantities: Vec<(String, i64)> = sqlx::query_as(

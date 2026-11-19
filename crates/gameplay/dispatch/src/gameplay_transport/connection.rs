@@ -35,6 +35,30 @@ use crate::foundation::{
 mod item_use_view_refresh;
 pub(in crate::gameplay_transport) use item_use_view_refresh::refresh_newhaven_inventory;
 
+#[cfg(test)]
+pub(super) async fn regression_routed_item_use<A: FreshAdmissionAuthority>(
+    authority: &A,
+    actor: ExactActorRef,
+    mut admitted: AdmittedSession,
+    command: oteryn_protocol_oteryn::ClientCommandView<'_>,
+    items: &mut Option<SessionItemView>,
+) -> Option<UseOutcome> {
+    match routing::use_item::route(
+        authority,
+        actor,
+        &mut admitted,
+        command,
+        items,
+        &mut None,
+        &None,
+    )
+    .await?
+    {
+        Dispatch::Use(outcome) => Some(outcome),
+        _ => None,
+    }
+}
+
 use appearance_change::SessionAppearance;
 use moved_step::moved_step_frames;
 use std::future::Future;
