@@ -686,13 +686,23 @@ async fn scenario(
     let first_id = first.current_character_lease().character_id();
     let second_id = second.current_character_lease().character_id();
     if cake_world_bonus {
-        sqlx::query("INSERT INTO game_cake_world_progress(world_id,event_year) VALUES(encode($1,'hex')::uuid,2026)")
-            .bind(world.as_bytes().as_slice()).execute(&h.pool).await?;
-        sqlx::query("INSERT INTO game_cake_phases(world_id,event_year,stage,layer,bonus_activated_at,bonus_until)
-            SELECT encode($1,'hex')::uuid,2026,3,4,activated,activated+interval '604800 seconds'
-            FROM (SELECT statement_timestamp() - CASE WHEN $2 THEN interval '0 seconds'
-                ELSE interval '604801 seconds' END AS activated) sample")
-            .bind(world.as_bytes().as_slice()).bind(cake_bonus_active).execute(&h.pool).await?;
+        sqlx::query(
+            "INSERT INTO game_cake_world_progress(world_id,event_year)
+             VALUES(encode($1,'hex')::uuid,2026)",
+        )
+        .bind(world.as_bytes().as_slice())
+        .execute(&h.pool)
+        .await?;
+        sqlx::query(
+            "INSERT INTO game_cake_phases(world_id,event_year,stage,layer,bonus_activated_at,bonus_until)
+             SELECT encode($1,'hex')::uuid,2026,3,4,activated,activated+interval '604800 seconds'
+             FROM (SELECT statement_timestamp() - CASE WHEN $2 THEN interval '0 seconds'
+                 ELSE interval '604801 seconds' END AS activated) sample",
+        )
+        .bind(world.as_bytes().as_slice())
+        .bind(cake_bonus_active)
+        .execute(&h.pool)
+        .await?;
         let (actor, session) = players[0];
         let runtime = owner.runtime.lock().await;
         let mut states = owner.states.spell_states.lock().await;
@@ -1563,7 +1573,8 @@ async fn scenario(
         );
     }
     if cake_world_bonus {
-        super::cake_world_bonus_fixtures::assert_regeneration(&owner, &players, cake_bonus_active).await?;
+        super::cake_world_bonus_fixtures::assert_regeneration(&owner, &players, cake_bonus_active)
+            .await?;
     }
     let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_party_kill_xp_receipts")
         .fetch_one(&h.pool)
