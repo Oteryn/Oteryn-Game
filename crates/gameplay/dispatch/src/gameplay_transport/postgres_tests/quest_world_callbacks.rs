@@ -364,7 +364,7 @@ pub(super) fn world_with_cells(
     clippy::too_many_arguments,
     reason = "combines existing object and native item fixtures with explicit extra cells"
 )]
-fn world_cells(
+pub(super) fn world_cells(
     callback: &Callback,
     trigger: Position,
     appearance: u16,

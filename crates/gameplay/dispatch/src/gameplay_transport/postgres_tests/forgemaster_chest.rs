@@ -26,7 +26,7 @@ pub(super) const BETWEEN_CHESTS: Position = Position { x: 34088, ..CHEST };
 const UID: u16 = 57237;
 const CHEST_APPEARANCE: u16 = 2472;
 // Crystal no_rest_for_the_wicked_rewards.lua:1-13 pairs each UID with a prize.
-const CHESTS: [(u16, i32, &[u16], u16); 11] = [
+const CHESTS: [(u16, u16, &[u16], u16); 11] = [
     (57237, 34087, &[2187], 49520),
     (57238, 34089, &[2187], 49522),
     (57239, 34091, &[2187], 49523),
@@ -100,7 +100,7 @@ pub(super) fn callback(name: &str) -> TestResult<Callback> {
     }))?)
 }
 
-fn native_selector(x: i32, under_chest: &[u16]) -> TestResult<NativeSelector> {
+fn native_selector(x: u16, under_chest: &[u16]) -> TestResult<NativeSelector> {
     Ok(NativeSelector {
         position: Position { x, ..CHEST },
         ordinal: u8::try_from(under_chest.len() + 1)?,
