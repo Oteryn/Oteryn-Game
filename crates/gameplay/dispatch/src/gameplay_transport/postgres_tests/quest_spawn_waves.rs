@@ -54,6 +54,7 @@ const CAVE_RAT: &str = "oteryn:creature.cave_rat";
 const CREDIT: &str = "oteryn:quest-transition/wave-egress/fixture";
 const TRACK: &str = "oteryn:quest-progress/fixture/wave-survived";
 const CUT: &str = "oteryn:quest-progress/fixture/weak-point";
+const OTHER_CUT: &str = "oteryn:quest-progress/fixture/other-weak-point";
 const CHAMPION: &str = "oteryn:achievement/champion_of_chazorai";
 const OAK_TOOL: &str = "oteryn:item.tibia.i919";
 
@@ -566,7 +567,7 @@ fn scenario(admin: String, case: Case) -> TestResult {
                 tokio::time::resume();
             }
             Case::EarthStep => earth_step_scenario(&owner, &mut admitted, deps.actor).await?,
-            Case::Retaliation => retaliation_scenario(&owner, &mut admitted, deps.actor).await?,
+            Case::Retaliation => retaliation_scenario(&h, &owner, &mut admitted, deps.actor).await?,
             Case::UnreachableExit | Case::UnknownAchievement | Case::WorldCredit => {
                 let peer = stage_peer(&h, &owner, &admitted).await?;
                 let peer_actor = peer.runtime_actor.ok_or("staged peer")?;
@@ -631,8 +632,8 @@ fn credit_catalogue(
 }
 
 fn retaliation_binding(callback: &mut Callback) {
-    // Crystal actions_demon_oak.lua:80-126. The fixture starts at the last
-    // special blow, using one weak point and one legal spawn cell.
+    // Crystal actions_demon_oak.lua:67-70,80-126 reads each character's weak
+    // points. Retain a completed point while staging the last special blow.
     callback.effects.encounter = None;
     callback.requires_world_admission = true;
     callback.item_on_target = Some(ItemOnTarget {
@@ -659,9 +660,21 @@ fn retaliation_binding(callback: &mut Callback) {
         at_least: false,
         read_only: false,
     });
+    callback.storage.push(Storage {
+        track: OTHER_CUT.into(),
+        minimum: 0,
+        maximum: 11,
+        set: 11,
+        add: None,
+        set_if: None,
+        preserve: true,
+        increment: false,
+        at_least: false,
+        read_only: false,
+    });
     callback.effects.retaliation = Some(Retaliation {
         progress: CUT.into(),
-        weak_points: vec![CUT.into()],
+        weak_points: vec![CUT.into(), OTHER_CUT.into()],
         completed_at: 11,
         positions: vec![FIRST],
         ordinary_chance: Chance { wins: 11, rolls: 100 },
@@ -706,6 +719,7 @@ fn retaliation_catalogue(
         preserve: false,
         ..cut.clone()
     };
+    finish.storage[1].minimum = 11;
     finish.storage.push(done);
     let bindings = Bindings::parse(&serde_json::to_vec(&serde_json::json!({"schema":1,"quests":[{
         "quest":hit.quest,
@@ -713,6 +727,7 @@ fn retaliation_catalogue(
         "sources":["Crystal 201189f8 demon_oak/actions_demon_oak.lua:62-126"],
         "tracks":[
             {"key":CUT,"initial":10,"minimum":10,"maximum":11},
+            {"key":OTHER_CUT,"initial":11,"minimum":0,"maximum":11},
             {"key":TRACK,"initial":0,"minimum":0,"maximum":1}
         ],
         "stages":[
@@ -725,6 +740,7 @@ fn retaliation_catalogue(
 }
 
 async fn retaliation_scenario(
+    h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     player: ExactActorRef,
@@ -775,6 +791,31 @@ async fn retaliation_scenario(
     assert_eq!(state.tracks().get(CUT), Some(&11));
     assert_eq!(state.tracks().get(TRACK), Some(&1));
     assert_eq!(before - health().await?, 35);
+
+    // Crystal actions_demon_oak.lua:67-70,80-96 uses the axe wielder's stored
+    // blows. Another character still owes the last blow after the first exits.
+    let mut peer = stage_peer(h, owner, admitted).await?;
+    let peer_actor = peer.runtime_actor.ok_or("peer actor")?;
+    let peer_fence = peer.item_fence.ok_or("peer axe item fence")?;
+    assert_ne!(peer_fence.character_id, fence.character_id);
+    super::quest_world_callbacks::input_item(
+        owner,
+        peer_fence,
+        &Offering { position: TRIGGER, item: OAK_TOOL.into(), count: 1 },
+        61,
+        true,
+    ).await?;
+    assert_eq!(use_room(owner, &mut peer, 1).await?, UseDisposition::Committed);
+    assert_eq!(position(owner, peer_actor).await?, local(PEER_START));
+    assert_eq!(position(owner, player).await?, local(EXIT));
+    let peer_state = owner.root
+        .read_character_quest_state(owner.character, peer_fence.character_id)
+        .await.map_err(debug)?;
+    assert_eq!(peer_state.tracks().get(CUT), Some(&11));
+    assert_eq!(peer_state.tracks().get(TRACK).copied().unwrap_or(0), 0);
+    let spawned = creatures(owner).await?;
+    assert_eq!(spawned.len(), 1);
+    assert_ne!(spawned[0].0, *last);
     Ok(())
 }
 
