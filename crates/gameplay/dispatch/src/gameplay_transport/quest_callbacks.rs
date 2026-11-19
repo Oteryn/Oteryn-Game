@@ -1638,6 +1638,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !callback.return_on_failure {
             return;
         }
+        let destination = if let Some(direction) = callback.effects.refusal_step_from_source {
+            use crate::movement::CardinalStep;
+            use world_callbacks::Facing;
+            let (dx, dy) = match direction {
+                Facing::North => CardinalStep::North,
+                Facing::East => CardinalStep::East,
+                Facing::South => CardinalStep::South,
+                Facing::West => CardinalStep::West,
+            }
+            .delta();
+            let at = entered.position();
+            let (Some(x), Some(y)) = (at.x.checked_add(dx), at.y.checked_add(dy)) else {
+                return;
+            };
+            MovementLocalPosition { x, y, ..at }
+        } else {
+            callback.failure_teleport.map_or(origin.position(), local)
+        };
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let blocked = super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
         if let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport_facing(
@@ -1646,7 +1664,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             actor,
             session,
             entered,
-            callback.failure_teleport.map_or(origin.position(), local),
+            destination,
             blocked,
             &closed,
             None,

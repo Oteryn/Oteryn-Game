@@ -218,9 +218,10 @@ pub(super) fn portal_callback() -> TestResult<Callback> {
         "selector":{"action":34301},
         "reversible":false,"passages":[],"offerings":[],
         "storage":[{"track":WINDOW,"minimum":1,"maximum":1,"set":1,"read_only":true}],
-        "teleport":LANDING,"return_on_failure":true,"failure_teleport":REFUSAL,
+        "teleport":LANDING,"return_on_failure":true,
         "failure_message":"You not proven your worth. There is no escape for you here.",
-        "effects":{"teleport_effect":TELEPORT,"refusal_effect_on_source":TELEPORT},
+        "effects":{"teleport_effect":TELEPORT,"refusal_effect_on_source":TELEPORT,
+            "refusal_step_from_source":"south"},
         "sources":[PORTAL_SOURCE]
     }]});
     let [callback] = oteryn_gameplay_quests::quest::world_callbacks::parse(&document.to_string())?

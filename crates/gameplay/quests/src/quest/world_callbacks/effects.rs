@@ -113,6 +113,9 @@ pub struct CallbackEffects {
     /// Cue at the entered object after a refused STEP relocates its actor.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub refusal_effect_on_source: Option<u16>,
+    /// One cardinal cell from the entered object on a refused STEP.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub refusal_step_from_source: Option<Facing>,
     pub portals: Option<PortalPair>,
     pub item_cycle: Option<ItemCycle>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -1405,6 +1408,11 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || callback.trigger != Trigger::StepIn
                 || !callback.return_on_failure
         })
+        || (effects.refusal_step_from_source.is_some()
+            && (callback.actor_kind != ActorKind::Player
+                || callback.trigger != Trigger::StepIn
+                || !callback.return_on_failure
+                || callback.failure_teleport.is_some()))
         || (callback.trigger == Trigger::StepOut && callback.return_on_failure)
     {
         return false;
