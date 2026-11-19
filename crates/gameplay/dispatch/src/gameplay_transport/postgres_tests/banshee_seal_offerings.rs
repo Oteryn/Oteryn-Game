@@ -18,6 +18,7 @@ const ENTRY: Position = Position {
     y: 31892,
     floor: -14,
 };
+const SACRIFICE_APPROACH: Position = Position { x: ENTRY.x - 1, ..ENTRY };
 // Crystal startup/tables/teleport.lua:234-240, paired portals.
 const PLAGUE_ENTRY: Position = Position {
     x: 32176,
@@ -106,7 +107,7 @@ fn document(name: &str) -> serde_json::Value {
         json!({"teleport_effect":11})
     } else {
         json!({
-            "fluid_offering":{"position":ALTAR,"subtype":BLOOD,
+            "fluid_offering":{"position":ALTAR,"subtype":BLOOD,"missing_return_effect":11,
                 "placement_cues":BLOOD_CUES.map(|position| json!({"position":position,"effect":1}))},
             "magic":{"position":ALTAR,"effect":14},
             "teleport_effect":14
@@ -270,6 +271,7 @@ pub(super) async fn exercise(
             1
         );
         assert!(blood_cues(owner)?.is_empty());
+        assert_eq!(effects_at(owner, SACRIFICE_APPROACH)?, vec![11]);
         pour(owner, admitted, h, BLOOD, 302).await?;
         assert_eq!(blood_cues(owner)?, BLOOD_CUES);
         move_to_flame(owner, admitted).await?;
@@ -311,6 +313,26 @@ pub(super) async fn exercise(
         assert_eq!(
             count("SELECT count(*) FROM game_character_quest_tracks WHERE value=1").await?,
             2
+        );
+        assert_eq!(effects_at(owner, ALTAR)?, vec![14]);
+        assert_eq!(effects_at(owner, SACRIFICE_LANDING)?, vec![14]);
+
+        // Crystal movement-4-fourth_seal_flame.lua:9-12 rejects an already
+        // completed seal before it looks at the blood on the altar.
+        pour(owner, admitted, h, BLOOD, 303).await?;
+        move_to_flame(owner, admitted).await?;
+        let command = admitted.continuity.next_command_id;
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(std::time::Duration::from_secs(2))
+            .ok_or("clock")?;
+        wire(owner, admitted, command, 1, encode_step_intent(StepDirection::East)).await?;
+        let returned = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?;
+        assert_eq!(returned.position(), local(SACRIFICE_APPROACH));
+        assert_eq!(effects_at(owner, SACRIFICE_APPROACH)?, vec![11]);
+        assert_eq!(
+            count("SELECT count(*) FROM game_item_fluid_splashes WHERE fluid_subtype=5").await?,
+            1
         );
     }
     Ok(())
@@ -373,6 +395,13 @@ fn blood_cues(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult<Vec<Posi
         .collect())
 }
 
+fn effects_at(owner: &ComposedFreshAdmission<'_, '_, '_>, position: Position) -> TestResult<Vec<u16>> {
+    let map = owner.bundle_map().ok_or("map")?;
+    Ok(map.facts.movement_effects_since(0).into_iter().filter_map(|(_, at, effect)| {
+        ((at.x, at.y, at.floor) == (position.x, position.y, position.floor)).then_some(effect)
+    }).collect())
+}
+
 async fn move_to_flame(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
@@ -381,7 +410,7 @@ async fn move_to_flame(
         owner,
         admitted.runtime_actor.ok_or("actor")?,
         admitted.game_session_id,
-        Position { x: ENTRY.x - 1, ..ENTRY },
+        SACRIFICE_APPROACH,
     ).await
 }
 

@@ -887,6 +887,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         callback,
                         pending.expected,
                         origin,
+                        result,
                     );
                 }
             }
@@ -1579,6 +1580,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     callback,
                     entered,
                     origin,
+                    result,
                 );
             }
             runtime.read_actor_position(actor).unwrap_or(entered)
@@ -1602,6 +1604,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         callback,
                         entered,
                         origin,
+                        UseDisposition::Rejected,
                     );
                 }
                 runtime.read_actor_position(actor).unwrap_or(entered)
@@ -1647,6 +1650,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         callback: &Callback,
         entered: MovementPositionSnapshot,
         origin: MovementPositionSnapshot,
+        result: UseDisposition,
     ) {
         if !callback.return_on_failure {
             return;
@@ -1684,10 +1688,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, snapshot.position()),
             );
             self.punish_carrot_refusal(runtime, states, actor, session, entered, snapshot);
-            if let Some(effect) = callback.effects.teleport_effect.or_else(|| {
-                oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key)
-                    .map(|gate| gate.effect)
-            }) && let Some(at) = native(snapshot.position())
+            // An authored offering cue applies only to missing fluid. Crystal
+            // movement-4-fourth_seal_flame.lua:9-21 returns completed seals silently.
+            let effect = match callback
+                .effects
+                .fluid_offering
+                .as_ref()
+                .and_then(|offering| offering.missing_return_effect)
+            {
+                Some(effect) => (result == UseDisposition::RequirementNotMet).then_some(effect),
+                None => callback.effects.teleport_effect.or_else(|| {
+                    oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key)
+                        .map(|gate| gate.effect)
+                }),
+            };
+            if let Some(effect) = effect
+                && let Some(at) = native(snapshot.position())
             {
                 let _ = map.facts.emit_movement_effect(at, effect);
             }

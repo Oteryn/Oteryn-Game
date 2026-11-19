@@ -1298,7 +1298,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if let Ok(mut pending)=self.states.quest_callbacks.records.lock(){pending.remove(&session);}
                     return UseDisposition::Committed;
                 }
-                Ok(_) | Err(_) => {
+                outcome => {
                     if oteryn_gameplay_quests::quest::death_objectives::load().is_ok_and(|objectives|
                         objectives.iter().any(|objective| objective.quest == callback.quest && objective.guardian.is_some()))
                     {
@@ -1317,6 +1317,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if party.is_some() {
                         // The source lever still flips on a missing sacrifice.
                         map.facts.apply_quest_callback(key, expected_revision, after, &[], &[], close, None);
+                    }
+                    if callback.effects.fluid_offering.as_ref()
+                        .is_some_and(|offering| offering.missing_return_effect.is_some())
+                        && matches!(outcome, Ok(QuestTransitionOutcome::Refused(
+                            oteryn_gameplay_quests::quest::QuestRefusal::SourceOfferingMissing
+                        )))
+                    {
+                        return UseDisposition::RequirementNotMet;
                     }
                     return UseDisposition::Rejected;
                 }

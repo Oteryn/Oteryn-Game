@@ -50,6 +50,9 @@ pub struct ItemDisguiseRequirement {
 pub struct FluidOffering {
     pub position: Position,
     pub subtype: u8,
+    /// Cue at the restored StepIn origin when the required fluid is missing.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub missing_return_effect: Option<u16>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub placement_cues: Vec<MagicEffect>,
 }
@@ -558,6 +561,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || callback.item_on_target.is_some()
             || !effects.carried_inputs.is_empty()
             || offering.subtype == 0
+            || offering
+                .missing_return_effect
+                .is_some_and(|effect| effect == 0 || effect > 255 || !callback.return_on_failure)
             || !pos(offering.position)
             || offering.placement_cues.len() > 8
             || offering

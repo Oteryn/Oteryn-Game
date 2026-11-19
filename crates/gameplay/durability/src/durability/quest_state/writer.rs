@@ -1937,7 +1937,16 @@ impl DurabilityRoot {
                     }
                     if let (Some(callback), Some((permit, context, _))) = (&callback, &context)
                         && !super::super::quest_world_callback::consume(&mut tx, permit, fence, &request, callback, &changes, context, (&recovery, &node)).await?
-                    { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
+                    {
+                        let refusal = if callback.effects.fluid_offering.as_ref()
+                            .is_some_and(|offering| offering.missing_return_effect.is_some())
+                        {
+                            QuestRefusal::SourceOfferingMissing
+                        } else {
+                            QuestRefusal::StageMismatch
+                        };
+                        return Ok(Ok(QuestTransitionOutcome::Refused(refusal)));
+                    }
                     if native_claim {
                         let Some((permit, world, _)) = &context else { return Err(DurabilityError::InvalidStoredState); };
                         if !super::super::quest_world_callback::context_is_current(&mut tx, permit, fence, world).await? {
