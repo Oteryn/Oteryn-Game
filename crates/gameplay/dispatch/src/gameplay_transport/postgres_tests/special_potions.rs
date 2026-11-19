@@ -1,6 +1,7 @@
 //! Crystal 201189f8 potions.lua:21-26,36-42,57,62,78-110,141-147.
 //! Real USE frames, actual player condition owner, fenced PostgreSQL burn and flask.
 use super::special_potions_fixtures::{exchange};
+use super::srx3_native_source_cast_fixtures::NativeOwnerClock;
 
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
@@ -16,7 +17,6 @@ use oteryn_protocol_oteryn::world_object::{
     UseDisposition, UseIntent, UseTarget, decode_use_result, encode_item_use_intent,
 };
 use std::num::NonZeroU64;
-use std::time::Duration;
 
 #[test]
 fn antidote_potion_postgres_use_cures_poison_flask_cooldown_replay() -> TestResult {
@@ -180,9 +180,8 @@ fn scenario(item: u32, vocation: &'static str, level: u32) -> TestResult {
         owner.active_generation = Some(generation);
         owner.movement_cells = (&cells).into();
         owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&deps.room));
-        owner.clock_origin = std::time::Instant::now()
-            .checked_sub(Duration::from_secs(60))
-            .ok_or("clock")?;
+        let clock = NativeOwnerClock::new(&owner);
+        clock.set(60_000_000);
         {
             let runtime = deps.runtime.lock().await;
             let mut states = owner.states.spell_states.lock().await;
@@ -284,6 +283,7 @@ fn scenario(item: u32, vocation: &'static str, level: u32) -> TestResult {
             );
             assert_eq!(inventory_fingerprint(&h).await?, before);
             eprintln!("PG_MARKER i14-magic-shield-requirement-refusal {vocation} {level}");
+            drop(clock);
             drop(owner);
             drop(authority);
             drop(seal);
@@ -378,9 +378,7 @@ fn scenario(item: u32, vocation: &'static str, level: u32) -> TestResult {
             );
         }
         // Place the next framed USE inside the source action delay on the fixture's owner clock.
-        owner.clock_origin = std::time::Instant::now()
-            .checked_sub(Duration::from_micros(applied + 100_000))
-            .ok_or("cooldown clock")?;
+        clock.set(applied + 100_000);
         let (next, _, exhausted, _) =
             exchange(&owner, admitted, 2, &payload, reference(&key), None).await?;
         admitted = next;
@@ -390,10 +388,7 @@ fn scenario(item: u32, vocation: &'static str, level: u32) -> TestResult {
         );
         assert_eq!(inventory_fingerprint(&h).await?, after);
         if item == 7644 {
-            owner.clock_origin = owner
-                .clock_origin
-                .checked_sub(Duration::from_secs(2))
-                .ok_or("next potion time")?;
+            clock.set(applied + 2_100_000);
             let (_, _, clean_use, _) =
                 exchange(&owner, admitted, 3, &payload, reference(&key), None).await?;
             assert_eq!(
@@ -407,10 +402,7 @@ fn scenario(item: u32, vocation: &'static str, level: u32) -> TestResult {
             assert_eq!(sqlx::query_scalar::<_,i64>("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i285' AND lifecycle=1")
                 .fetch_one(&h.pool).await?, 2);
         } else {
-            owner.clock_origin = owner
-                .clock_origin
-                .checked_sub(Duration::from_secs(61))
-                .ok_or("shield expiry time")?;
+            clock.set(applied + 61_100_000);
             let runtime = deps.runtime.lock().await;
             let mut states = owner.states.spell_states.lock().await;
             states
@@ -446,6 +438,7 @@ fn scenario(item: u32, vocation: &'static str, level: u32) -> TestResult {
         )
         .await?;
         eprintln!("PG_MARKER i14-special-potion-effect-burn-flask-replay-cooldown {item}");
+        drop(clock);
         drop(owner);
         drop(authority);
         drop(seal);
