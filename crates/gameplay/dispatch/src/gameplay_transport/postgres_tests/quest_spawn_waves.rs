@@ -5,6 +5,7 @@ use super::{
 };
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition, NodeId,
+    owner_timer::SemanticTimeMicros,
 };
 use crate::gameplay_transport::{FenceHold, FenceStep, TransitionFence};
 use crate::map::view::MapFacts;
@@ -955,7 +956,7 @@ async fn wave_scenario(
                 Some("physical"),
                 1,
                 b"terminal-wave-reflection",
-                owner.owner_now(),
+                SemanticTimeMicros::from_micros(owner.owner_now().get()),
             ));
             assert!(!runtime.contains_live_creature(*terminal));
             assert_eq!(states.equipment_reflection_kills.len(), 1);
