@@ -11,7 +11,7 @@ fn srx3_weeping_actual_death_step_outfit_and_later_item_replay_postgres() -> Tes
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("srx3-weeping-source-step", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-weeping-source-step", || {
         run(async |admin| {
             use crate::domain::condition::ConflictKey;
             use crate::durability::creature_source_items::SourceGroundStep;
@@ -24,8 +24,8 @@ fn srx3_weeping_actual_death_step_outfit_and_later_item_replay_postgres() -> Tes
             reset();
             let h = Harness::create_with_admission_seed(admin, "srx3_weeping_step", false, false)
                 .await?;
-            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-            super::house_transfer::prepare_owned_session(&h).await?;
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::house_transfer_fixtures::prepare_owned_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -62,7 +62,7 @@ fn srx3_weeping_actual_death_step_outfit_and_later_item_replay_postgres() -> Tes
                     .overlay
                     .base(),
             );
-            super::boss_activity::issue_content_and_reset_with_runtime_pin(
+            super::boss_activity_fixtures::issue_content_and_reset_with_runtime_pin(
                 &h,
                 &activation_pin,
                 &scene.pin,
@@ -411,7 +411,7 @@ async fn weeping_corpse_from_actual_death(
         admitted.game_session_id,
         crate::foundation::CommandId::new(ordinal).map_err(debug)?,
     );
-    super::srx3_rotten_callbacks::publish_native_fixture_player_source(
+    super::srx3_rotten_callbacks_fixtures::publish_native_fixture_player_source(
         owner,
         fence,
         actor,
@@ -481,7 +481,7 @@ async fn weeping_corpse_from_actual_death(
         );
         child
     };
-    super::srx3_native_source_cast::drain_source_death(owner, child, now).await?;
+    super::srx3_native_source_cast_fixtures::drain_source_death(owner, child, now).await?;
     assert_eq!(
         owner.drain_kill_rewards(admitted.game_session_id).await,
         crate::gameplay_transport::kill_reward::DrainOutcome::Drained
@@ -494,7 +494,7 @@ fn srx3_spite_private_registration_uses_actual_ready_scope_before_entry_postgres
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("srx3-spite-private-global", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-spite-private-global", || {
         run(async |admin| {
             use crate::foundation::RuntimeScopeRefV1;
             use oteryn_simulation_determinism::SemanticTimeMicros;
@@ -506,8 +506,8 @@ fn srx3_spite_private_registration_uses_actual_ready_scope_before_entry_postgres
                 false,
             )
             .await?;
-            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-            super::house_transfer::prepare_owned_session(&h).await?;
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::house_transfer_fixtures::prepare_owned_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -526,10 +526,10 @@ fn srx3_spite_private_registration_uses_actual_ready_scope_before_entry_postgres
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &evidence.evidence;
             install_scene(&mut owner, &scene, PinnedActivitySourceRoom::GoshnarsSpite)?;
-            super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+            super::boss_activity_fixtures::issue_content_and_reset(&h, &scene.pin).await?;
             let mut admitted = deps.admitted;
             prepare_player(&h, &owner, &mut admitted, 500).await?;
-            let scope = super::activity_runtime::allocate_ready_instance(&h, 218).await?;
+            let scope = super::activity_runtime_fixtures::allocate_ready_instance(&h, 218).await?;
             let started = owner.owner_now().get();
             // Exercise the actual ready-runtime registration owner without
             // manufacturing a callback, accepting a lever or opening the gate.
@@ -670,7 +670,7 @@ fn spite_source_step_case(cancel_during_cleanup: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("srx3-spite-source-step", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-spite-source-step", move || {
         run(async move |admin| {
             use crate::durability::character_progression::CharacterProgressionError;
             use crate::durability::quest_state::{
@@ -681,8 +681,8 @@ fn spite_source_step_case(cancel_during_cleanup: bool) -> TestResult {
             reset();
             let h =
                 Harness::create_with_admission_seed(admin, "srx3_spite_step", false, false).await?;
-            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-            super::house_transfer::prepare_owned_session(&h).await?;
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::house_transfer_fixtures::prepare_owned_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -701,7 +701,7 @@ fn spite_source_step_case(cancel_during_cleanup: bool) -> TestResult {
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &evidence.evidence;
             install_scene(&mut owner, &scene, PinnedActivitySourceRoom::GoshnarsSpite)?;
-            super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+            super::boss_activity_fixtures::issue_content_and_reset(&h, &scene.pin).await?;
             let mut admitted = deps.admitted;
             prepare_player(&h, &owner, &mut admitted, 500).await?;
             h.root.set_test_quest_clock(1_800_000_000).map_err(debug)?;
@@ -1123,7 +1123,7 @@ fn registered_global_case(reserve_target: bool, expire: bool) -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run("srx3-spite-global", move || {
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-spite-global", move || {
         run(async move |admin| {
             reset();
             let scene = SourceScene::new(
@@ -1137,8 +1137,8 @@ fn registered_global_case(reserve_target: bool, expire: bool) -> TestResult {
             let deps = scene.dependencies()?;
             let h = Harness::create_with_admission_seed(admin, "srx3_spite_global", false, false)
                 .await?;
-            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-            super::house_transfer::prepare_owned_session(&h).await?;
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::house_transfer_fixtures::prepare_owned_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -1148,7 +1148,7 @@ fn registered_global_case(reserve_target: bool, expire: bool) -> TestResult {
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &evidence.evidence;
             install_scene(&mut owner, &scene, PinnedActivitySourceRoom::GoshnarsSpite)?;
-            super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+            super::boss_activity_fixtures::issue_content_and_reset(&h, &scene.pin).await?;
             let mut admitted = deps.admitted;
             prepare_player(&h, &owner, &mut admitted, 500).await?;
             let native = scene
@@ -1511,8 +1511,8 @@ fn srx3_spite_registered_global_qualifies_actual_published_world_without_private
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run("srx3-spite-global-world", || {
-        let scene = super::srx3_soul_war_world_fixture::source_world(MovementLocalPosition {
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-spite-global-world", || {
+        let scene = super::srx3_soul_war_world_fixture_fixtures::source_world(MovementLocalPosition {
             x: 33742,
             y: 31639,
             floor: 14,
@@ -1551,10 +1551,10 @@ fn srx3_spite_registered_world_owner_emits_one_selected_field_without_a_boss_aft
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run("srx3-spite-global-owner", || {
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-spite-global-owner", || {
         run(async |admin| {
             reset();
-            let scene = super::srx3_soul_war_world_fixture::source_world(MovementLocalPosition {
+            let scene = super::srx3_soul_war_world_fixture_fixtures::source_world(MovementLocalPosition {
                 x: 33742,
                 y: 31639,
                 floor: 14,
@@ -1563,8 +1563,8 @@ fn srx3_spite_registered_world_owner_emits_one_selected_field_without_a_boss_aft
             let h =
                 Harness::create_with_admission_seed(admin, "srx3_spite_global_owner", false, false)
                     .await?;
-            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-            super::house_transfer::prepare_owned_session(&h).await?;
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::house_transfer_fixtures::prepare_owned_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -1576,7 +1576,7 @@ fn srx3_spite_registered_world_owner_emits_one_selected_field_without_a_boss_aft
             owner.active_generation = scene.controller.active();
             owner.rooms =
                 crate::gameplay_transport::SeamRooms::new(Some(&scene.room), Some(&scene.room));
-            super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+            super::boss_activity_fixtures::issue_content_and_reset(&h, &scene.pin).await?;
             let mut admitted = deps.admitted;
             prepare_player(&h, &owner, &mut admitted, 500).await?;
             let registered = owner.owner_now().get();

@@ -17,7 +17,7 @@ fn srx3_megalomania_native_corpses_player_and_creature_steps_postgres() -> TestR
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("srx3-megalomania-ground-step", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-megalomania-ground-step", || {
         run(async |admin| {
             use crate::gameplay_transport::capabilities::{
                 BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
@@ -45,8 +45,8 @@ fn srx3_megalomania_native_corpses_player_and_creature_steps_postgres() -> TestR
             sqlx::query("INSERT INTO game_character_soul_war(character_id,teleport_access,defeated_bosses,first_taint_at,megalomania_completed,final_reward_claimed) VALUES(encode($1,'hex')::uuid,true,31,extract(epoch from clock_timestamp())::bigint,false,false)")
                 .bind(id(41).as_slice()).execute(&mut *historical).await?;
             historical.commit().await?;
-            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-            super::house_transfer::prepare_owned_session(&h).await?;
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::house_transfer_fixtures::prepare_owned_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -60,7 +60,7 @@ fn srx3_megalomania_native_corpses_player_and_creature_steps_postgres() -> TestR
                 &scene,
                 PinnedActivitySourceRoom::GoshnarsMegalomania,
             )?;
-            super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+            super::boss_activity_fixtures::issue_content_and_reset(&h, &scene.pin).await?;
             let mut admitted = deps.admitted;
             admitted.continuity.selected_capabilities = SelectedCapabilities::select(
                 BUNDLE_WORLD_OFFERED_CAPABILITIES,
@@ -79,8 +79,8 @@ fn srx3_megalomania_native_corpses_player_and_creature_steps_postgres() -> TestR
             )
             .ok_or("actual boss capabilities")?;
             prepare_player(&h, &owner, &mut admitted, 1999).await?;
-            let instance = super::activity_runtime::allocate_ready_instance(&h, 217).await?;
-            let (_, reply, barrier) = super::boss_activity::exchange_capture(
+            let instance = super::activity_runtime_fixtures::allocate_ready_instance(&h, 217).await?;
+            let (_, reply, barrier) = super::boss_activity_fixtures::exchange_capture(
                 &owner,
                 &mut admitted,
                 "oteryn:boss.goshnar_s_megalomania",
@@ -716,7 +716,7 @@ async fn actual_corpse(
         admitted.game_session_id,
         crate::foundation::CommandId::new(ordinal).map_err(debug)?,
     );
-    super::srx3_rotten_callbacks::publish_native_fixture_player_source(
+    super::srx3_rotten_callbacks_fixtures::publish_native_fixture_player_source(
         owner,
         fence,
         actor,
@@ -792,7 +792,7 @@ async fn actual_corpse(
         );
         child
     };
-    super::srx3_native_source_cast::drain_source_death(owner, child, now).await?;
+    super::srx3_native_source_cast_fixtures::drain_source_death(owner, child, now).await?;
     assert_eq!(
         owner.drain_kill_rewards(admitted.game_session_id).await,
         crate::gameplay_transport::kill_reward::DrainOutcome::Drained

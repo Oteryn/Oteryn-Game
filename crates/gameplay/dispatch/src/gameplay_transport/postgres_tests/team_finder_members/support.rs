@@ -248,7 +248,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     // full_world_e2e uses this qualified generation to align the native training
     // formula with the bootstrap fixture's durable content-1 interpretation.
     let (controller, _pin) =
-        super::super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+        super::super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
     let active = controller.active().ok_or("active native content")?;
     let mut owner = crate::gameplay_transport::composed_test_owner::ComposedTestOwner {
         root: &h.root, character: &recovery, holder: &h.node, evidence: &evidence,

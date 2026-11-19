@@ -1,0 +1,138 @@
+use super::fixture::{Harness, debug};
+use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
+use crate::foundation::ExactActorRef;
+use crate::gameplay_transport::{
+    connection::{FreshAdmissionAuthority, UseCommand},
+    item_look,
+    item_move::{LoopMove, LoopMoveResult, LoopTarget},
+    item_view,
+    world_map::SessionMapView,
+};
+use oteryn_protocol_oteryn::{
+    arena::{ArenaAction, ArenaDisposition},
+    item_look::ItemLookResult,
+    item_view::WorldTilePosition,
+};
+
+pub(super) async fn after_first_rank(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    actor: ExactActorRef,
+) -> TestResult {
+    let claimed = super::arena_match_fixtures::command(
+        owner,
+        admitted,
+        ArenaAction::ClaimReward {
+            rank: 1,
+            category: 4,
+            choice: 1,
+        },
+    )
+    .await?;
+    assert_eq!(claimed.disposition, ArenaDisposition::Applied);
+    let fence = admitted.item_fence.ok_or("trophy character")?;
+    let bytes: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(i.item_instance_id) FROM game_item_instances i
+        JOIN game_item_container_entries e USING(item_instance_id) WHERE e.character_id=encode($1,'hex')::uuid
+        AND i.definition_production_key='oteryn:item.tibia.i5807' AND i.lifecycle=1")
+        .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    let trophy = item_view::ItemKey::Instance(bytes.as_slice().try_into()?);
+    let recipient: String = sqlx::query_scalar(
+        "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    let backpack = owner
+        .root
+        .read_character_backpack(owner.character, fence.character_id)
+        .await?;
+    let index = owner
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .and_then(|native| native.item_index())
+        .ok_or("Item index")?;
+    let inventory = item_view::inventory_from_backpack(backpack.as_ref(), |definition| {
+        index.definition_ref(
+            &definition.family,
+            &definition.production_key,
+            &definition.revision_ref,
+        )
+    })
+    .ok_or("inventory")?;
+    let mut views = item_view::SessionItemView::resume(item_view::ItemViewContinuity::default());
+    views.snapshot(inventory, None).map_err(debug)?;
+    let handle = views.table().handle(&trophy).ok_or("trophy handle")?;
+    let ItemLookResult::Text(text) = item_look::look_item(
+        owner,
+        actor,
+        admitted.game_session_id,
+        Some(fence),
+        &views,
+        handle,
+    )
+    .await
+    else {
+        return Err("the visible trophy must support LOOK".into());
+    };
+    let inscription = format!(
+        "It is given to the courageous victor of the barbarian arena in greenhorn difficulty. Awarded to {recipient}"
+    );
+    assert!(text.ends_with(&inscription));
+
+    let position = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(actor)
+        .map_err(debug)?
+        .position();
+    let moved = owner
+        .move_loop_item(
+            actor,
+            UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id: admitted.continuity.next_command_id,
+                item_fence: Some(fence),
+            },
+            LoopMove {
+                item: trophy,
+                count: None,
+                target: LoopTarget::Ground(WorldTilePosition {
+                    x: position.x,
+                    y: position.y,
+                    floor: position.floor.checked_neg().ok_or("trophy floor")?,
+                }),
+            },
+        )
+        .await;
+    assert_eq!(moved, LoopMoveResult::Committed);
+    let mut map = SessionMapView::default();
+    let mut map_items =
+        item_view::SessionItemView::resume(item_view::ItemViewContinuity::default())
+            .with_map_view();
+    owner
+        .observe_world_map(actor, &mut map, &mut map_items)
+        .await
+        .ok_or("Arena map")?
+        .map_err(debug)?
+        .ok_or("Arena map snapshot")?;
+    let ground_handle = map_items
+        .table()
+        .handle(&trophy)
+        .ok_or("trophy ground handle")?;
+    let ItemLookResult::Text(ground_text) = item_look::look_item(
+        owner,
+        actor,
+        admitted.game_session_id,
+        None,
+        &map_items,
+        ground_handle,
+    )
+    .await
+    else {
+        return Err("the Ground trophy must support LOOK".into());
+    };
+    assert!(ground_text.ends_with(&inscription));
+    Ok(())
+}

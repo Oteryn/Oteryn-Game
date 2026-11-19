@@ -10,7 +10,7 @@ async fn action(
     let id = admitted.continuity.next_command_id;
     let payload = difficulty::encode_request(&request).map_err(debug)?;
     let (status, bytes) =
-        super::super::boss_difficulty::exchange(owner, admitted, id, &payload).await?;
+        super::super::boss_difficulty_fixtures::exchange(owner, admitted, id, &payload).await?;
     assert_eq!(status, CommandStatus::Accepted);
     difficulty::decode_reply(&bytes).map_err(debug)
 }
@@ -24,7 +24,7 @@ pub(super) async fn exercise(
 ) -> TestResult {
     let id = admitted.continuity.next_command_id;
     let body = wire::encode_boss_key(boss).map_err(debug)?;
-    let (status, bytes) = super::super::boss_difficulty::exchange_kind(
+    let (status, bytes) = super::super::boss_difficulty_fixtures::exchange_kind(
         owner,
         admitted,
         id,
@@ -165,7 +165,7 @@ pub(super) async fn exercise(
     let payload =
         oteryn_protocol_oteryn::highscores::encode_highscores_query(query).map_err(debug)?;
     let (status, bytes) =
-        super::super::boss_difficulty::exchange_kind(owner, admitted, id, &payload, 14).await?;
+        super::super::boss_difficulty_fixtures::exchange_kind(owner, admitted, id, &payload, 14).await?;
     assert_eq!(status, CommandStatus::Accepted);
     let result =
         oteryn_protocol_oteryn::highscores::decode_highscores_result(&bytes).map_err(debug)?;

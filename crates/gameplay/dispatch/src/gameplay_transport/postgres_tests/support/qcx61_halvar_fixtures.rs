@@ -1,0 +1,226 @@
+use super::fixture::{Harness, debug};
+use super::{
+    AdmittedSession, ComposedFreshAdmission, TestResult, classic_quests_fixtures as classic_quests,
+};
+use crate::foundation::{ExactActorRef, MovementLocalPosition};
+use oteryn_gameplay_quests::quest::world_callbacks::Callback;
+use oteryn_protocol_oteryn::{
+    arena::{ArenaAction, ArenaDisposition},
+    world_object::{UseDisposition, WorldObjectTarget, decode_use_result, encode_use_intent},
+    world_spatial::StepDirection,
+};
+use serde_json::json;
+
+const APPROACH: MovementLocalPosition = MovementLocalPosition {
+    x: 32246,
+    y: 31098,
+    floor: 7,
+};
+
+pub(super) fn callback() -> TestResult<Callback> {
+    Ok(serde_json::from_value(json!({
+        "key":"oteryn:quest-callback/qcx61/arena-entrance",
+        "quest":"oteryn:quest.barbarian_arena_quest",
+        "selector":{"action":25100,"native":{
+            "position":{"x":32246,"y":31097,"floor":-7},"ordinal":1,"appearance":1949
+        }},
+        "trigger":"step_in","reversible":false,"passages":[],"offerings":[],"storage":[],
+        "return_on_failure":false,
+        "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/svargrond_arena/movements_arena_enter.lua:3-40"]
+    }))?)
+}
+
+pub(super) async fn exercise(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    actor: ExactActorRef,
+    pit_ground_reset: bool,
+) -> TestResult {
+    owner
+        .states
+        .quest_callbacks
+        .fixture
+        .set(vec![callback()?])
+        .map_err(|_| "Arena native callback")?;
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let current = runtime.read_actor_position(actor).map_err(debug)?;
+        runtime
+            .relocate_arena_player(actor, admitted.game_session_id, current, APPROACH)
+            .map_err(debug)?;
+    }
+    let [halvar] = classic_quests::install(owner, admitted, ["oteryn:npc.halvar"]).await?;
+    if !pit_ground_reset {
+        assert_eq!(
+            use_sealed_door(owner, admitted, actor, 32233, 31098).await?,
+            UseDisposition::Locked
+        );
+    }
+    let (unpaid, _) = owner
+        .ordinary_paced_step(
+            actor,
+            admitted.game_session_id,
+            StepDirection::North,
+            None,
+            None,
+        )
+        .await;
+    assert_eq!(
+        unpaid.moved_to.ok_or("unpaid step")?.actor_position,
+        APPROACH
+    );
+    assert_eq!(
+        super::arena_match_fixtures::command(owner, admitted, ArenaAction::Enter)
+            .await?
+            .disposition,
+        ArenaDisposition::WrongState
+    );
+    assert_eq!(fees(h).await?, 0);
+    let observed = if pit_ground_reset {
+        Some(super::qcx61_pit_ground_reset_fixtures::seed(owner, admitted, h).await?)
+    } else {
+        None
+    };
+
+    classic_quests::talk(owner, admitted, halvar, 20300, "hi").await?;
+    let quote = classic_quests::talk(owner, admitted, halvar, 20301, "fight").await?;
+    assert!(quote.iter().any(|line| line.contains("1000")));
+    let paid = classic_quests::talk(owner, admitted, halvar, 20302, "yes").await?;
+    assert!(paid.iter().any(|line| line.contains("pass the door")));
+    let staged: (i32, i32) = sqlx::query_as(
+        "SELECT (body->>'paid_rank')::int, (body->>'phase')::int FROM game_character_arena_matches",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(staged, (1, 0));
+    assert_eq!(fees(h).await?, 1);
+    if !pit_ground_reset {
+        assert_eq!(
+            use_sealed_door(owner, admitted, actor, 32233, 31098).await?,
+            UseDisposition::Committed
+        );
+    }
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position(),
+        APPROACH
+    );
+
+    if !pit_ground_reset {
+        owner.clock_origin -= std::time::Duration::from_secs(2);
+        let (unqualified, _) = owner
+            .ordinary_paced_step(
+                actor,
+                admitted.game_session_id,
+                StepDirection::North,
+                None,
+                None,
+            )
+            .await;
+        assert_eq!(
+            unqualified
+                .moved_to
+                .ok_or("unqualified paid step")?
+                .actor_position,
+            APPROACH
+        );
+        let leases: i64 = sqlx::query_scalar("SELECT count(*) FROM game_svargrond_pit_leases")
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(leases, 0);
+        assert_eq!(fees(h).await?, 1);
+    }
+    super::arena_match_fixtures::finish_barbarian_test(owner, admitted.game_session_id).await?;
+    owner.clock_origin -= std::time::Duration::from_secs(2);
+    let (admitted_step, _) = owner
+        .ordinary_paced_step(
+            actor,
+            admitted.game_session_id,
+            StepDirection::North,
+            None,
+            None,
+        )
+        .await;
+    let landing = admitted_step.moved_to.ok_or("paid step")?.actor_position;
+    let (x, y) = crate::durability::arena_match::donor::CENTERS[0];
+    assert_eq!((landing.x, landing.y, landing.floor), (x, y, 7));
+    assert_eq!(fees(h).await?, 1);
+    let leases: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM game_svargrond_pit_leases WHERE pit=1")
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!(leases, 1);
+    if let Some(observed) = observed {
+        super::qcx61_pit_ground_reset_fixtures::assert_retirement(h, observed).await?;
+    }
+    Ok(())
+}
+
+pub(super) async fn use_sealed_door(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    actor: ExactActorRef,
+    x: u16,
+    y: u16,
+) -> TestResult<UseDisposition> {
+    use crate::map::view::MapFacts;
+    let target = {
+        let map = owner.bundle_map().ok_or("arena map")?;
+        let key = oteryn_world_bundle::bundle::placement_key(-7, x, y, 1)
+            .ok_or("sealed door placement")?;
+        let mut placement = map.overlay.base().digest().to_vec();
+        placement.extend_from_slice(&key.to_be_bytes());
+        WorldObjectTarget {
+            placement,
+            expected_revision: map.facts.object_revision(key),
+        }
+    };
+    let session = admitted.game_session_id;
+    let previous = {
+        let mut runtime = owner.runtime.lock().await;
+        let current = runtime.read_actor_position(actor).map_err(debug)?;
+        runtime
+            .relocate_arena_player(
+                actor,
+                session,
+                current,
+                MovementLocalPosition {
+                    x: i32::from(x) + 1,
+                    y: i32::from(y),
+                    floor: 7,
+                },
+            )
+            .map_err(debug)?;
+        current.position()
+    };
+    owner.clock_origin -= std::time::Duration::from_secs(2);
+    let id = admitted.continuity.next_command_id;
+    let reply = super::quest_world_callbacks_fixtures::wire(
+        owner,
+        admitted,
+        id,
+        2,
+        encode_use_intent(&target).map_err(debug)?,
+    )
+    .await?;
+    let mut runtime = owner.runtime.lock().await;
+    let current = runtime.read_actor_position(actor).map_err(debug)?;
+    runtime
+        .relocate_arena_player(actor, session, current, previous)
+        .map_err(debug)?;
+    Ok(decode_use_result(&reply).map_err(debug)?)
+}
+
+async fn fees(h: &Harness) -> TestResult<i64> {
+    Ok(
+        sqlx::query_scalar("SELECT count(*) FROM game_arena_entry_receipts")
+            .fetch_one(&h.pool)
+            .await?,
+    )
+}

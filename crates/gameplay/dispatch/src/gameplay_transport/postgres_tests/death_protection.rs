@@ -88,7 +88,7 @@ fn death_projection_scenario() -> TestResult {
         .fetch_all(&harness.pool)
         .await?;
         assert_eq!(blessings, ["oteryn:blessing.spiritual_shielding"]);
-        use super::cyclopedia::support::exchange;
+        use super::cyclopedia_fixtures::support::exchange;
         use crate::gameplay_transport::capabilities::{OfferedCapability, SelectedCapabilities};
         use crate::gameplay_transport::connection::FirstEntryOutcome;
         use oteryn_protocol_oteryn::death_protection::DeathProtectionReply;

@@ -30,7 +30,7 @@ fn scenario(mode: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run_async(async move |admin| {
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async move |admin| {
         let h = Harness::create(
             admin,
             &format!("charm_gaps_{}", mode.replace('-', "_")),
@@ -50,7 +50,7 @@ fn scenario(mode: &'static str) -> TestResult {
             let world = crate::foundation::WorldId::decode(&id(WORLD)).map_err(debug)?;
             // Assertion failures must release this case's temporary database too.
             std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                super::all_charms_contracts::charm_gaps_durable_player(
+                super::all_charms_contracts_fixtures::charm_gaps_durable_player(
                     world,
                     current.current_game_session_id(),
                     current.current_character_lease(),

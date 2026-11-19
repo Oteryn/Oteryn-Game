@@ -1,5 +1,5 @@
 //! B24: real canonical admission and pinned native mask -> live sound observer.
-use super::cyclopedia::support;
+use super::cyclopedia_fixtures::support;
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
@@ -33,12 +33,12 @@ fn scenario() -> TestResult {
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activation_pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;
         let generation = controller.active().ok_or("active generation")?;
-        let world = super::subarea::world(&deps, generation)?;
+        let world = super::subarea_fixtures::world(&deps, generation)?;
         let cells = world
             .movement_cells(deps.room.movement_cells())
             .map_err(debug)?;
@@ -87,7 +87,7 @@ fn scenario() -> TestResult {
             )
             .ok_or("ambient selection")?;
         let (_, output) =
-            super::weather_wire::fixture_access::serve_input(&owner, admitted, &[]).await?;
+            super::weather_wire_fixtures::fixture_access::serve_input(&owner, admitted, &[]).await?;
         let mut snapshot_seen = false;
         let mut bytes = output.as_slice();
         while bytes.len() >= 4 {

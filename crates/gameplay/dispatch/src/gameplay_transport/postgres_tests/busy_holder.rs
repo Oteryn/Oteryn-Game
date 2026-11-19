@@ -11,7 +11,7 @@ use std::time::Duration;
 
 #[test]
 fn a_committed_actor_enters_after_a_busy_holder_is_returned_postgres() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("first-entry-busy-holder", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("first-entry-busy-holder", || {
         run(async |admin| {
             let h =
                 Harness::create_with_admission_seed(admin, "first_entry_busy_holder", false, false)
@@ -56,7 +56,7 @@ fn a_committed_actor_enters_after_a_busy_holder_is_returned_postgres() -> TestRe
 
 #[test]
 fn trade_open_retains_foreground_demand_until_its_name_reads_complete_postgres() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("trade-open-busy-holder", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("trade-open-busy-holder", || {
         run(async |admin| {
             let h =
                 Harness::create_with_admission_seed(admin, "trade_open_busy_holder", true, false)
@@ -118,7 +118,7 @@ fn trade_open_retains_foreground_demand_until_its_name_reads_complete_postgres()
 /// background pass on the holder was rejected (the node-boot use-wire `step_blocked` stage).
 #[test]
 fn a_step_lock_refresh_waits_for_a_busy_holder_postgres() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("pvp-refresh-busy-holder", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("pvp-refresh-busy-holder", || {
         run(async |admin| {
             let h =
                 Harness::create_with_admission_seed(admin, "pvp_refresh_busy_holder", true, false)
@@ -161,7 +161,7 @@ fn a_step_lock_refresh_waits_for_a_busy_holder_postgres() -> TestResult {
 
 #[test]
 fn activity_input_waits_for_a_busy_holder_postgres() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("activity-input-busy-holder", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("activity-input-busy-holder", || {
         run(async |admin| {
             let h = Harness::create_with_admission_seed(
                 admin,

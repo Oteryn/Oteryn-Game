@@ -127,7 +127,10 @@ with CI and never blocks or delays it.
   runs over the same head, each with the
   diff, `CODEX-CHECKLIST.md`, its lens and, for a CI fix, the failing log
   lines. Each run is told to report every finding, with no cap on lines or
-  count, and every other instance of the same class in the diff. Lenses,
+  count, and every other instance of the same class in the diff. A package
+  PR or a chunked diff also gets the two holistic whole-diff runs
+  (`whole-integration`, `whole-flows`) in the same round; chunk runs alone are
+  not a covered review of a package. Lenses, holistic runs,
   chunking of big diffs, the prompt, the merge, verify and sweep steps and the
   stop rule are in `references/batch-review.md`; read it before you start a
   review or delegate one. Code Codex wrote is

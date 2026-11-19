@@ -81,7 +81,7 @@ fn cults_scenario(reenter: bool) -> TestResult {
         return Ok(());
     }
     let began = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("engenc2-cults", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("engenc2-cults", move || {
         run(async |admin| {
             reset();
             let h =
@@ -93,10 +93,10 @@ fn cults_scenario(reenter: bool) -> TestResult {
                 y: 100,
                 floor: -7,
             };
-            let world = super::quest_world_callbacks::world(&callback, trigger)?;
+            let world = super::quest_world_callbacks_fixtures::world(&callback, trigger)?;
             let mut deps = Dependencies::new()?;
             let (controller, activated) =
-                super::death_ml_loss_composed::production_generation_with_pin(
+                super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                     deps.admitted.world_id,
                     "content-1",
                 )?;
