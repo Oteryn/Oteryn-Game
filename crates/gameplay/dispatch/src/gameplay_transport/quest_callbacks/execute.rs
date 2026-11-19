@@ -23,7 +23,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         read_only_gate: Option<&ReadOnlyGate>,
         selected_tool: Option<&([u8; 16], Vec<u8>)>,
         live_ground: Option<&super::super::loop_move::LoopGroundOverlay>,
-        cooldown_refused: Option<&mut bool>,
+        room_refusal: Option<&mut Option<QuestRefusal>>,
     ) -> UseDisposition {
         if callback.effects.encounter.is_none()
             && let Some(catalogue) = self.quest_catalogue.as_deref()
@@ -1536,11 +1536,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return UseDisposition::Committed;
                 }
                 refusal_or_error => {
-                    if matches!(refusal_or_error, Ok(QuestTransitionOutcome::Refused(
-                        oteryn_gameplay_quests::quest::QuestRefusal::SourceBossCooldownActive)))
-                        && let Some(refused) = cooldown_refused
+                    if let Ok(QuestTransitionOutcome::Refused(reason @ (
+                        QuestRefusal::SourceRoomAccessRequired | QuestRefusal::SourceBossCooldownActive))) = refusal_or_error
+                        && let Some(refused) = room_refusal
                     {
-                        *refused = true;
+                        *refused = Some(reason);
                     }
                     if oteryn_gameplay_quests::quest::death_objectives::load().is_ok_and(|objectives|
                         objectives.iter().any(|objective| objective.quest == callback.quest && objective.guardian.is_some()))

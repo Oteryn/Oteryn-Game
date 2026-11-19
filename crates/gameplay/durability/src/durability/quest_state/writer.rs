@@ -1821,7 +1821,11 @@ impl DurabilityRoot {
                     let mut changes = match refusal
                         .map_or_else(|| grizzly_plan.as_ref().map_or_else(
                             || counter_reset_plan.as_ref().map_or_else(
-                                || catalogue.evaluate_with_roll(transition, &stored, now, roll),
+                                || catalogue.evaluate_with_roll(transition, &stored, now, roll).map_err(|refusal| {
+                                    if refusal == QuestRefusal::StageMismatch && callback.as_ref().is_some_and(|source| source.effects.access_refusal_speech.is_some()) {
+                                        QuestRefusal::SourceRoomAccessRequired
+                                    } else { refusal }
+                                }),
                                 |plan| Ok(plan.clone())),
                             |plan| Ok(plan.changes.clone())), Err)
                         .and_then(|changes| {

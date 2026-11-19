@@ -388,6 +388,8 @@ pub enum QuestRefusal {
     SourceOfferingMissing,
     /// A carried source offering exists, but current Premium admission denied entry.
     SourceOfferingPremiumRequired,
+    /// The locked progress comparison denied access to the authored room.
+    SourceRoomAccessRequired,
     /// The fenced encounter admission found an active personal boss cooldown.
     SourceBossCooldownActive,
     /// The quest state is pinned to another definition hash (§6).
@@ -408,6 +410,7 @@ impl QuestRefusal {
             Self::StageMismatch
             | Self::SourceOfferingMissing
             | Self::SourceOfferingPremiumRequired
+            | Self::SourceRoomAccessRequired
             | Self::SourceBossCooldownActive => "STAGE_MISMATCH",
             Self::RevisionMismatch => "REVISION_MISMATCH",
             Self::OutOfRange => "OUT_OF_RANGE",

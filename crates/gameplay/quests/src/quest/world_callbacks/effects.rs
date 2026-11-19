@@ -114,6 +114,9 @@ pub struct CallbackEffects {
     /// Source-authored public player MONSTER_SAY, emitted only after commit.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub player_speech: Option<String>,
+    /// Player MONSTER_SAY at the return position after a quest access refusal.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub access_refusal_speech: Option<String>,
     /// Player MONSTER_SAY at the return position after a cooldown refusal.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cooldown_refusal_speech: Option<String>,
@@ -831,18 +834,22 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || text.chars().any(char::is_control)
     };
     if effects.player_speech.as_ref().is_some_and(invalid_speech)
-        || effects
-            .cooldown_refusal_speech
-            .as_ref()
-            .is_some_and(|text| {
-                invalid_speech(text)
-                    || callback.trigger != Trigger::StepIn
-                    || !callback.return_on_failure
-                    || effects
-                        .encounter
-                        .as_ref()
-                        .is_none_or(|room| room.solo_expiry.is_none())
-            })
+        || effects.access_refusal_speech.is_some() && callback.storage.is_empty()
+        || [
+            effects.access_refusal_speech.as_ref(),
+            effects.cooldown_refusal_speech.as_ref(),
+        ]
+        .into_iter()
+        .flatten()
+        .any(|text| {
+            invalid_speech(text)
+                || callback.trigger != Trigger::StepIn
+                || !callback.return_on_failure
+                || effects
+                    .encounter
+                    .as_ref()
+                    .is_none_or(|room| room.solo_expiry.is_none())
+        })
     {
         return false;
     }

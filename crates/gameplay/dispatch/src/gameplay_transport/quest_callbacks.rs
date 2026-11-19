@@ -58,6 +58,7 @@ use crate::map::{
     overlay::TilePos,
     view::{MapFacts, placement_key},
 };
+use oteryn_gameplay_quests::quest::QuestRefusal;
 use oteryn_gameplay_quests::quest::world_callbacks::{self, Callback, Position, Trigger};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::sync::OnceLock;
@@ -859,7 +860,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if runtime.read_actor_position(pending.actor) != Ok(pending.expected) {
                 return false;
             }
-            let mut cooldown_refused = false;
+            let mut room_refusal = None;
             let result = match observation {
                 Ok(observation) => {
                     Box::pin(self.execute_quest_callback(
@@ -880,7 +881,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         None,
                         pending.selected_tool.as_ref(),
                         None,
-                        Some(&mut cooldown_refused),
+                        Some(&mut room_refusal),
                     ))
                     .await
                 }
@@ -901,7 +902,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         callback,
                         pending.expected,
                         origin,
-                        cooldown_refused,
+                        room_refusal,
                     );
                 }
             }
@@ -1572,7 +1573,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if runtime.read_actor_position(actor) != Ok(entered) {
                 return entered;
             }
-            let mut cooldown_refused = false;
+            let mut room_refusal = None;
             let result = match observation {
                 Ok(observation) => {
                     Box::pin(self.execute_quest_callback(
@@ -1593,7 +1594,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         read_only_gate.as_ref(),
                         None,
                         grid_ground.as_deref(),
-                        Some(&mut cooldown_refused),
+                        Some(&mut room_refusal),
                     ))
                     .await
                 }
@@ -1623,7 +1624,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     callback,
                     entered,
                     origin,
-                    cooldown_refused,
+                    room_refusal,
                 );
             }
             runtime.read_actor_position(actor).unwrap_or(entered)
@@ -1647,7 +1648,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         callback,
                         entered,
                         origin,
-                        false,
+                        None,
                     );
                 }
                 runtime.read_actor_position(actor).unwrap_or(entered)
@@ -1693,7 +1694,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         callback: &Callback,
         entered: MovementPositionSnapshot,
         origin: MovementPositionSnapshot,
-        cooldown_refused: bool,
+        room_refusal: Option<QuestRefusal>,
     ) {
         if !callback.return_on_failure {
             return;
@@ -1777,8 +1778,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let _ = map.facts.emit_movement_effect(at, effect);
             }
         }
-        // Crystal movement_kroazur_room.lua:45-49 speaks from the return tile.
-        if cooldown_refused && let Some(speech) = &callback.effects.cooldown_refusal_speech {
+        // Crystal movement_kroazur_room.lua:37-57 speaks from the return tile.
+        let speech = match room_refusal {
+            Some(QuestRefusal::SourceRoomAccessRequired) => {
+                callback.effects.access_refusal_speech.as_deref()
+            }
+            Some(QuestRefusal::SourceBossCooldownActive) => {
+                callback.effects.cooldown_refusal_speech.as_deref()
+            }
+            _ => None,
+        };
+        if let Some(speech) = speech {
             if relocated.is_some() {
                 self.states
                     .chat

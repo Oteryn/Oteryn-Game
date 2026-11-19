@@ -27,6 +27,8 @@ const ACCESS: &str =
 const KROAZUR: &str = "oteryn:creature.kroazur";
 // Crystal movement_kroazur_room.lua:69.
 const ADMISSION_TEXT: &str = "You have ten minutes to kill and loot this boss, else you will lose that chance and will be kicked out.";
+// Crystal movement_kroazur_room.lua:37-41.
+const ACCESS_TEXT: &str = "You don't have access to this room!";
 // Crystal movement_kroazur_room.lua:45-49.
 const COOLDOWN_TEXT: &str = "You have to wait to challenge this enemy again!";
 // Crystal data-global/startup/tables/tile.lua:993-999 maps AID 25029 here.
@@ -60,7 +62,7 @@ pub(super) fn binding() -> TestResult<Callback> {
         "return_on_failure":true,"reversible":false,"passages":[],"offerings":[],
         "storage":[{"track":ACCESS,"minimum":1,"maximum":1,"set":1}],
         "effects":{"magic":{"position":TRIGGER,"effect":11},"player_speech":ADMISSION_TEXT,
-            "cooldown_refusal_speech":COOLDOWN_TEXT,"encounter":{
+            "access_refusal_speech":ACCESS_TEXT,"cooldown_refusal_speech":COOLDOWN_TEXT,"encounter":{
             "minimum_level":0,
             "players":[{"from":TRIGGER,"to":LANDING}],
             "monsters":[{"position":at(33591,32305),"creature":KROAZUR}],
@@ -164,6 +166,7 @@ pub(super) async fn exercise(
     h: &Harness,
     fence: CurrentCharacterGameplayFence,
 ) -> TestResult {
+    let actor = admitted.runtime_actor.ok_or("actor")?;
     {
         let map = owner.bundle_map().ok_or("Kroazur map")?;
         let before = map
@@ -182,9 +185,17 @@ pub(super) async fn exercise(
                 .collect::<Vec<_>>(),
             [TRIGGER, ORIGIN].map(|p| (p.x, p.y, p.floor, 11))
         );
-        assert!(!owner.states.chat.drain(admitted.game_session_id).iter().any(|line| {
+        let messages = owner.states.chat.drain(admitted.game_session_id);
+        assert!(!messages.iter().any(|line| {
             matches!(line, ChatLine::Local { text, .. } if text == COOLDOWN_TEXT)
         }));
+        assert_eq!(messages.iter().filter(|line| {
+            matches!(line, ChatLine::Local { speaker, mode: ChatSpeechMode::MonsterSay, text, position, .. }
+                if speaker.identity == actor.placement_identity()
+                    && speaker.generation.get() == actor.actor_local_generation()
+                    && text == ACCESS_TEXT
+                    && (position.x, position.y, position.floor) == (33618, 32304, 9))
+        }).count(), 1);
     }
     assert!(
         super::engworldchg_journals::live_creatures(owner, KROAZUR)
@@ -230,7 +241,6 @@ pub(super) async fn exercise(
         }).count(), 1);
     }
     let messages = owner.states.chat.drain(admitted.game_session_id);
-    let actor = admitted.runtime_actor.ok_or("actor")?;
     assert_eq!(messages.iter().filter(|line| {
         matches!(line, ChatLine::Local { speaker, mode: ChatSpeechMode::MonsterSay, text, position, .. }
             if speaker.identity == actor.placement_identity()
