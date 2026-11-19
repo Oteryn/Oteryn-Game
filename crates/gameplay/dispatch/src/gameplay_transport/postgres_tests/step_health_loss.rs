@@ -40,6 +40,7 @@ pub(super) const DESTINATION: Position = Position {
     y: 31975,
     floor: -14,
 };
+const TELEPORT_EFFECT: u16 = 11;
 
 #[test]
 fn unpaid_vestibule_walk_in_relocates_and_applies_agony_once() -> TestResult {
@@ -102,6 +103,8 @@ pub(super) async fn exercise(
     paid["storage"][0]["maximum"] = json!(5);
     paid["teleport"] = json!(DESTINATION);
     paid["success_message"] = json!(null);
+    // Crystal movements_blood_entrance.lua:34-36 emits the effect only at the paid landing.
+    paid["effects"]["magic"] = json!({"position":DESTINATION,"effect":TELEPORT_EFFECT});
     unpaid["effects"]["step_health_loss"] = json!({"percent":20,"health_floor":10});
     let bindings = Bindings::parse(&serde_json::to_vec(&json!({
         "schema":1,
@@ -156,6 +159,20 @@ pub(super) async fn exercise(
         assert!(before > 13);
         before - (before / 5).max(1)
     };
+    let landing_effects = || -> TestResult<usize> {
+        let map = owner.bundle_map().ok_or("Vestibule fixture map")?;
+        let count = map
+            .facts
+            .movement_effects_since(0)
+            .into_iter()
+            .filter(|(_, at, effect)| {
+                (at.x, at.y, at.floor) == (DESTINATION.x, DESTINATION.y, DESTINATION.floor)
+                    && *effect == TELEPORT_EFFECT
+            })
+            .count();
+        Ok(count)
+    };
+    let effects_before = landing_effects()?;
     let step = encode_step_intent(StepDirection::East);
     let reply = wire(owner, admitted, 1, 1, step.clone()).await?;
     assert_eq!(
@@ -173,6 +190,8 @@ pub(super) async fn exercise(
         local(if name == PAID { DESTINATION } else { EJECT })
     );
     assert_eq!(health().await?, expected);
+    let effects_after = effects_before + usize::from(name == PAID);
+    assert_eq!(landing_effects()?, effects_after);
     let unpaid_message = oteryn_protocol_oteryn::chat::ChatLine::Private {
         speaker_name: "Game".into(),
         text: UNPAID.into(),
@@ -185,6 +204,7 @@ pub(super) async fn exercise(
     }
     assert_eq!(wire(owner, admitted, 1, 1, step).await?, reply);
     assert_eq!(health().await?, expected);
+    assert_eq!(landing_effects()?, effects_after);
     assert!(owner.states.chat.drain(session).is_empty());
     Ok(())
 }
