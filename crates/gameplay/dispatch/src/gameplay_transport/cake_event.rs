@@ -163,8 +163,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         *cache = Some((bundle, native.source_digest(), sources.clone()));
         Some(sources)
     }
-    /// Project the current World reward onto present owners. A saved or already
-    /// projected Cake condition keeps its original expiry and partial ticks.
+    /// Project the current annual World reward onto present owners once.
+    /// The normal regeneration slot preserves partial ticks on renewal.
     pub(super) async fn refresh_cake_regeneration(&self) {
         use crate::domain::condition::{ConditionValues, ConflictKey};
         use crate::foundation::condition::{
@@ -177,6 +177,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(Some(bonus)) = self.root.cake_world_bonus(self.world_id).await else {
             return;
         };
+        // Crystal a_piece_of_cake_config.lua:456-467 applies the bonus after
+        // each completion. Repeated scheduler passes for one award are inert.
+        let condition_key = format!("{KEY}.{}", bonus.event_year);
         let runtime = self.runtime.lock().await;
         if runtime.owner_fence().is_err() || runtime.binding().world_id() != self.world_id {
             return;
@@ -206,7 +209,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if current.vitals().health == 0
                 || store
                     .active_at(ConflictKey::Recovery, now)
-                    .is_some_and(|active| active.definition().key() == KEY)
+                    .is_some_and(|active| active.definition().key() == condition_key)
             {
                 continue;
             }
@@ -216,7 +219,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .max(u32::from(gain > 0))
             };
             let Some(definition) = ConditionDefinition::new(
-                KEY,
+                &condition_key,
                 1,
                 ConditionValues::SpellRegeneration {
                     sub_id: 0,

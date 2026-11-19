@@ -25,21 +25,7 @@ pub(super) async fn activate(
     pool: &sqlx::PgPool,
     players: &[(ExactActorRef, GameSessionId)],
 ) -> TestResult {
-    let world = owner.world_id.as_bytes();
-    let mut tx = pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role=replica")
-        .execute(&mut *tx)
-        .await?;
-    sqlx::query("INSERT INTO game_cake_world_progress VALUES(encode($1,'hex')::uuid,2026,200,200)")
-        .bind(world.as_slice())
-        .execute(&mut *tx)
-        .await?;
-    sqlx::query(
-        "INSERT INTO game_cake_phases(world_id,event_year,stage,layer,bonus_activated_at,bonus_until)
-         VALUES(encode($1,'hex')::uuid,2026,3,4,transaction_timestamp(),
-                transaction_timestamp()+interval '604800 seconds')",
-    ).bind(world.as_slice()).execute(&mut *tx).await?;
-    tx.commit().await?;
+    insert_activation(pool, owner.world_id.as_bytes(), 2025, 1).await?;
     let [(actor, session), (target, target_session)] = players else {
         return Err("Cake bonus case requires two players".into());
     };
@@ -96,14 +82,53 @@ pub(super) async fn activate(
     let retry_ms = owner.owner_now().get() / 1_000 + 1_000;
     owner.tick_timed_items_at(retry_ms).await;
     let sampled = owner.owner_now().get();
-    let initial = check_regeneration(owner, players, sampled).await?;
+    let initial = check_regeneration(owner, players, sampled, 2025).await?;
     // Advance the containing item scheduler by one period without sleeping.
     owner.tick_timed_items_at(retry_ms + 1_000).await;
     assert_eq!(
-        check_regeneration(owner, players, sampled).await?,
+        check_regeneration(owner, players, sampled, 2025).await?,
         initial,
         "an active world reward keeps its condition identity and expiry",
     );
+    // Crystal a_piece_of_cake_config.lua:456-467 applies a fresh seven-day
+    // reward to online players at completion. Give the fixture a newer award
+    // while both actors still carry a shorter Cake condition from the prior one.
+    insert_activation(pool, owner.world_id.as_bytes(), 2026, 0).await?;
+    owner.tick_timed_items_at(retry_ms + 2_000).await;
+    let renewed = check_regeneration(owner, players, owner.owner_now().get(), 2026).await?;
+    for ((before_sequence, before_ms), (sequence, remaining_ms)) in initial.into_iter().zip(renewed) {
+        assert_ne!(sequence, before_sequence);
+        assert!(remaining_ms > before_ms);
+    }
+    Ok(())
+}
+
+async fn insert_activation(
+    pool: &sqlx::PgPool,
+    world: &[u8; 16],
+    year: i32,
+    elapsed_days: i32,
+) -> TestResult {
+    let mut tx = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("INSERT INTO game_cake_world_progress VALUES(encode($1,'hex')::uuid,$2,200,200)")
+        .bind(world.as_slice())
+        .bind(year)
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query(
+        "INSERT INTO game_cake_phases(world_id,event_year,stage,layer,bonus_activated_at,bonus_until)
+         SELECT encode($1,'hex')::uuid,$2,3,4,activated,activated+interval '604800 seconds'
+         FROM (SELECT transaction_timestamp()-$3::integer*interval '1 day' AS activated) AS bonus",
+    )
+    .bind(world.as_slice())
+    .bind(year)
+    .bind(elapsed_days)
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
     Ok(())
 }
 
@@ -111,6 +136,7 @@ async fn check_regeneration(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     players: &[(ExactActorRef, GameSessionId)],
     sampled: u64,
+    year: i32,
 ) -> TestResult<Vec<(u32, i32)>> {
     let runtime = owner.runtime.lock().await;
     let states = owner.states.spell_states.lock().await;
@@ -127,7 +153,7 @@ async fn check_regeneration(
             .ok_or("world regeneration missing after scheduler tick")?;
         assert_eq!(
             condition.definition().key(),
-            "source.cake.world-regeneration"
+            format!("source.cake.world-regeneration.{year}")
         );
         let ConditionValues::SpellRegeneration {
             health_gain,

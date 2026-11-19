@@ -268,6 +268,7 @@ pub(super) async fn bonus_active_in_transaction(
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CakeWorldBonus {
+    pub event_year: i32,
     pub remaining_ms: u64,
 }
 impl DurabilityRoot {
@@ -287,13 +288,29 @@ impl DurabilityRoot {
         &self,
         world: WorldId,
     ) -> Result<Option<CakeWorldBonus>, DurabilityError> {
-        self.try_issue_semantic_pass()?.run(move|holder,deadline|Box::pin(async move {
-            let mut tx=begin_semantic_transaction(holder,deadline).await?;
-            let remaining:Option<i64>=sqlx::query_scalar("SELECT floor(extract(epoch FROM(bonus_until-clock_timestamp()))*1000)::bigint FROM game_cake_phases WHERE world_id=encode($1,'hex')::uuid AND bonus_activated_at<=clock_timestamp() AND clock_timestamp()<bonus_until ORDER BY event_year DESC LIMIT 1")
-                .bind(world.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
-            let bonus=remaining.filter(|ms|*ms>0).map(|ms|u64::try_from(ms).map(|remaining_ms|CakeWorldBonus{remaining_ms}).map_err(|_|DurabilityError::InvalidStoredState)).transpose()?;
-            commit_semantic_transaction(tx,deadline).await?;Ok(bonus)
-        })).await
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let remaining: Option<(i32, i64)> = sqlx::query_as(
+                        "SELECT event_year, floor(extract(epoch FROM (bonus_until-statement_timestamp()))*1000)::bigint
+                         FROM game_cake_phases WHERE world_id=encode($1,'hex')::uuid
+                         AND bonus_activated_at<=statement_timestamp() AND statement_timestamp()<bonus_until
+                         ORDER BY event_year DESC LIMIT 1",
+                    )
+                    .bind(world.as_bytes().as_slice())
+                    .fetch_optional(&mut *tx)
+                    .await?;
+                    let bonus = remaining
+                        .and_then(|(event_year, ms)| {
+                            let remaining_ms = u64::try_from(ms).ok()?;
+                            (remaining_ms > 0).then_some(CakeWorldBonus { event_year, remaining_ms })
+                        });
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(bonus)
+                })
+            })
+            .await
     }
 }
 
