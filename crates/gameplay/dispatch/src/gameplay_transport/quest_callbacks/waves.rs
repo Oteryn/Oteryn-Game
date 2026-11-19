@@ -156,7 +156,7 @@ impl ActiveWaveRun {
                 });
             }
         }
-        if let Some(exit) = &self.exit {
+        if let Some(exit) = &mut self.exit {
             if !eject(
                 owner,
                 runtime,
@@ -504,7 +504,7 @@ fn eject(
     room: &Encounter,
     participants: &[(ExactActorRef, GameSessionId)],
     callback: &str,
-    exit: &WaveExit,
+    exit: &mut WaveExit,
 ) -> bool {
     let Ok(census) = runtime.positioned_melee_census() else {
         return false;
@@ -590,6 +590,7 @@ fn eject(
                 after.revision(),
                 owner.reset_epoch,
             ));
+            exit.survivors.retain(|member| *member != (actor, session));
         }
         states.stage_special_movement_step(
             runtime,
