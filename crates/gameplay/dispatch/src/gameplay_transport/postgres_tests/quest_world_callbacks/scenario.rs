@@ -366,7 +366,7 @@ fn scenario_case(
     use super::super::feaster_solo_rooms;
     let feaster_solo = matches!(name, feaster_solo_rooms::IRGIX | feaster_solo_rooms::IRGIX_RETURN | feaster_solo_rooms::UNAZ | feaster_solo_rooms::VOK);
     use super::super::haunted_cellar_disguise;
-    let haunted_cellar = matches!(name, haunted_cellar_disguise::NAME | haunted_cellar_disguise::FINISH);
+    let haunted_cellar = matches!(name, haunted_cellar_disguise::NAME | haunted_cellar_disguise::FINISH | haunted_cellar_disguise::TIMER);
     use super::super::haunted_cellar_ectoplasm;
     let ectoplasm = matches!(name, haunted_cellar_ectoplasm::FILLED | haunted_cellar_ectoplasm::SPENT);
     use super::super::haunted_tomb_roll;
@@ -3109,7 +3109,7 @@ fn scenario_case(
         } else if ectoplasm {
             Box::pin(haunted_cellar_ectoplasm::exercise(&owner, &mut admitted, &h, fence, &callback, name == haunted_cellar_ectoplasm::FILLED)).await?;
         } else if haunted_cellar {
-            Box::pin(haunted_cellar_disguise::exercise(&owner, &mut admitted, &h, fence, name == haunted_cellar_disguise::FINISH)).await?;
+            Box::pin(haunted_cellar_disguise::exercise(&owner, &mut admitted, &h, fence, name)).await?;
         } else if knightwatch {
             Box::pin(dreamers_knightwatch_toll::exercise(&owner, &mut admitted, &h, fence, &callback)).await?;
         } else if stone_offerings {

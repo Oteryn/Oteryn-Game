@@ -279,7 +279,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let runtime = &*creature_runtime.as_ref().ok_or(())?.runtime;
             let states = self.states.spell_states.lock().await;
-            if states.get(runtime, actor, command.game_session_id).is_none()
+            if states
+                .get(runtime, actor, command.game_session_id)
+                .is_none()
                 || states.is_dead(actor)
                 || !states.spell_idle(runtime, actor, command.game_session_id)
             {

@@ -19,10 +19,11 @@ use oteryn_protocol_oteryn::world_spatial::{
     encode_step_intent,
 };
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
-use std::sync::Arc;
+use std::{sync::{Arc, atomic::Ordering}, time::Duration};
 
 pub(super) const NAME: &str = "haunted-cellar-disguise";
 pub(super) const FINISH: &str = "haunted-cellar-third-challenge";
+pub(super) const TIMER: &str = "haunted-cellar-disguise-after-exchange";
 const QUEST: &str = "oteryn:quest.the_dream_courts_quest";
 const ENTRY: &str = "oteryn:quest-callback/dream-courts-haunted-cellar";
 const START: &str = "oteryn:quest-transition/haunted-cellar-fixture/start";
@@ -169,13 +170,23 @@ fn haunted_cellar_advances_the_haunted_house_journal_when_it_is_the_third_challe
     super::kill_reward_e2e::scenario_thread::run(FINISH, || scenario(FINISH, TRIGGER, false))
 }
 
+#[test]
+fn haunted_cellar_disguise_lasts_two_minutes_after_the_bucket_exchange_commits() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(TIMER, || scenario(TIMER, TRIGGER, false))
+}
+
 pub(super) async fn exercise(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     harness: &Harness,
     fence: CurrentCharacterGameplayFence,
-    finishes: bool,
+    name: &str,
 ) -> TestResult {
+    let finishes = name == FINISH;
     input_item(
         owner,
         fence.item_fence(),
@@ -221,6 +232,9 @@ pub(super) async fn exercise(
         .await;
 
     let actor = admitted.runtime_actor.ok_or("actor")?;
+    if name == TIMER {
+        return apply_self_outfit(owner, admitted, actor, Some(harness)).await;
+    }
     for (direction, expected) in [
         (StepDirection::East, TRIGGER),
         (
@@ -233,7 +247,7 @@ pub(super) async fn exercise(
         (StepDirection::East, EXIT),
     ] {
         if expected == EXIT {
-            apply_self_outfit(owner, admitted, actor).await?;
+            apply_self_outfit(owner, admitted, actor, None).await?;
         }
         let ordinal = admitted.continuity.next_command_id;
         let reply = wire(
@@ -284,6 +298,7 @@ async fn apply_self_outfit(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     actor: crate::foundation::ExactActorRef,
+    delay_exchange: Option<&Harness>,
 ) -> TestResult {
     use crate::gameplay_transport::connection::FreshAdmissionAuthority;
     let target = {
@@ -329,14 +344,50 @@ async fn apply_self_outfit(
             use_with_position: None,
         })
         .map_err(debug)?;
-        let (next, result, _) = super::rust_lottery::exchange_latest_source(
+        let exchange = super::rust_lottery::exchange_latest_source(
             owner,
             *admitted,
             admitted.continuity.next_command_id,
             &payload,
             Some(reference),
-        )
-        .await?;
+        );
+        let (next, result, _) = if let Some(harness) = delay_exchange.filter(|_| should_commit) {
+            let mut blocker = harness.pool.begin().await?;
+            // SHARE allows the replay probe to read the proof table. The live
+            // exchange holds the runtime turn when its first INSERT waits here.
+            sqlx::query("LOCK TABLE game_quest_callback_consumptions IN SHARE MODE")
+                .execute(&mut *blocker)
+                .await?;
+            let writer_start = owner.owner_now().get() / 1_000 * 1_000;
+            owner.states.test_owner_time.store(writer_start + 1, Ordering::Relaxed);
+            let advance = async {
+                loop {
+                    let waiting: bool = sqlx::query_scalar(
+                        "SELECT EXISTS(SELECT 1 FROM pg_locks \
+                          WHERE database=(SELECT oid FROM pg_database WHERE datname=current_database()) \
+                            AND relation='game_quest_callback_consumptions'::regclass \
+                            AND mode='RowExclusiveLock' AND NOT granted)",
+                    )
+                    .fetch_one(&harness.pool)
+                    .await?;
+                    if waiting {
+                        break;
+                    }
+                    tokio::task::yield_now().await;
+                }
+                owner.states.test_owner_time.store(writer_start + 1_000_001, Ordering::Relaxed);
+                blocker.commit().await
+            };
+            tokio::pin!(exchange);
+            tokio::select! {
+                biased;
+                result = tokio::time::timeout(Duration::from_secs(5), advance) => result??,
+                _ = &mut exchange => return Err("bucket exchange completed before its proof INSERT waited".into()),
+            }
+            exchange.await?
+        } else {
+            exchange.await?
+        };
         *admitted = next;
         assert_eq!(result == UseDisposition::Committed, should_commit);
     }
@@ -348,6 +399,11 @@ async fn apply_self_outfit(
         .owned_conditions();
     let now = owner.owner_now().get();
     assert_eq!(outfit.outfit_at(now), Some(19));
+    if delay_exchange.is_some() {
+        // Crystal actions_strange_bucket.lua:66-67 starts the outfit after
+        // the bucket changes. Even the final microsecond must be available.
+        assert_eq!(outfit.outfit_at(now + 119_999_999), Some(19));
+    }
     assert_eq!(outfit.outfit_at(now + 120_000_000), None);
     Ok(())
 }
