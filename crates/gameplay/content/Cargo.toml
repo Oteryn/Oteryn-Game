@@ -23,6 +23,9 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true, features = ["raw_value"] }
 sha2.workspace = true
 
+[build-dependencies]
+serde_json.workspace = true
+
 [dev-dependencies]
 oteryn-world-bundle-compiler = { version = "=0.1.0", path = "../../../tools/world-bundle-compiler" }
 zstd.workspace = true

@@ -336,6 +336,27 @@ fn refuse(reason: &'static str) -> ContentError {
     ContentError::InvalidArtifact(reason)
 }
 
+fn quest_loot_items() -> &'static HashSet<&'static str> {
+    static ITEMS: LazyLock<HashSet<&'static str>> = LazyLock::new(|| {
+        include_str!(concat!(env!("OUT_DIR"), "/quest-loot-items.txt"))
+            .lines()
+            .collect()
+    });
+    &ITEMS
+}
+
+fn is_boss(profile: &ProjectV2CreatureAuthoring) -> bool {
+    profile.bosstiary.is_some()
+        || profile.details.as_ref().is_some_and(|details| {
+            details.bosstiary.is_some() || details.system_eligibility.reward_boss
+        })
+}
+
+fn has_quest_loot(entry: &SectionLootEntry) -> bool {
+    quest_loot_items().contains(entry.item.key.as_str())
+        || entry.children.iter().any(has_quest_loot)
+}
+
 fn lower_loot_entries(
     entries: &[SectionLootEntry],
     items: &HashMap<&SectionRef, &SectionItemFacts>,
@@ -348,7 +369,7 @@ fn lower_loot_entries(
     let mut lowered = Vec::with_capacity(entries.len());
     for entry in entries {
         let Some(facts) = items.get(&entry.item).filter(|facts| facts.materializable) else {
-            if allow_unavailable_yields {
+            if allow_unavailable_yields && !has_quest_loot(entry) {
                 continue;
             }
             return Err(NoSettlementReason::LootItemInadmissible);
@@ -936,14 +957,13 @@ fn row(
             let table = tables
                 .get(reference)
                 .ok_or(NoSettlementReason::LootTableMissing)?;
-            // An unavailable ordinary independent drop need not prevent the
-            // corpse or the other drops. Private and coupled tables retain
-            // their complete-table admission contract.
+            // Independent filler can be omitted. Boss and coupled tables
+            // require the entire table, and every quest yield is mandatory.
             let algorithm =
                 algorithm(&table.algorithm).unwrap_or(LootSelectionAlgorithm::NestedGroups);
             let allow_unavailable_yields = !source_plain
                 && algorithm == LootSelectionAlgorithm::IndependentBernoulliPpm
-                && !private_reward;
+                && !is_boss(profile);
             let entries = lower_loot_entries(&table.entries, items, 0, allow_unavailable_yields)?;
             (
                 reference.lower(),
@@ -1361,6 +1381,175 @@ mod source_48_corpse_tests {
             30,
             "physical capacity never raises the existing loot/work bound"
         );
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod protected_loot_tests {
+    use super::*;
+
+    pub(super) fn documents()
+    -> Result<(CreatureProfilesDocument, LootTablesSection), serde_json::Error> {
+        let creatures = serde_json::from_str(include_str!(
+            "../../../../../content/creatures/definitions/spell-native-profiles.json"
+        ))?;
+        let loot = serde_json::from_str(include_str!(
+            "../../../../../tools/content-schema/native-gameplay/loot-tables.json"
+        ))?;
+        Ok((creatures, loot))
+    }
+
+    #[test]
+    fn omruc_settles_mini_mummy_at_authored_probability() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let (creatures, loot) = documents()?;
+        let row = CreatureRewardTable::from_pin(&creatures, Some(&loot))
+            .row("oteryn:creature.omruc")
+            .map_err(NoSettlementReason::as_str)?;
+        assert!(
+            row.loot_table.entries.iter().any(|entry| {
+                entry.item.production_key == "oteryn:item.tibia.i10290"
+                    && entry.probability_ppm == Some(11429)
+            }),
+            "Omruc's 11,429 ppm mini mummy is missing"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn merlkin_settles_ape_fur_for_myra() -> Result<(), Box<dyn std::error::Error>> {
+        let (creatures, loot) = documents()?;
+        let row = CreatureRewardTable::from_pin(&creatures, Some(&loot))
+            .row("oteryn:creature.merlkin")
+            .map_err(NoSettlementReason::as_str)?;
+        assert!(
+            row.loot_table.entries.iter().any(|entry| {
+                entry.item.production_key == "oteryn:item.tibia.i5883"
+                    && entry.probability_ppm == Some(10000)
+            }),
+            "Merlkin's 10,000 ppm ape fur is missing"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn unmaterializable_protected_loot_refuses_settlement() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let (creatures, mut loot) = documents()?;
+        loot.items.retain(|facts| {
+            !matches!(
+                facts.item.key.as_str(),
+                "oteryn:item.tibia.i10290" | "oteryn:item.tibia.i5883"
+            )
+        });
+        let table = CreatureRewardTable::from_pin(&creatures, Some(&loot));
+        for key in ["oteryn:creature.omruc", "oteryn:creature.merlkin"] {
+            assert_eq!(
+                table.row(key),
+                Err(NoSettlementReason::LootItemInadmissible),
+                "{key}"
+            );
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod protected_loot_sweep {
+    use super::*;
+
+    #[test]
+    fn settleable_boss_and_quest_loot_keeps_every_protected_entry()
+    -> Result<(), Box<dyn std::error::Error>> {
+        fn has_pruned_protected(
+            authored: &[SectionLootEntry],
+            lowered: &[LootTableEntry],
+            boss: bool,
+            missing: &mut Vec<String>,
+        ) {
+            // The committed quest corpus is the source of protection.
+            for entry in authored {
+                let row = lowered.iter().find(|row| {
+                    row.item == entry.item.lower()
+                        && row.min_count == entry.min_count
+                        && row.max_count == entry.max_count
+                        && row.probability_ppm == entry.probability_ppm
+                });
+                if row.is_none() && (boss || quest_loot_items().contains(entry.item.key.as_str())) {
+                    missing.push(entry.item.key.clone());
+                }
+                has_pruned_protected(
+                    &entry.children,
+                    row.map_or(&[], |row| row.details.children.as_slice()),
+                    boss,
+                    missing,
+                );
+            }
+        }
+
+        let (creatures, loot) = super::protected_loot_tests::documents()?;
+        let profile_items = serde_json::from_str(include_str!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        ))?;
+        let table = CreatureRewardTable::from_pin_with_native_corpses(
+            &creatures,
+            Some(&loot),
+            Some(&profile_items),
+        );
+        let bosses: HashSet<_> = creatures
+            .records
+            .iter()
+            .filter_map(|record| {
+                let ProjectV2AuthoringProfileData::Creature(profile) = &record.profile.data else {
+                    return None;
+                };
+                is_boss(profile).then_some(&record.profile.target.key)
+            })
+            .collect();
+        // Every row known to have pruned a protected drop must still settle.
+        for creature in [
+            "ashmunrah",
+            "bane_of_light",
+            "behemoth",
+            "bonebeast",
+            "dipthrah",
+            "ghost",
+            "goldhanded_cultist",
+            "goldhanded_cultist_bride",
+            "horestis",
+            "lich",
+            "mahrdis",
+            "merlkin",
+            "morguthis",
+            "omruc",
+            "rahemos",
+            "ribstride",
+            "thalas",
+            "vashresamun",
+        ] {
+            let key = format!("oteryn:creature.{creature}");
+            assert!(table.row(&key).is_ok(), "{key} must still settle");
+        }
+        let authored: HashMap<_, _> = loot.tables.iter().map(|t| (&t.identity, t)).collect();
+        let mut missing = Vec::new();
+        for binding in &loot.creature_loot {
+            let key = &binding.creature.key;
+            let (Ok(row), Some(reference)) = (table.row(key), &binding.loot) else {
+                continue;
+            };
+            let mut pruned = Vec::new();
+            has_pruned_protected(
+                &authored[reference].entries,
+                &row.loot_table.entries,
+                bosses.contains(key),
+                &mut pruned,
+            );
+            if !pruned.is_empty() {
+                missing.push((key, pruned));
+            }
+        }
+        assert!(missing.is_empty(), "protected loot pruned: {missing:?}");
         Ok(())
     }
 }

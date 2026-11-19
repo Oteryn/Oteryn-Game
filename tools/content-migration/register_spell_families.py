@@ -700,6 +700,8 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     import healing_global_overrides
     healing_global_overrides.apply_native_profiles(items)
     admit_dream_courts_supplies(root, items)
+    import protected_loot_yields
+    protected_loot_yields.admit(root, items, provider_order)
     # The complete source closure must fit native_gameplay's existing 8 MiB
     # Item-profile input bound. Only the final active serialization is compact;
     # record order/values are unchanged and donor captures stay readable.
