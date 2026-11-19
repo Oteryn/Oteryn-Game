@@ -186,8 +186,24 @@ impl ChannelRuntimeV1 {
         players: Vec<P>,
         monsters: &[(&str, i64, MovementLocalPosition)],
     ) -> Result<(), CarrierError> {
-        self.quest_encounter_entry(players, monsters, || true, false)
-            .map(|_| ())
+        self.preflight_quest_encounter_replacing_visit(players, monsters, &[])
+    }
+
+    /// Validate a replacement including retirement of the previous roster.
+    pub fn preflight_quest_encounter_replacing_visit<P: SourceStepCommitProof>(
+        &mut self,
+        players: Vec<P>,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        retire: &[ExactActorRef],
+    ) -> Result<(), CarrierError> {
+        self.quest_encounter_with_phase(
+            players,
+            monsters,
+            |_, _, _| Ok(()),
+            || true,
+            (retire, false),
+        )
+        .map(|_| ())
     }
 
     pub fn commit_quest_encounter_entry_with_roster<P: SourceStepCommitProof>(
@@ -196,31 +212,24 @@ impl ChannelRuntimeV1 {
         monsters: &[(&str, i64, MovementLocalPosition)],
         project: impl FnOnce() -> bool,
     ) -> Result<(Vec<MovementPositionSnapshot>, Vec<ExactActorRef>), CarrierError> {
-        self.quest_encounter_with_phase(
-            players,
-            monsters,
-            |_, actors, _| Ok(actors.to_vec()),
-            project,
-            (&[], true),
-        )
+        self.commit_quest_encounter_replacing_visit(players, monsters, &[], project)
     }
 
     /// Stage retirement of an abandoned roster inside the same carrier
-    /// transaction as a replacement visit. A preview leaves both visits untouched.
-    pub fn quest_encounter_replacing_visit<P: SourceStepCommitProof>(
+    /// transaction as a replacement visit and its map projection.
+    pub fn commit_quest_encounter_replacing_visit<P: SourceStepCommitProof>(
         &mut self,
         players: Vec<P>,
         monsters: &[(&str, i64, MovementLocalPosition)],
         retire: &[ExactActorRef],
         project: impl FnOnce() -> bool,
-        publish: bool,
     ) -> Result<(Vec<MovementPositionSnapshot>, Vec<ExactActorRef>), CarrierError> {
         self.quest_encounter_with_phase(
             players,
             monsters,
             |_, actors, _| Ok(actors.to_vec()),
             project,
-            (retire, publish),
+            (retire, true),
         )
     }
 

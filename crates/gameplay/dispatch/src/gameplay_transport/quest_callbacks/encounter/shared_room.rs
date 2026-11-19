@@ -151,13 +151,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return if !monsters.is_empty()
                 && (!can_add_visit
                     || runtime
-                        .quest_encounter_replacing_visit(
-                            vec![proof],
-                            &monsters,
-                            &retired,
-                            || true,
-                            false,
-                        )
+                        .preflight_quest_encounter_replacing_visit(vec![proof], &monsters, &retired)
                         .is_err())
             {
                 UseDisposition::Occupied
@@ -209,7 +203,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             runtime.commit_quest_relocation(vec![proof], project)
         } else {
             runtime
-                .quest_encounter_replacing_visit(vec![proof], &monsters, &retired, project, true)
+                .commit_quest_encounter_replacing_visit(vec![proof], &monsters, &retired, project)
                 .map(|(landings, creatures)| {
                     visit.creatures = creatures;
                     landings
