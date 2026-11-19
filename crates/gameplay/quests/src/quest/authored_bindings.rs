@@ -333,7 +333,7 @@ impl Bindings {
                 if owner != &quest.quest
                     || !transitions.insert(key)
                     || (storage.is_empty()
-                        && !stage.is_native_encounter()
+                        && !stage.is_map_owned()
                         && !matches!(&stage.trigger,
                             Trigger::MapUse { callback } | Trigger::StepIn { callback }
                             if callback.operation_count() > 0)
@@ -414,7 +414,7 @@ impl Bindings {
                 transitions.push(occurrence.transition()?);
             }
             for stage in &quest.stages {
-                if stage.is_native_encounter() {
+                if stage.is_map_owned() {
                     continue;
                 }
                 for mut transition in stage.transitions(&quest.quest)? {
@@ -494,11 +494,16 @@ impl Bindings {
 }
 
 impl Stage {
-    /// Native entry mutates the physical owner atomically and grants no quest value.
-    pub(in crate::quest) fn is_native_encounter(&self) -> bool {
+    /// These native operations are owned by the map and grant no quest value.
+    pub(in crate::quest) fn is_map_owned(&self) -> bool {
         matches!(&self.trigger, Trigger::MapUse { callback }
             if !self.completes && callback.storage.is_empty() && callback.operation_count() == 0
                 && callback.effects.encounter.as_ref().is_some_and(|encounter| encounter.timing.is_none()))
+            || matches!(&self.trigger, Trigger::StepIn { callback }
+                if !self.completes && !callback.requires_durable_commit()
+                    && callback.is_scripted_step_route()
+                    && !callback.world_requirements.is_empty()
+                    && callback.world_requirements.iter().all(super::world_callbacks::WorldRequirement::is_map))
     }
     /// All exact operations registered for this stage share one ownership boundary.
     pub(in crate::quest) fn transitions(

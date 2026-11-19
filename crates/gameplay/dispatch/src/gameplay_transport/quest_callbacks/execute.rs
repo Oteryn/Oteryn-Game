@@ -675,7 +675,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Crystal actions_mission09.lua:26-30 and movements_firetp.lua:49-98
             // use Creature:teleportTo, which accepts an occupied destination.
             let proof = if callback.teleport == Some(to)
-                && (callback.effects.random_use.is_some() || scripted_step_route(callback))
+                && (callback.effects.random_use.is_some() || callback.is_scripted_step_route())
             {
                 crate::map::floor::prepare_quest_teleport_to_present_tile(
                     runtime,

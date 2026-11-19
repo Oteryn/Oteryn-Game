@@ -708,7 +708,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
 
     if effects.scripted_teleport
         && (callback.teleport.is_none()
-            || callback.selector.native.is_none()
+            || (callback.selector.native.is_none()
+                && !(callback.is_scripted_step_route()
+                    && callback.selector.action.is_some_and(|action| action != 0)))
             || callback.actor_kind != ActorKind::Player)
     {
         return false;

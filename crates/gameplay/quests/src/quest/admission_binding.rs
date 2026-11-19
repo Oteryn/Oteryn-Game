@@ -156,7 +156,7 @@ pub fn validate_for_catalogue(
     if let Some(bindings) = &catalogue.authored_bindings {
         for quest in &bindings.source.quests {
             for stage in &quest.stages {
-                if stage.is_native_encounter() {
+                if stage.is_map_owned() {
                     continue;
                 }
                 if let Some(expected) = stage

@@ -548,6 +548,14 @@ pub struct Callback {
 }
 
 impl Callback {
+    /// A paired source-script landing names both the accepted and refused STEP destinations.
+    pub fn is_scripted_step_route(&self) -> bool {
+        self.trigger == Trigger::StepIn
+            && self.effects.scripted_teleport
+            && self.teleport.is_some()
+            && self.failure_teleport.is_some()
+    }
+
     pub fn operations(&self) -> impl Iterator<Item = &super::reward_callbacks::StateOperation> {
         self.state_ops.iter().chain(&self.state_operations)
     }
