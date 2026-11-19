@@ -220,6 +220,7 @@ async fn exercise_peter(h: &f::Harness) -> f::TestResult {
         &catalogue,
         1_700_000_000,
         &Default::default(),
+        None,
     )
     .map_err(f::debug)?
     .ok_or("Peter teleport preview")?;
@@ -541,7 +542,16 @@ async fn exercise_riddler(h: &f::Harness) -> f::TestResult {
     let state = h.root.read_character_quest_state(&authority,f::fence(2)?.character_id).await.map_err(f::debug)?;
     let mut request = NpcProgramRequest {command:command(9801)?,npc:"oteryn:npc.riddler".into(),trigger:NpcRuleTrigger::Say,
         message:"1".into(),topic:13,transition_key:"oteryn:quest-npc/the_paradox_tower_quest/riddler/branch-135-15-1-1".into()};
-    let preview = teleport::preview_teleport(&request,state.tracks(),&catalogue,1_700_000_000,&Default::default()).map_err(f::debug)?.ok_or("Riddler preview")?;
+    let preview = teleport::preview_teleport(
+        &request,
+        state.tracks(),
+        &catalogue,
+        1_700_000_000,
+        &Default::default(),
+        None,
+    )
+    .map_err(f::debug)?
+    .ok_or("Riddler preview")?;
     request.transition_key = preview.source.selected_rule_keys.first().ok_or("Riddler selected branch")?.clone();
     assert_eq!(preview.source.track_changes.len(),2);
     let fence = f::fence(2)?;
