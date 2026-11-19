@@ -112,26 +112,38 @@ async fn open_lucky_loop(
     Ok(npc)
 }
 
-pub(super) async fn lucky_charms(
+async fn start_lucky_charms(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     h: &Harness,
-) -> TestResult {
+) -> TestResult<oteryn_protocol_oteryn::world_spatial_entities::EntityRef> {
     let [npc] = install(owner, admitted, [ROTTIN]).await?;
     for (command, text) in [(1700, "hi"), (1701, "mission"), (1702, "yes")] {
         talk(owner, admitted, npc, command, text).await?;
     }
     assert_eq!(talk(owner, admitted, npc, 1703, "yes").await?, source_reply("line-152")?);
     assert_eq!(minted_quantity(h, START_CHARMS, RIBBON).await?, 7);
-    let mission = format!("{ROTTIN_STATE}mission01");
-    let stage = || sqlx::query_scalar::<_, i64>(
-        "SELECT value FROM game_character_quest_tracks WHERE track_key=$1",
-    ).bind(&mission).fetch_one(&h.pool);
-    assert_eq!(stage().await?, 1);
+    assert_eq!(first_mission_stage(h).await?, 1);
+    Ok(npc)
+}
+
+async fn first_mission_stage(h: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
+        .bind(format!("{ROTTIN_STATE}mission01"))
+        .fetch_one(&h.pool)
+        .await?)
+}
+
+pub(super) async fn lucky_charms(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    let npc = start_lucky_charms(owner, admitted, h).await?;
     let before_xp = experience(h).await?;
     talk(owner, admitted, npc, 1704, "mission").await?;
     assert_eq!(talk(owner, admitted, npc, 1705, "yes").await?, source_reply("line-163")?);
-    assert_eq!(stage().await?, 2);
+    assert_eq!(first_mission_stage(h).await?, 2);
     assert_eq!(experience(h).await?, before_xp + 100);
     assert_eq!(minted_quantity(h, CHARMS_PAYOUT, PLATINUM).await?, 5);
     Ok(())
@@ -149,8 +161,13 @@ pub(super) async fn craft_lucky_charm(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     h: &Harness,
+    first_mission: bool,
 ) -> TestResult {
-    start_lucky_loop(owner, admitted, h, false).await?;
+    if first_mission {
+        start_lucky_charms(owner, admitted, h).await?;
+    } else {
+        start_lucky_loop(owner, admitted, h, false).await?;
+    }
     let owner = &*owner;
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
@@ -182,18 +199,24 @@ pub(super) async fn craft_lucky_charm(
         None,
     )
     .map_err(debug)?;
-    let handle = |key| {
-        backpack
+    let operand = |key| -> TestResult<_> {
+        let item = &backpack
             .entries
             .iter()
             .find(|entry| entry.item.definition.production_key == key)
-            .and_then(|entry| view.table().handle(&ItemKey::Instance(entry.item.item_instance_id)))
-            .ok_or("recipe operand handle")
+            .ok_or("recipe operand")?
+            .item;
+        let instance = item.item_instance_id;
+        let handle = view
+            .table()
+            .handle(&ItemKey::Instance(instance))
+            .ok_or("recipe operand handle")?;
+        Ok((instance, handle, i64::from(item.quantity)))
     };
-    let ribbon = handle(RIBBON)?;
-    let foot = handle(FOOT)?;
+    let (ribbon_id, ribbon, ribbon_quantity) = operand(RIBBON)?;
+    let (foot_id, foot, foot_quantity) = operand(FOOT)?;
     let actor = admitted.runtime_actor.ok_or("recipe actor")?;
-    let use_pair = |command_id, source, target| {
+    let use_pair = async |command_id, source, target, view: &SessionItemView| {
         crate::gameplay_transport::mining::dispatch_map_use(
             owner,
             actor,
@@ -208,11 +231,15 @@ pub(super) async fn craft_lucky_charm(
                 use_with_map_item: Some(MapUseTarget::Item(target)),
                 use_with_position: None,
             },
-            Some(&view),
+            Some(view),
         )
+        .await
     };
     assert_eq!(
-        use_pair(1707, foot, ribbon).await.ok_or("reversed recipe")?.disposition,
+        use_pair(1707, foot, ribbon, &view)
+            .await
+            .ok_or("reversed recipe")?
+            .disposition,
         UseDisposition::NothingToUse
     );
     let carried_quantities = || sqlx::query_as::<_, (String, i64)>(
@@ -233,13 +260,45 @@ pub(super) async fn craft_lucky_charm(
         [(RIBBON.to_owned(), 7), (FOOT.to_owned(), 1)]
     );
     assert_eq!(
-        use_pair(1708, ribbon, foot).await.ok_or("ribbon on foot")?.disposition,
+        use_pair(1708, ribbon, foot, &view)
+            .await
+            .ok_or("ribbon on foot")?
+            .disposition,
+        UseDisposition::Committed
+    );
+    let resumed_view = SessionItemView::resume(Default::default());
+    assert_eq!(
+        use_pair(1708, ribbon, foot, &resumed_view)
+            .await
+            .ok_or("recipe replay")?
+            .disposition,
         UseDisposition::Committed
     );
     assert_eq!(
         carried_quantities().await?,
         [(RIBBON.to_owned(), 6), (CHARM.to_owned(), 1)]
     );
+    let receipts: (i64, i64) = sqlx::query_as(
+        "SELECT count(*), count(*) FILTER (WHERE command_id=1708
+           AND recipe='oteryn:quest-craft/rottin-wood/lucky-charm' AND consume_source
+           AND source_item_instance_id=encode($2,'hex')::uuid
+           AND ingredient_item_instance_id=encode($3,'hex')::uuid
+           AND (before_item->>'quantity')::bigint=$4
+           AND (ingredient_before_item->>'quantity')::bigint=$5
+           AND ingredient_consumed_quantity=1
+           AND jsonb_array_length(outputs)=1
+           AND outputs #>> '{0,key}'=$6 AND outputs #>> '{0,count}'='1')
+         FROM game_item_craft_records WHERE game_session_id=encode($1,'hex')::uuid",
+    )
+    .bind(admitted.game_session_id.as_bytes().as_slice())
+    .bind(ribbon_id.as_slice())
+    .bind(foot_id.as_slice())
+    .bind(ribbon_quantity)
+    .bind(foot_quantity)
+    .bind(CHARM)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(receipts, (1, 1));
     Ok(())
 }
 

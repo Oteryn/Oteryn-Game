@@ -15,3 +15,17 @@ fn rottin_rabbit_task_crafts_lucky_charm_postgres() -> TestResult {
         .map_err(|_| "Lucky Charm craft PostgreSQL thread panicked")?
         .map_err(Into::into)
 }
+
+#[test]
+fn rottin_first_mission_crafts_lucky_charm_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| scenario("rottin_first_mission_lucky_charm_craft", false, None))?
+        .join()
+        .map_err(|_| "First-mission Lucky Charm craft PostgreSQL thread panicked")?
+        .map_err(Into::into)
+}

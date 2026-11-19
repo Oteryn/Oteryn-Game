@@ -219,6 +219,33 @@ pub(super) async fn claim_count(harness: &Harness) -> TestResult<i64> {
 
 pub(super) const SERVED_CHEST: (u16, u16, i8) = (34101, 32346, -14);
 
+pub(super) fn assert_production_choices(
+    placements: &[crate::content::world_reward_claims::BoundPlacement],
+) -> TestResult {
+    use oteryn_world_bundle::bundle::placement_key;
+
+    assert_eq!(placements.len(), REWARDS.len());
+    for ((x, uid), reward) in (34087..=34107).step_by(2).zip(57237..=57247).zip(REWARDS) {
+        let (_, y, floor) = SERVED_CHEST;
+        let ordinal = if x == 34107 { 3 } else { 2 };
+        let selector = placement_key(floor, x, y, ordinal).ok_or("Forgemaster chest selector")?;
+        let bound = placements
+            .iter()
+            .find(|bound| bound.bundle_placement_key == selector)
+            .ok_or("Forgemaster chest missing at its source selector")?;
+        assert_eq!(
+            bound.reward_callback.as_deref(),
+            Some(callback_key(uid).as_str())
+        );
+        let [item] = bound.placement.items.as_slice() else {
+            return Err("Forgemaster chest must offer exactly one item".into());
+        };
+        assert_eq!(item.item.key().as_str(), key(reward));
+        assert_eq!(item.count, 1);
+    }
+    Ok(())
+}
+
 pub(super) fn production_chests(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<crate::map::boot::BundleWorld> {
@@ -290,6 +317,19 @@ pub(super) async fn ask_for_key(
 
     let [npc] = install(owner, admitted, [NPC]).await?;
     talk(owner, admitted, npc, 10, "hi").await?;
+    let refusal = talk(owner, admitted, npc, 11, "key").await?;
+    assert_eq!(
+        refusal,
+        ["You are not ready yet. Proove yourself worthy first."]
+    );
+    let rows = owner
+        .root
+        .read_character_quest_state(owner.character, character)
+        .await
+        .map_err(debug)?;
+    assert_ne!(rows.tracks().get(ACCESS), Some(&1));
+    assert_ne!(rows.tracks().get(DOOR_STAGE), Some(&3));
+
     for (track, value) in [(HARD_KILLS, 10_i64), (DOOR_STAGE, 2)] {
         let inserted = sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
             .bind(character.as_bytes().as_slice()).bind(track).bind(QUEST).bind(value)
@@ -297,8 +337,11 @@ pub(super) async fn ask_for_key(
         assert_eq!(inserted.rows_affected(), 1);
     }
     owner.refresh_quest_session(admitted.game_session_id, true).await;
-    let lines = talk(owner, admitted, npc, 11, "key").await?;
-    assert!(lines.iter().any(|line| line.contains("chamber is now accessible")));
+    let lines = talk(owner, admitted, npc, 12, "key").await?;
+    assert_eq!(
+        lines,
+        ["You have proven yourself worthy. The door to the Forgemaster's chamber is now accessible."]
+    );
     let rows = owner.root.read_character_quest_state(owner.character, character).await.map_err(debug)?;
     assert_eq!(rows.tracks().get(ACCESS), Some(&1));
     assert_eq!(rows.tracks().get(DOOR_STAGE), Some(&3));

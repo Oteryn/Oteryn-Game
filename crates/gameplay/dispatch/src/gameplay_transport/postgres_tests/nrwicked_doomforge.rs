@@ -17,6 +17,8 @@ const START: TilePos = TilePos {
 const LEVER: TilePos = TilePos { x: 34058, y: 32394, floor: -14 };
 const STAGING: TilePos = TilePos { y: LEVER.y + 1, ..LEVER };
 const ARENA_ENTRY: MovementLocalPosition = MovementLocalPosition { x: 34034, y: 32340, floor: 14 };
+const WICKED_TRACK: &str =
+    "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked";
 
 const PORTAL: TilePos = TilePos { x: 34041, ..START };
 const FORGE: TilePos = TilePos {
@@ -181,7 +183,8 @@ fn scenario(
                     .ok_or("lever placement")?;
                 let mut lever_placement = map.base().digest().to_vec();
                 lever_placement.extend_from_slice(&lever_key.to_be_bytes());
-                two_player_exit(&h, &mut owner, deps.actor, session, lever_placement).await?;
+                two_player_exit(&h, &mut owner, deps.actor, session, lever_placement, map.facts())
+                    .await?;
                 drop(owner);
                 drop(authority);
                 drop(seal);
@@ -319,6 +322,7 @@ async fn two_player_exit(
     first: crate::foundation::ExactActorRef,
     session: crate::foundation::GameSessionId,
     lever_placement: Vec<u8>,
+    facts: &crate::map::facts::BundleFacts,
 ) -> TestResult {
     use super::fixture::id;
     use crate::foundation::{CommandId, CommandRef, GameSessionId, OwnerDamageCommand};
@@ -327,7 +331,7 @@ async fn two_player_exit(
         kill_reward::{DrainOutcome, KillSink, record_creature_kill},
     };
     use crate::gameplay_transport::connection::UseCommand;
-    use oteryn_gameplay_encounters::bosses::phase_controller::arbaziloth::BOSS;
+    use oteryn_gameplay_encounters::bosses::phase_controller::arbaziloth::{BOSS, FORGEMASTER};
     use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
     use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
     const ENRAGED: &str = "oteryn:creature.enraged_arbaziloth";
@@ -344,6 +348,27 @@ async fn two_player_exit(
         .await?
         .0
         .current_character_lease();
+    // The second player starts one hard win away from qualifying for the key.
+    for (track, value) in [
+        ("hard_kills", 9_i64),
+        ("kill_arbaziloth/questline", 2),
+        ("questlog", 1),
+        ("forgemaster_door/questline", 1),
+    ] {
+        let inserted = sqlx::query(
+            "INSERT INTO game_character_quest_tracks
+                (character_id, track_key, quest_key, value, committed_character_revision)
+             SELECT character_id, $2, $3, $4, character_revision
+             FROM game_character_roots WHERE character_id = encode($1, 'hex')::uuid",
+        )
+        .bind(second_lease.character_id().as_bytes().as_slice())
+        .bind(format!("{WICKED_TRACK}/{track}"))
+        .bind("oteryn:quest.no_rest_for_the_wicked_quest")
+        .bind(value)
+        .execute(&h.pool)
+        .await?;
+        assert_eq!(inserted.rows_affected(), 1);
+    }
     let native = owner.active_generation.and_then(|g| g.native_gameplay())
         .ok_or("production native policies")?;
     let mut runtime = owner.runtime.lock().await;
@@ -393,10 +418,28 @@ async fn two_player_exit(
     for (actor, _) in players {
         assert_eq!(runtime.read_actor_position(actor).map_err(debug)?.position(), ARENA_ENTRY);
     }
-    let boss = runtime.positioned_actor_census().map_err(debug)?.into_iter()
-        .map(|(actor, _, _)| actor)
-        .find(|actor| runtime.matches_live_creature_identity(*actor, BOSS.as_bytes()))
-        .ok_or("normal Arbaziloth spawned by lever")?;
+    let census = runtime.positioned_actor_census().map_err(debug)?;
+    let spawned = |key: &str| {
+        census.iter().find_map(|(actor, _, _)| {
+            runtime
+                .matches_live_creature_identity(*actor, key.as_bytes())
+                .then_some(*actor)
+        })
+    };
+    let boss = spawned(BOSS).ok_or("normal Arbaziloth spawned by lever")?;
+    let forgemaster = spawned(FORGEMASTER).ok_or("Forgemaster spawned by lever")?;
+    assert_eq!(
+        runtime.companion_snapshot(forgemaster).map_err(debug)?.health,
+        10_500
+    );
+    let boss_home = runtime.read_actor_position(boss).map_err(debug)?.position();
+    let purple_fire = || {
+        facts
+            .movement_item_entries()
+            .into_iter()
+            .filter_map(|(at, entry)| (entry.facts.appearance_id == 49362).then_some(at))
+            .collect::<Vec<_>>()
+    };
     for phase in 0..4 {
         let health = runtime.companion_snapshot(boss).map_err(debug)?.health;
         let occurrence = format!("nrwicked-party-{phase}");
@@ -413,11 +456,36 @@ async fn two_player_exit(
                 },
             )
             .map_err(debug)?;
-        let shields = runtime
-            .arbaziloth_shields_mut(boss)
-            .ok_or("bound shields")?;
-        assert!(shields.step_on_fire());
-        assert!(shields.use_rod(100, 100));
+        encounter_phases::tick(&mut runtime, &states, 100);
+        let [fire]: [TilePos; 1] = purple_fire()
+            .try_into()
+            .map_err(|_| "expected exactly one production purple fire per shield")?;
+        let before = runtime.read_actor_position(boss).map_err(debug)?;
+        runtime
+            .borrow_movement_position()
+            .commit_creature_relocation(
+                boss,
+                before,
+                MovementLocalPosition {
+                    x: i32::from(fire.x),
+                    y: i32::from(fire.y),
+                    floor: -i16::from(fire.floor),
+                },
+            )
+            .map_err(debug)?;
+        encounter_phases::tick(&mut runtime, &states, 100);
+        assert!(purple_fire().is_empty(), "boss crossing consumes purple fire");
+        assert!(
+            runtime
+                .arbaziloth_shields_mut(boss)
+                .ok_or("bound shields")?
+                .use_rod(100, 100)
+        );
+        let before = runtime.read_actor_position(boss).map_err(debug)?;
+        runtime
+            .borrow_movement_position()
+            .commit_creature_relocation(boss, before, boss_home)
+            .map_err(debug)?;
     }
     encounter_phases::tick(&mut runtime, &states, 3100);
     let enraged = runtime
@@ -427,9 +495,12 @@ async fn two_player_exit(
         .map(|(actor, _, _)| actor)
         .find(|actor| runtime.matches_live_creature_identity(*actor, ENRAGED.as_bytes()))
         .ok_or("enraged replacement")?;
+    assert!(!runtime.contains_live_creature(boss));
+    assert!(!runtime.contains_live_creature(forgemaster));
     let observed = owner.owner_now();
     let now = observed.get() / 1000;
     let health = runtime.companion_snapshot(enraged).map_err(debug)?.health;
+    assert_eq!(health, 360_000);
     for (actor, session, damage) in [(other, other_session, health / 4), (first, session, health - health / 4)] {
         runtime
             .borrow_exact_actor_commit_at(now)
@@ -474,7 +545,7 @@ async fn two_player_exit(
         owner.drain_kill_rewards(session).await,
         DrainOutcome::Drained
     );
-    for lease in [first_lease, second_lease] {
+    for (lease, hard_kills, door_stage) in [(first_lease, 1, 1), (second_lease, 10, 2)] {
         let character = oteryn_gameplay_domain::domain::CharacterId::from_bytes(
             *lease.character_id().as_bytes(),
         )
@@ -484,17 +555,22 @@ async fn two_player_exit(
             .read_character_quest_state(owner.character, character)
             .await
             .map_err(debug)?;
-        let track = "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked";
-        assert_eq!(rows.tracks().get(&format!("{track}/hard_kills")), Some(&1));
+        assert_eq!(
+            rows.tracks().get(&format!("{WICKED_TRACK}/hard_kills")),
+            Some(&hard_kills)
+        );
         assert_eq!(
             rows.tracks()
-                .get(&format!("{track}/kill_arbaziloth/questline")),
+                .get(&format!("{WICKED_TRACK}/kill_arbaziloth/questline")),
             Some(&2)
         );
-        assert_eq!(rows.tracks().get(&format!("{track}/questlog")), Some(&1));
         assert_eq!(
-            rows.tracks().get(&format!("{track}/forgemaster_door/questline")),
+            rows.tracks().get(&format!("{WICKED_TRACK}/questlog")),
             Some(&1)
+        );
+        assert_eq!(
+            rows.tracks().get(&format!("{WICKED_TRACK}/forgemaster_door/questline")),
+            Some(&door_stage)
         );
     }
     for (actor, session) in players {

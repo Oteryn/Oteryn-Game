@@ -239,7 +239,8 @@ pub(super) fn scenario(
         let repeat_reward = seed == "rottin_weighted_repeat";
         let short_reward = seed == "rottin_weighted_short";
         let lucky_charms = seed == "rottin_lucky_charms";
-        let craft_lucky_charm = seed == "rottin_lucky_charm_craft";
+        let craft_first_mission = seed == "rottin_first_mission_lucky_charm_craft";
+        let craft_lucky_charm = seed == "rottin_lucky_charm_craft" || craft_first_mission;
         let accept_bushwhacking = seed == "rottin_bushwhacking_acceptance";
         let weighted_reward = seed == "rottin_weighted_reward" || repeat_reward || short_reward;
         let rottin = merchant_loot || merchant_wave || weighted_reward || repair
@@ -261,7 +262,7 @@ pub(super) fn scenario(
             super::item_look_fixtures::seed_main_backpack(&h, &[]).await?;
         }
         prepare_current_session(&h).await?;
-        if craft_lucky_charm || accept_bushwhacking {
+        if (craft_lucky_charm && !craft_first_mission) || accept_bushwhacking {
             use oteryn_gameplay_quests::quest::classic_talk::ROTTIN_STATE;
             let questline = if craft_lucky_charm { 2 } else { 4 };
             super::rottin_rewards_fixtures::seed_tracks(
@@ -454,7 +455,9 @@ pub(super) fn scenario(
             } else if repair {
                 super::rottin_repairs_fixtures::exercise(&mut owner, admitted, &h, handyman).await?;
             } else if craft_lucky_charm {
-                super::rottin_rewards_fixtures::craft_lucky_charm(&mut owner, &admitted, &h).await?;
+                super::rottin_rewards_fixtures::craft_lucky_charm(
+                    &mut owner, &admitted, &h, craft_first_mission,
+                ).await?;
             } else if lucky_charms {
                 super::rottin_rewards_fixtures::lucky_charms(&mut owner, &admitted, &h).await?;
             } else if short_reward {
