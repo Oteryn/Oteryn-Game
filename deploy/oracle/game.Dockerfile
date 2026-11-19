@@ -4,7 +4,8 @@ FROM rust:1.94.0-bookworm@sha256:365468470075493dc4583f47387001854321c5a8583ea96
 RUN apt-get update \
     && apt-get install -y --no-install-recommends cmake pkg-config \
     && rm -rf /var/lib/apt/lists/*
-ARG GAME_SOURCE_SHA=87f770c87ce17518ba69f5effdbd04725d8a7d06
+ARG GAME_SOURCE_SHA
+RUN test "${#GAME_SOURCE_SHA}" -eq 40
 ENV OTERYN_BUILD_SHA=${GAME_SOURCE_SHA}
 WORKDIR /src
 COPY . .
@@ -42,11 +43,14 @@ RUN set -eu \
     && python3 deploy/synology-game/stage_gameplay.py content/spells.manifest.json . /node-inputs/gameplay \
     && python3 deploy/synology-game/stage_npc_data.py deploy/synology-game/npc-data.pin.json . /node-inputs/npc-data \
     && cd /node-inputs \
-    && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > /INPUTS.sha256 \
+    && find . -type f -print0 > /inputs.list \
+    && LC_ALL=C sort -z /inputs.list > /inputs.sorted \
+    && xargs -0 sha256sum < /inputs.sorted > /INPUTS.sha256 \
+    && rm /inputs.list /inputs.sorted \
     && mv /INPUTS.sha256 INPUTS.sha256
 
 FROM debian:bookworm-slim@sha256:7c7b2c966bc9ee8cedfeef67e0e279108992c77681fa595db4a9d65c06ccc587 AS runtime
-ARG GAME_SOURCE_SHA=87f770c87ce17518ba69f5effdbd04725d8a7d06
+ARG GAME_SOURCE_SHA
 LABEL org.opencontainers.image.source="https://github.com/Oteryn/Oteryn-Game" \
     org.opencontainers.image.revision="${GAME_SOURCE_SHA}"
 RUN apt-get update \

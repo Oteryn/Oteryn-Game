@@ -54,3 +54,11 @@ The runtime image carries the node's pinned inputs under `/opt/oteryn-game`
 - `INPUTS.sha256`: `sha256sum` of every file above, sorted by path.
 
 The image build fails when any input differs from its pin.
+`GAME_SOURCE_SHA` has no default: the build refuses anything but the full
+40-character commit of the source archive.
+
+Mount nothing over `/opt/oteryn-game`: a host mount there replaces the baked,
+pinned inputs. With the baked `[world_bundle]`, `[readiness]` in `node.toml`
+sets `map_revision` to the bundle digest and
+`required_gameplay_capabilities = [11, 18, 30]`, the bundle world's mandatory
+floor; the node refuses to boot a bundle world with `[]`.
