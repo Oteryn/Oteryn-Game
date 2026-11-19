@@ -128,7 +128,7 @@ async fn exercise_world(
 ) -> TestResult {
     let keep_cave_monsters = cave == Some(CaveRoom::OccupiedEntry);
     let buff = buff.map(|buff| {
-        // Crystal movements_strangely_glowing_mark.lua:18,26.
+        // Crystal movements_strangely_glowing_mark.lua:18,28.
         let message = match buff.benefit {
             StepBenefit::Heal { .. } => "The mythic fires beneath your feet heal you.",
             StepBenefit::Speed { .. } => "The mythic fires beneath your feet gave you speed.",
@@ -407,7 +407,7 @@ async fn exercise_world(
             }
             assert_eq!(movement_effect_count(&owner, local(ENTRY), buff.magic_effect)?, 1);
             let clock = sqlx::query_as::<_, (i64, i64)>(
-                "SELECT value, committed_character_revision FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2",
+                "SELECT value, committed_character_revision::bigint FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2",
             ).bind(id(41).as_slice()).bind(TRACK).fetch_one(&h.pool).await?;
             assert!(clock.0 > 9);
             if let Some(first) = first_clock {
