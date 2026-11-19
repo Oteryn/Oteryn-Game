@@ -21,6 +21,7 @@ use oteryn_protocol_oteryn::world_spatial::{
 use std::{sync::Arc, time::Duration};
 
 pub(super) const NAME: &str = "faceless-bane-restores";
+pub(super) const LIMITED_SLOTS: &str = "faceless-bane-limited-summon-slots";
 const KEY: &str = "oteryn:quest-callback/dream-courts/faceless-bane";
 const QUEST: &str = "oteryn:quest.the_dream_courts_quest";
 const BOSS: &str = "oteryn:creature.faceless_bane";
@@ -119,6 +120,7 @@ fn faceless_bane_think_restores_health_and_protects_until_the_room_switch_step_t
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
+    limited_slots: bool,
 ) -> TestResult {
     let first = admitted.runtime_actor.ok_or("first actor")?;
     let second_session = GameSessionId::decode(&id(110)).map_err(debug)?;
@@ -217,8 +219,11 @@ pub(super) async fn exercise(
         assert!(damage(&mut runtime, boss, b"while-immune", 1).is_err());
         owner.tick_quest_encounter_thresholds(&mut runtime);
     }
-    for creature in SUMMONS {
-        assert_eq!(live(owner, creature).await?.len(), 1);
+    for (index, creature) in SUMMONS.into_iter().enumerate() {
+        assert_eq!(
+            live(owner, creature).await?.len(),
+            usize::from(!limited_slots || index == 0)
+        );
     }
     {
         let mut runtime = owner.runtime.lock().await;
@@ -276,7 +281,21 @@ pub(super) async fn exercise(
         );
     }
     assert!(live(owner, BOSS).await?.is_empty());
+    for creature in SUMMONS {
+        assert!(live(owner, creature).await?.is_empty());
+    }
     Ok(())
+}
+
+#[test]
+fn faceless_bane_restores_and_ejects_both_players_with_only_one_free_summon_slot() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(LIMITED_SLOTS, || {
+        scenario(LIMITED_SLOTS, LEVER, false)
+    })
 }
 
 async fn step(
