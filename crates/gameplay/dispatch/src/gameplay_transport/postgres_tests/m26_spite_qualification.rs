@@ -12,7 +12,7 @@ fn m26_spite_postgres_production_source_room_qualification_and_publication() -> 
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| {
         super::reset();
         let h = Harness::create_with_admission_seed(admin, "m26_spite_qualification", true, false)
             .await?;
@@ -61,7 +61,7 @@ fn m26_spite_postgres_production_source_room_qualification_and_publication() -> 
             Some(crate::content::bosses::activity_template::ActivityTemplateRefusal::InvalidSourceCapture)
         );
         let pin = source_pin.into_channel_pin();
-        super::boss_activity::issue_content_and_reset(&h, &pin).await?;
+        super::boss_activity_fixtures::issue_content_and_reset(&h, &pin).await?;
         let store = ActivityHandoffOwner::new(h.root.clone());
         store
             .publish_qualified_boss_rooms(&h.node, std::slice::from_ref(&template))

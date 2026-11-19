@@ -1,4 +1,5 @@
 //! Prepared storage is administrative setup; cancellation runs through real logout.
+use tokio::io::AsyncWriteExt;
 use super::*;
 use crate::durability::fresh_admission::{ExpiredLossReleaseV1, FreshAdmissionStore};
 use crate::foundation::{AuthenticatedTransportRefV1, GameSessionState};

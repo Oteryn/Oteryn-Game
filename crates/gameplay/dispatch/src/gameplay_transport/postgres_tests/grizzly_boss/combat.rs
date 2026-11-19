@@ -385,7 +385,7 @@ async fn late_party(
         .map_err(debug)?
         .position();
     let (other, second) =
-        super::vacancy::second_player(owner, deps, h, MovementLocalPosition { x: at.x - 1, ..at })
+        super::second_player(owner, deps, h, MovementLocalPosition { x: at.x - 1, ..at })
             .await?;
     task_level(owner, second.game_session_id, 242).await?;
     task(owner, second.game_session_id, 700, Action::Join).await?;

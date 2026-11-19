@@ -1,6 +1,6 @@
 //! F32: cached presentation positions must never redirect a durable nested-bag move.
 use super::fixture::{Harness, debug, id, run};
-use super::{Dependencies, TestResult, item_look, prepare_current_session};
+use super::{Dependencies, TestResult, item_look_fixtures as item_look, prepare_current_session};
 use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::FirstEntryOutcome;
@@ -40,7 +40,7 @@ fn f32_full_view_boundary_shrink() -> TestResult {
 
 fn scenario(exercise: fn() -> TestResult) -> TestResult {
     // Match the existing live-container fixture's stack requirement.
-    super::kill_reward_e2e::scenario_thread::run("f32-locator", exercise)
+    super::kill_reward_e2e_fixtures::scenario_thread::run("f32-locator", exercise)
 }
 fn exercise(mutation: Mutation) -> TestResult {
     run(async |admin| {
@@ -55,7 +55,7 @@ fn exercise(mutation: Mutation) -> TestResult {
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (controller, pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
         let generation = controller.active().ok_or("active")?;
         let room = pin.qualified_room().clone();
         let frame_digest = pin.frame_binding().digest();

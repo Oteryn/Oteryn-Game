@@ -1,7 +1,7 @@
 //! Crystal 201189f8 data-global/scripts/quests/shadows_of_yalahar_quest/
 //! movements_mission05.lua:9-18: one of six charges per delivery, during stages 1-3.
 use super::fixture::{Harness, debug, id};
-use super::quest_world_callbacks::wire;
+use super::quest_world_callbacks_fixtures::wire;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::connection::FirstEntryOutcome;
@@ -27,7 +27,7 @@ fn yalahar_step_assigns_one_persistent_charge_and_refuses_a_second() -> TestResu
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| exercise(&admin).await)
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| exercise(&admin).await)
 }
 
 fn catalogue() -> TestResult<QuestStateCatalogue> {
@@ -76,13 +76,13 @@ async fn exercise(admin: &str) -> TestResult {
         .await
         .map_err(debug)?;
     let mut deps = Dependencies::new()?;
-    let (controller, activation) = super::death_ml_loss_composed::production_generation_with_pin(
+    let (controller, activation) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
         deps.admitted.world_id,
         "content-1",
     )?;
     let generation = controller.active().ok_or("active generation")?;
-    let world = super::quest_callbacks::source_world(TILE, 25030, 1948, 0)?;
-    super::arena_match::fixture::runtime_at(
+    let world = super::quest_callbacks_fixtures::source_world(TILE, 25030, 1948, 0)?;
+    super::arena_match_fixtures::fixture::runtime_at(
         &mut deps,
         generation,
         &activation,

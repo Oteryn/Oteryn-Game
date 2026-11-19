@@ -1,6 +1,6 @@
 //! Crystal 201189f8 data-global/scripts/quests/kilmaresh/1-fafnars-wrath/6-mind-travel.lua:1-39.
 use super::fixture::{Harness, debug, id};
-use super::quest_world_callbacks::{local, wire};
+use super::quest_world_callbacks_fixtures::{local, wire};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::MovementFacing;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
@@ -56,7 +56,7 @@ fn hallucinogen_use_checks_ring_and_temple_and_commits_only_the_chosen_side() ->
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| exercise(admin, false).await)
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| exercise(admin, false).await)
 }
 
 #[test]
@@ -65,7 +65,7 @@ fn hallucinogen_use_can_arrive_at_either_occupied_brain_landing() -> TestResult 
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| exercise(admin, true).await)
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| exercise(admin, true).await)
 }
 
 fn catalogue() -> TestResult<QuestStateCatalogue> {
@@ -105,7 +105,7 @@ async fn exercise(admin: String, occupied_landings: bool) -> TestResult {
         .await
         .map_err(debug)?;
     let mut deps = Dependencies::new()?;
-    let (controller, pin) = super::death_ml_loss_composed::production_generation_with_pin(
+    let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
         deps.admitted.world_id,
         "content-1",
     )?;
@@ -116,8 +116,8 @@ async fn exercise(admin: String, occupied_landings: bool) -> TestResult {
         .map(|p| (p.x, p.y, p.floor, 0, 1948))
         .collect();
     let world =
-        super::quest_callbacks::source_world_spatial((START.x, START.y, START.floor), &tiles)?;
-    super::arena_match::fixture::runtime_at(&mut deps, generation, &pin, &world, local(START))?;
+        super::quest_callbacks_fixtures::source_world_spatial((START.x, START.y, START.floor), &tiles)?;
+    super::arena_match_fixtures::fixture::runtime_at(&mut deps, generation, &pin, &world, local(START))?;
     let cells = world
         .movement_cells(deps.room.movement_cells())
         .map_err(debug)?;
@@ -144,7 +144,7 @@ async fn exercise(admin: String, occupied_landings: bool) -> TestResult {
         .bind(generation.identity().server_artifact_digest().as_slice())
         .bind(generation.identity().client_artifact_digest().as_slice())
         .bind(world.frame_binding_digest(admitted.world_id).as_slice()).execute(&h.pool).await?;
-    super::item_look::seed_main_backpack(&h, &[(POTION, 1), (RING, 1)]).await?;
+    super::item_look_fixtures::seed_main_backpack(&h, &[(POTION, 1), (RING, 1)]).await?;
     owner.admit_quest_session(&admitted).await;
     let potion = generation
         .native_gameplay()
@@ -254,7 +254,7 @@ async fn exercise(admin: String, occupied_landings: bool) -> TestResult {
         // Crystal game.cpp:3167-3192 asks the chosen existing tile for FLAG_NOLIMIT.
         // Occupy both outcomes so this assertion is independent of the database draw.
         let (player, _) =
-            super::grizzly_boss::second_player(&owner, &deps, &h, local(LANDINGS[0])).await?;
+            super::grizzly_boss_fixtures::second_player(&owner, &deps, &h, local(LANDINGS[0])).await?;
         let mut runtime = owner.runtime.lock().await;
         let native = generation.native_gameplay().ok_or("native gameplay")?;
         native

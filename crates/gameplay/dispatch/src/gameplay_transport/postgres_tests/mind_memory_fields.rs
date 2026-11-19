@@ -1,6 +1,6 @@
 //! Crystal 201189f8 data-global/scripts/quests/kilmaresh/1-fafnars-wrath/6-mind-travel.lua:117-143.
 use super::fixture::{Harness, debug, id};
-use super::quest_world_callbacks::wire;
+use super::quest_world_callbacks_fixtures::wire;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::connection::FirstEntryOutcome;
@@ -34,7 +34,7 @@ fn mind_energy_field_step_removes_one_owned_shard_without_changing_memories() ->
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| exercise(admin, false).await)
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| exercise(admin, false).await)
 }
 
 #[test]
@@ -43,7 +43,7 @@ fn mind_energy_field_debits_a_shard_in_a_closed_nested_bag() -> TestResult {
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| exercise(admin, true).await)
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| exercise(admin, true).await)
 }
 
 fn catalogue() -> TestResult<QuestStateCatalogue> {
@@ -81,18 +81,18 @@ async fn exercise(admin: String, nested: bool) -> TestResult {
         .await
         .map_err(debug)?;
     let mut deps = Dependencies::new()?;
-    let (controller, pin) = super::death_ml_loss_composed::production_generation_with_pin(
+    let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
         deps.admitted.world_id,
         "content-1",
     )?;
     let generation = controller.active().ok_or("content generation")?;
-    let world = super::quest_callbacks::source_world(POS, 0, FIELD, 0)?;
+    let world = super::quest_callbacks_fixtures::source_world(POS, 0, FIELD, 0)?;
     let start = MovementLocalPosition {
         x: i32::from(POS.0 - 1),
         y: i32::from(POS.1),
         floor: 9,
     };
-    super::arena_match::fixture::runtime_at(&mut deps, generation, &pin, &world, start)?;
+    super::arena_match_fixtures::fixture::runtime_at(&mut deps, generation, &pin, &world, start)?;
     let cells = world
         .movement_cells(deps.room.movement_cells())
         .map_err(debug)?;
@@ -119,11 +119,11 @@ async fn exercise(admin: String, nested: bool) -> TestResult {
     let owned = if nested {
         // Crystal 6-mind-travel.lua:126 uses getItemById(id, true).
         // The closed bag contains one matching shard and an unrelated coin.
-        super::item_look::seed_main_backpack(&h, &[(BAG, 1), (SHARDS[1], 1), (COIN, 1)]).await?;
+        super::item_look_fixtures::seed_main_backpack(&h, &[(BAG, 1), (SHARDS[1], 1), (COIN, 1)]).await?;
         nest_backpack_contents(&h).await?;
         1
     } else {
-        super::item_look::seed_main_backpack(&h, &SHARDS.map(|key| (key, 1))).await?;
+        super::item_look_fixtures::seed_main_backpack(&h, &SHARDS.map(|key| (key, 1))).await?;
         3
     };
     owner.admit_quest_session(&admitted).await;

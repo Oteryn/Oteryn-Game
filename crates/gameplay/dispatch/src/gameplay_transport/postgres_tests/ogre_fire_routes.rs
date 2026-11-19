@@ -1,6 +1,6 @@
 //! Crystal 201189f8 kilmaresh/movements_firetp.lua:2-39,43-104.
 use super::fixture::{Harness, debug};
-use super::quest_world_callbacks::{local, wire};
+use super::quest_world_callbacks_fixtures::{local, wire};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::gameplay_transport::connection::FirstEntryOutcome;
 use crate::map::overlay::TilePos;
@@ -52,7 +52,7 @@ fn ogre_step_routes_check_current_fires_and_teleport_to_either_occupied_landing(
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(exercise)
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(exercise)
 }
 
 fn catalogue() -> TestResult<QuestStateCatalogue> {
@@ -101,7 +101,7 @@ async fn exercise(admin: String) -> TestResult {
         .await
         .map_err(debug)?;
     let mut deps = Dependencies::new()?;
-    let (controller, pin) = super::death_ml_loss_composed::production_generation_with_pin(
+    let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
         deps.admitted.world_id,
         "content-1",
     )?;
@@ -119,11 +119,11 @@ async fn exercise(admin: String) -> TestResult {
         .chain([SUCCESS, FAILURE].map(|p| (p.x, p.y, p.floor, 0, 422)))
         .collect();
     let first = PADS[0];
-    let world = super::quest_callbacks::source_world_step_actions(
+    let world = super::quest_callbacks_fixtures::source_world_step_actions(
         (first.x, first.y, first.floor),
         &objects,
     )?;
-    super::arena_match::fixture::runtime_at(
+    super::arena_match_fixtures::fixture::runtime_at(
         &mut deps,
         generation,
         &pin,
@@ -166,7 +166,7 @@ async fn exercise(admin: String) -> TestResult {
                     "publish the live fire appearance"
                 );
             }
-            super::l6_native_signs::relocate(&owner, actor, session, at(pad.x - 1, pad.y)).await?;
+            super::l6_native_signs_fixtures::relocate(&owner, actor, session, at(pad.x - 1, pad.y)).await?;
             owner.clock_origin = owner
                 .clock_origin
                 .checked_sub(Duration::from_secs(2))

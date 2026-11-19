@@ -1,5 +1,5 @@
 //! Durable daily choice through the admitted command route, including process-cache replacement.
-use super::cyclopedia::support;
+use super::cyclopedia_fixtures::support;
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1};
@@ -47,7 +47,7 @@ fn scenario() -> TestResult {
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activation_pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;

@@ -1,6 +1,6 @@
 //! Crystal 201189f8 actions_mission02.lua:7-23,60-104 and data/items/items.xml:24509-24548.
 use super::fixture::{Harness, debug, id};
-use super::quest_world_callbacks::wire;
+use super::quest_world_callbacks_fixtures::wire;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
@@ -33,7 +33,7 @@ fn yalahar_cycled_column_unlocks_one_core_through_the_dispenser() -> TestResult 
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| exercise(&admin).await)
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| exercise(&admin).await)
 }
 
 fn catalogue() -> TestResult<QuestStateCatalogue> {
@@ -101,12 +101,12 @@ async fn exercise(admin: &str) -> TestResult {
         .await
         .map_err(debug)?;
     let mut deps = Dependencies::new()?;
-    let (controller, pin) = super::death_ml_loss_composed::production_generation_with_pin(
+    let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
         deps.admitted.world_id,
         "content-1",
     )?;
     let active = controller.active().ok_or("content generation")?;
-    let world = super::quest_callbacks::source_world_spatial(
+    let world = super::quest_callbacks_fixtures::source_world_spatial(
         CANNON,
         &[
             (CANNON.0, CANNON.1, CANNON.2, 0, 9132),
@@ -120,7 +120,7 @@ async fn exercise(admin: &str) -> TestResult {
         y: i32::from(CANNON.1),
         floor: 11,
     };
-    super::arena_match::fixture::runtime_at(&mut deps, active, &pin, &world, start)?;
+    super::arena_match_fixtures::fixture::runtime_at(&mut deps, active, &pin, &world, start)?;
     let cells = world
         .movement_cells(deps.room.movement_cells())
         .map_err(debug)?;
@@ -249,7 +249,7 @@ async fn exercise(admin: &str) -> TestResult {
                 UseDisposition::Rejected
             }
         );
-        assert_eq!(super::qengine_voucher_stories::quantity(&h, CORE).await?, expected);
+        assert_eq!(super::qengine_voucher_stories_fixtures::quantity(&h, CORE).await?, expected);
     }
     let repeat = wire(
         &owner,
@@ -260,7 +260,7 @@ async fn exercise(admin: &str) -> TestResult {
     )
     .await?;
     assert_eq!(decode_use_result(&repeat).map_err(debug)?, UseDisposition::Rejected);
-    assert_eq!(super::qengine_voucher_stories::quantity(&h, CORE).await?, 1);
+    assert_eq!(super::qengine_voucher_stories_fixtures::quantity(&h, CORE).await?, 1);
     owner
         .states
         .test_owner_time

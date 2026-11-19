@@ -1,6 +1,6 @@
 //! Crystal 201189f8 data-global/npc/telas.lua:94-105,385-399 and
 //! data-global/npc/golem_servant.lua:84-108,203-208,238-240.
-use super::classic_quests::{install, talk};
+use super::classic_quests_fixtures::{install, talk};
 use super::fixture::{Harness, debug, id};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::WorldId;
@@ -42,7 +42,7 @@ fn telas_dialogue_persists_three_distinct_ingredient_indices() -> TestResult {
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| exercise(&admin, false).await)
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| exercise(&admin, false).await)
 }
 
 #[test]
@@ -51,7 +51,7 @@ fn golem_servant_dialogue_reports_the_persisted_part_for_each_request() -> TestR
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| exercise(&admin, true).await)
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| exercise(&admin, true).await)
 }
 
 fn binding(npc: &str, repair: bool) -> TestResult<QuestStateCatalogue> {
@@ -113,7 +113,7 @@ async fn exercise(admin: &str, repair: bool) -> TestResult {
         .open_character_authority(&seal)
         .await
         .map_err(debug)?;
-    let (controller, pin) = super::death_ml_loss_composed::production_generation_with_pin(
+    let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
         WorldId::decode(&id(42)).map_err(debug)?,
         "content-1",
     )?;

@@ -57,7 +57,7 @@ fn sanction_record_postgres_projection_is_idempotent_and_the_read_is_own_and_fen
         return Ok(());
     }
     std::thread::Builder::new().stack_size(256 << 20).spawn(|| run(async |admin| {
-        use super::cyclopedia::support::exchange;
+        use super::cyclopedia_fixtures::support::exchange;
         reset();
         let h = Harness::create_with_admission_seed(admin, "sanction_record", true, false).await.map_err(debug)?;
         prepare_current_session(&h).await?;

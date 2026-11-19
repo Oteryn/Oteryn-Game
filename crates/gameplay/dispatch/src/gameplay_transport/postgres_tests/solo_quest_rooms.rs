@@ -1,7 +1,7 @@
 //! Crystal 201189f8 Wanted actions_portal_minis_kilmaresh.lua:2-15,59-106;
 //! Path of Defiances movements_teleportTo.lua:1-7,75-90,95-128.
 use super::fixture::{Harness, debug, id};
-use super::quest_world_callbacks::{local, wire};
+use super::quest_world_callbacks_fixtures::{local, wire};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{
     CharacterId, CharacterLease, ExactActorRef, GameSessionId, MovementFacing,
@@ -72,7 +72,7 @@ fn wanted_step_ejects_both_occupants_and_resets_boss_only_after_cooldown() -> Te
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| exercise(admin, WANTED).await)
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| exercise(admin, WANTED).await)
 }
 
 #[test]
@@ -81,7 +81,7 @@ fn defiances_step_checks_reset_radius_deadlines_and_cooldown_order() -> TestResu
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| {
         exercise(admin, DEFIANCES).await
     })
 }
@@ -135,7 +135,7 @@ async fn exercise(admin: String, room: Room) -> TestResult {
         .await
         .map_err(debug)?;
     let mut deps = Dependencies::new()?;
-    let (controller, pin) = super::death_ml_loss_composed::production_generation_with_pin(
+    let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
         deps.admitted.world_id,
         "content-1",
     )?;
@@ -151,7 +151,7 @@ async fn exercise(admin: String, room: Room) -> TestResult {
     .into_iter()
     .map(|p| (p.x, p.y, p.floor, 0, 1948))
     .collect();
-    let world = super::quest_callbacks::source_world_spatial(
+    let world = super::quest_callbacks_fixtures::source_world_spatial(
         (room.entry.x, room.entry.y, room.entry.floor),
         &tiles,
     )?;
@@ -159,7 +159,7 @@ async fn exercise(admin: String, room: Room) -> TestResult {
         x: i32::from(room.entry.x - 1),
         ..local(room.entry)
     };
-    super::arena_match::fixture::runtime_at(&mut deps, generation, &pin, &world, start)?;
+    super::arena_match_fixtures::fixture::runtime_at(&mut deps, generation, &pin, &world, start)?;
     let cells = world
         .movement_cells(deps.room.movement_cells())
         .map_err(debug)?;
@@ -277,7 +277,7 @@ async fn exercise(admin: String, room: Room) -> TestResult {
         (peer, room.landing, peer_position)
     } else {
         let (peer, mut peer_session) =
-            super::grizzly_boss::second_player(&owner, &deps, &h, start).await?;
+            super::grizzly_boss_fixtures::second_player(&owner, &deps, &h, start).await?;
         set_time(entered_at + 2_000_000);
         step(&owner, &mut admitted, 2, StepDirection::West).await?;
         set_time(entered_at + 4_000_000);

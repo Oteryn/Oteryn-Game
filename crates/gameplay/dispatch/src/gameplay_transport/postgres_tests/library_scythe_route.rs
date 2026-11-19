@@ -1,6 +1,6 @@
 //! Crystal 201189f8 data-global/scripts/lib/register_actions.lua:1035-1067.
 use super::fixture::{Harness, debug, id};
-use super::quest_world_callbacks::wire;
+use super::quest_world_callbacks_fixtures::wire;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
@@ -29,7 +29,7 @@ fn library_scythe_dispatch_retains_either_tool_and_requires_permission_seven() -
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| {
         exercise(&admin, SCYTHES[0], 6).await?;
         exercise(&admin, SCYTHES[0], 7).await?;
         exercise(&admin, SCYTHES[1], 7).await
@@ -75,12 +75,12 @@ async fn exercise(admin: &str, tool: &str, permission: i64) -> TestResult {
         .await
         .map_err(debug)?;
     let mut deps = Dependencies::new()?;
-    let (controller, pin) = super::death_ml_loss_composed::production_generation_with_pin(
+    let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
         deps.admitted.world_id,
         "content-1",
     )?;
     let active = controller.active().ok_or("content generation")?;
-    let world = super::quest_callbacks::source_world_spatial(
+    let world = super::quest_callbacks_fixtures::source_world_spatial(
         ENTRY,
         &[
             (ENTRY.0, ENTRY.1, ENTRY.2, 0, 1948),
@@ -92,7 +92,7 @@ async fn exercise(admin: &str, tool: &str, permission: i64) -> TestResult {
         y: i32::from(ENTRY.1),
         floor: 7,
     };
-    super::arena_match::fixture::runtime_at(&mut deps, active, &pin, &world, start)?;
+    super::arena_match_fixtures::fixture::runtime_at(&mut deps, active, &pin, &world, start)?;
     let cells = world
         .movement_cells(deps.room.movement_cells())
         .map_err(debug)?;
@@ -112,7 +112,7 @@ async fn exercise(admin: &str, tool: &str, permission: i64) -> TestResult {
         .map_err(|()| "quest fence")?
         .ok_or("quest session")?;
     admitted.item_fence = Some(fence.item_fence());
-    super::item_look::seed_main_backpack(&h, &[(tool, 1)]).await?;
+    super::item_look_fixtures::seed_main_backpack(&h, &[(tool, 1)]).await?;
     sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
         .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
@@ -129,7 +129,7 @@ async fn exercise(admin: &str, tool: &str, permission: i64) -> TestResult {
         y: i32::from(LANDING.1),
         floor: 12,
     };
-    let (occupant, _) = super::grizzly_boss::second_player(&owner, &deps, &h, park).await?;
+    let (occupant, _) = super::grizzly_boss_fixtures::second_player(&owner, &deps, &h, park).await?;
 
     let definition = active
         .native_gameplay()

@@ -1,6 +1,6 @@
 //! Crystal 201189f8 actions_mission09.lua:7-49.
 use super::fixture::{Harness, debug, id};
-use super::quest_world_callbacks::{local, wire};
+use super::quest_world_callbacks_fixtures::{local, wire};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::MovementFacing;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
@@ -64,7 +64,7 @@ fn folio_use_relocates_to_an_occupied_tile_and_resets_success() -> TestResult {
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| {
         exercise(admin, "relocate", false).await
     })
 }
@@ -75,7 +75,7 @@ fn folio_use_starts_a_headache_and_spawns_one_active_bookworm() -> TestResult {
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| {
         exercise(admin, "headache-bookworm", false).await
     })
 }
@@ -86,7 +86,7 @@ fn folio_success_counts_the_first_read_from_a_negative_legacy_value() -> TestRes
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| {
         exercise(admin, "success", false).await
     })
 }
@@ -97,7 +97,7 @@ fn folio_reconnect_projects_the_committed_headache_spawn_once() -> TestResult {
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| {
         exercise(admin, "headache-bookworm", true).await
     })
 }
@@ -162,7 +162,7 @@ async fn exercise(admin: String, branch: &str, interrupt_projection: bool) -> Te
         .await
         .map_err(debug)?;
     let mut deps = Dependencies::new()?;
-    let (controller, pin) = super::death_ml_loss_composed::production_generation_with_pin(
+    let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
         deps.admitted.world_id,
         "content-1",
     )?;
@@ -174,8 +174,8 @@ async fn exercise(admin: String, branch: &str, interrupt_projection: bool) -> Te
         .world_callbacks()
         .find(|callback| callback.teleport == Some(LANDING))
         .ok_or("folio relocation branch")?;
-    let world = super::quest_world_callbacks::world(relocation, FOLIO)?;
-    super::arena_match::fixture::runtime_at(&mut deps, generation, &pin, &world, local(START))?;
+    let world = super::quest_world_callbacks_fixtures::world(relocation, FOLIO)?;
+    super::arena_match_fixtures::fixture::runtime_at(&mut deps, generation, &pin, &world, local(START))?;
     let cells = world
         .movement_cells(deps.room.movement_cells())
         .map_err(debug)?;
@@ -206,7 +206,7 @@ async fn exercise(admin: String, branch: &str, interrupt_projection: bool) -> Te
     let landing_occupant = if branch == "relocate" {
         // Crystal actions_mission09.lua:28 and game.cpp:3167-3192.
         let (peer, _) =
-            super::grizzly_boss::second_player(&owner, &deps, &h, local(LANDING)).await?;
+            super::grizzly_boss_fixtures::second_player(&owner, &deps, &h, local(LANDING)).await?;
         Some(peer)
     } else {
         None

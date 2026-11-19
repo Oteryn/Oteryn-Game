@@ -1,9 +1,5 @@
 //! Shared world-change occurrence through reset and the real admitted dispatch path.
 use super::*;
-#[path = "qworld/consumers.rs"]
-pub(super) mod consumers;
-#[path = "qworld/rules.rs"]
-pub(super) mod rules;
 
 #[test]
 fn qworld_postgres_occurrence_dispatch_and_restart() -> TestResult {
@@ -28,7 +24,7 @@ fn qworld_postgres_occurrence_dispatch_and_restart() -> TestResult {
                     day.their_masters_voice && day.fury_gates.is_some()
                 })
                 .ok_or("no active deterministic occurrence in qualification bound")?;
-            super::world_event::scenario_with_consumers(active_epoch, true)
+            super::world_event_fixtures::scenario_with_consumers(active_epoch, true)
                 .map_err(|error| error.to_string())?;
             Ok::<_, String>(())
         })?

@@ -1,6 +1,6 @@
 //! Distinguish a training content rejection from a transient busy holder at first entry.
 use super::fixture::{Harness, debug};
-use super::kill_reward_e2e::scenario_thread::run_async as run;
+use super::kill_reward_e2e_fixtures::scenario_thread::run_async as run;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::gameplay_transport::connection::FirstEntryOutcome;
 
@@ -19,11 +19,11 @@ fn first_entry_training_content_mismatch_is_not_holder_contention_postgres() -> 
                 .await
                 .map_err(debug)?;
             let deps = Dependencies::new()?;
-            let (incompatible, _) = super::death_ml_loss_composed::production_generation_with_pin(
+            let (incompatible, _) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "s3b-content-1",
             )?;
-            let (compatible, _) = super::death_ml_loss_composed::production_generation_with_pin(
+            let (compatible, _) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;

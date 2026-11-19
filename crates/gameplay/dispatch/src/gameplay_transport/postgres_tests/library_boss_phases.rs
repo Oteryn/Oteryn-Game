@@ -2,7 +2,7 @@
 //! grand_master_oberon.lua:125-159, grand_master_oberon_functions.lua:1-60,
 //! and library_area/creaturescripts_ghulosh.lua:19-60.
 use super::fixture::{Harness, debug, id};
-use super::quest_world_callbacks::{local, wire};
+use super::quest_world_callbacks_fixtures::{local, wire};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::character_build::{
     BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState, convert_vocation,
@@ -66,7 +66,7 @@ fn oberon_scheduler_heals_and_summons_then_only_correct_say_removes_immunity() -
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| {
         exercise(admin, OBERON, false).await
     })
 }
@@ -78,7 +78,7 @@ fn ghulosh_scheduler_transforms_with_current_hp_and_book_death_spawns_concentrat
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| {
         exercise(admin, GHULOSH, false).await
     })
 }
@@ -89,7 +89,7 @@ fn library_lever_admits_two_staged_players_to_one_cell_and_both_step_out() -> Te
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| {
         exercise(admin, OBERON, true).await
     })
 }
@@ -156,7 +156,7 @@ async fn exercise(admin: String, boss: &str, party: bool) -> TestResult {
         .await
         .map_err(debug)?;
     let mut deps = Dependencies::new()?;
-    let (controller, pin) = super::death_ml_loss_composed::production_generation_with_pin(
+    let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
         deps.admitted.world_id,
         "content-1",
     )?;
@@ -174,12 +174,12 @@ async fn exercise(admin: String, boss: &str, party: bool) -> TestResult {
         .next()
         .ok_or("boss lever")?
         .clone();
-    let world = super::quest_world_callbacks::world_with_cells(
+    let world = super::quest_world_callbacks_fixtures::world_with_cells(
         &callback,
         LEVER,
         &[EXIT_PAD, EXIT, EXIT_CLEAR],
     )?;
-    super::arena_match::fixture::runtime_at(&mut deps, generation, &pin, &world, local(STAGING))?;
+    super::arena_match_fixtures::fixture::runtime_at(&mut deps, generation, &pin, &world, local(STAGING))?;
     let cells = world
         .movement_cells(deps.room.movement_cells())
         .map_err(debug)?;
@@ -250,7 +250,7 @@ async fn exercise(admin: String, boss: &str, party: bool) -> TestResult {
         owner.admit_progression_session(&mut admitted).await;
         let progression = owner.progression_binding(session).ok_or("progression")?;
         let formula = native.training_formula().ok_or("training")?;
-        let fresh = || super::death_ml_loss_composed::current_fence(&owner, session);
+        let fresh = || super::death_ml_loss_composed_fixtures::current_fence(&owner, session);
         let druid =
             convert_vocation(formula, &DurableBuildState::default(), "druid").map_err(debug)?;
         h.root

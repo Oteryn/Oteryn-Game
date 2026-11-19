@@ -1,5 +1,5 @@
 //! C18c: delayed casts through real dispatch and fenced Character/Equipment owners.
-use super::death_ml_loss_composed::{current_fence, production_generation_with_source};
+use super::death_ml_loss_composed_fixtures::{current_fence, production_generation_with_source};
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::character_build::{
@@ -72,7 +72,7 @@ fn death_echo_checks_speech_shield_at_impact_and_emits_one_cue() -> TestResult {
         spells: &[("candidate:spell/death_echo", 120, 150)],
         case: Case::ShieldedEcho,
     };
-    super::kill_reward_e2e::scenario_thread::run_async(async move |_| {
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async move |_| {
         scenario_inner(admin, plan).await
     })
 }
@@ -200,7 +200,7 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
     let native = active.native_gameplay().ok_or("native")?;
     let entry = pin.qualified_room().clone();
     let shielded_map = if plan.case == Case::ShieldedEcho {
-        Some(super::pvp_live::bundle_fixture::world(world, false)?)
+        Some(super::pvp_live_fixtures::bundle_fixture::world(world, false)?)
     } else {
         None
     };
@@ -332,7 +332,7 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
         .await
         .map_err(debug)?;
     if matches!(plan.case, Case::Grenade | Case::Pz | Case::Outburst(_)) {
-        let purchase = super::atelier::fixture::prepare(&h).await?;
+        let purchase = super::atelier_fixtures::fixture::prepare(&h).await?;
         let fence = current_fence(&owner, session).await?;
         let promoted = owner
             .revision_sequencer
