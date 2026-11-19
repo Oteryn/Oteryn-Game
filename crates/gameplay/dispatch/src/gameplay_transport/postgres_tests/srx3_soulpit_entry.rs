@@ -25,7 +25,7 @@ fn exercise_shared_soulpit_entry(exit_while_live: bool, without_core_context: bo
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("srx3-soulpit-entry", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-soulpit-entry", move || {
         run(async |admin| {
             let h = Harness::create_with_admission_seed(admin, "srx3_soulpit_entry", true, false)
                 .await?;
@@ -41,7 +41,7 @@ fn exercise_shared_soulpit_entry(exit_while_live: bool, without_core_context: bo
                 .ok_or("native content")?;
             // Native catalogue qualification is deliberately before the short-lived
             // ready/session proofs; production refreshes them continuously.
-            let (_evidence, mut activity) = super::activity_runtime::prepare_activity_fixture(&h)
+            let (_evidence, mut activity) = super::activity_runtime_fixtures::prepare_activity_fixture(&h)
                 .await
                 .map_err(|e| format!("prepare shared activity: {e}"))?;
             let source = activity.participants[0].source;
@@ -56,7 +56,7 @@ fn exercise_shared_soulpit_entry(exit_while_live: bool, without_core_context: bo
                 .bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
             sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)")
                 .bind(source.character_id.as_bytes().as_slice()).execute(&h.pool).await?;
-            super::item_look::seed_main_backpack(&h, &[(core_key, 2)])
+            super::item_look_fixtures::seed_main_backpack(&h, &[(core_key, 2)])
                 .await
                 .map_err(|e| format!("seed Soul Core: {e}"))?;
             activity.activity_key = crate::durability::soulpit::SOULPIT_ACTIVITY_KEY.into();

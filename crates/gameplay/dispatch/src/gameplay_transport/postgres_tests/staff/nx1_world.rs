@@ -1,7 +1,7 @@
 //! NX-1 production command560 -> signed audit -> real pinned-world mutation/visibility.
 use super::*;
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, GameSessionId, MovementLocalPosition};
-use crate::gameplay_transport::monk_save::postgres_tests::appearance_change_postgres::observer_visibility_tests as observer;
+use crate::gameplay_transport::monk_save::postgres_tests::appearance_change_postgres_fixtures::observer_visibility_tests as observer;
 use crate::map::{
     boot::{BootPins, boot},
     overlay::TilePos,

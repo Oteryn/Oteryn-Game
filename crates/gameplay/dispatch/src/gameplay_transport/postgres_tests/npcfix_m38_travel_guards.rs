@@ -1,18 +1,9 @@
 //! M38: permission and outstanding fines compose in the existing fenced travel owner.
+use super::npcfix_m38_travel_guards_fixtures::{NoPremium};
+
 use super::fixture::{Harness, debug, run};
 use super::{Dependencies, TestResult, prepare_current_session};
-use crate::durability::npc_travel::{NpcTravelGate, TravelRefusal};
-
-pub(super) struct NoPremium;
-impl NpcTravelGate for NoPremium {
-    async fn travel_permitted(
-        &self,
-        _tx: &mut crate::durability::item_mint_audit::Type2Transaction<'_>,
-        _account: [u8; 16],
-    ) -> Result<bool, crate::durability::DurabilityError> {
-        Ok(false)
-    }
-}
+use crate::durability::npc_travel::TravelRefusal;
 
 #[test]
 fn npcfix_m38_travel_permission_and_clear_fine_are_both_required_postgres() -> TestResult {
@@ -20,7 +11,7 @@ fn npcfix_m38_travel_permission_and_clear_fine_are_both_required_postgres() -> T
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("npcfix-m38-travel-guards", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("npcfix-m38-travel-guards", || {
         run(async |admin| {
             let h = Harness::create_with_admission_seed(admin, "m38_travel_guards", true, false)
                 .await?;

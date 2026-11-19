@@ -31,7 +31,7 @@ pub(super) async fn prepare(h: &Harness) -> TestResult<CurrentCharacterItemFence
         .map_err(debug)?;
     let world = crate::foundation::WorldId::decode(&id(WORLD)).map_err(debug)?;
     let (generation, _) =
-        super::super::super::death_ml_loss_composed::production_generation_with_source(
+        super::super::super::death_ml_loss_composed_fixtures::production_generation_with_source(
             world,
             "content-1",
             None,
@@ -108,8 +108,8 @@ pub(super) async fn prepare(h: &Harness) -> TestResult<CurrentCharacterItemFence
         )
         .await
         .map_err(debug)?;
-    super::super::super::guild_bank::bank_seed::balance(h, account(), buyer(), 1000, 180).await?;
-    super::super::super::guild_bank::bank_seed::balance(h, id(40), id(41), 100, 160).await?;
+    super::super::super::guild_bank_fixtures::bank_seed::balance(h, account(), buyer(), 1000, 180).await?;
+    super::super::super::guild_bank_fixtures::bank_seed::balance(h, id(40), id(41), 100, 160).await?;
     Ok(fence)
 }
 pub(super) async fn balance(h: &Harness, a: [u8; 16]) -> TestResult<i64> {

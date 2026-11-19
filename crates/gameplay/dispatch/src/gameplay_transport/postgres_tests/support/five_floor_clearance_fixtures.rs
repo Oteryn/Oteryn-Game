@@ -1,0 +1,118 @@
+use super::fixture::debug;
+use super::m07_realm_trials_fixtures::{BEGIN, CONTROL, phase, use_source};
+use super::quest_world_callbacks_fixtures::{input_item, local};
+use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
+use crate::durability::character_progression::CurrentCharacterGameplayFence;
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+use oteryn_gameplay_quests::quest::{
+    QuestStateCatalogue,
+    authored_bindings::Bindings,
+    world_callbacks::{Callback, Offering, Position, load},
+};
+use oteryn_protocol_oteryn::world_object::UseDisposition;
+use std::sync::Arc;
+
+pub(super) const NAME: &str = "m07/realm-trial-five-floor";
+const FIFTH_FLOOR_DRAGON: Position = Position {
+    x: 33076,
+    y: 32582,
+    floor: -7,
+};
+const DRAGON: &str = "oteryn:creature.dragon";
+
+pub(super) async fn exercise(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    fence: CurrentCharacterGameplayFence,
+    control: &Callback,
+) -> TestResult {
+    let mut begin = load()?
+        .into_iter()
+        .find(|callback| {
+            callback.selector.position == Some(BEGIN) && callback.quest == control.quest
+        })
+        .ok_or("Realm start control")?;
+    begin.key = "oteryn:quest-callback/fixture/five-floor-begin".into();
+    let mut control = control.clone();
+    control.key = "oteryn:quest-callback/fixture/five-floor-control".into();
+    let area = control.effects.clear_area.as_mut().ok_or("Realm area")?;
+    area.additional_floors.insert(0, FIFTH_FLOOR_DRAGON.floor);
+    assert!(area.contains(FIFTH_FLOOR_DRAGON));
+    let bindings = Bindings::parse(&serde_json::to_vec(&serde_json::json!({
+        "schema":1,
+        "quests":[{
+            "quest":control.quest,
+            "recipe_sha256":"2222222222222222222222222222222222222222222222222222222222222222",
+            "sources":[
+                "Crystal 201189f8 chayenne_realm/actions_lever.lua:3-22",
+                "Crystal 201189f8 world-monster.xml:47455-47457"
+            ],
+            "tracks":[{"key":control.storage[0].track,"initial":-1,"minimum":-1,"maximum":2}],
+            "stages":[
+                {"key":"begin","completes":false,"trigger":{"kind":"map_use","callback":begin}},
+                {"key":"control","completes":false,"trigger":{"kind":"map_use","callback":control}}
+            ]
+        }]
+    }))?)?;
+    let base = QuestStateCatalogue::empty("content-1").ok_or("test catalogue")?;
+    owner.quest_catalogue = Some(Arc::new(bindings.attach(&base)?));
+    owner
+        .states
+        .quest_callbacks
+        .fixture
+        .set(bindings.world_callbacks().cloned().collect())
+        .map_err(|_| "clearance fixture already set")?;
+
+    input_item(
+        owner,
+        fence.item_fence(),
+        &Offering {
+            position: BEGIN,
+            item: "oteryn:item.tibia.i14682".into(),
+            count: 1,
+        },
+        81,
+        true,
+    )
+    .await?;
+    assert_eq!(
+        use_source(owner, admitted, 1, BEGIN, 3, 0).await?,
+        UseDisposition::Committed
+    );
+    let guardian = {
+        let mut runtime = owner.runtime.lock().await;
+        owner
+            .active_generation
+            .and_then(|generation| generation.native_gameplay())
+            .ok_or("native policies")?
+            .install_companion_policies(&mut runtime)
+            .map_err(debug)?;
+        let health = runtime
+            .companion_policy(DRAGON)
+            .map_err(debug)?
+            .maximum_health;
+        let guardian = runtime
+            .admit_encounter_actor(
+                DRAGON,
+                health,
+                local(FIFTH_FLOOR_DRAGON),
+            )
+            .map_err(debug)?;
+        runtime
+            .install_creature_policy(guardian, DRAGON)
+            .map_err(debug)?;
+        guardian
+    };
+    assert_eq!(
+        use_source(owner, admitted, 2, CONTROL, 1, 0).await?,
+        UseDisposition::Rejected
+    );
+    assert_eq!(phase(owner, fence, &control).await?, Some(1));
+    super::engenc2_cults_fixtures::kill(owner, admitted, guardian, DRAGON, 3).await?;
+    assert_eq!(
+        use_source(owner, admitted, 4, CONTROL, 1, 0).await?,
+        UseDisposition::Committed
+    );
+    assert_eq!(phase(owner, fence, &control).await?, Some(2));
+    Ok(())
+}

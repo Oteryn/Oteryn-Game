@@ -7,7 +7,7 @@ fn srx3_source_names_zero_match_requires_current_negative_admission_postgres() -
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("srx3-source-names-negative", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-source-names-negative", || {
         run(async |admin| {
             super::reset();
             let h = Harness::create_with_admission_seed(
@@ -19,7 +19,7 @@ fn srx3_source_names_zero_match_requires_current_negative_admission_postgres() -
             .await?;
             prepare_current_session(&h).await?;
             h.seed_appearance_observer().await?;
-            super::appearance_change_postgres::observer_visibility_tests::admit(&h).await?;
+            super::appearance_change_postgres_fixtures::observer_visibility_tests::admit(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -37,7 +37,7 @@ fn srx3_source_names_zero_match_requires_current_negative_admission_postgres() -
                 crate::foundation::GameSessionState::Active
             );
             let other_actor =
-                super::appearance_change_postgres::observer_visibility_tests::initialize(
+                super::appearance_change_postgres_fixtures::observer_visibility_tests::initialize(
                     &deps, &owner,
                 )
                 .await?;

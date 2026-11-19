@@ -46,13 +46,13 @@ pub(super) async fn exercise(
     let receipt: serde_json::Value = serde_json::from_slice(&first)?;
     assert_eq!(receipt["applied"], true);
     assert_eq!(
-        super::super::item_forge::support::balances(h).await?,
+        super::super::item_forge_fixtures::support::balances(h).await?,
         (40, 100, 3, 0)
     );
     // A new transport command carrying the SAME occurrence reaches durable replay.
     assert_eq!(exchange(owner, admitted, 2, 181, &payload).await?, first);
     assert_eq!(
-        super::super::item_forge::support::balances(h).await?,
+        super::super::item_forge_fixtures::support::balances(h).await?,
         (40, 100, 3, 0)
     );
     assert_eq!(

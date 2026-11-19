@@ -18,7 +18,7 @@ fn srx3_megalomania_actual_source_entry_and_initial_aspect_postgres() -> TestRes
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("srx3-megalomania-native", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-megalomania-native", || {
         run(async |admin| {
             reset();
             // Crystal201189f lib/quests/soul_war.lua:450-478: literal first
@@ -44,8 +44,8 @@ fn srx3_megalomania_actual_source_entry_and_initial_aspect_postgres() -> TestRes
             sqlx::query("INSERT INTO game_character_soul_war(character_id,teleport_access,defeated_bosses,first_taint_at,megalomania_completed,final_reward_claimed) VALUES(encode($1,'hex')::uuid,true,31,extract(epoch from clock_timestamp())::bigint,false,false)")
                 .bind(id(41).as_slice()).execute(&mut *historical).await?;
             historical.commit().await?;
-            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-            super::house_transfer::prepare_owned_session(&h).await?;
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::house_transfer_fixtures::prepare_owned_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -59,7 +59,7 @@ fn srx3_megalomania_actual_source_entry_and_initial_aspect_postgres() -> TestRes
                 &scene,
                 PinnedActivitySourceRoom::GoshnarsMegalomania,
             )?;
-            super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+            super::boss_activity_fixtures::issue_content_and_reset(&h, &scene.pin).await?;
             let mut admitted = deps.admitted;
             admitted.continuity.selected_capabilities = SelectedCapabilities::select(
                 BUNDLE_WORLD_OFFERED_CAPABILITIES,
@@ -78,10 +78,10 @@ fn srx3_megalomania_actual_source_entry_and_initial_aspect_postgres() -> TestRes
             )
             .ok_or("actual native boss capabilities")?;
             prepare_player(&h, &owner, &mut admitted, 1999).await?;
-            let instance = super::activity_runtime::allocate_ready_instance(&h, 216).await?;
+            let instance = super::activity_runtime_fixtures::allocate_ready_instance(&h, 216).await?;
 
             let mut frames = Vec::new();
-            let (_, reply, barrier) = super::boss_activity::exchange_capture(
+            let (_, reply, barrier) = super::boss_activity_fixtures::exchange_capture(
                 &owner,
                 &mut admitted,
                 "oteryn:boss.goshnar_s_megalomania",
