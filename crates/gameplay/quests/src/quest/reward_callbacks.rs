@@ -1204,12 +1204,6 @@ const ROOK_CITIZEN_BEFORE_NORMA_RESTART: [u8; 32] = [
     0x3b, 0x94, 0x9b, 0x19, 0x08, 0x96, 0x3c, 0x93, 0x5a, 0x57, 0xfb, 0x99, 0x24, 0x4d, 0xef, 0x4a,
 ];
 
-// The published Ape City definition before the Hairycles Shaman reward.
-const MAIN_APE_CITY_DEFINITION: [u8; 32] = [
-    0x18, 0x88, 0x46, 0x01, 0xe0, 0x4f, 0xc4, 0x16, 0x71, 0xd5, 0xb2, 0x4a, 0xbc, 0x67, 0xf6, 0x3c,
-    0xc0, 0xcf, 0x23, 0x48, 0x13, 0xbc, 0x1f, 0x96, 0x7a, 0xb2, 0x42, 0x97, 0x87, 0x1d, 0x1e, 0x05,
-];
-
 pub fn extend(mut catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
     let document = embedded_document()?;
     // These changes preserve every track default.
@@ -1222,7 +1216,6 @@ pub fn extend(mut catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue,
             "oteryn:quest.outfit_and_addon_quests",
             MAIN_OUTFIT_DEFINITION,
         ),
-        ("oteryn:quest.the_ape_city_quest", MAIN_APE_CITY_DEFINITION),
     ] {
         catalogue
             .predecessors
@@ -1491,7 +1484,7 @@ fn is_qb_outfit_extension(callback: &RewardCallback) -> bool {
         .key
         .strip_prefix("oteryn:quest-reward/")
         .is_some_and(|key| {
-            ["qb-barbarian-", "qb-citizen-", "qb-shaman-", "qb-warrior-"]
+            ["qb-barbarian-", "qb-citizen-", "qb-warrior-"]
                 .iter()
                 .any(|prefix| key.starts_with(prefix))
         })
@@ -2223,9 +2216,9 @@ mod tests {
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
         // shared-reward-callbacks.json has 207 existing rows plus the generated
-        // QB routes: 17 Barbarian, 5 Citizen, 5 Shaman and 9 Warrior.
+        // QB routes: 17 Barbarian, 5 Citizen and 9 Warrior.
         // The other terms are QuestPC7, other registered shards, M43 peer and Kingsday journal.
-        assert_eq!(load()?.len(), 243 + 59 + 125 + 1 + 1);
+        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -2251,7 +2244,7 @@ mod tests {
     -> Result<(), String> {
         let shared = parse(DOCUMENTS[0])?;
         let (qb, legacy): (Vec<_>, Vec<_>) = shared.into_iter().partition(is_qb_outfit_extension);
-        assert_eq!(qb.len(), 36);
+        assert_eq!(qb.len(), 31);
         let added_keys = [
             "oteryn:quest-reward/l2-wizard-flowers",
             "oteryn:quest-reward/l2-wizard-flowers-start",
@@ -3060,9 +3053,8 @@ mod outfit_reward_predecessor_tests {
                 .iter()
                 .filter(|callback| callback.quest == QUEST)
                 .count(),
-            // 112 retained rows plus 31 QB Barbarian/Citizen/Warrior and four
-            // QB Shaman addon rows; Hairycles belongs to The Ape City.
-            147
+            // 112 retained rows plus 31 QB Barbarian/Citizen/Warrior rows.
+            143
         );
         document
             .callbacks

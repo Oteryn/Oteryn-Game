@@ -311,6 +311,9 @@ pub struct SectionItemFacts {
     pub item: SectionRef,
     pub materializable: bool,
     pub container_capacity: Option<u32>,
+    /// Ground custody qualified for ordinary loot only, even when a private boss shares the Item.
+    #[serde(default)]
+    pub ordinary_corpse_only: bool,
     #[serde(default)]
     pub charges: Option<u32>,
     #[serde(default)]
@@ -337,39 +340,46 @@ fn lower_loot_entries(
     entries: &[SectionLootEntry],
     items: &HashMap<&SectionRef, &SectionItemFacts>,
     depth: usize,
+    allow_unavailable_yields: bool,
 ) -> Result<Vec<LootTableEntry>, NoSettlementReason> {
     if depth > 8 || entries.len() > LOOT_SECTION_RECORDS_MAX {
         return Err(NoSettlementReason::LootItemInadmissible);
     }
-    entries
-        .iter()
-        .map(|entry| {
-            let facts = items
-                .get(&entry.item)
-                .filter(|facts| facts.materializable)
-                .ok_or(NoSettlementReason::LootItemInadmissible)?;
-            if !entry.children.is_empty() && facts.container_capacity.is_none() {
-                return Err(NoSettlementReason::LootItemInadmissible);
+    let mut lowered = Vec::with_capacity(entries.len());
+    for entry in entries {
+        let Some(facts) = items.get(&entry.item).filter(|facts| facts.materializable) else {
+            if allow_unavailable_yields {
+                continue;
             }
-            Ok(LootTableEntry {
-                item: entry.item.lower(),
-                min_count: entry.min_count,
-                max_count: entry.max_count,
-                probability_ppm: entry.probability_ppm,
-                details: oteryn_gameplay_domain::domain::loot_data::LootEntryDetails {
-                    children: lower_loot_entries(&entry.children, items, depth + 1)?,
-                    container_capacity: facts.container_capacity,
-                    charges: facts.charges,
-                    stackable: facts.stackable,
-                    subtype: entry.subtype,
-                    unique: entry.unique,
-                    creature_product: facts.creature_product,
-                    gut_bonus_hundredths: 0,
-                    rated_probability_ppm: None,
-                },
-            })
-        })
-        .collect()
+            return Err(NoSettlementReason::LootItemInadmissible);
+        };
+        if !entry.children.is_empty() && facts.container_capacity.is_none() {
+            return Err(NoSettlementReason::LootItemInadmissible);
+        }
+        lowered.push(LootTableEntry {
+            item: entry.item.lower(),
+            min_count: entry.min_count,
+            max_count: entry.max_count,
+            probability_ppm: entry.probability_ppm,
+            details: oteryn_gameplay_domain::domain::loot_data::LootEntryDetails {
+                children: lower_loot_entries(
+                    &entry.children,
+                    items,
+                    depth + 1,
+                    allow_unavailable_yields,
+                )?,
+                container_capacity: facts.container_capacity,
+                charges: facts.charges,
+                stackable: facts.stackable,
+                subtype: entry.subtype,
+                unique: entry.unique,
+                creature_product: facts.creature_product,
+                gut_bonus_hundredths: 0,
+                rated_probability_ppm: None,
+            },
+        });
+    }
+    Ok(lowered)
 }
 
 fn algorithm(name: &str) -> Option<LootSelectionAlgorithm> {
@@ -878,20 +888,22 @@ fn row(
         key: corpse.key.clone(),
         revision: corpse.revision.clone(),
     };
-    let admitted = |item: &SectionRef| items.get(item).filter(|facts| facts.materializable);
+    let private_reward = profile
+        .details
+        .as_ref()
+        .is_some_and(|details| details.system_eligibility.reward_boss);
     let source_plain = verified_source_corpses.contains(&corpse.key)
         && source_plain_corpse_pair(creature, &corpse)
-        && profile
-            .details
-            .as_ref()
-            .is_some_and(|details| !details.system_eligibility.reward_boss);
+        && !private_reward;
     if !source_plain {
-        admitted(&corpse)
+        items
+            .get(&corpse)
+            .filter(|facts| facts.materializable && !(private_reward && facts.ordinary_corpse_only))
             .and_then(|facts| facts.container_capacity)
             .filter(|capacity| {
                 // Private reward custody has its own loot budget; only the
                 // materializable physical container's positive capacity is admitted.
-                (*capacity > 0 && profile.details.as_ref().is_some_and(|details| details.system_eligibility.reward_boss))
+                (*capacity > 0 && private_reward)
                     || (1..=maximum_corpse_capacity).contains(capacity)
                     // Source capacity36 belongs only to this exact Seacrest
                     // body; the independent runtime loot-entry limit stays30.
@@ -924,15 +936,18 @@ fn row(
             let table = tables
                 .get(reference)
                 .ok_or(NoSettlementReason::LootTableMissing)?;
-            let entries = lower_loot_entries(&table.entries, items, 0)?;
+            // An unavailable ordinary independent drop need not prevent the
+            // corpse or the other drops. Private and coupled tables retain
+            // their complete-table admission contract.
+            let algorithm =
+                algorithm(&table.algorithm).unwrap_or(LootSelectionAlgorithm::NestedGroups);
+            let allow_unavailable_yields = !source_plain
+                && algorithm == LootSelectionAlgorithm::IndependentBernoulliPpm
+                && !private_reward;
+            let entries = lower_loot_entries(&table.entries, items, 0, allow_unavailable_yields)?;
             (
                 reference.lower(),
-                LootTableDefinition {
-                    // Decode admits only the named algorithms.
-                    algorithm: algorithm(&table.algorithm)
-                        .unwrap_or(LootSelectionAlgorithm::NestedGroups),
-                    entries,
-                },
+                LootTableDefinition { algorithm, entries },
             )
         }
     };
@@ -1034,6 +1049,7 @@ mod private_loot_capacity_tests {
             item: corpse.clone(),
             materializable: true,
             container_capacity: Some(64),
+            ordinary_corpse_only: false,
             charges: None,
             stackable: false,
             creature_product: false,
@@ -1145,6 +1161,7 @@ mod private_loot_tests {
             item: corpse.clone(),
             materializable: true,
             container_capacity: Some(64),
+            ordinary_corpse_only: false,
             charges: None,
             stackable: false,
             creature_product: false,

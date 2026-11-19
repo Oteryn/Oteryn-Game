@@ -1191,6 +1191,7 @@ fn scenario_case(
             super::super::l6_tomb_native_fixtures::world(
                 generation.native_gameplay().ok_or("native Tomb policies")?,
                 callback.selector.unique.ok_or("source UID")?,
+                trigger,
             )?
         } else if small_ruby {
             super::super::l6_world_pickups_fixtures::small_ruby(
@@ -2392,18 +2393,24 @@ fn scenario_case(
                     .iter()
                     .find(|r| Some(r.unique) == callback.selector.unique)
                     .ok_or("source key recipe")?;
-                super::input_item(
-                    &owner,
-                    fence.item_fence(),
-                    &oteryn_gameplay_quests::quest::world_callbacks::Offering {
-                        position: trigger,
-                        item: recipe.item.into(),
-                        count: 1,
-                    },
-                    71,
-                    true,
-                )
-                .await?;
+                if tomb_native {
+                    Box::pin(super::super::l6_tomb_native_fixtures::hunt_pass(
+                        &owner, &admitted, &h, recipe,
+                    )).await?;
+                } else {
+                    super::input_item(
+                        &owner,
+                        fence.item_fence(),
+                        &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+                            position: trigger,
+                            item: recipe.item.into(),
+                            count: 1,
+                        },
+                        71,
+                        true,
+                    )
+                    .await?;
+                }
             }
             Box::pin(super::stateless::exercise(
                 &owner,

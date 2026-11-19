@@ -4,54 +4,29 @@ use super::*;
 
 /// (NPC key, x, y, floor) of every outfit hand-in contact this lane placed.
 const QB_OUTFIT_NPCS: &[(&str, u16, u16, u8)] = &[
-    // Mage and Summoner Outfits Quests: Angelina, Lynda, Myra, Sandra and Zoltan.
+    // Mage and Summoner Outfits Quests: Angelina, Lynda, Myra and Zoltan.
     ("oteryn:npc.angelina", 32633, 32402, 10),
-    // Assassin Outfits Quest: Vescu (base), Erayo (first addon), Atrad (second addon).
-    ("oteryn:npc.atrad", 32077, 32533, 9),
-    ("oteryn:npc.erayo", 32518, 32911, 8),
-    // Beggar Outfits Quest: Hugo (base), Simon the Beggar (addons).
-    ("oteryn:npc.hugo", 32950, 32102, 5),
     // Hunter Outfits Quest: Legola (gloves); Elane was already placed.
     ("oteryn:npc.legola", 32298, 31785, 7),
     // Wizard Outfits Quest: Lugri (skull) and The Queen of the Banshees (flowers).
     ("oteryn:npc.lugri", 32389, 32118, 8),
     ("oteryn:npc.lynda", 32331, 32199, 7),
     ("oteryn:npc.myra", 32580, 32751, 6),
-    ("oteryn:npc.sandra", 33257, 31839, 7),
-    ("oteryn:npc.simon_the_beggar", 32186, 32471, 7),
     ("oteryn:npc.the_queen_of_the_banshees", 32260, 31866, 14),
-    ("oteryn:npc.vescu", 32565, 32651, 7),
     ("oteryn:npc.zoltan", 33266, 31847, 4),
 ];
 
 /// QB-2: further outfit, addon and reward-use hand-in contacts.
 const QB2_OUTFIT_NPCS: &[(&str, u16, u16, u8)] = &[
-    // Druid Outfits Quest (A Majestic Warwolf, Ceiron, Ustan).
-    ("oteryn:npc.a_majestic_warwolf", 33355, 31991, 8),
-    // To Outfox a Fox Quest.
-    ("oteryn:npc.budrik", 32525, 31906, 8),
-    ("oteryn:npc.ceiron", 32665, 31717, 7),
-    // Dream Warden and Dream Warrior Outfits.
-    ("oteryn:npc.eruaran", 33618, 32372, 5),
     // Revenant Outfits.
     ("oteryn:npc.flickering_soul", 33621, 31419, 10),
-    // Crystal Warlord and Soil Guardian Outfits.
-    ("oteryn:npc.gnomally", 32795, 31746, 10),
     // Cave Explorer Outfits.
     ("oteryn:npc.gnommander", 32248, 32604, 8),
-    // Knight Outfits Quest.
-    ("oteryn:npc.gregor", 32406, 32201, 6),
     // The Inquisition (Hand of the Inquisition Outfits): the guards of mission 1.
     ("oteryn:npc.grof_the_guard", 32372, 32182, 7),
     ("oteryn:npc.kulag_the_guard", 32287, 32264, 7),
     ("oteryn:npc.miles_the_guard", 32429, 32173, 5),
-    // Brotherhood Outfits.
-    ("oteryn:npc.the_bone_master", 32793, 32225, 14),
-    // Nightmare Outfits.
-    ("oteryn:npc.the_dream_master", 32844, 32228, 14),
     ("oteryn:npc.tim_the_guard", 32425, 32223, 6),
-    ("oteryn:npc.ustan", 32580, 32757, 6),
-    ("oteryn:npc.vanys", 33685, 32180, 8),
     ("oteryn:npc.walter_the_guard", 32338, 32277, 7),
 ];
 

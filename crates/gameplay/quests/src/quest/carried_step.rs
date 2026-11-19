@@ -180,8 +180,10 @@ fn boss_forcefield(unique: u16) -> Option<NativeSelector> {
         3950 => (33174, 32694, -14),
         3951 => (33396, 32852, -14),
         3952 => (33191, 32959, -15),
+        3953 => (33195, 33002, -14),
         3954 => (33073, 32781, -14),
         3955 => (33103, 32590, -15),
+        3956 => (33116, 32656, -15),
         _ => return None,
     };
     Some(NativeSelector {
@@ -191,7 +193,7 @@ fn boss_forcefield(unique: u16) -> Option<NativeSelector> {
     })
 }
 
-/// Compatibility counterpart for the two routes with conflicting reward destinations.
+/// Retained compatibility counterparts at two original native teleport exits.
 /// Matching includes the original native teleport; destination alone is never identity.
 #[derive(Clone, Copy, Debug)]
 pub struct NativeBinding {

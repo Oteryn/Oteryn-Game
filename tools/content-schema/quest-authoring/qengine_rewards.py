@@ -17,7 +17,6 @@ import questl2_ready
 import taming_cosmetics
 import qb_barbarian
 import qb_citizen_warrior
-import qb_shaman
 import wizard_cosmetics
 import engoutfit_m36
 import qmech_m39
@@ -94,7 +93,7 @@ def sha(value):
 
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/XML/mounts.xml', 'data-crystal/scripts/special/addon_doll.lua', 'data-global/scripts/actions/mounts/mounts.lua', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
-        'morgan', 'navigator', 'rock_steady', *qb_barbarian.DONOR_NPCS, *qb_citizen_warrior.DONOR_NPCS, *qb_shaman.DONOR_NPCS, *wizard_cosmetics.DONOR_NPCS, *qmech_m39.NPCS, 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
+        'morgan', 'navigator', 'rock_steady', *qb_barbarian.DONOR_NPCS, *qb_citizen_warrior.DONOR_NPCS, *wizard_cosmetics.DONOR_NPCS, *qmech_m39.NPCS, 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
         'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness', 'a_sweaty_cyclops', 'gnommander', 'flickering_soul', 'bloodshade_rotten', 'cledwyn', *questl2_ready.NPCS)]
     paths += ['data/scripts/actions/items/usable_outfit_items.lua', 'data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua', 'data-global/scripts/actions/valuables/random_items.lua',
               'data-global/scripts/quests/the_new_frontier/action_outfit.lua',
@@ -629,6 +628,7 @@ def build():
             'storage':states,'reply':['Would you bring 100 minotaur leathers for a handmade backpack?']})
     states=[storage(backpack,1,2),storage(mission,0,2,4)]
     add('l6-citizen-rook-backpack-materials','citizen_outfits_quest_on_rook','amber',['yes'],states,take=[(5878,100)],topic=3)
+    callbacks[-1]['forbids_addons']=[{'outfit':'oteryn:outfit.citizen','addons':1}]
     callbacks[-1]['state_ops']=[{'track':timer,'from':{'kind':'any'},'effect':{'kind':'set_now'}}]
     offers.append({'npc':'oteryn:npc.amber','keywords':['addon','outfit','backpack','leather'],'topic':0,'next_topic':3,
         'storage':states,'reply':['Did you bring 100 minotaur leathers? Your backpack takes two hours to make.']})
@@ -645,6 +645,7 @@ def build():
     states=[storage(hat,1,2),storage(hat_mission,0,0,1)]
     add('l6-citizen-rook-hat','citizen_outfits_quest_on_rook','norma',['yes'],states,
         take=[(3374,1),(5902,50),(5890,100)],outfit=('citizen',2),topic=2)
+    callbacks[-1]['forbids_addons']=[{'outfit':'oteryn:outfit.citizen','addons':2}]
     offers.append({'npc':'oteryn:npc.norma','keywords':['addon','outfit','hat'],'topic':0,'next_topic':2,
         'storage':states,'reply':['Have you brought a legion helmet, 50 honeycombs and 100 chicken feathers?']})
     # Crystal reoffers the recipe when the mission returns to zero after hand-in.
@@ -654,7 +655,6 @@ def build():
         'storage':states,'reply':['Shall I teach you how to make a feather hat?']})
     qb_citizen_warrior.append(add, storage, offers, callbacks, prefix)
     qb_barbarian.append(add, storage, offers, callbacks, prefix)
-    qb_shaman.append(add, storage, offers, callbacks, prefix)
     wizard_cosmetics.append(add, storage, offers, prefix)
     beggar=prefix+'u7_8/beggar_outfits/'
     beggar_stage=beggar+'beggar_outfit'

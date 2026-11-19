@@ -895,3 +895,54 @@ async fn expiry_exercise(
     assert_eq!(Some(replay.transaction_id), first);
     Ok(())
 }
+
+pub(super) async fn assemble_claimed_helmet(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    altar: Position,
+) -> TestResult {
+    use oteryn_protocol_oteryn::item_view::{
+        CAPABILITY_ITEM_STACK_COUNT_V1, ItemMoveOutcome, WorldTilePosition,
+    };
+    use super::fixture::debug;
+
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            owner.offered_capabilities(),
+            &[4, 6, 11, 12, 14, 15, 18, CAPABILITY_ITEM_STACK_COUNT_V1],
+        )
+        .ok_or("floor drop capabilities")?;
+    let items = owner
+        .active_generation
+        .and_then(|generation| generation.native_gameplay())
+        .and_then(|native| native.item_index())
+        .ok_or("native item index")?;
+    let cell = WorldTilePosition {
+        x: i32::from(altar.x),
+        y: i32::from(altar.y),
+        floor: i16::from(altar.floor),
+    };
+    for id in 3222..=3228 {
+        let definition = items
+            .definition_ref("Item", &format!("oteryn:item.tibia.i{id}"), "definition-r1")
+            .ok_or("source helmet part")?;
+        let command = admitted.continuity.next_command_id;
+        let (next, outcome, _) = super::map_seed_planting_fixtures::drop_exchange_at(
+            owner, *admitted, command, None, definition, 1, false, cell,
+        )
+        .await?;
+        *admitted = next;
+        assert_eq!(outcome, Some(ItemMoveOutcome::Moved), "drop part {id}");
+    }
+    let (parts, helmets): (i64, i64) = sqlx::query_as(
+        "SELECT count(*) FILTER (WHERE definition_production_key=ANY($1)),                 count(*) FILTER (WHERE definition_production_key='oteryn:item.tibia.i3229')          FROM game_item_instances WHERE lifecycle=1",
+    )
+    .bind((3222..=3228).map(|id| format!("oteryn:item.tibia.i{id}")).collect::<Vec<_>>())
+    .fetch_one(&h.pool)
+    .await
+    .map_err(debug)?;
+    assert_eq!((parts, helmets), (0, 1));
+    verify_audit(h).await?;
+    assert_fire_effect_at(owner, true, altar)
+}

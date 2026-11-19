@@ -44,10 +44,12 @@ pub(super) fn run(name: &'static str) -> TestResult {
 }
 
 pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot::BundleWorld> {
-    use super::l6_world_pickups_fixtures::{ExpectedTile, NativeCrop, native_scene};
-    native_scene(
-        native,
-        vec![NativeCrop {
+    super::l6_world_pickups_fixtures::native_scene(native, vec![altar_crop()], &[])
+}
+
+pub(super) fn altar_crop() -> super::l6_world_pickups_fixtures::NativeCrop {
+    use super::l6_world_pickups_fixtures::{ExpectedTile, NativeCrop};
+    NativeCrop {
             bytes: include_bytes!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
                 "/../../../content/world/placements/region-z11-x129-y128.b3"
@@ -67,9 +69,7 @@ pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot
                     counted_entry: None,
                 },
             ],
-        }],
-        &[],
-    )
+    }
 }
 
 pub(super) async fn exercise(

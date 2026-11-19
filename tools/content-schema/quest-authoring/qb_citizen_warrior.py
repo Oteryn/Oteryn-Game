@@ -92,6 +92,7 @@ def append(add, storage, offers, callbacks, prefix):
         topic=3,
         requires_premium=False,
     )
+    callbacks[-1]["forbids_addons"] = [{"outfit": "oteryn:outfit.citizen", "addons": 1}]
     timer_set(timer)
     callback(
         "citizen-backpack",
@@ -143,6 +144,7 @@ def append(add, storage, offers, callbacks, prefix):
         topic=2,
         requires_premium=False,
     )
+    callbacks[-1]["forbids_addons"] = [{"outfit": "oteryn:outfit.citizen", "addons": 2}]
     offer(
         "hanna",
         ["addon", "outfit", "hat"],

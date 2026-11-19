@@ -117,7 +117,7 @@ fn qb_outfit_progress_advances_from_main_definition() -> TestResult {
 }
 
 #[test]
-fn qb_citizen_owned_hat_accepts_mainland_exchange_without_duplicate_unlock() -> TestResult {
+fn qb_citizen_owned_hat_refuses_mainland_exchange_without_debit() -> TestResult {
     super::qengine_rewards_fixtures::scenario("qengine-rewards-qb-owned-hat")
 }
 
@@ -147,7 +147,7 @@ fn qb_crystal_citizen_amber_completed_reply() -> TestResult {
 }
 
 #[test]
-fn qb_crystal_citizen_lubo_uses_character_progress() -> TestResult {
+fn qb_crystal_citizen_lubo_refuses_owned_backpack_without_debit() -> TestResult {
     super::qengine_rewards_fixtures::scenario("qengine-rewards-qb-crystal-lubo-progress")
 }
 
@@ -157,7 +157,7 @@ fn qb_crystal_citizen_lubo_accepts_free_character() -> TestResult {
 }
 
 #[test]
-fn qb_crystal_citizen_norma_can_restart_at_mission_zero() -> TestResult {
+fn qb_crystal_citizen_norma_refuses_second_hat_without_debit() -> TestResult {
     super::qengine_rewards_fixtures::scenario("qengine-rewards-qb-crystal-norma-restart")
 }
 

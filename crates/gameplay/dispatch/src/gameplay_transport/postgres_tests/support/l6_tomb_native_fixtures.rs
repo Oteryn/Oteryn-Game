@@ -107,6 +107,7 @@ pub(super) fn present_3955() -> TestResult {
 pub(super) fn world(
     native: &crate::content::native_gameplay::NativeGameplayState,
     unique: u16,
+    trigger: Position,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     let recipe = oteryn_gameplay_quests::quest::carried_step::RECIPES
         .iter()
@@ -135,7 +136,10 @@ pub(super) fn world(
         decay.target.is_none(),
         "source key expires to0, no replacement item"
     );
-    if let Some(crops) = boss_portal_crops(unique) {
+    let trigger_cell = (trigger.x, trigger.y, u8::try_from(-trigger.floor)?);
+    if boss_portal(unique) == Some(trigger_cell)
+        && let Some(crops) = boss_portal_crops(unique)
+    {
         let world = super::l6_world_pickups_fixtures::native_scene(native, crops, &[])?;
         let portal = boss_portal(unique).ok_or("boss portal")?;
         let key =
@@ -159,7 +163,9 @@ pub(super) fn world(
         );
         return Ok(world);
     }
-    use super::l6_world_pickups_fixtures::{ExpectedTeleport, ExpectedTile, NativeCrop, native_scene};
+    use super::l6_world_pickups_fixtures::{
+        ExpectedTeleport, ExpectedTile, NativeCrop, native_scene,
+    };
     let (bytes, region, portal, success, missing, raw): (&'static [u8], _, _, _, _, _) =
         match unique {
             3953 => (
@@ -279,8 +285,10 @@ fn boss_portal(unique: u16) -> Option<(u16, u16, u8)> {
         3950 => Some((33174, 32694, 14)),
         3951 => Some((33396, 32852, 14)),
         3952 => Some((33191, 32959, 15)),
+        3953 => Some((33195, 33002, 14)),
         3954 => Some((33073, 32781, 14)),
         3955 => Some((33103, 32590, 15)),
+        3956 => Some((33116, 32656, 15)),
         _ => None,
     }
 }
@@ -349,6 +357,16 @@ fn boss_portal_crops(unique: u16) -> Option<Vec<super::l6_world_pickups_fixtures
             region!("08-x129-y128"),
             415,
         ),
+        3953 => (
+            region!("14-x129-y128"),
+            1236,
+            &[415],
+            (33145, 32665, 15),
+            region!("15-x129-y127"),
+            (33025, 32868, 8),
+            region!("08-x129-y128"),
+            415,
+        ),
         3954 => (
             region!("14-x129-y128"),
             423,
@@ -366,6 +384,16 @@ fn boss_portal_crops(unique: u16) -> Option<Vec<super::l6_world_pickups_fixtures
             (33349, 32827, 14),
             region!("14-x130-y128"),
             (33131, 32566, 8),
+            region!("08-x129-y127"),
+            415,
+        ),
+        3956 => (
+            region!("15-x129-y127"),
+            417,
+            &[417],
+            (33186, 33012, 14),
+            region!("14-x129-y128"),
+            (33206, 32592, 8),
             region!("08-x129-y127"),
             415,
         ),
@@ -399,4 +427,244 @@ fn boss_portal_crops(unique: u16) -> Option<Vec<super::l6_world_pickups_fixtures
         },
         landing(destination, exit_region, exit_ground),
     ])
+}
+
+pub(super) async fn hunt_pass(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &super::AdmittedSession,
+    h: &super::fixture::Harness,
+    recipe: &oteryn_gameplay_quests::quest::carried_step::Recipe,
+) -> TestResult {
+    let boss = match recipe.unique {
+        3950 => "morguthis",
+        3951 => "thalas",
+        3952 => "mahrdis",
+        3953 => "omruc",
+        3954 => "rahemos",
+        3955 => "dipthrah",
+        3956 => "vashresamun",
+        _ => return Err("unknown Tomb pass".into()),
+    };
+    hunt_loot(owner, admitted, h, boss, recipe.item, 1, 20_000).await
+}
+
+pub(super) async fn hunt_loot(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &super::AdmittedSession,
+    h: &super::fixture::Harness,
+    creature: &str,
+    item: &str,
+    count: u16,
+    command: u64,
+) -> TestResult {
+    use super::fixture::debug;
+    use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+    use oteryn_gameplay_items::loot_plan::{LootPlanDeathKey, plan_creature_loot};
+
+    let creature = format!("oteryn:creature.{creature}");
+    let native = owner
+        .active_generation
+        .and_then(|generation| generation.native_gameplay())
+        .ok_or("native gameplay for quest loot")?;
+    let reward = native.reward_table().row(&creature).map_err(debug)?;
+    let loot = reward
+        .loot_table_ref
+        .as_ref()
+        .ok_or("source loot reference")?;
+    assert!(
+        reward
+            .loot_table
+            .entries
+            .iter()
+            .any(|entry| entry.item.production_key == item),
+        "{creature} must admit its source drop {item}"
+    );
+    let actor = admitted.runtime_actor.ok_or("hunter")?;
+    let (health, position) = {
+        let mut runtime = owner.runtime.lock().await;
+        native
+            .install_companion_policies(&mut runtime)
+            .map_err(debug)?;
+        let position = runtime
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position();
+        let health = runtime
+            .companion_policy(&creature)
+            .map_err(debug)?
+            .maximum_health;
+        (health, position)
+    };
+    let mut remaining = i64::from(count);
+    for ordinal in 0..count {
+        let target = {
+            let mut runtime = owner.runtime.lock().await;
+            let mut selected = None;
+            // Pick an exact actor generation whose authored roll drops the item.
+            // This keeps the drop chance, quantity and native reward table intact.
+            for _ in 0..20_000 {
+                let candidate = runtime
+                    .admit_encounter_actor(&creature, health, position)
+                    .map_err(debug)?;
+                let seed = LootPlanDeathKey::new(
+                    *candidate.world_id().as_bytes(),
+                    *candidate
+                        .channel_id()
+                        .ok_or("quest hunt Channel")?
+                        .as_bytes(),
+                    candidate.scope_generation().get(),
+                    candidate.actor_local_id(),
+                    candidate.actor_local_generation(),
+                );
+                let plan = plan_creature_loot(seed, loot, &reward.loot_table).map_err(debug)?;
+                if plan
+                    .entries
+                    .iter()
+                    .any(|entry| entry.item.production_key == item)
+                {
+                    runtime
+                        .install_creature_policy(candidate, &creature)
+                        .map_err(debug)?;
+                    selected = Some(candidate);
+                    break;
+                }
+                runtime.remove_encounter_actor(candidate).map_err(debug)?;
+            }
+            selected.ok_or("bounded source loot occurrence")?
+        };
+        super::grizzly_npc_fixtures::questpc8_campaign::lethal(
+            owner,
+            admitted,
+            target,
+            &creature,
+            command,
+            ordinal + 1,
+        )
+        .await?;
+        let corpse = {
+            let runtime = owner.runtime.lock().await;
+            runtime
+                .visible_corpses()
+                .into_iter()
+                .find(|corpse| corpse.identity == target.corpse_identity())
+                .ok_or("settled creature corpse")?
+                .item
+                .item_instance_id
+        };
+        remaining -= collect_loot(
+            owner,
+            admitted,
+            h,
+            corpse,
+            item,
+            command + u64::from(ordinal) + 1,
+        )
+        .await?;
+        owner
+            .runtime
+            .lock()
+            .await
+            .remove_encounter_actor(target)
+            .map_err(debug)?;
+        if remaining <= 0 {
+            return Ok(());
+        }
+        // Long material hunts run against the real corpse budget. Advance
+        // only the fixture clock anchor and let the decay owner free the body.
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("UPDATE game_item_mint_receipts SET materialized_at=floor(extract(epoch FROM clock_timestamp())*1000)::bigint-61000 WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(corpse.as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+        owner.drain_corpse_deadlines().await;
+    }
+    Err(format!("source hunt did not deliver {count} units of {item}").into())
+}
+
+async fn collect_loot(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &super::AdmittedSession,
+    h: &super::fixture::Harness,
+    corpse: [u8; 16],
+    item: &str,
+    command: u64,
+) -> TestResult<i64> {
+    use super::fixture::debug;
+    use crate::durability::{
+        item_mint::TypedDefinitionRef,
+        item_transfer::{ItemTransferDestination, ItemTransferRequest},
+    };
+    use crate::gameplay_transport::item_ref_admission::{NativeItemWeights, generation_item_facts};
+
+    let (raw, quantity): (Vec<u8>, i64) = sqlx::query_as(
+        "SELECT uuid_send(i.item_instance_id),i.quantity::bigint          FROM game_item_corpse_container_entries e JOIN game_item_instances i USING(item_instance_id)          WHERE e.parent_item_instance_id=encode($1,'hex')::uuid AND i.definition_production_key=$2          AND i.lifecycle=1 ORDER BY e.placement_ordinal LIMIT 1",
+    )
+    .bind(corpse.as_slice())
+    .bind(item)
+    .fetch_one(&h.pool)
+    .await?;
+    let native = owner
+        .active_generation
+        .and_then(|generation| generation.native_gameplay())
+        .ok_or("native gameplay for quest loot")?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|_| "quest loot fence")?
+        .ok_or("quest loot session")?
+        .item_fence();
+    let definition = |key: &str| TypedDefinitionRef {
+        family: "Item".into(),
+        production_key: key.into(),
+        revision_ref: "definition-r1".into(),
+    };
+    let weights = NativeItemWeights(native);
+    super::map_seed_planting_fixtures::maintain_ready(owner).await?;
+    let mut candidate = owner
+        .root
+        .freeze_item_transfer(
+            owner.character,
+            owner.holder,
+            fence,
+            ItemTransferRequest {
+                weight_generation_digest: native.source_digest(),
+                command: crate::foundation::CommandRef::new(
+                    admitted.game_session_id,
+                    crate::foundation::CommandId::new(command).map_err(debug)?,
+                ),
+                source_item_instance_id: raw.try_into().map_err(|_| "corpse item UUID")?,
+                destination: ItemTransferDestination::MainBackpack,
+                item: generation_item_facts(native, &definition(item)).map_err(debug)?,
+                backpack: Some(
+                    generation_item_facts(native, &definition("oteryn:item.tibia.i2854"))
+                        .map_err(debug)?,
+                ),
+                content_revision: "content-1".into(),
+                ruleset_revision: "ruleset-1".into(),
+                sim_revision: "sim-1".into(),
+            },
+            &weights,
+        )
+        .await
+        .map_err(debug)?;
+    super::map_seed_planting_fixtures::maintain_ready(owner).await?;
+    let permit = owner
+        .spell_lane_permit()
+        .await
+        .ok_or("quest loot item lane")?;
+    owner
+        .root
+        .commit_item_transfer(
+            &permit,
+            owner.character,
+            owner.holder,
+            fence,
+            &mut candidate,
+            &weights,
+        )
+        .await
+        .map_err(debug)?;
+    Ok(quantity)
 }

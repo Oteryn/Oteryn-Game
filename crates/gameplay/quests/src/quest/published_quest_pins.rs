@@ -74,13 +74,6 @@ const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
 // new rules bound to the new hash. Existing absent-track defaults did not change.
 const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     (
-        "oteryn:quest.dangerous_depths_quest",
-        hash(b"e177a8f38383a25e9c0fea9ee86bf6831782c7253431a75fa911dc5e2e2d620a"),
-        &[hash(
-            b"b19e1d3f99ecdaf123501f7ba3a54ca184be811b7e4e6a9f8c6f3307f32a0acb",
-        )],
-    ),
-    (
         "oteryn:quest.ferumbras_ascension_quest",
         hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f"),
         &[hash(
@@ -89,15 +82,14 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     ),
     (
         "oteryn:quest.forgotten_knowledge_quest",
-        hash(b"7da8382a26e05c98cdf07b52f4ff6961ec70138baf90ffbb98c164d5240fccca"),
-        &[
-            hash(b"298abe628683287d3aa5939bb4769361cccfeb586946e8956daa886f9b37a51a"),
-            hash(b"4c96930f43d73c762b1f0e546c0f71aa11a24a504fbde760e03327b4e0db74ce"),
-        ],
+        hash(b"4c96930f43d73c762b1f0e546c0f71aa11a24a504fbde760e03327b4e0db74ce"),
+        &[hash(
+            b"298abe628683287d3aa5939bb4769361cccfeb586946e8956daa886f9b37a51a",
+        )],
     ),
     (
         "oteryn:quest.the_ancient_tombs_quest",
-        hash(b"2cecdbb9b63e475fc2111ebedb9046ad4dcfb287d62024a449eee1dc88fca485"),
+        hash(b"5a7765b1239512ce87772a6d2c366b9443cd5596969c7b52ff789d50db0d501a"),
         &[
             hash(b"4c3fff8d01302e1c6854af72abc7bc65d369e6874890557088a53844da2cbe14"),
             hash(b"8a188b5b0b564e34830783f89b5b1a24cc00eb29a1639495bdfb8a7124b584af"),
@@ -133,7 +125,7 @@ mod tests {
     use crate::quest::{loader, npc_rules};
 
     #[test]
-    fn package_keeps_main_grave_danger_and_ape_city_pins() -> Result<(), String> {
+    fn package_keeps_main_grave_danger_pin() -> Result<(), String> {
         let loaded =
             loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
         let catalogue = loaded.catalogue();
@@ -151,13 +143,6 @@ mod tests {
                 &hash(b"5054575cd55c76480522bdc31bab711873fc7dd859b3832d4bcacbeeede0259e"),
             )
             .is_some()
-        );
-        let ape_city = "oteryn:quest.the_ape_city_quest";
-        let pin = hash(b"18884601e04fc41671d5b24abc67f63cc0cf234813bc1f967ab24297871d1e05");
-        assert_ne!(catalogue.definition_hash(ape_city), Some(pin));
-        assert_eq!(
-            npc_rules::legacy_defaults(catalogue, ape_city, &pin),
-            Some(&Default::default())
         );
         Ok(())
     }

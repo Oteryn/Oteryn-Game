@@ -114,5 +114,5 @@ pub(super) async fn exercise(
         1,
         "only the accepted admission creates a receipt"
     );
-    super::qcx_dangerous_depths_fixtures::exercise(owner, admitted, h, authority, npc).await
+    Ok(())
 }

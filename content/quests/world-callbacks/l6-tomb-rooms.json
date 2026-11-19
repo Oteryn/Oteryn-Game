@@ -618,6 +618,102 @@
           "contents": []
         }
       }
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-vashresamun-sarcophagus",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33186,
+            "y": 33010,
+            "floor": -14
+          },
+          "ordinal": 1,
+          "appearance": 1994
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "requires_world_admission": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/vashresamun_sarcophagus_claim",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "https://tibia.fandom.com/?curid=5073&oldid=1174796",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:633"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3225",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-omruc-sarcophagus",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33145,
+            "y": 32663,
+            "floor": -15
+          },
+          "ordinal": 1,
+          "appearance": 1994
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "requires_world_admission": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/omruc_sarcophagus_claim",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "https://tibia.fandom.com/?curid=5073&oldid=1174796",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:687"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3228",
+          "count": 1,
+          "contents": []
+        }
+      }
     }
   ]
 }

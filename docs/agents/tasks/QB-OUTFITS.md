@@ -31,21 +31,13 @@ native World placement index, so no player could reach the conversations.
 
 | Quest | TibiaWiki | NPCs placed (x, y, z) |
 |---|---|---|
-| Assassin Outfits | `Assassin_Outfits_Quest/Spoiler` | Vescu 32565,32651,7 (base); Erayo 32518,32911,8; Atrad 32077,32533,9 |
-| Beggar Outfits | `Beggar_Outfits_Quest/Spoiler` | Hugo 32950,32102,5; Simon the Beggar 32186,32471,7 |
 | Hunter Outfits | `Hunter_Outfits_Quest/Spoiler` | Legola 32298,31785,7 (Elane was already placed) |
-| Mage / Summoner Outfits | `Mage_Outfits_Quest/Spoiler`, `Summoner_Outfits_Quest/Spoiler` | Angelina 32633,32402,10; Lynda 32331,32199,7; Myra 32580,32751,6; Sandra 33257,31839,7; Zoltan 33266,31847,4 |
+| Mage / Summoner Outfits | `Mage_Outfits_Quest/Spoiler`, `Summoner_Outfits_Quest/Spoiler` | Angelina 32633,32402,10; Lynda 32331,32199,7; Myra 32580,32751,6; Zoltan 33266,31847,4 |
 | Wizard Outfits | `Wizard_Outfits_Quest/Spoiler` | Lugri 32389,32118,8; The Queen of the Banshees 32260,31866,14 |
 
 - Every NPC is placed at its single agreeing Canary/Crystal promotion-candidate
   cell (`npc_placement_scope.json`, then `convert_placements.py`, then
   `pin-refresh`).
-- Vescu's donor cell holds a BlockSolid item in our map. No adjacent cell is
-  clear single-item native ground, so `placement_adjustments` cannot apply.
-  Vescu is therefore a source-backed `block_solid_contact`, the same mechanism
-  as Zarifan. The neighbouring border items do not block movement.
-- `test_m38_zarifan.py` now pins the exact exception set
-  {Zarifan, Vescu} instead of "Zarifan only".
 
 Tests (red before the placement change, green after):
 
@@ -68,15 +60,9 @@ at its single agreeing promotion-candidate cell, as in QB-1. One Eyed Joe
 
 | Quest | TibiaWiki | NPCs placed (x, y, z) |
 |---|---|---|
-| Brotherhood / Nightmare Outfits | `Brotherhood_Outfits`, `Nightmare_Outfits` | The Bone Master 32793,32225,14; The Dream Master 32844,32228,14 |
 | Cave Explorer Outfits | `Cave_Explorer_Outfits` | Gnommander 32248,32604,8 (source-backed solid contact: no adjacent clear single-item ground) |
-| Crystal Warlord / Soil Guardian Outfits | `Crystal_Warlord_Outfits`, `Soil_Guardian_Outfits` | Gnomally 32795,31746,10 |
 | Revenant Outfits | `Revenant_Outfits` | Flickering Soul 33621,31419,10 |
-| Dream Warden / Dream Warrior Outfits | `Dream_Warden_Outfits`, `Dream_Warrior_Outfits` | Eruaran 33618,32372,5; Vanys 33685,32180,8 |
-| Druid Outfits | `Druid_Outfits_Quest/Spoiler` | A Majestic Warwolf 33355,31991,8; Ceiron 32665,31717,7; Ustan 32580,32757,6 |
-| Knight Outfits | `Knight_Outfits_Quest/Spoiler` | Gregor 32406,32201,6 |
 | Hand of the Inquisition (mission 1 guards) | `The_Inquisition_Quest/Spoiler` | Grof 32372,32182,7; Kulag 32287,32264,7; Miles 32429,32173,5; Tim 32425,32223,6; Walter 32338,32277,7 |
-| To Outfox a Fox | `To_Outfox_a_Fox_Quest/Spoiler` | Budrik 32525,31906,8 (adjacent to the BlockSolid donor cell 32525,31905,8) |
 
 ## QB-3 — mainland Citizen and Warrior addons
 
@@ -115,36 +101,18 @@ Known global-parity gaps (later batches or the server lane):
 - The full-outfit achievement on owning both addons, from any source, has
   been sent to the server lane.
 
-## QB-shaman — Shaman outfit and addons (Hairycles, Chondur)
+## Deferred outfit routes
 
-Gap: Hairycles and Chondur had no placement and no outfit or addon conversation. New generator
-module `tools/content-schema/quest-authoring/qb_shaman.py`, registered in `qengine_rewards.py`,
-writes the three stages from the Hairycles and Chondur donors; Hairycles 32826,32574,6 and
-Chondur 32361,32550,7 are placed at their single agreeing promotion-candidate cells. Global wins
-over the donors.
-
-| Step | TibiaWiki | Global mechanic |
-|---|---|---|
-| Outfit | `Shaman_Outfits_Quest/Spoiler`, `Shaman_Outfits` | After the Banuta questline (Ape City track 18), Hairycles gives the outfit for "shamanic powers" (looktype 154 male, 158 female) |
-| Staff start | `Shaman_Outfits_Quest/Spoiler` | Chondur: "task", "addon", "yes", once the 5 pirate voodoo dolls of the Sabrehaven mission are handed in (reputation track 12 or more) and the outfit is owned |
-| Voodoo Staff (addon 2) | `Shaman_Outfits_Quest/Spoiler` | Chondur takes 5 dworc voodoo dolls (3002) and 1 mandrake (5014) |
-| Mask start | `Shaman_Outfits_Quest/Spoiler` | "addon", "yes", "yes" after the staff |
-| Voodoo Mask (addon 1) | `Shaman_Outfits_Quest/Spoiler` | Chondur takes 5 tribal masks (3403) and 5 banana staffs (3348) |
-
-- The Way of the Shaman achievement is granted by the generic full-outfit table, not here.
-- Tracks are the existing `u7_8/shaman_outfits/addon_staff_mask`, `mission_staff`, `mission_mask`
-  and `u7_6/the_ape_city/shaman_outfit`; the items 3403 and 3348 were added to the native
-  custody profile list (`qengine_reward_item_profiles.py`) and the regenerated pins follow.
-
-Not modelled (reported, not faked):
-
-- The donor's extra Counterspell and Djinn in Love requirements (the global wiki asks only for
-  the pirate voodoo dolls).
-- Chondur's stage-dependent greeting, his "Maybe next time" reply to "no", and Hairycles'
-  "You already are shaman and doctor" and "journey for wisdom" replies.
-
-Tests: `postgres_tests/qb_shaman.rs` (placement index and `qengine-rewards-qb-shaman-story` on
-PostgreSQL in CI), `tests/npcs/qb_shaman_npcs.rs` and `test_qb_shaman_placements.py`.
+The Shaman addon package and the new Gregor, Bone Master, Dream Master and Vanys
+placements require live writes for their prerequisite quest milestones. The
+Assassin placements require the unplaced Jack Fate (Goroma) shipwreck hand-in
+and obtainable gear ingredients. Gnomally's outfits require Bigfoot Burden
+tokens, and Eruaran's claw requires the inactive Gaz'haragoth raid. The new
+Beggar and Druid placements depend on unavailable brown cloth and the
+Griffinclaw flower and waterskin respectively. Sandra's belt hand-in depends
+on a ticket that the live lottery converter can transform but has no source
+exchange for. Budrik's mining helmet has a claim, while the required quest
+stage has no live writer.
 
 ## QB-barbarian — Barbarian addons (Bron, Ajax)
 

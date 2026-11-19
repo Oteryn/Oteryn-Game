@@ -48,14 +48,6 @@ Global snapshot does not specify numeric item/achievement/placement IDs, exact g
 
 Faction entry and device hand-ins, task field objectives, the repeat Measurements offer and remaining NPC paths, boss access and pumps, encounter credit, Powerful Featherweight, and Morgathla assembly, encounter and claims remain open.
 
-## Ordnance cooldown correction
 
-The Gnomus generator now compares the stored deadline with the dispatch transaction clock. The active cooldown remains in effect while the deadline is in the future. A deadline reached or passed enables the existing repeat offer. The 20-hour interval comes from the Global spoiler. [Daily tasks](https://tibia.fandom.com/?curid=83369&oldid=1105447#Daily_Tasks)
-
-The PostgreSQL fixture seeds the two states that normally follow escort completion. The real Gnomus dispatch must refuse the future deadline, offer the repeat mission at the expired deadline and accept confirmation. On the audit commit `146089d500fb55d786b74810643d72cebf8e908a` with the regression case present locally, PG via shard failed after 80.92 s at the expired-deadline assertion. It returned the cooldown reply.
-
-PG via shard (pgsplit build files applied on `36b7df326128d94ad0c6a458417140b5a9ae646e`) passed the one Ordnance case in 100.86 s. The same filter without the PostgreSQL URL returned `Ok(())` in 0.00 s.
-
-Quest authoring passed all 44 checks, including 269 schema cases. The Gnomus generator passed its three focused tests. World pin refresh reproduced the existing digest and pin-check passed for one world. Formatting passed.
-
-Dispatch library Clippy with `-D warnings` passed.
+Ordnance cooldown and repeat qualification are deferred until the live escort
+completion writes the stage and deadline.

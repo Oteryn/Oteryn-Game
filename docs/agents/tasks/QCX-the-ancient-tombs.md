@@ -36,8 +36,8 @@ B3 has seven two-tile sarcophagi. The usable half is appearance 1994, which is t
 
 ## Corrections
 
-- Bind the five corroborated sarcophagi to a distinct per-character reward marker and grant exactly one part through the existing item reward transaction.
-- Route the five corroborated pass items at the corresponding boss-room forcefields. Native treasure-room exits retain their ordinary behavior.
+- Bind all seven source sarcophagi to separate per-character claim markers. Crystal supplies the Left Horn at (33186,33010,14) and the Helmet Adornment at (33145,32663,15).
+- Restore the seven source boss spawns at their fixed 90-second respawn and admit each guaranteed pass through its actual corpse loot. Each boss-room forcefield uses the pinned Crystal trigger and destination. The two original compatibility exits still recognize their exact source passes.
 - Bind floor assembly and the Small Ruby transform to the actual Ashmunrah north table.
 - Allow the Morguthis teleporter after all seven flames regardless of a higher imported treasure value. A successful entry preserves that value. The older test's exact assumption of an upper gate is replaced with exact preservation assertions for the same values. [Spoiler, curid 5073 oldid 1174796](https://tibia.fandom.com/?curid=5073&oldid=1174796)
 
@@ -52,7 +52,6 @@ BLOCKER Dipthrah switches persistent shared switches without expiry data-global/
 BLOCKER Ashmunrah switches per-character puzzle completion and consume-on-entry data-global/scripts/quests/the_ancient_tombs/movements_enter_ashmunrah_teleport_switche_done.lua:9-16
 BLOCKER Thalas poison/Cobra atomic live poison and greeting teleport data-global/npc/cobra.lua:48-69
 BLOCKER Rahemos hat trial random carrot, wrong-guess damage and temporary door data-global/scripts/quests/the_ancient_tombs/actions_oasis_lever_door.lua:26-34
-BLOCKER Vashresamun/Omruc pass destinations versioned durable recipe and audit binding data-global/scripts/quests/the_ancient_tombs/movements_tomb_teleport.lua:21-24,39-42
 BLOCKER Omruc maze return-to-step-origin routing data-global/scripts/quests/the_ancient_tombs/movements_peninsula_tomb_maze.lua:3-15
 ```
 

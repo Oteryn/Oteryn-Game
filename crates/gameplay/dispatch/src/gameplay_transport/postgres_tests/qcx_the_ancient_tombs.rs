@@ -56,7 +56,7 @@ fn sarcophagi_grant_their_pieces_once() -> TestResult {
 
 #[test]
 fn ashmunrah_north_table_assembles_helmet() -> TestResult {
-    super::l6_floor_native_fixtures::run("l6-floor-assembly-native")
+    run("sarcophagi_assembly", true)
 }
 
 #[test]
@@ -87,6 +87,24 @@ fn rahemos_boss_forcefield_accepts_pass() -> TestResult {
 #[test]
 fn dipthrah_boss_forcefield_accepts_pass() -> TestResult {
     super::l6_tomb_native_fixtures::present_3955()
+}
+
+#[test]
+fn omruc_boss_forcefield_accepts_earned_pass() -> TestResult {
+    super::l6_tomb_native_fixtures::run(
+        "l6-tomb-native-present-3953",
+        Position { x: 33195, y: 33002, floor: -14 },
+        Position { x: 33145, y: 32665, floor: -15 },
+    )
+}
+
+#[test]
+fn vashresamun_boss_forcefield_accepts_earned_pass() -> TestResult {
+    super::l6_tomb_native_fixtures::run(
+        "l6-tomb-native-present-3956",
+        Position { x: 33116, y: 32656, floor: -15 },
+        Position { x: 33186, y: 33012, floor: -14 },
+    )
 }
 
 fn run(name: &'static str, rewards: bool) -> TestResult {
@@ -246,7 +264,19 @@ fn run(name: &'static str, rewards: bool) -> TestResult {
         }
         owner.admit_quest_session(&admitted).await;
         if rewards {
-            return claim_parts(&mut owner, &mut admitted, &h, deps.actor).await;
+            claim_parts(&mut owner, &mut admitted, &h, deps.actor).await?;
+            if name == "sarcophagi" {
+                return Ok(());
+            }
+            let at = super::l6_floor_native_fixtures::start();
+            position_player(&owner, &admitted, deps.actor, at).await?;
+            return super::l6_floor_assembly_fixtures::assemble_claimed_helmet(
+                &owner,
+                &mut admitted,
+                &h,
+                super::l6_floor_native_fixtures::ALTAR,
+            )
+            .await;
         }
         let result = wire(
             &owner,
@@ -446,12 +476,14 @@ async fn seed_morguthis_progress(
 
 // Spoiler curid 5073 oldid 1174796 links each pharaoh to one distinct part.
 type Sarcophagus = ((u16, u16, u8), u16, &'static [u8]);
-const SARCOPHAGI: [Sarcophagus; 5] = [
+const SARCOPHAGI: [Sarcophagus; 7] = [
     ((33126, 32589, 15), 3222, region!("15-x129-y127")),
     ((33174, 32932, 15), 3223, region!("15-x129-y128")),
     ((33182, 32712, 14), 3224, region!("14-x129-y127")),
+    ((33186, 33010, 14), 3225, region!("14-x129-y128")),
     ((33349, 32825, 14), 3226, region!("14-x130-y128")),
     ((33041, 32772, 14), 3227, region!("14-x129-y128")),
+    ((33145, 32663, 15), 3228, region!("15-x129-y127")),
 ];
 
 fn approach((x, y, z): (u16, u16, u8)) -> Position {
@@ -485,8 +517,36 @@ fn reward_world(
                 },
             ],
         })
+        .chain(std::iter::once(super::l6_floor_native_fixtures::altar_crop()))
         .collect();
     native_scene(native, crops, &[])
+}
+
+async fn position_player(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    actor: crate::foundation::ExactActorRef,
+    position: Position,
+) -> TestResult {
+    let map = owner.bundle_map().ok_or("reward room map")?;
+    let doors = crate::map::floor::BundleDoors(map.facts.doors());
+    let mut runtime = owner.runtime.lock().await;
+    let previous = runtime.read_actor_position(actor).map_err(debug)?;
+    if previous.position() != local(position) {
+        let proof = crate::map::floor::prepare_quest_callback_teleport(
+            &runtime,
+            &owner.movement_cells,
+            actor,
+            admitted.game_session_id,
+            previous,
+            local(position),
+            false,
+            &doors,
+        )
+        .map_err(debug)?;
+        runtime.commit_source_step(proof).map_err(debug)?;
+    }
+    Ok(())
 }
 
 async fn claim_parts(
@@ -506,25 +566,7 @@ async fn claim_parts(
         let map = owner.bundle_map().ok_or("reward room map")?;
         let mut placement = map.overlay.base().digest().to_vec();
         placement.extend_from_slice(&key.to_be_bytes());
-        let doors = crate::map::floor::BundleDoors(map.facts.doors());
-        {
-            let mut runtime = owner.runtime.lock().await;
-            let previous = runtime.read_actor_position(actor).map_err(debug)?;
-            if previous.position() != local(position) {
-                let proof = crate::map::floor::prepare_quest_callback_teleport(
-                    &runtime,
-                    &owner.movement_cells,
-                    actor,
-                    admitted.game_session_id,
-                    previous,
-                    local(position),
-                    false,
-                    &doors,
-                )
-                .map_err(debug)?;
-                runtime.commit_source_step(proof).map_err(debug)?;
-            }
-        }
+        position_player(owner, admitted, actor, position).await?;
         for expected in [UseDisposition::Committed, UseDisposition::Rejected] {
             owner.clock_origin -= std::time::Duration::from_secs(2);
             let ordinal = admitted.continuity.next_command_id;

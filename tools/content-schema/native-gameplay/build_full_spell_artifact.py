@@ -743,7 +743,19 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
         if capacity is not None:
             facts[key]['materializable'] = True
             facts[key]['container_capacity'] = capacity
-            qualified_corpses.add(key)
+            if not facts[key].get('ordinary_corpse_only'):
+                qualified_corpses.add(key)
+    # These exact quest yields already have admitted native pickup and carried
+    # profiles. Keep source tables and rates as authored.
+    quest_yields = {f'oteryn:item.tibia.i{i}' for i in (
+        3235, 3236, 3237, 3238, 3239, 3240, 3241, 3348, 3403, 5893, 5899, 5925,
+    )}
+    for key in sorted(quest_yields & yield_keys):
+        if not facts[key]['materializable']:
+            profiles = native_by_key.get(key, [])
+            native = native_loot_yield_facts(facts[key]['item'], profiles[0]) if len(profiles) == 1 else None
+            if native is not None:
+                facts[key].update(native)
     # Complete only these source-qualified corpse rows' existing loot closures.
     # Ordinary yields retain the stronger Inventory + Ground + pickup admission;
     # Ground-only corpse admission never authorizes a normal yield.

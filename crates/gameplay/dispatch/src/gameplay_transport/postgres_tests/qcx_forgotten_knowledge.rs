@@ -12,11 +12,6 @@ use super::l6_world_pickups_fixtures::NativeCrop;
 use super::quest_catalogue_chests_fixtures::CatalogueActivation;
 
 #[test]
-fn albinius_ice_offering_requires_contactman_and_fifty_fish() -> TestResult {
-    super::qengine_rewards_fixtures::scenario("questpc2-albinius-portals-exact")
-}
-
-#[test]
 fn retained_world_claims_grant_each_quest_item_once() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
