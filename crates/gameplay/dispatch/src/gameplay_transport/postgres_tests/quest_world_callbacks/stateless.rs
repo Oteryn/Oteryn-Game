@@ -144,15 +144,19 @@ pub(super) async fn exercise(
     if callback.effects.solid_teleport.is_some() {
         let map = owner.bundle_map().ok_or("map")?;
         let effects = map.facts.movement_effects_since(0);
-        assert_eq!(effects.len(), 1);
-        assert_eq!(
-            (effects[0].1, effects[0].2),
-            (crate::map::overlay::TilePos {
-                x: expected_destination.x,
-                y: expected_destination.y,
-                floor: expected_destination.floor,
-            }, 11)
-        );
+        if callback.selector.position == Some(expected_destination) {
+            assert!(effects.is_empty());
+        } else {
+            assert_eq!(effects.len(), 1);
+            assert_eq!(
+                (effects[0].1, effects[0].2),
+                (crate::map::overlay::TilePos {
+                    x: expected_destination.x,
+                    y: expected_destination.y,
+                    floor: expected_destination.floor,
+                }, 11)
+            );
+        }
     }
     if let Some((x, y, floor)) = expected_effect {
         let map = owner.bundle_map().ok_or("map")?;

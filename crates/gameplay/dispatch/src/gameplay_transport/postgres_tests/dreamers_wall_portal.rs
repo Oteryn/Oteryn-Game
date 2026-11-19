@@ -6,6 +6,7 @@ use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 
 pub(super) const BLOCKED: &str = "dreamers-wall-portal-blocked";
 pub(super) const CLEAR: &str = "dreamers-wall-portal-clear";
+pub(super) const FOREIGN_UID: &str = "dreamers-wall-portal-foreign-uid";
 pub(super) const LIVE_CLEAR: &str = "dreamers-wall-portal-live-clear";
 // Crystal data-global/startup/tables/item.lua:4495-4498 maps UID 9030 here.
 const TRIGGER: Position = at(32762, 32290);
@@ -69,9 +70,11 @@ pub(super) fn world(
     }
     // Keep the native counterpart witness on the map that strips the startup UID.
     let mut map_fixture = callback.clone();
-    if name == CLEAR {
-        map_fixture.selector.unique = None;
-    }
+    map_fixture.selector.unique = match name {
+        CLEAR => None,
+        FOREIGN_UID => Some(9033), // Crystal startup item.lua:4499-4503 assigns it elsewhere.
+        _ => callback.selector.unique,
+    };
     world_cells(&map_fixture, TRIGGER, 1949, 1, &objects, &[], None, &cells)
 }
 
@@ -114,5 +117,16 @@ fn dreamers_wall_portal_reads_the_current_wall_after_a_live_transform() -> TestR
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(LIVE_CLEAR, || {
         stateless_scenario(LIVE_CLEAR, TRIGGER, EXIT)
+    })
+}
+
+#[test]
+fn dreamers_wall_portal_does_not_take_a_native_counterpart_with_a_foreign_uid() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(FOREIGN_UID, || {
+        stateless_scenario(FOREIGN_UID, TRIGGER, TRIGGER)
     })
 }
