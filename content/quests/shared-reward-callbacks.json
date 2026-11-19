@@ -5352,7 +5352,11 @@
             }
           ]
         }
-      ]
+      ],
+      "account_reservation": {
+        "action": "finish",
+        "key": "oteryn:quest-reservation/citizen-backpack"
+      }
     },
     {
       "key": "oteryn:quest-reward/l6-citizen-rook-backpack-materials",
@@ -5408,7 +5412,13 @@
             "kind": "set_now"
           }
         }
-      ]
+      ],
+      "account_reservation": {
+        "action": "start",
+        "key": "oteryn:quest-reservation/citizen-backpack",
+        "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook",
+        "pending_value": 2
+      }
     },
     {
       "key": "oteryn:quest-reward/l6-citizen-rook-backpack-start",
@@ -9282,7 +9292,11 @@
             "value": 0
           }
         }
-      ]
+      ],
+      "account_reservation": {
+        "action": "finish",
+        "key": "oteryn:quest-reservation/citizen-backpack"
+      }
     },
     {
       "key": "oteryn:quest-reward/qb-citizen-backpack-materials",
@@ -9338,7 +9352,13 @@
             "kind": "set_now"
           }
         }
-      ]
+      ],
+      "account_reservation": {
+        "action": "start",
+        "key": "oteryn:quest-reservation/citizen-backpack",
+        "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+        "pending_value": 2
+      }
     },
     {
       "key": "oteryn:quest-reward/qb-citizen-backpack-start",
