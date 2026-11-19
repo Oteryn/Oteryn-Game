@@ -51,10 +51,9 @@ pub(super) async fn seed_loop_prerequisites(
         .await
 }
 
-async fn open_lucky_loop(
+async fn start_lucky_loop(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
-    h: &Harness,
 ) -> TestResult<oteryn_protocol_oteryn::world_spatial_entities::EntityRef> {
     let [npc] = install(owner, admitted, [ROTTIN]).await?;
     for (command, text) in [
@@ -62,11 +61,20 @@ async fn open_lucky_loop(
         (1702, "task"),
         (1703, "lucky charms"),
         (1704, "yes"),
-        (1705, "task"),
-        (1706, "lucky charms"),
     ] {
         talk(owner, admitted, npc, command, text).await?;
     }
+    Ok(npc)
+}
+
+async fn open_lucky_loop(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    h: &Harness,
+) -> TestResult<oteryn_protocol_oteryn::world_spatial_entities::EntityRef> {
+    let npc = start_lucky_loop(owner, admitted).await?;
+    talk(owner, admitted, npc, 1705, "task").await?;
+    talk(owner, admitted, npc, 1706, "lucky charms").await?;
     assert_ribbons(h, TRACK, 1).await?;
     Ok(npc)
 }
@@ -112,7 +120,8 @@ pub(super) async fn craft_lucky_charm(
     admitted: &AdmittedSession,
     h: &Harness,
 ) -> TestResult {
-    open_lucky_loop(owner, admitted, h).await?;
+    start_lucky_loop(owner, admitted).await?;
+    assert_ribbons(h, TRACK, 1).await?;
     let owner = &*owner;
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
