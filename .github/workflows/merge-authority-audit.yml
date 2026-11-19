@@ -28,7 +28,7 @@ jobs:
     env:
       EXPECTED_MERGE_GROUP_GATE_BLOB: "1de3f58c155660d9bf1dec97119231f9f991a3a4"
       EXPECTED_AGENT_GOVERNANCE_BLOB: "42d84c9089cdef928c6cb17268269156c87c0abb"
-      EXPECTED_MERGE_GATE_BLOB: "42f72738733a599fb4d47ff9791cf9a06a642c37"
+      EXPECTED_MERGE_GATE_BLOB: "69420747c3de35c1071adc160dafa53b7bc80308"
     steps:
       - name: Validate control-plane candidate as inert data
         shell: bash
