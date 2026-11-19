@@ -24,8 +24,15 @@ pub(super) struct ActiveWaveRun {
     next: usize,
     creatures: Vec<ExactActorRef>,
     terminal: Option<ExactActorRef>,
-    exit: Option<(Position, bool)>,
+    exit: Option<WaveExit>,
     lever: Option<(u64, crate::map::view::EntryFacts)>,
+}
+
+struct WaveExit {
+    destination: Position,
+    victory: bool,
+    credit: Option<String>,
+    survivors: Vec<(ExactActorRef, GameSessionId)>,
 }
 
 impl ActiveWaveRun {
@@ -98,7 +105,7 @@ impl ActiveWaveRun {
         if self.exit.is_none() {
             // Crystal action_arena.lua:71 arms cleanup at the room timeout;
             // creaturescripts_tirecz_kill.lua:19-30 settles the kill event.
-            self.exit = if let Some(victory) = &plan.victory
+            let exit = if let Some(victory) = &plan.victory
                 && self.terminal.is_some_and(|actor| {
                     let pending = !runtime.contains_live_creature(actor)
                         && (states
@@ -123,18 +130,42 @@ impl ActiveWaveRun {
             } else {
                 timed_out.then_some((plan.timeout_exit, false))
             };
+            if let Some((destination, victory)) = exit {
+                let credit = plan.credit_transition(victory).map(str::to_owned);
+                let mut survivors = Vec::new();
+                if credit.is_some() {
+                    let Ok(census) = runtime.positioned_melee_census() else {
+                        return true;
+                    };
+                    // Crystal movements_click.lua:29-43 and
+                    // creaturescripts_tirecz_kill.lua:19-30 take one spectator
+                    // snapshot. Egress retries cannot qualify new arrivals.
+                    survivors.extend(census.into_iter().filter_map(|(actor, at, session)| {
+                        let session = session?;
+                        (!states.is_dead(actor)
+                            && super::room_contains(&self.room, at.position())
+                            && (plan.eject_room || self.participants.contains(&(actor, session))))
+                        .then_some((actor, session))
+                    }));
+                }
+                self.exit = Some(WaveExit {
+                    destination,
+                    victory,
+                    credit,
+                    survivors,
+                });
+            }
         }
-        if let Some((destination, victory)) = self.exit {
+        if let Some(exit) = &self.exit {
             if !eject(
                 owner,
                 runtime,
                 states,
                 map,
                 &self.room,
-                destination,
                 &self.participants,
-                plan.credit_transition(victory)
-                    .map(|key| (self.callback.as_str(), key, victory)),
+                &self.callback,
+                exit,
             ) {
                 return true;
             }
@@ -471,9 +502,9 @@ fn eject(
     states: &mut ChannelSpellStates,
     map: &BundleMap,
     room: &Encounter,
-    destination: Position,
     participants: &[(ExactActorRef, GameSessionId)],
-    credit: Option<(&str, &str, bool)>,
+    callback: &str,
+    exit: &WaveExit,
 ) -> bool {
     let Ok(census) = runtime.positioned_melee_census() else {
         return false;
@@ -495,7 +526,7 @@ fn eject(
             more = true;
             break;
         }
-        let lease = if credit.is_some() {
+        let lease = if exit.survivors.contains(&(actor, session)) {
             let Ok(lease) = runtime.bound_attacker_lease(actor, session) else {
                 // A positioned session can still be acquiring its character
                 // lease. Revisit it without holding up the other survivors.
@@ -512,7 +543,7 @@ fn eject(
             actor,
             session,
             position,
-            local(destination),
+            local(exit.destination),
             &closed,
         ) else {
             return false;
@@ -523,11 +554,15 @@ fn eject(
     if proofs.is_empty() {
         return !more;
     }
-    let mut credits = if credit.is_some() {
+    let credit_count = players
+        .iter()
+        .filter(|(_, _, _, lease)| lease.is_some())
+        .count();
+    let mut credits = if credit_count > 0 {
         let Ok(mut queue) = owner.states.quest_callbacks.wave_credits.lock() else {
             return false;
         };
-        if queue.len() + proofs.len() > 128 || queue.try_reserve(proofs.len()).is_err() {
+        if queue.len() + credit_count > 128 || queue.try_reserve(credit_count).is_err() {
             return false;
         }
         Some(queue)
@@ -539,8 +574,8 @@ fn eject(
     };
     let now = owner.owner_now().get();
     for ((actor, session, from, lease), after) in players.into_iter().zip(snapshots) {
-        if let (Some(queue), Some((callback, transition, victory)), Some(lease)) =
-            (&mut credits, credit, lease)
+        if let (Some(queue), Some(transition), Some(lease)) =
+            (&mut credits, exit.credit.as_deref(), lease)
             && let Some(command) =
                 super::step_command(actor, session, after.revision(), owner.reset_epoch)
         {
@@ -549,7 +584,7 @@ fn eject(
                 transition.to_owned(),
                 actor,
                 command,
-                victory,
+                exit.victory,
                 lease,
                 runtime.encounter_owner_scope().1,
                 after.revision(),
@@ -574,7 +609,7 @@ fn eject(
             underwater(map, from),
             underwater(map, after.position()),
         );
-        map.facts.emit_movement_effect(tile(destination), 11);
+        map.facts.emit_movement_effect(tile(exit.destination), 11);
     }
     !more
 }

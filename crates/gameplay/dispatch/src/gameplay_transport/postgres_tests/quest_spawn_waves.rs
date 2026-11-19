@@ -1453,9 +1453,29 @@ async fn stations_scenario(
     }
     assert!(!owner.has_pending_wave_credit(admitted.game_session_id));
 
-    owner.runtime.lock().await.remove_test_actor(arriving).map_err(debug)?;
+    {
+        let mut runtime = owner.runtime.lock().await;
+        // Crystal movements_click.lua:29-43 awards only the spectators present
+        // in the cleanup event. The unleased arrival keeps this cleanup active
+        // while the previously staged peer enters after the deadline.
+        let closed = crate::map::floor::BundleDoors(&map.facts);
+        let expected = runtime.read_actor_position(peer_actor).map_err(debug)?;
+        let step = crate::map::floor::prepare_quest_encounter_ejection(
+            &runtime, owner.movement_cells(), peer_actor, peer.game_session_id,
+            expected, local(LANDING), &closed,
+        ).map_err(debug)?;
+        runtime.commit_quest_relocation(vec![step], || true).map_err(debug)?;
+        runtime.remove_test_actor(arriving).map_err(debug)?;
+    }
     owner.drain_quest_encounter_deadlines().await;
     assert!(creatures(owner).await?.is_empty());
+    assert_eq!(position(owner, peer_actor).await?, local(EXIT));
+    assert!(!owner.has_pending_wave_credit(peer.game_session_id));
+    owner.drain_quest_encounter_deadlines().await;
+    let late_peer = owner.root.read_character_quest_state(
+        owner.character, peer.item_fence.ok_or("peer item fence")?.character_id,
+    ).await.map_err(debug)?;
+    assert_eq!(late_peer.tracks().get(TRACK).copied().unwrap_or(0), 0);
     Ok(())
 }
 
