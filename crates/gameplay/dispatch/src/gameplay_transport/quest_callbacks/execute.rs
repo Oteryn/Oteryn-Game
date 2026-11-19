@@ -1763,17 +1763,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         );
                     }
                 }
-            } else if !callback.is_read_only() && !personal_gift_preserves_object {
-                if let Some(spawn) = roll_spawn {
-                    if runtime
-                        .commit_quest_creature_spawn_with_projection(&[spawn], apply_scene)
-                        .is_err()
-                    {
-                        return UseDisposition::Rejected;
-                    }
-                } else if !apply_scene() {
-                    return UseDisposition::Rejected;
-                }
+            } else if !callback.is_read_only()
+                && !personal_gift_preserves_object
+                && !super::step_spawn::publish_optional_quest_spawn(
+                    runtime,
+                    roll_spawn,
+                    apply_scene,
+                )
+            {
+                return UseDisposition::Rejected;
             }
         }
         if fresh_effects && let Some(roll) = failed_roll {

@@ -359,7 +359,7 @@ fn scenario_case(
     use super::super::dreamers_wall_portal;
     let dreamers_wall = matches!(name, dreamers_wall_portal::BLOCKED | dreamers_wall_portal::CLEAR);
     use super::super::lucifuga_bait_spawn;
-    let lucifuga = matches!(name, lucifuga_bait_spawn::NAME | lucifuga_bait_spawn::PORTALS);
+    let lucifuga = matches!(name, lucifuga_bait_spawn::NAME | lucifuga_bait_spawn::NO_SLOT | lucifuga_bait_spawn::PORTALS);
     use super::super::faceless_bane_phase;
     let faceless_bane = matches!(name, faceless_bane_phase::LIMITED_SLOTS | faceless_bane_phase::NAME);
     use super::super::feaster_brain_head;
@@ -373,7 +373,7 @@ fn scenario_case(
     use super::super::haunted_tomb_roll;
     let haunted_tomb = matches!(
         name,
-        haunted_tomb_roll::PRIZE | haunted_tomb_roll::MUMMY_CASE | haunted_tomb_roll::PORTALS
+        haunted_tomb_roll::MUMMY_CASE | haunted_tomb_roll::NO_SLOT | haunted_tomb_roll::PORTALS | haunted_tomb_roll::PRIZE
     );
     use super::super::kroazur_solo_room;
     let kroazur = name == kroazur_solo_room::NAME;
@@ -1674,6 +1674,8 @@ fn scenario_case(
                 4
             } else if name == faceless_bane_phase::LIMITED_SLOTS {
                 4 // Two entrants, the boss, and one available spectre slot.
+            } else if matches!(name, haunted_tomb_roll::NO_SLOT | lucifuga_bait_spawn::NO_SLOT) {
+                1 // The admitted character occupies the only carrier slot.
             } else if callback.effects.encounter.is_some() {
                 16
             } else {
@@ -3144,7 +3146,7 @@ fn scenario_case(
             Box::pin(kroazur_solo_room::exercise(&mut owner, &mut admitted, &h, fence)).await?;
         } else if lucifuga {
             Box::pin(lucifuga_bait_spawn::exercise(
-                &owner, &mut admitted, fence, name == lucifuga_bait_spawn::PORTALS,
+                &owner, &mut admitted, fence, name,
             )).await?;
         } else if outfit_world
             || callback.effects != Default::default() && !dreamers_wall

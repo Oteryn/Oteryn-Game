@@ -20,6 +20,7 @@ use oteryn_protocol_oteryn::world_spatial::{
 use std::sync::Arc;
 
 pub(super) const NAME: &str = "lucifuga-bait-spawn";
+pub(super) const NO_SLOT: &str = "lucifuga-bait-no-slot";
 pub(super) const PORTALS: &str = "lucifuga-bait-portals";
 const QUEST: &str = "oteryn:quest.the_dream_courts_quest";
 const BAIT: &str =
@@ -71,6 +72,15 @@ fn lucifuga_skips_adjacent_portals_and_rearms_when_no_spawn_tile_is_available() 
     super::kill_reward_e2e::scenario_thread::run(PORTALS, || scenario(PORTALS, TRIGGER, false))
 }
 
+#[test]
+fn lucifuga_rearms_even_when_the_channel_has_no_free_creature_slot() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(NO_SLOT, || scenario(NO_SLOT, TRIGGER, false))
+}
+
 async fn step(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -96,8 +106,9 @@ pub(super) async fn exercise(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     fence: CurrentCharacterGameplayFence,
-    portals: bool,
+    name: &str,
 ) -> TestResult {
+    let portals = name == PORTALS;
     let map = owner.bundle_map().ok_or("map")?;
     let key = placement_key(
         TilePos {
@@ -152,8 +163,7 @@ pub(super) async fn exercise(
     assert!(due >= before + 60_000_000);
     assert!(due <= owner.owner_now().get() + 600_000_000);
     let spiders = creatures(owner, SPIDER).await?;
-    if portals {
-        // Crystal src/map/map.cpp:293-295 skips all of these valid adjacent tiles.
+    if portals || name == NO_SLOT {
         assert!(spiders.is_empty());
         assert_eq!(map.facts.expire_movement_items(due - 1), 0);
         assert_eq!(map.facts.expire_movement_items(due), 1);

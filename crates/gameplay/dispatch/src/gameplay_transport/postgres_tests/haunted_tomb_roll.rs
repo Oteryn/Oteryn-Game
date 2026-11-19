@@ -24,6 +24,7 @@ use std::sync::Arc;
 
 pub(super) const PRIZE: &str = "haunted-tomb-prize";
 pub(super) const MUMMY_CASE: &str = "haunted-tomb-mummy";
+pub(super) const NO_SLOT: &str = "haunted-tomb-no-slot";
 pub(super) const PORTALS: &str = "haunted-tomb-portals";
 const QUEST: &str = "oteryn:quest.the_dream_courts_quest";
 const STARTED: &str =
@@ -120,6 +121,15 @@ fn haunted_tomb_failed_roll_rearms_when_only_adjacent_portals_are_free() -> Test
     };
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(PORTALS, || scenario(PORTALS, SARCOPHAGUS, false))
+}
+
+#[test]
+fn haunted_tomb_failed_roll_rearms_even_when_the_channel_has_no_free_creature_slot() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(NO_SLOT, || scenario(NO_SLOT, SARCOPHAGUS, false))
 }
 
 pub(super) async fn exercise(
@@ -259,7 +269,7 @@ pub(super) async fn exercise(
         super::engworldchg_journals::live_creatures(owner, MUMMY)
             .await?
             .len(),
-        usize::from(!won && !portals)
+        usize::from(!won && !portals && case != NO_SLOT)
     );
     let due = map
         .facts

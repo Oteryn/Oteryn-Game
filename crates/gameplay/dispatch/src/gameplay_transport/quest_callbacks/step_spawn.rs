@@ -3,6 +3,7 @@ use super::*;
 use crate::content::{CollisionClass, LogicalCell};
 use crate::map::facts::QuestCallbackProjection;
 use crate::map::view::EntryFacts;
+use oteryn_gameplay_entities::CarrierError;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::world_callbacks::StepSpawn;
 use sha2::{Digest, Sha256};
@@ -81,17 +82,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(landing) => landing,
             Err(result) => return result,
         };
-        if let Some(landing) = landing {
-            if runtime
-                .commit_quest_creature_spawn_with_projection(
-                    &[(spawn.creature.as_str(), health, landing)],
-                    projection,
-                )
-                .is_err()
-            {
-                return UseDisposition::Rejected;
-            }
-        } else if !projection() {
+        let spawn = landing.map(|position| (spawn.creature.as_str(), health, position));
+        if !publish_optional_quest_spawn(runtime, spawn, projection) {
             return UseDisposition::Rejected;
         }
         states.owner_wake.notify_one();
@@ -149,6 +141,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .iter()
                         .any(|(_, position, _)| position.position() == *landing)
             }))
+    }
+}
+
+/// Crystal movements_spider_summon.lua:20-24 and actions_sacrophagus_use.lua:39-45
+/// disarm the source even when Game.createMonster cannot place an actor.
+pub(super) fn publish_optional_quest_spawn(
+    runtime: &mut ChannelRuntimeV1,
+    spawn: Option<(&str, i64, MovementLocalPosition)>,
+    project: impl Fn() -> bool,
+) -> bool {
+    let Some(spawn) = spawn else {
+        return project();
+    };
+    match runtime.commit_quest_creature_spawn_with_projection(&[spawn], &project) {
+        Ok(_) => true,
+        // The carrier rolls back before the map readset is projected in this case.
+        Err(CarrierError::CapacityExceeded) => project(),
+        Err(_) => false,
     }
 }
 
