@@ -250,6 +250,8 @@ fn scenario_case(
             y: 31159,
             floor: -8,
         }
+    } else if name == super::super::forgemaster_chest::NATIVE {
+        super::super::forgemaster_chest::BETWEEN_CHESTS
     } else if mead {
         Position {
             x: trigger.x,
@@ -679,7 +681,11 @@ fn scenario_case(
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
     let world = if name == super::super::forgemaster_chest::NATIVE {
-        super::world_with_cells(&callback, trigger, &[])?
+        let native = callback.selector.native.as_ref().ok_or("Forgemaster native selector")?;
+        super::world_with_extra(
+            &callback, trigger, native.appearance, native.ordinal,
+            &super::super::forgemaster_chest::SECOND_CHEST_ENTRIES, &[], None,
+        )?
     } else if name == super::super::putrefactory_reservoir::NATIVE {
         let mut physical = callback.clone();
         physical.selector.action = None;
