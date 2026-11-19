@@ -472,6 +472,16 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
         counter["required_outcome"] = json!({"group":OUTCOME_GROUP,"mode":"hard"});
         counter["key"] = json!("oteryn:quest-transition/native-kills/qcredit-fixture-hard");
         counter["track"] = json!(HARD_TRACK);
+        if case.has_shields() {
+            // Crystal 201189f8 arbaziloth_death.lua:35-52 counts the first hard win
+            // while also opening the Forgemaster journal. Settle this counter
+            // before the first-win stage mutates its captured gate.
+            counter["gate"] = json!(FORGEMASTER_DOOR_TRACK);
+            counter["gate_value"] = json!(0);
+            counter["gate_maximum"] = json!(1);
+            counter["maximum"] = json!(10);
+            counter["advance_gate_to"] = json!(2);
+        }
         stages.push(stage("hard-kill", &counter));
         if case.has_shields() {
             // Crystal 201189f8 enraged_arbaziloth.lua:1-8, arbaziloth_death.lua:29-41.
@@ -555,7 +565,7 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
             .as_array_mut()
             .ok_or("mode tracks")?
             .push(json!({
-                "key":HARD_TRACK,"initial":0,"minimum":0,"maximum":5
+                "key":HARD_TRACK,"initial":0,"minimum":0,"maximum":if case.has_shields() { 10 } else { 5 }
             }));
     }
     let base = QuestStateCatalogue::empty("content-1").ok_or("fixture content revision")?;

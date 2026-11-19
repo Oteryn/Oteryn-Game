@@ -327,6 +327,7 @@ pub(super) async fn exercise(
     settle_actor_death(owner, players, terminal_definition, terminal, case, 542).await?;
     assert_first_defeat_messages(owner, players, [1, 1]);
     assert_first_defeat_outfits(pool).await?;
+    assert_first_defeat_journal(pool, players.len()).await?;
     let first_wins: Vec<i64> = sqlx::query_scalar(
         "SELECT value FROM game_character_quest_tracks WHERE track_key=$1 ORDER BY character_id",
     )
