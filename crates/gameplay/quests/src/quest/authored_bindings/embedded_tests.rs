@@ -340,6 +340,69 @@ fn chosen_level_resolves_only_the_original_unknown_level() -> Result<(), String>
 }
 
 #[test]
+fn spike_kill_binding_accepts_explicit_selected_premium_and_retains_other_source_holds()
+-> Result<(), String> {
+    let (mut bindings, index, mut shard) = canonical_inputs()?;
+    let quest = &mut bindings.quests[0];
+    quest.quest = "oteryn:quest.spike_task".into();
+    let source = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spike_tasks/creaturescripts_lower_spike_kill.lua:1-21";
+    quest.sources = vec![source.into()];
+    quest.tracks = serde_json::from_value(serde_json::json!([
+        {"key":"oteryn:quest-progress/spike/lower-hunt-active","initial":0,"minimum":0,"maximum":1},
+        {"key":"oteryn:quest-progress/spike/lower-drillworms","initial":-1,"minimum":-1,"maximum":7}
+    ]))
+    .map_err(|e| e.to_string())?;
+    quest.stages = serde_json::from_value(serde_json::json!([
+        {"key":"lower-drillworms","completes":false,"trigger":{"kind":"kill","counter":{
+            "key":"oteryn:quest-transition/native-kills/spike-lower-drillworms",
+            "creature":"oteryn:creature.drillworm",
+            "track":"oteryn:quest-progress/spike/lower-drillworms",
+            "gate":"oteryn:quest-progress/spike/lower-hunt-active","gate_value":1,"maximum":7,
+            "death_area":{"minimum":[32120,32470,13],"maximum":[32345,32710,15]}
+        }}}
+    ]))
+    .map_err(|e| e.to_string())?;
+    quest.admission = Some(
+        serde_json::from_value(serde_json::json!({
+            "minimum_level":25,"use_selected_premium":true
+        }))
+        .map_err(|e| e.to_string())?,
+    );
+    let recipe = serde_json::json!({
+        "requirements":{"basis":"CHOSEN_OTERYN_APPROXIMATION","min_level":25,"premium":false,"prerequisites":[]},
+        "stages":[{"key":"lower-drillworms","kind":"kill","count":7}]
+    });
+    quest.recipe_sha256 = Sha256::digest(serde_json::to_vec(&recipe).map_err(|e| e.to_string())?)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    let identity = serde_json::json!({"key":quest.quest});
+    shard["records"][0]["definition"] = serde_json::json!({
+        "identity":identity,"missing_data":[{"code":"requirement_unknown","field":"premium"}],
+        "oteryn_recipe":{"profile":"chosen_source_completion_v1","chosen_data_complete":true,
+            "payload":{"identity":identity,"recipe":recipe}}
+    });
+    let registry = evidence(&index, &shard)?;
+    registry.verify(&bindings)?;
+
+    let mut wrong = bindings.clone();
+    let admission = wrong.quests[0].admission.as_mut().ok_or("admission")?;
+    admission.use_selected_premium = false;
+    assert!(registry.verify(&wrong).is_err());
+    let admission = wrong.quests[0].admission.as_mut().ok_or("admission")?;
+    admission.use_selected_premium = true;
+    admission.premium = true;
+    assert!(registry.verify(&wrong).is_err());
+
+    shard["records"][0]["definition"]["missing_data"] = serde_json::json!([
+        {"code":"requirement_unknown","field":"premium"},
+        {"code":"requirement_unknown","field":"vocation"}
+    ]);
+    assert!(evidence(&index, &shard)?.verify(&bindings).is_err());
+    Ok(())
+}
+
+#[test]
 fn qm55_save_scope_requires_daily_canonical_recipe_even_with_a_matching_digest()
 -> Result<(), String> {
     let (bindings, index, shard) = canonical_inputs()?;

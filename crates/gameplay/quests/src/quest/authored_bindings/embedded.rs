@@ -65,6 +65,7 @@ struct Recipe {
     complete: bool,
     data_holds: bool,
     claim_only_pending: bool,
+    selected_premium_resolves_hold: bool,
     minimum_level: Option<u32>,
     requires_premium: Option<bool>,
     prerequisites: Option<Vec<String>>,
@@ -141,6 +142,7 @@ impl RecipeEvidence {
                 ) && !(selected.original_source_gaps
                     && entry["code"].as_str() == Some("reported_source_gap"))
                     && !selected.resolves_original_level(entry)
+                    && !selected.resolves_original_premium(entry)
             });
             // A missing legacy delivery owner must not prevent a safe first step.
             // Every other data hold remains authoritative, as do nontrivial actor gates.
@@ -193,6 +195,9 @@ impl RecipeEvidence {
                     complete: selected.complete,
                     data_holds,
                     claim_only_pending,
+                    selected_premium_resolves_hold: missing
+                        .iter()
+                        .any(|entry| selected.resolves_original_premium(entry)),
                     minimum_level,
                     requires_premium,
                     prerequisites,
@@ -256,8 +261,13 @@ impl RecipeEvidence {
             }
             let pure_progress =
                 native_observations && quest.stages.iter().all(|stage| !stage.completes);
-            if recipe.data_holds
-                && !(recipe.claim_only_pending && admission_matches && pure_progress)
+            let use_selected_premium = quest
+                .admission
+                .as_ref()
+                .is_some_and(|gate| gate.use_selected_premium);
+            if (recipe.data_holds
+                && !(recipe.claim_only_pending && admission_matches && pure_progress))
+                || recipe.selected_premium_resolves_hold != use_selected_premium
             {
                 return Err(format!(
                     "authored Quest has unresolved data holds: {}",

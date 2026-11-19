@@ -725,6 +725,7 @@ async fn level_admission_fixture(
         quest.admission = Some(ActorAdmission {
             minimum_level: minimum,
             premium: false,
+            use_selected_premium: false,
             prerequisites: Vec::new(),
         });
         let bindings = Bindings {

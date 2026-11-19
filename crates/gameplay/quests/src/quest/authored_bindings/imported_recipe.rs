@@ -22,6 +22,19 @@ impl SelectedRecipe<'_> {
                         .is_some_and(|level| u32::try_from(level).is_ok())
             })
     }
+
+    /// A selected Premium predicate can govern native bindings while the
+    /// original provider's missing Premium evidence stays recorded.
+    pub(super) fn resolves_original_premium(&self, gap: &Value) -> bool {
+        self.original_source_gaps
+            && self.complete
+            && gap["code"] == "requirement_unknown"
+            && gap["field"] == "premium"
+            && self.recipe.is_some_and(|recipe| {
+                recipe["requirements"]["basis"] == "CHOSEN_OTERYN_APPROXIMATION"
+                    && recipe["requirements"]["premium"].is_boolean()
+            })
+    }
 }
 
 pub(super) fn select(definition: &Value) -> Result<Option<SelectedRecipe<'_>>, String> {

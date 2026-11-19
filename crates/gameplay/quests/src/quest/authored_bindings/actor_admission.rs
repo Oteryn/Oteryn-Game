@@ -7,6 +7,9 @@ pub struct ActorAdmission {
     pub minimum_level: u32,
     #[serde(default, skip_serializing_if = "is_false")]
     pub premium: bool,
+    /// Use the exact selected recipe's Premium choice for an imported source gap.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub use_selected_premium: bool,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub prerequisites: Vec<QuestPrerequisite>,
 }
