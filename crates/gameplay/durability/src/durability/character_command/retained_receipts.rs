@@ -58,13 +58,24 @@ impl<'a, 'f, 's> RetainedCreatePublisherStore<'a, 'f, 's> {
             .record_for(self.root)
             .map_err(|_| SourceError::Unavailable)?;
         let deadline = Instant::now() + DB_PASS_DEADLINE;
-        tokio::time::timeout(DB_PASS_DEADLINE, async {
-            let mut holder = self.pool.acquire().await?;
-            operation(&mut holder, deadline, recovery).await
-        })
-        .await
-        .map_err(|_| SourceError::Unavailable)?
-        .map_err(|_| SourceError::Unavailable)
+        let mut holder = self
+            .pool
+            .acquire()
+            .await
+            .map_err(|_| SourceError::Unavailable)?;
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        let result =
+            tokio::time::timeout(remaining, operation(&mut holder, deadline, recovery)).await;
+        if matches!(
+            result,
+            Err(_) | Ok(Err(DurabilityError::CommitOutcomeUnknown))
+        ) {
+            // Never reuse a session that might still be completing a timed-out pass.
+            holder.close_on_drop();
+        }
+        result
+            .map_err(|_| SourceError::Unavailable)?
+            .map_err(|_| SourceError::Unavailable)
     }
 }
 

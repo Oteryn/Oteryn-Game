@@ -1640,6 +1640,15 @@ impl Decider for ClosureFeed {
 
 #[test]
 fn closure_feed_is_served_while_retained_create_platform_exchange_waits() {
+    closure_feed_is_served_while_create_waits(usize::MAX, true);
+}
+
+#[test]
+fn closure_feed_is_served_while_retained_create_store_waits() {
+    closure_feed_is_served_while_create_waits(0, false);
+}
+
+fn closure_feed_is_served_while_create_waits(read_limit: usize, offered: bool) {
     let create_calls = Arc::new(Mutex::new(Vec::new()));
     let closure_calls = Arc::new(Mutex::new(Vec::new()));
     let runtime = tokio::runtime::Builder::new_current_thread()
@@ -1656,7 +1665,7 @@ fn closure_feed_is_served_while_retained_create_platform_exchange_waits() {
         RetainedCreates {
             store: Arc::new(Mutex::new(RetainedCreateStore::default())),
             reads: 0,
-            read_limit: usize::MAX,
+            read_limit,
             source_authority: AUTHORITY,
         },
         |_| {},
@@ -1688,13 +1697,17 @@ fn closure_feed_is_served_while_retained_create_platform_exchange_waits() {
         assert!(creates.as_mut().poll(&mut cx).is_pending());
         assert!(closure.as_mut().poll(&mut cx).is_pending());
     }
-    assert_eq!(
-        *create_calls.lock().unwrap(),
-        [(
-            Operation::PublishCharacterCommandReceiptV1,
-            "receipt-a".into()
-        )]
-    );
+    if offered {
+        assert_eq!(
+            *create_calls.lock().unwrap(),
+            [(
+                Operation::PublishCharacterCommandReceiptV1,
+                "receipt-a".into()
+            )]
+        );
+    } else {
+        assert!(create_calls.lock().unwrap().is_empty());
+    }
     assert_eq!(
         *closure_calls.lock().unwrap(),
         publications.map(|(operation, body)| (operation, body.to_owned()))
@@ -1770,18 +1783,17 @@ fn retained_create_failed_scan_rotates_and_wrap_reaches_in_range_arrival() {
 
 #[test]
 fn closure_feed_is_served_before_create_retries_when_queue_is_full() {
-    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::atomic::{AtomicU64, Ordering};
     struct Peer {
         clock: Clock,
-        slow: Arc<AtomicBool>,
+        elapsed_ms: Arc<AtomicU64>,
         sent: Arc<Mutex<Vec<String>>>,
     }
     impl CommandSource for Peer {
         async fn exchange(&mut self, _: Operation, body: &str) -> Result<Vec<u8>, Failure> {
             self.sent.lock().unwrap().push(body.to_owned());
-            if self.slow.load(Ordering::Relaxed) {
-                *self.clock.0.lock().unwrap() += RETAINED_CREATE_RETRY_TIME_PER_POLL;
-            }
+            *self.clock.0.lock().unwrap() +=
+                Duration::from_millis(self.elapsed_ms.load(Ordering::Relaxed));
             Err(Failure::Unavailable)
         }
     }
@@ -1792,7 +1804,7 @@ fn closure_feed_is_served_before_create_retries_when_queue_is_full() {
     let clock = store.lock().unwrap().clock.clone();
     let create_calls = Arc::new(Mutex::new(Vec::new()));
     let closure_calls = Arc::new(Mutex::new(Vec::new()));
-    let slow = Arc::new(AtomicBool::new(true));
+    let elapsed_ms = Arc::new(AtomicU64::new(6000));
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_time()
         .build()
@@ -1806,7 +1818,7 @@ fn closure_feed_is_served_before_create_retries_when_queue_is_full() {
         PauseAtPoll(clock.clone()),
         Peer {
             clock,
-            slow: slow.clone(),
+            elapsed_ms: elapsed_ms.clone(),
             sent: create_calls.clone()
         },
         RetainedCreates {
@@ -1842,17 +1854,34 @@ fn closure_feed_is_served_before_create_retries_when_queue_is_full() {
         assert!(creates.as_mut().poll(&mut cx).is_pending());
     }
     assert_eq!(SATURATION.get(), 2);
-    for (index, expected) in [8, 1].into_iter().enumerate() {
-        slow.store(index != 0, Ordering::Relaxed);
+    for (index, (millis, expected, new)) in [(0, 8, [1027, 1028]), (3000, 2, [1029, 1030])]
+        .into_iter()
+        .enumerate()
+    {
+        elapsed_ms.store(millis, Ordering::Relaxed);
         let before = create_calls.lock().unwrap().len();
         assert!(closure.as_mut().poll(&mut cx).is_pending());
         assert_eq!(closure_calls.lock().unwrap().len(), index + 1);
         assert!(creates.as_mut().poll(&mut cx).is_pending());
-        assert_eq!(create_calls.lock().unwrap().len() - before, expected + 2);
+        let calls = create_calls.lock().unwrap();
+        let (retries, scan) = calls[before..].split_at(expected);
+        assert_eq!(retries.len(), expected);
+        assert!(retries.iter().all(|id| id <= &op(1024)));
+        assert_eq!(scan, new.map(op));
     }
     assert!(closure.as_mut().poll(&mut cx).is_pending());
     assert_eq!(
         *closure_calls.lock().unwrap(),
         publications.map(|(operation, body)| (operation, body.to_owned()))
     );
+
+    // Wrap and revisit keys that are already queued. A scan must not add
+    // their attempts to either the fast or the slow retry allowance.
+    assert!(creates.as_mut().poll(&mut cx).is_pending());
+    for (millis, expected) in [(0, 8), (3000, 2)] {
+        elapsed_ms.store(millis, Ordering::Relaxed);
+        let before = create_calls.lock().unwrap().len();
+        assert!(creates.as_mut().poll(&mut cx).is_pending());
+        assert_eq!(create_calls.lock().unwrap().len() - before, expected);
+    }
 }

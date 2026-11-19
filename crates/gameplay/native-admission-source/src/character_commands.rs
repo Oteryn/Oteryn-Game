@@ -1229,6 +1229,11 @@ pub async fn run_account_closure_publications<C: ReportClock, S: CommandSource, 
 
 /// Replay committed v1 creates independently of the pending list and closure feed.
 /// The durable table is the retry source of truth. The queue only expedites offers.
+/// For a visible key K, a fault-free sweep reaches it within K polls. An earlier
+/// sweep through H takes at most H + 1 polls to wrap. Each failed sweep adds at
+/// most its captured watermark plus one poll, since every poll advances or wraps.
+/// Queued IDs get a FIFO retry turn within 1,024 polls even if the scan skips
+/// them. These bounds require store and sendability reads to recover.
 pub async fn run_retained_create_publications<
     C: ReportClock,
     S: CommandSource,
@@ -1286,7 +1291,7 @@ pub async fn run_retained_create_publications<
                 for key in page.keys {
                     cursor = key.scan_key;
                     let operation_id = key.operation_id;
-                    if attempted.contains(&operation_id) {
+                    if attempted.contains(&operation_id) || retries.contains(&operation_id) {
                         continue;
                     }
                     let offer = offer_retained_create(
@@ -1298,13 +1303,9 @@ pub async fn run_retained_create_publications<
                     )
                     .await;
                     if offer != RetainedOffer::Retry {
-                        retries.retain(|queued| queued != &operation_id);
                         if offer == RetainedOffer::Settled {
                             break;
                         }
-                        continue;
-                    }
-                    if retries.contains(&operation_id) {
                         continue;
                     }
                     if retries.len() == RETAINED_CREATE_RETRY_LIMIT {

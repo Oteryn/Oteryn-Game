@@ -188,7 +188,7 @@ async fn exercise_invariants(database: &Database) -> TestResult {
     }
     let [
         (operation, intent, receipt),
-        (invalid, invalid_intent, _),
+        (invalid, invalid_intent, invalid_receipt),
         (valid, valid_intent, valid_receipt),
     ] = committed.as_slice()
     else {
@@ -216,6 +216,34 @@ async fn exercise_invariants(database: &Database) -> TestResult {
             .collect::<Vec<_>>(),
         [operation.as_str(), invalid.as_str()]
     );
+    // SHARE permits the exact sendability read but blocks the stop INSERT.
+    let mut stop_barrier = pool.begin().await?;
+    sqlx::query("LOCK TABLE game_character_retained_create_receipt_stops IN SHARE MODE")
+        .execute(&mut *stop_barrier)
+        .await?;
+    thread_local! {
+        static FAILED_STOP: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    }
+    FAILED_STOP.set(0);
+    let offers = retained_poll(&root, &authority, &node, Err(classify(409, b"")), |event| {
+        if event.ends_with("alarm=receipt_stop_write_failed") {
+            FAILED_STOP.set(FAILED_STOP.get() + 1);
+        }
+    })
+    .await?;
+    assert_eq!(
+        offers,
+        [
+            (published, receipt.clone()),
+            (published, invalid_receipt.clone())
+        ]
+    );
+    assert_eq!(FAILED_STOP.get(), 1);
+    stop_barrier.rollback().await?;
+    assert!(matches!(
+        index.sendable_create(operation).await,
+        Ok(CreateSendability::Ready(_))
+    ));
     assert_eq!(
         retained_poll(&root, &authority, &node, Err(classify(404, b"")), |_| {}).await?,
         [(published, receipt.clone())]
@@ -321,6 +349,17 @@ async fn closure_while_create_holder_is_busy(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     node: &NodeIncarnationProof,
 ) -> TestResult {
+    let mut isolated = RetainedCreatePublisherStore::new(root, authority, node, SOURCE)?;
+    let held = root.try_issue_semantic_pass()?;
+    assert!(
+        isolated
+            .scan_retained_creates(0, None)
+            .await
+            .map_err(|_| "retained scan competes for the ordinary holder")?
+            .keys
+            .is_empty()
+    );
+    held.run(|_, _| Box::pin(async { Ok(()) })).await?;
     let mut barrier = pool.begin().await?;
     sqlx::query("LOCK TABLE game_character_retained_create_scan IN ACCESS EXCLUSIVE MODE")
         .execute(&mut *barrier)

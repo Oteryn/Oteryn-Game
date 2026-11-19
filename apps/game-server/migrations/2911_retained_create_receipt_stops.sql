@@ -17,11 +17,6 @@ CREATE TABLE game_character_retained_create_scan (
 REVOKE ALL ON game_character_retained_create_scan FROM PUBLIC;
 GRANT SELECT ON game_character_retained_create_scan TO oteryn_game_runtime, oteryn_game_control;
 
-INSERT INTO game_character_retained_create_scan (operation_id)
-    SELECT operation_id FROM game_character_command_receipts
-    WHERE command = 'CreateCharacter' AND outcome = 1
-    ORDER BY operation_id;
-
 -- Runtime can neither add nor remove scan entries directly.
 CREATE FUNCTION game_character_retained_create_enqueue() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
@@ -50,3 +45,10 @@ CREATE TRIGGER game_character_retained_create_enqueue
 CREATE TRIGGER game_character_retained_create_dequeue
     AFTER INSERT ON game_character_retained_create_receipt_stops FOR EACH ROW
     EXECUTE FUNCTION game_character_retained_create_dequeue();
+
+-- Install the triggers before backfill so the migration holds the receipt
+-- table lock throughout the copy and cannot miss a concurrent create.
+INSERT INTO game_character_retained_create_scan (operation_id)
+    SELECT operation_id FROM game_character_command_receipts
+    WHERE command = 'CreateCharacter' AND outcome = 1
+    ORDER BY operation_id;
