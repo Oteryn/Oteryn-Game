@@ -78,6 +78,12 @@ use crate::domain::progression::FiniteProgressionPolicy;
 use crate::domain::{CharacterId, CharacterRevision};
 use oteryn_gameplay_quests::quest::QuestStateCatalogue;
 
+/// Formula and starter item facts for the atomic Newhaven build.
+pub struct NewhavenBuildContext<'a> {
+    pub formula: &'a dyn BuildFormula,
+    pub kit: super::starter_grant::NewhavenKit<'a>,
+}
+
 /// The per-Character slots of one Channel runtime. Idle slots are dropped, so the map holds at
 /// most the Characters with a write queued or in flight, plus the one being acquired.
 #[derive(Debug, Default)]
@@ -401,16 +407,24 @@ impl RevisionSlot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
         request: BuildChangeRequest,
-        formula: &dyn BuildFormula,
-        content: &dyn super::item_loop_move::ItemLoopContent,
-        definitions: &[crate::domain::item_definition::TypedDefinitionRef],
+        context: NewhavenBuildContext<'_>,
     ) -> Result<BuildCommitOutcome, CharacterProgressionError> {
+        let NewhavenBuildContext { formula, kit } = context;
+        let super::starter_grant::NewhavenKit { content, definitions } = kit;
         self.sequenced(
             root_revision(root, authority),
             fence,
             Expect::Replay(fence.expected_character_revision),
-            |fence| root.commit_character_build_with_kit(authority, node, fence, request.clone(), formula,
-                Some(super::starter_grant::NewhavenKit { content, definitions })),
+            |fence| {
+                root.commit_character_build_with_kit(
+                    authority,
+                    node,
+                    fence,
+                    request.clone(),
+                    formula,
+                    Some(super::starter_grant::NewhavenKit { content, definitions }),
+                )
+            },
         )
         .await
     }

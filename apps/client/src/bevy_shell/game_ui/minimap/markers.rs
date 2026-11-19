@@ -9,7 +9,7 @@ type MarkerKey = (u64, (i32, i32, i16));
 #[derive(Resource, Default)]
 pub(super) struct Editor {
     at: Option<MarkerKey>,
-    root: Option<Entity>,
+    root: Option<(MarkerKey, Entity)>,
     pending: Option<Entity>,
     color: u8,
 }
@@ -29,7 +29,12 @@ enum Action {
 pub(super) fn install(app: &mut App) {
     app.init_resource::<Editor>()
         .add_systems(Update, project)
-        .add_systems(PostUpdate, finish.after(bevy::text::EditableTextSystems));
+        .add_systems(
+            PostUpdate,
+            finish
+                .after(bevy::text::EditableTextSystems)
+                .before(bevy::ui::UiSystems::Stack),
+        );
 }
 pub(super) fn click(
     event: On<PointerClick>,
@@ -72,6 +77,13 @@ impl Editor {
     fn open(&mut self, key: MarkerKey) {
         self.at = Some(key);
     }
+
+    fn despawn(&mut self, commands: &mut Commands, focus: &mut InputFocus) {
+        if let Some((_, root)) = self.root.take() {
+            commands.entity(root).despawn();
+            focus.clear();
+        }
+    }
 }
 fn project(
     mut commands: Commands,
@@ -79,7 +91,6 @@ fn project(
     skin: Res<Skins>,
     mut editor: ResMut<Editor>,
     mut focus: ResMut<InputFocus>,
-    mut seen: Local<Option<MarkerKey>>,
 ) {
     if editor.at.is_some_and(|key| key.0 != owner.generation()) || owner.play.is_none() {
         editor.at = None;
@@ -91,14 +102,10 @@ fn project(
     {
         editor.open((owner.generation(), at));
     }
-    if *seen == editor.at {
+    if editor.root.map(|(key, _)| key) == editor.at {
         return;
     }
-    if let Some(root) = editor.root.take() {
-        commands.entity(root).despawn();
-        focus.clear();
-    }
-    *seen = editor.at;
+    editor.despawn(&mut commands, &mut focus);
     let Some(key) = editor.at else {
         return;
     };
@@ -185,7 +192,7 @@ fn project(
         commands.entity(button).add_child(text);
         commands.entity(root).add_child(button);
     }
-    editor.root = Some(root);
+    editor.root = Some((key, root));
 }
 fn activate(
     event: On<Activate>,
@@ -239,8 +246,10 @@ fn activate(
     }
 }
 fn finish(
+    mut commands: Commands,
     mut owner: NonSendMut<HostOwner>,
     mut editor: ResMut<Editor>,
+    mut focus: ResMut<InputFocus>,
     fields: Query<&EditableText, With<Field>>,
     guard: super::super::modal::ModalGuard,
 ) {
@@ -297,6 +306,9 @@ fn finish(
         .is_ok()
     {
         editor.at = None;
+    }
+    if editor.at.is_none() {
+        editor.despawn(&mut commands, &mut focus);
     }
 }
 

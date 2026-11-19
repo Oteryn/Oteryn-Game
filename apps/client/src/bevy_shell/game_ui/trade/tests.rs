@@ -589,9 +589,9 @@ fn trade_contents_decode_render_and_indexed_inspection_use_the_retained_snapshot
     assert!(link.inspection_panel().open);
     assert!(
         app.world_mut()
-            .query::<&Text>()
+            .query::<&bevy::text::EditableText>()
             .iter(app.world())
-            .any(|text| text.0.contains("Freshly caught fish"))
+            .any(|text| text.value().to_string().contains("Freshly caught fish"))
     );
     Ok(())
 }

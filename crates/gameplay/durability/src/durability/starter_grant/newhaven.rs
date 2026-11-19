@@ -55,7 +55,7 @@ pub(in crate::durability) async fn grant_newhaven_in_transaction(
     };
     assert_current_equipment_in_transaction(tx, recovery, node, fence, None, content.loop_content_digest()).await.map_err(grant_error)?;
     let character = fence.character_id;
-    let (world, _) = scope_of(&fence).map_err(|_| DurabilityError::Unavailable)?;
+    let (world, _) = scope_of(fence).map_err(|_| DurabilityError::Unavailable)?;
     let (current, creation_revision): (String, String) = sqlx::query_as("SELECT coalesce((SELECT vocation FROM game_character_build_state WHERE character_id=r.character_id),'none'),r.starter_template_revision FROM game_character_roots r WHERE r.character_id=encode($1,'hex')::uuid")
         .bind(character.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
     if creation_revision != NEWHAVEN_STARTER_TEMPLATE_REVISION { return Ok(NewhavenStarterOutcome::NotApplicable); }

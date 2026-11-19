@@ -346,8 +346,8 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
         .spawn((
             LoginProgress,
             source::text("", source::font(skins.font.clone(), false)),
-            TextLayout::default(),
         ))
+        .insert(TextLayout::default())
         .id();
     commands
         .entity(panel)

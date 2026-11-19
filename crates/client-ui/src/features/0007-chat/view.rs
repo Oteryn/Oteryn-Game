@@ -43,7 +43,9 @@ fn tab_text(
             crate::chat_channel_participants::participants_text(names)
         );
     }
-    if channel.is_none() && panel.console.presentation.visible[2] {
+    if (channel.is_none() || channel == Some(&super::ChannelTab::Guild))
+        && panel.console.presentation.visible[2]
+    {
         text.push_str(&crate::chat_guild_room::panel_text(panel));
     }
     let presentation = &panel.console.presentation;

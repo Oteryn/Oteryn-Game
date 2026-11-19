@@ -113,6 +113,18 @@ fn a_summon_row_cannot_select_its_owner_for_kicking() -> Result {
     let (mut app, mut commands, outbox) = app()?;
     let mut result = state();
     result.members[1].list.push(party::PartyListEntity {
+        entity: EntityRef { identity: [2; 16], generation: 1 },
+        name: "Member".into(),
+        vocation: 1,
+        summon: false,
+        distance: 1,
+        health_percent: Some(100),
+        mana_percent: None,
+        skull: None,
+        portrait: None,
+        portrait_colours: [[0; 3]; 4],
+    });
+    result.members[1].list.push(party::PartyListEntity {
         entity: EntityRef { identity: [3; 16], generation: 1 },
         name: "Summoned rat".into(),
         vocation: 1,
@@ -128,9 +140,14 @@ fn a_summon_row_cannot_select_its_owner_for_kicking() -> Result {
     let _ = command(&mut commands)?;
     publish(&outbox, &result, party::PartyDisposition::Ok)?;
     app.update();
-    let row = app.world_mut().query::<(Entity, &Name)>().iter(app.world())
-        .find_map(|(entity, name)| (name.as_str() == "party.combat-row").then_some(entity))
-        .ok_or("summon row")?;
+    let row = app
+        .world_mut()
+        .query::<(&Text, &ChildOf)>()
+        .iter(app.world())
+        .find_map(|(text, parent)| (text.0 == "↳ Summoned rat").then_some(parent.parent()))
+        .and_then(|details| app.world().get::<ChildOf>(details))
+        .ok_or("summon row")?
+        .parent();
     app.world_mut().trigger(bevy::ui_widgets::Activate { entity: row });
     app.update();
     let play = app.world().non_send::<HostOwner>().play.as_ref().ok_or("play")?;

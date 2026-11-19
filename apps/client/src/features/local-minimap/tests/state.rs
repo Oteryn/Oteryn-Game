@@ -402,6 +402,7 @@ fn removing_a_persisted_mark_defers_the_cache_write() -> Result<(), Box<dyn std:
     let mut map = Minimap::default();
     map.root = Some(root.path().to_path_buf());
     map.bind_world("11111111-1111-4111-8111-111111111111");
+    map.observe(&joined_window(100, 200));
     map.edit_marker(100, 200, -7, "Camp".into(), 0)?;
     let cache = map.path().ok_or("bound cache")?;
     let staging = cache.with_extension("tmp");
@@ -439,6 +440,7 @@ fn creating_and_editing_persisted_marks_defer_the_cache_write() -> Result<(), Bo
     let mut map = Minimap::default();
     map.root = Some(root.path().to_path_buf());
     map.bind_world("11111111-1111-4111-8111-111111111111");
+    map.observe(&joined_window(100, 200));
     let cache = map.path().ok_or("bound cache")?;
     let staging = cache.with_extension("tmp");
     std::fs::create_dir(&staging)?;

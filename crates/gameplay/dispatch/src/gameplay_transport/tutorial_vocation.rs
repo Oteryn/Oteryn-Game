@@ -5,11 +5,11 @@ use super::vocation_choice::{
 use super::{ComposedFreshAdmission, SecureIdentifiers, connection::AdmittedSession};
 use crate::durability::character_build::{BuildFormula, BuildOccurrence, NO_VOCATION};
 use crate::durability::character_progression::CharacterProgressionError;
+use crate::durability::character_revision_sequencer::NewhavenBuildContext;
+use crate::durability::starter_grant::{NewhavenKit, NewhavenStarterOutcome};
 use crate::foundation::{ExactActorRef, GameSessionId};
 use oteryn_gameplay_quests::tutorial::TutorialStep;
 use oteryn_protocol_oteryn::tutorial_vocation as wire;
-
-use crate::durability::starter_grant::NewhavenStarterOutcome;
 
 struct InitialVitalsHold<'a> {
     sessions: &'a super::tutorial_session::TutorialSessions,
@@ -247,10 +247,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let native = self.active_generation?.native_gameplay()?;
         let vocation = retained.request.after.vocation();
         let definitions = newhaven_kit_definitions(native, vocation)?;
-        let result = slot.commit_newhaven_build(
-            self.root, self.character, self.holder, retained.fence, retained.request.clone(),
-            formula, &super::item_ref_admission::NativeItemWeights(native), &definitions,
-        ).await;
+        let result = slot
+            .commit_newhaven_build(
+                self.root,
+                self.character,
+                self.holder,
+                retained.fence,
+                retained.request.clone(),
+                NewhavenBuildContext {
+                    formula,
+                    kit: NewhavenKit {
+                        content: &super::item_ref_admission::NativeItemWeights(native),
+                        definitions: &definitions,
+                    },
+                },
+            )
+            .await;
         match result {
             Ok(_) => {}
             Err(CharacterProgressionError::Unavailable(_)) => {

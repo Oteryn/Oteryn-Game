@@ -76,6 +76,8 @@ fn layout_id(boss: bool) -> &'static str {
 }
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
+        .init_resource::<bevy::picking::events::PointerState>()
+        .add_message::<bevy::picking::events::PointerRelease>()
         .add_systems(Update, project)
         .add_systems(PostUpdate, finish.after(bevy::text::EditableTextSystems));
 }
