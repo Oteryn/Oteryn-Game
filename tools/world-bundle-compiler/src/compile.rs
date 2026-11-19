@@ -484,9 +484,19 @@ fn spawns_with(
                 ));
             }
             let (x, y, z) = point.cell;
+            // The pinned Crystal mainland Koshei encounter is a repeating
+            // quest spawn. Its corpse is the target of the amulet action.
+            let koshei_respawn = source.key == "oteryn:spawn.x33271_y32406_z12"
+                && source.centre == (33271, 32406, 12)
+                && source.points.len() == 1
+                && point.creature == "oteryn:creature.koshei_the_deathless"
+                && point.cell == (33271, 32406, 12)
+                && point.respawn_ms == 15_000;
             let reason = match families.creatures.get(&point.creature) {
                 None => Some(SpawnReason::UnboundCreature),
-                Some(creature) if creature.boss && point.boss_policy.is_none() => {
+                Some(creature)
+                    if creature.boss && point.boss_policy.is_none() && !koshei_respawn =>
+                {
                     return Err(Error::Format(
                         "boss spawn requires a scheduling policy".into(),
                     ));

@@ -27,12 +27,15 @@ pub(super) fn prepare(
             ) {
                 return None;
             }
-            let mut returned = quest::TRACKS
+            let returned = quest::TRACKS
                 .iter()
-                .filter(|track| tracks.get(**track) == Some(&1));
-            // Before collecting any energy, generic replies belong to other quests.
-            returned.next()?;
-            let complete = returned.count() + 1 == quest::TRACKS.len();
+                .filter(|track| tracks.get(**track) == Some(&1))
+                .count();
+            // Explicit Fire-Feathered help is available before any orb is returned.
+            if returned == 0 && !matches!(text.as_str(), "orbs" | "energies") {
+                return None;
+            }
+            let complete = returned == quest::TRACKS.len();
             let reply = if complete {
                 "You have returned the three orb energies. The Fire-Feathered Sea Serpent's task is complete."
             } else {

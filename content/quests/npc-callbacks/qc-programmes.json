@@ -6,9 +6,9 @@
       "quest": "oteryn:quest.friends_and_traders",
       "npc": "oteryn:npc.a_sweaty_cyclops",
       "keywords": [
-        "forge draconian steel"
+        "yes"
       ],
-      "topic": 0,
+      "topic": 6,
       "next_topic": 0,
       "storage": [
         {

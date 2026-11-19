@@ -252,7 +252,7 @@ fn scenario_case(
             super::qc_pinned_world::COMPLETION_CHEST_UIDS.contains(&chest.unique)
         });
         let world = if pinned_completion_chest {
-            super::qc_pinned_world::world(native, false)?
+            super::qc_pinned_world::world(native)?
         } else if matches!(case, Case::Choice | Case::ChoiceDoor | Case::ChoiceCaptured) {
             super::quest_callbacks_fixtures::source_world_choices_with_door(
                 chest,

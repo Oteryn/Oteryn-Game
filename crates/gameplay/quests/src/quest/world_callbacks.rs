@@ -761,9 +761,6 @@ pub fn load() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/qc-lizard-sanctuary.json"
     ))?);
     callbacks.extend(parse(include_str!(
-        "../../../../../content/quests/world-callbacks/qc-twenty-miles.json"
-    ))?);
-    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/qm48-mammoth.json"
     ))?);
     callbacks.push(super::barbarian_mead::callback()?);
@@ -1706,8 +1703,6 @@ mod bounded_tests;
 mod outfit_tests;
 #[cfg(test)]
 mod qc_lizard_sanctuary_tests;
-#[cfg(test)]
-mod qc_twenty_miles_tests;
 
 #[cfg(test)]
 mod scene_tests;

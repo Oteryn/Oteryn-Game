@@ -481,6 +481,55 @@ fn boss_spawn1_policy_loader_rejects_invalid_and_ambiguous_policies() -> TestRes
 }
 
 #[test]
+fn koshei_mainland_point_keeps_its_exact_source_respawn() -> TestResult {
+    use oteryn_world_bundle_compiler::source;
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let mut project = source::project_regions(&root, &[(33271 / 256, 32406 / 256)])?;
+    let (registry, palette) = source::registry(&root, &project)?;
+    let key = "oteryn:spawn.x33271_y32406_z12";
+    project.families.spawns.retain(|source| source.key == key);
+    let realize = |families| {
+        realize_spawns(
+            &Input {
+                regions: &project.regions,
+                palette: &palette,
+                identity: Identity::default(),
+                world: source::world_extent(&root)?,
+                build_class: BuildClass::NonProduction,
+                draft_areas: Vec::new(),
+                families,
+            },
+            &registry,
+        )
+    };
+    let (table, report) = realize(&project.families)?;
+    assert_eq!(report.points, 1);
+    let [source] = table.sources.as_slice() else {
+        return Err("missing compiled Koshei spawn".into());
+    };
+    let [point] = source.points.as_slice() else {
+        return Err("missing compiled Koshei spawn point".into());
+    };
+    assert_eq!(
+        (source.key.as_str(), source.floor, point.x, point.y),
+        (key, -12, 33271, 32406)
+    );
+    assert_eq!((point.respawn_ms, point.boss_policy), (15_000, None));
+    assert_eq!(
+        table.creatures[point.creature as usize].key,
+        "oteryn:creature.koshei_the_deathless"
+    );
+
+    let mut mismatched = project.families.clone();
+    mismatched.spawns[0].points[0].respawn_ms = 16_000;
+    assert!(matches!(
+        realize(&mismatched),
+        Err(Error::Format(reason)) if reason == "boss spawn requires a scheduling policy"
+    ));
+    Ok(())
+}
+
+#[test]
 fn boss_spawn_world_points_reach_bundle_at_fixed_cells() -> TestResult {
     use oteryn_world_bundle_compiler::source;
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");

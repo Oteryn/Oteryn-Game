@@ -56,7 +56,8 @@ def choose_cell(root, actual_source, choice, occupied):
                 or not 1 < distance <= MAX_MISSING_TILE_DISTANCE
                 or not clear((x, y), walkable=True)
                 or any(clear(cell, walkable=True) for cell in tiles
-                       if abs(cell[0]-before[0]) + abs(cell[1]-before[1]) < distance)):
+                       if cell != (x, y)
+                       and abs(cell[0]-before[0]) + abs(cell[1]-before[1]) <= distance)):
             raise ValueError('chosen placement must adjoin its exact retained source cell')
     if not clear((x, y)):
         raise ValueError('chosen placement target is not clear native ground')

@@ -33,7 +33,8 @@
         "count": 1,
         "replacement": null,
         "target_replacement": null,
-        "reusable": false
+        "reusable": false,
+        "selected_instance": true
       },
       "return_on_failure": false,
       "failure_message": "You need the eggs of a sacred snake.",
@@ -44,7 +45,8 @@
         "https://tibia.fandom.com/index.php?curid=68839&oldid=1198612",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/actions_legion_helmet.lua:1-4",
         "canary:666a60f6fef803b043cbaf1c7b5fab219da9bfa9:data-otservbr-global/scripts/quests/dawnport/actions_legion_helmet.lua:15-26"
-      ]
+      ],
+      "requires_world_admission": true
     },
     {
       "key": "oteryn:quest-callback/qc-lizard-sanctuary-altar-2",
@@ -78,7 +80,8 @@
         "count": 1,
         "replacement": null,
         "target_replacement": null,
-        "reusable": false
+        "reusable": false,
+        "selected_instance": true
       },
       "return_on_failure": false,
       "failure_message": "You need the eggs of a sacred snake.",
@@ -89,6 +92,47 @@
         "https://tibia.fandom.com/index.php?curid=68839&oldid=1198612",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/actions_legion_helmet.lua:1-4",
         "canary:666a60f6fef803b043cbaf1c7b5fab219da9bfa9:data-otservbr-global/scripts/quests/dawnport/actions_legion_helmet.lua:15-26"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/qc-lizard-sanctuary-portal",
+      "quest": "oteryn:quest.sanctuary_of_the_lizard_god",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32112,
+          "y": 31936,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 1949
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32124,
+        "y": 31938,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/lizard_sanctuary/discovered",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": "Offer the lives of the yet unborn to the lizard god if you want to enter the sanctuary.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/movements_legion_helmet.lua:1-20",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
       ]
     }
   ]

@@ -54,19 +54,34 @@ fn koshei_real_use_with_grants_storage_refuses_other_operands_and_replays() -> T
 
 #[test]
 fn koshei_spawned_ground_target_real_use_with_refusals_and_replay() -> TestResult {
+    run_ground("koshei-amulet-ground")
+}
+
+#[test]
+fn koshei_main_save_keeps_fragment_progress_after_amulet_use() -> TestResult {
+    run_ground("koshei-amulet-saved-ground")
+}
+
+#[test]
+fn koshei_runtime_role_kills_shipped_spawn_and_uses_amulet() -> TestResult {
+    run_ground(super::koshei_amulet_fixtures::SPAWN_CASE)
+}
+
+fn run_ground(name: &'static str) -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
     assert!(!admin.is_empty());
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e_fixtures::scenario_thread::run("koshei-amulet-ground", || {
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run(name, move || {
+        let start = if name == super::koshei_amulet_fixtures::SPAWN_CASE {
+            world_callbacks::Position { x: 33271, y: 32405, floor: -12 }
+        } else {
+            world_callbacks::Position { x: 32700, y: 31200, floor: -7 }
+        };
         super::quest_world_callbacks_fixtures::scenario(
-            "koshei-amulet-ground",
-            world_callbacks::Position {
-                x: 32700,
-                y: 31200,
-                floor: -7,
-            },
+            name,
+            start,
             false,
         )
     });

@@ -17,6 +17,7 @@ use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, decode_use_intent_target,
     encode_item_use_intent,
 };
+use sqlx::Connection;
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::sync::Mutex;
@@ -49,14 +50,20 @@ fn koshei_current_ground_handles_real_use_with_refusals_door_and_replay() -> Tes
                 .block_on(async {
                     let started = std::time::Instant::now();
                     let h = fixture::Harness::create_with_admission_seed(
-                        admin,
+                        admin.clone(),
                         "koshei_wire",
                         true,
                         false,
                     )
                     .await?;
-                    let result = exercise(&h).await;
+                    let (login, url) = runtime_login(&h).await?;
+                    let result = exercise(&h, &url, &login).await;
                     h.cleanup().await?;
+                    let mut admin = sqlx::PgConnection::connect(&admin).await?;
+                    sqlx::query(sqlx::AssertSqlSafe(format!("DROP ROLE {login}")))
+                        .execute(&mut admin)
+                        .await?;
+                    admin.close().await?;
                     result?;
                     assert!(started.elapsed().as_secs_f64() > 0.01);
                     eprintln!(
@@ -72,7 +79,25 @@ fn koshei_current_ground_handles_real_use_with_refusals_door_and_replay() -> Tes
         .map_err(Into::into)
 }
 
-async fn exercise(h: &fixture::Harness) -> TestResult {
+async fn runtime_login(h: &fixture::Harness) -> TestResult<(String, String)> {
+    let suffix = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)?
+        .as_nanos();
+    let login = format!("koshei_runtime_{suffix}");
+    let password = format!("{login}_test");
+    sqlx::query(sqlx::AssertSqlSafe(format!(
+        "CREATE ROLE {login} LOGIN PASSWORD '{password}' IN ROLE oteryn_game_runtime"
+    )))
+    .execute(&h.pool)
+    .await?;
+    let (_, address) = h.database.url.split_once('@').ok_or("test database address")?;
+    Ok((
+        login.clone(),
+        format!("postgresql://{login}:{password}@{address}?options=-c%20role%3Doteryn_game_runtime"),
+    ))
+}
+
+async fn exercise(h: &fixture::Harness, runtime_url: &str, runtime_login: &str) -> TestResult {
     super::engnpc2_live_transport::fresh(h).await?;
     let scope = fixture::fence(1)?.runtime_scope;
     let world = scope.world_id();
@@ -217,14 +242,32 @@ async fn exercise(h: &fixture::Harness) -> TestResult {
     let charms =
         oteryn_gameplay_content::content::charm_source::CanonicalCharmCatalogue::embedded()
             .map_err(debug)?;
+    let mut runtime_connection = sqlx::PgConnection::connect(runtime_url).await?;
+    let (login, role): (String, String) = sqlx::query_as("SELECT session_user, current_user")
+        .fetch_one(&mut runtime_connection)
+        .await?;
+    assert_eq!(login, runtime_login);
+    assert_eq!(role, "oteryn_game_runtime");
+    // The original route's lock requires UPDATE on Ground even for an empty result.
+    let original_lock = sqlx::query(
+        "SELECT spatial_position FROM game_item_ground_locations WHERE false FOR SHARE",
+    )
+    .execute(&mut runtime_connection)
+    .await;
+    assert!(matches!(
+        original_lock,
+        Err(sqlx::Error::Database(ref error)) if error.code().as_deref() == Some("42501")
+    ));
+    runtime_connection.close().await?;
+    let runtime_root = crate::durability::DurabilityRoot::connect_test_runtime(runtime_url)?;
+    assert!(runtime_root.maintain_ready_once().await?);
     let seal = h.recovery.seal_current().map_err(debug)?;
-    let authority = h
-        .root
+    let authority = runtime_root
         .open_character_authority(&seal)
         .await
         .map_err(debug)?;
     let mut owner: ComposedFreshAdmission<'_, '_, '_> = ComposedTestOwner {
-        root: &h.root,
+        root: &runtime_root,
         character: &authority,
         holder: &h.node,
         evidence: &evidence,
@@ -327,7 +370,7 @@ async fn exercise(h: &fixture::Harness) -> TestResult {
         assert_ne!(result, UseDisposition::Committed);
         assert_eq!(snapshot(h).await?, (0, 1, 0, 1));
         assert!(
-            !h.root
+            !runtime_root
                 .read_character_quest_state(&authority, fence.character_id)
                 .await
                 .map_err(debug)?
@@ -348,8 +391,7 @@ async fn exercise(h: &fixture::Harness) -> TestResult {
     admitted = next;
     assert_eq!(result, UseDisposition::Committed);
     assert_eq!(snapshot(h).await?, (1, 0, 1, 1));
-    let copy = h
-        .root
+    let copy = runtime_root
         .read_character_quest_state(&authority, fence.character_id)
         .await
         .map_err(debug)?;

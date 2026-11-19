@@ -150,12 +150,92 @@ fn door_access(
 }
 
 
+pub(super) const SPAWN_CASE: &str = "koshei-amulet-source-ground";
+const CREATURE: &str = "oteryn:creature.koshei_the_deathless";
+
+pub(super) async fn runtime_login(
+    h: &Harness,
+) -> TestResult<(String, crate::durability::DurabilityRoot)> {
+    use sqlx::Connection;
+    let suffix = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)?
+        .as_nanos();
+    let login = format!("koshei_source_{suffix}");
+    sqlx::query(sqlx::AssertSqlSafe(format!(
+        "CREATE ROLE {login} LOGIN PASSWORD '{login}' IN ROLE oteryn_game_runtime"
+    )))
+    .execute(&h.pool)
+    .await?;
+    let options = h.pool.connect_options();
+    let host = options.get_host();
+    let port = options.get_port();
+    let database = options.get_database().ok_or("test database name")?;
+    let url = format!(
+        "postgresql://{login}:{login}@{host}:{port}/{database}?options=-c%20role%3Doteryn_game_runtime"
+    );
+    let mut connection = sqlx::PgConnection::connect(&url).await?;
+    let callers: (String, String) = sqlx::query_as("SELECT session_user, current_user")
+        .fetch_one(&mut connection)
+        .await?;
+    assert_eq!(callers, (login.clone(), "oteryn_game_runtime".into()));
+    connection.close().await?;
+    let root = crate::durability::DurabilityRoot::connect_test_runtime(&url)?;
+    assert!(root.maintain_ready_once().await?);
+    Ok((login, root))
+}
+
+pub(super) async fn kill_shipped_spawn(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    world: &crate::map::boot::BundleWorld,
+    target: world_callbacks::Position,
+) -> TestResult {
+    super::questpc7_native_deaths_fixtures::prepare_native_hunter(owner, admitted).await?;
+    let at = super::quest_world_callbacks_fixtures::local(target);
+    let target = {
+        let mut runtime = owner.runtime.lock().await;
+        let mut sources = world
+            .activation_spawns(|key| {
+                let policy = runtime.companion_policy(key).ok()?;
+                Some((u64::try_from(policy.maximum_health).ok()?, policy.blocked_by_nearby_players))
+            })
+            .ok_or("shipped spawn policies")?;
+        for (points, _) in &mut sources {
+            points.retain(|point| point.2 == CREATURE);
+        }
+        sources.retain(|(points, _)| !points.is_empty());
+        assert_eq!(sources.iter().map(|(points, _)| points.len()).sum::<usize>(), 1);
+        runtime.begin_activation_spawn_sources(sources).map_err(debug)?;
+        let progress = runtime.realize_activation_spawn_window(0).map_err(debug)?;
+        assert_eq!((progress.realized_total, progress.remaining), (1, 0));
+        runtime
+            .positioned_melee_census()
+            .map_err(debug)?
+            .into_iter()
+            .find(|(_, position, session)| session.is_none() && position.position() == at)
+            .map(|(actor, _, _)| actor)
+            .ok_or("Koshei at the shipped spawn cell")?
+    };
+    super::questpc7_native_deaths_fixtures::lethal_creature(owner, admitted, target, 900, CREATURE)
+        .await
+}
+
 pub(super) async fn exercise_ground(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
     target: world_callbacks::Position,
+    saved: bool,
+    spawned: bool,
 ) -> TestResult {
+    const FRAGMENT: &str = "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part1";
+    if saved {
+        super::qc_pinned_world::seed_saved_progress(
+            h, owner, admitted, "oteryn:quest.koshei_the_deathless_quest",
+            "1a1c543dbe511c3a5654d1385956224b7323243ace53fa5eb142e676361fc420",
+            FRAGMENT, 1,
+        ).await?;
+    }
     use crate::foundation::{CharacterId, CharacterLease};
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
@@ -205,14 +285,16 @@ pub(super) async fn exercise_ground(
         y: target.y + 1,
         ..target
     };
-    ground_item(
-        owner,
-        fence.item_fence(),
-        ground_at,
-        "oteryn:item.tibia.i7535",
-        903,
-    )
-    .await?;
+    if !spawned {
+        ground_item(
+            owner,
+            fence.item_fence(),
+            ground_at,
+            "oteryn:item.tibia.i7535",
+            903,
+        )
+        .await?;
+    }
     ground_item(
         owner,
         fence.item_fence(),
@@ -276,6 +358,12 @@ pub(super) async fn exercise_ground(
     assert_eq!(result, UseDisposition::Committed);
     assert_eq!(snapshot(h).await?, (1, 0, 1, 1));
     assert!(door_access(owner, admitted)?);
+    if saved {
+        let fragment: i64 = sqlx::query_scalar(
+            "SELECT value FROM game_character_quest_tracks WHERE track_key=$1",
+        ).bind(FRAGMENT).fetch_one(&h.pool).await?;
+        assert_eq!(fragment, 1);
+    }
     let (_, replay, _) =
         super::rust_lottery_fixtures::exchange(owner, *admitted, command, &actual, None, None).await?;
     assert_eq!(replay, UseDisposition::Committed);

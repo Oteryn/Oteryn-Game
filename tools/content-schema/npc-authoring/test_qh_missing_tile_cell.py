@@ -72,6 +72,23 @@ class MissingTileCell(unittest.TestCase):
         with self.assertRaises(ValueError):
             source.choose_cell(ROOT, (32697, 31718, 2), edala, set())
 
+    def test_equal_distance_walkable_cells_refuse(self):
+        path = self.donor_root / stub.REGION
+        floor, rx, ry, sectors = source.codec.decode_region(path.read_bytes())
+        tied = (32856, 31381)
+        result = {}
+        for index, tiles in sectors:
+            if index == ((tied[1] // 32) % 8) * 8 + (tied[0] // 32) % 8:
+                winning = next(tile for tile in tiles if tile[:2] == (32857, 31380))
+                tiles = [tile for tile in tiles if tile[:2] != tied]
+                tiles.append((*tied, *winning[2:]))
+                tiles.sort(key=lambda tile: (tile[1], tile[0]))
+            result[index] = source.codec.encode_sector_tiles(
+                rx * 8 + index % 8, ry * 8 + index // 8, tiles)
+        path.write_bytes(source.codec.encode_region(floor, rx, ry, result))
+        with self.assertRaises(ValueError):
+            source.choose_cell(self.donor_root, JIMMY, choice(32857, 31380), set())
+
 
 if __name__ == '__main__':
     unittest.main()

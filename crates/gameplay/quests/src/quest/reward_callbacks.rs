@@ -484,7 +484,6 @@ const DOCUMENTS: &[&str] = &[
     // Keep the shared document at DOCUMENTS[0]; Oramond is the final extension.
     include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qc-programmes.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/qc-twenty-miles.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-m10.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-sams-old-backpack.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-steal-from-thieves.json"),
@@ -1448,12 +1447,9 @@ fn extend_callbacks(
     Ok(updated)
 }
 
-/// Preserve the published definition hashes and absent-track values before the
-/// Friends and Traders forge, the Treasure Hunt completion, and the Twenty Miles
-/// source-floor correction.
+/// Preserve published definition hashes and absent-track values for changed quests.
 pub(super) fn retain_qc_reward_predecessors(active: &mut QuestStateCatalogue) {
-    // Friends and Treasure Hunt use origin/main 871c1dec7 before the lane's
-    // changes. Twenty Miles uses the reviewed ff6a482f7 content.
+    // Main at 492ca0e6ba, before Package C.
     type DefinitionPin = (&'static str, [u8; 32], &'static [(&'static str, i64)]);
     const PREVIOUS: &[DefinitionPin] = &[
         (
@@ -1502,27 +1498,43 @@ pub(super) fn retain_qc_reward_predecessors(active: &mut QuestStateCatalogue) {
             ],
         ),
         (
-            "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+            "oteryn:quest.koshei_the_deathless_quest",
             [
-                0x95, 0x57, 0x24, 0xdf, 0xc1, 0xc9, 0xb0, 0x39, 0x2d, 0x23, 0xea, 0xa2, 0x2a, 0x2b,
-                0x77, 0x1f, 0x73, 0x9e, 0x36, 0x7e, 0x9b, 0x7a, 0x07, 0xf2, 0xa7, 0xd7, 0x5e, 0x52,
-                0x4b, 0xfe, 0x3f, 0x3c,
+                0x1a, 0x1c, 0x54, 0x3d, 0xbe, 0x51, 0x1c, 0x3a, 0x56, 0x54, 0xd1, 0x38, 0x59, 0x56,
+                0x22, 0x4b, 0x73, 0x23, 0x24, 0x3a, 0xce, 0x53, 0xfa, 0x5e, 0xb1, 0x42, 0xe6, 0x76,
+                0x36, 0x1f, 0xc4, 0x20,
             ],
             &[
-                ("oteryn:quest-progress/qc/twenty_miles/access_birthing", -1),
                 (
-                    "oteryn:quest-progress/qc/twenty_miles/access_sunken_city",
-                    -1,
+                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1",
+                    0,
                 ),
-                ("oteryn:quest-progress/qc/twenty_miles/access_west", -1),
-                ("oteryn:quest-progress/qc/twenty_miles/pile1", -1),
-                ("oteryn:quest-progress/qc/twenty_miles/pile2", -1),
-                ("oteryn:quest-progress/qc/twenty_miles/pile3", -1),
-                ("oteryn:quest-progress/qc/twenty_miles/pile4", -1),
-                ("oteryn:quest-progress/qc/twenty_miles/pile5", -1),
-                ("oteryn:quest-progress/qc/twenty_miles/skulls", 0),
-                ("oteryn:quest-progress/qc/twenty_miles/slabs", 0),
-                ("oteryn:quest-progress/qc/twenty_miles/stage", -1),
+                (
+                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part1",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part2",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part3",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part4",
+                    0,
+                ),
+                ("oteryn:quest-progress/qnpcfx/koshei/amulet", 0),
+                ("oteryn:quest-progress/qnpcfx/koshei/amulet_started_at", 0),
+                (
+                    "oteryn:quest-progress/quest/u8_1/koshei_the_deathless/koshei_the_deathless_legs/claimed",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/quest/u8_1/koshei_the_deathless/koshei_the_deathless_platinum/claimed",
+                    0,
+                ),
             ],
         ),
     ];
@@ -2267,8 +2279,8 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Shared, QuestPC7, other registered shards, M43 peer, Kingsday journal, Twenty Miles.
-        assert_eq!(load()?.len(), 207 + 59 + 130 + 1 + 1 + 18);
+        // Shared, QuestPC7, other registered shards, M43 peer and Kingsday journal.
+        assert_eq!(load()?.len(), 207 + 59 + 130 + 1 + 1);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;

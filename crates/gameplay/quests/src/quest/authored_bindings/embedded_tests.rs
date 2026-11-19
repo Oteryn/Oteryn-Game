@@ -556,7 +556,8 @@ mod main_native_contract {
         for stage in arena.stages {
             track(&stage.track, &arena.quest, stage.goal)?;
         }
-        assert_eq!(additions.len(), 66);
+        // Package C adds three Skull of Ratha claim markers and one Legion Helmet marker.
+        assert_eq!(additions.len(), 70);
 
         let baseline = crate::quest::loader::lower_embedded_quest_state("native-admission-fixture")
             .map_err(|error| format!("{error:?}"))?;
@@ -569,7 +570,7 @@ mod main_native_contract {
         assert_eq!(baseline.counts(), explicit.counts());
         let before = baseline.catalogue();
         let after = explicit.catalogue();
-        assert_eq!(before.tracks.len(), 2142);
+        assert_eq!(before.tracks.len(), 2131);
         for supply in ["anatomy-book", "colourful-mushroom"] {
             let key = format!("oteryn:quest-progress/dream-courts/supplies/{supply}");
             let expected = crate::quest::QuestTrack {
