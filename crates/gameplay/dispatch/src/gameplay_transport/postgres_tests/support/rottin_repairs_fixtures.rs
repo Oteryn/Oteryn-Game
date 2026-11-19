@@ -58,7 +58,7 @@ pub(super) async fn exercise(
     let due = map.facts.next_movement_decay_time().ok_or("wall reset")?;
     assert_eq!(
         map.facts
-            .base_entry(wall, 2, 7)
+            .base_entry(wall, 2, source_id)
             .ok_or("repaired wall")?
             .appearance_id,
         6474
@@ -73,7 +73,7 @@ pub(super) async fn exercise(
     assert_eq!(map.facts.expire_movement_items(due), 1);
     assert_eq!(
         map.facts
-            .base_entry(wall, 2, 7)
+            .base_entry(wall, 2, source_id)
             .ok_or("restored wall")?
             .appearance_id,
         12183
