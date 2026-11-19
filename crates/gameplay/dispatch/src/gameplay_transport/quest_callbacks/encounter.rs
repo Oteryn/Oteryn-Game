@@ -132,8 +132,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     underwater(map, current.position()),
                     underwater(map, landed.position()),
                 );
-                if deadline.rule.heal {
-                    let _ = states.apply_health_gain(runtime, actor, session, u64::MAX);
+                // Crystal mission12_into_fortress.lua:521-525 uses getBaseMaxHealth().
+                if deadline.rule.heal
+                    && let Some(player) = states.get(runtime, actor, session)
+                {
+                    let missing = player.base_max_health().saturating_sub(player.health);
+                    let _ = states.apply_health_gain(runtime, actor, session, u64::from(missing));
                 }
                 map.facts
                     .emit_movement_effect(tile(deadline.rule.landing), 11);

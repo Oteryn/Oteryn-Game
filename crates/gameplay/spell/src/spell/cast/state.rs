@@ -57,6 +57,11 @@ impl PlayerSpellState {
         self.facts
     }
 
+    /// Character-owned maximum before Wheel dedication is projected.
+    pub const fn base_max_health(&self) -> u32 {
+        self.base_max_health
+    }
+
     /// Compare the durable Character base without mistaking current Wheel maxima or
     /// the Promotion/Premium soul projection for a changed Character build.
     pub fn matches_character_base(&self, base: CharacterCastFacts) -> bool {

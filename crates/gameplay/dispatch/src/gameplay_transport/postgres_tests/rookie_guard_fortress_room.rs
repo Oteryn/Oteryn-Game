@@ -293,6 +293,15 @@ pub(super) async fn exercise(
     relocate(owner, peer, peer_session, peer_approach).await?;
     advance_clock(owner, 2)?;
     wire(owner, admitted, 4, 1, east.clone()).await?;
+    let (base_health, injured_health) = {
+        let runtime = owner.runtime.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
+        let state = states.get_mut(&runtime, player, player_session).ok_or("combat player")?;
+        let base = state.base_max_health();
+        state.apply_wheel_maximum_bonus(20, 0).map_err(debug)?;
+        state.health = base.checked_sub(10).ok_or("combat base health")?;
+        (base, state.health)
+    };
     // Crystal mission12_into_fortress.lua:575 leaves the fight active for five minutes.
     advance_clock(owner, 290)?;
     owner.drain_quest_encounter_deadlines().await;
@@ -304,12 +313,21 @@ pub(super) async fn exercise(
             "the timeout keeps the admitted player in the room before the deadline"
         );
         assert_eq!(runtime.current_live_creature_census().map_err(debug)?.len(), 1);
+        let states = owner.states.spell_states.lock().await;
+        let state = states.get(&runtime, player, player_session).ok_or("combat player")?;
+        assert_eq!(state.health, injured_health);
     }
     advance_clock(owner, 11)?;
     owner.drain_quest_encounter_deadlines().await;
     let mut runtime = owner.runtime.lock().await;
     let timed_out = runtime.read_actor_position(player).map_err(debug)?;
     assert_eq!(timed_out.position(), local(TIMEOUT));
+    {
+        let states = owner.states.spell_states.lock().await;
+        let state = states.get(&runtime, player, player_session).ok_or("combat player")?;
+        assert_eq!(state.facts.max_health, base_health + 20);
+        assert_eq!(state.health, base_health);
+    }
     assert_eq!(
         runtime.read_actor_position(peer).map_err(debug)?.position(),
         peer_outside
