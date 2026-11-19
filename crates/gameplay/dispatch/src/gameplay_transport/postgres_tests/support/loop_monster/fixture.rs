@@ -11,7 +11,7 @@ pub(in super::super) fn run_case(
     run_case_with_progression(false, body)
 }
 
-pub(super) fn run_case_with_progression(
+pub(in super::super) fn run_case_with_progression(
     initialized: bool,
     body: impl AsyncFnOnce(&Harness) -> TestResult + Send + 'static,
 ) -> TestResult {

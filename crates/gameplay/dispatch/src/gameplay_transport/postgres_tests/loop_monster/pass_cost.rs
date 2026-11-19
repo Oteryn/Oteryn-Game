@@ -273,7 +273,7 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
         let (controller, pin) = if logout {
             // The fixture's Character root and native training writer must use
             // the same interpretation for the terminal logout transaction.
-            super::super::death_ml_loss_composed::production_generation_with_source(
+            super::super::death_ml_loss_composed_fixtures::production_generation_with_source(
                 world,
                 "content-1",
                 Some(include_bytes!(concat!(

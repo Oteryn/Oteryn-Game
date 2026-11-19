@@ -18,7 +18,7 @@ fn banshee_logic_use_flips_lever_without_overwriting_a_discordant_campfire() -> 
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("banshee-logic", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("banshee-logic", move || {
         run_seal_case(
             admin,
             Seal::Logic,
@@ -32,7 +32,7 @@ fn banshee_sacrifice_step_consumes_only_blood_and_commits_both_flags() -> TestRe
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("banshee-sacrifice", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("banshee-sacrifice", move || {
         run_seal_case(
             admin,
             Seal::Sacrifice,
@@ -46,7 +46,7 @@ fn banshee_queen_dialogue_gates_the_kiss_and_commits_arrival_with_all_three_flag
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("banshee-queen", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("banshee-queen", move || {
         run_seal_case(
             admin,
             Seal::Queen,
@@ -79,7 +79,7 @@ async fn exercise(admin: String, seal_case: Seal) -> TestResult {
         .await
         .map_err(debug)?;
     let deps = Dependencies::new()?;
-    let (controller, activated) = super::death_ml_loss_composed::production_generation_with_pin(
+    let (controller, activated) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
         deps.admitted.world_id,
         "content-1",
     )?;
@@ -937,13 +937,13 @@ async fn exercise_queen(
     drop(slot);
     owner.admit_quest_session(admitted).await;
 
-    let [queen] = super::classic_quests::install(owner, admitted, [QUEEN]).await?;
-    super::classic_quests::talk(owner, admitted, queen, 1, "hi").await?;
-    super::classic_quests::talk(owner, admitted, queen, 2, "seventh seal").await?;
+    let [queen] = super::classic_quests_fixtures::install(owner, admitted, [QUEEN]).await?;
+    super::classic_quests_fixtures::talk(owner, admitted, queen, 1, "hi").await?;
+    super::classic_quests_fixtures::talk(owner, admitted, queen, 2, "seventh seal").await?;
     for command in 3..=8 {
-        super::classic_quests::talk(owner, admitted, queen, command, "yes").await?;
+        super::classic_quests_fixtures::talk(owner, admitted, queen, command, "yes").await?;
     }
-    let offer = super::classic_quests::talk(owner, admitted, queen, 9, "kiss").await?;
+    let offer = super::classic_quests_fixtures::talk(owner, admitted, queen, 9, "kiss").await?;
     assert!(
         offer
             .iter()
@@ -1069,7 +1069,7 @@ async fn exercise_queen(
         (12, "addon yes"),
         (13, "moonorchid holy orchid yes"),
     ] {
-        let mixed = super::classic_quests::talk(owner, admitted, queen, command, text).await?;
+        let mixed = super::classic_quests_fixtures::talk(owner, admitted, queen, command, text).await?;
         assert!(
             mixed
                 .iter()
@@ -1078,13 +1078,13 @@ async fn exercise_queen(
             "a higher priority dialogue keyword must keep the kiss topic pending: {text}"
         );
     }
-    let refused = super::classic_quests::talk(owner, admitted, queen, 14, "yes").await?;
+    let refused = super::classic_quests_fixtures::talk(owner, admitted, queen, 14, "yes").await?;
     assert!(
         refused
             .iter()
             .any(|line| line.contains("spilled too much blood"))
     );
-    let repeated = super::classic_quests::talk(owner, admitted, queen, 15, "yes").await?;
+    let repeated = super::classic_quests_fixtures::talk(owner, admitted, queen, 15, "yes").await?;
     assert!(
         !repeated
             .iter()
@@ -1124,11 +1124,11 @@ async fn exercise_queen(
         .await
         .read_actor_position(actor)
         .map_err(debug)?;
-    super::classic_quests::talk(owner, admitted, queen, 16, "seventh seal").await?;
+    super::classic_quests_fixtures::talk(owner, admitted, queen, 16, "seventh seal").await?;
     for command in 17..=22 {
-        super::classic_quests::talk(owner, admitted, queen, command, "yes").await?;
+        super::classic_quests_fixtures::talk(owner, admitted, queen, command, "yes").await?;
     }
-    super::classic_quests::talk(owner, admitted, queen, 23, "kiss").await?;
+    super::classic_quests_fixtures::talk(owner, admitted, queen, 23, "kiss").await?;
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
@@ -1181,12 +1181,12 @@ async fn exercise_queen(
         .bind(character_id)
         .execute(&h.pool)
         .await?;
-    super::classic_quests::talk(owner, admitted, queen, 25, "seventh seal").await?;
+    super::classic_quests_fixtures::talk(owner, admitted, queen, 25, "seventh seal").await?;
     for command in 26..=31 {
-        super::classic_quests::talk(owner, admitted, queen, command, "yes").await?;
+        super::classic_quests_fixtures::talk(owner, admitted, queen, command, "yes").await?;
     }
-    super::classic_quests::talk(owner, admitted, queen, 32, "kiss").await?;
-    super::classic_quests::talk(owner, admitted, queen, 33, "yes").await?;
+    super::classic_quests_fixtures::talk(owner, admitted, queen, 32, "kiss").await?;
+    super::classic_quests_fixtures::talk(owner, admitted, queen, 33, "yes").await?;
     let at = owner
         .runtime
         .lock()
