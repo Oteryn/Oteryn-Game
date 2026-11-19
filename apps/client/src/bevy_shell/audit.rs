@@ -39,22 +39,21 @@ pub(super) fn capture_on_key(
     let occupied = !captures.is_empty();
     let generation = owner.generation();
     manual_pending.retain(|(requested, _)| *requested == generation);
-    if keys.just_pressed(KeyCode::F12) {
-        if manual_pending.len() >= MAX_PENDING_MANUAL_CAPTURES || writes.is_full() {
-            owner.status = "Screenshot failed: capture queue is full".into();
+    let pressed = keys.just_pressed(KeyCode::F12);
+    let rejected =
+        pressed && (manual_pending.len() >= MAX_PENDING_MANUAL_CAPTURES || writes.is_full());
+    if pressed && !rejected {
+        let request = if let Some(path) = &output.path {
+            ManualCapture::Audit(path.with_extension("png"))
         } else {
-            let request = if let Some(path) = &output.path {
-                ManualCapture::Audit(path.with_extension("png"))
-            } else {
-                let preferences = owner.settings.preferences.screenshots.effective();
-                ManualCapture::Player(super::screenshots::PlayerCapture {
-                    directory: preferences.directory,
-                    game_only: preferences.game_only,
-                    backlog: owner.play.is_some() && preferences.backlog_frames > 0,
-                })
-            };
-            manual_pending.push_back((generation, request));
-        }
+            let preferences = owner.settings.preferences.screenshots.effective();
+            ManualCapture::Player(super::screenshots::PlayerCapture {
+                directory: preferences.directory,
+                game_only: preferences.game_only,
+                backlog: owner.play.is_some() && preferences.backlog_frames > 0,
+            })
+        };
+        manual_pending.push_back((generation, request));
     }
     let manual_batch = match manual_pending.front() {
         Some((_, ManualCapture::Player(request)))
@@ -77,25 +76,27 @@ pub(super) fn capture_on_key(
         &writes,
         manual_batch,
     );
-    if occupied || writes.is_full() || (manual_batch.is_some() && readback.is_none()) {
-        return;
+    if !occupied && !writes.is_full() && (manual_batch.is_none() || readback.is_some()) {
+        let batch_scheduled = manual_batch.is_some();
+        match manual_pending.pop_front() {
+            Some((generation, ManualCapture::Audit(path))) => {
+                super::screenshots::request_audit(&mut commands, readback, generation, path);
+            }
+            Some((generation, ManualCapture::Player(request))) if !batch_scheduled => {
+                super::screenshots::request(
+                    &mut commands,
+                    readback,
+                    &mut owner,
+                    generation,
+                    request,
+                    *viewport,
+                );
+            }
+            _ => {}
+        }
     }
-    let batch_scheduled = manual_batch.is_some();
-    match manual_pending.pop_front() {
-        Some((generation, ManualCapture::Audit(path))) => {
-            super::screenshots::request_audit(&mut commands, readback, generation, path);
-        }
-        Some((generation, ManualCapture::Player(request))) if !batch_scheduled => {
-            super::screenshots::request(
-                &mut commands,
-                readback,
-                &mut owner,
-                generation,
-                request,
-                *viewport,
-            );
-        }
-        _ => {}
+    if rejected {
+        owner.status = "Screenshot failed: capture queue is full".into();
     }
 }
 #[derive(Resource)]

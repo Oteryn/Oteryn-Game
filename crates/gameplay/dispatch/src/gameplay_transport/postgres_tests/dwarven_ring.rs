@@ -283,7 +283,7 @@ fn scenario() -> TestResult {
             proceed.notify_one();
             // The biased join polls the reread with the holder still checked out.
             tokio::task::yield_now().await;
-            drop(held);
+            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
             Ok::<_, Box<dyn std::error::Error>>(())
         };
         let ((), contention) = tokio::time::timeout(std::time::Duration::from_secs(5), async {

@@ -387,8 +387,11 @@ fn vocation_scenario(case: Case) -> TestResult {
                         owner.states.tutorial_sessions.clear_vocation(session, retained.request.occurrence);
                         // Trial actions above level 8 refill. Keep the current actor
                         // wounded to stand in for a failed post-commit cast-facts read.
-                        sqlx::query("UPDATE game_character_progression_state SET level=9 WHERE character_id=encode($1,'hex')::uuid")
-                            .bind(id(41).as_slice()).execute(&h.pool).await?;
+                        let mut setup = h.pool.begin().await?;
+                        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *setup).await?;
+                        sqlx::query("UPDATE game_character_progression_state SET level=9,total_experience=6400 WHERE character_id=encode($1,'hex')::uuid")
+                            .bind(id(41).as_slice()).execute(&mut *setup).await?;
+                        setup.commit().await?;
                         let mut trial = retained.clone();
                         trial.request.cause = BuildCause::VocationTrial;
                         let mut slot = owner.revision_sequencer.acquire(old.character_id).await;
@@ -435,7 +438,7 @@ fn vocation_scenario(case: Case) -> TestResult {
                             .bind(id(41).as_slice()).execute(&h.pool).await?;
                         let holder = h.root.try_issue_semantic_pass()?;
                         assert!(!owner.save_first_vocation_vitals(deps.actor, session, old, &retained.request.before).await);
-                        drop(holder);
+                        holder.run(|_, _| Box::pin(async { Ok(()) })).await?;
                         assert_eq!(owner.write_due_last_positions(true).await, 0);
                         let saved: i32 = sqlx::query_scalar("SELECT tile_x FROM game_character_last_positions WHERE character_id=encode($1,'hex')::uuid")
                             .bind(id(41).as_slice()).fetch_one(&h.pool).await?;

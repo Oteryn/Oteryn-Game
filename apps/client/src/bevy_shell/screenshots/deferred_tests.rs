@@ -43,18 +43,24 @@ fn deferred_game_capture_crops_the_viewport_at_dispatch() -> TestResult {
 
 #[test]
 fn fifth_deferred_capture_reports_that_the_queue_is_full() -> TestResult {
-    let fixture = TestDir::new()?;
-    let mut app = app(fixture.path(), false)?;
-    let _occupied = app.world_mut().spawn(Screenshot::primary_window());
-    for _ in 0..5 {
+    for release_readback in [false, true] {
+        let fixture = TestDir::new()?;
+        let mut app = app(fixture.path(), false)?;
+        let occupied = app.world_mut().spawn(Screenshot::primary_window()).id();
+        for _ in 0..4 {
+            press(&mut app);
+        }
+        if release_readback {
+            app.world_mut().despawn(occupied);
+        }
         press(&mut app);
+        assert!(
+            app.world()
+                .non_send::<HostOwner>()
+                .status
+                .contains("queue is full")
+        );
     }
-    assert!(
-        app.world()
-            .non_send::<HostOwner>()
-            .status
-            .contains("queue is full")
-    );
     Ok(())
 }
 
