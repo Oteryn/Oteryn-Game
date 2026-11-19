@@ -30,10 +30,23 @@ impl EncounterVisit {
         self.deadline.as_ref().map(|deadline| deadline.due)
     }
 
-    fn retire(&self, runtime: &mut ChannelRuntimeV1) -> bool {
+    fn retire(&self, runtime: &mut ChannelRuntimeV1, map: &BundleMap) -> bool {
         self.creatures.iter().all(|actor| {
-            !runtime.contains_live_creature(*actor)
-                || runtime.remove_encounter_actor(*actor).is_ok()
+            if !runtime.contains_live_creature(*actor) {
+                return true;
+            }
+            let position = runtime
+                .read_actor_position(*actor)
+                .ok()
+                .and_then(|snapshot| native(snapshot.position()));
+            if runtime.remove_encounter_actor(*actor).is_err() {
+                return false;
+            }
+            // Crystal mission12_into_fortress.lua:527-532,600-605.
+            if let Some(position) = position {
+                map.facts.emit_movement_effect(position, 3);
+            }
+            true
         })
     }
 
@@ -48,6 +61,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) fn retire_owned_encounter(
         &self,
         runtime: &mut ChannelRuntimeV1,
+        map: &BundleMap,
         key: &str,
         actor: ExactActorRef,
         session: GameSessionId,
@@ -56,7 +70,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             visits.retain(|visit| {
                 visit.key != key
                     || !visit.participants.contains(&(actor, session))
-                    || !visit.retire(runtime)
+                    || !visit.retire(runtime, map)
             });
         }
     }
@@ -145,7 +159,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .chat
                     .push_quest_feedback(session, &deadline.rule.message);
             }
-            !visit.retire(runtime)
+            !visit.retire(runtime, map)
         });
     }
 

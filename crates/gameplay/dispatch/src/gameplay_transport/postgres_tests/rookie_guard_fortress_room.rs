@@ -244,6 +244,7 @@ pub(super) async fn exercise(
     relocate(owner, player, player_session, LANDING).await?;
     advance_clock(owner, 2)?;
     wire(owner, admitted, 3, 1, east.clone()).await?;
+    assert_eq!(boss_retirement_cues(owner)?, 1);
     {
         let mut runtime = owner.runtime.lock().await;
         let current = runtime.read_actor_position(player).map_err(debug)?;
@@ -283,6 +284,7 @@ pub(super) async fn exercise(
     }
     advance_clock(owner, 2)?;
     wire(owner, &mut second, 3, 1, east.clone()).await?;
+    assert_eq!(boss_retirement_cues(owner)?, 2);
     {
         let runtime = owner.runtime.lock().await;
         assert_eq!(runtime.read_actor_position(peer).map_err(debug)?.position(), local(EXIT_LANDING));
@@ -318,6 +320,7 @@ pub(super) async fn exercise(
     }
     advance_clock(owner, 11)?;
     owner.drain_quest_encounter_deadlines().await;
+    assert_eq!(boss_retirement_cues(owner)?, 3);
     let mut runtime = owner.runtime.lock().await;
     let timed_out = runtime.read_actor_position(player).map_err(debug)?;
     assert_eq!(timed_out.position(), local(TIMEOUT));
@@ -360,10 +363,15 @@ pub(super) async fn exercise(
         .bind(fence.character_id.as_bytes().as_slice())
         .execute(&h.pool).await?;
     defeat_boss(owner, admitted, player).await?;
-    advance_clock(owner, 2)?;
-    wire(owner, admitted, 7, 1, north).await?;
+    // Crystal mission12_into_fortress.lua:559-562 cancels the timer on death.
     advance_clock(owner, 301)?;
     owner.drain_quest_encounter_deadlines().await;
+    assert_eq!(
+        owner.runtime.lock().await.read_actor_position(player).map_err(debug)?.position(),
+        local(TREASURE_APPROACH),
+        "defeat cancels automatic ejection while the player is still in the boss room"
+    );
+    wire(owner, admitted, 7, 1, north).await?;
     assert_eq!(
         owner
             .runtime
@@ -373,7 +381,7 @@ pub(super) async fn exercise(
             .map_err(debug)?
             .position(),
         local(TREASURE),
-        "defeat unlocks the treasure and cancels automatic ejection"
+        "defeat unlocks the treasure"
     );
     let state: i64 = sqlx::query_scalar(
         "SELECT value FROM game_character_quest_tracks WHERE track_key=$1 AND character_id=encode($2,'hex')::uuid",
@@ -384,6 +392,18 @@ pub(super) async fn exercise(
             .await?;
     assert_eq!(state, 13);
     Ok(())
+}
+
+fn boss_retirement_cues(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult<usize> {
+    let map = owner.bundle_map().ok_or("map")?;
+    Ok(map
+        .facts
+        .movement_effects_since(0)
+        .iter()
+        .filter(|(_, at, effect)| {
+            *effect == 3 && (at.x, at.y, at.floor) == (BOSS.x, BOSS.y, BOSS.floor)
+        })
+        .count())
 }
 
 async fn defeat_boss(
