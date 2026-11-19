@@ -262,3 +262,67 @@ BEGIN
     EXECUTE replace(function_body,anchor,anchor||proof);
 END
 $migration$;
+
+-- Crystal 201189f actions_strange_bucket.lua:61-69 transforms the selected
+-- bucket in place. Compose the replacement into the existing Quest receipt
+-- and carried proofs without admitting a second mint or custody change.
+CREATE FUNCTION game_quest_item_self_transform_plan(plan JSONB) RETURNS BOOLEAN
+LANGUAGE sql IMMUTABLE AS $function$
+    SELECT coalesce(
+        plan->'repeatable'='true'::jsonb
+        AND plan->'give'='null'::jsonb
+        AND coalesce(plan->'experience','null'::jsonb)='null'::jsonb
+        AND NOT plan ?| ARRAY['carried_exchange','recipe_source','world_claim','creature_target','self_target','peer_requires','corpse_target','fee','per_occurrence_mint']
+        AND plan->>'carried_item' ~ '^oteryn:item[.]tibia[.]i[1-9][0-9]*$'
+        AND plan->>'carried_replacement' ~ '^oteryn:item[.]tibia[.]i[1-9][0-9]*$'
+        AND plan->>'carried_replacement'<>plan->>'carried_item'
+        AND plan->'take'=jsonb_build_array(jsonb_build_object('item',plan->>'carried_item','count',1))
+        AND jsonb_typeof(plan->'temporary_outfit')='object'
+        AND CASE WHEN plan #>> '{temporary_outfit,look_type}' ~ '^[1-9][0-9]{0,4}$'
+                 AND plan #>> '{temporary_outfit,duration_ms}' ~ '^[1-9][0-9]{0,6}$'
+            THEN (plan #>> '{temporary_outfit,look_type}')::integer BETWEEN 1 AND 65535
+             AND (plan #>> '{temporary_outfit,duration_ms}')::integer BETWEEN 1 AND 3600000
+            ELSE false END, false)
+$function$;
+REVOKE ALL ON FUNCTION game_quest_item_self_transform_plan(JSONB) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_quest_item_self_transform_plan(JSONB) TO oteryn_game_runtime;
+
+DO $migration$
+DECLARE body TEXT; patched TEXT; fn TEXT; anchor TEXT; substitution TEXT; begin_at INTEGER;
+BEGIN
+    FOR fn,anchor,substitution IN VALUES
+      ('game_quest_carried_use_complete()',
+       'AND c.quantity=1 AND c.replacement IS NULL',
+       'AND c.quantity=1 AND c.replacement IS NOT DISTINCT FROM (NEW.plan->>''carried_replacement'')'),
+      ('game_quest_reward_complete()',
+       'AND c.replacement IS NULL AND c.created_xact_id=pg_current_xact_id();',
+       'AND c.replacement IS NOT DISTINCT FROM (NEW.plan->>''carried_replacement'') AND c.created_xact_id=pg_current_xact_id();'),
+      ('game_quest_carried_repeatable_complete(game_quest_reward_sources)',
+       'AND c.replacement IS NULL AND c.created_xact_id=pg_current_xact_id();',
+       'AND c.replacement IS NOT DISTINCT FROM (p.plan->>''carried_replacement'') AND c.created_xact_id=pg_current_xact_id();'),
+      ('game_quest_carried_repeatable_complete(game_quest_reward_sources)',
+       'OR c.replacement IS NOT NULL OR c.created_xact_id<>pg_current_xact_id()',
+       'OR c.replacement IS DISTINCT FROM (p.plan->>''carried_replacement'') OR c.created_xact_id<>pg_current_xact_id()'),
+      ('game_quest_carried_repeatable_complete(game_quest_reward_sources)',
+       'OR expected_xp_amount IS NULL THEN RETURN FALSE;',
+       'OR (expected_xp_amount IS NULL AND NOT game_quest_item_self_transform_plan(p.plan)) THEN RETURN FALSE;')
+    LOOP
+        body:=pg_get_functiondef(fn::regprocedure);
+        patched:=replace(body,anchor,substitution);
+        IF (length(body)-length(replace(body,anchor,'')))/length(anchor)<>1 THEN
+            RAISE EXCEPTION 'unexpected carried transform predecessor: %',fn;
+        END IF;
+        EXECUTE patched;
+    END LOOP;
+
+    body:=pg_get_functiondef('game_quest_reward_complete()'::regprocedure);
+    begin_at:=regexp_instr(body,$re$\mBEGIN\M$re$,1,1,0,'i');
+    IF begin_at=0 THEN RAISE EXCEPTION 'missing reward transform guard body'; END IF;
+    EXECUTE overlay(body placing $arm$BEGIN
+    IF NEW.plan ?| ARRAY['temporary_outfit','carried_replacement']
+        AND NOT game_quest_item_self_transform_plan(NEW.plan) THEN
+        RAISE EXCEPTION 'invalid selected self-use replacement' USING ERRCODE='23514';
+    END IF;
+$arm$ FROM begin_at FOR 5);
+    EXECUTE format('ALTER FUNCTION game_quest_item_self_transform_plan(JSONB) SET search_path=pg_catalog,%I,pg_temp',current_schema());
+END $migration$;

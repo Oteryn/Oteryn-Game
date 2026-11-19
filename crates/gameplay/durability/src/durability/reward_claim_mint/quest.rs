@@ -185,6 +185,15 @@ pub(crate) async fn apply(
     if admission.weights.generation_digest() != admission.native.source_digest() {
         return Ok(false);
     }
+    if let Some(target) = callback.carried_replacement()
+        && admission
+            .native
+            .item_index()
+            .and_then(|index| index.definition_ref("Item", target, "definition-r1"))
+            .is_none()
+    {
+        return Ok(false);
+    }
     // The Character root is locked by the caller. Receipts are immutable, so an
     // optional source reset cannot erase an earlier earned milestone.
     for requirement in &callback.required_receipts {
@@ -456,7 +465,9 @@ pub(crate) async fn apply(
             .await?,
         );
     }
-    let minted = if let Some(reward) = &callback.give {
+    let minted = if let Some(reward) = &callback.give
+        && callback.carried_replacement().is_none()
+    {
         let Some(transaction) =
             mint_npc(tx, tuple, node, fence, command, callback, reward, admission).await?
         else {

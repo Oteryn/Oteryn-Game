@@ -409,6 +409,10 @@ pub(super) async fn consume_reward_inputs(
         if count == 0 {
             continue;
         }
+        let replacement = callback.carried_replacement();
+        if replacement.is_some() && (quantity != 1 || count != 1) {
+            return Ok(false);
+        }
         let input = Input {
             item: row.try_get("item")?,
             before: row.try_get("before_item")?,
@@ -416,7 +420,7 @@ pub(super) async fn consume_reward_inputs(
             kind: row.try_get("kind")?,
             quantity,
             count: u16::try_from(count).map_err(|_| DurabilityError::InvalidStoredState)?,
-            replacement: None,
+            replacement: replacement.map(str::to_owned),
         };
         *required -= count;
         inputs.push(input);

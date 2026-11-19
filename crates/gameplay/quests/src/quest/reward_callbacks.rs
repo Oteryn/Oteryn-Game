@@ -388,6 +388,12 @@ impl RewardCallback {
         self.self_target.is_some() || self.temporary_outfit.is_some()
     }
 
+    /// A timed self-use transforms the selected item in its original custody.
+    pub fn carried_replacement(&self) -> Option<&str> {
+        self.temporary_outfit?;
+        self.give.as_ref().map(|reward| reward.item.as_str())
+    }
+
     fn valid_carried_inputs(&self) -> bool {
         let selected = |key: &str| {
             self.take
@@ -897,6 +903,8 @@ fn validate_document_with_capacity(
                     || !(1..=3_600_000).contains(&outfit.duration_ms)
                     || !c.repeatable
                     || c.carried_exchange
+                    || c.per_occurrence_mint
+                    || c.experience.is_some()
                     || c.carried_item.is_none()
                     || c.carried_target.is_some()
                     || c.self_target.is_some()
@@ -907,6 +915,9 @@ fn validate_document_with_capacity(
                     || c.give.as_ref().is_none_or(|give| {
                         Some(&give.item) == c.carried_item.as_ref()
                             || give.count != 1
+                            || give.premium
+                            || give.key_number.is_some()
+                            || give.text.is_some()
                             || !give.contents.is_empty()
                             || !give.backpack_outputs.is_empty()
                             || !give.additional.is_empty()
@@ -1207,7 +1218,11 @@ pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, Stri
 /// Legacy tool plans retain their exact serialized shape.
 pub fn durable_plan(callback: &RewardCallback) -> Result<serde_json::Value, String> {
     let mut value = serde_json::to_value(callback).map_err(|e| e.to_string())?;
-    if callback.carried_target.is_some() {
+    if let Some(target) = callback.carried_replacement() {
+        let object = value.as_object_mut().ok_or("item transform plan")?;
+        object.insert("give".into(), serde_json::Value::Null);
+        object.insert("carried_replacement".into(), target.into());
+    } else if callback.carried_target.is_some() {
         let object = value.as_object_mut().ok_or("recipe plan")?;
         let source = object.remove("carried_item").ok_or("recipe source")?;
         object.insert("recipe_source".into(), source);
