@@ -3,7 +3,7 @@ use super::fixture::{Harness, debug, id};
 use super::quest_world_callbacks::{local, scenario, wire, world_cells};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
-use crate::foundation::GameSessionId;
+use crate::foundation::{ExactActorRef, GameSessionId};
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue,
     world_callbacks::{self, Callback, Position},
@@ -92,7 +92,8 @@ pub(super) fn binding(name: &str) -> TestResult<Callback> {
             "minimum_level":250,"players":[{"from":r.door,"to":r.entry}],
             "monsters":[{"creature":r.boss,"position":r.spawn}],
             "room_min":r.min,"room_max":r.max,
-            "solo_expiry":{"exit":r.exit,"time_limit_ms":600000,"cooldown_seconds":72000}
+            "solo_expiry":{"exit":r.exit,"time_limit_ms":600000,"cooldown_seconds":72000,
+                "eject_room_players":true}
         }},
         "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua:1-115"]
     }))?)
@@ -130,6 +131,29 @@ fn spectator_wait(room: &Room) -> Position {
         y: room.exit.y + 1,
         ..room.exit
     }
+}
+
+async fn move_spectator(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    destination: Position,
+) -> TestResult {
+    let map = owner.bundle_map().ok_or("solo room map")?;
+    let mut runtime = owner.runtime.lock().await;
+    let proof = crate::map::floor::prepare_quest_callback_teleport(
+        &runtime,
+        owner.movement_cells(),
+        actor,
+        session,
+        runtime.read_actor_position(actor).map_err(debug)?,
+        local(destination),
+        false,
+        &crate::map::floor::BundleDoors(&map.facts),
+    )
+    .map_err(debug)?;
+    runtime.commit_source_step(proof).map_err(debug)?;
+    Ok(())
 }
 
 #[test]
@@ -234,20 +258,7 @@ pub(super) async fn exercise(
         if command == 1 {
             assert!(live(owner, r.boss).await?.is_empty());
             assert!(cooldown().await?.is_none());
-            let mut runtime = owner.runtime.lock().await;
-            let map = owner.bundle_map().ok_or("map")?;
-            let proof = crate::map::floor::prepare_quest_callback_teleport(
-                &runtime,
-                owner.movement_cells(),
-                other,
-                other_session,
-                runtime.read_actor_position(other).map_err(debug)?,
-                local(spectator_wait(r)),
-                false,
-                &crate::map::floor::BundleDoors(&map.facts),
-            )
-            .map_err(debug)?;
-            runtime.commit_source_step(proof).map_err(debug)?;
+            move_spectator(owner, other, other_session, spectator_wait(r)).await?;
         }
     }
     assert_eq!(live(owner, r.boss).await?.len(), 1);
@@ -274,6 +285,13 @@ pub(super) async fn exercise(
             .position(),
         local(r.entry)
     );
+    // Crystal actions_portal_minis_feaster.lua:102-107 refreshes the census.
+    // This player arrived after admission and has no entry receipt for the visit.
+    let spectator_inside = Position {
+        x: r.entry.x + 1,
+        ..r.entry
+    };
+    move_spectator(owner, other, other_session, spectator_inside).await?;
     let due = owner
         .states
         .quest_callbacks
@@ -282,16 +300,18 @@ pub(super) async fn exercise(
     let advance = Duration::from_micros(due.saturating_sub(owner.owner_now().get()));
     owner.clock_origin = owner.clock_origin.checked_sub(advance).ok_or("clock")?;
     owner.drain_quest_encounter_deadlines().await;
-    assert_eq!(
-        owner
-            .runtime
-            .lock()
-            .await
-            .read_actor_position(actor)
-            .map_err(debug)?
-            .position(),
-        local(r.exit)
-    );
+    {
+        let runtime = owner.runtime.lock().await;
+        for occupant in [actor, other] {
+            assert_eq!(
+                runtime
+                    .read_actor_position(occupant)
+                    .map_err(debug)?
+                    .position(),
+                local(r.exit)
+            );
+        }
+    }
     assert!(live(owner, r.boss).await?.is_empty());
     Ok(())
 }
@@ -302,7 +322,6 @@ async fn return_through_portal(
     room: &Room,
     origin: Position,
 ) -> TestResult {
-    use crate::foundation::ExactActorRef;
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let session = admitted.game_session_id;
     let map = owner.bundle_map().ok_or("map")?;
