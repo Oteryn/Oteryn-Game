@@ -177,12 +177,7 @@ pub(super) async fn craft_lucky_charm(
         use_pair(1707, foot, ribbon).await.ok_or("reversed recipe")?.disposition,
         UseDisposition::NothingToUse
     );
-    assert_eq!(
-        use_pair(1708, ribbon, foot).await.ok_or("ribbon on foot")?.disposition,
-        UseDisposition::Committed
-    );
-
-    let quantities: Vec<(String, i64)> = sqlx::query_as(
+    let carried_quantities = || sqlx::query_as::<_, (String, i64)>(
         "SELECT definition_production_key, sum(quantity)::bigint
          FROM game_item_instances JOIN game_item_container_entries USING(item_instance_id)
          WHERE character_id=encode($1,'hex')::uuid AND lifecycle=1
@@ -194,9 +189,19 @@ pub(super) async fn craft_lucky_charm(
     .bind(RIBBON)
     .bind(FOOT)
     .bind(CHARM)
-    .fetch_all(&h.pool)
-    .await?;
-    assert_eq!(quantities, [(RIBBON.to_owned(), 6), (CHARM.to_owned(), 1)]);
+    .fetch_all(&h.pool);
+    assert_eq!(
+        carried_quantities().await?,
+        [(RIBBON.to_owned(), 7), (FOOT.to_owned(), 1)]
+    );
+    assert_eq!(
+        use_pair(1708, ribbon, foot).await.ok_or("ribbon on foot")?.disposition,
+        UseDisposition::Committed
+    );
+    assert_eq!(
+        carried_quantities().await?,
+        [(RIBBON.to_owned(), 6), (CHARM.to_owned(), 1)]
+    );
     Ok(())
 }
 
