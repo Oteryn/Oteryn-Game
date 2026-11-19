@@ -441,6 +441,10 @@ pub struct SoloEncounterExpiry {
     pub exit: Position,
     pub time_limit_ms: u32,
     pub cooldown_seconds: u64,
+    /// Crystal actions_portal_minis_feaster.lua:102-107 refreshes the room
+    /// census and ejects the players present when the visit expires.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub eject_room_players: bool,
     /// Crystal actions_portal_brain_head.lua:50-126 admits a bounded group
     /// during the opening stage, then locks the running visit.
     #[serde(default, skip_serializing_if = "Option::is_none")]

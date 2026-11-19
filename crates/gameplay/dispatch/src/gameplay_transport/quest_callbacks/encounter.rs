@@ -216,14 +216,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(expiry) = &visit.expires else {
                 return visit.active(runtime);
             };
-            let shared_players;
-            let participants = if visit.join_until.is_some() {
-                // Crystal actions_portal_brain_head.lua:93 removes the zone census
-                // at the deadline, including players arriving through another entrance.
+            let room_players;
+            let participants = if visit
+                .room
+                .solo_expiry
+                .is_some_and(|expiry| expiry.shared.is_some() || expiry.eject_room_players)
+            {
+                // Crystal actions_portal_brain_head.lua:93 and
+                // actions_portal_minis_feaster.lua:102-107 eject the live room census.
                 let Ok(census) = runtime.positioned_melee_census() else {
                     return true;
                 };
-                shared_players = census
+                room_players = census
                     .into_iter()
                     .filter_map(|(actor, at, session)| {
                         session
@@ -234,7 +238,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .map(|session| (actor, session))
                     })
                     .collect::<Vec<_>>();
-                &shared_players
+                &room_players
             } else {
                 &visit.participants
             };
@@ -254,8 +258,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 return occupied;
             }
-            // Crystal movement_kroazur_room.lua:67-72. Eject the admitted
-            // player only while their exact incarnation remains in this visit.
+            // Recheck the exact incarnation and current position before ejection.
             for &(actor, session) in participants {
                 let Ok(expected) = runtime.read_actor_position(actor) else {
                     continue;
