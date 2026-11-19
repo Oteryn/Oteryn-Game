@@ -97,12 +97,23 @@ fn document(name: &str) -> serde_json::Value {
     } else {
         json!({"ambush":ambush,"magic":{"position":THIRD_ENTRY,"effect":14}})
     };
+    let (selector, placement) = if first {
+        (
+            json!({"position":FIRST_ENTRY,"appearance":1959,"unique":35013}),
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:560-564",
+        )
+    } else {
+        (
+            json!({"position":THIRD_ENTRY,"appearance":431,"action":25023}),
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile.lua:937-944",
+        )
+    };
     json!({"schema":1,"callbacks":[{
         "key":format!("oteryn:quest-callback/{name}"),"quest":QUEST,
-        "trigger":"step_in","selector":{"position":entry(name),"appearance":if first { 1959 } else { 431 }},
+        "trigger":"step_in","selector":selector,
         "reversible":false,"passages":[],"teleport":first.then_some(FIRST_EXIT),
         "requires_world_admission":true,"return_on_failure":first,
-        "storage":storage,"offerings":[],"effects":effects,"sources":[source]
+        "storage":storage,"offerings":[],"effects":effects,"sources":[source,placement]
     }]})
 }
 
@@ -223,5 +234,33 @@ pub(super) async fn exercise(
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(receipts, 1);
+
+    let first_approach = Position { x: entry(name).x - 1, ..entry(name) };
+    super::l6_native_signs::relocate(owner, actor, admitted.game_session_id, first_approach)
+        .await?;
+    let second_approach = Position { x: entry(name).x + 1, ..entry(name) };
+    let mut second = super::scenarios::peer_at(h, owner, *admitted, local(second_approach)).await?;
+    owner.admit_quest_session(&second).await;
+    wire(
+        owner,
+        &mut second,
+        1,
+        1,
+        encode_step_intent(StepDirection::West),
+    ).await?;
+    let runtime = owner.runtime.lock().await;
+    assert_eq!(
+        runtime.current_live_creature_census().map_err(debug)?.len(),
+        spawned.len() * 2,
+        "one character's seal never suppresses another character's ambush"
+    );
+    drop(runtime);
+    let receipts: i64 = sqlx::query_scalar(
+        "SELECT count(DISTINCT character_id) FROM game_character_quest_receipts WHERE transition_key=$1",
+    )
+    .bind(&callback.key)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(receipts, 2);
     Ok(())
 }
