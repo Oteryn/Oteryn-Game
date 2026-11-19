@@ -192,7 +192,7 @@ pub(super) fn prepare(
                 return None;
             }
             if context.2 == oteryn_gameplay_quests::quest::classic_talk::ROTTIN {
-                return rottin_dialogue(topic, &text, tracks);
+                return rottin_dialogue(topic, &text, tracks, refusal);
             }
             if let Some(offer) = offers
                 .offers
@@ -377,6 +377,7 @@ fn rottin_dialogue(
     topic: &Topic,
     text: &str,
     tracks: &std::collections::BTreeMap<String, i64>,
+    refusal: impl FnOnce(&[String]) -> Option<Choice>,
 ) -> Option<Choice> {
     use oteryn_gameplay_quests::quest::{classic_dialogue, classic_talk};
     let topic = u8::try_from(topic.number)
@@ -384,7 +385,7 @@ fn rottin_dialogue(
         .map(classic_talk::Topic::Rottin);
     let selected = classic_talk::choose(classic_talk::ROTTIN, text, topic, tracks)?;
     if selected.deferred {
-        return None;
+        return refusal(&["Sorry, not possible.".into()]);
     }
     let reply = selected
         .branches
