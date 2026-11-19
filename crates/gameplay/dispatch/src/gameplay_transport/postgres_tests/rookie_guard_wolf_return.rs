@@ -19,6 +19,9 @@ const START: Position = Position {
     y: 32131,
     floor: -11,
 };
+const ALTERNATE_START: Position = Position { y: 32128, ..START };
+const BOOST_ACTION: u16 = 50334;
+const BOOST_EFFECT: u16 = 3;
 const RETURN: Position = Position {
     x: 32109,
     y: 32131,
@@ -49,14 +52,15 @@ fn wolf_escape_timer_projects_return_movement_and_allows_only_unfinished_attempt
 
 fn document() -> serde_json::Value {
     use serde_json::json;
+    let aliases = [32128, 32129, 32130, 32132, 32133, 32134].map(|y| Position { y, ..START });
     json!({"schema":1,"callbacks":[
         {"key":"oteryn:quest-callback/rookie-guard-wolf-return", "quest":QUEST, "trigger":"step_in",
-         "selector":{"position":START,"action":50334},"requires_world_admission":true,
+         "selector":{"position":START,"position_aliases":aliases,"action":BOOST_ACTION},"requires_world_admission":true,
          "passages":[],"offerings":[],"reversible":false,"return_on_failure":false,
          "storage":[{"track":TRACK,"minimum":4,"maximum":4,"set":5}],
          "success_message":"RUUUUUUUUUUUUUUUUUN!",
          "effects":{"personal_return":{"delay_ms":25000,"landing":RETURN,"retry_value":4,
-             "failure_message":TIMEOUT_MESSAGE,
+             "failure_message":TIMEOUT_MESSAGE,"start_effect":BOOST_EFFECT,
              "haste":{"multiplier":300,"offset":-24}}},
          "sources":[SOURCE,BOOST_TILE]},
         {"key":"oteryn:quest-callback/rookie-guard-wolf-exit", "quest":QUEST, "trigger":"step_in",
@@ -73,18 +77,22 @@ pub(super) fn callback() -> TestResult<Callback> {
 }
 
 pub(super) fn world(callback: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
+    use oteryn_world_bundle::sector::Attrs;
+    let mut objects = vec![(EXIT, 7542, Attrs { unique: Some(25027), ..Default::default() })];
+    let mut cells = vec![RETURN, EXIT_APPROACH];
+    for &position in &callback.selector.position_aliases {
+        objects.push((position, 100, Attrs { action: Some(BOOST_ACTION), ..Default::default() }));
+        cells.push(Position { x: position.x - 1, ..position });
+    }
     super::quest_world_callbacks::world_cells(
         callback,
         START,
         100,
         1,
-        &[(EXIT, 7542, oteryn_world_bundle::sector::Attrs {
-            unique: Some(25027),
-            ..Default::default()
-        })],
+        &objects,
         &[],
         None,
-        &[RETURN, EXIT_APPROACH],
+        &cells,
     )
 }
 
@@ -124,6 +132,7 @@ pub(super) async fn exercise(
     let step = encode_step_intent(StepDirection::East);
     wire(owner, admitted, 1, 1, step.clone()).await?;
     assert_eq!(stage(h).await?, 5);
+    assert_eq!(boost_cues(owner)?, vec![START]);
     {
         let runtime = owner.runtime.lock().await;
         let states = owner.states.spell_states.lock().await;
@@ -160,9 +169,11 @@ pub(super) async fn exercise(
         .checked_sub(std::time::Duration::from_secs(26))
         .ok_or("clock")?;
     let relocate = super::l6_native_signs::relocate;
-    relocate(owner, actor, session, BOOST_APPROACH).await?;
+    let alternate_approach = Position { x: ALTERNATE_START.x - 1, ..ALTERNATE_START };
+    relocate(owner, actor, session, alternate_approach).await?;
     wire(owner, admitted, 2, 1, step.clone()).await?;
     assert_eq!(stage(h).await?, 5);
+    assert_eq!(boost_cues(owner)?, vec![START, ALTERNATE_START]);
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
@@ -228,6 +239,14 @@ pub(super) async fn exercise(
         .fetch_one(&h.pool).await?;
     assert_eq!(returns, 2);
     Ok(())
+}
+
+fn boost_cues(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult<Vec<Position>> {
+    Ok(owner.bundle_map().ok_or("map")?.facts.movement_effects_since(0).into_iter()
+        .filter(|(_, position, effect)| *effect == BOOST_EFFECT && position.x == START.x
+            && position.floor == START.floor && (32128..=32134).contains(&position.y))
+        .map(|(_, position, _)| Position { x: position.x, y: position.y, floor: position.floor })
+        .collect())
 }
 
 async fn stage(h: &Harness) -> TestResult<i64> {

@@ -1709,6 +1709,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(entry) = &callback.effects.encounter_exit {
             self.retire_owned_encounter(runtime, map, entry, actor, session);
         }
+        if fresh_effects
+            && let Some(effect) = callback
+                .effects
+                .personal_return
+                .as_ref()
+                .and_then(|timer| timer.start_effect)
+        {
+            // Crystal mission06_run_like_wolf.lua:157 cues the step tile, including aliases.
+            map.facts.emit_movement_effect(pos, effect);
+        }
         if let Some(magic) = &callback.effects.magic {
             map.facts
                 .emit_movement_effect(tile(magic.position), magic.effect);
