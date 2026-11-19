@@ -83,24 +83,36 @@ pub(super) async fn settle_monster_melee_at(
     .map_err(|_| "actual native work did not settle at its scheduled instant")?
 }
 
-/// Drain the current death's copied events and retained corpse ACK at one instant.
+/// One current death: at most one detached turn per copied event, its completion,
+/// and the retained uncredited corpse ACK. Never advance the source clock here.
 pub(super) async fn drain_source_death(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     actor: crate::foundation::ExactActorRef,
     now: oteryn_simulation_determinism::SemanticTimeMicros,
 ) -> TestResult {
-    let is_outburst = owner
+    let native = owner
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .ok_or("actual native death content")?;
+    let profile = owner
         .runtime
         .lock()
         .await
         .companion_snapshot_including_dead(actor)
         .map_err(debug)?
         .state
-        .policy
-        .definition_key
-        == "oteryn:creature.outburst";
+        .policy;
+    let definition = crate::content::ProjectV2DefinitionRef {
+        family: crate::content::ProjectV2Family::Creature,
+        key: profile.definition_key.clone(),
+        revision: profile.definition_revision.clone(),
+    };
+    let event_count = native
+        .native_death_events(&definition)
+        .map_or(0, |events| events.events().len());
+    let is_outburst = definition.key == "oteryn:creature.outburst";
     tokio::time::timeout(NATIVE_TURN_TIMEOUT, async {
-        loop {
+        for _ in 0..event_count + 2 {
             let pending = {
                 let runtime = owner.runtime.lock().await;
                 let states = owner.states.spell_states.lock().await;
@@ -115,7 +127,7 @@ pub(super) async fn drain_source_death(
                 head.is_some() || states.source_death_corpse.is_some()
             };
             if !pending {
-                return Ok::<(), Box<dyn std::error::Error>>(());
+                break;
             }
             if is_outburst {
                 diagnose_outburst_death(owner, actor, now, "before_turn").await;
@@ -124,8 +136,8 @@ pub(super) async fn drain_source_death(
             if is_outburst {
                 diagnose_outburst_death(owner, actor, now, "after_turn").await;
             }
-            tokio::task::yield_now().await;
         }
+        Ok::<(), Box<dyn std::error::Error>>(())
     })
     .await
     .map_err(|_| "actual source death and corpse ACK did not settle")??;
