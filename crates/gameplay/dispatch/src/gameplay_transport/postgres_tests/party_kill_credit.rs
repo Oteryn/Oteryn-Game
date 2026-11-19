@@ -810,9 +810,15 @@ fn run(admin: String, case: Case) -> TestResult {
             }
         }
         if case == Case::Ordered {
-            let position = MovementLocalPosition { x: at.x + 1, ..at };
-            let lower = spawn_credit_creature(&owner, RAT, position).await?;
-            let higher = spawn_credit_creature(&owner, CAVE_RAT, position).await?;
+            let lower =
+                spawn_credit_creature(&owner, RAT, MovementLocalPosition { x: at.x + 1, ..at })
+                    .await?;
+            let higher = spawn_credit_creature(
+                &owner,
+                CAVE_RAT,
+                MovementLocalPosition { x: at.x + 2, ..at },
+            )
+            .await?;
             // An area cast may capture both deaths against one character revision.
             queue_actor_death(&owner, &players, RAT, lower, case, 115).await?;
             queue_actor_death(&owner, &players, CAVE_RAT, higher, case, 120).await?;
@@ -821,6 +827,13 @@ fn run(admin: String, case: Case) -> TestResult {
                 DrainOutcome::Drained
             );
             assert_tracks(&h.pool, [3, 3, 0]).await?;
+            let receipts: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_character_quest_receipts
+                 WHERE transition_key LIKE 'oteryn:quest-transition/native-kills/qcredit-fixture-%'",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(receipts, 4, "both ranks credited both damagers");
             let mut runtime = owner.runtime.lock().await;
             runtime.remove_arena_opponent(lower).map_err(debug)?;
             runtime.remove_arena_opponent(higher).map_err(debug)?;
