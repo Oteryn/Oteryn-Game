@@ -1,7 +1,7 @@
 //! M33: one physical STEP selector may serve provably disjoint read-only phases.
 //! Feaster chosen recipe s2/s6; retained questpc7 route at 2caf66704f73,
 //! content/quests/questpc7-world-callbacks.json, programme 0 versus 5.
-use super::{ActorKind, Callback, Trigger};
+use super::{ActorKind, Callback, Storage, Trigger};
 use crate::quest::QuestStateCatalogue;
 use std::collections::BTreeMap;
 
@@ -13,13 +13,17 @@ pub(super) fn disjoint(a: &Callback, b: &Callback) -> bool {
         && a.actor_kind == ActorKind::Player
         && b.actor_kind == ActorKind::Player
         && a.storage.iter().any(|left| {
-            left.preserve
-                && b.storage.iter().any(|right| {
-                    right.preserve
-                        && left.track == right.track
-                        && (left.maximum < right.minimum || right.maximum < left.minimum)
-                })
+            b.storage.iter().any(|right| {
+                // Crystal movement_sacrifice_teleport.lua:8-21 reads a
+                // faction's rank without advancing the branch's quest.
+                ((left.preserve && right.preserve) || (left.read_only && right.read_only))
+                    && disjoint_ranges(left, right)
+            })
         })
+}
+
+fn disjoint_ranges(left: &Storage, right: &Storage) -> bool {
+    left.track == right.track && (left.maximum < right.minimum || right.maximum < left.minimum)
 }
 
 /// Select by current Character state, never registry order. The ordinary fenced
@@ -61,24 +65,23 @@ pub fn select_storage_phase<'a>(
 // STEP alternatives share geometry only when preserved personal phases are disjoint.
 
 pub fn exclusive(left: &Callback, right: &Callback) -> bool {
+    if matches!(left.trigger, Trigger::StepIn | Trigger::StepOut) {
+        return disjoint(left, right);
+    }
     let source_trial = left.trigger == Trigger::Use
         && left.effects.target_transform.is_some()
         && left.effects.target_transform == right.effects.target_transform
         && left.item_on_target == right.item_on_target;
     left.actor_kind == ActorKind::Player
         && right.actor_kind == ActorKind::Player
-        && (source_trial || matches!(left.trigger, Trigger::StepIn | Trigger::StepOut))
+        && source_trial
         && left.trigger == right.trigger
         && left.selector == right.selector
         && left.quest == right.quest
-        && left.storage.iter().any(|a| {
-            (a.preserve || source_trial)
-                && right.storage.iter().any(|b| {
-                    (b.preserve || source_trial)
-                        && a.track == b.track
-                        && (a.maximum < b.minimum || b.maximum < a.minimum)
-                })
-        })
+        && left
+            .storage
+            .iter()
+            .any(|a| right.storage.iter().any(|b| disjoint_ranges(a, b)))
 }
 
 pub fn matches(callback: &Callback, tracks: &BTreeMap<String, i64>) -> bool {
