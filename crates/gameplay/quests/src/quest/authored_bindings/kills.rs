@@ -101,7 +101,10 @@ pub struct KillCounter {
 
 impl KillCounter {
     pub(crate) fn gate_bounds(&self) -> (i64, i64) {
-        (self.gate_value, self.gate_maximum.unwrap_or(self.gate_value))
+        (
+            self.gate_value,
+            self.gate_maximum.unwrap_or(self.gate_value),
+        )
     }
 
     fn gate_comparison(&self) -> QuestComparison {

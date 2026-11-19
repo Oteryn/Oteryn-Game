@@ -36,6 +36,7 @@ const FORGE_OPEN: &str = "You enter the forge!";
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Case {
     All,
+    Departed,
     Top,
     Time,
     Window,
@@ -86,6 +87,14 @@ fn all_direct_damagers_get_one_credit_without_party_membership() -> TestResult {
         return Ok(());
     };
     run(admin, Case::All)
+}
+
+#[test]
+fn a_captured_damager_that_leaves_before_settlement_cannot_receive_credit() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::Departed)
 }
 
 #[test]
@@ -354,7 +363,7 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
             counter["maximum"] = json!(i64::MAX);
             "Crystal201189f ferumbras_ascension/creaturescripts_bosses_kill.lua:114-124"
         }
-        Case::All | Case::FirstDefeatOutfit => {
+        Case::All | Case::Departed | Case::FirstDefeatOutfit => {
             counter["gate"] = json!(TRACK);
             counter["gate_value"] = json!(0);
             counter["maximum"] = json!(1);
@@ -732,6 +741,29 @@ fn run(admin: String, case: Case) -> TestResult {
 
         if matches!(case, Case::PartyArea | Case::PartyCounter) {
             exercise_party(&owner, &players, at, &h.pool, case).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
+
+        if case == Case::Departed {
+            let position = MovementLocalPosition { x: at.x + 1, ..at };
+            let target = spawn_credit_creature(&owner, RAT, position).await?;
+            // Keep the principal online to drain the death. Its other captured
+            // recipient loses the actor/session fence between capture and commit.
+            queue_actor_death(&owner, &players, RAT, target, case, 201).await?;
+            owner
+                .runtime
+                .lock()
+                .await
+                .remove_terminal_session(players[1].session, players[1].actor)
+                .map_err(debug)?;
+            assert_eq!(
+                owner.drain_kill_rewards(players[0].session).await,
+                DrainOutcome::Drained
+            );
+            assert_tracks(&h.pool, [1, 0, 0]).await?;
             drop(owner);
             drop(authority);
             drop(seal);
