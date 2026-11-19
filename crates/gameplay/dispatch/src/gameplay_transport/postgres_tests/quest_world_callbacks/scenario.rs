@@ -370,8 +370,11 @@ fn scenario_case(
         super::super::putrefactory_reservoir::LEGACY |
         super::super::putrefactory_reservoir::PASSIVE
     );
+    let putrefactory_gate = name == super::super::putrefactory_reservoir::GATE;
     let mut callback = if forgemaster {
         super::super::forgemaster_chest::callback(name)?
+    } else if putrefactory_gate {
+        callback(super::super::putrefactory_reservoir::GATE_CALLBACK)?
     } else if reservoir {
         super::super::putrefactory_reservoir::callback()?
     } else if vestibule {
@@ -2093,6 +2096,10 @@ fn scenario_case(
                 name,
             ))
             .await?;
+        } else if putrefactory_gate {
+            Box::pin(super::super::putrefactory_reservoir::exercise_gate(
+                &mut owner, &mut admitted, &h, deps.actor, &callback,
+            )).await?;
         } else if reservoir {
             Box::pin(super::super::putrefactory_reservoir::exercise(&mut owner, &mut admitted, &h, deps.actor, name)).await?;
         } else if vestibule {

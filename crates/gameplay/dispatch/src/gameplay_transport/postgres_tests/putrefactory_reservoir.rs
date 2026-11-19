@@ -19,6 +19,10 @@ use serde_json::json;
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
 
+pub(super) const GATE: &str = "putrefactory-full-counter-gate";
+pub(super) const GATE_CALLBACK: &str = "rotten-putrefactory-full-counter";
+// Crystal startup/tables/item.lua:2294-2299 registers action 34065 on this placement.
+const GATE_POSITION: Position = Position { x: 34065, y: 31716, floor: -15 };
 pub(super) const LEGACY: &str = "putrefactory-reservoir-legacy";
 pub(super) const CAP: &str = "putrefactory-reservoir-cap";
 pub(super) const PASSIVE: &str = "putrefactory-passive-charge";
@@ -72,6 +76,82 @@ fn putrefactory_passive_charge_ticks_from_the_channel_clock() -> TestResult {
         return Err("empty PostgreSQL admin URL".into());
     }
     super::kill_reward_e2e::scenario_thread::run(PASSIVE, || scenario(PASSIVE, AT, false))
+}
+
+#[test]
+fn putrefactory_entrance_requires_full_charge_and_keeps_it_for_reentry() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    if admin.is_empty() {
+        return Err("empty PostgreSQL admin URL".into());
+    }
+    super::kill_reward_e2e::scenario_thread::run(GATE, || scenario(GATE, GATE_POSITION, false))
+}
+
+pub(super) async fn exercise_gate(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    actor: ExactActorRef,
+    callback: &Callback,
+) -> TestResult {
+    use super::m07_realm_trials::use_source;
+
+    // Crystal actions_putrefactory.lua:49-66 only reads the charge before teleporting.
+    assert_eq!(callback.selector.action, Some(34065));
+    let destination = callback.teleport.ok_or("Putrefactory gate destination")?;
+    assert_eq!(destination, Position { x: 32972, y: 32336, floor: -15 });
+    let hash = owner.quest_catalogue.as_ref()
+        .and_then(|catalogue| catalogue.definition_hash(QUEST))
+        .ok_or("Putrefactory definition hash")?;
+    seed_previous_charge(h, hash, 99).await?;
+    let session = admitted.game_session_id;
+    owner.refresh_quest_session(session, true).await;
+    owner.states.chat.admit(session, "Putrefactory fixture", owner.owner_now());
+
+    let charge = || async {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT value FROM game_character_quest_tracks
+             WHERE character_id=encode($1,'hex')::uuid AND track_key=$2",
+        )
+        .bind(super::fixture::id(41).as_slice()).bind(CHARGE).fetch_one(&h.pool).await
+    };
+    let origin = actor_position(owner, actor).await?;
+    assert_eq!(use_source(owner, admitted, 1, GATE_POSITION, 1, 0).await?, UseDisposition::Rejected);
+    assert_eq!(actor_position(owner, actor).await?, origin);
+    assert_eq!(charge().await?, 99);
+    assert_eq!(owner.states.chat.drain(session), vec![
+        oteryn_protocol_oteryn::chat::ChatLine::Private {
+            speaker_name: "Game".into(), text: "You need to reach 100 points to enter.".into(),
+        }
+    ]);
+
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    let rows = sqlx::query(
+        "UPDATE game_character_quest_tracks SET value=100
+         WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND value=99",
+    )
+    .bind(super::fixture::id(41).as_slice()).bind(CHARGE).execute(&mut *tx).await?;
+    assert_eq!(rows.rows_affected(), 1);
+    tx.commit().await?;
+    owner.refresh_quest_session(session, true).await;
+
+    let (key, _) = use_intent(owner, GATE_POSITION)?;
+    for command in [2, 3] {
+        let revision = owner.bundle_map().ok_or("gate map")?.facts.object_revision(key);
+        assert_eq!(
+            use_source(owner, admitted, command, GATE_POSITION, 1, revision).await?,
+            UseDisposition::Committed
+        );
+        assert_eq!(actor_position(owner, actor).await?, local(destination));
+        assert_eq!(charge().await?, 100);
+        if command == 2 {
+            position_at_reservoir(owner, admitted, actor, GATE_POSITION).await?;
+        }
+    }
+    Ok(())
 }
 
 pub(super) fn callback() -> TestResult<Callback> {
@@ -163,7 +243,7 @@ pub(super) async fn exercise(
     if let Some(previous) = base.definition_hash(QUEST) {
         assert_ne!(attached.definition_hash(QUEST), Some(previous));
         assert!(oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(&attached, QUEST, &previous).is_some());
-        seed_previous_charge(h, previous).await?;
+        seed_previous_charge(h, previous, SAVED_CHARGE).await?;
     }
     owner.quest_catalogue = Some(Arc::new(attached));
     h.root.set_test_quest_clock(STARTED_AT).map_err(debug)?;
@@ -294,6 +374,13 @@ pub(super) async fn exercise(
     Ok(())
 }
 
+async fn actor_position(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+) -> TestResult<crate::foundation::MovementLocalPosition> {
+    Ok(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position())
+}
+
 fn use_intent(owner: &ComposedFreshAdmission<'_, '_, '_>, at: Position) -> TestResult<(u64, Vec<u8>)> {
     let key = oteryn_world_bundle::bundle::placement_key(at.floor, at.x, at.y, 1)
         .ok_or("reservoir placement")?;
@@ -341,7 +428,7 @@ fn canonical_recipe_sha() -> TestResult<String> {
         .collect())
 }
 
-async fn seed_previous_charge(h: &Harness, definition_hash: [u8; 32]) -> TestResult {
+async fn seed_previous_charge(h: &Harness, definition_hash: [u8; 32], charge: i64) -> TestResult {
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
@@ -367,7 +454,7 @@ async fn seed_previous_charge(h: &Harness, definition_hash: [u8; 32]) -> TestRes
     .bind(character.as_slice())
     .bind(CHARGE)
     .bind(QUEST)
-    .bind(SAVED_CHARGE)
+    .bind(charge)
     .execute(&mut *tx)
     .await?;
     tx.commit().await?;
