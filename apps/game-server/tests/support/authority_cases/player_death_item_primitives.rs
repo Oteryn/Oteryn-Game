@@ -2257,6 +2257,7 @@ async fn run_maximum_nested_death_reset(admin: String) -> TestResult {
             Err(DecayRetireError::Unavailable(
                 DurabilityError::RootUnavailable
                     | DurabilityError::RootPassDeadlineExceeded
+                    | DurabilityError::CommitTransactionTimeout
                     | DurabilityError::CommitOutcomeUnknown
             ))
         );

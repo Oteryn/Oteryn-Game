@@ -122,7 +122,11 @@ fn bounded_statement_refusals_keep_commit_certainty_and_drop_payloads() {
         let committed = DurabilityError::from_commit_error(sqlx::Error::Database(Box::new(
             PayloadProbe(seen.clone(), Some(code)),
         )));
-        assert!(matches!(committed, DurabilityError::CommitRejected));
+        if code == "25P04" {
+            assert!(matches!(committed, DurabilityError::CommitTransactionTimeout));
+        } else {
+            assert!(matches!(committed, DurabilityError::CommitRejected));
+        }
         assert_eq!(seen.drops.load(Ordering::SeqCst), 2);
         assert_eq!(seen.formats.load(Ordering::SeqCst), 0);
     }

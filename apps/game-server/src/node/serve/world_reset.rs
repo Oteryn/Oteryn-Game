@@ -116,7 +116,12 @@ pub(super) async fn recover_retiring(
                 Ok(None) if tokio::time::Instant::now() < wait_until => {}
                 Ok(None) => return Err(BootError::Readiness("World reset drain wait")),
                 Err(crate::durability::item_decay_retire::DecayRetireError::Unavailable(error))
-                    if boot_step_retryable(&error) && tokio::time::Instant::now() < wait_until => {}
+                    if (boot_step_retryable(&error)
+                        || matches!(
+                            error,
+                            crate::durability::DurabilityError::CommitTransactionTimeout
+                        ))
+                        && tokio::time::Instant::now() < wait_until => {}
                 Err(_) => return Err(BootError::Readiness("World reset completion")),
             }
             tokio::time::sleep(ASSIGNMENT_POLL).await;
