@@ -7,8 +7,12 @@ run all of it, and fix every failure of one run in one push.
 
 ## Order (cheapest first)
 
-1. If the branch conflicts with `main` or is about to get `heavy-tests`, merge
-   `origin/main` first (`ci-merge.md`, *Before every push*); then `cargo fmt --all`.
+1. If the branch conflicts with `main`, merge `origin/main` first; then
+   `cargo fmt --all`. It conflicts when GitHub reports the PR conflicted, or
+   when, after `git fetch origin main`,
+   `git merge-tree --write-tree origin/main HEAD` exits exactly 1. A conflict
+   and the main-red case are the only reasons to merge (`ci-merge.md`,
+   *Before every push*).
 2. Generated content: `python3 tools/content-migration/regenerate_content.py --resolve`
    (same as `tools/merge-driver/regen.sh`; the python form is the one the
    session allowlist permits) if anything under
@@ -28,6 +32,11 @@ run all of it, and fix every failure of one run in one push.
    process per test, so a test that relies on state left by another passes
    locally under `cargo test` and fails in CI; `cargo nextest run -p <package>`
    reproduces CI when nextest is installed.
+   Then build the changed package without tests:
+   `cargo build --locked -p <package> --quiet` (its default library and binary
+   targets, no tests; it also works for a binary-only package). Test-only code
+   left ungated in a non-test build (an ungated `#[tokio::test]` helper) passes
+   every test run and review and fails only in the node-boot build.
 7. Governance, when `docs/agents/`, `tools/agents/`, `.claude/` or `AGENTS.md`
    changed: `python3 tools/agents/validate_governance.py` and
    `python3 -m unittest discover -s tools/agents/tests`.

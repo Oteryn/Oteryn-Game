@@ -1,5 +1,5 @@
 use super::TestResult;
-use super::quest_world_callbacks::{callback, literal_uses};
+use super::quest_world_callbacks_fixtures::{callback, literal_uses};
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
 #[test]
@@ -11,7 +11,7 @@ fn order_of_the_stag_use_preserves_main_era_quest_save() -> TestResult {
         !admin.is_empty(),
         "PostgreSQL route must be nonempty when configured"
     );
-    super::kill_reward_e2e::scenario_thread::run("stag-main-era-use", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("stag-main-era-use", || {
         let boat = callback("order-of-the-stag-boat-to-ada")?;
         assert!(boat.is_read_only());
         // Crystal isle_of_ada.lua:27-39 and order_of_the_stag.lua:60-62.
@@ -44,7 +44,7 @@ fn phantom_army_step_preserves_main_era_quest_save() -> TestResult {
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run("phantom-army-main-era-step", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("phantom-army-main-era-step", || {
         // Crystal movements_teleport.lua:8-25 checks teleportAccess == 1 in both directions.
         // Both retained B3 placements select the object at top-level ordinal 1.
         for (suffix, appearance, from, to) in [

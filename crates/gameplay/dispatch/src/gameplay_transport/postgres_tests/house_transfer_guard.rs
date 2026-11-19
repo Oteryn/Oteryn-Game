@@ -89,7 +89,7 @@ async fn result(client: &mut tokio::io::DuplexStream) -> TestResult<(CommandStat
 
 #[test]
 fn house_transfer_guard_busy_budget_preserves_connection_postgres() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("house-guard-deferred", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("house-guard-deferred", || {
         run(async |admin| {
             let h = Harness::create_with_admission_seed(admin, "house_guard_deferred", true, false)
                 .await?;

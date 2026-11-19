@@ -131,7 +131,7 @@ impl DeviceAttempt {
         if saved
             .channel
             .as_ref()
-            .is_some_and(|id| !row.channels.iter().any(|c| &c.0 == id))
+            .is_some_and(|id| !row.channels.iter().any(|c| &c.id == id))
         {
             return None;
         }

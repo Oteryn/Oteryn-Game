@@ -60,7 +60,7 @@ fn coverage() -> TestResult {
         }
     }
     let deps = Dependencies::new()?;
-    let (controller, _) = super::death_ml_loss_composed::production_generation_with_pin(
+    let (controller, _) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
         deps.admitted.world_id,
         "content-1",
     )?;
@@ -101,7 +101,7 @@ fn coverage() -> TestResult {
                     u16::try_from(unique)?,
                 ));
             }
-            let world = super::quest_callbacks::source_world_positions(
+            let world = super::quest_callbacks_fixtures::source_world_positions(
                 (x, y, floor),
                 &choices,
                 u16::try_from(appearance)?,
@@ -142,15 +142,15 @@ fn coverage() -> TestResult {
 
 #[test]
 fn definition_ready_claim_use_and_replay_dispatch_postgres() -> TestResult {
-    postgres_scenario(super::quest_callbacks::DefinitionReadyClaim::RuneEmblem)
+    postgres_scenario(super::quest_callbacks_fixtures::DefinitionReadyClaim::RuneEmblem)
 }
 
 #[test]
 fn definition_ready_claim_bloodherb_use_and_replay_dispatch_postgres() -> TestResult {
-    postgres_scenario(super::quest_callbacks::DefinitionReadyClaim::BloodHerb)
+    postgres_scenario(super::quest_callbacks_fixtures::DefinitionReadyClaim::BloodHerb)
 }
 
-fn postgres_scenario(claim: super::quest_callbacks::DefinitionReadyClaim) -> TestResult {
+fn postgres_scenario(claim: super::quest_callbacks_fixtures::DefinitionReadyClaim) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -158,7 +158,7 @@ fn postgres_scenario(claim: super::quest_callbacks::DefinitionReadyClaim) -> Tes
     let result = std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(move || {
-            super::quest_callbacks::scenario_with_definition_ready_claim(false, Some(claim))
+            super::quest_callbacks_fixtures::scenario_with_definition_ready_claim(false, Some(claim))
                 .map_err(|error| error.to_string())
         })?
         .join()

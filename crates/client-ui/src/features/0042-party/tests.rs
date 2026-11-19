@@ -5,6 +5,7 @@ fn result(disposition: party::PartyDisposition) -> party::PartyResult {
         disposition,
         shared_xp_enabled: true,
         members: vec![party::PartyEntry {
+            channel: None,
             list: Vec::new(),
             handle: 7,
             name: "Leader".into(),
@@ -62,6 +63,7 @@ fn malformed_operation_is_never_reported_as_confirmed() -> Result<(), party::Par
 fn request_uses_party_codec_and_requires_selection() -> Result<(), &'static str> {
     let mut state = result(party::PartyDisposition::Ok);
     state.members.push(party::PartyEntry {
+        channel: None,
         list: Vec::new(),
         handle: 8,
         name: "Member".into(),
@@ -193,6 +195,7 @@ fn leadership_controls_follow_own_character_and_authoritative_role_changes()
 -> Result<(), party::PartyWireError> {
     let mut state = result(party::PartyDisposition::Ok);
     state.members.push(party::PartyEntry {
+        channel: None,
         list: Vec::new(),
         handle: 8,
         name: "Member".into(),

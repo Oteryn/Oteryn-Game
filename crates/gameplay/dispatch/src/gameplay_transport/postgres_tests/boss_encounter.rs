@@ -1,4 +1,7 @@
 //! Command 133 through the real admitted connection, fenced PostgreSQL read and wire result.
+use tokio::io::AsyncWriteExt;
+use super::boss_encounter_fixtures::{exchange_kind, maintain_ready};
+
 use super::fixture::{self, Harness, debug, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::foundation::{MessageType, decode_wire_envelope};
@@ -13,26 +16,12 @@ use oteryn_protocol_oteryn::boss_encounter::*;
 use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, decode_command_result, encode_client_command,
 };
-use tokio::io::AsyncWriteExt;
 
 #[path = "boss_encounter/activity_handoff.rs"]
 mod activity_handoff;
 
 #[path = "boss_encounter/staged_room.rs"]
 mod staged_room;
-
-// Direct connections have no node maintenance task. A bounded pass can retire
-// its holder, or the live server can still be using it without any demand yet.
-// Request and service readiness before a direct pass, without retrying that pass.
-async fn maintain_ready(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult {
-    if !owner.root.is_ready() {
-        owner.root.request_ready();
-    }
-    if owner.root.has_ready_demand() {
-        owner.root.maintain_ready_once().await.map_err(debug)?;
-    }
-    Ok(())
-}
 
 async fn exchange(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -41,70 +30,6 @@ async fn exchange(
     payload: &[u8],
 ) -> TestResult<(CommandStatus, Vec<u8>)> {
     exchange_kind(owner, admitted, id, COMMAND_TYPE_BOSS_COOLDOWNS, payload).await
-}
-
-pub(super) async fn exchange_kind(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &mut AdmittedSession,
-    id: u64,
-    kind: u32,
-    payload: &[u8],
-) -> TestResult<(CommandStatus, Vec<u8>)> {
-    maintain_ready(owner).await?;
-    let before = *admitted;
-    let (mut server, mut client) = tokio::io::duplex(4096);
-    let serving = async move {
-        let ended = serve_admitted(&mut server, before, owner, IDLE_LIVENESS).await;
-        drop(server);
-        ended
-    };
-    let driving = async {
-        loop {
-            let frame = read_frame(&mut client).await?;
-            if decode_wire_envelope(&frame).map_err(debug)?.message_type()
-                == MessageType::SnapshotCommit
-            {
-                break;
-            }
-        }
-        write_frame(
-            &mut client,
-            &encode_client_command(
-                before.continuity.connection_generation,
-                &ClientCommandValue {
-                    command_id: id,
-                    command_type: kind,
-                    payload,
-                },
-            )
-            .map_err(debug)?,
-        )
-        .await?;
-        let reply = loop {
-            let frame = read_frame(&mut client).await?;
-            let env = decode_wire_envelope(&frame).map_err(debug)?;
-            if env.message_type() == MessageType::CommandResult {
-                let r = decode_command_result(env.payload()).map_err(debug)?;
-                assert_eq!(r.command_id, id);
-                assert!(r.payload.len() <= MAX_RESULT_BYTES);
-                break (r.status, r.payload.to_vec());
-            }
-        };
-        client.shutdown().await?;
-        Ok(reply)
-    };
-    let (ended, result): (_, TestResult<(CommandStatus, Vec<u8>)>) = tokio::time::timeout(
-        std::time::Duration::from_secs(30),
-        fixture::join_two(serving, driving),
-    )
-    .await?;
-    maintain_ready(owner).await?;
-    if let ConnectionEnd::AdmittedThenDisconnected(current)
-    | ConnectionEnd::AdmittedThenClosed(current, _) = &ended
-    {
-        *admitted = *current;
-    }
-    result.map_err(|error| format!("cooldown command {id} ended {ended:?}: {error}").into())
 }
 
 // Keep one connection alive across the changes. Its initial valid command

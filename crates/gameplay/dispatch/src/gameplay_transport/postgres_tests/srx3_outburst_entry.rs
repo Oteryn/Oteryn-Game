@@ -14,7 +14,7 @@ fn srx3_outburst_actual_source_bosslever_enters_private_native_party_room_postgr
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run("srx3-outburst-entry", || {
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-outburst-entry", || {
         run(async |admin| {
             super::reset();
             // actions_outburst_lever.lua:7 is the actual first waiting tile, not
@@ -49,8 +49,8 @@ fn srx3_outburst_actual_source_bosslever_enters_private_native_party_room_postgr
             let deps = scene.dependencies()?;
             let h = Harness::create_with_admission_seed(admin, "srx3_outburst_entry", false, false)
                 .await?;
-            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-            super::house_transfer::prepare_owned_session(&h).await?;
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::house_transfer_fixtures::prepare_owned_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -60,7 +60,7 @@ fn srx3_outburst_actual_source_bosslever_enters_private_native_party_room_postgr
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &evidence.evidence;
             install_scene(&mut owner, &scene, source)?;
-            super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+            super::boss_activity_fixtures::issue_content_and_reset(&h, &scene.pin).await?;
             let mut admitted = deps.admitted;
             admitted.continuity.selected_capabilities = SelectedCapabilities::select(
                 BUNDLE_WORLD_OFFERED_CAPABILITIES,
@@ -79,9 +79,9 @@ fn srx3_outburst_actual_source_bosslever_enters_private_native_party_room_postgr
             )
             .ok_or("native Outburst capabilities")?;
             prepare_player(&h, &owner, &mut admitted, 2).await?;
-            let destination = super::activity_runtime::allocate_ready_instance(&h, 231).await?;
+            let destination = super::activity_runtime_fixtures::allocate_ready_instance(&h, 231).await?;
             let mut frames = Vec::new();
-            let (_, reply, barrier) = super::boss_activity::exchange_capture(
+            let (_, reply, barrier) = super::boss_activity_fixtures::exchange_capture(
                 &owner,
                 &mut admitted,
                 "oteryn:boss.outburst",

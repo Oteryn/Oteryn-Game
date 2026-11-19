@@ -1,5 +1,5 @@
 //! IDLEKICK: real router, composed logout, generation fence and PostgreSQL final position.
-use super::autowalk::{at, place, read};
+use super::autowalk_fixtures::{at, place, read};
 use super::fixture::{Harness, debug, id, join_two, run};
 use super::{Dependencies, TestResult, prepare_current_session, track};
 use crate::content::channel_content_pin::ChannelContentPin;
@@ -157,7 +157,7 @@ fn case(protected: bool, stale: bool) -> TestResult {
             .await
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
-        let (controller, pin) = super::death_ml_loss_composed::production_generation_with_pin(
+        let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
             deps.admitted.world_id,
             "content-1",
         )?;
@@ -239,6 +239,25 @@ fn case(protected: bool, stale: bool) -> TestResult {
         admitted.continuity.selected_capabilities =
             SelectedCapabilities::select(owner.offered_capabilities(), &[31])
                 .ok_or("notice capability")?;
+        if protected {
+            use crate::gameplay_transport::channel_switch::ChannelSwitchOutcome;
+            use oteryn_protocol_oteryn::channel_switch as wire;
+            let mut picker = admitted;
+            picker.continuity.selected_capabilities = SelectedCapabilities::select(
+                crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
+                &[wire::CAPABILITY_CHANNEL_SWITCH_V1],
+            )
+            .ok_or("switch capability")?;
+            let Some(ChannelSwitchOutcome::Status(payload)) =
+                owner.channel_switch_status_wire(picker, 1, &[]).await
+            else {
+                return Err("missing switch status".into());
+            };
+            assert_eq!(
+                wire::decode_status(&payload).map(|s| s.lock),
+                Some(wire::SwitchLock::NoLogout)
+            );
+        }
         if stale {
             admitted.controller.as_mut().ok_or("controller")?.transport =
                 crate::foundation::AuthenticatedTransportRefV1::decode(&[10; 16]).map_err(debug)?;

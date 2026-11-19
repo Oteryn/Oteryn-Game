@@ -187,10 +187,10 @@ fn engworldchg_guarded_wood_exchange_real_dispatch_postgres() -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("engworldchg-guarded-sale", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("engworldchg-guarded-sale", move || {
         let (entry_callback, catalogue) = fixture()?;
         let entry = entry_callback.selector.position.ok_or("entry")?;
-        let world = super::engworldchg_journals::scene(&entry_callback, &entry_callback)?;
+        let world = super::engworldchg_journals_fixtures::scene(&entry_callback, &entry_callback)?;
         run(async move |admin| {
             let h = Harness::create_with_admission_seed(
                 admin,
@@ -208,7 +208,7 @@ fn engworldchg_guarded_wood_exchange_real_dispatch_postgres() -> TestResult {
                 .map_err(debug)?;
             let mut deps = Dependencies::new()?;
             let (controller, activated) =
-                super::death_ml_loss_composed::production_generation_with_pin(
+                super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                     deps.admitted.world_id,
                     "content-1",
                 )?;
@@ -216,7 +216,7 @@ fn engworldchg_guarded_wood_exchange_real_dispatch_postgres() -> TestResult {
             let cells = world
                 .movement_cells(activated.qualified_room().movement_cells())
                 .map_err(debug)?;
-            let origin = super::quest_world_callbacks::local(
+            let origin = super::quest_world_callbacks_fixtures::local(
                 entry_callback
                     .effects
                     .encounter
@@ -341,7 +341,7 @@ fn engworldchg_guarded_wood_exchange_real_dispatch_postgres() -> TestResult {
                 .await
                 .map_err(|()| "quest fence")?
                 .ok_or("quest fence")?;
-            super::quest_world_callbacks::input_item(
+            super::quest_world_callbacks_fixtures::input_item(
                 &owner,
                 fence.item_fence(),
                 &Offering {
@@ -358,11 +358,11 @@ fn engworldchg_guarded_wood_exchange_real_dispatch_postgres() -> TestResult {
             .await?;
             assert_eq!(quantity(&h, WOOD).await?, 2);
             assert_eq!(
-                super::qengine_rewards::talk(&mut owner, &mut admitted, npc, 31000, "hi").await?,
+                super::qengine_rewards_fixtures::talk(&mut owner, &mut admitted, npc, 31000, "hi").await?,
                 NpcIntentDisposition::Ok
             );
             assert_eq!(
-                super::qengine_rewards::talk(&mut owner, &mut admitted, npc, 31001, "sell wood")
+                super::qengine_rewards_fixtures::talk(&mut owner, &mut admitted, npc, 31001, "sell wood")
                     .await?,
                 NpcIntentDisposition::Rejected
             );
@@ -372,30 +372,30 @@ fn engworldchg_guarded_wood_exchange_real_dispatch_postgres() -> TestResult {
                 "knowledge gate cannot consume inputs"
             );
             assert_eq!(quantity(&h, GOLD).await?, start_gold);
-            super::engworldchg_journals::step(&owner, &mut admitted, 1, StepDirection::West)
+            super::engworldchg_journals_fixtures::step(&owner, &mut admitted, 1, StepDirection::West)
                 .await?;
-            assert_eq!(super::engworldchg_journals::value(&h, PHASE).await?, 1);
-            super::engworldchg_journals::step(&owner, &mut admitted, 2, StepDirection::East)
+            assert_eq!(super::engworldchg_journals_fixtures::value(&h, PHASE).await?, 1);
+            super::engworldchg_journals_fixtures::step(&owner, &mut admitted, 2, StepDirection::East)
                 .await?;
             owner.open_npc_session(admitted.game_session_id).await;
             assert_eq!(
-                super::qengine_rewards::talk(&mut owner, &mut admitted, npc, 31002, "hi").await?,
+                super::qengine_rewards_fixtures::talk(&mut owner, &mut admitted, npc, 31002, "hi").await?,
                 NpcIntentDisposition::Ok
             );
             assert_eq!(
-                super::qengine_rewards::talk(&mut owner, &mut admitted, npc, 31003, "work").await?,
+                super::qengine_rewards_fixtures::talk(&mut owner, &mut admitted, npc, 31003, "work").await?,
                 NpcIntentDisposition::Ok
             );
-            assert_eq!(super::engworldchg_journals::value(&h, PHASE).await?, 2);
+            assert_eq!(super::engworldchg_journals_fixtures::value(&h, PHASE).await?, 2);
             assert_eq!(
-                super::qengine_rewards::talk(&mut owner, &mut admitted, npc, 31004, "sell wood")
+                super::qengine_rewards_fixtures::talk(&mut owner, &mut admitted, npc, 31004, "sell wood")
                     .await?,
                 NpcIntentDisposition::Ok
             );
             assert_eq!(quantity(&h, WOOD).await?, 1);
             assert_eq!(quantity(&h, GOLD).await?, start_gold + 50);
             assert_eq!(
-                super::qengine_rewards::talk(&mut owner, &mut admitted, npc, 31004, "sell wood")
+                super::qengine_rewards_fixtures::talk(&mut owner, &mut admitted, npc, 31004, "sell wood")
                     .await?,
                 NpcIntentDisposition::Ok
             );
@@ -410,14 +410,14 @@ fn engworldchg_guarded_wood_exchange_real_dispatch_postgres() -> TestResult {
                 "replay cannot mint a second payout"
             );
             assert_eq!(
-                super::qengine_rewards::talk(&mut owner, &mut admitted, npc, 31005, "sell wood")
+                super::qengine_rewards_fixtures::talk(&mut owner, &mut admitted, npc, 31005, "sell wood")
                     .await?,
                 NpcIntentDisposition::Ok
             );
             assert_eq!(quantity(&h, WOOD).await?, 0);
             assert_eq!(quantity(&h, GOLD).await?, start_gold + 100);
             assert_eq!(
-                super::qengine_rewards::talk(&mut owner, &mut admitted, npc, 31005, "sell wood")
+                super::qengine_rewards_fixtures::talk(&mut owner, &mut admitted, npc, 31005, "sell wood")
                     .await?,
                 NpcIntentDisposition::Ok,
                 "a committed sale replays after all inputs were consumed"
@@ -425,7 +425,7 @@ fn engworldchg_guarded_wood_exchange_real_dispatch_postgres() -> TestResult {
             assert_eq!(quantity(&h, WOOD).await?, 0);
             assert_eq!(quantity(&h, GOLD).await?, start_gold + 100);
             assert_eq!(
-                super::qengine_rewards::talk(&mut owner, &mut admitted, npc, 31006, "sell wood")
+                super::qengine_rewards_fixtures::talk(&mut owner, &mut admitted, npc, 31006, "sell wood")
                     .await?,
                 NpcIntentDisposition::Rejected
             );
@@ -435,7 +435,7 @@ fn engworldchg_guarded_wood_exchange_real_dispatch_postgres() -> TestResult {
                 "missing inputs cannot mint"
             );
             assert_eq!(
-                super::engworldchg_journals::value(&h, PHASE).await?,
+                super::engworldchg_journals_fixtures::value(&h, PHASE).await?,
                 2,
                 "sales must retain investigation progress"
             );

@@ -5,7 +5,7 @@ fn execute(ground: bool, missing: bool) -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::item_cosmetics::run_stock_glider(ground, missing);
+    let result = super::item_cosmetics_fixtures::run_stock_glider(ground, missing);
     eprintln!(
         "POSTGRES_CASE_COMPLETED S06_GLIDER ground={ground} missing={missing} duration={:?} success={}",
         started.elapsed(),
