@@ -14,6 +14,76 @@ pub(super) fn facing(direction: Facing) -> crate::foundation::MovementFacing {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "both hops use the fenced STEP origin and current movement policy"
+    )]
+    pub(super) fn quest_teleport_via(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        map: &BundleMap,
+        callback: &Callback,
+        mut current: MovementPositionSnapshot,
+        via: Position,
+        destination: Position,
+        blocked: bool,
+        optional_pvp: Option<bool>,
+    ) -> UseDisposition {
+        let doors = crate::map::floor::BundleDoors(&map.facts);
+        let now = self.owner_now().get();
+        // Crystal movement_sacrifice_teleport.lua:14-23 still attempts the
+        // second hop if the first one cannot land.
+        for target in [via, destination] {
+            let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+                runtime,
+                self.movement_cells(),
+                actor,
+                session,
+                current,
+                local(target),
+                blocked,
+                &doors,
+            ) else {
+                continue;
+            };
+            let Ok(landed) = runtime.commit_source_step(proof) else {
+                continue;
+            };
+            states.stage_special_movement_step(
+                runtime,
+                map,
+                actor,
+                session,
+                now,
+                Some(current.position()),
+                landed.position(),
+                optional_pvp,
+            );
+            states.stage_underwater_step(
+                runtime,
+                actor,
+                session,
+                now,
+                underwater(map, current.position()),
+                underwater(map, landed.position()),
+            );
+            current = landed;
+        }
+        if let Some(magic) = &callback.effects.magic {
+            map.facts
+                .emit_movement_effect(tile(magic.position), magic.effect);
+        }
+        if let Some(effect) = callback.effects.teleport_effect
+            && let Some(landing) = native(current.position())
+        {
+            map.facts.emit_movement_effect(landing, effect);
+        }
+        UseDisposition::Committed
+    }
+
     pub(super) fn prepare_quest_projection(
         &self,
         map: &BundleMap,

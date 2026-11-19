@@ -792,6 +792,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return UseDisposition::Rejected;
                 }
             }
+        } else if callback.effects.teleport_via.is_some() {
+            None
         } else {
             match destination {
                 Some(to) => match crate::map::floor::prepare_scripted_quest_teleport_facing(
@@ -1014,6 +1016,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
         {
             return UseDisposition::Rejected;
+        }
+        if let (Some(via), Some(destination)) = (callback.effects.teleport_via, destination) {
+            return self.quest_teleport_via(
+                runtime,
+                states,
+                actor,
+                session,
+                map,
+                callback,
+                expected,
+                via,
+                destination,
+                blocked,
+                optional_pvp,
+            );
         }
         if let Some(spawn) = &callback.effects.step_spawn {
             let (QuestCause::Step(command), Some(action)) = (cause, callback.selector.action)

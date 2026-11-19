@@ -134,6 +134,9 @@ pub struct CallbackEffects {
     /// One cue at a committed landing, or at the restored STEP origin on refusal.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub teleport_effect: Option<u16>,
+    /// A first landing attempted before the terminal destination of a read-only STEP.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub teleport_via: Option<Position>,
     pub portals: Option<PortalPair>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub solid_teleport: Option<SolidTeleport>,
@@ -559,6 +562,33 @@ pub(super) fn valid(callback: &Callback) -> bool {
         return false;
     }
     let effects = &callback.effects;
+    if effects.teleport_via.is_some_and(|via| {
+        // Crystal movement_sacrifice_teleport.lua:14-23 has two synchronous
+        // landing attempts and a separate cue for the qualified branch.
+        callback.trigger != Trigger::StepIn
+            || callback.actor_kind != ActorKind::Player
+            || !callback.is_read_only()
+            || callback
+                .selector
+                .position
+                .is_none_or(|source| source == via)
+            || callback
+                .teleport
+                .is_none_or(|destination| destination == via)
+            || !(-15..=0).contains(&via.floor)
+            || callback.facing.is_some()
+            || callback.remote_teleport.is_some()
+            || callback.reversible
+            || *effects
+                != CallbackEffects {
+                    teleport_via: Some(via),
+                    teleport_effect: effects.teleport_effect,
+                    magic: effects.magic.clone(),
+                    ..Default::default()
+                }
+    }) {
+        return false;
+    }
     if effects
         .position_forms
         .as_ref()
