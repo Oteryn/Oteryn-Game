@@ -98,14 +98,26 @@ impl ActiveWaveRun {
         if self.exit.is_none() {
             // Crystal action_arena.lua:71 arms cleanup at the room timeout;
             // creaturescripts_tirecz_kill.lua:19-30 settles the kill event.
-            // Retained deaths carry the lethal turn's owner clock, even when
-            // this scheduler first observes the projection after the cutoff.
             self.exit = if let Some(victory) = &plan.victory
                 && self.terminal.is_some_and(|actor| {
-                    runtime
-                        .borrow_combat_death()
-                        .projected_death_at_ms(actor)
-                        .is_ok_and(|at| at.map_or(!timed_out, |at| at < self.timeout_owner_ms))
+                    let pending = !runtime.contains_live_creature(actor)
+                        && (states
+                            .equipment_reflection_kills
+                            .iter()
+                            .any(|(target, _, _)| *target == actor)
+                            || runtime.source_creature_death_pending(actor) == Ok(true));
+                    let death = runtime.borrow_combat_death();
+                    match death.projected_death_at_ms(actor) {
+                        Ok(at) => at.map_or(!timed_out, |at| at < self.timeout_owner_ms),
+                        // The source scheduler can run between a lethal commit and
+                        // the combat drain that publishes its corpse.
+                        Err(_) if pending => death
+                            .committed_lethal_receipt(actor)
+                            .ok()
+                            .and_then(|receipt| receipt.death_at_ms())
+                            .is_some_and(|at| at < self.timeout_owner_ms),
+                        Err(_) => false,
+                    }
                 }) {
                 Some((victory.exit, true))
             } else {

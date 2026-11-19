@@ -177,6 +177,16 @@ fn quest_wave_uses_an_in_time_terminal_death_observed_after_timeout() -> TestRes
 }
 
 #[test]
+fn quest_wave_uses_a_pre_cutoff_reflection_while_corpse_projection_is_pending() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("quest-wave-pending-reflection", move || {
+        scenario(admin, Case::VictoryWithPendingReflection)
+    })
+}
+
+#[test]
 fn quest_wave_terminal_death_at_timeout_ejects_both_without_victory_credit() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -215,6 +225,7 @@ enum Case {
     DeathAtTimeout,
     Victory,
     VictoryBeforeTimeout,
+    VictoryWithPendingReflection,
     VictoryWithoutProgress,
     SurvivalStep,
     Stations,
@@ -231,6 +242,7 @@ impl Case {
             self,
             Self::Victory
                 | Self::VictoryBeforeTimeout
+                | Self::VictoryWithPendingReflection
                 | Self::VictoryWithoutProgress
                 | Self::DeathAtTimeout
                 | Self::UnknownAchievement
@@ -833,7 +845,10 @@ async fn wave_scenario(
     case: Case,
 ) -> TestResult {
     let victory = case.has_victory_binding();
-    let timeout_edge = matches!(case, Case::VictoryBeforeTimeout | Case::DeathAtTimeout);
+    let timeout_edge = matches!(
+        case,
+        Case::VictoryBeforeTimeout | Case::VictoryWithPendingReflection | Case::DeathAtTimeout
+    );
     let timed_out = matches!(case, Case::DeathAtTimeout);
     assert_eq!(
         use_room(owner, admitted, 1).await?,
@@ -914,7 +929,34 @@ async fn wave_scenario(
                 std::sync::atomic::Ordering::Relaxed,
             );
         }
-        project_wave_death(owner, *terminal, b"terminal-wave").await?;
+        if matches!(case, Case::VictoryWithPendingReflection) {
+            let mut runtime = owner.runtime.lock().await;
+            let mut states = owner.states.spell_states.lock().await;
+            runtime.set_test_creature_health(*terminal, 1).map_err(debug)?;
+            states
+                .get_mut(&runtime, player, admitted.game_session_id)
+                .ok_or("primary combat state")?
+                .install_equipped_offence(
+                    oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence {
+                        reflect_percent: 10_000,
+                        ..Default::default()
+                    },
+                );
+            assert!(states.reflect_equipment(
+                &mut runtime,
+                *terminal,
+                player,
+                admitted.game_session_id,
+                Some("physical"),
+                1,
+                b"terminal-wave-reflection",
+                owner.owner_now(),
+            ));
+            assert!(!runtime.contains_live_creature(*terminal));
+            assert!(runtime.borrow_combat_death().projected_death_at_ms(*terminal).is_err());
+        } else {
+            project_wave_death(owner, *terminal, b"terminal-wave").await?;
+        }
         if timeout_edge {
             tokio::time::advance(Duration::from_millis(2)).await;
             assert_eq!(next_spawn_delay(owner).await, Some(Duration::ZERO));

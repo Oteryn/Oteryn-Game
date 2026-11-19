@@ -358,6 +358,11 @@ fn is_more_preferred_contributor(
 }
 
 impl CommittedLethalReceipt {
+    /// Owner clock of the lethal commit, available before corpse projection.
+    pub fn death_at_ms(&self) -> Option<u64> {
+        self.projection.death_at_ms
+    }
+
     /// Read-only identity of an actual committed physical death, including a
     /// nonreward Instance death. This issues no corpse or gameplay authority.
     pub fn statistics_death_key(&self) -> Result<CreatureDeathOccurrenceKey, CarrierError> {
