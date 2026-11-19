@@ -210,7 +210,7 @@ async fn dig(
     let dirt = target(owner, tile(DIRT))?;
     let map = owner.bundle_map().ok_or("dig map")?;
     assert_eq!(
-        super::engitem_seal_paint::source_appearances(map, DIRT)?,
+        super::engitem_seal_paint_fixtures::source_appearances(map, DIRT)?,
         [351, 8504]
     );
     assert_eq!(live(h, 3456).await?, i64::from(name != NO_PICK));
@@ -387,7 +387,7 @@ async fn prepare_city(
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
             .ok_or("capabilities")?;
     let npcs =
-        super::classic_quests::install(owner, admitted, ["oteryn:npc.iriana", "oteryn:npc.jimmy"])
+        super::classic_quests_fixtures::install(owner, admitted, ["oteryn:npc.iriana", "oteryn:npc.jimmy"])
             .await?;
     owner
         .refresh_quest_session(admitted.game_session_id, false)
@@ -404,7 +404,7 @@ async fn start_city(
 ) -> TestResult {
     for (npc, word, stage) in [(iriana, "quest", 1), (jimmy, "iriana", 2)] {
         assert_eq!(
-            super::questpc7_outfit_items::talk(owner, admitted, npc, sequence, word).await?,
+            super::questpc7_outfit_items_fixtures::talk(owner, admitted, npc, sequence, word).await?,
             NpcIntentDisposition::Ok,
             "{word}"
         );
@@ -444,13 +444,13 @@ async fn top_of_the_city(
     );
     assert_eq!(live(h, 8772).await?, 1);
     assert_eq!(
-        super::questpc7_outfit_items::talk(owner, admitted, jimmy, &mut sequence, "quest").await?,
+        super::questpc7_outfit_items_fixtures::talk(owner, admitted, jimmy, &mut sequence, "quest").await?,
         NpcIntentDisposition::Ok
     );
     assert_eq!(track(h, CITY_STAGE).await?, 4);
     assert_eq!((live(h, 8772).await?, live(h, 8773).await?), (0, 1));
     assert_eq!(
-        super::questpc7_outfit_items::talk(owner, admitted, iriana, &mut sequence, "quest").await?,
+        super::questpc7_outfit_items_fixtures::talk(owner, admitted, iriana, &mut sequence, "quest").await?,
         NpcIntentDisposition::Ok
     );
     assert_eq!(track(h, CITY_STAGE).await?, 5);
@@ -462,7 +462,7 @@ async fn top_of_the_city(
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(completed, 1, "the quest completes once");
-    super::questpc7_outfit_items::talk(owner, admitted, iriana, &mut sequence, "quest").await?;
+    super::questpc7_outfit_items_fixtures::talk(owner, admitted, iriana, &mut sequence, "quest").await?;
     assert_eq!(live(h, 5921).await?, 10, "no second reward");
     Ok(())
 }

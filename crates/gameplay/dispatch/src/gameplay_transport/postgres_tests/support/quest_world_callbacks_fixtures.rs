@@ -15,6 +15,9 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::collections::BTreeMap;
 
 pub(super) fn callback(name: &str) -> TestResult<Callback> {
+    if name.starts_with("koshei-amulet") {
+        return oteryn_gameplay_quests::quest::koshei_amulet::callback().map_err(Into::into);
+    }
     // The Stampede entry is an authored binding of the content catalogue.
     if name == "m01b/asura-palace/s1/entry" || name == super::m01c_stampede_entry_fixtures::CALLBACK {
         let label = if name == super::m01c_stampede_entry_fixtures::CALLBACK {

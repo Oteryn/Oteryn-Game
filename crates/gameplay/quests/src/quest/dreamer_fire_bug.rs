@@ -31,6 +31,7 @@ pub(crate) fn callbacks() -> [Callback; 1] {
     ignite.key = IGNITE.into();
     ignite.quest = QUEST.into();
     ignite.selector = Selector {
+        target_definition: None,
         position_aliases: Vec::new(),
         ordinal: None,
         native: Some(NativeSelector {

@@ -940,6 +940,7 @@ fn scenario_case(
                 name,
                 "catalogue-npc" | "catalogue-npc-inventory" | "catalogue-npc-scoped"
             )
+            || name.starts_with("koshei-amulet")
             || name == "srv7-reliable-ram"
             || name.starts_with("m09-treasure-")
             || name.starts_with("engoutfit-")
@@ -1275,7 +1276,13 @@ fn scenario_case(
         } else {
             world
         };
-        let world = if name == "qengine-rewards-smith-story" {
+        let world = if name.starts_with("koshei-amulet") {
+            // A Terrain lookalike and the real Item deliberately share appearance 7535.
+            let mut physical = callback.clone();
+            physical.selector.appearance = Some(7535);
+            let items = if name.ends_with("-ground") { Vec::new() } else { vec![(trigger, 7535)] };
+            world_with_native_items(&physical, trigger, &[], generation.native_gameplay().ok_or("native")?, &items)?
+        } else if name == "qengine-rewards-smith-story" {
             world_with_native_items(
                 &callback,
                 trigger,
@@ -2550,6 +2557,12 @@ fn scenario_case(
                 &authority,
             ))
             .await?;
+        } else if name.starts_with("koshei-amulet") {
+            if name.ends_with("-ground") {
+                Box::pin(super::super::koshei_amulet_fixtures::exercise_ground(&mut owner, &mut admitted, &h, trigger)).await?;
+            } else {
+                Box::pin(super::super::koshei_amulet_fixtures::exercise(&mut owner, &mut admitted, &h, trigger)).await?;
+            }
         } else if name == "engitem-native-seal-paint" {
             Box::pin(super::super::engitem_seal_paint_fixtures::exercise(
                 &mut owner,

@@ -760,6 +760,7 @@ mod tests {
             "engitem-ice-seal-2-2",
             "goblin-merchant-elevator-lower",
             "goblin-merchant-elevator-upper",
+            "koshei-amulet",
             "last-creep-native-blightwalker",
             "last-creep-native-carniphila",
             "last-creep-native-exit",
@@ -816,7 +817,7 @@ mod tests {
         ] {
             assert!(expected.insert(format!("oteryn:quest-callback/{suffix}")));
         }
-        assert_eq!(expected.len() - before_qmech_native, 69);
+        assert_eq!(expected.len() - before_qmech_native, 70);
         assert_eq!(
             callbacks
                 .into_iter()
