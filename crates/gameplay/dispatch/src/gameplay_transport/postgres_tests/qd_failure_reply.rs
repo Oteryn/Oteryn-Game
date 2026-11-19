@@ -103,7 +103,7 @@ fn muriel_failure_reply_is_shown_on_refused_callback() -> TestResult {
                 },
             );
             tokio::pin!(response);
-            let advance = async {
+            let wait_for_blocked_writer = async {
                 loop {
                     let blocked: bool = sqlx::query_scalar(
                         "SELECT EXISTS(SELECT 1 FROM pg_locks \
@@ -116,16 +116,6 @@ fn muriel_failure_reply_is_shown_on_refused_callback() -> TestResult {
                         break;
                     }
                 }
-                if stale {
-                    let chat = &owner.states.chat;
-                    let engaged = chat.engaged(session).ok_or("Muriel engagement")?;
-                    let generation = chat.npc_conversation_generation(session);
-                    assert!(chat.end_engagement(session, engaged));
-                    chat.converse(session, |focus| *focus = Some(engaged))
-                        .ok_or("reopened engagement")?;
-                    assert_ne!(chat.npc_conversation_generation(session), generation);
-                }
-                tx.commit().await?;
                 Ok::<(), Box<dyn std::error::Error>>(())
             };
             tokio::select! {
@@ -133,8 +123,19 @@ fn muriel_failure_reply_is_shown_on_refused_callback() -> TestResult {
                     "NPC replied before the writer reached PostgreSQL: {:?}, unknown={}",
                     outcome.disposition, outcome.unknown,
                 ).into()),
-                result = tokio::time::timeout(Duration::from_secs(5), advance) => result??,
+                result = tokio::time::timeout(Duration::from_secs(5), wait_for_blocked_writer) => result??,
             }
+            if stale {
+                let chat = &owner.states.chat;
+                let engaged = chat.engaged(session).ok_or("Muriel engagement")?;
+                let generation = chat.npc_conversation_generation(session);
+                assert!(chat.end_engagement(session, engaged));
+                chat.converse(session, |focus| *focus = Some(engaged))
+                    .ok_or("reopened engagement")?;
+                assert_ne!(chat.npc_conversation_generation(session), generation);
+            }
+            // PostgreSQL can release the lock before acknowledging COMMIT.
+            tx.commit().await?;
             let outcome = response.await;
             assert!(!outcome.unknown);
             assert!(!outcome.inventory_changed);
