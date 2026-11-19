@@ -2,6 +2,10 @@
 //! The spell swaps their positions; replacing one actor's profile is insufficient.
 use super::fixture::{Harness, debug, run};
 use super::srx3_activity_source_fixture::{SourceScene, install_scene, prepare_player};
+use super::srx3_native_source_cast_fixtures::{
+    NATIVE_TURN_TIMEOUT, drain_ready_monster_melee_at, next_native_melee_deadline,
+    settle_monster_melee_at,
+};
 use super::{Dependencies, TestResult, reset};
 use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
 use crate::foundation::MovementLocalPosition;
@@ -103,12 +107,12 @@ fn srx3_time_guardian_actual_native_callback_swaps_distinct_source_actors_postgr
                 (base, fire, ice)
             };
             let mut selected = false;
+            let mut now = owner.owner_now().get();
+            // The 10% defence draw is keyed to the actor and committed Think
+            // sequence. Honor source deadlines too: the alternate defence can
+            // park the caster until its retained return callback moves it back.
             for _ in 0..128 {
-                owner.clock_origin = owner
-                    .clock_origin
-                    .checked_sub(std::time::Duration::from_secs(2))
-                    .ok_or("clock")?;
-                owner.drain_monster_melee().await;
+                settle_monster_melee_at(&owner, now).await?;
                 let runtime = owner.runtime.lock().await;
                 assert!(
                     runtime.contains_live_creature(base),
@@ -127,6 +131,19 @@ fn srx3_time_guardian_actual_native_callback_swaps_distinct_source_actors_postgr
                 if selected {
                     break;
                 }
+                let parked = runtime.read_actor_position(base).map_err(debug)?.position().floor
+                    != ARENA.floor;
+                if parked {
+                    now = states
+                        .native_callbacks
+                        .next_source_due_time()
+                        .map_err(debug)?
+                        .ok_or("alternate guardian defence retained its return deadline")?;
+                    continue;
+                }
+                drop(states);
+                drop(runtime);
+                now = next_native_melee_deadline(&owner).await?;
             }
             assert!(
                 selected,
@@ -178,11 +195,34 @@ fn srx3_time_guardian_actual_native_callback_swaps_distinct_source_actors_postgr
                     Some(base)
                 );
             }
-            owner.clock_origin = owner
-                .clock_origin
-                .checked_sub(std::time::Duration::from_secs(30))
-                .ok_or("return clock")?;
-            owner.drain_monster_melee().await;
+            let return_due = owner
+                .states
+                .spell_states
+                .lock()
+                .await
+                .native_callbacks
+                .next_source_due_time()
+                .map_err(debug)?
+                .ok_or("retained time guardian return deadline")?;
+            tokio::time::timeout(NATIVE_TURN_TIMEOUT, async {
+                loop {
+                    drain_ready_monster_melee_at(&owner, return_due).await?;
+                    if owner
+                        .states
+                        .spell_states
+                        .lock()
+                        .await
+                        .native_callbacks
+                        .time_guardian_cast_position_for_test(base)
+                        .is_none()
+                    {
+                        return Ok::<_, Box<dyn std::error::Error>>(());
+                    }
+                    tokio::task::yield_now().await;
+                }
+            })
+            .await
+            .map_err(|_| "retained time guardian return did not complete at its deadline")??;
             {
                 let runtime = owner.runtime.lock().await;
                 assert!(

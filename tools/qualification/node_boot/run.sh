@@ -155,6 +155,38 @@ if [[ "$(git -C "$PLATFORM_SOURCE" rev-parse HEAD 2>/dev/null)" != "$NODE_BOOT_P
   echo 'NODE_BOOT_RESULT=BLOCKED reason=exact_platform_checkout_missing'
   exit 2
 fi
+NODE_BOOT_LIBTEST=""
+WORLD_COMPILER=(cargo +1.100.0 run --locked --release -p oteryn-world-bundle-compiler --)
+if [[ "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
+  # The qualification clock is available only in disposable World runs.
+  NODE_CLOCK_FEATURES=()
+  export OTERYN_NODE_BOOT_REAL_CLOCK="${OTERYN_NODE_BOOT_REAL_CLOCK:-0}"
+  case "$OTERYN_NODE_BOOT_REAL_CLOCK" in
+    0|1) ;;
+    *) echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_real_clock_mode'; exit 2 ;;
+  esac
+  variant=default
+  if [[ "$NODE_BOOT_WORLD" == 1 && "$OTERYN_NODE_BOOT_REAL_CLOCK" == 0 ]]; then
+    NODE_CLOCK_FEATURES=(--features qualification-clock)
+    variant=qualification-clock
+  fi
+  TARGET="$GAME_SOURCE/target/debug"
+  if [[ -n "${NODE_BOOT_PREBUILT_DIR:-}" ]]; then
+    prebuilt="$GAME_SOURCE/tools/qualification/node_boot/prebuilt.py"
+    if ! python3 "$prebuilt" verify "$variant" "$NODE_BOOT_PREBUILT_DIR"; then
+      echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_prebuilt_game_artifact'; exit 2
+    fi
+    TARGET="$(realpath -e -- "$NODE_BOOT_PREBUILT_DIR/$variant")"
+    NODE_BOOT_LIBTEST="$TARGET/node-boot-libtest"
+    if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+      if ! python3 "$prebuilt" verify world-compiler "$NODE_BOOT_PREBUILT_DIR"; then
+        echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_prebuilt_world_compiler'; exit 2
+      fi
+      compiler_dir="$(realpath -e -- "$NODE_BOOT_PREBUILT_DIR/world-compiler")"
+      WORLD_COMPILER=("$compiler_dir/oteryn-world-bundle-compiler")
+    fi
+  fi
+fi
 if [[ "$NODE_BOOT_SPELLS" == 1 && "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
   # Execute the existing compile/decode/stage qualification before creating services.
   RUST_MIN_STACK="${RUST_MIN_STACK:-16777216}" \
@@ -389,18 +421,11 @@ ADMIN_URL="postgresql://oteryn_node_boot_admin:$PG_ADMIN_PASSWORD@127.0.0.1:$PG_
 game_platform_start
 
 
-# The accelerated build is disposable: production binaries omit its file input.
-# Real-clock qualification deliberately builds the ordinary shipping binary.
-NODE_CLOCK_FEATURES=()
-export OTERYN_NODE_BOOT_REAL_CLOCK="${OTERYN_NODE_BOOT_REAL_CLOCK:-0}"
-case "$OTERYN_NODE_BOOT_REAL_CLOCK" in 0|1) ;; *) fail invalid_real_clock_mode ;; esac
-if [[ "$NODE_BOOT_WORLD" == 1 && "$OTERYN_NODE_BOOT_REAL_CLOCK" == 0 ]]; then
-  NODE_CLOCK_FEATURES=(--features qualification-clock)
-fi
 # Shipped binaries and the SEAM client harness.
-cargo +1.100.0 build --locked -p oteryn-game-server --bins "${NODE_CLOCK_FEATURES[@]}"
-cargo +1.100.0 test --locked -p oteryn-game-server --lib --no-run "${NODE_CLOCK_FEATURES[@]}"
-TARGET="$GAME_SOURCE/target/debug"
+if [[ -z "$NODE_BOOT_LIBTEST" ]]; then
+  cargo +1.100.0 build --locked -p oteryn-game-server --bins "${NODE_CLOCK_FEATURES[@]}"
+  cargo +1.100.0 test --locked -p oteryn-game-server --lib --no-run "${NODE_CLOCK_FEATURES[@]}"
+fi
 
 # Deployment administration: service user, directories, roles, migration.
 sudo useradd --system --no-create-home --shell /usr/sbin/nologin "$SERVICE_USER" 2>/dev/null || true
@@ -465,7 +490,7 @@ fi
 MAP_REVISION=map-s3b-1
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   evidence "world_profile=$NODE_BOOT_WORLD_PROFILE regions=$WORLD_REGIONS"
-  cargo +1.100.0 run --locked --release -p oteryn-world-bundle-compiler -- compile-regions "$GAME_SOURCE" "$GAME_SOURCE/content/world/pins/oteryn.identity.json" "$WORK/world.otwb" "$WORLD_REGIONS" > "$WORK/world-compile.json"
+  "${WORLD_COMPILER[@]}" compile-regions "$GAME_SOURCE" "$GAME_SOURCE/content/world/pins/oteryn.identity.json" "$WORK/world.otwb" "$WORLD_REGIONS" > "$WORK/world-compile.json"
   PIN="$WORK/world.json"
   python3 - "$GAME_SOURCE/content/world/pins/oteryn.json" "$WORK/world-compile.json" "$PIN" <<'PY_REGION_PIN'
 import json, sys
@@ -1162,22 +1187,32 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   done
   local staged_manifest="${NODE_GAMEPLAY_ENV[0]:-}"
   staged_manifest="${staged_manifest#OTERYN_NATIVE_GAMEPLAY_MANIFEST=}"
-  env "${NODE_GAMEPLAY_ENV[@]}" "${test_env[@]}" \
-  NODE_BOOT_SPELL_MANIFEST="$staged_manifest" \
-  NODE_BOOT_CONTROL_SOCKET="$BASE/run/control.sock" \
-  NODE_BOOT_ADDRESS="127.0.0.1:${NODE_BOOT_GAME_PORT:-17181}" \
-  NODE_BOOT_GAMEPLAY_CERT="$WP5_PKI/gameplay.crt" \
-  NODE_BOOT_DATABASE_URL="$ADMIN_URL" \
-  NODE_BOOT_WORLD_ID="$WORLD_ID" NODE_BOOT_CHANNEL_ID="$CHANNEL_ID" \
-  WP5_S3A_PORT="$WP5_PORT" WP5_S3A_SERVER_NAME="${WP5_SERVER_NAME:-source.test}" \
-  WP5_S3A_SOURCE_AUTHORITY="${WP5_SOURCE_AUTHORITY:-platform}" WP5_S3A_ROUTE_REVISION="${WP5_ROUTE_REVISION:-route-s3b-1}" \
-  WP5_S3A_CA_CERT="$WP5_PKI/server-ca.crt" \
-  WP5_S3A_CLIENT_CERT="$WP5_PKI/client.crt" WP5_S3A_CLIENT_KEY="$WP5_PKI/client.key" \
-  WP5_S3A_ACCOUNT_ID="$ACCOUNT_ID" WP5_S3B_SECOND_ACCOUNT_ID="$SECOND_ACCOUNT_ID" \
-  WP5_S3B_FRESH_KEY_ID="$FRESH_KEY_ID" WP5_S3B_FRESH_KEY_SEED="$FRESH_SEED_HEX" \
-  WP5_S3B_RECOVERY_KEY_ID="$RECOVERY_KEY_ID" WP5_S3B_RECOVERY_KEY_SEED="$RECOVERY_SEED_HEX" \
-    cargo +1.100.0 test --locked -p oteryn-game-server --lib "${NODE_CLOCK_FEATURES[@]}" \
-    "qualification::$qualification" -- --ignored --exact --nocapture
+  local test_dir="$PWD"
+  local test_command=(cargo +1.100.0 test --locked -p oteryn-game-server --lib "${NODE_CLOCK_FEATURES[@]}"
+    "qualification::$qualification" -- --ignored --exact --nocapture)
+  if [[ -n "${NODE_BOOT_LIBTEST:-}" ]]; then
+    # Cargo runs each test with its package directory as the working directory.
+    test_dir="$GAME_SOURCE/apps/game-server"
+    test_command=("$NODE_BOOT_LIBTEST" "qualification::$qualification" --ignored --exact --nocapture)
+  fi
+  (
+    cd "$test_dir"
+    env "${NODE_GAMEPLAY_ENV[@]}" "${test_env[@]}" \
+      NODE_BOOT_SPELL_MANIFEST="$staged_manifest" \
+      NODE_BOOT_CONTROL_SOCKET="$BASE/run/control.sock" \
+      NODE_BOOT_ADDRESS="127.0.0.1:${NODE_BOOT_GAME_PORT:-17181}" \
+      NODE_BOOT_GAMEPLAY_CERT="$WP5_PKI/gameplay.crt" \
+      NODE_BOOT_DATABASE_URL="$ADMIN_URL" \
+      NODE_BOOT_WORLD_ID="$WORLD_ID" NODE_BOOT_CHANNEL_ID="$CHANNEL_ID" \
+      WP5_S3A_PORT="$WP5_PORT" WP5_S3A_SERVER_NAME="${WP5_SERVER_NAME:-source.test}" \
+      WP5_S3A_SOURCE_AUTHORITY="${WP5_SOURCE_AUTHORITY:-platform}" WP5_S3A_ROUTE_REVISION="${WP5_ROUTE_REVISION:-route-s3b-1}" \
+      WP5_S3A_CA_CERT="$WP5_PKI/server-ca.crt" \
+      WP5_S3A_CLIENT_CERT="$WP5_PKI/client.crt" WP5_S3A_CLIENT_KEY="$WP5_PKI/client.key" \
+      WP5_S3A_ACCOUNT_ID="$ACCOUNT_ID" WP5_S3B_SECOND_ACCOUNT_ID="$SECOND_ACCOUNT_ID" \
+      WP5_S3B_FRESH_KEY_ID="$FRESH_KEY_ID" WP5_S3B_FRESH_KEY_SEED="$FRESH_SEED_HEX" \
+      WP5_S3B_RECOVERY_KEY_ID="$RECOVERY_KEY_ID" WP5_S3B_RECOVERY_KEY_SEED="$RECOVERY_SEED_HEX" \
+      "${test_command[@]}"
+  )
 }
 
 graceful_shutdown() { # ready=false first, socket removed

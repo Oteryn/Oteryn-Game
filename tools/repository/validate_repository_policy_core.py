@@ -47,8 +47,8 @@ EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "6b6a5a3101e090663adcbec2b32a268e1f8a57fb
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "1a1f98f8f2df7b981fa6a85f0f4bf3ac218247121ab330bf5348a703ce0b1e0d"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "b3423b858c7cad5c2814cef0708819f41c4b5bb328bae5450d202c2e18a92631"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "a5e38bbe7cdf36414a84c0626a65c7c630a9fae9"
-EXPECTED_POST_MERGE_RUST_SHA256 = "470b746eca8cad94235ed4f43fdd1de86977ac738421fcaca6dfacfd5ce3c89a"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "55c403a1e0c53972efb287720aa53650b8520a73"
+EXPECTED_POST_MERGE_RUST_SHA256 = "0393a1f9243c6134a5c3814983b099b4eb0ca04acf1cb6eb068d86b5b8df2ac6"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
     "on",
@@ -71,9 +71,11 @@ EXPECTED_MERGE_GROUP_JOB_KEYS = [
     "rust_linux",
     "durability_postgres_build",
     "durability_postgres",
+    "rust_dispatch",
     "rust_windows",
     "rust_supply_chain",
     "node_boot_plan",
+    "node_boot_build",
     "node_boot_shard",
     "node_boot",
     "server_seam",
@@ -547,24 +549,28 @@ def main() -> int:
             "rust_linux": (
                 "    name: Merge Queue / Rust Linux workspace\n",
                 "      fail-fast: false\n",
-                "        shard: [lint, lib-content, lib-rest, integration-heavy, integration-rest, build-smoke, client-ui]\n",
+                "        shard: [lint, lib, integration-heavy, integration-rest, build-smoke, client-ui]\n",
                 "cargo +1.100.0 clippy --locked --workspace --all-targets -- -D warnings",
                 "python tools/repository/test_check_duplicate_test_sources.py",
                 'python tools/repository/check_duplicate_test_sources.py "$RUNNER_TEMP/clippy-messages.jsonl"',
                 "NEXTEST_SHA256: 682c21b777c333e96fd532e114d3a5a894e0729ab88d94c0a9f20f8419695428",
                 "echo \"${NEXTEST_SHA256}  ${archive}\" | sha256sum -c -",
-                "cargo +1.100.0 nextest run --locked --workspace --lib --no-fail-fast -E 'test(content::)'",
-                "cargo +1.100.0 nextest run --locked --workspace --lib --no-fail-fast -E 'not test(content::)'",
+                "cargo +1.100.0 nextest run --locked --workspace --exclude oteryn-gameplay-dispatch",
+                "--features oteryn-gameplay-quests/test-support --lib --no-fail-fast",
                 'python tools/repository/plan_rust_test_shards.py "$RUNNER_TEMP/metadata.json" "$SHARD"',
                 'cargo +1.100.0 nextest run --locked --workspace "${shard_args[@]}" --no-fail-fast',
-                "cargo +1.100.0 build --locked --workspace --bins --examples --benches",
+                "cargo +1.100.0 build --locked --workspace --bins --examples",
+                "tools/repository/plan_rust_test_shards.py /dev/stdin build-benches",
+                'cargo +1.100.0 build --locked --workspace "${bench_args[@]}"',
                 "cargo +1.100.0 test --locked --workspace --bins",
                 "cargo +1.100.0 test --locked --workspace --doc",
                 "cargo +1.100.0 run --locked -p oteryn-synthetic-client-harness",
                 "cargo +1.100.0 run --locked -p oteryn-game-server -- --smoke",
             ),
             "durability_postgres_build": (
-                "    name: Merge Queue / Durability PostgreSQL harness build\n",
+                "    name: Merge Queue / Durability PostgreSQL harness build (${{ matrix.archive }})\n",
+                "        archive: [e2e, lib, lib-1, lib-2, lib-3]\n",
+                "python3 tools/repository/check_dispatch_pg_shards.py 3",
                 "    if: needs.candidate.outputs.rust == 'true'\n",
                 "ref: ${{ github.event.merge_group.head_sha || github.sha }}",
                 "BASE_SHA: ${{ needs.candidate.outputs.base_sha }}",
@@ -590,11 +596,18 @@ def main() -> int:
                 "run_registered_target character_authority_postgres apps/game-server/tests/character_authority_postgres.rs",
                 "run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs",
                 "run_registered_target native_admission_source_postgres apps/game-server/tests/native_admission_source_postgres.rs",
-                'cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"',
+                "cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-game-server ",
+                '--features oteryn-gameplay-quests/test-support --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"',
+                'export OTERYN_DISPATCH_PG_SHARD="${BASH_REMATCH[1]}/3"',
+                "-p oteryn-gameplay-dispatch --features test-support --lib",
+                '--archive-file "$RUNNER_TEMP/pg-archives/pg-$ARCHIVE.tar.zst"',
                 "NEXTEST_SHA256: 682c21b777c333e96fd532e114d3a5a894e0729ab88d94c0a9f20f8419695428",
                 'echo "${NEXTEST_SHA256}  ${archive}" | sha256sum -c -',
-                "sha256sum head-sha pg-e2e.tar.zst pg-lib.tar.zst > SHA256SUMS",
+                'cargo-nextest nextest list --cargo-metadata "$meta/target/nextest/cargo-metadata.json"',
+                '--binaries-metadata "$meta/target/nextest/binaries-metadata.json" --message-format json',
+                'sha256sum head-sha workspace "pg-$ARCHIVE.tar.zst" "pg-$ARCHIVE.json" > SHA256SUMS',
                 "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
+                "name: mq-postgres-test-inventory-${{ matrix.archive }}",
                 "          if-no-files-found: error\n",
             ),
             "durability_postgres": (
@@ -606,18 +619,35 @@ def main() -> int:
                 "NEXTEST_SHA256: 682c21b777c333e96fd532e114d3a5a894e0729ab88d94c0a9f20f8419695428",
                 'echo "${NEXTEST_SHA256}  ${archive}" | sha256sum -c -',
                 "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
-                "ARCHIVES_SHA256: ${{ needs.durability_postgres_build.outputs.archives_sha256 }}",
-                'echo "${ARCHIVES_SHA256}  SHA256SUMS" | sha256sum -c -',
-                "sha256sum -c SHA256SUMS",
-                'test "$(cat head-sha)" = "$EXPECTED_SHA"',
+                "pattern: mq-postgres-test-inventory-*",
+                "name: mq-postgres-test-archives-${{ steps.affinity.outputs.archive }}",
+                "echo 'db285d452e0cb5814a95f0c8b25ab969af5ee9637fd051a1a0fdbcb8221cb64a  tools/ci/pg_archive_affinity.py' | sha256sum -c -",
+                'python3 tools/ci/pg_archive_affinity.py route "$PG_ARCHIVES" "$JOB_INDEX" "$JOB_TOTAL"',
+                'python3 tools/ci/pg_archive_affinity.py verify "$RUNNER_TEMP" mq',
+                '"$PG_ARCHIVES" "$SELECTED_ARCHIVE" "$EXPECTED_SHA" "$GITHUB_WORKSPACE" tools/ci/plan_pg_partitions.py',
+                'test "$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_SHA"',
                 'test "$LABEL" = "$((JOB_INDEX + 1))"',
-                'python3 - "$plan" "$JOB_INDEX" "$JOB_TOTAL" "$GITHUB_WORKSPACE/tools/ci/pg_test_durations.json" <<\'PY\'',
-                "raise SystemExit(f'{archive}: the plan does not run every listed test exactly once')",
+                'JOB_INDEX="${ARCHIVE_INDEX:?missing archive worker index}"',
+                'JOB_TOTAL="${ARCHIVE_TOTAL:?missing archive worker count}"',
+                'echo "1d26d89fd1faff1752d47a7f2ae59dde980f8683fa791b85da35f92b79607321  tools/ci/plan_pg_partitions.py" | sha256sum -c -',
+                'python3 tools/ci/plan_pg_partitions.py "$plan" "$JOB_INDEX" "$JOB_TOTAL"',
                 'mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-e2e.filters"',
-                'cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst" \\',
+                'cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst" ',
                 "if: ${{ !cancelled() && steps.partition.outcome == 'success' }}",
-                'mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-lib.filters"',
-                'cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst" \\',
+                'mapfile -t filters < "$RUNNER_TEMP/pg-plan/$archive.filters"',
+                'cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/$archive.tar.zst" ',
+            ),
+            "rust_dispatch": (
+                "    name: Merge Queue / Dispatch library tests without a database\n",
+                "    needs: [candidate, durability_postgres_build]\n",
+                "    if: needs.candidate.outputs.rust == 'true'\n",
+                "        shard: [1, 2, 3]\n",
+                "name: mq-postgres-test-archives-lib-${{ matrix.shard }}",
+                'echo "$ARCHIVE_SHA256  SHA256SUMS" | sha256sum -c -',
+                'sha256sum head-sha workspace "pg-lib-$SHARD.tar.zst" "pg-lib-$SHARD.json" | cmp - SHA256SUMS',
+                'test "$(cat head-sha)" = "$EXPECTED_SHA"',
+                "unset OTERYN_TEST_POSTGRES_ADMIN_URL",
+                'cargo-nextest nextest run --archive-file "pg-lib-$SHARD.tar.zst"',
             ),
             "rust_windows": (
                 "    name: Merge Queue / Rust Windows client\n",
@@ -656,26 +686,38 @@ def main() -> int:
                 "EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}",
                 "python3 tools/qualification/node_boot/matrix.py plan --set pr > \"$RUNNER_TEMP/shards.json\"",
                 "\"$RUNNER_TEMP/shards.json\")\" = 6d04b52a16145723eedb0c56640ad052dbd26e94\n",
+                'echo "7135b31f6acc0ebc2626b80823f0a67c7afed41ef509900ad3b14437dce1c373  .github/workflows/node-boot-build.yml" | sha256sum -c -',
+                'echo "56029b4b5706f4983c262d65982abcbe029eaff9c30c408bd583561639722ed7  tools/qualification/node_boot/prebuilt.py" | sha256sum -c -',
+            ),
+            "node_boot_build": (
+                "    needs: node_boot_plan\n",
+                "    uses: ./.github/workflows/node-boot-build.yml\n",
+                "revision: ${{ github.event.merge_group.head_sha || github.sha }}",
+                "variants: ${{ needs.node_boot_plan.outputs.build_variants }}",
             ),
             "node_boot_shard": (
                 "    name: Merge Queue / Node boot / ${{ matrix.shard.name }}\n",
-                "    needs: [candidate, node_boot_plan]\n",
+                "    needs: [candidate, node_boot_plan, node_boot_build]\n",
                 "    if: needs.candidate.outputs.server_qualification != 'false'\n",
                 "    timeout-minutes: 240\n",
                 "      fail-fast: false\n",
                 "        shard: ${{ fromJSON(needs.node_boot_plan.outputs.shards) }}\n",
                 "EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}",
                 "ref: ${{ matrix.shard.platform_ref }}",
+                "NODE_BOOT_PREBUILT_DIR: ${{ runner.temp }}/node-boot-prebuilt",
+                "MAIN_SHA256: ${{ needs.node_boot_build.outputs[steps.build_inputs.outputs.main_variant] }}",
+                'python3 tools/qualification/node_boot/prebuilt.py unpack "$variant" "$archive"',
                 "NODE_BOOT_FAILURE_LOG_DIR=\"$logs\" bash tools/qualification/node_boot/run.sh | tee \"$evidence\"",
                 "python3 tools/qualification/node_boot/matrix.py extract \"$evidence\"",
                 "--shard \"$SHARD_NAME\" --entry \"$SHARD_ENTRY\" --exit-code \"$code\"",
             ),
             "node_boot": (
                 "    name: Merge Queue / Node boot against the real Platform\n",
-                "    needs: [candidate, node_boot_plan, node_boot_shard]\n",
+                "    needs: [candidate, node_boot_plan, node_boot_build, node_boot_shard]\n",
                 "    if: always() && needs.candidate.outputs.server_qualification != 'false'\n",
                 "EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}",
                 "          test \"$PLAN_RESULT\" = success\n",
+                "          test \"$BUILD_RESULT\" = success\n",
                 "          test \"$SHARD_RESULT\" = success\n",
                 "          exit \"$status\"\n",
             ),
@@ -690,7 +732,7 @@ def main() -> int:
             "game_gate": (
                 "    name: game-gate\n",
                 "    if: always()\n",
-                "    needs: [candidate, dependency_review, codeql, atlas_fullworld, world_bundle, rust_linux, durability_postgres, rust_windows, rust_supply_chain, node_boot, server_seam]\n",
+                "    needs: [candidate, dependency_review, codeql, atlas_fullworld, world_bundle, rust_linux, rust_dispatch, durability_postgres, rust_windows, rust_supply_chain, node_boot, server_seam]\n",
                 "          EVENT_NAME: ${{ github.event_name }}\n",
                 "          CANDIDATE: ${{ needs.candidate.result }}\n",
                 "          DEPENDENCY_REVIEW: ${{ needs.dependency_review.result }}\n",
@@ -706,6 +748,8 @@ def main() -> int:
                 "          WORLD_BUNDLE_REQUIRED: ${{ needs.candidate.outputs.world_bundle }}\n",
                 "          WORLD_BUNDLE: ${{ needs.world_bundle.result }}\n",
                 "          RUST_LINUX: ${{ needs.rust_linux.result }}\n",
+                "          RUST_DISPATCH: ${{ needs.rust_dispatch.result }}\n",
+                'for result in "$RUST_LINUX" "$RUST_DISPATCH" "$DURABILITY_POSTGRES" "$RUST_SUPPLY_CHAIN"; do',
                 "          DURABILITY_POSTGRES: ${{ needs.durability_postgres.result }}\n",
                 "          RUST_WINDOWS: ${{ needs.rust_windows.result }}\n",
                 "          RUST_SUPPLY_CHAIN: ${{ needs.rust_supply_chain.result }}\n",
@@ -726,12 +770,13 @@ def main() -> int:
                         f"merge-group gate job {job} missing canonical fragment: {fragment.strip()}"
                     )
         # The PostgreSQL partitions only run the archives built once by durability_postgres_build.
-        partitions = indented_yaml_mapping_block(text, "durability_postgres", 2)
-        for forbidden in ("rustup ", "cargo +", "cargo build", "cargo test", "actions/cache/"):
-            if partitions is not None and forbidden in partitions:
-                errors.append(
-                    f"merge-group gate job durability_postgres must not compile or restore a cache: {forbidden.strip()}"
-                )
+        for job in ("durability_postgres", "rust_dispatch"):
+            consumer = indented_yaml_mapping_block(text, job, 2)
+            for forbidden in ("rustup ", "cargo +", "cargo build", "cargo test", "actions/cache/"):
+                if consumer is not None and forbidden in consumer:
+                    errors.append(
+                        f"merge-group gate job {job} must not compile or restore a cache: {forbidden.strip()}"
+                    )
 
     # The merge-group gate leaves push-to-main CodeQL to codeql.yml, so codeql.yml must keep
     # analysing python, actions and rust on every push to main with no path or job filter.

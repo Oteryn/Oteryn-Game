@@ -26,9 +26,9 @@ jobs:
       contents: read
       pull-requests: read
     env:
-      EXPECTED_MERGE_GROUP_GATE_BLOB: "1de3f58c155660d9bf1dec97119231f9f991a3a4"
+      EXPECTED_MERGE_GROUP_GATE_BLOB: "e2b004fc0c0eb68b9954587223b9d0f08d9f404a"
       EXPECTED_AGENT_GOVERNANCE_BLOB: "42d84c9089cdef928c6cb17268269156c87c0abb"
-      EXPECTED_MERGE_GATE_BLOB: "42f72738733a599fb4d47ff9791cf9a06a642c37"
+      EXPECTED_MERGE_GATE_BLOB: "4ac7517823014f6992534d96438cbd9a49bcdc11"
     steps:
       - name: Validate control-plane candidate as inert data
         shell: bash
@@ -264,6 +264,8 @@ jobs:
           durability_result_expression = '$' + '{{ needs.durability_postgres.result }}'
           world_bundle_result_expression = '$' + '{{ needs.world_bundle.result }}'
           world_bundle_required_expression = '$' + '{{ needs.candidate.outputs.world_bundle }}'
+          archive_matrix_expression = '$' + '{{ matrix.archive }}'
+          affinity_archive_expression = '$' + '{{ steps.affinity.outputs.archive }}'
           required = (
               '  merge_group:\n    types: [checks_requested]\n  push:\n    branches: [main]\n',
               '    name: game-gate\n',
@@ -301,13 +303,16 @@ jobs:
               "            --config 'profile.dev.package.oteryn-gameplay-dispatch.debug=0' -p oteryn-gameplay-dispatch --features test-support --lib \\\n",
               '          sha256sum head-sha workspace "pg-$ARCHIVE.tar.zst" "pg-$ARCHIVE.json" > SHA256SUMS\n',
               '          cargo-nextest nextest list --cargo-metadata "$meta/target/nextest/cargo-metadata.json" \\\n',
-              '              sha256sum head-sha workspace "pg-$archive.tar.zst" "pg-$archive.json" | cmp - SHA256SUMS\n',
               '          test "$SHARD_RESULT" = success\n',
-              '          verify_archive e2e "$E2E_SHA256"\n',
-              '          verify_archive lib "$LIB_SHA256"\n',
-              '          verify_archive lib-1 "$DISPATCH_1_SHA256"\n',
-              '          verify_archive lib-2 "$DISPATCH_2_SHA256"\n',
-              '          verify_archive lib-3 "$DISPATCH_3_SHA256"\n',
+              f'          name: mq-postgres-test-inventory-{archive_matrix_expression}\n',
+              '          pattern: mq-postgres-test-inventory-*\n',
+              f'          name: mq-postgres-test-archives-{affinity_archive_expression}\n',
+              "          echo 'db285d452e0cb5814a95f0c8b25ab969af5ee9637fd051a1a0fdbcb8221cb64a  tools/ci/pg_archive_affinity.py' | sha256sum -c -\n",
+              '          python3 tools/ci/pg_archive_affinity.py route "$PG_ARCHIVES" "$JOB_INDEX" "$JOB_TOTAL"\n',
+              '          python3 tools/ci/pg_archive_affinity.py verify "$RUNNER_TEMP" mq \\\n',
+              '            "$PG_ARCHIVES" "$SELECTED_ARCHIVE" "$EXPECTED_SHA" "$GITHUB_WORKSPACE" tools/ci/plan_pg_partitions.py\n',
+              '          JOB_INDEX="${ARCHIVE_INDEX:?missing archive worker index}"\n',
+              '          JOB_TOTAL="${ARCHIVE_TOTAL:?missing archive worker count}"\n',
               '          python3 tools/ci/plan_pg_partitions.py "$plan" "$JOB_INDEX" "$JOB_TOTAL" \\\n',
               '    name: Merge Queue / Dispatch library tests without a database\n',
               '          unset OTERYN_TEST_POSTGRES_ADMIN_URL\n',
