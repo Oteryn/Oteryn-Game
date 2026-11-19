@@ -114,7 +114,7 @@ fn unpaid_blood_entrance_uses_the_retained_donor_placement() -> TestResult {
 
 pub(super) fn callback(trigger: Position) -> TestResult<Callback> {
     let selector = if trigger == SOURCE_ENTRANCE {
-        json!({"position":trigger,"ordinal":SOURCE_ORDINAL,"appearance":SOURCE_APPEARANCE})
+        json!({"native":{"position":trigger,"ordinal":SOURCE_ORDINAL,"appearance":SOURCE_APPEARANCE}})
     } else {
         json!({"position":trigger,"ordinal":0})
     };

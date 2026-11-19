@@ -339,11 +339,20 @@ pub(super) fn world_with_cells(
     trigger: Position,
     cells: &[Position],
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    let selector = &callback.selector;
+    let (appearance, ordinal) = if let Some(native) = &selector.native {
+        (native.appearance, native.ordinal)
+    } else {
+        (
+            selector.appearance.unwrap_or(100),
+            u8::try_from(selector.ordinal.unwrap_or(1).max(1))?,
+        )
+    };
     world_cells(
         callback,
         trigger,
-        callback.selector.appearance.unwrap_or(100),
-        u8::try_from(callback.selector.ordinal.unwrap_or(1).max(1))?,
+        appearance,
+        ordinal,
         &[],
         &[],
         None,
