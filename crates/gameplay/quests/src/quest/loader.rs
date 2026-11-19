@@ -790,6 +790,7 @@ mod tests {
             "m44-lions-flower-3",
             "m44-lions-flower-4",
             "m44-lions-flower-5",
+            "nrwicked/arbaziloth",
             "qn1-children-lever-0/ordinary",
             "qn1-children-lever-0/solved",
             "qn1-children-lever-1/ordinary",
@@ -829,7 +830,7 @@ mod tests {
         ] {
             assert!(expected.insert(format!("oteryn:quest-callback/{suffix}")));
         }
-        assert_eq!(expected.len() - before_qmech_native, 78);
+        assert_eq!(expected.len() - before_qmech_native, 79);
         assert_eq!(
             callbacks
                 .into_iter()

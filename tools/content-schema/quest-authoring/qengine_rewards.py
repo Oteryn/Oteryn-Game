@@ -1245,6 +1245,7 @@ def validate_callbacks(document):
                 or callback.get('completes',False) or counter['track'] in all_keys
                 or counter['track'] in {r['track'] for r in callback.get('requires',[])}):
             raise ValueError('invalid owned reward counter '+callback['key'])
+        value_guard = value_guard or (counter is not None and bool(storage or operations))
         if (len(all_keys)+int(counter is not None)>16 or len(all_keys)!=len(set(all_keys))
             or any(len(p['storage'])+len(p.get('state_ops',[]))>8 for p in participants)
             or len({p['quest'] for p in participants})!=len(participants)
@@ -1264,7 +1265,8 @@ def validate_callbacks(document):
             or {r['track'] for r in requires}&{s['track'] for s in storage}
             or any(r['minimum']>r['maximum'] for r in requires)
             or any(s['minimum']>s['maximum'] for s in storage)
-            or (not value_guard and not callback.get('repeatable',False) and all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage))
+            or (not value_guard and not callback.get('repeatable',False)
+                and all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage))
             or (callback.get('repeatable',False) and (
                 not ((callback.get('fee') and callback.get('give'))
                      or (bool(callback['take']) and (callback.get('give')

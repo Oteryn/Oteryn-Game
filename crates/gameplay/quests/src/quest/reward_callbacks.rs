@@ -2241,8 +2241,8 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Shared, QuestPC7, other registered shards, M43 peer, Kingsday journal.
-        assert_eq!(load()?.len(), 207 + 59 + 125 + 1 + 1 + 13);
+        // Shared, QuestPC7, other shards, M43, Kingsday, Rottin and Forgemaster.
+        assert_eq!(load()?.len(), 207 + 59 + 125 + 1 + 1 + 13 + 12);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
