@@ -129,7 +129,25 @@ pub(super) async fn exercise(
     h: &Harness,
     fence: CurrentCharacterGameplayFence,
 ) -> TestResult {
-    step(owner, admitted, 1, ORIGIN).await?;
+    {
+        let map = owner.bundle_map().ok_or("Kroazur map")?;
+        let before = map
+            .facts
+            .movement_effects_since(0)
+            .last()
+            .map_or(0, |cue| cue.0);
+        step(owner, admitted, 1, ORIGIN).await?;
+        // Crystal movement_kroazur_room.lua:37-41 sends teleport feedback
+        // at the safe return square even when the access track is unset.
+        assert!(
+            map.facts
+                .movement_effects_since(before)
+                .iter()
+                .any(|(_, at, effect)| {
+                    (at.x, at.y, at.floor, *effect) == (ORIGIN.x, ORIGIN.y, ORIGIN.floor, 11)
+                })
+        );
+    }
     assert!(
         super::engworldchg_journals::live_creatures(owner, KROAZUR)
             .await?
