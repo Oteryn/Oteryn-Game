@@ -63,9 +63,11 @@ fn route(name: &str) -> Route {
 fn bindings(name: &str) -> TestResult<[Callback; 2]> {
     let route = route(name);
     let make = |phase, minimum, maximum, destination| {
+        // The rank belongs to the faction quest. The read-only world owner
+        // checks the track under that quest's existing Character fence.
         serde_json::from_value(serde_json::json!({
             "key":format!("oteryn:quest-callback/dreamers-sacrifice-{}-{phase}", route.action),
-            "quest":"oteryn:quest.dreamer_s_challenge_quest",
+            "quest":route.faction,
             "trigger":"step_in",
             "selector":{"position":route.source,"action":route.action,"appearance":1949},
             "reversible":false,"passages":[],"offerings":[],
