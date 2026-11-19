@@ -106,7 +106,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         clippy::too_many_arguments,
         reason = "one owner turn binds party, native carrier, map and exact lever revision"
     )]
-    pub(super) async fn execute_quest_encounter(
+    pub(in crate::gameplay_transport) async fn execute_quest_encounter(
         &self,
         permit: &SpellLanePermit,
         runtime: &mut ChannelRuntimeV1,

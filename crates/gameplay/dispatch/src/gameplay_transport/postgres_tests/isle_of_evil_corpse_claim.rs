@@ -67,7 +67,10 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
             "sources":["Crystal 201189f8 actions_corpse_bosses.lua:36-67"]
         }}})
     }).collect::<Vec<_>>();
-    let recipe = format!("{:x}", Sha256::digest(serde_json::to_vec(&CORPSES)?));
+    let recipe = Sha256::digest(serde_json::to_vec(&CORPSES)?)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
     let source = json!({"schema":1,"quests":[{"quest":QUEST,"tracks":tracks,"stages":stages,
         "recipe_sha256":recipe,
         "sources":["Crystal 201189f8 actions_corpse_bosses.lua:4-67"]}]});

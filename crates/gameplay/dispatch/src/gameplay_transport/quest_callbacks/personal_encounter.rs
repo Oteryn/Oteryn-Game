@@ -147,7 +147,7 @@ impl Cohorts {
     }
 }
 
-pub(super) struct Reservation<'a> {
+pub(in crate::gameplay_transport) struct Reservation<'a> {
     pool: &'a Cohorts,
     scope: Scope,
     callback: String,
