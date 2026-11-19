@@ -759,7 +759,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     RottenAreaEffect::EnergyDamage { amount, .. } => {
                         // Lua ignores doTargetCombatHealth's result. A known HP
                         // refusal never rolls back its already-applied icon/KV.
-                        let _ = states.apply_creature_damage_kind(
+                        let hit = states.apply_creature_damage_kind(
                             &runtime,
                             effect.actor,
                             effect.session,
@@ -770,6 +770,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             ),
                             oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Creature(None),
                         );
+                        // Crystal monster_onthink_area_icons.lua:147-153 passes
+                        // CONST_ME_ENERGYHIT (12) to the targeted combat call.
+                        if hit.is_some()
+                            && let Some(map) = self.bundle_map()
+                            && let Ok(target) = runtime.read_actor_position(effect.actor)
+                            && let Some(at) =
+                                super::native_callbacks::visual_position(target.position())
+                        {
+                            map.facts.emit_movement_effect(at, 12);
+                        }
                         true
                     }
                 };

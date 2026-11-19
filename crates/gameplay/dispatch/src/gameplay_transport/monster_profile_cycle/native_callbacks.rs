@@ -446,7 +446,9 @@ impl NativeCallbackState {
     }
 }
 
-fn visual_position(position: MovementLocalPosition) -> Option<crate::map::overlay::TilePos> {
+pub(super) fn visual_position(
+    position: MovementLocalPosition,
+) -> Option<crate::map::overlay::TilePos> {
     Some(crate::map::overlay::TilePos {
         x: u16::try_from(position.x).ok()?,
         y: u16::try_from(position.y).ok()?,

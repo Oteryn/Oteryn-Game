@@ -6,6 +6,17 @@ use crate::foundation::MovementLocalPosition;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 #[test]
+fn gloom_pillars_full_cross_damages_player_and_emits_energy_hit() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    if admin.is_empty() {
+        return Err("empty PostgreSQL admin URL".into());
+    }
+    run_rotten_world_case(RottenWorldCase::GloomCross)
+}
+
+#[test]
 fn srx3_rotten_area_native_reserved_think_publishes_canonical_icon_and_kv_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -17,6 +28,7 @@ fn srx3_rotten_area_native_reserved_think_publishes_canonical_icon_and_kv_postgr
 pub(super) enum RottenWorldCase {
     InitialCharge,
     ChargeInterval,
+    GloomCross,
     TorkadaExpedition,
 }
 
@@ -25,12 +37,23 @@ pub(super) fn run_rotten_world_case(case: RottenWorldCase) -> TestResult {
     let result = run_on_thread("srx3-rotten-area-native", move || {
         run(async |admin| {
             reset();
-            // Pinned XML178092-178094: Bloated Man-Maggot33887,31662,14.
-            let scene = super::srx3_soul_war_world_fixture::source_world(MovementLocalPosition {
-                x: 33887,
-                y: 31663,
-                floor: 14,
-            })?;
+            let gloom_cross = matches!(case, RottenWorldCase::GloomCross);
+            let (at, origin, creature) = if gloom_cross {
+                // Crystal world-monster.xml: Wandering Pillar at (33813,31824,15).
+                (
+                    MovementLocalPosition { x: 33813, y: 31824, floor: 15 },
+                    MovementLocalPosition { x: 33815, y: 31824, floor: 15 },
+                    "oteryn:creature.wandering_pillar",
+                )
+            } else {
+                // Pinned XML178092-178094: Bloated Man-Maggot33887,31662,14.
+                (
+                    MovementLocalPosition { x: 33887, y: 31662, floor: 14 },
+                    MovementLocalPosition { x: 33887, y: 31663, floor: 14 },
+                    "oteryn:creature.bloated_man_maggot",
+                )
+            };
+            let scene = super::srx3_soul_war_world_fixture::source_world(origin)?;
             let active = scene.controller.active().ok_or("actual World activation")?;
             let native = active
                 .native_gameplay()
@@ -111,11 +134,6 @@ pub(super) fn run_rotten_world_case(case: RottenWorldCase) -> TestResult {
                 drop(seal);
                 return h.cleanup().await;
             }
-            let at = MovementLocalPosition {
-                x: 33887,
-                y: 31662,
-                floor: 14,
-            };
             assert_eq!(
                 scene.room.movement_cells().index().lookup(
                     scene.room.movement_cells().scope(),
@@ -140,11 +158,19 @@ pub(super) fn run_rotten_world_case(case: RottenWorldCase) -> TestResult {
                         .all(Option::is_none)
                 );
                 runtime
-                    .spawn_arena_opponent("oteryn:creature.bloated_man_maggot", at, |r, p| {
+                    .spawn_arena_opponent(creature, at, |r, p| {
                         Some(p == at && r.native_summon_cell_free(p))
                     })
                     .map_err(debug)?
             };
+            if gloom_cross {
+                assert_gloom_cross(&mut owner, native, player, admitted.game_session_id, minion)
+                    .await?;
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
+            }
             for _ in 0..8 {
                 owner.clock_origin -= std::time::Duration::from_secs(1);
                 owner.drain_monster_melee().await;
@@ -200,6 +226,48 @@ pub(super) fn run_rotten_world_case(case: RottenWorldCase) -> TestResult {
         started.elapsed()
     );
     result
+}
+
+async fn assert_gloom_cross(
+    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    player: crate::foundation::ExactActorRef,
+    session: crate::foundation::GameSessionId,
+    minion: crate::foundation::ExactActorRef,
+) -> TestResult {
+    use oteryn_gameplay_entities::carrier::rotten_blood::RottenBloodIconKey;
+
+    let before = {
+        let mut runtime = owner.runtime.lock().await;
+        let source = runtime.qualify_rotten_blood_icon_source(minion, native).map_err(debug)?;
+        // Crystal monster_onthink_area_icons.lua:139-153. Start just before
+        // the threshold to exercise one real, durable native Think.
+        runtime
+            .set_rotten_blood_player_icon(&source, player, session, RottenBloodIconKey::WhiteCross, Some(110))
+            .map_err(debug)?;
+        owner.states.spell_states.lock().await.get(&runtime, player, session)
+            .ok_or("Gloom Pillars player vitals")?.vitals().health
+    };
+    let at = crate::map::overlay::TilePos { x: 33815, y: 31824, floor: -15 };
+    let cursor = owner.bundle_map().ok_or("Gloom Pillars map")?.facts
+        .movement_effects_since(0).last().map_or(0, |(sequence, _, _)| *sequence);
+    for _ in 0..8 {
+        owner.clock_origin -= std::time::Duration::from_secs(1);
+        owner.drain_monster_melee().await;
+        let runtime = owner.runtime.lock().await;
+        let cross = runtime.rotten_blood_keyed_icons(player).map_err(debug)?
+            .into_iter().flatten().find(|icon| icon.0 == "white-cross");
+        if cross.is_some_and(|icon| icon.3 == 0) {
+            let states = owner.states.spell_states.lock().await;
+            let after = states.get(&runtime, player, session)
+                .ok_or("Gloom Pillars player vitals")?.vitals().health;
+            assert!(after < before);
+            assert!(owner.bundle_map().ok_or("Gloom Pillars map")?.facts
+                .movement_effects_since(cursor).iter().any(|(_, pos, effect)| *pos == at && *effect == 12));
+            return Ok(());
+        }
+    }
+    Err("the native Gloom Pillars think did not discharge the full cross".into())
 }
 
 async fn assert_global_charge_interval(
