@@ -33,7 +33,7 @@ fn rottin_rabbit_skinning_uses_mature_corpse_and_keeps_decay_postgres() -> TestR
         return Ok(());
     };
     drop(admin);
-    super::kill_reward_e2e::scenario_thread::run("rottin-rabbit-skinning", || scenario(true))
+    super::kill_reward_e2e_fixtures::scenario_thread::run("rottin-rabbit-skinning", || scenario(true))
 }
 
 fn scenario(rabbit: bool) -> TestResult {
@@ -164,7 +164,7 @@ fn scenario(rabbit: bool) -> TestResult {
             ("oteryn:item.tibia.i5942", 1),
             ("oteryn:item.tibia.i3469", 1),
         ];
-        super::item_look::seed_main_backpack(&harness, if rabbit { &tools } else { &tools[..2] })
+        super::item_look_fixtures::seed_main_backpack(&harness, if rabbit { &tools } else { &tools[..2] })
             .await?;
 
         if rabbit {

@@ -11,7 +11,7 @@ fn m26_soul_war_postgres_all_six_source_aliases_reach_real_entry_gates() -> Test
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| {
         super::reset();
         let h =
             Harness::create_with_admission_seed(admin, "m26_source_aliases", true, false).await?;
@@ -60,7 +60,7 @@ fn m26_soul_war_postgres_all_six_source_aliases_reach_real_entry_gates() -> Test
         {
             let key = format!("oteryn:boss.{boss}");
             assert_eq!(
-                super::boss_encounter::exchange_kind(
+                super::boss_encounter_fixtures::exchange_kind(
                     &owner,
                     &mut admitted,
                     index as u64 + 1,

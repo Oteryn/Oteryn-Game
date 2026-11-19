@@ -1,5 +1,6 @@
 use super::*;
 use crate::gameplay_transport::spell_character_facts::{CastFactsLoad, load_character_cast_facts};
+use oteryn_protocol_oteryn::channel_switch::{SwitchLock, SwitchStatus};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn admit_fresh_session(
@@ -206,6 +207,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return Err(AdmissionRefusal::PremiumRequired);
             }
+            if budget
+                .retry_unavailable(async || {
+                    self.root
+                        .read_channel_full(
+                            *attempt.character_id.as_bytes(),
+                            *self.world_id.as_bytes(),
+                            *self.channel_id.as_bytes(),
+                        )
+                        .await
+                        .map_err(|_| Unavailable)
+                })
+                .await?
+            {
+                return Err(AdmissionRefusal::ChannelSwitch(SwitchStatus {
+                    lock: SwitchLock::ChannelFull,
+                    cooldown_left_ms: 0,
+                }));
+            }
             // Capacity is reserved only after every semantic/authentication check,
             // but before the durable GameSession mutation. M+1 therefore rejects
             // without creating a playable/committed session.
@@ -256,6 +275,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     FreshAdmissionDurableOutcomeV1::Committed(_)
                     | FreshAdmissionDurableOutcomeV1::ExistingCommitted(_),
                 ) => {}
+                Ok(FreshAdmissionDurableOutcomeV1::RejectedChannelSwitch(status)) => {
+                    self.rollback_runtime_player(reservation).await?;
+                    return Err(AdmissionRefusal::ChannelSwitch(status));
+                }
                 // The owner evidence moved after composition: proven noncommit.
                 Ok(FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority)
                     if budget.stale_rounds < FRESH_ADMISSION_ROUNDS =>

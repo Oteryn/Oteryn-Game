@@ -31,7 +31,7 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run(
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run(
         "srx3-primal-death-cutoff",
         move || {
             run(async move |admin| {
@@ -49,8 +49,8 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                 let h =
                     Harness::create_with_admission_seed(admin, "srx3_primal_cutoff", false, false)
                         .await?;
-                let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-                super::house_transfer::prepare_owned_session(&h).await?;
+                let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+                super::house_transfer_fixtures::prepare_owned_session(&h).await?;
                 let seal = h.recovery.seal_current().map_err(debug)?;
                 let authority = h
                     .root
@@ -60,7 +60,7 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                 let mut owner = deps.owner(&h, &authority);
                 owner.evidence = &evidence.evidence;
                 install_scene(&mut owner, &scene, PinnedActivitySourceRoom::Primal)?;
-                super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+                super::boss_activity_fixtures::issue_content_and_reset(&h, &scene.pin).await?;
                 let mut admitted = deps.admitted;
                 let (offered, scope, generation) = {
                     let runtime = owner.runtime.lock().await;
@@ -93,8 +93,8 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                     )
                     .map_err(debug)?;
                 prepare_player(&h, &owner, &mut admitted, 1999).await?;
-                let instance = super::activity_runtime::allocate_ready_instance(&h, 219).await?;
-                let (_, reply, barrier) = super::boss_activity::exchange_capture(
+                let instance = super::activity_runtime_fixtures::allocate_ready_instance(&h, 219).await?;
+                let (_, reply, barrier) = super::boss_activity_fixtures::exchange_capture(
                     &owner,
                     &mut admitted,
                     "oteryn:creature.the_primal_menace",
@@ -180,7 +180,7 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                         Box<dyn std::future::Future<Output = TestResult> + '_>,
                     > = Box::pin(async {
                         let view = owner.runtime_view(&registered);
-                        super::srx3_primal::drain_actual_native_through(
+                        super::srx3_primal_fixtures::drain_actual_native_through(
                             &view,
                             view.owner_now().get(),
                             true,
@@ -227,7 +227,7 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                     Box<dyn std::future::Future<Output = TestResult> + '_>,
                 > = Box::pin(async {
                     let view = owner.runtime_view(&registered);
-                    super::srx3_primal::drain_actual_native_through(
+                    super::srx3_primal_fixtures::drain_actual_native_through(
                         &view,
                         view.owner_now().get(),
                         true,
@@ -293,7 +293,7 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                         // Finish the original callbacks and native continuations
                         // before holding the Item row needed by the target Map read.
                         let view = owner.runtime_view(&registered);
-                        super::srx3_primal::drain_actual_native_through(
+                        super::srx3_primal_fixtures::drain_actual_native_through(
                             &view,
                             view.owner_now().get(),
                             true,
@@ -319,7 +319,7 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                             ))
                             .ok_or("actual predecessor execution clock")?;
                         let view = owner.runtime_view(&registered);
-                        super::srx3_primal::drain_actual_native_through(&view, before_think, true)
+                        super::srx3_primal_fixtures::drain_actual_native_through(&view, before_think, true)
                             .await?;
                         assert_eq!(
                             view.states
@@ -341,7 +341,7 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                             .ok_or("actual next native Think execution clock")?;
                         let normal_now = owner.owner_now().get();
                         let view = owner.runtime_view(&registered);
-                        super::srx3_primal::drain_actual_native_through(&view, normal_now, false)
+                        super::srx3_primal_fixtures::drain_actual_native_through(&view, normal_now, false)
                             .await?;
                         assert!(
                             normal_now < first.2,
@@ -352,8 +352,8 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                         let blocker_pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
                             .fetch_one(&mut *blocker)
                             .await?;
-                        sqlx::query("SELECT i.item_instance_id FROM game_item_instances i JOIN game_primal_pod_callbacks p USING(item_instance_id) WHERE p.source_transaction_id=encode($1,'hex')::uuid FOR UPDATE OF i")
-                            .bind(first.0.as_slice()).fetch_one(&mut *blocker).await?;
+                        let (holder_ready, wait_for_holder) = tokio::sync::oneshot::channel();
+                        let (row_locked, wait_for_row_lock) = tokio::sync::oneshot::channel();
                         let epoch_before = crate::gameplay_transport::primal_callbacks::normal_map_read_epoch_for_test();
                         let view = owner.runtime_view(&registered);
                         {
@@ -385,14 +385,31 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                             "i.definition_revision_ref,i.quantity,i.state_revision::text,%",
                         );
                         let (drained, observed) = tokio::join!(
-                            Box::pin(super::srx3_primal::drain_actual_native_through(
-                                &view, normal_now, true,
-                            ))
+                            Box::pin(
+                                crate::gameplay_transport::primal_callbacks::NORMAL_MAP_READ_GATE
+                                    .scope(
+                                        std::cell::RefCell::new(Some((
+                                            holder_ready,
+                                            wait_for_row_lock
+                                        ))),
+                                        super::srx3_primal_fixtures::drain_actual_native_through(
+                                            &view, normal_now, true,
+                                        ),
+                                    )
+                            )
                                 as std::pin::Pin<
                                     Box<dyn std::future::Future<Output = TestResult> + '_>,
                                 >,
                             Box::pin(async {
                                 let observation: TestResult = async {
+                                    // Earlier map reads run freely. Lock the row only when the
+                                    // Primal read itself has checked out and proved its holder.
+                                    tokio::time::timeout(std::time::Duration::from_secs(8), wait_for_holder)
+                                        .await
+                                        .map_err(|_| "prerequisite: actual Primal map-read holder was not proved")??;
+                                    sqlx::query("SELECT i.item_instance_id FROM game_item_instances i JOIN game_primal_pod_callbacks p USING(item_instance_id) WHERE p.source_transaction_id=encode($1,'hex')::uuid FOR UPDATE OF i")
+                                        .bind(first.0.as_slice()).fetch_one(&mut *blocker).await?;
+                                    row_locked.send(()).map_err(|()| "actual Primal read ended before external row lock")?;
                                     let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(8);
                                     loop {
                                         let blocked: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND $1=ANY(pg_blocking_pids(pid)) AND wait_event_type='Lock' AND query LIKE $2)")

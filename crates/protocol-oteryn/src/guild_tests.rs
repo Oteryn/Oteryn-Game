@@ -72,6 +72,7 @@ fn guild_codec_intents_queries_results_roundtrip() -> Result<(), GuildWireError>
             guild,
             revision: 1,
             members: vec![GuildMember {
+                channel: None,
                 character,
                 name: "Hero".into(),
                 level: 3,
@@ -165,6 +166,7 @@ fn guild_codec_bounds_and_malformed_fields() -> Result<(), GuildWireError> {
     );
     let members = (1..=100)
         .map(|n| GuildMember {
+            channel: None,
             character: id(n),
             name: "a".repeat(29),
             level: 3,
@@ -195,6 +197,7 @@ fn guild_codec_bounds_and_malformed_fields() -> Result<(), GuildWireError> {
     );
     if let GuildQueryResult::Roster { members, .. } = &mut page {
         members.push(GuildMember {
+            channel: None,
             character: id(101),
             name: "Hero".into(),
             level: 3,
@@ -202,5 +205,37 @@ fn guild_codec_bounds_and_malformed_fields() -> Result<(), GuildWireError> {
         });
     }
     assert!(encode_guild_query_result(&page).is_err());
+    Ok(())
+}
+
+#[test]
+fn a_roster_member_carries_its_current_channel_and_a_bad_channel_fails_closed()
+-> Result<(), GuildWireError> {
+    let id = |n: u8| {
+        let mut id = [n; 16];
+        id[6] = 0x70;
+        id[8] = 0x80;
+        id
+    };
+    let mut member = GuildMember {
+        channel: Some(id(3)),
+        character: id(2),
+        name: "Hero".into(),
+        level: 3,
+        title: "".into(),
+    };
+    let roster = |member: GuildMember| GuildQueryResult::Roster {
+        guild: id(1),
+        revision: 1,
+        members: vec![member],
+        next: None,
+    };
+    let result = roster(member.clone());
+    assert_eq!(
+        decode_guild_query_result(&encode_guild_query_result(&result)?)?,
+        result
+    );
+    member.channel = Some([0; 16]);
+    assert!(encode_guild_query_result(&roster(member)).is_err());
     Ok(())
 }

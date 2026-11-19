@@ -120,7 +120,9 @@ loop; the CI history named the culprit commit in minutes.
    restrict the fix to a file list.
 5. **Push once.** Before the PR, dispatch seam and node boot on the fix branch
    and wait for both; then the PR, merged before anything else. Waiting PRs
-   take `origin/main` afterwards (`oteryn-dev` `references/ci-merge.md`,
+   do not merge `origin/main` to stay current. A waiting PR whose head still
+   fails for this defect merges `origin/main` once, on its otherwise-ready
+   head, and names the fix SHA (`oteryn-dev` `references/ci-merge.md`,
    *Reading a red check*, step 3).
 6. **Revert is the fallback, not the default.** Offer the owner a revert of
    the culprit when step 3 cannot reproduce the failure within about an
@@ -188,7 +190,7 @@ Read a red node boot run from its causes, not its last lines.
 |---|---|
 | stack overflow / `SIGSEGV` in a scenario test | default thread stack; needs a 64 MiB thread |
 | `busy` holder, lock timeout in one PG partition | contention or a missing retry of a busy durable holder (DEFLAKE-2..4) |
-| passes locally, fails in CI only | nextest per-process isolation, runner stack size, or `main` moved (CI tests the merge with `main`) |
+| passes locally, fails in CI only | nextest per-process isolation, runner stack size, or a defect already on `main` (CI tests the PR head SHA, not the merge with `main`; check the same test on `main`) |
 | integration count or file-family test red after a content change | a new import batch or spawn file nobody counted (#2684, #2691) |
 | hosted runner job killed (exit 143) or timed out, only on one branch | out of memory or a compile-size regression in the branch; before any re-run, compare its duration with the same job on recent PRs (the PostgreSQL harness build takes 10-15 min elsewhere), then shrink the build or escalate; do not re-run it a third time |
 | node boot shard green, scenario rows red | the job only proves the node started; read the rows (`SEAM_EVIDENCE ... status=FAIL`, `failure_summary.py`) |

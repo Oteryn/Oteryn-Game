@@ -1,7 +1,7 @@
 //! Component proof after real native Instance handoff. The death is supplied
 //! through the existing captured-death seam; this does not claim a Primal fight
 //! or qualify a Primal template. No Primal catalogue row is seeded.
-use super::super::soul_war::{CapturedEndgameDeath, settle_captured_endgame_death};
+use super::super::soul_war_fixtures::{CapturedEndgameDeath, settle_captured_endgame_death};
 use super::*;
 
 pub(super) async fn assert_receipts(

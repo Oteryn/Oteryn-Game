@@ -71,7 +71,7 @@ fn task_board_real_dispatch_weekly_bounty_custody_reset_and_replay() -> TestResu
         eprintln!("<TASK_BOARD> POSTGRES_CASE_SKIPPED: OTERYN_TEST_POSTGRES_ADMIN_URL is not set");
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("task-board-e2e", scenario)
+    super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-e2e", scenario)
 }
 
 fn request(action: u8, task: u8) -> Vec<u8> {
@@ -205,7 +205,7 @@ fn task_board_elite_real_dispatch_rarity_combat_xp_and_premium_dust() -> TestRes
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("task-board-elite", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-elite", || {
         scenario_with_mode(None, true)
     })
 }
@@ -216,7 +216,7 @@ fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) ->
 
 #[test]
 fn task_board_control_epoch_initializer_allows_live_query_postgres() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("task-board-control-epoch", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-control-epoch", || {
         scenario_with_bootstrap(None, false, true)
     })
 }

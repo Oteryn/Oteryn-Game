@@ -23,7 +23,8 @@
       {
         "key": "report_missing",
         "line": 99,
-        "kind": "default_callback"
+        "kind": "default_callback",
+        "override": "https://tibia.fandom.com/?curid=88737&oldid=1176165"
       },
       {
         "key": "ultimate",

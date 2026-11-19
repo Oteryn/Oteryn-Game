@@ -7,7 +7,7 @@ use super::full_world_support::*;
 
 #[test]
 fn full_world_chain_survives_relogin_and_replays_move_no_value_on_postgres() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("full-world-e2e", scenario)
+    super::kill_reward_e2e_fixtures::scenario_thread::run("full-world-e2e", scenario)
 }
 
 fn scenario() -> TestResult {
@@ -318,7 +318,7 @@ fn scenario() -> TestResult {
                 input.extend(frame);
             }
             let (end, output) =
-                super::weather_wire::fixture_access::serve_input(&owner, admitted, &input).await?;
+                super::weather_wire_fixtures::fixture_access::serve_input(&owner, admitted, &input).await?;
             let mut replies = Vec::new();
             let mut cursor = output.as_slice();
             while !cursor.is_empty() {

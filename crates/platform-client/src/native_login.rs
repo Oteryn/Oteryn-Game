@@ -433,6 +433,13 @@ fn format_uuid(bytes: &[u8; 16]) -> String {
 #[derive(Debug)]
 pub struct AccessToken(SecretText);
 
+impl AccessToken {
+    /// The bearer value for a Platform request; never logged.
+    pub(crate) fn expose(&self) -> &str {
+        self.0.expose()
+    }
+}
+
 /// A one-time native Game Login Ticket, the instant after which the client stops using it, and
 /// the Gateway requests already sent with it (one budget for the ticket and its `attempt_ref`).
 #[derive(Debug)]

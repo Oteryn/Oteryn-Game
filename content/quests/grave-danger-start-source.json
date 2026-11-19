@@ -23,7 +23,8 @@
       {
         "key": "report_missing",
         "line": 99,
-        "kind": "default_callback"
+        "kind": "default_callback",
+        "override": "https://tibia.fandom.com/?curid=88737&oldid=1176165"
       },
       {
         "key": "ultimate",
@@ -179,9 +180,7 @@
     "keyword_matcher": "data/npclib/npc_system/keyword_handler.lua:58-67",
     "line": 127
   },
-  "runtime_status": "LEFT_OUT_COORDINATOR_OWNER",
-  "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017",
-  "reason": "Point5 reserves the existing8-effect bound; atomic start must not be split",
+  "runtime_status": "ACTIVE_ATOMIC",
   "transition": {
     "key": "oteryn:quest-transition/grave-danger/start",
     "quest": "oteryn:quest.grave_danger_quest",

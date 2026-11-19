@@ -38,7 +38,7 @@ fn rottin_hammer_repairs_counts_and_resets_postgres() -> TestResult {
         return Ok(());
     };
     drop(admin);
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "rottin_walls", false, false).await?;
         super::reset();
         prepare_current_session(&h).await?;
@@ -50,7 +50,7 @@ fn rottin_hammer_repairs_counts_and_resets_postgres() -> TestResult {
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activated) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;
@@ -131,7 +131,7 @@ fn rottin_hammer_repairs_counts_and_resets_postgres() -> TestResult {
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.runtime_actor = Some(deps.actor);
         let fence =
-            super::death_ml_loss_composed::current_fence(&owner, admitted.game_session_id).await?;
+            super::death_ml_loss_composed_fixtures::current_fence(&owner, admitted.game_session_id).await?;
         admitted.item_fence = Some(fence.item_fence());
         owner
             .runtime
@@ -194,7 +194,7 @@ fn rottin_hammer_repairs_counts_and_resets_postgres() -> TestResult {
 fn world(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    use super::native_world_crop::{ExpectedTile, NativeCrop, native_scene_with_appearances};
+    use super::l6_world_pickups_fixtures::{ExpectedTile, NativeCrop, native_scene_with_appearances};
     native_scene_with_appearances(
         native,
         vec![NativeCrop {
@@ -258,7 +258,7 @@ async fn exercise(
         0
     );
     for (command, item) in [(951, KITCHEN_KNIFE), (952, HAMMER)] {
-        super::world_input_item::input_item(
+        super::quest_world_callbacks_fixtures::input_item(
             owner,
             fence.item_fence(),
             &Offering {
@@ -404,7 +404,7 @@ async fn use_tool(
         })),
     })
     .map_err(debug)?;
-    let (next, result, _) = super::item_craft::exchange(
+    let (next, result, _) = super::item_craft_fixtures::exchange(
         owner,
         *admitted,
         admitted.continuity.next_command_id,

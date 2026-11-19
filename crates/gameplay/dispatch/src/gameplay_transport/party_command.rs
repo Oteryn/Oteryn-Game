@@ -54,8 +54,22 @@ impl SessionPartyView {
     ) -> Option<PartyResult> {
         let mut result = PartyResult::refused(PartyDisposition::Ok);
         result.shared_xp_enabled = view.source.shared_xp_enabled;
+        // chsw: the member's Channel of the World is negotiated by capability 513; a hidden or
+        // offline member has none.
+        let social = admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::channel_switch::CAPABILITY_SOCIAL_CHANNEL_V1);
         for (id, name) in view.members {
+            let channel = view
+                .source
+                .members
+                .iter()
+                .find(|member| member.character == id)
+                .and_then(|member| member.channel)
+                .filter(|_| social);
             result.members.push(PartyEntry {
+                channel,
                 list: lists.remove(&id).unwrap_or_default(),
                 handle: self.handle(admitted, 1, id)?,
                 name,
@@ -66,6 +80,7 @@ impl SessionPartyView {
         }
         for (id, name, expires_at) in view.invitations {
             result.invitations.push(PartyEntry {
+                channel: None,
                 list: Vec::new(),
                 handle: self.handle(admitted, 2, id)?,
                 name,

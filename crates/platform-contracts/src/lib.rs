@@ -40,10 +40,35 @@ impl ClientDirectoryEpoch {
     }
 }
 
+/// The PvP type of a Channel (GAME-CHANNEL-01; client-directory-v1 `pvp_type`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum DirectoryPvpType {
+    OptionalPvp,
+    OpenPvp,
+}
+
+impl DirectoryPvpType {
+    /// The wire value; any other value makes the whole snapshot invalid.
+    #[must_use]
+    pub fn parse(value: &str) -> Option<Self> {
+        match value {
+            "OPTIONAL_PVP" => Some(Self::OptionalPvp),
+            "OPEN_PVP" => Some(Self::OpenPvp),
+            _ => None,
+        }
+    }
+}
+
+/// The longest region label of client-directory-v1, in bytes.
+pub const MAX_DIRECTORY_REGION_BYTES: usize = 32;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DirectoryChannel {
     pub channel_ref: DirectoryChannelRef,
     pub display_name: BoundedText,
+    pub pvp_type: DirectoryPvpType,
+    /// A display label of at most [`MAX_DIRECTORY_REGION_BYTES`]; never a route.
+    pub region: BoundedText,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

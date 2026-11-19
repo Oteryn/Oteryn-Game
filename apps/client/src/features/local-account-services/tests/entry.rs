@@ -52,14 +52,14 @@ fn account_services_selection_uses_separate_scope_and_returns_to_fresh_game_logi
                 Action::Back
             }
         });
-        let (_, id, _, name, training_requested) = mock.runtime.block_on(authorize::authorize(
+        let authorized = mock.runtime.block_on(authorize::authorize(
             &client,
             &config,
             CancellationToken::new(),
         ))?;
-        assert_eq!(id, CHARACTER);
-        assert!(!training_requested);
-        assert_eq!(name, "Ari");
+        assert_eq!(authorized.character_id, CHARACTER);
+        assert!(!authorized.training_requested);
+        assert_eq!(authorized.character_name, "Ari");
         assert_eq!(selections.load(Ordering::SeqCst), 2);
         let urls = urls.lock().map_err(|_| "urls lock")?;
         assert_eq!(urls.len(), 3);

@@ -9,18 +9,18 @@ use crate::durability::soulpit::{SoulpitAction, SoulpitStepOutcome, SoulpitStepR
 use crate::foundation::RuntimeScopeRefV1;
 use sqlx::Row;
 
-use super::super::soulpit_shared_entry::{AdmittedSoulpit, admit, prepare_source};
+use super::super::soulpit_shared_entry_fixtures::{AdmittedSoulpit, admit, prepare_source};
 
 const INJECTED_FAILURE: &str = "soulpit atomicity injected failure after Animus insert";
 
 #[test]
 fn soulpit_survivor_completion_and_animus_commit_together_postgres() -> TestResult {
-    super::super::kill_reward_e2e::scenario_thread::run("soulpit-animus-commit", || run_case(false))
+    super::super::kill_reward_e2e_fixtures::scenario_thread::run("soulpit-animus-commit", || run_case(false))
 }
 
 #[test]
 fn soulpit_failure_after_animus_insert_rolls_back_completion_postgres() -> TestResult {
-    super::super::kill_reward_e2e::scenario_thread::run("soulpit-animus-rollback", || {
+    super::super::kill_reward_e2e_fixtures::scenario_thread::run("soulpit-animus-rollback", || {
         run_case(true)
     })
 }

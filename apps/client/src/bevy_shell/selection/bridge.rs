@@ -170,7 +170,7 @@ fn allowed(request: &SelectionRequest, action: &SelectionAction) -> bool {
                 && &row.character.character_id == character_id
                 && channel_id
                     .as_ref()
-                    .is_none_or(|id| row.channels.iter().any(|channel| &channel.0 == id))
+                    .is_none_or(|id| row.channels.iter().any(|channel| &channel.id == id))
         }),
         SelectionAction::Cancel | SelectionAction::Refresh | SelectionAction::Create => true,
         SelectionAction::Train { .. }
@@ -194,7 +194,12 @@ mod tests {
                 availability: CharacterAvailability::Available,
             },
             world_name: "Server world".into(),
-            channels: vec![("channel".into(), "Server channel".into())],
+            channels: vec![crate::character_selection::ChannelChoice {
+                id: "channel".into(),
+                name: "Server channel".into(),
+                pvp_type: oteryn_platform_contracts::DirectoryPvpType::OptionalPvp,
+                region: "EU".into(),
+            }],
             available: true,
         }]
     }

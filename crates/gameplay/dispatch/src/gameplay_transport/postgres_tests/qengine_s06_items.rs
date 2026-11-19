@@ -6,7 +6,7 @@ fn s06_stock_random_outfit_item_grant_replay_and_selection() -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::item_cosmetics::run_stock_random_outfit();
+    let result = super::item_cosmetics_fixtures::run_stock_random_outfit();
     eprintln!(
         "POSTGRES_CASE_COMPLETED S06_STOCK_RANDOM_OUTFIT duration={:?} success={}",
         started.elapsed(),
@@ -20,7 +20,7 @@ fn run_named(name: &'static str) -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::item_cosmetics::run_stock_named_outfit(name);
+    let result = super::item_cosmetics_fixtures::run_stock_named_outfit(name);
     eprintln!(
         "POSTGRES_CASE_COMPLETED S06_SOURCE_OUTFIT {name} duration={:?} success={}",
         started.elapsed(),

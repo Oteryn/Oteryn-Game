@@ -25,6 +25,7 @@ fn host() -> std::result::Result<Fixture, Box<dyn std::error::Error>> {
 }
 fn state() -> party::PartyResult {
     let entry = |handle, name: &str, leader| party::PartyEntry {
+        channel: None,
         handle,
         name: name.into(),
         leader,

@@ -21,7 +21,7 @@ fn worldchg_benevola_native_yes_debits_one_and_credits_ten_atomically() -> TestR
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("worldchg-benevola", scenario)
+    super::kill_reward_e2e_fixtures::scenario_thread::run("worldchg-benevola", scenario)
 }
 async fn snapshot(h: &Harness) -> TestResult<(i64, i64, i64, i64)> {
     let wolves: i64 = sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1")
@@ -63,7 +63,7 @@ fn scenario() -> TestResult {
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (controller, pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
         let active = controller.active().ok_or("native generation")?;
         let channel_pin = ChannelContentPin::from_activation(
             world,
@@ -173,7 +173,7 @@ fn scenario() -> TestResult {
         sqlx::query("UPDATE game_world_change_counters SET state=$2 WHERE world_id=encode($1,'hex')::uuid AND change_key='overhunting'")
             .bind(world.as_bytes().as_slice()).bind(serde_json::to_value(state)?).execute(&h.pool).await?;
         // Migration-owned fixture input only. Observation/debit uses real carried custody.
-        super::item_look::seed_main_backpack(&h, &[(WOLF, 1), (WOLF, 1)]).await?;
+        super::item_look_fixtures::seed_main_backpack(&h, &[(WOLF, 1), (WOLF, 1)]).await?;
         let command = |id| UseCommand {
             game_session_id: session,
             command_id: id,
