@@ -1259,6 +1259,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     // A storage error can hide a committed receipt; reconcile its original cause.
                     return UseDisposition::Rejected;
                 }
+                Ok(QuestTransitionOutcome::Refused(oteryn_gameplay_quests::quest::QuestRefusal::RottenAltarAccessGranted)) => {
+                    if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
+                        pending.remove(&session);
+                    }
+                    self.states.chat.push_quest_feedback(session, "You already have access.");
+                    return UseDisposition::Committed;
+                }
                 Ok(QuestTransitionOutcome::Refused(oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch))
                     if flame.as_ref().and_then(|input|input.no_change()).is_some() => {
                     if flame.as_ref().and_then(|input|input.no_change())==Some(crate::durability::quest_state::rotten_flame::FlameNoChange::AlreadyActive){

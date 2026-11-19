@@ -394,6 +394,8 @@ pub enum QuestRefusal {
     SourceOfferingMissing,
     /// A carried source offering exists, but current Premium admission denied entry.
     SourceOfferingPremiumRequired,
+    /// The Rotten Blood altar checked the locked access track and found it already granted.
+    RottenAltarAccessGranted,
     /// The quest state is pinned to another definition hash (§6).
     RevisionMismatch,
     /// A result leaves the track's bounds, or `ADD` overflows.
@@ -412,7 +414,8 @@ impl QuestRefusal {
             Self::StageMismatch
             | Self::RechargeCoolingDown
             | Self::SourceOfferingMissing
-            | Self::SourceOfferingPremiumRequired => "STAGE_MISMATCH",
+            | Self::SourceOfferingPremiumRequired
+            | Self::RottenAltarAccessGranted => "STAGE_MISMATCH",
             Self::RevisionMismatch => "REVISION_MISMATCH",
             Self::OutOfRange => "OUT_OF_RANGE",
             Self::NotSupported => "NOT_SUPPORTED",

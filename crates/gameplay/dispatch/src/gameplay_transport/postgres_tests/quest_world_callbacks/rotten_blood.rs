@@ -11,8 +11,11 @@ use oteryn_gameplay_quests::quest::rotten_blood as rules;
 
 #[test]
 fn rotten_blood_postgres_literal_altar_consumption_and_replay() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
+    };
+    if admin.is_empty() {
+        return Err("empty PostgreSQL admin URL".into());
     }
     super::super::kill_reward_e2e::scenario_thread::run("rotten-blood-altar", || {
         super::scenario(
@@ -164,11 +167,22 @@ pub(super) async fn exercise(
         UseDisposition::Committed
     );
     assert_eq!(evidence(h).await?, (4, 3, 0));
+    // Crystal actions_sacrifice.lua:4-10 handles the attempt without requiring
+    // a tear once access has been granted.
+    let session = admitted.game_session_id;
+    owner.states.chat.drain(session);
     assert_eq!(
         use_altar(owner, admitted, key, 7).await?,
-        UseDisposition::Rejected
+        UseDisposition::Committed
     );
+    assert!(owner.states.chat.drain(session).iter().any(|line| matches!(
+        line, oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. }
+            if text == "You already have access."
+    )));
     assert_eq!(evidence(h).await?, (4, 3, 0));
+    input_item(owner, fence.item_fence(), &offering, 63, true).await?;
+    assert_eq!(use_altar(owner, admitted, key, 8).await?, UseDisposition::Committed);
+    assert_eq!(evidence(h).await?, (4, 3, 1));
     let copy = owner
         .root
         .read_character_quest_state(authority, fence.character_id)

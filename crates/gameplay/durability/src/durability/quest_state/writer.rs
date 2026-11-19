@@ -1823,6 +1823,18 @@ impl DurabilityRoot {
                         }) {
                         Ok(changes) => changes,
                         Err(refusal) => {
+                            use oteryn_gameplay_quests::quest::rotten_blood::{ACCESS_TRACK, SACRIFICE};
+                            // Crystal actions_sacrifice.lua:4-10 checks completed
+                            // access before looking for a carried offering.
+                            if refusal == QuestRefusal::StageMismatch
+                                && callback.as_ref().is_some_and(|c| c.key == SACRIFICE)
+                                && stored.get(ACCESS_TRACK).is_some_and(|access| (4..=5).contains(access))
+                                && let Some((permit, world, _)) = &context
+                                && super::super::quest_world_callback::context_is_current(&mut tx, permit, fence, world).await?
+                            {
+                                tx.rollback().await?;
+                                return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::RottenAltarAccessGranted)));
+                            }
                             if let Some(recipe) = timer_recipe
                                 && refusal == QuestRefusal::StageMismatch
                                 && stored.get(recipe.track).copied().unwrap_or(-1) > recipe.maximum_before {
