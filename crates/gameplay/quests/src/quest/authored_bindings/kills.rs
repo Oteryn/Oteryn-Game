@@ -4,7 +4,7 @@ use super::BoundQuest;
 use crate::quest::reward_callbacks::OutfitReward;
 use crate::quest::{QuestComparison, QuestEffect, QuestEffectKind};
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 pub const MAX_KILL_BINDINGS: usize = 128;
 
@@ -147,19 +147,7 @@ impl KillCounter {
                         track.key == *key && (track.minimum..=track.maximum).contains(value)
                     })
             })
-            || self.achievements.len() > 8
-            || self.achievements.iter().any(|key| {
-                key.len() > 128
-                    || !key.strip_prefix("oteryn:achievement/").is_some_and(|tail| {
-                        !tail.is_empty()
-                            && tail.bytes().all(|byte| {
-                                byte.is_ascii_lowercase()
-                                    || byte.is_ascii_digit()
-                                    || b"_/-".contains(&byte)
-                            })
-                    })
-            })
-            || self.achievements.iter().collect::<BTreeSet<_>>().len() != self.achievements.len()
+            || !super::super::world_callbacks::valid_achievement_keys(&self.achievements)
             || self.first_defeat_outfit.as_ref().is_some_and(|reward| {
                 self.track != self.gate
                     || !self.set_to_maximum

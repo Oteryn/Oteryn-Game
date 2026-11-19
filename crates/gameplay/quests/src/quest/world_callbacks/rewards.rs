@@ -19,12 +19,18 @@ pub(super) fn valid(callback: &Callback) -> bool {
             && (!callback.completes
                 || callback.item_reward.is_none()
                 || callback.effects.outfit_reward.is_none()))
-        || callback.achievements.len() > 8
     {
         return false;
     }
+    valid_achievement_keys(&callback.achievements)
+}
+
+pub(in crate::quest) fn valid_achievement_keys(keys: &[String]) -> bool {
+    if keys.len() > 8 {
+        return false;
+    }
     let mut unique = BTreeSet::new();
-    callback.achievements.iter().all(|key| {
+    keys.iter().all(|key| {
         key.len() <= 128
             && unique.insert(key)
             && key.strip_prefix("oteryn:achievement/").is_some_and(|tail| {

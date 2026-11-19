@@ -940,6 +940,14 @@ fn run(admin: String, case: Case) -> TestResult {
                 })
                 .collect::<Vec<_>>();
             assert_eq!(achievements, expected);
+            let journal: Vec<sqlx::types::Uuid> = sqlx::query_scalar(
+                "SELECT character_id FROM game_character_quest_tracks
+                 WHERE track_key=$1 AND value=1 ORDER BY character_id",
+            )
+            .bind(EXIT)
+            .fetch_all(&h.pool)
+            .await?;
+            assert_eq!(journal, [60, 61].map(|character| sqlx::types::Uuid::from_bytes(id(character))));
         }
         drop(owner);
         drop(authority);

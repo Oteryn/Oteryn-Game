@@ -1653,6 +1653,7 @@ mod ground_requirement_tests;
 mod timed_tests;
 
 mod rewards;
+pub(super) use rewards::valid_achievement_keys;
 
 #[cfg(test)]
 mod clock_tests;
