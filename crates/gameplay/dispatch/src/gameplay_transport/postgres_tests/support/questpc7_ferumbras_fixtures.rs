@@ -509,18 +509,21 @@ pub(super) async fn exercise(
         };
         // Crystal 201189f8, ferumbras_ascension/actions_reward.lua:13-38.
         // Switch definitions after earning the chest gate but before its literal USE.
-        super::quest_definition_predecessors_fixtures::install_successor(owner, QuestTransition {
-            quest: "oteryn:quest.ferumbras_ascension_quest".into(),
-            key: "oteryn:quest-transition/fixture/ferumbras-final-arena-binding".into(),
-            effects: vec![QuestEffect {
-                track: TRACK.into(),
-                from: QuestComparison::Eq(2),
-                effect: QuestEffectKind::Set(2),
-            }],
-            completes: false,
-            experience: None,
-            world_change: None,
-        })?;
+        super::quest_definition_predecessors_fixtures::install_successor(
+            owner,
+            QuestTransition {
+                quest: "oteryn:quest.ferumbras_ascension_quest".into(),
+                key: "oteryn:quest-transition/fixture/ferumbras-final-arena-binding".into(),
+                effects: vec![QuestEffect {
+                    track: TRACK.into(),
+                    from: QuestComparison::Eq(2),
+                    effect: QuestEffectKind::Set(2),
+                }],
+                completes: false,
+                experience: None,
+                world_change: None,
+            },
+        )?;
         owner.refresh_quest_session(a.game_session_id, false).await;
     }
     let claim_command = a.continuity.next_command_id;

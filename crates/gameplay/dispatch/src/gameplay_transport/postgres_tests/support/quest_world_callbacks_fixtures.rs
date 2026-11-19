@@ -999,10 +999,15 @@ pub(super) fn world_cells(
             .entry((position.floor, position.x, position.y))
             .or_default();
         if !entries.iter().any(|entry| entry.palette == palette) {
-            let teleport = callback.effects.encounter.as_ref()
+            let teleport = callback
+                .effects
+                .encounter
+                .as_ref()
                 .and_then(|encounter| encounter.death_phases.as_ref())
                 .and_then(|plan| plan.terminal_portal)
-                .filter(|portal| portal.position == *position && portal.original_appearance == *appearance)
+                .filter(|portal| {
+                    portal.position == *position && portal.original_appearance == *appearance
+                })
                 .map(|portal| {
                     let destination = portal.return_destination;
                     (destination.x, destination.y, destination.floor as u8)
@@ -1010,7 +1015,10 @@ pub(super) fn world_cells(
             entries.push(sector::Item {
                 palette,
                 depth: 0,
-                attrs: sector::Attrs { teleport, ..Default::default() },
+                attrs: sector::Attrs {
+                    teleport,
+                    ..Default::default()
+                },
             });
         }
     }
