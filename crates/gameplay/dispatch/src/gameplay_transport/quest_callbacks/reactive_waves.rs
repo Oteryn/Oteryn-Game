@@ -12,7 +12,10 @@ pub(super) fn selected_wave<'p>(
     let Some(hit) = changes.iter().find(|change| change.track == plan.progress) else {
         return &[];
     };
-    if let Some(wave) = plan.special.iter().find(|wave| wave.before == hit.before) {
+    let progress = plan
+        .progress_floor
+        .map_or(hit.before, |floor| hit.before.max(floor));
+    if let Some(wave) = plan.special.iter().find(|wave| wave.before == progress) {
         let last = plan.weak_points.iter().all(|track| {
             changes
                 .iter()

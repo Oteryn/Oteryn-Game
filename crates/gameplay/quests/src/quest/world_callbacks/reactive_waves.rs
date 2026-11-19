@@ -31,6 +31,10 @@ pub struct Retaliation {
     pub progress: String,
     pub weak_points: Vec<String>,
     pub completed_at: i64,
+    /// Lower bound on the current blow count before selecting or advancing a wave.
+    /// Crystal actions_demon_oak.lua:94-95,124 clamps unset storage to one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub progress_floor: Option<i64>,
     pub positions: Vec<Position>,
     pub ordinary_chance: Chance,
     pub ordinary: Vec<String>,
@@ -125,6 +129,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 })
         })
         && plan.weak_points.contains(&plan.progress)
+        && plan
+            .progress_floor
+            .is_none_or(|floor| floor > 0 && floor < plan.completed_at)
         && (1..=16).contains(&plan.positions.len())
         && plan.positions.iter().all(|p| (-15..=0).contains(&p.floor))
         && plan.ordinary_chance.valid()

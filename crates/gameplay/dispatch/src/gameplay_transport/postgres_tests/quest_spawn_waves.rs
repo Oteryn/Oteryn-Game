@@ -218,6 +218,16 @@ fn quest_axe_use_spawns_last_retaliation_and_requires_clearance_for_final_cut() 
     })
 }
 
+#[test]
+fn quest_axe_use_advances_an_unset_weak_point_to_two() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("quest-retaliation-first-blow", move || {
+        scenario(admin, Case::RetaliationFirstBlow)
+    })
+}
+
 #[derive(Clone, Copy, Debug)]
 enum Case {
     Periodic,
@@ -233,12 +243,17 @@ enum Case {
     Stations,
     EarthStep,
     Retaliation,
+    RetaliationFirstBlow,
     UnreachableExit,
     UnknownAchievement,
     WorldCredit,
 }
 
 impl Case {
+    fn has_retaliation_binding(self) -> bool {
+        matches!(self, Self::Retaliation | Self::RetaliationFirstBlow)
+    }
+
     fn has_victory_binding(self) -> bool {
         matches!(
             self,
@@ -400,8 +415,8 @@ fn scenario(admin: String, case: Case) -> TestResult {
                 effect: 51,
             });
         }
-        if matches!(case, Case::Retaliation) {
-            retaliation_binding(&mut callback);
+        if case.has_retaliation_binding() {
+            retaliation_binding(&mut callback, matches!(case, Case::RetaliationFirstBlow));
         }
         // Use the real typed callback decode in addition to the composed PG fixture.
         let callback: Callback = serde_json::from_value(serde_json::to_value(callback)?)?;
@@ -474,7 +489,7 @@ fn scenario(admin: String, case: Case) -> TestResult {
         }
         if victory || matches!(case, Case::Waves | Case::SurvivalStep | Case::Stations | Case::UnreachableExit | Case::WorldCredit) {
             owner.quest_catalogue = Some(std::sync::Arc::new(credit_catalogue(&callback, matches!(case, Case::WorldCredit))?));
-        } else if matches!(case, Case::Retaliation) {
+        } else if case.has_retaliation_binding() {
             owner.quest_catalogue = Some(std::sync::Arc::new(retaliation_catalogue(&callback)?));
         } else if matches!(case, Case::EarthStep) {
             assert!(
@@ -568,6 +583,7 @@ fn scenario(admin: String, case: Case) -> TestResult {
             }
             Case::EarthStep => earth_step_scenario(&owner, &mut admitted, deps.actor).await?,
             Case::Retaliation => retaliation_scenario(&h, &owner, &mut admitted, deps.actor).await?,
+            Case::RetaliationFirstBlow => retaliation_first_blow(&h, &owner, &mut admitted, deps.actor).await?,
             Case::UnreachableExit | Case::UnknownAchievement | Case::WorldCredit => {
                 let peer = stage_peer(&h, &owner, &admitted).await?;
                 let peer_actor = peer.runtime_actor.ok_or("staged peer")?;
@@ -631,7 +647,7 @@ fn credit_catalogue(
     Ok(bindings.attach(&base)?)
 }
 
-fn retaliation_binding(callback: &mut Callback) {
+fn retaliation_binding(callback: &mut Callback, first_blow: bool) {
     // Crystal actions_demon_oak.lua:67-70,80-126 reads each character's weak
     // points. Retain a completed point while staging the last special blow.
     callback.effects.encounter = None;
@@ -650,7 +666,7 @@ fn retaliation_binding(callback: &mut Callback) {
     });
     callback.storage.push(Storage {
         track: CUT.into(),
-        minimum: 10,
+        minimum: if first_blow { -1 } else { 10 },
         maximum: 10,
         set: 11,
         add: Some(1),
@@ -676,8 +692,9 @@ fn retaliation_binding(callback: &mut Callback) {
         progress: CUT.into(),
         weak_points: vec![CUT.into(), OTHER_CUT.into()],
         completed_at: 11,
+        progress_floor: first_blow.then_some(1),
         positions: vec![FIRST],
-        ordinary_chance: Chance { wins: 11, rolls: 100 },
+        ordinary_chance: if first_blow { Chance { wins: 1, rolls: 1 } } else { Chance { wins: 11, rolls: 100 } },
         ordinary: vec![RAT.into()],
         special: vec![SpecialWave {
             before: 10,
@@ -697,6 +714,7 @@ fn retaliation_catalogue(
     hit: &Callback,
 ) -> TestResult<oteryn_gameplay_quests::quest::QuestStateCatalogue> {
     use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bindings};
+    let initial = hit.storage.first().ok_or("fixture cut track")?.minimum;
     let mut finish = hit.clone();
     finish.key = "oteryn:quest-callback/fixture/finish-weak-point".into();
     finish.teleport = Some(EXIT);
@@ -726,7 +744,7 @@ fn retaliation_catalogue(
         "recipe_sha256":"2222222222222222222222222222222222222222222222222222222222222222",
         "sources":["Crystal 201189f8 demon_oak/actions_demon_oak.lua:62-126"],
         "tracks":[
-            {"key":CUT,"initial":10,"minimum":10,"maximum":11},
+            {"key":CUT,"initial":initial,"minimum":initial,"maximum":11},
             {"key":OTHER_CUT,"initial":11,"minimum":0,"maximum":11},
             {"key":TRACK,"initial":0,"minimum":0,"maximum":1}
         ],
@@ -737,6 +755,39 @@ fn retaliation_catalogue(
     }]}))?)?;
     let base = QuestStateCatalogue::new("content-1", Vec::new(), Vec::new()).map_err(debug)?;
     Ok(bindings.attach(&base)?)
+}
+
+async fn retaliation_first_blow(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    player: ExactActorRef,
+) -> TestResult {
+    let fence = admitted.item_fence.ok_or("axe item fence")?;
+    super::item_look::seed_main_backpack_for(h, fence.character_id.as_bytes(), 70, &[]).await?;
+    super::quest_world_callbacks::input_item(
+        owner,
+        fence,
+        &Offering { position: TRIGGER, item: OAK_TOOL.into(), count: 1 },
+        60,
+        true,
+    ).await?;
+    assert_eq!(use_room(owner, admitted, 1).await?, UseDisposition::Committed);
+    assert_eq!(position(owner, player).await?, local(START));
+    // Crystal actions_demon_oak.lua:94-95,115-124. The unset track counts
+    // as one when striking; the durable result is two and the wave is ordinary.
+    let state = owner.root
+        .read_character_quest_state(owner.character, fence.character_id)
+        .await.map_err(debug)?;
+    assert_eq!(state.tracks().get(CUT), Some(&2));
+    let spawned = creatures(owner).await?;
+    let [(actor, at)] = spawned.as_slice() else {
+        return Err("first blow should spawn the fixture's ordinary monster".into());
+    };
+    assert_eq!(*at, local(FIRST));
+    let runtime = owner.runtime.lock().await;
+    assert_eq!(runtime.companion_snapshot(*actor).map_err(debug)?.state.policy.definition_key, RAT);
+    Ok(())
 }
 
 async fn retaliation_scenario(

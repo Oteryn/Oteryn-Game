@@ -1566,7 +1566,20 @@ pub fn primary_transition(callback: &Callback) -> Result<QuestTransition, String
                     equals: state.set_if.unwrap_or(state.minimum),
                     value: state.set,
                 },
-                None if state.add.is_some() => QuestEffectKind::Add(state.add.unwrap_or(0)),
+                None if state.add.is_some() => {
+                    let delta = state.add.unwrap_or(0);
+                    if let Some(plan) = &callback.effects.retaliation
+                        && plan.progress == state.track
+                        && let Some(floor) = plan.progress_floor
+                    {
+                        QuestEffectKind::AddAtLeast {
+                            delta,
+                            minimum: floor.saturating_add(delta),
+                        }
+                    } else {
+                        QuestEffectKind::Add(delta)
+                    }
+                }
                 None if state.preserve => QuestEffectKind::Add(0),
                 None if state.at_least => match binding.filter(|_| Some(index) == bound_index) {
                     Some(binding) => QuestEffectKind::RaiseToWithBinding {
