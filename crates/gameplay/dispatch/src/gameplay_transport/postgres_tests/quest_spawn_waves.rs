@@ -975,18 +975,47 @@ async fn wave_scenario(
             assert_eq!(next_spawn_delay(owner).await, Some(Duration::ZERO));
         }
         owner.drain_quest_encounter_deadlines().await;
+        tokio::time::resume();
         if timed_out { EXIT } else { VICTORY_EXIT }
     } else {
         assert!(active.iter().any(|(_, at)| *at == local(FIRST)));
         assert!(active.iter().any(|(_, at)| *at == local(SECOND)));
-        advance(owner, 7_000).await;
+        advance(owner, 6_999).await;
+        assert_eq!(next_spawn_delay(owner).await, Some(Duration::from_millis(1)));
+        assert_eq!(position(owner, player).await?, local(LANDING));
+        assert_eq!(position(owner, peer_actor).await?, local(PEER_LANDING));
+        assert_eq!(creatures(owner).await?, active);
+
+        // Crystal action_arena.lua:39-50,71 arms cleanup without a client
+        // packet. Cross the deadline on the paused clock and let the actual
+        // source owner perform egress and cleanup.
+        tokio::time::advance(Duration::from_millis(1)).await;
+        tokio::time::resume();
+        let stop = oteryn_foundation::CancellationToken::new();
+        let observe = async {
+            loop {
+                if position(owner, player).await? == local(EXIT)
+                    && position(owner, peer_actor).await? == local(EXIT)
+                    && creatures(owner).await?.is_empty()
+                {
+                    stop.cancel();
+                    return Ok::<_, Box<dyn std::error::Error>>(());
+                }
+                tokio::time::sleep(Duration::from_millis(25)).await;
+            }
+        };
+        tokio::time::timeout(Duration::from_secs(10), async {
+            let (_, result) =
+                super::fixture::join_two(owner.run_source_owner_cycles(&stop), observe).await;
+            result
+        })
+        .await??;
         EXIT
     };
     assert_eq!(position(owner, player).await?, local(exit));
     assert_eq!(position(owner, peer_actor).await?, local(exit));
     assert!(creatures(owner).await?.is_empty());
     assert_eq!(next_spawn_delay(owner).await, None);
-    tokio::time::resume();
     drop(clock);
 
     let primary = admitted
