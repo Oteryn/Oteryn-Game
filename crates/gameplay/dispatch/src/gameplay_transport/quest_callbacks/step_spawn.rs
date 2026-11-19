@@ -176,7 +176,7 @@ fn native_position_open(map: &BundleMap, landing: MovementLocalPosition) -> bool
     })
 }
 
-fn protection_zone(map: &BundleMap, position: TilePos) -> bool {
+pub(super) fn protection_zone(map: &BundleMap, position: TilePos) -> bool {
     map.overlay
         .base()
         .tile(position.x, position.y, position.floor)

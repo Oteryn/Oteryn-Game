@@ -424,17 +424,18 @@ pub(super) fn world_cells(
     )>,
     extra: &[Position],
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    build_world_cells(callback, trigger, appearance, ordinal, objects, appearances, native_items, extra, 0)
+    build_world_cells(callback, trigger, appearance, ordinal, objects, appearances, native_items, extra, None)
 }
 
-pub(super) fn world_cells_with_protected_source(
+pub(super) fn world_cells_with_protected_tile(
     callback: &Callback,
     trigger: Position,
     appearance: u16,
     ordinal: u8,
+    protected: Position,
+    extra: &[Position],
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    // The retained sector protection-zone bit.
-    build_world_cells(callback, trigger, appearance, ordinal, &[], &[], None, &[], 1)
+    build_world_cells(callback, trigger, appearance, ordinal, &[], &[], None, extra, Some(protected))
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -450,7 +451,7 @@ fn build_world_cells(
         &[(Position, u32)],
     )>,
     extra: &[Position],
-    trigger_flags: u32,
+    protected: Option<Position>,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
@@ -1190,7 +1191,8 @@ fn build_world_cells(
             .push(sector::Tile {
                 x,
                 y,
-                flags: if (floor, x, y) == (trigger.floor, trigger.x, trigger.y) { trigger_flags } else { 0 },
+                // The retained sector protection-zone bit.
+                flags: u32::from(protected == Some(Position { x, y, floor })),
                 house: 0,
                 zones: vec![],
                 items,

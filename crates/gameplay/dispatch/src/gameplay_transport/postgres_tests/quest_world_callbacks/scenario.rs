@@ -398,7 +398,7 @@ fn scenario_case(
     use super::super::dreamers_sacrifice_routes;
     let sacrifice_route = matches!(name, dreamers_sacrifice_routes::BROTHERHOOD | dreamers_sacrifice_routes::NIGHTMARE);
     use super::super::zarganash_linked_boss;
-    let zarganash = matches!(name, zarganash_linked_boss::DEPARTED_TOP | zarganash_linked_boss::NAME | zarganash_linked_boss::OCCUPIED_ARRIVAL);
+    let zarganash = matches!(name, zarganash_linked_boss::DEPARTED_TOP | zarganash_linked_boss::NAME | zarganash_linked_boss::OCCUPIED_ARRIVAL | zarganash_linked_boss::PROTECTED_ARRIVAL);
     let mut callback = if zarganash {
         zarganash_linked_boss::binding()?
     } else if izcandar {
@@ -738,7 +738,7 @@ fn scenario_case(
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
     let world = if zarganash {
-        zarganash_linked_boss::world(&callback)?
+        zarganash_linked_boss::world(&callback, name)?
     } else if izcandar {
         dream_scar_izcandar_forms::world(&callback)?
     } else if faceless_bane {
@@ -774,7 +774,7 @@ fn scenario_case(
     } else if kroazur {
         super::world_with_cells(&callback, trigger, &[kroazur_solo_room::EXIT])?
     } else if name == lucifuga_bait_spawn::PROTECTED {
-        super::world_cells_with_protected_source(&callback, trigger, 100, 1)?
+        super::world_cells_with_protected_tile(&callback, trigger, 100, 1, trigger, &[])?
     } else if dreamers_wall {
         dreamers_wall_portal::world(&callback, name)?
     } else if name == "authored-wrath-crystals" {
@@ -1511,7 +1511,7 @@ fn scenario_case(
             "questpc7-outfits-fiend" | "questpc7-outfits-inquisition" => Some(250),
             dream_scar_izcandar_forms::NAME | faceless_bane_phase::LIMITED_SLOTS | faceless_bane_phase::NAME | feaster_brain_head::CLOSED | feaster_brain_head::FULL | feaster_brain_head::NAME | feaster_brain_head::VACANT | feaster_solo_rooms::IRGIX
             | feaster_solo_rooms::IRGIX_RETURN | feaster_solo_rooms::UNAZ | feaster_solo_rooms::VOK
-            | zarganash_linked_boss::DEPARTED_TOP | zarganash_linked_boss::NAME | zarganash_linked_boss::OCCUPIED_ARRIVAL => Some(250),
+            | zarganash_linked_boss::DEPARTED_TOP | zarganash_linked_boss::NAME | zarganash_linked_boss::OCCUPIED_ARRIVAL | zarganash_linked_boss::PROTECTED_ARRIVAL => Some(250),
             _ => None,
         };
         if let Some(initial_level) = initial_level {

@@ -316,6 +316,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         original: ExactActorRef,
         link: &world_callbacks::LinkedArrival,
     ) -> Option<ExactActorRef> {
+        // Crystal actions_the_unwelcome_lever.lua:17-23 uses ordinary placement.
+        // Map::placeCreature cannot search outside the centre's protection zone,
+        // and Tile::queryAdd refuses this masterless monster inside it.
+        if super::step_spawn::protection_zone(map, tile(link.monster.position)) {
+            return None;
+        }
         let center = local(link.monster.position);
         let census = runtime.positioned_melee_census().ok()?;
         let doors = crate::map::floor::BundleDoors(&map.facts);

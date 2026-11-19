@@ -16,6 +16,7 @@ use std::time::Duration;
 pub(super) const NAME: &str = "zarganash-linked-boss";
 pub(super) const DEPARTED_TOP: &str = "zarganash-linked-boss-departed-top";
 pub(super) const OCCUPIED_ARRIVAL: &str = "zarganash-linked-boss-occupied-arrival";
+pub(super) const PROTECTED_ARRIVAL: &str = "zarganash-linked-boss-protected-arrival";
 const UNWELCOME: &str = "oteryn:creature.the_unwelcome";
 const BROTHER: &str = "oteryn:creature.brother_worm";
 const QUEST: &str = "oteryn:quest.feaster_of_souls_quest";
@@ -64,17 +65,13 @@ pub(super) fn binding() -> TestResult<Callback> {
     }))?)
 }
 
-pub(super) fn world(callback: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
-    world_cells(
-        callback,
-        LEVER,
-        8911,
-        2,
-        &[],
-        &[],
-        None,
-        &[ARRIVAL, at(33711, 31539), EXIT],
-    )
+pub(super) fn world(callback: &Callback, name: &str) -> TestResult<crate::map::boot::BundleWorld> {
+    let extra = [ARRIVAL, at(33711, 31539), EXIT];
+    if name == PROTECTED_ARRIVAL {
+        super::quest_world_callbacks::world_cells_with_protected_tile(callback, LEVER, 8911, 2, ARRIVAL, &extra)
+    } else {
+        world_cells(callback, LEVER, 8911, 2, &[], &[], None, &extra)
+    }
 }
 
 #[test]
@@ -243,6 +240,16 @@ pub(super) async fn exercise(
     assert!(live(owner, BROTHER).await?.is_empty());
     advance_to_deadline(owner)?;
     owner.drain_quest_encounter_deadlines().await;
+    if name == PROTECTED_ARRIVAL {
+        let base = owner.bundle_map().ok_or("map")?.overlay.base();
+        assert!(base.tile(ARRIVAL.x, ARRIVAL.y, ARRIVAL.floor).is_some_and(|tile| tile.protection_zone()));
+        assert!(base.tile(ARRIVAL.x - 1, ARRIVAL.y, ARRIVAL.floor).is_some_and(|tile| tile.walkable() && !tile.protection_zone()));
+        assert!(live(owner, BROTHER).await?.is_empty());
+        assert!(live(owner, UNWELCOME).await?.contains(&original));
+        finish_visit(owner, &[player, second]).await?;
+        assert_eq!(live(owner, UNWELCOME).await?, vec![unrelated]);
+        return Ok(());
+    }
     let [brother] = live(owner, BROTHER)
         .await?
         .try_into()
@@ -358,12 +365,16 @@ pub(super) async fn exercise(
         .await?;
         assert_eq!(value, Some(1));
     }
+    let members = [player, second];
+    finish_visit(owner, &members[..if departed_top { 1 } else { 2 }]).await?;
+    assert_eq!(live(owner, UNWELCOME).await?, vec![unrelated]);
+    Ok(())
+}
+
+async fn finish_visit(owner: &mut ComposedFreshAdmission<'_, '_, '_>, members: &[crate::foundation::ExactActorRef]) -> TestResult {
     advance_to_deadline(owner)?;
     owner.drain_quest_encounter_deadlines().await;
-    for member in [player, second] {
-        if departed_top && member == second {
-            continue;
-        }
+    for &member in members {
         assert_eq!(
             owner
                 .runtime
@@ -375,7 +386,6 @@ pub(super) async fn exercise(
             local(EXIT)
         );
     }
-    assert_eq!(live(owner, UNWELCOME).await?, vec![unrelated]);
     Ok(())
 }
 
@@ -388,6 +398,17 @@ fn zarganash_brother_worm_arrives_adjacent_to_the_occupied_spawn_and_ejects_both
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(OCCUPIED_ARRIVAL, || {
         scenario(OCCUPIED_ARRIVAL, LEVER, false)
+    })
+}
+
+#[test]
+fn zarganash_brother_worm_skips_a_protected_arrival_and_ejects_both_players() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(PROTECTED_ARRIVAL, || {
+        scenario(PROTECTED_ARRIVAL, LEVER, false)
     })
 }
 

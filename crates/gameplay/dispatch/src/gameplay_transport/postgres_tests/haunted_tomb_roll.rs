@@ -1,6 +1,6 @@
 //! Crystal 201189f the_dream_courts/actions_sacrophagus_use.lua:16-62 and items.xml:55554-55559.
 use super::fixture::{Harness, debug};
-use super::quest_world_callbacks::{scenario, surround_with_portals, wire, world_cells, world_cells_with_protected_source};
+use super::quest_world_callbacks::{scenario, surround_with_portals, wire, world_cells, world_cells_with_protected_tile};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::{
     character_progression::CurrentCharacterGameplayFence,
@@ -66,7 +66,7 @@ pub(super) fn binding() -> TestResult<Callback> {
 
 pub(super) fn world(callback: &Callback, case: &str) -> TestResult<crate::map::boot::BundleWorld> {
     if case == PROTECTED {
-        world_cells_with_protected_source(callback, SARCOPHAGUS, 29349, 2)
+        world_cells_with_protected_tile(callback, SARCOPHAGUS, 29349, 2, SARCOPHAGUS, &[])
     } else {
         world_cells(callback, SARCOPHAGUS, 29349, 2, &[], &[], None, &[])
     }
