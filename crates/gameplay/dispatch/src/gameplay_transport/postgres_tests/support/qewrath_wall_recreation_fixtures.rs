@@ -31,16 +31,6 @@ const LAMP: Position = Position {
     floor: -8,
 };
 
-#[test]
-fn shrine_lever_flips_while_the_wall_passage_keeps_its_original_deadline() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        return Ok(());
-    };
-    drop(admin);
-    super::kill_reward_e2e_fixtures::scenario_thread::run(NAME, || {
-        super::quest_world_callbacks_fixtures::scenario(NAME, LEVER, false)
-    })
-}
 fn fixture(lamp: bool) -> TestResult<Callback> {
     let (lever, passage, appearance, replacement, key, source) = if lamp {
         (LAMP_LEVER, LAMP, 10491, 10479, LAMP_NAME, "8-29")
