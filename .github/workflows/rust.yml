@@ -164,9 +164,8 @@ jobs:
     needs: lanes
     if: ${{ always() && !cancelled() && github.ref == 'refs/heads/main' && github.ref_protected && (github.event_name != 'push' || needs.lanes.result != 'success' || needs.lanes.outputs.rust != 'false' || needs.lanes.outputs.windows != 'false') }}
     runs-on: ubuntu-24.04
-    # Full test execution, the synthetic harness and the smoke belong to Merge Queue (rust_linux
-    # build-smoke on the same SHA). Compile and lint the protected merged tree to warm every shared
-    # Cargo artifact without repeating tests or runs.
+    # Full test execution, the synthetic harness and the smoke belong to Merge Queue on the same
+    # SHA. Build the shared Cargo artifacts and lint the protected merged tree here.
     timeout-minutes: 60
     # Two attempts on 719b33ac lost the hosted runner mid-build ("runner lost communication",
     # resource starvation). Cap parallel rustc/link jobs so the 4-core runner keeps headroom.
@@ -187,6 +186,12 @@ jobs:
       - name: Install Rust toolchain
         run: rustup toolchain install 1.100.0 --profile minimal --component clippy,rustfmt
 
+      - name: Free hosted runner disk before the Cargo cache restore
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h /
+
       - name: Restore trimmed Cargo cache from protected main
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -198,9 +203,20 @@ jobs:
           key: rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
           restore-keys: |
             rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-
+            rust-linux-v2-1.100.0-
 
       - name: Normalize source mtimes for the restored Cargo cache
         run: python tools/repository/normalize_cargo_mtimes.py
+
+      # Use the temporary disk for swap so parallel rustc processes have headroom on a cold build.
+      - name: Add swap for the workspace test build
+        run: |
+          set -euo pipefail
+          sudo fallocate -l 16G /mnt/oteryn-extra.swap
+          sudo chmod 600 /mnt/oteryn-extra.swap
+          sudo mkswap /mnt/oteryn-extra.swap
+          sudo swapon /mnt/oteryn-extra.swap
+          swapon --show
 
       - name: Report runner disk and memory before the build
         run: |
@@ -209,7 +225,7 @@ jobs:
           du -sh target/ 2>/dev/null || true
 
       - name: Build workspace
-        run: cargo +1.100.0 build --locked --workspace --all-targets
+        run: cargo +1.100.0 build --locked --workspace --lib --bins --examples
 
       - name: Produce public Game catalogue
         run: python3 tools/game-platform-catalog/build.py "$RUNNER_TEMP/game-platform-catalog.json"
@@ -230,8 +246,10 @@ jobs:
       - name: Strict Clippy
         run: cargo +1.100.0 clippy --locked --workspace --all-targets -- -D warnings
 
+      # Clippy still checks dispatch test targets. The qualification jobs compile and run them.
+      # Keep test-support feature unification for the quest test binaries those jobs restore.
       - name: Compile workspace tests without executing them
-        run: cargo +1.100.0 test --locked --workspace --no-run
+        run: cargo +1.100.0 test --locked --workspace --exclude oteryn-gameplay-dispatch --features oteryn-gameplay-quests/test-support --no-run
 
       # The MQ build-smoke leg, node_boot and server_seam build these package-scoped units
       # (`-p` resolves features per package) and reuse them from this cache.
@@ -242,14 +260,14 @@ jobs:
 
       # Only protected-main source may produce the shared compilation cache.
       # A cache hit never substitutes for exact-candidate MQ qualification.
-      - name: Trim incremental cache and mark its source commit
+      - name: Trim incremental cache and record its source snapshot
         if: github.ref == 'refs/heads/main' && github.ref_protected
         shell: bash
         run: |
           set -euo pipefail
           du -sh target/ | tee -a "$GITHUB_STEP_SUMMARY"
           find target -type d -name incremental -prune -exec rm -rf -- {} +
-          git rev-parse HEAD > target/.oteryn-cache-source-sha
+          python tools/repository/normalize_cargo_mtimes.py --record
           du -sh target/ | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Save trimmed cache from protected main after compilation
