@@ -2,7 +2,7 @@
 //! The fixture begins at the durable crash boundary: its originally enabled quote passed,
 //! the reservation exists, and Platform has one debit whose reply may or may not be retained.
 use super::*;
-use super::store::{platform_answer, platform_intent, platform_bytes};
+use super::store_fixtures::{platform_answer, platform_intent, platform_bytes};
 use crate::foundation::{MessageType, decode_wire_envelope};
 use crate::gameplay_transport::capabilities::{OfferedCapability, SelectedCapabilities};
 use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
@@ -21,7 +21,7 @@ fn old_revision() -> String {
     offer["enabled"] = true.into();
     offer["price"] = 37.into();
     document.sort_all_objects();
-    super::store::sha256(&serde_json::to_vec(&document).expect("canonical catalogue"))
+    super::store_fixtures::sha256(&serde_json::to_vec(&document).expect("canonical catalogue"))
 }
 
 #[test]
@@ -103,7 +103,7 @@ fn scenario(answered: bool, invalid_local: bool) -> TestResult {
         let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (generation, pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
         let room = pin.qualified_room().clone();
         let (channel_pin, _, _, _) = pin.into_channel_parts();
         let deps = Dependencies::with_content(channel_pin, room, crate::spell::cast::v1_spell_book().map_err(debug)?)?;

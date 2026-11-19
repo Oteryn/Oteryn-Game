@@ -106,7 +106,7 @@ fn qualify_disguise_kit(
 }
 
 fn disguise_input() -> TestResult<crate::content::native_gameplay::NativeGameplayInput> {
-    let mut input = super::super::death_ml_loss_composed::production_input_with_source(
+    let mut input = super::super::death_ml_loss_composed_fixtures::production_input_with_source(
         "content-1", None,
     )?;
     qualify_disguise_kit(input.item_profiles.as_mut().ok_or("native item profiles")?)?;
@@ -220,7 +220,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
         let cells = map
             .movement_cells(pin.qualified_room().movement_cells())
             .map_err(debug)?;
-        let bundle_room = super::super::rust_lottery::bundle_action_room(
+        let bundle_room = super::super::rust_lottery_fixtures::bundle_action_room(
             pin.qualified_room(),
             &map,
             deps.admitted.world_id,
@@ -285,9 +285,9 @@ pub(super) fn scenario(case: Case) -> TestResult {
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
         if case.nested() {
-            super::super::item_look::seed_main_backpack(&harness, &[(key, 1), (bag, 1)]).await?;
+            super::super::item_look_fixtures::seed_main_backpack(&harness, &[(key, 1), (bag, 1)]).await?;
         } else {
-            super::super::item_look::seed_main_backpack(&harness, &[(key, 1)]).await?;
+            super::super::item_look_fixtures::seed_main_backpack(&harness, &[(key, 1)]).await?;
         }
         let used = crate::gameplay_transport::item_look::typed_definition(
             index,
@@ -508,10 +508,10 @@ pub(super) fn scenario(case: Case) -> TestResult {
         let nurik = if case == Case::BridgeRobberyDisguise {
             owner.quest_catalogue = Some(std::sync::Arc::new(nurik_catalogue()?));
             owner.refresh_quest_session(admitted.game_session_id, false).await;
-            let [npc] = super::super::classic_quests::install_with_offsets(
+            let [npc] = super::super::classic_quests_fixtures::install_with_offsets(
                 &owner, &admitted, [NURIK], Some([(1, 0)]),
             ).await?;
-            let reply = super::super::classic_quests::talk(&mut owner, &admitted, npc, 7865, "hi").await?;
+            let reply = super::super::classic_quests_fixtures::talk(&mut owner, &admitted, npc, 7865, "hi").await?;
             assert_eq!(reply, [NURIK_REFUSAL]);
             Some(npc)
         } else {
@@ -526,7 +526,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
             return harness.cleanup().await;
         }
         let (mut end, result, actual, wire_cues) =
-            super::super::rust_lottery::exchange_with_visuals(
+            super::super::rust_lottery_fixtures::exchange_with_visuals(
                 &owner,
                 admitted,
                 command_id,
@@ -739,7 +739,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
                 .ok_or("receipt replay")?;
             assert_eq!(replay.disposition, UseDisposition::Committed);
             let (replayed_end, replayed, _) =
-                super::super::rust_lottery::exchange(&owner, end, command_id, &actual, None, None)
+                super::super::rust_lottery_fixtures::exchange(&owner, end, command_id, &actual, None, None)
                     .await?;
             end = replayed_end;
             assert_eq!(replayed, UseDisposition::Committed);
@@ -800,9 +800,9 @@ pub(super) fn scenario(case: Case) -> TestResult {
             );
         }
         if let Some(npc) = nurik {
-            let talk = super::super::classic_quests::talk;
+            let talk = super::super::classic_quests_fixtures::talk;
             assert_eq!(talk(&mut owner, &end, npc, 7866, "hi").await?, [NURIK_REFUSAL]);
-            super::super::qengine_outfit_stories::commit_fixture(&owner, &end, READY_TO_SELL, 7867).await?;
+            super::super::qengine_outfit_stories_fixtures::commit_fixture(&owner, &end, READY_TO_SELL, 7867).await?;
             owner.refresh_quest_session(end.game_session_id, false).await;
             assert_eq!(talk(&mut owner, &end, npc, 7868, "hi").await?, [NURIK_WELCOME]);
             talk(&mut owner, &end, npc, 7869, "bye").await?;
@@ -878,7 +878,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
                 sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) SELECT encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,coalesce(max(placement_ordinal),0)+1,game_character_uuid_v7() FROM game_item_container_entries WHERE parent_item_instance_id=encode($4,'hex')::uuid")
                     .bind(source.as_slice()).bind(id(42).as_slice()).bind(id(41).as_slice()).bind(id(70).as_slice()).execute(&mut *tx).await?;
                 tx.commit().await?;
-                let (next, outcome, actual) = super::super::rust_lottery::exchange_latest_source(
+                let (next, outcome, actual) = super::super::rust_lottery_fixtures::exchange_latest_source(
                     &owner,
                     admitted,
                     command,
@@ -896,7 +896,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
                     i64::from(command == 6)
                 );
                 if command == 6 {
-                    let (_, outcome, _) = super::super::rust_lottery::exchange(
+                    let (_, outcome, _) = super::super::rust_lottery_fixtures::exchange(
                         &owner, admitted, command, &actual, None, None,
                     )
                     .await?;

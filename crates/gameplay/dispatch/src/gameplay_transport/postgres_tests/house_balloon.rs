@@ -1,6 +1,8 @@
 //! W19: ordinary framed USE in actual House custody, including a real guest ACL.
+use super::house_balloon_fixtures::{INNER, wire};
+
 use super::fixture::{Harness, debug, id, run};
-use super::house_transfer::{RecoverySource, prepare_owned_session};
+use super::house_transfer_fixtures::{RecoverySource, prepare_owned_session};
 use super::{Dependencies, TestResult};
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::durability::house_scope_handoff::{
@@ -17,7 +19,7 @@ use crate::gameplay_transport::connection::{
     AdmittedSession, ConnectionEnd, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS,
     serve_admitted,
 };
-use oteryn_protocol_oteryn::world_map::{MapDefinition, MapOrigin};
+
 use oteryn_protocol_oteryn::world_object::{
     UseDisposition, UseIntent, UseTarget, encode_item_use_intent,
 };
@@ -25,13 +27,12 @@ use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, decode_command_result, encode_client_command,
 };
 use serde_json::Value;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 const HOUSE: &str = "oteryn:content.house.admiral_s_avenue_1";
 const POSITION: [i32; 3] = [32310, 32804, 7];
 const BEFORE: &str = "oteryn:item.tibia.i37414";
 const AFTER: &str = "oteryn:item.tibia.i37471";
-const INNER: &str = "oteryn:item.tibia.i2854";
+
 const MAP_OFFERS: &[OfferedCapability] = &[
     OfferedCapability {
         id: 4,
@@ -287,7 +288,6 @@ mod rotation;
 mod scenario;
 #[path = "house_balloon/timed.rs"]
 mod timed;
-#[path = "house_balloon/wire.rs"]
-pub(super) mod wire;
+
 use scenario::scenario;
 use wire::{HouseExchange, exchange};

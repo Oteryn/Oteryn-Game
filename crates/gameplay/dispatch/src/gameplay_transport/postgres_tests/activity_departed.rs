@@ -1,6 +1,8 @@
 //! Production origin lifecycle without the departed process's native directory.
 //! The successor is offline; only a separately authenticated fresh admission
 //! obtains new control. Fixture content and initial inventory remain explicit.
+use super::activity_departed_fixtures::{fresh_after_release};
+
 use super::fixture::{Harness, debug, id};
 use super::{Dependencies, TestResult};
 use crate::durability::activity_handoff::ActivityHandoffOwner;
@@ -19,12 +21,11 @@ use crate::durability::runtime_scope_assignment::{
 };
 use crate::durability::spell_owner_commit::SpellLane;
 use crate::foundation::admission_authority_publication::AdmissionAuthorityGuardStateV1;
-use crate::foundation::fresh_admission_durability::FreshAdmissionDurableOutcomeV1;
+
 use crate::foundation::{
-    AuthenticatedTransportRefV1, CharacterId, CommandId, CommandRef, GameSessionId,
+    CommandId, CommandRef,
     GameSessionState, RuntimeScopeRefV1, ScopeOwnershipGeneration,
 };
-use crate::gameplay_transport::item_fence_of;
 
 #[test]
 fn activity_departed_postgres_origin_lifecycle_releases_for_fresh_admission_and_retires_ground()
@@ -84,7 +85,7 @@ fn run_with_departure(cancel_commit: bool, registration_ended: bool) -> TestResu
 }
 
 async fn scenario(h: &Harness, cancel_commit: bool, registration_ended: bool) -> TestResult {
-    let entered = super::activity_runtime::enter_fixture(h).await?;
+    let entered = super::activity_runtime_fixtures::enter_fixture(h).await?;
     let source = entered.fence;
     let origin = entered.request.participants[0].source.runtime_scope;
     let origin_generation = entered.request.participants[0]
@@ -439,79 +440,6 @@ async fn cancel_after_committed_return(
     Ok(())
 }
 
-pub(super) async fn fresh_after_release(
-    h: &Harness,
-    character: crate::domain::CharacterId,
-    origin: RuntimeScopeRefV1,
-) -> TestResult<crate::foundation::GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>> {
-    let now: i64 =
-        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
-            .fetch_one(&h.pool)
-            .await?;
-    let mut source = super::fresh_fixture::fresh::Source::new(now)?;
-    let keys = source
-        .rows
-        .iter()
-        .map(|row| row.key.clone())
-        .collect::<Vec<_>>();
-    source.rows = AdmissionGuardStore::from_root(h.root.clone())
-        .load(&keys)
-        .await?
-        .into_iter()
-        .collect::<Option<Vec<_>>>()
-        .ok_or("current fresh guards")?;
-    for row in &source.rows {
-        match &row.state {
-            AdmissionAuthorityGuardStateV1::Account { presence, .. } => assert!(presence.is_none()),
-            AdmissionAuthorityGuardStateV1::Character {
-                holder,
-                lease_generation,
-                ..
-            } => {
-                assert!(holder.is_none());
-                source.current.character_lease_generation = *lease_generation;
-            }
-            AdmissionAuthorityGuardStateV1::Runtime {
-                ownership_generation,
-                ready,
-                ..
-            } => {
-                assert!(*ready);
-                source.current.scope_ownership_generation = *ownership_generation;
-            }
-            _ => {}
-        }
-    }
-    assert_eq!(
-        source.current.character_id,
-        CharacterId::decode(character.as_bytes()).map_err(debug)?
-    );
-    assert_eq!(
-        RuntimeScopeRefV1::channel(source.current.world_id, source.current.channel_id),
-        origin
-    );
-    let character_text: String = sqlx::query_scalar("SELECT character_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
-        .bind(character.as_bytes().as_slice()).fetch_one(&h.pool).await?;
-    let session = GameSessionId::decode(&id(197)).map_err(debug)?;
-    let transport = AuthenticatedTransportRefV1::decode(&[197; 16]).map_err(debug)?;
-    let request =
-        source.activity_room_request(session, transport, &character_text, [197; 32], now)?;
-    let store = FreshAdmissionStore::from_root(h.root.clone());
-    assert!(matches!(
-        store.commit(&request).await?,
-        FreshAdmissionDurableOutcomeV1::Committed(_)
-    ));
-    let current = store.current_session_at(session).await?.0;
-    assert_eq!(current.current_transport(), Some(transport));
-    assert_eq!(
-        item_fence_of(current)
-            .ok_or("fresh current fence")?
-            .character_id,
-        character
-    );
-    Ok(current)
-}
-
 fn bind_origin_capabilities(
     owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     origin: RuntimeScopeRefV1,
@@ -745,9 +673,9 @@ async fn census(h: &Harness) -> TestResult<(i64, i64, i64, i64)> {
 async fn seed_private_ground(
     h: &Harness,
     authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
-    entered: &super::activity_runtime::EnteredActivityFixture,
+    entered: &super::activity_runtime_fixtures::EnteredActivityFixture,
 ) -> TestResult {
-    super::item_look::seed_main_backpack(h, &[("oteryn:item.tibia.i3031", 5)]).await?;
+    super::item_look_fixtures::seed_main_backpack(h, &[("oteryn:item.tibia.i3031", 5)]).await?;
     sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)")
         .bind(entered.fence.character_id.as_bytes().as_slice()).execute(&h.pool).await?;
     let cell = entered.request.participants[0].destination_cell;

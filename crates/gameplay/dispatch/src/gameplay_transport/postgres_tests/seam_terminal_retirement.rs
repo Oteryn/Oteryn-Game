@@ -6,7 +6,7 @@ use crate::gameplay_transport::connection::{FreshAdmissionAuthority, GraceExpiry
 
 #[test]
 fn seam_terminal_retirement_retries_offline_ack_after_actor_removal_postgres() -> TestResult {
-    kill_reward_e2e::scenario_thread::run_async(async |admin| {
+    kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "terminal_retire_retry", true, false)
             .await?;
         prepare_current_session(&h).await?;
@@ -113,7 +113,7 @@ fn seam_terminal_retirement_retries_offline_ack_after_actor_removal_postgres() -
 #[test]
 fn seam_terminal_retirement_keeps_unknown_without_terminal_or_scoped_absence_postgres() -> TestResult
 {
-    kill_reward_e2e::scenario_thread::run_async(async |admin| {
+    kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "terminal_retire_fences", true, false)
             .await?;
         prepare_current_session(&h).await?;

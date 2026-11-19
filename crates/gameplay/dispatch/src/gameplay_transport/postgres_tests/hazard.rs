@@ -81,7 +81,7 @@ fn hazard_postgres_real_dispatch_selection_reload_fences_and_capability() -> Tes
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("hazard-dispatch", scenario)
+    super::kill_reward_e2e_fixtures::scenario_thread::run("hazard-dispatch", scenario)
 }
 
 fn scenario() -> TestResult {

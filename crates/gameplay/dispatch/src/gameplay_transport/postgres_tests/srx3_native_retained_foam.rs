@@ -120,7 +120,7 @@ fn srx3_native_foam_older_stage_runs_with_registered_hp0_caster_before_death_pos
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("srx3-native-retained-foam", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-native-retained-foam", || {
         run(async |admin| {
             super::reset();
             let kind =
@@ -181,8 +181,8 @@ fn srx3_native_foam_older_stage_runs_with_registered_hp0_caster_before_death_pos
                 false,
             )
             .await?;
-            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-            super::house_transfer::prepare_owned_session(&h).await?;
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::house_transfer_fixtures::prepare_owned_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -192,7 +192,7 @@ fn srx3_native_foam_older_stage_runs_with_registered_hp0_caster_before_death_pos
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &evidence.evidence;
             super::srx3_activity_source_fixture::install_scene(&mut owner, &scene, kind)?;
-            super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+            super::boss_activity_fixtures::issue_content_and_reset(&h, &scene.pin).await?;
             let mut admitted = deps.admitted;
             super::srx3_activity_source_fixture::prepare_player(&h, &owner, &mut admitted, 2000)
                 .await?;

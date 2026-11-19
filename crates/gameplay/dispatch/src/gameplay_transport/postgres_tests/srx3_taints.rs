@@ -12,7 +12,7 @@ fn srx3_taints_postgres_native_query_private_expiry_and_session_fence() -> TestR
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("srx3-taints", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-taints", || {
         run(async |admin| {
             reset();
             let h = Harness::create_with_admission_seed(admin, "srx3_taints", true, false).await?;
@@ -73,7 +73,7 @@ fn srx3_taints_postgres_native_query_private_expiry_and_session_fence() -> TestR
                 .ok_or("current item fence")?
                 .character_id;
             let (status, bytes) =
-                super::boss_encounter::exchange_kind(&owner, &mut admitted, 1, 133, &[16, 1])
+                super::boss_encounter_fixtures::exchange_kind(&owner, &mut admitted, 1, 133, &[16, 1])
                     .await?;
             assert_eq!(status, CommandStatus::Accepted);
             assert!(bytes.ends_with(&[58, 8, 8, 0, 16, 0, 24, 0, 32, 0]));
@@ -87,7 +87,7 @@ fn srx3_taints_postgres_native_query_private_expiry_and_session_fence() -> TestR
                 .bind(character.as_bytes().as_slice()).execute(&mut *historical).await?;
             historical.commit().await?;
             let (status, bytes) =
-                super::boss_encounter::exchange_kind(&owner, &mut admitted, 2, 133, &[16, 1])
+                super::boss_encounter_fixtures::exchange_kind(&owner, &mut admitted, 2, 133, &[16, 1])
                     .await?;
             assert_eq!(status, CommandStatus::Accepted);
             assert!(bytes.ends_with(&[58, 8, 8, 5, 16, 3, 24, 15, 32, 1]));
@@ -100,11 +100,11 @@ fn srx3_taints_postgres_native_query_private_expiry_and_session_fence() -> TestR
                 .bind(character.as_bytes().as_slice()).execute(&mut *historical).await?;
             historical.commit().await?;
             let (_, bytes) =
-                super::boss_encounter::exchange_kind(&owner, &mut admitted, 3, 133, &[16, 1])
+                super::boss_encounter_fixtures::exchange_kind(&owner, &mut admitted, 3, 133, &[16, 1])
                     .await?;
             assert!(bytes.ends_with(&[58, 8, 8, 0, 16, 3, 24, 15, 32, 1]));
             let (_, legacy) =
-                super::boss_encounter::exchange_kind(&owner, &mut admitted, 4, 133, &[]).await?;
+                super::boss_encounter_fixtures::exchange_kind(&owner, &mut admitted, 4, 133, &[]).await?;
             assert!(!legacy.ends_with(&[58, 8, 8, 0, 16, 3, 24, 15, 32, 1]));
             let mut stale = admitted.item_fence.ok_or("item fence")?;
             stale.game_session_id =
@@ -136,7 +136,7 @@ fn srx3_taints_postgres_census_over_one_work_page_keeps_every_current_player() -
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("srx3-taints-census", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-taints-census", || {
         run(async |admin| {
             reset();
             let started = std::time::Instant::now();
@@ -267,7 +267,7 @@ fn srx3_taints_postgres_visible_grace_keeps_data_without_restoring_input() -> Te
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("srx3-taints-grace", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-taints-grace", || {
         run(async |admin| {
             reset();
             let started = std::time::Instant::now();
