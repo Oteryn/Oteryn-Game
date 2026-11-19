@@ -154,10 +154,10 @@ fn scenario() -> Result<(), String> {
         let actors = {
             let (carrier, continuity, pin) = runtime.soulpit_kernel_parts().map_err(err)?;
             carrier
-                .spawn_soulpit_wave(
+                .spawn_native_soulpit_wave(
                     continuity,
                     pin,
-                    native.policies(),
+                    native,
                     SoulpitWaveRequest {
                         handoff_id: uuid(7),
                         wave,
