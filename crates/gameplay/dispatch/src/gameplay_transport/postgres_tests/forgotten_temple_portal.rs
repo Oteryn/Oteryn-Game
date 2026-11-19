@@ -19,10 +19,10 @@ const ACCESS: &str = "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/acc
 const FIXTURE: &str = "oteryn:quest-transition/forgotten/fixture-energy-offering";
 const KEY: &str = "oteryn:quest-callback/forgotten/energy-temple-portal";
 const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/forgotten_knowledge/movements_entrance_teleport.lua:12-20,100-125";
-// Mount appearance 25051 near the donor's temple return point on this test map.
+// Crystal data-global/world/world.otbm places appearance 25051 here.
 const PORTAL: Position = Position {
     x: 32328,
-    y: 32088,
+    y: 32087,
     floor: -7,
 };
 const LANDING: Position = Position {
