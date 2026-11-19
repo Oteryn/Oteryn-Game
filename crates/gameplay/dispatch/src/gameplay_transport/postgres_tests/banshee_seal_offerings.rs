@@ -12,9 +12,9 @@ use oteryn_protocol_oteryn::world_spatial::{StepDirection, encode_step_intent};
 pub(super) const PLAGUE: &str = "banshee-plague-offerings";
 pub(super) const SACRIFICE: &str = "banshee-sacrifice-offering";
 const QUEST: &str = "oteryn:quest.the_queen_of_the_banshees_quest";
-pub(super) const ENTRY: Position = Position {
-    x: 32243,
-    y: 31891,
+const ENTRY: Position = Position {
+    x: 32250,
+    y: 31892,
     floor: -14,
 };
 // Crystal startup/tables/teleport.lua:234-240, west member of the paired portals.
@@ -44,10 +44,10 @@ const SACRIFICE_DOOR: &str =
     "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/fourth_seal_door";
 const BLOOD: u8 = 5;
 const BLOOD_CUES: [Position; 4] = [
-    Position { x: 32242, ..ENTRY },
-    ENTRY,
-    Position { x: 32242, y: 31893, ..ENTRY },
-    Position { y: 31893, ..ENTRY },
+    Position { x: 32242, y: 31891, ..ALTAR },
+    Position { y: 31891, ..ALTAR },
+    Position { x: 32242, y: 31893, ..ALTAR },
+    Position { y: 31893, ..ALTAR },
 ];
 
 #[test]
@@ -109,19 +109,24 @@ fn document(name: &str) -> serde_json::Value {
     };
     let mut storage = vec![json!({"track":track,"minimum":-1,"maximum":0,"set":1,"preserve":plague})];
     let mut sources = vec![source];
+    let selector = if plague {
+        json!({"position":PLAGUE_ENTRY,"appearance":1949,"action":35002})
+    } else {
+        json!({"position":ENTRY,"appearance":1959,"unique":35016})
+    };
     if !plague {
         storage.push(json!({"track":SACRIFICE_DOOR,"minimum":-1,"maximum":1,"set":1}));
         sources.extend([
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/movement-4-fourth_seal_sacrifice.lua:3-15",
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/the_queen_of_the_banshees.lua:97-105",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:575-579",
         ]);
+    } else {
+        sources.push("crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:233-240");
     }
     json!({"schema":1,"callbacks":[{
         "key":format!("oteryn:quest-callback/{name}"),"quest":QUEST,
-        "trigger":"step_in","selector":{
-            "position":if plague { PLAGUE_ENTRY } else { ENTRY },
-            "appearance":if plague { 1949 } else { 100 }
-        },
+        "trigger":"step_in","selector":selector,
         "reversible":false,"passages":[],"teleport":if plague { PLAGUE_LANDING } else { SACRIFICE_LANDING },
         "requires_world_admission":true,"storage":storage,
         "offerings":offerings,"effects":effects,"return_on_failure":true,"sources":sources
@@ -132,6 +137,14 @@ pub(super) fn callback(name: &str) -> TestResult<Callback> {
     Ok(serde_json::from_value(
         document(name)["callbacks"][0].clone(),
     )?)
+}
+
+pub(super) fn world(name: &str, callback: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
+    if name == SACRIFICE {
+        super::quest_world_callbacks::world_with_cells(callback, ENTRY, &[ALTAR])
+    } else {
+        super::quest_world_callbacks::world_with_cells(callback, PLAGUE_ENTRY, &[])
+    }
 }
 
 pub(super) async fn exercise(
@@ -180,6 +193,7 @@ pub(super) async fn exercise(
         .await?;
     } else {
         pour(owner, admitted, h, 3, 301).await?;
+        move_to_flame(owner, admitted).await?;
     }
     let step = encode_step_intent(StepDirection::East);
     wire(owner, admitted, 1, 1, step.clone()).await?;
@@ -215,6 +229,7 @@ pub(super) async fn exercise(
         assert!(blood_cues(owner)?.is_empty());
         pour(owner, admitted, h, BLOOD, 302).await?;
         assert_eq!(blood_cues(owner)?, BLOOD_CUES);
+        move_to_flame(owner, admitted).await?;
     }
     owner.clock_origin = owner
         .clock_origin
@@ -267,6 +282,18 @@ fn blood_cues(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult<Vec<Posi
         .filter(|(_, _, effect)| *effect == 1)
         .map(|(_, tile, _)| Position { x: tile.x, y: tile.y, floor: tile.floor })
         .collect())
+}
+
+async fn move_to_flame(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+) -> TestResult {
+    super::l6_native_signs::relocate(
+        owner,
+        admitted.runtime_actor.ok_or("actor")?,
+        admitted.game_session_id,
+        Position { x: ENTRY.x - 1, ..ENTRY },
+    ).await
 }
 
 async fn pour(
@@ -327,6 +354,12 @@ async fn pour(
         .ok_or("placement")?;
     placement.extend_from_slice(&key.to_be_bytes());
     let actor = admitted.runtime_actor.ok_or("actor")?;
+    super::l6_native_signs::relocate(
+        owner,
+        actor,
+        admitted.game_session_id,
+        Position { x: ALTAR.x - 1, ..ALTAR },
+    ).await?;
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
