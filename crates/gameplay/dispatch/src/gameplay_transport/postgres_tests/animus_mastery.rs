@@ -1,5 +1,5 @@
 //! ANIMUS-1 durable completion and real command 232 query, replay and current-session fencing.
-use super::cyclopedia::support;
+use super::cyclopedia_fixtures::support;
 use super::fixture::{Harness, debug, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
@@ -15,7 +15,7 @@ fn animus_mastery_completion_replay_reload_and_fence_postgres() -> TestResult {
         eprintln!("ANIMUS_COMPLETION POSTGRES_CASE_NOT_RUN: no configured PostgreSQL route");
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("animus-mastery", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("animus-mastery", || {
         run(async |admin| {
             let h =
                 Harness::create_with_admission_seed(admin, "animus_mastery", false, false).await?;
@@ -84,7 +84,7 @@ fn animus_mastery_postgres_real_dispatch_pages_replay_and_current_fence() -> Tes
         eprintln!("ANIMUS_QUERY POSTGRES_CASE_NOT_RUN: no configured PostgreSQL route");
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("animus-query", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("animus-query", || {
         run(async |admin| {
             super::reset();
             let h = Harness::create_with_admission_seed(admin, "animus_query", true, false).await?;

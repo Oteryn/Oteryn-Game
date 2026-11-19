@@ -1,6 +1,6 @@
 //! M38: elapsed ticket validity is read from Quest state using database time.
 use super::fixture::{Harness, debug, run};
-use super::npcfix_m38_travel_guards::NoPremium;
+use super::npcfix_m38_travel_guards_fixtures::NoPremium;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::npc_travel::TravelRefusal;
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
@@ -17,7 +17,7 @@ fn npcfix_m38_travel_ticket_requires_an_unexpired_server_purchase_postgres() -> 
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("npcfix-m38-ticket", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("npcfix-m38-ticket", || {
         run(async |admin| {
             let h = Harness::create_with_admission_seed(admin, "m38_travel_ticket", true, false)
                 .await?;

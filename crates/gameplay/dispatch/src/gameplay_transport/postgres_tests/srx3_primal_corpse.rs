@@ -10,7 +10,7 @@ fn srx3_primal_corpse_source_chain_policy_postgres() -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("srx3-primal-corpse", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-primal-corpse", || {
         run(async |admin| {
             let h = Harness::create_with_admission_seed(admin, "srx3_primal_corpse", false, false)
                 .await?;
@@ -39,7 +39,7 @@ fn srx3_w11_corpse_source_chain_policy_postgres() -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("srx3-w11-corpse", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-w11-corpse", || {
         run(async |admin| {
             let h =
                 Harness::create_with_admission_seed(admin, "srx3_w11_corpse", false, false).await?;
@@ -105,7 +105,7 @@ fn srx3_rotten_ambient_corpse_source_chain_policy_postgres() -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run("srx3-rotten-ambient-corpse", || {
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-rotten-ambient-corpse", || {
         run(async |admin| {
             let h = Harness::create_with_admission_seed(
                 admin,
@@ -161,7 +161,7 @@ fn srx3_all52_source_corpse_policy_exact_postgres() -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run("srx3-all52-source-corpse", || {
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-all52-source-corpse", || {
         run(async |admin| {
             let h = Harness::create_with_admission_seed(
                 admin,

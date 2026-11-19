@@ -10,7 +10,7 @@ use std::sync::{Arc, atomic::Ordering};
 
 #[test]
 fn seam_control_loss_unknown_ack_keeps_original_through_six_busy_reads_postgres() -> TestResult {
-    kill_reward_e2e::scenario_thread::run_async(async |admin| {
+    kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "loss_unknown_retained", false, false)
             .await?;
         prepare_current_session(&h).await?;
@@ -155,7 +155,7 @@ fn seam_control_loss_retired_owner_before_publication_never_marks_actor_postgres
 }
 
 fn publication_superseded(terminal: bool) -> TestResult {
-    kill_reward_e2e::scenario_thread::run_async(async move |admin| {
+    kill_reward_e2e_fixtures::scenario_thread::run_async(async move |admin| {
         let h = Harness::create_with_admission_seed(
             admin,
             if terminal {

@@ -1,6 +1,6 @@
 //! W18: house-podium commands through framed ingress, composed dispatch, and PostgreSQL.
 use super::fixture::{Harness, debug, id, run};
-use super::house_transfer::{RecoverySource, prepare_owned_session};
+use super::house_transfer_fixtures::{RecoverySource, prepare_owned_session};
 use super::{Dependencies, TestResult};
 use crate::content::native_gameplay::test_support::cosmetics_fixture::{
     activated_with_optional_cosmetics, cosmetics_test_packet,
@@ -83,7 +83,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         .await
         .map_err(debug)?;
     let base = Dependencies::new()?;
-    let world = super::house_wrap::wrap_bundle(base.admitted.world_id, base.admitted.channel_id)?;
+    let world = super::house_wrap_fixtures::wrap_bundle(base.admitted.world_id, base.admitted.channel_id)?;
     let cells = world
         .movement_cells(base.room.movement_cells())
         .map_err(debug)?;
@@ -202,7 +202,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         .ok_or("house transfer outcome")?;
     let mut admitted = inside.ok_or("house transfer admission")?;
 
-    super::item_look::seed_main_backpack(h, &[]).await?;
+    super::item_look_fixtures::seed_main_backpack(h, &[]).await?;
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role = replica")
         .execute(&mut *tx)

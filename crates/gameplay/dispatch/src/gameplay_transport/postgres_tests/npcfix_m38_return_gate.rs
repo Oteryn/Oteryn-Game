@@ -1,7 +1,7 @@
 //! M38: quote and commit both require the last completed inbound port.
 use super::fixture::{Harness, debug, run};
-use super::npcfix_m38_travel_guards::NoPremium;
-use super::npcfix_m38_travel_return::{commit, complete, request, requirement};
+use super::npcfix_m38_travel_guards_fixtures::NoPremium;
+use super::npcfix_m38_travel_return_fixtures::{commit, complete, request, requirement};
 use super::{ComposedFreshAdmission, Dependencies, TestResult, prepare_current_session};
 use crate::content::npc_catalogue::travel::TravelRoute;
 use crate::durability::npc_travel::TravelRefusal;
@@ -15,7 +15,7 @@ fn npcfix_m38_return_origin_is_rechecked_at_quote_and_commit_postgres() -> TestR
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("npcfix-m38-return-gate", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("npcfix-m38-return-gate", || {
         run(async |admin| {
             let h =
                 Harness::create_with_admission_seed(admin, "m38_return_gate", true, false).await?;

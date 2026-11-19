@@ -2,7 +2,7 @@
 #![allow(clippy::expect_used)]
 
 use super::fixture::{Harness, debug, id, run};
-use super::store::{FakePlatform, Ledger, purchase, purchase_request, serve, uuid};
+use super::store_fixtures::{FakePlatform, Ledger, purchase, purchase_request, serve, uuid};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::CommandStatus;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
@@ -18,7 +18,7 @@ fn store_purchase_history_lists_in_game_purchases_newest_first() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("store-history", scenario)
+    super::kill_reward_e2e_fixtures::scenario_thread::run("store-history", scenario)
 }
 
 fn scenario() -> TestResult {

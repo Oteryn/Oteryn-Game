@@ -1,7 +1,7 @@
 //! A4/C17b: production spell completion under real Character and Content fences.
-use super::death_ml_loss_composed::{current_fence, production_generation_with_source};
+use super::death_ml_loss_composed_fixtures::{current_fence, production_generation_with_source};
 use super::fixture::{Harness, debug, id, run};
-use super::item_look::large_stack;
+use super::item_look_fixtures::large_stack;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::character_build::{
     BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState, convert_vocation,
@@ -41,7 +41,7 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
             prepare_current_session(&h).await?;
             if WITH_OBSERVER {
                 h.seed_appearance_observer().await?;
-                super::appearance_change_postgres::observer_visibility_tests::admit(&h).await?;
+                super::appearance_change_postgres_fixtures::observer_visibility_tests::admit(&h).await?;
             }
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
@@ -226,7 +226,7 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
             }
             let observer = if WITH_OBSERVER {
                 Some(
-                    super::appearance_change_postgres::observer_visibility_tests::initialize(
+                    super::appearance_change_postgres_fixtures::observer_visibility_tests::initialize(
                         &deps, &owner,
                     )
                     .await?,

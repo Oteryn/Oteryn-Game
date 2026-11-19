@@ -1,5 +1,5 @@
 //! W-2: framed commands -> composed owner -> fenced PostgreSQL -> durable allocation/reload.
-use super::atelier::fixture as atelier_fixture;
+use super::atelier_fixtures::fixture as atelier_fixture;
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
@@ -225,7 +225,7 @@ fn scenario(transition: Option<WheelExtensionCase>, combat: Option<WheelCombatCa
             .await
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
-        let (controller, pin) = super::death_ml_loss_composed::production_generation_with_source(
+        let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_source(
             world,
             "content-1",
             Some(include_bytes!(concat!(
