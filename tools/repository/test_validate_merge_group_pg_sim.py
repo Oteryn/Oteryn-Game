@@ -20,7 +20,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "9d6ed27db2ed55998dae2153eaa2227c0d8c4704"
+APPROVED = "1de3f58c155660d9bf1dec97119231f9f991a3a4"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 REGISTERED_POSTGRES_TARGETS = (
     ("durability_postgres", "apps/game-server/tests/durability_postgres.rs"),
@@ -209,7 +209,7 @@ def _atlas_queue_canaries(original: str, core) -> None:
     assert "ATLAS_FULLWORLD: ${{ needs.atlas_fullworld.result }}" in gate
     script = textwrap.dedent(gate.split("        run: |\n", 1)[1])
     base = dict(os.environ, **dict.fromkeys((
-        "CANDIDATE", "DEPENDENCY_REVIEW", "CODEQL", "RUST_LINUX",
+        "CANDIDATE", "DEPENDENCY_REVIEW", "CODEQL", "RUST_LINUX", "RUST_DISPATCH",
         "DURABILITY_POSTGRES", "RUST_WINDOWS", "RUST_SUPPLY_CHAIN",
         "NODE_BOOT", "SERVER_SEAM", "WORLD_BUNDLE",
     ), "success"))
@@ -224,7 +224,7 @@ def _atlas_queue_canaries(original: str, core) -> None:
     assert subprocess.run(["bash", "-c", script], env=base, capture_output=True).returncode != 0
     atlas_only = dict(base, RUST_REQUIRED="false", WINDOWS_REQUIRED="false",
         SERVER_QUALIFICATION_REQUIRED="false", ATLAS_FULLWORLD_REQUIRED="true",
-        RUST_LINUX="skipped", DURABILITY_POSTGRES="skipped", RUST_WINDOWS="skipped",
+        RUST_LINUX="skipped", RUST_DISPATCH="skipped", DURABILITY_POSTGRES="skipped", RUST_WINDOWS="skipped",
         RUST_SUPPLY_CHAIN="skipped", NODE_BOOT="skipped", SERVER_SEAM="skipped",
         WORLD_BUNDLE_REQUIRED="false", WORLD_BUNDLE="skipped")
     for result in ("success", "skipped"):
@@ -278,7 +278,7 @@ def _world_bundle_queue_canaries(original: str, core) -> None:
     assert "WORLD_BUNDLE: ${{ needs.world_bundle.result }}" in gate
     script = textwrap.dedent(gate.split("        run: |\n", 1)[1])
     base = dict(os.environ, **dict.fromkeys((
-        "CANDIDATE", "DEPENDENCY_REVIEW", "CODEQL", "ATLAS_FULLWORLD", "RUST_LINUX",
+        "CANDIDATE", "DEPENDENCY_REVIEW", "CODEQL", "ATLAS_FULLWORLD", "RUST_LINUX", "RUST_DISPATCH",
         "DURABILITY_POSTGRES", "RUST_WINDOWS", "RUST_SUPPLY_CHAIN",
         "NODE_BOOT", "SERVER_SEAM",
     ), "success"))
@@ -376,6 +376,7 @@ def main() -> int:
 
     for job, condition in (
         ("rust_linux", "if: needs.candidate.outputs.rust == 'true'"),
+        ("rust_dispatch", "if: needs.candidate.outputs.rust == 'true'"),
         ("durability_postgres_build", "if: needs.candidate.outputs.rust == 'true'"),
         ("durability_postgres", "if: needs.candidate.outputs.rust == 'true'"),
         ("rust_windows", "if: needs.candidate.outputs.windows == 'true'"),
@@ -397,7 +398,7 @@ def main() -> int:
         '            if git cat-file -e "$HEAD_SHA:$path" 2>/dev/null; then',
         '            if [[ "$base_present" == true && "$head_present" == false ]]; then',
         "          verify_registered_target_binding() {",
-        '            cargo +1.100.0 metadata --locked --no-deps --format-version 1 > "$metadata"',
+        '          cargo +1.100.0 metadata --locked --no-deps --format-version 1 > "$metadata"',
         "              owners = [package for package in packages if package.get('name') == 'oteryn-game-server']",
         "              expected_manifest = (pathlib.Path.cwd() / 'apps/game-server/Cargo.toml').resolve(strict=True)",
         "              observed_manifest = pathlib.Path(owners[0]['manifest_path']).resolve(strict=True)",
@@ -510,14 +511,14 @@ def main() -> int:
             return core.main()
 
     mutations = 0
-    for job in ("durability_postgres_build", "durability_postgres", "rust_windows"):
+    for job in ("durability_postgres_build", "durability_postgres", "rust_dispatch", "rust_windows"):
         for key in ("if: false", "continue-on-error: true", '"continue-on-error": true'):
             changed = original.replace(f"  {job}:\n", f"  {job}:\n    {key}\n", 1)
             assert changed != original and validate(changed) != 0, (job, key)
             mutations += 1
     for command in (
         '          cargo +1.100.0 nextest archive --locked --workspace "${archived_targets[@]}" --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"',
-        '          cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"',
+        '          cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-game-server',
         "        run: cargo +1.100.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
         "        run: cargo +1.100.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
     ):
@@ -536,15 +537,20 @@ def main() -> int:
         assert validate(original.replace(marker, "", 1)) != 0
         mutations += 1
 
-    for archive in ("pg-e2e", "pg-lib"):
-        run = f'          cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/{archive}.tar.zst" \\'
-        plan = f'          mapfile -t filters < "$RUNNER_TEMP/pg-plan/{archive}.filters"'
+    for archive in ("pg-e2e", "$archive"):
+        run = f'cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/{archive}.tar.zst"'
+        plan = f'mapfile -t filters < "$RUNNER_TEMP/pg-plan/{archive}.filters"'
         assert original.count(run) == 1, run
         assert original.count(plan) == 1, plan
         for replacement in ("", run.replace("cargo-nextest", "echo cargo-nextest", 1)):
             assert validate(original.replace(run, replacement, 1)) != 0, (archive, replacement)
-            mutations += 1
+        mutations += 2
         assert validate(original.replace(plan, "", 1)) != 0, (archive, plan)
+        mutations += 1
+    for verification in ('verify_archive lib-1', 'verify_archive lib-2', 'verify_archive lib-3',
+                         'unset OTERYN_TEST_POSTGRES_ADMIN_URL'):
+        assert original.count(verification) == 1, verification
+        assert validate(original.replace(verification, 'true # ' + verification, 1)) != 0
         mutations += 1
     for compile_step in ("        run: rustup toolchain install 1.100.0 --profile minimal\n",):
         partitions = core.indented_yaml_mapping_block(original, "durability_postgres", 2)
@@ -571,7 +577,7 @@ def main() -> int:
     mutations += 1
 
     binding_fragments = (
-        '            cargo +1.100.0 metadata --locked --no-deps --format-version 1 > "$metadata"',
+        '          cargo +1.100.0 metadata --locked --no-deps --format-version 1 > "$metadata"',
         "              expected_manifest = (pathlib.Path.cwd() / 'apps/game-server/Cargo.toml').resolve(strict=True)",
         "              observed_manifest = pathlib.Path(owners[0]['manifest_path']).resolve(strict=True)",
         "              if observed_manifest != expected_manifest:",
@@ -594,7 +600,7 @@ def main() -> int:
     script = textwrap.dedent(block.split("        run: |\n", 1)[1])
     predicates = (
         "CANDIDATE", "DEPENDENCY_REVIEW", "CODEQL", "ATLAS_FULLWORLD", "WORLD_BUNDLE",
-        "RUST_LINUX", "DURABILITY_POSTGRES", "RUST_WINDOWS", "RUST_SUPPLY_CHAIN",
+        "RUST_LINUX", "RUST_DISPATCH", "DURABILITY_POSTGRES", "RUST_WINDOWS", "RUST_SUPPLY_CHAIN",
         "NODE_BOOT", "SERVER_SEAM",
     )
     env = dict(os.environ, **dict.fromkeys(predicates, "success"))
@@ -610,7 +616,7 @@ def main() -> int:
         env,
         RUST_REQUIRED="false",
         WINDOWS_REQUIRED="false",
-        RUST_LINUX="skipped",
+        RUST_LINUX="skipped", RUST_DISPATCH="skipped",
         DURABILITY_POSTGRES="skipped",
         RUST_WINDOWS="skipped",
         RUST_SUPPLY_CHAIN="skipped",
@@ -649,7 +655,7 @@ def main() -> int:
             assert subprocess.run(
                 ["bash", "-c", script], env=dict(docs_env, **{predicate: failure}), check=False
             ).returncode != 0, (predicate, failure)
-    for predicate in ("RUST_LINUX", "DURABILITY_POSTGRES", "RUST_WINDOWS", "RUST_SUPPLY_CHAIN"):
+    for predicate in ("RUST_LINUX", "RUST_DISPATCH", "DURABILITY_POSTGRES", "RUST_WINDOWS", "RUST_SUPPLY_CHAIN"):
         for failure in ("failure", "cancelled", ""):
             assert subprocess.run(
                 ["bash", "-c", script], env=dict(docs_env, **{predicate: failure}), check=False

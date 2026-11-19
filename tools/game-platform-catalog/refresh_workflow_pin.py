@@ -6,7 +6,7 @@ import hashlib
 import re
 from pathlib import Path
 
-PREVIOUS_WORKFLOW_SHA256 = "3ad10ed77185ae06bf0b1a2addaf5e94d52723ffc934c0944d028ad69182fff1"
+PREVIOUS_WORKFLOW_SHA256 = "e904a74b111380bd987393c53aab88e1658b12606eb94164037a3aef5ce62a8b"
 APPROVED_STEPS = '''      - name: Produce public Game catalogue
         run: python3 tools/game-platform-catalog/build.py "$RUNNER_TEMP/game-platform-catalog.json"
 
