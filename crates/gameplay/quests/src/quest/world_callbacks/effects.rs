@@ -154,6 +154,9 @@ pub struct CallbackEffects {
     pub passages_reset_after_ms: Option<u32>,
     pub facing: Option<Facing>,
     pub magic: Option<MagicEffect>,
+    /// Cue at the actual tile of a newly committed StepIn, including selector aliases.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub step_effect: Option<u16>,
     /// One cue at a committed landing, or at the restored STEP origin on refusal.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub teleport_effect: Option<u16>,

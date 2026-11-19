@@ -662,7 +662,9 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
-    let world = if super::super::banshee_seal_offerings::matches(name) {
+    let world = if super::super::banshee_seal_ambushes::matches(name) {
+        super::super::banshee_seal_ambushes::world(name, &callback)?
+    } else if super::super::banshee_seal_offerings::matches(name) {
         super::super::banshee_seal_offerings::world(name, &callback)?
     } else if name == super::super::rookie_guard_distraction::NAME {
         super::super::rookie_guard_distraction::world(&callback)?

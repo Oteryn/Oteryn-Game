@@ -9,9 +9,6 @@ pub struct PersonalReturn {
     pub landing: Position,
     pub retry_value: i64,
     pub failure_message: String,
-    /// Cue at the actual step tile that armed this return.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub start_effect: Option<u16>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub haste: Option<ReturnHaste>,
 }
@@ -89,9 +86,6 @@ pub(super) fn valid(callback: &Callback, timer: &PersonalReturn) -> bool {
         && (-15..=0).contains(&timer.landing.floor)
         && !timer.failure_message.is_empty()
         && timer.failure_message.len() <= 512
-        && timer
-            .start_effect
-            .is_none_or(|effect| (1..=255).contains(&effect))
         && timer.haste.as_ref().is_none_or(|haste| {
             (1..=1000).contains(&haste.multiplier) && (-100..=100).contains(&haste.offset)
         })

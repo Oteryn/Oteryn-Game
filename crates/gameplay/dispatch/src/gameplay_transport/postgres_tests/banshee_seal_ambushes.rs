@@ -19,6 +19,9 @@ const THIRD_ENTRY: Position = Position {
     y: 31838,
     floor: -15,
 };
+const THIRD_EAST: Position = Position { x: 32216, ..THIRD_ENTRY };
+const WARLOCK_ACTION: u16 = 25023;
+const WARLOCK_EFFECT: u16 = 14;
 const FIRST_EXIT: Position = Position {
     x: 32266,
     y: 31849,
@@ -95,7 +98,7 @@ fn document(name: &str) -> serde_json::Value {
     let effects = if first {
         json!({"ambush":ambush,"teleport_effect":11})
     } else {
-        json!({"ambush":ambush,"magic":{"position":THIRD_ENTRY,"effect":14}})
+        json!({"ambush":ambush,"step_effect":WARLOCK_EFFECT})
     };
     let (selector, placement) = if first {
         (
@@ -104,7 +107,7 @@ fn document(name: &str) -> serde_json::Value {
         )
     } else {
         (
-            json!({"position":THIRD_ENTRY,"appearance":431,"action":25023}),
+            json!({"position":THIRD_ENTRY,"position_aliases":[THIRD_EAST],"appearance":431,"action":WARLOCK_ACTION}),
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile.lua:937-944",
         )
     };
@@ -121,6 +124,16 @@ pub(super) fn callback(name: &str) -> TestResult<Callback> {
     Ok(serde_json::from_value(
         document(name)["callbacks"][0].clone(),
     )?)
+}
+
+pub(super) fn world(name: &str, callback: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
+    use oteryn_world_bundle::sector::Attrs;
+    let objects = if name == THIRD {
+        vec![(THIRD_EAST, 431, Attrs { action: Some(WARLOCK_ACTION), ..Default::default() })]
+    } else {
+        Vec::new()
+    };
+    super::quest_world_callbacks::world_cells(callback, entry(name), 100, 1, &objects, &[], None, &[])
 }
 
 pub(super) async fn exercise(
@@ -238,7 +251,8 @@ pub(super) async fn exercise(
     let first_approach = Position { x: entry(name).x - 1, ..entry(name) };
     super::l6_native_signs::relocate(owner, actor, admitted.game_session_id, first_approach)
         .await?;
-    let second_approach = Position { x: entry(name).x + 1, ..entry(name) };
+    let second_entry = if name == THIRD { THIRD_EAST } else { FIRST_ENTRY };
+    let second_approach = Position { x: second_entry.x + 1, ..second_entry };
     let mut second = super::scenarios::peer_at(h, owner, *admitted, local(second_approach)).await?;
     owner.admit_quest_session(&second).await;
     wire(
@@ -254,6 +268,17 @@ pub(super) async fn exercise(
         spawned.len() * 2,
         "one character's seal never suppresses another character's ambush"
     );
+    if name == THIRD {
+        let peer = second.runtime_actor.ok_or("peer actor")?;
+        assert_eq!(runtime.read_actor_position(peer).map_err(debug)?.position(), local(THIRD_EAST));
+        let map = owner.bundle_map().ok_or("map")?;
+        let cues: Vec<_> = map.facts.movement_effects_since(0).into_iter()
+            .filter(|(_, at, effect)| *effect == WARLOCK_EFFECT && at.y == THIRD_ENTRY.y
+                && at.floor == THIRD_ENTRY.floor && [THIRD_ENTRY.x, THIRD_EAST.x].contains(&at.x))
+            .map(|(_, at, _)| at.x)
+            .collect();
+        assert_eq!(cues, vec![THIRD_ENTRY.x, THIRD_EAST.x]);
+    }
     drop(runtime);
     let receipts: i64 = sqlx::query_scalar(
         "SELECT count(DISTINCT character_id) FROM game_character_quest_receipts WHERE transition_key=$1",
