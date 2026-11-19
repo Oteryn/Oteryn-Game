@@ -674,3 +674,22 @@ impl ChannelRuntimeV1 {
             .collect())
     }
 }
+
+impl ChannelRuntimeV1 {
+    /// Complete physical Player roster; reward attribution retains its independent cap.
+    pub fn all_source_player_damage_shares(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<Vec<SourcePlayerDamageShare>, CarrierError> {
+        self.owner_fence()?;
+        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        let Slot::CreatureOccupied {
+            damage_contributors,
+            ..
+        } = &self.carrier.slots[index]
+        else {
+            return Err(CarrierError::NotCreature);
+        };
+        Ok(damage_contributors.source_players.clone())
+    }
+}
