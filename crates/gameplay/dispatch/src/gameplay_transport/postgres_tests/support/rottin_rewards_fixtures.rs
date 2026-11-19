@@ -239,21 +239,44 @@ pub(super) async fn craft_charms(
         use_pair(1601, foot, ribbon, &mut view).await?,
         UseDisposition::NothingToUse
     );
-    for command_id in 1602..1602 + u64::try_from(count)? {
+    let next_command_id = 1602 + u64::try_from(count)?;
+    for command_id in 1602..next_command_id {
         assert_eq!(
             use_pair(command_id, ribbon, foot, &mut view).await?,
             UseDisposition::Committed
         );
     }
-    // A resumed session no longer resolves either consumed handle.
-    let mut resumed_view = Some(SessionItemView::resume(Default::default()));
+    // Refresh the original handle table from the committed inventory.
+    let inventory = owner
+        .root
+        .read_item_use_inventory(owner.character, owner.holder, fence)
+        .await
+        .map_err(debug)?;
+    let refreshed = view.as_mut().ok_or("recipe inventory view")?;
+    refreshed.inventory_committed(
+        inventory_from_backpack(inventory.backpack.as_ref(), |definition| {
+            index.definition_ref(
+                &definition.family,
+                &definition.production_key,
+                &definition.revision_ref,
+            )
+        })
+        .ok_or("committed recipe inventory")?,
+    )
+    .map_err(debug)?;
+    assert_eq!(refreshed.resolve(ribbon), None);
+    assert_eq!(refreshed.resolve(foot), None);
     assert_eq!(
-        use_pair(1602, ribbon, foot, &mut resumed_view).await?,
+        use_pair(1602, ribbon, foot, &mut view).await?,
         UseDisposition::Committed
     );
     assert_eq!(
-        use_pair(1602, foot, ribbon, &mut resumed_view).await?,
+        use_pair(1602, foot, ribbon, &mut view).await?,
         UseDisposition::Rejected
+    );
+    assert_eq!(
+        use_pair(next_command_id, ribbon, foot, &mut view).await?,
+        UseDisposition::StaleState
     );
     let quantities: Vec<(String, i64)> = sqlx::query_as(
         "SELECT definition_production_key, sum(quantity)::bigint
