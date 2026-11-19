@@ -82,3 +82,59 @@ fn engclaim_m35_exact_mint_authority_cannot_be_stripped_or_renamed() -> Result<(
     );
     Ok(())
 }
+/// TibiaWiki Skull of Ratha Quest (rev 756266/749158): both Witch Hill bags and
+/// the witch-house basement chest are one quest; completion needs all three.
+#[test]
+fn skull_of_ratha_completes_only_after_both_bags_and_the_basement_chest() -> Result<(), String> {
+    let loaded =
+        super::loader::load_embedded_quest_state("content-1").map_err(|e| format!("{e:?}"))?;
+    let catalogue = loaded.catalogue();
+    let quest = "oteryn:quest.skull_of_ratha_quest";
+    let markers = [
+        "quest/u7_6/explorer_society/skull_of_ratha/bag2",
+        "kv/witch_house_quest",
+        "quest/u7_6/explorer_society/skull_of_ratha/bag1",
+    ];
+    assert_eq!(catalogue.completion_tracks(quest).count(), markers.len());
+    let mut stored = std::collections::BTreeMap::new();
+    for (index, marker) in markers.iter().enumerate() {
+        let transition = catalogue
+            .transition(&format!("oteryn:quest-transition/{marker}/chest"))
+            .ok_or("Skull of Ratha chest member")?;
+        assert_eq!(transition.quest, quest);
+        assert_eq!(transition.effects[0].effect, QuestEffectKind::Set(1));
+        let changes = catalogue
+            .evaluate(transition, &stored, 0)
+            .map_err(|e| format!("{e:?}"))?;
+        assert_eq!(
+            catalogue.completes_after_claim_sets(transition, &stored, &changes),
+            index + 1 == markers.len()
+        );
+        for change in changes {
+            stored.insert(change.track, change.after);
+        }
+    }
+    Ok(())
+}
+
+/// TibiaWiki Sanctuary of the Lizard God Quest (rev 1198612): the Legion Helmet
+/// chest behind the sanctuary teleport is the quest's reward and closes it.
+#[test]
+fn sanctuary_of_the_lizard_god_completes_on_the_legion_helmet_chest() -> Result<(), String> {
+    let loaded =
+        super::loader::load_embedded_quest_state("content-1").map_err(|e| format!("{e:?}"))?;
+    let catalogue = loaded.catalogue();
+    let quest = "oteryn:quest.sanctuary_of_the_lizard_god";
+    assert_eq!(catalogue.completion_tracks(quest).count(), 1);
+    let transition = catalogue
+        .transition("oteryn:quest-transition/kv/legiondawnport/chest")
+        .ok_or("Legion Helmet chest")?;
+    assert_eq!(transition.quest, quest);
+    assert_eq!(transition.effects[0].effect, QuestEffectKind::Set(1));
+    let stored = std::collections::BTreeMap::new();
+    let changes = catalogue
+        .evaluate(transition, &stored, 0)
+        .map_err(|e| format!("{e:?}"))?;
+    assert!(catalogue.completes_after_claim_sets(transition, &stored, &changes));
+    Ok(())
+}

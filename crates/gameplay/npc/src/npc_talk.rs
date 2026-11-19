@@ -30,6 +30,8 @@ const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/chosen-reward-callbacks.json"),
     include_str!("../../../../content/quests/npc-callbacks/qd-sams-old-backpack.json"),
     include_str!("../../../../content/quests/npc-callbacks/qd-steal-from-thieves.json"),
+    include_str!("../../../../content/quests/npc-callbacks/qc-programmes.json"),
+    include_str!("../../../../content/quests/npc-callbacks/qc-twenty-miles.json"),
     include_str!("../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
     include_str!("../../../../content/quests/npc-callbacks/qnpcfx-m10.json"),
     include_str!("../../../../content/quests/npc-callbacks/m39-stories.json"),

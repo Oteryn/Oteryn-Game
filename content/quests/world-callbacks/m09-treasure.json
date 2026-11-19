@@ -42,7 +42,8 @@
           "count": 1,
           "contents": []
         }
-      }
+      },
+      "completes": true
     },
     {
       "key": "oteryn:quest-callback/m09-treasure-ingots",

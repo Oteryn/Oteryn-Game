@@ -51,7 +51,9 @@ def outputs():
             'sources': ['https://www.tibiawiki.com.br/index.php?title=Treasure_Hunt_Quest&oldid=431833#Recompensa',
                      'docs/reference/content-prep/qmech-m09/reward-sources.md'],
             'effects': {'item_reward': {'item': f'oteryn:item.tibia.i{item}',
-                                          'count': count, 'contents': []}}})
+                                          'count': count, 'contents': []}},
+            # Lane qc: the treasure-room telescope chest closes the quest log.
+            **({'completes': True} if label == 'telescope' else {})})
     return {
         'content/quests/npc-callbacks/m09-rookie.json':
             {'schema': 1, 'callbacks': [callback]},

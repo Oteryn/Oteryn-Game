@@ -344,6 +344,7 @@ pub(super) fn lower_embedded_quest_state(
         super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::death_objectives::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    super::reward_callbacks::retain_qc_reward_predecessors(&mut lowered.catalogue);
     super::native_kill_goals::validate_closed(&lowered.catalogue).map_err(QuestLoadError::Json)?;
     // Crystal 201189f, data-global/scripts/lib/register_actions.lua:921-926.
     // This tool-owned auxiliary flag is outside the captured NPC track inventory.
@@ -654,6 +655,9 @@ mod tests {
             include_str!("../../../../../content/quests/world-callbacks/m09-treasure.json"),
             include_str!("../../../../../content/quests/world-callbacks/m39-stories.json"),
             include_str!("../../../../../content/quests/world-callbacks/oramond-native-roots.json"),
+            include_str!("../../../../../content/quests/world-callbacks/qc-chests.json"),
+            include_str!("../../../../../content/quests/world-callbacks/qc-lizard-sanctuary.json"),
+            include_str!("../../../../../content/quests/world-callbacks/qc-twenty-miles.json"),
             include_str!("../../../../../content/quests/world-callbacks/qm48-mammoth.json"),
             include_str!("../../../../../content/quests/world-callbacks/qready1-clocks.json"),
             include_str!("../../../../../content/quests/world-callbacks/qready1-crafts.json"),

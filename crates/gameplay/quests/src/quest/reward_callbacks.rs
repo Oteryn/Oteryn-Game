@@ -483,6 +483,8 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/m13-siflind-paint.json"),
     // Keep the shared document at DOCUMENTS[0]; Oramond is the final extension.
     include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/qc-programmes.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/qc-twenty-miles.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-m10.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-sams-old-backpack.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-steal-from-thieves.json"),
@@ -1446,6 +1448,102 @@ fn extend_callbacks(
     Ok(updated)
 }
 
+/// Preserve the published definition hashes and absent-track values before the
+/// Friends and Traders forge, the Treasure Hunt completion, and the Twenty Miles
+/// source-floor correction.
+pub(super) fn retain_qc_reward_predecessors(active: &mut QuestStateCatalogue) {
+    // Friends and Treasure Hunt use origin/main 871c1dec7 before the lane's
+    // changes. Twenty Miles uses the reviewed ff6a482f7 content.
+    type DefinitionPin = (&'static str, [u8; 32], &'static [(&'static str, i64)]);
+    const PREVIOUS: &[DefinitionPin] = &[
+        (
+            "oteryn:quest.friends_and_traders",
+            [
+                0x0a, 0x66, 0x58, 0x93, 0xaa, 0x6b, 0x60, 0x28, 0x83, 0xc7, 0x1b, 0xfe, 0xe7, 0x86,
+                0xa7, 0x1e, 0x86, 0xb2, 0xb9, 0xd3, 0xfd, 0xbf, 0xfe, 0xdf, 0x0c, 0xe6, 0x19, 0xf1,
+                0x71, 0x56, 0xd2, 0x23,
+            ],
+            &[
+                (
+                    "oteryn:quest-progress/quest/u7_8/friends_and_traders/default_start",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_blessed_stake",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_blessed_stake_wait_time",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_mermaid_marina",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_sweaty_cyclops",
+                    0,
+                ),
+                ("oteryn:quest-progress/questpc7/friends/program", -1),
+                ("oteryn:quest-progress/questpc7/friends/steel-uses", 0),
+                ("oteryn:quest-progress/questpc7/friends/yarn-uses", 0),
+            ],
+        ),
+        (
+            "oteryn:quest.treasure_hunt_quest",
+            [
+                0xf5, 0x96, 0x11, 0x56, 0xeb, 0xf0, 0x43, 0x9a, 0x52, 0x2a, 0x95, 0xe0, 0x77, 0x22,
+                0x87, 0x88, 0x67, 0xa3, 0x26, 0x3e, 0x14, 0x0c, 0x11, 0x35, 0x81, 0xdb, 0x8f, 0xa7,
+                0x31, 0x10, 0x9f, 0x22,
+            ],
+            &[
+                ("oteryn:quest-progress/m09/treasure/ingots", -1),
+                ("oteryn:quest-progress/m09/treasure/telescope", -1),
+            ],
+        ),
+        (
+            "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+            [
+                0x95, 0x57, 0x24, 0xdf, 0xc1, 0xc9, 0xb0, 0x39, 0x2d, 0x23, 0xea, 0xa2, 0x2a, 0x2b,
+                0x77, 0x1f, 0x73, 0x9e, 0x36, 0x7e, 0x9b, 0x7a, 0x07, 0xf2, 0xa7, 0xd7, 0x5e, 0x52,
+                0x4b, 0xfe, 0x3f, 0x3c,
+            ],
+            &[
+                ("oteryn:quest-progress/qc/twenty_miles/access_birthing", -1),
+                (
+                    "oteryn:quest-progress/qc/twenty_miles/access_sunken_city",
+                    -1,
+                ),
+                ("oteryn:quest-progress/qc/twenty_miles/access_west", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/pile1", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/pile2", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/pile3", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/pile4", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/pile5", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/skulls", 0),
+                ("oteryn:quest-progress/qc/twenty_miles/slabs", 0),
+                ("oteryn:quest-progress/qc/twenty_miles/stage", -1),
+            ],
+        ),
+    ];
+    for &(quest, hash, defaults) in PREVIOUS {
+        if active
+            .definition_hash(quest)
+            .is_some_and(|current| current != hash)
+        {
+            active.predecessors.entry(quest.into()).or_default().push(
+                super::NpcDefinitionPredecessor {
+                    hash,
+                    defaults: defaults
+                        .iter()
+                        .map(|&(track, value)| (track.into(), value))
+                        .collect(),
+                },
+            );
+        }
+    }
+}
+
 /// Recover the complete reward definition captured before Citizen NPC activation.
 /// The current loader still installs NPC prerequisites before active rewards.
 pub(super) fn retain_outfit_reward_predecessor(
@@ -2169,8 +2267,8 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Shared, QuestPC7, other registered shards, M43 peer, Kingsday journal.
-        assert_eq!(load()?.len(), 207 + 59 + 125 + 1 + 1);
+        // Shared, QuestPC7, other registered shards, M43 peer, Kingsday journal, Twenty Miles.
+        assert_eq!(load()?.len(), 207 + 59 + 130 + 1 + 1 + 18);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;

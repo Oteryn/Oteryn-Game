@@ -138,7 +138,15 @@ class QuestCompletionMatrixTest(unittest.TestCase):
         self.assertEqual(["oteryn:reward-claim.kv.silveramulet"],
                          silver_amulet["reward_claim_owner"]["claim_keys"])
         self.assertEqual(1, silver_amulet["reward_claim_owner"]["ready_claims"])
-        owner_enabled = enabled + 1
+        # The pinned Legion Helmet chest enables its claim without qualifying
+        # the quest's implementation state or playability.
+        legion_helmet = by_title["Newhaven Legion Helmet Quest"]
+        self.assertEqual(
+            "REWARD_CLAIM_USE_ENABLED", legion_helmet["reward_claim_owner"]["state"]
+        )
+        self.assertEqual("NATIVE_BINDINGS_PENDING", legion_helmet["implementation_state"])
+        self.assertEqual("NOT_ASSESSED", legion_helmet["playable_verification"])
+        owner_enabled = enabled + 2
         self.assertEqual(
             {
                 "REWARD_CLAIM_DATA_PENDING": 3,

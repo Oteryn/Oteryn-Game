@@ -77,7 +77,11 @@ fn scenario_case(
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
     let last_creep = name == "qengine-rewards-m23-last-creep";
-    let native_crop = m03_use
+    let pinned_qc_world = name == super::super::qc_pinned_world::PILE
+        || name.starts_with("m09-treasure-")
+        || name == super::super::questpc7_friends_fixtures::LEGACY_CASE;
+    let native_crop = pinned_qc_world
+        || m03_use
         || qd_world
         || engenc_asura
         || m49
@@ -294,7 +298,10 @@ fn scenario_case(
         || name.starts_with("questpc7-eligibility-")
         || name.starts_with("qengine-rewards-")
         || name == "questpc7-golden"
-        || name == "questpc7-friends";
+        || name == "questpc7-friends"
+        || name == super::super::questpc7_friends_fixtures::LEGACY_CASE
+        || super::super::qc_npc_programmes_fixtures::matches(name)
+        || super::super::qc_twenty_miles_fixtures::matches_chain(name);
     let classic_npc = shared_rewards
         || name.starts_with("engoutfit-")
         || qengine_reward
@@ -943,6 +950,9 @@ fn scenario_case(
             || name.starts_with("koshei-amulet")
             || name == "srv7-reliable-ram"
             || name.starts_with("m09-treasure-")
+            || super::super::qc_chests_fixtures::matches(name)
+            || super::super::qc_twenty_miles_fixtures::matches_world(name)
+            || super::super::qc_lizard_sanctuary_fixtures::matches_world(name)
             || name.starts_with("engoutfit-")
             || name == "engitem-targuna-selected-tool"
             || name == "engitem-native-seal-paint"
@@ -1030,7 +1040,14 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if m03_use {
+        let world = if pinned_qc_world {
+            super::super::qc_pinned_world::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("native pinned world policies")?,
+                name == super::super::qc_pinned_world::PILE,
+            )?
+        } else if m03_use {
             super::super::qengine_m03_use_fixtures::world(
                 generation
                     .native_gameplay()
@@ -1394,6 +1411,8 @@ fn scenario_case(
             "questpc7-grave" => Some(250),
             "questpc7-outfits-formal" => Some(20),
             "questpc7-outfits-fiend" | "questpc7-outfits-inquisition" => Some(250),
+            // Ninety-nine fish exceed a fresh character's capacity.
+            "qc-sinatuki" => Some(150),
             _ => None,
         };
         if let Some(initial_level) = initial_level {
@@ -1533,6 +1552,8 @@ fn scenario_case(
             } else if name == "questpc7-friends" {
                 // Thirteen selected vendors/priests and one player; charge every actor slot.
                 14
+            } else if name == "qc-obsidian-knife" {
+                2 // One player and the Sweaty Cyclops.
             } else if native_story
                 || (native_upper && name.ends_with("-complete"))
                 || matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped")
@@ -2679,9 +2700,27 @@ fn scenario_case(
         } else if name.starts_with("questpc7-eligibility-") {
             super::super::questpc7_eligibility_fixtures::exercise(&mut owner, &mut admitted, &h, name)
                 .await?;
+        } else if name == super::super::questpc7_friends_fixtures::LEGACY_CASE {
+            super::super::questpc7_friends_fixtures::exercise_legacy(&mut owner, &mut admitted, &h, trigger)
+                .await?;
         } else if name == "questpc7-friends" {
             super::super::questpc7_friends_fixtures::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
+        } else if super::super::qc_twenty_miles_fixtures::matches_chain(name) {
+            super::super::qc_twenty_miles_fixtures::exercise_chain(&mut owner, &mut admitted, &h).await?;
+        } else if super::super::qc_twenty_miles_fixtures::matches_world(name)
+            || super::super::qc_lizard_sanctuary_fixtures::matches_world(name)
+        {
+            Box::pin(super::super::qc_twenty_miles_fixtures::exercise_world(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &callback,
+                trigger,
+            ))
+            .await?;
+        } else if super::super::qc_npc_programmes_fixtures::matches(name) {
+            super::super::qc_npc_programmes_fixtures::exercise(&mut owner, &mut admitted, &h, name).await?;
         } else if name == "questpc7-golden" {
             super::super::questpc7_golden_fixtures::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
@@ -2692,6 +2731,15 @@ fn scenario_case(
                 &h,
                 deps.actor,
                 fence,
+                &callback,
+                trigger,
+            ))
+            .await?;
+        } else if super::super::qc_chests_fixtures::matches(name) {
+            Box::pin(super::super::qc_chests_fixtures::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
                 &callback,
                 trigger,
             ))

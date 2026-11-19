@@ -96,51 +96,9 @@ async fn install_offsets<const N: usize>(
     positions: Option<[Position; N]>,
     offset: impl Fn(i32) -> (i32, i32),
 ) -> TestResult<[EntityRef; N]> {
-    let catalogue = NpcDataCatalogue::load(
-        std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
-        std::ffi::OsStr::new("world"),
-        npc_catalogue_preproduction_limits(),
-    )
-    .map_err(debug)?;
-    let model = catalogue.service_model_for_project().map_err(debug)?;
-    let source =
-        oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog::runtime().map_err(debug)?;
-    let native_npcs = source
-        .programs()
-        .iter()
-        .flat_map(|program| program.document.rules.iter().map(|rule| rule.npc.as_str()))
-        .chain(std::iter::once("oteryn:npc.viola"))
-        .chain(keys.iter().copied())
-        .collect::<std::collections::BTreeSet<_>>()
-        .into_iter()
-        .collect::<Vec<_>>();
-    owner.states.chat.install_npc_talk(std::sync::Arc::new(
-        NpcTalkBook::from_model_with_native_quests(&model, &native_npcs),
-    ));
-    owner
-        .states
-        .chat
-        .admit(admitted.game_session_id, "Quest witness", owner.owner_now());
-    owner.states.chat.set_npc_service(admitted.game_session_id);
-    let fence = owner
-        .current_quest_fence(admitted.game_session_id)
-        .await
-        .map_err(|()| "fence")?
-        .ok_or("fence")?;
+    prepare_contact_session(owner, admitted, &keys).await?;
     let mut runtime = owner.runtime.lock().await;
     let actor = admitted.runtime_actor.ok_or("actor")?;
-    runtime
-        .bind_attacker_lease(
-            actor,
-            admitted.game_session_id,
-            crate::foundation::CharacterLease::new(
-                crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
-                    .map_err(debug)?,
-                fence.character_lease_generation,
-            )
-            .map_err(debug)?,
-        )
-        .map_err(debug)?;
     let at = runtime
         .read_actor_position(actor)
         .map_err(debug)?
@@ -191,6 +149,101 @@ async fn install_offsets<const N: usize>(
         );
     }
     found.try_into().map_err(|_| "exact NPC refs".into())
+}
+
+async fn prepare_contact_session(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    keys: &[&str],
+) -> TestResult {
+    let catalogue = NpcDataCatalogue::load(
+        std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+        std::ffi::OsStr::new("world"),
+        npc_catalogue_preproduction_limits(),
+    )
+    .map_err(debug)?;
+    let model = catalogue.service_model_for_project().map_err(debug)?;
+    let source =
+        oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog::runtime().map_err(debug)?;
+    let native_npcs = source
+        .programs()
+        .iter()
+        .flat_map(|program| program.document.rules.iter().map(|rule| rule.npc.as_str()))
+        .chain(std::iter::once("oteryn:npc.viola"))
+        .chain(keys.iter().copied())
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
+        .collect::<Vec<_>>();
+    owner.states.chat.install_npc_talk(std::sync::Arc::new(
+        NpcTalkBook::from_model_with_native_quests(&model, &native_npcs),
+    ));
+    owner
+        .states
+        .chat
+        .admit(admitted.game_session_id, "Quest witness", owner.owner_now());
+    owner.states.chat.set_npc_service(admitted.game_session_id);
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "fence")?
+        .ok_or("fence")?;
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    owner
+        .runtime
+        .lock()
+        .await
+        .bind_attacker_lease(
+            actor,
+            admitted.game_session_id,
+            crate::foundation::CharacterLease::new(
+                crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                    .map_err(debug)?,
+                fence.character_lease_generation,
+            )
+            .map_err(debug)?,
+        )
+        .map_err(debug)?;
+    Ok(())
+}
+
+pub(super) async fn place_pinned_contact(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    key: &str,
+    placement: oteryn_world_bundle::npc::Placement,
+) -> TestResult<EntityRef> {
+    use oteryn_world_bundle::npc::Direction;
+    prepare_contact_session(owner, admitted, &[key]).await?;
+    let mut runtime = owner.runtime.lock().await;
+    let placements = NpcPlacementTable {
+        npcs: vec![NpcPlacements {
+            key: key.into(),
+            placements: vec![NpcPlacement {
+                x: placement.x,
+                y: placement.y,
+                floor: placement.floor,
+                direction: match placement.direction {
+                    Direction::North => MovementFacing::North,
+                    Direction::East => MovementFacing::East,
+                    Direction::South => MovementFacing::South,
+                    Direction::West => MovementFacing::West,
+                },
+            }],
+        }],
+    };
+    runtime
+        .place_npcs(&placements, |candidate| candidate == key, true)
+        .map_err(debug)?;
+    let visible = runtime
+        .visible_entities()
+        .npcs
+        .into_iter()
+        .find(|npc| runtime.npc_key(npc.actor) == Some(key))
+        .ok_or("pinned NPC actor")?;
+    Ok(EntityRef {
+        identity: visible.actor.placement_identity(),
+        generation: visible.generation,
+    })
 }
 
 pub(super) async fn talk(

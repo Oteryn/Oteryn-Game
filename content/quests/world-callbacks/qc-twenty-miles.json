@@ -1,0 +1,1253 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/qc-twenty-miles-pile-1",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33456,
+          "y": 31648,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4285
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/pile1",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": null,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i21770",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/qc-twenty-miles-pile-2",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33444,
+          "y": 31741,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4285
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/pile2",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": null,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i21770",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/qc-twenty-miles-pile-3",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33500,
+          "y": 31775,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4285
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/pile3",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": null,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i21770",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/qc-twenty-miles-pile-4",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33474,
+          "y": 31859,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4285
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/pile4",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": null,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i21770",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/qc-twenty-miles-pile-5",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33411,
+          "y": 31890,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4285
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/pile5",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": null,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i21770",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/qc-twenty-miles-altar-1",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33394,
+          "y": 31886,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 21796
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/skulls",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i21770",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "return_on_failure": false,
+      "failure_message": "You need a drowned seaman's skull.",
+      "success_message": null,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/qc/twenty_miles/skulls": 0
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/qc-twenty-miles-altar-2",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33394,
+          "y": 31892,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 21796
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/skulls",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i21770",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "return_on_failure": false,
+      "failure_message": "You need a drowned seaman's skull.",
+      "success_message": null,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/qc/twenty_miles/skulls": 0
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/qc-twenty-miles-altar-3",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33459,
+          "y": 31666,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 21796
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/skulls",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i21770",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "return_on_failure": false,
+      "failure_message": "You need a drowned seaman's skull.",
+      "success_message": null,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/qc/twenty_miles/skulls": 0
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/qc-twenty-miles-altar-4",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33462,
+          "y": 31671,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 21796
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/skulls",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i21770",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "return_on_failure": false,
+      "failure_message": "You need a drowned seaman's skull.",
+      "success_message": null,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/qc/twenty_miles/skulls": 0
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/qc-twenty-miles-altar-5",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33463,
+          "y": 31658,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 21796
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/skulls",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i21770",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "return_on_failure": false,
+      "failure_message": "You need a drowned seaman's skull.",
+      "success_message": null,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/qc/twenty_miles/skulls": 0
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/qc-twenty-miles-altar-6",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33468,
+          "y": 31671,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 21796
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/skulls",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i21770",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "return_on_failure": false,
+      "failure_message": "You need a drowned seaman's skull.",
+      "success_message": null,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/qc/twenty_miles/skulls": 0
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/qc-twenty-miles-altar-7",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33469,
+          "y": 31666,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 21796
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/skulls",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i21770",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "return_on_failure": false,
+      "failure_message": "You need a drowned seaman's skull.",
+      "success_message": null,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/qc/twenty_miles/skulls": 0
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/qc-twenty-miles-altar-8",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33470,
+          "y": 31850,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 21796
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/skulls",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i21770",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "return_on_failure": false,
+      "failure_message": "You need a drowned seaman's skull.",
+      "success_message": null,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/qc/twenty_miles/skulls": 0
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/qc-twenty-miles-altar-9",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33490,
+          "y": 31804,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 21796
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/skulls",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i21770",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "return_on_failure": false,
+      "failure_message": "You need a drowned seaman's skull.",
+      "success_message": null,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/qc/twenty_miles/skulls": 0
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/qc-twenty-miles-hoard-1",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33421,
+          "y": 31894,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 21750
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33422,
+        "y": 31897,
+        "floor": -15
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i21746",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "return_on_failure": false,
+      "failure_message": "You need cursed gold.",
+      "success_message": null,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/qc-twenty-miles-hoard-2",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33422,
+          "y": 31894,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 21750
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33422,
+        "y": 31897,
+        "floor": -15
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i21746",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "return_on_failure": false,
+      "failure_message": "You need cursed gold.",
+      "success_message": null,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/qc-twenty-miles-hoard-3",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33423,
+          "y": 31894,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 21750
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33422,
+        "y": 31897,
+        "floor": -15
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i21746",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "return_on_failure": false,
+      "failure_message": "You need cursed gold.",
+      "success_message": null,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/qc-twenty-miles-hoard-4",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33424,
+          "y": 31894,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 21750
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33422,
+        "y": 31897,
+        "floor": -15
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i21746",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "return_on_failure": false,
+      "failure_message": "You need cursed gold.",
+      "success_message": null,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/qc-twenty-miles-ring-chest",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33422,
+          "y": 31898,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4073
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You have found Brandon's wedding ring.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i21745",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/qc-twenty-miles-shipwreck-chest",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33434,
+          "y": 31765,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2472
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You have found a nacre slab.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i21753",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/qc-twenty-miles-shrine-chest",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33391,
+          "y": 31794,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4073
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You have found a nacre slab.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i21861",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/qc-twenty-miles-broken-altar-1",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33538,
+          "y": 31636,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 21787
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 16,
+          "maximum": 16,
+          "set": 16,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/slabs",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i21753",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "return_on_failure": false,
+      "failure_message": "You need the matching nacre slab.",
+      "success_message": null,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/qc/twenty_miles/slabs": 0
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/qc-twenty-miles-broken-altar-2",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33542,
+          "y": 31636,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 21787
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 16,
+          "maximum": 16,
+          "set": 16,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/slabs",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i21861",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "return_on_failure": false,
+      "failure_message": "You need the matching nacre slab.",
+      "success_message": null,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/qc/twenty_miles/slabs": 0
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/qc-twenty-miles-broken-altar-3",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33546,
+          "y": 31636,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 21787
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 16,
+          "maximum": 16,
+          "set": 16,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/slabs",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i21862",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "return_on_failure": false,
+      "failure_message": "You need the matching nacre slab.",
+      "success_message": null,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/qc/twenty_miles/slabs": 0
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/qc-twenty-miles-sundial",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33394,
+          "y": 31889,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 21794
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 21,
+          "maximum": 21,
+          "set": 22
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i21754",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "return_on_failure": false,
+      "failure_message": "You need a sea ear.",
+      "success_message": null,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i21795",
+          "count": 1,
+          "contents": []
+        }
+      }
+    }
+  ]
+}
