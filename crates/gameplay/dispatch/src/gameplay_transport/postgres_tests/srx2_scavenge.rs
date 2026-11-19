@@ -173,6 +173,8 @@ fn scenario(rabbit: bool) -> TestResult {
             (tool, 1),
             ("oteryn:item.tibia.i5942", 1),
             ("oteryn:item.tibia.i3469", 1),
+            (bag, 1),
+            ("oteryn:item.tibia.i12171", 1),
         ];
         super::item_look_fixtures::seed_main_backpack(
             &harness,
@@ -181,6 +183,7 @@ fn scenario(rabbit: bool) -> TestResult {
         .await?;
 
         if rabbit {
+            nest_rabbit_knives(&harness).await?;
             let result = exercise_rabbit(&owner, &harness, native, fence, deps.actor).await;
             drop(owner);
             drop(authority);
@@ -1026,6 +1029,34 @@ async fn provenance_refuses_late_binding(h: &Harness, unregistered: [u8; 16]) ->
 #[path = "srx2_scavenge/m41.rs"]
 mod m41;
 
+async fn nest_rabbit_knives(h: &Harness) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    let moved = sqlx::query(
+        "WITH knives AS (
+            DELETE FROM game_item_container_entries
+            WHERE parent_item_instance_id=encode($1,'hex')::uuid
+              AND item_instance_id IN (encode($2,'hex')::uuid,encode($3,'hex')::uuid)
+            RETURNING item_instance_id,world_id,placement_ordinal,placed_transaction_id
+         )
+         INSERT INTO game_item_nested_entries
+            (item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id)
+         SELECT item_instance_id,world_id,encode($4,'hex')::uuid,placement_ordinal,placed_transaction_id
+         FROM knives",
+    )
+    .bind(id(70).as_slice())
+    .bind(id(71).as_slice())
+    .bind(id(73).as_slice())
+    .bind(id(74).as_slice())
+    .execute(&mut *tx)
+    .await?;
+    assert_eq!(moved.rows_affected(), 2);
+    tx.commit().await?;
+    Ok(())
+}
+
 async fn exercise_rabbit(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
@@ -1162,9 +1193,26 @@ async fn exercise_rabbit(
             .is_none_or(|outcome| outcome.disposition != UseDisposition::Committed)
     );
     assert_eq!(body(corpse).await?, "oteryn:item.tibia.i4301");
+    let knife = ItemKey::Instance(id(kitchen_knife));
+    let body_key = ItemKey::Instance(corpse);
+    let mut view =
+        crate::gameplay_transport::item_view::SessionItemView::resume(Default::default())
+            .with_map_view();
+    view.tree_delta(&[knife], |_| Ok(Vec::new())).map_err(debug)?;
+    let body_handle = view
+        .map_view(&[body_key], |table| Ok(table.handle(&body_key)))
+        .map_err(debug)?
+        .ok_or("mature rabbit handle")?;
+    let nested_use = UseIntent {
+        target: UseTarget::Item(view.table().handle(&knife).ok_or("nested knife handle")?),
+        use_with_map_item: Some(MapUseTarget::Item(body_handle)),
+        ..intent.clone()
+    };
     for _ in 0..2 {
         assert_eq!(
-            attempt(corpse, command, kitchen_knife)
+            crate::gameplay_transport::item_craft::dispatch(
+                owner, actor, command, nested_use.clone(), Some(&view)
+            )
                 .await
                 .ok_or("kitchen knife rabbit USE")?
                 .disposition,
