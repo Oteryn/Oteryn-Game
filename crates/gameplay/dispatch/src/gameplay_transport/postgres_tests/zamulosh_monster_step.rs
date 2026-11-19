@@ -9,6 +9,7 @@ use sha2::{Digest, Sha256};
 pub(super) const CASE: &str = "ferumbras-zamulosh-lovely-monster-step";
 pub(super) const BLOSSOM: &str = "first-dragon-fertility-blossom-step";
 pub(super) const HABITAT: &str = "ferumbras-zamulosh-grass-habitat";
+const BLOCKED_SPAWN: &str = "ferumbras-zamulosh-grass-habitat-blocked-spawn";
 const MISSING_BASIN: &str = "ferumbras-zamulosh-grass-habitat-missing-basin";
 const STALE_HABITAT: &str = "ferumbras-zamulosh-grass-habitat-stale";
 const FRAZZLEMAW: &str = "oteryn:creature.lovely_frazzlemaw";
@@ -109,6 +110,17 @@ fn zamulosh_grass_habitat_changes_basin_at_use_and_terrain_after_two_seconds() -
 }
 
 #[test]
+fn zamulosh_grass_habitat_refuses_an_unavailable_spawn_without_awarding_credit() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(BLOCKED_SPAWN, || {
+        super::quest_world_callbacks::scenario(BLOCKED_SPAWN, HABITAT_LEVER, false)
+    })
+}
+
+#[test]
 fn zamulosh_grass_habitat_drops_the_whole_batch_when_one_terrain_revision_changes() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -131,7 +143,10 @@ fn zamulosh_grass_habitat_skips_the_absent_basin_and_its_cue() -> TestResult {
 }
 
 pub(super) fn is_habitat(name: &str) -> bool {
-    matches!(name, HABITAT | MISSING_BASIN | STALE_HABITAT)
+    matches!(
+        name,
+        HABITAT | BLOCKED_SPAWN | MISSING_BASIN | STALE_HABITAT
+    )
 }
 
 pub(super) fn habitat_callback() -> TestResult<Callback> {
@@ -246,6 +261,49 @@ pub(super) async fn exercise_habitat(
     let progress = super::questpc7_ferumbras::value;
     assert_eq!(progress(owner, admitted, GRASS).await?, -1);
     assert_eq!(progress(owner, admitted, ALL_HABITATS).await?, -1);
+    if name == BLOCKED_SPAWN {
+        let pos = crate::map::overlay::TilePos {
+            x: HABITAT_SPAWN.x,
+            y: HABITAT_SPAWN.y,
+            floor: HABITAT_SPAWN.floor,
+        };
+        let key = crate::map::view::placement_key(pos, 1).ok_or("spawn ground placement")?;
+        let facts = map
+            .facts
+            .quest_callback_replacement(key, PREVIOUS_TERRAIN)
+            .ok_or("spawn ground facts")?;
+        {
+            let _channel = owner.runtime.lock().await;
+            assert!(map.facts.apply_quest_callback(
+                key,
+                map.facts.object_revision(key),
+                facts,
+                &[],
+                &[(key, facts, false)],
+                false,
+                None,
+            ));
+        }
+        assert_eq!(
+            super::questpc7_ferumbras::use_at(owner, admitted, HABITAT_LEVER, 9125).await?,
+            UseDisposition::Rejected,
+        );
+        assert_eq!(progress(owner, admitted, GRASS).await?, -1);
+        assert_eq!(progress(owner, admitted, ALL_HABITATS).await?, -1);
+        assert!(has(HABITAT_LEVER, 9125)?);
+        assert!(has(BASIN, 11114)?);
+        assert!(!has(BASIN, 22196)?);
+        assert_eq!(map.facts.next_movement_decay_time(), None);
+        let channel = owner.runtime.lock().await;
+        assert!(
+            !channel
+                .current_live_creature_census()
+                .map_err(debug)?
+                .into_iter()
+                .any(|actor| channel.matches_live_creature_identity(actor, FRAZZLEMAW.as_bytes()))
+        );
+        return Ok(());
+    }
     assert_eq!(
         super::questpc7_ferumbras::use_at(owner, admitted, HABITAT_LEVER, 9125).await?,
         UseDisposition::Committed
