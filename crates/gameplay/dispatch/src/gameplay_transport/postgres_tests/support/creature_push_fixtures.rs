@@ -310,7 +310,9 @@ pub(super) fn scenario(
             deps.admitted.world_id,
             deps.admitted.channel_id,
             |key| {
-                if merchant_wave || merchant_loot {
+                if (merchant_wave || merchant_loot)
+                    && matches!(key, "oteryn:item.tibia.i12187" | "oteryn:item.tibia.i12189" | "oteryn:item.tibia.i3682")
+                {
                     return crate::map::boot::native_item_definition(active.native_gameplay(), key);
                 }
                 Some(crate::map::facts::ItemDefinition {
