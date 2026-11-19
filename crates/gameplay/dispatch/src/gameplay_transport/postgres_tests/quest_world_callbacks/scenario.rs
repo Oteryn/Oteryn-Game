@@ -686,11 +686,7 @@ fn scenario_case(
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
     let world = if name == super::super::forgemaster_chest::NATIVE {
-        let native = callback.selector.native.as_ref().ok_or("Forgemaster native selector")?;
-        super::world_with_extra(
-            &callback, trigger, native.appearance, native.ordinal,
-            &super::super::forgemaster_chest::SECOND_CHEST_ENTRIES, &[], None,
-        )?
+        super::super::forgemaster_chest::native_world(&callback)?
     } else if native_putrefactory_gate || name == super::super::putrefactory_reservoir::NATIVE {
         let mut physical = callback.clone();
         physical.selector.action = None;
@@ -2109,6 +2105,7 @@ fn scenario_case(
                 &mut owner,
                 &mut admitted,
                 &h,
+                deps.actor,
                 &callback,
                 name,
             ))

@@ -3,12 +3,13 @@
 //! item to prove the shared claim owner while the donor item awaits admission.
 use super::fixture::{Harness, debug};
 use super::m07_realm_trials::use_source;
-use super::quest_world_callbacks::scenario;
+use super::quest_world_callbacks::{local, scenario, world_cells};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
+use crate::foundation::ExactActorRef;
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue,
     authored_bindings::Bindings,
-    world_callbacks::{Callback, Position},
+    world_callbacks::{Callback, NativeSelector, Position},
 };
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use serde_json::json;
@@ -18,18 +19,26 @@ pub(super) const LOCKED: &str = "forgemaster-chest-locked";
 pub(super) const NATIVE: &str = "forgemaster-chest-native";
 pub(super) const OPEN: &str = "forgemaster-chest-open";
 pub(super) const UNADMITTED: &str = "forgemaster-chest-unadmitted-item";
-// Crystal startup/tables/item.lua:5117-5120 binds UID 57237 at startup.
-// The pinned B3 tile retains bare item 2472 above two top-level entries.
+// Crystal startup/tables/item.lua:5117-5160 binds the UIDs in this row.
+// Retained B3 region z14-x133-y126 has these objects above the ground.
 const CHEST: Position = Position { x: 34087, y: 32346, floor: -14 };
-// Crystal startup/tables/item.lua:5121-5124 and the same B3 region.
-const SECOND_CHEST: Position = Position { x: 34089, ..CHEST };
 pub(super) const BETWEEN_CHESTS: Position = Position { x: 34088, ..CHEST };
 const UID: u16 = 57237;
 const CHEST_APPEARANCE: u16 = 2472;
-pub(super) const SECOND_CHEST_ENTRIES: [(Position, u16); 2] =
-    [(SECOND_CHEST, 2187), (SECOND_CHEST, CHEST_APPEARANCE)];
-const NATIVE_ORDINAL: u8 = 2;
-const DONOR_REWARD_ID: u16 = 49520;
+// Crystal no_rest_for_the_wicked_rewards.lua:1-13 pairs each UID with a prize.
+const CHESTS: [(u16, i32, &[u16], u16); 11] = [
+    (57237, 34087, &[2187], 49520),
+    (57238, 34089, &[2187], 49522),
+    (57239, 34091, &[2187], 49523),
+    (57240, 34093, &[2187], 49524),
+    (57241, 34095, &[2187], 49525),
+    (57242, 34097, &[2187], 49526),
+    (57243, 34099, &[2187], 49527),
+    (57244, 34101, &[2187], 49530),
+    (57245, 34103, &[2187], 49528),
+    (57246, 34105, &[2187], 49529),
+    (57247, 34107, &[6381, 6385], 50250),
+];
 const FIXTURE_REWARD_ID: u16 = 3031;
 const QUEST: &str = "oteryn:quest.no_rest_for_the_wicked_quest";
 const ACCESS: &str =
@@ -67,7 +76,7 @@ fn forgemaster_chest_use_matches_the_untagged_native_placement() -> TestResult {
 pub(super) fn callback(name: &str) -> TestResult<Callback> {
     let item = reward_id(name);
     let selector = if name == NATIVE {
-        json!({"native":{"position":CHEST,"ordinal":NATIVE_ORDINAL,"appearance":CHEST_APPEARANCE}})
+        json!({"native": native_selector(CHESTS[0].1, CHESTS[0].2)?})
     } else {
         json!({"unique":UID,"appearance":CHEST_APPEARANCE})
     };
@@ -85,33 +94,56 @@ pub(super) fn callback(name: &str) -> TestResult<Callback> {
         "requires_world_admission":true,
         "sources":[
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_forgemaster.lua:176-180",
-            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:5117-5124",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:5117-5160",
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/no_rest_for_the_wicked_rewards.lua:1-32"
         ]
     }))?)
+}
+
+fn native_selector(x: i32, under_chest: &[u16]) -> TestResult<NativeSelector> {
+    Ok(NativeSelector {
+        position: Position { x, ..CHEST },
+        ordinal: u8::try_from(under_chest.len() + 1)?,
+        appearance: CHEST_APPEARANCE,
+    })
+}
+
+pub(super) fn native_world(callback: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
+    let first = native_selector(CHESTS[0].1, CHESTS[0].2)?;
+    let mut objects = Vec::new();
+    let mut approach = Vec::new();
+    for &(_, x, under_chest, _) in &CHESTS[1..] {
+        let position = Position { x, ..CHEST };
+        objects.extend(under_chest.iter().chain(&[CHEST_APPEARANCE]).map(|&id| (position, id)));
+        approach.push(Position { y: position.y + 1, ..position });
+    }
+    world_cells(callback, first.position, first.appearance, first.ordinal, &objects, &[], None, &approach)
 }
 
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     harness: &Harness,
+    actor: ExactActorRef,
     callback: &Callback,
     name: &str,
 ) -> TestResult {
     let has_access = name != LOCKED;
     let can_claim = matches!(name, NATIVE | OPEN);
-    let ordinal = if name == NATIVE { NATIVE_ORDINAL } else { 1 };
+    let ordinal = callback.selector.native.as_ref().map_or(1, |native| native.ordinal);
     let item = reward_id(name);
     let mut stages = vec![json!({"key":"chest-57237","completes":false,
         "trigger":{"kind":"map_use","callback":callback}})];
     let empty_message = "The chest is empty.";
     if name == NATIVE {
-        let mut other = callback.clone();
-        other.key = "oteryn:quest-callback/fixture/forgemaster-chest-57238".into();
-        other.selector.native.as_mut().ok_or("native chest selector")?.position = SECOND_CHEST;
-        other.failure_message = Some(empty_message.into());
-        stages.push(json!({"key":"chest-57238","completes":false,
-            "trigger":{"kind":"map_use","callback":other}}));
+        for &(uid, x, under_chest, _) in &CHESTS[1..] {
+            let mut other = callback.clone();
+            other.key = format!("oteryn:quest-callback/fixture/forgemaster-chest-{uid}");
+            other.selector.native = Some(native_selector(x, under_chest)?);
+            other.failure_message = Some(empty_message.into());
+            stages.push(json!({"key":format!("chest-{uid}"),"completes":false,
+                "trigger":{"kind":"map_use","callback":other}}));
+        }
         owner.states.chat.admit(admitted.game_session_id, "Forge claimant", owner.owner_now());
     }
     let bindings = Bindings::parse(&serde_json::to_vec(&json!({
@@ -134,7 +166,7 @@ pub(super) async fn exercise(
     if name == NATIVE {
         // The interaction targets the chest entry, not the tile's other object.
         assert_ne!(
-            use_source(owner, admitted, 1, CHEST, NATIVE_ORDINAL - 1, 0).await?,
+            use_source(owner, admitted, 1, CHEST, ordinal - 1, 0).await?,
             UseDisposition::Committed,
         );
         assert_eq!(super::qengine_voucher_stories::quantity(harness, item).await?, before);
@@ -160,14 +192,30 @@ pub(super) async fn exercise(
         );
     }
     if name == NATIVE {
-        // Crystal no_rest_for_the_wicked_rewards.lua:17-24 uses one Reward
-        // storage for all chest UIDs. This is a fresh USE at a different chest.
-        assert_eq!(
-            use_source(owner, admitted, 4, SECOND_CHEST, NATIVE_ORDINAL, 0).await?,
-            UseDisposition::Rejected,
-        );
-        assert!(owner.states.chat.drain(admitted.game_session_id).iter().any(|line|
-            matches!(line, oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. } if text == empty_message)));
+        // Crystal uses one Reward storage for every chest UID. Use each bare
+        // placement afresh and require its own empty message from the owner.
+        let session = admitted.game_session_id;
+        owner.states.chat.drain(session);
+        for (index, &(uid, x, under_chest, _)) in CHESTS[1..].iter().enumerate() {
+            let source = native_selector(x, under_chest)?;
+            let approach = Position { y: source.position.y + 1, ..source.position };
+            {
+                let mut runtime = owner.runtime.lock().await;
+                let expected = runtime.read_actor_position(actor).map_err(debug)?;
+                let doors = crate::map::floor::BundleDoors(&owner.bundle_map().ok_or("chest map")?.facts);
+                let proof = crate::map::floor::prepare_quest_callback_teleport_facing(
+                    &runtime, owner.movement_cells(), actor, session, expected,
+                    local(approach), false, &doors, None,
+                ).map_err(debug)?;
+                runtime.commit_source_step(proof).map_err(debug)?;
+            }
+            let command = u64::try_from(index)? + 4;
+            assert_eq!(use_source(owner, admitted, command, source.position, source.ordinal, 0).await?,
+                UseDisposition::Rejected, "chest {uid}");
+            assert!(owner.states.chat.drain(session).iter().any(|line|
+                matches!(line, oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. } if text == empty_message)),
+                "chest {uid} must resolve its native selector and report the shared claim");
+        }
     }
     assert_eq!(
         super::qengine_voucher_stories::quantity(harness, item).await?,
@@ -189,7 +237,7 @@ pub(super) async fn exercise(
 
 fn reward_id(name: &str) -> u16 {
     if name == UNADMITTED {
-        DONOR_REWARD_ID
+        CHESTS[0].3
     } else {
         FIXTURE_REWARD_ID
     }
