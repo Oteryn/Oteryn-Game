@@ -4,7 +4,10 @@
 use super::fixture::debug;
 use super::{ComposedFreshAdmission, TestResult, party_xp};
 use crate::domain::condition::{ConditionValues, ConflictKey};
-use crate::foundation::{ExactActorRef, GameSessionId};
+use crate::foundation::runtime_actor_spell_types::{
+    ManaShieldState, OwnerCombatBatch, OwnerCombatChange, OwnerCombatEffect, SpellOccurrenceBinding,
+};
+use crate::foundation::{CommandId, CommandRef, ExactActorRef, GameSessionId};
 
 #[test]
 fn cake_bonus_regenerates_both_players_and_scales_only_premium_shared_xp() -> TestResult {
@@ -37,21 +40,65 @@ pub(super) async fn activate(
                 transaction_timestamp()+interval '604800 seconds')",
     ).bind(world.as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;
-    let (actor, session) = players[0];
-    {
-        let runtime = owner.runtime.lock().await;
+    let [(actor, session), (target, target_session)] = players else {
+        return Err("Cake bonus case requires two players".into());
+    };
+    let (actor, session, target, target_session) = (*actor, *session, *target, *target_session);
+    let now = owner.owner_now();
+    let staged = {
+        let mut runtime = owner.runtime.lock().await;
         let mut states = owner.states.spell_states.lock().await;
         states
             .get_mut(&runtime, actor, session)
             .ok_or("premium fixture actor")?
             .apply_owner_premium_transition(true, Some(owner.owner_now().get() + 600_000_000))
             .map_err(debug)?;
-    }
+        let lease = runtime.bound_attacker_lease(actor, session).map_err(debug)?;
+        let batch = OwnerCombatBatch {
+            caster: actor,
+            attacker: lease.character_id(),
+            current_lease_generation: lease.generation(),
+            command: CommandRef::new(session, CommandId::new(105).map_err(debug)?),
+            occurrence: SpellOccurrenceBinding {
+                id: "cake-bonus-pending-target".into(),
+                revisions: std::array::from_fn(|_| "fixture:1".into()),
+            },
+            binding: b"cake-bonus-pending-target".to_vec(),
+            anchor: None,
+            now_us: Some(now),
+            now_ms: now.get() / 1_000,
+            effects: vec![OwnerCombatEffect {
+                target,
+                sub_ordinal: 0,
+                change: OwnerCombatChange::ManaShield(ManaShieldState {
+                    capacity: 50,
+                    expires_ms: now.get() / 1_000 + 1_000,
+                }),
+            }],
+            deferred: None,
+        };
+        let mut staged = runtime.stage_spell_batch(&batch).map_err(debug)?;
+        runtime.reserve_spell_batch(&mut staged).map_err(debug)?;
+        assert!(runtime.actor_spell_reserved(target));
+        staged
+    };
     owner.tick_timed_items().await;
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        let state = states.get(&runtime, target, target_session).ok_or("reserved target")?;
+        assert!(
+            state.owned_conditions().get(ConflictKey::Recovery).is_none(),
+            "Cake must leave the reserved player's condition state untouched"
+        );
+        runtime.release_definitely_uncommitted_spell_batch(&staged).map_err(debug)?;
+    }
+    let retry_ms = owner.owner_now().get() / 1_000 + 1_000;
+    owner.tick_timed_items_at(retry_ms).await;
     let sampled = owner.owner_now().get();
     let initial = check_regeneration(owner, players, sampled).await?;
     // Advance the containing item scheduler by one period without sleeping.
-    owner.tick_timed_items_at(owner.owner_now().get() / 1_000 + 1_000).await;
+    owner.tick_timed_items_at(retry_ms + 1_000).await;
     assert_eq!(
         check_regeneration(owner, players, sampled).await?,
         initial,

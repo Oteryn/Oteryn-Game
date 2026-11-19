@@ -195,6 +195,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
         for index in 0..states.actors.len() {
             let (actor, session, _) = states.actors[index];
+            // The scheduler retries after the spell owner releases its exact before-state.
+            if !states.spell_idle(&runtime, actor, session) {
+                continue;
+            }
             let Some(current) = states.get(&runtime, actor, session) else {
                 continue;
             };
