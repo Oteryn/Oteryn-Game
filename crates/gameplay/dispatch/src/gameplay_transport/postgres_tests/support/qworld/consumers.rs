@@ -62,7 +62,6 @@ pub(crate) async fn qualify(
         completes: true,
         experience: None,
         world_change: Some(key.into()),
-        conditional: None,
     };
     let catalogue = std::sync::Arc::new(
         QuestStateCatalogue::new(revision, vec![track], vec![transition]).map_err(debug)?,
@@ -336,5 +335,6 @@ fn travel_route(key: &str) -> oteryn_gameplay_content::content::npc_catalogue::t
         ticket: None,
         return_origin: None,
         world_change: Some(key.into()),
+        conditional: None,
     }
 }

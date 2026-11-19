@@ -2,6 +2,7 @@
 use super::TestResult;
 use super::qcx62_buddel_ring_fixtures::NAME;
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
+
 #[test]
 fn buddel_exchanges_exactly_one_carried_ring_for_the_named_island() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {

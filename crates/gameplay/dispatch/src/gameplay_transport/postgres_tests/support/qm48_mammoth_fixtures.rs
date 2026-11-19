@@ -364,7 +364,10 @@ async fn drink_mead(
             .await?;
     *admitted = next;
     assert_eq!(disposition, UseDisposition::Committed);
-    assert_eq!(h.count("game_item_fluid_states").await?, 0);
+    let fluid_rows: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_fluid_states")
+        .fetch_one(&h.pool)
+        .await?;
+    assert_eq!(fluid_rows, 0);
     let actor = admitted.runtime_actor.ok_or("actor after drinking")?;
     let runtime = owner.runtime.lock().await;
     let states = owner.states.spell_states.lock().await;

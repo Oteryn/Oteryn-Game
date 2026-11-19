@@ -2627,6 +2627,7 @@ fn scenario_case(
                 &mut admitted,
                 &h,
                 &callback,
+                trigger,
             ))
             .await?;
         } else if name == super::super::engitem_seal_paint_lost_ack_fixtures::NAME {

@@ -2,6 +2,7 @@
 use super::TestResult;
 use super::qcx62_iskan_fixtures::{LANDING, NAME};
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
+
 #[test]
 fn iskan_greets_earned_warlords_and_requires_the_musher_report_for_passage() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {

@@ -2,6 +2,7 @@
 use super::TestResult;
 use super::qcx62_buddel_fixtures::NAME;
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
+
 #[test]
 fn buddel_rechecks_helheim_progress_before_paying_and_places_the_diversion() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {

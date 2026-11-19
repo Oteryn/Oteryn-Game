@@ -66,9 +66,10 @@ pub(super) async fn exercise(
             None,
         )
         .await;
+    let at = unpaid.moved_to.ok_or("unpaid step")?.actor_position;
     assert_eq!(
-        unpaid.moved_to.ok_or("unpaid step")?.actor_position,
-        APPROACH
+        (at.x, at.y, at.floor),
+        (APPROACH.x, APPROACH.y, APPROACH.floor)
     );
     assert_eq!(
         super::arena_match_fixtures::command(owner, admitted, ArenaAction::Enter)
@@ -123,12 +124,13 @@ pub(super) async fn exercise(
                 None,
             )
             .await;
+        let at = unqualified
+            .moved_to
+            .ok_or("unqualified paid step")?
+            .actor_position;
         assert_eq!(
-            unqualified
-                .moved_to
-                .ok_or("unqualified paid step")?
-                .actor_position,
-            APPROACH
+            (at.x, at.y, at.floor),
+            (APPROACH.x, APPROACH.y, APPROACH.floor)
         );
         let leases: i64 = sqlx::query_scalar("SELECT count(*) FROM game_svargrond_pit_leases")
             .fetch_one(&h.pool)

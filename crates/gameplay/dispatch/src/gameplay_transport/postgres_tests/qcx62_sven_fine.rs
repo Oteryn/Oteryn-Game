@@ -2,6 +2,7 @@
 use super::TestResult;
 use super::qcx62_sven_fine_fixtures::NAME;
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
+
 #[test]
 fn sven_charges_each_reported_husky_before_clearing_the_debt() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
