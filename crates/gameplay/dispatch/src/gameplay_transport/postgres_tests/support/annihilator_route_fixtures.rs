@@ -1,6 +1,6 @@
+use super::fixture::{debug, id};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_world::map::view::MapFacts;
-use super::fixture::{debug, id};
 
 use super::{AdmittedSession, ComposedFreshAdmission, Dependencies, FirstEntryOutcome, TestResult};
 
@@ -191,10 +191,11 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
             .await?;
         eprintln!("ANNIHILATOR_ROUTE POSTGRES_CASE_OBSERVED server_version_num={version}");
         let mut deps = Dependencies::new()?;
-        let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
-            deps.admitted.world_id,
-            "content-1",
-        )?;
+        let (controller, pin) =
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
+                deps.admitted.world_id,
+                "content-1",
+            )?;
         let generation = controller.active().ok_or("active generation")?;
         let native = generation.native_gameplay().ok_or("native gameplay")?;
         let world = if route == Route::Ashmunrah {
@@ -208,9 +209,9 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
                     Route::ElvenbaneCombat | Route::ElvenbaneDefenders | Route::ElvenbaneComplete
                 ),
                 match route {
-                    Route::BansheeWindows => &[(125,124)],
-                    Route::CathedralSwitches => &[(127,127)],
-                    Route::Demonrage => &[(126,124)],
+                    Route::BansheeWindows => &[(125, 124)],
+                    Route::CathedralSwitches => &[(127, 127)],
+                    Route::Demonrage => &[(126, 124)],
                     _ => &[],
                 },
             )?
@@ -222,8 +223,15 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
         let mut currents = Vec::new();
         let mut operations = Vec::new();
         let participants = match route {
-            Route::CathedralNote | Route::CathedralSwitches | Route::Logic | Route::TimedPassage => 1,
-            Route::Ashmunrah | Route::BansheeWindows | Route::CoalBasin | Route::Demonrage | Route::Lord => 2,
+            Route::CathedralNote
+            | Route::CathedralSwitches
+            | Route::Logic
+            | Route::TimedPassage => 1,
+            Route::Ashmunrah
+            | Route::BansheeWindows
+            | Route::CoalBasin
+            | Route::Demonrage
+            | Route::Lord => 2,
             Route::TimedPair => 3,
             _ => 4,
         };
@@ -561,7 +569,9 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
         };
         let map = index.map();
         if route == Route::CoalBasin {
-            let result = super::quest_coal_basin_fixtures::exercise(&mut owner, &mut admitted, &h.pool).await;
+            let result =
+                super::quest_coal_basin_fixtures::exercise(&mut owner, &mut admitted, &h.pool)
+                    .await;
             drop(owner);
             drop(authority);
             drop(seal);
@@ -569,7 +579,9 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
             return result;
         }
         if route == Route::BansheeWindows {
-            let result = super::quest_banshee_windows_fixtures::exercise(&mut owner, &mut admitted, map).await;
+            let result =
+                super::quest_banshee_windows_fixtures::exercise(&mut owner, &mut admitted, map)
+                    .await;
             drop(owner);
             drop(authority);
             drop(seal);
@@ -577,7 +589,8 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
             return result;
         }
         if route == Route::Demonrage {
-            let result = super::quest_demonrage_fixtures::exercise(&mut owner, &mut admitted, map).await;
+            let result =
+                super::quest_demonrage_fixtures::exercise(&mut owner, &mut admitted, map).await;
             drop(owner);
             drop(authority);
             drop(seal);
@@ -585,7 +598,9 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
             return result;
         }
         if route == Route::Logic {
-            let result = super::quest_banshee_logic_fixtures::exercise(&mut owner, &mut admitted[0], map).await;
+            let result =
+                super::quest_banshee_logic_fixtures::exercise(&mut owner, &mut admitted[0], map)
+                    .await;
             drop(owner);
             drop(authority);
             drop(seal);
@@ -593,8 +608,12 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
             return result;
         }
         if route == Route::CathedralSwitches {
-            let result =
-                super::quest_cathedral_switches_fixtures::exercise(&mut owner, &mut admitted[0], map).await;
+            let result = super::quest_cathedral_switches_fixtures::exercise(
+                &mut owner,
+                &mut admitted[0],
+                map,
+            )
+            .await;
             drop(owner);
             drop(authority);
             drop(seal);
@@ -617,8 +636,12 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
         }
         if matches!(route, Route::Lord | Route::LordEntry) {
             let result = super::quest_switch_windows_fixtures::lord(
-                &mut owner, &mut admitted, map, (route == Route::LordEntry).then_some(&h.pool),
-            ).await;
+                &mut owner,
+                &mut admitted,
+                map,
+                (route == Route::LordEntry).then_some(&h.pool),
+            )
+            .await;
             drop(owner);
             drop(authority);
             drop(seal);
@@ -627,7 +650,8 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
         }
         if route == Route::Ashmunrah {
             let result =
-                super::quest_switch_windows_fixtures::ashmunrah(&mut owner, &mut admitted, &h.pool).await;
+                super::quest_switch_windows_fixtures::ashmunrah(&mut owner, &mut admitted, &h.pool)
+                    .await;
             drop(owner);
             drop(authority);
             drop(seal);
@@ -672,7 +696,8 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
         }
         if route == Route::ElvenbaneExploration {
             let result =
-                super::elvenbane_route_fixtures::exploration(&mut owner, &mut admitted[0], &h.pool).await;
+                super::elvenbane_route_fixtures::exploration(&mut owner, &mut admitted[0], &h.pool)
+                    .await;
             drop(owner);
             drop(authority);
             drop(seal);
@@ -701,9 +726,12 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
             }
         }
         if route == Route::TimedPassage {
-            let result =
-                super::quest_switch_windows_fixtures::reversible_passage(&mut owner, &mut admitted[0], map)
-                    .await;
+            let result = super::quest_switch_windows_fixtures::reversible_passage(
+                &mut owner,
+                &mut admitted[0],
+                map,
+            )
+            .await;
             drop(owner);
             drop(authority);
             drop(seal);
@@ -744,7 +772,12 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
                 )
                 .map_err(debug)?;
                 runtime.commit_source_step(proof).map_err(debug)?;
-                assert_eq!(runtime.current_top_actor_on_cell(local(pad)).map_err(debug)?, Some(actor));
+                assert_eq!(
+                    runtime
+                        .current_top_actor_on_cell(local(pad))
+                        .map_err(debug)?,
+                    Some(actor)
+                );
                 admitted.swap(1, 2);
             }
             authored["effects"]["timed_group_transfer"] = serde_json::json!({
@@ -774,7 +807,12 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
         let arrivals: &[(i32, i32)] = if route == Route::TimedPair {
             &[(33222, 31659), (33221, 31659), (33224, 31671)]
         } else {
-            &[(33222, 31659), (33221, 31659), (33220, 31659), (33219, 31659)]
+            &[
+                (33222, 31659),
+                (33221, 31659),
+                (33220, 31659),
+                (33219, 31659),
+            ]
         };
         for (member, &(x, y)) in admitted.iter().zip(arrivals) {
             let at = runtime
@@ -1007,7 +1045,7 @@ fn source_world(
     native: &crate::content::native_gameplay::NativeGameplayState,
     start: Position,
     elvenbane_combat: bool,
-    extra_regions: &[(u16,u16)],
+    extra_regions: &[(u16, u16)],
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::bundle;
     use oteryn_world_bundle_compiler::{compile, project, source};
