@@ -13,7 +13,7 @@ pub(super) mod provision;
 
 #[test]
 fn qualification_fixture_accepts_native_admission_logout_and_relog() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("qualification-relog", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("qualification-relog", || {
         scenario("qualification_relog", false)
     })
 }
@@ -257,7 +257,7 @@ fn scenario(tag: &str, provision_before_relog: bool) -> TestResult {
 
 #[test]
 fn qualification_fixture_familiar_login_without_platform_is_playable() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("qualification-familiar-login", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("qualification-familiar-login", || {
         scenario("qualification_familiar_login", true)
     })
 }

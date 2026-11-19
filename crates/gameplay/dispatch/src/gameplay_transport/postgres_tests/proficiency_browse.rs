@@ -30,7 +30,7 @@ fn scenario() -> TestResult {
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (controller, pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
         let generation = controller.active().ok_or("active")?;
         let frame_digest = pin.frame_binding().digest();
         let room = pin.qualified_room().clone();
@@ -142,7 +142,7 @@ fn scenario() -> TestResult {
             )
             .ok_or("capabilities")?;
         assert!(
-            super::proficiency_select_perk::connection(&owner, admitted, async |client| {
+            super::proficiency_select_perk_fixtures::connection(&owner, admitted, async |client| {
                 let page = wire_query(
                     client,
                     1,
@@ -201,7 +201,7 @@ async fn wire_query(
     client.write_u32(u32::try_from(frame.len())?).await?;
     client.write_all(&frame).await?;
     loop {
-        let frame = super::item_look::read_frame(client).await?;
+        let frame = super::item_look_fixtures::read_frame(client).await?;
         let envelope = protocol::decode_wire_envelope(&frame).map_err(debug)?;
         if envelope.message_type() == protocol::MessageType::CommandResult {
             let result = protocol::decode_command_result(envelope.payload()).map_err(debug)?;

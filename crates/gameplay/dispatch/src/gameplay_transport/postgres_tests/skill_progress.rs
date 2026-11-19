@@ -24,7 +24,7 @@ fn skill_progress_postgres_real_dispatch_projection_replay_and_fences() -> TestR
 }
 
 fn scenario() -> TestResult {
-    use super::cyclopedia::support::exchange;
+    use super::cyclopedia_fixtures::support::exchange;
     run(async |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "skill_progress", true, false).await?;

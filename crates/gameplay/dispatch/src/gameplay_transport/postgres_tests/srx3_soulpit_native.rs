@@ -60,12 +60,12 @@ fn native_soulpit_scenario_with_entry_cue(
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("srx3-soulpit-native", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-soulpit-native", move || {
         run(async |admin| {
             let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
             let channel = crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?;
             let (controller, pin) =
-                super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+                super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
             let active = controller.active().ok_or("active")?;
             let native = active.native_gameplay().ok_or("native")?;
             let source = active
@@ -102,20 +102,20 @@ fn native_soulpit_scenario_with_entry_cue(
                 .await?;
             let result: TestResult = async {
             super::reset();
-            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-            super::house_transfer::prepare_owned_session(&h).await?;
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::house_transfer_fixtures::prepare_owned_session(&h).await?;
             let account:String=sqlx::query_scalar("SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
             evidence
                 .evidence
                 .refresh_account(&h.root, &h.node, &account)
                 .await
                 .map_err(debug)?;
-            super::activity_runtime::allocate_ready_instance(&h, 88).await?;
+            super::activity_runtime_fixtures::allocate_ready_instance(&h, 88).await?;
             sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
             sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(active.identity().server_artifact_digest().as_slice()).bind(active.identity().client_artifact_digest().as_slice()).bind(room.frame_binding().digest().as_slice()).execute(&h.pool).await?;
             sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&h.pool).await?;
-            super::item_look::seed_main_backpack(&h, &[("oteryn:item.tibia.i47398", 2)]).await?;
+            super::item_look_fixtures::seed_main_backpack(&h, &[("oteryn:item.tibia.i47398", 2)]).await?;
             let content = ChannelContentPin::from_activation(
                 world,
                 active.activation_sequence(),
@@ -198,7 +198,7 @@ fn native_soulpit_scenario_with_entry_cue(
                 admitted.continuity.selected_capabilities,
                 "the actual BOOT descriptor preserves the source native selection",
             );
-            super::arena_match::fixture::equip_weapon(&h, "oteryn:item.tibia.i3264").await?;
+            super::arena_match_fixtures::fixture::equip_weapon(&h, "oteryn:item.tibia.i3264").await?;
             super::srx3_activity_source_fixture::prepare_player(&h, &owner, &mut admitted, 1999)
                 .await?;
             let effects = owner
@@ -315,11 +315,11 @@ fn native_soulpit_scenario_with_entry_cue(
                 let (status, payload, scope, actual_command) = if entry_cue_only {
                     // Canary47df soulpit fight:75 -> libs/functions/lever.lua165-175:
                     // the actual destination player receives CONST_ME_TELEPORT (11).
-                    super::guild_wire::exchange_capture_switch_effect(&owner,&mut admitted,1,
+                    super::guild_wire_fixtures::exchange_capture_switch_effect(&owner,&mut admitted,1,
                         oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT,
                         build_payload,11,&mut entry_frames).await?
                 } else {
-                    super::guild_wire::exchange_capture(&owner,&mut admitted,1,
+                    super::guild_wire_fixtures::exchange_capture(&owner,&mut admitted,1,
                         oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT,
                         build_payload,true,&mut entry_frames).await?
                 };
@@ -799,7 +799,7 @@ fn native_soulpit_scenario_with_entry_cue(
                     // The capture starts another live serve after the final reward pass.
                     // Let its initial Instance snapshot start with an idle holder.
                     h.root.await_ready().await?;
-                    completed_return = Some(super::guild_wire::capture_activity_return(
+                    completed_return = Some(super::guild_wire_fixtures::capture_activity_return(
                         &owner, &mut player, &mut native_capture.return_frames,
                         async {
                             // The real Node owner (soulpit/cadence.rs) honors returned
@@ -918,7 +918,7 @@ async fn fight_source_monster(
         }
     };
     let command = admitted.continuity.next_command_id;
-    let (status, payload) = super::guild_wire::exchange(
+    let (status, payload) = super::guild_wire_fixtures::exchange(
         owner,
         admitted,
         command,

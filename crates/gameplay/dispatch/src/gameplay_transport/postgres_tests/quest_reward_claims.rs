@@ -2,7 +2,7 @@
 //! These cases qualify reward execution from committed map selectors; they do not
 //! certify the entire source quest journey.
 use super::fixture::{Harness, debug, id, run};
-use super::quest_callbacks::{source_world, wire_use_targets};
+use super::quest_callbacks_fixtures::{source_world, wire_use_targets};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::durability::item_mint::TypedDefinitionRef;
@@ -870,7 +870,7 @@ async fn journey_step(
     direction: oteryn_protocol_oteryn::world_spatial::StepDirection,
 ) -> TestResult {
     let command = admitted.continuity.next_command_id;
-    let reply = super::quest_world_callbacks::wire(
+    let reply = super::quest_world_callbacks_fixtures::wire(
         owner,
         admitted,
         command,
@@ -896,7 +896,7 @@ async fn duplicate_pick(
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let peer = async {
         loop {
-            let bytes = super::item_look::read_frame(&mut client).await?;
+            let bytes = super::item_look_fixtures::read_frame(&mut client).await?;
             if decode_wire_envelope(&bytes)?.message_type() == MessageType::SnapshotCommit {
                 break;
             }
@@ -913,7 +913,7 @@ async fn duplicate_pick(
             client.write_u32(u32::try_from(frame.len())?).await?;
             client.write_all(&frame).await?;
             loop {
-                let bytes = super::item_look::read_frame(&mut client).await?;
+                let bytes = super::item_look_fixtures::read_frame(&mut client).await?;
                 let envelope = decode_wire_envelope(&bytes)?;
                 if envelope.message_type() == MessageType::CommandResult {
                     let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
@@ -956,7 +956,7 @@ async fn journey_use(
     target: &WorldObjectTarget,
 ) -> TestResult<UseDisposition> {
     let command = admitted.continuity.next_command_id;
-    let reply = super::quest_world_callbacks::wire(
+    let reply = super::quest_world_callbacks_fixtures::wire(
         owner,
         admitted,
         command,
@@ -1007,7 +1007,7 @@ async fn panpipe_access(
     ] {
         tokio::time::sleep(std::time::Duration::from_millis(210)).await;
         let command = admitted.continuity.next_command_id;
-        let (next, result, actual) = super::item_craft::exchange(
+        let (next, result, actual) = super::item_craft_fixtures::exchange(
             owner,
             *admitted,
             command,
@@ -1019,7 +1019,7 @@ async fn panpipe_access(
         *admitted = next;
         if expected == UseDisposition::Committed {
             let (next, replay, _) =
-                super::item_craft::exchange(owner, *admitted, command, &actual, None).await?;
+                super::item_craft_fixtures::exchange(owner, *admitted, command, &actual, None).await?;
             *admitted = next;
             assert_eq!(replay, UseDisposition::Committed);
             assert_eq!(
@@ -1088,7 +1088,7 @@ async fn naginata_journey(
     };
     let payload =
         oteryn_protocol_oteryn::world_object::encode_item_use_intent(&intent).map_err(debug)?;
-    let (next, result, _) = super::item_craft::exchange(
+    let (next, result, _) = super::item_craft_fixtures::exchange(
         owner,
         *admitted,
         admitted.continuity.next_command_id,
@@ -1168,7 +1168,7 @@ fn scenario(chest: &Chest, gate: Option<&Gate>, pick: bool, panpipe: bool) -> Te
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activated) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;
@@ -1262,7 +1262,7 @@ fn scenario(chest: &Chest, gate: Option<&Gate>, pick: bool, panpipe: bool) -> Te
             ..crate::durability::starter_grant::StarterTemplate::main()
         };
         if panpipe {
-            super::item_look::seed_main_backpack(
+            super::item_look_fixtures::seed_main_backpack(
                 &harness,
                 &[
                     ("oteryn:item.tibia.i2969", 1),
@@ -1280,7 +1280,7 @@ fn scenario(chest: &Chest, gate: Option<&Gate>, pick: bool, panpipe: bool) -> Te
             }
             tx.commit().await?;
         } else if pick {
-            super::item_look::seed_main_backpack(
+            super::item_look_fixtures::seed_main_backpack(
                 &harness,
                 &[
                     ("oteryn:item.tibia.i3456", 1),
@@ -1470,7 +1470,7 @@ fn scenario(chest: &Chest, gate: Option<&Gate>, pick: bool, panpipe: bool) -> Te
                     first_payload = Some(payload);
                 } else {
                     let (next, result, _) =
-                        super::item_craft::exchange(&owner, admitted, hit + 1, &payload, None)
+                        super::item_craft_fixtures::exchange(&owner, admitted, hit + 1, &payload, None)
                             .await?;
                     assert_eq!(result, UseDisposition::Committed, "pick hit {hit}");
                     admitted = next;
@@ -1524,7 +1524,7 @@ fn scenario(chest: &Chest, gate: Option<&Gate>, pick: bool, panpipe: bool) -> Te
             restarted.movement_cells = (&cells).into();
             deps.initialize(&restarted).await;
             let (_, replay, _) =
-                super::item_craft::exchange(&restarted, original, 1, &payload, None).await?;
+                super::item_craft_fixtures::exchange(&restarted, original, 1, &payload, None).await?;
             assert_eq!(replay, UseDisposition::Committed);
             assert_eq!(world.facts().object_revision(key), 6);
             let quantity: i64 = sqlx::query_scalar("SELECT sum(quantity)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3456' AND lifecycle=1")
@@ -1549,7 +1549,7 @@ fn scenario(chest: &Chest, gate: Option<&Gate>, pick: bool, panpipe: bool) -> Te
             changed_owner.movement_cells = (&cells).into();
             deps.initialize(&changed_owner).await;
             let (_, refusal, _) =
-                super::item_craft::exchange(&changed_owner, original, 1, &changed, None).await?;
+                super::item_craft_fixtures::exchange(&changed_owner, original, 1, &changed, None).await?;
             assert_eq!(
                 refusal,
                 UseDisposition::Rejected,
@@ -1687,7 +1687,7 @@ fn scenario(chest: &Chest, gate: Option<&Gate>, pick: bool, panpipe: bool) -> Te
                     );
                 }
                 assert_eq!(
-                    super::quest_callbacks::wire_uses(&owner, admitted, &[1], &target).await?,
+                    super::quest_callbacks_fixtures::wire_uses(&owner, admitted, &[1], &target).await?,
                     [expected],
                     "{} at level {level}",
                     gate.quest

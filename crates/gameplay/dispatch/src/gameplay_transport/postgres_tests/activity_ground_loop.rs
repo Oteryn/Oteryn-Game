@@ -60,7 +60,7 @@ fn activity_ground_loop_postgres_real_drop_pickup_return_isolation_and_retiremen
 }
 
 async fn scenario(h: &Harness) -> TestResult {
-    let entered = super::activity_runtime::enter_fixture(h).await?;
+    let entered = super::activity_runtime_fixtures::enter_fixture(h).await?;
     let current = entered.fence;
     let RuntimeScopeRefV1::Instance { instance_id, .. } = current.runtime_scope else {
         return Err("real Instance admission required".into());
@@ -75,7 +75,7 @@ async fn scenario(h: &Harness) -> TestResult {
     let activity = ActivityHandoffOwner::new(h.root.clone());
     // Only initial fixture inventory is seeded. Every drop, pickup, return and
     // retirement below executes the runtime owner with all SQL triggers enabled.
-    super::item_look::seed_main_backpack(h, &[("oteryn:item.tibia.i3031", 5)]).await?;
+    super::item_look_fixtures::seed_main_backpack(h, &[("oteryn:item.tibia.i3031", 5)]).await?;
     sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)")
         .bind(current.character_id.as_bytes().as_slice()).execute(&h.pool).await?;
     let content = Content(entered.request.destination_content.server_artifact_digest);

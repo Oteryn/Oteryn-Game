@@ -1,7 +1,7 @@
 //! PARITY-REFUSAL-DETAIL-1: real session ingress on a bundle World answers an unreachable map
 //! door `TOO_FAR`; with capability 66 field 15 names `TOO_FAR_AWAY`, without it the bytes are
 //! the pre-66 payload.
-use super::autowalk::{COIN, DOOR, at, bundle, object, pos, result, send};
+use super::autowalk_fixtures::{COIN, DOOR, at, bundle, object, pos, result, send};
 use super::fixture::{Harness, debug, id, join_two, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
@@ -41,7 +41,7 @@ fn scenario() -> TestResult {
             .await
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
-        let (controller, pin) = super::death_ml_loss_composed::production_generation_with_pin(
+        let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
             deps.admitted.world_id,
             "content-1",
         )?;

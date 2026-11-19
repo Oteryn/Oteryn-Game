@@ -24,7 +24,7 @@ fn field(out: &mut Vec<u8>, key: u8, mut value: u64) {
 }
 #[test]
 fn ranged_attack_postgres_dummy_bow_wand_and_rod_train_at_distance_five() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("ranged-dummy", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("ranged-dummy", || {
         scenario(28555, 5)?;
         scenario(28556, 0)?;
         scenario(28557, 0)
@@ -43,7 +43,7 @@ fn scenario(item: u32, family: usize) -> TestResult {
             .await
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
-        let (controller, pin) = super::death_ml_loss_composed::production_generation_with_pin(
+        let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
             deps.admitted.world_id,
             "content-1",
         )?;

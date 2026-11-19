@@ -31,7 +31,7 @@ fn scenario(initial: i64, name: &'static str) -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run_async(async move |admin| {
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async move |admin| {
         let database_tag = name.replace('-', "_");
         let h = Harness::create(admin, &database_tag, true).await?;
         let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")

@@ -1,5 +1,5 @@
 //! SRV6: only Kesar's actual post-siege report grants Hero of Bounac and Lionheart.
-use super::classic_quests::{install, progress, talk};
+use super::classic_quests_fixtures::{install, progress, talk};
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::character_progression::ExperienceCommitOutcome;
@@ -30,7 +30,7 @@ fn srv6_hero_title_real_npc_final_report_atomic_and_replay() -> TestResult {
             let seal=h.recovery.seal_current().map_err(debug)?;
             let authority=h.root.open_character_authority(&seal).await.map_err(debug)?;
             let world=WorldId::decode(&id(42)).map_err(debug)?;
-            let (generation,pin)=super::death_ml_loss_composed::production_generation_with_pin(world,"content-1")?;
+            let (generation,pin)=super::death_ml_loss_composed_fixtures::production_generation_with_pin(world,"content-1")?;
             let active=generation.active().ok_or("active")?;
             let room=pin.qualified_room().clone();
             let (channel_pin,_,_,_)=pin.into_channel_parts();
