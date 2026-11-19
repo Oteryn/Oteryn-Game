@@ -1492,15 +1492,18 @@ fn retained_create_later_retry_gets_a_full_exchange_deadline() {
             |_| {},
         ));
         let mut acknowledgement = pin!(accepted.notified());
-        tokio::time::timeout(
+        let retry = tokio::time::timeout(
             Duration::from_secs(2),
             std::future::poll_fn(|cx| {
                 assert!(publisher.as_mut().poll(cx).is_pending());
                 acknowledgement.as_mut().poll(cx)
             }),
         )
-        .await
-        .expect("B must get its first full retry while A keeps failing");
+        .await;
+        assert!(
+            retry.is_ok(),
+            "B must get its first full retry while A keeps failing"
+        );
     });
 }
 

@@ -6,14 +6,14 @@ use crate::native_admission_source::SourceError;
 use crate::native_admission_source::character_commands::{
     CreateSendability, RetainedCreateKey, RetainedCreatePage, RetainedCreateScan,
 };
-use sqlx::postgres::{PgPoolOptions, PgRow};
+use sqlx::postgres::PgRow;
 use std::time::Instant;
 
 const PAGE_SIZE: i64 = 2;
 
 /// One publisher-owned connection slot on the verified durability endpoint.
 pub struct RetainedCreatePublisherStore<'a, 'f, 's> {
-    pool: sqlx::PgPool,
+    pool: &'a sqlx::PgPool,
     root: &'a DurabilityRoot,
     authority: &'a ReconciledCharacterAuthority<'f, 's>,
     proof: &'a NodeIncarnationProof,
@@ -27,13 +27,7 @@ impl<'a, 'f, 's> RetainedCreatePublisherStore<'a, 'f, 's> {
         proof: &'a NodeIncarnationProof,
         source: &'a str,
     ) -> Result<Self, DurabilityError> {
-        let options = root
-            .chat_relay_connect_options()
-            .ok_or(DurabilityError::Unavailable)?;
-        let pool = PgPoolOptions::new()
-            .max_connections(1)
-            .acquire_timeout(DB_PASS_DEADLINE)
-            .connect_lazy_with(options);
+        let pool = root.retained_receipt_publisher_pool()?;
         Ok(Self {
             pool,
             root,
