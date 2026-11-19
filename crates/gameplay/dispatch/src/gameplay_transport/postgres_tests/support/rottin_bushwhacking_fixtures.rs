@@ -186,20 +186,23 @@ pub(super) async fn exercise_mission(
         super::rottin_rewards_fixtures::experience(h).await?,
         before_xp + 1000
     );
-    let (stage, questline, platinum, achievement): (i64, i64, i64, bool) = sqlx::query_as(
+    let (stage, questline, platinum, achievement, payouts): (i64, i64, i64, bool, i64) = sqlx::query_as(
         "SELECT
          (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),
          (SELECT value FROM game_character_quest_tracks WHERE track_key=$3),
          (SELECT COALESCE(sum(quantity),0)::bigint FROM game_item_instances
           WHERE definition_production_key='oteryn:item.tibia.i3035' AND lifecycle=1),
-         EXISTS(SELECT 1 FROM game_account_achievements WHERE achievement_key=$2)",
+         EXISTS(SELECT 1 FROM game_account_achievements WHERE achievement_key=$2),
+         (SELECT count(*) FROM game_quest_reward_sources
+          WHERE transition_key=$4 AND mint_transaction_id IS NOT NULL)",
     )
     .bind(MISSION)
     .bind(MERRY_ADVENTURES)
     .bind(QUESTLINE)
+    .bind(TURN_IN)
     .fetch_one(&h.pool)
     .await?;
-    assert_eq!((stage, questline, platinum, achievement), (2, 6, 6, true));
+    assert_eq!((stage, questline, platinum, achievement, payouts), (2, 6, 6, true, 1));
     Ok(())
 }
 
