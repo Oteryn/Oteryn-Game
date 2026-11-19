@@ -672,10 +672,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         } else if let Some(to) = destination {
             let facing = facing.or(callback.effects.facing.map(super::effects::facing));
-            // Crystal actions_mission09.lua:26-30 and movements_firetp.lua:49-98
-            // use Creature:teleportTo, which accepts an occupied destination.
+            // Crystal actions_mission09.lua:26-30, movements_firetp.lua:49-98,
+            // and register_actions.lua:1056-1059 use Creature:teleportTo.
             let proof = if callback.teleport == Some(to)
-                && (callback.effects.random_use.is_some() || callback.is_scripted_step_route())
+                && (callback.effects.random_use.is_some()
+                    || callback.is_scripted_step_route()
+                    || (callback.effects.scripted_teleport && callback.is_retained_tool_route()))
             {
                 crate::map::floor::prepare_quest_teleport_to_present_tile(
                     runtime,

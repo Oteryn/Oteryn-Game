@@ -52,7 +52,7 @@ fn catalogue(permission: i64) -> TestResult<QuestStateCatalogue> {
                 "requires_world_admission": true,
                 "storage": [{"track": PERMISSION, "minimum": 7, "maximum": 7, "set": 7}],
                 "teleport": {"x": LANDING.0, "y": LANDING.1, "floor": LANDING.2},
-                "effects": {"teleport_effect": 11, "refused_tool_effect": 3},
+                "effects": {"scripted_teleport": true, "teleport_effect": 11, "refused_tool_effect": 3},
                 "item_on_target": {"item": SCYTHES[0], "alternatives": [SCYTHES[1]], "count": 1,
                                    "reusable": true, "selected_instance": true},
                 "sources": [SOURCE]
@@ -122,6 +122,15 @@ async fn exercise(admin: &str, tool: &str, permission: i64) -> TestResult {
         .bind(world.frame_binding_digest(admitted.world_id).as_slice()).execute(&h.pool).await?;
     owner.admit_quest_session(&admitted).await;
 
+    // Crystal register_actions.lua:1056-1059 uses Creature:teleportTo, so the
+    // destination remains valid when another player is already there.
+    let park = MovementLocalPosition {
+        x: i32::from(LANDING.0),
+        y: i32::from(LANDING.1),
+        floor: 12,
+    };
+    let (occupant, _) = super::grizzly_boss::second_player(&owner, &deps, &h, park).await?;
+
     let definition = active
         .native_gameplay()
         .and_then(|native| native.item_index())
@@ -155,11 +164,6 @@ async fn exercise(admin: &str, tool: &str, permission: i64) -> TestResult {
             UseDisposition::Rejected
         }
     );
-    let park = MovementLocalPosition {
-        x: i32::from(LANDING.0),
-        y: i32::from(LANDING.1),
-        floor: 12,
-    };
     assert_eq!(
         deps.runtime
             .lock()
@@ -168,6 +172,15 @@ async fn exercise(admin: &str, tool: &str, permission: i64) -> TestResult {
             .map_err(debug)?
             .position(),
         if allowed { park } else { start }
+    );
+    assert_eq!(
+        deps.runtime
+            .lock()
+            .await
+            .read_actor_position(occupant)
+            .map_err(debug)?
+            .position(),
+        park
     );
     let (retained_reads, consumed): (i64, i64) = sqlx::query_as(
         "SELECT (SELECT count(*) FROM game_quest_world_tool_reads WHERE transition_key = $1),
