@@ -168,7 +168,7 @@ fn irgix_solo_room_rejects_an_occupant_and_sets_cooldown_before_timed_exit() -> 
 }
 
 #[test]
-fn irgix_return_step_clears_the_abandoned_visit_and_preserves_the_personal_cooldown() -> TestResult
+fn irgix_manual_exit_and_cooldown_refusal_preserve_the_roster_until_vacancy_cleanup() -> TestResult
 {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -330,6 +330,11 @@ async fn return_through_portal(
         .await?
         .try_into()
         .map_err(|_| "original encounter boss")?;
+    let original_deadline = owner
+        .states
+        .quest_callbacks
+        .next_encounter_due_us()
+        .ok_or("original solo deadline")?;
     let before_exit = Position {
         x: room.manual_exit.x - 1,
         ..room.manual_exit
@@ -374,7 +379,15 @@ async fn return_through_portal(
                 .position(),
             local(expected)
         );
+        // Crystal actions_portal_minis_feaster.lua:65-69,87-95 returns on
+        // manual exit or cooldown before it clears anything in the room.
+        assert_eq!(live(owner, room.boss).await?, [previous]);
+        assert_eq!(
+            owner.states.quest_callbacks.next_encounter_due_us(),
+            Some(original_deadline)
+        );
     }
+    owner.drain_quest_encounter_deadlines().await;
     assert!(live(owner, room.boss).await?.is_empty());
     assert!(
         owner
