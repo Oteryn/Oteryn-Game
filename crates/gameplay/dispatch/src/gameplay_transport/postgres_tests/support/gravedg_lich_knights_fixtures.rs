@@ -167,6 +167,16 @@ pub(super) async fn exercise(
     let runtime = owner.runtime.lock().await;
     assert!(!runtime.contains_live_creature(nictros));
     assert!(!runtime.contains_live_creature(baeloc));
+    for (actor, session) in [
+        (player, admitted.game_session_id),
+        (partner_actor, partner.game_session_id),
+    ] {
+        assert_eq!(
+            owner.switch_encounter_lock(&runtime, actor, session),
+            None,
+            "the Sirs exit clears the encounter's channel lock"
+        );
+    }
     Ok(())
 }
 
