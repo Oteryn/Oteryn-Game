@@ -4,6 +4,7 @@ use super::{
     AdmittedSession, ComposedFreshAdmission, TestResult, fixture::Harness, fixture::debug,
 };
 use crate::foundation::ExactActorRef;
+use crate::gameplay_transport::kill_reward::DrainOutcome;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
@@ -52,6 +53,9 @@ fn late_essence_waves() -> impl Iterator<Item = [Position; 6]> {
         .map(|y| [33609, 33610, 33611, 33612, 33613, 33614].map(|x| at(x, y)))
 }
 const DRAGON: &str = "oteryn:creature.the_first_dragon";
+const DRAGON_QUEST: &str = "oteryn:quest.the_first_dragon_quest";
+const FEATHERS: &str = "oteryn:quest-progress/quest/u11_02/the_first_dragon/feathers";
+const ROOM_ENTITLEMENT: &str = "oteryn:quest-transition/native-kills/first-dragon-room-entitlement";
 const CHALLENGER: &str = "oteryn:creature.fallen_challenger";
 const SPIRIT: &str = "oteryn:creature.spirit_of_fertility";
 const PLANT: &str = "oteryn:creature.angry_plant";
@@ -201,7 +205,7 @@ fn bound_astral_power_routes_from_top_damage_across_floors_at_six_but_not_seven(
 }
 
 #[test]
-fn first_dragon_death_sends_two_room_spectators_to_the_reward_landing() -> TestResult {
+fn first_dragon_death_transfers_and_entitles_two_room_spectators() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -352,7 +356,7 @@ pub(super) fn callback(name: &str, lever: Position) -> TestResult<Callback> {
         )
     } else {
         (
-            "oteryn:quest.the_first_dragon_quest",
+            DRAGON_QUEST,
             "the_first_dragon/creaturescripts_death_dragon_essence.lua:3-12",
             at(33583, 30993),
             at(33621, 31023),
@@ -381,7 +385,8 @@ pub(super) fn callback(name: &str, lever: Position) -> TestResult<Callback> {
     )];
     if name == VICTORY {
         death_phases["terminal_transfer"] = json!({
-            "area_min": at(33603,31009), "area_max": at(33631,31037), "destination": REWARD_ROOM
+            "area_min": at(33603,31009), "area_max": at(33631,31037),
+            "destination": REWARD_ROOM, "credit_spectators":true
         });
         sources.push("crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/creaturescripts_death_first_dragon.lua:21-30".into());
     }
@@ -399,6 +404,27 @@ pub(super) fn callback(name: &str, lever: Position) -> TestResult<Callback> {
         .try_into()
         .map_err(|_| "one phase callback")?;
     Ok(callback)
+}
+
+pub(super) fn reward_room_catalogue(
+    callback: &Callback,
+) -> TestResult<oteryn_gameplay_quests::quest::QuestStateCatalogue> {
+    use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bindings};
+    use sha2::{Digest, Sha256};
+
+    let document = json!({"schema":1,"quests":[{
+        "quest":DRAGON_QUEST,"recipe_sha256":format!("{:x}", Sha256::digest(callback.sources.join("\n"))),
+        "sources":callback.sources,"tracks":[{"key":FEATHERS,"initial":0,"minimum":0,"maximum":2}],
+        "stages":[
+            {"key":"finale","completes":false,"trigger":{"kind":"map_use","callback":callback}},
+            {"key":"reward-room-entitlement","completes":false,"trigger":{"kind":"kill","counter":{
+                "key":ROOM_ENTITLEMENT,"creature":DRAGON,"track":FEATHERS,"gate":FEATHERS,
+                "gate_value":0,"minimum":0,"maximum":1,"encounter_source":callback.key
+            }}}
+        ]
+    }]});
+    let base = QuestStateCatalogue::empty("content-1").ok_or("quest catalogue")?;
+    Ok(Bindings::parse(&serde_json::to_vec(&document)?)?.attach(&base)?)
 }
 
 fn lore_callback(name: &str, lever: Position) -> TestResult<Callback> {
@@ -557,7 +583,6 @@ async fn flower_bowl(
     h: &Harness,
 ) -> TestResult {
     use super::quest_world_callbacks::local;
-    use crate::gameplay_transport::kill_reward::DrainOutcome;
 
     let [plant] = live(owner, PLANT)
         .await?
@@ -924,7 +949,6 @@ async fn fallen_portals(
     peer: ExactActorRef,
 ) -> TestResult {
     use super::quest_world_callbacks::local;
-    use crate::gameplay_transport::kill_reward::DrainOutcome;
     use crate::map::{
         overlay::TilePos,
         view::{MapFacts, placement_key},
@@ -1350,6 +1374,16 @@ pub(super) async fn exercise(
         if name == VICTORY {
             let peer =
                 super::ferumbras_crystal_reset::admit_peer(owner, h, at(33622, 31023)).await?;
+            let peer_session = {
+                let runtime = owner.runtime.lock().await;
+                runtime
+                    .positioned_melee_census()
+                    .map_err(debug)?
+                    .into_iter()
+                    .find_map(|(actor, _, session)| (actor == peer).then_some(session).flatten())
+                    .ok_or("spectator session")?
+            };
+            owner.refresh_quest_session(peer_session, true).await;
             let player = admitted.runtime_actor.ok_or("player")?;
             let [dragon] = live(owner, DRAGON)
                 .await?
@@ -1357,6 +1391,10 @@ pub(super) async fn exercise(
                 .map_err(|_| "one dragon")?;
             super::engenc2_cults::kill(owner, admitted, dragon, DRAGON, 102).await?;
             owner.drain_monster_melee().await;
+            assert_eq!(
+                owner.drain_kill_rewards(admitted.game_session_id).await,
+                DrainOutcome::Drained
+            );
             let runtime = owner.runtime.lock().await;
             for actor in [player, peer] {
                 assert_eq!(
@@ -1367,6 +1405,29 @@ pub(super) async fn exercise(
                     super::quest_world_callbacks::local(REWARD_ROOM)
                 );
             }
+            drop(runtime);
+            for session in [admitted.game_session_id, peer_session] {
+                let fence = owner
+                    .current_quest_fence(session)
+                    .await
+                    .map_err(|()| "entitlement fence")?
+                    .ok_or("entitlement fence")?;
+                let stored = sqlx::query_scalar::<_, i64>(
+                    "SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2"
+                ).bind(fence.character_id.as_bytes().as_slice()).bind(FEATHERS)
+                    .fetch_one(&h.pool).await?;
+                assert_eq!(stored, 1);
+            }
+            let receipts = sqlx::query_scalar::<_, i64>(
+                "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+            )
+            .bind(ROOM_ENTITLEMENT)
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(
+                receipts, 2,
+                "the duplicate death projection grants each spectator once"
+            );
         }
     }
     Ok(())

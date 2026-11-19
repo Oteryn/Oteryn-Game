@@ -1733,6 +1733,9 @@ fn scenario_case(
             owner.quest_catalogue =
                 Some(super::super::draconia_escape::catalogue(&callback, name)?);
         }
+        if name == super::super::encounter_death_replacements::VICTORY {
+            owner.quest_catalogue = Some(std::sync::Arc::new(super::super::encounter_death_replacements::reward_room_catalogue(&callback)?));
+        }
         if engenc_asura {
             owner.quest_catalogue = Some(std::sync::Arc::new(
                 super::super::engenc_asura_dispatch::catalogue(name)?,
