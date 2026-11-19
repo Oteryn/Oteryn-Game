@@ -1151,23 +1151,40 @@ async fn scenario(
             .expect("clock");
     }
     if cake_kill_before_activation || cake_kill_before_expiry {
-        // The production death has queued. Move the window across the drain
-        // without waiting a week or racing either side of the kill timestamp.
-        let active: bool = sqlx::query_scalar(
+        let died_at_unix_ms = {
+            use crate::gameplay_transport::kill_reward::TakeOutcome;
+            let attack = owner.states.attack.lock().await;
+            let queue = attack.kills();
+            let session = players.iter()
+                .find_map(|(_, session)| queue.has_session(*session).then_some(*session))
+                .ok_or("queued Cake XP death")?;
+            let TakeOutcome::Taken(taken) = queue.take(session, 2) else {
+                return Err("could not read the queued Cake XP death".into());
+            };
+            i64::try_from(taken.entry().ok_or("Cake XP death")?.facts.died_at_unix_ms)?
+            // Dropping the read reservation requeues the same death for the real drain.
+        };
+        assert!(died_at_unix_ms > 0);
+        // Move the durable window across the drain without waiting a week.
+        // Verify that the fixture straddled the actual queued death timestamp.
+        let (active_at_kill, active_at_drain): (bool, bool) = sqlx::query_as(
             "UPDATE game_cake_phases p
              SET bonus_activated_at = sample.activated,
                  bonus_until = sample.activated + interval '604800 seconds'
              FROM (SELECT statement_timestamp() - CASE WHEN $2 THEN interval '0 seconds'
                     ELSE interval '604800 seconds' END AS activated) sample
              WHERE p.world_id=encode($1,'hex')::uuid AND p.event_year=2026
-             RETURNING bonus_activated_at<=statement_timestamp()
+             RETURNING bonus_activated_at<=to_timestamp($3::bigint::double precision / 1000)
+                       AND to_timestamp($3::bigint::double precision / 1000)<bonus_until,
+                       bonus_activated_at<=statement_timestamp()
                        AND statement_timestamp()<bonus_until",
         )
         .bind(world.as_bytes().as_slice())
         .bind(cake_kill_before_activation)
+        .bind(died_at_unix_ms)
         .fetch_one(&h.pool)
         .await?;
-        assert_eq!(active, cake_kill_before_activation);
+        assert_eq!((active_at_kill, active_at_drain), (cake_xp_active, !cake_xp_active));
     }
     if matches!(case, Case::Concurrent) {
         let first_principal = {
