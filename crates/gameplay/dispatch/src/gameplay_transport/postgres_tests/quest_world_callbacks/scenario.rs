@@ -352,6 +352,7 @@ fn scenario_case(
     let forgemaster = matches!(
         name,
         super::super::forgemaster_chest::LOCKED
+            | super::super::forgemaster_chest::NATIVE
             | super::super::forgemaster_chest::OPEN
             | super::super::forgemaster_chest::UNADMITTED
     );
@@ -673,7 +674,9 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
-    let world = if name == "authored-wrath-crystals" {
+    let world = if name == super::super::forgemaster_chest::NATIVE {
+        super::world_with_cells(&callback, trigger, &[])?
+    } else if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::world()?
     } else if name == "nx6-wayfarer" {
         super::super::questpc8_wrath_source_dragon::world()?

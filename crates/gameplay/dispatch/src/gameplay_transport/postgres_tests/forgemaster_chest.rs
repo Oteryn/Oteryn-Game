@@ -15,14 +15,15 @@ use serde_json::json;
 use std::sync::Arc;
 
 pub(super) const LOCKED: &str = "forgemaster-chest-locked";
+pub(super) const NATIVE: &str = "forgemaster-chest-native";
 pub(super) const OPEN: &str = "forgemaster-chest-open";
 pub(super) const UNADMITTED: &str = "forgemaster-chest-unadmitted-item";
-const CHEST: Position = Position {
-    x: 33294,
-    y: 31677,
-    floor: -15,
-};
+// Crystal startup/tables/item.lua:5117-5120 binds UID 57237 at startup.
+// The pinned B3 tile retains bare item 2472 above two top-level entries.
+const CHEST: Position = Position { x: 34087, y: 32346, floor: -14 };
 const UID: u16 = 57237;
+const CHEST_APPEARANCE: u16 = 2472;
+const NATIVE_ORDINAL: u8 = 2;
 const DONOR_REWARD_ID: u16 = 49520;
 const FIXTURE_REWARD_ID: u16 = 3031;
 const QUEST: &str = "oteryn:quest.no_rest_for_the_wicked_quest";
@@ -47,12 +48,28 @@ fn forgemaster_chest_requires_door_access_and_claims_the_retained_reward_once() 
     Ok(())
 }
 
+#[test]
+fn forgemaster_chest_use_matches_the_untagged_native_placement() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    if admin.is_empty() {
+        return Err("empty PostgreSQL admin URL".into());
+    }
+    super::kill_reward_e2e::scenario_thread::run(NATIVE, || scenario(NATIVE, CHEST, false))
+}
+
 pub(super) fn callback(name: &str) -> TestResult<Callback> {
     let item = reward_id(name);
+    let selector = if name == NATIVE {
+        json!({"position":CHEST,"ordinal":NATIVE_ORDINAL,"appearance":CHEST_APPEARANCE})
+    } else {
+        json!({"unique":UID,"appearance":CHEST_APPEARANCE})
+    };
     Ok(serde_json::from_value(json!({
         "key":"oteryn:quest-callback/fixture/forgemaster-chest-57237",
         "quest":QUEST,"trigger":"use","actor_kind":"player",
-        "selector":{"unique":UID},
+        "selector":selector,
         "storage":[
             {"track":ACCESS,"minimum":1,"maximum":1,"set":1,"preserve":true},
             {"track":CLAIM,"minimum":0,"maximum":0,"set":1},
@@ -63,6 +80,7 @@ pub(super) fn callback(name: &str) -> TestResult<Callback> {
         "requires_world_admission":true,
         "sources":[
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_forgemaster.lua:176-180",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:5117-5120",
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/no_rest_for_the_wicked_rewards.lua:1-32"
         ]
     }))?)
@@ -76,7 +94,8 @@ pub(super) async fn exercise(
     name: &str,
 ) -> TestResult {
     let has_access = name != LOCKED;
-    let can_claim = name == OPEN;
+    let can_claim = matches!(name, NATIVE | OPEN);
+    let ordinal = if name == NATIVE { NATIVE_ORDINAL } else { 1 };
     let item = reward_id(name);
     let bindings = Bindings::parse(&serde_json::to_vec(&json!({
         "schema":1,
@@ -96,7 +115,15 @@ pub(super) async fn exercise(
     let base = QuestStateCatalogue::empty("content-1").ok_or("test catalogue")?;
     owner.quest_catalogue = Some(Arc::new(bindings.attach(&base)?));
     let before = super::qengine_voucher_stories::quantity(harness, item).await?;
-    let result = use_source(owner, admitted, 1, CHEST, 1, 0).await?;
+    if name == NATIVE {
+        // The interaction targets the chest entry, not the tile's other object.
+        assert_ne!(
+            use_source(owner, admitted, 1, CHEST, NATIVE_ORDINAL - 1, 0).await?,
+            UseDisposition::Committed,
+        );
+        assert_eq!(super::qengine_voucher_stories::quantity(harness, item).await?, before);
+    }
+    let result = use_source(owner, admitted, 2, CHEST, ordinal, 0).await?;
     assert_eq!(
         result,
         if can_claim {
@@ -107,7 +134,7 @@ pub(super) async fn exercise(
     );
     if can_claim {
         assert_eq!(
-            use_source(owner, admitted, 2, CHEST, 1, 0).await?,
+            use_source(owner, admitted, 3, CHEST, ordinal, 0).await?,
             UseDisposition::Rejected
         );
     }
