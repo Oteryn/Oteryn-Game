@@ -27,7 +27,7 @@ fn nightmare_beast_death_awards_dream_warrior_to_damage_recipients_and_advances_
 }
 
 #[test]
-fn nightmare_beast_death_awards_dream_warrior_and_cooldown_at_the_ward_stones_cap() -> TestResult {
+fn nightmare_beast_capped_deaths_refresh_cooldown_and_announce_the_first_outfit_only() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };

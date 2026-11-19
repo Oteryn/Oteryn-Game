@@ -377,6 +377,10 @@ async fn exercise(
     // Herald uses a lower-damage challenger. Outfit deliveries also inspect
     // a nearby witness who did not deal damage.
     let room_delivery = rule.delivery.is_some() && rule.room.is_some();
+    let dream_warrior = rule.delivery == Some(source_deaths::DeathDelivery::DreamWarrior);
+    if dream_warrior {
+        owner.states.chat.admit(session, "Fixture Hero", owner.owner_now());
+    }
     let secondary = if rule.top_damage_only || rule.delivery.is_some() {
         let mut runtime = owner.runtime.lock().await;
         let session = crate::foundation::GameSessionId::decode(&id(77)).map_err(debug)?;
@@ -409,10 +413,12 @@ async fn exercise(
     };
     let kills = if rule.creature == "oteryn:creature.cake_golem" {
         20usize
+    } else if dream_warrior {
+        2
     } else {
         1
     };
-    let actual_kills = if kills == 20 { 21 } else { 1 };
+    let actual_kills = if kills == 20 { 21 } else { kills };
     // Two deaths share each frozen quest snapshot. A preceding counter increment
     // must not invalidate the next queued death from the same admitted mission run.
     for batch in (0..actual_kills).step_by(2) {
@@ -570,6 +576,13 @@ async fn exercise(
         owner.drain_kill_rewards(session).await,
         DrainOutcome::Drained
     );
+    if dream_warrior {
+        let messages = owner.states.chat.drain(session).into_iter().filter(|line| {
+            matches!(line, oteryn_protocol_oteryn::chat::ChatLine::Private { speaker_name, text }
+                if speaker_name == "Game" && text == "Congratulations! You have won a Dream Warrior Outfit.")
+        }).count();
+        assert_eq!(messages, 1, "only the first outfit grant announces");
+    }
     for effect in &rule.effects {
         let value:Option<i64>=sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2")
             .bind(id(41).as_slice()).bind(&effect.track).fetch_optional(&h.pool).await?;
@@ -601,7 +614,7 @@ async fn exercise(
     assert_eq!(
         receipts,
         i64::try_from(kills)?,
-        "duplicate corpse projection must retain the first captured receipt"
+        "each qualified death owns exactly one receipt across repeated corpse projection"
     );
     Ok(())
 }
