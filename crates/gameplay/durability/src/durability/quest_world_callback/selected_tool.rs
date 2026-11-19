@@ -11,6 +11,9 @@ pub struct QuestWorldToolContext {
     pub(super) selected_tool: Option<SelectedQuestTool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) ground_supply: Option<GroundSupplyFace>,
+    /// Live refusal evidence belongs only to this attempt, never to a receipt identity.
+    #[serde(skip)]
+    pub(crate) solo_room_occupied: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -32,10 +35,16 @@ impl From<QuestWorldContext> for QuestWorldToolContext {
             world,
             selected_tool: None,
             ground_supply: None,
+            solo_room_occupied: false,
         }
     }
 }
 impl QuestWorldToolContext {
+    pub fn with_occupied_solo_room(mut self) -> Self {
+        self.solo_room_occupied = true;
+        self
+    }
+
     pub fn with_ground_supply_face(mut self, source: u64, revision: u64, before: u16) -> Self {
         self.ground_supply = Some(GroundSupplyFace {
             source,
@@ -90,6 +99,7 @@ impl QuestWorldContext {
             world: self,
             selected_tool: Some(SelectedQuestTool { source, intent }),
             ground_supply: None,
+            solo_room_occupied: false,
         })
     }
 }

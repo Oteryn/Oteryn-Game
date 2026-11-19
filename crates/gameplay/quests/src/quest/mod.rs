@@ -392,6 +392,8 @@ pub enum QuestRefusal {
     SourceRoomAccessRequired,
     /// The fenced encounter admission found an active personal boss cooldown.
     SourceBossCooldownActive,
+    /// The current channel owner observed another player in the source room.
+    SourceBossRoomOccupied,
     /// The quest state is pinned to another definition hash (§6).
     RevisionMismatch,
     /// A result leaves the track's bounds, or `ADD` overflows.
@@ -411,7 +413,8 @@ impl QuestRefusal {
             | Self::SourceOfferingMissing
             | Self::SourceOfferingPremiumRequired
             | Self::SourceRoomAccessRequired
-            | Self::SourceBossCooldownActive => "STAGE_MISMATCH",
+            | Self::SourceBossCooldownActive
+            | Self::SourceBossRoomOccupied => "STAGE_MISMATCH",
             Self::RevisionMismatch => "REVISION_MISMATCH",
             Self::OutOfRange => "OUT_OF_RANGE",
             Self::NotSupported => "NOT_SUPPORTED",

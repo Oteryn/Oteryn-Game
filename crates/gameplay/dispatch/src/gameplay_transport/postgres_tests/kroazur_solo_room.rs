@@ -1,12 +1,12 @@
 //! Crystal 201189f data-global/scripts/quests/threatened_dreams_quest/movement_kroazur_room.lua:3-78.
-use super::fixture::{Harness, debug};
+use super::fixture::{Harness, debug, id};
 use super::quest_world_callbacks::{local, scenario, stateless_scenario, wire};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::{
     character_progression::CurrentCharacterGameplayFence,
     quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest},
 };
-use crate::foundation::{CommandId, CommandRef};
+use crate::foundation::{CommandId, CommandRef, ExactActorRef, GameSessionId};
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue,
     world_callbacks::{self, Callback, Position},
@@ -31,6 +31,8 @@ const ADMISSION_TEXT: &str = "You have ten minutes to kill and loot this boss, e
 const ACCESS_TEXT: &str = "You don't have access to this room!";
 // Crystal movement_kroazur_room.lua:45-49.
 const COOLDOWN_TEXT: &str = "You have to wait to challenge this enemy again!";
+// Crystal movement_kroazur_room.lua:53-57.
+const OCCUPIED_TEXT: &str = "Someone is fighting against the boss! You need wait awhile.";
 // Crystal data-global/startup/tables/tile.lua:993-999 maps AID 25029 here.
 const TRIGGER: Position = Position {
     x: 33619,
@@ -62,7 +64,8 @@ pub(super) fn binding() -> TestResult<Callback> {
         "return_on_failure":true,"reversible":false,"passages":[],"offerings":[],
         "storage":[{"track":ACCESS,"minimum":1,"maximum":1,"set":1}],
         "effects":{"magic":{"position":TRIGGER,"effect":11},"player_speech":ADMISSION_TEXT,
-            "access_refusal_speech":ACCESS_TEXT,"cooldown_refusal_speech":COOLDOWN_TEXT,"encounter":{
+            "access_refusal_speech":ACCESS_TEXT,"cooldown_refusal_speech":COOLDOWN_TEXT,
+            "occupancy_refusal_speech":OCCUPIED_TEXT,"encounter":{
             "minimum_level":0,
             "players":[{"from":TRIGGER,"to":LANDING}],
             "monsters":[{"position":at(33591,32305),"creature":KROAZUR}],
@@ -160,6 +163,42 @@ async fn assert_location(
     Ok(())
 }
 
+async fn move_player(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    position: Position,
+) -> TestResult {
+    let map = owner.bundle_map().ok_or("Kroazur map")?;
+    let mut runtime = owner.runtime.lock().await;
+    let proof = crate::map::floor::prepare_quest_callback_teleport(
+        &runtime,
+        owner.movement_cells(),
+        actor,
+        session,
+        runtime.read_actor_position(actor).map_err(debug)?,
+        local(position),
+        false,
+        &crate::map::floor::BundleDoors(&map.facts),
+    )
+    .map_err(debug)?;
+    runtime.commit_source_step(proof).map_err(debug)?;
+    Ok(())
+}
+
+fn assert_refusal_speech(messages: &[ChatLine], actor: ExactActorRef, expected: &str) {
+    let speech: Vec<_> = messages.iter().filter_map(|line| {
+        match line {
+            ChatLine::Local { speaker, mode: ChatSpeechMode::MonsterSay, text, position, .. }
+                if speaker.identity == actor.placement_identity()
+                    && speaker.generation.get() == actor.actor_local_generation()
+                    && (position.x, position.y, position.floor) == (33618, 32304, 9) => Some(text.as_str()),
+            _ => None,
+        }
+    }).collect();
+    assert_eq!(speech, [expected]);
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -167,6 +206,14 @@ pub(super) async fn exercise(
     fence: CurrentCharacterGameplayFence,
 ) -> TestResult {
     let actor = admitted.runtime_actor.ok_or("actor")?;
+    let spectator_session = GameSessionId::decode(&id(112)).map_err(debug)?;
+    let spectator = {
+        let mut runtime = owner.runtime.lock().await;
+        let lease = runtime.reserve_fresh_session(spectator_session).map_err(debug)?;
+        let spectator = runtime.commit_fresh_session(lease).map_err(debug)?;
+        runtime.initialize_pinned_test_position(spectator, local(LANDING)).map_err(debug)?;
+        spectator
+    };
     {
         let map = owner.bundle_map().ok_or("Kroazur map")?;
         let before = map
@@ -189,13 +236,8 @@ pub(super) async fn exercise(
         assert!(!messages.iter().any(|line| {
             matches!(line, ChatLine::Local { text, .. } if text == COOLDOWN_TEXT)
         }));
-        assert_eq!(messages.iter().filter(|line| {
-            matches!(line, ChatLine::Local { speaker, mode: ChatSpeechMode::MonsterSay, text, position, .. }
-                if speaker.identity == actor.placement_identity()
-                    && speaker.generation.get() == actor.actor_local_generation()
-                    && text == ACCESS_TEXT
-                    && (position.x, position.y, position.floor) == (33618, 32304, 9))
-        }).count(), 1);
+        // Missing progress takes precedence over the live spectator.
+        assert_refusal_speech(&messages, actor, ACCESS_TEXT);
     }
     assert!(
         super::engworldchg_journals::live_creatures(owner, KROAZUR)
@@ -224,6 +266,20 @@ pub(super) async fn exercise(
     assert!(matches!(started, QuestTransitionOutcome::Committed(_)));
     drop(slot);
 
+    let cooldown_value = || {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT available_at FROM game_character_boss_cooldowns WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2",
+        )
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(KROAZUR)
+        .fetch_optional(&h.pool)
+    };
+    step(owner, admitted, 2, ORIGIN).await?;
+    assert_refusal_speech(&owner.states.chat.drain(admitted.game_session_id), actor, OCCUPIED_TEXT);
+    assert!(cooldown_value().await?.is_none());
+    assert!(super::engworldchg_journals::live_creatures(owner, KROAZUR).await?.is_empty());
+    move_player(owner, spectator, spectator_session, Position { x: EXIT.x + 1, ..EXIT }).await?;
+
     let measure = || {
         sqlx::query_scalar::<_, i64>(
             "SELECT floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint",
@@ -233,7 +289,7 @@ pub(super) async fn exercise(
     let before = measure().await?;
     let map = owner.bundle_map().ok_or("Kroazur map")?;
     let effect_cursor = map.facts.movement_effects_since(0).last().map_or(0, |cue| cue.0);
-    step(owner, admitted, 2, LANDING).await?;
+    step(owner, admitted, 3, LANDING).await?;
     let effects = map.facts.movement_effects_since(effect_cursor);
     for position in [TRIGGER, LANDING] {
         assert_eq!(effects.iter().filter(|(_, at, effect)| {
@@ -248,7 +304,7 @@ pub(super) async fn exercise(
                 && text == ADMISSION_TEXT
                 && (position.x, position.y, position.floor) == (33591, 32315, 10))
     }).count(), 1);
-    step(owner, admitted, 2, LANDING).await?;
+    step(owner, admitted, 3, LANDING).await?;
     let messages = owner.states.chat.drain(admitted.game_session_id);
     assert!(!messages.iter().any(|line| {
         matches!(line, ChatLine::Local { text, .. } | ChatLine::Private { text, .. }
@@ -260,9 +316,7 @@ pub(super) async fn exercise(
             .len(),
         1
     );
-    let cooldown: i64 = sqlx::query_scalar(
-        "SELECT available_at FROM game_character_boss_cooldowns WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2"
-    ).bind(fence.character_id.as_bytes().as_slice()).bind(KROAZUR).fetch_one(&h.pool).await?;
+    let cooldown = cooldown_value().await?.ok_or("Kroazur cooldown")?;
     assert!((before + 7_200_000..=measure().await? + 7_200_000).contains(&cooldown));
 
     owner.drain_quest_encounter_deadlines().await;
@@ -286,23 +340,10 @@ pub(super) async fn exercise(
     );
 
     let map = owner.bundle_map().ok_or("map")?;
-    {
-        let mut runtime = owner.runtime.lock().await;
-        let proof = crate::map::floor::prepare_quest_callback_teleport(
-            &runtime,
-            owner.movement_cells(),
-            actor,
-            admitted.game_session_id,
-            runtime.read_actor_position(actor).map_err(debug)?,
-            local(ORIGIN),
-            false,
-            &crate::map::floor::BundleDoors(&map.facts),
-        )
-        .map_err(debug)?;
-        runtime.commit_source_step(proof).map_err(debug)?;
-    }
+    move_player(owner, actor, admitted.game_session_id, ORIGIN).await?;
+    move_player(owner, spectator, spectator_session, LANDING).await?;
     let effect_cursor = map.facts.movement_effects_since(0).last().map_or(0, |cue| cue.0);
-    step(owner, admitted, 3, ORIGIN).await?;
+    step(owner, admitted, 4, ORIGIN).await?;
     // Crystal movement_kroazur_room.lua:45-49 uses the same ordered pair
     // of teleport cues while the personal cooldown is active.
     assert_eq!(
@@ -318,13 +359,9 @@ pub(super) async fn exercise(
         matches!(line, ChatLine::Local { text, .. } | ChatLine::Private { text, .. }
             if text == ADMISSION_TEXT)
     }));
-    assert_eq!(messages.iter().filter(|line| {
-        matches!(line, ChatLine::Local { speaker, mode: ChatSpeechMode::MonsterSay, text, position, .. }
-            if speaker.identity == actor.placement_identity()
-                && speaker.generation.get() == actor.actor_local_generation()
-                && text == COOLDOWN_TEXT
-                && (position.x, position.y, position.floor) == (33618, 32304, 9))
-    }).count(), 1);
+    // The cooldown still takes precedence after the spectator returns.
+    assert_refusal_speech(&messages, actor, COOLDOWN_TEXT);
+    assert_eq!(cooldown_value().await?, Some(cooldown));
     assert!(
         super::engworldchg_journals::live_creatures(owner, KROAZUR)
             .await?

@@ -1997,11 +1997,17 @@ impl DurabilityRoot {
                             let refusal = match admit_solo_quest_room(
                                 &mut tx, character, &monster.creature, context.reset_epoch, expiry.cooldown_seconds,
                             ).await? {
+                                // Crystal movement_kroazur_room.lua:37-58 gives access and
+                                // cooldown precedence over the live occupancy refusal.
+                                BossCooldownChange::Applied if context.solo_room_occupied => {
+                                    Some(QuestRefusal::SourceBossRoomOccupied)
+                                }
                                 BossCooldownChange::Applied => None,
                                 BossCooldownChange::OnCooldown => Some(QuestRefusal::SourceBossCooldownActive),
                                 BossCooldownChange::Replayed => Some(QuestRefusal::StageMismatch),
                             };
                             if let Some(refusal) = refusal {
+                                tx.rollback().await?;
                                 return Ok(Ok(QuestTransitionOutcome::Refused(refusal)));
                             }
                         }

@@ -422,6 +422,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         preflight: bool,
         cause: QuestCause,
         reservation: Option<&mut personal_encounter::Reservation<'_>>,
+        room_occupied: Option<&mut bool>,
     ) -> UseDisposition {
         self.quest_encounter(
             runtime,
@@ -436,6 +437,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             preflight,
             cause,
             reservation,
+            room_occupied,
         )
     }
 
@@ -466,6 +468,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             true,
             cause,
             None,
+            None,
         )
     }
 
@@ -484,6 +487,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         preflight: bool,
         cause: QuestCause,
         reservation: Option<&mut personal_encounter::Reservation<'_>>,
+        room_occupied: Option<&mut bool>,
     ) -> UseDisposition {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
@@ -562,6 +566,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && *who == actor
                     && *occupant_session == Some(session))
         }) {
+            if let Some(occupied) = room_occupied {
+                *occupied = true;
+            }
             return UseDisposition::Occupied;
         }
         // Crystal actions_portal_minis_feaster.lua:87-100 and

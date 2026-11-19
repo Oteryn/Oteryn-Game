@@ -120,6 +120,9 @@ pub struct CallbackEffects {
     /// Player MONSTER_SAY at the return position after a cooldown refusal.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cooldown_refusal_speech: Option<String>,
+    /// Player MONSTER_SAY at the return position after finding the solo room occupied.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub occupancy_refusal_speech: Option<String>,
     pub transform: Option<u16>,
     /// Restore the traversed portal's replacement and its collision in the same STEP.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -835,9 +838,16 @@ pub(super) fn valid(callback: &Callback) -> bool {
     };
     if effects.player_speech.as_ref().is_some_and(invalid_speech)
         || effects.access_refusal_speech.is_some() && callback.storage.is_empty()
+        || effects.occupancy_refusal_speech.is_some()
+            && effects
+                .encounter
+                .as_ref()
+                .and_then(|room| room.solo_expiry)
+                .is_none_or(|expiry| expiry.shared.is_some())
         || [
             effects.access_refusal_speech.as_ref(),
             effects.cooldown_refusal_speech.as_ref(),
+            effects.occupancy_refusal_speech.as_ref(),
         ]
         .into_iter()
         .flatten()

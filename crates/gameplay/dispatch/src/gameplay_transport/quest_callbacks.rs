@@ -1786,6 +1786,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Some(QuestRefusal::SourceBossCooldownActive) => {
                 callback.effects.cooldown_refusal_speech.as_deref()
             }
+            Some(QuestRefusal::SourceBossRoomOccupied) => {
+                callback.effects.occupancy_refusal_speech.as_deref()
+            }
             _ => None,
         };
         if let Some(speech) = speech {
