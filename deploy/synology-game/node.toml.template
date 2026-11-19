@@ -47,6 +47,9 @@ ruleset_revision = "<RULESET_REVISION>"
 content_revision = "<CONTENT_REVISION>"
 map_revision = "<MAP_REVISION>"
 world_policy_revision = "<WORLD_POLICY_REVISION>"
+# ADMIT0: registered gameplay capability IDs this scope requires; required key. [] serves the fixture
+# entry room; with [world_bundle] it must be the bundle floor [11, 18, 30] (see below).
+required_gameplay_capabilities = []
 offer_revision = "<OFFER_REVISION>"
 [platform]
 source_authority = "platform"
@@ -104,7 +107,8 @@ authorization_file = "<BASE>/state/launch-initial.json"
 s2_authorization_file = "<BASE>/state/s2-fresh-store.json"
 # Opt-in World Bundle (preproduction only; production is refused by the node). Enable it by appending
 # the [world_bundle] table of preprod-topology.toml with <BASE> replaced and, in [readiness],
-# map_revision = "<digest>". deploy-ops.sh check-setup refuses any difference from the manifest.
+# map_revision = "<digest>" and required_gameplay_capabilities = [11, 18, 30] (the node refuses a
+# bundle world with []). deploy-ops.sh check-setup refuses any difference from the manifest.
 # Without the table the node serves the fixture entry room.
 # NPC catalogue (NPC-LOAD-1): not a node.toml key. It is two command-line flags, --npc-data-project and
 # --npc-data-sha256, which supervisor.sh passes when the deploy staged BASE/run/npc-data (npc-data.pin.json).
