@@ -7,6 +7,7 @@ use crate::gameplay_transport::world_spatial::StepDirection;
 use crate::gameplay_transport::{StepOutcome, WorldSpatialObservation};
 use oteryn_protocol_oteryn::{
     CommandStatus, MessageType, decode_command_result, decode_wire_envelope,
+    world_spatial::{StepDisposition, decode_step_result},
 };
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
@@ -153,7 +154,9 @@ fn house_transfer_guard_busy_budget_preserves_connection_postgres() -> TestResul
                         client.write_all(&first).await?;
                     }
                     let refusal = result(&mut client).await?;
-                    assert_eq!(refusal, (CommandStatus::Rejected, vec![0x08, 0x03]));
+                    assert_eq!(refusal.0, CommandStatus::Rejected);
+                    assert_eq!(decode_step_result(&refusal.1), Ok(StepDisposition::Rejected));
+                    assert_eq!(refusal.1, [0x08, 0x03]);
                     assert_eq!(
                         result(&mut client).await?,
                         (CommandStatus::DuplicateReplay, refusal.1)
@@ -163,7 +166,9 @@ fn house_transfer_guard_busy_budget_preserves_connection_postgres() -> TestResul
                     let next = command(2)?;
                     client.write_u32(next.len() as u32).await?;
                     client.write_all(&next).await?;
-                    assert_eq!(result(&mut client).await?.0, CommandStatus::Accepted);
+                    let next_result = result(&mut client).await?;
+                    assert_eq!(next_result.0, CommandStatus::Accepted);
+                    assert_eq!(decode_step_result(&next_result.1), Ok(StepDisposition::Blocked));
                     assert_eq!(probe.steps.get(), 1);
                     client.shutdown().await?;
                     Ok::<_, Box<dyn std::error::Error>>(())

@@ -514,7 +514,8 @@ impl AdmissionRetryBudget<'_> {
                         DurabilityError::Database(_)
                         | DurabilityError::Migration(_)
                         | DurabilityError::SchemaIncompatible(_) => "storage",
-                        DurabilityError::RootPassDeadlineExceeded => "deadline",
+                        DurabilityError::RootPassDeadlineExceeded
+                        | DurabilityError::CommitTransactionTimeout => "deadline",
                         DurabilityError::CommitOutcomeUnknown => "commit_unknown",
                         DurabilityError::SessionUseAuthorization(_)
                         | DurabilityError::CommitRejected => "authority",
