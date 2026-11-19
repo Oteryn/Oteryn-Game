@@ -469,26 +469,50 @@ pub enum Decision {
     Transient,
 }
 
-/// A retained operation and its verified immutable publication bytes.
-pub struct RetainedCreateReceipt {
+/// Result of checking the current immutable create receipt immediately before an offer.
+pub enum CreateSendability {
+    Ready(String),
+    StoppedOrMissing,
+    Invalid,
+}
+
+pub struct RetainedCreateKey {
+    pub scan_key: i64,
     pub operation_id: String,
-    /// Upper UUID from the first cursor read's store snapshot, when there is no lower cursor.
-    pub scan_end: Option<String>,
-    /// Absent when the row is present but its stored receipt is invalid.
-    pub body: Option<Vec<u8>>,
+}
+
+pub struct RetainedCreatePage {
+    pub through: i64,
+    pub keys: Vec<RetainedCreateKey>,
+}
+
+pub trait RetainedCreateScan: Send {
+    fn sendable_create(
+        &mut self,
+        operation_id: &str,
+    ) -> impl Future<Output = Result<CreateSendability, SourceError>> + Send;
+
+    fn stop_retained_create_receipt(
+        &mut self,
+        operation_id: &str,
+    ) -> impl Future<Output = Result<(), SourceError>> + Send;
+
+    fn scan_retained_creates(
+        &mut self,
+        after: i64,
+        through: Option<i64>,
+    ) -> impl Future<Output = Result<RetainedCreatePage, SourceError>> + Send;
 }
 
 /// The Character Authority side of the consumer.
 pub trait Decider: Send {
-    /// Fenced immutable create receipts, independent of the retired intent feed.
-    fn next_retained_create_receipt(
+    fn sendable_create(
         &mut self,
-        _after: Option<&str>,
-    ) -> impl Future<Output = Result<Option<RetainedCreateReceipt>, SourceError>> + Send {
-        async { Ok(None) }
+        _operation_id: &str,
+    ) -> impl Future<Output = Result<CreateSendability, SourceError>> + Send {
+        async { Err(SourceError::Unavailable) }
     }
 
-    /// Durably stop publication while retaining the immutable v1 create receipt.
     fn stop_retained_create_receipt(
         &mut self,
         _operation_id: &str,
@@ -981,7 +1005,25 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
                 return Step::Settled(Settle::Retry);
             }
         };
-        let Ok(body) = std::str::from_utf8(&receipt) else {
+        let committed_create =
+            !self.services_wire && command == CREATE_COMMAND && result_code == "CHAR_CMD_OK";
+        let checked;
+        let body = if committed_create {
+            match self.decider.sendable_create(operation_id).await {
+                Ok(CreateSendability::Ready(body)) => {
+                    checked = body;
+                    checked.as_str()
+                }
+                Ok(CreateSendability::StoppedOrMissing) => return Step::Settled(Settle::Stopped),
+                Ok(CreateSendability::Invalid) => {
+                    (self.event)(INVALID_RETAINED_CREATE);
+                    return Step::Settled(Settle::Done);
+                }
+                Err(_) => return Step::Settled(Settle::Retry),
+            }
+        } else if let Ok(body) = std::str::from_utf8(&receipt) {
+            body
+        } else {
             return Step::Settled(Settle::Done);
         };
         let publication_operation = if self.services_wire {
@@ -1005,6 +1047,22 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
                 }
                 .map_err(|_| Failure::InvalidResponse)
             });
+        if committed_create
+            && matches!(published, Err(Failure::NotFound | Failure::Conflict))
+            && self
+                .decider
+                .stop_retained_create_receipt(operation_id)
+                .await
+                .is_err()
+        {
+            self.log(
+                "PublishCharacterCommandReceiptV1",
+                Some(command),
+                "alarm=receipt_stop_write_failed",
+                started,
+            );
+            return Step::Settled(Settle::Retry);
+        }
         if self.services_wire && matches!(published, Err(Failure::NotFound | Failure::Conflict)) {
             self.decider
                 .stop_services_receipt(operation_id, &receipt)
@@ -1040,58 +1098,13 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
     }
 }
 
-// The scan takes an exclusive UUIDv7 cursor. Subtract one in UUIDv7 order,
-// preserving the version and variant bits. The first UUIDv7 has no predecessor.
-fn preceding_uuid_v7(operation_id: &str) -> Option<String> {
-    let mut before = operation_id.as_bytes().to_vec();
-    for (index, digit) in before.iter_mut().enumerate().rev() {
-        let (first, last) = match index {
-            8 | 13 | 14 | 18 | 23 => continue,
-            19 => (b'8', b'b'),
-            _ => (b'0', b'f'),
-        };
-        if *digit != first {
-            *digit = if *digit == b'a' { b'9' } else { *digit - 1 };
-            return String::from_utf8(before).ok();
-        }
-        *digit = last;
-    }
-    None
-}
-
 const RETAINED_CREATE_RETRY_LIMIT: usize = 1024;
 const RETAINED_CREATE_RETRIES_PER_POLL: usize = 8;
 const RETAINED_CREATE_RETRY_TIME_PER_POLL: Duration = Duration::from_secs(6);
 const RETAINED_CREATE_READ_TIME: Duration = Duration::from_secs(3);
 const RETAINED_CREATE_OFFER_TIME: Duration = Duration::from_millis(super::EXCHANGE_DEADLINE_MS);
 const RETAINED_CREATE_INVALID_LIMIT: usize = 1024;
-
-async fn read_retained_create(
-    decider: &mut impl Decider,
-    after: Option<&str>,
-) -> Result<Option<RetainedCreateReceipt>, SourceError> {
-    tokio::time::timeout(
-        RETAINED_CREATE_READ_TIME,
-        decider.next_retained_create_receipt(after),
-    )
-    .await
-    .map_err(|_| SourceError::Unavailable)?
-}
-
-/// Both lanes use the same fenced store operation. An exact retry must never
-/// substitute the next row if the requested ID disappeared or was stopped.
-async fn read_retained_create_retry(
-    decider: &mut impl Decider,
-    operation_id: &str,
-) -> Result<Option<RetainedCreateReceipt>, SourceError> {
-    if !uuid_v7(operation_id) {
-        return Err(SourceError::Unavailable);
-    }
-    let before = preceding_uuid_v7(operation_id);
-    Ok(read_retained_create(decider, before.as_deref())
-        .await?
-        .filter(|receipt| receipt.operation_id == operation_id))
-}
+const INVALID_RETAINED_CREATE: &str = "event=character_commands operation=PublishCharacterCommandReceiptV1 command=CreateCharacter receipt=invalid_stored_state alarm=invalid_retained_receipt";
 
 #[derive(PartialEq, Eq)]
 enum RetainedOffer {
@@ -1101,32 +1114,36 @@ enum RetainedOffer {
 }
 
 async fn offer_retained_create(
-    decider: &mut impl Decider,
+    store: &mut impl RetainedCreateScan,
     source: &mut impl CommandSource,
-    receipt: RetainedCreateReceipt,
+    operation_id: &str,
     invalid_creates: &mut BTreeSet<String>,
     event: fn(&str),
 ) -> RetainedOffer {
-    let RetainedCreateReceipt {
-        operation_id, body, ..
-    } = receipt;
-    let Some(body) = body.and_then(|bytes| String::from_utf8(bytes).ok()) else {
-        if !invalid_creates.contains(&operation_id) {
-            (event)(
-                "event=character_commands operation=PublishCharacterCommandReceiptV1 command=CreateCharacter receipt=invalid_stored_state alarm=invalid_retained_receipt",
-            );
-            if invalid_creates.len() == RETAINED_CREATE_INVALID_LIMIT {
-                (event)(
-                    "event=character_commands command=CreateCharacter alarm=retained_create_invalid_limit",
-                );
-                // Alarm suppression is best effort. An evicted invalid ID can alarm again.
-                let _ = invalid_creates.pop_first();
+    let body = match tokio::time::timeout(
+        RETAINED_CREATE_READ_TIME,
+        store.sendable_create(operation_id),
+    )
+    .await
+    {
+        Ok(Ok(CreateSendability::Ready(body))) => body,
+        Ok(Ok(CreateSendability::StoppedOrMissing)) => return RetainedOffer::Skipped,
+        Ok(Ok(CreateSendability::Invalid)) => {
+            if !invalid_creates.contains(operation_id) {
+                (event)(INVALID_RETAINED_CREATE);
+                if invalid_creates.len() == RETAINED_CREATE_INVALID_LIMIT {
+                    (event)(
+                        "event=character_commands command=CreateCharacter alarm=retained_create_invalid_limit",
+                    );
+                    let _ = invalid_creates.pop_first();
+                }
+                invalid_creates.insert(operation_id.to_owned());
             }
-            invalid_creates.insert(operation_id);
+            return RetainedOffer::Skipped;
         }
-        return RetainedOffer::Skipped;
+        _ => return RetainedOffer::Retry,
     };
-    invalid_creates.remove(&operation_id);
+    invalid_creates.remove(operation_id);
     let published = tokio::time::timeout(
         RETAINED_CREATE_OFFER_TIME,
         source.exchange(Operation::PublishCharacterCommandReceiptV1, &body),
@@ -1137,8 +1154,8 @@ async fn offer_retained_create(
     match published {
         Ok(()) => RetainedOffer::Settled,
         Err(failure @ (Failure::NotFound | Failure::Conflict)) => {
-            let stop_failed = decider
-                .stop_retained_create_receipt(&operation_id)
+            let stop_failed = store
+                .stop_retained_create_receipt(operation_id)
                 .await
                 .is_err();
             let alarm = if stop_failed {
@@ -1212,14 +1229,18 @@ pub async fn run_account_closure_publications<C: ReportClock, S: CommandSource, 
 
 /// Replay committed v1 creates independently of the pending list and closure feed.
 /// The durable table is the retry source of truth. The queue only expedites offers.
-pub async fn run_retained_create_publications<C: ReportClock, S: CommandSource, D: Decider>(
+pub async fn run_retained_create_publications<
+    C: ReportClock,
+    S: CommandSource,
+    D: RetainedCreateScan,
+>(
     clock: C,
     mut source: S,
     mut decider: D,
     event: fn(&str),
 ) {
-    let mut cursor: Option<String> = None;
-    let mut scan_end: Option<String> = None;
+    let mut cursor = 0;
+    let mut scan_end = None;
     let mut invalid_creates = BTreeSet::new();
     let mut retries: VecDeque<String> = VecDeque::new();
     loop {
@@ -1238,78 +1259,78 @@ pub async fn run_retained_create_publications<C: ReportClock, S: CommandSource, 
             let Some(operation_id) = retries.pop_front() else {
                 break;
             };
-            let retry = match read_retained_create_retry(&mut decider, &operation_id).await {
-                Ok(Some(receipt)) => {
-                    attempted.push(operation_id.clone());
-                    offer_retained_create(
-                        &mut decider,
-                        &mut source,
-                        receipt,
-                        &mut invalid_creates,
-                        event,
-                    )
-                    .await
-                        == RetainedOffer::Retry
-                }
-                Ok(None) => false,
-                Err(_) => true,
-            };
-            if retry {
-                retries.push_back(operation_id);
-            }
-        }
-
-        // This cursor enumerates durable rows. Advancing it is independent
-        // of settlement, so a slow or invalid row cannot block later rows.
-        // A fixed upper UUID per sweep makes wrap independent of newer keys.
-        for _ in 0..2 {
-            let receipt = match read_retained_create(&mut decider, cursor.as_deref()).await {
-                Ok(Some(receipt)) => receipt,
-                Ok(None) => {
-                    cursor = None;
-                    break;
-                }
-                Err(_) => break,
-            };
-            if cursor.is_none() {
-                scan_end = receipt.scan_end.clone();
-            }
-            if scan_end
-                .as_ref()
-                .is_some_and(|end| receipt.operation_id > *end)
-            {
-                cursor = None;
-                break;
-            }
-            let operation_id = receipt.operation_id.clone();
-            cursor = Some(operation_id.clone());
-            if attempted.contains(&operation_id) {
-                continue;
-            }
             let offer = offer_retained_create(
                 &mut decider,
                 &mut source,
-                receipt,
+                &operation_id,
                 &mut invalid_creates,
                 event,
             )
             .await;
-            if offer != RetainedOffer::Retry {
-                retries.retain(|queued| queued != &operation_id);
-                if offer == RetainedOffer::Settled {
-                    break;
-                }
-                continue;
-            }
-            if retries.contains(&operation_id) {
-                continue;
-            }
-            if retries.len() == RETAINED_CREATE_RETRY_LIMIT {
-                (event)(
-                    "event=character_commands operation=PublishCharacterCommandReceiptV1 command=CreateCharacter alarm=retained_create_retry_limit",
-                );
-            } else {
+            attempted.push(operation_id.clone());
+            if offer == RetainedOffer::Retry {
                 retries.push_back(operation_id);
+            }
+        }
+
+        // Candidate discovery holds no receipt bytes. Take a fresh exact check
+        // for each offer, including candidates already read in this page.
+        match tokio::time::timeout(
+            RETAINED_CREATE_READ_TIME,
+            decider.scan_retained_creates(cursor, scan_end),
+        )
+        .await
+        {
+            Ok(Ok(page)) if !page.keys.is_empty() => {
+                scan_end = Some(page.through);
+                for key in page.keys {
+                    cursor = key.scan_key;
+                    let operation_id = key.operation_id;
+                    if attempted.contains(&operation_id) {
+                        continue;
+                    }
+                    let offer = offer_retained_create(
+                        &mut decider,
+                        &mut source,
+                        &operation_id,
+                        &mut invalid_creates,
+                        event,
+                    )
+                    .await;
+                    if offer != RetainedOffer::Retry {
+                        retries.retain(|queued| queued != &operation_id);
+                        if offer == RetainedOffer::Settled {
+                            break;
+                        }
+                        continue;
+                    }
+                    if retries.contains(&operation_id) {
+                        continue;
+                    }
+                    if retries.len() == RETAINED_CREATE_RETRY_LIMIT {
+                        (event)(
+                            "event=character_commands operation=PublishCharacterCommandReceiptV1 command=CreateCharacter alarm=retained_create_retry_limit",
+                        );
+                    } else {
+                        retries.push_back(operation_id);
+                    }
+                }
+            }
+            Ok(Ok(_)) => {
+                cursor = 0;
+                scan_end = None;
+            }
+            _ => {
+                (event)(
+                    "event=character_commands command=CreateCharacter alarm=retained_create_scan_unavailable",
+                );
+                // Skip one possible key, not an unread page. Only a successful
+                // subsequent sweep can settle skipped candidates.
+                cursor = cursor.saturating_add(1);
+                if scan_end.is_some_and(|end| cursor >= end) {
+                    cursor = 0;
+                    scan_end = None;
+                }
             }
         }
         clock.sleep(POLL).await;

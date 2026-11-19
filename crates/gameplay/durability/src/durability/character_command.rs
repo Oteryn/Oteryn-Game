@@ -22,6 +22,7 @@ use crate::native_admission_source::character_commands::{
 };
 pub mod account_deletion;
 mod retained_receipts;
+pub use retained_receipts::RetainedCreatePublisherStore;
 
 use oteryn_gameplay_characters::character_authority_audit::{
     EVENT_SCHEMA_REVISION, EVENT_TYPE_CHARACTER_AUTHORITY_BOOTSTRAPPED, RETENTION_PROFILE,
