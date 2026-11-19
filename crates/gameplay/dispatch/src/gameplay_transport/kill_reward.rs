@@ -2151,7 +2151,14 @@ pub fn record_creature_kill(
             // death with a present principal may carry its separately sourced work;
             // no fallback invents XP, a loot table, corpse Item or Bestiary race.
             let boss = sink.rewards.boss(&creature);
+            let room_credit = sink.prey.is_some_and(|states| {
+                states
+                    .encounter_phases
+                    .terminal_spectators(runtime, states, target)
+                    .is_some_and(|spectators| !spectators.players.is_empty())
+            });
             if boss.is_none()
+                && !room_credit
                 && (top.present().is_none()
                     || !super::grizzly_kills::tracks_creature(&creature)
                         && !super::grizzly_kills::tracks_native_creature(sink.queue, &creature)
@@ -2728,7 +2735,12 @@ fn accept_encounter_kill(
         }
     };
     if entry.soulpit_experience.is_none() {
-        super::grizzly_kills::capture(runtime, queue, &mut entry);
+        let spectators = states.and_then(|states| {
+            states
+                .encounter_phases
+                .terminal_spectators(runtime, states, entry.target)
+        });
+        super::grizzly_kills::capture(runtime, queue, &mut entry, spectators.as_ref());
         super::quest_kill_objectives::capture(runtime, queue, &mut entry);
     }
     super::quest_death_loot::capture(&mut entry);

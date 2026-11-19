@@ -81,12 +81,18 @@ const MAX_ENCOUNTERS: usize = 64;
 #[derive(Debug)]
 pub(super) struct ActivePhase {
     key: u64,
+    source: String,
     fight: Fight,
     room: oteryn_gameplay_quests::quest::world_callbacks::Encounter,
     participants: Vec<(ExactActorRef, GameSessionId)>,
     credits: Vec<grizzly_kills::EncounterCredit>,
     frozen: Option<(ExactActorRef, Vec<super::quest_kills::Recipient>)>,
     cells: crate::content::NativeEntryMovementCells,
+}
+
+pub(super) struct TerminalSpectators {
+    pub(super) source: String,
+    pub(super) players: Vec<(ExactActorRef, GameSessionId)>,
 }
 
 #[derive(Default, Debug)]
@@ -314,6 +320,32 @@ impl Registry {
             grizzly_kills::replace_encounter_native_credit(entry, recipients.clone());
         }
     }
+
+    pub(super) fn terminal_spectators(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        states: &ChannelSpellStates,
+        actor: ExactActorRef,
+    ) -> Option<TerminalSpectators> {
+        self.active.lock().ok()?.iter().find_map(|phase| {
+            let Fight::Replacements(fight) = &phase.fight else {
+                return None;
+            };
+            if !fight.is_current(runtime) {
+                return None;
+            }
+            let players = fight
+                .terminal_spectators(actor)?
+                .iter()
+                .copied()
+                .filter(|(spectator, _)| !states.is_dead(*spectator))
+                .collect();
+            Some(TerminalSpectators {
+                source: phase.source.clone(),
+                players,
+            })
+        })
+    }
 }
 
 pub(super) fn bind(
@@ -345,6 +377,7 @@ pub(super) fn bind(
         }
         return Ok(ActivePhase {
             key,
+            source: callback.key.clone(),
             fight: Fight::Replacements(Box::new(replacements::Replacements::bind(
                 runtime, encounter, plan, actors, players,
             )?)),
@@ -404,6 +437,7 @@ pub(super) fn bind(
     }
     Ok(ActivePhase {
         key,
+        source: callback.key.clone(),
         fight: Fight::Cults(Box::new(CultsEncounter::bind(
             runtime, players, pillars, stops, centre,
         )?)),

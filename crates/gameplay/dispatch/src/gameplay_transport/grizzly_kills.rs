@@ -313,6 +313,7 @@ pub(super) fn capture(
     runtime: &mut ChannelRuntimeV1,
     queue: &KillSettlementQueue,
     entry: &mut PendingKillSettlement,
+    terminal_spectators: Option<&super::encounter_phases::TerminalSpectators>,
 ) {
     let Ok(mut cache) = queue.1.lock() else {
         return;
@@ -448,6 +449,9 @@ pub(super) fn capture(
                     runs,
                     principal_present,
                 ));
+            if let Some(spectators) = terminal_spectators {
+                frozen.native.extend(encounters::capture_terminal_spectators(runtime, entry, &live, spectators));
+            }
             frozen.native_goals = native_goals::freeze(runtime, entry, principal_present, &live);
             frozen
         }),

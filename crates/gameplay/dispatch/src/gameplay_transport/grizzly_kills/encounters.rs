@@ -212,6 +212,58 @@ pub(super) fn capture(
     recipients
 }
 
+/// Crystal 201189f8, the_first_dragon/creaturescripts_death_first_dragon.lua:21-30.
+pub(super) fn capture_terminal_spectators(
+    runtime: &ChannelRuntimeV1,
+    entry: &PendingKillSettlement,
+    snapshots: &[TaskSnapshot],
+    spectators: &crate::gameplay_transport::encounter_phases::TerminalSpectators,
+) -> Vec<crate::gameplay_transport::quest_kills::Recipient> {
+    use crate::durability::quest_state::{
+        encounter_deaths::EncounterDeathContext,
+        native_kills::{NativeDeathSource, NativeQuestDeath},
+    };
+    let (scope, generation) = runtime.encounter_owner_scope();
+    let mut recipients = Vec::new();
+    for snapshot in snapshots.iter().filter(|snapshot| {
+        spectators
+            .players
+            .contains(&(snapshot.actor, snapshot.session))
+    }) {
+        for counter in &snapshot.native_counters {
+            if counter.creature != entry.creature
+                || counter.encounter_source.as_deref() != Some(spectators.source.as_str())
+                || counter.definition_hash.is_none()
+            {
+                continue;
+            }
+            recipients.push(crate::gameplay_transport::quest_kills::Recipient {
+                actor: snapshot.actor,
+                session: snapshot.session,
+                character: snapshot.character,
+                lease_generation: snapshot.lease_generation,
+                death: NativeQuestDeath {
+                    transition: counter.transition.clone(),
+                    creature: entry.creature.clone(),
+                    observed_revision: snapshot.observed_revision,
+                    definition_hash: counter.definition_hash,
+                    source: NativeDeathSource::Encounter(EncounterDeathContext {
+                        source: spectators.source.clone(),
+                        scope,
+                        scope_generation: generation.get(),
+                        character: snapshot.character,
+                        session: snapshot.session,
+                        lease_generation: snapshot.lease_generation,
+                        participant: snapshot.actor.placement_identity(),
+                        defender: entry.target.corpse_identity(),
+                    }),
+                },
+            });
+        }
+    }
+    recipients
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

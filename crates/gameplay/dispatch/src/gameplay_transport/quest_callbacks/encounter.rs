@@ -480,7 +480,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .map(|(actor, session, _)| (*actor, *session))
             .collect();
-        let scoped_hash = self.quest_catalogue.as_deref().and_then(|catalogue| {
+        let spectator_credit = encounter.death_phases.as_ref().is_some_and(|phase| {
+            phase
+                .terminal_transfer
+                .is_some_and(|transfer| transfer.credit_spectators)
+        });
+        let scoped_hash = self.quest_catalogue.as_deref().filter(|_| !spectator_credit).and_then(|catalogue| {
             let bindings = catalogue.authored_bindings()?;
             bindings.quests.iter().find(|quest| quest.stages.iter().any(|stage|
                 matches!(&stage.trigger, oteryn_gameplay_quests::quest::authored_bindings::Trigger::MapUse { callback: source }

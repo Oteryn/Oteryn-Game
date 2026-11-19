@@ -239,6 +239,20 @@ impl Replacements {
         self.transfer.as_ref().is_some_and(Transfer::is_pending)
     }
 
+    pub(super) fn terminal_spectators(
+        &self,
+        actor: ExactActorRef,
+    ) -> Option<&[(ExactActorRef, GameSessionId)]> {
+        if !self.members.iter().any(|member| {
+            member.actor == actor
+                && member.death_at.is_some()
+                && member.creature == self.plan.terminal
+        }) {
+            return None;
+        }
+        self.transfer.as_ref()?.credit_recipients()
+    }
+
     pub(super) fn replace_member(
         &mut self,
         runtime: &ChannelRuntimeV1,

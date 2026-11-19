@@ -58,7 +58,7 @@ impl KillCounter {
             || !self.key.starts_with(super::super::native_kills::PREFIX)
             || !super::super::valid_quest_key(&self.creature)
             || !self.creature.starts_with("oteryn:creature.")
-            || self.track == self.gate
+            || (self.track == self.gate && self.encounter_source.is_none())
             || self.minimum >= self.maximum
             || self.death_area.is_some_and(|area| !area.valid())
             || count
@@ -88,7 +88,23 @@ impl KillCounter {
                 .iter()
                 .filter(|monster| monster.creature == self.creature)
                 .count();
-            if self.minimum != 0
+            let spectator_phase = encounter.death_phases.as_ref().filter(|phase| {
+                phase
+                    .terminal_transfer
+                    .is_some_and(|transfer| transfer.credit_spectators)
+            });
+            if let Some(phase) = spectator_phase {
+                if phase.terminal != self.creature
+                    || self.track != self.gate
+                    || self.minimum != self.gate_value
+                    || self.minimum.checked_add(1) != Some(self.maximum)
+                    || self.advance_gate_to.is_some()
+                    || self.death_area.is_some()
+                {
+                    return Err("authored spectator entitlement must be a single step".into());
+                }
+            } else if self.track == self.gate
+                || self.minimum != 0
                 || encounter.timing.is_some()
                 || encounter.players.is_empty()
                 || encounter.players.len() > 8

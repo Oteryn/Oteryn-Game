@@ -45,6 +45,12 @@ impl Transfer {
         !self.spectators.is_empty()
     }
 
+    pub(super) fn credit_recipients(&self) -> Option<&[(ExactActorRef, GameSessionId)]> {
+        self.plan
+            .credit_spectators
+            .then_some(self.spectators.as_slice())
+    }
+
     pub(super) fn project(
         &mut self,
         runtime: &mut ChannelRuntimeV1,

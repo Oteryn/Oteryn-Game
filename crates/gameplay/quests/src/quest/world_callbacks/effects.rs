@@ -672,6 +672,9 @@ pub struct TerminalTransfer {
     pub area_min: Position,
     pub area_max: Position,
     pub destination: Position,
+    /// A native kill binding on this encounter may credit the same frozen room census.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub credit_spectators: bool,
 }
 
 impl TerminalTransfer {
