@@ -125,9 +125,14 @@ fn validate(mechanics: &[Mechanic]) -> Result<(), String> {
     Ok(())
 }
 
+// Cargo build-script directives are emitted on standard output.
+pub(super) fn emit_cargo_directive(key: &str, value: impl std::fmt::Display) {
+    println!("cargo:{key}={value}");
+}
+
 pub(super) fn generate(root: &Path, out: &Path) -> Result<(), Box<dyn std::error::Error>> {
     let directory = root.join("mechanics");
-    println!("cargo:rerun-if-changed={}", directory.display());
+    emit_cargo_directive("rerun-if-changed", directory.display());
     let mut paths = std::fs::read_dir(&directory)?
         .map(|entry| entry.map(|entry| entry.path()))
         .collect::<Result<Vec<_>, _>>()?;
@@ -135,7 +140,7 @@ pub(super) fn generate(root: &Path, out: &Path) -> Result<(), Box<dyn std::error
     paths.sort();
     let mut mechanics = Vec::new();
     for path in paths {
-        println!("cargo:rerun-if-changed={}", path.display());
+        emit_cargo_directive("rerun-if-changed", path.display());
         let text = std::fs::read_to_string(&path)?.replace("\r\n", "\n");
         let mechanic = parse(&text).map_err(|error| format!("{}: {error}", path.display()))?;
         mechanics.push(mechanic);

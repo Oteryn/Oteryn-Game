@@ -3,7 +3,60 @@ use super::*;
 use crate::content::{CollisionClass, LogicalCell};
 use crate::map::view::EntryFacts;
 
+pub(in crate::gameplay_transport) fn room_contains(
+    encounter: &oteryn_gameplay_quests::quest::world_callbacks::Encounter,
+    at: MovementLocalPosition,
+) -> bool {
+    at.floor == -i16::from(encounter.room_min.floor)
+        && (i32::from(encounter.room_min.x)..=i32::from(encounter.room_max.x)).contains(&at.x)
+        && (i32::from(encounter.room_min.y)..=i32::from(encounter.room_max.y)).contains(&at.y)
+}
+
+pub(super) struct EncounterVisit {
+    room: oteryn_gameplay_quests::quest::world_callbacks::Encounter,
+    participants: Vec<(ExactActorRef, GameSessionId)>,
+    creatures: Vec<ExactActorRef>,
+}
+
+impl EncounterVisit {
+    fn active(&self, runtime: &ChannelRuntimeV1) -> bool {
+        self.creatures
+            .iter()
+            .any(|actor| runtime.contains_live_creature(*actor))
+    }
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(in crate::gameplay_transport) fn encounter_blocks_channel_switch(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        position: MovementLocalPosition,
+    ) -> bool {
+        if self.states.grizzly_boss.has_pending(session) {
+            return true;
+        }
+        let callbacks = &self.states.quest_callbacks;
+        if callbacks.encounters.lock().map_or(true, |visits| {
+            visits.iter().any(|visit| {
+                visit.participants.contains(&(actor, session))
+                    && room_contains(&visit.room, position)
+                    && visit.active(runtime)
+            })
+        }) {
+            return true;
+        }
+        self.bundle_map().is_some_and(|map| {
+            let now = self.owner_now().get();
+            callbacks.timed.lock().map_or(true, |visits| {
+                visits.iter().any(|visit| {
+                    visit.contains_participant(runtime, map, actor, session, position, now)
+                })
+            })
+        })
+    }
+
     #[allow(
         clippy::too_many_arguments,
         reason = "one owner turn binds party, native carrier, map and exact lever revision"
@@ -128,17 +181,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(census) = runtime.positioned_melee_census() else {
             return UseDisposition::Rejected;
         };
-        let in_room = |at: MovementLocalPosition| {
-            at.floor == -i16::from(encounter.room_min.floor)
-                && (i32::from(encounter.room_min.x)..=i32::from(encounter.room_max.x))
-                    .contains(&at.x)
-                && (i32::from(encounter.room_min.y)..=i32::from(encounter.room_max.y))
-                    .contains(&at.y)
-        };
         let personal_entry = callback.personal_room_entry().map(local);
         if census.iter().any(|(who, pos, occupant_session)| {
             occupant_session.is_some()
-                && in_room(pos.position())
+                && room_contains(encounter, pos.position())
                 && !(Some(pos.position()) == personal_entry
                     && *who == actor
                     && *occupant_session == Some(session))
@@ -314,6 +360,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        let mut visits = if encounter.phase.is_none() && !monsters.is_empty() {
+            let Ok(mut visits) = self.states.quest_callbacks.encounters.lock() else {
+                return UseDisposition::Rejected;
+            };
+            visits.retain(|visit| visit.active(runtime));
+            if visits.len() >= super::timed_encounter::MAX_TIMED_ENCOUNTERS
+                || visits.try_reserve(1).is_err()
+            {
+                return UseDisposition::Exhausted;
+            }
+            Some(visits)
+        } else {
+            None
+        };
         let Ok((snapshots, (phase, actors, roster))) = runtime.commit_quest_encounter_with_phase(
             proofs,
             &monsters,
@@ -352,6 +412,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             phases.push(phase);
         }
         drop(phases);
+        if let Some(visits) = &mut visits {
+            visits.push(EncounterVisit {
+                room: encounter.clone(),
+                participants: party,
+                creatures: actors.clone(),
+            });
+        }
+        drop(visits);
         if let Some(reservation) = reservation
             && let Err(disposition) = reservation.publish(runtime, actors)
         {

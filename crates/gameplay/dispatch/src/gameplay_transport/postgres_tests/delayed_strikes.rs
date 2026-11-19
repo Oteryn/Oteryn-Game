@@ -1,5 +1,5 @@
 //! C18c: delayed casts through real dispatch and fenced Character/Equipment owners.
-use super::death_ml_loss_composed::{current_fence, production_generation_with_source};
+use super::death_ml_loss_composed_fixtures::{current_fence, production_generation_with_source};
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::character_build::{
@@ -291,7 +291,7 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
         .await
         .map_err(debug)?;
     if matches!(plan.case, Case::Grenade | Case::Pz | Case::Outburst(_)) {
-        let purchase = super::atelier::fixture::prepare(&h).await?;
+        let purchase = super::atelier_fixtures::fixture::prepare(&h).await?;
         let fence = current_fence(&owner, session).await?;
         let promoted = owner
             .revision_sequencer

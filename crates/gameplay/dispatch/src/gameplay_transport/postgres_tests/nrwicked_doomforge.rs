@@ -92,7 +92,7 @@ fn scenario(
             prepare_current_session(&h).await?;
             if hard_win {
                 h.seed_appearance_observer().await?;
-                super::appearance_change_postgres::observer_visibility_tests::admit(&h).await?;
+                super::appearance_change_postgres_fixtures::observer_visibility_tests::admit(&h).await?;
             }
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
@@ -314,7 +314,7 @@ async fn two_player_exit(
         .0
         .current_character_lease();
     let (controller, _) =
-        super::death_ml_loss_composed::production_generation_with_pin(owner.world_id, "content-1")?;
+        super::death_ml_loss_composed_fixtures::production_generation_with_pin(owner.world_id, "content-1")?;
     let native = controller
         .active()
         .and_then(|g| g.native_gameplay())

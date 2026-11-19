@@ -1,6 +1,6 @@
 //! PKG6 P17: the owner decision of 2026-10-30 applies privacy and war rules to every world.
 use super::TestResult;
-use super::parameter_spell::scenario_in_world;
+use super::parameter_spell_fixtures::scenario_in_world;
 
 #[test]
 fn p17_exiva_rules_optional_pvp_postgres() -> TestResult {

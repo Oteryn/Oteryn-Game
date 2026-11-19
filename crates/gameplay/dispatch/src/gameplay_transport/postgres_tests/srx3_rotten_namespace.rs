@@ -8,7 +8,7 @@ fn srx3_rotten_tagged_instance_death_receipt_namespace_postgres() -> TestResult 
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("srx3-rotten-namespace", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-rotten-namespace", || {
         run(async |admin| {
             let h =
                 Harness::create_with_admission_seed(admin, "srx3_rotten_namespace", false, false)

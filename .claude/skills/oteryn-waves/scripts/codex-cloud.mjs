@@ -98,7 +98,7 @@ try {
       threadId,clientUserMessageId:state.clientUserMessageId,
       sandboxPolicy:{workspaceWrite:{writableRoots:{values:['/workspace']},networkAccess:true}},
       input:{values:[{text:{text:prompt}}]},
-      model:opt('--model')??process.env.OTERYN_CODEX_MODEL??'gpt-6.2-sol',effort:opt('--effort')??process.env.OTERYN_CODEX_EFFORT??'medium',
+      model:opt('--model')??process.env.OTERYN_CODEX_MODEL??'gpt-6.2-sol',effort:opt('--effort')??process.env.OTERYN_CODEX_EFFORT??'high',
       deferredEnvironment:true
     });
     state.admitted=true;
@@ -124,7 +124,7 @@ try {
       threadId,clientUserMessageId:crypto.randomUUID(),
       sandboxPolicy:{workspaceWrite:{writableRoots:{values:['/workspace']},networkAccess:true}},
       input:{values:[{text:{text:prompt}}]},
-      model:opt('--model')??process.env.OTERYN_CODEX_MODEL??'gpt-6.2-sol',effort:opt('--effort')??process.env.OTERYN_CODEX_EFFORT??'medium',
+      model:opt('--model')??process.env.OTERYN_CODEX_MODEL??'gpt-6.2-sol',effort:opt('--effort')??process.env.OTERYN_CODEX_EFFORT??'high',
       deferredEnvironment:true
     });
     print({threadId,admitted:true,admissionOutcome:result.admissionOutcome});

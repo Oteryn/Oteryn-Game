@@ -55,7 +55,7 @@ fn cyclopedia_tracker_postgres_dispatch_kill_refresh_and_restart() -> TestResult
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("cyclopedia-tracker", scenario)
+    super::kill_reward_e2e_fixtures::scenario_thread::run("cyclopedia-tracker", scenario)
 }
 
 fn change(action: TrackerAction, key: &str) -> Vec<u8> {
@@ -605,9 +605,9 @@ fn scenario() -> TestResult {
         // An untracked boss kill credits the boss and pushes nothing.
         let facts = {
             let mut runtime = owner.runtime.lock().await;
-            super::bosstiary::death(&mut runtime, fence)?
+            super::bosstiary_fixtures::death(&mut runtime, fence)?
         };
-        super::bosstiary::settle(&owner, facts, &boss).await?;
+        super::bosstiary_fixtures::settle(&owner, facts, &boss).await?;
         connect(&owner, &mut admitted, async |mut client| {
             let (bestiary, bosstiary) = client.join().await?.ok_or("domain 98 snapshot")?;
             assert_eq!(keys(&bestiary), [(RAT, 1)]);
@@ -626,9 +626,9 @@ fn scenario() -> TestResult {
             // A Bosstiary kill while connected is pushed on the cadence.
             let facts = {
                 let mut runtime = owner.runtime.lock().await;
-                super::bosstiary::death(&mut runtime, fence)?
+                super::bosstiary_fixtures::death(&mut runtime, fence)?
             };
-            super::bosstiary::settle(&owner, facts, &boss).await?;
+            super::bosstiary_fixtures::settle(&owner, facts, &boss).await?;
             let (revision, refreshed) = client.next_delta().await?;
             assert_eq!(revision, 3);
             assert!(refreshed.boss);

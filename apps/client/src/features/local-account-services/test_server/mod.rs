@@ -125,7 +125,7 @@ impl Authority {
             return (
                 200,
                 format!(
-                    r#"{{"epoch":1,"worlds":[{{"id":"{WORLD}","name":"North","channels":[{{"id":"{DESTINATION}","name":"First"}}],"characters":[]}}]}}"#
+                    r#"{{"epoch":1,"worlds":[{{"id":"{WORLD}","name":"North","channels":[{{"id":"{DESTINATION}","name":"First","pvp_type":"OPTIONAL_PVP","region":"EU"}}],"characters":[]}}]}}"#
                 ),
             );
         }

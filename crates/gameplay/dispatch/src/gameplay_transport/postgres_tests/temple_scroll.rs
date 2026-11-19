@@ -135,7 +135,7 @@ fn scenario(name: &'static str, case: Case) -> TestResult {
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (controller, pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
         let generation = controller.active().ok_or("active")?;
         let room = pin.qualified_room().clone();
         let frame_digest = pin.frame_binding().digest();
@@ -638,7 +638,7 @@ async fn instance_case(h: &Harness) -> TestResult {
     use crate::durability::item_decay_retire::ActivityGroundRetirement;
     use crate::durability::spell_owner_commit::SpellLane;
     use crate::foundation::{AuthenticatedTransportRefV1, GameSessionId};
-    let entered = super::activity_runtime::enter_fixture(h).await?;
+    let entered = super::activity_runtime_fixtures::enter_fixture(h).await?;
     let scope = entered.fence.runtime_scope;
     let instance = scope.instance_id().ok_or("Instance scope")?;
     let world = *scope.world_id().as_bytes();

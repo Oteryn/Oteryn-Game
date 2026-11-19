@@ -53,7 +53,7 @@ async fn wire(
     id: u64,
 ) -> TestResult<Overview> {
     let (status, bytes) =
-        super::cyclopedia::support::exchange(owner, session, id, 113, &[5]).await?;
+        super::cyclopedia_fixtures::support::exchange(owner, session, id, 113, &[5]).await?;
     assert_eq!(status, CommandStatus::Accepted);
     Overview::decode(&bytes).ok_or_else(|| "Premium codec".into())
 }
@@ -186,7 +186,7 @@ fn scenario() -> TestResult {
             crate::gameplay_transport::character_info::CharacterInfoReply::Rejected
         ));
         let (bad, _) =
-            super::cyclopedia::support::exchange(&owner, &mut session, 5, 113, &[5, 0]).await?;
+            super::cyclopedia_fixtures::support::exchange(&owner, &mut session, 5, 113, &[5, 0]).await?;
         assert_eq!(bad, CommandStatus::Rejected);
         eprintln!(
             "POSTGRES_EXECUTED t165_premium_overview_real_dispatch_account_privacy_expiry_and_leases"
