@@ -47,6 +47,15 @@ class QualificationPlacementTests(unittest.TestCase):
         return build.split(f"      - name: {name}\n", 1)[1].split("\n      - name: ", 1)[0]
 
     @staticmethod
+    def step_script(step):
+        lines = []
+        for line in step.split("        run: |\n", 1)[1].splitlines(keepends=True):
+            if line.strip() and not line.startswith("          "):
+                break
+            lines.append(line)
+        return textwrap.dedent("".join(lines))
+
+    @staticmethod
     def route_script(text):
         block = text.split("      - name: Resolve Molehill routing\n", 1)[1].split("        run: |\n", 1)[1]
         lines = []
@@ -106,9 +115,9 @@ class QualificationPlacementTests(unittest.TestCase):
                     self.rust_fast_step(name),
                 )
         self.assertIn("    needs: [scope, lanes, runner_route, rust_fast_build]\n", job)
-        self.assertIn('nextest archive --locked "${package_args[@]}" --lib --bins', build)
-        self.assertIn('nextest run --archive-file "$artifact/unit-tests.tar.zst"', job)
-        self.assertIn('--workspace-remap . --extract-to .', job)
+        self.assertIn('nextest archive --locked "${package_args[@]}" "${target_args[@]}"', build)
+        self.assertIn('nextest run --archive-file "$artifact/$archive/unit-tests.tar.zst"', job)
+        self.assertIn('--workspace-remap . --extract-to "$destination"', job)
         self.assertIn('--partition "hash:${SHARD}" --no-tests=pass --no-fail-fast', job)
         self.assertIn("          retention-days: 30\n", self.archive_step("Upload unit-test archive"))
         for name in ("Add swap for the library test build", "Install pinned mold linker"):
@@ -133,6 +142,70 @@ class QualificationPlacementTests(unittest.TestCase):
                     [sys.executable, "-c", source], env=env, check=True, capture_output=True, text=True
                 )
                 self.assertEqual(result.stdout.splitlines(), expected)
+
+    def test_archive_creation_splits_before_codegen_with_the_same_package_selection(self):
+        step = self.archive_step("Archive changed-crate unit tests")
+        script = 'cargo() { printf "%s\\n" "${OTERYN_DISPATCH_PG_SHARD-unset}" "$@"; }\n'
+        script += self.step_script(step)
+        dispatch = "package(=oteryn-gameplay-dispatch)"
+        for mode, packages in (("workspace", ["--workspace"]), ("packages", ["-p", "first", "-p", "second"])):
+            for role, shard, args in (
+                ("all", "unset", ["--lib", "--bins"]),
+                ("bins", "unset", ["--bins"]),
+                ("lib-1", "1/3", ["--lib"]),
+                ("lib-2", "2/3", ["--lib", "-E", dispatch]),
+                ("lib-3", "3/3", ["--lib", "-E", dispatch]),
+            ):
+                with self.subTest(mode=mode, role=role), tempfile.TemporaryDirectory() as directory:
+                    root = Path(directory)
+                    (root / "nextest-bin").mkdir()
+                    (root / "nextest-bin/cargo-nextest").touch()
+                    env = dict(os.environ, ARCHIVE=role, OTERYN_DISPATCH_PG_SHARD="9/9",
+                               RUNNER_TEMP=directory, RUNNER_OS="Linux", RUNNER_ARCH="X64",
+                               RUST_SELECTION=json.dumps(dict(mode=mode, packages=["first", "second"])))
+                    result = subprocess.check_output(["bash", "-c", script], env=env, text=True)
+                    archive = root / "rust-fast-archive" / role / "unit-tests.tar.zst"
+                    self.assertEqual(result.splitlines(), [
+                        shard, "+1.100.0", "nextest", "archive", "--locked", *packages, *args,
+                        "--archive-file", str(archive), "--zstd-level", "1",
+                    ])
+
+    def test_archive_matrix_preserves_older_heads_and_selected_targets(self):
+        step = self.pr.split("      - name: Select changed workspace crates\n", 1)[1]
+        source = textwrap.dedent(step.split('"$RUNNER_TEMP/rust-selection.json" <<\'PY\'\n', 1)[1]
+                                 .split("          PY\n", 1)[0])
+        dispatch = "oteryn-gameplay-dispatch"
+        roles = ["lib-1", "lib-2", "lib-3"]
+        for supported, mode, selected, archives in (
+            (False, "workspace", [], ["all"]),
+            (True, "workspace", [], [*roles, "bins"]),
+            (True, "packages", [dispatch], roles),
+            (True, "packages", ["other"], ["all"]),
+        ):
+            with self.subTest(supported=supported, mode=mode, selected=selected), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                if supported:
+                    for name in ("crates/gameplay/dispatch/build_pg_shards.rs", "tools/repository/check_dispatch_pg_shards.py"):
+                        path = root / name
+                        path.parent.mkdir(parents=True)
+                        path.touch()
+                metadata = root / "metadata.json"
+                metadata.write_text(json.dumps({
+                    "workspace_members": [dispatch, "other"],
+                    "packages": [
+                        {"name": dispatch, "id": dispatch, "targets": [{"kind": ["lib"], "test": True}]},
+                        {"name": "other", "id": "other", "targets": [{"kind": ["bin"], "test": False}]},
+                    ],
+                }))
+                selection = root / "selection.json"
+                selection.write_text(json.dumps({"mode": mode, "packages": selected}))
+                output = root / "outputs"
+                env = dict(os.environ, RUNNER_TEMP=directory, GITHUB_OUTPUT=str(output))
+                subprocess.run([sys.executable, "-c", source, str(metadata), str(selection)],
+                               cwd=root, env=env, check=True, capture_output=True)
+                selected_outputs = dict(line.split("=", 1) for line in output.read_text().splitlines())
+                self.assertEqual(json.loads(selected_outputs["archives"]), archives)
+                self.assertEqual(json.loads(selected_outputs["selection"])["packages"], sorted(selected or ["other", dispatch]))
 
     def test_unit_test_ledger_handles_mixed_runner_images(self):
         archive_step = self.archive_step("Report archive runner identity")
@@ -208,10 +281,12 @@ class QualificationPlacementTests(unittest.TestCase):
         image = "20261111.370.1"
         platform = "Linux-X64"
         rows = f"{name}\t--lib\n"
-        for builder_image, builder_platform in (
-            (image, platform), ("20261116.376.1", platform), (image, "Linux-ARM64"),
+        for builder_image, builder_platform, secondary in (
+            (image, platform, "passed"), ("20261116.376.1", platform, "passed"),
+            (image, "Linux-ARM64", "passed"), (image, platform, "image-mismatch"),
+            (image, platform, "failed"), (image, platform, "missing"),
         ):
-            with self.subTest(builder_image=builder_image, builder_platform=builder_platform), \
+            with self.subTest(builder_image=builder_image, builder_platform=builder_platform, secondary=secondary), \
                  tempfile.TemporaryDirectory() as directory:
                 temp = Path(directory)
                 packages = temp / "rust-fast-packages.tsv"
@@ -225,9 +300,19 @@ class QualificationPlacementTests(unittest.TestCase):
                         "manifest_path": str(ROOT / "crates/simulation-determinism/Cargo.toml"),
                     }],
                 }))
-                junit = temp / "nextest/rust-fast/junit.xml"
-                junit.parent.mkdir(parents=True)
-                junit.write_text(f'<testsuite name="{name}" tests="1"><testcase name="ok"/></testsuite>')
+                for role in ("lib-1", "lib-2", "lib-3"):
+                    artifact = temp / "rust-fast-archive" / role
+                    artifact.mkdir(parents=True)
+                    role_image = "different-image" if role == "lib-2" and secondary == "image-mismatch" else builder_image
+                    (artifact / "runner-image").write_text(role_image + "\n")
+                    (artifact / "runner-platform").write_text(builder_platform + "\n")
+                    junit = temp / "rust-fast-extract" / role / "junit.xml"
+                    junit.parent.mkdir(parents=True)
+                    if role == "lib-2" and secondary == "missing":
+                        continue
+                    outcome = "<failure/>" if role == "lib-2" and secondary == "failed" else ""
+                    junit.write_text(f'<testsuite name="{name}" tests="1">'
+                                     f'<testcase name="{role}">{outcome}</testcase></testsuite>')
                 output = temp / "output"
                 env = dict(
                     os.environ, KIND="tests", JOB="rust_fast-tests 1/5", BASE_SHA="base",
@@ -235,6 +320,7 @@ class QualificationPlacementTests(unittest.TestCase):
                     GITHUB_STEP_SUMMARY=str(temp / "summary"), CARGO_TARGET_DIR=directory,
                     PLAN_IMAGE=image, PLAN_PLATFORM=platform, ARCHIVE_RESULT="success",
                     ARCHIVE_IMAGE=builder_image, ARCHIVE_PLATFORM=builder_platform,
+                    ARCHIVE_ROLES='["lib-1","lib-2","lib-3"]',
                     ImageVersion=image, RUNNER_OS="Linux", RUNNER_ARCH="X64",
                 )
                 subprocess.run(["bash", "-c", textwrap.dedent(plan)], cwd=ROOT, env=env,
@@ -251,10 +337,11 @@ class QualificationPlacementTests(unittest.TestCase):
                     cwd=ROOT, env=env, check=True, capture_output=True,
                 )
                 matched = (builder_image, builder_platform) == (image, platform)
-                self.assertEqual(remaining.read_text(), "" if matched else rows)
-                self.assertEqual((temp / "jobresult/ledger.json").exists(), matched)
-                self.assertEqual("recorded=true\n" in output.read_text(), matched)
-                self.assertEqual(recorded.stdout.count("::notice::"), int(not matched))
+                passed = matched and secondary == "passed"
+                self.assertEqual(remaining.read_text(), "" if passed else rows)
+                self.assertEqual((temp / "jobresult/ledger.json").exists(), passed)
+                self.assertEqual("recorded=true\n" in output.read_text(), passed)
+                self.assertEqual(recorded.stdout.count("::notice::"), int(not matched or secondary in {"image-mismatch", "missing"}))
                 recorded_key = json.loads((temp / "jr-plan.json").read_text())["units"][name]
                 lookup_key = json.loads(later_plan.read_text())["units"][name]
                 self.assertTrue(recorded_key and lookup_key)
@@ -317,7 +404,7 @@ class QualificationPlacementTests(unittest.TestCase):
                             self.assertFalse(github_env.exists())
         self.assertIn(
             'junit="${CARGO_TARGET_DIR:-target}/nextest/rust-fast/junit.xml"',
-            self.rust_fast_step("Record passed crates in the job-result ledger"),
+            self.rust_fast_step("Unit-test changed crates (nextest shard ${{ matrix.shard }})"),
         )
 
     def test_no_workflows(self):
