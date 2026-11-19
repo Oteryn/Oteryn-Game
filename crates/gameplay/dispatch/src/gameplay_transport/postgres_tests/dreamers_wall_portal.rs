@@ -1,10 +1,12 @@
 //! Crystal 201189f data-global/scripts/quests/dreamers_challenge_quest/movement_wall_teleport.lua:1-43.
 use super::TestResult;
 use super::quest_world_callbacks::{stateless_scenario, world_cells};
+use crate::map::{overlay::TilePos, view::placement_key};
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 
 pub(super) const BLOCKED: &str = "dreamers-wall-portal-blocked";
 pub(super) const CLEAR: &str = "dreamers-wall-portal-clear";
+pub(super) const LIVE_CLEAR: &str = "dreamers-wall-portal-live-clear";
 // Crystal data-global/startup/tables/item.lua:4495-4498 maps UID 9030 here.
 const TRIGGER: Position = at(32762, 32290);
 const PUZZLE: Position = at(32762, 32305);
@@ -37,7 +39,8 @@ pub(super) fn binding() -> TestResult<Callback> {
         "key": "oteryn:quest-callback/dreamers-challenge-wall-portal",
         "quest": "oteryn:quest.dreamer_s_challenge_quest",
         "trigger": "step_in",
-        "selector": {"native":{"position":TRIGGER,"ordinal":1,"appearance":1949}},
+        "selector": {"unique":9030,"position":TRIGGER,"appearance":1949,
+            "native":{"position":TRIGGER,"ordinal":1,"appearance":1949}},
         "reversible":false, "passages":[], "storage":[], "offerings":[],
         "teleport": EXIT,
         "effects": {
@@ -45,23 +48,42 @@ pub(super) fn binding() -> TestResult<Callback> {
             "teleport_effect": 11
         },
         "return_on_failure":false,
-        "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_wall_teleport.lua:1-43"]
+        "sources":[
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_wall_teleport.lua:1-43",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4495-4498"
+        ]
     }))?)
 }
 
 pub(super) fn world(
     callback: &Callback,
-    blocked: bool,
+    name: &str,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     let mut cells = WALLS.to_vec();
     cells.push(PUZZLE);
     // The first item is movable solid furniture. Only the second (if present)
     // carries the donor immovable-solid flag.
     let mut objects = vec![(WALLS[0], 2025)];
-    if blocked {
+    if matches!(name, BLOCKED | LIVE_CLEAR) {
         objects.push((WALLS[15], 100));
     }
-    world_cells(callback, TRIGGER, 1949, 1, &objects, &[], None, &cells)
+    // Keep the native counterpart witness on the map that strips the startup UID.
+    let mut map_fixture = callback.clone();
+    if name == CLEAR {
+        map_fixture.selector.unique = None;
+    }
+    world_cells(&map_fixture, TRIGGER, 1949, 1, &objects, &[], None, &cells)
+}
+
+pub(super) fn clear_live_wall(map: &crate::map::boot::BundleMap) -> TestResult {
+    let wall = WALLS[15];
+    let position = TilePos { x: wall.x, y: wall.y, floor: wall.floor };
+    let key = placement_key(position, 1).ok_or("wall placement")?;
+    let open = map.facts.quest_callback_replacement(key, 2025).ok_or("movable solid replacement")?;
+    assert_eq!(map.facts.immovable_solid_at(&map.overlay, position), Some(true));
+    assert!(map.facts.apply_quest_callback(key, 0, open, &[], &[], false, None));
+    assert_eq!(map.facts.immovable_solid_at(&map.overlay, position), Some(false));
+    Ok(())
 }
 
 #[test]
@@ -82,4 +104,15 @@ fn dreamers_wall_portal_passes_when_only_movable_solids_remain() -> TestResult {
     };
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(CLEAR, || stateless_scenario(CLEAR, TRIGGER, EXIT))
+}
+
+#[test]
+fn dreamers_wall_portal_reads_the_current_wall_after_a_live_transform() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(LIVE_CLEAR, || {
+        stateless_scenario(LIVE_CLEAR, TRIGGER, EXIT)
+    })
 }

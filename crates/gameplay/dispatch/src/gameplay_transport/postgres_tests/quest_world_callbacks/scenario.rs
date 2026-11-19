@@ -357,7 +357,7 @@ fn scenario_case(
     use super::super::dream_scar_izcandar_forms;
     let izcandar = name == dream_scar_izcandar_forms::NAME;
     use super::super::dreamers_wall_portal;
-    let dreamers_wall = matches!(name, dreamers_wall_portal::BLOCKED | dreamers_wall_portal::CLEAR);
+    let dreamers_wall = matches!(name, dreamers_wall_portal::BLOCKED | dreamers_wall_portal::CLEAR | dreamers_wall_portal::LIVE_CLEAR);
     use super::super::lucifuga_bait_spawn;
     let lucifuga = matches!(name, lucifuga_bait_spawn::NAME | lucifuga_bait_spawn::NO_SLOT | lucifuga_bait_spawn::PORTALS);
     use super::super::faceless_bane_phase;
@@ -774,7 +774,7 @@ fn scenario_case(
     } else if kroazur {
         super::world_with_cells(&callback, trigger, &[kroazur_solo_room::EXIT])?
     } else if dreamers_wall {
-        dreamers_wall_portal::world(&callback, name == dreamers_wall_portal::BLOCKED)?
+        dreamers_wall_portal::world(&callback, name)?
     } else if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::world()?
     } else if name == "nx6-wayfarer" {
@@ -3163,6 +3163,9 @@ fn scenario_case(
             ))
             .await?;
         } else if let Some(expected_destination) = stateless_destination {
+            if name == dreamers_wall_portal::LIVE_CLEAR {
+                dreamers_wall_portal::clear_live_wall(owner.bundle_map().ok_or("wall map")?)?;
+            }
             Box::pin(super::stateless::exercise(
                 &owner,
                 &mut admitted,
