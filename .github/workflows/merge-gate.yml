@@ -662,6 +662,9 @@ jobs:
     outputs:
       rust_runner_mode: ${{ steps.route.outputs.mode }}
       rust_selection: ${{ steps.rust_selection.outputs.selection }}
+      rust_test_packages: ${{ steps.test_selection.outputs.packages }}
+      rust_test_shards: ${{ steps.test_selection.outputs.shards }}
+      rust_test_build_required: ${{ steps.test_selection.outputs.build_required }}
       rust_client_ui_required: ${{ steps.rust_selection.outputs.client_ui_required }}
     steps:
       - name: Resolve Molehill routing
@@ -748,20 +751,304 @@ jobs:
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
               output.write(f"selection={json.dumps({'mode': mode, 'packages': sorted(selected)})}\n")
               output.write(f"client_ui_required={str('oteryn-client' in selected).lower()}\n")
+          with open(pathlib.Path(os.environ['RUNNER_TEMP'], 'rust-fast-test-packages.tsv'), 'w', encoding='utf-8') as output:
+              for name in sorted(selected):
+                  kinds = {kind for target in packages[name]['targets'] for kind in target['kind']}
+                  flags = []
+                  if kinds & {'lib', 'rlib', 'dylib', 'cdylib', 'staticlib', 'proc-macro'}:
+                      flags.append('--lib')
+                  if 'bin' in kinds:
+                      flags.append('--bins')
+                  output.write(f"{name}\t{' '.join(flags)}\n")
           print(f'Rust fast lane mode={mode} packages={len(selected)}/{len(packages)}')
           PY
 
-  # One job id, six parallel matrix legs: strict Clippy on one leg, and the unit tests of
-  # the same changed crates hash-partitioned over five nextest shards. `needs.rust_fast.result`
-  # is success only when every leg succeeds, so validate and game-gate keep their semantics.
+      # Resolve all five existing ledger keys before scheduling the build. The archive
+      # and the shards use the same selection even if a ledger is refreshed later.
+      # Cache versions depend on the original restore path. Move each ledger aside
+      # after restoring it so the next shard can restore to that same path.
+      - name: Plan unit-test job-result keys
+        id: test_keys
+        env:
+          BASE_SHA: ${{ needs.scope.outputs.base_sha }}
+        run: |
+          set -euo pipefail
+          packages="$RUNNER_TEMP/rust-fast-test-packages.tsv"
+          for shard in {1..5}; do
+            plan="$RUNNER_TEMP/rust-fast-test-plan-${shard}.json"
+            outputs="$RUNNER_TEMP/rust-fast-test-outputs-${shard}"
+            GITHUB_OUTPUT="$outputs" python -I tools/repository/job_result_key.py plan \
+              --job "rust_fast-tests ${shard}/5" --metadata "$RUNNER_TEMP/rust-fast-metadata.json" \
+              --packages "$packages" --out "$plan" --per-package \
+              --extra "base=$BASE_SHA" --extra "image=${ImageVersion:-unknown}" \
+              --extra "os=${RUNNER_OS:-}-${RUNNER_ARCH:-}"
+            printf 'shard_%s_%s\n' "$shard" "$(cat "$outputs")" >> "$GITHUB_OUTPUT"
+          done
+
+      - name: Restore job-result ledger for tests 1/5
+        if: steps.test_keys.outputs.shard_1_keyed == 'true'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ${{ runner.temp }}/jobresult
+          key: job-result-ledger-v1-rust_fast-tests-1-5-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            job-result-ledger-v1-rust_fast-tests-1-5-
+
+      - name: Stash restored ledger for tests 1/5
+        if: steps.test_keys.outputs.shard_1_keyed == 'true'
+        run: |
+          if [[ -d "$RUNNER_TEMP/jobresult" ]]; then
+            mv "$RUNNER_TEMP/jobresult" "$RUNNER_TEMP/jobresult-tests-1-5"
+          fi
+
+      - name: Restore job-result ledger for tests 2/5
+        if: steps.test_keys.outputs.shard_2_keyed == 'true'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ${{ runner.temp }}/jobresult
+          key: job-result-ledger-v1-rust_fast-tests-2-5-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            job-result-ledger-v1-rust_fast-tests-2-5-
+
+      - name: Stash restored ledger for tests 2/5
+        if: steps.test_keys.outputs.shard_2_keyed == 'true'
+        run: |
+          if [[ -d "$RUNNER_TEMP/jobresult" ]]; then
+            mv "$RUNNER_TEMP/jobresult" "$RUNNER_TEMP/jobresult-tests-2-5"
+          fi
+
+      - name: Restore job-result ledger for tests 3/5
+        if: steps.test_keys.outputs.shard_3_keyed == 'true'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ${{ runner.temp }}/jobresult
+          key: job-result-ledger-v1-rust_fast-tests-3-5-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            job-result-ledger-v1-rust_fast-tests-3-5-
+
+      - name: Stash restored ledger for tests 3/5
+        if: steps.test_keys.outputs.shard_3_keyed == 'true'
+        run: |
+          if [[ -d "$RUNNER_TEMP/jobresult" ]]; then
+            mv "$RUNNER_TEMP/jobresult" "$RUNNER_TEMP/jobresult-tests-3-5"
+          fi
+
+      - name: Restore job-result ledger for tests 4/5
+        if: steps.test_keys.outputs.shard_4_keyed == 'true'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ${{ runner.temp }}/jobresult
+          key: job-result-ledger-v1-rust_fast-tests-4-5-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            job-result-ledger-v1-rust_fast-tests-4-5-
+
+      - name: Stash restored ledger for tests 4/5
+        if: steps.test_keys.outputs.shard_4_keyed == 'true'
+        run: |
+          if [[ -d "$RUNNER_TEMP/jobresult" ]]; then
+            mv "$RUNNER_TEMP/jobresult" "$RUNNER_TEMP/jobresult-tests-4-5"
+          fi
+
+      - name: Restore job-result ledger for tests 5/5
+        if: steps.test_keys.outputs.shard_5_keyed == 'true'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ${{ runner.temp }}/jobresult
+          key: job-result-ledger-v1-rust_fast-tests-5-5-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            job-result-ledger-v1-rust_fast-tests-5-5-
+
+      - name: Stash restored ledger for tests 5/5
+        if: steps.test_keys.outputs.shard_5_keyed == 'true'
+        run: |
+          if [[ -d "$RUNNER_TEMP/jobresult" ]]; then
+            mv "$RUNNER_TEMP/jobresult" "$RUNNER_TEMP/jobresult-tests-5-5"
+          fi
+
+      - name: Select test packages for each shard and the archive
+        id: test_selection
+        run: |
+          set -euo pipefail
+          for shard in {1..5}; do
+            GITHUB_OUTPUT=/dev/null python -I tools/repository/job_result_key.py select \
+              --plan "$RUNNER_TEMP/rust-fast-test-plan-${shard}.json" \
+              --packages "$RUNNER_TEMP/rust-fast-test-packages.tsv" \
+              --dir "$RUNNER_TEMP/jobresult-tests-${shard}-5" \
+              --out "$RUNNER_TEMP/rust-fast-test-run-${shard}.tsv"
+          done
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          temp = Path(os.environ['RUNNER_TEMP'])
+          shards = {}
+          for shard in range(1, 6):
+              rows = (temp / f'rust-fast-test-run-{shard}.tsv').read_text().splitlines()
+              packages = []
+              for row in rows:
+                  package, flags = row.split('\t', 1)
+                  if flags:
+                      packages.append(package)
+                  else:
+                      print(f'NOT_APPLICABLE: {package} has no library or binary unit-test targets')
+              shards[f'tests-{shard}-5'] = packages
+          union = sorted({package for packages in shards.values() for package in packages})
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              output.write(f'shards={json.dumps(shards)}\n')
+              output.write(f'packages={json.dumps(union)}\n')
+              output.write(f'build_required={str(bool(union)).lower()}\n')
+          PY
+
+  rust_fast_build:
+    name: Merge gate / Build changed-crate unit-test archive
+    needs: [scope, lanes, runner_route]
+    if: needs.lanes.outputs.rust == 'true' && needs.runner_route.outputs.rust_test_build_required == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    outputs:
+      artifact_id: ${{ steps.upload.outputs.artifact-id }}
+    steps:
+      - name: Check out exact head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.scope.outputs.target_sha }}
+          persist-credentials: false
+
+      - name: Verify checked-out SHA
+        env:
+          EXPECTED_SHA: ${{ needs.scope.outputs.target_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Install Rust toolchain
+        run: rustup toolchain install 1.100.0 --profile minimal
+
+      - name: Free hosted runner disk before the Cargo cache restore
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h /
+
+      - name: Restore trimmed Cargo cache from protected main
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-
+            rust-linux-v2-1.100.0-
+
+      - name: Normalize source mtimes for the restored Cargo cache
+        run: python tools/repository/normalize_cargo_mtimes.py
+
+      - name: Install pinned cargo-nextest
+        env:
+          NEXTEST_VERSION: 0.9.146
+          NEXTEST_SHA256: 682c21b777c333e96fd532e114d3a5a894e0729ab88d94c0a9f20f8419695428
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/cargo-nextest.tar.gz"
+          mkdir -p "$RUNNER_TEMP/nextest-bin"
+          if curl --proto '=https' --tlsv1.2 -fsSL --retry 8 --retry-delay 15 --retry-all-errors --retry-max-time 150 --connect-timeout 30 -o "$archive" \
+            "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-${NEXTEST_VERSION}/cargo-nextest-${NEXTEST_VERSION}-x86_64-unknown-linux-gnu.tar.gz"; then
+            echo "${NEXTEST_SHA256}  ${archive}" | sha256sum -c -
+            tar -xzf "$archive" -C "$RUNNER_TEMP/nextest-bin"
+          else
+            # Hosted runners can lose GitHub release downloads for an hour at a time. Build the
+            # same pinned version from crates.io with its locked dependency set instead.
+            echo "::warning::cargo-nextest ${NEXTEST_VERSION} release download failed; building it from crates.io"
+            rustup toolchain install 1.100.0 --profile minimal --no-self-update
+            cargo +1.100.0 install --locked --quiet cargo-nextest --version "=${NEXTEST_VERSION}" --root "$RUNNER_TEMP/nextest-root"
+            cp "$RUNNER_TEMP/nextest-root/bin/cargo-nextest" "$RUNNER_TEMP/nextest-bin/"
+          fi
+          echo "$RUNNER_TEMP/nextest-bin" >> "$GITHUB_PATH"
+
+      - name: Add swap for the library test build
+        run: |
+          set -euo pipefail
+          sudo fallocate -l 16G /mnt/oteryn-extra.swap
+          sudo chmod 600 /mnt/oteryn-extra.swap
+          sudo mkswap /mnt/oteryn-extra.swap
+          sudo swapon /mnt/oteryn-extra.swap
+          swapon --show
+          free -h
+
+      - name: Install pinned mold linker
+        env:
+          MOLD_VERSION: 2.42.1
+          MOLD_SHA256: 6ff270c9bf07d2bec5c98aa324eb7c4daf6a1a4d815c05ff1708049616047855
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/mold.tar.gz"
+          curl --proto '=https' --tlsv1.2 -fsSL --retry 40 --retry-delay 15 --retry-all-errors --retry-max-time 600 --connect-timeout 30 -o "$archive" \
+            "https://github.com/rui314/mold/releases/download/v${MOLD_VERSION}/mold-${MOLD_VERSION}-x86_64-linux.tar.gz"
+          echo "${MOLD_SHA256}  ${archive}" | sha256sum -c -
+          tar -xzf "$archive" -C "$RUNNER_TEMP"
+          mold_dir="$RUNNER_TEMP/mold-${MOLD_VERSION}-x86_64-linux"
+          "$mold_dir/bin/mold" --version
+          echo "MOLD_PATH=$mold_dir/bin/mold" >> "$GITHUB_ENV"
+          echo "MOLD_PRELOAD=$mold_dir/lib/mold/mold-wrapper.so" >> "$GITHUB_ENV"
+
+      # Compile the union of packages that still need a result, once for all five shards.
+      - name: Archive changed-crate unit tests
+        env:
+          TEST_PACKAGES: ${{ needs.runner_route.outputs.rust_test_packages }}
+          RUST_SELECTION: ${{ needs.runner_route.outputs.rust_selection }}
+          CARGO_BUILD_JOBS: "1"
+          LD_PRELOAD: ${{ env.MOLD_PRELOAD }}
+        run: |
+          set -euo pipefail
+          package_args_file="$RUNNER_TEMP/rust-fast-archive-args.txt"
+          python - <<'PY' > "$package_args_file"
+          import json
+          import os
+
+          packages = json.loads(os.environ['TEST_PACKAGES'])
+          if not packages:
+              raise SystemExit('unit-test archive requires a nonempty package selection')
+          selection = json.loads(os.environ['RUST_SELECTION'])
+          if selection['mode'] == 'workspace' and packages == selection['packages']:
+              print('--workspace')
+          else:
+              for package in packages:
+                  print('-p')
+                  print(package)
+          PY
+          mapfile -t package_args < "$package_args_file"
+          artifact="$RUNNER_TEMP/rust-fast-archive"
+          mkdir -p "$artifact"
+          cargo +1.100.0 nextest archive --locked "${package_args[@]}" --lib --bins \
+            --archive-file "$artifact/unit-tests.tar.zst" --zstd-level 1 < /dev/null
+          cp "$RUNNER_TEMP/nextest-bin/cargo-nextest" "$artifact/"
+
+      - name: Upload unit-test archive
+        id: upload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: rust-fast-unit-tests-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/rust-fast-archive/
+          if-no-files-found: error
+          retention-days: 3
+          compression-level: 0
+
+  # Strict Clippy and five hash-partitioned nextest shards share the same aggregate result.
+  # The matrix also runs when the archive build is skipped on a complete ledger hit.
   rust_fast:
     name: Merge gate / Rust changed-crate Clippy and unit tests (${{ matrix.leg }})
-    needs: [scope, lanes, runner_route]
-    if: needs.lanes.outputs.rust == 'true'
+    needs: [scope, lanes, runner_route, rust_fast_build]
+    if: >-
+      !cancelled() && needs.scope.result == 'success' && needs.lanes.result == 'success'
+      && needs.runner_route.result == 'success' && needs.lanes.outputs.rust == 'true'
+      && (needs.rust_fast_build.result == 'success' || needs.rust_fast_build.result == 'skipped')
     # OTERYN_SELF_HOSTED_RUST=on runs the Clippy leg on Molehill (warm workspace target); auto
     # does so only while the Molehill heartbeat is fresh (resolved in runner_route), so an
-    # offline PC falls back to hosted. The five test shards always run hosted from the
-    # rust.yml cache, so one PR no longer builds the same test binaries three times on the PC.
+    # offline PC falls back to hosted. The five test shards always run hosted from the archive.
     # Forks and dependabot stay hosted because PR code would run on the owner's machine.
     runs-on: ${{ (needs.runner_route.outputs.rust_runner_mode == 'on' && matrix.kind == 'clippy' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') && fromJSON('["self-hosted","linux","x64","oteryn-molehill"]') || 'ubuntu-24.04' }}
     timeout-minutes: 45
@@ -885,7 +1172,29 @@ jobs:
 
       - name: Select crates without a passed result
         id: jr_hit
+        env:
+          KIND: ${{ matrix.kind }}
+          TEST_SHARDS: ${{ needs.runner_route.outputs.rust_test_shards }}
+          SLUG: ${{ matrix.slug }}
         run: |
+          if [[ "$KIND" == tests ]]; then
+            python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          pending = set(json.loads(os.environ['TEST_SHARDS'])[os.environ['SLUG']])
+          temp = Path(os.environ['RUNNER_TEMP'])
+          rows = (temp / 'rust-fast-packages.tsv').read_text().splitlines(keepends=True)
+          selected = [row for row in rows if row.split('\t', 1)[0] in pending]
+          if len(selected) != len(pending):
+              raise SystemExit('unit-test shard selection disagrees with checked-out packages')
+          (temp / 'rust-fast-run.tsv').write_text(''.join(selected), encoding='utf-8')
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              output.write(f'hit={str(not pending).lower()}\n')
+          PY
+            exit 0
+          fi
           if [[ ! -s "$RUNNER_TEMP/rust-fast-packages.tsv" ]]; then
             : > "$RUNNER_TEMP/rust-fast-run.tsv"
             echo 'hit=true' >> "$GITHUB_OUTPUT"
@@ -893,9 +1202,8 @@ jobs:
           fi
           python -I tools/repository/job_result_key.py select --plan "$RUNNER_TEMP/jr-plan.json" --packages "$RUNNER_TEMP/rust-fast-packages.tsv" --dir "$RUNNER_TEMP/jobresult" --out "$RUNNER_TEMP/rust-fast-run.tsv"
 
-      # The restored target/ is ~26G extracted; hosted runners ran out of disk mid-extract
-      # (No space left on device, worker crash). Drop preinstalled SDKs this job never uses.
-      - name: Free hosted runner disk before the Cargo cache restore
+      # Allow space for the hosted Clippy cache or the extracted nextest binaries.
+      - name: Free hosted runner disk for cached or archived artifacts
         if: runner.environment == 'github-hosted' && steps.jr_hit.outputs.hit != 'true'
         run: |
           df -h /
@@ -903,7 +1211,7 @@ jobs:
           df -h /
 
       - name: Restore trimmed Cargo cache from protected main
-        if: runner.environment == 'github-hosted' && steps.jr_hit.outputs.hit != 'true'
+        if: matrix.kind == 'clippy' && runner.environment == 'github-hosted' && steps.jr_hit.outputs.hit != 'true'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: |
@@ -921,11 +1229,9 @@ jobs:
       # Old mtimes on files unchanged since the cached commit let Cargo reuse those units;
       # changed files keep fresh mtimes, so this exact head is still built and tested.
       - name: Normalize source mtimes for the restored Cargo cache
-        if: runner.environment == 'github-hosted' && steps.jr_hit.outputs.hit != 'true'
+        if: matrix.kind == 'clippy' && runner.environment == 'github-hosted' && steps.jr_hit.outputs.hit != 'true'
         run: python tools/repository/normalize_cargo_mtimes.py
 
-      # Both commands consume the one Cargo package selection. Cargo builds dependencies
-      # automatically; reverse dependants are explicitly selected by the lane classifier.
       - name: Strict Clippy (workspace)
         id: clippy
         if: matrix.kind == 'clippy' && steps.jr_hit.outputs.hit != 'true'
@@ -938,94 +1244,33 @@ jobs:
           cargo +1.100.0 clippy --locked "${package_args[@]}" --all-targets -- -D warnings
           echo 'completed=true' >> "$GITHUB_OUTPUT"
 
-      # cargo-nextest 0.9.146 (released 2026-09-21), pinned by SHA-256. nextest runs each test
-      # in its own process; the game-server unit tests have no env mutation and no ordering or
-      # shared-state dependence between tests (see the PR description for the audit).
-      - name: Install pinned cargo-nextest
-        if: matrix.kind == 'tests' && steps.jr_hit.outputs.hit != 'true'
-        env:
-          NEXTEST_VERSION: 0.9.146
-          NEXTEST_SHA256: 682c21b777c333e96fd532e114d3a5a894e0729ab88d94c0a9f20f8419695428
-        run: |
-          set -euo pipefail
-          archive="$RUNNER_TEMP/cargo-nextest.tar.gz"
-          mkdir -p "$RUNNER_TEMP/nextest-bin"
-          if curl --proto '=https' --tlsv1.2 -fsSL --retry 8 --retry-delay 15 --retry-all-errors --retry-max-time 150 --connect-timeout 30 -o "$archive" \
-            "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-${NEXTEST_VERSION}/cargo-nextest-${NEXTEST_VERSION}-x86_64-unknown-linux-gnu.tar.gz"; then
-            echo "${NEXTEST_SHA256}  ${archive}" | sha256sum -c -
-            tar -xzf "$archive" -C "$RUNNER_TEMP/nextest-bin"
-          else
-            # Hosted runners can lose GitHub release downloads for an hour at a time. Build the
-            # same pinned version from crates.io with its locked dependency set instead.
-            echo "::warning::cargo-nextest ${NEXTEST_VERSION} release download failed; building it from crates.io"
-            rustup toolchain install 1.100.0 --profile minimal --no-self-update
-            cargo +1.100.0 install --locked --quiet cargo-nextest --version "=${NEXTEST_VERSION}" --root "$RUNNER_TEMP/nextest-root"
-            cp "$RUNNER_TEMP/nextest-root/bin/cargo-nextest" "$RUNNER_TEMP/nextest-bin/"
-          fi
-          echo "$RUNNER_TEMP/nextest-bin" >> "$GITHUB_PATH"
+      - name: Download unit-test archive
+        if: matrix.kind == 'tests' && steps.jr_hit.outputs.hit != 'true' && needs.rust_fast_build.outputs.artifact_id != ''
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ needs.rust_fast_build.outputs.artifact_id }}
+          path: ${{ runner.temp }}/rust-fast-archive
 
-      # The dispatch library test build peaks above the hosted runner's 16 GB since #3056
-      # (17.3 GB at -j1, 20.3 GB at -j4, measured 2026-11-17); swap makes it slow down instead
-      # of being killed with exit 143.
-      - name: Add swap for the library test build
-        if: matrix.kind == 'tests' && steps.jr_hit.outputs.hit != 'true' && runner.environment == 'github-hosted'
-        run: |
-          set -euo pipefail
-          sudo fallocate -l 16G /mnt/oteryn-extra.swap
-          sudo chmod 600 /mnt/oteryn-extra.swap
-          sudo mkswap /mnt/oteryn-extra.swap
-          sudo swapon /mnt/oteryn-extra.swap
-          swapon --show
-          free -h
-
-      # mold 2.42.1 (released 2026-09-11), pinned by SHA-256. The nextest step links through its
-      # LD_PRELOAD wrapper, so RUSTFLAGS and the linker setting stay as in the protected-main
-      # cache producer and the restored target/ keeps matching; only the link step gets faster.
-      - name: Install pinned mold linker
-        if: matrix.kind == 'tests' && steps.jr_hit.outputs.hit != 'true' && runner.environment == 'github-hosted'
-        env:
-          MOLD_VERSION: 2.42.1
-          MOLD_SHA256: 6ff270c9bf07d2bec5c98aa324eb7c4daf6a1a4d815c05ff1708049616047855
-        run: |
-          set -euo pipefail
-          archive="$RUNNER_TEMP/mold.tar.gz"
-          curl --proto '=https' --tlsv1.2 -fsSL --retry 40 --retry-delay 15 --retry-all-errors --retry-max-time 600 --connect-timeout 30 -o "$archive" \
-            "https://github.com/rui314/mold/releases/download/v${MOLD_VERSION}/mold-${MOLD_VERSION}-x86_64-linux.tar.gz"
-          echo "${MOLD_SHA256}  ${archive}" | sha256sum -c -
-          tar -xzf "$archive" -C "$RUNNER_TEMP"
-          mold_dir="$RUNNER_TEMP/mold-${MOLD_VERSION}-x86_64-linux"
-          "$mold_dir/bin/mold" --version
-          echo "MOLD_PATH=$mold_dir/bin/mold" >> "$GITHUB_ENV"
-          echo "MOLD_PRELOAD=$mold_dir/lib/mold/mold-wrapper.so" >> "$GITHUB_ENV"
-
-      # The lib and bin unit tests of the selected crates without a passed result, as in the
-      # former per-crate loop. Cargo builds only the selected packages and their dependencies;
-      # the ledger filter selects binaries still needing a result. Hash partitioning splits each crate's
-      # tests disjointly and exhaustively across the five shards. `--no-tests=pass` only covers
-      # a shard whose slice is empty; it never skips or filters a test. Exit code 100 means
-      # test failures with every binary run, so the JUnit report then names the passed crates.
+      # The ledger filter selects only packages still needing this shard's result.
+      # Hash partitioning covers each package disjointly across the five shards.
+      # Exit 100 means test failures with a complete run, so JUnit can identify passed crates.
       - name: Unit-test changed crates (nextest shard ${{ matrix.shard }})
         id: nextest
         if: matrix.kind == 'tests' && steps.jr_hit.outputs.hit != 'true'
         env:
           SHARD: ${{ matrix.shard }}
-          CARGO_BUILD_JOBS: "1"
-          LD_PRELOAD: ${{ env.MOLD_PRELOAD }}
         run: |
           set -euo pipefail
-          # Cache restoration may include an older report; only this invocation can supply one.
-          rm -f -- "${CARGO_TARGET_DIR:-target}/nextest/rust-fast/junit.xml"
+          artifact="$RUNNER_TEMP/rust-fast-archive"
+          chmod +x "$artifact/cargo-nextest"
+          export PATH="$artifact:$PATH"
           filters=()
-          while IFS=$'\t' read -r package flags; do
-            if [[ -z "$flags" ]]; then
-              echo "NOT_APPLICABLE: $package has no library or binary unit-test targets"
-              continue
-            fi
+          while IFS=$'\t' read -r package _; do
             filters+=("package(=$package)")
           done < "$RUNNER_TEMP/rust-fast-run.tsv"
           if [[ "${#filters[@]}" -eq 0 ]]; then
-            echo 'code=0' >> "$GITHUB_OUTPUT"
-            exit 0
+            echo '::error::Expected packages for this nextest shard'
+            exit 1
           fi
           expression="$(IFS='|'; echo "${filters[*]}")"
           # Priorities only order the start of this shard's tests; they never select or skip one.
@@ -1044,8 +1289,8 @@ jobs:
           priority = 50
           TOML
           code=0
-          mapfile -t package_args < "$RUNNER_TEMP/rust-fast-package-args.txt"
-          cargo +1.100.0 nextest run --locked "${package_args[@]}" --lib --bins \
+          cargo +1.100.0 nextest run --archive-file "$artifact/unit-tests.tar.zst" \
+            --workspace-remap . --extract-to . \
             --config-file "$RUNNER_TEMP/nextest.toml" --profile rust-fast -E "$expression" \
             --partition "hash:${SHARD}" --no-tests=pass --no-fail-fast < /dev/null || code=$?
           echo "code=$code" >> "$GITHUB_OUTPUT"
@@ -1289,7 +1534,7 @@ jobs:
   validate:
     name: Merge gate / validate
     if: always() && (github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref)
-    needs: [scope, lanes, governance, dependency_review, routing_contract, world_bundle, rust_policy, runner_route, rust_fast, rust_supply_chain, rust_client_ui]
+    needs: [scope, lanes, governance, dependency_review, routing_contract, world_bundle, rust_policy, runner_route, rust_fast_build, rust_fast, rust_supply_chain, rust_client_ui]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -1305,6 +1550,8 @@ jobs:
           RUST_REQUIRED: ${{ needs.lanes.outputs.rust }}
           WINDOWS_REQUIRED: ${{ needs.lanes.outputs.windows }}
           RUST_POLICY: ${{ needs.rust_policy.result }}
+          RUST_FAST_BUILD_REQUIRED: ${{ needs.runner_route.outputs.rust_test_build_required }}
+          RUST_FAST_BUILD: ${{ needs.rust_fast_build.result }}
           RUST_FAST: ${{ needs.rust_fast.result }}
           RUST_SUPPLY_CHAIN: ${{ needs.rust_supply_chain.result }}
           RUST_CLIENT_UI_REQUIRED: ${{ needs.runner_route.outputs.rust_client_ui_required }}
@@ -1329,6 +1576,12 @@ jobs:
           for name in ('RUST_POLICY', 'RUST_FAST', 'RUST_SUPPLY_CHAIN'):
               if os.environ[name] not in rust_allowed:
                   failures.append(f'{name}={os.environ[name]}')
+          build_required = os.environ['RUST_FAST_BUILD_REQUIRED']
+          if os.environ['RUST_REQUIRED'] == 'true' and build_required not in {'true', 'false'}:
+              failures.append(f'invalid RUST_FAST_BUILD_REQUIRED={build_required}')
+          build_expected = 'success' if os.environ['RUST_REQUIRED'] == 'true' and build_required == 'true' else 'skipped'
+          if os.environ['RUST_FAST_BUILD'] != build_expected:
+              failures.append(f"RUST_FAST_BUILD={os.environ['RUST_FAST_BUILD']}")
           client_ui_required = os.environ['RUST_CLIENT_UI_REQUIRED']
           if os.environ['RUST_REQUIRED'] == 'true' and client_ui_required not in {'true', 'false'}:
               failures.append(f'invalid RUST_CLIENT_UI_REQUIRED={client_ui_required}')
@@ -1353,7 +1606,7 @@ jobs:
   game_gate:
     name: game-gate
     if: always() && (github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref)
-    needs: [scope, validate]
+    needs: [scope, rust_fast_build, validate]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -1363,7 +1616,10 @@ jobs:
       - name: Require canonical aggregate success
         env:
           LEGACY_VALIDATE: ${{ needs.validate.result }}
-        run: test "$LEGACY_VALIDATE" = "success"
+          RUST_FAST_BUILD: ${{ needs.rust_fast_build.result }}
+        run: |
+          test "$LEGACY_VALIDATE" = "success" &&
+            [[ "$RUST_FAST_BUILD" == success || "$RUST_FAST_BUILD" == skipped ]]
       - name: Revalidate isolated edit target before publishing game-gate
         if: github.event.action == 'edited' && github.event.changes.base == null
         env:

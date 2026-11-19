@@ -85,15 +85,29 @@ class QualificationPlacementTests(unittest.TestCase):
             "|| 'ubuntu-24.04' }}"
         )
         self.assertEqual(re.findall(r"(?m)^    runs-on: (.+)$", job), [expected])
+        build = self.pr.split("  rust_fast_build:\n", 1)[1].split("\n  rust_fast:\n", 1)[0]
+        self.assertIn("    runs-on: ubuntu-24.04\n", build)
+        self.assertIn("needs.runner_route.outputs.rust_test_build_required == 'true'", build)
         for name in (
             "Restore trimmed Cargo cache from protected main",
             "Normalize source mtimes for the restored Cargo cache",
         ):
             with self.subTest(step=name):
+                self.assertIn(f"      - name: {name}\n", build)
                 self.assertIn(
-                    "        if: runner.environment == 'github-hosted' && steps.jr_hit.outputs.hit != 'true'\n",
+                    "        if: matrix.kind == 'clippy' && runner.environment == 'github-hosted' "
+                    "&& steps.jr_hit.outputs.hit != 'true'\n",
                     self.rust_fast_step(name),
                 )
+        self.assertIn("    needs: [scope, lanes, runner_route, rust_fast_build]\n", job)
+        self.assertIn('nextest archive --locked "${package_args[@]}" --lib --bins', build)
+        self.assertIn('nextest run --archive-file "$artifact/unit-tests.tar.zst"', job)
+        self.assertIn('--workspace-remap . --extract-to .', job)
+        self.assertIn('--partition "hash:${SHARD}" --no-tests=pass --no-fail-fast', job)
+        for name in ("Add swap for the library test build", "Install pinned mold linker"):
+            with self.subTest(step=name):
+                self.assertIn(f"      - name: {name}\n", build)
+                self.assertNotIn(f"      - name: {name}\n", job)
 
     def test_self_hosted_target_setup_and_stale_junit_cleanup(self):
         name = "Select persistent self-hosted Cargo target directory"
