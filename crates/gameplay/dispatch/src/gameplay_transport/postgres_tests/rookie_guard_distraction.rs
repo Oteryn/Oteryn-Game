@@ -26,7 +26,7 @@ const TRACK: &str = "oteryn:quest-progress/quest/u9_1/the_rookie_guard/mission12
 const BONE: &str = "oteryn:item.tibia.i12674";
 const APPEARANCE: u16 = 12792;
 const GUARD_ORDINAL: u8 = 2;
-const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua:251-294";
+const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua:249-295";
 
 #[test]
 fn fleshy_bone_use_retains_the_item_and_recovers_the_guard_after_two_minutes() -> TestResult {
@@ -48,6 +48,7 @@ fn document() -> serde_json::Value {
         "requires_world_admission":true, "passages":[],"offerings":[],
         "reversible":false,"return_on_failure":false,
         "storage":[{"track":TRACK,"minimum":5,"maximum":5,"set":6}], "experience":50,
+        "success_message":"This should be enough distraction for you to sneak into the fortress! Hurry up!",
         "item_on_target":{"item":BONE,"count":1,"reusable":true,"selected_instance":true},
         "effects":{"distraction":{"duration_ms":120000,"radius":2,"eject_to":EJECT,
             "spawns":[{"creature":"oteryn:creature.running_elite_orc_guard","offset_y":1,"count":1},
@@ -161,8 +162,12 @@ pub(super) async fn exercise(
     let key = placement_key(target, GUARD_ORDINAL).ok_or("guard placement")?;
     let origin = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position();
     use_bone(owner, admitted, key, reference).await?;
-    {
-        let runtime = owner.runtime.lock().await;
+    assert_eq!(teleport_cues(owner, GUARD)?, 1);
+    let dogs = Position { y: GUARD.y + 3, ..GUARD };
+    let running_guard = Position { y: GUARD.y + 1, ..GUARD };
+    let nearby_dog = Position { x: GUARD.x + 1, ..dogs };
+    let nearby_actor = {
+        let mut runtime = owner.runtime.lock().await;
         let census = runtime.current_live_creature_census().map_err(debug)?;
         assert_eq!(census.len(), 9);
         assert_eq!(
@@ -170,17 +175,22 @@ pub(super) async fn exercise(
                 .iter()
                 .filter(
                     |actor| runtime.read_actor_position(**actor).is_ok_and(|at| {
-                        at.position()
-                            == local(Position {
-                                y: GUARD.y + 3,
-                                ..GUARD
-                            })
+                        at.position() == local(dogs)
                     })
                 )
                 .count(),
             8
         );
-    }
+        let creature = "oteryn:creature.wild_dog";
+        let health = runtime.companion_policy(creature).map_err(debug)?.maximum_health;
+        let spawned = runtime
+            .commit_quest_creature_spawn(&[(creature, health, local(nearby_dog))])
+            .map_err(debug)?;
+        let [nearby_actor] = spawned.as_slice() else {
+            return Err("expected one unrelated dog".into());
+        };
+        *nearby_actor
+    };
     let (stage, bones): (i64, i64) = sqlx::query_as(
         "SELECT (SELECT value FROM game_character_quest_tracks WHERE track_key=$1), \
                 (SELECT count(*) FROM game_item_instances WHERE definition_production_key=$2 AND lifecycle=1)",
@@ -197,12 +207,18 @@ pub(super) async fn exercise(
         .ok_or("clock")?;
     owner.drain_quest_encounter_deadlines().await;
     assert!(!owner.bundle_map().ok_or("map")?.facts.base_hidden(key));
+    // Crystal mission12_into_fortress.lua:263-269 removes and signals each spawned actor.
+    owner.drain_quest_encounter_deadlines().await;
+    assert_eq!(teleport_cues(owner, running_guard)?, 1);
+    assert_eq!(teleport_cues(owner, dogs)?, 8);
+    assert_eq!(teleport_cues(owner, nearby_dog)?, 0);
     let mut runtime = owner.runtime.lock().await;
-    assert!(
+    assert_eq!(
         runtime
             .current_live_creature_census()
-            .map_err(debug)?
-            .is_empty()
+            .map_err(debug)?,
+        vec![nearby_actor],
+        "the timeout must leave the unrelated actor of the same creature type alone"
     );
     let ejected = runtime.read_actor_position(actor).map_err(debug)?;
     assert_eq!(ejected.position(), local(EJECT));
@@ -216,15 +232,28 @@ pub(super) async fn exercise(
     drop(runtime);
     use_bone(owner, admitted, key, reference).await?;
     assert!(owner.bundle_map().ok_or("map")?.facts.base_hidden(key));
+    assert_eq!(teleport_cues(owner, GUARD)?, 2);
     assert_eq!(
         owner.runtime.lock().await.current_live_creature_census().map_err(debug)?.len(),
-        9,
+        10,
     );
     let retry_experience: i64 = sqlx::query_scalar(
         "SELECT total_experience FROM game_character_progression_state",
     ).fetch_one(&h.pool).await?;
     assert_eq!(retry_experience, first_experience);
     Ok(())
+}
+
+fn teleport_cues(owner: &ComposedFreshAdmission<'_, '_, '_>, position: Position) -> TestResult<usize> {
+    let map = owner.bundle_map().ok_or("map")?;
+    Ok(map
+        .facts
+        .movement_effects_since(0)
+        .iter()
+        .filter(|(_, at, effect)| {
+            *effect == 11 && (at.x, at.y, at.floor) == (position.x, position.y, position.floor)
+        })
+        .count())
 }
 
 async fn use_bone(

@@ -31,23 +31,10 @@ impl EncounterVisit {
     }
 
     fn retire(&self, runtime: &mut ChannelRuntimeV1, map: &BundleMap) -> bool {
-        self.creatures.iter().all(|actor| {
-            if !runtime.contains_live_creature(*actor) {
-                return true;
-            }
-            let position = runtime
-                .read_actor_position(*actor)
-                .ok()
-                .and_then(|snapshot| native(snapshot.position()));
-            if runtime.remove_encounter_actor(*actor).is_err() {
-                return false;
-            }
-            // Crystal mission12_into_fortress.lua:527-532,600-605.
-            if let Some(position) = position {
-                map.facts.emit_movement_effect(position, 3);
-            }
-            true
-        })
+        // Crystal mission12_into_fortress.lua:527-532,600-605.
+        self.creatures
+            .iter()
+            .all(|actor| retire_live_encounter_creature(runtime, map, *actor, 3))
     }
 
     fn active(&self, runtime: &ChannelRuntimeV1) -> bool {
@@ -55,6 +42,29 @@ impl EncounterVisit {
             .iter()
             .any(|actor| runtime.contains_live_creature(*actor))
     }
+}
+
+/// Publish the cue once the exact actor has retired. A failed removal can be retried.
+pub(super) fn retire_live_encounter_creature(
+    runtime: &mut ChannelRuntimeV1,
+    map: &BundleMap,
+    actor: ExactActorRef,
+    effect: u16,
+) -> bool {
+    if !runtime.contains_live_creature(actor) {
+        return true;
+    }
+    let position = runtime
+        .read_actor_position(actor)
+        .ok()
+        .and_then(|snapshot| native(snapshot.position()));
+    if runtime.remove_encounter_actor(actor).is_err() {
+        return false;
+    }
+    if let Some(position) = position {
+        map.facts.emit_movement_effect(position, effect);
+    }
+    true
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {

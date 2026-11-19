@@ -145,6 +145,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             landing: prepared.rule.eject_to,
             creatures,
         });
+        // Crystal mission12_into_fortress.lua:282-295 signals the guard's disappearance.
+        map.facts.emit_movement_effect(source, 11);
         states.owner_wake.notify_one();
         true
     }
@@ -220,17 +222,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     underwater(map, landed.position()),
                 );
             }
-            for actor in &visit.creatures {
-                if runtime.contains_live_creature(*actor) {
-                    if let Ok(position) = runtime.read_actor_position(*actor)
-                        && let Some(position) = native(position.position())
-                    {
-                        map.facts.emit_movement_effect(position, 11);
-                    }
-                    if runtime.remove_encounter_actor(*actor).is_err() {
-                        return true;
-                    }
-                }
+            // Crystal mission12_into_fortress.lua:263-269 retires the actors from this use.
+            if !visit.creatures.iter().all(|actor| {
+                super::encounter::retire_live_encounter_creature(runtime, map, *actor, 11)
+            }) {
+                return true;
             }
             // CAS prevents an old distraction from resurrecting a replaced target.
             map.facts.object_revision(visit.key) == visit.revision
