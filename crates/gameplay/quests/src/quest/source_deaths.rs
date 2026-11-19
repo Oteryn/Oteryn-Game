@@ -152,6 +152,17 @@ impl Rule {
                         track: e.track.clone(),
                         from: e.from.comparison()?,
                         effect: match (e.set, e.add, e.increment_to) {
+                            (Some(value), None, None)
+                                if self.delivery == Some(DeathDelivery::PoltergeistAndBeyonder) =>
+                            {
+                                // Crystal creaturescripts_pale_worm_death.lua:13-18:
+                                // every witness receives the achievement. The outfit
+                                // and its storage change belong only to the unset value.
+                                QuestEffectKind::SetIf {
+                                    equals: e.default,
+                                    value,
+                                }
+                            }
                             (Some(value), None, None) => QuestEffectKind::Set(value),
                             (None, Some(value), None) => QuestEffectKind::Add(value),
                             (None, None, Some(value)) => QuestEffectKind::IncrementTo(value),

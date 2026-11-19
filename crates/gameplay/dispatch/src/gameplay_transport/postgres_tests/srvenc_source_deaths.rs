@@ -48,7 +48,7 @@ fn scenario(name: &'static str, creature: &'static str) -> TestResult {
                 .find(|r| r.creature == format!("oteryn:creature.{creature}"))
                 .ok_or("source rule")?;
             let h = Harness::create_with_admission_seed(admin, "srvenc_m24", false, false).await?;
-            let result = exercise(&h, rule, None).await;
+            let result = exercise(&h, rule, None, None).await;
             let cleanup = h.cleanup().await;
             result?;
             cleanup?;
@@ -66,13 +66,28 @@ fn scenario(name: &'static str, creature: &'static str) -> TestResult {
 pub(super) async fn exercise_delivery(
     h: &Harness, transition: &str, quest: &str, rule: &str,
 ) -> TestResult {
+    exercise_delivery_with_prior(h, transition, quest, rule, None).await
+}
+
+pub(super) async fn exercise_delivery_with_prior(
+    h: &Harness,
+    transition: &str,
+    quest: &str,
+    rule: &str,
+    prior: Option<(&str, i64)>,
+) -> TestResult {
     let base = load_embedded_quest_state("content-1").map_err(debug)?;
     let catalogue = source_deaths::with_fixture_rule(base.catalogue(), quest, rule)?;
     let rule = source_deaths::rule_for(&catalogue, transition).ok_or("fixture death rule")?;
-    exercise(h, rule, Some(catalogue.clone())).await
+    exercise(h, rule, Some(catalogue.clone()), prior).await
 }
 
-async fn exercise(h: &Harness, rule: &source_deaths::Rule, catalogue: Option<QuestStateCatalogue>) -> TestResult {
+async fn exercise(
+    h: &Harness,
+    rule: &source_deaths::Rule,
+    catalogue: Option<QuestStateCatalogue>,
+    prior: Option<(&str, i64)>,
+) -> TestResult {
     prepare_current_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
@@ -345,6 +360,11 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, catalogue: Option<Que
             "detached native source generation: {outcome:?}"
         );
     }
+    if let Some((track, value)) = prior {
+        super::qengine_outfit_stories::seed_quest_prerequisites(
+            h, &owner, &admitted, &[(track.to_owned(), value)], 0xa7,
+        ).await?;
+    }
     owner.admit_quest_session(&admitted).await;
     owner.refresh_quest_session(session, false).await;
     let actor = deps.actor;
@@ -551,7 +571,9 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, catalogue: Option<Que
             .iter()
             .find(|(track, _)| track == &effect.track)
             .map_or(effect.default, |(_, value)| *value);
+        let before = prior.filter(|(track, _)| *track == effect.track).map_or(before, |(_, value)| value);
         let expected = match (effect.set, effect.increment_to) {
+            (_, _) if rule.delivery.is_some() && before != effect.default => before,
             (Some(value), _) => value,
             (None, Some(maximum)) => before.max((before + i64::try_from(kills)?).min(maximum)),
             (None, None) => before + effect.add.unwrap_or(0) * i64::try_from(kills)?,

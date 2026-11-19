@@ -81,6 +81,7 @@ impl SourceDeathContext {
         // the lethal snapshot cannot consume that earlier death, even if its value matches.
         for effect in &rule.effects {
             if effect.increment_to.is_some()
+                || rule.delivery == Some(oteryn_gameplay_quests::quest::source_deaths::DeathDelivery::PoltergeistAndBeyonder)
                 || rule
                 .epoch_tracks
                 .as_ref()
