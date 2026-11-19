@@ -11,6 +11,7 @@ use crate::map::view::MapFacts;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_protocol_oteryn::creature_push::{CreaturePushDisposition, CreaturePushIntent};
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
+use oteryn_protocol_oteryn::world_map::MapDefinition;
 use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
 };
@@ -108,6 +109,14 @@ pub(super) async fn exercise(
     assert!(map.facts.create_movement_item(tile, 12187, 0, || true));
     let before = map.facts.movement_items(tile);
     assert_eq!(before.len(), 1);
+    let gameplay = owner
+        .active_generation
+        .and_then(|generation| generation.native_gameplay());
+    let trap = crate::map::boot::native_item_definition(gameplay, "oteryn:item.tibia.i12187")
+        .ok_or("shipped merchant trap")?;
+    let captured = crate::map::boot::native_item_definition(gameplay, "oteryn:item.tibia.i12189")
+        .ok_or("shipped captured merchant")?;
+    assert_eq!(before[0].facts.definition, MapDefinition::Item(trap.reference));
     let intent = CreaturePushIntent {
         target: reference(owner, merchant).await?,
         destination: ActorPosition {
@@ -127,6 +136,7 @@ pub(super) async fn exercise(
     assert_eq!(after.len(), 1);
     assert_eq!(after[0].source, before[0].source);
     assert_eq!(after[0].facts.appearance_id, 12189);
+    assert_eq!(after[0].facts.definition, MapDefinition::Item(captured.reference));
     if let Some(h) = loot {
         super::autowalk_fixtures::place(owner, admitted, at(3, 2)).await?;
         let crate::map::view::EntrySource::Added(id) = after[0].source else {

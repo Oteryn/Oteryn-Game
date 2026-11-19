@@ -307,8 +307,10 @@ pub(super) fn scenario(
             deps.admitted.world_id,
             deps.admitted.channel_id,
             |key| {
-                if (merchant_wave || merchant_loot)
-                    && matches!(key, "oteryn:item.tibia.i12187" | "oteryn:item.tibia.i12189" | "oteryn:item.tibia.i3682")
+                if matches!(
+                    key,
+                    "oteryn:item.tibia.i12187" | "oteryn:item.tibia.i12189" | "oteryn:item.tibia.i3682"
+                )
                 {
                     return crate::map::boot::native_item_definition(active.native_gameplay(), key);
                 }
@@ -318,9 +320,6 @@ pub(super) fn scenario(
                         "oteryn:item.tibia.i3945" => 5,
                         "oteryn:item.tibia.i12368" => 6,
                         "oteryn:item.tibia.i12369" => 7,
-                        "oteryn:item.tibia.i12187" => 9,
-                        "oteryn:item.tibia.i12189" => 10,
-                        "oteryn:item.tibia.i3682" => 11,
                         _ => return None,
                     })?,
                     solid: Some(false),
