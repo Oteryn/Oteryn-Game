@@ -1067,7 +1067,6 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         "gameplay_transport/postgres_tests/browse_field/fixture.rs",
         2,
     ),
-    ("gameplay_transport/postgres_tests/creature_push.rs", 1),
     ("gameplay_transport/postgres_tests/cyclopedia.rs", 3),
     ("gameplay_transport/postgres_tests/dawnport_trial.rs", 1),
     // Q6's condition-potion fixture supplies only combat; its qualified room stays None.
@@ -1178,6 +1177,11 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("node/serve.rs", 1),
     ("qualification.rs", 1),
     // SRX-3 fixture room bindings; production Bundle closure is asserted separately.
+    // The Rottin merchant net capture moved the creature push room binding into its fixture.
+    (
+        "gameplay_transport/postgres_tests/support/creature_push_fixtures.rs",
+        1,
+    ),
     (
         "gameplay_transport/postgres_tests/support/hireling_lifecycle_fixtures.rs",
         1,
