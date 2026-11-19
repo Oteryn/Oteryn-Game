@@ -5,6 +5,7 @@ use super::{
 use crate::foundation::ExactActorRef;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bindings};
+use oteryn_gameplay_world::map::view::MapFacts;
 use serde_json::json;
 use sha2::{Digest, Sha256};
 
@@ -168,7 +169,6 @@ pub(super) async fn exercise_access(
         QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
     };
     use crate::foundation::{CommandId, CommandRef};
-    use oteryn_gameplay_world::map::view::MapFacts;
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 
     owner
@@ -670,7 +670,6 @@ pub(super) async fn exercise(
         );
     }
     if position == FLOWER {
-        use crate::map::view::MapFacts;
         let map = owner.bundle_map().ok_or("map")?;
         let tile = crate::map::overlay::TilePos {
             x: FLOWER.x,
