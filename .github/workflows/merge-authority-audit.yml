@@ -26,9 +26,9 @@ jobs:
       contents: read
       pull-requests: read
     env:
-      EXPECTED_MERGE_GROUP_GATE_BLOB: "a5e38bbe7cdf36414a84c0626a65c7c630a9fae9"
+      EXPECTED_MERGE_GROUP_GATE_BLOB: "e2b004fc0c0eb68b9954587223b9d0f08d9f404a"
       EXPECTED_AGENT_GOVERNANCE_BLOB: "42d84c9089cdef928c6cb17268269156c87c0abb"
-      EXPECTED_MERGE_GATE_BLOB: "22615205582e8cb3a76b54ab11460ab35c8c102e"
+      EXPECTED_MERGE_GATE_BLOB: "4ac7517823014f6992534d96438cbd9a49bcdc11"
     steps:
       - name: Validate control-plane candidate as inert data
         shell: bash
@@ -264,15 +264,17 @@ jobs:
           durability_result_expression = '$' + '{{ needs.durability_postgres.result }}'
           world_bundle_result_expression = '$' + '{{ needs.world_bundle.result }}'
           world_bundle_required_expression = '$' + '{{ needs.candidate.outputs.world_bundle }}'
+          archive_matrix_expression = '$' + '{{ matrix.archive }}'
+          affinity_archive_expression = '$' + '{{ steps.affinity.outputs.archive }}'
           required = (
               '  merge_group:\n    types: [checks_requested]\n  push:\n    branches: [main]\n',
               '    name: game-gate\n',
               '    if: always()\n',
-              '    needs: [candidate, dependency_review, codeql, atlas_fullworld, world_bundle, rust_linux, durability_postgres, rust_windows, rust_supply_chain, node_boot, server_seam]\n',
+              '    needs: [candidate, dependency_review, codeql, atlas_fullworld, world_bundle, rust_linux, rust_dispatch, durability_postgres, rust_windows, rust_supply_chain, node_boot, server_seam]\n',
               '    name: Merge Queue / candidate and governance\n',
               '          python tools/agents/tests/test_governance_lifecycle_discovery.py\n',
               '          python tools/repository/test_validate_merge_group_pg_sim.py\n',
-              '    name: Merge Queue / Durability PostgreSQL harness build\n',
+              '    name: Merge Queue / Durability PostgreSQL harness build (',
               '    name: Merge Queue / Durability PostgreSQL harness\n',
               '    needs: [candidate, durability_postgres_build]\n',
               '        image: postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc\n',
@@ -295,13 +297,32 @@ jobs:
               '              verify_registered_target_binding "$name" "$path"\n',
               '              archived_targets+=(--test "$name")\n',
               '          cargo +1.100.0 nextest archive --locked --workspace "${archived_targets[@]}" --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"\n',
-              '          cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"\n',
+              '        archive: [e2e, lib, lib-1, lib-2, lib-3]\n',
+              '          cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-game-server \\\n',
+              '            --features oteryn-gameplay-quests/test-support --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"\n',
+              "            --config 'profile.dev.package.oteryn-gameplay-dispatch.debug=0' -p oteryn-gameplay-dispatch --features test-support --lib \\\n",
+              '          sha256sum head-sha workspace "pg-$ARCHIVE.tar.zst" "pg-$ARCHIVE.json" > SHA256SUMS\n',
+              '          cargo-nextest nextest list --cargo-metadata "$meta/target/nextest/cargo-metadata.json" \\\n',
+              '          test "$SHARD_RESULT" = success\n',
+              f'          name: mq-postgres-test-inventory-{archive_matrix_expression}\n',
+              '          pattern: mq-postgres-test-inventory-*\n',
+              f'          name: mq-postgres-test-archives-{affinity_archive_expression}\n',
+              "          echo 'db285d452e0cb5814a95f0c8b25ab969af5ee9637fd051a1a0fdbcb8221cb64a  tools/ci/pg_archive_affinity.py' | sha256sum -c -\n",
+              '          python3 tools/ci/pg_archive_affinity.py route "$PG_ARCHIVES" "$JOB_INDEX" "$JOB_TOTAL"\n',
+              '          python3 tools/ci/pg_archive_affinity.py verify "$RUNNER_TEMP" mq \\\n',
+              '            "$PG_ARCHIVES" "$SELECTED_ARCHIVE" "$EXPECTED_SHA" "$GITHUB_WORKSPACE" tools/ci/plan_pg_partitions.py\n',
+              '          JOB_INDEX="${ARCHIVE_INDEX:?missing archive worker index}"\n',
+              '          JOB_TOTAL="${ARCHIVE_TOTAL:?missing archive worker count}"\n',
+              '          python3 tools/ci/plan_pg_partitions.py "$plan" "$JOB_INDEX" "$JOB_TOTAL" \\\n',
+              '    name: Merge Queue / Dispatch library tests without a database\n',
+              '          unset OTERYN_TEST_POSTGRES_ADMIN_URL\n',
+              '    uses: ./.github/workflows/node-boot-build.yml\n',
+              '    needs: [candidate, node_boot_plan, node_boot_build, node_boot_shard]\n',
+              '          test "$BUILD_RESULT" = success\n',
               '          cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst" \\\n'
               '            --workspace-remap "$GITHUB_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \\\n'
               '            --no-fail-fast "${filters[@]}"\n',
-              '          cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst" \\\n'
-              '            --workspace-remap "$GITHUB_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \\\n'
-              '            --no-fail-fast "${filters[@]}"\n',
+              '            cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/$archive.tar.zst" \\\n              --workspace-remap "$GITHUB_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \\\n              --no-fail-fast "${filters[@]}" || status=1\n',
               '          run_registered_target durability_postgres apps/game-server/tests/durability_postgres.rs\n',
               '          run_registered_target character_authority_postgres apps/game-server/tests/character_authority_postgres.rs\n',
               '          run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs\n',

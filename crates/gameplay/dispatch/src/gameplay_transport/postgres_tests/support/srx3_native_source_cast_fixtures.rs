@@ -2,6 +2,87 @@ use super::fixture::debug;
 
 use super::TestResult;
 
+use crate::gameplay_transport::ComposedFreshAdmission;
+use oteryn_simulation_determinism::SemanticTimeMicros;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::Duration;
+
+pub(super) const NATIVE_TURN_TIMEOUT: Duration = Duration::from_secs(10);
+
+pub(super) struct NativeOwnerClock<'a> {
+    time: &'a AtomicU64,
+    previous: u64,
+}
+
+impl<'a> NativeOwnerClock<'a> {
+    pub(super) fn new(owner: &'a ComposedFreshAdmission<'_, '_, '_>) -> Self {
+        let time = &owner.states.test_owner_time;
+        Self {
+            time,
+            previous: time.load(Ordering::Relaxed),
+        }
+    }
+
+    pub(super) fn set(&self, now: u64) {
+        // Zero selects the wall clock. The test clock stores its instant plus one.
+        self.time.store(now.saturating_add(1), Ordering::Relaxed);
+    }
+}
+
+impl Drop for NativeOwnerClock<'_> {
+    fn drop(&mut self) {
+        self.time.store(self.previous, Ordering::Relaxed);
+    }
+}
+
+pub(super) async fn drain_ready_monster_melee_at(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    now: u64,
+) -> TestResult {
+    // These fixtures have no Node maintenance pump. A previous pass may still
+    // be returning its holder, or cancellation may have retired it.
+    owner.root.await_ready().await?;
+    let clock = NativeOwnerClock::new(owner);
+    clock.set(now);
+    owner
+        .drain_monster_melee_at(SemanticTimeMicros::from_micros(now))
+        .await;
+    Ok(())
+}
+
+pub(super) async fn next_native_melee_deadline(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+) -> TestResult<u64> {
+    let runtime = owner.runtime.lock().await;
+    let states = owner.states.spell_states.lock().await;
+    let native = owner
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .ok_or("actual native work context")?;
+    Ok(crate::gameplay_transport::source_death::next_source_work(&runtime, &states, native)
+        .map_err(debug)?
+        .map_or(states.next_monster_ai_pass_us, |(_, due)| {
+            due.min(states.next_monster_ai_pass_us)
+        }))
+}
+
+pub(super) async fn settle_monster_melee_at(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    now: u64,
+) -> TestResult {
+    tokio::time::timeout(NATIVE_TURN_TIMEOUT, async {
+        loop {
+            drain_ready_monster_melee_at(owner, now).await?;
+            if next_native_melee_deadline(owner).await? > now {
+                return Ok(());
+            }
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .map_err(|_| "actual native work did not settle at its scheduled instant")?
+}
+
 /// One current death: at most one detached turn per copied event, its completion,
 /// and the retained uncredited corpse ACK. Never advance the source clock here.
 pub(super) async fn drain_source_death(
@@ -29,32 +110,38 @@ pub(super) async fn drain_source_death(
     let event_count = native
         .native_death_events(&definition)
         .map_or(0, |events| events.events().len());
-    for _ in 0..event_count + 2 {
-        let runtime = owner.runtime.lock().await;
-        let states = owner.states.spell_states.lock().await;
-        let head = runtime.next_source_creature_death().map_err(debug)?;
-        if let Some(head) = &head {
-            assert_eq!(
-                head.actor(),
-                actor,
-                "only this exact retained death may be drained"
-            );
+    let is_outburst = definition.key == "oteryn:creature.outburst";
+    tokio::time::timeout(NATIVE_TURN_TIMEOUT, async {
+        for _ in 0..event_count + 2 {
+            let pending = {
+                let runtime = owner.runtime.lock().await;
+                let states = owner.states.spell_states.lock().await;
+                let head = runtime.next_source_creature_death().map_err(debug)?;
+                if let Some(head) = &head {
+                    assert_eq!(
+                        head.actor(),
+                        actor,
+                        "only this exact retained death may be drained"
+                    );
+                }
+                head.is_some() || states.source_death_corpse.is_some()
+            };
+            if !pending {
+                break;
+            }
+            if is_outburst {
+                diagnose_outburst_death(owner, actor, now, "before_turn").await;
+            }
+            drain_ready_monster_melee_at(owner, now.get()).await?;
+            if is_outburst {
+                diagnose_outburst_death(owner, actor, now, "after_turn").await;
+            }
         }
-        let pending = head.is_some() || states.source_death_corpse.is_some();
-        drop(states);
-        drop(runtime);
-        if !pending {
-            break;
-        }
-        if definition.key == "oteryn:creature.outburst" {
-            diagnose_outburst_death(owner, actor, now, "before_turn").await;
-        }
-        owner.drain_monster_melee_at(now).await;
-        if definition.key == "oteryn:creature.outburst" {
-            diagnose_outburst_death(owner, actor, now, "after_turn").await;
-        }
-    }
-    if definition.key == "oteryn:creature.outburst" {
+        Ok::<(), Box<dyn std::error::Error>>(())
+    })
+    .await
+    .map_err(|_| "actual source death and corpse ACK did not settle")??;
+    if is_outburst {
         diagnose_outburst_death(owner, actor, now, "before_assert").await;
     }
     assert!(
