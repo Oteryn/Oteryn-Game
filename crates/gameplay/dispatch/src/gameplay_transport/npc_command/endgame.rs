@@ -11,6 +11,7 @@ use crate::durability::quest_state::soul_war::{SoulWarCommand, SoulWarCommandOut
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
 use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::foundation::{CommandId, CommandRef};
+use oteryn_gameplay_quests::quest::dark_trails::message_contains;
 use oteryn_gameplay_quests::quest::rotten_blood::{CleanseMode, RottenBloodRefusal};
 use oteryn_gameplay_quests::quest::soul_war_dialogue::{self as soul_dialogue, Reply as SoulReply};
 mod payment;
@@ -116,10 +117,17 @@ fn choose(npc: &str, text: &str, topic: Option<Topic>) -> Option<(Option<Topic>,
     }
     match npc {
         "oteryn:npc.bloodshade_rotten" => match text {
-            "taints" | "cleanse" | "purify" => Some((
-                Some(Topic::RottenCleanse),
-                Action::Reply(topic_line(Topic::RottenCleanse)),
-            )),
+            // Crystal npc/bloodshade_rotten.lua:81-94 handles cleansing
+            // keywords before considering quest acknowledgement at line 136.
+            _ if ["taints", "cleanse", "purify"]
+                .iter()
+                .any(|keyword| message_contains(text, keyword)) =>
+            {
+                Some((
+                    Some(Topic::RottenCleanse),
+                    Action::Reply(topic_line(Topic::RottenCleanse)),
+                ))
+            }
             "regular" | "all" if topic == Some(Topic::RottenCleanse) => {
                 let mode = if text == "all" {
                     CleanseMode::All
@@ -136,7 +144,7 @@ fn choose(npc: &str, text: &str, topic: Option<Topic>) -> Option<(Option<Topic>,
                 _ => None,
             },
             // Crystal npc/bloodshade_rotten.lua:136 uses MsgContains("quest").
-            _ if oteryn_gameplay_quests::quest::dark_trails::message_contains(text, "quest") => {
+            _ if message_contains(text, "quest") => {
                 Some((None, Action::Commit(Mutation::RottenAcknowledge)))
             }
             _ => None,

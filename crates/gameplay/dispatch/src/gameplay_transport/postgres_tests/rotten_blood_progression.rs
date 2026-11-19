@@ -241,9 +241,14 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
             "oteryn:npc.bloodshade_rotten",
         )
         .await?;
-        // Crystal npc/bloodshade_rotten.lua:129-142 accepts the keyword
-        // in a sentence. The next request must not write another receipt.
-        for (number, text) in [(80, "hi"), (81, "I am here for the quest."), (82, "quest")] {
+        // Crystal npc/bloodshade_rotten.lua:81-94,129-142 gives cleansing
+        // precedence and accepts the quest keyword in a sentence.
+        for (number, text, expected_stage) in [
+            (80, "hi", 4),
+            (81, "Tell me about taints in this quest.", 4),
+            (82, "I am here for the quest.", 5),
+            (83, "quest", 5),
+        ] {
             advance_npc_turn(&mut owner)?;
             talk(
                 &owner,
@@ -254,22 +259,14 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
                 text,
             )
             .await?;
-            if number == 81 {
-                assert_eq!(
-                    read(&owner, &h, &authority, admitted.game_session_id)
-                        .await?
-                        .access_stage(),
-                    5,
-                    "the sentence must acknowledge the chain before the repeat request",
-                );
-            }
+            assert_eq!(
+                read(&owner, &h, &authority, admitted.game_session_id)
+                    .await?
+                    .access_stage(),
+                expected_stage,
+                "wrong access stage after Bloodshade heard {text:?}",
+            );
         }
-        assert_eq!(
-            read(&owner, &h, &authority, admitted.game_session_id)
-                .await?
-                .access_stage(),
-            5
-        );
         assert_eq!(
             sqlx::query_scalar::<_, i64>(
                 "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1"
