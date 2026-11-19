@@ -114,6 +114,9 @@ pub(super) async fn exercise(
 ) -> TestResult {
     let occupied_arrival = name == OCCUPIED_ARRIVAL;
     let departed_top = name == DEPARTED_TOP;
+    if departed_top {
+        owner.refresh_quest_session(admitted.game_session_id, true).await;
+    }
     let player = admitted.runtime_actor.ok_or("actor")?;
     let second_session = GameSessionId::decode(&id(110)).map_err(debug)?;
     let second = {
@@ -345,8 +348,14 @@ pub(super) async fn exercise(
         use crate::gameplay_transport::kill_reward::DrainOutcome;
         assert_eq!(owner.drain_kill_rewards(admitted.game_session_id).await, DrainOutcome::Drained);
         let value: Option<i64> = sqlx::query_scalar(
-            "SELECT value FROM game_character_quest_tracks WHERE quest_key=$1 AND track_key=$2",
-        ).bind(QUEST).bind(CREDIT_TRACK).fetch_optional(&harness.pool).await?;
+            "SELECT value FROM game_character_quest_tracks \
+             WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 AND track_key=$3",
+        )
+        .bind(id(41).as_slice())
+        .bind(QUEST)
+        .bind(CREDIT_TRACK)
+        .fetch_optional(&harness.pool)
+        .await?;
         assert_eq!(value, Some(1));
     }
     advance_to_deadline(owner)?;
