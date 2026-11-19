@@ -984,6 +984,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && c.trigger == Trigger::Use
                     && !oteryn_gameplay_quests::quest::ice_seal_paint::historical_only(&c.key)
                     && matches(map, c, resolved.placement_key)
+                    && scene::matches_delayed_scene_opening(map, c, resolved.pos, resolved.ordinal)
                     && c.activation.as_ref().is_none_or(|activation| {
                         self.states
                             .quest_sessions

@@ -1739,6 +1739,9 @@ fn scenario_case(
         if super::super::warzone_portal_cooldown::is_entry(name) {
             owner.quest_catalogue = Some(std::sync::Arc::new(super::super::warzone_portal_cooldown::catalogue(&callback, name)?));
         }
+        if super::super::zamulosh_monster_step::is_habitat(name) {
+            owner.quest_catalogue = Some(std::sync::Arc::new(super::super::zamulosh_monster_step::habitat_catalogue(&callback)?));
+        }
         if super::super::first_dragon_descendant::handles(name) {
             owner.quest_catalogue = Some(std::sync::Arc::new(
                 super::super::first_dragon_descendant::catalogue(&callback)?,

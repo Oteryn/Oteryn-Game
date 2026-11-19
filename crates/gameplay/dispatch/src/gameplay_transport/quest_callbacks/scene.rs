@@ -3,6 +3,38 @@ use crate::map::facts::{QuestCallbackProjection, QuestSceneMutation};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::world_callbacks::SceneEdit;
 
+pub(super) fn matches_delayed_scene_opening(
+    map: &BundleMap,
+    callback: &Callback,
+    position: TilePos,
+    ordinal: u8,
+) -> bool {
+    let Some(scene) = &callback.effects.scene else {
+        return true;
+    };
+    let Some([opening, _]) = callback.lever else {
+        return true;
+    };
+    if scene.delayed_open.is_none() {
+        return true;
+    }
+    // Crystal 201189f8, actions_habitat_grass.lua:439-468. Both lever
+    // appearances retain the same AID; only this one starts the terrain turn.
+    map.overlay
+        .base()
+        .tile(position.x, position.y, position.floor)
+        .and_then(|base| {
+            base.ids()
+                .iter()
+                .zip(base.depths())
+                .filter(|(_, depth)| **depth == 0)
+                .nth(usize::from(ordinal))
+                .map(|(id, _)| *id)
+        })
+        .and_then(|id| map.facts.base_entry(position, ordinal, id))
+        .is_some_and(|entry| entry.appearance_id == opening)
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) fn prepare_delayed_scene_spawn<'a>(
         &self,

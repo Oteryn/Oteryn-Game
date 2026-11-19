@@ -2,6 +2,9 @@
 use super::{ComposedFreshAdmission, TestResult, fixture::Harness, fixture::debug};
 use crate::foundation::ExactActorRef;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
+use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bindings};
+use serde_json::json;
+use sha2::{Digest, Sha256};
 
 pub(super) const CASE: &str = "ferumbras-zamulosh-lovely-monster-step";
 pub(super) const BLOSSOM: &str = "first-dragon-fertility-blossom-step";
@@ -15,6 +18,11 @@ const PLANT: &str = "oteryn:creature.angry_plant";
 const MATCHED_CUE: &str = "That seemed correct!";
 const THUNDER: u16 = 73; // Crystal src/utils/utils_definitions.hpp:128.
 const ENERGY_AREA: u16 = 38; // Crystal src/utils/utils_definitions.hpp:93.
+const FERUMBRAS: &str = "oteryn:quest.ferumbras_ascension_quest";
+const GRASS: &str = "oteryn:quest-progress/quest/u10_90/ferumbras_ascension/habitats/grass";
+const ALL_HABITATS: &str =
+    "oteryn:quest-progress/quest/u10_90/ferumbras_ascension/habitats/all_habitats";
+const HABITAT_SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/actions_habitat_grass.lua:15-27,93,393-420,439-472";
 // Mount the source UID on a tile in the finale fixture. Crystal selects its
 // appearance and UID, while the map asset determines the coordinates.
 const FLOWER: Position = Position {
@@ -134,22 +142,55 @@ pub(super) fn habitat_callback() -> TestResult<Callback> {
     });
     let document = serde_json::json!({"schema":1,"callbacks":[{
         "key":"oteryn:quest-callback/ferumbras/zamulosh/grass-habitat",
-        "quest":"oteryn:quest.ferumbras_ascension_quest",
+        "quest":FERUMBRAS,
         "trigger":"use","selector":{"position":HABITAT_LEVER,"action":34306,"appearance":9125},
-        "lever":[9125,9126],"reversible":false,"passages":[],"storage":[],"offerings":[],
+        "lever":[9125,9126],"reversible":false,"passages":[],"offerings":[],
+        "requires_world_admission":true,
         "return_on_failure":false,
+        "storage":[{"track":GRASS,"minimum":-1,"maximum":0,"set":1}],
+        "state_operations":[{"track":ALL_HABITATS,"from":{"kind":"any"},
+            "effect":{"kind":"add","value":1}}],
         "effects":{"magic":{"position":BASIN,"effect":ENERGY_AREA},"scene":{
             "open":[{"position":BASIN,"remove":11114,"create":22196,"passable":true,
                 "allow_missing":true}],
             "close":[],"delayed_open":{"delay_ms":2000,"edits":delayed_edits,
                 "spawn":{"position":HABITAT_SPAWN,"creature":FRAZZLEMAW}}
         }},
-        "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/actions_habitat_grass.lua:15-27,93,393-420,439-472"]
+        "sources":[HABITAT_SOURCE]
     }]});
     let [callback] = oteryn_gameplay_quests::quest::world_callbacks::parse(&document.to_string())?
         .try_into()
         .map_err(|_| "one grass habitat callback")?;
     Ok(callback)
+}
+
+fn habitat_close_callback() -> TestResult<Callback> {
+    let document = json!({"schema":1,"callbacks":[{
+        "key":"oteryn:quest-callback/ferumbras/zamulosh/grass-habitat-close",
+        "quest":FERUMBRAS,"trigger":"use",
+        "selector":{"position":HABITAT_LEVER,"action":34306,"appearance":9126},
+        "reversible":false,"passages":[],"storage":[],"offerings":[],"return_on_failure":false,
+        "effects":{"transform":9125},"sources":[HABITAT_SOURCE]
+    }]});
+    let [callback] = oteryn_gameplay_quests::quest::world_callbacks::parse(&document.to_string())?
+        .try_into()
+        .map_err(|_| "one grass habitat closing callback")?;
+    Ok(callback)
+}
+
+pub(super) fn habitat_catalogue(callback: &Callback) -> TestResult<QuestStateCatalogue> {
+    let digest = format!("{:x}", Sha256::digest(HABITAT_SOURCE));
+    let document = json!({"schema":1,"quests":[{
+        "quest":FERUMBRAS,"recipe_sha256":digest,"sources":[HABITAT_SOURCE],
+        "tracks":[
+            {"key":GRASS,"initial":-1,"minimum":-1,"maximum":1},
+            {"key":ALL_HABITATS,"initial":-1,"minimum":-1,"maximum":8}
+        ],
+        "stages":[{"key":"grass-habitat","completes":false,
+            "trigger":{"kind":"map_use","callback":callback}}]
+    }]});
+    let bindings = Bindings::parse(&serde_json::to_vec(&document)?)?;
+    Ok(bindings.attach(&QuestStateCatalogue::empty("content-1").ok_or("catalogue")?)?)
 }
 
 pub(super) fn habitat_world(
@@ -184,7 +225,7 @@ pub(super) async fn exercise_habitat(
         .states
         .quest_callbacks
         .fixture
-        .set(vec![callback])
+        .set(vec![callback, habitat_close_callback()?])
         .map_err(|_| "callback installed")?;
     let map = owner.bundle_map().ok_or("habitat map")?;
     let has = |at: Position, appearance: u16| -> TestResult<bool> {
@@ -202,10 +243,15 @@ pub(super) async fn exercise_habitat(
             .any(|entry| entry.facts.appearance_id == appearance))
     };
     let before = owner.owner_now().get();
+    let progress = super::questpc7_ferumbras::value;
+    assert_eq!(progress(owner, admitted, GRASS).await?, -1);
+    assert_eq!(progress(owner, admitted, ALL_HABITATS).await?, -1);
     assert_eq!(
         super::questpc7_ferumbras::use_at(owner, admitted, HABITAT_LEVER, 9125).await?,
         UseDisposition::Committed
     );
+    assert_eq!(progress(owner, admitted, GRASS).await?, 1);
+    assert_eq!(progress(owner, admitted, ALL_HABITATS).await?, 0);
     let due = map
         .facts
         .next_movement_decay_time()
@@ -280,6 +326,33 @@ pub(super) async fn exercise_habitat(
     assert_eq!(map.facts.expire_movement_items(due), 0);
     assert_eq!(map.facts.next_movement_decay_time(), None);
     assert_eq!(frazzlemaws()?, [frazzlemaw]);
+    drop(channel);
+    if stale {
+        // Restore the lever after the stale batch discarded its map edits. The
+        // original placement is eligible again, but the character already used it.
+        assert_eq!(
+            super::questpc7_ferumbras::use_at(owner, admitted, HABITAT_LEVER, 9126).await?,
+            UseDisposition::Committed,
+        );
+        assert_eq!(
+            super::questpc7_ferumbras::use_at(owner, admitted, HABITAT_LEVER, 9125).await?,
+            UseDisposition::Rejected,
+        );
+        assert_eq!(progress(owner, admitted, GRASS).await?, 1);
+        assert_eq!(progress(owner, admitted, ALL_HABITATS).await?, 0);
+        assert_eq!(map.facts.next_movement_decay_time(), None);
+        let runtime = owner.runtime.lock().await;
+        let actors = runtime.current_live_creature_census().map_err(debug)?;
+        assert_eq!(
+            actors
+                .into_iter()
+                .filter(
+                    |actor| runtime.matches_live_creature_identity(*actor, FRAZZLEMAW.as_bytes())
+                )
+                .collect::<Vec<_>>(),
+            [frazzlemaw]
+        );
+    }
     Ok(())
 }
 
