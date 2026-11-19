@@ -1989,10 +1989,16 @@ impl DurabilityRoot {
                             && let Some(expiry) = room.solo_expiry
                         {
                             let Some(monster) = room.monsters.first() else { return Err(DurabilityError::InvalidStoredState); };
-                            if !super::super::boss_encounter::cooldown_storage::admit_solo_quest_room(
+                            use super::super::boss_encounter::cooldown_storage::{BossCooldownChange, admit_solo_quest_room};
+                            let refusal = match admit_solo_quest_room(
                                 &mut tx, character, &monster.creature, context.reset_epoch, expiry.cooldown_seconds,
                             ).await? {
-                                return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::SourceBossCooldownActive)));
+                                BossCooldownChange::Applied => None,
+                                BossCooldownChange::OnCooldown => Some(QuestRefusal::SourceBossCooldownActive),
+                                BossCooldownChange::Replayed => Some(QuestRefusal::StageMismatch),
+                            };
+                            if let Some(refusal) = refusal {
+                                return Ok(Ok(QuestTransitionOutcome::Refused(refusal)));
                             }
                         }
                     }

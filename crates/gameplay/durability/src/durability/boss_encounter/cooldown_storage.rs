@@ -223,7 +223,7 @@ pub(crate) async fn admit_solo_quest_room(
     creature: &str,
     epoch: u64,
     cooldown_seconds: u64,
-) -> Result<bool, DurabilityError> {
+) -> Result<BossCooldownChange, DurabilityError> {
     let (admission, now): (Vec<u8>, i64) = sqlx::query_as(
         "SELECT uuid_send(game_character_uuid_v7()), floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint",
     ).fetch_one(&mut **tx).await?;
@@ -232,7 +232,7 @@ pub(crate) async fn admit_solo_quest_room(
     let admission = admission
         .try_into()
         .map_err(|_| DurabilityError::InvalidStoredState)?;
-    let outcome = set_boss_cooldowns_data(
+    set_boss_cooldowns_data(
         tx,
         &[key],
         &BossCooldownAdmissionData {
@@ -247,8 +247,7 @@ pub(crate) async fn admit_solo_quest_room(
     .map_err(|error| match error {
         BossRewardStateError::Unavailable(error) => error,
         _ => DurabilityError::InvalidStoredState,
-    })?;
-    Ok(outcome == BossCooldownChange::Applied)
+    })
 }
 
 /// A donor death can extend the same cooldown booked on entry. The Character

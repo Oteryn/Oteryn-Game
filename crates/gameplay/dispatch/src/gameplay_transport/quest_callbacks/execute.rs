@@ -1535,16 +1535,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if let Ok(mut pending)=self.states.quest_callbacks.records.lock(){pending.remove(&session);}
                     return UseDisposition::Committed;
                 }
-                Ok(QuestTransitionOutcome::Refused(oteryn_gameplay_quests::quest::QuestRefusal::SourceBossCooldownActive)) => {
-                    if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
-                        pending.remove(&session);
-                    }
-                    if let Some(refused) = cooldown_refused {
+                refusal_or_error => {
+                    if matches!(refusal_or_error, Ok(QuestTransitionOutcome::Refused(
+                        oteryn_gameplay_quests::quest::QuestRefusal::SourceBossCooldownActive)))
+                        && let Some(refused) = cooldown_refused
+                    {
                         *refused = true;
                     }
-                    return UseDisposition::Rejected;
-                }
-                Ok(_) | Err(_) => {
                     if oteryn_gameplay_quests::quest::death_objectives::load().is_ok_and(|objectives|
                         objectives.iter().any(|objective| objective.quest == callback.quest && objective.guardian.is_some()))
                     {
