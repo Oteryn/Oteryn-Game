@@ -1109,7 +1109,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                     || !callback.passages.is_empty()
                     || !callback.offerings.is_empty()
                     || callback.item_on_target.is_some()
-                    || callback.minimum_level.is_some()
+                    || (callback.minimum_level.is_some() && callback.trigger != Trigger::StepIn)
                     || callback.requires_live_premium()
                     || callback.experience.is_some()
                     || callback.monk_reward.is_some()

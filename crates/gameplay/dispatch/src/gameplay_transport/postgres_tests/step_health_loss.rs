@@ -1,6 +1,6 @@
 //! Crystal 201189f8, rotten_blood_quest/movements_blood_entrance.lua:7-44.
 //! The ingress pad is adjacent to the requested Putrefactory landing in this fixture.
-use super::fixture::debug;
+use super::fixture::{Harness, debug};
 use super::quest_world_callbacks::{local, scenario, wire};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::foundation::ExactActorRef;
@@ -18,8 +18,10 @@ use std::sync::Arc;
 pub(super) const NAME: &str = "unpaid-vestibule-step-health-loss";
 pub(super) const HEALTH_FLOOR: &str = "unpaid-vestibule-health-floor";
 pub(super) const PAID: &str = "paid-vestibule-step-no-health-loss";
+pub(super) const BELOW_LEVEL: &str = "vestibule-step-below-level";
 const QUEST: &str = "oteryn:quest.fixture.vestibule";
 const ACCESS: &str = "oteryn:quest-progress/fixture/vestibule-access";
+const LEVEL_REFUSAL: &str = "You need at least level 250 to enter.";
 const UNPAID: &str = "You offerings to this sanguine master of this realm have been insufficient. You can not pass.";
 const LANDING: Position = Position {
     x: 34101,
@@ -77,6 +79,19 @@ fn paid_vestibule_walk_in_admits_without_agony() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run(PAID, || scenario(PAID, INGRESS, false))
 }
 
+#[test]
+fn vestibule_returns_below_level_player_to_landing_before_penalty() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    if admin.is_empty() {
+        return Err("empty PostgreSQL admin URL".into());
+    }
+    super::kill_reward_e2e::scenario_thread::run(BELOW_LEVEL, || {
+        scenario(BELOW_LEVEL, INGRESS, false)
+    })
+}
+
 pub(super) fn callback() -> TestResult<Callback> {
     Ok(serde_json::from_value(json!({
         "key":"oteryn:quest-callback/fixture/vestibule-ejection",
@@ -85,7 +100,7 @@ pub(super) fn callback() -> TestResult<Callback> {
         "passages":[], "storage":[{"track":ACCESS,"minimum":0,"maximum":3,"set":0,"read_only":true}],
         "offerings":[], "return_on_failure":true, "reversible":false,
         "teleport":EJECT,
-        "success_message":UNPAID,
+        "minimum_level":250, "failure_message":LEVEL_REFUSAL, "success_message":UNPAID,
         "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/movements_blood_entrance.lua:7-44"]
     }))?)
 }
@@ -94,6 +109,7 @@ pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     actor: ExactActorRef,
+    harness: &Harness,
     name: &str,
 ) -> TestResult {
     let mut unpaid = serde_json::to_value(callback()?)?;
@@ -124,6 +140,23 @@ pub(super) async fn exercise(
     let base = QuestStateCatalogue::empty("content-1").ok_or("test catalogue")?;
     owner.quest_catalogue = Some(Arc::new(bindings.attach(&base)?));
     let session = admitted.game_session_id;
+    let fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(debug)?
+        .ok_or("Vestibule fence")?;
+    let level: i64 = if name == BELOW_LEVEL { 249 } else { 250 };
+    let mut tx = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx).await?;
+    let updated = sqlx::query(
+        "UPDATE game_character_progression_state SET level=$1 WHERE character_id=encode($2,'hex')::uuid",
+    )
+    .bind(level)
+    .bind(fence.character_id.as_bytes().as_slice())
+    .execute(&mut *tx).await?;
+    assert_eq!(updated.rows_affected(), 1);
+    tx.commit().await?;
     owner.states.chat.admit(session, "Fixture Hero", owner.owner_now());
     if name == HEALTH_FLOOR {
         let runtime = owner.runtime.lock().await;
@@ -153,7 +186,7 @@ pub(super) async fn exercise(
     let expected = if name == HEALTH_FLOOR {
         assert_eq!(before, 12);
         before
-    } else if name == PAID {
+    } else if matches!(name, PAID | BELOW_LEVEL) {
         before
     } else {
         assert!(before > 13);
@@ -187,20 +220,23 @@ pub(super) async fn exercise(
             .read_actor_position(actor)
             .map_err(debug)?
             .position(),
-        local(if name == PAID { DESTINATION } else { EJECT })
+        local(match name {
+            PAID => DESTINATION,
+            BELOW_LEVEL => LANDING,
+            _ => EJECT,
+        })
     );
     assert_eq!(health().await?, expected);
     let effects_after = effects_before + usize::from(name == PAID);
     assert_eq!(landing_effects()?, effects_after);
-    let unpaid_message = oteryn_protocol_oteryn::chat::ChatLine::Private {
-        speaker_name: "Game".into(),
-        text: UNPAID.into(),
-    };
     let messages = owner.states.chat.drain(session);
     if name == PAID {
         assert!(messages.is_empty());
     } else {
-        assert_eq!(messages, vec![unpaid_message]);
+        assert_eq!(messages, vec![oteryn_protocol_oteryn::chat::ChatLine::Private {
+            speaker_name: "Game".into(),
+            text: if name == BELOW_LEVEL { LEVEL_REFUSAL } else { UNPAID }.into(),
+        }]);
     }
     assert_eq!(wire(owner, admitted, 1, 1, step).await?, reply);
     assert_eq!(health().await?, expected);

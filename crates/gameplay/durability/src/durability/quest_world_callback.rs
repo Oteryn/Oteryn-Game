@@ -119,12 +119,19 @@ impl super::DurabilityRoot {
                 if !context_is_current(&mut tx, permit, fence, context).await? {
                     return Ok(Ok(false));
                 }
-                let current: Option<String> = sqlx::query_scalar(
-                    "SELECT content_revision FROM game_character_progression_state \
+                let current: Option<(String, i64)> = sqlx::query_as(
+                    "SELECT content_revision,level FROM game_character_progression_state \
                      WHERE character_id=encode($1,'hex')::uuid",
                 ).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
-                if current.as_deref() != Some(catalogue.content_revision()) {
+                let Some((revision, level)) = current else {
                     return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
+                };
+                if revision != catalogue.content_revision() {
+                    return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
+                }
+                // Crystal movements_blood_entrance.lua:20-30 checks level before the offering penalty.
+                if callback.minimum_level.is_some_and(|minimum| level < i64::from(minimum)) {
+                    return Ok(Ok(false));
                 }
                 let pending: bool = sqlx::query_scalar(
                     "SELECT EXISTS(SELECT 1 FROM game_character_pending_respawns \

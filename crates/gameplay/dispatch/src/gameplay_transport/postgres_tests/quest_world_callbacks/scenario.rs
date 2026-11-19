@@ -358,7 +358,8 @@ fn scenario_case(
     let draconia_escape = name.starts_with("draconia-escape-");
     let vestibule = matches!(
         name,
-        super::super::step_health_loss::NAME
+        super::super::step_health_loss::BELOW_LEVEL
+            | super::super::step_health_loss::NAME
             | super::super::step_health_loss::HEALTH_FLOOR
             | super::super::step_health_loss::PAID
     );
@@ -2091,7 +2092,7 @@ fn scenario_case(
         } else if reservoir {
             Box::pin(super::super::putrefactory_reservoir::exercise(&mut owner, &mut admitted, &h, deps.actor, name)).await?;
         } else if vestibule {
-            Box::pin(super::super::step_health_loss::exercise(&mut owner, &mut admitted, deps.actor, name)).await?;
+            Box::pin(super::super::step_health_loss::exercise(&mut owner, &mut admitted, deps.actor, &h, name)).await?;
         } else if failure_landing {
             super::super::conditional_callback_failure::exercise(
                 &owner,
