@@ -106,14 +106,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 floor: at.floor,
             })
             .find(|landing| {
-                self.movement_cells().index().lookup(
-                    self.movement_cells().scope(),
-                    LogicalCell {
-                        x: landing.x,
-                        y: landing.y,
-                        z: i32::from(landing.floor),
-                    },
-                ) == Ok(CollisionClass::Walkable)
+                let cell = LogicalCell {
+                    x: landing.x,
+                    y: landing.y,
+                    z: i32::from(landing.floor),
+                };
+                let cells = self.movement_cells();
+                cells.index().lookup(cells.scope(), cell) == Ok(CollisionClass::Walkable)
+                    // Crystal src/map/map.cpp:293-295 excludes teleport tiles
+                    // from the neighbouring positions considered for a spawn.
+                    && (*landing == at || !crate::map::floor::is_teleport(cells, cell))
                     && native_position_open(map, *landing)
                     && !census
                         .iter()
