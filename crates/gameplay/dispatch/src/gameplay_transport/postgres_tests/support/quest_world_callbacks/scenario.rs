@@ -695,7 +695,7 @@ fn scenario_case(
     } else if native_putrefactory_gate || name == putrefactory_reservoir_fixtures::NATIVE {
         let mut physical = callback.clone();
         physical.selector.action = None;
-        super::world_with_cells(&physical, trigger, &[])?
+        super::world_with_selector_cells(&physical, trigger, &[])?
     } else if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals_fixtures::world()?
     } else if name == "nx6-wayfarer" {
@@ -1076,7 +1076,7 @@ fn scenario_case(
             )?;
         let generation = controller.active().ok_or("generation")?;
         let world = if vestibule {
-            super::world_with_cells(
+            super::world_with_selector_cells(
                 &callback,
                 trigger,
                 &[step_health_loss_fixtures::DESTINATION],

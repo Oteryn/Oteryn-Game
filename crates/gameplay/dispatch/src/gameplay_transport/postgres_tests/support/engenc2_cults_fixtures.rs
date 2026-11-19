@@ -101,7 +101,7 @@ pub(super) fn encounter_scenario(
                 |native| native.position,
             );
             let world = if let Some(battlefield) = callback.effects.battlefield {
-                super::quest_world_callbacks_fixtures::world_with_cells(
+                super::quest_world_callbacks_fixtures::world_with_selector_cells(
                     &callback,
                     trigger,
                     &[battlefield.exit, battlefield.captain, battlefield.boss],
