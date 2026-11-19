@@ -256,9 +256,7 @@ pub(super) fn scenario(
         } else {
             Harness::create_with_admission_seed(admin, seed, true, false).await?
         };
-        if weighted_reward {
-            super::rottin_rewards_fixtures::seed_inventory(&h, if short_reward { 6 } else { 7 }).await?;
-        } else if merchant_wave {
+        if merchant_wave {
             super::item_look_fixtures::seed_main_backpack(&h, &[("oteryn:item.tibia.i12186", 1); 2]).await?;
         } else if repair {
             super::item_look_fixtures::seed_main_backpack(&h, &[("oteryn:item.tibia.i3460", 1)]).await?;
@@ -339,7 +337,7 @@ pub(super) fn scenario(
                 },
             )
             .ok_or("push combat room")?;
-        if merchant_loot || merchant_wave || repair {
+        if merchant_loot || merchant_wave || repair || weighted_reward {
             sqlx::query(
                 "INSERT INTO game_control_scope_grants VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)",
             )
@@ -428,6 +426,11 @@ pub(super) fn scenario(
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
             owner.admit_quest_session(&admitted).await;
+            if weighted_reward {
+                super::rottin_rewards_fixtures::craft_charms(
+                    &owner, &admitted, &h, if short_reward { 6 } else { 7 },
+                ).await?;
+            }
             if merchant_wave {
                 let expected_merchants = if blocked_merchant_spawn { 6 } else { 7 };
                 super::rottin_bushwhacking_fixtures::exercise_wave(

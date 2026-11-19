@@ -1,23 +1,32 @@
 //! Exercise the authored reward owner through live Rottin TALK and PostgreSQL.
 use super::classic_quests_fixtures::{install, talk};
-use super::fixture::{Harness, id};
+use super::fixture::{Harness, debug, id};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
+use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
+use crate::foundation::{CommandId, CommandRef};
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
+use crate::gameplay_transport::item_view::{ItemKey, SessionItemView, inventory_from_backpack};
 use oteryn_gameplay_quests::quest::QuestStateCatalogue;
 use oteryn_gameplay_quests::quest::authored_bindings::Bindings;
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
+use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseDisposition, UseIntent, UseTarget};
 use serde_json::json;
 use sha2::{Digest, Sha256};
+use std::sync::Arc;
 
 const QUEST: &str = "oteryn:quest.rottin_wood_and_the_married_men_quest";
 const TRACK: &str =
     "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/task01";
 const COOLDOWN: &str = "oteryn:quest-progress/crystalserver/kv/lucky-loop-task";
+const START_TASK: &str =
+    "oteryn:quest-transition/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/task01/npc_1";
 const ACHIEVEMENT: &str = "oteryn:achievement/bunny_slipped";
 const PAYOUT: &str = "oteryn:quest-reward/rottin-wood/lucky-loop";
 const ROTTIN: &str = "oteryn:npc.rottin_wood";
 const PLATINUM: &str = "oteryn:item.tibia.i3035";
 const RING: &str = "oteryn:item.tibia.i3053";
+const RIBBON: &str = "oteryn:item.tibia.i12171";
+const FOOT: &str = "oteryn:item.tibia.i12172";
 const CHARM: &str = "oteryn:item.tibia.i12173";
 const DONOR: &str =
     "201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:238-255";
@@ -59,7 +68,7 @@ pub(super) fn catalogue(repeat: bool) -> TestResult<QuestStateCatalogue> {
             "recipe_sha256": digest,
             "sources": [DONOR],
             "tracks": [
-                {"key": TRACK, "initial": 1, "minimum": 1, "maximum": 2},
+                {"key": TRACK, "initial": 0, "minimum": 0, "maximum": 2},
                 {"key": COOLDOWN, "initial": prior_stamp, "minimum": 0, "maximum": i64::MAX}
             ],
             "stages": [{
@@ -92,12 +101,138 @@ pub(super) fn catalogue(repeat: bool) -> TestResult<QuestStateCatalogue> {
             }]
         }]
     }))?)?;
-    let base = QuestStateCatalogue::empty("content-1").ok_or("quest catalogue")?;
+    let source = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(debug)?;
+    let track = source.catalogue().track(TRACK).ok_or("Lucky Loop track")?;
+    let start = source
+        .catalogue()
+        .transition(START_TASK)
+        .ok_or("Lucky Loop start transition")?;
+    let base = QuestStateCatalogue::new("content-1", vec![track.clone()], vec![start.clone()])
+        .map_err(debug)?;
     Ok(bindings.attach(&base)?)
 }
 
-pub(super) async fn seed_inventory(h: &Harness, count: usize) -> TestResult {
-    super::item_look_fixtures::seed_main_backpack(h, &vec![(CHARM, 1); count]).await
+pub(super) async fn craft_charms(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    h: &Harness,
+    count: i64,
+) -> TestResult {
+    super::item_look_fixtures::seed_main_backpack(h, &[(RIBBON, count), (FOOT, count)]).await?;
+    let quest_fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "quest fence")?
+        .ok_or("quest fence")?;
+    let fence = quest_fence.item_fence();
+    let inventory = owner
+        .root
+        .read_item_use_inventory(owner.character, owner.holder, fence)
+        .await
+        .map_err(debug)?;
+    let index = owner
+        .active_generation
+        .and_then(|generation| generation.native_gameplay())
+        .and_then(|native| native.item_index())
+        .ok_or("production item index")?;
+    let mut view = SessionItemView::resume(Default::default());
+    view.snapshot(
+        inventory_from_backpack(inventory.backpack.as_ref(), |definition| {
+            index.definition_ref(
+                &definition.family,
+                &definition.production_key,
+                &definition.revision_ref,
+            )
+        })
+        .ok_or("recipe inventory")?,
+        None,
+    )
+    .map_err(debug)?;
+    let operand = |seed| {
+        view.table()
+            .handle(&ItemKey::Instance(id(seed)))
+            .ok_or("recipe operand handle")
+    };
+    let ribbon = operand(71)?;
+    let foot = operand(72)?;
+    let actor = admitted.runtime_actor.ok_or("recipe actor")?;
+    let use_pair = async |command_id, source, target, view: &SessionItemView| {
+        crate::gameplay_transport::mining::dispatch_map_use(
+            owner,
+            actor,
+            UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id,
+                item_fence: Some(fence),
+            },
+            UseIntent {
+                target: UseTarget::Item(source),
+                use_with: None,
+                use_with_map_item: Some(MapUseTarget::Item(target)),
+                use_with_position: None,
+            },
+            Some(view),
+        )
+        .await
+    };
+    assert_eq!(
+        use_pair(1599, ribbon, foot, &view).await.ok_or("inactive recipe")?.disposition,
+        UseDisposition::NothingToUse
+    );
+    // Use the source-lowered start transition. Dialogue coverage lives in the NPC lane.
+    let started = owner
+        .revision_sequencer
+        .acquire(fence.character_id)
+        .await
+        .commit_quest_transition(
+            owner.root,
+            owner.character,
+            owner.holder,
+            quest_fence,
+            QuestTransitionRequest {
+                transition_key: START_TASK.into(),
+                cause: QuestCause::Command(CommandRef::new(
+                    admitted.game_session_id,
+                    CommandId::new(1600).map_err(debug)?,
+                )),
+            },
+            Arc::clone(owner.quest_catalogue.as_ref().ok_or("quest catalogue")?),
+        )
+        .await
+        .map_err(debug)?;
+    assert!(matches!(started, QuestTransitionOutcome::Committed(_)), "{started:?}");
+    assert_eq!(
+        use_pair(1601, foot, ribbon, &view).await.ok_or("reversed recipe")?.disposition,
+        UseDisposition::NothingToUse
+    );
+    for command_id in 1602..1602 + u64::try_from(count)? {
+        assert_eq!(
+            use_pair(command_id, ribbon, foot, &view).await.ok_or("ribbon on foot")?.disposition,
+            UseDisposition::Committed
+        );
+    }
+    // A resumed session no longer resolves either consumed handle.
+    let resumed_view = SessionItemView::resume(Default::default());
+    assert_eq!(
+        use_pair(1602, ribbon, foot, &resumed_view).await.ok_or("recipe replay")?.disposition,
+        UseDisposition::Committed
+    );
+    let quantities: Vec<(String, i64)> = sqlx::query_as(
+        "SELECT definition_production_key, sum(quantity)::bigint
+         FROM game_item_instances JOIN game_item_container_entries USING(item_instance_id)
+         WHERE character_id=encode($1,'hex')::uuid AND lifecycle=1
+           AND definition_production_key IN ($2,$3,$4)
+         GROUP BY definition_production_key",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(RIBBON)
+    .bind(FOOT)
+    .bind(CHARM)
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(quantities, [(CHARM.to_owned(), count)]);
+    Ok(())
 }
 
 pub(super) async fn refuse_short_hand_in(

@@ -3,7 +3,7 @@ use super::TestResult;
 use super::creature_push_fixtures::scenario;
 
 #[test]
-fn rottin_lucky_loop_talk_mints_one_weighted_bundle_postgres() -> TestResult {
+fn rottin_lucky_loop_crafts_charms_and_mints_one_weighted_bundle_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
