@@ -167,7 +167,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     /// The gameplay fence of `session` from current durable reads; its expected revision is
     /// replaced by the revision slot's cursor at commit. `Ok(None)` when the session is proven
-    /// terminal; `Err` when a read failed, which proves nothing.
+    /// terminal or absent; `Err` when a read failed, which proves nothing.
     pub(super) async fn current_quest_fence(
         &self,
         session: GameSessionId,

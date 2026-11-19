@@ -182,7 +182,19 @@ impl DurabilityRoot {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             super::db::lock_admission_relations(&mut tx).await?;
-            let current = store.current_session_in_transaction(&mut tx, session).await?;
+            let current = match store.current_session_in_transaction(&mut tx, session).await {
+                Ok(current) => current,
+                Err(DurabilityError::Unavailable) => {
+                    let exists: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid)")
+                        .bind(session.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+                    if exists {
+                        return Err(DurabilityError::Unavailable);
+                    }
+                    commit_semantic_transaction(tx, deadline).await?;
+                    return Ok(Ok(None));
+                }
+                Err(error) => return Err(error),
+            };
             if current.session_state() == crate::foundation::GameSessionState::Terminal {
                 commit_semantic_transaction(tx, deadline).await?;
                 return Ok(Ok(None));
@@ -1371,7 +1383,8 @@ pub(super) async fn verify_character_proficiency_receipt_history(
 
 /// CHAR-BUILD-1 (A13 §4.2, #1271 F4) build state, checked by name at admission:
 /// build-chain continuity (each build receipt, and each death receipt with build
-/// fields, starts from its predecessor's `after`, or from the seed `none`, magic
+/// fields, starts from its predecessor's `after`, or from the immutable creation vocation
+/// (historically `none`), magic
 /// level (0, 0) and every skill at (10, 0) for the first), and the build row equal
 /// to the latest build-carrying receipt (values, revision, occurrence), absent when
 /// there is none. The death receipt's build fields are covered by both checks.
@@ -1424,7 +1437,7 @@ async fn verify_character_build_chain(
                   o.distance_tries_before, o.shielding_level_before, \
                   o.shielding_tries_before, o.fishing_level_before, \
                   o.fishing_tries_before) \
-                 IS DISTINCT FROM ('none', 0, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0)) \
+                 IS DISTINCT FROM ((SELECT coalesce(creation_vocation,'none') FROM game_character_roots WHERE character_id=o.character_id), 0, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0)) \
              OR (p.position IS NOT NULL AND (o.vocation_before, o.magic_level_before, o.mana_spent_before, \
                   o.fist_level_before, o.fist_tries_before, o.club_level_before, \
                   o.club_tries_before, o.sword_level_before, o.sword_tries_before, \
@@ -1461,6 +1474,10 @@ async fn verify_character_build_chain(
          UNION ALL \
          SELECT 1 FROM game_character_build_state r \
           WHERE NOT EXISTS (SELECT 1 FROM build_chain c WHERE c.character_id = r.character_id) \
+            AND NOT game_character_creation_build_seed(r.character_id) \
+         UNION ALL \
+         SELECT 1 FROM game_character_roots r WHERE r.creation_vocation IS NOT NULL \
+           AND NOT EXISTS (SELECT 1 FROM game_character_build_state b WHERE b.character_id=r.character_id) \
          LIMIT 1",
     )
     .fetch_optional(&mut **tx)

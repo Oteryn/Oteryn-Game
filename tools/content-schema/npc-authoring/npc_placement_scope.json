@@ -10,13 +10,16 @@
     "oteryn:npc.ajax",
     "oteryn:npc.al_dee",
     "oteryn:npc.aldo",
+    "oteryn:npc.alexander",
     "oteryn:npc.amanda",
     "oteryn:npc.ambassador_manop",
     "oteryn:npc.amber",
     "oteryn:npc.angelina",
     "oteryn:npc.anna",
     "oteryn:npc.ariella",
+    "oteryn:npc.asima",
     "oteryn:npc.asralius",
+    "oteryn:npc.aurelia",
     "oteryn:npc.avar_tar",
     "oteryn:npc.billy",
     "oteryn:npc.blind_orc",
@@ -384,6 +387,63 @@
           "direction": "NORTH"
         }
       ]
+    },
+    "oteryn:npc.alexander": {
+      "basis": "E2E JOURNEY: Edron shop at data-global/world/world-npc.xml:121. North is the engine default because the spawn has no direction.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33256,
+            "y": 31839,
+            "z": 3
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.asima": {
+      "basis": "E2E JOURNEY: Darashia shop at data-global/world/world-npc.xml:2078. North is the engine default because the spawn has no direction.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33220,
+            "y": 32403,
+            "z": 7
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.aurelia": {
+      "basis": "E2E JOURNEY: Targuna shop at data-global/world/world-npc.xml:1709. North is the engine default because the spawn has no direction.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 31955,
+            "y": 31916,
+            "z": 7
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
     }
   }
 }
