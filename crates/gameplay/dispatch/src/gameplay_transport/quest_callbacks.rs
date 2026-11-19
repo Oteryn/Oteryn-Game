@@ -1670,19 +1670,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return;
         }
         let closed = crate::map::floor::BundleDoors(&map.facts);
-        let blocked = super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
-        if let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport_facing(
-            runtime,
-            self.movement_cells(),
-            actor,
-            session,
-            entered,
-            callback.failure_teleport.map_or(origin.position(), local),
-            blocked,
-            &closed,
-            None,
-        ) && let Ok(snapshot) = runtime.commit_source_step(proof)
-        {
+        let destination = callback.failure_teleport.map_or(origin.position(), local);
+        let shared_room = callback
+            .effects
+            .encounter
+            .as_ref()
+            .and_then(|room| room.solo_expiry)
+            .is_some_and(|expiry| expiry.shared.is_some());
+        let relocated = if shared_room {
+            // Crystal actions_portal_brain_head.lua:102-125 uses a forced teleport
+            // to one common landing, including when another entrant was sent there.
+            crate::map::floor::prepare_quest_encounter_ejection(
+                runtime,
+                self.movement_cells(),
+                actor,
+                session,
+                entered,
+                destination,
+                &closed,
+            )
+            .ok()
+            .and_then(|proof| runtime.commit_source_step(proof).ok())
+        } else {
+            let blocked = super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
+            crate::map::floor::prepare_quest_callback_teleport_facing(
+                runtime,
+                self.movement_cells(),
+                actor,
+                session,
+                entered,
+                destination,
+                blocked,
+                &closed,
+                None,
+            )
+            .ok()
+            .and_then(|proof| runtime.commit_source_step(proof).ok())
+        };
+        if let Some(snapshot) = relocated {
             states.stage_special_movement_step(
                 runtime,
                 map,
@@ -1702,10 +1727,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, snapshot.position()),
             );
             self.punish_carrot_refusal(runtime, states, actor, session, entered, snapshot);
-            if let Some(effect) = callback.effects.teleport_effect.or_else(|| {
-                oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key)
-                    .map(|gate| gate.effect)
-            }) && let Some(at) = native(snapshot.position())
+            if let Some(effect) = callback
+                .effects
+                .teleport_effect
+                .or(shared_room.then_some(11))
+                .or_else(|| {
+                    oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key)
+                        .map(|gate| gate.effect)
+                })
+                && let Some(at) = native(snapshot.position())
             {
                 let _ = map.facts.emit_movement_effect(at, effect);
             }

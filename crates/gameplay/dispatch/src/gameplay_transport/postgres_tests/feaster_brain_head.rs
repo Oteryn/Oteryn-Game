@@ -72,7 +72,7 @@ fn brain_head_admits_two_players_through_separate_portals_then_ejects_both_at_th
 }
 
 #[test]
-fn brain_head_full_room_refuses_step_without_booking_a_cooldown_or_spawning() -> TestResult {
+fn brain_head_full_room_returns_step_to_occupied_exit_without_booking_cooldown() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -97,6 +97,7 @@ pub(super) async fn exercise(
             at(31962, 32324),
             at(31962, 32325),
             at(31963, 32325),
+            EXIT,
         ];
         for (index, cell) in cells.into_iter().enumerate() {
             let session = GameSessionId::decode(&id(112 + u8::try_from(index)?)).map_err(debug)?;
@@ -107,6 +108,12 @@ pub(super) async fn exercise(
                 .map_err(debug)?;
         }
     }
+    let map = owner.bundle_map().ok_or("room map")?;
+    let cue_cursor = map
+        .facts
+        .movement_effects_since(0)
+        .last()
+        .map_or(0, |cue| cue.0);
     let result = wire(
         owner,
         admitted,
@@ -140,6 +147,10 @@ pub(super) async fn exercise(
     .fetch_optional(&harness.pool)
     .await?;
     if full {
+        let cues = map.facts.movement_effects_since(cue_cursor);
+        assert!(cues.iter().any(|(_, at, effect)| {
+            (at.x, at.y, at.floor, *effect) == (EXIT.x, EXIT.y, EXIT.floor, 11)
+        }));
         assert!(remaining.is_none());
         assert!(live(owner, BOSS).await?.is_empty());
         assert!(live(owner, ADD).await?.is_empty());
