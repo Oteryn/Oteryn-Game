@@ -859,6 +859,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if runtime.read_actor_position(pending.actor) != Ok(pending.expected) {
                 return false;
             }
+            let mut cooldown_refused = false;
             let result = match observation {
                 Ok(observation) => {
                     Box::pin(self.execute_quest_callback(
@@ -879,6 +880,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         None,
                         pending.selected_tool.as_ref(),
                         None,
+                        Some(&mut cooldown_refused),
                     ))
                     .await
                 }
@@ -899,6 +901,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         callback,
                         pending.expected,
                         origin,
+                        cooldown_refused,
                     );
                 }
             }
@@ -1282,6 +1285,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 read_only_gate.as_ref(),
                 selected_tool.as_ref(),
                 board_ground.as_deref(),
+                None,
             ))
             .await;
             drop(states);
@@ -1568,6 +1572,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if runtime.read_actor_position(actor) != Ok(entered) {
                 return entered;
             }
+            let mut cooldown_refused = false;
             let result = match observation {
                 Ok(observation) => {
                     Box::pin(self.execute_quest_callback(
@@ -1588,6 +1593,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         read_only_gate.as_ref(),
                         None,
                         grid_ground.as_deref(),
+                        Some(&mut cooldown_refused),
                     ))
                     .await
                 }
@@ -1617,6 +1623,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     callback,
                     entered,
                     origin,
+                    cooldown_refused,
                 );
             }
             runtime.read_actor_position(actor).unwrap_or(entered)
@@ -1640,6 +1647,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         callback,
                         entered,
                         origin,
+                        false,
                     );
                 }
                 runtime.read_actor_position(actor).unwrap_or(entered)
@@ -1685,6 +1693,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         callback: &Callback,
         entered: MovementPositionSnapshot,
         origin: MovementPositionSnapshot,
+        cooldown_refused: bool,
     ) {
         if !callback.return_on_failure {
             return;
@@ -1768,7 +1777,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let _ = map.facts.emit_movement_effect(at, effect);
             }
         }
-        if let Some(message) = &callback.failure_message {
+        // Crystal movement_kroazur_room.lua:45-49 speaks from the return tile.
+        if cooldown_refused && let Some(speech) = &callback.effects.cooldown_refusal_speech {
+            if relocated.is_some() {
+                self.states
+                    .chat
+                    .publish_quest_speech(runtime, actor, session, speech);
+            }
+        } else if let Some(message) = &callback.failure_message {
             self.states.chat.push_quest_feedback(session, message);
         }
     }

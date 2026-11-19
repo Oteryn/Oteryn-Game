@@ -1981,9 +1981,21 @@ impl DurabilityRoot {
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
                     }
-                    if let (Some(callback), Some((permit, context, _))) = (&callback, &context)
-                        && !super::super::quest_world_callback::consume(&mut tx, permit, fence, &request, callback, &changes, context, (&recovery, &node)).await?
-                    { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
+                    if let (Some(callback), Some((permit, context, _))) = (&callback, &context) {
+                        if !super::super::quest_world_callback::consume(&mut tx, permit, fence, &request, callback, &changes, context, (&recovery, &node)).await? {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                        if let Some(room) = &callback.effects.encounter
+                            && let Some(expiry) = room.solo_expiry
+                        {
+                            let Some(monster) = room.monsters.first() else { return Err(DurabilityError::InvalidStoredState); };
+                            if !super::super::boss_encounter::cooldown_storage::admit_solo_quest_room(
+                                &mut tx, character, &monster.creature, context.reset_epoch, expiry.cooldown_seconds,
+                            ).await? {
+                                return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::SourceBossCooldownActive)));
+                            }
+                        }
+                    }
                     if native_claim {
                         let Some((permit, world, _)) = &context else { return Err(DurabilityError::InvalidStoredState); };
                         if !super::super::quest_world_callback::context_is_current(&mut tx, permit, fence, world).await? {

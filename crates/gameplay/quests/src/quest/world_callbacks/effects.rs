@@ -114,6 +114,9 @@ pub struct CallbackEffects {
     /// Source-authored public player MONSTER_SAY, emitted only after commit.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub player_speech: Option<String>,
+    /// Player MONSTER_SAY at the return position after a cooldown refusal.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cooldown_refusal_speech: Option<String>,
     pub transform: Option<u16>,
     /// Restore the traversed portal's replacement and its collision in the same STEP.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -818,7 +821,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
     if effects.item_reward_per_use && !super::per_use_reward::admitted(callback) {
         return false;
     }
-    if effects.player_speech.as_ref().is_some_and(|text| {
+    let invalid_speech = |text: &String| {
         callback.actor_kind != ActorKind::Player
             || text.is_empty()
             // CHAT0-RL-01: 255 Unicode scalars, each at most four UTF-8 bytes.
@@ -826,7 +829,21 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || text.chars().count() > 255
             || text.trim() != text.as_str()
             || text.chars().any(char::is_control)
-    }) {
+    };
+    if effects.player_speech.as_ref().is_some_and(invalid_speech)
+        || effects
+            .cooldown_refusal_speech
+            .as_ref()
+            .is_some_and(|text| {
+                invalid_speech(text)
+                    || callback.trigger != Trigger::StepIn
+                    || !callback.return_on_failure
+                    || effects
+                        .encounter
+                        .as_ref()
+                        .is_none_or(|room| room.solo_expiry.is_none())
+            })
+    {
         return false;
     }
     if effects
