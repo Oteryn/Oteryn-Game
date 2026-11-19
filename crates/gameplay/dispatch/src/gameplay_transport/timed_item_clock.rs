@@ -465,8 +465,9 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         // its initial read, also repairing a previous expiry's failed acknowledgement/read.
         let mut retired_effects = None;
         if retired_equipment {
-            let Some(equipment) =
-                super::equipment_move::read_current_equipment(self, session).await
+            let Some(equipment) = self
+                .read_clock_equipment(actor, item_fence, native.source_digest(), false)
+                .await
             else {
                 return false;
             };
@@ -549,7 +550,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             self.read_house_equipment_effects(actor, session, fence, true)
                 .await?
         } else {
-            self.read_admission_effects(session).await?
+            self.read_fenced_equipment_effects(fence).await?
         };
         let runtime = self.runtime.lock().await;
         let installed = if house {

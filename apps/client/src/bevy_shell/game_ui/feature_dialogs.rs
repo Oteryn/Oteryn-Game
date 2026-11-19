@@ -274,13 +274,13 @@ fn remember(
 fn keyboard(
     guard: ModalGuard,
     overlays: Query<Entity, With<Overlay>>,
-    focus: Res<InputFocus>,
-    checkboxes: Query<(), With<bevy::ui_widgets::Checkbox>>,
+    focused_checkbox: (Res<InputFocus>, Query<(), With<bevy::ui_widgets::Checkbox>>),
     mut keys: MessageReader<bevy::input::keyboard::KeyboardInput>,
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
     input: Query<(Entity, &EditableText), With<ValueField>>,
 ) {
+    let (focus, checkboxes) = focused_checkbox;
     if !overlays.single().is_ok_and(|overlay| guard.allows(overlay)) {
         keys.clear();
         return;

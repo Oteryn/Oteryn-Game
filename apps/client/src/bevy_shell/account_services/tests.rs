@@ -530,3 +530,62 @@ fn commerce_uses_a_character_selected_in_the_same_frame_as_the_action() -> TestR
     }
     Ok(())
 }
+
+#[test]
+fn commerce_cancel_invalidates_queued_confirmation() -> TestResult {
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        let (mut app, config) = commerce_app()?;
+        let cancellation = CancellationToken::new();
+        let worker_token = cancellation.clone();
+        let worker = thread::Builder::new().stack_size(64 << 20).spawn(move || {
+            mock.runtime
+                .block_on(crate::account_services::run(
+                    &client,
+                    &token,
+                    &config,
+                    worker_token,
+                ))
+                .map_err(|err| format!("{err:?}"))
+        })?;
+        let result = (|| -> TestResult {
+            let menu = wait(&mut app, None)?;
+            click_named(&mut app, "account.coins")?;
+            let packages = wait(&mut app, Some(menu))?;
+            let prepare = format!(
+                "coin.package.{}",
+                crate::account_services::test_server::coins::PACKAGE
+            );
+            click_named(&mut app, &prepare)?;
+            let mut entities = Vec::new();
+            for name in ["commerce.cancel", &prepare, "commerce.confirm"] {
+                let world = app.world_mut();
+                entities.push(
+                    world
+                        .query::<(Entity, &Name)>()
+                        .iter(world)
+                        .find_map(|(entity, label)| (label.as_str() == name).then_some(entity))
+                        .ok_or("commerce button")?,
+                );
+            }
+            for entity in entities {
+                app.world_mut().trigger(Activate { entity });
+            }
+            app.update();
+            assert_eq!(
+                app.world()
+                    .non_send::<HostOwner>()
+                    .services
+                    .pending()
+                    .map(|r| r.id),
+                Some(packages)
+            );
+            Ok(())
+        })();
+        cancellation.cancel();
+        let _ = worker.join().map_err(|_| "account presenter")?;
+        result
+    })
+}

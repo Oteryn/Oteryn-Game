@@ -720,18 +720,26 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         &self,
         expected: crate::durability::item_transfer::CurrentCharacterItemFence,
     ) -> Result<Option<AdmissionEffects>, ()> {
-        let Some(native) = self
-            .active_generation
-            .and_then(|active| active.native_gameplay())
-        else {
-            return Ok(None);
-        };
         if !matches!(
             expected.runtime_scope,
             crate::foundation::RuntimeScopeRefV1::Channel { .. }
         ) {
             return Err(());
         }
+        self.read_fenced_equipment_effects(expected).await
+    }
+
+    /// The authoritative clock can refresh effects during reconnect grace.
+    pub(in crate::gameplay_transport) async fn read_fenced_equipment_effects(
+        &self,
+        expected: crate::durability::item_transfer::CurrentCharacterItemFence,
+    ) -> Result<Option<AdmissionEffects>, ()> {
+        let Some(native) = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+        else {
+            return Ok(None);
+        };
         let fence = self
             .current_quest_fence(expected.game_session_id)
             .await

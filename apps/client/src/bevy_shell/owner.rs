@@ -318,7 +318,22 @@ impl HostOwner {
         if self.phase == Phase::Closed {
             return;
         }
-        self.settings.poll_background_save();
+        let completion = self.settings.poll_background_save();
+        if let Some(previous) = completion.before_restore
+            && self
+                .draft
+                .as_ref()
+                .is_some_and(|draft| draft.values == previous)
+        {
+            let restored = self.settings.preferences.clone();
+            self.edit_preferences(|draft| *draft = restored);
+        }
+        if let Some(error) = completion.error {
+            self.status.clone_from(&error);
+            if self.login.visible {
+                self.login.form.feedback(error);
+            }
+        }
         if self.entry.as_ref().is_some_and(Reentry::is_entering) {
             self.phase = Phase::Entering;
         }

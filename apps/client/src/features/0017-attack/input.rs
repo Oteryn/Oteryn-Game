@@ -76,12 +76,12 @@ impl PlayLink {
             return false;
         }
         let command = if attacking {
-            CombatCommand::Stop
+            PlayCommand::StopAttacking(target)
         } else {
-            CombatCommand::Attack(target)
+            PlayCommand::Combat(CombatCommand::Attack(target))
         };
-        mailbox.cancel_walk_for_combat(command);
-        self.commands.send(PlayCommand::Combat(command)).is_ok()
+        oteryn_client_ui::target_move::cancel(&mut mailbox.target_walk);
+        self.commands.send(command).is_ok()
     }
 
     pub fn battle_request(&self, action: Action) {
@@ -160,9 +160,10 @@ mod review_regressions {
 
 #[cfg(test)]
 #[test]
-fn target_change_between_context_check_and_submission_refuses_stop() {
+fn target_change_between_context_check_and_submission_refuses_stop()
+-> Result<(), Box<dyn std::error::Error>> {
     use oteryn_session::{ActorCombatState, EntityRef, FightModes};
-    let (link, mut commands, _) = crate::play::play_channel();
+    let (link, mut commands, outbox) = crate::play::play_channel();
     let first = EntityRef {
         identity: [1; 16],
         generation: 1,
@@ -188,8 +189,10 @@ fn target_change_between_context_check_and_submission_refuses_stop() {
     assert!(!link.request_context_combat(first, was_attacking));
     assert!(commands.try_recv().is_err());
     assert!(link.request_context_combat(second, true));
+    let mut commands = outbox.record_queued_combat_wire_for_test(&mut commands)?;
     assert!(matches!(
         commands.try_recv(),
         Ok(PlayCommand::Combat(CombatCommand::Stop))
     ));
+    Ok(())
 }

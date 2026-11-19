@@ -213,6 +213,7 @@ pub(in crate::play) fn receive_command(
             PlayCommand::Step(_)
                 | PlayCommand::TargetWalk(_)
                 | PlayCommand::Combat(_)
+                | PlayCommand::StopAttacking(_)
                 | PlayCommand::DailyReward(_)
                 | PlayCommand::Battle(_)
                 | PlayCommand::MoveItem(_)

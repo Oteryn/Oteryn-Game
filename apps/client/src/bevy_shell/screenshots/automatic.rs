@@ -67,26 +67,29 @@ pub(in crate::bevy_shell) fn observe(
     occupied: bool,
     clock: &Time<Real>,
     writes: &Writes,
-    manual: bool,
+    manual: Option<&PlayerCapture>,
 ) -> Option<Entity> {
     let generation = owner.play.as_ref().map(|_| owner.generation());
     if state.generation != generation {
         owner.settings.reset_screenshot_session();
         state.generation = generation;
     }
-    let Some(generation) = generation else {
-        return None;
-    };
-    if manual {
-        owner.settings.request_screenshot();
-        owner.status = "Capturing screenshot…".into();
-    }
+    let generation = generation?;
     let at = clock.last_update().unwrap_or(clock.startup());
-    let action = prepare(owner, at);
+    let automatic = prepare(owner, at);
+    let action = if manual.is_some() {
+        CaptureAction::Save
+    } else {
+        automatic
+    };
     if matches!(action, CaptureAction::Idle) || writes.automatic || writes.is_full() || occupied {
         return None;
     }
     let game_only = owner.settings.preferences.screenshots.effective().game_only;
+    let (crop, directory) = manual.map_or((game_only.then_some(viewport), None), |request| {
+        owner.status = "Capturing screenshot…".into();
+        (request.crop, Some(request.directory.clone()))
+    });
     let entity = commands
         .spawn(Screenshot::primary_window())
         .observe(
@@ -101,12 +104,14 @@ pub(in crate::bevy_shell) fn observe(
                 let batch = match action {
                     CaptureAction::Idle => return,
                     CaptureAction::Buffer => None,
-                    CaptureAction::Save => Some(owner.settings.submit_screenshot(at)),
+                    CaptureAction::Save => {
+                        Some(owner.settings.submit_screenshot(at, directory.clone()))
+                    }
                 };
                 let image = event.image.clone();
                 writes.automatic = true;
                 writes.queued.push_back(Box::new(move || {
-                    let pixels = pixels(image, game_only.then_some(viewport));
+                    let pixels = pixels(image, crop);
                     let result = if let Some(batch) = batch {
                         AutomaticResult::Saved(pixels.and_then(|pixels| batch.save(&pixels)), batch)
                     } else {

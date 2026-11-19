@@ -29,7 +29,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         fence: CurrentCharacterGameplayFence,
         before: &DurableBuildState,
     ) -> bool {
-        let placed = {
+        let (placed, captured_at) = {
             let runtime = self.runtime.lock().await;
             let states = self.states.spell_states.lock().await;
             if states.is_dead(actor) || states.has_pending_spell_commit(actor, session) {
@@ -58,9 +58,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Reserve the successor used by the build transaction's atomic refill. Captures
             // are held while the retained choice awaits installation (last_position.rs).
             self.states.last_positions.next_sequence();
-            placed
+            (placed, std::time::Instant::now())
         };
-        matches!(
+        let written = matches!(
             self.root
                 .write_character_last_position(
                     self.character,
@@ -71,6 +71,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await,
             Ok(LastPositionWrite::Written)
-        )
+        );
+        if written {
+            self.invalidate_first_vocation_position(session, actor, captured_at);
+        }
+        written
     }
 }

@@ -339,11 +339,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return None;
             }
+            self.states
+                .tutorial_sessions
+                .clear_vocation(session, retained.request.occurrence);
         }
         drop(slot);
-        self.states
-            .tutorial_sessions
-            .clear_vocation(session, retained.request.occurrence);
         let chosen = wire::VOCATIONS
             .iter()
             .position(|key| *key == build.vocation())? as u8

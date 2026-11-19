@@ -8,6 +8,7 @@ pub(super) enum Case {
     Contended,
     Entry,
     Return,
+    LostExpiry,
 }
 
 #[test]
@@ -23,6 +24,49 @@ fn activity_entry_settles_partial_equipment_time_postgres() -> TestResult {
 #[test]
 fn activity_return_settles_partial_equipment_time_postgres() -> TestResult {
     scenario_thread(Case::Return)
+}
+
+#[test]
+fn lost_activity_participant_can_settle_expiring_equipment_postgres() -> TestResult {
+    scenario_thread(Case::LostExpiry)
+}
+
+pub(super) async fn settle_lost_expiry(
+    h: &Harness,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+) -> TestResult {
+    use crate::gameplay_transport::connection::{ControlLossResult, FreshAdmissionAuthority};
+    let actor = admitted.runtime_actor.ok_or("activity actor")?;
+    let session = admitted.game_session_id;
+    let ring = "oteryn:item.tibia.i3088";
+    let revision = owner.active_generation.and_then(|active| active.native_gameplay())
+        .and_then(|native| native.item_index()).and_then(|index| index.revision(ring))
+        .ok_or("equipped energy ring definition")?;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id)
+        VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,$4,1,1,game_character_uuid_v7())")
+        .bind(id(73).as_slice()).bind(id(42).as_slice()).bind(ring).bind(revision).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_character_equipment_slots(character_id,slot,item_instance_id,world_id,placed_transaction_id)
+        VALUES(encode($1,'hex')::uuid,8,encode($2,'hex')::uuid,encode($3,'hex')::uuid,game_character_uuid_v7())")
+        .bind(id(41).as_slice()).bind(id(73).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    let permit = owner.spell_lane_permit().await.ok_or("activity spell lane")?;
+    assert!(owner.checkpoint_timed_equipment(actor, session, true).await);
+    drop(permit);
+    assert_eq!(
+        owner.lose_control(admitted, std::time::Duration::ZERO, None).await,
+        ControlLossResult::Recorded,
+    );
+    owner.clock_origin -= std::time::Duration::from_secs(601);
+    let permit = owner.spell_lane_permit().await.ok_or("activity spell lane")?;
+    assert!(owner.settle_activity_equipment(actor, session).await);
+    drop(permit);
+    let equipped: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_character_equipment_slots WHERE item_instance_id=encode($1,'hex')::uuid)")
+        .bind(id(73).as_slice()).fetch_one(&h.pool).await?;
+    assert!(!equipped, "the durable settlement retired the expired energy ring");
+    Ok(())
 }
 
 fn scenario_thread(case: Case) -> TestResult {

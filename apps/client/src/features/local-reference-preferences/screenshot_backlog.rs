@@ -176,9 +176,17 @@ impl SettingsState {
     }
 
     #[cfg(bevy_shell)]
-    pub(crate) fn submit_screenshot(&mut self, now: Instant) -> ScreenshotBatch {
+    pub(crate) fn submit_screenshot(
+        &mut self,
+        now: Instant,
+        directory: Option<String>,
+    ) -> ScreenshotBatch {
         self.screenshot_runtime.last_frame = Some(now);
         self.cancel_screenshot();
-        self.take_screenshot_batch()
+        let mut batch = self.take_screenshot_batch();
+        if let Some(directory) = directory {
+            batch.directory = directory;
+        }
+        batch
     }
 }

@@ -12,7 +12,7 @@ struct Form {
     character: Option<String>,
     status: Entity,
     confirmation: Entity,
-    confirming: bool,
+    confirming: Option<(Entity, Entity)>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -67,7 +67,7 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, parent: Entity, reque
             character: None,
             status,
             confirmation,
-            confirming: false,
+            confirming: None,
         })
         .add_children(&[confirmation, status]);
     commands.entity(parent).add_child(form);
@@ -269,7 +269,7 @@ impl Builder<'_, '_, '_> {
             .id();
         self.commands.entity(self.parent).add_child(entity);
     }
-    fn button(&mut self, name: &str, label: &str, action: Action) {
+    fn button(&mut self, name: &str, label: &str, action: Action) -> Entity {
         let button = self
             .commands
             .spawn((
@@ -289,6 +289,7 @@ impl Builder<'_, '_, '_> {
             .id();
         self.commands.entity(button).add_child(text);
         self.commands.entity(self.parent).add_child(button);
+        button
     }
     fn account(&mut self, name: &str, label: &str, action: Account) {
         self.button(name, label, Action::Send(Reply::Account(action)));
@@ -343,7 +344,14 @@ fn finish(
         let Ok((mut form, scroll)) = forms.get_mut(button.form) else {
             continue;
         };
-        if form.confirming && !matches!(button.action, Action::Confirm(_) | Action::Cancel) {
+        let current = match button.action {
+            Action::Confirm(_) => form
+                .confirming
+                .is_some_and(|(confirm, _)| confirm == entity),
+            Action::Cancel => form.confirming.is_some_and(|(_, cancel)| cancel == entity),
+            _ => form.confirming.is_none(),
+        };
+        if !current {
             continue;
         }
         if fields.iter().any(|(field, text)| {
@@ -371,6 +379,7 @@ fn finish(
         };
         let (caption, reply) = match &button.action {
             Action::Send(reply) | Action::Confirm(reply) => {
+                form.confirming = None;
                 owner.services.reply(button.request, reply.clone());
                 continue;
             }
@@ -463,11 +472,10 @@ fn finish(
             Action::Prepare(caption, reply) => (caption.clone(), reply.clone()),
             Action::Cancel => {
                 commands.entity(form.confirmation).despawn_children();
-                form.confirming = false;
+                form.confirming = None;
                 continue;
             }
         };
-        form.confirming = true;
         commands
             .entity(scroll.parent())
             .insert(ScrollPosition::default());
@@ -479,7 +487,8 @@ fn finish(
             parent: form.confirmation,
         };
         ui.text(&caption);
-        ui.button("commerce.confirm", "Confirm", Action::Confirm(reply));
-        ui.button("commerce.cancel", "Cancel", Action::Cancel);
+        let confirm = ui.button("commerce.confirm", "Confirm", Action::Confirm(reply));
+        let cancel = ui.button("commerce.cancel", "Cancel", Action::Cancel);
+        form.confirming = Some((confirm, cancel));
     }
 }

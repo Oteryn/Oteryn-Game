@@ -121,7 +121,7 @@ fn context_menu_follows_tibia_order_with_shortcuts_and_uses_a_bed() -> Result {
         browse: Some((tile, 0)),
         npc: None,
         player: Some("Bryn".into()),
-        attack: Some((
+        attack: Some(Box::new((
             tile,
             (
                 oteryn_session::EntityRef {
@@ -130,7 +130,7 @@ fn context_menu_follows_tibia_order_with_shortcuts_and_uses_a_bed() -> Result {
                 },
                 false,
             ),
-        )),
+        ))),
     };
     let items = projection::context_items(&content, true, false);
     let rows: Vec<String> = items
@@ -177,7 +177,7 @@ fn context_menu_follows_tibia_order_with_shortcuts_and_uses_a_bed() -> Result {
         browse: None,
         npc: None,
         player: None,
-        attack: Some((
+        attack: Some(Box::new((
             tile,
             (
                 oteryn_session::EntityRef {
@@ -186,7 +186,7 @@ fn context_menu_follows_tibia_order_with_shortcuts_and_uses_a_bed() -> Result {
                 },
                 true,
             ),
-        )),
+        ))),
     };
     let rows = projection::context_items(&current, false, false);
     assert!(matches!(

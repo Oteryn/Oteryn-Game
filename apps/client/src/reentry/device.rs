@@ -1,4 +1,34 @@
 use super::*;
+use std::sync::Arc;
+use tokio::sync::watch;
+
+pub(super) struct Revocation {
+    config: Arc<crate::NativeLoginConfig>,
+    result: watch::Receiver<Option<bool>>,
+}
+
+impl Revocation {
+    fn start(
+        config: Arc<crate::NativeLoginConfig>,
+        runtime: &oteryn_client_runtime::ClientRuntime,
+    ) -> Self {
+        let (sender, result) = watch::channel(None);
+        let held = Arc::clone(&config);
+        let _task = runtime.spawn(async move {
+            sender.send_replace(Some(held.forget_devices().await));
+        });
+        Self { config, result }
+    }
+
+    fn succeeded(&self) -> bool {
+        *self.result.borrow() == Some(true)
+    }
+
+    pub(super) fn pending(&self) -> bool {
+        self.result.borrow().is_none() && self.result.has_changed().is_ok()
+    }
+}
+
 impl Reentry {
     /// Cancel just this attempt, preserving the process runtime for a fresh sign-in.
     pub fn cancel_entry(&mut self) -> bool {
@@ -42,19 +72,39 @@ impl Reentry {
     }
     /// Explicit native sign-out; normal game logout keeps a remembered login available.
     pub fn forget_native_session(&mut self) {
-        if let Some(config) = self.client.native_login.clone() {
-            let previous = self.revocation.take();
-            self.revocation = self
-                .client
-                .runtime
-                .spawn(async move {
-                    if let Some(previous) = previous {
-                        let _ = previous.await;
-                    }
-                    config.forget_devices().await;
-                })
-                .ok();
+        let Some(config) = &self.client.native_login else {
+            return;
+        };
+        let runtime = &self.client.runtime;
+        self.revocations
+            .retain(|revocation| !revocation.succeeded());
+        if let Some(previous) = self
+            .revocations
+            .iter_mut()
+            .find(|previous| Arc::ptr_eq(&previous.config.device_sessions, &config.device_sessions))
+        {
+            if !previous.pending() {
+                *previous = Revocation::start(previous.config.clone(), runtime);
+            }
+        } else {
+            self.revocations
+                .push(Revocation::start(Arc::new(config.clone()), runtime));
         }
+    }
+
+    pub(super) fn revocations_for_entry(&mut self) -> Vec<watch::Receiver<Option<bool>>> {
+        self.revocations
+            .retain(|revocation| !revocation.succeeded());
+        self.revocations
+            .iter_mut()
+            .map(|revocation| {
+                if !revocation.pending() {
+                    *revocation =
+                        Revocation::start(revocation.config.clone(), &self.client.runtime);
+                }
+                revocation.result.clone()
+            })
+            .collect()
     }
 }
 
@@ -131,12 +181,49 @@ fn cancelled_admission_cannot_be_retried_until_device_revocation_finishes()
     entry.attempt_cancellation = Some(CancellationToken::new());
     assert!(entry.cancel_entry());
     entry.forget_native_session();
+    assert!(entry.poll().is_none());
+    assert!(!entry.request());
     sender.send(Err(GameplayEntryError::Rejected(
         PublicClass::SessionUnavailable,
     )))?;
-    assert!(entry.poll().is_none());
-    assert!(!entry.request());
+    assert!(matches!(entry.poll(), Some(Err(_))));
     drop(held_session);
+    entry.shutdown();
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn poll_consumes_cancelled_attempt_while_revocation_is_pending()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut entry = Reentry::new(ClientBootstrap::new()?);
+    let (sender, receiver) = mpsc::channel();
+    entry.pending = Some(receiver);
+    entry.state = EntryState::Entering;
+    entry.attempt_cancellation = Some(CancellationToken::new());
+    let config = crate::NativeLoginConfig::from_env(|name| {
+        Some(match name {
+            "OTERYN_PLATFORM_URL" | "OTERYN_GATEWAY_URL" => "https://localhost:1".into(),
+            "OTERYN_OAUTH_CLIENT_ID" => "019a5f4a-1000-7000-8000-000000000001".into(),
+            "OTERYN_DEV_ROOT" => "/tmp/reentry-unused-root".into(),
+            _ => String::new(),
+        })
+    })?
+    .ok_or("native login config")?;
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    let device = config.device_sessions.clone();
+    let held = runtime.block_on(device.hold_session_for_reentry_test());
+    entry.client.native_login = Some(config);
+    entry.forget_native_session();
+    assert!(entry.cancel_entry());
+    sender.send(Err(GameplayEntryError::Rejected(
+        PublicClass::SessionUnavailable,
+    )))?;
+    assert!(matches!(entry.poll(), Some(Err(_))));
+    assert!(!entry.is_entering());
+    drop(held);
     entry.shutdown();
     Ok(())
 }

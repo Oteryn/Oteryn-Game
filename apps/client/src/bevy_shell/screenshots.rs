@@ -21,13 +21,13 @@ pub(super) struct Writes {
 }
 
 enum Completion {
-    Manual(io::Result<PathBuf>),
+    Manual(u64, io::Result<PathBuf>),
     Audit(io::Result<()>),
     Automatic(automatic::Completed),
 }
 
 impl Writes {
-    fn is_full(&self) -> bool {
+    pub(super) fn is_full(&self) -> bool {
         self.queued.len() >= MAX_QUEUED_CAPTURES
     }
 
@@ -47,7 +47,7 @@ impl Writes {
             };
             self.active = None;
             match result {
-                Completion::Manual(result) => {
+                Completion::Manual(generation, result) if generation == owner.generation() => {
                     owner.status = match result {
                         Ok(path) => format!("Screenshot saved: {}", path.display()),
                         Err(error) => format!("Screenshot failed: {error}"),
@@ -56,7 +56,7 @@ impl Writes {
                 Completion::Audit(Err(error)) => {
                     bevy::log::error!("Could not save audit screenshot: {error}")
                 }
-                Completion::Audit(Ok(())) => {}
+                Completion::Manual(_, _) | Completion::Audit(Ok(())) => {}
                 Completion::Automatic(result) => {
                     self.automatic = false;
                     result.apply(owner);
@@ -69,24 +69,35 @@ impl Writes {
     }
 }
 
+pub(super) struct PlayerCapture {
+    pub(super) directory: String,
+    pub(super) crop: Option<WorldViewport>,
+    pub(super) backlog: bool,
+}
+
 pub(super) fn request(
     commands: &mut Commands,
     readback: Option<Entity>,
     owner: &mut HostOwner,
-    viewport: WorldViewport,
+    generation: u64,
+    request: PlayerCapture,
 ) {
-    let preferences = owner.settings.preferences.screenshots.effective();
-    let crop = preferences.game_only.then_some(viewport);
+    let PlayerCapture {
+        directory, crop, ..
+    } = request;
     owner.status = "Capturing screenshot…".into();
     let entity = readback.unwrap_or_else(|| commands.spawn(Screenshot::primary_window()).id());
     commands.entity(entity).observe(
         move |event: On<ScreenshotCaptured>,
               mut owner: NonSendMut<HostOwner>,
               mut writes: NonSendMut<Writes>| {
+            if owner.generation() != generation {
+                return;
+            }
             let image = event.image.clone();
-            let directory = preferences.directory.clone();
+            let directory = directory.clone();
             if !writes.push(Box::new(move || {
-                Completion::Manual(save(image, &directory, crop))
+                Completion::Manual(generation, save(image, &directory, crop))
             })) {
                 owner.status = "Screenshot failed: write queue is full".into();
             }
@@ -115,10 +126,20 @@ fn pixels(image: Image, crop: Option<WorldViewport>) -> io::Result<Pixels> {
 }
 
 /// Audit mode keeps its fixed PNG name, replacing it only after encoding completes.
-pub(super) fn request_audit(commands: &mut Commands, readback: Option<Entity>, path: PathBuf) {
+pub(super) fn request_audit(
+    commands: &mut Commands,
+    readback: Option<Entity>,
+    generation: u64,
+    path: PathBuf,
+) {
     let entity = readback.unwrap_or_else(|| commands.spawn(Screenshot::primary_window()).id());
     commands.entity(entity).observe(
-        move |event: On<ScreenshotCaptured>, mut writes: NonSendMut<Writes>| {
+        move |event: On<ScreenshotCaptured>,
+              owner: NonSend<HostOwner>,
+              mut writes: NonSendMut<Writes>| {
+            if owner.generation() != generation {
+                return;
+            }
             let image = event.image.clone();
             let path = path.clone();
             #[cfg(test)]

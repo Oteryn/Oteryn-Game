@@ -278,6 +278,7 @@ struct Track {
     /// The cell and vitals last written or read for this Character; `None` when nothing is
     /// stored.
     written: Option<Saved>,
+    written_at: Instant,
     /// When the cell and vitals the stored row holds (or unchanged ones) were last captured.
     checked: Instant,
 }
@@ -307,12 +308,48 @@ impl Saved {
     }
 }
 
+#[cfg(test)]
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum RetainedCaptureBoundary {
+    BeforeSlot,
+    AfterCapture,
+}
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static RETAINED_CAPTURE_PAUSE: (RetainedCaptureBoundary, std::sync::Arc<tokio::sync::Notify>, std::sync::Arc<tokio::sync::Notify>);
+}
+
+#[cfg(test)]
+async fn retained_capture_pause(at: RetainedCaptureBoundary) {
+    if RETAINED_CAPTURE_PAUSE.try_with(|pause| pause.0 == at) == Ok(true) {
+        RETAINED_CAPTURE_PAUSE.with(|pause| pause.1.notify_one());
+        let proceed = RETAINED_CAPTURE_PAUSE.with(|pause| pause.2.clone());
+        proceed.notified().await;
+    }
+}
+
+#[derive(Clone, Copy)]
+enum VocationCapture {
+    Hold,
+    Recheck(crate::durability::character_build::BuildOccurrence),
+    Final,
+}
+
+#[derive(Clone, Copy)]
+struct RetainedPosition {
+    character: crate::domain::CharacterId,
+    occurrence: crate::durability::character_build::BuildOccurrence,
+}
+
 /// One capture attempt under the runtime lock.
 enum Captured {
     At(Box<Capture>),
     /// The actor is dead: the placement of its respawn writes the respawn cell.
     Dead,
-    /// A retained vocation commit awaits live installation; retry the track later.
+    /// A retained vocation commit awaits live installation.
+    Vocation(RetainedPosition),
+    /// Another gameplay owner is still settling this actor.
     Held,
     /// The actor has no current position in the pinned context.
     Gone,
@@ -325,6 +362,7 @@ struct Capture {
     house: Option<HouseLastPosition>,
     write_sequence: u64,
     at: Instant,
+    preserve_vitals: bool,
 }
 
 impl LastPositions {
@@ -360,13 +398,15 @@ impl LastPositions {
         revision: CharacterRevision,
     ) {
         if let Ok(mut tracks) = self.tracks.lock() {
+            let now = Instant::now();
             tracks.insert(
                 session,
                 Track {
                     actor,
                     revision,
                     written,
-                    checked: Instant::now(),
+                    written_at: now,
+                    checked: now,
                 },
             );
         }
@@ -389,6 +429,7 @@ impl LastPositions {
             tracks.remove(&source);
             track.written = Some(Saved::of(record));
             track.checked = Instant::now();
+            track.written_at = track.checked;
             tracks.insert(destination, track);
             return true;
         }
@@ -453,8 +494,9 @@ impl LastPositions {
             && let Some(track) = tracks.get_mut(&session)
             && track.actor == actor
         {
-            if saved.is_some() {
+            if saved.is_some() && track.written_at <= at {
                 track.written = saved;
+                track.written_at = at;
             }
             track.checked = track.checked.max(at);
         }
@@ -472,6 +514,7 @@ impl LastPositions {
                 rest: None,
             });
             track.checked = Instant::now();
+            track.written_at = track.checked;
         }
     }
 }
@@ -522,6 +565,7 @@ impl LastPositions {
             // compare the new actual scope; the source's cell is never assumed current.
             track.written = None;
             track.checked = Instant::now();
+            track.written_at = track.checked;
             target.insert(new, track);
         }
         Ok(())

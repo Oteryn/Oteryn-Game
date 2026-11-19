@@ -46,6 +46,8 @@ pub struct SettingsState {
     /// A page the options window turns to when it next runs (Ctrl+K: the hotkey page).
     page_request: Option<SettingsPage>,
     store: Option<PreferenceStore>,
+    #[cfg(bevy_shell)]
+    outgoing_stores: Vec<PreferenceStore>,
     input: PreferenceInput,
     control_input: super::controls::ControlInput,
     control_epoch: std::time::Instant,

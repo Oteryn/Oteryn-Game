@@ -32,6 +32,8 @@ pub enum PlayCommand {
     ContainerView(oteryn_client_runtime::container_tree::ContainerViewIntent),
     WorldContext(oteryn_client_runtime::world_interaction::Command),
     Combat(CombatCommand),
+    /// Stop only the opponent named by a world click or context-menu action.
+    StopAttacking(oteryn_session::EntityRef),
     /// Combat command originating from the battle panel.
     Battle(CombatCommand),
     /// Leave the game (capability 21 `LOGOUT_INTENT`).

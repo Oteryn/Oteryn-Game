@@ -95,13 +95,18 @@ fn activate(
                 let saved = owner.settings.preferences.clone();
                 owner.edit_preferences(|draft| *draft = saved);
             }
-            owner.settings.feedback = match action {
-                Action::Export => "Options exported",
-                Action::Import => "Options imported and saved",
-                Action::Restore => "Backup restored and saved",
-                Action::Defaults => "Defaults restored and saved",
-            }
-            .into();
+            owner.settings.feedback =
+                if !matches!(action, Action::Export) && owner.settings.preference_save_pending() {
+                    "Saving preferences…"
+                } else {
+                    match action {
+                        Action::Export => "Options exported",
+                        Action::Import => "Options imported and saved",
+                        Action::Restore => "Backup restored and saved",
+                        Action::Defaults => "Defaults restored and saved",
+                    }
+                }
+                .into();
         }
         Err(error) => owner.settings.feedback = error.to_string(),
     }

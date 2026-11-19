@@ -374,7 +374,7 @@ fn n004_alt_click_attacks_a_creature_then_stops_when_it_is_the_target()
     use oteryn_session::{
         ActorPosition, EntityDetail, EntityKind, EntityRef, StepDirection, WorldSpatialEntity,
     };
-    let (link, mut commands, _) = play_channel();
+    let (link, mut commands, outbox) = play_channel();
     let mut view = PlayView::new(TileCoord::new(1, 1), 0, &[])?;
     let creature = EntityRef {
         identity: [7; 16],
@@ -428,6 +428,7 @@ fn n004_alt_click_attacks_a_creature_then_stops_when_it_is_the_target()
     // The context menu then offers Stop Attack on the current target.
     assert_eq!(view.attack_context(tile, &link), Some(true));
     assert!(view.attack_toggle_click(tile, &link));
+    let mut commands = outbox.record_queued_combat_wire_for_test(&mut commands)?;
     assert!(matches!(
         commands.try_recv()?,
         crate::combat_input::PlayCommand::Combat(CombatCommand::Stop)

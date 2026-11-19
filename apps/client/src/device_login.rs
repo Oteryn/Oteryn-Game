@@ -8,7 +8,9 @@ use oteryn_platform_client::{
     device_sessions::{DeviceCredential, DeviceSession, SessionKey, now},
     native_login::{NativeLoginClient, NativeLoginError},
 };
-use std::{path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc, time::Duration};
+
+const CREDENTIAL_LOCK_TIMEOUT: Duration = Duration::from_secs(1);
 #[derive(Default)]
 struct State {
     session: Option<DeviceSession>,
@@ -61,27 +63,61 @@ impl DeviceLogin {
             return Ok(None);
         }
         let mut state = self.state.clone().lock_owned().await;
-        let lock = if let Some(folder) = &self.folder {
-            std::fs::create_dir_all(folder).map_err(|_| storage_error())?;
+        let lock = self.lock_credential().await?;
+        if let Some(pending) = state.pending.take() {
+            let _ = client
+                .revoke_device(&pending, CancellationToken::new())
+                .await;
+        }
+        self.load_remembered(&mut state)?;
+        let remembered = options.remember_device && self.vault.available();
+        let mut attempt = DeviceAttempt {
+            state,
+            vault: self.vault.clone(),
+            _lock: lock,
+            remembered,
+            options,
+            folder: self.folder.clone(),
+        };
+        if !options.stay_logged_in || attempt.state.remembered != remembered {
+            attempt.sign_out(client).await;
+        }
+        if cancel.is_cancelled() {
+            attempt.sign_out(client).await;
+            return Err(storage_error());
+        }
+        Ok(Some(attempt))
+    }
+    async fn lock_credential(&self) -> Result<Option<std::fs::File>, NativeLoginError> {
+        let Some(folder) = self.folder.clone() else {
+            return Ok(None);
+        };
+        tokio::task::spawn_blocking(move || {
+            use std::{fs::TryLockError, time::Instant};
+
+            std::fs::create_dir_all(&folder).map_err(|_| storage_error())?;
             let file = std::fs::OpenOptions::new()
                 .create(true)
                 .truncate(false)
                 .write(true)
                 .open(folder.join("credential.lock"))
                 .map_err(|_| storage_error())?;
-            let file = tokio::task::spawn_blocking(move || file.lock().map(|()| file))
-                .await
-                .map_err(|_| storage_error())?
-                .map_err(|_| storage_error())?;
-            Some(file)
-        } else {
-            None
-        };
-        if let Some(pending) = state.pending.take() {
-            let _ = client
-                .revoke_device(&pending, CancellationToken::new())
-                .await;
-        }
+            let deadline = Instant::now() + CREDENTIAL_LOCK_TIMEOUT;
+            loop {
+                match file.try_lock() {
+                    Ok(()) => return Ok(Some(file)),
+                    Err(TryLockError::WouldBlock) if Instant::now() < deadline => {
+                        std::thread::sleep(Duration::from_millis(10));
+                    }
+                    Err(_) => return Err(storage_error()),
+                }
+            }
+        })
+        .await
+        .map_err(|_| storage_error())?
+    }
+
+    fn load_remembered(&self, state: &mut State) -> Result<(), NativeLoginError> {
         if state.remembered {
             state.session = None;
         }
@@ -102,41 +138,24 @@ impl DeviceLogin {
                 }
             }
         }
-        let remembered = options.remember_device && self.vault.available();
+        Ok(())
+    }
+
+    pub async fn sign_out(&self, client: &NativeLoginClient) -> Result<(), NativeLoginError> {
+        let state = tokio::time::timeout(CREDENTIAL_LOCK_TIMEOUT, self.state.clone().lock_owned())
+            .await
+            .map_err(|_| storage_error())?;
+        let lock = self.lock_credential().await?;
         let mut attempt = DeviceAttempt {
             state,
             vault: self.vault.clone(),
             _lock: lock,
-            remembered,
-            options,
+            remembered: false,
+            options: MiscellaneousPreferences::default(),
             folder: self.folder.clone(),
         };
-        if !options.stay_logged_in || attempt.state.remembered != remembered {
-            attempt.sign_out(client).await;
-        }
-        if cancel.is_cancelled() {
-            attempt.sign_out(client).await;
-            return Err(storage_error());
-        }
-        Ok(Some(attempt))
-    }
-    pub async fn sign_out(&self, client: &NativeLoginClient) {
-        let active = Self {
-            enabled: true,
-            vault: self.vault.clone(),
-            state: self.state.clone(),
-            folder: self.folder.clone(),
-        };
-        if let Ok(Some(mut attempt)) = active
-            .begin(
-                client,
-                MiscellaneousPreferences::default(),
-                CancellationToken::new(),
-            )
-            .await
-        {
-            attempt.sign_out(client).await;
-        }
+        self.load_remembered(&mut attempt.state)?;
+        attempt.revoke(client).await
     }
     pub fn vault_available(&self) -> bool {
         self.vault.available()

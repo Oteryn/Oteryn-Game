@@ -360,3 +360,56 @@ impl DeviceLogin {
         manager(Arc::new(MemoryVault::default()), folder)
     }
 }
+
+#[test]
+fn sign_out_stays_failed_until_it_can_lock_and_clear_the_vault() -> TestResult {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    runtime.block_on(async {
+        let server = Server::start(vec![]).await?;
+        let root = tempfile::tempdir()?;
+        let vault = Arc::new(MemoryVault::default());
+        vault::Vault::write(vault.as_ref(), b"invalid saved credential")
+            .map_err(std::io::Error::other)?;
+        let login = manager(vault.clone(), root.path().to_path_buf());
+        let lock_path = root.path().join("credential.lock");
+        std::fs::create_dir(&lock_path)?;
+        assert!(login.sign_out(&server.client).await.is_err());
+        assert!(
+            vault::Vault::read(vault.as_ref())
+                .map_err(std::io::Error::other)?
+                .is_some()
+        );
+        std::fs::remove_dir(&lock_path)?;
+        let held = std::fs::OpenOptions::new()
+            .create(true)
+            .truncate(false)
+            .write(true)
+            .open(&lock_path)?;
+        held.try_lock()?;
+        let result = tokio::time::timeout(
+            std::time::Duration::from_secs(3),
+            login.sign_out(&server.client),
+        )
+        .await;
+        drop(held);
+        assert!(
+            result?.is_err(),
+            "lock contention must report a failed revocation"
+        );
+        assert!(
+            vault::Vault::read(vault.as_ref())
+                .map_err(std::io::Error::other)?
+                .is_some()
+        );
+        login.sign_out(&server.client).await?;
+        assert!(
+            vault::Vault::read(vault.as_ref())
+                .map_err(std::io::Error::other)?
+                .is_none()
+        );
+        server.finish().await?;
+        Ok(())
+    })
+}

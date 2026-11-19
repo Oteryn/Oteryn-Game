@@ -149,7 +149,7 @@ fn browser_command(platform: BrowserPlatform, url: &str) -> std::process::Comman
 }
 
 impl NativeLoginConfig {
-    pub(crate) async fn forget_devices(&self) {
+    pub(crate) async fn forget_devices(&self) -> bool {
         use oteryn_platform_client::{PlatformClientConfig, gameplay_entry::login_client};
         if let (Ok(platform), Ok(gateway)) = (
             PlatformClientConfig::new(&self.platform_url),
@@ -157,7 +157,9 @@ impl NativeLoginConfig {
         ) && let Ok(client) =
             login_client(&platform, &gateway, &self.oauth_client_id, self.retry_unit)
         {
-            self.device_sessions.sign_out(&client).await;
+            self.device_sessions.sign_out(&client).await.is_ok()
+        } else {
+            false
         }
     }
 }

@@ -134,6 +134,8 @@ pub enum LastPositionWrite {
     /// A pending respawn decides the next placement, so nothing is written (§3.2 "Not
     /// written").
     PendingObligation,
+    /// A retained choice kept the locked row's vitals, with the same cell/rest or a new one.
+    RetainedVitals(Option<LastVitals>),
 }
 
 /// The most periodic writes one batch carries ([`DurabilityRoot::write_character_last_positions`]).
@@ -223,7 +225,7 @@ impl DurabilityRoot {
             node,
             writes
                 .into_iter()
-                .map(|write| ScopedPeriodicLastPosition { write, house: None })
+                .map(|write| ScopedPeriodicLastPosition { write, house: None, preserve_vitals: false })
                 .collect(),
         )
         .await
@@ -272,7 +274,8 @@ impl DurabilityRoot {
 async fn write_periodic(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     node: &NodeIncarnationProof,
-    write: PeriodicLastPosition,
+    mut write: PeriodicLastPosition,
+    preserve_vitals: bool,
 ) -> std::result::Result<Result<LastPositionWrite>, DurabilityError> {
     if let Err(error) = validate_fence(&write.fence, &write.record) {
         return Ok(Err(error));
@@ -283,12 +286,26 @@ async fn write_periodic(
     if let Err(error) = assert_session_fence(tx, &write.fence.item_fence(), node).await? {
         return Ok(Err(error));
     }
+    if preserve_vitals {
+        let Some(stored) = load_last_position_in(tx, write.fence.character_id, true).await? else {
+            return Ok(Err(CharacterProgressionError::MissingProgressionState));
+        };
+        if stored.record.cell == write.record.cell && stored.record.rest == write.record.rest {
+            return Ok(Ok(LastPositionWrite::RetainedVitals(stored.record.vitals)));
+        }
+        write.record.vitals = stored.record.vitals;
+    }
     let key = LastPositionKey {
         character_lease_generation: write.fence.character_lease_generation,
         write_sequence: write.write_sequence,
     };
     let outcome =
         upsert_last_position(tx, write.fence.character_id.as_bytes(), key, &write.record).await?;
+    let outcome = if preserve_vitals && outcome == LastPositionWrite::Written {
+        LastPositionWrite::RetainedVitals(write.record.vitals)
+    } else {
+        outcome
+    };
     Ok(Ok(outcome))
 }
 
@@ -322,13 +339,21 @@ pub(super) async fn load_last_position(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     character_id: CharacterId,
 ) -> std::result::Result<Option<StoredLastPosition>, DurabilityError> {
-    let row = sqlx::query(
-        "SELECT world_id::text, tile_x, tile_y, tile_floor, coordinate_frame_digest, \
+    load_last_position_in(tx, character_id, false).await
+}
+
+async fn load_last_position_in(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character_id: CharacterId,
+    lock: bool,
+) -> std::result::Result<Option<StoredLastPosition>, DurabilityError> {
+    const SQL: &str = "SELECT world_id::text, tile_x, tile_y, tile_floor, coordinate_frame_digest, \
                 map_revision_digest, server_artifact_digest, \
                 character_lease_generation::text, write_sequence::text, health, mana, rest \
            FROM game_character_last_positions \
-          WHERE character_id = encode($1,'hex')::uuid",
-    )
+          WHERE character_id = encode($1,'hex')::uuid FOR UPDATE";
+    let sql = if lock { SQL } else { SQL.trim_end_matches(" FOR UPDATE") };
+    let row = sqlx::query(sql)
     .bind(character_id.as_bytes().as_slice())
     .fetch_optional(&mut **tx)
     .await?;

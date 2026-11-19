@@ -1,4 +1,11 @@
 use super::*;
+#[cfg(bevy_shell)]
+#[derive(Default)]
+pub(crate) struct PreferenceSaveCompletion {
+    pub(crate) before_restore: Option<ReferencePreferences>,
+    pub(crate) error: Option<String>,
+}
+
 impl SettingsState {
     pub fn request_hud_toggle(&mut self, panel: crate::play::HudPanel) {
         self.hud_toggle = Some(panel);
@@ -125,8 +132,10 @@ impl SettingsState {
 
     pub fn restore_backup(&mut self) -> io::Result<()> {
         #[cfg(bevy_shell)]
-        if let Some(store) = &mut self.store {
-            store.finish_background_save();
+        if let Some(store) = &mut self.store
+            && store.saving()
+        {
+            return store.restore_in_background(&self.preferences);
         }
         let path = self
             .store
@@ -146,6 +155,11 @@ impl SettingsState {
             .as_mut()
             .ok_or_else(|| io::Error::other(tr!("Preference storage is unavailable")))?;
         store.replace_with_backup(preferences.clone(), &self.preferences)?;
+        self.accept_replaced(preferences);
+        Ok(())
+    }
+
+    fn accept_replaced(&mut self, preferences: ReferencePreferences) {
         self.preferences = preferences;
         self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
         self.skills_edit = self.battle_edit;
@@ -156,7 +170,6 @@ impl SettingsState {
         self.spellbook_edit = self.battle_edit;
         self.stash_sort_edit = self.battle_edit;
         self.archive_edit = self.battle_edit;
-        Ok(())
     }
 
     pub fn new(path: Option<PathBuf>) -> Self {
@@ -207,6 +220,8 @@ impl SettingsState {
             archive_edit: 0,
             battle_edit: 0,
             store,
+            #[cfg(bevy_shell)]
+            outgoing_stores: Vec::new(),
             preferences: {
                 let mut preferences = preferences;
                 preferences.reconcile_controls(None);
@@ -410,6 +425,8 @@ impl SettingsState {
         }
         self.preferences = preferences;
         self.feedback = match result {
+            #[cfg(bevy_shell)]
+            Ok(()) if self.preference_save_pending() => "Saving preferences…".into(),
             Ok(()) => tr!("Applied and saved").into(),
             Err(error) => lfmt!(
                 "Applied for this session; could not save: {error}",
@@ -431,20 +448,38 @@ impl SettingsState {
     }
 
     #[cfg(bevy_shell)]
-    pub(crate) fn poll_background_save(&mut self) {
-        if let Some(result) = self
-            .store
-            .as_mut()
-            .and_then(PreferenceStore::poll_background_save)
-        {
-            self.feedback = match result {
-                Ok(()) => tr!("Applied and saved").into(),
-                Err(error) => lfmt!(
-                    "Applied for this session; could not save: {error}",
-                    error = error
-                ),
-            };
+    pub(crate) fn preference_save_pending(&self) -> bool {
+        self.store.as_ref().is_some_and(PreferenceStore::saving)
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn poll_background_save(&mut self) -> PreferenceSaveCompletion {
+        let mut completion = PreferenceSaveCompletion::default();
+        let mut failure = None;
+        if let Some(results) = self.store.as_mut().and_then(PreferenceStore::poll_background_save) {
+            if let Some(Ok(Some(restored))) = results.last() {
+                completion.before_restore = Some(self.preferences.clone());
+                self.accept_replaced(restored.clone());
+            }
+            failure = results.into_iter().find_map(Result::err);
+            self.feedback = tr!("Applied and saved").into();
         }
+        self.outgoing_stores.retain_mut(|store| {
+            if let Some(results) = store.poll_background_save() {
+                let error = results.into_iter().find_map(Result::err);
+                failure = failure.take().or(error);
+            }
+            store.saving()
+        });
+        if let Some(error) = failure {
+            let message = lfmt!(
+                "Applied for this session; could not save: {error}",
+                error = error
+            );
+            self.feedback.clone_from(&message);
+            completion.error = Some(message);
+        }
+        completion
     }
 
     fn capture_hud_layout(&mut self, view: &PlayView) {

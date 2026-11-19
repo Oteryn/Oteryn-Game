@@ -455,3 +455,32 @@ fn creating_and_editing_persisted_marks_defer_the_cache_write() -> Result<(), Bo
     assert_eq!(Saved::read_from(&cache)?.ok_or("saved cache")?.markers[0].label, "Camp");
     Ok(())
 }
+
+#[cfg(bevy_shell)]
+#[test]
+fn map_binding_change_does_not_join_the_background_save() -> Result<(), Box<dyn std::error::Error>> {
+    use std::sync::mpsc;
+    let pool = bevy_tasks::IoTaskPool::get_or_init(|| bevy_tasks::TaskPoolBuilder::new().num_threads(1).build());
+    let root = tempfile::tempdir()?;
+    let mut map = Minimap::default();
+    map.root = Some(root.path().to_path_buf());
+    map.bind_world("11111111-1111-4111-8111-111111111111");
+    map.observe(&joined_window(100, 200));
+    map.enable_background_save();
+    let (release, blocked) = tokio::sync::oneshot::channel();
+    map.save_task = Some(pool.spawn(async move {
+        blocked.await.map_err(io::Error::other)
+    }));
+    let (finished, observed) = mpsc::channel();
+    let worker = std::thread::spawn(move || {
+        let mut next = joined_window(100, 200);
+        next.header.reset_epoch += 1;
+        map.observe(&next);
+        let _ = finished.send(());
+    });
+    let returned = observed.recv_timeout(Duration::from_secs(2));
+    let _ = release.send(());
+    worker.join().map_err(|_| "minimap observation")?;
+    returned?;
+    Ok(())
+}

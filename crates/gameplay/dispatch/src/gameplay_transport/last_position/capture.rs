@@ -39,61 +39,63 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         matches!(
             self.capture_last_position(&track, session).await,
-            Captured::Held
+            Captured::Held | Captured::Vocation(_)
         )
+    }
+
+    #[cfg(test)]
+    #[allow(dead_code, reason = "The tutorial vocation case is compiled in only one PG shard")]
+    pub(super) fn last_position_checked_for_test(&self, session: GameSessionId) -> Option<Instant> {
+        self.states.last_positions.tracked(session).map(|track| track.checked)
     }
 
     async fn capture_retained_tutorial_position(
         &self,
         track: &Track,
         session: GameSessionId,
-    ) -> Option<(
-        Box<Capture>,
-        crate::durability::character_revision_sequencer::RevisionSlot,
-    )> {
-        let retained = self.states.tutorial_sessions.vocation(session).ok()??;
-        let revision = self
-            .revision_sequencer
-            .try_acquire(retained.fence.character_id)?;
-        let fence = self.current_quest_fence(session).await.ok()??;
-        let stored = self
-            .root
-            .read_character_last_position(self.character, self.holder, fence)
-            .await
-            .ok()??;
-        let Captured::At(mut capture) = self.capture_position(track, session, true).await else {
-            return None;
-        };
-        if stored.record.cell == capture.record.cell && stored.record.rest == capture.record.rest {
-            return None;
+        character: crate::domain::CharacterId,
+        retained: RetainedPosition,
+    ) -> Captured {
+        #[cfg(test)]
+        retained_capture_pause(RetainedCaptureBoundary::BeforeSlot).await;
+        if character != retained.character {
+            return Captured::Held;
         }
-        capture.record.vitals = stored.record.vitals;
-        Some((capture, revision))
+        let Some(_slot) = self.revision_sequencer.try_acquire(character) else {
+            return Captured::Held;
+        };
+        self.capture_position(track, session, VocationCapture::Recheck(retained.occurrence)).await
     }
 
     async fn capture_last_position(&self, track: &Track, session: GameSessionId) -> Captured {
-        self.capture_position(track, session, false).await
+        self.capture_position(track, session, VocationCapture::Hold).await
     }
 
     async fn capture_position(
         &self,
         track: &Track,
         session: GameSessionId,
-        preserve_vocation_vitals: bool,
+        vocation: VocationCapture,
     ) -> Captured {
         let actor = track.actor;
         let kept = track.written.and_then(|saved| saved.vitals);
         let runtime = self.runtime.lock().await;
-        // A retained build may have committed its refill before live installation. Keep
-        // the transaction's projection until the actor has the committed pools too.
+        // A retained build may have committed its refill before live installation. Decide
+        // which vitals are authoritative under the same guard that captures the live state.
+        let preserve_vitals = match self.states.tutorial_sessions.vocation(session) {
+            Ok(None) => false,
+            Ok(Some(retained)) => match vocation {
+                VocationCapture::Final => true,
+                VocationCapture::Hold => return Captured::Vocation(RetainedPosition {
+                    character: retained.fence.character_id,
+                    occurrence: retained.request.occurrence,
+                }),
+                VocationCapture::Recheck(occurrence) if retained.request.occurrence == occurrence => true,
+                _ => return Captured::Held,
+            },
+            Err(()) => return Captured::Held,
+        };
         if self.states.dawnport_departures.held(session)
-            || self
-                .states
-                .tutorial_sessions
-                .vocation(session)
-                .map_or(true, |retained| {
-                    retained.is_some() && !preserve_vocation_vitals
-                })
             || self
                 .states
                 .npc_conversations
@@ -179,7 +181,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             house,
             write_sequence: placed.write_sequence,
             at: Instant::now(),
+            preserve_vitals,
         }))
+    }
+
+    pub(super) fn invalidate_first_vocation_position(
+        &self,
+        session: GameSessionId,
+        actor: ExactActorRef,
+        at: Instant,
+    ) {
+        if let Ok(mut tracks) = self.states.last_positions.tracks.lock()
+            && let Some(track) = tracks.get_mut(&session)
+            && track.actor == actor
+            && track.written_at <= at
+        {
+            // The initial projection and the subsequent refill both bypass the periodic cache.
+            track.written = None;
+            track.written_at = at;
+        }
     }
 
     /// The record of `cell` in the pinned context, with a fresh write sequence and no vitals (a
@@ -222,7 +242,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 record: capture.record,
                 write_sequence: capture.write_sequence,
             }),
-            Captured::Dead | Captured::Held | Captured::Gone => None,
+            Captured::Dead | Captured::Held | Captured::Vocation(_) | Captured::Gone => None,
         }
     }
 
@@ -253,13 +273,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return store;
         };
-        let preserve_vitals = self
-            .states
-            .tutorial_sessions
-            .vocation(session)
-            .is_ok_and(|retained| retained.is_some());
         let capture = self
-            .capture_position(&track, session, preserve_vitals)
+            .capture_position(&track, session, VocationCapture::Final)
             .await;
         match capture {
             Captured::At(capture) => {
@@ -269,13 +284,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 match capture.house {
                     Some(house) => store.with_final_house_position(position, house, self.holder),
-                    None if preserve_vitals => {
+                    None if capture.preserve_vitals => {
                         store.with_final_position_preserving_vitals(position)
                     }
                     None => store.with_final_position(position),
                 }
             }
-            Captured::Dead | Captured::Held | Captured::Gone => store.clone(),
+            Captured::Dead | Captured::Held | Captured::Vocation(_) | Captured::Gone => store.clone(),
         }
     }
 

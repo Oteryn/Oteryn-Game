@@ -197,3 +197,69 @@ fn f12_waits_for_a_fresh_readback_after_an_older_capture() -> TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn deferred_f12_drops_on_generation_change() -> TestResult {
+    let folder = TestDir::new()?;
+    let mut app = app(folder.path(), false)?;
+    let old = app.world_mut().spawn(Screenshot::primary_window()).id();
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::F12);
+    app.update();
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .reset_all();
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .enter_character(Some([1; 16]));
+    app.world_mut().despawn(old);
+    app.update();
+    assert_eq!(
+        app.world_mut()
+            .query_filtered::<Entity, With<Screenshot>>()
+            .iter(app.world())
+            .count(),
+        0
+    );
+    Ok(())
+}
+
+#[test]
+fn deferred_f12_keeps_each_press_and_its_directory() -> TestResult {
+    let first = TestDir::new()?;
+    let second = TestDir::new()?;
+    let mut app = app(first.path(), false)?;
+    let old = app.world_mut().spawn(Screenshot::primary_window()).id();
+    for directory in [first.path(), second.path()] {
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .settings
+            .preferences
+            .screenshots
+            .directory = directory.to_str().ok_or("capture directory")?.into();
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .press(KeyCode::F12);
+        app.update();
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .reset_all();
+    }
+    app.world_mut().despawn(old);
+    for directory in [first.path(), second.path()] {
+        app.update();
+        let entity = app
+            .world_mut()
+            .query_filtered::<Entity, With<Screenshot>>()
+            .single(app.world())?;
+        app.world_mut().trigger(ScreenshotCaptured {
+            entity,
+            image: frame(),
+        });
+        app.world_mut().despawn(entity);
+        wait_for_writes(&mut app)?;
+        assert_eq!(std::fs::read_dir(directory)?.count(), 1);
+    }
+    Ok(())
+}

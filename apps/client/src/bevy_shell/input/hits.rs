@@ -9,12 +9,14 @@ use bevy::{
     ui_widgets::{Button, Checkbox, TextInput},
     window::PrimaryWindow,
 };
+type UiControls = Or<(With<Button>, With<Checkbox>, With<TextInput>)>;
+
 #[derive(SystemParam)]
 pub(in crate::bevy_shell) struct WorldPointerHits<'w, 's> {
     hover: Res<'w, HoverMap>,
     pointers: Query<'w, 's, (&'static PointerId, &'static PointerLocation)>,
     primary: Query<'w, 's, (Entity, &'static Window), With<PrimaryWindow>>,
-    controls: Query<'w, 's, (), Or<(With<Button>, With<Checkbox>, With<TextInput>)>>,
+    controls: Query<'w, 's, (), UiControls>,
     parents: Query<'w, 's, &'static ChildOf>,
 }
 impl WorldPointerHits<'_, '_> {

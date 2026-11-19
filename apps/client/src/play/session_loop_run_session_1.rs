@@ -161,7 +161,7 @@ pub async fn run_session<T: Stepper>(
                     Err(error) => error,
                 }
             }
-            Ok(command @ (PlayCommand::Combat(_) | PlayCommand::Battle(_))) => {
+            Ok(command @ (PlayCommand::Combat(_) | PlayCommand::Battle(_) | PlayCommand::StopAttacking(_))) => {
                 match outbox.battle_run(&mut session, command).await {
                     Ok(()) => {
                         publish(&mut session, &outbox, &mut held);

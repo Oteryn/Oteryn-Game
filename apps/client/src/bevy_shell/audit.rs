@@ -7,9 +7,16 @@ use super::{
 };
 use bevy::{prelude::*, window::PrimaryWindow};
 use serde::Serialize;
-use std::path::PathBuf;
+use std::{collections::VecDeque, path::PathBuf};
 
 mod named;
+
+const MAX_PENDING_MANUAL_CAPTURES: usize = 4;
+
+pub(super) enum ManualCapture {
+    Audit(PathBuf),
+    Player(super::screenshots::PlayerCapture),
+}
 
 /// F12 captures the rendered window; explicit audit mode keeps its diagnostic PNG path.
 #[allow(
@@ -23,28 +30,39 @@ pub(super) fn capture_on_key(
     mut owner: NonSendMut<HostOwner>,
     viewport: Res<super::game_ui::viewport::WorldViewport>,
     mut automatic: Local<super::screenshots::AutomaticState>,
-    mut manual_pending: Local<bool>,
+    mut manual_pending: Local<VecDeque<(u64, ManualCapture)>>,
     captures: Query<Entity, With<bevy::render::view::screenshot::Screenshot>>,
     clock: Res<Time<Real>>,
     mut writes: NonSendMut<super::screenshots::Writes>,
 ) {
     writes.poll(&mut owner);
     let occupied = !captures.is_empty();
-    *manual_pending |= keys.just_pressed(KeyCode::F12);
-    let manual = *manual_pending && !occupied;
-    if manual {
-        *manual_pending = false;
+    let generation = owner.generation();
+    manual_pending.retain(|(requested, _)| *requested == generation);
+    if keys.just_pressed(KeyCode::F12) && manual_pending.len() < MAX_PENDING_MANUAL_CAPTURES {
+        let request = if let Some(path) = &output.path {
+            ManualCapture::Audit(path.with_extension("png"))
+        } else {
+            let preferences = owner.settings.preferences.screenshots.effective();
+            ManualCapture::Player(super::screenshots::PlayerCapture {
+                directory: preferences.directory,
+                crop: preferences.game_only.then_some(*viewport),
+                backlog: owner.play.is_some() && preferences.backlog_frames > 0,
+            })
+        };
+        manual_pending.push_back((generation, request));
     }
-    let manual_batch = manual
-        && output.path.is_none()
-        && owner.play.is_some()
-        && owner
-            .settings
-            .preferences
-            .screenshots
-            .effective()
-            .backlog_frames
-            > 0;
+    let manual_batch = match manual_pending.front() {
+        Some((_, ManualCapture::Player(request)))
+            if request.backlog
+                && owner.play.is_some()
+                && request.crop.is_some()
+                    == owner.settings.preferences.screenshots.effective().game_only =>
+        {
+            Some(request)
+        }
+        _ => None,
+    };
     let readback = super::screenshots::observe(
         &mut commands,
         &mut owner,
@@ -55,13 +73,18 @@ pub(super) fn capture_on_key(
         &writes,
         manual_batch,
     );
-    if !manual || manual_batch {
+    if occupied || writes.is_full() || (manual_batch.is_some() && readback.is_none()) {
         return;
     }
-    if let Some(path) = &output.path {
-        super::screenshots::request_audit(&mut commands, readback, path.with_extension("png"));
-    } else {
-        super::screenshots::request(&mut commands, readback, &mut owner, *viewport);
+    let batch_scheduled = manual_batch.is_some();
+    match manual_pending.pop_front() {
+        Some((generation, ManualCapture::Audit(path))) => {
+            super::screenshots::request_audit(&mut commands, readback, generation, path);
+        }
+        Some((generation, ManualCapture::Player(request))) if !batch_scheduled => {
+            super::screenshots::request(&mut commands, readback, &mut owner, generation, request);
+        }
+        _ => {}
     }
 }
 #[derive(Resource)]

@@ -98,20 +98,28 @@ impl DeviceAttempt {
         }
     }
     pub async fn sign_out(&mut self, client: &NativeLoginClient) {
-        let credential = self
-            .state
-            .session
-            .take()
-            .map(|s| s.device_credential)
-            .or_else(|| self.state.pending.take());
-        let _ = self.vault.clear();
-        self.state.key = None;
-        self.state.pending = None;
-        if let Some(credential) = credential {
-            let _ = client
-                .revoke_device(&credential, CancellationToken::new())
-                .await;
+        let _ = self.revoke(client).await;
+    }
+
+    pub(super) async fn revoke(
+        &mut self,
+        client: &NativeLoginClient,
+    ) -> Result<(), NativeLoginError> {
+        if self.vault.available() {
+            self.vault.clear().map_err(|_| storage_error())?;
         }
+        if let Some(session) = self.state.session.take() {
+            self.state.pending = Some(session.device_credential);
+        }
+        self.state.key = None;
+        self.state.remembered = false;
+        if let Some(credential) = &self.state.pending {
+            client
+                .revoke_device(credential, CancellationToken::new())
+                .await?;
+            self.state.pending = None;
+        }
+        Ok(())
     }
     pub fn quick_selection(
         &self,

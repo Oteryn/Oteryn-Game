@@ -22,6 +22,8 @@ struct Request {
     generation: u64,
     content: Content,
 }
+type AttackChoice = (TileCoord, (oteryn_session::EntityRef, bool));
+
 enum Content {
     Logout,
     /// chsw (capability 512): the Change Channel window, its confirmation and its errors.
@@ -37,7 +39,7 @@ enum Content {
         /// The name of the clicked player other than the own character.
         player: Option<String>,
         /// The clicked opponent and the attack state displayed when the menu opened.
-        attack: Option<(TileCoord, (oteryn_session::EntityRef, bool))>,
+        attack: Option<Box<AttackChoice>>,
     },
 }
 #[derive(Clone, Copy, Component)]
@@ -157,7 +159,7 @@ impl HostOwner {
                 })
             })
             .and_then(|play| play.view.attack_target(tile, &play.link))
-            .map(|target| (tile, target));
+            .map(|target| Box::new((tile, target)));
         if self.phase == Phase::Playing
             && (menu.is_some()
                 || npc.is_some()
@@ -305,11 +307,12 @@ impl HostOwner {
             (_, Choice::Cancel | Choice::CopyName) => true,
             (
                 Content::Context {
-                    attack: Some((tile, (target, attacking))),
+                    attack: Some(attack),
                     ..
                 },
                 Choice::Attack,
             ) => self.play.as_ref().is_some_and(|play| {
+                let (tile, (target, attacking)) = *attack;
                 if play.view.gameplay_input_blocked(&play.link)
                     || play.view.attack_target(tile, &play.link) != Some((target, attacking))
                 {

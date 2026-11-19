@@ -18,10 +18,6 @@ impl SettingsState {
         if character == self.character {
             return;
         }
-        #[cfg(bevy_shell)]
-        if let Some(store) = &mut self.store {
-            store.finish_background_save();
-        }
         let Some(base) = self.base_path.as_ref() else {
             return;
         };
@@ -30,7 +26,22 @@ impl SettingsState {
             |id| PreferenceStore::character_path(base, id),
         );
         let missing = !path.exists();
-        let mut selected = Self::new(Some(path));
+        let mut selected = Self::new(Some(path.clone()));
+        #[cfg(bevy_shell)]
+        let missing = match self.outgoing_stores.iter().position(|store| store.at_path(&path)) {
+            Some(index) => {
+                let store = self.outgoing_stores.swap_remove(index);
+                selected.preferences = store.preferences().clone();
+                selected.store = Some(store);
+                selected.feedback.clear();
+                false
+            }
+            None => missing,
+        };
+        #[cfg(bevy_shell)]
+        if let Some(store) = self.store.take().filter(PreferenceStore::saving) {
+            self.outgoing_stores.push(store);
+        }
         // Session choices remain under the original local base across actor namespaces.
         selected.base_path = Some(base.clone());
         selected.preferences.miscellaneous = self.preferences.miscellaneous;
@@ -64,4 +75,29 @@ impl SettingsState {
         self.stash_sort_edit = self.battle_edit;
         self.archive_edit = self.battle_edit;
     }
+}
+
+#[cfg(all(test, bevy_shell))]
+#[test]
+fn leaving_character_reports_its_failed_mark_save() -> Result<(), Box<dyn std::error::Error>> {
+    use std::time::{Duration, Instant};
+
+    bevy_tasks::IoTaskPool::get_or_init(|| bevy_tasks::TaskPoolBuilder::new().num_threads(1).build());
+    let folder = tempfile::tempdir()?;
+    let base = folder.path().join("preferences.json");
+    let identity = [1; 16];
+    let mut settings = SettingsState::new(Some(base.clone()));
+    settings.select_character(Some(identity));
+    std::fs::write(PreferenceStore::character_path(&base, identity), "damaged")?;
+    settings.apply_minimap_marks_in_background(settings.preferences.clone());
+    settings.select_character(None);
+    let deadline = Instant::now() + Duration::from_secs(2);
+    while Instant::now() < deadline {
+        let _ = settings.poll_background_save();
+        if settings.feedback.contains("could not save") {
+            return Ok(());
+        }
+        std::thread::yield_now();
+    }
+    Err("the outgoing preference save error was lost".into())
 }

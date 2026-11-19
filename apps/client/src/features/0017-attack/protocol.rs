@@ -19,6 +19,14 @@ impl crate::play::Outbox {
         let (command, panel_command) = match request {
             PlayCommand::Battle(command) => (command, Some(command)),
             PlayCommand::Combat(command) => (command, None),
+            PlayCommand::StopAttacking(target) => {
+                if crate::play::mailbox::lock(&self.0).battle.combat
+                    .is_none_or(|state| state.target != Some(target))
+                {
+                    return Ok(());
+                }
+                (CombatCommand::Stop, None)
+            }
             _ => return Err(oteryn_session::SessionError::SessionUnusable),
         };
         let wire = crate::play::mailbox::lock(&self.0).wire_combat(command);

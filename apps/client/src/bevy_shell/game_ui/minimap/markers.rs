@@ -228,6 +228,10 @@ fn activate(
                     return;
                 }
             } else if let Some(index) = remembered_index(&play.view, &owner.settings, at) {
+                if let Err(error) = play.view.require_minimap_preferences_writer() {
+                    owner.status = error.to_string();
+                    return;
+                }
                 let mut preferences = owner.settings.preferences.clone();
                 preferences.minimap.remove_mark(index);
                 owner
@@ -284,6 +288,10 @@ fn finish(
     if !has_world_mark(&play.view, at)
         && let Some(index) = remembered_index(&play.view, &owner.settings, at)
     {
+        if let Err(error) = play.view.require_minimap_preferences_writer() {
+            owner.status = error.to_string();
+            return;
+        }
         let mut preferences = owner.settings.preferences.clone();
         preferences.minimap.marks[index].label = label;
         if !preferences.minimap.valid() {

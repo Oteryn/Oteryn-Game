@@ -5,6 +5,7 @@ use std::{
     collections::{BTreeMap, btree_map::Entry},
     io,
     path::{Path, PathBuf},
+    sync::Arc,
     time::{Duration, Instant},
 };
 
@@ -79,7 +80,7 @@ type CellPosition = (i16, i32, i32);
 
 #[derive(Debug)]
 enum CacheAccess {
-    Owner { _lock: std::fs::File },
+    Owner { _lock: Arc<std::fs::File> },
     ReadOnly(io::Error),
 }
 
@@ -150,6 +151,8 @@ pub struct Minimap {
     marker_save_queued: bool,
     #[cfg(bevy_shell)]
     save_task: Option<bevy_tasks::Task<io::Result<()>>>,
+    #[cfg(bevy_shell)]
+    outgoing_saves: BTreeMap<PathBuf, background_save::OutgoingSave>,
 }
 impl Default for Minimap {
     fn default() -> Self {
@@ -184,6 +187,8 @@ impl Default for Minimap {
             marker_save_queued: false,
             #[cfg(bevy_shell)]
             save_task: None,
+            #[cfg(bevy_shell)]
+            outgoing_saves: BTreeMap::new(),
         }
     }
 }
@@ -227,7 +232,7 @@ impl Minimap {
         if !(1..=36).contains(&world.len())
             || !world.bytes().all(|c| c.is_ascii_hexdigit() || c == b'-')
         {
-            if let Err(error) = self.save() {
+            if let Err(error) = self.save_before_rebind() {
                 self.feedback =
                     format!("Could not save minimap before refusing world binding: {error}");
             } else {
@@ -243,7 +248,7 @@ impl Minimap {
             self.zoom = 1;
             self.quest_marks = Default::default();
         } else if self.world.as_deref() != Some(world) {
-            if let Err(error) = self.save() {
+            if let Err(error) = self.save_before_rebind() {
                 self.feedback = error.to_string();
             }
             self.quest_markers.clear();
@@ -293,7 +298,7 @@ impl Minimap {
         );
         if self.binding != Some(binding) {
             self.pending_edit = None;
-            if let Err(error) = self.save() {
+            if let Err(error) = self.save_before_rebind() {
                 self.feedback = error.to_string();
             }
             self.cells.clear();
@@ -400,7 +405,6 @@ impl Minimap {
             .then_some(position)
     }
     pub fn save(&mut self) -> io::Result<()> {
-        self.finish_pending_save();
         if !self.cells_dirty {
             return Ok(());
         }
@@ -409,6 +413,10 @@ impl Minimap {
                 if matches!(self.cache_access.get(&path), Some(CacheAccess::ReadOnly(_))) => {}
             Some(path) => {
                 self.require_cache_owner(&path)?;
+                #[cfg(bevy_shell)]
+                if self.save_task.is_some() {
+                    return self.start_save();
+                }
                 return self.write_cache(&path, self.markers.clone());
             }
             None if self.world.is_some() => {
@@ -449,7 +457,6 @@ impl Minimap {
     }
 
     fn write_cache(&mut self, path: &Path, markers: Vec<Marker>) -> io::Result<()> {
-        self.finish_pending_save();
         if self.load_failed {
             return Err(io::Error::other(tr!("Invalid minimap file")));
         }
@@ -471,9 +478,13 @@ impl Minimap {
         let Some(path) = self.path() else {
             return Ok(());
         };
+        #[cfg(bevy_shell)]
+        if self.load_outgoing_save(&path) {
+            return Ok(());
+        }
         if let Entry::Vacant(entry) = self.cache_access.entry(path.clone()) {
             let access = match Saved::lock_cache(&path) {
-                Ok(lock) => CacheAccess::Owner { _lock: lock },
+                Ok(lock) => CacheAccess::Owner { _lock: Arc::new(lock) },
                 Err(error) if error.kind() == io::ErrorKind::WouldBlock => {
                     CacheAccess::ReadOnly(error)
                 }
@@ -526,7 +537,9 @@ impl Saved {
 }
 impl Drop for Minimap {
     fn drop(&mut self) {
-        let _ = self.save();
+        let _ = self.save_before_rebind();
+        #[cfg(bevy_shell)]
+        self.detach_outgoing_saves();
     }
 }
 #[cfg(test)]

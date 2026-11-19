@@ -498,3 +498,74 @@ fn review_ordinary_admission_seeds_target_walk_and_entity_floor()
     );
     Ok(())
 }
+
+#[test]
+fn queued_context_stop_does_not_stop_the_new_attack_target()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::{ActorCombatState, EntityRef, FightModes};
+
+    let (link, mut commands, outbox) = play_channel();
+    let first = EntityRef {
+        identity: [1; 16],
+        generation: 1,
+    };
+    let second = EntityRef {
+        identity: [2; 16],
+        generation: 1,
+    };
+    let state = |target| {
+        Some(ActorCombatState {
+            target: Some(target),
+            modes: FightModes::DEFAULT,
+            in_fight: true,
+        })
+    };
+    outbox.battle_publish(state(first), None, &[]);
+    assert!(link.request_context_combat(first, true));
+    let stop = commands.try_recv()?;
+    outbox.battle_result(
+        crate::combat_input::CombatReport::Attack(oteryn_session::AttackIntentDisposition::Ok),
+        state(second),
+        None,
+    );
+
+    let combats = Arc::new(Mutex::new(Vec::new()));
+    let mut session = Recorder {
+        walks: Arc::default(),
+        combats: Arc::clone(&combats),
+        contexts: Arc::default(),
+    };
+    let runtime = tokio::runtime::Builder::new_current_thread().build()?;
+    let result = runtime.block_on(outbox.battle_run(&mut session, stop));
+    assert!(combats.lock().map_err(|_| "combats")?.is_empty());
+    result?;
+    Ok(())
+}
+
+impl crate::play::Outbox {
+    // Validate the original wire-level Stop assertions through the real dispatcher
+    // now that the UI queue also carries the opponent's identity.
+    pub(in crate::play) fn record_queued_combat_wire_for_test(
+        &self,
+        commands: &mut tokio::sync::mpsc::UnboundedReceiver<crate::combat_input::PlayCommand>,
+    ) -> Result<
+        tokio::sync::mpsc::UnboundedReceiver<crate::combat_input::PlayCommand>,
+        Box<dyn std::error::Error>,
+    > {
+        let command = commands.try_recv()?;
+        let combats = Arc::new(Mutex::new(Vec::new()));
+        let mut session = Recorder {
+            walks: Arc::default(),
+            combats: Arc::clone(&combats),
+            contexts: Arc::default(),
+        };
+        let runtime = tokio::runtime::Builder::new_current_thread().build()?;
+        // Recorder records the wire command and then refuses the synthetic peer.
+        let _ = runtime.block_on(self.battle_run(&mut session, command));
+        let (sender, receiver) = tokio::sync::mpsc::unbounded_channel();
+        for &command in &*combats.lock().map_err(|_| "combat wire recorder")? {
+            sender.send(crate::combat_input::PlayCommand::Combat(command))?;
+        }
+        Ok(receiver)
+    }
+}

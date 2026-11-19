@@ -1,3 +1,8 @@
+enum PeriodicCapture {
+    Ready(Box<Capture>),
+    Retained(RetainedPosition),
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// §3.2 periodic writes (`CHARPOS0-RL-01`): sleep until the earliest deadline (at most
     /// [`WRITER_MAX_SLEEP`], at least [`WRITER_MIN_PAUSE`]), then write every due session. It
@@ -50,9 +55,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         failed
     }
 
-    /// One batch of a pass: capture each session under the runtime lock, then read the changed
-    /// sessions' fences in one root pass and write them in one transaction, so the batch costs
-    /// two durability passes whatever its size (`CHARPOS0-RL-01`). Returns the failed writes.
+    /// One batch reads the candidate sessions' fences in one root pass and writes in one
+    /// transaction (`CHARPOS0-RL-01`). Retained captures use the fence read before capture.
+    /// The write transaction reads the retained vitals under that same fence.
     async fn write_last_position_batch(&self, batch: &[(GameSessionId, Track)]) -> usize {
         self.root
             .with_background_operation(self.write_last_position_batch_inner(batch))
@@ -61,41 +66,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     async fn write_last_position_batch_inner(&self, batch: &[(GameSessionId, Track)]) -> usize {
         let mut changed = Vec::with_capacity(batch.len());
-        let mut retained_slots = Vec::new();
+        let mut failed = 0;
         for &(session, track) in batch {
-            let capture = match self.capture_last_position(&track, session).await {
-                Captured::At(capture) => capture,
+            match self.capture_last_position(&track, session).await {
+                Captured::At(capture) => {
+                    if capture.at.saturating_duration_since(track.checked) > LAST_POSITION_WRITE_INTERVAL {
+                        operator_event("last_position_interval_exceeded");
+                    }
+                    if track.written == Some(Saved::of(&capture.record)) {
+                        self.states.last_positions.settled(session, track.actor, None, capture.at);
+                    } else {
+                        changed.push((session, track, PeriodicCapture::Ready(capture)));
+                    }
+                }
+                Captured::Vocation(retained) => {
+                    changed.push((session, track, PeriodicCapture::Retained(retained)));
+                }
+                Captured::Held => {}
                 // The placement of its respawn writes the respawn cell.
-                Captured::Held => {
-                    let Some((capture, slot)) = self
-                        .capture_retained_tutorial_position(&track, session)
-                        .await
-                    else {
-                        continue;
-                    };
-                    retained_slots.push(slot);
-                    capture
-                }
-                Captured::Dead => continue,
-                Captured::Gone => {
-                    // The actor is gone: its session ended without a retire of this track.
-                    self.states.last_positions.forget(session);
-                    continue;
-                }
-            };
-            if capture.at.saturating_duration_since(track.checked) > LAST_POSITION_WRITE_INTERVAL {
-                operator_event("last_position_interval_exceeded");
+                Captured::Dead => {}
+                Captured::Gone => self.states.last_positions.forget(session),
             }
-            if track.written == Some(Saved::of(&capture.record)) {
-                self.states
-                    .last_positions
-                    .settled(session, track.actor, None, capture.at);
-                continue;
-            }
-            changed.push((session, track, capture));
         }
         if changed.is_empty() {
-            return 0;
+            return failed;
         }
         let current = match FreshAdmissionStore::from_root(self.root.clone())
             .current_sessions_at(changed.iter().map(|(session, _, _)| *session).collect())
@@ -104,11 +98,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(current) => current,
             Err(error) => {
                 operator_event(&format!("last_position_write_failed reason={error}"));
-                return changed.len();
+                return failed + changed.len();
             }
         };
         // `current` has one entry per changed session, in order; a missing one stays due.
-        let mut failed = changed.len().saturating_sub(current.len());
+        failed += changed.len().saturating_sub(current.len());
         let mut writes = Vec::with_capacity(changed.len());
         let mut fenced = Vec::with_capacity(changed.len());
         for ((session, track, capture), current) in changed.into_iter().zip(current) {
@@ -127,8 +121,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 failed += 1;
                 continue;
             };
+            let capture = match capture {
+                PeriodicCapture::Ready(capture) => capture,
+                PeriodicCapture::Retained(retained) => {
+                    let Captured::At(capture) = self
+                        .capture_retained_tutorial_position(&track, session, character_id, retained)
+                        .await
+                    else {
+                        failed += 1;
+                        continue;
+                    };
+                    if capture.at.saturating_duration_since(track.checked) > LAST_POSITION_WRITE_INTERVAL {
+                        operator_event("last_position_interval_exceeded");
+                    }
+                    #[cfg(test)]
+                    retained_capture_pause(RetainedCaptureBoundary::AfterCapture).await;
+                    capture
+                }
+            };
             writes.push(ScopedPeriodicLastPosition {
                 house: capture.house.clone(),
+                preserve_vitals: capture.preserve_vitals,
                 write: PeriodicLastPosition {
                     fence: CurrentCharacterGameplayFence {
                         character_id,
@@ -162,17 +175,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         failed += fenced.len().saturating_sub(outcomes.len());
         for ((session, track, capture), outcome) in fenced.into_iter().zip(outcomes) {
             match outcome {
-                Ok(
-                    LastPositionWrite::Written
-                    | LastPositionWrite::Superseded
-                    | LastPositionWrite::PendingObligation,
-                ) => {
-                    self.states.last_positions.settled(
-                        session,
-                        track.actor,
-                        Some(Saved::of(&capture.record)),
-                        capture.at,
-                    );
+                Ok(outcome) => {
+                    let saved = match outcome {
+                        LastPositionWrite::Written => Some(Saved::of(&capture.record)),
+                        LastPositionWrite::RetainedVitals(vitals) => {
+                            let mut saved = Saved::of(&capture.record);
+                            saved.vitals = vitals;
+                            Some(saved)
+                        }
+                        LastPositionWrite::Superseded | LastPositionWrite::PendingObligation => None,
+                    };
+                    self.states.last_positions.settled(session, track.actor, saved, capture.at);
                 }
                 Err(error) => {
                     failed += 1;

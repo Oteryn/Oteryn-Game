@@ -138,11 +138,27 @@ impl Minimap {
             )));
         }
         portable.saved.validate()?;
-        self.finish_pending_save();
-        portable.saved.write_to(&active)?;
-        self.cells = saved_cells(portable.saved.cells);
-        self.markers = portable.saved.markers;
+        #[cfg(bevy_shell)]
+        if self.background_save && self.save_task.is_some() {
+            self.cells = saved_cells(portable.saved.cells);
+            self.markers = portable.saved.markers;
+            self.queue_snapshot(active, self.snapshot(self.markers.clone()))?;
+        } else {
+            portable.saved.write_to(&active)?;
+            self.cells = saved_cells(portable.saved.cells);
+            self.markers = portable.saved.markers;
+        }
+        #[cfg(not(bevy_shell))]
+        {
+            portable.saved.write_to(&active)?;
+            self.cells = saved_cells(portable.saved.cells);
+            self.markers = portable.saved.markers;
+        }
         self.load_failed = false;
+        #[cfg(bevy_shell)]
+        {
+            self.marker_save_queued = false;
+        }
         self.cells_dirty = false;
         self.saved_at = Instant::now();
         self.retry_delay = Duration::from_secs(5);

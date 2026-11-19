@@ -416,3 +416,60 @@ fn open_marker_editor(app: &mut App) -> TestResult {
 }
 
 include!("marker_editor_tests.rs");
+
+#[test]
+fn read_only_minimap_cannot_edit_or_remove_remembered_marks() -> TestResult {
+    for action in ["Save mark", "Remove mark"] {
+        let root = tempfile::tempdir()?;
+        let mut app = fixture()?;
+        let make_read_only = root.path().join("cache");
+        let mut writer = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), -7, &[])?;
+        writer.bind_test_minimap(make_read_only.clone());
+        {
+            let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+            let play = owner.play.as_mut().ok_or("play")?;
+            let (x, y, floor) = play.view.satellite_player();
+            play.view
+                .set_live_map(&oteryn_session::world_map::WorldMapViewSnapshot {
+                    header: oteryn_session::world_map::MapViewHeader {
+                        content_generation: [1; 32],
+                        bundle_digest: [2; 32],
+                        reset_epoch: 1,
+                        origin: oteryn_session::ActorPosition { x, y, floor },
+                        first_visible_floor: floor,
+                    },
+                    tiles: vec![],
+                })?;
+            play.view.bind_test_minimap(make_read_only);
+            assert!(play.view.require_minimap_preferences_writer().is_err());
+            let mut preferences = play.view.preferences().clone();
+            preferences.minimap.add_mark(crate::play::MinimapMark {
+                x,
+                y,
+                floor,
+                label: "Imported camp".into(),
+            })?;
+            play.view.set_preferences(preferences.clone())?;
+            owner.settings.apply(preferences);
+        }
+        open_marker_editor(&mut app)?;
+        *app.world_mut()
+            .query::<&mut bevy::text::EditableText>()
+            .single_mut(app.world_mut())? = bevy::text::EditableText::new("Renamed camp");
+        activate(&mut app, action)?;
+        let owner = app.world().non_send::<HostOwner>();
+        assert_eq!(
+            owner
+                .settings
+                .preferences
+                .minimap
+                .marks
+                .iter()
+                .map(|mark| mark.label.as_str())
+                .collect::<Vec<_>>(),
+            ["Imported camp"],
+            "{action}"
+        );
+    }
+    Ok(())
+}
