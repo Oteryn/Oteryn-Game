@@ -33,6 +33,7 @@ pub(super) const TOKENS: [(Position, u16); 9] = [
 pub(super) const READY: &str = "dreamers-board-ready";
 pub(super) const MISSING: &str = "dreamers-board-missing";
 pub(super) const MIXED: &str = "dreamers-board-mixed-pillars";
+pub(super) const PORTAL_MISSING: &str = "dreamers-board-missing-portal";
 
 const fn at(x: u16, y: u16) -> Position {
     Position { x, y, floor: -14 }
@@ -67,13 +68,13 @@ pub(super) fn binding() -> TestResult<Callback> {
 }
 
 pub(super) fn world(callback: &Callback, name: &str) -> TestResult<crate::map::boot::BundleWorld> {
-    let solved = name == READY;
+    let solved = matches!(name, PORTAL_MISSING | READY);
     let objects = PILLARS
         .into_iter()
         .skip(usize::from(name == MIXED))
         .map(|p| (p, 2153))
         .chain(TOKENS.into_iter().take(if solved { 9 } else { 8 }))
-        .chain([(PORTAL, 6298)])
+        .chain((name != PORTAL_MISSING).then_some((PORTAL, 6298)))
         .collect::<Vec<_>>();
     world_cells(
         callback,
@@ -83,7 +84,7 @@ pub(super) fn world(callback: &Callback, name: &str) -> TestResult<crate::map::b
         &objects,
         &[1949],
         None,
-        &[TOKENS[8].0],
+        &[TOKENS[8].0, PORTAL],
     )
 }
 
@@ -112,6 +113,17 @@ fn dreamers_tic_tac_lever_recreates_and_removes_a_missing_native_pillar() -> Tes
     };
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(MIXED, || scenario(MIXED, LEVER, false))
+}
+
+#[test]
+fn dreamers_tic_tac_solved_board_toggles_pillars_without_a_portal_counterpart() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(PORTAL_MISSING, || {
+        scenario(PORTAL_MISSING, LEVER, false)
+    })
 }
 
 pub(super) async fn exercise(
@@ -169,12 +181,17 @@ pub(super) async fn exercise(
             );
         }
         let portal = tile(PORTAL);
-        let id = map
+        let portal_tile = map
             .overlay
             .base()
             .tile(portal.x, portal.y, portal.floor)
-            .ok_or("portal tile")?
-            .ids()[1];
+            .ok_or("portal tile")?;
+        if name == PORTAL_MISSING {
+            assert_eq!(portal_tile.ids().len(), 1);
+            assert!(map.facts.movement_items(portal).is_empty());
+            continue;
+        }
+        let id = portal_tile.ids()[1];
         assert_eq!(
             map.facts
                 .base_entry(portal, 1, id)

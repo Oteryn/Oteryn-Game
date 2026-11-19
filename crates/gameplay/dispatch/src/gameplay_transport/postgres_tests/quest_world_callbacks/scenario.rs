@@ -383,7 +383,7 @@ fn scenario_case(
     use super::super::nightmare_dreamcatcher_supply;
     let nightmare_supply = name == nightmare_dreamcatcher_supply::NAME;
     let board_exit = name == dreamers_board_exit::NAME;
-    let board_portal = matches!(name, dreamers_board_portal::MISSING | dreamers_board_portal::MIXED | dreamers_board_portal::READY);
+    let board_portal = matches!(name, dreamers_board_portal::MISSING | dreamers_board_portal::MIXED | dreamers_board_portal::PORTAL_MISSING | dreamers_board_portal::READY);
     use super::super::dreamers_color_grid;
     let color_grid = dreamers_color_grid::matches(name);
     use super::super::dreamers_knightwatch_toll;

@@ -119,10 +119,13 @@ pub(super) fn prepare(
                         .any(|entry| entry.facts.appearance_id == token.appearance)
                 })
     });
-    if solved {
-        let (key, current) = base_slot(map, tile(board.portal), &[board.sealed, board.opened])?
-            .filter(|(key, _)| !map.facts.base_hidden(*key))
-            .ok_or(UseDisposition::Rejected)?;
+    // Crystal actions_tic_tac_teleport.lua:39-55 changes the portal only
+    // when the corresponding item is present. The lever and pillars toggle anyway.
+    if solved
+        && let Some((key, current)) =
+            base_slot(map, tile(board.portal), &[board.sealed, board.opened])?
+        && !map.facts.base_hidden(key)
+    {
         let opened = lever_appearance == board.open_on;
         let desired = if opened { board.opened } else { board.sealed };
         if desired != current.appearance_id {
