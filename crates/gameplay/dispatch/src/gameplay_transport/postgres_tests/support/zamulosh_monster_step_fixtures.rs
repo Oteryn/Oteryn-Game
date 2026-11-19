@@ -164,6 +164,7 @@ pub(super) async fn exercise_access(
         QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
     };
     use crate::foundation::{CommandId, CommandRef};
+    use oteryn_gameplay_world::map::view::MapFacts;
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 
     owner
