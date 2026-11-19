@@ -34,7 +34,7 @@ class CanonicalVariantTests(unittest.TestCase):
     def test_plain_231_definition_records_remain_exact_and_readiness_228_3(self):
         outputs = plain.generate(); index = json.loads(outputs[plain.INDEX_PATH])
         self.assertEqual(index['plain_record_count'], 231)
-        self.assertEqual(index['native_authored_records'], 9)
+        self.assertEqual(index['native_authored_records'], 10)
         self.assertEqual(index['record_count'] - index['native_authored_records'], 336)
         self.assertEqual(index['readiness']['ready'] - index['native_authored_records'], 228)
         self.assertEqual(index['readiness']['waiting_item_semantics'], 3)

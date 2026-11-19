@@ -509,6 +509,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     qengine_reward_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import quest_finish_newhaven_items
     quest_finish_newhaven_items.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import nrwicked_profiles
+    nrwicked_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'],
+                            NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import podium_item_profiles
     podium_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import quick_loot_item_profiles
@@ -687,6 +690,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     creature_path = spell_import.PROVIDER_DESTINATIONS["creature_profiles"]
     creatures = json.loads(generated[creature_path])
     engenc_elemental_profiles.apply(creatures)
+    nrwicked_profiles.admit_creatures(
+        root, creatures, generated, spell_import.PROVIDER_DESTINATIONS['presentation_profiles'],
+        NATIVE_MANIFEST, spell_import.canonical_bytes)
     generated[creature_path] = spell_import.canonical_bytes(creatures)
 
     # PKG1R2 owner decision (2026-10-30), Energy_Field_(Field) rev 1011133:

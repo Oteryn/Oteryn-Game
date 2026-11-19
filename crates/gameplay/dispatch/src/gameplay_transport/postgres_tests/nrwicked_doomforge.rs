@@ -14,6 +14,10 @@ const START: TilePos = TilePos {
     y: 32330,
     floor: -14,
 };
+const LEVER: TilePos = TilePos { x: 34058, y: 32394, floor: -14 };
+const STAGING: TilePos = TilePos { y: LEVER.y + 1, ..LEVER };
+const ARENA_ENTRY: MovementLocalPosition = MovementLocalPosition { x: 34034, y: 32340, floor: 14 };
+
 const PORTAL: TilePos = TilePos { x: 34041, ..START };
 const FORGE: TilePos = TilePos {
     x: 34062,
@@ -103,22 +107,30 @@ fn scenario(
             let initial = Dependencies::new()?;
             let world = initial.admitted.world_id;
             let channel = initial.admitted.channel_id;
-            let room = qualify_native_entry_room(world).map_err(debug)?;
-            let (bytes, pins) = portal_fixture(destination)?;
+            let production = if hard_win {
+                Some(super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?)
+            } else {
+                None
+            };
+            let generation = production.as_ref().and_then(|(controller, _)| controller.active());
+            let native = generation.and_then(|g| g.native_gameplay());
+            let room = if let Some((_, pin)) = &production {
+                pin.qualified_room().clone()
+            } else {
+                qualify_native_entry_room(world).map_err(debug)?
+            };
+            let (bytes, pins) = portal_fixture(destination, native)?;
             let map = boot(&bytes, &pins, world, channel, |key| {
-                let mut definition = fixture::floor_items("oteryn:item.tibia.i37001")?;
-                match key {
-                    "oteryn:item.tibia.i37000" => Some(definition),
-                    "oteryn:item.tibia.i49362" => {
-                        definition.reference = std::num::NonZeroU32::new(5)?;
-                        Some(definition)
-                    }
-                    _ => None,
+                if let Some(native) = native {
+                    return crate::map::boot::native_item_definition(Some(native), key);
                 }
-            })
-            .map_err(debug)?;
+                (key == "oteryn:item.tibia.i37000")
+                    .then(|| fixture::floor_items("oteryn:item.tibia.i37001"))
+                    .flatten()
+            }).map_err(debug)?;
             assert_eq!(map.floors().teleport(PORTAL), Some(destination));
             let cells = map.movement_cells(room.movement_cells()).map_err(debug)?;
+            let spawn = if hard_win { STAGING } else { START };
             let pin = ChannelContentPin::from_activation(
                 world,
                 1,
@@ -126,7 +138,7 @@ fn scenario(
                 room.compiled().client_digest(),
                 map.frame_binding_digest(world),
                 map.map_revision_digest(),
-                (i32::from(START.x), i32::from(START.y), 14),
+                (i32::from(spawn.x), i32::from(spawn.y), 14),
             );
             let deps = Dependencies::with_content_and_capacity(
                 pin,
@@ -136,6 +148,7 @@ fn scenario(
             )?;
             let mut owner = deps.owner(&h, &authority);
             owner.movement_cells = (&cells).into();
+            owner.active_generation = generation;
             let session = deps.admitted.game_session_id;
             {
                 let mut runtime = deps.runtime.lock().await;
@@ -164,7 +177,11 @@ fn scenario(
                         .catalogue()
                         .clone(),
                 ));
-                two_player_exit(&h, &owner, deps.actor, session, &cells).await?;
+                let lever_key = bundle::placement_key(LEVER.floor, LEVER.x, LEVER.y, 2)
+                    .ok_or("lever placement")?;
+                let mut lever_placement = map.base().digest().to_vec();
+                lever_placement.extend_from_slice(&lever_key.to_be_bytes());
+                two_player_exit(&h, &mut owner, deps.actor, session, lever_placement).await?;
                 drop(owner);
                 drop(authority);
                 drop(seal);
@@ -202,24 +219,36 @@ fn scenario(
         })
 }
 
-fn portal_fixture(destination: TilePos) -> TestResult<(Vec<u8>, crate::map::boot::BootPins)> {
+fn portal_fixture(
+    destination: TilePos,
+    native: Option<&crate::content::native_gameplay::NativeGameplayState>,
+) -> TestResult<(Vec<u8>, crate::map::boot::BootPins)> {
     let (bytes, mut pins) = fixture::teleport_bundle();
     let mut manifest = bundle::read(&bytes)?.manifest;
     manifest.world = bundle::Extent {
-        min_x: START.x - 3,
-        min_y: START.y,
-        max_x: destination.x + 1,
-        max_y: destination.y + 1,
+        min_x: if native.is_some() { 34025 } else { START.x - 3 },
+        min_y: if native.is_some() { 32322 } else { START.y },
+        max_x: if native.is_some() { destination.x.max(STAGING.x) + 1 } else { destination.x + 1 },
+        max_y: if native.is_some() { STAGING.y + 5 } else { destination.y + 1 },
         floors: vec![START.floor],
     };
     let mut portal = manifest.palette.pop().ok_or("portal palette")?;
     portal.key = "oteryn:item.tibia.i37000".into();
-    let mut fire = portal.clone();
-    fire.key = "oteryn:item.tibia.i49362".into();
-    fire.id = portal.id + 1;
     manifest.palette.truncate(1);
+    if let Some(native) = native {
+        portal.id = crate::map::boot::native_item_definition(Some(native), &portal.key)
+            .ok_or("production portal")?.reference.get() - 1;
+    }
     manifest.palette.push(portal);
-    manifest.palette.push(fire);
+    if let Some(native) = native {
+        for key in ["oteryn:item.tibia.i2342", "oteryn:item.tibia.i8911"] {
+            let definition = crate::map::boot::native_item_definition(Some(native), key)
+                .ok_or("production lever stack item")?;
+            manifest.palette.push(bundle::PaletteEntry {
+                key: key.into(), family: bundle::Family::Item, id: definition.reference.get() - 1, terrain: None,
+            });
+        }
+    }
     let tile = |at: TilePos| sector::Tile {
         x: at.x,
         y: at.y,
@@ -245,60 +274,62 @@ fn portal_fixture(destination: TilePos) -> TestResult<(Vec<u8>, crate::map::boot
             ..Default::default()
         },
     });
-    let sectors = [
-        bundle::Sector {
-            floor: START.floor,
-            sx: START.x / 32,
-            sy: START.y / 32,
-            tiles: vec![
-                tile(TilePos {
-                    x: START.x - 3,
-                    ..START
-                }),
-                tile(TilePos {
-                    x: START.x - 2,
-                    ..START
-                }),
-                tile(TilePos {
-                    x: START.x - 1,
-                    ..START
-                }),
-                tile(START),
-                entrance,
-            ],
-        },
-        bundle::Sector {
-            floor: FORGE.floor,
-            sx: destination.x / 32,
-            sy: destination.y / 32,
-            tiles: vec![tile(destination)],
-        },
-    ];
+    let mut tiles = std::collections::BTreeMap::<_, Vec<_>>::new();
+    let mut add = |tile: sector::Tile| {
+        tiles.entry((tile.x / 32, tile.y / 32)).or_default().push(tile);
+    };
+    if native.is_some() {
+        for y in 32322..=32341 {
+            for x in 34025..=34043 {
+                if (x, y) != (PORTAL.x, PORTAL.y) {
+                    add(tile(TilePos { x, y, ..START }));
+                }
+            }
+        }
+        for y in STAGING.y..=STAGING.y + 4 {
+            add(tile(TilePos { y, ..STAGING }));
+        }
+        let mut lever = tile(LEVER);
+        lever.items.extend([2, 3].map(|palette| sector::Item {
+            palette, depth: 0, attrs: Default::default(),
+        }));
+        add(lever);
+    } else {
+        for x in START.x - 3..=START.x {
+            add(tile(TilePos { x, ..START }));
+        }
+    }
+    add(entrance);
+    add(tile(destination));
+    let mut sectors: Vec<_> = tiles.into_iter().map(|((sx, sy), mut tiles)| {
+        tiles.sort_by_key(|tile| (tile.y, tile.x));
+        bundle::Sector { floor: START.floor, sx, sy, tiles }
+    }).collect();
+    sectors.sort_by_key(bundle::order);
     let bytes = writer::write(&manifest, &sectors, &Default::default())?;
     pins.digest = bundle::read(&bytes)?.digest;
     let mut pins = fixture::floor_pins(pins);
-    pins.start = START;
+    pins.start = if native.is_some() { STAGING } else { START };
     Ok((bytes, pins))
 }
 
 async fn two_player_exit(
     h: &Harness,
-    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     first: crate::foundation::ExactActorRef,
     session: crate::foundation::GameSessionId,
-    cells: &crate::content::NativeEntryMovementCells,
+    lever_placement: Vec<u8>,
 ) -> TestResult {
     use super::fixture::id;
     use crate::foundation::{CommandId, CommandRef, GameSessionId, OwnerDamageCommand};
     use crate::gameplay_transport::{
-        encounter_phases, grizzly_kills,
+        encounter_phases,
         kill_reward::{DrainOutcome, KillSink, record_creature_kill},
     };
-    use crate::map::floor::{BundleDoors, prepare_quest_encounter_member};
-    use oteryn_gameplay_encounters::bosses::phase_controller::arbaziloth::{BOSS, FORGEMASTER};
-    use oteryn_gameplay_quests::quest::world_callbacks::{
-        Encounter, EncounterMonster, EncounterPhase, EncounterPlayer, Position,
-    };
+    use crate::gameplay_transport::connection::UseCommand;
+    use oteryn_gameplay_encounters::bosses::phase_controller::arbaziloth::BOSS;
+    use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+    use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
     const ENRAGED: &str = "oteryn:creature.enraged_arbaziloth";
     let other_session = GameSessionId::decode(&id(110)).map_err(debug)?;
     let admissions =
@@ -313,53 +344,17 @@ async fn two_player_exit(
         .await?
         .0
         .current_character_lease();
-    let (controller, _) =
-        super::death_ml_loss_composed_fixtures::production_generation_with_pin(owner.world_id, "content-1")?;
-    let native = controller
-        .active()
-        .and_then(|g| g.native_gameplay())
-        .ok_or("native policies")?;
-    let original = native
-        .policies()
-        .policies()
-        .iter()
-        .find(|p| p.definition_key == BOSS)
-        .ok_or("Arbaziloth policy")?;
+    let native = owner.active_generation.and_then(|g| g.native_gameplay())
+        .ok_or("production native policies")?;
     let mut runtime = owner.runtime.lock().await;
-    let digest = runtime.content_pin().server_artifact_digest();
-    let policies = [BOSS, FORGEMASTER, ENRAGED].map(|key| {
-        let mut policy = (**original).clone();
-        policy.definition_key = key.into();
-        policy.maximum_health = 100;
-        policy
-    });
-    runtime
-        .install_companion_policies(
-            crate::content::creature_policy::CompiledCreaturePolicies::from_active_artifact(
-                digest,
-                Vec::from(policies),
-            )
-            .map_err(debug)?,
-        )
-        .map_err(debug)?;
+    native.install_companion_policies(&mut runtime).map_err(debug)?;
     let reservation = runtime
         .reserve_fresh_session(other_session)
         .map_err(debug)?;
     let other = runtime.commit_fresh_session(reservation).map_err(debug)?;
-    let start = MovementLocalPosition {
-        x: i32::from(START.x),
-        y: i32::from(START.y),
-        floor: 14,
-    };
-    runtime
-        .initialize_pinned_test_position(
-            other,
-            MovementLocalPosition {
-                x: start.x - 1,
-                ..start
-            },
-        )
-        .map_err(debug)?;
+    runtime.initialize_pinned_test_position(other, MovementLocalPosition {
+        x: i32::from(STAGING.x), y: i32::from(STAGING.y) + 1, floor: 14,
+    }).map_err(debug)?;
     runtime
         .bind_attacker_lease(first, session, first_lease)
         .map_err(debug)?;
@@ -386,110 +381,24 @@ async fn two_player_exit(
         owner.refresh_quest_session(session, true).await;
         assert!(owner.refresh_source_party_presence(actor, session).await);
     }
+    let fence = owner.current_quest_fence(session).await
+        .map_err(|()| "Arbaziloth lever fence")?.ok_or("missing Arbaziloth lever fence")?;
+    let outcome = owner.use_object(first, UseCommand {
+        game_session_id: session, command_id: 1, item_fence: Some(fence.item_fence()),
+    }, WorldObjectTarget { placement: lever_placement, expected_revision: 0 }).await;
+    assert_eq!(outcome.disposition, UseDisposition::Committed, "production Arbaziloth lever");
     let queue = owner.states.attack.lock().await.kills().clone();
     let mut runtime = owner.runtime.lock().await;
     let states = owner.states.spell_states.lock().await;
-    use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
-    let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
-        cells.index()
-    else {
-        return Err("bundle arena cells".into());
-    };
-    let doors = BundleDoors(&index.map().facts);
-    let proofs = players
-        .iter()
-        .map(|&(actor, session)| {
-            let original = runtime.read_actor_position(actor).map_err(debug)?;
-            prepare_quest_encounter_member(
-                &runtime, cells, actor, session, original, start, false, &doors, true,
-            )
-            .map_err(debug)
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    let position = |x| Position {
-        x,
-        y: START.y,
-        floor: START.floor,
-    };
-    let encounter = Encounter {
-        minimum_level: 0,
-        players: vec![
-            EncounterPlayer {
-                from: position(START.x),
-                to: position(START.x),
-            },
-            EncounterPlayer {
-                from: position(START.x - 1),
-                to: position(START.x),
-            },
-        ],
-        monsters: vec![
-            EncounterMonster {
-                creature: BOSS.into(),
-                position: position(START.x - 2),
-            },
-            EncounterMonster {
-                creature: FORGEMASTER.into(),
-                position: position(START.x - 3),
-            },
-        ],
-        room_min: position(START.x - 3),
-        room_max: position(PORTAL.x),
-        timing: None,
-        phase: Some(EncounterPhase::Arbaziloth),
-    };
-    let credits =
-        grizzly_kills::capture_encounter_admission(owner, &runtime, &players).map_err(debug)?;
-    // Scope the reservation guard so it is dropped before the next await.
-    let (entered, boss) = {
-    let mut active = states
-        .encounter_phases
-        .reserve(&mut runtime, 1)
-        .map_err(debug)?;
-    let (entered, (phase, boss)) = runtime
-        .commit_quest_encounter_with_phase(
-            proofs,
-            &[
-                (
-                    BOSS,
-                    100,
-                    MovementLocalPosition {
-                        x: start.x - 2,
-                        ..start
-                    },
-                ),
-                (
-                    FORGEMASTER,
-                    100,
-                    MovementLocalPosition {
-                        x: start.x - 3,
-                        ..start
-                    },
-                ),
-            ],
-            |runtime, actors| {
-                Ok((
-                    encounter_phases::bind(
-                        runtime,
-                        &encounter,
-                        1,
-                        actors,
-                        &players,
-                        credits,
-                        cells.clone(),
-                    )?,
-                    actors[0],
-                ))
-            },
-            || true,
-        )
-        .map_err(debug)?;
-    active.push(phase);
-    (entered, boss)
-    };
-    assert_eq!(entered.len(), 2);
-    assert!(entered.iter().all(|snapshot| snapshot.position() == start));
-    for (phase, health) in [100, 80, 60, 40].into_iter().enumerate() {
+    for (actor, _) in players {
+        assert_eq!(runtime.read_actor_position(actor).map_err(debug)?.position(), ARENA_ENTRY);
+    }
+    let boss = runtime.positioned_actor_census().map_err(debug)?.into_iter()
+        .map(|(actor, _, _)| actor)
+        .find(|actor| runtime.matches_live_creature_identity(*actor, BOSS.as_bytes()))
+        .ok_or("normal Arbaziloth spawned by lever")?;
+    for phase in 0..4 {
+        let health = runtime.companion_snapshot(boss).map_err(debug)?.health;
         let occurrence = format!("nrwicked-party-{phase}");
         let binding = format!("{occurrence}\0damage");
         runtime
@@ -520,7 +429,8 @@ async fn two_player_exit(
         .ok_or("enraged replacement")?;
     let observed = owner.owner_now();
     let now = observed.get() / 1000;
-    for (actor, session, damage) in [(other, other_session, 25), (first, session, 75)] {
+    let health = runtime.companion_snapshot(enraged).map_err(debug)?.health;
+    for (actor, session, damage) in [(other, other_session, health / 4), (first, session, health - health / 4)] {
         runtime
             .borrow_exact_actor_commit_at(now)
             .commit_damage_for_bound_attacker(
@@ -588,8 +498,15 @@ async fn two_player_exit(
         );
     }
     for (actor, session) in players {
-        let (outcome, _) = owner.paced_step(actor, session, StepDirection::East).await;
-        assert_eq!(outcome.disposition, StepDisposition::Moved);
+        for direction in std::iter::repeat_n(StepDirection::East, 6)
+            .chain(std::iter::repeat_n(StepDirection::North, 10))
+            .chain(std::iter::once(StepDirection::East))
+        {
+            owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(1))
+                .ok_or("Doomforge movement clock")?;
+            let (outcome, _) = owner.paced_step(actor, session, direction).await;
+            assert_eq!(outcome.disposition, StepDisposition::Moved);
+        }
         let at = owner
             .runtime
             .lock()

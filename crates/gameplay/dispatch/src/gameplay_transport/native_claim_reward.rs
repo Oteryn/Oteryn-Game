@@ -40,15 +40,28 @@ pub(super) fn admits_forgemaster_claim(
     bound: &BoundPlacement,
     catalogue: Option<&QuestStateCatalogue>,
 ) -> bool {
+    let forgemaster_claim = claim.key.as_str() == "oteryn:reward-claim.nrwicked-forgemaster";
     let matches = |placement: &BoundPlacement, uid| {
-        map.facts
-            .quest_callback_matches(placement.bundle_placement_key, Some(uid), None, None)
+        let key = placement.bundle_placement_key;
+        if forgemaster_claim && !map.facts.quest_callback_source_bound(key) {
+            // The retained World chests have native position/ordinal bindings.
+            // Their bound callback names carry the donor selector for the same guard.
+            return placement
+                .reward_callback
+                .as_deref()
+                .and_then(|callback| {
+                    callback.strip_prefix("oteryn:quest-reward/nrwicked-forgemaster-")
+                })
+                .and_then(|selector| selector.parse::<u16>().ok())
+                == Some(uid);
+        }
+        map.facts.quest_callback_matches(key, Some(uid), None, None)
     };
     let Some((_, selected_item)) = FORGEMASTER_REWARDS
         .iter()
         .find(|(uid, _)| matches(bound, *uid))
     else {
-        return true;
+        return !forgemaster_claim;
     };
     claim.placements.len() == FORGEMASTER_REWARDS.len()
         && FORGEMASTER_REWARDS.iter().all(|(uid, item)| {
