@@ -3,7 +3,7 @@ use super::fixture::{Harness, debug, id};
 use super::quest_world_callbacks::{local, scenario, wire, world_with_cells};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
-use crate::foundation::GameSessionId;
+use crate::foundation::{ExactActorRef, GameSessionId};
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 use oteryn_protocol_oteryn::world_spatial::{
     COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result,
@@ -14,6 +14,7 @@ use std::time::Duration;
 pub(super) const NAME: &str = "feaster-brain-head";
 pub(super) const FULL: &str = "feaster-brain-head-full";
 pub(super) const CLOSED: &str = "feaster-brain-head-closed";
+pub(super) const VACANT: &str = "feaster-brain-head-vacant";
 const ADMISSION_WINDOW_MS: u32 = 30_000;
 const BOSS: &str = "oteryn:creature.brain_head";
 const ADD: &str = "oteryn:creature.cerebellum";
@@ -139,6 +140,15 @@ fn brain_head_join_window_refuses_a_late_second_player_until_the_room_expires() 
     super::kill_reward_e2e::scenario_thread::run(CLOSED, || scenario(CLOSED, ALIAS, false))
 }
 
+#[test]
+fn brain_head_cooldown_refusal_preserves_roster_until_an_eligible_player_enters() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(VACANT, || scenario(VACANT, ALIAS, false))
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -224,9 +234,15 @@ pub(super) async fn exercise(
         );
         return Ok(());
     }
-    assert_eq!(live(owner, BOSS).await?.len(), 1);
-    assert_eq!(live(owner, ADD).await?.len(), 8);
+    let mut first_roster = live(owner, BOSS).await?;
+    assert_eq!(first_roster.len(), 1);
+    let first_adds = live(owner, ADD).await?;
+    assert_eq!(first_adds.len(), 8);
+    first_roster.extend(first_adds);
     assert!((35_990_000..=36_000_000).contains(&remaining.ok_or("booked cooldown")?));
+    if name == VACANT {
+        refused_vacant_reentry(owner, admitted, &first_roster).await?;
+    }
     // Crystal registers every approach tile for the same visit. A second
     // independently fenced Character enters by the primary position.
     let mut second = second_player(owner, admitted, harness).await?;
@@ -264,6 +280,10 @@ pub(super) async fn exercise(
     );
     assert_eq!(live(owner, BOSS).await?.len(), 1);
     assert_eq!(live(owner, ADD).await?.len(), 8);
+    if name == VACANT {
+        let runtime = owner.runtime.lock().await;
+        assert!(first_roster.iter().all(|&actor| !runtime.contains_live_creature(actor)));
+    }
     let cooled_players: i64 =
         sqlx::query_scalar("SELECT count(*) FROM game_character_boss_cooldowns WHERE boss_key=$1")
             .bind(BOSS)
@@ -292,6 +312,47 @@ pub(super) async fn exercise(
     }
     assert!(live(owner, BOSS).await?.is_empty());
     assert!(live(owner, ADD).await?.is_empty());
+    Ok(())
+}
+
+async fn refused_vacant_reentry(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    roster: &[ExactActorRef],
+) -> TestResult {
+    let actor = admitted.runtime_actor.ok_or("first player")?;
+    let map = owner.bundle_map().ok_or("room map")?;
+    let approach = at(ALIAS.x - 1, ALIAS.y);
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let doors = crate::map::floor::BundleDoors(&map.facts);
+        let proof = crate::map::floor::prepare_quest_encounter_ejection(
+            &runtime,
+            owner.movement_cells(),
+            actor,
+            admitted.game_session_id,
+            runtime.read_actor_position(actor).map_err(debug)?,
+            local(approach),
+            &doors,
+        )
+        .map_err(debug)?;
+        runtime.commit_source_step(proof).map_err(debug)?;
+    }
+    let deadline = owner.states.quest_callbacks.next_encounter_due_us().ok_or("original visit deadline")?;
+    let command = admitted.continuity.next_command_id;
+    let reply = wire(
+        owner,
+        admitted,
+        command,
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+        encode_step_intent(StepDirection::East),
+    )
+    .await?;
+    assert_eq!(decode_step_result(&reply).map_err(debug)?, StepDisposition::Moved);
+    let runtime = owner.runtime.lock().await;
+    assert_eq!(runtime.read_actor_position(actor).map_err(debug)?.position(), local(EXIT));
+    assert!(roster.iter().all(|&actor| runtime.contains_live_creature(actor)));
+    assert_eq!(owner.states.quest_callbacks.next_encounter_due_us(), Some(deadline));
     Ok(())
 }
 
