@@ -139,7 +139,7 @@ mod tests {
 
     #[test]
     fn inactive_quest_disguise_preserves_an_unrelated_costume() {
-        let current = stage_item_costume(&player(), 924, 3_000_000, 1).expect("costume");
+        let current = stage_item_costume(&player(), 924, 3_000_000, 1, None).expect("costume");
         assert!(
             stage_quest_disguise(&current, None, 2)
                 .expect("unrelated")
@@ -151,12 +151,12 @@ mod tests {
     #[test]
     fn costume_expires_at_the_original_fifty_minute_deadline() {
         let state = player();
-        let next = stage_item_costume(&state, 924, 3_000_000, 1).expect("costume");
+        let next = stage_item_costume(&state, 924, 3_000_000, 1, None).expect("costume");
         assert_eq!(next.conditions.outfit_at(1000), Some(924));
         assert_eq!(next.conditions.outfit_at(3_000_001_000), None);
         assert_eq!(next.revision(), state.revision() + 1);
-        assert!(stage_item_costume(&state, 0, 1, 0).is_err());
-        assert!(stage_item_costume(&state, 924, 0, 0).is_err());
+        assert!(stage_item_costume(&state, 0, 1, 0, None).is_err());
+        assert!(stage_item_costume(&state, 924, 0, 0, None).is_err());
     }
     #[test]
     fn rocket_health_loss_retains_lethal_floor_and_clears_lifecycle_conditions() {
