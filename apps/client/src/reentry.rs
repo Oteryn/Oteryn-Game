@@ -199,8 +199,14 @@ impl Reentry {
             )),
         };
         // Cancel and poll are serialized by the UI owner. A completed worker may have
-        // queued its result just before cancellation; it must not start play afterward.
-        let result = if self
+        // queued its result just before cancellation. Keep gate refusals and discard
+        // any result that could start play or allow another sign-in immediately.
+        let result = if !matches!(
+            &result,
+            Err(GameplayEntryError::ClientUpdateRequired { .. }
+                | GameplayEntryError::Maintenance { .. }
+                | GameplayEntryError::Rejected(PublicClass::ClientUpdateRequired))
+        ) && self
             .attempt_cancellation
             .as_ref()
             .is_some_and(CancellationToken::is_cancelled)
@@ -385,7 +391,7 @@ mod tests {
         assert!(entry.cancel_entry());
         let result = entry.poll().ok_or("queued result missing")?;
         assert_eq!(
-            result.as_ref().err().copied(),
+            result.as_ref().err().cloned(),
             Some(GameplayEntryError::Rejected(
                 PublicClass::SessionUnavailable
             ))
@@ -398,3 +404,30 @@ mod tests {
 #[cfg(test)]
 #[path = "features/0054-training/tests/reentry.rs"]
 mod training_batch_tests;
+
+#[cfg(test)]
+#[test]
+fn cancellation_preserves_queued_build_gate_refusals() -> Result<(), Box<dyn std::error::Error>> {
+    for refusal in [
+        GameplayEntryError::Maintenance {
+            retry_at: Instant::now() + std::time::Duration::from_secs(120),
+        },
+        GameplayEntryError::ClientUpdateRequired {
+            manual_download_url: "https://oteryn.com/download".into(),
+            updater_started: true,
+        },
+        GameplayEntryError::Rejected(PublicClass::ClientUpdateRequired),
+    ] {
+        let mut entry = Reentry::new(ClientBootstrap::new()?);
+        entry.state = EntryState::Entering;
+        entry.attempt_cancellation = Some(CancellationToken::new());
+        let (sender, receiver) = mpsc::channel();
+        entry.pending = Some(receiver);
+        assert!(sender.send(Err(refusal.clone())).is_ok());
+        assert!(entry.cancel_entry());
+        let result = entry.poll().ok_or("queued result missing")?;
+        entry.shutdown();
+        assert_eq!(result.err(), Some(refusal));
+    }
+    Ok(())
+}
