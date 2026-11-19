@@ -1,0 +1,1 @@
+{"epoch":7,"probes":[{"channel_id":"019a5f4a-4000-7000-8000-000000000001","probe_url":"http://probe-eu1.example.invalid/v1/probe"},{"channel_id":"019a5f4a-4000-7000-8000-000000000002","probe_url":"https://probe-eu2.example.invalid/v1/probe"}]}

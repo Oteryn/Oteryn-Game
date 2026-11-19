@@ -79,10 +79,11 @@ fn execute(case: Case) -> TestResult {
             .await
             .map_err(debug)?;
         let dependencies = Dependencies::new()?;
-        let (generation, _) = super::death_ml_loss_composed::production_generation_with_pin(
-            dependencies.admitted.world_id,
-            "content-1",
-        )?;
+        let (generation, _) =
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
+                dependencies.admitted.world_id,
+                "content-1",
+            )?;
         let mut owner = dependencies.owner(&harness, &authority);
         owner.active_generation = generation.active();
         let session = dependencies.admitted.game_session_id;
@@ -102,7 +103,7 @@ fn execute(case: Case) -> TestResult {
         );
         drop(refresh);
         let key = super::quest_runtime_fixture::TRANSITION;
-        let fence = super::death_ml_loss_composed::current_fence(&owner, session).await?;
+        let fence = super::death_ml_loss_composed_fixtures::current_fence(&owner, session).await?;
         let request = |command_id| -> TestResult<QuestTransitionRequest> {
             Ok(QuestTransitionRequest {
                 transition_key: key.into(),

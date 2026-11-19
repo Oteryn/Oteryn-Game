@@ -31,6 +31,9 @@ pub trait AdmissionAttempt {
         &mut self,
         cancellation: CancellationToken,
     ) -> impl Future<Output = Result<(), Self::Error>>;
+    fn terminal_refusal(&self) -> Option<Self::Error> {
+        None
+    }
     fn waiting(&mut self, _wait: AdmissionWait) {}
     fn queue(&self) -> Option<AdmissionQueue> {
         None
@@ -56,6 +59,9 @@ pub async fn enter<A: AdmissionAttempt>(
             Err(Some(code)) => code,
             Err(None) => return Err(A::rejected(AdmissionPublicClass::TemporarilyUnavailable)),
         };
+        if let Some(reason) = attempt.terminal_refusal() {
+            return Err(reason);
+        }
         let class = admission_refusal_class(code).map_or(
             AdmissionPublicClass::TemporarilyUnavailable,
             |(_progression, class)| class,

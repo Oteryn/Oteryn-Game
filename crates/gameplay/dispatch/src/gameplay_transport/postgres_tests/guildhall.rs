@@ -1,6 +1,6 @@
 //! GUILDHALL: actual House command -> composed owner -> native split ledger/custody.
 use super::fixture::{Harness, debug, id, run};
-use super::guild_bank::{bank_seed, transport};
+use super::guild_bank_fixtures::{bank_seed, transport};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::domain::CharacterId;
 use crate::durability::guild_chat_fixture as seed;

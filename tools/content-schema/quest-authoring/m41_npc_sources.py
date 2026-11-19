@@ -17,6 +17,8 @@ SOURCE = 'data-global/npc/alyxo.lua'
 SHA = '86f3cf5aa793d5ccffd14bdf35bda841bb00f8c3ce3352826b088f4f25c4b008'
 QUEST = 'oteryn:quest.kilmaresh_quest'
 FAFNAR = 'oteryn:quest-progress/crystalserver/kilmaresh/thirteen/fafnar'
+LYRE = 'oteryn:quest-progress/crystalserver/kilmaresh/thirteen/lyre'
+TORTOISE = 'oteryn:quest-progress/crystalserver/kilmaresh/thirteen/presente'
 REMAINS = 'oteryn:quest-progress/crystalserver/kilmaresh/fourteen/remains'
 PROGRAM = 'oteryn:quest-npc-program.m41_kilmaresh_finale'
 
@@ -29,18 +31,23 @@ def build(root=ROOT):
     # The captured 9f5a72c and checked 201189f file have identical bytes; the
     # source URL/revision and SHA are recorded in M41-NPC-ACHIEVEMENTS-AND-BEAKS.md.
     source = lambda lines: [f'crystal:{REVISION}:{SOURCE}:{lines}']
-    guard = {'kind': 'storage', 'track': FAFNAR, 'op': 'eq', 'value': 301}
+    # Kilmaresh Quest/Spoiler (curid 88780, oldid 1199254) requires all
+    # three separate reports before the emblem. Alyxo lines 136, 152 and 167
+    # establish the corresponding completed donor storage values.
+    guards = [{'kind': 'storage', 'track': track, 'op': 'eq', 'value': value}
+              for track, value in [(FAFNAR, 301), (LYRE, 4), (TORTOISE, 3)]]
     common = {'quest': QUEST, 'npc': 'oteryn:npc.alyxo', 'trigger': 'say'}
     return {'schema': 1, 'program_key': PROGRAM, 'quest': QUEST,
             'source_files': [{'path': SOURCE, 'sha256': SHA, 'revision': REVISION}],
-            'tracks': [dict(key=key, quest=QUEST, initial=0, min=0, max=maximum, sources=source('190-204'))
-                       for key, maximum in [(FAFNAR, 301), (REMAINS, 3)]],
+            'tracks': [dict(key=key, quest=QUEST, initial=0, min=0, max=maximum, sources=source(lines))
+                       for key, maximum, lines in [(FAFNAR, 301, '190-204'), (REMAINS, 3, '190-204'),
+                                                   (LYRE, 4, '143-157'), (TORTOISE, 3, '158-173')]],
             'rules': [
                 dict(common, key='oteryn:quest-npc/m41-kilmaresh/alyxo/mission-offer',
-                     keywords=['mission'], guards=[guard], effects=[{'kind': 'set_topic', 'value': 13}],
+                     keywords=['mission'], guards=guards, effects=[{'kind': 'set_topic', 'value': 13}],
                      reply=['Did you finish the 3 jobs I gave you?'], sources=source('190-194')),
                 dict(common, key='oteryn:quest-npc/m41-kilmaresh/alyxo/sculptor-reward',
-                     keywords=['yes'], topics=[13], guards=[guard],
+                     keywords=['yes'], topics=[13], guards=guards,
                      effects=[{'kind': 'achievement', 'name': 'Sculptor Apprentice'},
                               {'kind': 'give_item', 'item': 'oteryn:item.tibia.i31574', 'count': 1},
                               {'kind': 'set', 'track': REMAINS, 'value': 1},

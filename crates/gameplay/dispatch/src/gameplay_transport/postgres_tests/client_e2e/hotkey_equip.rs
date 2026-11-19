@@ -15,7 +15,7 @@ pub(super) async fn exercise(
     admitted: &mut AdmittedSession,
 ) -> TestResult {
     let key = "oteryn:item.tibia.i3264";
-    super::super::item_forge::support::seed_items(h, &[(90, key, 1, 0)]).await?;
+    super::super::item_forge_fixtures::support::seed_items(h, &[(90, key, 1, 0)]).await?;
     let definition = owner
         .active_generation
         .and_then(|g| g.native_gameplay())

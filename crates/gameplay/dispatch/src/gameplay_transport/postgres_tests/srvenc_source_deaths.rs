@@ -41,7 +41,7 @@ fn scenario(name: &'static str, creature: &'static str) -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run(name, move || {
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run(name, move || {
         run(async |admin| {
             let rule = source_deaths::rules()?
                 .iter()
@@ -72,7 +72,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
         .await
         .map_err(debug)?;
     let mut deps = Dependencies::new()?;
-    let (controller, activated) = super::death_ml_loss_composed::production_generation_with_pin(
+    let (controller, activated) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
         deps.admitted.world_id,
         "content-1",
     )?;
@@ -225,7 +225,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
         // generic writer must not impersonate her protected quest operation.
         // Import only that predecessor, as the other native Quest fixtures do;
         // the death and all its rewards still use the real fenced owners.
-        super::qengine_outfit_stories::seed_quest_prerequisites(
+        super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
             h, &owner, &admitted, &seeds, 0xa6,
         )
         .await?;

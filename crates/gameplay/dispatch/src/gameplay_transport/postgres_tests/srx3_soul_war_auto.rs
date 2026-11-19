@@ -12,7 +12,7 @@ fn srx3_mirror_actual_auto_attack_publishes_current_character_vocation_postgres(
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("srx3-mirror-auto", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-mirror-auto", || {
         run(async |admin| {
             reset();
             let scene = super::srx3_activity_source_fixture::SourceScene::new(
@@ -41,8 +41,8 @@ fn srx3_mirror_actual_auto_attack_publishes_current_character_vocation_postgres(
             assert!(native.qualifies_soul_war_callbacks(native.source_digest()));
             let h = Harness::create_with_admission_seed(admin, "srx3_mirror_auto", false, false)
                 .await?;
-            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-            super::house_transfer::prepare_owned_session(&h).await?;
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::house_transfer_fixtures::prepare_owned_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -56,7 +56,7 @@ fn srx3_mirror_actual_auto_attack_publishes_current_character_vocation_postgres(
                 &scene,
                 crate::content::bosses::activity_template::PinnedActivitySourceRoom::GoshnarsGreed,
             )?;
-            super::boss_activity::issue_content_and_reset(&h, pin).await?;
+            super::boss_activity_fixtures::issue_content_and_reset(&h, pin).await?;
             let mut admitted = deps.admitted;
             super::srx3_activity_source_fixture::prepare_player(&h, &owner, &mut admitted, 500)
                 .await?;

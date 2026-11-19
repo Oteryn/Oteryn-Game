@@ -258,7 +258,7 @@ pub(super) async fn recover(
     // the Character. It inherits the exact pending death; only the ordinary
     // accepted Channel temple-placement owner may later consume that row.
     let fresh =
-        super::super::activity_departed::fresh_after_release(h, source.character_id, origin)
+        super::super::activity_departed_fixtures::fresh_after_release(h, source.character_id, origin)
             .await?;
     assert_eq!(fresh.session_state(), GameSessionState::Active);
     assert_eq!(fresh.current_runtime_scope(), origin);

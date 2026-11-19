@@ -41,6 +41,7 @@ Write it as one self-contained file. Include, in this order:
 7. **Review:** for a Claude lane or child session that owns its branch,
    "you run the Codex review of your head and fix confirmed findings
    (`oteryn-review` §5 and its `references/batch-review.md`: parallel lens runs,
+   plus the two holistic whole-diff runs for a package or chunked diff,
    every finding with no cap, pattern sweep, one batch fix)"; for a Codex lane, "no review, the coordinator
    reviews".
 8. **Report:** at most 15 lines: result, head SHA or diff name, commands run
@@ -64,14 +65,15 @@ what any competent engineer would choose the same way. Point at repository
 files (`AGENTS.md`, task card, README of a directory) instead of pasting them.
 State what to do rather than what to avoid; a prohibition belongs only in the
 limits below. Send Codex work to Codex Cloud with model
-`gpt-6.2-sol` at reasoning effort `medium` and start each packet with
-"Reasoning effort: medium."; a Codex lane on the PC that writes code uses the
+`gpt-6.2-sol` at reasoning effort `high` and start each packet with
+"Reasoning effort: high."; a Codex lane on the PC that writes code uses the
 same setting. Codex review runs in Codex Cloud, read-only, with
-`gpt-6.2-sol` at reasoning effort `high`, never `codex exec` on the PC
-(`oteryn-review`); its verified findings are fixed by a separate `medium`
+`gpt-6.2-astra` at reasoning effort `high`, never `codex exec` on the PC
+(`oteryn-review`); its verified findings are fixed by a separate `high`
 run (`codex-review.sh ... --fix-confirmed`, `oteryn-review` §5). Owner decision 2026-11-11, replacing the 2026-11-05
 `high` for code-writing Codex; owner rule 2026-11-17 sets the model
-`gpt-6.2-sol` and moves review to Codex Cloud. Repository subagents use the model and effort
+`gpt-6.2-sol` and moves review to Codex Cloud; owner rule 2026-11-18 sets review
+to `gpt-6.2-astra` and code-writing and fix runs to effort `high`. Repository subagents use the model and effort
 set in their own `.claude/agents/*.md` definition.
 
 Submit a Codex Cloud task with `scripts/codex-cloud.mjs` (2026-11-12: the old
@@ -107,8 +109,11 @@ The receiving agent cannot see this skill, so paste these lines verbatim:
 Before a returned diff goes onto a branch:
 
 1. Apply it to a worktree on the packet's base and check it against current
-   `main` with `git merge-tree --write-tree origin/main HEAD`; merge only on
-   a conflict.
+   `main`: `git fetch origin main`, then
+   `git merge-tree --write-tree origin/main HEAD`. Merge only on a conflict
+   (exit 1, or GitHub reports the PR conflicted; `oteryn-dev`
+   `references/ci-merge.md`, *Before every push*). Any other non-zero exit is
+   an error to fix.
 2. Read the full diff. Reject or trim: files outside the owned paths, stray
    notes/logs, weakened assertions, `#[ignore]`, hand-edited digests,
    renumbered migrations of other mechanics, unrelated refactors.

@@ -8,7 +8,7 @@ use std::collections::{BTreeMap, BTreeSet};
 pub const SPECTATOR_RANGE_TILES: u16 = 15;
 pub const HAZARD_REFRESH_SECONDS: u64 = 8;
 pub const PARTY_CACHE_SECONDS: u64 = 10;
-pub const AREA_STEP_SECONDS: u64 = 30;
+pub use oteryn_gameplay_quests::quest::rotten_blood::area_icons::AREA_STEP_SECONDS;
 pub const AREA_MAX_COUNT: u8 = 100;
 pub const CROSS_STEP_SECONDS: u64 = 1;
 pub const CROSS_TRIGGER_COUNT: u8 = 111;

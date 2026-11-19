@@ -8,7 +8,7 @@ fn grizzly_task_points_use_native_post_xp_level_and_pending_batch_rewards() -> T
         eprintln!("GRIZZLY_POST_XP_POINTS POSTGRES_CASE_SKIPPED no_admin_url");
         return Ok(());
     }
-    super::super::kill_reward_e2e::scenario_thread::run("grizzly-post-xp", scenario)
+    super::super::kill_reward_e2e_fixtures::scenario_thread::run("grizzly-post-xp", scenario)
 }
 
 fn scenario() -> TestResult {

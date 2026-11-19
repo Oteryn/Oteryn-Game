@@ -1,5 +1,5 @@
 //! Source reward slices only: these do not certify their access or outfit programmes.
-use super::{TestResult, quest_catalogue_chests};
+use super::{TestResult, quest_catalogue_chests_fixtures as quest_catalogue_chests};
 use std::collections::BTreeSet;
 
 fn rewards(claims: &[&str]) -> TestResult {
