@@ -59,6 +59,7 @@ pub struct FamiliarSourceSettings {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum FamiliarBenefitUse {
     CurrentEligibility,
+    LoginWithoutPremium,
     NotApplicableEnd,
 }
 #[derive(Debug, Clone)]
@@ -345,6 +346,14 @@ pub trait CurrentFamiliarSourceOwner: source_registration::Registered {
         binding: &CastFactsBinding,
         now_micros: u64,
     ) -> Option<CurrentProjection<FamiliarSourceSettings>>;
+
+    fn read_for_login(
+        &self,
+        binding: &CastFactsBinding,
+        now_micros: u64,
+    ) -> Option<CurrentProjection<FamiliarSourceSettings>> {
+        self.read_current(binding, now_micros)
+    }
 }
 use super::native_combat_cast::UnresolvedSpellCommit;
 use crate::content::native_gameplay::NativeGameplayState;
@@ -1705,25 +1714,69 @@ impl<
         binding: &CastFactsBinding,
         now: u64,
     ) -> Option<CurrentProjection<FamiliarSourceSettings>> {
+        self.read_settings(binding, now, false)
+    }
+
+    fn read_for_login(
+        &self,
+        binding: &CastFactsBinding,
+        now: u64,
+    ) -> Option<CurrentProjection<FamiliarSourceSettings>> {
+        self.read_settings(binding, now, true)
+    }
+}
+
+impl<
+    P: super::super::spell_access_facts::CurrentSpellAccessOwner,
+    A: CurrentFamiliarAdministrativeOwner,
+> FamiliarSourceAdapter<'_, P, A>
+{
+    fn read_settings(
+        &self,
+        binding: &CastFactsBinding,
+        now: u64,
+        login: bool,
+    ) -> Option<CurrentProjection<FamiliarSourceSettings>> {
         if self.config.source_digest() != binding.content_digest {
             return None;
         }
-        let premium = self.premium.read_current(binding, now).ok()?.premium?;
+        let premium = self
+            .premium
+            .read_current(binding, now)
+            .ok()?
+            .premium
+            .filter(|proof| proof.current(binding, now));
         let group = self.administrative.read_current_group(binding, now)?;
-        if !premium.current(binding, now) || !group.current(binding, now) {
+        if !group.current(binding, now) {
             return None;
         }
+        let (benefit_use, premium, premium_revision, valid_until_micros) = match premium {
+            Some(proof) => (
+                FamiliarBenefitUse::CurrentEligibility,
+                proof.value,
+                proof.authority_revision,
+                proof.valid_until_micros.min(group.valid_until_micros),
+            ),
+            // Login can restore fenced state without granting a paid benefit.
+            None if login => (
+                FamiliarBenefitUse::LoginWithoutPremium,
+                false,
+                0,
+                group.valid_until_micros,
+            ),
+            None => return None,
+        };
         Some(CurrentProjection {
             binding: binding.clone(),
             authority_revision: group.authority_revision,
-            valid_until_micros: premium.valid_until_micros.min(group.valid_until_micros),
+            valid_until_micros,
             value: FamiliarSourceSettings {
-                benefit_use: FamiliarBenefitUse::CurrentEligibility,
+                benefit_use,
                 account_at_least_god: group.value,
-                premium: premium.value,
-                premium_revision: premium.authority_revision,
+                premium,
+                premium_revision,
                 familiar_minutes: self.config.familiar_minutes(),
-                vip: self.config.vip_enabled() && premium.value,
+                vip: self.config.vip_enabled() && premium,
                 vip_reduction_minutes: self.config.vip_reduction_minutes(),
                 cooldown_rate: self.config.cooldown_rate(),
             },
@@ -2007,8 +2060,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     | FamiliarOwnerEvent::Expiry { .. }
                     | FamiliarOwnerEvent::OwnerDeath { .. }
             );
+            let is_login = matches!(event, FamiliarOwnerEvent::Login(_));
             let caster = if is_end {
                 None
+            } else if is_login {
+                Some(
+                    owned
+                        .numerical_caster(
+                            state,
+                            spell,
+                            content,
+                            crate::spell::harmony::HarmonyMultiplier::ONE,
+                            now.get(),
+                        )
+                        .map_err(|_| ())?,
+                )
             } else {
                 Some(
                     owned
@@ -2022,12 +2088,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .map_err(|_| ())?,
                 )
             };
-            let settings = source
-                .read_current(owned.binding(), now.get())
-                .filter(|v| v.current(owned.binding(), now.get()))
-                .ok_or(())?;
-            if (is_end && settings.value.benefit_use != FamiliarBenefitUse::NotApplicableEnd)
-                || (!is_end && settings.value.benefit_use != FamiliarBenefitUse::CurrentEligibility)
+            let settings = if is_login {
+                source.read_for_login(owned.binding(), now.get())
+            } else {
+                source.read_current(owned.binding(), now.get())
+            }
+            .filter(|v| v.current(owned.binding(), now.get()))
+            .ok_or(())?;
+            let applicable = match settings.value.benefit_use {
+                FamiliarBenefitUse::CurrentEligibility => !is_end,
+                FamiliarBenefitUse::LoginWithoutPremium => is_login,
+                FamiliarBenefitUse::NotApplicableEnd => is_end,
+            };
+            if !applicable
                 || caster
                     .as_ref()
                     .is_some_and(|c| settings.value.premium != c.premium.is_current())
@@ -2255,9 +2328,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if actual_binding != &expected_binding {
             return Err(());
         }
-        let current = source
-            .read_current(actual_binding, now.get())
-            .filter(|v| v.current(actual_binding, now.get()));
+        // Recovery selects the read from the sealed origin, including when the response
+        // to the original fenced Login write was lost.
+        let current = if matches!(
+            prepared.familiar.binding().origin(),
+            crate::spell::companion_lifecycle::FamiliarLifecycleOrigin::Login { .. }
+        ) {
+            source.read_for_login(actual_binding, now.get())
+        } else {
+            source.read_current(actual_binding, now.get())
+        }
+        .filter(|v| v.current(actual_binding, now.get()));
         let allow_new_mutation = current.as_ref().is_some_and(|v| {
             v.value == prepared.settings.value
                 && v.authority_revision == prepared.settings.authority_revision

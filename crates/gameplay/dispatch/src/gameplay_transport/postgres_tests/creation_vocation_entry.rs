@@ -1,4 +1,4 @@
-//! Creation-vocation admission must work before any progression initialization.
+//! A v4 birth starts without progression; first entry supplies it before Familiar Login.
 use super::fixture::{Harness, debug, id};
 use super::{Dependencies, TestResult, fresh_fixture};
 use crate::durability::admission_authority_guards::AdmissionGuardStore;
@@ -7,7 +7,9 @@ use crate::foundation::admission_authority_publication::{
     AdmissionAuthorityGuardKeyV1, AdmissionAuthorityPublicationV1,
 };
 use crate::foundation::{AuthenticatedTransportRefV1, GameSessionId};
+use crate::gameplay_transport::AdmissionRetryBudget;
 use crate::gameplay_transport::connection::FirstEntryOutcome;
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 fn uuid(id: &[u8; 16]) -> String {
     crate::gameplay_transport::canonical_uuid(id)
 }
@@ -19,7 +21,14 @@ fn bootstrap_v4_every_vocation_first_entry_without_progression_postgres() -> Tes
     };
     super::kill_reward_e2e_fixtures::scenario_thread::run("creation-vocation-entry", move || {
         tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async move {
-            for vocation in ["Knight", "Paladin", "Sorcerer", "Druid", "Monk"] {
+            for (vocation, with_premium) in [
+                ("Knight", true),
+                ("Paladin", true),
+                ("Sorcerer", true),
+                ("Druid", true),
+                ("Monk", true),
+                ("Sorcerer", false),
+            ] {
                 let h = Harness::create_newhaven(admin.clone(), "creation_entry").await?;
                 let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
                 let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
@@ -27,7 +36,15 @@ fn bootstrap_v4_every_vocation_first_entry_without_progression_postgres() -> Tes
                 let active = controller.active().ok_or("active generation")?;
                 super::tutorial_vitals_fixture::native_asset_revisions(&h, active).await?;
                 let room = pin.qualified_room().clone();
-                let deps = Dependencies::with_content(pin.into_channel_parts().0, room, crate::spell::cast::v1_spell_book().map_err(debug)?)?;
+                let spells = if vocation == "Sorcerer" {
+                    let native = active.native_gameplay().ok_or("native gameplay")?;
+                    assert!(native.familiar_config().is_some());
+                    assert!(active.progression().is_some());
+                    native.spell_book().clone()
+                } else {
+                    crate::spell::cast::v1_spell_book().map_err(debug)?
+                };
+                let deps = Dependencies::with_content(pin.into_channel_parts().0, room, spells)?;
                 let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint").fetch_one(&h.pool).await?;
                 let character = bootstrap(&h, vocation, now).await?;
                 let seal = h.recovery.seal_current().map_err(debug)?;
@@ -51,15 +68,71 @@ fn bootstrap_v4_every_vocation_first_entry_without_progression_postgres() -> Tes
                 let request = source.activity_room_request(session, transport, &uuid(character.as_bytes()), [60;32], now)?;
                 let committed = FreshAdmissionStore::from_root(h.root.clone()).commit(&request).await?;
                 assert!(matches!(committed, crate::foundation::fresh_admission_durability::FreshAdmissionDurableOutcomeV1::Committed(_)), "{committed:?}");
-                let (consumer, clock, activation, _) = crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
-                h.root.latch_premium_activation(&activation.activation_id, activation.switch_over_us, activation.switch_over_us + 60_000_000).await.map_err(debug)?;
-                let premium = crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(consumer, Some(clock), Some(activation), Some(h.root.clone()));
+                use crate::gameplay_transport::spell_premium_coordinator::{
+                    SpellPremiumCoordinator, purchase_fixture,
+                };
+                let premium = if with_premium {
+                    let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
+                    h.root.latch_premium_activation(&activation.activation_id, activation.switch_over_us, activation.switch_over_us + 60_000_000).await.map_err(debug)?;
+                    SpellPremiumCoordinator::new(
+                        consumer, Some(clock), Some(activation), Some(h.root.clone()),
+                    )
+                } else {
+                    // Same cold first-entry boundary as native g-core: no activation, no
+                    // snapshot client, and no account pull registered before placement.
+                    SpellPremiumCoordinator::new(Default::default(), None, None, Some(h.root.clone()))
+                };
                 let mut owner = deps.owner(&h, &authority);
                 owner.premium_coordinator = Some(&premium);
-                owner.admit_premium(id(40), session);
+                if with_premium {
+                    owner.admit_premium(id(40), session);
+                }
                 owner.active_generation = Some(active);
-                let (outcome, _, _) = Box::pin(owner.initialize_first_entry(&request, session, transport, deps.actor)).await;
-                assert_eq!(outcome, FirstEntryOutcome::Positioned, "{vocation}");
+                if vocation == "Sorcerer" {
+                    assert!(owner.active_familiar_index("sorcerer").is_some());
+                    let native = active.native_gameplay().ok_or("native gameplay")?;
+                    let mut runtime = deps.runtime.lock().await;
+                    native.install_companion_policies(&mut runtime).map_err(debug)?;
+                    let familiar = runtime
+                        .companion_policy("oteryn:creature.sorcerer_familiar")
+                        .map_err(debug)?;
+                    assert!(familiar.is_familiar, "Sorcerer Familiar policy must be installed");
+                }
+                let budget = AdmissionRetryBudget::for_root(&session, &h.root);
+                let (outcome, _, _) = Box::pin(
+                    owner.enter_committed_actor(&budget, &request, session, transport, deps.actor),
+                )
+                .await;
+                assert_eq!(
+                    outcome,
+                    FirstEntryOutcome::Positioned,
+                    "{vocation} with_premium={with_premium}",
+                );
+                if vocation == "Sorcerer" {
+                    assert!(owner.progression_binding(session).is_some());
+                    let progression = h
+                        .root
+                        .read_character_progression(&authority, character)
+                        .await?
+                        .ok_or("Familiar first entry must have initialized progression")?;
+                    assert_eq!((progression.level, progression.total_experience.get()), (1, 0));
+                }
+                if !with_premium {
+                    let familiar = h.root.read_character_familiar_state(&authority, character).await?;
+                    assert!(familiar.state().granted_looks.is_empty());
+                    let native = active.native_gameplay().ok_or("native gameplay")?;
+                    let owned = owner
+                        .read_familiar_lifecycle_inputs(deps.actor, session, native, &*premium.view(id(40)))
+                        .await
+                        .map_err(|()| "current Familiar facts")?;
+                    let index = owner.active_familiar_index("sorcerer").ok_or("Familiar spell")?;
+                    let (spell, true) = native.spell_book().source_indexed(index).ok_or("Familiar index")?
+                        else { return Err("Familiar spell must be active".into()); };
+                    assert_eq!(
+                        owned.check_current_access(spell, owner.owner_now().get()),
+                        Err(crate::spell::owned_cast_facts::OwnedFactsError::UnavailablePremium),
+                    );
+                }
                 let loaded = crate::gameplay_transport::load_character_cast_facts(&h.root, &authority, character).await;
                 let crate::gameplay_transport::CastFactsLoad::Ready { facts, .. } = loaded else { return Err(format!("{vocation}: {loaded:?}").into()); };
                 assert_eq!(facts.level, 1);
