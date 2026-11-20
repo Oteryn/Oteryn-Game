@@ -707,21 +707,22 @@ def merge_authority_audit_pin_only(head: str) -> bool:
 
         base = exact_git_object(before, b"blob")
         candidate = exact_git_object(after, b"blob")
-        name = b"EXPECTED_MERGE_GROUP_GATE_BLOB"
-        # Allow the existing Python environment lookup. Extra mentions can make
-        # the assignment ambiguous, so decline the exception in that case.
-        if base.replace(b"os.environ['" + name + b"']", b"", 1).count(name) != 1:
-            return False
-        assignment = re.search(rb'(?m)^      ' + name + rb': "([0-9a-f]{40})"$', base)
-        if assignment is None:
-            return False
-        start, end = assignment.span(1)
-        new_pin = candidate[start:end]
-        return (
-            new_pin != assignment[1]
-            and re.fullmatch(rb"[0-9a-f]{40}", new_pin) is not None
-            and candidate == base[:start] + new_pin + base[end:]
-        )
+        for name in (b"EXPECTED_MERGE_GROUP_GATE_BLOB", b"EXPECTED_MERGE_GATE_BLOB"):
+            # An extra mention could make an otherwise well-formed assignment ambiguous.
+            if base.replace(b"os.environ['" + name + b"']", b"", 1).count(name) != 1:
+                continue
+            assignment = re.search(rb'(?m)^      ' + name + rb': "([0-9a-f]{40})"$', base)
+            if assignment is None:
+                continue
+            start, end = assignment.span(1)
+            new_pin = candidate[start:end]
+            if (
+                new_pin != assignment[1]
+                and re.fullmatch(rb"[0-9a-f]{40}", new_pin) is not None
+                and candidate == base[:start] + new_pin + base[end:]
+            ):
+                return True
+        return False
     except (OSError, ValueError, subprocess.SubprocessError):
         return False
 
@@ -736,6 +737,7 @@ def classify(
     candidate_sha=None,
     reference_consumers=None,
     defer_content_consumers=False,
+    report_doc_packages=False,
 ) -> dict:
     try:
         if candidate_modes_verified is not True:
@@ -872,6 +874,13 @@ def classify(
             return full("unmodelled-input")
 
         expand_reverse_closure(affected, reverse)
+        # Only a positive, modelled decision below can export this PR-only proof.
+        # Moves/deletions, mixed inputs and an incomplete transport stay conservative.
+        doc_packages = {}
+        if (report_doc_packages and affected and all(documentation_path(path) for path in paths)
+                and all(status in {"added", "modified"} and previous is None
+                        for _, status, previous in records)):
+            doc_packages["doc_packages"] = sorted(affected)
 
         if affected & WINDOWS:
             surface = (
@@ -879,7 +888,7 @@ def classify(
                 else "shared" if SERVER in affected
                 else "client"
             )
-            result = full("windows-consumer-affected", surface)
+            result = full("windows-consumer-affected", surface) | doc_packages
             # Only client product sources with a known Cargo graph can omit
             # the server PG suite. Fixtures, manifests and mixed diffs stay full.
             pg_owners = {SERVER, "oteryn-gameplay-dispatch", "oteryn-gameplay-durability"}
@@ -900,7 +909,7 @@ def classify(
             reason = "server-only-exact-consumer-closure"
             if atlas_fullworld:
                 reason += "-plus-atlas-fullworld"
-            return dict(rust=True, windows=False, surface=surface, reason=reason)
+            return dict(rust=True, windows=False, surface=surface, reason=reason) | doc_packages
 
         if atlas_fullworld:
             return dict(
@@ -1090,6 +1099,8 @@ def main() -> int:
                 complete=complete,
                 candidate_modes_verified=modes_verified,
                 candidate_sha=expected_head,
+                report_doc_packages=(os.environ.get("GITHUB_EVENT_NAME") == "pull_request"
+                                     and os.environ.get("ENUMERATION_COMPLETE") == "true"),
             )
             # Only narrow the established FULL decision after its mode and
             # enumeration checks and an independent proof over both Git trees.
@@ -1143,6 +1154,8 @@ def main() -> int:
             output.write(f"surface={result['surface']}\n")
             output.write(f"reason={result['reason']}\n")
             output.write(f"routing_health={health}\n")
+            if "doc_packages" in result:
+                output.write(f"doc_packages={json.dumps(result['doc_packages'])}\n")
     return 0
 
 

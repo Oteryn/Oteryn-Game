@@ -41,9 +41,9 @@ EXPECTED_MERGE_GATE_TRIGGER_BLOCK = """on:
       - edited
 """
 EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = "fa39175ae4cd95951781d3955f63a005f7ea16398159a37ab9018c2d916cc890"
-EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = "514f6effebae2c0bf5172caa206dc1c2e3bc39d5299ceb69001f7fa3e16a84fb"
+EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = "2b2a88ed7e73595a349286cbb029264f3989a8e5b3f6c312101e1759154fa4c1"
 EXPECTED_MERGE_GATE_FINAL_JOB_SHA256 = "96caca0e141757f3b18e9d97b574aa6362f147791b6e01a53a4c11e2597bdedd"
-EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "e18d449d6874819909129c4d11235fb36b2f8208456b57ac7473c02c1de21765"
+EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "3f488a4e42d3c3c61186ec6a7d38ea5528b43b852da51b0d98a58d2ff090a7bd"
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "1a1f98f8f2df7b981fa6a85f0f4bf3ac218247121ab330bf5348a703ce0b1e0d"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "b3423b858c7cad5c2814cef0708819f41c4b5bb328bae5450d202c2e18a92631"
@@ -407,7 +407,7 @@ def main() -> int:
         if world_digest != EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256:
             errors.append("merge gate World bundle must retain its reviewed fail-closed qualification")
         jobs = yaml_mapping_keys_at_indent(top_level_yaml_mapping_block(text, "jobs") or "", 2)
-        if jobs != ["scope", "lanes", "governance", "dependency_review", "routing_contract", "world_bundle", "rust_policy", "runner_route", "rust_fast_build", "rust_fast", "rust_supply_chain", "rust_client_ui", "validate", "game_gate"]:
+        if jobs != ["scope", "lanes", "governance", "dependency_review", "routing_contract", "world_bundle", "rust_policy", "runner_route", "rust_fast_build", "rust_fast", "rust_clippy", "rust_supply_chain", "rust_client_ui", "validate", "game_gate"]:
             errors.append("merge gate must contain only the canonical fast PR jobs")
         validate_block = indented_yaml_mapping_block(text, "validate", 2)
         validate_digest = hashlib.sha256(validate_block.encode("utf-8")).hexdigest() if validate_block else None

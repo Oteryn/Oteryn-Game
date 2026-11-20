@@ -381,6 +381,7 @@ def test_documentation_fast_path(module):
                     metadata,
                     candidate_modes_verified=module.candidate_modes_safe(head),
                     candidate_sha=head,
+                    report_doc_packages=True,
                 )
             finally:
                 os.chdir(old_cwd)
@@ -393,12 +394,14 @@ def test_documentation_fast_path(module):
         result = candidate(docs_only)
         assert result["rust"] is False and result["windows"] is False, result
         assert result["reason"] == "unconsumed-auxiliary-inputs", result
+        assert "doc_packages" not in result, result
 
         # Mixed documentation and code never takes the documentation skip.
         result = candidate(docs_only | {"apps/game-server/src/lib.rs": "//! changed\n"})
         assert result["rust"] is True and result["reason"] != "unconsumed-auxiliary-inputs", result
         result = candidate(docs_only | {"apps/client/src/main.rs": "fn main() {}\n"})
         assert result["rust"] is True and result["windows"] is True, result
+        assert "doc_packages" not in result, result
 
         # Canonical workflow, composite action and classifier changes run FULL.
         for control in (
@@ -419,6 +422,7 @@ def test_documentation_fast_path(module):
         for consumed in ("docs/guides/new.md", "docs/contracts/NOTE.md"):
             result = candidate({consumed: "# changed\n"})
             assert result["rust"] is True and result["windows"] is True, (consumed, result)
+            assert "oteryn-client" in result["doc_packages"], result
 
     for path in (
         "docs/architecture/reviews/X.md", "docs/agents/tasks/archive/T.md",
@@ -470,12 +474,19 @@ def test_candidate_modes(module):
 
 
 def test_pr_audit_blob_rotation():
+    group_pin = b"EXPECTED_MERGE_GROUP_GATE_BLOB"
+    pr_pin = b"EXPECTED_MERGE_GATE_BLOB"
+    for pin, other_pin in ((group_pin, pr_pin), (pr_pin, group_pin)):
+        check_pr_audit_blob_rotation(pin, other_pin)
+
+
+def check_pr_audit_blob_rotation(pin, other_pin):
     audit_path = ".github/workflows/merge-authority-audit.yml"
-    pin = b"EXPECTED_MERGE_GROUP_GATE_BLOB"
     old, new = b"a" * 40, b"b" * 40
     audit = (
         b'    env:\n      ' + pin + b': "' + old + b'"\n'
-        b'      EXPECTED_MERGE_GATE_BLOB: "' + b"c" * 40 + b'"\n'
+        b'      ' + other_pin + b': "' + b"c" * 40 + b'"\n'
+        b'      EXPECTED_AGENT_GOVERNANCE_BLOB: "' + b"e" * 40 + b'"\n'
         b"    run: |\n      pin = os.environ['" + pin + b"']\n"
     )
     rotated = audit.replace(old, new)
@@ -566,7 +577,7 @@ def test_pr_audit_blob_rotation():
             rotated + b"\n",
             rotated.replace(new, b"G" * 40),
             rotated.replace(new, new[:-1]),
-            audit.replace(b"c" * 40, b"d" * 40),
+            audit.replace(b"e" * 40, b"d" * 40),
         ):
             assert_full(candidate(content))
         for invalid_base, base_pin in (
@@ -1142,7 +1153,7 @@ def test_aggregate():
     block = gate.split("  validate:\n", 1)[1].split("  game_gate:\n", 1)[0]
     script = textwrap.dedent(block.split("python - <<'PY'\n", 1)[1].rsplit("          PY", 1)[0])
     mandatory = ("SCOPE", "LANES", "GOVERNANCE", "DEPENDENCY_REVIEW", "ROUTING_CONTRACT")
-    fast_rust = ("RUST_POLICY", "RUST_FAST", "RUST_SUPPLY_CHAIN")
+    fast_rust = ("RUST_POLICY", "RUST_FAST", "RUST_CLIPPY", "RUST_SUPPLY_CHAIN")
     env = dict.fromkeys(mandatory + fast_rust, "success")
     env.update(WORLD_BUNDLE="success", RUST_REQUIRED="true", WINDOWS_REQUIRED="true")
     env.update(RUST_CLIENT_UI_REQUIRED="true", RUST_CLIENT_UI="success")
@@ -1157,9 +1168,11 @@ def test_aggregate():
                 return False
 
     assert accepts({})
-    reused = {"REUSE_RUST": "true", "RUST_ROUTE": "skipped", "RUST_FAST": "skipped",
+    reused = {"REUSE_RUST": "true", "RUST_ROUTE": "skipped", "RUST_FAST": "skipped", "RUST_CLIPPY": "skipped",
               "RUST_FAST_BUILD": "skipped", "RUST_CLIENT_UI": "skipped"}
     assert accepts(reused)
+    for result in ("skipped", "failure", "cancelled", ""):
+        assert not accepts({"RUST_CLIPPY": result})
     for name in reused.keys() - {"REUSE_RUST"}:
         assert not accepts(reused | {name: "failure"})
     for name in ("SCOPE", "GOVERNANCE", "DEPENDENCY_REVIEW", "RUST_SUPPLY_CHAIN", "RUST_POLICY"):

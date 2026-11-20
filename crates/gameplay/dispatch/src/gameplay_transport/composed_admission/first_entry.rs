@@ -18,8 +18,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) {
         let phase = EntryPhase::default();
         enter_with_retry(budget, &phase, async || {
-            self.initialize_first_entry_traced(request, game_session_id, transport, actor, &phase)
-                .await
+            self.initialize_first_entry_traced(
+                request,
+                game_session_id,
+                transport,
+                actor,
+                &phase,
+                budget,
+            )
+            .await
         })
         .await
     }
@@ -32,12 +39,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         transport: AuthenticatedTransportRefV1,
         actor: ExactActorRef,
     ) -> EntryResult {
+        let budget = AdmissionRetryBudget::for_root(&game_session_id, self.root);
         self.initialize_first_entry_traced(
             request,
             game_session_id,
             transport,
             actor,
             &EntryPhase::default(),
+            &budget,
         )
         .await
     }
@@ -55,6 +64,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         transport: AuthenticatedTransportRefV1,
         actor: ExactActorRef,
         phase: &EntryPhase,
+        budget: &AdmissionRetryBudget<'_>,
     ) -> (
         FirstEntryOutcome,
         Option<CurrentCharacterItemFence>,
@@ -533,6 +543,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let _ = self
                 .refresh_source_party_presence(actor, game_session_id)
                 .await;
+        }
+        // ARCH-PROGRESSION-SOURCE-0 §1.5: the committed, positioned session now has its
+        // gameplay fence. Familiar Login reads the durable progression this step owns.
+        phase.set("progression");
+        if budget
+            .retry_unavailable(async || self.bind_positioned_progression(game_session_id).await)
+            .await
+            .is_err()
+        {
+            return (
+                FirstEntryOutcome::RefusedUnavailable,
+                item_fence,
+                Some(decided),
+            );
         }
         // A Character without a vocation has no familiar; its absent build row is valid.
         if facts.vocation != crate::spell::Vocation::None

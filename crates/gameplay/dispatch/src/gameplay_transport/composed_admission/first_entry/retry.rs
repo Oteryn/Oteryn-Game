@@ -34,9 +34,10 @@ pub(super) async fn enter_with_retry(
         let result = initialize().await;
         match result.0 {
             FirstEntryOutcome::RefusedUnavailable
-                if budget
-                    .retries_unavailable(AdmissionRefusal::Unavailable)
-                    .await => {}
+                if result.2.is_none()
+                    && budget
+                        .retries_unavailable(AdmissionRefusal::Unavailable)
+                        .await => {}
             FirstEntryOutcome::RefusedStaleAuthority if stale_rounds < RECONCILE_ATTEMPTS => {
                 stale_rounds += 1;
                 tokio::time::sleep(RECONCILE_BACKOFF).await;
