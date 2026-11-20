@@ -6,9 +6,10 @@ use super::TestResult;
 use serde_json::Value;
 use std::collections::BTreeSet;
 
-const CATALOGUE_SLICE_COUNT: usize = 8;
+const CATALOGUE_SLICE_COUNT: usize = 24;
+const A_M_SLICE_COUNT: usize = 8;
 
-fn catalogue_slice(index: usize, cases: &[CatalogueChest]) -> std::ops::Range<usize> {
+fn catalogue_slice(index: usize, count: usize, cases: &[CatalogueChest]) -> std::ops::Range<usize> {
     // cases() emits every placement for a claim consecutively.
     let mut boundaries = vec![0];
     boundaries.extend(
@@ -20,8 +21,8 @@ fn catalogue_slice(index: usize, cases: &[CatalogueChest]) -> std::ops::Range<us
     );
     boundaries.push(cases.len());
     let claims = boundaries.len() - 1;
-    boundaries[index * claims / CATALOGUE_SLICE_COUNT]
-        ..boundaries[(index + 1) * claims / CATALOGUE_SLICE_COUNT]
+    boundaries[index * claims / count]
+        ..boundaries[(index + 1) * claims / count]
 }
 
 fn run_catalogue_slice(index: usize) -> TestResult {
@@ -29,7 +30,7 @@ fn run_catalogue_slice(index: usize) -> TestResult {
         return Ok(());
     };
     let mut cases = cases()?;
-    let range = catalogue_slice(index, &cases);
+    let range = catalogue_slice(index, CATALOGUE_SLICE_COUNT, &cases);
     execute(cases.drain(range).collect())
 }
 
@@ -47,7 +48,7 @@ fn quest_catalogue_chests_slices_cover_every_supported_source_placement() -> Tes
     let mut seen_claims = BTreeSet::new();
     let mut seen_placements = vec![false; cases.len()];
     for index in 0..CATALOGUE_SLICE_COUNT {
-        let range = catalogue_slice(index, &cases);
+        let range = catalogue_slice(index, CATALOGUE_SLICE_COUNT, &cases);
         assert!(!range.is_empty(), "slice {index} is empty");
         let mut slice_claims = BTreeSet::new();
         for placement in range {
@@ -73,54 +74,135 @@ fn quest_catalogue_chests_slices_cover_every_supported_source_placement() -> Tes
     Ok(())
 }
 
-#[test]
-fn quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_1_of_8()
--> TestResult {
-    run_catalogue_slice(0)
+macro_rules! native_case {
+    ($test:ident, $slice:literal, $run:ident) => {
+        #[test]
+        fn $test() -> TestResult {
+            $run($slice)
+        }
+    };
 }
 
-#[test]
-fn quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_2_of_8()
--> TestResult {
-    run_catalogue_slice(1)
-}
-
-#[test]
-fn quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_3_of_8()
--> TestResult {
-    run_catalogue_slice(2)
-}
-
-#[test]
-fn quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_4_of_8()
--> TestResult {
-    run_catalogue_slice(3)
-}
-
-#[test]
-fn quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_5_of_8()
--> TestResult {
-    run_catalogue_slice(4)
-}
-
-#[test]
-fn quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_6_of_8()
--> TestResult {
-    run_catalogue_slice(5)
-}
-
-#[test]
-fn quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_7_of_8()
--> TestResult {
-    run_catalogue_slice(6)
-}
-
-#[test]
-fn quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_8_of_8()
--> TestResult {
-    run_catalogue_slice(7)?;
-    super::falcon_chests_fixtures::run_falcon_chests()
-}
+native_case!(
+    quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_1_of_24,
+    0,
+    run_catalogue_slice
+);
+native_case!(
+    quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_2_of_24,
+    1,
+    run_catalogue_slice
+);
+native_case!(
+    quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_3_of_24,
+    2,
+    run_catalogue_slice
+);
+native_case!(
+    quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_4_of_24,
+    3,
+    run_catalogue_slice
+);
+native_case!(
+    quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_5_of_24,
+    4,
+    run_catalogue_slice
+);
+native_case!(
+    quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_6_of_24,
+    5,
+    run_catalogue_slice
+);
+native_case!(
+    quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_7_of_24,
+    6,
+    run_catalogue_slice
+);
+native_case!(
+    quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_8_of_24,
+    7,
+    run_catalogue_slice
+);
+native_case!(
+    quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_9_of_24,
+    8,
+    run_catalogue_slice
+);
+native_case!(
+    quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_10_of_24,
+    9,
+    run_catalogue_slice
+);
+native_case!(
+    quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_11_of_24,
+    10,
+    run_catalogue_slice
+);
+native_case!(
+    quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_12_of_24,
+    11,
+    run_catalogue_slice
+);
+native_case!(
+    quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_13_of_24,
+    12,
+    run_catalogue_slice
+);
+native_case!(
+    quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_14_of_24,
+    13,
+    run_catalogue_slice
+);
+native_case!(
+    quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_15_of_24,
+    14,
+    run_catalogue_slice
+);
+native_case!(
+    quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_16_of_24,
+    15,
+    run_catalogue_slice
+);
+native_case!(
+    quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_17_of_24,
+    16,
+    run_catalogue_slice
+);
+native_case!(
+    quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_18_of_24,
+    17,
+    run_catalogue_slice
+);
+native_case!(
+    quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_19_of_24,
+    18,
+    run_catalogue_slice
+);
+native_case!(
+    quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_20_of_24,
+    19,
+    run_catalogue_slice
+);
+native_case!(
+    quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_21_of_24,
+    20,
+    run_catalogue_slice
+);
+native_case!(
+    quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_22_of_24,
+    21,
+    run_catalogue_slice
+);
+native_case!(
+    quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_23_of_24,
+    22,
+    run_catalogue_slice
+);
+native_case!(
+    quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_24_of_24,
+    23,
+    run_catalogue_slice
+);
 
 #[test]
 fn quest_catalogue_chests_dragahs_spellbook_use_replay_and_refusal() -> TestResult {
@@ -399,8 +481,8 @@ fn quest_catalogue_chests_a_m_slices_cover_frozen_source_placements() -> TestRes
     let cases = a_m_catalogue_cases()?;
     let mut next_placement = 0;
     let mut seen_claims = BTreeSet::new();
-    for index in 0..CATALOGUE_SLICE_COUNT {
-        let range = catalogue_slice(index, &cases);
+    for index in 0..A_M_SLICE_COUNT {
+        let range = catalogue_slice(index, A_M_SLICE_COUNT, &cases);
         assert!(!range.is_empty(), "A..M slice {index} is empty");
         assert_eq!(
             range.start, next_placement,
@@ -428,50 +510,49 @@ fn run_a_m_catalogue_slice(index: usize) -> TestResult {
         return Ok(());
     };
     let mut cases = a_m_catalogue_cases()?;
-    let range = catalogue_slice(index, &cases);
+    let range = catalogue_slice(index, A_M_SLICE_COUNT, &cases);
     execute(cases.drain(range).collect())
-}
-
-macro_rules! native_case {
-    ($test:ident, $slice:literal) => {
-        #[test]
-        fn $test() -> TestResult {
-            run_a_m_catalogue_slice($slice)
-        }
-    };
 }
 
 native_case!(
     quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal_slice_1_of_8,
-    0
+    0,
+    run_a_m_catalogue_slice
 );
 native_case!(
     quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal_slice_2_of_8,
-    1
+    1,
+    run_a_m_catalogue_slice
 );
 native_case!(
     quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal_slice_3_of_8,
-    2
+    2,
+    run_a_m_catalogue_slice
 );
 native_case!(
     quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal_slice_4_of_8,
-    3
+    3,
+    run_a_m_catalogue_slice
 );
 native_case!(
     quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal_slice_5_of_8,
-    4
+    4,
+    run_a_m_catalogue_slice
 );
 native_case!(
     quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal_slice_6_of_8,
-    5
+    5,
+    run_a_m_catalogue_slice
 );
 native_case!(
     quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal_slice_7_of_8,
-    6
+    6,
+    run_a_m_catalogue_slice
 );
 native_case!(
     quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal_slice_8_of_8,
-    7
+    7,
+    run_a_m_catalogue_slice
 );
 
 #[test]

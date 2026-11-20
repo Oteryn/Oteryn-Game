@@ -2,6 +2,7 @@
 """Exercise the actual heavy-gate script and PostgreSQL runner expressions."""
 from collections import Counter
 import hashlib
+import itertools
 import json
 import os
 from pathlib import Path
@@ -74,9 +75,41 @@ class PostgresLibraryArchiveTests(unittest.TestCase):
                             "--archive-file", f"{directory}/pg-archives/pg-{archive}.tar.zst",
                         ])
 
+    def worker_matrix(self, archives, calibrated=True):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            planner_dir = root / "pg-planner"
+            planner_dir.mkdir()
+            (planner_dir / "pg_archive_affinity.py").write_bytes(
+                (ROOT / "tools/ci/pg_archive_affinity.py").read_bytes()
+            )
+            output = root / "outputs"
+            subprocess.run(
+                ["bash", "-c", self.script("Size PostgreSQL partitions for the selected archives")],
+                cwd=root, check=True, env=dict(os.environ, RUNNER_TEMP=directory,
+                    GITHUB_OUTPUT=str(output), ARCHIVES=json.dumps(archives),
+                    CALIBRATED=str(calibrated).lower()),
+            )
+            return json.loads(output.read_text().removeprefix("matrix="))["include"]
+
+    def test_each_selected_archive_keeps_every_calibrated_partition_once(self):
+        counts = {"lib-1": 15, "lib-2": 7, "lib-3": 7, "e2e": 5, "lib": 2}
+        for size in range(1, len(counts) + 1):
+            for archives in itertools.combinations(counts, size):
+                with self.subTest(archives=archives):
+                    rows = self.worker_matrix(archives)
+                    self.assertEqual([row["partition"] for row in rows], list(range(1, len(rows) + 1)))
+                    self.assertCountEqual(
+                        [(row["archive"], row["archive_index"], row["archive_total"]) for row in rows],
+                        [(name, i, counts[name]) for name in archives for i in range(counts[name])],
+                    )
+
     def test_every_library_test_is_planned_once_in_both_archive_modes(self):
         partition = indented_yaml_mapping_block(WORKFLOW.read_text(), "durability_postgres", 2)
-        total = len(re.search(r"^        partition: \[(.+)\]$", partition, re.M)[1].split(","))
+        self.assertIn("matrix: ${{ fromJSON(needs.prepare.outputs.partitions) }}", partition)
+        legacy = self.worker_matrix(["lib"], calibrated=False)
+        self.assertEqual(legacy, [{"partition": i} for i in range(1, 37)])
+        total = len(legacy)
         script = self.script("Plan partition")
         dispatch = "oteryn-gameplay-dispatch"
         mounted_path = "gameplay_transport::monk_save::postgres_tests::"
