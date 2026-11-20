@@ -182,6 +182,7 @@ jobs:
       actions: read
     outputs:
       rust_receipt: ${{ steps.prior.outputs.stamp }}
+      rust_source: ${{ steps.prior.outputs.source }}
       reuse_rust: ${{ steps.prior.outputs.reuse }}
       rust: ${{ steps.classify.outputs.rust }}
       windows: ${{ steps.classify.outputs.windows }}
@@ -1854,10 +1855,11 @@ jobs:
   game_gate:
     name: game-gate
     if: always() && (github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref)
-    needs: [scope, rust_fast_build, validate]
+    needs: [scope, lanes, rust_fast_build, validate]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
+      actions: read
       contents: read
       pull-requests: read
     steps:
@@ -1907,3 +1909,27 @@ jobs:
               raise SystemExit('isolated edit target changed after qualification; current qualification is required')
           print('Isolated edit still matches the qualified live head and base.')
           PY
+      - name: Check out protected qualification verifier
+        if: needs.lanes.outputs.reuse_rust == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.scope.outputs.base_sha }}
+          persist-credentials: false
+          sparse-checkout: |
+            .github/workflows
+            tools/repository
+
+      - name: Confirm source qualification before publishing game-gate
+        if: needs.lanes.outputs.reuse_rust == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ needs.scope.outputs.pr_number }}
+          HEAD_SHA: ${{ needs.scope.outputs.target_sha }}
+          BASE_SHA: ${{ needs.scope.outputs.base_sha }}
+          MOLEHILL_MODE: ${{ vars.OTERYN_SELF_HOSTED_RUST }}
+          EXPECTED_STAMP: ${{ needs.lanes.outputs.rust_receipt }}
+          EXPECTED_SOURCE: ${{ needs.lanes.outputs.rust_source }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$BASE_SHA"
+          test -n "$EXPECTED_SOURCE"
+          python -I tools/repository/qualified_rust_edit.py --confirm

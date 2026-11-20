@@ -965,7 +965,7 @@ def test_hosted_rust_edit_receipt():
             return {"total_count": len(listed), "jobs": listed}
         return proof.reusable(fetch, repo, pr, head, 8, wanted)
 
-    assert check([run | {"id": 8, "status": "in_progress"}, run])
+    assert check([run | {"id": 8, "status": "in_progress"}, run]) == "7/1"
     assert not check([])
     assert not check([run], wanted="different base, image or selection")
     assert not check([run], listed=jobs[1:])
@@ -986,6 +986,18 @@ def test_hosted_rust_edit_receipt():
         assert not check([run | changed]), changed
     assert not check([run | {"id": 5}, run | {"conclusion": "failure"}])
 
+    from hashlib import sha1
+    content = (ROOT / proof.WORKFLOW).read_bytes()
+    blob = sha1(f"blob {len(content)}\0".encode() + content).hexdigest()
+    execution_sha, event_base = "d" * 40, "c" * 40
+    def contents(path):
+        assert path == f"contents/{proof.WORKFLOW}?ref={execution_sha}"
+        return {"type": "file", "sha": blob}
+    assert proof.protected_workflow(contents, execution_sha, event_base, event_base) == blob
+    assert not proof.protected_workflow(contents, execution_sha, event_base, "e" * 40)
+    assert not proof.protected_workflow(lambda _: {"type": "file", "sha": "f" * 40},
+                                        execution_sha, event_base, event_base)
+
     with tempfile.TemporaryDirectory() as tmp:
         event_path = Path(tmp) / "event.json"
         out = Path(tmp) / "out"
@@ -993,13 +1005,19 @@ def test_hosted_rust_edit_receipt():
                "GITHUB_REPOSITORY": repo, "GITHUB_RUN_ID": "8", "GITHUB_RUN_ATTEMPT": "1",
                "PR_NUMBER": pr, "HEAD_SHA": head, "BASE_SHA": "c" * 40, "ImageVersion": "20261120",
                "RUNNER_OS": "Linux", "RUNNER_ARCH": "X64", "ROUTING": "full", "FILE_RECORDS": "[]",
-               "MOLEHILL_MODE": "off"}
-        def execute(action, changes, **updates):
-            event_path.write_text(json.dumps({"action": action, "changes": changes}))
+               "MOLEHILL_MODE": "off", "GITHUB_WORKFLOW_SHA": execution_sha, "GH_TOKEN": "test"}
+        def execute(action, changes, *, final=False, source="7/1", **updates):
+            event_path.write_text(json.dumps({"action": action, "changes": changes,
+                                              "pull_request": {"base": {"sha": event_base}}}))
             out.write_text("")
-            with patch.dict(os.environ, env | updates), patch.object(proof, "reusable", return_value=True):
-                proof.main()
+            with (patch.dict(os.environ, env | updates), patch.object(proof, "reusable", return_value=source),
+                  patch.object(proof.request, "urlopen", return_value=response(contents(
+                      f"contents/{proof.WORKFLOW}?ref={execution_sha}")))):
+                proof.main(final=final)
             return dict(line.split("=", 1) for line in out.read_text().splitlines())
+
+        def response(data):
+            return io.BytesIO(json.dumps(data).encode())
 
         initial = execute("opened", {})
         assert initial["reuse"] == "false" and initial["stamp"]
@@ -1012,6 +1030,18 @@ def test_hosted_rust_edit_receipt():
         assert execute("edited", {"title": {}}, MOLEHILL_MODE="auto")["stamp"] == ""
         for key in ("BASE_SHA", "HEAD_SHA", "ImageVersion", "RUNNER_ARCH", "ROUTING", "FILE_RECORDS"):
             assert execute("opened", {}, **{key: "e" * 40})["stamp"] != initial["stamp"]
+
+        # A partial rerun can retain the planning job's outputs. The authoritative
+        # check must use the same source even when the upstream jobs did not rerun.
+        final_env = {"GITHUB_RUN_ATTEMPT": "2", "EXPECTED_SOURCE": "7/1", "EXPECTED_STAMP": initial["stamp"]}
+        execute("edited", {"body": {}}, final=True, **final_env)
+        for changed in ({"source": None}, {"source": "6/1"}, {"EXPECTED_SOURCE": "7/2"},
+                        {"EXPECTED_STAMP": "expired"}, {"BASE_SHA": "e" * 40}):
+            try:
+                execute("edited", {"body": {}}, final=True, **(final_env | changed))
+            except SystemExit:
+                continue
+            raise AssertionError(f"invalid retained proof authorized publication: {changed}")
 
 
 def test_metadata_events():
@@ -1031,7 +1061,7 @@ def test_metadata_events():
     final = core.indented_yaml_mapping_block(gate, "game_gate", 2)
     aggregate_guard = f"    if: always() && ({main_guard})\n"
     assert aggregate_guard in aggregate and aggregate_guard in final
-    assert "    name: game-gate\n" in final and "    needs: [scope, rust_fast_build, validate]\n" in final
+    assert "    name: game-gate\n" in final and "    needs: [scope, lanes, rust_fast_build, validate]\n" in final
     assert '          test "$LEGACY_VALIDATE" = "success" &&\n' in final
     assert '            [[ "$RUST_FAST_BUILD" == success || "$RUST_FAST_BUILD" == skipped ]]\n' in final
 
