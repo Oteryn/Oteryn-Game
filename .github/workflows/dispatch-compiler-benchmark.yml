@@ -66,6 +66,7 @@ jobs:
             https://github.com/rui314/mold/releases/download/v2.42.1/mold-2.42.1-x86_64-linux.tar.gz
           echo "6ff270c9bf07d2bec5c98aa324eb7c4daf6a1a4d815c05ff1708049616047855  $RUNNER_TEMP/mold.tgz" | sha256sum -c -
           tar -xzf "$RUNNER_TEMP/mold.tgz" -C "$RUNNER_TEMP"
+          echo "MOLD_PATH=$RUNNER_TEMP/mold-2.42.1-x86_64-linux/bin/mold" >> "$GITHUB_ENV"
           echo "MOLD_WRAPPER=$RUNNER_TEMP/mold-2.42.1-x86_64-linux/lib/mold/mold-wrapper.so" >> "$GITHUB_ENV"
           test ! -e target
           cargo +"$toolchain" fetch --locked
