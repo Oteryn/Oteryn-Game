@@ -1353,11 +1353,42 @@ def test_directory_reference_left_boundary(module):
     print("Directory reference left boundary PASS: prose ignored; quoted, joined and exact-file consumers kept")
 
 
+def test_client_only_pg_scope(module):
+    metadata = fixture()
+    for suffix in ("dispatch", "durability"):
+        name = "oteryn-gameplay-" + suffix
+        metadata["workspace_members"].append(name)
+        metadata["packages"].append({
+            "name": name, "id": name, "dependencies": [],
+            "manifest_path": f"/repo/crates/gameplay/{suffix}/Cargo.toml",
+        })
+
+    def needs_pg(*paths):
+        return module.classify(
+            [{"filename": path, "status": "modified"} for path in paths],
+            len(paths), metadata, candidate_modes_verified=True,
+            reference_consumers={path: set() for path in paths},
+        ).get("postgres", True)
+
+    client = "apps/client/src/about.rs"
+    assert not needs_pg(client)
+    assert needs_pg(client, "apps/game-server/src/lib.rs")
+    assert needs_pg("apps/client/Cargo.toml")
+    assert needs_pg("apps/client/src/migrations/schema.rs")
+    assert needs_pg("apps/client/src/world.json")
+    # A new optional/build/dev dependency of a PG owner must widen coverage.
+    metadata["packages"][-1]["dependencies"].append({
+        "name": "oteryn-client", "kind": "dev", "path": "/repo/apps/client",
+    })
+    assert needs_pg(client)
+
+
 def main() -> int:
     module = load_module()
     test_metadata_events()
     test_repository_tool_dependencies(module)
     test_routing_matrix(module)
+    test_client_only_pg_scope(module)
     test_exact_candidate_reference_scan(module)
     test_directory_reference_left_boundary(module)
     test_documentation_fast_path(module)
