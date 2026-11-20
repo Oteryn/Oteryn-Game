@@ -1,0 +1,210 @@
+name: Dispatch compiler benchmark
+on:
+  push:
+    branches: [codex/dispatch-compiler-benchmark-20261120]
+    paths: [.github/workflows/dispatch-compiler-benchmark.yml]
+
+permissions:
+  contents: read
+
+env:
+  SOURCE_SHA: 4beb4cfa87bdde05bebecb2dd8930340b12daeb4
+
+jobs:
+  build:
+    name: Build ${{ matrix.variant }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [stable, nightly-1, nightly-2, nightly-2-cranelift]
+    env:
+      VARIANT: ${{ matrix.variant }}
+      OTERYN_DISPATCH_PG_SHARD: 3/3
+      CARGO_BUILD_JOBS: '2'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          persist-credentials: false
+      - name: Install pinned tools and prepare empty target
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          sudo fallocate -l 16G /mnt/dispatch-benchmark.swap
+          sudo chmod 600 /mnt/dispatch-benchmark.swap
+          sudo mkswap /mnt/dispatch-benchmark.swap
+          sudo swapon /mnt/dispatch-benchmark.swap
+          df -h / /mnt
+          free -h
+          nproc
+          mkdir -p "$RUNNER_TEMP/lib3" "$RUNNER_TEMP/metrics" "$HOME/.cargo"
+          printf '[profile.dev.package.oteryn-gameplay-dispatch]\ndebug = 0\n' >> "$HOME/.cargo/config.toml"
+          if [[ "$VARIANT" == stable ]]; then
+            toolchain=1.100.0
+          else
+            toolchain=nightly-2026-11-16
+            threads=2
+            if [[ "$VARIANT" == nightly-1 ]]; then threads=1; fi
+            echo "RUSTFLAGS=-Zunstable-options --jobs-frontend=$threads" >> "$GITHUB_ENV"
+          fi
+          rustup toolchain install "$toolchain" --profile minimal --no-self-update
+          if [[ "$VARIANT" == nightly-2-cranelift ]]; then
+            rustup component add rustc-codegen-cranelift-preview --toolchain "$toolchain"
+            printf '\n[unstable]\ncodegen-backend = true\n[profile.dev.package.oteryn-gameplay-content]\ncodegen-backend = "cranelift"\n' >> "$HOME/.cargo/config.toml"
+          fi
+          echo "RUSTUP_TOOLCHAIN=$toolchain" >> "$GITHUB_ENV"
+          rustc +"$toolchain" -vV | tee "$RUNNER_TEMP/metrics/compiler.txt"
+          curl --proto '=https' --tlsv1.2 -fsSL --retry 5 --retry-all-errors -o "$RUNNER_TEMP/nextest.tgz" \
+            https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.146/cargo-nextest-0.9.146-x86_64-unknown-linux-gnu.tar.gz
+          echo "682c21b777c333e96fd532e114d3a5a894e0729ab88d94c0a9f20f8419695428  $RUNNER_TEMP/nextest.tgz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/nextest.tgz" -C "$RUNNER_TEMP/lib3" cargo-nextest
+          echo "$RUNNER_TEMP/lib3" >> "$GITHUB_PATH"
+          curl --proto '=https' --tlsv1.2 -fsSL --retry 5 --retry-all-errors -o "$RUNNER_TEMP/mold.tgz" \
+            https://github.com/rui314/mold/releases/download/v2.42.1/mold-2.42.1-x86_64-linux.tar.gz
+          echo "6ff270c9bf07d2bec5c98aa324eb7c4daf6a1a4d815c05ff1708049616047855  $RUNNER_TEMP/mold.tgz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/mold.tgz" -C "$RUNNER_TEMP"
+          echo "MOLD_WRAPPER=$RUNNER_TEMP/mold-2.42.1-x86_64-linux/lib/mold/mold-wrapper.so" >> "$GITHUB_ENV"
+          test ! -e target
+          cargo +"$toolchain" fetch --locked
+      - name: Measure cold and same-runner warm test build
+        run: |
+          set -euo pipefail
+          export LD_PRELOAD="$MOLD_WRAPPER"
+          metrics="$RUNNER_TEMP/metrics"
+          for phase in cold warm; do
+            /usr/bin/time -f 'wall_seconds=%e\nuser_seconds=%U\nsystem_seconds=%S\nmax_process_rss_kib=%M' -o "$metrics/$phase.time" \
+              cargo test --verbose --locked --offline -p oteryn-gameplay-dispatch --lib --no-run --timings \
+              > "$RUNNER_TEMP/$phase.log" 2>&1 || { tail -n 60 "$RUNNER_TEMP/$phase.log"; exit 1; }
+            cp target/cargo-timings/cargo-timing.html "$metrics/$phase.html"
+            cat "$metrics/$phase.time"
+          done
+          python3 - <<'PY'
+          import os, pathlib, re
+          root = pathlib.Path(os.environ['RUNNER_TEMP'])
+          calls = [line for line in (root/'cold.log').read_text().splitlines() if ' Running ' in line and '--crate-name ' in line and '--emit=' in line]
+          assert calls
+          variant = os.environ['VARIANT']
+          selectors = [line for line in calls if re.search(r'-Z\s*codegen-backend(?:=| )cranelift', line)]
+          if variant == 'nightly-2-cranelift':
+              assert any('--crate-name oteryn_gameplay_content ' in line for line in selectors)
+              assert all('--crate-name oteryn_gameplay_content ' in line or (
+                  '--crate-name build_script_build ' in line and 'crates/gameplay/content/build.rs' in line
+              ) for line in selectors), len(selectors)
+          else:
+              assert not selectors
+          if variant != 'stable':
+              expected = '--jobs-frontend=' + ('1' if variant == 'nightly-1' else '2')
+              assert any(expected in line and '--crate-name oteryn_gameplay_dispatch ' in line for line in calls)
+          assert not any(' Running ' in l and '--crate-name ' in l and '--emit=' in l for l in (root/'warm.log').read_text().splitlines())
+          PY
+      - name: Archive exact binary and identify runnable PostgreSQL tests
+        run: |
+          set -euo pipefail
+          export LD_PRELOAD="$MOLD_WRAPPER"
+          lib="$RUNNER_TEMP/lib3"
+          /usr/bin/time -f 'wall_seconds=%e' -o "$RUNNER_TEMP/metrics/archive.time" cargo nextest archive --locked \
+            -p oteryn-gameplay-dispatch --lib --archive-file "$lib/pg-lib-3.tar.zst"
+          cargo-nextest nextest list --archive-file "$lib/pg-lib-3.tar.zst" --message-format json > "$lib/pg-lib-3.json"
+          python3 tools/ci/plan_pg_partitions.py "$lib" 0 1 tools/ci/pg_test_durations.json --optional-archives
+          test -s "$lib/pg-lib-3.filters"
+          cp "$lib/pg-lib-3.filters" "$RUNNER_TEMP/metrics/inventory.filters"
+          wc -l "$lib/pg-lib-3.filters"
+          sha256sum "$lib/pg-lib-3.filters" | cut -d' ' -f1 > "$RUNNER_TEMP/metrics/inventory.sha256"
+          cd "$lib"
+          sha256sum cargo-nextest pg-lib-3.json pg-lib-3.tar.zst > SHA256SUMS
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: build-metrics-${{ matrix.variant }}
+          path: ${{ runner.temp }}/metrics
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: lib3-${{ matrix.variant }}
+          path: |
+            ${{ runner.temp }}/lib3/cargo-nextest
+            ${{ runner.temp }}/lib3/pg-lib-3.tar.zst
+            ${{ runner.temp }}/lib3/pg-lib-3.json
+            ${{ runner.temp }}/lib3/SHA256SUMS
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
+
+  postgres:
+    name: PG ${{ matrix.variant }} / ${{ matrix.shard }}
+    needs: build
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [stable, nightly-1, nightly-2, nightly-2-cranelift]
+        shard: [0, 1, 2, 3, 4, 5, 6]
+    services:
+      postgres:
+        image: postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc
+        env:
+          POSTGRES_USER: oteryn_test_admin
+          POSTGRES_DB: postgres
+          POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: lib3-${{ matrix.variant }}
+          path: ${{ runner.temp }}/lib3
+      - name: Verify planned and executed PostgreSQL cases
+        env:
+          SHARD: ${{ matrix.shard }}
+          OTERYN_TEST_POSTGRES_ADMIN_URL: postgresql://oteryn_test_admin:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/postgres
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          lib="$RUNNER_TEMP/lib3"
+          (cd "$lib" && sha256sum -c SHA256SUMS)
+          chmod +x "$lib/cargo-nextest"
+          psql "$OTERYN_TEST_POSTGRES_ADMIN_URL" -XAtc 'show server_version' | grep -E '^18\.6'
+          python3 tools/ci/plan_pg_partitions.py "$lib" "$SHARD" 7 tools/ci/pg_test_durations.json --optional-archives
+          mapfile -t filters < "$lib/pg-lib-3.filters"
+          (( ${#filters[@]} > 0 ))
+          metrics="$RUNNER_TEMP/pg-metrics"
+          mkdir -p "$metrics"
+          cp "$lib/pg-lib-3.filters" "$metrics/planned.filters"
+          printf '[profile.default.junit]\npath = "junit.xml"\n' > "$RUNNER_TEMP/nextest.toml"
+          status=0
+          /usr/bin/time -f 'wall_seconds=%e\nmax_process_rss_kib=%M' -o "$metrics/pg.time" \
+            "$lib/cargo-nextest" nextest run --archive-file "$lib/pg-lib-3.tar.zst" \
+              --workspace-remap "$GITHUB_WORKSPACE" --config-file "$RUNNER_TEMP/nextest.toml" \
+              --tool-config-file "oteryn-pg-plan:$lib/priority.toml" --no-fail-fast --test-threads 4 "${filters[@]}" || status=$?
+          python3 - <<'PY'
+          import json, os, pathlib, xml.etree.ElementTree as ET
+          m = pathlib.Path(os.environ['RUNNER_TEMP'])/'pg-metrics'
+          wanted = [s.split(' & test(=',1)[1][:-1] for s in (m/'planned.filters').read_text().splitlines()]
+          files = list(pathlib.Path('target').rglob('junit.xml'))
+          assert len(files) == 1, files
+          cases = ET.parse(files[0]).findall('.//testcase')
+          observed = {c.attrib['name']: {'seconds': c.attrib.get('time'), 'result': next((k for k in ('failure','error','skipped') if c.find(k) is not None), 'pass')} for c in cases}
+          (m/'cases.json').write_text(json.dumps(observed,sort_keys=True))
+          assert len(cases) == len(wanted) == len(observed) and set(wanted) == set(observed)
+          assert all(v['result']=='pass' for v in observed.values()), [k for k,v in observed.items() if v['result']!='pass']
+          print(f'{len(observed)} distinct PostgreSQL cases executed and passed')
+          PY
+          exit "$status"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: pg-metrics-${{ matrix.variant }}-${{ matrix.shard }}
+          path: ${{ runner.temp }}/pg-metrics
+          if-no-files-found: warn
+          retention-days: 7
