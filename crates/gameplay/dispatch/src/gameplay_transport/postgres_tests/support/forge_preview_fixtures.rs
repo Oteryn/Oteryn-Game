@@ -3,6 +3,7 @@ use tokio::io::AsyncWriteExt;
 use super::{
     TestResult,
     fixture::{Harness, debug, id},
+    item_forge_fusion_fixtures::fixture::occurrence_for,
     item_forge_fixtures::support::{self, seed_items, send_command},
 };
 
@@ -192,7 +193,10 @@ pub(super) async fn exercise(
     .execute(&mut *setup)
     .await?;
         setup.commit().await?;
-        let request = selection.canonical(id(147)).ok_or("paid request")?;
+        // A successful fusion can waive gold. Select a no-bonus draw to exercise
+        // the live fee check on the paid writer and its exact refusal replay.
+        let occurrence = occurrence_for(h, 147, |rolls| rolls[2] < 7400).await?;
+        let request = selection.canonical(occurrence).ok_or("paid request")?;
         let paid_bytes = request.encode().ok_or("paid bytes")?;
         let (status, result) = paid(
             &mut client,
