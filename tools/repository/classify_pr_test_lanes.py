@@ -736,6 +736,7 @@ def classify(
     candidate_sha=None,
     reference_consumers=None,
     defer_content_consumers=False,
+    report_doc_packages=False,
 ) -> dict:
     try:
         if candidate_modes_verified is not True:
@@ -872,6 +873,13 @@ def classify(
             return full("unmodelled-input")
 
         expand_reverse_closure(affected, reverse)
+        # Only a positive, modelled decision below can export this PR-only proof.
+        # Moves/deletions, mixed inputs and an incomplete transport stay conservative.
+        doc_packages = {}
+        if (report_doc_packages and affected and all(documentation_path(path) for path in paths)
+                and all(status in {"added", "modified"} and previous is None
+                        for _, status, previous in records)):
+            doc_packages["doc_packages"] = sorted(affected)
 
         if affected & WINDOWS:
             surface = (
@@ -879,7 +887,7 @@ def classify(
                 else "shared" if SERVER in affected
                 else "client"
             )
-            result = full("windows-consumer-affected", surface)
+            result = full("windows-consumer-affected", surface) | doc_packages
             # Only client product sources with a known Cargo graph can omit
             # the server PG suite. Fixtures, manifests and mixed diffs stay full.
             pg_owners = {SERVER, "oteryn-gameplay-dispatch", "oteryn-gameplay-durability"}
@@ -900,7 +908,7 @@ def classify(
             reason = "server-only-exact-consumer-closure"
             if atlas_fullworld:
                 reason += "-plus-atlas-fullworld"
-            return dict(rust=True, windows=False, surface=surface, reason=reason)
+            return dict(rust=True, windows=False, surface=surface, reason=reason) | doc_packages
 
         if atlas_fullworld:
             return dict(
@@ -1090,6 +1098,8 @@ def main() -> int:
                 complete=complete,
                 candidate_modes_verified=modes_verified,
                 candidate_sha=expected_head,
+                report_doc_packages=(os.environ.get("GITHUB_EVENT_NAME") == "pull_request"
+                                     and os.environ.get("ENUMERATION_COMPLETE") == "true"),
             )
             # Only narrow the established FULL decision after its mode and
             # enumeration checks and an independent proof over both Git trees.
@@ -1143,6 +1153,8 @@ def main() -> int:
             output.write(f"surface={result['surface']}\n")
             output.write(f"reason={result['reason']}\n")
             output.write(f"routing_health={health}\n")
+            if "doc_packages" in result:
+                output.write(f"doc_packages={json.dumps(result['doc_packages'])}\n")
     return 0
 
 

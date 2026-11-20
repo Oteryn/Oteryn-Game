@@ -381,6 +381,7 @@ def test_documentation_fast_path(module):
                     metadata,
                     candidate_modes_verified=module.candidate_modes_safe(head),
                     candidate_sha=head,
+                    report_doc_packages=True,
                 )
             finally:
                 os.chdir(old_cwd)
@@ -393,12 +394,14 @@ def test_documentation_fast_path(module):
         result = candidate(docs_only)
         assert result["rust"] is False and result["windows"] is False, result
         assert result["reason"] == "unconsumed-auxiliary-inputs", result
+        assert "doc_packages" not in result, result
 
         # Mixed documentation and code never takes the documentation skip.
         result = candidate(docs_only | {"apps/game-server/src/lib.rs": "//! changed\n"})
         assert result["rust"] is True and result["reason"] != "unconsumed-auxiliary-inputs", result
         result = candidate(docs_only | {"apps/client/src/main.rs": "fn main() {}\n"})
         assert result["rust"] is True and result["windows"] is True, result
+        assert "doc_packages" not in result, result
 
         # Canonical workflow, composite action and classifier changes run FULL.
         for control in (
@@ -419,6 +422,7 @@ def test_documentation_fast_path(module):
         for consumed in ("docs/guides/new.md", "docs/contracts/NOTE.md"):
             result = candidate({consumed: "# changed\n"})
             assert result["rust"] is True and result["windows"] is True, (consumed, result)
+            assert "oteryn-client" in result["doc_packages"], result
 
     for path in (
         "docs/architecture/reviews/X.md", "docs/agents/tasks/archive/T.md",
