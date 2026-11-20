@@ -1142,7 +1142,7 @@ def test_aggregate():
     block = gate.split("  validate:\n", 1)[1].split("  game_gate:\n", 1)[0]
     script = textwrap.dedent(block.split("python - <<'PY'\n", 1)[1].rsplit("          PY", 1)[0])
     mandatory = ("SCOPE", "LANES", "GOVERNANCE", "DEPENDENCY_REVIEW", "ROUTING_CONTRACT")
-    fast_rust = ("RUST_POLICY", "RUST_FAST", "RUST_SUPPLY_CHAIN")
+    fast_rust = ("RUST_POLICY", "RUST_FAST", "RUST_CLIPPY", "RUST_SUPPLY_CHAIN")
     env = dict.fromkeys(mandatory + fast_rust, "success")
     env.update(WORLD_BUNDLE="success", RUST_REQUIRED="true", WINDOWS_REQUIRED="true")
     env.update(RUST_CLIENT_UI_REQUIRED="true", RUST_CLIENT_UI="success")
@@ -1157,9 +1157,11 @@ def test_aggregate():
                 return False
 
     assert accepts({})
-    reused = {"REUSE_RUST": "true", "RUST_ROUTE": "skipped", "RUST_FAST": "skipped",
+    reused = {"REUSE_RUST": "true", "RUST_ROUTE": "skipped", "RUST_FAST": "skipped", "RUST_CLIPPY": "skipped",
               "RUST_FAST_BUILD": "skipped", "RUST_CLIENT_UI": "skipped"}
     assert accepts(reused)
+    for result in ("skipped", "failure", "cancelled", ""):
+        assert not accepts({"RUST_CLIPPY": result})
     for name in reused.keys() - {"REUSE_RUST"}:
         assert not accepts(reused | {name: "failure"})
     for name in ("SCOPE", "GOVERNANCE", "DEPENDENCY_REVIEW", "RUST_SUPPLY_CHAIN", "RUST_POLICY"):
