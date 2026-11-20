@@ -299,8 +299,19 @@ jobs:
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
           df -h / /mnt
 
+      # The protected-main target costs more to unpack than it saves compiling this shard.
+      - name: Restore Cargo dependencies for dispatch lib-3
+        if: matrix.archive == 'lib-3' && contains(fromJSON(needs.prepare.outputs.archives), matrix.archive) && needs.prepare.outputs.current_ci == 'true'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: pg-cargo-deps-linux-v1-${{ hashFiles('Cargo.lock') }}
+
       - name: Restore trimmed Cargo cache from protected main
-        if: contains(fromJSON(needs.prepare.outputs.archives), matrix.archive) && needs.prepare.outputs.current_ci == 'true'
+        if: matrix.archive != 'lib-3' && contains(fromJSON(needs.prepare.outputs.archives), matrix.archive) && needs.prepare.outputs.current_ci == 'true'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: |
@@ -314,7 +325,7 @@ jobs:
             rust-linux-v2-1.100.0-
 
       - name: Normalize source mtimes for the restored Cargo cache
-        if: contains(fromJSON(needs.prepare.outputs.archives), matrix.archive) && needs.prepare.outputs.current_ci == 'true'
+        if: matrix.archive != 'lib-3' && contains(fromJSON(needs.prepare.outputs.archives), matrix.archive) && needs.prepare.outputs.current_ci == 'true'
         run: python tools/repository/normalize_cargo_mtimes.py
 
       - name: Verify locked metadata
