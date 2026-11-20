@@ -14,6 +14,7 @@ if [[ $1 == setup ]]; then
   mkdir -p "$HOME/.cargo" "$RUNNER_TEMP/pilot-bin"
   printf '[profile.dev.package.oteryn-gameplay-dispatch]\ndebug = 0\n' >> "$HOME/.cargo/config.toml"
   rustup toolchain install 1.100.0 --profile minimal --no-self-update
+  rustup component add rust-src --toolchain 1.100.0
   rustc +1.100.0 -vV > "$metrics/rustc.txt"
   cargo +1.100.0 fetch --locked
   fetch() {
@@ -66,6 +67,7 @@ measure() {
     timeout --signal=TERM --kill-after=10s 20m "$@" > "$RUNNER_TEMP/$phase.log" 2>&1 || rc=$?
   printf '%s\n' "$rc" > "$metrics/$phase.exit"
   tail -n 28 "$RUNNER_TEMP/$phase.log" | cut -c1-1600 | tee "$metrics/$phase.tail"
+  grep -F "blaze:" "$RUNNER_TEMP/$phase.log" | tail -n 300 | cut -c1-800 > "$metrics/$phase.wrapper-notes" || true
   cat "$metrics/$phase.time"
   return "$rc"
 }

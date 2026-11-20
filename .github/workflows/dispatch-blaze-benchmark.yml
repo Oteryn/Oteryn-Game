@@ -1,7 +1,7 @@
-name: Dispatch Blaze hosted edit control
+name: Dispatch Blaze wrapper control
 on:
   push:
-    branches: [codex/dispatch-blaze-hosted-20261120]
+    branches: [codex/dispatch-blaze-wrapper-20261120]
     paths:
       - .github/workflows/dispatch-blaze-benchmark.yml
       - tools/ci/dispatch_blaze_pilot.sh
@@ -15,8 +15,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        engine: [blaze, enabled]
-        operation: [edit]
+        engine: [enabled]
+        operation: [edit, archive]
     env:
       ENGINE: ${{ matrix.engine }}
       OPERATION: ${{ matrix.operation }}
@@ -54,7 +54,7 @@ jobs:
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
-          name: hosted-${{ matrix.engine }}-${{ matrix.operation }}
+          name: wrapper-${{ matrix.engine }}-${{ matrix.operation }}
           path: ${{ runner.temp }}/metrics
           if-no-files-found: warn
           retention-days: 7
