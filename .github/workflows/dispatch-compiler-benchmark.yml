@@ -1,7 +1,7 @@
-name: Dispatch compiler benchmark
+name: Dispatch single-thread Cranelift control
 on:
   push:
-    branches: [codex/dispatch-compiler-benchmark-20261120]
+    branches: [codex/dispatch-compiler-single-cranelift-20261120]
     paths: [.github/workflows/dispatch-compiler-benchmark.yml]
 
 permissions:
@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [stable, nightly-1, nightly-2, nightly-2-cranelift]
+        variant: [nightly-1-cranelift]
     env:
       VARIANT: ${{ matrix.variant }}
       OTERYN_DISPATCH_PG_SHARD: 3/3
@@ -47,11 +47,11 @@ jobs:
           else
             toolchain=nightly-2026-11-16
             threads=2
-            if [[ "$VARIANT" == nightly-1 ]]; then threads=1; fi
+            if [[ "$VARIANT" == nightly-1* ]]; then threads=1; fi
             echo "RUSTFLAGS=-Zunstable-options --jobs-frontend=$threads" >> "$GITHUB_ENV"
           fi
           rustup toolchain install "$toolchain" --profile minimal --no-self-update
-          if [[ "$VARIANT" == nightly-2-cranelift ]]; then
+          if [[ "$VARIANT" == *-cranelift ]]; then
             rustup component add rustc-codegen-cranelift-preview --toolchain "$toolchain"
             printf '\n[unstable]\ncodegen-backend = true\n[profile.dev.package.oteryn-gameplay-content]\ncodegen-backend = "cranelift"\n' >> "$HOME/.cargo/config.toml"
           fi
@@ -89,7 +89,7 @@ jobs:
           assert calls
           variant = os.environ['VARIANT']
           selectors = [line for line in calls if re.search(r'-Z\s*codegen-backend(?:=| )cranelift', line)]
-          if variant == 'nightly-2-cranelift':
+          if variant.endswith('-cranelift'):
               assert any('--crate-name oteryn_gameplay_content ' in line for line in selectors)
               assert all('--crate-name oteryn_gameplay_content ' in line or (
                   '--crate-name build_script_build ' in line and 'crates/gameplay/content/build.rs' in line
@@ -97,7 +97,7 @@ jobs:
           else:
               assert not selectors
           if variant != 'stable':
-              expected = '--jobs-frontend=' + ('1' if variant == 'nightly-1' else '2')
+              expected = '--jobs-frontend=' + ('1' if variant.startswith('nightly-1') else '2')
               assert any(expected in line and '--crate-name oteryn_gameplay_dispatch ' in line for line in calls)
           assert not any(' Running ' in l and '--crate-name ' in l and '--emit=' in l for l in (root/'warm.log').read_text().splitlines())
           PY
@@ -144,7 +144,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [stable, nightly-1, nightly-2, nightly-2-cranelift]
+        variant: [nightly-1-cranelift]
         shard: [0, 1, 2, 3, 4, 5, 6]
     services:
       postgres:
