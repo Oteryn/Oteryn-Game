@@ -25,7 +25,7 @@ fn gap_house_exact_mutations_and_query() -> Result<(), &'static str> {
                 revision: 8,
                 members: vec![],
             },
-            vec![42, 10, 10, 6, 8, 1, 16, 2, 24, 13, 16, 8],
+            vec![42, 10, 10, 6, 8, 1, 16, 2, 24, 14, 16, 8],
         ),
         (Action::Leave, vec![58, 0]),
     ] {
@@ -137,9 +137,9 @@ fn house_metadata_refuses_partial_invalid_floor_and_duplicate_fields() -> Result
     for end in 1..details.len() {
         assert!(house::page(&page(&details[..end])).is_err());
     }
-    for floor in [1, 31, 32] {
+    for encoded_floor in [1, 31, 32] {
         let mut bad = details;
-        bad[13] = floor;
+        bad[14] = encoded_floor;
         assert!(house::page(&page(&bad)).is_err());
     }
     assert!(house::page(&page(&[details.as_slice(), &[112, 0]].concat())).is_err());
