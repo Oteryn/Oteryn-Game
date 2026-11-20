@@ -1,7 +1,7 @@
-name: Dispatch Blaze wrapper control
+name: Dispatch Blaze matched-nightly edit
 on:
   push:
-    branches: [codex/dispatch-blaze-wrapper-20261120]
+    branches: [codex/dispatch-blaze-matched-20261120]
     paths:
       - .github/workflows/dispatch-blaze-benchmark.yml
       - tools/ci/dispatch_blaze_pilot.sh
@@ -15,13 +15,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        engine: [enabled]
-        operation: [edit, archive]
+        engine: [cargo, enabled]
+        operation: [edit]
     env:
       ENGINE: ${{ matrix.engine }}
       OPERATION: ${{ matrix.operation }}
       CARGO_BUILD_JOBS: '2'
       BLAZE_SANDBOX: 'off'
+      RA_JIT_SCRIPTS_BY_RUSTC: '1'
+      RA_JIT_PROC_MACRO_SERVER: '0'
+      RUSTUP_TOOLCHAIN: nightly-2026-10-27
       OTERYN_DISPATCH_PG_SHARD: 3/3
       SOURCE_SHA: 4beb4cfa87bdde05bebecb2dd8930340b12daeb4
     steps:
@@ -54,7 +57,7 @@ jobs:
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
-          name: wrapper-${{ matrix.engine }}-${{ matrix.operation }}
+          name: matched-${{ matrix.engine }}-${{ matrix.operation }}
           path: ${{ runner.temp }}/metrics
           if-no-files-found: warn
           retention-days: 7

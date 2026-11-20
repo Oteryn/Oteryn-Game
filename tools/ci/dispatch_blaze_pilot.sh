@@ -13,10 +13,10 @@ if [[ $1 == setup ]]; then
   sudo swapon /mnt/dispatch-blaze.swap
   mkdir -p "$HOME/.cargo" "$RUNNER_TEMP/pilot-bin"
   printf '[profile.dev.package.oteryn-gameplay-dispatch]\ndebug = 0\n' >> "$HOME/.cargo/config.toml"
-  rustup toolchain install 1.100.0 --profile minimal --no-self-update
-  rustup component add rust-src --toolchain 1.100.0
-  rustc +1.100.0 -vV > "$metrics/rustc.txt"
-  cargo +1.100.0 fetch --locked
+  rustup toolchain install nightly-2026-10-27 --profile minimal --no-self-update
+  rustup component add rust-src --toolchain nightly-2026-10-27
+  rustc +nightly-2026-10-27 -vV > "$metrics/rustc.txt"
+  cargo +nightly-2026-10-27 fetch --locked
   fetch() {
     curl --proto '=https' --tlsv1.2 -fsSL --retry 5 --retry-all-errors --connect-timeout 15 -o "$2" "$1"
     echo "$3  $2" | sha256sum -c -
@@ -56,7 +56,7 @@ fi
 
 test "$1" = measure
 export LD_PRELOAD="$MOLD_PRELOAD"
-export RUSTUP_TOOLCHAIN=1.100.0
+export RUSTUP_TOOLCHAIN=nightly-2026-10-27
 # Each phase keeps diagnostics in the Actions log and a small ordered result file,
 # including if the compiler rejects the candidate.
 measure() {
@@ -101,6 +101,17 @@ RS
   }
   measure cold "${build[@]}"
   verify cold work_item_overrun
+  # The wrapper loads the program asynchronously only after Cargo exits.
+  # Record startup separately; an edit before the worker is ready would silently use rustc.
+  if [[ $ENGINE == enabled ]]; then
+    start=$SECONDS
+    while (( SECONDS - start < 240 )); do
+      timeout 10 blaze status > "$metrics/initial-load.txt" 2>&1 || true
+      if grep -Eq ': ready$|: failed:' "$metrics/initial-load.txt"; then break; fi
+      sleep 3
+    done
+    echo "$((SECONDS-start))" > "$metrics/initial-load.seconds"
+  fi
   measure warm "${build[@]}"
   verify warm work_item_overrun
   src=crates/gameplay/dispatch/src/observability.rs
@@ -115,6 +126,9 @@ RS
     measure restart "${build[@]}"
     verify restart work_item_overrun_probe
   fi
+  sed -i 's/"work_item_overrun_probe"/"work_item_overrun_probe2"/' "$src"
+  measure restart_edit "${build[@]}"
+  verify restart_edit work_item_overrun_probe2
 else
   lib="$RUNNER_TEMP/lib3"
   mkdir -p "$lib"
