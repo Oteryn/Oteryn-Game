@@ -38,8 +38,8 @@ fn l6_tomb_other_native_missing_3954_uses_source_branch() -> TestResult {
     super::l6_tomb_native_fixtures::run(
         "l6-tomb-native-missing-3954",
         Position {
-            x: 33042,
-            y: 32777,
+            x: 33073,
+            y: 32781,
             floor: -14,
         },
         Position {
@@ -51,28 +51,16 @@ fn l6_tomb_other_native_missing_3954_uses_source_branch() -> TestResult {
 }
 #[test]
 fn l6_tomb_other_native_present_3954_uses_source_branch() -> TestResult {
-    super::l6_tomb_native_fixtures::run(
-        "l6-tomb-native-present-3954",
-        Position {
-            x: 33042,
-            y: 32777,
-            floor: -14,
-        },
-        Position {
-            x: 33041,
-            y: 32774,
-            floor: -14,
-        },
-    )
+    super::l6_tomb_native_fixtures::present_3954()
 }
 #[test]
 fn l6_tomb_other_native_missing_3955_uses_source_branch() -> TestResult {
     super::l6_tomb_native_fixtures::run(
         "l6-tomb-native-missing-3955",
         Position {
-            x: 33350,
-            y: 32830,
-            floor: -14,
+            x: 33103,
+            y: 32590,
+            floor: -15,
         },
         Position {
             x: 33131,
@@ -83,19 +71,7 @@ fn l6_tomb_other_native_missing_3955_uses_source_branch() -> TestResult {
 }
 #[test]
 fn l6_tomb_other_native_present_3955_uses_source_branch() -> TestResult {
-    super::l6_tomb_native_fixtures::run(
-        "l6-tomb-native-present-3955",
-        Position {
-            x: 33350,
-            y: 32830,
-            floor: -14,
-        },
-        Position {
-            x: 33349,
-            y: 32827,
-            floor: -14,
-        },
-    )
+    super::l6_tomb_native_fixtures::present_3955()
 }
 #[test]
 fn l6_tomb_other_native_missing_3956_uses_source_branch() -> TestResult {

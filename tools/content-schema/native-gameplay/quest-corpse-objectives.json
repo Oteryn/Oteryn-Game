@@ -7,7 +7,9 @@
   "sources": [
     "content/creatures/definitions/spell-native-profiles.json#oteryn:creature.little_corym_charlatan",
     "https://tibia.fandom.com/wiki/Little_Corym_Charlatan",
-    "imports/canary/items-xml/items.xml#17449-17450"
+    "imports/canary/items-xml/items.xml#17449-17450",
+    "content/creatures/definitions/spell-native-profiles.json#exact-ordinary-creature-corpse-bindings",
+    "imports/canary/items-xml/items.xml#corpse-capacity-and-decay"
   ],
   "capacity_projections": [
     {
@@ -19,6 +21,42 @@
         "crates/gameplay/domain/src/domain/loot_data.rs#CORPSE_CONTAINER_ENTRIES_MAX",
         "OTERYN_AUTHORED_APPROXIMATION: retain the existing native30-entry corpse ceiling; source40 and canonical Item facts stay unchanged."
       ]
+    },
+    {
+      "item": "oteryn:item.tibia.i5999",
+      "source_capacity": 50,
+      "native_capacity": 30,
+      "sources": [
+        "imports/canary/items-xml/items.xml#5999",
+        "crates/gameplay/domain/src/domain/loot_data.rs#CORPSE_CONTAINER_ENTRIES_MAX"
+      ]
+    },
+    {
+      "item": "oteryn:item.tibia.i8909",
+      "source_capacity": 36,
+      "native_capacity": 30,
+      "sources": [
+        "imports/canary/items-xml/items.xml#8909",
+        "crates/gameplay/domain/src/domain/loot_data.rs#CORPSE_CONTAINER_ENTRIES_MAX"
+      ]
     }
-  ]
+  ],
+  "loot_creatures": {
+    "oteryn:creature.behemoth": 5999,
+    "oteryn:creature.bonebeast": 6030,
+    "oteryn:creature.dipthrah": 6031,
+    "oteryn:creature.dworc_voodoomaster": 6055,
+    "oteryn:creature.faun": 25815,
+    "oteryn:creature.mahrdis": 6025,
+    "oteryn:creature.merlkin": 6044,
+    "oteryn:creature.morguthis": 6025,
+    "oteryn:creature.omruc": 6025,
+    "oteryn:creature.rahemos": 6031,
+    "oteryn:creature.rotworm": 5967,
+    "oteryn:creature.souleater": 11675,
+    "oteryn:creature.thalas": 6025,
+    "oteryn:creature.tortoise": 6072,
+    "oteryn:creature.undead_gladiator": 8909,
+    "oteryn:creature.vashresamun": 6025
+  }
 }

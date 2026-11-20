@@ -1132,6 +1132,11 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         "gameplay_transport/postgres_tests/support/proficiency_modification_fixtures.rs",
         1,
     ),
+    // The Ancient Tombs supplies the combat room for its Bundle fixture; qualified room stays None.
+    (
+        "gameplay_transport/postgres_tests/qcx_the_ancient_tombs.rs",
+        1,
+    ),
     // Threatened Dreams supplies the combat room for its Bundle fixture.
     (
         "gameplay_transport/postgres_tests/qcx_threatened_dreams.rs",
