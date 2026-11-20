@@ -2,33 +2,55 @@
 use super::fixture::{Harness, debug, id};
 use super::{Dependencies, TestResult, fresh_fixture};
 use crate::durability::admission_authority_guards::AdmissionGuardStore;
+use crate::durability::character_familiar::{
+    FamiliarCooldownSnapshot, FamiliarLifecycleV2, FamiliarLifecycleWriter,
+    FamiliarStateOccurrence, FamiliarStateOutcome, FamiliarStateRequest,
+};
 use crate::durability::fresh_admission::FreshAdmissionStore;
+use crate::foundation::ExactActorRef;
 use crate::foundation::admission_authority_publication::{
     AdmissionAuthorityGuardKeyV1, AdmissionAuthorityPublicationV1,
 };
+use crate::foundation::fresh_admission_durability::FreshAdmissionCommitRequestV1;
 use crate::foundation::{AuthenticatedTransportRefV1, GameSessionId};
 use crate::gameplay_transport::AdmissionRetryBudget;
+use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::connection::FirstEntryOutcome;
+use crate::gameplay_transport::spell_access_facts::{
+    AccessFactsError, CurrentSpellAccessOwner, UnavailableAccessOwner, owner_registration,
+};
+use crate::spell::Execution;
+use crate::spell::companion_lifecycle::familiar_return_placement_available;
+use crate::spell::owned_cast_facts::{
+    AccessProjections, CastFactsBinding, CurrentProjection, OwnedFactsError,
+};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+
 fn uuid(id: &[u8; 16]) -> String {
     crate::gameplay_transport::canonical_uuid(id)
 }
 
 #[test]
 fn bootstrap_v4_every_vocation_first_entry_without_progression_postgres() -> TestResult {
+    creation_vocation_entry(None)
+}
+
+fn creation_vocation_entry(regression: Option<FamiliarRegression>) -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
     super::kill_reward_e2e_fixtures::scenario_thread::run("creation-vocation-entry", move || {
         tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async move {
-            for (vocation, with_premium) in [
+            let normal_cases = [
                 ("Knight", true),
                 ("Paladin", true),
                 ("Sorcerer", true),
                 ("Druid", true),
                 ("Monk", true),
                 ("Sorcerer", false),
-            ] {
+            ];
+            let cases = if regression.is_some() { &normal_cases[5..] } else { &normal_cases[..] };
+            for &(vocation, with_premium) in cases {
                 let h = Harness::create_newhaven(admin.clone(), "creation_entry").await?;
                 let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
                 let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
@@ -44,12 +66,29 @@ fn bootstrap_v4_every_vocation_first_entry_without_progression_postgres() -> Tes
                 } else {
                     crate::spell::cast::v1_spell_book().map_err(debug)?
                 };
-                let deps = Dependencies::with_content(pin.into_channel_parts().0, room, spells)?;
+                let deps = if matches!(regression, Some(FamiliarRegression::BlockedReturn)) {
+                    Dependencies::with_content_and_capacity(pin.into_channel_parts().0, room, spells, 16)?
+                } else {
+                    Dependencies::with_content(pin.into_channel_parts().0, room, spells)?
+                };
                 let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint").fetch_one(&h.pool).await?;
                 let character = bootstrap(&h, vocation, now).await?;
                 let seal = h.recovery.seal_current().map_err(debug)?;
                 let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
                 assert!(h.root.read_character_progression(&authority, character).await?.is_none());
+                if regression.is_some() {
+                    let policy = active.progression().ok_or("progression policy")?
+                        .policy_for("profile-1", "ruleset-1", "content-1").map_err(debug)?;
+                    let xp = policy.thresholds.iter().find(|row| row.level == 250)
+                        .ok_or("level 250 threshold")?.minimum_experience.get();
+                    // Pre-existing progression for the returning Character. Admission still
+                    // obtains its own session and progression fence from the real owners.
+                    sqlx::query("INSERT INTO game_character_progression_state(character_id,character_revision,level,total_experience,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision) SELECT character_id,character_revision,250,$2,profile_revision,ruleset_revision,content_revision,$3,$4,$5,$6,$7 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+                        .bind(character.as_bytes().as_slice()).bind(xp)
+                        .bind(&policy.context.simulation).bind(&policy.context.evidence)
+                        .bind(&policy.context.declaration).bind(&policy.policy_revision)
+                        .bind(&policy.reward_revision).execute(&h.pool).await?;
+                }
                 let mut source = fresh_fixture::fresh::Source::new(now)?;
                 source.current.character_id = crate::foundation::CharacterId::decode(character.as_bytes()).map_err(debug)?;
                 for row in &mut source.rows {
@@ -108,6 +147,14 @@ fn bootstrap_v4_every_vocation_first_entry_without_progression_postgres() -> Tes
                     FirstEntryOutcome::Positioned,
                     "{vocation} with_premium={with_premium}",
                 );
+                if let Some(regression) = regression {
+                    let progression = h.root.read_character_progression(&authority, character).await?
+                        .ok_or("historical progression")?;
+                    assert_eq!(progression.level, 250);
+                    let result = check_familiar_regression(&h, &owner, &request, deps.actor, session, regression).await;
+                    drop(owner); drop(authority); drop(seal); h.cleanup().await?;
+                    return result;
+                }
                 if vocation == "Sorcerer" {
                     assert!(owner.progression_binding(session).is_some());
                     let progression = h
@@ -242,4 +289,289 @@ async fn bootstrap(
         .map_err(debug)?;
     assert_eq!(bootstrapped.revision.get(), 1);
     Ok(bootstrapped.character_id)
+}
+
+#[derive(Clone, Copy)]
+enum FamiliarRegression {
+    ExistingLook { denied: bool },
+    BlockedReturn,
+}
+
+#[test]
+fn familiar_login_preserves_existing_look_until_premium_is_known_postgres() -> TestResult {
+    creation_vocation_entry(Some(FamiliarRegression::ExistingLook { denied: false }))?;
+    creation_vocation_entry(Some(FamiliarRegression::ExistingLook { denied: true }))
+}
+
+#[test]
+fn familiar_waiting_return_finishes_without_premium_after_tile_frees_postgres() -> TestResult {
+    creation_vocation_entry(Some(FamiliarRegression::BlockedReturn))
+}
+
+// RegisteredSpellAccessOwner supplies a positive proof or no projection. Exercise the
+// explicit negative branch with a test producer bound to this same owner read.
+struct DeniedPremium;
+impl owner_registration::Registered for DeniedPremium {}
+impl CurrentSpellAccessOwner for DeniedPremium {
+    fn read_current(
+        &self,
+        binding: &CastFactsBinding,
+        now: u64,
+    ) -> Result<AccessProjections, AccessFactsError> {
+        Ok(AccessProjections {
+            premium: Some(CurrentProjection {
+                binding: binding.clone(),
+                authority_revision: 1,
+                valid_until_micros: now.saturating_add(60_000_000),
+                value: false,
+            }),
+            ..AccessProjections::default()
+        })
+    }
+}
+
+async fn check_familiar_regression(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    request: &FreshAdmissionCommitRequestV1,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    regression: FamiliarRegression,
+) -> TestResult {
+    let native = owner
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .ok_or("native gameplay")?;
+    let config = native.familiar_config().ok_or("Familiar config")?;
+    let index = owner
+        .active_familiar_index("sorcerer")
+        .ok_or("Familiar index")?;
+    let (spell, true) = owner.spells.source_indexed(index).ok_or("Familiar spell")? else {
+        return Err("Familiar spell must be active".into());
+    };
+    let Execution::NativeProfile(profile) = &spell.execution else {
+        return Err("Familiar native profile".into());
+    };
+    let parameters = &profile.spell()["execution"]["native_behavior"]["parameters"];
+    let look = u32::try_from(
+        parameters["default_look_type"]
+            .as_u64()
+            .ok_or("Familiar look")?,
+    )?;
+    let progression = owner
+        .progression_binding(session)
+        .ok_or("progression binding")?;
+    let fence = super::death_ml_loss_composed_fixtures::current_fence(owner, session).await?;
+    let before = h
+        .root
+        .read_character_familiar_state(owner.character, fence.character_id)
+        .await?;
+    let mut historical = before.state().clone();
+    let mut blockers = Vec::new();
+    let returning = matches!(regression, FamiliarRegression::BlockedReturn);
+    historical.lifecycle = Some(FamiliarLifecycleV2 {
+        version: 2,
+        familiar_remaining_ms: if returning { 90_123 } else { 0 },
+        open: false,
+        writer: FamiliarLifecycleWriter::from_fence(&fence).map_err(debug)?,
+        clean_end_game_session_id: None,
+    });
+    if returning {
+        historical.cooldowns = vec![FamiliarCooldownSnapshot {
+            reference_spell_id: u32::try_from(
+                profile.spell()["reference_spell_id"]
+                    .as_u64()
+                    .ok_or("Familiar cooldown reference")?,
+            )?,
+            remaining_micros: 60_000_123,
+        }];
+        let mut runtime = owner.runtime.lock().await;
+        let cells = owner.movement_cells();
+        assert!(familiar_return_placement_available(
+            &runtime, cells, profile, actor
+        ));
+        let center = runtime
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position();
+        for dx in -1..=1 {
+            for dy in -1..=1 {
+                let Some(x) = center.x.checked_add(dx) else {
+                    continue;
+                };
+                let Some(y) = center.y.checked_add(dy) else {
+                    continue;
+                };
+                let at = crate::foundation::MovementLocalPosition { x, y, ..center };
+                if runtime.companion_creation_available(at).map_err(debug)? {
+                    blockers.push(runtime.admit_pinned_test_creature(at).map_err(debug)?);
+                }
+            }
+        }
+        assert!(!blockers.is_empty());
+        assert!(!familiar_return_placement_available(
+            &runtime, cells, profile, actor
+        ));
+    } else {
+        historical.selected_look = look;
+        historical.granted_looks = vec![look];
+    }
+    // Seed a clean historical projection through the real fenced writer. The Login and
+    // Return operations and their subsequent receipts are produced by dispatch below.
+    let FamiliarStateOutcome::Committed(seed) = h
+        .root
+        .commit_character_familiar_state(
+            owner.character,
+            &h.node,
+            fence,
+            FamiliarStateRequest {
+                occurrence: FamiliarStateOccurrence::from_bytes(id(83)).map_err(debug)?,
+                before: before.state().clone(),
+                after: historical.clone(),
+                content_revision: progression.context.content.clone(),
+                policy_revision: progression.policy_revision.clone(),
+                policy_digest: [83; 32],
+            },
+        )
+        .await?
+    else {
+        return Err("historical Familiar fixture did not commit".into());
+    };
+    let unknown = UnavailableAccessOwner;
+    let denied = matches!(
+        regression,
+        FamiliarRegression::ExistingLook { denied: true }
+    );
+    let login = if denied {
+        owner
+            .initialize_familiar_login(actor, session, request, native, &DeniedPremium, config)
+            .await
+    } else {
+        owner
+            .initialize_familiar_login(actor, session, request, native, &unknown, config)
+            .await
+    }
+    .map_err(|()| "Familiar Login refused")?
+    .ok_or("Familiar Login receipt")?;
+    assert!(login.creature().is_none());
+    let after_login = h
+        .root
+        .read_character_familiar_state(owner.character, fence.character_id)
+        .await?;
+    if !returning {
+        assert_eq!(after_login.state().selected_look, look);
+        if denied {
+            assert!(after_login.state().granted_looks.is_empty());
+            assert!(
+                after_login
+                    .committed_character_revision()
+                    .ok_or("denied receipt")?
+                    > seed.committed_character_revision()
+            );
+        } else {
+            assert_eq!(
+                after_login.state(),
+                &historical,
+                "missing proof must keep the granted look"
+            );
+            assert_eq!(
+                after_login.committed_character_revision(),
+                Some(seed.committed_character_revision())
+            );
+        }
+        return Ok(());
+    }
+    assert!(
+        crate::spell::companion_lifecycle::login_left_familiar_waiting(
+            login.creature(),
+            login.owner_operations()
+        )
+    );
+    assert!(
+        !owner
+            .retry_waiting_familiar_return(actor, session, &unknown)
+            .await
+            .map_err(|()| "blocked Return")?
+    );
+    let waiting = h
+        .root
+        .read_character_familiar_state(owner.character, fence.character_id)
+        .await?;
+    assert_eq!(waiting.state(), after_login.state());
+    assert_eq!(
+        waiting.committed_character_revision(),
+        after_login.committed_character_revision()
+    );
+    {
+        let mut runtime = owner.runtime.lock().await;
+        for blocker in blockers {
+            runtime.remove_test_actor(blocker).map_err(debug)?;
+            if familiar_return_placement_available(&runtime, owner.movement_cells(), profile, actor)
+            {
+                break;
+            }
+        }
+        assert!(familiar_return_placement_available(
+            &runtime,
+            owner.movement_cells(),
+            profile,
+            actor
+        ));
+    }
+    let access = owner
+        .read_familiar_lifecycle_inputs(actor, session, native, &unknown)
+        .await
+        .map_err(|()| "current Familiar facts before Return")?;
+    assert_eq!(
+        access.check_current_access(spell, owner.owner_now().get()),
+        Err(OwnedFactsError::UnavailablePremium)
+    );
+    assert!(
+        owner
+            .retry_waiting_familiar_return(actor, session, &unknown)
+            .await
+            .map_err(|()| "due Return refused with no Premium proof")?
+    );
+    let returned = h
+        .root
+        .read_character_familiar_state(owner.character, fence.character_id)
+        .await?;
+    let state = returned.state();
+    let lifecycle = state.lifecycle.as_ref().ok_or("returned lifecycle")?;
+    assert!(lifecycle.open);
+    assert_eq!(lifecycle.familiar_remaining_ms, 90_123);
+    assert_eq!(
+        lifecycle.writer,
+        historical.lifecycle.ok_or("seeded lifecycle")?.writer
+    );
+    assert_eq!(state.lifecycle_epoch, waiting.state().lifecycle_epoch + 1);
+    assert_eq!(state.cooldowns, waiting.state().cooldowns);
+    assert!(state.granted_looks.is_empty());
+    assert_eq!(state.selected_look, 0);
+    assert!(
+        !owner
+            .retry_waiting_familiar_return(actor, session, &unknown)
+            .await
+            .map_err(|()| "replayed Return")?
+    );
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .owned_companions(actor, session)
+            .map_err(debug)?
+            .len(),
+        1
+    );
+    let still_returned = h
+        .root
+        .read_character_familiar_state(owner.character, fence.character_id)
+        .await?;
+    assert_eq!(still_returned.state(), state);
+    assert_eq!(
+        still_returned.committed_character_revision(),
+        returned.committed_character_revision()
+    );
+    Ok(())
 }

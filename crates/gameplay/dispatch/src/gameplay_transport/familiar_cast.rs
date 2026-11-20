@@ -59,7 +59,7 @@ pub struct FamiliarSourceSettings {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum FamiliarBenefitUse {
     CurrentEligibility,
-    LoginWithoutPremium,
+    RestoreWithoutPremium,
     NotApplicableEnd,
 }
 #[derive(Debug, Clone)]
@@ -347,7 +347,7 @@ pub trait CurrentFamiliarSourceOwner: source_registration::Registered {
         now_micros: u64,
     ) -> Option<CurrentProjection<FamiliarSourceSettings>>;
 
-    fn read_for_login(
+    fn read_for_restore(
         &self,
         binding: &CastFactsBinding,
         now_micros: u64,
@@ -1159,7 +1159,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             let facts = FamiliarOwnerFacts {
                 vocation: base_familiar_vocation(caster.vocation).to_owned(),
-                premium: caster.premium.is_current(),
+                premium: Some(caster.premium.is_current()),
                 level: caster.level,
                 account_at_least_god: value.account_at_least_god,
                 current_speed: i32::from(crate::spell::actor_conditions::movement_speed(
@@ -1717,7 +1717,7 @@ impl<
         self.read_settings(binding, now, false)
     }
 
-    fn read_for_login(
+    fn read_for_restore(
         &self,
         binding: &CastFactsBinding,
         now: u64,
@@ -1735,7 +1735,7 @@ impl<
         &self,
         binding: &CastFactsBinding,
         now: u64,
-        login: bool,
+        restoring: bool,
     ) -> Option<CurrentProjection<FamiliarSourceSettings>> {
         if self.config.source_digest() != binding.content_digest {
             return None;
@@ -1757,9 +1757,9 @@ impl<
                 proof.authority_revision,
                 proof.valid_until_micros.min(group.valid_until_micros),
             ),
-            // Login can restore fenced state without granting a paid benefit.
-            None if login => (
-                FamiliarBenefitUse::LoginWithoutPremium,
+            // Login and its delayed Return can restore fenced state without a Premium decision.
+            None if restoring => (
+                FamiliarBenefitUse::RestoreWithoutPremium,
                 false,
                 0,
                 group.valid_until_micros,
@@ -2060,10 +2060,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     | FamiliarOwnerEvent::Expiry { .. }
                     | FamiliarOwnerEvent::OwnerDeath { .. }
             );
-            let is_login = matches!(event, FamiliarOwnerEvent::Login(_));
+            let restoring = matches!(
+                event,
+                FamiliarOwnerEvent::Login(_) | FamiliarOwnerEvent::Return
+            );
             let caster = if is_end {
                 None
-            } else if is_login {
+            } else if restoring {
                 Some(
                     owned
                         .numerical_caster(
@@ -2088,23 +2091,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .map_err(|_| ())?,
                 )
             };
-            let settings = if is_login {
-                source.read_for_login(owned.binding(), now.get())
+            let settings = if restoring {
+                source.read_for_restore(owned.binding(), now.get())
             } else {
                 source.read_current(owned.binding(), now.get())
             }
             .filter(|v| v.current(owned.binding(), now.get()))
             .ok_or(())?;
-            let applicable = match settings.value.benefit_use {
-                FamiliarBenefitUse::CurrentEligibility => !is_end,
-                FamiliarBenefitUse::LoginWithoutPremium => is_login,
-                FamiliarBenefitUse::NotApplicableEnd => is_end,
+            let premium = match settings.value.benefit_use {
+                FamiliarBenefitUse::CurrentEligibility if !is_end => Some(settings.value.premium),
+                FamiliarBenefitUse::RestoreWithoutPremium if restoring => None,
+                FamiliarBenefitUse::NotApplicableEnd if is_end => None,
+                _ => return Err(()),
             };
-            if !applicable
-                || caster
-                    .as_ref()
-                    .is_some_and(|c| settings.value.premium != c.premium.is_current())
-            {
+            if !is_end && premium != owned.current_premium(now.get()).map(|proof| proof.value) {
                 return Err(());
             }
             let equipment_speed = if is_end {
@@ -2123,7 +2123,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // The explicit NotApplicableEnd mode reaches only the source's Death and
                 // Expiry branches, which never read benefit/level/speed/cooldown inputs. These
                 // representation values grant no benefit; Cast/Login/Advance reject it.
-                premium: caster.as_ref().is_some_and(|c| c.premium.is_current()),
+                premium,
                 level: caster.as_ref().map_or(0, |c| c.level),
                 account_at_least_god: settings.value.account_at_least_god,
                 current_speed: i32::from(crate::spell::actor_conditions::movement_speed(
@@ -2328,13 +2328,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if actual_binding != &expected_binding {
             return Err(());
         }
-        // Recovery selects the read from the sealed origin, including when the response
-        // to the original fenced Login write was lost.
+        // Revalidate with the sealed original event's authority, including a lost
+        // response to a fenced Login or Return write.
+        use crate::spell::companion_lifecycle::FamiliarLifecycleOrigin;
         let current = if matches!(
             prepared.familiar.binding().origin(),
-            crate::spell::companion_lifecycle::FamiliarLifecycleOrigin::Login { .. }
+            FamiliarLifecycleOrigin::Login { .. } | FamiliarLifecycleOrigin::Return { .. }
         ) {
-            source.read_for_login(actual_binding, now.get())
+            source.read_for_restore(actual_binding, now.get())
         } else {
             source.read_current(actual_binding, now.get())
         }

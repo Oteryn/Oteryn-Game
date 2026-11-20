@@ -210,7 +210,7 @@ fn source_familiar_look_and_genuine_lethal_cleanup_require_matching_durable_rece
         // Source Advance grants the vocation look when premium even below level 200.
         let current = FamiliarOwnerFacts {
             vocation: "knight".into(),
-            premium: true,
+            premium: Some(true),
             level: 50,
             account_at_least_god: false,
             current_speed: 220,
@@ -412,7 +412,7 @@ fn source_familiar_look_and_genuine_lethal_cleanup_require_matching_durable_rece
         // Source Death does not read Premium/level/config benefit inputs. The
         // genuine physical lethal receipt, matching owner and durable state do.
         let current = FamiliarOwnerFacts {
-            premium: false,
+            premium: None,
             level: 0,
             familiar_minutes: 0,
             cooldown_rate: 0.0,
@@ -651,7 +651,7 @@ async fn familiar_end_closes_the_durable_row_before_the_despawn(
         // An expiry reads no Premium/level/config benefit input, as a death does.
         let current = FamiliarOwnerFacts {
             vocation: "knight".into(),
-            premium: false,
+            premium: None,
             level: 0,
             account_at_least_god: false,
             current_speed: 220,
