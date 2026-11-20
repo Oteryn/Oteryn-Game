@@ -14,6 +14,11 @@ use crate::gameplay_transport::{SeamRooms, item_fence_of};
 use oteryn_protocol_oteryn::boss_encounter as wire;
 use std::time::Instant;
 const SPITE_KEY: &str = "oteryn:creature.goshnar_s_spite";
+// Replay the passing 6219382d native wave draws under the current content pin.
+const WAVE_SEED: [u8; 32] = [
+    0x31, 0x69, 0x5e, 0x74, 0xa8, 0xda, 0x59, 0xdf, 0x8b, 0x6f, 0xad, 0xc4, 0x44, 0xf5, 0xd7, 0x7c,
+    0xdb, 0xe9, 0xd5, 0x25, 0xd8, 0xff, 0xdd, 0x60, 0x19, 0x2a, 0x35, 0xb9, 0xcd, 0x88, 0x47, 0xc5,
+];
 
 #[test]
 fn m26_spite_postgres_static_instance_map_needs_no_channel_item_custody() -> TestResult {
@@ -561,7 +566,11 @@ async fn scenario(admin: String) -> TestResult {
     );
     assert!(started.elapsed().as_secs_f64() > 0.01);
     super::m26_rotten_room_taints::check(&destination, admitted, origin_session).await?;
-    super::m26_rotten_wave_production::check(&destination, admitted).await?;
+    crate::gameplay_transport::monster_profile_cycle::rotten_waves::with_wave_seed_for_test(
+        WAVE_SEED,
+        super::m26_rotten_wave_production::check(&destination, admitted),
+    )
+    .await?;
     eprintln!(
         "M26_STATIC_INSTANCE POSTGRES_CASE_COMPLETED duration={:?} success=true",
         started.elapsed()

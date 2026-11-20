@@ -28,6 +28,7 @@ jobs:
     outputs:
       base_sha: ${{ steps.base.outputs.sha }}
       rust: ${{ steps.lanes.outputs.rust }}
+      postgres: ${{ steps.lanes.outputs.postgres }}
       windows: ${{ steps.lanes.outputs.windows }}
       surface: ${{ steps.lanes.outputs.surface }}
       server_qualification: ${{ steps.lanes.outputs.server_qualification }}
@@ -277,6 +278,10 @@ jobs:
                       candidate_modes_verified=module.candidate_modes_safe(head),
                       candidate_sha=head,
                   )
+                  if (routed.get('postgres') is False and routed.get('rust') is True
+                          and routed.get('windows') is True and routed.get('surface') == 'client'
+                          and routed.get('reason') == 'windows-consumer-affected'):
+                      result['postgres'] = 'false'
                   if routed.get('rust') is False and routed.get('windows') is False:
                       surface = routed.get('surface')
                       if not isinstance(surface, str) or re.fullmatch(r'[a-z-]+', surface) is None:
@@ -292,6 +297,7 @@ jobs:
                   result = {'rust': 'true', 'windows': 'true', 'surface': 'full'}
 
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              output.write(f"postgres={result.get('postgres', result['rust'])}\n")
               output.write(f"rust={result['rust']}\n")
               output.write(f"windows={result['windows']}\n")
               output.write(f"surface={result['surface']}\n")
@@ -676,7 +682,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        archive: [e2e, lib, lib-1, lib-2, lib-3]
+        # E2E verifies target custody; dispatch archives also serve the Rust unit lane.
+        archive: ${{ fromJSON(needs.candidate.outputs.postgres == 'false' && '["e2e","lib-1","lib-2","lib-3"]' || '["e2e","lib","lib-1","lib-2","lib-3"]') }}
     # Archive-specific keys are written by only one matrix leg.
     outputs:
       e2e_sha256: ${{ steps.digest.outputs.e2e_sha256 }}
@@ -966,7 +973,7 @@ jobs:
   durability_postgres:
     name: Merge Queue / Durability PostgreSQL harness
     needs: [candidate, durability_postgres_build]
-    if: needs.candidate.outputs.rust == 'true'
+    if: needs.candidate.outputs.rust == 'true' && needs.candidate.outputs.postgres != 'false'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:
@@ -1735,6 +1742,7 @@ jobs:
           WINDOWS_REQUIRED: ${{ needs.candidate.outputs.windows }}
           RUST_LINUX: ${{ needs.rust_linux.result }}
           RUST_DISPATCH: ${{ needs.rust_dispatch.result }}
+          PG_REQUIRED: ${{ needs.candidate.outputs.postgres }}
           DURABILITY_POSTGRES: ${{ needs.durability_postgres.result }}
           RUST_WINDOWS: ${{ needs.rust_windows.result }}
           RUST_SUPPLY_CHAIN: ${{ needs.rust_supply_chain.result }}
@@ -1776,13 +1784,18 @@ jobs:
               ;;
           esac
           if [[ "$RUST_REQUIRED" == "true" ]]; then
-            for result in "$RUST_LINUX" "$RUST_DISPATCH" "$DURABILITY_POSTGRES" "$RUST_SUPPLY_CHAIN"; do
+            for result in "$RUST_LINUX" "$RUST_DISPATCH" "$RUST_SUPPLY_CHAIN"; do
               test "$result" = success
             done
           else
-            for result in "$RUST_LINUX" "$RUST_DISPATCH" "$DURABILITY_POSTGRES" "$RUST_SUPPLY_CHAIN"; do
+            for result in "$RUST_LINUX" "$RUST_DISPATCH" "$RUST_SUPPLY_CHAIN"; do
               [[ "$result" == success || "$result" == skipped ]]
             done
+          fi
+          if [[ "$RUST_REQUIRED" == "true" && "${PG_REQUIRED:-}" != "false" ]]; then
+            test "$DURABILITY_POSTGRES" = success
+          else
+            [[ "$DURABILITY_POSTGRES" == success || "$DURABILITY_POSTGRES" == skipped ]]
           fi
           if [[ "$WINDOWS_REQUIRED" == "true" ]]; then
             test "$RUST_WINDOWS" = success

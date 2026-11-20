@@ -26,9 +26,9 @@ jobs:
       contents: read
       pull-requests: read
     env:
-      EXPECTED_MERGE_GROUP_GATE_BLOB: "55c403a1e0c53972efb287720aa53650b8520a73"
+      EXPECTED_MERGE_GROUP_GATE_BLOB: "fc84a163207949f3e207c7114c8d818ee7bc2d3c"
       EXPECTED_AGENT_GOVERNANCE_BLOB: "42d84c9089cdef928c6cb17268269156c87c0abb"
-      EXPECTED_MERGE_GATE_BLOB: "4ac7517823014f6992534d96438cbd9a49bcdc11"
+      EXPECTED_MERGE_GATE_BLOB: "cfec6bc38cbb89d60a0fdbf5a7e3c7ff7bdd072c"
     steps:
       - name: Validate control-plane candidate as inert data
         shell: bash
@@ -297,7 +297,10 @@ jobs:
               '              verify_registered_target_binding "$name" "$path"\n',
               '              archived_targets+=(--test "$name")\n',
               '          cargo +1.100.0 nextest archive --locked --workspace "${archived_targets[@]}" --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"\n',
-              '        archive: [e2e, lib, lib-1, lib-2, lib-3]\n',
+              '        archive: $' + '{{ fromJSON(needs.candidate.outputs.postgres == \'false\' && \'["e2e","lib-1","lib-2","lib-3"]\' || \'["e2e","lib","lib-1","lib-2","lib-3"]\') }}\n',
+              "    if: needs.candidate.outputs.rust == 'true' && needs.candidate.outputs.postgres != 'false'\n",
+              '          PG_REQUIRED: $' + '{{ needs.candidate.outputs.postgres }}\n',
+              '            test "$DURABILITY_POSTGRES" = success\n',
               '          cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-game-server \\\n',
               '            --features oteryn-gameplay-quests/test-support --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"\n',
               "            --config 'profile.dev.package.oteryn-gameplay-dispatch.debug=0' -p oteryn-gameplay-dispatch --features test-support --lib \\\n",

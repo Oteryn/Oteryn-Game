@@ -879,7 +879,15 @@ def classify(
                 else "shared" if SERVER in affected
                 else "client"
             )
-            return full("windows-consumer-affected", surface)
+            result = full("windows-consumer-affected", surface)
+            # Only client product sources with a known Cargo graph can omit
+            # the server PG suite. Fixtures, manifests and mixed diffs stay full.
+            pg_owners = {SERVER, "oteryn-gameplay-dispatch", "oteryn-gameplay-durability"}
+            if (surface == "client" and pg_owners <= roots.keys() and affected.isdisjoint(pg_owners)
+                    and all(re.fullmatch(r"(?:apps/client|crates/client-(?:ui|ui-bevy|runtime))/src/.+\.rs", path)
+                            and "migrations" not in PurePosixPath(path).parts for path in paths)):
+                result["postgres"] = False
+            return result
 
         if affected:
             if affected != {SERVER}:
