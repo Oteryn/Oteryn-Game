@@ -1003,7 +1003,13 @@ jobs:
         run: rustup toolchain install 1.100.0 --profile minimal
 
       - name: Free hosted runner disk before the Cargo cache restore
-        run: |
+        run: &cleanup_cargo_disk |
+          # Allow for the extracted Cargo cache (~26 GiB), 16 GiB swap and new artifacts.
+          available_kib=$(df -Pk / | awk 'END {print $4}')
+          if [[ "$available_kib" =~ ^[0-9]+$ ]] && (( available_kib >= 80 * 1024 * 1024 )); then
+            echo "Skipping SDK cleanup with $(( available_kib / 1024 / 1024 )) GiB free on /"
+            exit 0
+          fi
           df -h /
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
           df -h /
@@ -1154,7 +1160,6 @@ jobs:
           [[ "$ARTIFACT_ID" =~ ^[1-9][0-9]*$ ]]
           echo "${ARCHIVE//-/_}_artifact_id=$ARTIFACT_ID" >> "$GITHUB_OUTPUT"
 
-  # Strict Clippy and five hash-partitioned nextest shards share the same aggregate result.
   # The matrix also runs when the archive build is skipped on a complete ledger hit.
   rust_fast:
     name: Merge gate / Rust changed-crate Clippy and unit tests (${{ matrix.leg }})
@@ -1163,15 +1168,21 @@ jobs:
       !cancelled() && needs.scope.result == 'success' && needs.lanes.result == 'success'
       && needs.runner_route.result == 'success' && needs.lanes.outputs.rust == 'true'
       && (needs.rust_fast_build.result == 'success' || needs.rust_fast_build.result == 'skipped')
-    # OTERYN_SELF_HOSTED_RUST=on runs the Clippy leg on Molehill (warm workspace target); auto
-    # does so only while the Molehill heartbeat is fresh (resolved in runner_route), so an
-    # offline PC falls back to hosted. The five test shards always run hosted from the archive.
-    # Forks and dependabot stay hosted because PR code would run on the owner's machine.
-    runs-on: ${{ (needs.runner_route.outputs.rust_runner_mode == 'on' && matrix.kind == 'clippy' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') && fromJSON('["self-hosted","linux","x64","oteryn-molehill"]') || 'ubuntu-24.04' }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:
       contents: read
     env:
+      ARCHIVE_RESULT: ${{ needs.rust_fast_build.result }}
+      ALL_ARTIFACT_ID: ${{ needs.rust_fast_build.outputs.all_artifact_id }}
+      BINS_ARTIFACT_ID: ${{ needs.rust_fast_build.outputs.bins_artifact_id }}
+      LIB_ARTIFACT_ID: ${{ needs.rust_fast_build.outputs.lib_artifact_id }}
+      DISPATCH_1_ARTIFACT_ID: ${{ needs.rust_fast_build.outputs.dispatch_1_artifact_id }}
+      DISPATCH_2_ARTIFACT_ID: ${{ needs.rust_fast_build.outputs.dispatch_2_artifact_id }}
+      DISPATCH_3_ARTIFACT_ID: ${{ needs.rust_fast_build.outputs.dispatch_3_artifact_id }}
+      LIB_1_ARTIFACT_ID: ${{ needs.rust_fast_build.outputs.lib_1_artifact_id }}
+      LIB_2_ARTIFACT_ID: ${{ needs.rust_fast_build.outputs.lib_2_artifact_id }}
+      LIB_3_ARTIFACT_ID: ${{ needs.rust_fast_build.outputs.lib_3_artifact_id }}
       ARCHIVE_IMAGE: ${{ needs.rust_fast_build.outputs.runner_image }}
       ARCHIVE_PLATFORM: ${{ needs.rust_fast_build.outputs.runner_platform }}
       ARCHIVE_ROLES: ${{ needs.runner_route.outputs.rust_test_archives }}
@@ -1179,10 +1190,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - leg: clippy
-            slug: clippy
-            kind: clippy
-            shard: ''
           - leg: tests 1/5
             slug: tests-1-5
             kind: tests
@@ -1203,7 +1210,7 @@ jobs:
             slug: tests-5-5
             kind: tests
             shard: '5/5'
-    steps:
+    steps: &rust_fast_steps
       - name: Check out exact head
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -1283,7 +1290,6 @@ jobs:
           PER_PACKAGE: ${{ matrix.kind == 'tests' && '--per-package' || '' }}
           PLAN_IMAGE: ${{ needs.runner_route.outputs.rust_test_image }}
           PLAN_PLATFORM: ${{ needs.runner_route.outputs.rust_test_platform }}
-          ARCHIVE_RESULT: ${{ needs.rust_fast_build.result }}
         run: |
           set -euo pipefail
           image="${ImageVersion:-unknown}"
@@ -1350,10 +1356,7 @@ jobs:
       # Allow space for the hosted Clippy cache or the extracted nextest binaries.
       - name: Free hosted runner disk for cached or archived artifacts
         if: runner.environment == 'github-hosted' && steps.jr_hit.outputs.hit != 'true'
-        run: |
-          df -h /
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
-          df -h /
+        run: *cleanup_cargo_disk
 
       - name: Restore trimmed Cargo cache from protected main
         if: matrix.kind == 'clippy' && runner.environment == 'github-hosted' && steps.jr_hit.outputs.hit != 'true'
@@ -1392,16 +1395,6 @@ jobs:
       - name: Select unit-test artifact IDs
         id: artifact_ids
         if: matrix.kind == 'tests' && steps.jr_hit.outputs.hit != 'true'
-        env:
-          ALL_ARTIFACT_ID: ${{ needs.rust_fast_build.outputs.all_artifact_id }}
-          BINS_ARTIFACT_ID: ${{ needs.rust_fast_build.outputs.bins_artifact_id }}
-          LIB_ARTIFACT_ID: ${{ needs.rust_fast_build.outputs.lib_artifact_id }}
-          DISPATCH_1_ARTIFACT_ID: ${{ needs.rust_fast_build.outputs.dispatch_1_artifact_id }}
-          DISPATCH_2_ARTIFACT_ID: ${{ needs.rust_fast_build.outputs.dispatch_2_artifact_id }}
-          DISPATCH_3_ARTIFACT_ID: ${{ needs.rust_fast_build.outputs.dispatch_3_artifact_id }}
-          LIB_1_ARTIFACT_ID: ${{ needs.rust_fast_build.outputs.lib_1_artifact_id }}
-          LIB_2_ARTIFACT_ID: ${{ needs.rust_fast_build.outputs.lib_2_artifact_id }}
-          LIB_3_ARTIFACT_ID: ${{ needs.rust_fast_build.outputs.lib_3_artifact_id }}
         run: |
           set -euo pipefail
           roles=$(jq -er '.[]' <<< "$ARCHIVE_ROLES")
@@ -1570,6 +1563,24 @@ jobs:
           path: ${{ runner.temp }}/jobresult
           key: job-result-ledger-v1-rust_fast-${{ matrix.slug }}-${{ github.run_id }}-${{ github.run_attempt }}
 
+  # Lint consumes the checked-out source and its own ledger. Start it with the archive producers.
+  rust_clippy:
+    name: Merge gate / Rust changed-crate Clippy and unit tests (${{ matrix.leg }})
+    needs: [scope, lanes, runner_route]
+    if: needs.lanes.outputs.rust == 'true'
+    runs-on: ${{ (needs.runner_route.outputs.rust_runner_mode == 'on' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') && fromJSON('["self-hosted","linux","x64","oteryn-molehill"]') || 'ubuntu-24.04' }}
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        include:
+          - leg: clippy
+            slug: clippy
+            kind: clippy
+            shard: ''
+    steps: *rust_fast_steps
+
   rust_supply_chain:
     name: Merge gate / Rust supply chain
     needs: [scope, lanes]
@@ -1685,10 +1696,7 @@ jobs:
       # (No space left on device, worker crash). Drop preinstalled SDKs this job never uses.
       - name: Free hosted runner disk before the Cargo cache restore
         if: runner.environment == 'github-hosted'
-        run: |
-          df -h /
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
-          df -h /
+        run: *cleanup_cargo_disk
 
       - name: Restore trimmed Cargo cache from protected main
         if: runner.environment == 'github-hosted'
@@ -1769,7 +1777,7 @@ jobs:
   validate:
     name: Merge gate / validate
     if: always() && (github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref)
-    needs: [scope, lanes, governance, dependency_review, routing_contract, world_bundle, rust_policy, runner_route, rust_fast_build, rust_fast, rust_supply_chain, rust_client_ui]
+    needs: [scope, lanes, governance, dependency_review, routing_contract, world_bundle, rust_policy, runner_route, rust_fast_build, rust_fast, rust_clippy, rust_supply_chain, rust_client_ui]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -1789,6 +1797,7 @@ jobs:
           RUST_POLICY: ${{ needs.rust_policy.result }}
           RUST_FAST_BUILD_REQUIRED: ${{ needs.runner_route.outputs.rust_test_build_required }}
           RUST_FAST_BUILD: ${{ needs.rust_fast_build.result }}
+          RUST_CLIPPY: ${{ needs.rust_clippy.result }}
           RUST_FAST: ${{ needs.rust_fast.result }}
           RUST_SUPPLY_CHAIN: ${{ needs.rust_supply_chain.result }}
           RUST_CLIENT_UI_REQUIRED: ${{ needs.runner_route.outputs.rust_client_ui_required }}
@@ -1814,12 +1823,13 @@ jobs:
               if os.environ[name] not in rust_allowed:
                   failures.append(f'{name}={os.environ[name]}')
           if os.environ.get('REUSE_RUST') == 'true':
-              for name in ('RUST_ROUTE', 'RUST_FAST_BUILD', 'RUST_FAST', 'RUST_CLIENT_UI'):
+              for name in ('RUST_ROUTE', 'RUST_FAST_BUILD', 'RUST_FAST', 'RUST_CLIPPY', 'RUST_CLIENT_UI'):
                   if os.environ[name] != 'skipped':
                       failures.append(f'{name}={os.environ[name]}')
           else:
-              if os.environ['RUST_FAST'] not in rust_allowed:
-                  failures.append(f"RUST_FAST={os.environ['RUST_FAST']}")
+              for name in ('RUST_FAST', 'RUST_CLIPPY'):
+                  if os.environ[name] not in rust_allowed:
+                      failures.append(f'{name}={os.environ[name]}')
               build_required = os.environ['RUST_FAST_BUILD_REQUIRED']
               if os.environ['RUST_REQUIRED'] == 'true' and build_required not in {'true', 'false'}:
                   failures.append(f'invalid RUST_FAST_BUILD_REQUIRED={build_required}')
