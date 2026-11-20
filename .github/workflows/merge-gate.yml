@@ -192,6 +192,7 @@ jobs:
       surface: ${{ steps.classify.outputs.surface }}
       reason: ${{ steps.classify.outputs.reason }}
       routing_health: ${{ steps.classify.outputs.routing_health }}
+      doc_packages: ${{ steps.classify.outputs.doc_packages }}
     steps:
       - name: Check out protected-base classifier and inputs
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -733,6 +734,7 @@ jobs:
         id: rust_selection
         env:
           RUST_REQUIRED: ${{ needs.lanes.outputs.rust }}
+          TRUSTED_DOC_PACKAGES: ${{ needs.lanes.outputs.doc_packages }}
           CHANGED_FILE_RECORDS: ${{ needs.scope.outputs.file_records }}
           CHANGED_FILE_COUNT: ${{ needs.scope.outputs.file_count }}
           ENUMERATION_COMPLETE: ${{ needs.scope.outputs.complete }}
