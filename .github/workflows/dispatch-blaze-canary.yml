@@ -1,0 +1,41 @@
+name: Dispatch Blaze canary compatibility
+on:
+  push:
+    branches: [codex/dispatch-blaze-canary-20261120]
+    paths: [.github/workflows/dispatch-blaze-canary.yml]
+permissions:
+  contents: read
+jobs:
+  compile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 4beb4cfa87bdde05bebecb2dd8930340b12daeb4
+          persist-credentials: false
+      - name: Prepare published compiler
+        run: |
+          uname -r
+          asset=blaze-v0.20261105.4-x86_64-unknown-linux-gnu
+          curl --retry 3 -fsSL "https://github.com/indexable-inc/blaze/releases/download/v0.20261105.4/$asset.tar.gz" -o "$RUNNER_TEMP/compiler.tgz"
+          echo "a8b8f3b36b7397671d3a5bcf739e5e1407e5941ee2345aaf5dc2b0868d44d8e6  $RUNNER_TEMP/compiler.tgz" | sha256sum -c -
+          tar -xf "$RUNNER_TEMP/compiler.tgz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/$asset" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/$asset/blaze" --version
+          worker=$(pgrep -o -f Runner.Worker)
+          sudo prlimit --pid "$worker" --memlock=unlimited:unlimited
+      - name: Direct build of the Dispatch crate
+        run: |
+          ulimit -l
+          test "$(git rev-parse HEAD)" = 4beb4cfa87bdde05bebecb2dd8930340b12daeb4
+          timeout 12m blaze build --locked -p oteryn-gameplay-dispatch --lib
+      - name: Cargo JSON artifact output required by nextest
+        if: ${{ !cancelled() }}
+        run: |
+          timeout 3m blaze test --locked -p oteryn-gameplay-dispatch --lib --no-run --message-format=json-render-diagnostics | tee "$RUNNER_TEMP/messages.jsonl"
+          jq -es 'any(.[]; .reason=="compiler-artifact" and .executable!=null)' "$RUNNER_TEMP/messages.jsonl"
+      - name: Daemon diagnostics
+        if: always()
+        run: |
+          find "$HOME/.blaze" "$HOME/.cache/blaze" -maxdepth 6 -type f -name '*.log' -exec tail -40 '{}' ';' 2>/dev/null || true
