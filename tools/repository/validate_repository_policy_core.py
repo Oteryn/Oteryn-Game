@@ -47,7 +47,7 @@ EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "6b6a5a3101e090663adcbec2b32a268e1f8a57fb
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "1a1f98f8f2df7b981fa6a85f0f4bf3ac218247121ab330bf5348a703ce0b1e0d"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "b3423b858c7cad5c2814cef0708819f41c4b5bb328bae5450d202c2e18a92631"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "55c403a1e0c53972efb287720aa53650b8520a73"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "fc84a163207949f3e207c7114c8d818ee7bc2d3c"
 EXPECTED_POST_MERGE_RUST_SHA256 = "0393a1f9243c6134a5c3814983b099b4eb0ca04acf1cb6eb068d86b5b8df2ac6"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
@@ -569,7 +569,7 @@ def main() -> int:
             ),
             "durability_postgres_build": (
                 "    name: Merge Queue / Durability PostgreSQL harness build (${{ matrix.archive }})\n",
-                "        archive: [e2e, lib, lib-1, lib-2, lib-3]\n",
+                '        archive: ${{ fromJSON(needs.candidate.outputs.postgres == \'false\' && \'["e2e","lib-1","lib-2","lib-3"]\' || \'["e2e","lib","lib-1","lib-2","lib-3"]\') }}\n',
                 "python3 tools/repository/check_dispatch_pg_shards.py 3",
                 "    if: needs.candidate.outputs.rust == 'true'\n",
                 "ref: ${{ github.event.merge_group.head_sha || github.sha }}",
@@ -613,7 +613,7 @@ def main() -> int:
             "durability_postgres": (
                 "    name: Merge Queue / Durability PostgreSQL harness\n",
                 "    needs: [candidate, durability_postgres_build]\n",
-                "    if: needs.candidate.outputs.rust == 'true'\n",
+                "    if: needs.candidate.outputs.rust == 'true' && needs.candidate.outputs.postgres != 'false'\n",
                 "image: postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc",
                 "ref: ${{ github.event.merge_group.head_sha || github.sha }}",
                 "NEXTEST_SHA256: 682c21b777c333e96fd532e114d3a5a894e0729ab88d94c0a9f20f8419695428",
@@ -749,7 +749,10 @@ def main() -> int:
                 "          WORLD_BUNDLE: ${{ needs.world_bundle.result }}\n",
                 "          RUST_LINUX: ${{ needs.rust_linux.result }}\n",
                 "          RUST_DISPATCH: ${{ needs.rust_dispatch.result }}\n",
-                'for result in "$RUST_LINUX" "$RUST_DISPATCH" "$DURABILITY_POSTGRES" "$RUST_SUPPLY_CHAIN"; do',
+                'for result in "$RUST_LINUX" "$RUST_DISPATCH" "$RUST_SUPPLY_CHAIN"; do',
+                'if [[ "$RUST_REQUIRED" == "true" && "${PG_REQUIRED:-}" != "false" ]]; then',
+                'test "$DURABILITY_POSTGRES" = success',
+                "          PG_REQUIRED: ${{ needs.candidate.outputs.postgres }}\n",
                 "          DURABILITY_POSTGRES: ${{ needs.durability_postgres.result }}\n",
                 "          RUST_WINDOWS: ${{ needs.rust_windows.result }}\n",
                 "          RUST_SUPPLY_CHAIN: ${{ needs.rust_supply_chain.result }}\n",

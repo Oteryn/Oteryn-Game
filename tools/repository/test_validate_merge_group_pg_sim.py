@@ -20,7 +20,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "55c403a1e0c53972efb287720aa53650b8520a73"
+APPROVED = "fc84a163207949f3e207c7114c8d818ee7bc2d3c"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 REGISTERED_POSTGRES_TARGETS = (
     ("durability_postgres", "apps/game-server/tests/durability_postgres.rs"),
@@ -87,7 +87,12 @@ def _queue_lane_routing_canaries(candidate: str) -> None:
         rust=True, windows=False, surface="server",
         reason="server-only-exact-consumer-closure",
     )
+    client = dict(rust=True, windows=True, surface="client", reason="windows-consumer-affected")
     cases = (
+        (dict(client, postgres=False), ("true", "true", "full")),
+        (client, ("true", "true", "full")),  # older protected classifier lacks the PG decision
+        (dict(client, postgres="false"), ("true", "true", "full")),
+        (dict(client, postgres=False, reason="unresolved-input"), ("true", "true", "full")),
         (server, ("true", "false", "server")),
         (dict(server, surface="durability"), ("true", "false", "durability")),
         (dict(rust=False, windows=False, surface="auxiliary"), ("false", "false", "auxiliary")),
@@ -128,6 +133,10 @@ def _queue_lane_routing_canaries(candidate: str) -> None:
                 exec(compile(source, "<queue consumer routing>", "exec"), namespace)
             actual = namespace["result"]
             assert tuple(actual[key] for key in ("rust", "windows", "surface")) == expected, (routed, actual)
+            if routed == dict(client, postgres=False):
+                assert actual.get("postgres") == "false"
+            else:
+                assert actual.get("postgres", actual["rust"]) == actual["rust"]
             assert len(classify_calls) == 1
 
         # Unreadable/malformed metadata never deselects Windows.
@@ -378,7 +387,7 @@ def main() -> int:
         ("rust_linux", "if: needs.candidate.outputs.rust == 'true'"),
         ("rust_dispatch", "if: needs.candidate.outputs.rust == 'true'"),
         ("durability_postgres_build", "if: needs.candidate.outputs.rust == 'true'"),
-        ("durability_postgres", "if: needs.candidate.outputs.rust == 'true'"),
+        ("durability_postgres", "if: needs.candidate.outputs.rust == 'true' && needs.candidate.outputs.postgres != 'false'"),
         ("rust_windows", "if: needs.candidate.outputs.windows == 'true'"),
         ("rust_supply_chain", "if: needs.candidate.outputs.rust == 'true'"),
         ("node_boot_plan", "if: needs.candidate.outputs.server_qualification != 'false'"),
@@ -415,8 +424,13 @@ def main() -> int:
     for name, target in REGISTERED_POSTGRES_TARGETS:
         marker = f"          run_registered_target {name} {target}"
         assert postgres.count(marker) == 1, marker
+    # The only dynamic matrix selects between two fixed producer sets. E2E
+    # target custody and all route-less unit consumers remain in both.
+    trusted_matrix = """fromJSON(needs.candidate.outputs.postgres == 'false' && '["e2e","lib-1","lib-2","lib-3"]' || '["e2e","lib","lib-1","lib-2","lib-3"]')"""
+    assert postgres.count(trusted_matrix) == 1
+    target_routing = postgres.replace(trusted_matrix, "")
     for forbidden in ("glob(", "rglob(", "fnmatch", "TARGETS_JSON", "fromJSON(", "postgres-target-manifest"):
-        assert forbidden not in postgres, f"Merge Queue PostgreSQL routing is PR/data controlled: {forbidden}"
+        assert forbidden not in target_routing, f"Merge Queue PostgreSQL routing is PR/data controlled: {forbidden}"
 
     marker = '            python - "$metadata" "$name" "$path" <<\'PY\'\n'
     verifier = textwrap.dedent(postgres.split(marker, 1)[1].split("          PY\n", 1)[0])
@@ -633,6 +647,10 @@ def main() -> int:
         WORLD_BUNDLE="skipped",
     )
     assert subprocess.run(["bash", "-c", script], env=docs_env, check=False).returncode == 0
+    client_env = dict(env, RUST_REQUIRED="true", WINDOWS_REQUIRED="true", PG_REQUIRED="false")
+    for result in ("success", "skipped", "failure", "cancelled", ""):
+        rc = subprocess.run(["bash", "-c", script], env=dict(client_env, DURABILITY_POSTGRES=result)).returncode
+        assert (rc == 0) == (result in {"success", "skipped"}), result
     server_env = dict(env, RUST_REQUIRED="true", WINDOWS_REQUIRED="false", RUST_WINDOWS="skipped")
     assert subprocess.run(["bash", "-c", script], env=server_env, check=False).returncode == 0
     for predicate in predicates:
