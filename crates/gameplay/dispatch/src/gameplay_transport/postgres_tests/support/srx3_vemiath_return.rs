@@ -155,12 +155,23 @@ pub(super) async fn exercise(
     );
     drop(clock);
     drop(view);
-    let (terminal,deadline,now):(i64,i64,i64)=sqlx::query_as("SELECT terminal_at,exit_deadline,floor(extract(epoch FROM clock_timestamp())*1000)::bigint FROM game_boss_room_activities WHERE boss_key='oteryn:boss.vemiath'")
-        .fetch_one(&h.pool).await?;
+    let RuntimeScopeRefV1::Instance { instance_id, .. } = fence.runtime_scope else {
+        return Err("actual Vemiath Instance".into());
+    };
+    let (terminal, deadline, now): (i64, i64, i64) = sqlx::query_as(
+        "SELECT terminal_at,exit_deadline,floor(extract(epoch FROM clock_timestamp())*1000)::bigint
+         FROM game_boss_room_activities WHERE instance_id=encode($1,'hex')::uuid
+           AND boss_key='oteryn:boss.vemiath' AND state=2",
+    )
+    .bind(instance_id.as_slice())
+    .fetch_one(&h.pool)
+    .await?;
     assert_eq!(deadline - terminal, 60_000);
     let remaining = u64::try_from((deadline - now).max(0))?;
     assert!(remaining < 60_000);
-    tokio::time::sleep(std::time::Duration::from_millis(remaining + 5)).await;
+    // The return writer uses the fixture quest clock in whole Unix seconds.
+    let due_second = deadline.div_euclid(1_000) + i64::from(deadline.rem_euclid(1_000) != 0);
+    owner.root.set_test_quest_clock(due_second).map_err(debug)?;
     let mut frames = Vec::new();
     let (_, reply, barrier) = super::boss_activity_fixtures::exchange_command_capture(
         owner,
