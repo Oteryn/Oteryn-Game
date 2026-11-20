@@ -14,7 +14,10 @@ from unittest.mock import patch
 SELECTOR = Path(__file__).resolve().parents[1] / "ci" / "select_postgres_packages.py"
 DISPATCH = "crates/gameplay/dispatch"
 TRANSPORT = f"{DISPATCH}/src/gameplay_transport"
-SUPPORT = f"{TRANSPORT}/postgres_tests/support"
+SCENARIOS = f"{TRANSPORT}/postgres_tests"
+SUPPORT = f"{SCENARIOS}/support"
+POTIONS = f"{SCENARIOS}/special_potions.rs"
+TELEPORTS = f"{SCENARIOS}/srx3_seven_teleports.rs"
 FIXTURE = f"{SUPPORT}/quest_catalogue_chests_fixtures.rs"
 CONTAINER = f"{SUPPORT}/quest_container_chests_fixtures.rs"
 FORGE = f"{SUPPORT}/forge_preview_fixtures.rs"
@@ -38,15 +41,23 @@ class PostgresScopeTests(unittest.TestCase):
         "postgres_test_support_mounts.rs",
         "",
     )?;
+    build_mounts::mount_directory(
+        "src/gameplay_transport/postgres_tests",
+        "postgres_tests_mounts.rs",
+        "",
+    )?;
 ''')
         self.write(f"{TRANSPORT}/monk_save.rs", '''#[cfg(test)]
 #[path = "monk_save_postgres_tests.rs"]
 pub(super) mod postgres_tests;
 ''')
         self.write(f"{TRANSPORT}/monk_save_postgres_tests.rs",
-                   'include!(concat!(env!("OUT_DIR"), "/postgres_test_support_mounts.rs"));\n')
+                   'include!(concat!(env!("OUT_DIR"), "/postgres_test_support_mounts.rs"));\n'
+                   'include!(concat!(env!("OUT_DIR"), "/postgres_tests_mounts.rs"));\n')
         for fixture in (FIXTURE, CONTAINER, FORGE):
             self.write(fixture, "fn fixture() {}\n")
+        for scenario in (POTIONS, TELEPORTS):
+            self.write(scenario, "#[test]\nfn scenario() {}\n")
         self.metadata = {"workspace_members": [PKG, SERVER], "packages": [
             {"id": PKG, "name": PKG, "manifest_path": str(self.root / DISPATCH / "Cargo.toml"),
              "dependencies": [], "targets": [{"src_path": str(self.root / DISPATCH / "src/lib.rs")}]},
@@ -97,6 +108,34 @@ pub(super) mod postgres_tests;
         self.commit()
         self.assertEqual(self.select(base), [SERVER, PKG])
         self.write("Cargo.lock", "new lockfile\n")
+        self.commit()
+        self.assertIsNone(self.select(base))
+
+    def test_existing_cfg_test_scenarios_and_fixtures_select_only_dispatch(self):
+        self.write("tools/ci/pg_test_durations.json", '{"special_potions::scenario": 42}\n')
+        base = self.commit()
+        self.write(POTIONS, "#[test]\nfn scenario() { assert!(ready()); }\n")
+        self.write(TELEPORTS, "#[test]\nfn scenario() { assert!(arrived()); }\n")
+        self.commit()
+        self.assertEqual(self.select(base), [PKG])
+        base = self.git("rev-parse", "HEAD")
+        self.write(POTIONS, "#[test]\nfn scenario() { assert!(replayed()); }\n")
+        self.write(FORGE, "fn fixture() { test_forge(); }\n")
+        self.commit()
+        self.assertEqual(self.select(base), [PKG])
+
+    def test_scenario_requires_generated_mount(self):
+        self.write(f"{TRANSPORT}/monk_save_postgres_tests.rs",
+                   'include!(concat!(env!("OUT_DIR"), "/postgres_test_support_mounts.rs"));\n')
+        base = self.commit()
+        self.write(POTIONS, "#[test]\nfn scenario() { assert!(ready()); }\n")
+        self.commit()
+        self.assertIsNone(self.select(base))
+
+    def test_scenario_path_consumer_cannot_be_dropped(self):
+        self.write("apps/game-server/src/lib.rs", f'include!("../../../{TELEPORTS}");\n')
+        base = self.commit()
+        self.write(TELEPORTS, "#[test]\nfn scenario() { assert!(arrived()); }\n")
         self.commit()
         self.assertIsNone(self.select(base))
 

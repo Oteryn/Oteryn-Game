@@ -12,20 +12,27 @@ import subprocess
 DISPATCH = "crates/gameplay/dispatch"
 TRANSPORT = f"{DISPATCH}/src/gameplay_transport"
 POSTGRES_TESTS = f"{TRANSPORT}/postgres_tests"
-SUPPORT = f"{POSTGRES_TESTS}/support"
 DISPATCH_PACKAGE = "oteryn-gameplay-dispatch"
-FIXTURE_PATH = re.compile(re.escape(SUPPORT) + r"/[a-z][a-z0-9_]*_fixtures\.rs")
+DISPATCH_TEST_PATH = re.compile(
+    re.escape(POSTGRES_TESTS) + r"/(?:[a-z][a-z0-9_]*|support/[a-z][a-z0-9_]*_fixtures)\.rs"
+)
 MOUNT_FILES = {
-    f"{DISPATCH}/build.rs": '''build_mounts::mount_directory(
+    f"{DISPATCH}/build.rs": ('''build_mounts::mount_directory(
         "src/gameplay_transport/postgres_tests/support",
         "postgres_test_support_mounts.rs",
         "",
-    )?;''',
-    f"{TRANSPORT}/monk_save.rs": '''#[cfg(test)]
+    )?;''', '''build_mounts::mount_directory(
+        "src/gameplay_transport/postgres_tests",
+        "postgres_tests_mounts.rs",
+        "",
+    )?;'''),
+    f"{TRANSPORT}/monk_save.rs": ('''#[cfg(test)]
 #[path = "monk_save_postgres_tests.rs"]
-pub(super) mod postgres_tests;''',
-    f"{TRANSPORT}/monk_save_postgres_tests.rs":
+pub(super) mod postgres_tests;''',),
+    f"{TRANSPORT}/monk_save_postgres_tests.rs": (
         'include!(concat!(env!("OUT_DIR"), "/postgres_test_support_mounts.rs"));',
+        'include!(concat!(env!("OUT_DIR"), "/postgres_tests_mounts.rs"));',
+    ),
 }
 
 
@@ -50,17 +57,18 @@ def git_changes(base, head):
     return changes
 
 
-def external_fixture_consumer(head, paths):
-    for path, witness in MOUNT_FILES.items():
-        if command("git", "show", f"{head}:{path}").count(witness) != 1:
+def external_dispatch_test_consumer(head, paths):
+    for path, witnesses in MOUNT_FILES.items():
+        source = command("git", "show", f"{head}:{path}")
+        if any(source.count(witness) != 1 for witness in witnesses):
             return f"unverified Dispatch test mount: {path}"
 
-    # Check exact candidate source for other mounts of the fixtures, their
+    # Check exact candidate source for other mounts of the test files, their
     # directory or the generated module. Cargo dependencies alone miss source
     # shared through attributes, includes, and build or workflow scripts.
     patterns = (
         "postgres_tests/support", 'postgres_tests"', "postgres_tests'", "postgres_tests/*",
-        "postgres_test_support_mounts.rs", "monk_save_postgres_tests.rs",
+        "postgres_test_support_mounts.rs", "postgres_tests_mounts.rs", "monk_save_postgres_tests.rs",
         *(Path(path).stem for path in paths),
     )
     args = ["git", "grep", "-I", "-l", "-z", "-F"]
@@ -72,11 +80,13 @@ def external_fixture_consumer(head, paths):
                  ":(exclude,glob)qlane-meta/**/*.json"))
     scan = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
     if scan.returncode not in (0, 1):
-        return "Dispatch fixture consumer scan failed"
+        return "Dispatch test consumer scan failed"
 
     recognized = set(MOUNT_FILES) | {
         f"{DISPATCH}/build_pg_shards.rs",
         "tools/architecture-check/src/logging.rs",
+        # Durations name cases but only affect scheduling, not other binaries.
+        "tools/ci/pg_test_durations.json",
         "tools/ci/select_postgres_packages.py",
         "tools/repository/check_dispatch_pg_shards.py",
         "tools/repository/test_check_dispatch_pg_shards.py",
@@ -87,14 +97,14 @@ def external_fixture_consumer(head, paths):
             continue
         prefix, _, path = record.partition(":")
         if prefix != head or not path:
-            return "unverified Dispatch fixture consumer scan output"
+            return "unverified Dispatch test consumer scan output"
         if path in recognized or path.startswith(POSTGRES_TESTS + "/"):
             continue
         if path == f"{TRANSPORT}/bundle_gates_tests.rs" and command(
             "git", "show", f"{head}:{TRANSPORT}/mod.rs"
         ).count("#[cfg(test)]\nmod bundle_gates_tests;") == 1:
             continue
-        return f"other Dispatch fixture consumer: {path}"
+        return f"other Dispatch test consumer: {path}"
     return None
 
 
@@ -120,18 +130,18 @@ def select(base, head):
     candidate = command("git", "rev-parse", "--verify", f"{head}^{{commit}}")
     merge_base = command("git", "merge-base", base, candidate)
     changes = git_changes(merge_base, candidate)
-    if changes and all(FIXTURE_PATH.fullmatch(path) for path in changes):
+    if changes and all(DISPATCH_TEST_PATH.fullmatch(path) for path in changes):
         if (owners.get(root / DISPATCH) != DISPATCH_PACKAGE
                 or any(change != ("100644", "100644", "M") for change in changes.values())):
-            return None, "unverified Dispatch fixture paths or modes"
+            return None, "unverified Dispatch test paths or modes"
         for package in packages:
             for target in package["targets"]:
                 source = Path(target["src_path"])
                 if source.is_relative_to(root / POSTGRES_TESTS):
-                    return None, f"independent Cargo target in Dispatch fixtures: {target['src_path']}"
-        if issue := external_fixture_consumer(candidate, changes):
+                    return None, f"independent Cargo target in Dispatch tests: {target['src_path']}"
+        if issue := external_dispatch_test_consumer(candidate, changes):
             return None, issue
-        return [DISPATCH_PACKAGE], f"Dispatch cfg(test) fixtures only at merge base {merge_base}"
+        return [DISPATCH_PACKAGE], f"Dispatch cfg(test) only at merge base {merge_base}"
     selected = set()
     for name in changes:
         path = Path(name)
