@@ -38,6 +38,10 @@ impl FreshAdmissionAuthority for GuardAuthority {
         Some(at(0))
     }
 
+    async fn house_scope_ack(&self, _: AdmittedSession) -> Result<Option<(u64, Vec<u8>)>, ()> {
+        Ok(Some((1, vec![1])))
+    }
+
     async fn house_transfer_input(&self, _: AdmittedSession) -> Result<(), DurabilityError> {
         if self.activity { Ok(()) } else { self.guard() }
     }

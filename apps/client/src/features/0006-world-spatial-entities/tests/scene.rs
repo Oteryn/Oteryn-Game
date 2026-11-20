@@ -629,16 +629,16 @@ fn srx3_native_object_pixels_use_explicit_resource_not_opaque_definition_referen
             .iter()
             .all(|draw| draw.cell > MARKER_CELL)
     );
-    let origin = oteryn_session::ActorPosition { floor: -6, ..at };
+    let origin = oteryn_session::ActorPosition { floor: 6, ..at };
     entry.entity.position = oteryn_session::ActorPosition {
         x: at.x - 1,
         y: at.y - 1,
-        floor: -7,
+        floor: 7,
     };
     let world = World::from_live_map(&oteryn_session::world_map::WorldMapViewSnapshot {
         header: oteryn_session::world_map::MapViewHeader {
             origin,
-            first_visible_floor: -6,
+            first_visible_floor: 6,
             content_generation: [0; 32],
             bundle_digest: [0; 32],
             reset_epoch: 1,
@@ -657,7 +657,7 @@ fn srx3_native_object_pixels_use_explicit_resource_not_opaque_definition_referen
         StepDir::South,
         &[],
     )?;
-    layered.set_presentations_from(std::slice::from_ref(&entry), -6, Some(root.clone()))?;
+    layered.set_presentations_from(std::slice::from_ref(&entry), 6, Some(root.clone()))?;
     let object = layered
         .object_draws
         .first()
@@ -675,7 +675,7 @@ fn srx3_native_object_pixels_use_explicit_resource_not_opaque_definition_referen
     let (batch, _, ranges, _) = layered.world_sprites()?;
     let (range, _) = ranges
         .iter()
-        .find(|(_, floor)| *floor == -7)
+        .find(|(_, floor)| *floor == 7)
         .ok_or(BatchError::InvalidView)?;
     let draw = object.2[0];
     let scale = layered.view().tile_px() as f32 / oteryn_client_domain::world::CELL_PX as f32;
@@ -697,13 +697,13 @@ fn srx3_native_object_pixels_use_explicit_resource_not_opaque_definition_referen
         entry.entity.position = oteryn_session::ActorPosition {
             x: at.x + 1,
             y: at.y + 1,
-            floor: -6,
+            floor: 6,
         };
-        let below = oteryn_session::ActorPosition { floor: -7, ..at };
+        let below = oteryn_session::ActorPosition { floor: 7, ..at };
         let mut map = oteryn_session::world_map::WorldMapViewSnapshot {
             header: oteryn_session::world_map::MapViewHeader {
                 origin: below,
-                first_visible_floor: -6,
+                first_visible_floor: 6,
                 content_generation: [0; 32],
                 bundle_digest: [0; 32],
                 reset_epoch: 1,
@@ -715,7 +715,7 @@ fn srx3_native_object_pixels_use_explicit_resource_not_opaque_definition_referen
                 items: vec![],
             }],
         };
-        for cutoff in [-6, -7] {
+        for cutoff in [6, 7] {
             map.header.first_visible_floor = cutoff;
             let mut frame = Scene::centered_on(
                 Arc::new(World::from_live_map(&map)?),
@@ -724,11 +724,11 @@ fn srx3_native_object_pixels_use_explicit_resource_not_opaque_definition_referen
                 StepDir::South,
                 &[],
             )?;
-            frame.set_presentations_from(std::slice::from_ref(&entry), -7, Some(root.clone()))?;
+            frame.set_presentations_from(std::slice::from_ref(&entry), 7, Some(root.clone()))?;
             let (range, _) = frame
                 .floor_quad_ranges()
                 .iter()
-                .find(|(_, floor)| *floor == -6)
+                .find(|(_, floor)| *floor == 6)
                 .ok_or(BatchError::InvalidView)?;
             assert!(
                 range.len() > 1,

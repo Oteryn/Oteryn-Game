@@ -872,7 +872,7 @@ fn trade_snapshots_require_registered_type() -> Result<(), BoxError> {
 }
 
 #[test]
-fn world_spatial_session_routes_negotiated_sidecars_on_both_floor_frames() -> Result<(), BoxError> {
+fn world_spatial_session_routes_negotiated_sidecars_on_two_global_floors() -> Result<(), BoxError> {
     use oteryn_protocol_oteryn::guild_emblem::{Emblem, GuildEmblem};
     use oteryn_protocol_oteryn::inventory_capacity::InventoryCapacity;
     use oteryn_protocol_oteryn::party_skull::PartyIcon;
@@ -883,7 +883,7 @@ fn world_spatial_session_routes_negotiated_sidecars_on_both_floor_frames() -> Re
 
     block_on(async {
         const SELECTED: &[u32] = &[4, 6, 42, 134, 508, 509];
-        for floor in [7, -7] {
+        for floor in [7, 8] {
             let position = ActorPosition {
                 x: 100,
                 y: 100,

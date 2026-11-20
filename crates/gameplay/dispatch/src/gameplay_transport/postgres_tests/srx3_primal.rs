@@ -247,7 +247,7 @@ fn srx3_primal_real_source_entry_wave_pods_and_terminal_postgres() -> TestResult
                 use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, UseTarget};
                 let actor = admitted.runtime_actor.ok_or("Source rune actor")?;
                 let at = view.observe_actor_position(actor).await.ok_or("Source wire position")?.actor_position;
-                assert_eq!(at.floor, -15);
+                assert_eq!(at.floor, 15);
                 let outcome = view.use_legacy_rune(
                     actor,
                     crate::gameplay_transport::connection::UseCommand {
@@ -297,7 +297,7 @@ fn srx3_primal_real_source_entry_wave_pods_and_terminal_postgres() -> TestResult
                 (1, 2, 1),
                 "real native kill settles the source hazard unlock in the composed progression transaction"
             );
-            let (terminal,exit,now):(i64,i64,i64)=sqlx::query_as("SELECT terminal_at,exit_deadline,floor(extract(epoch FROM clock_timestamp())*1000)::bigint FROM game_boss_room_activities WHERE boss_key='oteryn:boss.the_primal_menace'").fetch_one(&h.pool).await?;
+            let (terminal,exit,now):(i64,i64,i64)=sqlx::query_as("SELECT terminal_at,exit_deadline,floor(extract(epoch FROM clock_timestamp())*1000)::bigint FROM game_boss_room_activities WHERE boss_key='oteryn:boss.the_primal_menace' AND state=2").fetch_one(&h.pool).await?;
             assert_eq!(
                 exit - terminal,
                 60_000,
@@ -308,7 +308,9 @@ fn srx3_primal_real_source_entry_wave_pods_and_terminal_postgres() -> TestResult
                 remaining < 60_000,
                 "corpse stage consumer already consumed part of after-kill time"
             );
-            tokio::time::sleep(std::time::Duration::from_millis(remaining + 5)).await;
+            // The return writer uses the fixture quest clock in whole Unix seconds.
+            let due_second = exit.div_euclid(1_000) + i64::from(exit.rem_euclid(1_000) != 0);
+            h.root.set_test_quest_clock(due_second).map_err(debug)?;
             let before_return = admitted;
             let mut return_frames = Vec::new();
             let (_, returned, scope) = super::boss_activity_fixtures::exchange_command_capture(

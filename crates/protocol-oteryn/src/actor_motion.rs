@@ -166,7 +166,7 @@ mod tests {
             position: ActorPosition {
                 x: 1,
                 y: 2,
-                floor: -7,
+                floor: 7,
             },
             detail: EntityDetail::ActorWithIcons {
                 direction: StepDirection::South,

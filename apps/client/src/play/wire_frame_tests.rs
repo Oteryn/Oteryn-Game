@@ -167,7 +167,7 @@ impl Stepper for Recorder {
     }
 
     fn feature_snapshot(&self, domain: u32) -> Option<Vec<u8>> {
-        let SessionEvent::WorldMapSnapshot(map) = map_snapshot(at(100, 200, -7)) else {
+        let SessionEvent::WorldMapSnapshot(map) = map_snapshot(at(100, 200, 7)) else {
             return None;
         };
         (domain == 17)
@@ -453,6 +453,13 @@ fn review_ordinary_admission_seeds_target_walk_and_entity_floor()
         contexts: Default::default(),
     };
     crate::play::session_initialize::initialize(&peer, &outbox)?;
+    assert_eq!(
+        crate::play::mailbox::lock(&outbox.0)
+            .map
+            .as_deref()
+            .map(|map| map.header.origin),
+        Some(at(100, 200, 7))
+    );
     outbox.entities(vec![entity(at(101, 200, 7))]);
     assert_eq!(
         crate::play::mailbox::lock(&outbox.0)
@@ -462,12 +469,12 @@ fn review_ordinary_admission_seeds_target_walk_and_entity_floor()
             .ok_or("entities")?[0]
             .position
             .floor,
-        -7
+        7
     );
     let runtime = tokio::runtime::Builder::new_current_thread().build()?;
     let spell = NonZeroU32::MIN;
     runtime.block_on(async {
-        let _ = outbox.target_walk_run(&mut peer, at(101, 200, -7)).await;
+        let _ = outbox.target_walk_run(&mut peer, at(101, 200, 7)).await;
         let _ = outbox
             .battle_run(
                 &mut peer,
@@ -476,7 +483,7 @@ fn review_ordinary_admission_seeds_target_walk_and_entity_floor()
                     position: SpellTargetPosition {
                         x: 101,
                         y: 200,
-                        floor: -7,
+                        floor: 7,
                     },
                 }),
             )

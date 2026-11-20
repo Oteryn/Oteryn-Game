@@ -51,7 +51,7 @@ mod visual_tests {
             })
             .min_by_key(|appearance| appearance.id)
             .ok_or("animated map item")?;
-        let placement = Placement::at(100, 200, -7);
+        let placement = Placement::at(100, 200, 7);
         let first = index.resolve(&sheets, appearance.id, placement)?;
         assert_eq!(
             first,

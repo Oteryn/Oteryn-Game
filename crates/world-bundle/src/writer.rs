@@ -45,43 +45,6 @@ impl Size {
     }
 }
 
-impl std::io::Write for Size {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        self.add(buf.len()).map_err(std::io::Error::other)?;
-        Ok(buf.len())
-    }
-
-    fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
-    }
-}
-
-fn manifest_size(manifest: &Manifest, layers: &[crate::layers::Layer]) -> Result<usize, Error> {
-    #[derive(serde::Serialize)]
-    struct Envelope<'a> {
-        #[serde(skip_serializing_if = "Option::is_none")]
-        layers: Option<&'a [crate::layers::Layer]>,
-        #[serde(flatten)]
-        manifest: &'a Manifest,
-    }
-    let mut size = Size::new(MAX_MANIFEST_BYTES, "manifest too large");
-    serde_json::to_writer(
-        &mut size,
-        &Envelope {
-            layers: (!layers.is_empty()).then_some(layers),
-            manifest,
-        },
-    )
-    .map_err(|error| {
-        if error.is_io() {
-            Error::Limit("manifest too large".into())
-        } else {
-            Error::Format(error.to_string())
-        }
-    })?;
-    Ok(size.bytes)
-}
-
 fn sector_size(tiles: &[sector::Tile], max: usize) -> Result<usize, Error> {
     let mut size = Size::new(max, "sector payload too large");
     size.varint(tiles.len() as u64)?;
@@ -251,14 +214,12 @@ fn write_with_caps(
     validate_manifest(manifest)?;
     let floors = crate::bundle::FloorEncoding::for_manifest(manifest)?;
     limit(sectors.len() <= caps.sectors, "too many sectors")?;
-    let json_length = manifest_size(manifest, layers)?;
+    let json = crate::manifest::encode(manifest, layers)?;
     let mut file_size = Size::new(caps.file_bytes, "bundle file too large");
-    file_size.add(HEADER + json_length + ENTRY * sectors.len() + SPAWN_ROW + NPC_ROW + DIGEST)?;
+    file_size.add(HEADER + json.len() + ENTRY * sectors.len() + SPAWN_ROW + NPC_ROW + DIGEST)?;
     crate::layers::validate(manifest, layers)?;
     validate_spawns(manifest, spawns)?;
     validate_npcs(manifest, npcs)?;
-    let json = crate::manifest::encode(manifest, layers)?;
-    limit(json.len() <= MAX_MANIFEST_BYTES, "manifest too large")?;
     check(
         sectors.windows(2).all(|p| order(&p[0]) < order(&p[1])),
         "sectors unsorted",

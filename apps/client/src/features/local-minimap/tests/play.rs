@@ -104,10 +104,11 @@ fn minimap_projects_live_tiles_creatures_floor_changes_and_reset() -> Result<(),
     play.apply(&moved_to(101, 200, 6))?;
     assert_eq!(mini(&play).len(), 31 * 25 + 2); // Above-floor creature, no surface terrain.
     play.apply(&moved_to(101, 200, 7))?;
+    assert_eq!(mini(&play).len(), 31 * 25 + 3); // The creature and remembered terrain remain.
     let mut empty = map;
     empty.tiles.clear();
     play.set_live_map(&empty)?;
-    assert_eq!(mini(&play).len(), 31 * 25 + 3); // The creature and remembered terrain remain.
+    assert_eq!(mini(&play).len(), 31 * 25 + 2); // The player and creature remain.
     Ok(())
 }
 

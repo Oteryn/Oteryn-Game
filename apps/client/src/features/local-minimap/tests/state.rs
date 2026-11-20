@@ -33,8 +33,8 @@ fn exploration_and_markers_survive_reopen_and_bindings_stay_separate()
     };
     map.observe(&snapshot);
     map.edit_marker(100, 200, 7, "Home".into(), 1)?;
-    // Preserve the full palette when saving and reopening version-one cells.
-    map.set_cell_colour((7, 103, 200), 86);
+    // A saved cell outside the live window retains its full palette on reopen.
+    map.set_cell_colour((7, 1000, 200), 86);
     map.save()?;
     let binding = map.binding;
     let mut restored = Minimap::default();
@@ -43,7 +43,7 @@ fn exploration_and_markers_survive_reopen_and_bindings_stay_separate()
     restored.observe(&snapshot);
     assert_eq!(restored.markers[0].label, "Home");
     assert!(restored.cells.contains_key(&(7, 100, 200)));
-    assert_eq!(restored.cells.get(&(7, 103, 200)), Some(&86));
+    assert_eq!(restored.cells.get(&(7, 1000, 200)), Some(&86));
     snapshot.header.reset_epoch += 1;
     restored.observe(&snapshot);
     assert!(restored.markers.is_empty());

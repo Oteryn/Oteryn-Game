@@ -635,7 +635,7 @@ async fn capacity_reread(
                 destination: ItemMoveDestination::Ground(WorldTilePosition {
                     x: 6,
                     y: 0,
-                    floor: -7,
+                    floor: 7,
                 }),
             },
             ItemMoveSelection {

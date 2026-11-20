@@ -981,7 +981,7 @@ mod tests {
                 && fields.inventory_capacity
                 && fields.guild_emblems
         );
-        for floor in [7, -7] {
+        for floor in [7, 8] {
             let mut channel = channel([]);
             let player = &mut channel.entities[0];
             player.position.floor = floor;

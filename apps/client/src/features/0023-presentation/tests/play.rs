@@ -337,7 +337,7 @@ mod native_missile_merged;
 #[test]
 fn ground_floor_presentation_wire_events_reach_native_scene() -> Result<(), Box<dyn std::error::Error>> {
     let (link, _commands, outbox) = crate::play::play_channel();
-    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), -7, &[])?;
+    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), 7, &[])?;
     let position = oteryn_session::ActorPosition { x: 0, y: 0, floor: 7 };
     outbox.spell_catalog_initialize(true, Some(
         oteryn_session::spell_catalog::encode_catalog(&[oteryn_session::spell_catalog::SpellCatalogEntry {

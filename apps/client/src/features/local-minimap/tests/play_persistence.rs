@@ -285,6 +285,7 @@ fn review_successive_minimap_owners_preserve_each_others_markers()
         [100, 101]
     );
     lock(&reopened.minimap).remove_marker(100, 200, 7)?;
+    distant.header.origin.x = 2000;
     distant.tiles.clear();
     reopened.set_live_map(&distant)?;
     lock(&reopened.minimap).save()?;
@@ -598,7 +599,7 @@ fn review_empty_window_preserves_older_unseen_cache_cell() -> Result<(), Box<dyn
     lock(&first.minimap).save()?;
     drop(first);
     let mut second = review_view(&root)?;
-    second.set_live_map(&review_snapshot(100, false))?;
+    second.set_live_map(&review_snapshot(200, false))?;
     assert!(lock(&second.minimap).create_mark_at((100, 200, 7))?);
     assert_eq!(lock(&second.minimap).cells.get(&(7, 100, 200)), Some(&55));
     let reopened = review_view(&root)?;

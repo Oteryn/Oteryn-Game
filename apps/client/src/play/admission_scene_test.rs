@@ -65,11 +65,8 @@ fn frames() -> Result<Vec<Vec<u8>>, Box<dyn std::error::Error>> {
     .map_err(|error| format!("{error:?}"))?;
     let map = world_map::encode_world_map_snapshot(&world_map::WorldMapViewSnapshot {
         header: world_map::MapViewHeader {
-            origin: wire::world_spatial::ActorPosition {
-                floor: -7,
-                ..own.position
-            },
-            first_visible_floor: -7,
+            origin: own.position,
+            first_visible_floor: own.position.floor,
             content_generation: [17; 32],
             bundle_digest: [3; 32],
             reset_epoch: 1,
@@ -128,7 +125,7 @@ fn review_admitted_first_scene_projects_wire_entities_and_presentations()
                 let client = crate::ClientBootstrap::new()?.with_native_login(stack.config());
                 let admission = client.request_gameplay_entry()?;
                 let view = admission.play_view()?;
-                assert_eq!(view.floor(), -7);
+                assert_eq!(view.floor(), 7);
                 let target = view.scene().target_at(TileCoord::new(101, 200));
                 assert_eq!((target.is_some(), view.scene().name_count()), (true, 2));
                 drop(admission);
