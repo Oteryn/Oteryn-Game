@@ -361,6 +361,7 @@ fn lower_loot_entries(
     entries: &[SectionLootEntry],
     items: &HashMap<&SectionRef, &SectionItemFacts>,
     depth: usize,
+    admits_tusk_shield: bool,
     allow_unavailable_yields: bool,
 ) -> Result<Vec<LootTableEntry>, NoSettlementReason> {
     if depth > 8 || entries.len() > LOOT_SECTION_RECORDS_MAX {
@@ -368,6 +369,10 @@ fn lower_loot_entries(
     }
     let mut lowered = Vec::with_capacity(entries.len());
     for entry in entries {
+        // The native Item profile is shared, but Stampede alone admits this drop.
+        if !admits_tusk_shield && entry.item.key == "oteryn:item.tibia.i3443" {
+            continue;
+        }
         let Some(facts) = items.get(&entry.item).filter(|facts| facts.materializable) else {
             if allow_unavailable_yields && !has_quest_loot(entry) {
                 continue;
@@ -387,6 +392,7 @@ fn lower_loot_entries(
                     &entry.children,
                     items,
                     depth + 1,
+                    admits_tusk_shield,
                     allow_unavailable_yields,
                 )?,
                 container_capacity: facts.container_capacity,
@@ -964,7 +970,16 @@ fn row(
             let allow_unavailable_yields = !source_plain
                 && algorithm == LootSelectionAlgorithm::IndependentBernoulliPpm
                 && !is_boss(profile);
-            let entries = lower_loot_entries(&table.entries, items, 0, allow_unavailable_yields)?;
+            let admits_tusk_shield = creature == "oteryn:creature.terrified_elephant"
+                && reference.key == "oteryn:loot.creature.terrified_elephant"
+                && reference.revision == "definition-r1";
+            let entries = lower_loot_entries(
+                &table.entries,
+                items,
+                0,
+                admits_tusk_shield,
+                allow_unavailable_yields,
+            )?;
             (
                 reference.lower(),
                 LootTableDefinition { algorithm, entries },
@@ -1005,6 +1020,38 @@ fn boss_metadata(profile: &ProjectV2CreatureAuthoring, key: &str) -> Option<Boss
         key: key.to_owned(),
         category: category.to_owned(),
     })
+}
+
+#[cfg(test)]
+mod tusk_shield_tests {
+    use super::*;
+
+    #[test]
+    fn ordinary_elephant_cannot_roll_tusk_shield() -> Result<(), Box<dyn std::error::Error>> {
+        let creatures = serde_json::from_slice(include_bytes!(
+            "../../../../../content/creatures/definitions/spell-native-profiles.json"
+        ))?;
+        let section = LootTablesSection::decode(
+            include_bytes!("../../../../../tools/content-schema/native-gameplay/loot-tables.json"),
+            &creatures,
+        )?;
+        let rewards = CreatureRewardTable::from_pin(&creatures, Some(&section));
+        for (creature, expected_probability) in [
+            ("oteryn:creature.elephant", None),
+            ("oteryn:creature.terrified_elephant", Some(800)),
+        ] {
+            let reward = rewards.row(creature).map_err(|reason| reason.as_str())?;
+            assert_eq!(
+                reward.loot_table.entries.iter().find_map(|entry| {
+                    (entry.item.production_key == "oteryn:item.tibia.i3443")
+                        .then_some(entry.probability_ppm)
+                }),
+                expected_probability.map(Some),
+                "{creature}"
+            );
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]

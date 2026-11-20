@@ -655,6 +655,9 @@ mod m38_stationary;
 #[path = "npcs/m38_zarifan.rs"]
 mod m38_zarifan;
 
+#[path = "npcs/npcsell_seller_placements.rs"]
+mod npcsell_seller_placements;
+
 #[path = "npcs/qb_barbarian_npcs.rs"]
 mod qb_barbarian_npcs;
 

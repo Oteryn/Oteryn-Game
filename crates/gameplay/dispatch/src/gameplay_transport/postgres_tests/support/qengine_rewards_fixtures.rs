@@ -903,6 +903,12 @@ pub(super) async fn exercise(
     if name.starts_with("qengine-rewards-l2-djinn-") {
         return Box::pin(questl2_djinn_journeys::exercise(owner, admitted, h, name)).await;
     }
+    if name == super::terrified_elephant_corpse_decay_fixtures::NAME {
+        return Box::pin(super::terrified_elephant_corpse_decay_fixtures::exercise(
+            owner, admitted, h,
+        ))
+        .await;
+    }
     if name == "qengine-rewards-m25-galthen-native-deaths" {
         return Box::pin(super::m25_galthen_native_death_fixtures::exercise(
             owner, admitted, h,

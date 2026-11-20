@@ -141,11 +141,13 @@ fn source_spawn_case_with_gaz_heal(
             let child_key = format!("oteryn:creature.{child}");
             let started_at = owner.owner_now().get();
             let mut now = started_at;
-            let time_limit = started_at + 256_000_000;
+            // The content seed can delay Maxxen beyond the original 128 passes.
+            let passes = if slug == "professor_maxxen" { 256 } else { 128 };
             let think_interval_us = crate::ai_think::CREATURE_THINK_INTERVAL_MILLIS * 1_000;
             // Keep the former two-second budget per pass and drain every owner deadline
             // within that budget on its native cadence.
-            'passes: for pass in 1..=128 {
+            let time_limit = started_at + passes * 2 * think_interval_us;
+            'passes: for pass in 1..=passes {
                 let interval_end = started_at + pass * 2 * think_interval_us;
                 while now < interval_end {
                     // The Energy Pulse can spawn and retire in separate drains at the same instant.
