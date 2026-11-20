@@ -41,9 +41,9 @@ EXPECTED_MERGE_GATE_TRIGGER_BLOCK = """on:
       - edited
 """
 EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = "fa39175ae4cd95951781d3955f63a005f7ea16398159a37ab9018c2d916cc890"
-EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = "5f890a26eae21191689fc2b5696288ed36e4d6dcb70c88d2798c40011a0b6063"
-EXPECTED_MERGE_GATE_FINAL_JOB_SHA256 = "c4c54ae3b3ca74e2a88444e6c9874ba2ea6d37e30607d1d61906d298a659d247"
-EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "6b6a5a3101e090663adcbec2b32a268e1f8a57fb2aab1c4ed708f28a809caae7"
+EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = "514f6effebae2c0bf5172caa206dc1c2e3bc39d5299ceb69001f7fa3e16a84fb"
+EXPECTED_MERGE_GATE_FINAL_JOB_SHA256 = "96caca0e141757f3b18e9d97b574aa6362f147791b6e01a53a4c11e2597bdedd"
+EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "e18d449d6874819909129c4d11235fb36b2f8208456b57ac7473c02c1de21765"
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "1a1f98f8f2df7b981fa6a85f0f4bf3ac218247121ab330bf5348a703ce0b1e0d"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "b3423b858c7cad5c2814cef0708819f41c4b5bb328bae5450d202c2e18a92631"
@@ -380,8 +380,8 @@ def main() -> int:
             )
         if "workflow_dispatch:" in text:
             errors.append("merge gate must not execute pull-request code through workflow_dispatch")
-        if "  group: ${{ format('merge-gate-{0}', github.event.pull_request.number) }}\n" not in text:
-            errors.append("merge gate runs of one pull request must share one concurrency group")
+        if "  group: ${{ github.event.action == 'edited' && github.event.changes.base == null && format('merge-gate-{0}-edits', github.event.pull_request.number) || format('merge-gate-{0}', github.event.pull_request.number) }}\n" not in text:
+            errors.append("metadata edits must not displace pending product qualifications")
         if "  cancel-in-progress: ${{ !(github.event.action == 'edited' && github.event.changes.base == null) }}\n" not in text:
             errors.append("merge gate metadata edits must not cancel product qualifications")
         scope_block = indented_yaml_mapping_block(text, "scope", 2)
@@ -423,7 +423,7 @@ def main() -> int:
             for fragment in (
                 "    name: game-gate\n",
                 "    if: always() && (github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref)\n",
-                "    needs: [scope, rust_fast_build, validate]\n",
+                "    needs: [scope, lanes, rust_fast_build, validate]\n",
                 "          LEGACY_VALIDATE: ${{ needs.validate.result }}\n",
                 "          RUST_FAST_BUILD: ${{ needs.rust_fast_build.result }}\n",
                 '          test "$LEGACY_VALIDATE" = "success" &&\n',

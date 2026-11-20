@@ -944,6 +944,106 @@ def test_scope_count_drift(module):
     print("Scope count drift PASS: immutable recovery or FULL fallback; authority and count validity stay strict")
 
 
+def test_hosted_rust_edit_receipt():
+    import qualified_rust_edit as proof
+
+    repo, head, pr, stamp = "org/repo", "a" * 40, "38", "b" * 64
+    run = {"id": 7, "run_attempt": 1, "display_title": "Merge gate • pull_request • 38",
+           "status": "completed", "conclusion": "success", "event": "pull_request", "head_sha": head,
+           "path": ".github/workflows/merge-gate.yml", "head_repository": {"full_name": repo}}
+    jobs = [{"name": "game-gate", "conclusion": "success"},
+            {"name": "Merge gate / validate", "conclusion": "success", "steps": [
+                {"name": "Qualified hosted Rust inputs " + stamp, "conclusion": "success"}]}]
+
+    def check(runs, listed=jobs, wanted=stamp, live=None, extra_pages=False):
+        history = iter([runs, runs if live is None else live])
+        def fetch(path):
+            if path.startswith("actions/workflows/merge-gate.yml/runs?"):
+                rows = next(history)
+                return {"total_count": len(rows) + int(extra_pages), "workflow_runs": rows}
+            assert path == "actions/runs/7/attempts/1/jobs?per_page=100"
+            return {"total_count": len(listed), "jobs": listed}
+        return proof.reusable(fetch, repo, pr, head, 8, wanted)
+
+    assert check([run | {"id": 8, "status": "in_progress"}, run]) == "7/1"
+    assert not check([])
+    assert not check([run], wanted="different base, image or selection")
+    assert not check([run], listed=jobs[1:])
+    assert not check([run], listed=[jobs[0], jobs[1] | {"conclusion": "skipped"}])
+    assert not check([run], live=[run | {"run_attempt": 2}])
+    assert not check([run], extra_pages=True)
+    older = run | {"id": 6}
+    assert check([older, run])
+    for change in ({"run_attempt": 2}, {"run_attempt": 2, "conclusion": "failure"},
+                   {"status": "queued", "conclusion": None}, {"status": "in_progress", "conclusion": None},
+                   {"conclusion": "cancelled"}, {"conclusion": "failure"}):
+        assert not check([older | change, run])
+        assert not check([older, run], live=[older | change, run])
+    for changed in ({"display_title": "Merge gate • pull_request • 39"}, {"id": 9},
+                    {"run_attempt": 2}, {"status": "in_progress"}, {"conclusion": "failure"},
+                    {"conclusion": "cancelled"}, {"event": "push"}, {"head_sha": "c" * 40},
+                    {"head_repository": {"full_name": "another/repo"}}, {"path": "some-other-workflow"}):
+        assert not check([run | changed]), changed
+    assert not check([run | {"id": 5}, run | {"conclusion": "failure"}])
+
+    from hashlib import sha1
+    content = (ROOT / proof.WORKFLOW).read_bytes()
+    blob = sha1(f"blob {len(content)}\0".encode() + content).hexdigest()
+    execution_sha, event_base = "d" * 40, "c" * 40
+    def contents(path):
+        assert path == f"contents/{proof.WORKFLOW}?ref={execution_sha}"
+        return {"type": "file", "sha": blob}
+    assert proof.protected_workflow(contents, execution_sha, event_base, event_base) == blob
+    assert not proof.protected_workflow(contents, execution_sha, event_base, "e" * 40)
+    assert not proof.protected_workflow(lambda _: {"type": "file", "sha": "f" * 40},
+                                        execution_sha, event_base, event_base)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        event_path = Path(tmp) / "event.json"
+        out = Path(tmp) / "out"
+        env = {"GITHUB_EVENT_PATH": str(event_path), "GITHUB_OUTPUT": str(out),
+               "GITHUB_REPOSITORY": repo, "GITHUB_RUN_ID": "8", "GITHUB_RUN_ATTEMPT": "1",
+               "PR_NUMBER": pr, "HEAD_SHA": head, "BASE_SHA": "c" * 40, "ImageVersion": "20261120",
+               "RUNNER_OS": "Linux", "RUNNER_ARCH": "X64", "ROUTING": "full", "FILE_RECORDS": "[]",
+               "MOLEHILL_MODE": "off", "GITHUB_WORKFLOW_SHA": execution_sha, "GH_TOKEN": "test"}
+        def execute(action, changes, *, final=False, source="7/1", **updates):
+            event_path.write_text(json.dumps({"action": action, "changes": changes,
+                                              "pull_request": {"base": {"sha": event_base}}}))
+            out.write_text("")
+            with (patch.dict(os.environ, env | updates), patch.object(proof, "reusable", return_value=source),
+                  patch.object(proof.request, "urlopen", return_value=response(contents(
+                      f"contents/{proof.WORKFLOW}?ref={execution_sha}")))):
+                proof.main(final=final)
+            return dict(line.split("=", 1) for line in out.read_text().splitlines())
+
+        def response(data):
+            return io.BytesIO(json.dumps(data).encode())
+
+        initial = execute("opened", {})
+        assert initial["reuse"] == "false" and initial["stamp"]
+        for changes in ({"title": {}}, {"body": {}}, {"title": {}, "body": {}}):
+            rpt = execute("edited", changes)
+            assert rpt["reuse"] == "true" and rpt["stamp"] == initial["stamp"]
+        for changes in ({}, {"base": {}}, {"body": {}, "base": {}}, {"unknown": {}}):
+            assert execute("edited", changes)["reuse"] == "false"
+        assert execute("edited", {"body": {}}, GITHUB_RUN_ATTEMPT="2")["reuse"] == "false"
+        assert execute("edited", {"title": {}}, MOLEHILL_MODE="auto")["stamp"] == ""
+        for key in ("BASE_SHA", "HEAD_SHA", "ImageVersion", "RUNNER_ARCH", "ROUTING", "FILE_RECORDS"):
+            assert execute("opened", {}, **{key: "e" * 40})["stamp"] != initial["stamp"]
+
+        # A partial rerun can retain the planning job's outputs. The authoritative
+        # check must use the same source even when the upstream jobs did not rerun.
+        final_env = {"GITHUB_RUN_ATTEMPT": "2", "EXPECTED_SOURCE": "7/1", "EXPECTED_STAMP": initial["stamp"]}
+        execute("edited", {"body": {}}, final=True, **final_env)
+        for changed in ({"source": None}, {"source": "6/1"}, {"EXPECTED_SOURCE": "7/2"},
+                        {"EXPECTED_STAMP": "expired"}, {"BASE_SHA": "e" * 40}):
+            try:
+                execute("edited", {"body": {}}, final=True, **(final_env | changed))
+            except SystemExit:
+                continue
+            raise AssertionError(f"invalid retained proof authorized publication: {changed}")
+
+
 def test_metadata_events():
     """PR edits must qualify normally without cancelling the product run."""
     core_path = ROOT / "tools/repository/validate_repository_policy_core.py"
@@ -961,21 +1061,18 @@ def test_metadata_events():
     final = core.indented_yaml_mapping_block(gate, "game_gate", 2)
     aggregate_guard = f"    if: always() && ({main_guard})\n"
     assert aggregate_guard in aggregate and aggregate_guard in final
-    assert "    name: game-gate\n" in final and "    needs: [scope, rust_fast_build, validate]\n" in final
+    assert "    name: game-gate\n" in final and "    needs: [scope, lanes, rust_fast_build, validate]\n" in final
     assert '          test "$LEGACY_VALIDATE" = "success" &&\n' in final
     assert '            [[ "$RUST_FAST_BUILD" == success || "$RUST_FAST_BUILD" == skipped ]]\n' in final
 
     # Evaluate the exact hosted concurrency expressions for overlapping runs.
-    # Every run of one PR shares one group, so an edit queues behind the active
-    # qualification and reuses its job-result markers. Only metadata edits
-    # leave the running qualification alone; retarget and synchronize
-    # supersede it, and unrelated PRs never share a group.
+    # A burst of edits must not replace the pending product run for this PR.
     def expression_of(prefix):
         line = next(line for line in gate.splitlines() if line.startswith(prefix))
         return line, line.split("${{", 1)[1].rsplit("}}", 1)[0].strip()
     group_line, group_expression = expression_of("  group:")
     cancel_line, cancel_expression = expression_of("  cancel-in-progress:")
-    assert group_line == "  group: ${{ format('merge-gate-{0}', github.event.pull_request.number) }}"
+    assert group_line == "  group: ${{ github.event.action == 'edited' && github.event.changes.base == null && format('merge-gate-{0}-edits', github.event.pull_request.number) || format('merge-gate-{0}', github.event.pull_request.number) }}"
     assert cancel_line == "  cancel-in-progress: ${{ !(github.event.action == 'edited' && github.event.changes.base == null) }}"
     def evaluate(expression, action, base_changed, number, run_id):
         expression = expression.replace("github.event.action", "action")
@@ -995,9 +1092,11 @@ def test_metadata_events():
         return evaluate(cancel_expression, action, base_changed, 42, 1)
     product = group("synchronize", False, 42, 1)
     assert product == "merge-gate-42"
-    for action, base_changed in (("edited", False), ("edited", True), ("synchronize", False),
+    for action, base_changed in (("edited", True), ("synchronize", False),
                                  ("opened", False), ("reopened", False)):
         assert group(action, base_changed, 42, 9) == product
+    assert group("edited", False, 42, 7) != product
+    assert group("edited", False, 42, 7) == group("edited", False, 42, 8)
     assert group("synchronize", False, 43, 6) != product
     for action in ("synchronize", "opened", "reopened"):
         assert cancels(action, False) is True
@@ -1058,6 +1157,13 @@ def test_aggregate():
                 return False
 
     assert accepts({})
+    reused = {"REUSE_RUST": "true", "RUST_ROUTE": "skipped", "RUST_FAST": "skipped",
+              "RUST_FAST_BUILD": "skipped", "RUST_CLIENT_UI": "skipped"}
+    assert accepts(reused)
+    for name in reused.keys() - {"REUSE_RUST"}:
+        assert not accepts(reused | {name: "failure"})
+    for name in ("SCOPE", "GOVERNANCE", "DEPENDENCY_REVIEW", "RUST_SUPPLY_CHAIN", "RUST_POLICY"):
+        assert not accepts(reused | {name: "failure"})
     assert accepts({"RUST_FAST_BUILD_REQUIRED": "false", "RUST_FAST_BUILD": "skipped"})
     for result in ("skipped", "failure", "cancelled", ""):
         assert not accepts({"RUST_FAST_BUILD": result})
@@ -1385,6 +1491,7 @@ def test_client_only_pg_scope(module):
 
 def main() -> int:
     module = load_module()
+    test_hosted_rust_edit_receipt()
     test_metadata_events()
     test_repository_tool_dependencies(module)
     test_routing_matrix(module)
