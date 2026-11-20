@@ -16,14 +16,10 @@ use crate::foundation::{AuthenticatedTransportRefV1, GameSessionId};
 use crate::gameplay_transport::AdmissionRetryBudget;
 use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::connection::FirstEntryOutcome;
-use crate::gameplay_transport::spell_access_facts::{
-    AccessFactsError, CurrentSpellAccessOwner, UnavailableAccessOwner, owner_registration,
-};
+use crate::gameplay_transport::spell_access_facts::UnavailableAccessOwner;
 use crate::spell::Execution;
 use crate::spell::companion_lifecycle::familiar_return_placement_available;
-use crate::spell::owned_cast_facts::{
-    AccessProjections, CastFactsBinding, CurrentProjection, OwnedFactsError,
-};
+use crate::spell::owned_cast_facts::OwnedFactsError;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 fn uuid(id: &[u8; 16]) -> String {
@@ -293,14 +289,18 @@ async fn bootstrap(
 
 #[derive(Clone, Copy)]
 enum FamiliarRegression {
-    ExistingLook { denied: bool },
+    ExistingLook { revoked: bool },
     BlockedReturn,
 }
 
 #[test]
 fn familiar_login_preserves_existing_look_until_premium_is_known_postgres() -> TestResult {
-    creation_vocation_entry(Some(FamiliarRegression::ExistingLook { denied: false }))?;
-    creation_vocation_entry(Some(FamiliarRegression::ExistingLook { denied: true }))
+    creation_vocation_entry(Some(FamiliarRegression::ExistingLook { revoked: false }))
+}
+
+#[test]
+fn familiar_login_removes_vocation_look_after_revoked_premium_postgres() -> TestResult {
+    creation_vocation_entry(Some(FamiliarRegression::ExistingLook { revoked: true }))
 }
 
 #[test]
@@ -308,26 +308,86 @@ fn familiar_waiting_return_finishes_without_premium_after_tile_frees_postgres() 
     creation_vocation_entry(Some(FamiliarRegression::BlockedReturn))
 }
 
-// RegisteredSpellAccessOwner supplies a positive proof or no projection. Exercise the
-// explicit negative branch with a test producer bound to this same owner read.
-struct DeniedPremium;
-impl owner_registration::Registered for DeniedPremium {}
-impl CurrentSpellAccessOwner for DeniedPremium {
-    fn read_current(
-        &self,
-        binding: &CastFactsBinding,
-        now: u64,
-    ) -> Result<AccessProjections, AccessFactsError> {
-        Ok(AccessProjections {
-            premium: Some(CurrentProjection {
-                binding: binding.clone(),
-                authority_revision: 1,
-                valid_until_micros: now.saturating_add(60_000_000),
-                value: false,
-            }),
-            ..AccessProjections::default()
-        })
+#[allow(dead_code, reason = "shared mTLS fixture serves other Premium test cases")]
+#[path = "../../../../social/src/premium/test_producer.rs"]
+mod premium_test_producer;
+
+async fn revoked_premium(
+    root: &crate::durability::DurabilityRoot,
+) -> TestResult<
+    std::sync::Arc<
+        crate::gameplay_transport::spell_premium_coordinator::RegisteredSpellAccessOwner,
+    >,
+> {
+    use crate::gameplay_transport::spell_premium_coordinator::{
+        PremiumActivation, RegisteredPremiumClock, SpellPremiumCoordinator, clock_registration,
+    };
+    use crate::premium::{
+        IngestOutcome, PremiumClass, TrustedNow,
+        client::{PremiumClientConfig, PremiumSnapshotClient, fresh_nonce},
+    };
+    use premium_test_producer::{Reply, TestPki, TestProducer, snapshot};
+
+    // Use the producer's current, full-lease fixture window in the registered clock.
+    struct FixtureClock(TrustedNow);
+    impl clock_registration::Registered for FixtureClock {}
+    impl RegisteredPremiumClock for FixtureClock {
+        fn read_current_window(&self) -> Option<TrustedNow> {
+            Some(self.0)
+        }
     }
+
+    const ISSUED: i64 = 1_790_769_600_000_000;
+    let account = id(40);
+    let now = TrustedNow::new(ISSUED + 60_000_000, 1_000_000).ok_or("trusted clock window")?;
+    let reads = SpellPremiumCoordinator::new(
+        Default::default(),
+        Some(std::sync::Arc::new(FixtureClock(now))),
+        Some(PremiumActivation {
+            activation_id: "familiar-revocation".into(),
+            switch_over_us: ISSUED,
+        }),
+        Some(root.clone()),
+    );
+    let pki = TestPki::new();
+    let producer =
+        TestProducer::start(&pki, |request| Reply::json(snapshot(request, 7, &[]))).await;
+    let client = PremiumSnapshotClient::new(&PremiumClientConfig {
+        origin: producer.origin.clone(),
+        identity_pem: pki.client_identity_pem.into_bytes(),
+        platform_ca_pem: pki.ca_pem.into_bytes(),
+    })?;
+    let consumer = reads.consumer();
+    let nonce = fresh_nonce().ok_or("ACTIVE pull nonce")?;
+    let body = client.pull(account, &nonce).await.map_err(debug)?;
+    assert_eq!(
+        consumer.ingest(root, account, &nonce, &body).await,
+        IngestOutcome::Accepted
+    );
+    assert!(
+        reads.premium_gate(account).await.premium_current(),
+        "ACTIVE proof and latch"
+    );
+    producer.script(|request| {
+        Reply::json(snapshot(
+            request,
+            8,
+            &[
+                ("entitlement_state", "REVOKED".into()),
+                ("lifecycle_revision", 2.into()),
+            ],
+        ))
+    });
+    let nonce = fresh_nonce().ok_or("REVOKED pull nonce")?;
+    let body = client.pull(account, &nonce).await.map_err(debug)?;
+    assert_eq!(
+        consumer.ingest(root, account, &nonce, &body).await,
+        IngestOutcome::Accepted
+    );
+    assert_eq!(consumer.class(account, Some(now)), PremiumClass::Revoked);
+    assert!(!reads.premium_gate(account).await.premium_current());
+    assert_eq!(producer.requests().len(), 2);
+    Ok(reads.view(account))
 }
 
 async fn check_familiar_regression(
@@ -438,13 +498,22 @@ async fn check_familiar_regression(
         return Err("historical Familiar fixture did not commit".into());
     };
     let unknown = UnavailableAccessOwner;
-    let denied = matches!(
+    let revoked = matches!(
         regression,
-        FamiliarRegression::ExistingLook { denied: true }
+        FamiliarRegression::ExistingLook { revoked: true }
     );
-    let login = if denied {
+    let login = if revoked {
+        let access = revoked_premium(&h.root).await?;
+        let owned = owner
+            .read_familiar_lifecycle_inputs(actor, session, native, &access)
+            .await
+            .map_err(|()| "current Familiar facts after REVOKED")?;
+        assert_eq!(
+            owned.check_current_access(spell, owner.owner_now().get()),
+            Err(OwnedFactsError::UnavailablePremium),
+        );
         owner
-            .initialize_familiar_login(actor, session, request, native, &DeniedPremium, config)
+            .initialize_familiar_login(actor, session, request, native, &access, config)
             .await
     } else {
         owner
@@ -460,8 +529,11 @@ async fn check_familiar_regression(
         .await?;
     if !returning {
         assert_eq!(after_login.state().selected_look, look);
-        if denied {
-            assert!(after_login.state().granted_looks.is_empty());
+        if revoked {
+            assert!(
+                after_login.state().granted_looks.is_empty(),
+                "current fenced REVOKED must remove the granted vocation look",
+            );
             assert!(
                 after_login
                     .committed_character_revision()

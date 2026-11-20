@@ -59,6 +59,7 @@ pub struct FamiliarSourceSettings {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum FamiliarBenefitUse {
     CurrentEligibility,
+    RestoreDenied,
     RestoreWithoutPremium,
     NotApplicableEnd,
 }
@@ -1757,13 +1758,25 @@ impl<
                 proof.authority_revision,
                 proof.valid_until_micros.min(group.valid_until_micros),
             ),
-            // Login and its delayed Return can restore fenced state without a Premium decision.
-            None if restoring => (
-                FamiliarBenefitUse::RestoreWithoutPremium,
-                false,
-                0,
-                group.valid_until_micros,
-            ),
+            None if restoring => match self
+                .premium
+                .read_familiar_restore_denial(binding, now)
+                .filter(|proof| proof.current(binding, now))
+            {
+                Some(proof) => (
+                    FamiliarBenefitUse::RestoreDenied,
+                    false,
+                    proof.authority_revision,
+                    proof.valid_until_micros.min(group.valid_until_micros),
+                ),
+                // Unresolved Premium leaves the durable look decision intact.
+                None => (
+                    FamiliarBenefitUse::RestoreWithoutPremium,
+                    false,
+                    0,
+                    group.valid_until_micros,
+                ),
+            },
             None => return None,
         };
         Some(CurrentProjection {
@@ -2098,15 +2111,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             .filter(|v| v.current(owned.binding(), now.get()))
             .ok_or(())?;
+            let cast_premium = owned.current_premium(now.get()).map(|proof| proof.value);
             let premium = match settings.value.benefit_use {
-                FamiliarBenefitUse::CurrentEligibility if !is_end => Some(settings.value.premium),
-                FamiliarBenefitUse::RestoreWithoutPremium if restoring => None,
+                FamiliarBenefitUse::CurrentEligibility
+                    if !is_end && cast_premium == Some(settings.value.premium) =>
+                {
+                    cast_premium
+                }
+                // The paid-cast port never projects the restore-only denial.
+                FamiliarBenefitUse::RestoreDenied if restoring && cast_premium.is_none() => {
+                    Some(false)
+                }
+                FamiliarBenefitUse::RestoreWithoutPremium
+                    if restoring && cast_premium.is_none() =>
+                {
+                    None
+                }
                 FamiliarBenefitUse::NotApplicableEnd if is_end => None,
                 _ => return Err(()),
             };
-            if !is_end && premium != owned.current_premium(now.get()).map(|proof| proof.value) {
-                return Err(());
-            }
             let equipment_speed = if is_end {
                 0
             } else {
@@ -2340,6 +2363,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             source.read_current(actual_binding, now.get())
         }
         .filter(|v| v.current(actual_binding, now.get()));
+        // Settings carry the denial's authority revision and are read again from
+        // the live latch, clock and consumer for the sealed restore occurrence.
         let allow_new_mutation = current.as_ref().is_some_and(|v| {
             v.value == prepared.settings.value
                 && v.authority_revision == prepared.settings.authority_revision
