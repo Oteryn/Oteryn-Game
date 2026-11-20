@@ -707,21 +707,22 @@ def merge_authority_audit_pin_only(head: str) -> bool:
 
         base = exact_git_object(before, b"blob")
         candidate = exact_git_object(after, b"blob")
-        name = b"EXPECTED_MERGE_GROUP_GATE_BLOB"
-        # Allow the existing Python environment lookup. Extra mentions can make
-        # the assignment ambiguous, so decline the exception in that case.
-        if base.replace(b"os.environ['" + name + b"']", b"", 1).count(name) != 1:
-            return False
-        assignment = re.search(rb'(?m)^      ' + name + rb': "([0-9a-f]{40})"$', base)
-        if assignment is None:
-            return False
-        start, end = assignment.span(1)
-        new_pin = candidate[start:end]
-        return (
-            new_pin != assignment[1]
-            and re.fullmatch(rb"[0-9a-f]{40}", new_pin) is not None
-            and candidate == base[:start] + new_pin + base[end:]
-        )
+        for name in (b"EXPECTED_MERGE_GROUP_GATE_BLOB", b"EXPECTED_MERGE_GATE_BLOB"):
+            # An extra mention could make an otherwise well-formed assignment ambiguous.
+            if base.replace(b"os.environ['" + name + b"']", b"", 1).count(name) != 1:
+                continue
+            assignment = re.search(rb'(?m)^      ' + name + rb': "([0-9a-f]{40})"$', base)
+            if assignment is None:
+                continue
+            start, end = assignment.span(1)
+            new_pin = candidate[start:end]
+            if (
+                new_pin != assignment[1]
+                and re.fullmatch(rb"[0-9a-f]{40}", new_pin) is not None
+                and candidate == base[:start] + new_pin + base[end:]
+            ):
+                return True
+        return False
     except (OSError, ValueError, subprocess.SubprocessError):
         return False
 
