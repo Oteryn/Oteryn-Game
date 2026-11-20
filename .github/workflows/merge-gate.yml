@@ -15,12 +15,9 @@ on:
 permissions: {}
 
 concurrency:
-  # One group per PR. Metadata edits never cancel a product qualification:
-  # they wait for it and then reuse its job-result markers instead of running
-  # a second full gate on the same head. Base retargets and new commits cancel
-  # whatever is running. Labels select nothing, so label changes do not run
-  # the gate at all.
-  group: ${{ format('merge-gate-{0}', github.event.pull_request.number) }}
+  # An edit cannot displace a pending synchronize/retarget job. A concurrent
+  # edit with no finished qualification for its inputs runs full qualification.
+  group: ${{ github.event.action == 'edited' && github.event.changes.base == null && format('merge-gate-{0}-edits', github.event.pull_request.number) || format('merge-gate-{0}', github.event.pull_request.number) }}
   cancel-in-progress: ${{ !(github.event.action == 'edited' && github.event.changes.base == null) }}
 
 jobs:
@@ -182,7 +179,10 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
+      actions: read
     outputs:
+      rust_receipt: ${{ steps.prior.outputs.stamp }}
+      reuse_rust: ${{ steps.prior.outputs.reuse }}
       rust: ${{ steps.classify.outputs.rust }}
       windows: ${{ steps.classify.outputs.windows }}
       atlas_fullworld: ${{ steps.classify.outputs.atlas_fullworld }}
@@ -222,6 +222,22 @@ jobs:
         env:
           EXPECTED_HEAD: ${{ needs.scope.outputs.base_sha }}
         run: python -I tools/repository/validate_pr_routing_contract.py --protected-main "$RUNNER_TEMP/risk-metadata.json"
+
+      - name: Check previously qualified hosted Rust inputs
+        id: prior
+        if: steps.classify.outputs.rust == 'true' && needs.scope.outputs.complete == 'true'
+        env:
+          ROUTING: ${{ toJSON(steps.classify.outputs) }}
+          FILE_RECORDS: ${{ needs.scope.outputs.file_records }}
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ needs.scope.outputs.pr_number }}
+          HEAD_SHA: ${{ needs.scope.outputs.target_sha }}
+          BASE_SHA: ${{ needs.scope.outputs.base_sha }}
+          MOLEHILL_MODE: ${{ vars.OTERYN_SELF_HOSTED_RUST }}
+        run: |
+          if [[ -f tools/repository/qualified_rust_edit.py ]]; then
+            python -I tools/repository/qualified_rust_edit.py
+          fi
 
       - name: Summarize trusted-base routing
         env:
@@ -660,7 +676,7 @@ jobs:
   runner_route:
     name: Merge gate / Molehill runner routing
     needs: [scope, lanes]
-    if: needs.lanes.outputs.rust == 'true'
+    if: needs.lanes.outputs.rust == 'true' && needs.lanes.outputs.reuse_rust != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -1765,6 +1781,8 @@ jobs:
           GOVERNANCE: ${{ needs.governance.result }}
           DEPENDENCY_REVIEW: ${{ needs.dependency_review.result }}
           ROUTING_CONTRACT: ${{ needs.routing_contract.result }}
+          REUSE_RUST: ${{ needs.lanes.outputs.reuse_rust }}
+          RUST_ROUTE: ${{ needs.runner_route.result }}
           RUST_REQUIRED: ${{ needs.lanes.outputs.rust }}
           WINDOWS_REQUIRED: ${{ needs.lanes.outputs.windows }}
           RUST_POLICY: ${{ needs.rust_policy.result }}
@@ -1791,23 +1809,30 @@ jobs:
           if os.environ['RUST_REQUIRED'] == 'false' and os.environ['WINDOWS_REQUIRED'] == 'true':
               failures.append('Windows selection without Rust selection is invalid')
           rust_allowed = {'success'} if os.environ['RUST_REQUIRED'] == 'true' else {'success', 'skipped'}
-          for name in ('RUST_POLICY', 'RUST_FAST', 'RUST_SUPPLY_CHAIN'):
+          for name in ('RUST_POLICY', 'RUST_SUPPLY_CHAIN'):
               if os.environ[name] not in rust_allowed:
                   failures.append(f'{name}={os.environ[name]}')
-          build_required = os.environ['RUST_FAST_BUILD_REQUIRED']
-          if os.environ['RUST_REQUIRED'] == 'true' and build_required not in {'true', 'false'}:
-              failures.append(f'invalid RUST_FAST_BUILD_REQUIRED={build_required}')
-          build_expected = 'success' if os.environ['RUST_REQUIRED'] == 'true' and build_required == 'true' else 'skipped'
-          if os.environ['RUST_FAST_BUILD'] != build_expected:
-              failures.append(f"RUST_FAST_BUILD={os.environ['RUST_FAST_BUILD']}")
-          client_ui_required = os.environ['RUST_CLIENT_UI_REQUIRED']
-          if os.environ['RUST_REQUIRED'] == 'true' and client_ui_required not in {'true', 'false'}:
-              failures.append(f'invalid RUST_CLIENT_UI_REQUIRED={client_ui_required}')
-          client_ui_allowed = {'success', 'skipped'}
-          if os.environ['RUST_REQUIRED'] == 'true' and client_ui_required == 'true':
-              client_ui_allowed = {'success'}
-          if os.environ['RUST_CLIENT_UI'] not in client_ui_allowed:
-              failures.append(f"RUST_CLIENT_UI={os.environ['RUST_CLIENT_UI']}")
+          if os.environ.get('REUSE_RUST') == 'true':
+              for name in ('RUST_ROUTE', 'RUST_FAST_BUILD', 'RUST_FAST', 'RUST_CLIENT_UI'):
+                  if os.environ[name] != 'skipped':
+                      failures.append(f'{name}={os.environ[name]}')
+          else:
+              if os.environ['RUST_FAST'] not in rust_allowed:
+                  failures.append(f"RUST_FAST={os.environ['RUST_FAST']}")
+              build_required = os.environ['RUST_FAST_BUILD_REQUIRED']
+              if os.environ['RUST_REQUIRED'] == 'true' and build_required not in {'true', 'false'}:
+                  failures.append(f'invalid RUST_FAST_BUILD_REQUIRED={build_required}')
+              build_expected = 'success' if os.environ['RUST_REQUIRED'] == 'true' and build_required == 'true' else 'skipped'
+              if os.environ['RUST_FAST_BUILD'] != build_expected:
+                  failures.append(f"RUST_FAST_BUILD={os.environ['RUST_FAST_BUILD']}")
+              client_ui_required = os.environ['RUST_CLIENT_UI_REQUIRED']
+              if os.environ['RUST_REQUIRED'] == 'true' and client_ui_required not in {'true', 'false'}:
+                  failures.append(f'invalid RUST_CLIENT_UI_REQUIRED={client_ui_required}')
+              client_ui_allowed = {'success', 'skipped'}
+              if os.environ['RUST_REQUIRED'] == 'true' and client_ui_required == 'true':
+                  client_ui_allowed = {'success'}
+              if os.environ['RUST_CLIENT_UI'] not in client_ui_allowed:
+                  failures.append(f"RUST_CLIENT_UI={os.environ['RUST_CLIENT_UI']}")
           # Preserve fail-closed World qualification on the PR. Its measured
           # two-minute pin-check is a fast check, independent of heavy MQ tests.
           world_allowed = {'success', 'skipped'} if os.environ.get('WORLD_BUNDLE_REQUIRED', '') == 'false' else {'success'}
@@ -1820,6 +1845,11 @@ jobs:
               raise SystemExit(1)
           print('All applicable fast gates passed on the exact PR head; full qualification belongs to Merge Queue.')
           PY
+
+      # GitHub's job-step API records the exact validated inputs on success.
+      - name: Qualified hosted Rust inputs ${{ needs.lanes.outputs.rust_receipt }}
+        if: success() && needs.lanes.outputs.rust_receipt != ''
+        run: echo 'Hosted Rust qualification passed.'
 
   game_gate:
     name: game-gate
