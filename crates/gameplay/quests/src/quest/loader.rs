@@ -375,7 +375,13 @@ pub(super) fn lower_embedded_quest_state(
             }
         }
     }
-    restrict_runtime_scope(lowered, content_revision)
+    // The additive death callback owns this predecessor independently of
+    // whether native bindings are imported by the caller.
+    super::source_deaths::retain_overlord_predecessor(&mut lowered.catalogue)
+        .map_err(QuestLoadError::Json)?;
+    let mut lowered = restrict_runtime_scope(lowered, content_revision)?;
+    super::published_quest_pins::retain_predecessors(&mut lowered.catalogue);
+    Ok(lowered)
 }
 
 fn restrict_runtime_scope(
@@ -691,6 +697,7 @@ mod tests {
         }
         assert!(expected.insert(crate::quest::schrodinger_island::callback().key));
         expected.insert(crate::quest::rotten_blood::altar_callback().key);
+        assert!(expected.insert("oteryn:quest-callback/cwarlock/lever".to_owned()));
         // Collector main adds these exact native World cohorts; no donor
         // exclusion becomes an automatic admission through a loaded key.
         let before_native = expected.len();

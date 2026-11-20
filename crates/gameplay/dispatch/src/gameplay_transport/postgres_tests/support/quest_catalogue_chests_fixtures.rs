@@ -730,6 +730,20 @@ pub(super) fn catalogue_source_worlds(
     .map_err(super::fixture::debug)
 }
 
+/// Set OTERYN_PROFILE_PG_CHESTS when running a catalogue test with --nocapture.
+pub(super) fn profile_phases(case: &str) -> impl FnMut(&str) + '_ {
+    let mut last = std::env::var_os("OTERYN_PROFILE_PG_CHESTS")
+        .is_some()
+        .then(std::time::Instant::now);
+    move |name| {
+        if let Some(start) = &mut last {
+            let now = std::time::Instant::now();
+            eprintln!("PG_CHEST_PHASE case={case} phase={name} us={}", (now - *start).as_micros());
+            *start = now;
+        }
+    }
+}
+
 pub(super) fn execute(cases: Vec<CatalogueChest>) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -740,6 +754,7 @@ pub(super) fn execute(cases: Vec<CatalogueChest>) -> TestResult {
             // Every case has an isolated durable world/session, using the same
             // immutable production content generation. Qualify that content once;
             // no mutable character, command or receipt state is shared.
+            let mut slice_phase = profile_phases("slice");
             let world = crate::foundation::WorldId::decode(&super::fixture::id(42))
                 .map_err(|error| format!("{error:?}"))?;
             let activation =
@@ -747,12 +762,21 @@ pub(super) fn execute(cases: Vec<CatalogueChest>) -> TestResult {
                     .map_err(|error| error.to_string())?;
             let generation = activation.0.active().ok_or("active generation")?;
             let native = generation.native_gameplay().ok_or("native generation")?;
+            slice_phase("activation");
+            let quests = super::quest_container_chests_fixtures::embedded_catalogue()
+                .map_err(|error| error.to_string())?;
+            slice_phase("quest_catalogue");
             let mut template = None;
             super::fixture::run(async |admin| {
                 template = Some(super::fixture::MigratedDatabaseTemplate::create(admin).await?);
                 Ok(())
             }).map_err(|error| error.to_string())?;
+            slice_phase("migration_template");
             let result = (|| -> Result<(), String> {
+            let batch = super::quest_container_chests_fixtures::CatalogueBatch {
+                template: template.as_ref().ok_or("migration template")?,
+                quests,
+            };
             for case in cases {
                 for key in std::iter::once(case.root.as_str())
                     .chain(case.contents.iter().map(|(key, _, _)| key.as_str()))
@@ -767,7 +791,7 @@ pub(super) fn execute(cases: Vec<CatalogueChest>) -> TestResult {
                     }
                 }
                 let started = std::time::Instant::now();
-                super::quest_container_chests_fixtures::catalogue_scenario_with_template(&case, &activation, template.as_ref())
+                super::quest_container_chests_fixtures::catalogue_scenario_in_batch(&case, &activation, &batch)
                     .map_err(|error| format!("{} {:?}: {error}", case.claim, case.position))?;
                 println!(
                     "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED {} {:?} native_source={} duration={:?}",

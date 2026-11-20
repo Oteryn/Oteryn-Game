@@ -192,6 +192,13 @@ class RustTestShards(unittest.TestCase):
         self.assertEqual(set(heavy[1::2]) | set(rest[1::2]), shards.tested_integration_targets(self.full()))
         self.assertFalse(set(heavy[1::2]) & set(rest[1::2]))
 
+    def test_build_smoke_selects_only_explicit_workspace_benches(self):
+        self.assertEqual(shards.plan(self.full(), "build-benches"), [])
+        self.assertEqual(shards.plan(self.full(
+            target("lib_crate", "lib"), target("bench_me", "bench", False),
+            target("bench_also", "bench", False),
+        ), "build-benches"), ["--bench", "bench_also", "--bench", "bench_me"])
+
     def test_planner_fails_closed(self):
         with self.assertRaises(shards.PlanError):
             shards.plan(self.full(), "integration")

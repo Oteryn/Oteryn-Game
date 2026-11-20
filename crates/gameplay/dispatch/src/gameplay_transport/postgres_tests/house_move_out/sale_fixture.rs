@@ -22,29 +22,24 @@ pub(super) async fn prepare(h: &Harness) -> TestResult<CurrentCharacterItemFence
         super::super::super::fixture::fence(1)?.item_fence(),
     )
     .await?;
-    // This is a real vocation write, not a forged eligible build snapshot.
+    // The retained v4 creation binding already proves the buyer's Knight vocation.
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
         .root
         .open_character_authority(&seal)
         .await
         .map_err(debug)?;
-    let world = crate::foundation::WorldId::decode(&id(WORLD)).map_err(debug)?;
-    let (generation, _) =
-        super::super::super::death_ml_loss_composed_fixtures::production_generation_with_source(
-            world,
-            "content-1",
-            None,
-        )
-        .map_err(debug)?;
-    let active = generation.active().ok_or("active native generation")?;
-    let native = active.native_gameplay().ok_or("native gameplay")?;
-    let formula = native.training_formula().ok_or("native training formula")?;
-    use crate::durability::character_build::{
-        BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState, convert_vocation,
-    };
+    use crate::durability::character_build::DurableBuildState;
     use crate::durability::character_progression::CurrentCharacterGameplayFence;
-    let before = DurableBuildState::default();
+    let before = h
+        .root
+        .read_character_build_state(&authority, fence.character_id)
+        .await
+        .map_err(debug)?;
+    assert_eq!(
+        before,
+        DurableBuildState::new("knight", (0, 0), [(10, 0); 7]).map_err(debug)?
+    );
     let gameplay = CurrentCharacterGameplayFence {
         character_id: fence.character_id,
         game_session_id: fence.game_session_id,
@@ -89,22 +84,6 @@ pub(super) async fn prepare(h: &Harness) -> TestResult<CurrentCharacterItemFence
                     death_loss_rounding: RoundingMode::Floor,
                 },
             },
-        )
-        .await
-        .map_err(debug)?;
-    h.root
-        .commit_character_build(
-            &authority,
-            &h.node,
-            gameplay,
-            BuildChangeRequest {
-                occurrence: BuildOccurrence::from_bytes(id(150)).map_err(debug)?,
-                cause: BuildCause::VocationChoice,
-                after: convert_vocation(formula, &before, "knight").map_err(debug)?,
-                before,
-                pruned_stance: None,
-            },
-            formula,
         )
         .await
         .map_err(debug)?;

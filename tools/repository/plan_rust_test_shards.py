@@ -9,7 +9,11 @@ whole set by construction, so a new test target always lands in a shard. The pla
 closed when a heavy name is not such a target, when a shard would be empty, or when an example
 or bench target opts into `cargo test` (no shard runs those).
 
-Usage: plan_rust_test_shards.py <cargo-metadata.json> <shard>
+For build-smoke, build-benches lists only explicitly declared/auto-discovered
+benchmark targets. Cargo's --benches also selects implicit library and binary
+harnesses, which are already compiled by the unit-test lanes.
+
+Usage: plan_rust_test_shards.py <cargo-metadata.json> <shard|build-benches>
 Prints one argument per line (`--test`, `<name>`, ...).
 """
 from __future__ import annotations
@@ -55,6 +59,18 @@ def tested_integration_targets(metadata: dict) -> set[str]:
 
 
 def plan(metadata: dict, shard: str) -> list[str]:
+    if shard == "build-benches":
+        members = set(metadata.get("workspace_members") or [])
+        if not members:
+            raise PlanError("cargo metadata lists no workspace members")
+        benches = {
+            target["name"]
+            for package in metadata["packages"]
+            if package["id"] in members
+            for target in package["targets"]
+            if target["kind"] == ["bench"]
+        }
+        return [argument for name in sorted(benches) for argument in ("--bench", name)]
     if shard not in SHARDS:
         raise PlanError(f"unknown shard {shard!r}; expected one of {', '.join(SHARDS)}")
     targets = tested_integration_targets(metadata)
@@ -69,7 +85,7 @@ def plan(metadata: dict, shard: str) -> list[str]:
 
 def main(argv: list[str]) -> int:
     if len(argv) != 3:
-        print("usage: plan_rust_test_shards.py <cargo-metadata.json> <shard>", file=sys.stderr)
+        print("usage: plan_rust_test_shards.py <cargo-metadata.json> <shard|build-benches>", file=sys.stderr)
         return 2
     try:
         metadata = json.loads(Path(argv[1]).read_text(encoding="utf-8"))
@@ -77,7 +93,8 @@ def main(argv: list[str]) -> int:
     except (PlanError, OSError, ValueError) as error:
         print(f"rust test shard plan: FAIL: {error}", file=sys.stderr)
         return 1
-    print("\n".join(arguments))
+    for argument in arguments:
+        print(argument)
     return 0
 
 

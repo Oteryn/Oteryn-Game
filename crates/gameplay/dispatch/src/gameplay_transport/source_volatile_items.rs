@@ -323,7 +323,7 @@ mod tests {
             position: ActorPosition {
                 x: 100,
                 y: 100,
-                floor: -7,
+                floor: 7,
             },
             revision: 1,
         }];
@@ -340,7 +340,7 @@ mod tests {
         let pos = TilePos {
             x: 100,
             y: 100,
-            floor: 7,
+            floor: -7,
         };
         if !projection.facts.create_movement_item(pos, POD, 0, || true) {
             return Err("real volatile pod creation refused".into());
@@ -405,7 +405,7 @@ mod tests {
             ActorPosition {
                 x: 100,
                 y: 100,
-                floor: -7
+                floor: 7
             }
         );
         let without_items = SessionVisibility::with_objects(false)
@@ -419,7 +419,7 @@ mod tests {
         let position = MovementLocalPosition {
             x: 100,
             y: 100,
-            floor: -7,
+            floor: 7,
         };
         assert!(!projection.remove_pod(MovementLocalPosition { x: 101, ..position }, key));
         assert!(projection.remove_pod(position, key));
@@ -457,7 +457,7 @@ mod tests {
         let position = MovementLocalPosition {
             x: 100,
             y: 100,
-            floor: -7,
+            floor: 7,
         };
         assert!(old.remove_pod(position, old_key));
         assert!(old.entities().is_empty());

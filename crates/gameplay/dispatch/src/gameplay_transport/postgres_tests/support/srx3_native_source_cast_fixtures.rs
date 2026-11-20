@@ -70,11 +70,22 @@ pub(super) async fn settle_monster_melee_at(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     now: u64,
 ) -> TestResult {
+    settle_monster_melee_at_until(owner, now, async || false)
+        .await
+        .map(|_| ())
+}
+
+pub(super) async fn settle_monster_melee_at_until(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    now: u64,
+    mut condition_met: impl AsyncFnMut() -> bool,
+) -> TestResult<bool> {
     tokio::time::timeout(NATIVE_TURN_TIMEOUT, async {
         loop {
             drain_ready_monster_melee_at(owner, now).await?;
-            if next_native_melee_deadline(owner).await? > now {
-                return Ok(());
+            let met = condition_met().await;
+            if met || next_native_melee_deadline(owner).await? > now {
+                return Ok(met);
             }
             tokio::task::yield_now().await;
         }

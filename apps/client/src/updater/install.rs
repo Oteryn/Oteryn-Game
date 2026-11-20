@@ -101,19 +101,25 @@ pub(super) fn install(
     package: &Path,
     directory: &Path,
     release: &str,
+    launcher: Option<&Path>,
 ) -> Result<String, UpdateError> {
-    if !super::release_directory(release) || release.contains('~') {
+    // Reserve room for the first repair copy, including for a fresh installation.
+    if release.len() > super::MAX_SLOT_LENGTH - "~1".len()
+        || super::release_id_from_slot(release) != Some(release)
+    {
         return Err(UpdateError::Verification);
     }
+    if let Some(launcher) = launcher {
+        super::launcher::require_slot_support(launcher)?;
+    }
+
     let releases = directory.join("releases");
     fs::create_dir_all(&releases).map_err(|_| UpdateError::Storage)?;
-    let mut slot = release.to_owned();
-    for n in 1..=u32::MAX {
-        if !releases.join(&slot).exists() {
-            break;
-        }
-        slot = format!("{release}~{n}");
-    }
+    let slot = std::iter::once(release.to_owned())
+        .chain((1..=u32::MAX).map(|copy| format!("{release}~{copy}")))
+        .take_while(|slot| super::release_directory(slot))
+        .find(|slot| !releases.join(slot).exists())
+        .ok_or(UpdateError::Verification)?;
     let stage = releases.join(format!(".stage-{}", std::process::id()));
     fs::create_dir(&stage).map_err(|_| UpdateError::Storage)?;
     let result = (|| {

@@ -640,6 +640,9 @@ fn ground_and_walkable_border_items_do_not_block_an_npc_cell() -> TestResult {
     Ok(())
 }
 
+#[path = "npcs/journey.rs"]
+mod journey;
+
 #[path = "npcs/m38_minzy.rs"]
 mod m38_minzy;
 
@@ -654,3 +657,9 @@ mod m38_zarifan;
 
 #[path = "npcs/npcsell_seller_placements.rs"]
 mod npcsell_seller_placements;
+
+#[path = "npcs/qb_barbarian_npcs.rs"]
+mod qb_barbarian_npcs;
+
+#[path = "npcs/qb_outfit_npcs.rs"]
+mod qb_outfit_npcs;

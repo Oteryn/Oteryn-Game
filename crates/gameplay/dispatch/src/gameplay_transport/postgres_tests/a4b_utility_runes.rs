@@ -240,7 +240,7 @@ fn utility_rune(rune_id: u32) -> TestResult {
                     use_with_position: Some(SpellTargetPosition {
                         x: target.x,
                         y: target.y,
-                        floor: target.floor,
+                        floor: -target.floor,
                     }),
                 },
                 Some(ItemKey::Instance(id(71))),

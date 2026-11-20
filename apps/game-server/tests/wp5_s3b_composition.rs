@@ -85,8 +85,7 @@ use std::{env, fs, io};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-const SOURCE_AUTHORITY: &str = "platform";
-const PLATFORM_SOURCE: &str = "3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05";
+const PLATFORM_SOURCE: &str = "6d04b52a16145723eedb0c56640ad052dbd26e94";
 /// Game-owned interpretation configured by the operator procedure; the Platform
 /// intents issued by `run.sh` request exactly these revisions.
 const INTERPRETATION: [&str; 4] = [
@@ -96,6 +95,14 @@ const INTERPRETATION: [&str; 4] = [
     "s3b-starter-1",
 ];
 const RUNTIME_AUTHORITY: &str = "game:wp5-s3b-runtime";
+
+fn source_authority() -> String {
+    env::var("WP5_S3A_SOURCE_AUTHORITY").unwrap_or_else(|_| "platform".into())
+}
+
+fn route_revision() -> String {
+    env::var("WP5_S3A_ROUTE_REVISION").unwrap_or_else(|_| "route-s3b-1".into())
+}
 
 fn required(name: &str) -> Result<String, io::Error> {
     env::var(name).map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, name))
@@ -118,7 +125,7 @@ fn pem_der(path: &str, label: &str) -> TestResult<Vec<u8>> {
 
 fn descriptor() -> TestResult<ProducerDescriptor> {
     producer_descriptor(
-        SOURCE_AUTHORITY,
+        &source_authority(),
         "WP5_S3A_CLIENT_CERT",
         "WP5_S3A_CLIENT_KEY",
     )
@@ -138,11 +145,12 @@ fn producer_descriptor(authority: &str, cert: &str, key: &str) -> TestResult<Pro
     let ca = pem_der(&required("WP5_S3A_CA_CERT")?, "CERTIFICATE")?;
     let client = pem_der(&required(cert)?, "CERTIFICATE")?;
     let key = pem_der(&required(key)?, "PRIVATE KEY")?;
+    let server_name = env::var("WP5_S3A_SERVER_NAME").unwrap_or_else(|_| "source.test".into());
     Ok(ProducerDescriptor::new(
         authority.into(),
         ("127.0.0.1".into(), port),
-        "source.test".into(),
-        "source.test".into(),
+        server_name.clone(),
+        server_name,
         vec![CertificateDer::from(ca)],
         vec![CertificateDer::from(client)],
         PrivateKeyDer::try_from(key)?,
@@ -210,7 +218,7 @@ async fn fetch_real(
         native_admission_source::http1_mtls::exchange(descriptor, operation, &encoded, &mut permit)
             .await
             .map_err(|error| format!("S1 exchange: {error:?}"))?;
-    let Ok(Response::Observed(observation)) = decode_response(&request, SOURCE_AUTHORITY, &raw)
+    let Ok(Response::Observed(observation)) = decode_response(&request, &source_authority(), &raw)
     else {
         return Err("Platform did not return an authoritative observation".into());
     };
@@ -274,7 +282,7 @@ async fn ingest(
         root.accept_native_source_observation(
             custody,
             SourceObservation {
-                source_authority: SOURCE_AUTHORITY.into(),
+                source_authority: source_authority(),
                 operation,
                 subject,
                 source_revision: observation.source_revision,
@@ -363,7 +371,7 @@ async fn qualify_registered_recovery(
         root.accept_native_source_observation(
             custody,
             SourceObservation {
-                source_authority: SOURCE_AUTHORITY.into(),
+                source_authority: source_authority(),
                 operation,
                 subject,
                 source_revision: observation.source_revision,
@@ -522,7 +530,7 @@ async fn publish_readiness(
         state: AdmissionAuthorityGuardStateV1::Runtime {
             ownership_generation: generation,
             ready: true,
-            route_revision: "route-s3b-1".into(),
+            route_revision: route_revision(),
             runtime_observation_revision: format!("runtime-{source_revision}"),
             protocol_major: 1,
             transport_profile: 1,
@@ -590,7 +598,7 @@ fn grant(grant: &Grant<'_>, now: i64) -> String {
         "world_id": uuid_text(grant.subject.world_id.as_bytes()),
         "channel_id": uuid_text(grant.subject.channel_id.as_bytes()),
         "account_security_generation": grant.security_generation.to_string(),
-        "route_revision": "route-s3b-1",
+        "route_revision": route_revision(),
         "runtime_observation_revision": "RUNTIME_OBSERVATION",
         "scope_ownership_generation": grant.scope_generation.to_string(),
         "protocol_major": 1,
@@ -750,17 +758,21 @@ fn composition_flow(
             let provenance = FreshStoreProvenance {
                 namespace: "wp5-s3b".into(),
                 authorization: "s3b-disposable-topology".into(),
-                source_authority: SOURCE_AUTHORITY.into(),
+                source_authority: source_authority(),
                 initialized_at: now,
             };
             let registration = DescriptorRegistration {
                 revision: 1,
-                facts: format!("platform@{PLATFORM_SOURCE};source.test;tls1.3-mtls").into_bytes(),
+                facts: format!(
+                    "platform@{PLATFORM_SOURCE};{};tls1.3-mtls",
+                    env::var("WP5_S3A_SERVER_NAME").unwrap_or_else(|_| "source.test".into()),
+                )
+                .into_bytes(),
                 installed_at: now,
             };
             // Control-plane issuance first (OPS-NODE-BOOT-01 D2).
             if !root
-                .record_native_source_descriptor_issuance(SOURCE_AUTHORITY, registration.clone(), Some(provenance.clone()))
+                .record_native_source_descriptor_issuance(&source_authority(), registration.clone(), Some(provenance.clone()))
                 .await?
             {
                 return Err("S2 descriptor issuance refused".into());
@@ -858,6 +870,7 @@ fn composition_flow(
                     .await
                     .map_err(|e| format!("intent read {tag}: {e:?}"))?;
                 drop(permit);
+                assert_eq!(intent.requested_vocation(), "Sorcerer");
                 if uuid_text(intent.account_id().as_bytes()) != *account {
                     return Err("Platform intent names another AccountId".into());
                 }
@@ -1052,6 +1065,21 @@ async fn runtime_bound_grant(
             .to_bytes(),
     );
     Ok(format!("{signing_input}.{signature}"))
+}
+
+#[test]
+fn s3b_qualification_uses_the_node_boot_platform_pin() {
+    let expected = format!("readonly PLATFORM_SHA={PLATFORM_SOURCE}");
+    assert!(
+        include_str!("../../../tools/qualification/node_boot/run.sh")
+            .lines()
+            .any(|line| line == expected)
+    );
+    assert!(
+        include_str!("../../../tools/qualification/wp5_s3b/run.sh")
+            .lines()
+            .any(|line| line == expected)
+    );
 }
 
 #[test]

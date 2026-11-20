@@ -405,7 +405,7 @@ async fn scenario(admin: String) -> TestResult {
                     .select(
                         |at| {
                             let cell = crate::content::LogicalCell {
-                                x: at.x, y: at.y, z: -i32::from(at.floor),
+                                x: at.x, y: at.y, z: i32::from(at.floor),
                             };
                             let tile = source_world.immutable_tile(source_world.scope(), cell).ok()?;
                             let flags = tile.flags();

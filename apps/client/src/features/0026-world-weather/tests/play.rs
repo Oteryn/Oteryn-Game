@@ -4,7 +4,7 @@ use oteryn_session::{ActorPosition, world_clock::WorldClock, world_weather::Worl
 #[test]
 fn weather_replaces_clears_and_tracks_floor_without_losing_light()
 -> Result<(), oteryn_renderer::BatchError> {
-    let mut view = PlayView::new(TileCoord::new(0, 0), -7, &[])?;
+    let mut view = PlayView::new(TileCoord::new(0, 0), 7, &[])?;
     view.apply_pushed(&Pushed {
         world_clock: Some(WorldClock {
             tibian_minute: 0,
@@ -38,7 +38,7 @@ fn weather_replaces_clears_and_tracks_floor_without_losing_light()
         own: Some(ActorPosition {
             x: 0,
             y: 0,
-            floor: -8,
+            floor: 8,
         }),
         ..Pushed::default()
     })?;
@@ -47,7 +47,7 @@ fn weather_replaces_clears_and_tracks_floor_without_losing_light()
         own: Some(ActorPosition {
             x: 0,
             y: 0,
-            floor: -7,
+            floor: 7,
         }),
         ..Pushed::default()
     })?;

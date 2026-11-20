@@ -13,6 +13,16 @@ struct Portable {
     saved: Saved,
 }
 impl Saved {
+    pub(super) fn normalize_floor_sign(&mut self) {
+        // Local files written before Global z used a signed floor.
+        for [floor, ..] in &mut self.cells {
+            *floor = floor.saturating_abs();
+        }
+        for marker in &mut self.markers {
+            marker.floor = marker.floor.saturating_abs();
+        }
+    }
+
     pub(super) fn write_to(&self, path: &Path) -> io::Result<()> {
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;
@@ -87,12 +97,13 @@ impl Minimap {
         if bytes.len() as u64 > MAX_BYTES {
             return Err(io::Error::other(tr!("Minimap file is too large")));
         }
-        let portable: Portable = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
+        let mut portable: Portable = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
         if self.world.as_ref() != Some(&portable.world) || self.binding != Some(portable.binding) {
             return Err(io::Error::other(tr!(
                 "This minimap belongs to a different world or content generation"
             )));
         }
+        portable.saved.normalize_floor_sign();
         portable.saved.validate()?;
         portable.saved.write_to(&active)?;
         self.cells = portable
@@ -115,7 +126,7 @@ impl Saved {
             || self.cells.len() > MAX_CELLS
             || self.markers.len() > MAX_MARKERS
             || self.cells.iter().any(|[f, x, y, c]| {
-                !(-15..=0).contains(f)
+                !(0..=15).contains(f)
                     || !(0..=65535).contains(x)
                     || !(0..=65535).contains(y)
                     || ![55, 86].contains(c)
@@ -123,7 +134,7 @@ impl Saved {
             || self.markers.iter().any(|m| {
                 !(0..=65535).contains(&m.x)
                     || !(0..=65535).contains(&m.y)
-                    || !(-15..=0).contains(&m.floor)
+                    || !(0..=15).contains(&m.floor)
                     || m.color > 3
                     || m.label.trim().is_empty()
                     || m.label.len() > 128

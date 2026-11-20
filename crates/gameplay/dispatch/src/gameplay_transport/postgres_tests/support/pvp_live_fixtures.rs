@@ -579,7 +579,7 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                 target: actor_spell::SpellTarget::Position(actor_spell::SpellTargetPosition {
                     x: 1,
                     y: 11,
-                    floor,
+                    floor: floor.abs(),
                 }),
                 aim_at_target: true,
             };

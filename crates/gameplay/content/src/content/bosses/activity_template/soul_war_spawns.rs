@@ -95,11 +95,8 @@ impl ActiveGeneration {
             .map(|row| {
                 let [x, y, floor] = row.position;
                 if let Some(map) = map {
-                    map.immutable_tile(
-                        map.scope(),
-                        crate::content::LogicalCell { x, y, z: -floor },
-                    )
-                    .map_err(|_| R::OutsideQualifiedMap)?;
+                    map.immutable_tile(map.scope(), crate::content::LogicalCell { x, y, z: floor })
+                        .map_err(|_| R::OutsideQualifiedMap)?;
                 } else {
                     room.movement_cells()
                         .index()

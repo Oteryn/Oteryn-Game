@@ -449,10 +449,10 @@ mod soulpit_preflight_tests {
             let kernel = runtime.borrow_soulpit_kernel().map_err(debug)?;
             kernel
                 .carrier
-                .spawn_soulpit_wave(
+                .spawn_native_soulpit_wave(
                     kernel.continuity,
                     kernel.content,
-                    native.policies(),
+                    native,
                     SoulpitWaveRequest {
                         handoff_id: id(14),
                         wave: 1,

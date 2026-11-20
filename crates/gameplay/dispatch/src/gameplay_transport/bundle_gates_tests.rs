@@ -1022,6 +1022,7 @@ impl<'ast> Visit<'ast> for Constructions<'ast> {
 /// owners in `mod.rs`, its one production construction in `serve.rs`, the shared test
 /// constructor and explicit fixture room overrides.
 const CONSTRUCTIONS: &[(&str, usize)] = &[
+    ("gameplay_transport/postgres_tests/cwarlock.rs", 1),
     (
         "gameplay_transport/postgres_tests/support/m25_ahau_exit_fixtures.rs",
         1,
@@ -1129,6 +1130,11 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     // The proficiency fixture binds its Bundle combat view and withholds qualification.
     (
         "gameplay_transport/postgres_tests/support/proficiency_modification_fixtures.rs",
+        1,
+    ),
+    // The Ancient Tombs supplies the combat room for its Bundle fixture; qualified room stays None.
+    (
+        "gameplay_transport/postgres_tests/qcx_the_ancient_tombs.rs",
         1,
     ),
     // Threatened Dreams supplies the combat room for its Bundle fixture.

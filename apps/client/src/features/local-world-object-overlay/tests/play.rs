@@ -19,12 +19,12 @@ fn overlay_delta_adds_a_marker() -> Result<(), BatchError> {
 fn markers_are_refiltered_when_the_floor_changes() -> Result<(), BatchError> {
     let mut view = view()?;
     assert_eq!(view.marker_count(), 1);
-    view.apply(&moved_to(5, 5, -3))?;
+    view.apply(&moved_to(5, 5, 3))?;
     assert_eq!(view.marker_count(), 1);
     assert_eq!(view.scene().sprites().len(), 2);
     view.apply(&moved_to(100, 200, 0))?;
     assert_eq!(view.marker_count(), 1);
-    view.apply(&moved_to(100, 200, -7))?;
+    view.apply(&moved_to(100, 200, 7))?;
     assert_eq!(view.marker_count(), 0);
     Ok(())
 }

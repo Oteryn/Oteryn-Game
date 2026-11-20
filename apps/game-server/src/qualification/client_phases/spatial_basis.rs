@@ -12,10 +12,7 @@ impl Basis {
     // Legacy fixtures supply their serving-owner basis explicitly; live callers
     // must obtain the current basis through `current` below.
     pub(super) fn floor(self, native: i8) -> i16 {
-        match self {
-            Self::Native => i16::from(native),
-            Self::Legacy => -i16::from(native),
-        }
+        -i16::from(native)
     }
 
     pub(super) fn position(self, at: TilePos) -> ActorPosition {
@@ -28,18 +25,13 @@ impl Basis {
 }
 
 fn resolve(selected: bool, marker: Option<u32>, observed_floor: i16) -> TestResult<Basis> {
-    // Core spatial projection is independent of capability 385. Absence cannot
-    // establish Legacy, and floor zero alone cannot establish either basis.
+    // The snapshot selects the cue route. Both routes use Global z.
     let basis = match (selected, marker) {
         (true, Some(2)) => Basis::Native,
         (true, Some(1)) => Basis::Legacy,
         _ => return Err("qualification spatial basis is unproven by current snapshot".into()),
     };
-    let consistent = match basis {
-        Basis::Native => (-15..=0).contains(&observed_floor),
-        Basis::Legacy => (0..=15).contains(&observed_floor),
-    };
-    if !consistent {
+    if !(0..=15).contains(&observed_floor) {
         return Err("qualification spatial position contradicts current basis snapshot".into());
     }
     Ok(basis)
@@ -61,13 +53,13 @@ mod tests {
 
     #[test]
     fn current_native_and_legacy_markers_validate_observed_floor() -> TestResult {
-        for floor in [-15, -7, 0] {
+        for floor in [15, 7, 0] {
             assert_eq!(resolve(true, Some(2), floor)?, Basis::Native);
         }
         for floor in [0, 7, 15] {
             assert_eq!(resolve(true, Some(1), floor)?, Basis::Legacy);
         }
-        for (marker, floor) in [(2, 7), (2, -16), (1, -7), (1, 16)] {
+        for (marker, floor) in [(2, -7), (2, 16), (1, -7), (1, 16)] {
             assert!(resolve(true, Some(marker), floor).is_err());
         }
         Ok(())
@@ -86,8 +78,7 @@ mod tests {
 
     #[test]
     fn native_house_native_current_marker_sequence_keeps_each_basis() -> TestResult {
-        for (marker, floor, expected) in [(2, -7, -7), (1, 7, 7), (2, -7, -7), (2, 0, 0), (1, 0, 0)]
-        {
+        for (marker, floor, expected) in [(2, 7, 7), (1, 7, 7), (2, 7, 7), (2, 0, 0), (1, 0, 0)] {
             let basis = resolve(true, Some(marker), floor)?;
             let native = if floor == 0 { 0 } else { -7 };
             assert_eq!(basis.floor(native), expected);
@@ -106,7 +97,7 @@ mod tests {
                 floor,
             };
             assert_eq!(fixture_basis.position(at).floor, -i16::from(floor));
-            assert_eq!(Basis::Native.position(at).floor, i16::from(floor));
+            assert_eq!(Basis::Native.position(at).floor, -i16::from(floor));
         }
     }
 }

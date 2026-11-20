@@ -58,6 +58,7 @@ pub fn encode(s: &Snapshot) -> Result<Vec<u8>, Error> {
         || s.map == [0; 32]
         || s.frame == [0; 32]
         || s.player_revision == 0
+        || !(0..=15).contains(&s.floor)
     {
         return Err(Error::Malformed);
     }
@@ -174,6 +175,9 @@ pub fn decode(input: &[u8]) -> Result<Snapshot, Error> {
     let x = i32::from_be_bytes(r.bytes()?);
     let y = i32::from_be_bytes(r.bytes()?);
     let floor = i16::from_be_bytes(r.bytes()?);
+    if !(0..=15).contains(&floor) {
+        return Err(Error::Malformed);
+    }
     let owner_time_us = u64::from_be_bytes(r.bytes()?);
     let player_revision = u64::from_be_bytes(r.bytes()?);
     let invisible = match r.byte()? {
@@ -253,7 +257,7 @@ mod tests {
             frame: [4; 32],
             x: -120,
             y: 300,
-            floor: -7,
+            floor: 7,
             owner_time_us: 50_000,
             player_revision: 2,
             invisible: true,

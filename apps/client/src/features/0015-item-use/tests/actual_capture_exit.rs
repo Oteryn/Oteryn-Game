@@ -72,7 +72,7 @@ async fn gesture(capture: &Capture, key: &str, leaving: bool) -> Result<(), Scop
         )
     };
     render_until(&mut view, &link, destination, label).await?;
-    assert_eq!(view.floor, -8);
+    assert_eq!(view.floor, 8);
     assert!(view.scene().sprites().len() > 1);
     drop(link);
     runner.await?;

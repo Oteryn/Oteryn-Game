@@ -490,7 +490,7 @@ mod tests {
         let door_tile = ActorPosition {
             x: 6,
             y: 0,
-            floor: -7,
+            floor: 7,
         };
         let session = || {
             (

@@ -1,5 +1,6 @@
 use oteryn_client::GameplayEntryError;
 use oteryn_client::native_login::{LoginForm, LoginSettings, error_text};
+use oteryn_session_tcp::{RootCertificateError, load_root_certificate};
 
 #[test]
 fn native_login_input_validation_and_retry_projection() {
@@ -72,9 +73,15 @@ fn native_login_round_trip_pending_edit_and_retry() -> Result<(), Box<dyn std::e
     invalid = settings.clone();
     invalid.character_id = "not-a-character".into();
     assert!(invalid.validate().is_err());
-    invalid = settings.clone();
-    invalid.dev_root = directory.join("absent.pem").to_string_lossy().into_owned();
-    assert!(invalid.validate().is_err());
+    let absent_root = directory.join("absent.pem");
+    let mut missing_root = settings.clone();
+    missing_root.dev_root = absent_root.to_string_lossy().into_owned();
+    let config = missing_root.config()?;
+    assert_eq!(config.dev_root, absent_root);
+    assert!(matches!(
+        load_root_certificate(&config.dev_root),
+        Err(RootCertificateError::Io(error)) if error.kind() == std::io::ErrorKind::NotFound
+    ));
     std::fs::write(&path, b"{bad-json")?;
     assert!(LoginSettings::load(&path).is_err());
     assert!(LoginSettings::default().save(&path).is_err());

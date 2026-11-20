@@ -31,7 +31,7 @@ fn capacity_progress_and_cancel_cross_real_gateway_and_tls_admission() -> TestRe
                     }
                     if let Some(result) = entry.poll() {
                         assert_eq!(
-                            result.as_ref().err().copied(),
+                            result.as_ref().err().cloned(),
                             Some(GameplayEntryError::Rejected(
                                 PublicClass::SessionUnavailable
                             ))

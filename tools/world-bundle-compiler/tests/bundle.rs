@@ -179,6 +179,26 @@ fn compilation_is_byte_identical_and_equivalent_to_the_source() -> TestResult {
     assert_eq!(first.bytes, build(BuildClass::NonProduction)?.bytes);
     let read = bundle::read(&first.bytes)?;
     assert_eq!(read.digest, first.digest);
+    let manifest_size = u32::from_le_bytes(first.bytes[8..12].try_into()?) as usize;
+    let rows = bundle::HEADER + manifest_size;
+    let sector_floors: Vec<_> = read
+        .sectors
+        .iter()
+        .enumerate()
+        .map(|(index, sector)| (first.bytes[rows + index * bundle::ENTRY], sector.floor))
+        .collect();
+    assert_eq!(
+        sector_floors
+            .iter()
+            .map(|(wire, _)| *wire)
+            .collect::<std::collections::BTreeSet<_>>(),
+        std::collections::BTreeSet::from([6, 7])
+    );
+    assert!(
+        sector_floors
+            .iter()
+            .all(|&(wire, index)| i16::from(wire) == -i16::from(index))
+    );
     let keys: Vec<&str> = read
         .manifest
         .palette
@@ -452,7 +472,7 @@ fn reader_matches_the_python_b3_codec() -> TestResult {
 fn reseal(mut bytes: Vec<u8>) -> Vec<u8> {
     let body = bytes.len() - 32;
     let mut hash = <sha2::Sha256 as sha2::Digest>::new();
-    sha2::Digest::update(&mut hash, b"OTERYN_WORLD_BUNDLE/v8\0");
+    sha2::Digest::update(&mut hash, b"OTERYN_WORLD_BUNDLE/v9\0");
     sha2::Digest::update(&mut hash, &bytes[..body]);
     let digest: [u8; 32] = sha2::Digest::finalize(hash).into();
     bytes[body..].copy_from_slice(&digest);

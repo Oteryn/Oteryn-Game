@@ -157,7 +157,7 @@ fn depth_patterns_follow_the_floor() -> TestResult {
     let appearance = index.get(290).ok_or("appearance 290")?;
     assert_eq!(appearance.pattern_depth, 2);
     let ground = index.resolve(&sheets, 290, Placement::at(0, 0, 0))?;
-    let seven = index.resolve(&sheets, 290, Placement::at(0, 0, -7))?;
+    let seven = index.resolve(&sheets, 290, Placement::at(0, 0, 7))?;
     assert_ne!(ground.cells, seven.cells);
     let expected_ground = appearance.sprite_ids[0];
     let expected_seven = appearance.sprite_ids[(appearance.layers) as usize
@@ -282,8 +282,8 @@ fn bad_ids_are_errors() -> TestResult {
         Err(AssetError::UnknownAppearance { id: unknown })
     );
     assert_eq!(
-        index.resolve(&sheets, 104, Placement::at(0, 0, 1)),
-        Err(AssetError::InvalidFloor { floor: 1 })
+        index.resolve(&sheets, 104, Placement::at(0, 0, -1)),
+        Err(AssetError::InvalidFloor { floor: -1 })
     );
     Ok(())
 }

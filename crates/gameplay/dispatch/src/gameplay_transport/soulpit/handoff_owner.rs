@@ -547,6 +547,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         let handoff_id = *SecureIdentifiers.game_session_id().ok_or(())?.as_bytes();
+        #[cfg(test)]
+        let handoff_id = super::SOULPIT_TEST_HANDOFF_ID
+            .try_with(|id| *id)
+            .unwrap_or(handoff_id);
         let entry = SoulpitEntryRequest {
             handoff_id,
             command: CommandRef::new(

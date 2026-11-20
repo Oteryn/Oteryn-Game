@@ -111,7 +111,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         QuestLogObservation::Changed(QuestLogSource {
             map_marks: if entry.map_marks_world == Some(world) {
-                entry.map_marks.clone()
+                entry
+                    .map_marks
+                    .iter()
+                    .cloned()
+                    .map(|mut mark| {
+                        mark.floor = mark.floor.saturating_abs();
+                        mark
+                    })
+                    .collect()
             } else {
                 Vec::new()
             },

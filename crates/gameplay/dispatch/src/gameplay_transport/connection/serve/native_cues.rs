@@ -124,15 +124,11 @@ pub(super) async fn refresh_house_effects<S: AsyncWrite + Unpin, A: FreshAdmissi
         .filter(|(_, position, _)| super::outbound::movement_effect_visible(observer, *position))
         .enumerate()
         .filter_map(|(index, (_, position, effect))| {
-            let mut event = super::outbound::movement_magic_effect_event(
+            super::outbound::movement_magic_effect_event(
                 u32::try_from(index + 1).ok()?,
                 position,
                 effect,
-            )?;
-            if let wire::PresentationEventKind::MagicEffect { position: at, .. } = &mut event.kind {
-                at.floor = cue_floor(position.floor, native)?;
-            }
-            Some(event)
+            )
         })
         .collect();
     if !events.is_empty() {
@@ -193,25 +189,15 @@ fn observer(
         })
         .map(|entry| entry.position)
 }
-// Map callback queues retain the canonical native -z floor. Project exactly
-// once into the independently qualified observer's current wire frame.
-fn cue_floor(floor: i8, native: bool) -> Option<i16> {
-    let floor = i16::from(floor);
-    if !(-15..=0).contains(&floor) {
-        return None;
-    }
-    if native {
-        Some(floor)
-    } else {
-        floor.checked_neg()
-    }
+// Map callback positions use the bundle tile index's signed floor.
+fn cue_floor(floor: i8) -> Option<i16> {
+    (-15..=0).contains(&floor).then_some(-i16::from(floor))
 }
 fn speech_line(
     speech: &crate::map::facts::MovementSpeech,
     channel: &crate::gameplay_transport::world_spatial::ChannelEntities,
     observer: oteryn_protocol_oteryn::world_spatial::ActorPosition,
     monster_mode: bool,
-    native_floor: bool,
 ) -> Option<ChatLine> {
     use crate::chat::{ChatPosition, Heard, SpeechMode};
     use oteryn_protocol_oteryn::chat::{ChatSpeaker, ChatSpeechMode};
@@ -262,7 +248,7 @@ fn speech_line(
         position: oteryn_protocol_oteryn::world_spatial::ActorPosition {
             x: i32::from(speech.position.x),
             y: i32::from(speech.position.y),
-            floor: cue_floor(speech.position.floor, native_floor)?,
+            floor: cue_floor(speech.position.floor)?,
         },
     })
 }
@@ -381,12 +367,10 @@ pub(super) async fn refresh<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
                             super::outbound::movement_magic_effect_event(1, position, effect)?;
                         if let wire::PresentationEventKind::MagicEffect {
                             source: event_source,
-                            position: event_position,
                             ..
                         } = &mut event.kind
                         {
                             *event_source = source;
-                            event_position.floor = cue_floor(position.floor, native_wire)?;
                         }
                         Some(event)
                     }
@@ -398,7 +382,7 @@ pub(super) async fn refresh<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
                             Some(oteryn_protocol_oteryn::world_spatial::ActorPosition {
                                 x: i32::from(p.x),
                                 y: i32::from(p.y),
-                                floor: cue_floor(p.floor, native_wire)?,
+                                floor: cue_floor(p.floor)?,
                             })
                         };
                         Some(wire::PresentationEvent {
@@ -475,7 +459,7 @@ pub(super) async fn refresh<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
         let monster_mode = session
             .selected_capabilities
             .contains(wire::CAPABILITY_AMBIENT_SOUND_V1);
-        if let Some(line) = speech_line(&speech, &channel, observer, monster_mode, native_wire) {
+        if let Some(line) = speech_line(&speech, &channel, observer, monster_mode) {
             let encoded = if native_wire {
                 oteryn_protocol_oteryn::native_map_cues::encode_native_map_chat_line(&line)
                     .ok()

@@ -137,9 +137,11 @@ fn hit(
 #[test]
 fn instance_wave_attempts_preserve_partial_failure_and_replay_without_refill() -> TestResult {
     let (mut carrier, owner, pin, policies) = fixture(3, true)?;
-    let request = request(1, BossAbility::Overpower);
+    let mut request = request(1, BossAbility::Overpower);
+    let blocked = request.positions[0].as_mut().ok_or("preferred tile")?;
+    blocked.y = 31137;
     let first = carrier
-        .spawn_soulpit_wave(&owner, &pin, &policies, request.clone(), |at| at.x != 32363)
+        .spawn_soulpit_wave(&owner, &pin, &policies, request.clone(), |at| at.y == 31133)
         .map_err(debug)?;
     assert!(first[0].is_none());
     assert_eq!(
@@ -191,6 +193,165 @@ fn instance_wave_attempts_preserve_partial_failure_and_replay_without_refill() -
         Err(CarrierError::WrongScope)
     );
     assert_eq!(channel, before, "Channel cannot become a Soulpit scope");
+    Ok(())
+}
+
+#[test]
+fn ordinary_soulpit_spawn_uses_a_legal_neighbour_when_its_tile_is_occupied() -> TestResult {
+    let (mut carrier, owner, pin, policies) = fixture(2, true)?;
+    let mut request = request(1, BossAbility::Overpower);
+    let preferred = request.positions[0].ok_or("preferred tile")?;
+    let neighbour = MovementLocalPosition {
+        x: preferred.x + 1,
+        y: preferred.y + 1,
+        ..preferred
+    };
+    request.positions = [None; MONSTERS_PER_WAVE];
+    request.positions[..2].fill(Some(preferred));
+    let actors = carrier
+        .spawn_soulpit_wave(&owner, &pin, &policies, request, |at| {
+            at == preferred || at == neighbour
+        })
+        .map_err(debug)?;
+    let first = actors[0].ok_or("first ordinary spawn")?;
+    let second = actors[1].ok_or("ordinary spawn beside the occupied tile")?;
+    let census = carrier.soulpit_actors(&owner, id(7)).map_err(debug)?;
+    assert!(
+        census
+            .iter()
+            .any(|facts| facts.actor == first.actor && facts.position == preferred)
+    );
+    assert!(
+        census
+            .iter()
+            .any(|facts| facts.actor == second.actor && facts.position == neighbour)
+    );
+    Ok(())
+}
+
+#[test]
+fn soulpit_pusher_can_share_a_pushable_monsters_tile() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> TestResult {
+            let (mut carrier, owner, _, _) = fixture(3, true)?;
+            let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../../content/spells.manifest.json");
+            let native = oteryn_gameplay_content::content::native_gameplay::retained_callback_native_fixture_at(
+                carrier.runtime_scope.world_id(), &manifest);
+            let pin = ChannelContentPin::from_activation(
+                carrier.runtime_scope.world_id(),
+                1,
+                native.source_digest(),
+                [2; 32],
+                [3; 32],
+                [4; 32],
+                (32375, 31151, 8),
+            );
+            let mut request = request(1, BossAbility::Overpower);
+            request.species = "oteryn:creature.killer_rabbit".into();
+            let occupied = request.positions[0].ok_or("preferred tile")?;
+            let blocked = MovementLocalPosition { x: occupied.x + 1, ..occupied };
+            request.positions = [None; MONSTERS_PER_WAVE];
+            request.positions[..3].copy_from_slice(&[Some(occupied), Some(occupied), Some(blocked)]);
+            let actors = carrier
+                .spawn_native_soulpit_wave(&owner, &pin, &native, request, |at| at == occupied)
+                .map_err(debug)?;
+            assert!(actors[0].is_some(), "first rabbit occupies the legal tile");
+            assert!(actors[1].is_some(), "preferred tile admits a pusher alongside a pushable rabbit");
+            assert!(actors[2].is_some(), "adjacent tile admits a pusher alongside pushable rabbits");
+            let census = carrier.soulpit_actors(&owner, id(7)).map_err(debug)?;
+            assert_eq!(census.len(), 3);
+            assert!(census.iter().all(|entry| entry.position == occupied && entry.health > 0));
+            Ok(())
+        })
+        .map_err(debug)?
+        .join()
+        .map_err(|_| "Soulpit pusher test thread panicked".to_string())?
+}
+
+#[test]
+fn soulpit_neighbour_search_stays_inside_arena() -> TestResult {
+    let (mut carrier, owner, pin, policies) = fixture(2, true)?;
+    let mut request = request(1, BossAbility::Overpower);
+    let border = MovementLocalPosition {
+        x: *ARENA_X.start(),
+        y: *ARENA_Y.start(),
+        floor: 8,
+    };
+    let outside = MovementLocalPosition {
+        x: border.x - 1,
+        ..border
+    };
+    request.positions = [None; MONSTERS_PER_WAVE];
+    request.positions[..2].fill(Some(border));
+    let actors = carrier
+        .spawn_soulpit_wave(&owner, &pin, &policies, request, |at| {
+            at == border || at == outside
+        })
+        .map_err(debug)?;
+    assert!(actors[0].is_some());
+    assert!(
+        actors[1].is_none(),
+        "terrain outside the wave arena cannot admit a fallback"
+    );
+    Ok(())
+}
+
+#[test]
+fn soulpit_neighbour_shuffle_is_a_replayable_slot_keyed_permutation() -> TestResult {
+    let root = GameplayDecisionRoot::from_bytes([1; 32]);
+    let occurrence = DecisionOccurrenceId::from_bytes(id(7));
+    let expected: std::collections::BTreeSet<_> = (-1..=1)
+        .flat_map(|x| (-1..=1).map(move |y| (x, y)))
+        .filter(|&offset| offset != (0, 0))
+        .collect();
+    let first = shuffled_spawn_neighbours(&root, occurrence, 1).map_err(debug)?;
+    let second = shuffled_spawn_neighbours(&root, occurrence, 2).map_err(debug)?;
+    assert_eq!(
+        first.into_iter().collect::<std::collections::BTreeSet<_>>(),
+        expected
+    );
+    assert_eq!(
+        second
+            .into_iter()
+            .collect::<std::collections::BTreeSet<_>>(),
+        expected
+    );
+    assert_eq!(
+        shuffled_spawn_neighbours(&root, occurrence, 1).map_err(debug)?,
+        first
+    );
+    assert_ne!(first, second);
+
+    let place = |slot: usize| -> TestResult<MovementLocalPosition> {
+        let (mut carrier, owner, pin, policies) = fixture(2, true)?;
+        let mut request = request(1, BossAbility::Overpower);
+        let center = request.positions[0].ok_or("preferred tile")?;
+        request.positions = [None; MONSTERS_PER_WAVE];
+        request.positions[0] = Some(center);
+        request.positions[slot] = Some(center);
+        let actors = carrier
+            .spawn_soulpit_wave(&owner, &pin, &policies, request, |_| true)
+            .map_err(debug)?;
+        let placed = actors[slot].ok_or("spawn on an open neighbour")?;
+        carrier
+            .soulpit_actors(&owner, id(7))
+            .map_err(debug)?
+            .into_iter()
+            .find(|entry| entry.actor == placed.actor)
+            .map(|entry| entry.position)
+            .ok_or_else(|| "placed actor position".into())
+    };
+    let first_tile = place(1)?;
+    assert_eq!(place(1)?, first_tile);
+    assert!(
+        (2..MONSTERS_PER_WAVE)
+            .map(place)
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
+            .any(|position| position != first_tile)
+    );
     Ok(())
 }
 

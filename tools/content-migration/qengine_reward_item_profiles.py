@@ -21,6 +21,8 @@ import questl2_ready
 
 IDS = {21897, 21898, 21899, 21901, 21902, 21905, 21906, 30168, 30169, 37002, 37003, 768, 769, 770, 3723, 15698, 16103, 16165, 16167, 16242, 12517, 12413, 16128, 16129, 20275, 20276, 5903, 5947, 133, 139, 875, 3244, 9041, 10198, 10199, 11700, 11701,
        4867, 5886, 5924, 5937, 5938, 5939, 5940, 5921, 6107, 5945, 7289, 6099, 6100, 6101, 6102, 6126, 12599, 12601, 12803, 22516, 22721, 28792, 28793}
+# Ferumbras chest: the Rift Tapestry and Teddy need portable reward custody.
+IDS |= {22731, 22775}
 # M51 arena trophy custody is qualified from the same pinned physical sources.
 CUSTODY_PROMOTIONS = {5805, 5806}
 # Closed source qualification admits zero speed only for these three native Items.
@@ -86,6 +88,8 @@ STATIC_IDS = {8995, 8996, 9527, 17677, 17679, 17681, 21573, 23163, 32173, 32537}
 SIDE_IDS |= STATIC_IDS | {3114, 3456, 3661, 32197, 32225, 32226, 32227, 32228, 32582, 32583, 32584, 32585, 32602, 32757}
 SIDE_IDS |= {3537, 3543, 3587, 3589, 3590, 3593, 11544}
 
+# Existing Dworc and Merlkin loot yields require portable native custody.
+IDS |= {3348, 3403}
 IDS |= SIDE_IDS
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'

@@ -8,7 +8,7 @@ impl Scene {
             return false;
         };
         self.world.draw_floors().into_iter().any(|floor| {
-            floor > self.world.center().2
+            floor < self.world.center().2
                 && self
                     .world
                     .floor_tile(floor, self.own.x + anchor.x, self.own.y + anchor.y)
@@ -111,7 +111,7 @@ impl Scene {
                 )?;
             }
             floor_quads.push((start..sprites.len(), floor));
-            if floor < self.world.center().2 && self.floor_separator > 0 && sprites.len() > start {
+            if floor > self.world.center().2 && self.floor_separator > 0 && sprites.len() > start {
                 dimmed.push((start..sprites.len(), self.floor_separator));
             }
         }

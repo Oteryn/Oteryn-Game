@@ -339,7 +339,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
             target: actor_spell::SpellTarget::Position(actor_spell::SpellTargetPosition {
                 x: position.x,
                 y: position.y,
-                floor: position.floor,
+                floor: position.floor.abs(),
             }),
             aim_at_target: false,
         });

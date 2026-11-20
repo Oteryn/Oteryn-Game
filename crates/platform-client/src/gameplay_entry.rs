@@ -4,9 +4,9 @@ use crate::native_login::{NativeLoginClient, PublicClass, RetryPacing};
 use crate::{PlatformClient, PlatformClientConfig};
 use oteryn_foundation::CancellationToken;
 use std::fmt::{self, Display, Formatter};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GameplayEntryError {
     /// No native login is configured: the pre-native client never requests a route or credential.
     NativeProtocolUnavailable,
@@ -15,6 +15,13 @@ pub enum GameplayEntryError {
     /// The Platform directory does not list the configured World; nothing was requested.
     WorldUnavailable,
     ChannelFull,
+    ClientUpdateRequired {
+        manual_download_url: String,
+        updater_started: bool,
+    },
+    Maintenance {
+        retry_at: Instant,
+    },
     /// Login or admission ended with this FND-04A public class.
     Rejected(PublicClass),
 }
@@ -25,6 +32,8 @@ impl Display for GameplayEntryError {
             Self::NativeProtocolUnavailable => "native gameplay protocol is not available",
             Self::InvalidConfiguration => "native login configuration is invalid",
             Self::ChannelFull => "This channel is full.",
+            Self::ClientUpdateRequired { .. } => "please update the client",
+            Self::Maintenance { .. } => "the game is undergoing maintenance",
             Self::WorldUnavailable => "the selected World is not available",
             Self::Rejected(PublicClass::RetryLogin) => "login failed; please try again",
             Self::Rejected(PublicClass::AuthenticationRequired) => "please sign in again",

@@ -58,6 +58,16 @@ pub trait CurrentSpellAccessOwner: owner_registration::Registered {
         binding: &CastFactsBinding,
         now_micros: u64,
     ) -> Result<AccessProjections, AccessFactsError>;
+
+    /// Restore-only evidence of an explicit current denial. Ordinary cast projections
+    /// keep their existing authority semantics.
+    fn read_familiar_restore_denial(
+        &self,
+        _binding: &CastFactsBinding,
+        _now_micros: u64,
+    ) -> Option<CurrentProjection<()>> {
+        None
+    }
 }
 /// Explicit missing external producer. This supplies no known-negative or zero-stage projection.
 pub struct UnavailableAccessOwner;

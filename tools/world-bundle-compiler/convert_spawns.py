@@ -49,6 +49,19 @@ SOURCE = {
 DIRECTIONS = {None: "north", "0": "north", "1": "east", "2": "south", "3": "west"}
 
 
+# Public Ancient Tombs bosses use the fixed respawn in Crystal 201189f8
+# data-global/world/world-monster.xml:186588–199168, also retained by the
+# pinned Summer map. Match each exact source point before admitting it.
+PHARAOHS = {
+    "oteryn:creature.dipthrah": (33097, 32589, 15),
+    "oteryn:creature.mahrdis": (33191, 32957, 15),
+    "oteryn:creature.morguthis": (33172, 32694, 14),
+    "oteryn:creature.omruc": (33201, 33001, 14),
+    "oteryn:creature.rahemos": (33076, 32780, 14),
+    "oteryn:creature.thalas": (33396, 32839, 14),
+    "oteryn:creature.vashresamun": (33121, 32655, 15),
+}
+
 def encounter_bosses() -> set[str]:
     """Keep quest-owned creatures and explicit encounter/room actors out of world clocks."""
     bindings = json.loads((ROOT / "imports/canary/bindings/creatures.json").read_text())
@@ -121,6 +134,7 @@ def convert(xml: bytes) -> dict[str, str]:
     chances_bytes = BOSS_CHANCES.read_bytes()
     chances = json.loads(chances_bytes)["bosses"]
     scheduled_bosses = []
+    pharaohs = {}
     for ordinal, element in enumerate(ET.fromstring(xml)):
         cx, cy, cz = (int(element.get(k)) for k in ("centerx", "centery", "centerz"))
         base = f"oteryn:spawn.x{cx}_y{cy}_z{cz}"
@@ -147,7 +161,20 @@ def convert(xml: bytes) -> dict[str, str]:
             )
         live_points = []
         for point in points:
-            if point["creature"] in boss_keys:
+            if point["creature"] in PHARAOHS:
+                creature = point["creature"]
+                x, y, z = PHARAOHS[creature]
+                if (creature in pharaohs or point["cell"] != {"floor": z, "x": x, "y": y}
+                        or point["respawn_ms"] != 90_000):
+                    sys.exit(f"{key}: Ancient Tombs spawn differs from its source")
+                scheduled = {key: value for key, value in point.items() if key != "respawn_ms"}
+                scheduled["boss_policy"] = {"respawn": {"min_s": 90, "max_s": 90}}
+                pharaohs[creature] = {"declaration": {
+                    "centre": {"floor": cz, "x": cx, "y": cy},
+                    "identity": {"key": f"{key}.pharaoh", "revision": "definition-r1"},
+                    "points": [scheduled],
+                }}
+            elif point["creature"] in boss_keys:
                 if point["creature"] in encounter_bound:
                     held_bosses.append({"source": key, "point": point,
                                         "reason": "encounter-bound"})
@@ -182,7 +209,10 @@ def convert(xml: bytes) -> dict[str, str]:
                 }
             }
         )
+    if pharaohs.keys() != PHARAOHS.keys():
+        sys.exit("Ancient Tombs source spawns are incomplete")
     records.extend(scheduled_bosses)
+    records.extend(pharaohs[key] for key in sorted(pharaohs))
     files, shards = {}, []
     for start in range(0, len(records), SHARD_SIZE):
         part = records[start : start + SHARD_SIZE]

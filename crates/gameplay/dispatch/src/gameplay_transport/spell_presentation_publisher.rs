@@ -155,12 +155,12 @@ async fn current_observer(
 fn view(p: MovementLocalPosition) -> Result<VisibilityPosition, Error> {
     VisibilityPosition::new(p.x, p.y, p.floor).map_err(|_| Error::UnknownFrame)
 }
-fn pos(p: MovementLocalPosition) -> ActorPosition {
-    ActorPosition {
+fn wire_position(p: MovementLocalPosition) -> Option<ActorPosition> {
+    Some(ActorPosition {
         x: p.x,
         y: p.y,
-        floor: p.floor,
-    }
+        floor: tibia_floor(p.floor)?,
+    })
 }
 /// D87's floor distance and projected plane distance, on Tibia floors so a native floor ranks
 /// like its Tibia floor (see [`VisibilityPosition`]).
@@ -209,20 +209,21 @@ fn selected_events(
                 PresentationCause::FamiliarDefense { .. } => wire::Source::Creatures,
             }
         };
+        let position = wire_position(event.event.position).ok_or(Error::UnknownFrame)?;
         let body = match event.event.cue {
             Cue::Effect(id) => wire::Body::Effect {
-                position: pos(event.event.position),
+                position,
                 id,
                 source,
             },
             Cue::Projectile(id) => wire::Body::Missile {
-                from: pos(event.cause.origin()),
-                to: pos(event.event.position),
+                from: wire_position(event.cause.origin()).ok_or(Error::UnknownFrame)?,
+                to: position,
                 id,
                 source,
             },
             Cue::Sound(id) => wire::Body::Sound {
-                position: pos(event.event.position),
+                position,
                 id,
                 source,
                 secondary: None,
@@ -758,24 +759,19 @@ impl SoundPublisher {
             } else {
                 PresentationSource::Others
             };
+            let position = wire_position(sound.position)?;
             events.push(PresentationEvent {
                 decision_ordinal: u32::try_from(events.len() + 1).ok()?,
                 emission_ordinal: 1,
                 kind: if sound.effect {
                     PresentationEventKind::MagicEffect {
-                        position: ActorPosition {
-                            floor: tibia_floor(sound.position.floor)?,
-                            ..pos(sound.position)
-                        },
+                        position,
                         effect_id: u32::from(sound.cue),
                         source,
                     }
                 } else {
                     PresentationEventKind::Sound {
-                        position: ActorPosition {
-                            floor: tibia_floor(sound.position.floor)?,
-                            ..pos(sound.position)
-                        },
+                        position,
                         cue_id: u32::from(sound.cue),
                         source,
                         secondary_cue_id: u32::from(sound.secondary),
