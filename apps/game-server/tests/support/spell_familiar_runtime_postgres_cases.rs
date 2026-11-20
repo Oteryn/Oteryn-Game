@@ -281,7 +281,7 @@ fn source_familiar_look_and_genuine_lethal_cleanup_require_matching_durable_rece
             return Err("fresh familiar receipt".into());
         };
         let mut changed = current.clone();
-        changed.premium = false;
+        changed.premium = Some(false);
         assert!(
             commit_familiar(
                 &mut physical,
