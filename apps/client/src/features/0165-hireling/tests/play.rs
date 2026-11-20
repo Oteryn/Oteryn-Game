@@ -8,6 +8,8 @@ use std::time::Duration;
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 
+const SESSION_WAIT: Duration = Duration::from_secs(3);
+
 struct Peer {
     commands: Arc<Mutex<Vec<hireling::Request>>>,
 }
@@ -51,9 +53,38 @@ impl Stepper for Peer {
     }
 }
 
-async fn ready(link: &PlayLink) {
-    while !link.hireling_panel().selected || link.hireling_panel().pending.is_some() {
-        tokio::task::yield_now().await;
+async fn ready(
+    link: &PlayLink,
+    task: &tokio::task::JoinHandle<()>,
+    phase: &str,
+) -> Result<(), Error> {
+    tokio::time::timeout(SESSION_WAIT, async {
+        loop {
+            let panel = link.hireling_panel();
+            if task.is_finished() {
+                return Err(format!(
+                    "hireling session ended during {phase}: selected={}, pending={:?}",
+                    panel.selected, panel.pending
+                )
+                .into());
+            }
+            if panel.selected && panel.pending.is_none() {
+                return Ok(());
+            }
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .map_err(|_| format!("hireling session timed out during {phase}"))?
+}
+
+async fn stop(mut task: tokio::task::JoinHandle<()>) -> Result<(), Error> {
+    match tokio::time::timeout(SESSION_WAIT, &mut task).await {
+        Ok(result) => result.map_err(Into::into),
+        Err(_) => {
+            task.abort();
+            Err("hireling session shutdown timed out".into())
+        }
     }
 }
 
@@ -70,15 +101,15 @@ fn hireling_controls_use_real_codec_requests_and_apply_replies() -> Result<(), E
             incoming,
             outbox,
         ));
-        ready(&link).await;
+        ready(&link, &task, "capability selection").await?;
         link.hireling_request(Intent::Refresh);
-        ready(&link).await;
+        ready(&link, &task, "refresh reply").await?;
         link.hireling_target(7, 9, 1);
         link.hireling_request(Intent::Summon);
-        ready(&link).await;
+        ready(&link, &task, "summon reply").await?;
         assert!(panel_text(&link.hireling_panel()).contains("summoned"));
         link.hireling_request(Intent::Dismiss);
-        ready(&link).await;
+        ready(&link, &task, "dismiss reply").await?;
         assert_eq!(
             *commands.lock().unwrap_or_else(PoisonError::into_inner),
             vec![
@@ -92,7 +123,7 @@ fn hireling_controls_use_real_codec_requests_and_apply_replies() -> Result<(), E
             ]
         );
         drop(link);
-        task.await?;
+        stop(task).await?;
         Ok::<(), Error>(())
     })??;
     Ok(())
@@ -100,7 +131,8 @@ fn hireling_controls_use_real_codec_requests_and_apply_replies() -> Result<(), E
 
 #[test]
 fn map_pick_summons_at_the_actor_position_on_the_wire() -> Result<(), Error> {
-    std::thread::Builder::new().stack_size(64 << 20).spawn(|| {
+    let builder = std::thread::Builder::new().stack_size(64 << 20);
+    let thread = builder.spawn(|| {
         let runtime = oteryn_client_runtime::ClientRuntime::new()?;
         runtime.block_on(async {
             use crate::play::{PlayView, mailbox::lock};
@@ -115,28 +147,40 @@ fn map_pick_summons_at_the_actor_position_on_the_wire() -> Result<(), Error> {
                 new_revision: 1,
                 value: WorldSpatialObservation {
                     content_generation: [0; 32],
-                    actor_position: ActorPosition { x: 100, y: 100, floor: -7 },
+                    actor_position: ActorPosition {
+                        x: 100,
+                        y: 100,
+                        floor: 7,
+                    },
                 },
             })]);
             let task = tokio::spawn(run_session(
-                Peer { commands: Arc::clone(&commands) },
+                Peer {
+                    commands: Arc::clone(&commands),
+                },
                 incoming,
                 outbox,
             ));
-            ready(&link).await;
-            let mut view = PlayView::new(TileCoord::new(100, 100), -7, &[])?;
+            ready(&link, &task, "capability selection").await?;
+            let mut view = PlayView::new(TileCoord::new(100, 100), 7, &[])?;
             let form = crate::play::feature_0165_hireling::view::form(&link);
             (form.submit)(&mut lock(&link.mailbox), &link.commands, 3, Vec::new());
             view.primary_click(TileCoord::new(101, 100), &link)?;
+            assert_eq!(link.hireling_panel().target, Some((101, 100, 7)));
             (form.submit)(&mut lock(&link.mailbox), &link.commands, 0, Vec::new());
-            ready(&link).await;
+            ready(&link, &task, "summon reply").await?;
             assert_eq!(
                 *commands.lock().unwrap_or_else(PoisonError::into_inner),
-                [hireling::Request::Summon { x: 100, y: 100, floor: -7 }]
+                [hireling::Request::Summon {
+                    x: 100,
+                    y: 100,
+                    floor: 7
+                }]
             );
             drop(link);
-            task.await?;
+            stop(task).await?;
             Ok::<(), Error>(())
         })?
-    })?.join().map_err(|_| "hireling test thread panicked")?
+    })?;
+    thread.join().map_err(|_| "hireling test thread panicked")?
 }
