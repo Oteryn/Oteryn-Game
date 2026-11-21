@@ -52,6 +52,9 @@ pub struct SettingsState {
     background_preferences: bool,
     #[cfg(bevy_shell)]
     session_save: Option<bevy_tasks::Task<Result<(), String>>>,
+    #[cfg(bevy_shell)]
+    session_queued: usize,
+    session_baseline: std::sync::Arc<std::sync::Mutex<super::MiscellaneousPreferences>>,
     input: PreferenceInput,
     control_input: super::controls::ControlInput,
     control_epoch: std::time::Instant,
@@ -63,13 +66,13 @@ pub struct SettingsState {
     last_key: std::collections::BTreeMap<oteryn_input_actions::KeyCode, std::time::Instant>,
 }
 
+#[cfg(bevy_shell)]
+#[path = "background_preferences.rs"]
+mod background_preferences;
 #[path = "session_options.rs"]
 mod session_options;
 #[path = "settings_actions.rs"]
 mod settings_actions;
-#[cfg(bevy_shell)]
-#[path = "background_preferences.rs"]
-mod background_preferences;
 
 impl crate::play::PlayLink {
     /// A visible console owns the text context only while its composer is enabled.

@@ -28,6 +28,7 @@ pub(super) struct LoginState {
     pub advanced: bool,
     pub revision: u64,
     path: Option<PathBuf>,
+    baseline: LoginSettings,
     pending_submit: Option<submission::Pending>,
 }
 impl Default for LoginState {
@@ -39,6 +40,7 @@ impl Default for LoginState {
             advanced: false,
             revision: 0,
             path: None,
+            baseline: LoginSettings::default(),
             pending_submit: None,
         }
     }
@@ -49,7 +51,8 @@ impl LoginState {
             .as_ref()
             .map_or_else(|| Ok(LoginSettings::default()), |p| LoginSettings::load(p));
         let error = loaded.as_ref().err().cloned();
-        self.form = LoginForm::new(loaded.unwrap_or_default().with_env(lookup));
+        self.baseline = loaded.unwrap_or_default();
+        self.form = LoginForm::new(self.baseline.clone().with_env(lookup));
         if let Some(error) = error {
             self.form.feedback(error);
         }
@@ -68,11 +71,10 @@ impl LoginState {
             .path
             .as_ref()
             .ok_or_else(|| "Cannot locate the login configuration directory.".to_owned())
-            .and_then(|p| self.form.settings.save(p));
-        if let Err(error) = saved {
-            self.form.feedback(error.clone());
-            return Err(error);
-        }
+            .and_then(|p| self.form.settings.save_edits(p, &self.baseline));
+        let saved = saved.inspect_err(|error| self.form.feedback(error.clone()))?;
+        self.baseline = saved.clone();
+        self.form.settings = saved;
         self.form.submit()
     }
 }

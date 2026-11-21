@@ -27,9 +27,10 @@ fn submit_at(mailbox: &mut Mailbox, action: usize, selected: &str, path: &Path) 
     let result: Result<(), &str> = (|| {
         match action {
             0 => {
-                let mut book = panel.preset_book.clone();
-                book.insert(&panel.preset_fields[0], &panel.build_code())?;
-                book.save(path)?;
+                let book = update_book(path, |book| {
+                    book.insert(&panel.preset_fields[0], &panel.build_code())?;
+                    Ok(())
+                })?;
                 panel.preset_fields[0] = panel.preset_fields[0].trim().into();
                 panel.preset_book = book;
             }
@@ -44,11 +45,12 @@ fn submit_at(mailbox: &mut Mailbox, action: usize, selected: &str, path: &Path) 
                 panel.diagram.reset_requested = false;
             }
             2 => {
-                let mut book = panel.preset_book.clone();
-                if book.0.remove(panel.preset_fields[0].trim()).is_none() {
-                    return Err(tr!("Select a saved preset name"));
-                }
-                book.save(path)?;
+                let book = update_book(path, |book| {
+                    if book.0.remove(panel.preset_fields[0].trim()).is_none() {
+                        return Err(tr!("Select a saved preset name"));
+                    }
+                    Ok(())
+                })?;
                 panel.preset_book = book;
                 panel.preset_fields[0].clear();
             }
@@ -62,17 +64,18 @@ fn submit_at(mailbox: &mut Mailbox, action: usize, selected: &str, path: &Path) 
                 panel.diagram.reset_requested = false;
             }
             6 => {
-                let mut book = panel.preset_book.clone();
                 let name = panel.preset_fields[0].trim();
-                if name != selected && book.0.contains_key(name) {
-                    return Err("A preset with that name already exists");
-                }
-                let code = book
-                    .0
-                    .remove(selected)
-                    .ok_or("Select a saved preset name")?;
-                book.insert(name, &code)?;
-                book.save(path)?;
+                let book = update_book(path, |book| {
+                    if name != selected && book.0.contains_key(name) {
+                        return Err("A preset with that name already exists");
+                    }
+                    let code = book
+                        .0
+                        .remove(selected)
+                        .ok_or("Select a saved preset name")?;
+                    book.insert(name, &code)?;
+                    Ok(())
+                })?;
                 panel.preset_fields[0] = name.into();
                 panel.preset_book = book;
             }
@@ -87,6 +90,20 @@ fn submit_at(mailbox: &mut Mailbox, action: usize, selected: &str, path: &Path) 
         tr!("Preset updated. Loaded points are proposals; Save Wheel submits them.").into()
     });
 }
+fn update_book(
+    path: &Path,
+    edit: impl FnOnce(&mut PresetBook) -> Result<(), &'static str>,
+) -> Result<PresetBook, &'static str> {
+    let error = || tr!("Cannot save presets");
+    let _lock = crate::atomic_file::lock(path).map_err(|_| error())?;
+    let mut book = PresetBook::load(path)?;
+    edit(&mut book)?;
+    let bytes = serde_json::to_vec_pretty(&serde_json::json!({"version": 1, "presets": book.0}))
+        .map_err(|_| error())?;
+    crate::atomic_file::replace(path, &bytes, true).map_err(|_| error())?;
+    Ok(book)
+}
+
 impl PlayLink {
     pub fn wheel_presets_request(&self, action: usize) {
         let mut mailbox = lock(&self.mailbox);
@@ -124,7 +141,6 @@ pub(in crate::play) fn open_shared(
     let _ = commands;
     lock(shared).wheel.presets_open = true;
 }
-
 
 #[cfg(test)]
 #[path = "tests/e2e_n02.rs"]

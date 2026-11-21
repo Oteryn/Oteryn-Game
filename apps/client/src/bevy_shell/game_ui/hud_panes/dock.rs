@@ -58,17 +58,50 @@ struct Saved {
     floating: Vec<String>,
 }
 
+impl Default for SidebarWidgets {
+    fn default() -> Self {
+        Self {
+            entries: Widget::ALL
+                .into_iter()
+                .map(|widget| Entry {
+                    widget,
+                    dock: Dock::Right,
+                    open: widget.open_by_default(),
+                    minimised: false,
+                    height: widget.content_height(),
+                    floating: false,
+                })
+                .collect(),
+            left: false,
+            extra: false,
+            floating: Vec::new(),
+            saved_revision: None,
+        }
+    }
+}
+
+impl PartialEq for SidebarWidgets {
+    fn eq(&self, other: &Self) -> bool {
+        self.entries == other.entries
+            && self.left == other.left
+            && self.extra == other.extra
+            && self.floating == other.floating
+    }
+}
+
 impl SidebarWidgets {
     /// A missing file is the character's first start: the Global default dock.
     pub(in crate::bevy_shell) fn load(path: &Path) -> io::Result<Self> {
-        let saved: Saved = match std::fs::read(path) {
-            Ok(bytes) => serde_json::from_slice(&bytes)
-                .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?,
-            Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(Self::default()),
-            Err(error) => return Err(error),
+        let Some(revision) = read_revision(path)? else {
+            return Ok(Self::default());
         };
-        Ok(Self::sanitize(saved))
+        let saved = serde_json::from_slice(&revision)
+            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
+        let mut widgets = Self::sanitize(saved);
+        widgets.saved_revision = Some(revision);
+        Ok(widgets)
     }
+
     /// Unknown or repeated modules are dropped and missing ones keep their default place,
     /// so a stale or hand-edited file always yields every module exactly once.
     fn sanitize(saved: Saved) -> Self {
@@ -106,6 +139,7 @@ impl SidebarWidgets {
         }
         Self {
             entries,
+            saved_revision: None,
             left: saved.left,
             extra: saved.extra,
             floating: super::float::REGIONS
@@ -115,7 +149,11 @@ impl SidebarWidgets {
         }
     }
     /// Writes beside the target and renames, so a crash never leaves half a file.
-    pub(in crate::bevy_shell) fn save(&self, path: &Path) -> io::Result<()> {
+    pub(in crate::bevy_shell) fn save(&mut self, path: &Path) -> io::Result<()> {
+        let _lock = crate::atomic_file::try_lock(path)?;
+        if read_revision(path)? != self.saved_revision {
+            return Err(io::Error::other("Dock layout changed in another client"));
+        }
         let saved = Saved {
             left: self.left,
             extra: self.extra,
@@ -135,13 +173,36 @@ impl SidebarWidgets {
         };
         let bytes = serde_json::to_vec_pretty(&saved)
             .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
-        crate::atomic_file::replace(path, &bytes, false)
+        crate::atomic_file::replace(path, &bytes, false)?;
+        self.saved_revision = Some(bytes.into());
+        Ok(())
     }
     /// Reset window layout: the Global default dock, saved at once.
     pub(in crate::bevy_shell) fn reset(&mut self, path: Option<&Path>) -> io::Result<()> {
-        *self = Self::default();
-        path.map_or(Ok(()), |path| self.save(path))
+        let mut reset = Self {
+            saved_revision: self.saved_revision.clone(),
+            ..Self::default()
+        };
+        if let Some(path) = path {
+            reset.save(path)?;
+        }
+        *self = reset;
+        Ok(())
     }
+}
+
+fn read_revision(path: &Path) -> io::Result<Option<std::sync::Arc<[u8]>>> {
+    match std::fs::read(path) {
+        Ok(bytes) => Ok(Some(bytes.into())),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(error),
+    }
+}
+
+fn install_snapshot(widgets: &mut ResMut<SidebarWidgets>, snapshot: SidebarWidgets) {
+    let revision = snapshot.saved_revision.clone();
+    widgets.set_if_neq(snapshot);
+    widgets.bypass_change_detection().saved_revision = revision;
 }
 
 /// How long the dock must stay unchanged before it is written, so a drag writes once.
@@ -178,14 +239,14 @@ pub(super) fn persist(
     if path != state.path {
         if let Some(previous) = state.path.as_deref()
             && (state.pending.is_some() || widgets.is_changed())
-            && let Err(error) = widgets.save(previous)
+            && let Err(error) = widgets.bypass_change_detection().save(previous)
         {
             leprintln!("Could not save window layout: {error}", error = error);
             let previous = previous.to_owned();
             state.unsaved.insert(previous, (widgets.clone(), now));
         }
         if let Some((snapshot, _)) = path.as_ref().and_then(|path| state.unsaved.remove(path)) {
-            widgets.set_if_neq(snapshot);
+            install_snapshot(&mut widgets, snapshot);
             state.path = path;
             state.pending = Some(now);
             return;
@@ -198,7 +259,7 @@ pub(super) fn persist(
             }
             None => SidebarWidgets::default(),
         };
-        widgets.set_if_neq(next);
+        install_snapshot(&mut widgets, next);
         state.path = path;
         state.pending = None;
         return;
@@ -211,7 +272,7 @@ pub(super) fn persist(
         *pending = Some(now);
     }
     if pending.is_some_and(|since| closing || now.saturating_sub(since) >= SAVE_DELAY) {
-        if let Err(error) = widgets.save(path) {
+        if let Err(error) = widgets.bypass_change_detection().save(path) {
             *pending = Some(now);
             leprintln!("Could not save window layout: {error}", error = error);
         } else {

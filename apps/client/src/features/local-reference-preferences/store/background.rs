@@ -1,79 +1,76 @@
 use super::*;
 
 impl PreferenceStore {
-    pub(in super::super) fn apply_in_background(&mut self, preferences: ReferencePreferences) {
-        let previous = std::mem::replace(&mut self.preferences, preferences.clone());
-        if self.replacing {
-            self.enqueue(move |path| {
-                let mut current = Self::load(path.clone())?.preferences().clone();
-                current.rebase_edits(&previous, &preferences)?;
-                Self::write_existing(&path, &current)?;
-                Ok(Some(current))
-            });
-        } else {
-            self.enqueue(move |path| Self::write_existing(&path, &preferences).map(|()| None));
-        }
+    pub(in super::super) fn apply_in_background(
+        &mut self,
+        preferences: ReferencePreferences,
+    ) -> io::Result<()> {
+        self.apply_then(preferences, |_| {})
+    }
+
+    pub(in super::super) fn apply_then(
+        &mut self,
+        preferences: ReferencePreferences,
+        complete: impl FnOnce(bool) + Send + 'static,
+    ) -> io::Result<()> {
+        preferences.validate().map_err(io::Error::other)?;
+        let previous = self.preferences.clone();
+        let edited = preferences.clone();
+        let replacing = self.replacing;
+        self.enqueue(move |path| {
+            let result = Self::write_edits(&path, &previous, &edited)
+                .map(|active| replacing.then_some(active));
+            complete(result.is_ok());
+            result
+        })?;
+        self.preferences = preferences;
+        Ok(())
     }
 
     pub(in super::super) fn replace_in_background(
         &mut self,
         previous: &ReferencePreferences,
         load: impl FnOnce(&Path) -> io::Result<ReferencePreferences> + Send + 'static,
-    ) {
+    ) -> io::Result<()> {
         let previous = previous.clone();
+        self.enqueue(move |path| Self::publish_replacement(&path, &previous, load).map(Some))?;
         self.replacing = true;
-        self.enqueue(move |path| {
-            let mut replacement = load(&path)?;
-            let active = match Self::read_transfer(&path) {
-                Ok(active) => active,
-                Err(error)
-                    if matches!(
-                        error.kind(),
-                        io::ErrorKind::NotFound | io::ErrorKind::InvalidData
-                    ) =>
-                {
-                    previous
-                }
-                Err(error) => return Err(error),
-            };
-            replacement.miscellaneous = active.miscellaneous;
-            Self::write_with_backup(
-                &path,
-                &Self::serialized(&replacement)?,
-                &Self::serialized(&active)?,
-            )?;
-            Ok(Some(replacement))
-        });
+        Ok(())
     }
 
-    pub(in super::super) fn restore_in_background(
+    #[cfg(test)]
+    pub(super) fn restore_in_background(
         &mut self,
         previous: &ReferencePreferences,
     ) -> io::Result<()> {
         self.replace_in_background(previous, |path| {
             Self::read_transfer(&path.with_extension("backup.json"))
-        });
-        Ok(())
+        })
     }
 
     pub(in super::super) fn load_in_background(path: PathBuf, template: Option<PathBuf>) -> Self {
-        let mut store = Self::defaults(path);
+        let mut store = Self::defaults(path.clone());
         store.replacing = true;
-        store.enqueue(move |path| match Self::read_transfer(&path) {
-            Ok(preferences) => Ok(Some(preferences)),
-            Err(error) if error.kind() == io::ErrorKind::NotFound => {
-                let preferences = match template {
-                    Some(template) => {
-                        let preferences = Self::load(template)?.preferences().clone();
-                        Self::write_existing(&path, &preferences)?;
-                        preferences
+        let task = bevy_tasks::IoTaskPool::get().spawn(async move {
+            let result = (|| {
+                let _lock = crate::atomic_file::lock(&path)?;
+                match Self::read_transfer(&path) {
+                    Ok(preferences) => Ok(preferences),
+                    Err(error) if error.kind() == io::ErrorKind::NotFound => {
+                        let Some(template) = template else {
+                            return Ok(ReferencePreferences::default());
+                        };
+                        let preferences = Self::read_or_default(&template)?;
+                        crate::atomic_file::replace(&path, &Self::serialized(&preferences)?, true)?;
+                        Ok(preferences)
                     }
-                    None => ReferencePreferences::default(),
-                };
-                Ok(Some(preferences))
-            }
-            Err(error) => Err(error),
+                    Err(error) => Err(error),
+                }
+            })();
+            vec![result.map(Some)]
         });
+        store.save_task = Some(task);
+        store.queued = 1;
         store
     }
 
@@ -81,7 +78,18 @@ impl PreferenceStore {
         self.replacing
     }
 
-    fn enqueue(&mut self, save: impl FnOnce(PathBuf) -> SaveResult + Send + 'static) {
+    fn enqueue(
+        &mut self,
+        save: impl FnOnce(PathBuf) -> SaveResult + Send + 'static,
+    ) -> io::Result<()> {
+        const MAX_PENDING_WRITES: usize = 8;
+        if self.queued >= MAX_PENDING_WRITES {
+            return Err(io::Error::new(
+                io::ErrorKind::WouldBlock,
+                "Preference writer is busy",
+            ));
+        }
+        self.queued += 1;
         let path = self.path.clone();
         let previous = self.save_task.take();
         self.save_task = Some(bevy_tasks::IoTaskPool::get().spawn(async move {
@@ -92,6 +100,7 @@ impl PreferenceStore {
             results.push(save(path));
             results
         }));
+        Ok(())
     }
 
     pub(in super::super) fn saving(&self) -> bool {
@@ -105,6 +114,7 @@ impl PreferenceStore {
     pub(in super::super) fn poll_background_save(&mut self) -> Option<Vec<SaveResult>> {
         let results = bevy_tasks::futures::check_ready(self.save_task.as_mut()?)?;
         self.save_task = None;
+        self.queued = 0;
         self.replacing = false;
         if let Some(restored) = results
             .iter()

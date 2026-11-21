@@ -182,3 +182,54 @@ fn portable_import_then_apply_preserves_session_options() -> TestResult {
     assert_eq!(MiscellaneousPreferences::read(&temp.sidecar())?, flags);
     Ok(())
 }
+
+#[test]
+fn independent_settings_saves_preserve_disjoint_preferences_and_session_options() -> TestResult {
+    let temp = Temp::new()?;
+    let mut first = SettingsState::new(Some(temp.preferences()));
+    let mut second = SettingsState::new(Some(temp.preferences()));
+    let mut edited = first.preferences.clone();
+    edited.audio.master_volume = 35;
+    edited.miscellaneous.confirm_logout = false;
+    first.apply(edited);
+    let mut edited = second.preferences.clone();
+    edited.ui_scale = 125;
+    edited.miscellaneous.confirm_exit = false;
+    second.apply(edited);
+    let restored = SettingsState::new(Some(temp.preferences()));
+    assert_eq!(restored.preferences.ui_scale, 125);
+    assert_eq!(restored.preferences.audio.master_volume, 35);
+    assert!(!restored.preferences.miscellaneous.confirm_logout);
+    assert!(!restored.preferences.miscellaneous.confirm_exit);
+    Ok(())
+}
+
+#[cfg(bevy_shell)]
+#[test]
+fn import_from_active_file_waits_for_the_pending_save() -> TestResult {
+    use std::time::{Duration, Instant};
+
+    bevy_tasks::IoTaskPool::get_or_init(|| {
+        bevy_tasks::TaskPoolBuilder::new().num_threads(1).build()
+    });
+    let temp = Temp::new()?;
+    let path = temp.preferences();
+    let mut state = SettingsState::new(Some(path.clone()));
+    state.use_background_preferences();
+    let held = crate::atomic_file::lock(&path)?;
+    let mut edited = state.preferences.clone();
+    edited.ui_scale = 125;
+    state.apply(edited);
+    state.import_from(&path)?;
+    assert!(state.preference_transfer_pending());
+    drop(held);
+    let deadline = Instant::now() + Duration::from_secs(2);
+    while state.local_preference_writes_pending() {
+        assert!(Instant::now() < deadline, "pending import did not finish");
+        assert!(state.poll_background_save().error.is_none());
+        std::thread::yield_now();
+    }
+    assert_eq!(PreferenceStore::read_transfer(&path)?.ui_scale, 125);
+    assert_eq!(state.preferences.ui_scale, 125);
+    Ok(())
+}

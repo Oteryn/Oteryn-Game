@@ -2,7 +2,7 @@
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, io, path::Path};
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct WindowLayout(BTreeMap<String, [i32; 4]>);
 
@@ -46,6 +46,18 @@ impl WindowLayout {
         }
         self.0.insert(id.to_owned(), [x, y, width, height]);
         Ok(())
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn save_edits(&self, path: &Path, before: &Self) -> io::Result<()> {
+        let _lock = crate::atomic_file::try_lock(path)?;
+        let mut active = Self::load(path)?;
+        for (id, &bounds) in &self.0 {
+            if before.bounds(id) != Some(bounds) {
+                active.record(id, bounds)?;
+            }
+        }
+        active.save(path)
     }
 
     pub fn save(&self, path: &Path) -> io::Result<()> {
