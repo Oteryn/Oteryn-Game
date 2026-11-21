@@ -269,11 +269,11 @@ fn coin_shop_checkout_control_routes_to_the_authenticated_presenter() -> TestRes
 
 #[test]
 fn get_coins_reopens_and_inspects_an_awaiting_payment_order_by_request_id() -> TestResult {
-    use crate::account_services::test_server::coins::PACKAGE;
+    use crate::account_services::test_server::coins::{EventKind, PACKAGE};
     use std::sync::{Arc, Mutex};
 
     test_thread(|| {
-        let mock = MockPlatform::start()?;
+        let mock = Arc::new(MockPlatform::start()?);
         let client = mock.client()?;
         let token = mock.token(&client)?;
         let authority = mock.authority.clone();
@@ -293,8 +293,10 @@ fn get_coins_reopens_and_inspects_an_awaiting_payment_order_by_request_id() -> T
             }
             true
         });
+        let runner = Arc::clone(&mock);
         let worker = thread::Builder::new().stack_size(64 << 20).spawn(move || {
-            mock.runtime
+            runner
+                .runtime
                 .block_on(crate::account_services::run(
                     &client,
                     &token,
@@ -329,8 +331,28 @@ fn get_coins_reopens_and_inspects_an_awaiting_payment_order_by_request_id() -> T
         let inspected = wait(&mut app, Some(recent))?;
         click_named(&mut app, "coin.checkout")?;
         let reopened = wait(&mut app, Some(inspected))?;
+        let (body, signature) = mock.signed_event(&order, EventKind::Paid)?;
+        assert_eq!(mock.webhook(&body, &signature)?, 200);
+        click_named(&mut app, "coin.status")?;
+        let paid = wait(&mut app, Some(reopened))?;
+        let status = &app
+            .world_mut()
+            .query_filtered::<&Text, With<Body>>()
+            .single(app.world())?
+            .0;
+        assert!(status.contains("Paid, 100 coins"), "{status}");
+        assert!(status.contains("Balance: 1100 coins."), "{status}");
         click(&mut app, Action::Back)?;
-        wait(&mut app, Some(reopened))?;
+        wait(&mut app, Some(paid))?;
+        let status = &app
+            .world_mut()
+            .query_filtered::<&Text, With<Body>>()
+            .single(app.world())?
+            .0;
+        assert!(
+            status.contains("Last refreshed balance: 1100 Oteryn coins"),
+            "{status}"
+        );
         click(&mut app, Action::Back)?;
         worker.join().map_err(|_| "account services worker")??;
 
@@ -344,7 +366,9 @@ fn get_coins_reopens_and_inspects_an_awaiting_payment_order_by_request_id() -> T
                     order.request_id
                 )))
         );
-        assert_eq!(state.coins.as_ref().ok_or("coin authority")?.creations, 1);
+        let coins = state.coins.as_ref().ok_or("coin authority")?;
+        assert_eq!(coins.creations, 1);
+        assert_eq!(coins.credits, 1);
         assert_eq!(opens.lock().map_err(|_| "browser")?.len(), 2);
         Ok(())
     })
@@ -588,4 +612,27 @@ fn commerce_cancel_invalidates_queued_confirmation() -> TestResult {
         let _ = worker.join().map_err(|_| "account presenter")?;
         result
     })
+}
+
+#[test]
+fn unavailable_coin_shop_offers_back_without_refresh() -> TestResult {
+    let (mut app, config) = commerce_app()?;
+    let worker = thread::spawn(move || {
+        let mut view = crate::coin_shop::View::new(None);
+        view.unavailable = true;
+        (config.coin_shop)(&view, CancellationToken::new())
+    });
+    wait(&mut app, None)?;
+    assert!(
+        app.world_mut()
+            .query::<&Name>()
+            .iter(app.world())
+            .all(|name| name.as_str() != "coin.refresh")
+    );
+    click(&mut app, Action::Back)?;
+    assert!(matches!(
+        worker.join().map_err(|_| "coin presenter")?,
+        crate::coin_shop::Action::Back
+    ));
+    Ok(())
 }
