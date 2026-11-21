@@ -13,7 +13,9 @@ command failed. Each row emits exactly one report-compatible `<row>.full`
 result if reached. Individual row waits are bounded to 90 seconds. E01's walk
 from the entry tile to Sam and back is travel outside that budget (at level 1
 the outbound walk alone took about 88 s); every walked tile is progress, so a
-stalled walk still ends on the no-progress watchdog. An error before reaching
+stalled walk still ends on the no-progress watchdog. E05's and E07's walk to
+the depot locker is travel in the same way (on node boot run 44899121776 the
+E05 walk from the entry tile ran past 90 s). An error before reaching
 the phase leaves the report's ordinary absent-evidence FAIL.
 
 All journeys below live in `full_e2ef4.rs`:

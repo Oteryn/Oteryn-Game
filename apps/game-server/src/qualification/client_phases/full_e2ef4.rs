@@ -92,6 +92,56 @@ pub(super) async fn run(
     // Each row reports even when another row has missing content or a refused command.
     // Socket waits are bounded; a timed-out session is not evidence of server absence.
     macro_rules! row {
+        // The walk to the depot locker is travel outside the journey budget, as E01's walk to
+        // Sam is; each walked tile is progress, so a stalled walk ends on the no-progress watchdog.
+        (locker $id:literal, $actions:ident, $journey:ident $(, $arg:expr)*) => {{
+            let mut row = Row::new("E2EF4", $id, $actions).evidence(EVIDENCE, EVIDENCE);
+            let watch = row.watch();
+            let result = if let Some(active) = client.as_mut() {
+                let mut arrived = false;
+                let walked = watch
+                    .travel(
+                        concat!($id, " walk to the depot locker stalled;remaining-assertions-unproven"),
+                        async {
+                            let walked = locker(active, world).await;
+                            arrived = true;
+                            walked
+                        },
+                    )
+                    .await;
+                if !arrived {
+                    // An interrupted command or frame cannot be resumed by another row.
+                    *client = None;
+                    walked
+                } else if walked.is_err() {
+                    walked
+                } else {
+                    row!(@journey client, row, watch, active, $journey $(, $arg)*)
+                }
+            } else {
+                Err("prior-native-journey-deadline;connection-closed;actions-unproven".into())
+            };
+            row.finish(&result);
+        }};
+        (@journey $client:ident, $row:ident, $watch:ident, $active:ident, $journey:ident $(, $arg:expr)*) => {{
+            let mut completed = false;
+            let result = $watch
+                .bound(
+                    Duration::from_secs(90),
+                    "native-journey-deadline;remaining-assertions-unproven",
+                    async {
+                        let result = $journey(&mut $row, $active $(, $arg)*).await;
+                        completed = true;
+                        result
+                    },
+                )
+                .await;
+            if !completed {
+                // An interrupted command or frame cannot be resumed by another row.
+                *$client = None;
+            }
+            result
+        }};
         ($id:literal, $actions:ident, $journey:ident $(, $arg:expr)*) => {{
             let mut row = Row::new("E2EF4", $id, $actions).evidence(EVIDENCE, EVIDENCE);
             let watch = row.watch();
@@ -133,8 +183,8 @@ pub(super) async fn run(
     }
     row!("E03", E03, coins);
     row!("E04", E04, trade, clients, world);
-    row!("E05", E05, market, world);
-    row!("E07", E07, storage, clients, world);
+    row!(locker "E05", E05, market);
+    row!(locker "E07", E07, storage, clients);
     row!("S01", S01, party, clients, world);
     row!("S03", S03, guild);
     row!("S09", S09, logout, clients, world);
@@ -535,9 +585,9 @@ async fn trade(
     result
 }
 
-async fn market(row: &mut Row, client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+async fn market(row: &mut Row, client: &mut DevClientSession) -> TestResult {
     use oteryn_dev_client::{client_runtime::market as runtime, client_ui::market as ui};
-    locker(client, world).await?;
+    // The row walked to the depot locker before this journey.
     let mut panel = ui::MarketPanel {
         selected: true,
         ..Default::default()
@@ -602,11 +652,10 @@ async fn storage(
     row: &mut Row,
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
-    world: &BundleWorld,
 ) -> TestResult {
     use oteryn_dev_client::{client_runtime::stash as runtime, client_ui::stash as ui};
     use oteryn_protocol_oteryn::depot;
-    locker(client, world).await?;
+    // The row walked to the depot locker before this journey.
     for box_number in [1] {
         let payload = depot::encode_depot_intent(depot::DepotIntent {
             town: None,
