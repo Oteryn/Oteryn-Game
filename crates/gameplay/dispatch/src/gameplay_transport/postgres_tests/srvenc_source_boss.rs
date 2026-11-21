@@ -321,15 +321,15 @@ fn scenario(case: equipment::Case) -> TestResult {
         assert_eq!(barrier.handoff, handoff);
         assert_eq!(barrier.source_session, *old.game_session_id.as_bytes());
         assert_eq!(barrier.session, *admitted.game_session_id.as_bytes());
-        if let Some(budget) = entry_budget {
-            equipment::assert_elapsed(&h, budget, entry_checked_at, 59_000).await?;
-            return Ok(());
-        }
         let mut destination = owner
             .resolve_runtime_view(admitted)
             .await
             .map_err(|_| "resolve production Instance")?
             .ok_or("Instance owner switched")?;
+        if let Some(budget) = entry_budget {
+            equipment::tick_successor(&h, &mut destination, budget, entry_checked_at).await?;
+            return Ok(());
+        }
         assert_eq!(
             destination
                 .bundle_map()
@@ -440,7 +440,7 @@ fn scenario(case: equipment::Case) -> TestResult {
             EXIT
         );
         if let Some(budget) = before {
-            equipment::assert_elapsed(&h, budget, return_checked_at, 59_000).await?;
+            equipment::tick_successor(&h, &mut owner, budget, return_checked_at).await?;
         }
         let retained_rewards: i64 =
             sqlx::query_scalar("SELECT count(*) FROM game_boss_reward_items")

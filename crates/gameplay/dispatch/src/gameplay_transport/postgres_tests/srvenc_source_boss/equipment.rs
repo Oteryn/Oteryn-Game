@@ -159,3 +159,16 @@ pub(super) async fn assert_elapsed(
     }
     Ok(remaining)
 }
+
+pub(super) async fn tick_successor(
+    h: &Harness,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    before: (i64, i64),
+    since: std::time::Instant,
+) -> TestResult {
+    let settled = assert_elapsed(h, before, since, 59_000).await?;
+    owner.clock_origin -= std::time::Duration::from_secs(61);
+    owner.tick_timed_items().await;
+    assert_elapsed(h, settled, since, 61_000).await?;
+    Ok(())
+}
