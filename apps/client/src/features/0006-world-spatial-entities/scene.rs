@@ -21,6 +21,27 @@ impl Scene {
         self.names.len()
     }
 
+    /// Position relative to the actual visible name, fenced by entity generation.
+    #[cfg(feature = "bevy-shell")]
+    pub(crate) fn typing_position(
+        &self,
+        indicator: &oteryn_client_ui::player_typing::TypingIndicator,
+    ) -> Option<[f32; 2]> {
+        let (_, (tile, cells)) =
+            self.name_entities
+                .iter()
+                .zip(&self.names)
+                .find(|(entity, _)| {
+                    entity.identity == indicator.identity
+                        && entity.generation == indicator.generation.get()
+                })?;
+        let [x, y] = self.view.tile_to_screen(*tile);
+        let scale = f32::from(self.label_scale) / 100.;
+        let half_width = cells.len() as f32 * 4. * scale;
+        let left = (x + self.view.tile_px() as f32 / 2. - half_width).max(0.);
+        Some([left + half_width + 2., (y - 14. * scale).max(0.) - 4.])
+    }
+
     pub(crate) fn set_own_identity(&mut self, identity: [u8; 16]) {
         self.own_identity = Some(identity);
     }
@@ -42,6 +63,7 @@ impl Scene {
             next.cache.reset_atlas();
         }
         next.own_identity = self.own_identity;
+        next.drome_hazards = std::mem::take(&mut self.drome_hazards);
         *self = next;
         Ok(())
     }
@@ -65,14 +87,47 @@ impl Scene {
         root: Option<std::path::PathBuf>,
     ) -> Result<(), BatchError> {
         self.actor_draws.clear();
+        self.object_draws.clear();
         self.own_draws = None;
         self.names.clear();
+        #[cfg(feature = "bevy-shell")]
+        self.name_entities.clear();
         if !entries.is_empty() {
             self.cache.begin(self.world.atlas(), root);
         }
         for entry in entries {
-            let entity = &entry.entity;
-            if !matches!(entity.detail, EntityDetail::Actor { .. }) {
+            let entity = oteryn_client_ui::native_creature_icons::project(&entry.entity);
+            if let EntityDetail::ObjectWithAppearance {
+                item_definition_ref,
+                quantity,
+                appearance_id,
+                item_handle,
+            } = entity.detail
+            {
+                if !matches!(
+                    entity.kind,
+                    oteryn_session::EntityKind::Corpse | oteryn_session::EntityKind::GroundItem
+                ) || entity.entity.generation != 0
+                    || item_definition_ref == 0
+                    || quantity == 0
+                    || item_handle.is_none()
+                {
+                    continue;
+                }
+                if entity.position.floor == floor
+                    && let Some(draws) =
+                        self.cache
+                            .world_item(appearance_id, entity.position, quantity)
+                {
+                    self.object_draws
+                        .push((entity.position, item_definition_ref, draws));
+                }
+                continue;
+            }
+            if !matches!(
+                entity.detail,
+                EntityDetail::Actor { .. } | EntityDetail::ActorWithIcons { .. }
+            ) {
                 continue;
             }
             let is_own = self.own_identity == Some(entity.entity.identity);
@@ -85,15 +140,11 @@ impl Scene {
                 TileCoord::new(entity.position.x, entity.position.y)
             };
             let direction = if is_own {
-                match self.facing {
-                    StepDir::North => 0,
-                    StepDir::East | StepDir::NorthEast | StepDir::SouthEast => 1,
-                    StepDir::South => 2,
-                    StepDir::West | StepDir::NorthWest | StepDir::SouthWest => 3,
-                }
+                oteryn_client_ui::diagonal_movement::facing(self.facing)
             } else {
                 match entity.detail {
-                    EntityDetail::Actor { direction, .. } => match direction {
+                    EntityDetail::Actor { direction, .. }
+                    | EntityDetail::ActorWithIcons { direction, .. } => match direction {
                         oteryn_session::StepDirection::North => 0,
                         oteryn_session::StepDirection::East => 1,
                         oteryn_session::StepDirection::South => 2,
@@ -131,9 +182,21 @@ impl Scene {
                     .display_name
                     .as_ref()
                     .and_then(|name| name.as_str().ok());
-                if let Some(name) = name.or_else(|| marker.map(|_| tr!("Creature"))) {
-                    let label = oteryn_client_ui::forge_creature::label(name, marker);
+                let mut label = name
+                    .or_else(|| marker.map(|_| tr!("Creature")))
+                    .map(|name| oteryn_client_ui::forge_creature::label(name, marker))
+                    .unwrap_or_default();
+                let icons = oteryn_client_ui::native_creature_icons::labels(entity).join(" ");
+                if !icons.is_empty() {
+                    if !label.is_empty() {
+                        label.push(' ');
+                    }
+                    label.push_str(&icons);
+                }
+                if !label.is_empty() {
                     self.names.push((tile, self.cache.name(&label)));
+                    #[cfg(feature = "bevy-shell")]
+                    self.name_entities.push(entity.entity);
                 }
             }
         }
@@ -152,3 +215,48 @@ impl Scene {
 #[cfg(test)]
 #[path = "tests/scene.rs"]
 mod tests;
+
+#[cfg(feature = "bevy-shell")]
+impl Scene {
+    pub(crate) fn item_icon(&self, item: &oteryn_session::ItemEntry) -> Option<&[Draw]> {
+        self.cache.item(item)
+    }
+
+    pub(crate) fn prepare_item_icons<'a>(
+        &mut self,
+        items: impl Iterator<Item = &'a oteryn_session::ItemEntry>,
+    ) -> Result<bool, BatchError> {
+        let mut items = items.filter(|item| item.appearance_id != 0).peekable();
+        if items.peek().is_none() {
+            return Ok(false);
+        }
+        // begin retains the already loaded asset index and sprite sheets.
+        self.cache.begin(
+            self.world.atlas(),
+            std::env::var_os(crate::map::ASSET_DIR_ENV).map(std::path::PathBuf::from),
+        );
+        for item in items {
+            self.cache.prepare_item(item);
+        }
+        let image = self.cache.image()?;
+        if self
+            .presentation_atlas
+            .as_ref()
+            .is_none_or(|old| !Arc::ptr_eq(old, &image))
+        {
+            self.presentation_atlas = Some(image);
+            self.lit_atlas = None;
+            self.tiles = oteryn_renderer::TileBatch::from_cells(
+                &self.view,
+                self.atlas(),
+                &vec![
+                    crate::map::BLACK_CELL;
+                    (crate::scene::SCENE_COLUMNS * crate::scene::SCENE_ROWS) as usize
+                ],
+            )?;
+            self.rebuild_sprites()?;
+            return Ok(true);
+        }
+        Ok(false)
+    }
+}

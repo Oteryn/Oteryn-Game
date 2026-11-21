@@ -29,7 +29,7 @@ set -Eeuo pipefail
 umask 077
 
 # Platform main carrying U1 (>= 71bbe6c) and the native-only gateway config (Oteryn-Platform #1472).
-readonly PLATFORM_SHA=b18d32d30c4c4e496330077d12b37db3f0f29011
+readonly PLATFORM_SHA=3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
 readonly TOPOLOGY_REVISION=login-local-v1
 readonly ACCOUNT_ID=01934f10-7c00-7000-8000-0000000000a1
 readonly ACCOUNT_EMAIL=login-local@example.invalid
@@ -44,11 +44,11 @@ readonly COMPOSE_NODE_BOOT=tools/qualification/node_boot/compose.override.yml
 readonly COMPOSE_LOCAL=tools/qualification/login_local/compose.override.yml
 readonly COMPOSE_LAN=tools/qualification/login_local/compose.lan.yml
 readonly COMPOSE_PROXY=tools/qualification/login_local/compose.proxy.yml
-readonly RUST_IMAGE=rust:1.99.1-bookworm@sha256:48b7f435b8fc6378ce43b44f15e3a47fd8919b2825f835c39bd4bd3da50af5b8
+readonly RUST_IMAGE=rust:1.100.0-bookworm@sha256:ade39a710ef85f3506cffcfec3e8a24ba090badef1dff2fb798f71d878833fea
 readonly PG_IMAGE=postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc
 readonly SERVICE_USER=oteryn-login-local
 readonly BASE=/srv/oteryn-login-local
-readonly RUNTIME_IDENTITY=oteryn-game-node-runtime-status
+readonly RUNTIME_IDENTITY=node.runtime-status.login-local.test
 readonly OPS_IDENTITY=oteryn-game-ops
 readonly PROJECTION_IDENTITY=oteryn-game-character-projection
 readonly PROJECTION_AUTHORITY=oteryn:character-authority:login-local
@@ -92,6 +92,8 @@ if [[ "$LL_HOST" != 127.0.0.1 ]]; then
 fi
 
 GAME_SOURCE="$(git rev-parse --show-toplevel)"
+source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"
+NODE_ACTIVATION_WAIT_SECONDS="$(node_activation_wait_seconds "${LOGIN_LOCAL_WORLD_BUNDLE:-0}" 0)"
 PLATFORM_SOURCE="${PLATFORM_SOURCE:-$GAME_SOURCE/_platform}"
 [[ "$(git -C "$PLATFORM_SOURCE" rev-parse HEAD 2>/dev/null)" == "$PLATFORM_SHA" ]] || blocked exact_platform_checkout_missing
 
@@ -292,7 +294,9 @@ make_leaf db db.login-local.test db-ca serverAuth DNS:db.login-local.test
 make_leaf client oteryn-game-native-evidence client-ca clientAuth
 cp "$WP5_PKI/client.crt" "$WP5_PKI/intent-client.crt"
 cp "$WP5_PKI/client.key" "$WP5_PKI/intent-client.key"
-make_leaf runtime-status "$RUNTIME_IDENTITY" client-ca clientAuth
+make_leaf runtime-status "$RUNTIME_IDENTITY" client-ca clientAuth "DNS:$RUNTIME_IDENTITY"
+python3 "$GAME_SOURCE/tools/qualification/login_local/runtime_identity.py" \
+  "$WP5_PKI/runtime-status.crt" "$RUNTIME_IDENTITY" "$WP5_PKI/runtime-status-map.conf"
 make_leaf ops-authority "$OPS_IDENTITY" client-ca clientAuth
 make_leaf projection "$PROJECTION_IDENTITY" client-ca clientAuth
 # Gateway -> Platform upstream: nginx serves TLS (SAN nginx) from a test CA the gateway trusts via SSL_CERT_FILE.
@@ -362,7 +366,7 @@ ADMIN_URL="postgresql://oteryn_login_local_admin:$PG_ADMIN_PASSWORD@127.0.0.1:$P
 compose config --quiet
 compose build --pull platform gateway
 compose up --detach --wait db platform nginx
-php_exec() { compose exec --no-TTY --user www-data platform php -r 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); '"$1"; }
+php_exec() { local code=$1; shift; compose exec --no-TTY --user www-data "$@" platform php -r 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); '"$code"; }
 
 # Registry topology: one world row, one issued WorldId/ChannelId (uuid7, read back, never invented).
 # F7: issue on the retained SQLite fixture (migrated, one world row), then mirror the issued ids and
@@ -386,10 +390,16 @@ evidence "registry world_id=$WORLD_ID channel_id=$CHANNEL_ID route_revision=$ROU
 
 # Real scope identities and the Character projection feed (mode 33a off); recreate Platform with them,
 # then install the issuer seed (0600, www-data).
-LL_RUNTIME_STATUS_IDENTITIES="{\"CN=$RUNTIME_IDENTITY\":[\"$WORLD_ID/$CHANNEL_ID\"]}"
+LL_RUNTIME_STATUS_IDENTITIES="{\"$RUNTIME_IDENTITY\":[\"$WORLD_ID/$CHANNEL_ID\"]}"
 LL_SCOPE_ASSIGNMENT_IDENTITIES="{\"CN=$OPS_IDENTITY\":[\"$WORLD_ID/$CHANNEL_ID\"]}"
 export LL_RUNTIME_STATUS_IDENTITIES LL_SCOPE_ASSIGNMENT_IDENTITIES
 compose up --detach --wait --force-recreate platform
+# Generate Passport keys in the final container before OAuth use; safe to repeat.
+compose exec --no-TTY --user root platform php artisan passport:keys --force
+compose exec --no-TTY --user root platform chown www-data:www-data storage/oauth-private.key storage/oauth-public.key
+compose exec --no-TTY --user root platform chmod 600 storage/oauth-private.key
+compose exec --no-TTY --user root platform chmod 600 storage/oauth-public.key
+compose exec --no-TTY --user www-data platform php artisan config:clear
 # The gateway trusts exactly the per-run CA: one certificate in SSL_CERT_FILE, an empty SSL_CERT_DIR.
 [[ "$(grep -c 'BEGIN CERTIFICATE' "$WP5_PKI/platform-upstream-ca.crt")" == 1 && -z "$(ls -A "$LL_NO_SYSTEM_ROOTS")" ]] \
   || { echo "gateway trust roots are not exactly the per-run CA"; exit 1; }
@@ -398,15 +408,18 @@ compose config gateway | grep -q 'SSL_CERT_DIR: /run/login-local/no-system-roots
 compose up --detach --wait nginx gateway
 compose exec --no-TTY --user root platform install -o www-data -g www-data -m 0600 /run/wp5/signing.seed /run/oteryn-admission/signing.seed
 php_exec 'app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishTrustedKey(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission","'"$ADMISSION_KEY_ID"'",hex2bin("'"$ADMISSION_PUBLIC_HEX"'"));'
-php_exec 'Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>"'"$ACCOUNT_EMAIL"'","password"=>password_hash("'"$ACCOUNT_PASSWORD"'",PASSWORD_BCRYPT),"account_id"=>"'"$ACCOUNT_ID"'","native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]);'
-OAUTH_CLIENT_ID="$(php_exec 'Illuminate\Support\Facades\Artisan::call("game-auth:oauth-client:ensure"); echo Illuminate\Support\Facades\Artisan::output();' | sed -n 's/.*client id: \([^ ]*\).*/\1/p')"
-[[ -n "$OAUTH_CLIENT_ID" ]] || { echo "oauth client id not found"; exit 1; }
+ACCOUNT_PASSWORD="$ACCOUNT_PASSWORD" php_exec 'Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>"'"$ACCOUNT_EMAIL"'","password"=>Illuminate\Support\Facades\Hash::make(getenv("ACCOUNT_PASSWORD")),"account_id"=>"'"$ACCOUNT_ID"'","native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]);' --env ACCOUNT_PASSWORD
+OAUTH_CLIENT_ID="$(php_exec 'Illuminate\Support\Facades\Artisan::call("game-auth:oauth-client:ensure",["--rust"=>true]); echo Illuminate\Support\Facades\Artisan::output();' | sed -n 's/.*client id: \([0-9a-f-]\{36\}\)\.[[:space:]]*$/\1/p')"
+[[ "$OAUTH_CLIENT_ID" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]] \
+  || { echo "oauth client id missing or invalid UUID" >&2; exit 1; }
 evidence "platform_seed=account=1 admission_trust=published_public_key_only oauth_client=ensured mode=account_characters_feed"
 
 # Shipped binaries, service user, roles, migration (as node_boot).
 if [[ "$LL_RUST" == host ]]; then
-  cargo +1.99.1 build --locked -p oteryn-game-server -p oteryn-client --bins
-  TARGET="$GAME_SOURCE/target/debug"
+  # Release: a debug node spends ~800 ms per connection poll on the full World Bundle, so
+  # durability passes miss their 2 s deadline and the live session is closed.
+  cargo +1.100.0 build --locked --release -p oteryn-game-server -p oteryn-client --bins
+  TARGET="$GAME_SOURCE/target/release"
   sudo useradd --system --no-create-home --shell /usr/sbin/nologin "$SERVICE_USER" 2>/dev/null || true
   SERVICE_UID="$(id -u "$SERVICE_USER")"
 else
@@ -414,8 +427,8 @@ else
   mkdir -p "$GAME_SOURCE/target/login-local-container/cargo-home"
   docker run --rm --user "$(id -u):$(id -g)" --volume "$GAME_SOURCE:/src" --workdir /src \
     --env CARGO_HOME=/src/target/login-local-container/cargo-home --env CARGO_TARGET_DIR=/src/target/login-local-container \
-    --env RUSTUP_TOOLCHAIN=1.99.1 "$RUST_IMAGE" cargo build --locked -p oteryn-game-server --bins
-  TARGET="$GAME_SOURCE/target/login-local-container/debug"
+    --env RUSTUP_TOOLCHAIN=1.100.0 "$RUST_IMAGE" cargo build --locked --release -p oteryn-game-server --bins
+  TARGET="$GAME_SOURCE/target/login-local-container/release"
 fi
 evidence "rust mode=$LL_RUST service_uid=$SERVICE_UID"
 sudo install -d -o root -g root -m 0755 "$BASE" "$BASE/bin" "$BASE/state" "$BASE/node"
@@ -427,11 +440,70 @@ sudo install -d -o "$SERVICE_UID" -m 0755 "$BASE/node/secrets"
 sudo install -d -o "$SERVICE_UID" -m 0700 "$BASE/projection"
 printf '0\n' > "$WORK/epoch-fence"
 sudo install -o "$SERVICE_UID" -m 0600 "$WORK/epoch-fence" "$BASE/projection/epoch-fence"
+LL_GAMEPLAY_ENV=()
 if [[ "${LOGIN_LOCAL_WORLD_BUNDLE:-0}" == 1 ]]; then
+  # Match node_boot: the bundle needs the full item index, not the fixture room.
+  # Stage only declared, hash-bound inputs; never publish unrelated siblings.
+  python3 - "$GAME_SOURCE/content/spells.manifest.json" "$GAME_SOURCE" "$WORK/gameplay" "${INTERPRETATION[2]}" <<'PY_STAGE'
+import hashlib
+import json
+import pathlib
+import sys
+
+manifest = pathlib.Path(sys.argv[1]).resolve(strict=True)
+repo_root = pathlib.Path(sys.argv[2]).resolve(strict=True)
+staged = pathlib.Path(sys.argv[3])
+fields = {
+    "catalog", "source_selection", "creature_profiles", "presentation_profiles",
+    "item_profiles", "spell_appearances", "build_training", "familiar_config",
+    "familiar_defenses", "wheel_profile", "source_world", "progression", "item_keys",
+    "loot_tables",
+    "cosmetics", "starting_loadout_item_profiles", "item_profile_updates",
+}
+manifest_bytes = manifest.read_bytes()
+document = json.loads(manifest_bytes)
+# Staged paths are repository-relative, so a locator that leaves the manifest directory
+# (the canonical manifest's source_world and wheel_profile) lands where it resolves.
+selected = {manifest.relative_to(repo_root).as_posix(): manifest_bytes}
+for field in fields:
+    pin = document.get(field)
+    if pin is None:
+        continue
+    raw = pin["path"]
+    locator = pathlib.PurePosixPath(raw)
+    if locator.is_absolute() or "\\" in raw:
+        raise ValueError("unsafe manifest locator")
+    source = manifest.parent.joinpath(*locator.parts).resolve(strict=True)
+    if not source.is_relative_to(repo_root):
+        raise ValueError("manifest input escapes repository root")
+    data = source.read_bytes()
+    if hashlib.sha256(data).hexdigest() != pin["sha256"]:
+        raise ValueError("manifest input digest mismatch")
+    name = source.relative_to(repo_root).as_posix()
+    if name in selected and selected[name] != data:
+        raise ValueError("conflicting manifest input")
+    selected[name] = data
+sys.path.insert(0, str(repo_root / "tools/qualification/spells"))
+from provisioning_inputs import select_cosmetics_inputs
+select_cosmetics_inputs(document, manifest, repo_root, selected)
+document["build_training"]["content_revision"] = sys.argv[4]
+selected[manifest.relative_to(repo_root).as_posix()] = (
+    json.dumps(document, sort_keys=True, separators=(",", ":")) + "\n"
+).encode()
+staged.mkdir(mode=0o700)
+for name, data in selected.items():
+    destination = staged / name
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_bytes(data)
+PY_STAGE
+  sudo install -d -o root -g root -m 0755 "$BASE/gameplay"
+  sudo cp -R "$WORK/gameplay/." "$BASE/gameplay/"
+  sudo chmod -R a+rX "$BASE/gameplay"
+  LL_GAMEPLAY_ENV=("OTERYN_NATIVE_GAMEPLAY_MANIFEST=$BASE/gameplay/content/spells.manifest.json")
   # BUNDLE-BUILD-1: the node boots the pinned World Bundle (content/world/pins) instead of the fixture room.
   PIN="$GAME_SOURCE/content/world/pins/oteryn.json"
   WB_DIGEST="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["digest"])' "$PIN")"
-  (cd "$GAME_SOURCE" && cargo +1.99.1 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$WORK/world-bundle" > /dev/null)
+  (cd "$GAME_SOURCE" && cargo +1.100.0 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$WORK/world-bundle" > /dev/null)
   sudo install -d -o root -g root -m 0755 "$BASE/world"
   sudo install -o root -g root -m 0644 "$WORK/world-bundle/oteryn-$WB_DIGEST.otwb" "$BASE/world/world.otbundle"
 fi
@@ -449,6 +521,14 @@ CREATE ROLE ll_control LOGIN PASSWORD '$CONTROL_PASSWORD' IN ROLE oteryn_game_co
 CREATE ROLE ll_runtime LOGIN PASSWORD '$RUNTIME_PASSWORD' IN ROLE oteryn_game_runtime;
 GRANT CONNECT ON DATABASE oteryn_login_local TO ll_control, ll_runtime;
 INSERT INTO game_control_scope_grants SELECT 'll_control', '$WORLD_ID', '$CHANNEL_ID', op FROM generate_series(1, 4) op;
+INSERT INTO game_control_field_policy_grants VALUES ('ll_control', '$WORLD_ID', 'policy-ll-1');
+SQL
+# Match the readiness world_policy_revision with explicit control-owned non-PvP facts, as node_boot does.
+# Authenticate as the granted login: SET ROLE cannot satisfy the insert guard.
+docker exec -i -e PGPASSWORD="$CONTROL_PASSWORD" "$PG_CONTAINER" \
+  psql -v ON_ERROR_STOP=1 -qAt -h 127.0.0.1 -U ll_control -d oteryn_login_local <<SQL
+INSERT INTO game_spell_field_world_policies (world_id, world_policy_revision, world_type, protection_level, in_fight_ms, source_pin, control_role, decision_identity)
+VALUES ('$WORLD_ID', 'policy-ll-1', 1, 8, 60000, '99902524e052f37574194466c2949c576e4ab269', session_user, 'login-local-qualification');
 SQL
 printf '%s\n' "$CONTROL_PASSWORD" > "$WORK/control-password"
 printf '%s\n' "$RUNTIME_PASSWORD" > "$WORK/runtime-password"
@@ -512,11 +592,11 @@ client_certificate_file = "$BASE/ops/authority.crt"
 client_key_file = "$BASE/ops/authority.key"
 assignment_epoch = 1
 [node_certificate_files]
-"CN=$RUNTIME_IDENTITY" = "$BASE/ops/node-runtime-status.crt"
+"$RUNTIME_IDENTITY" = "$BASE/ops/node-runtime-status.crt"
 [[scope]]
 world_id = "$WORLD_ID"
 channel_id = "$CHANNEL_ID"
-node_identities = ["CN=$RUNTIME_IDENTITY"]
+node_identities = ["$RUNTIME_IDENTITY"]
 TOML
 sudo install -o root -m 0600 "$WORK/report.toml" "$BASE/ops/report.toml"
 DESCRIPTOR_INSTALLED_AT="$(date +%s)"
@@ -525,7 +605,7 @@ write_node_config() {
   local required_gameplay_capabilities='[]'
   if [[ "${LOGIN_LOCAL_WORLD_BUNDLE:-0}" == 1 ]]; then
     MAP_REVISION="$WB_DIGEST"
-    required_gameplay_capabilities='[11, 18]'
+    required_gameplay_capabilities='[11, 18, 21, 30]'
   fi
   cat > "$WORK/node.toml" <<TOML
 [listener]
@@ -559,7 +639,9 @@ source_authority = "oteryn:runtime:login-local"
 route_revision = "$ROUTE_REVISION"
 runtime_observation_revision = "runtime-1"
 ruleset_revision = "rules-ll-1"
-content_revision = "content-ll-1"
+# Quest and Task Board writers require the Character root content revision (from the
+# Platform intent) to equal this one; a mismatch is ProgressionContextMismatch.
+content_revision = "${INTERPRETATION[2]}"
 map_revision = "$MAP_REVISION"
 world_policy_revision = "policy-ll-1"
 required_gameplay_capabilities = $required_gameplay_capabilities
@@ -607,9 +689,9 @@ PY
 }
 ops() {
   if [[ "$LL_RUST" == host ]]; then
-    sudo "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"
+    sudo env "${LL_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"
   else
-    docker exec "$RUST_CONTAINER" "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"
+    docker exec "$RUST_CONTAINER" env "${LL_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"
   fi
 }
 node_log="$WORK/node.log"
@@ -627,25 +709,36 @@ PROJECTION_EPOCH="$(ops projection resync --raise-epoch true)"
 evidence "projection resync=raised epoch=$PROJECTION_EPOCH fence=persisted"
 
 if [[ "$LL_RUST" == host ]]; then
-  sudo -u "$SERVICE_USER" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" < /dev/null > /dev/null 2> "$node_log" &
+  sudo -u "$SERVICE_USER" env "${LL_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" < /dev/null > /dev/null 2> "$node_log" &
 else
-  docker exec --user "$SERVICE_UID:$SERVICE_UID" "$RUST_CONTAINER" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" \
+  docker exec --user "$SERVICE_UID:$SERVICE_UID" "$RUST_CONTAINER" env "${LL_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" \
     < /dev/null > /dev/null 2> "$node_log" &
 fi
 NODE_PID=$!
 await_log awaiting_assignment 120
-node="$(sed -n 's/.*awaiting_assignment.*node_id=\([^ ]*\).*/\1/p' "$node_log" | tail -n 1)"
-revision="$(sed -n 's/.*awaiting_assignment.*registration_revision=\([^ ]*\).*/\1/p' "$node_log" | tail -n 1)"
+node="$(sed -n 's/.*awaiting_assignment.*node_id=\([^ "]*\).*/\1/p' "$node_log" | tail -n 1)"
+revision="$(sed -n 's/.*awaiting_assignment.*registration_revision=\([^ "]*\).*/\1/p' "$node_log" | tail -n 1)"
 ops content activate --request content-1.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 1 --previous empty
 # `assignment assign` reports ReportScopeAssignmentV1 to Platform when both configs are given.
 ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" \
-  --node-config "$BASE/node/node.toml" --report-config "$BASE/ops/report.toml" | tee "$WORK/assign.out"
+  --node-config "$BASE/node/node.toml" --report-config "$BASE/ops/report.toml" --node-identity "$RUNTIME_IDENTITY" | tee "$WORK/assign.out"
 grep -q 'report=ReportScopeAssignmentV1' "$WORK/assign.out" || { echo "assignment was not reported to Platform"; exit 1; }
-await_log "readiness ready=true" 60
+await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
+# The full-world bundle prepares its map after activation and before readiness (about 70 s on the PC).
 if [[ "${LOGIN_LOCAL_WORLD_BUNDLE:-0}" == 1 ]]; then
-  await_log "event=world_bundle state=booted map_revision=sha256:$WB_DIGEST" 5
+  await_log "event=world_bundle .*state=booted map_revision=sha256:$WB_DIGEST" "$NODE_ACTIVATION_WAIT_SECONDS"
   evidence "world_bundle=booted digest=$WB_DIGEST"
+  # Epoch zero is created only by the Control initializer (as node_boot). Without it the
+  # reset calendar is absent and the first Task Board query fails InvalidStoredState.
+  epoch_result="$({
+    echo 'PREPARE login_local_world_epoch(UUID, UUID, TEXT) AS'
+    cat "$GAME_SOURCE/tools/qualification/node_boot/world_epoch.sql"
+    printf "EXECUTE login_local_world_epoch('%s', '%s', '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$WB_DIGEST"
+  } | psql_admin oteryn_login_local)"
+  [[ "$epoch_result" == t ]] || { echo "World epoch initialization failed"; exit 1; }
+  evidence "world_epoch=0 source=control_initializer calendar=TIBIA_SERVER_SAVE_BERLIN_06"
 fi
+await_log "event=readiness .*ready=true" 60
 evidence "node assigned=operator report=ReportScopeAssignmentV1 assignment_epoch=1 readiness=true runtime_status=configured"
 
 # Character from a real Platform intent; Platform verifies ownership from the projection feed (mode 33a off).

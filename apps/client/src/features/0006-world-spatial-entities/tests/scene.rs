@@ -57,7 +57,7 @@ fn cl6_forge_marks_reach_native_name_glyphs_and_clear_with_visibility() -> Resul
         "forge marks describe creatures only"
     );
     entry.entity.kind = oteryn_session::EntityKind::Creature;
-    entry.entity.position.floor = -1;
+    entry.entity.position.floor = 1;
     scene.set_presentations_from(&[entry], 0, None)?;
     assert!(scene.names.is_empty());
     scene.set_presentations_from(&[], 0, None)?;
@@ -112,7 +112,7 @@ fn live_outfit_uses_server_look_and_empty_outfit_suppresses_pixels() -> Result<(
     entry.look = Some(oteryn_session::Look::EmptyOutfit);
     scene.set_presentations_from(&[entry.clone()], 0, None)?;
     assert!(scene.actor_draws[0].1.is_empty());
-    entry.entity.position.floor = -1;
+    entry.entity.position.floor = 1;
     scene.set_presentations_from(&[entry], 0, None)?;
     assert_eq!(scene.name_count(), 0);
     Ok(())
@@ -364,5 +364,153 @@ fn nx8_influenced_and_fiendish_markers_follow_creature_presentation() -> Result<
     );
     scene.set_presentations_from(&[], 0, None)?;
     assert_eq!(scene.name_count(), 0);
+    Ok(())
+}
+
+#[cfg(feature = "bevy-shell")]
+#[test]
+fn item_icons_reuse_loaded_assets_and_packed_cells() -> Result<(), Box<dyn std::error::Error>> {
+    let mut scene = Scene::centered_on(
+        Arc::new(World::builtin()?),
+        None,
+        TileCoord::new(100, 100),
+        StepDir::South,
+        &[],
+    )?;
+    let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    scene.prime_visual_assets(root);
+    let item = oteryn_session::ItemEntry {
+        appearance_id: 3031,
+        handle: 7.try_into()?,
+        item_definition_ref: 17.try_into()?,
+        count: 3.try_into()?,
+        sub_type: 0,
+    };
+    let before = scene.cache.counts();
+    scene.prepare_item_icons(std::iter::once(&item))?;
+    assert!(scene.item_icon(&item).is_some());
+    let prepared = scene.cache.counts();
+    assert_eq!(prepared[0], before[0], "no asset reload");
+    assert_eq!(prepared[1], before[1], "no base atlas unpack");
+    scene.prepare_item_icons(std::iter::once(&item))?;
+    assert_eq!(
+        scene.cache.counts(),
+        prepared,
+        "no repack for the same item"
+    );
+    Ok(())
+}
+
+#[test]
+fn srx3_soul_war_callback_outfits_decode_server_bindings_and_draw_native_sprites()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::appearance as wire;
+    let tile = TileCoord::new(100, 200);
+    let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let mut scene =
+        Scene::centered_on(Arc::new(World::builtin()?), None, tile, StepDir::South, &[])?;
+    let mut snapshot = wire::Snapshot::decode(include_bytes!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../crates/protocol-oteryn/tests/fixtures/appearance_snapshot_v1.bin"
+    )))
+    .map_err(|error| format!("{error:?}"))?;
+    for look_type in [242, 286] {
+        snapshot.bindings[0].look = wire::Look::Outfit {
+            look_type,
+            colours: [0; 4],
+            addons: 0,
+        };
+        let encoded = snapshot.encode().map_err(|error| format!("{error:?}"))?;
+        let decoded = wire::Snapshot::decode(&encoded).map_err(|error| format!("{error:?}"))?;
+        let binding = &decoded.bindings[0];
+        let entry = VisibleAppearance {
+            forge_stacks: None,
+            light: None,
+            entity: oteryn_session::WorldSpatialEntity {
+                display_name: None,
+                kind: oteryn_session::EntityKind::Player,
+                entity: binding.entity,
+                position: oteryn_session::ActorPosition {
+                    x: 100,
+                    y: 200,
+                    floor: 0,
+                },
+                detail: EntityDetail::Actor {
+                    direction: oteryn_session::StepDirection::South,
+                    appearance_ref: binding.appearance_ref,
+                    health_percent: 100,
+                },
+            },
+            look: Some(binding.look.clone()),
+        };
+        scene.set_presentations_from(&[entry], 0, Some(root.clone()))?;
+        assert!(
+            scene.actor_draws[0]
+                .1
+                .iter()
+                .any(|draw| draw.cell > MARKER_CELL),
+            "source outfit {look_type} must use actual native sprite cells"
+        );
+    }
+    Ok(())
+}
+
+#[path = "native_icons.rs"]
+mod native_icons;
+
+#[test]
+fn srx3_native_object_pixels_use_explicit_resource_not_opaque_definition_reference()
+-> Result<(), BatchError> {
+    let tile = TileCoord::new(100, 200);
+    let at = oteryn_session::ActorPosition {
+        x: 100,
+        y: 200,
+        floor: 0,
+    };
+    let mut scene =
+        Scene::centered_on(Arc::new(World::builtin()?), None, tile, StepDir::South, &[])?;
+    let mut entry = VisibleAppearance {
+        forge_stacks: None,
+        light: None,
+        look: None,
+        entity: oteryn_session::WorldSpatialEntity {
+            display_name: None,
+            kind: oteryn_session::EntityKind::Corpse,
+            entity: oteryn_session::EntityRef {
+                identity: [9; 16],
+                generation: 0,
+            },
+            position: at,
+            detail: EntityDetail::ObjectWithAppearance {
+                item_definition_ref: 42,
+                quantity: 1,
+                item_handle: std::num::NonZeroU64::new(2),
+                appearance_id: std::num::NonZeroU16::new(39529).ok_or(BatchError::InvalidView)?,
+            },
+        },
+    };
+    let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    scene.set_presentations_from(std::slice::from_ref(&entry), 0, Some(root))?;
+    assert!(
+        scene.native_item_rendered_at(at, 42),
+        "actual pinned39529 cells must draw the opaque Item reference42"
+    );
+    assert!(
+        scene.object_draws[0]
+            .2
+            .iter()
+            .all(|draw| draw.cell > MARKER_CELL)
+    );
+    entry.entity.detail = EntityDetail::Object {
+        item_definition_ref: 39529,
+        quantity: 1,
+        item_handle: std::num::NonZeroU64::new(2),
+    };
+    scene.set_presentations_from(std::slice::from_ref(&entry), 0, None)?;
+    assert!(
+        scene.object_draws.is_empty(),
+        "a definition ordinal must never be guessed as a native appearance"
+    );
+    assert!(!scene.native_item_rendered_at(at, 39529));
     Ok(())
 }

@@ -9,8 +9,13 @@ impl World {
         let mut world = Self::builtin()?;
         let origin = map.header.origin;
         world.center = (origin.x, origin.y, origin.floor);
+        world.first_visible_floor = map.header.first_visible_floor;
         // A missing appearance remains visibly present without inventing local geometry.
-        for tile in map.tiles.iter().filter(|tile| visible(map, tile.position)) {
+        for tile in map
+            .tiles
+            .iter()
+            .filter(|tile| in_draw_window(map, tile.position))
+        {
             world.insert_floor_tile(
                 tile.position,
                 MapTile {
@@ -43,7 +48,13 @@ impl World {
         let mut sheets = SpriteSheets::new(store, catalog);
         let origin = map.header.origin;
         let mut entries = Vec::new();
-        for tile in map.tiles.iter().filter(|tile| visible(map, tile.position)) {
+        #[cfg(test)]
+        let mut native_resolved_items = Vec::new();
+        for tile in map
+            .tiles
+            .iter()
+            .filter(|tile| in_draw_window(map, tile.position))
+        {
             let hook = tile
                 .items
                 .iter()
@@ -69,6 +80,13 @@ impl World {
                 if let Ok(resolved) =
                     index.resolve(&sheets, u32::from(item.appearance_id), placement)
                 {
+                    #[cfg(test)]
+                    if !resolved.cells.is_empty()
+                        && let oteryn_session::world_map::MapDefinition::Item(reference) =
+                            item.definition
+                    {
+                        native_resolved_items.push((tile.position, reference.get()));
+                    }
                     let layer = if resolved.ground {
                         0
                     } else if resolved.ground_border {
@@ -129,7 +147,10 @@ impl World {
         });
         let mut world = Self {
             effects: Default::default(),
+            #[cfg(test)]
+            native_resolved_items,
             center: (origin.x, origin.y, origin.floor),
+            first_visible_floor: map.header.first_visible_floor,
             tiles: HashMap::new(),
             layers: BTreeMap::new(),
             player,
@@ -143,15 +164,16 @@ impl World {
     }
 }
 
-/// Native floors increase upwards. The server's boundary hides everything above it.
-fn visible(map: &WorldMapViewSnapshot, position: oteryn_session::ActorPosition) -> bool {
-    position.floor <= map.header.first_visible_floor
+/// Retain the bounded supplied geometry, including floors needed during a fade.
+fn in_draw_window(map: &WorldMapViewSnapshot, position: oteryn_session::ActorPosition) -> bool {
+    oteryn_session::world_map::floors_in_view(map.header.origin.floor)
+        .is_some_and(|floors| floors.contains(&position.floor))
         && oteryn_session::world_map::in_window(map.header.origin, position)
 }
 
 impl World {
     fn insert_floor_tile(&mut self, position: oteryn_session::ActorPosition, tile: MapTile) {
-        let shift = i32::from(position.floor - self.center.2);
+        let shift = i32::from(self.center.2 - position.floor);
         let projected = (position.x - shift, position.y - shift);
         if position.floor == self.center.2 {
             self.tiles.insert(projected, tile);
@@ -165,8 +187,15 @@ impl World {
 
     /// Painter order: the deepest floor first, the highest visible floor last.
     pub(crate) fn draw_floors(&self) -> Vec<i16> {
+        self.all_draw_floors()
+            .into_iter()
+            .filter(|floor| *floor >= self.first_visible_floor)
+            .collect()
+    }
+
+    pub(crate) fn all_draw_floors(&self) -> Vec<i16> {
         let mut floors: Vec<_> = self.layers.keys().copied().chain([self.center.2]).collect();
-        floors.sort_unstable();
+        floors.sort_unstable_by(|a, b| b.cmp(a));
         floors
     }
 
@@ -192,9 +221,9 @@ mod tests {
         use oteryn_renderer::{MAX_BATCH_QUADS, TileCoord};
         use std::sync::Arc;
         let mut world = World::builtin()?;
-        world.center = (100, 200, -8);
-        for floor in -10..=-8 {
-            let shift = i32::from(floor + 8);
+        world.center = (100, 200, 8);
+        for floor in (8..=10).rev() {
+            let shift = i32::from(8 - floor);
             for y in 195..=205 {
                 for x in 93..=107 {
                     world.insert_floor_tile(
@@ -206,7 +235,7 @@ mod tests {
                         crate::map::MapTile {
                             under: vec![
                                 Draw {
-                                    cell: if floor == -10 {
+                                    cell: if floor == 10 {
                                         MARKER_CELL
                                     } else {
                                         TARGET_CELL
@@ -249,7 +278,7 @@ mod tests {
         let position = ActorPosition {
             x: 100,
             y: 200,
-            floor: -7,
+            floor: 7,
         };
         let mut map = WorldMapViewSnapshot {
             header: MapViewHeader {
@@ -277,7 +306,7 @@ mod tests {
         };
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
         let world = World::resolve_live_map(&root, &map)?;
-        assert_eq!(world.center(), (100, 200, -7));
+        assert_eq!(world.center(), (100, 200, 7));
         assert_eq!(world.tile_count(), 1);
         let tile = world.tile(100, 200).ok_or("live tile missing")?;
         assert!(
@@ -290,13 +319,13 @@ mod tests {
         upper.position = ActorPosition {
             x: 101,
             y: 201,
-            floor: -6,
+            floor: 6,
         };
         map.tiles.push(upper);
         let layered = World::resolve_live_map(&root, &map)?;
         assert_eq!(layered.tile_count(), 2);
         let upper = layered
-            .floor_tile(-6, 100, 200)
+            .floor_tile(6, 100, 200)
             .ok_or("upper floor missing")?;
         assert!(
             upper

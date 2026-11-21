@@ -27,7 +27,7 @@ async fn call(
     })
     .map_err(debug)?;
     let (status, result) =
-        super::cyclopedia::support::exchange(owner, session, id, kind, &bytes).await?;
+        super::cyclopedia_fixtures::support::exchange(owner, session, id, kind, &bytes).await?;
     assert_eq!(status, CommandStatus::Accepted);
     vip::decode_result(&result).map_err(debug)
 }

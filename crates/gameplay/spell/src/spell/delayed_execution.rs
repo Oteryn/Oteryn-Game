@@ -130,8 +130,37 @@ pub struct SavedStrike {
     /// The same occurrence must never reuse an initial hit's durable effect ordinal.
     pub first_sub_ordinal: u16,
 }
+/// Qualified source damage retained before Prey and HP clipping, shared with direct casts.
+#[derive(Debug, Clone)]
+pub struct SpellLeechTarget {
+    pub target: ExactActorRef,
+    pub ordinal: u16,
+    /// None preserves actual-health-loss PvP policy. Creature damage is retained
+    /// before Damage Prey and before a lethal hit is clipped.
+    pub damage: Option<u32>,
+    pub rates: (u32, u32),
+    pub affected: usize,
+}
+
+/// Immutable due-only numerical and child inputs. These values grant no timer authority.
+#[derive(Debug, Clone)]
+pub struct DueSpellAugments {
+    pub leech: Vec<SpellLeechTarget>,
+    pub candidates: Vec<(crate::foundation::CompanionSnapshot, bool)>,
+    pub talisman: crate::durability::task_board::BountyTalismanSnapshot,
+    pub children: std::sync::Arc<std::sync::OnceLock<DueSpellChildren>>,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct DueSpellChildren {
+    pub proof:
+        Option<oteryn_gameplay_entities::carrier::runtime_actor_spell::QualifiedSpellChildren>,
+    pub fatal_holds: Vec<(ExactActorRef, u64)>,
+}
+
 #[derive(Debug, Clone)]
 pub struct ResolvedStrike {
+    pub augments: DueSpellAugments,
     pub batch: OwnerCombatBatch,
     /// First due qualification's talisman rates, keyed by target and effect ordinal.
     pub bounty_leech: Vec<(ExactActorRef, u16, u16)>,
@@ -1343,6 +1372,7 @@ impl SpellTimerOwner {
         ) -> Result<OwnerCombatBatch, Error>,
     ) -> Result<FireReport, Error> {
         self.fire_due_impl(
+            MAX_DUE_PER_CYCLE,
             runtime,
             clock,
             Some(fence),
@@ -1375,6 +1405,7 @@ impl SpellTimerOwner {
         ) -> Result<OwnerCombatBatch, Error>,
     ) -> Result<FireReport, Error> {
         self.fire_due_impl(
+            MAX_DUE_PER_CYCLE,
             runtime,
             clock,
             None,
@@ -1411,6 +1442,35 @@ impl SpellTimerOwner {
         ) -> Result<OwnerCombatBatch, Error>,
     ) -> Result<FireReport, Error> {
         self.fire_due_impl(
+            MAX_DUE_PER_CYCLE,
+            runtime,
+            clock,
+            None,
+            stamp,
+            context,
+            build,
+            |runtime, context, payload, batch| context.commit_due_combat(runtime, payload, batch),
+        )
+    }
+
+    /// Fire one callback so a background grant never covers another timer.
+    pub fn fire_one_due_current_with_context<C: DueCombatCommit>(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        clock: &impl OwnerClock,
+        stamp: RuntimeWorkStamp,
+        context: &mut C,
+        build: impl FnMut(
+            &ChannelRuntimeV1,
+            &C,
+            &TimerPayload,
+            SpellTimerOccurrence,
+            SemanticTimeMicros,
+            RuntimeWorkStamp,
+        ) -> Result<OwnerCombatBatch, Error>,
+    ) -> Result<FireReport, Error> {
+        self.fire_due_impl(
+            1,
             runtime,
             clock,
             None,
@@ -1424,6 +1484,7 @@ impl SpellTimerOwner {
     #[allow(clippy::too_many_arguments)]
     fn fire_due_impl<C>(
         &mut self,
+        max_events: usize,
         runtime: &mut ChannelRuntimeV1,
         clock: &impl OwnerClock,
         fence: Option<&ScopeRuntimeFence>,
@@ -1515,7 +1576,7 @@ impl SpellTimerOwner {
             .familiar_receipts
             .try_reserve(MAX_DUE_PER_CYCLE)
             .map_err(|_| Error::Allocation)?;
-        for event_index in 0..MAX_DUE_PER_CYCLE {
+        for event_index in 0..max_events {
             let Some(fired) = self.ready.front().copied() else {
                 break;
             };

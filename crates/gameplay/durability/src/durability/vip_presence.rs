@@ -19,6 +19,8 @@ pub struct VipPresenceRow {
     pub notify: bool,
     pub visible: bool,
     pub status: Status,
+    /// The Channel of the World an Online, visible target is on (capability 513).
+    pub channel: Option<[u8; 16]>,
 }
 
 impl DurabilityRoot {
@@ -58,7 +60,11 @@ impl DurabilityRoot {
                      WHEN COALESCE(s.vip_status,1)=2 THEN 1 \
                      WHEN EXISTS (SELECT 1 FROM game_durability_reconnect_sessions p \
                        WHERE p.character_id=e.character_id AND p.world_id=e.world_id \
-                       AND p.session_state IN(1,2)) THEN 2 ELSE 1 END AS presence \
+                       AND p.session_state IN(1,2)) THEN 2 ELSE 1 END AS presence, \
+                     (SELECT uuid_send(COALESCE(p.runtime_scope_channel_id,p.origin_channel_id)) \
+                       FROM game_durability_reconnect_sessions p WHERE p.character_id=e.character_id \
+                       AND p.world_id=e.world_id AND p.session_state IN(1,2) \
+                       ORDER BY p.game_session_id LIMIT 1) AS channel \
                      FROM game_vip_entries e JOIN game_character_roots r ON r.character_id=e.character_id \
                      LEFT JOIN game_character_social_settings s ON s.character_id=e.character_id \
                      WHERE e.account_id=$1::uuid AND e.world_id=encode($2,'hex')::uuid \
@@ -82,7 +88,17 @@ impl DurabilityRoot {
                         2 => Status::Online,
                         _ => return Err(DurabilityError::Unavailable),
                     };
+                    // A Channel is disclosed only with an Online status, which already
+                    // requires consent and visibility.
+                    let channel = match row.try_get::<Option<Vec<u8>>, _>("channel")? {
+                        Some(bytes) if status == Status::Online => Some(
+                            <[u8; 16]>::try_from(bytes.as_slice())
+                                .map_err(|_| DurabilityError::Unavailable)?,
+                        ),
+                        _ => None,
+                    };
                     values.push(VipPresenceRow {
+                        channel,
                         target,
                         entry: u64::try_from(entry).map_err(|_| DurabilityError::Unavailable)?,
                         name: row.try_get("name")?,

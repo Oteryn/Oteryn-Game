@@ -122,7 +122,7 @@ fn scope_intent(scope: RuntimeScopeRefV1) -> Value {
     }
 }
 
-fn apply(
+pub(super) fn apply(
     encounter: &mut SoulpitEncounter,
     action: &SoulpitAction,
     now: u64,

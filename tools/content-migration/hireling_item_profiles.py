@@ -2,6 +2,10 @@
 import copy
 import hashlib
 import json
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'tools/content-schema/native-gameplay'))
+from build_spell_item_identities import historical_binding_bytes
 
 from native_profile_composition import encode_native_profile
 
@@ -119,6 +123,12 @@ def merge_record(existing, source):
 def admit(root, generated, profile_path, manifest_path, order, canonical):
     overlay = json.loads((root / PATH).read_bytes())
     records = overlay["records"]
+    # The captured donor weights stay as proof; outside the decided pairs above,
+    # the captured Global client weight wins (ITEMGLOB).
+    from import_cyclopedia_global import apply_profile_weights
+    decided = SHARED_NATIVE_WEIGHTS.keys() | MERGED_MAIN_NATIVE_WEIGHTS.keys()
+    apply_profile_weights([row for row in records
+                           if row["production_definition"]["production_key"] not in decided], root)
     keys = [row["production_definition"]["production_key"] for row in records]
     expected = {f"oteryn:item.tibia.i{number}" for number in overlay["required_ids"]}
     catalogue = overlay["catalogue"]
@@ -128,7 +138,8 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
             or catalogue["trade_rows"] != 1675 or catalogue["trader_items"] != 1409
             or catalogue["packages"] != 23 or catalogue["package_ingredients"] != 69
             or hashlib.sha256((root / CATALOGUE).read_bytes()).hexdigest() != catalogue["sha256"]
-            or hashlib.sha256((root / "imports/crystalserver/bindings/items.json").read_bytes()).hexdigest()
+            or hashlib.sha256(historical_binding_bytes((root / "imports/crystalserver/bindings/items.json").read_bytes(),
+                                                    overlay["binding_table_sha256"])).hexdigest()
                 != overlay["binding_table_sha256"]):
         raise ValueError("HIRELING_NATIVE_ITEM_PROFILE_SET_OR_PIN")
     for key, (_, _, line) in (SHARED_NATIVE_WEIGHTS | MERGED_MAIN_NATIVE_WEIGHTS).items():

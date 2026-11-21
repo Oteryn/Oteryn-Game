@@ -24,6 +24,21 @@ struct Envelope<'a> {
     payload: &'a str,
 }
 
+fn channel_switch_refusal(
+    error: &sqlx::Error,
+) -> Option<oteryn_protocol_oteryn::channel_switch::SwitchStatus> {
+    let error = error
+        .as_database_error()?
+        .try_downcast_ref::<sqlx::postgres::PgDatabaseError>()?;
+    match error.code() {
+        "OTH01" => {
+            super::channel_switch::preflight_status(error.detail()?.parse().ok()?, None, true, true)
+        }
+        "OTH02" => super::channel_switch::preflight_status(0, Some(error.detail()?), true, true),
+        _ => None,
+    }
+}
+
 fn write_current(w: &mut Writer, f: &FreshCurrentEvidence) -> Result<()> {
     w.text(&f.account_id)?;
     w.bytes(f.character_id.as_bytes())?;
@@ -321,6 +336,7 @@ impl ControlLossCompletionSourceV1 for DurableLossCompletionSource {
 /// a separate adapter requirement; runtime arguments must match fixed registry caps.
 #[derive(Clone)]
 pub struct FreshAdmissionStore {
+    security_revocation_freshness_required: bool,
     retired_holder: Option<retired_holder_release::RetiredHolderProof>,
     // Rare Activity release proofs must not enlarge every ordinary admission
     // and reconnect future. Clones retain the same immutable, revalidated proof.
@@ -343,6 +359,9 @@ pub struct FreshAdmissionStore {
     /// OFFLINE0: revalidated in the same physical terminal-release transaction.
     training_logout: Option<std::sync::Arc<dyn TerminalReleaseParticipant>>,
     journal_catalogue: Option<std::sync::Arc<super::journal::LogoutCatalogue>>,
+    /// chsw: the release is the safe exit of a voluntary Channel switch; the Party membership is
+    /// held for the fresh admission into the target Channel instead of removed.
+    channel_switch: bool,
 }
 
 /// OFFLINE0: a terminal-release participant owned outside the shared core (LOOP-TRAIN-1's
@@ -356,6 +375,12 @@ pub trait TerminalReleaseParticipant: Send + Sync {
         'c: 'a;
 }
 impl FreshAdmissionStore {
+    /// Require a current stream read at PREPARE and COMMIT, independently of entry checks.
+    pub fn with_security_revocation_freshness(mut self, required: bool) -> Self {
+        self.security_revocation_freshness_required = required;
+        self
+    }
+
     /// One ADMIT0 predicate at both deciding owners. The caller holds the admission
     /// relation locks; read the current guard through its full mirror/history validator.
     /// Neither the prepared operation nor a callback can supply current runtime facts.
@@ -453,7 +478,19 @@ impl FreshAdmissionStore {
     /// Complete admitted-World root catalogue for the terminal journal capture.
     #[must_use]
     pub fn with_journal_catalogue(&self, catalogue: super::journal::LogoutCatalogue) -> Self {
-        Self { journal_catalogue: Some(std::sync::Arc::new(catalogue)), ..self.clone() }
+        Self {
+            journal_catalogue: Some(std::sync::Arc::new(catalogue)),
+            ..self.clone()
+        }
+    }
+
+    /// chsw: the terminal release of a voluntary Channel switch keeps the Party membership.
+    #[must_use]
+    pub fn with_channel_switch(&self) -> Self {
+        Self {
+            channel_switch: true,
+            ..self.clone()
+        }
     }
 
     /// OFFLINE0 participant: the final build marker commits with the terminal release.
@@ -498,12 +535,14 @@ impl FreshAdmissionStore {
             maximum_operation_bytes: super::MAX_FRESH_OPERATION_BYTES,
             training_logout: None,
             journal_catalogue: None,
+            channel_switch: false,
             final_position: None,
             final_house: None,
             house_release_node: None,
             retired_holder: None,
             departed_activity: None,
             staff_loss: None,
+            security_revocation_freshness_required: false,
             offline_activity_mismatch: None,
         }
     }
@@ -588,12 +627,18 @@ impl FreshAdmissionStore {
             .collect::<Result<_>>()?;
         let replay = b.facts.replay_key().to_bytes();
         let mut tx = super::admission_journal::begin_pass_transaction(holder, deadline).await?;
+        // Match service decisions: account portfolio before CharacterLease relations.
+        sqlx::query("SELECT account_id FROM game_character_account_guards WHERE account_id=$1::uuid FOR UPDATE")
+            .bind(&b.account_id).fetch_optional(&mut *tx).await?;
         super::db::lock_admission_relations(&mut tx).await?;
         if let Some(receipt) = store.receipt_locked(&mut tx, &replay).await? {
             let outcome = receipt.classify_retry(operation);
             super::admission_journal::commit_pass_transaction(tx, deadline).await?;
             return Ok(outcome);
         }
+        let service_blocked: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND lifecycle IN(3,4))")
+            .bind(checked(b.initial_commit())?.character_id().as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+        if service_blocked { return Ok(FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority); }
         if let Some(revalidate) = revalidate
             && !revalidate(&mut tx).await?
         {
@@ -645,6 +690,11 @@ impl FreshAdmissionStore {
         {
             return Ok(FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority);
         }
+        let minimum: Option<i64> = sqlx::query_scalar("SELECT native_security_generation FROM game_security_revocation_floors WHERE account_id=$1::text::uuid")
+            .bind(&b.account_id).fetch_optional(&mut *tx).await?;
+        if minimum.is_some_and(|minimum| u128::from(b.signed_security_generation) < minimum as u128) {
+            return Ok(FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority);
+        }
         // All relation protection and conflict/history observations precede L.
         // No SQL-generated source revision, decision or source timestamp exists.
         let decided_at: i64 =
@@ -655,10 +705,16 @@ impl FreshAdmissionStore {
             return Ok(FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority);
         };
         commit_session_use(&mut tx, initial.character_id(), b.candidate_session, b.transport.to_bytes(), use_state.revision).await?;
-        sqlx::query("INSERT INTO game_durability_fresh_admission_receipts (replay_key, game_session_id, account_id, character_id, world_id, channel_id, character_lease_generation, scope_ownership_generation, connection_generation, transport_ref, semantic_version, operation_json, authorization_decided_at) VALUES ($1, encode($2,'hex')::uuid, $3::text::uuid, encode($4,'hex')::uuid, encode($5,'hex')::uuid, encode($6,'hex')::uuid, $7::text::numeric(20,0), $8::text::numeric(20,0), 1, $9, 1, $10, $11)")
-            .bind(replay.as_slice()).bind(b.candidate_session.as_bytes().as_slice()).bind(&b.account_id).bind(initial.character_id().as_bytes().as_slice()).bind(initial.world_id().as_bytes().as_slice()).bind(initial.channel_id().as_bytes().as_slice()).bind(initial.character_lease_generation().to_string()).bind(initial.scope_ownership_generation().to_string()).bind(b.transport.to_bytes().as_slice()).bind(&encoded).bind(decided_at).execute(&mut *tx).await?;
-        sqlx::query("INSERT INTO game_durability_reconnect_sessions (game_session_id, account_id, character_id, world_id, runtime_scope_kind, runtime_scope_world_id, runtime_scope_channel_id, character_lease_generation, scope_ownership_generation, current_generation, current_transport_ref, session_state, fresh_replay_key) VALUES (encode($1,'hex')::uuid, $2::text::uuid, encode($3,'hex')::uuid, encode($4,'hex')::uuid, 1, encode($4,'hex')::uuid, encode($5,'hex')::uuid, $6::text::numeric(20,0), $7::text::numeric(20,0), 1, $8, 2, $9)")
-            .bind(b.candidate_session.as_bytes().as_slice()).bind(&b.account_id).bind(initial.character_id().as_bytes().as_slice()).bind(initial.world_id().as_bytes().as_slice()).bind(initial.channel_id().as_bytes().as_slice()).bind(initial.character_lease_generation().to_string()).bind(initial.scope_ownership_generation().to_string()).bind(b.transport.to_bytes().as_slice()).bind(replay.as_slice()).execute(&mut *tx).await?;
+        let receipt_insert = sqlx::query("INSERT INTO game_durability_fresh_admission_receipts (replay_key, game_session_id, account_id, character_id, world_id, channel_id, character_lease_generation, scope_ownership_generation, connection_generation, transport_ref, semantic_version, operation_json, authorization_decided_at) VALUES ($1, encode($2,'hex')::uuid, $3::text::uuid, encode($4,'hex')::uuid, encode($5,'hex')::uuid, encode($6,'hex')::uuid, $7::text::numeric(20,0), $8::text::numeric(20,0), 1, $9, 1, $10, $11)")
+            .bind(replay.as_slice()).bind(b.candidate_session.as_bytes().as_slice()).bind(&b.account_id).bind(initial.character_id().as_bytes().as_slice()).bind(initial.world_id().as_bytes().as_slice()).bind(initial.channel_id().as_bytes().as_slice()).bind(initial.character_lease_generation().to_string()).bind(initial.scope_ownership_generation().to_string()).bind(b.transport.to_bytes().as_slice()).bind(&encoded).bind(decided_at).execute(&mut *tx).await;
+        if let Err(error) = receipt_insert {
+            if let Some(status) = channel_switch_refusal(&error) {
+                return Ok(FreshAdmissionDurableOutcomeV1::RejectedChannelSwitch(status));
+            }
+            return Err(error.into());
+        }
+        sqlx::query("INSERT INTO game_durability_reconnect_sessions (game_session_id, account_id, character_id, world_id, runtime_scope_kind, runtime_scope_world_id, runtime_scope_channel_id, character_lease_generation, scope_ownership_generation, current_generation, current_transport_ref, session_state, fresh_replay_key, admission_security_generation) VALUES (encode($1,'hex')::uuid, $2::text::uuid, encode($3,'hex')::uuid, encode($4,'hex')::uuid, 1, encode($4,'hex')::uuid, encode($5,'hex')::uuid, $6::text::numeric(20,0), $7::text::numeric(20,0), 1, $8, 2, $9, $10::text::numeric)")
+            .bind(b.candidate_session.as_bytes().as_slice()).bind(&b.account_id).bind(initial.character_id().as_bytes().as_slice()).bind(initial.world_id().as_bytes().as_slice()).bind(initial.channel_id().as_bytes().as_slice()).bind(initial.character_lease_generation().to_string()).bind(initial.scope_ownership_generation().to_string()).bind(b.transport.to_bytes().as_slice()).bind(replay.as_slice()).bind(b.signed_security_generation.to_string()).execute(&mut *tx).await?;
         store.guards
             .persist_locked(&mut tx, successors, &previous, &encoded_successors)
             .await?;
@@ -2137,12 +2193,14 @@ impl FreshAdmissionStore {
             maximum_operation_bytes: super::MAX_FRESH_OPERATION_BYTES,
             training_logout: None,
             journal_catalogue: None,
+            channel_switch: false,
             final_position: None,
             final_house: None,
             house_release_node: None,
             retired_holder: None,
             departed_activity: None,
             staff_loss: None,
+            security_revocation_freshness_required: false,
             offline_activity_mismatch: None,
         }
     }
@@ -2846,6 +2904,10 @@ impl FreshAdmissionStore {
             }
             (None, None) if cfg!(any(test, feature = "test-support")) => {}
             _ => return Ok(CompleteReconnectOutcomeV1::Rejected),
+        }
+        if store.security_revocation_freshness_required
+            && !super::platform_streams::revocation_fresh_in_transaction(&mut tx).await? {
+            return Ok(CompleteReconnectOutcomeV1::Rejected);
         }
         if commit {
             if !store.complete_prepare_exists(&mut tx, identity, epoch, &encoded).await? {

@@ -71,7 +71,9 @@ pub fn npc_catalogue_preproduction_limits() -> ProjectFilesystemLimits {
         // LOOP-MAP-1 (#2152) adds the `content/cyclopedia/` sibling of `world` under `content/`: +1 (measured, 230).
         // WEATHER-1 adds the `content/weather/` sibling of `world` under `content/`: +1 (measured, 231).
         // CRAFT-CONTENT-1 adds content/craft/: +1 (measured, 232).
-        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11 + 11 + 1 + 1 + 1,
+        // QMINT3 moves the generated activity registry under content/world/ so
+        // Rust and Python agree on World inputs: one sibling per11 lookups.
+        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11 + 11 + 1 + 1 + 1 + 11,
     }
 }
 

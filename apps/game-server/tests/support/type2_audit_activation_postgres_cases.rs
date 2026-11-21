@@ -138,7 +138,7 @@ impl Database {
             version.starts_with("18"),
             "PostgreSQL 18 required: {version}"
         );
-        let migrator = sqlx::migrate!("./migrations");
+        let migrator = &oteryn_gameplay_durability::GAME_MIGRATOR;
         match upto {
             Some(version) => migrator.run_to(version, &mut connection).await?,
             None => migrator.run(&mut connection).await?,

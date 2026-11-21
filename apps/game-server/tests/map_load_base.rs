@@ -224,11 +224,7 @@ fn pins(compiled: &Compiled, production: bool) -> BundlePins {
 
 fn resealed(mut bytes: Vec<u8>) -> (Vec<u8>, [u8; 32]) {
     let body = bytes.len() - 32;
-    let digest: [u8; 32] = Sha256::new()
-        .chain_update(b"OTERYN_WORLD_BUNDLE/v8\0")
-        .chain_update(&bytes[..body])
-        .finalize()
-        .into();
+    let digest = bundle::digest_of(&bytes[..body]);
     bytes[body..].copy_from_slice(&digest);
     (bytes, digest)
 }
@@ -244,7 +240,10 @@ fn assemble(
     sectors: &[(i8, u16, u16, Vec<u8>)],
     spawn_raw: &[u8],
 ) -> Result<(Vec<u8>, [u8; 32]), Box<dyn StdError>> {
-    let json = serde_json::to_vec(manifest)?;
+    let mut manifest = manifest.clone();
+    manifest.format = bundle::LEGACY_FORMAT.into();
+    manifest.min_reader_version = bundle::LEGACY_VERSION;
+    let json = serde_json::to_vec(&manifest)?;
     let mut frames = Vec::new();
     for (_, _, _, raw) in sectors {
         frames.push((raw.len(), compress(raw)?));
@@ -254,7 +253,7 @@ fn assemble(
     let npc_frame = compress(&npc_raw)?;
     let u32_of = |value: usize| (value as u32).to_le_bytes();
     let mut out = b"OTWB".to_vec();
-    out.extend_from_slice(&bundle::VERSION.to_le_bytes());
+    out.extend_from_slice(&bundle::LEGACY_VERSION.to_le_bytes());
     out.extend_from_slice(&[0, 0]);
     out.extend_from_slice(&u32_of(json.len()));
     out.extend_from_slice(&u32_of(sectors.len()));
@@ -574,20 +573,25 @@ fn map_load_refuses_corrupt_and_unknown_content_whole() -> TestResult {
     let mut flipped = bytes.clone();
     flipped[first] ^= 1;
     assert!(map::load(&flipped, &pins(&compiled, false)).is_err());
-    // An unknown top-level manifest key.
-    let mut json = serde_json::to_value(manifest()?)?;
+    // The original wire manifest survives a JSON round trip and splice.
+    let mut json: serde_json::Value = serde_json::from_slice(manifest_bytes(&bytes))?;
+    let (same, digest) = with_manifest(&bytes, &serde_json::to_vec(&json)?)?;
+    assert!(map::load(&same, &pinned(digest)).is_ok());
+    // The same splice with an unknown top-level key is refused.
     json["surprise"] = true.into();
     let text = serde_json::to_vec(&json)?;
     let (unknown, digest) = with_manifest(&bytes, &text)?;
     assert!(refused_by_reader(map::load(&unknown, &pinned(digest))));
-    // The same splice with the original manifest loads, so only the key refused it.
-    let (same, digest) = with_manifest(&bytes, &serde_json::to_vec(&manifest()?)?)?;
-    assert!(map::load(&same, &pinned(digest)).is_ok());
     // A palette index past the palette.
     let stray = sector::encode(&[tile(1, 1, vec![item(11, 0)])])?;
     let (bytes, digest) = assemble(&manifest()?, &[(-7, 0, 0, stray)], &spawn_raw())?;
     assert!(refused_by_reader(map::load(&bytes, &pinned(digest))));
     Ok(())
+}
+
+/// The compiled on-disk manifest, including the wire floor convention.
+fn manifest_bytes(bytes: &[u8]) -> &[u8] {
+    &bytes[16..16 + word(bytes, 8)]
 }
 
 /// `bytes` with its manifest replaced by `json`: the header length and every table offset
@@ -622,7 +626,7 @@ fn with_terrain(
     speed: u64,
 ) -> Result<(Vec<u8>, [u8; 32]), Box<dyn StdError>> {
     let bytes = build(BuildClass::NonProduction)?.bytes;
-    let mut json = serde_json::to_value(manifest()?)?;
+    let mut json: serde_json::Value = serde_json::from_slice(manifest_bytes(&bytes))?;
     let palette = json["palette"].as_array_mut().ok_or("palette")?;
     let entry = palette
         .iter_mut()

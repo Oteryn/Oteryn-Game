@@ -32,8 +32,7 @@ impl PlayLink {
             tr!("Potion durations — Ctrl+Alt+Shift+T"),
             |mailbox| &mut mailbox.potion_durations,
         );
-        #[cfg(not(windows))]
-        {
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).potion_durations.open = true;
         }
         true

@@ -126,11 +126,11 @@
   "selection_policy": "EXACT_TWO_FIELDS_ONE_ID_HISTORY_RETAINED_NO_GLOBAL_DEPRECATED_FILTER",
   "source_inputs": {
     "binding_path": "imports/crystalserver/bindings/items.json",
-    "binding_sha256": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a",
+    "binding_sha256": "6e2952b3017d8f5e5ab952216387075238bd37e7f1aba5bdc501cdcf43b90b66",
     "client_path": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
     "client_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
     "client_version": "15.30",
     "snapshot_path": "imports/tibiawiki/facts/items-stats.json",
-    "snapshot_sha256": "513c4cfd9c9d5723677fb479458dfb48b88414ea5f7c51d5ab58a2b116ee01ef"
+    "snapshot_sha256": "a4cd8038051518678121ea59f8f3b195dd04b4329e77dfbfe217cf998770be49"
   }
 }

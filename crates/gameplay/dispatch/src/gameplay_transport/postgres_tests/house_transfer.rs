@@ -1,4 +1,8 @@
 //! HOUSE-TRANSFER-1 exercises the production composition through framed dispatch.
+use tokio::io::AsyncReadExt;
+use tokio::io::AsyncWriteExt;
+use super::house_transfer_fixtures::{RecoverySource, prepare_owned_session};
+
 use super::*;
 use crate::durability::house_scope_handoff::{
     HouseId, HouseScopeAssignmentCommand, HouseScopeAssignmentOutcome, HouseScopeAssignmentRequest,
@@ -13,7 +17,7 @@ use oteryn_protocol_oteryn::house_transfer as wire;
 use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, decode_command_result, encode_client_command,
 };
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
 const HOUSE: &str = "oteryn:content.house.admiral_s_avenue_1";
 
 #[test]
@@ -216,6 +220,7 @@ async fn resume_case(
             &owner,
             &supported_capabilities,
         )
+        .await
         .ok_or("selection")?;
     assert!(admitted.continuity.selected_capabilities.contains(67));
     assert!(
@@ -535,7 +540,7 @@ async fn case(h: &Harness) -> TestResult {
         .await
         .map_err(debug)?;
     let base = Dependencies::new()?;
-    let (controller, native_pin) = super::death_ml_loss_composed::production_generation_with_pin(
+    let (controller, native_pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
         base.admitted.world_id,
         "content-1",
     )?;
@@ -745,8 +750,29 @@ async fn case(h: &Harness) -> TestResult {
             .fetch_one(&h.pool)
             .await?;
     assert_eq!(rows, 2);
+    // A fresh entry check cannot authorize a controller after a lock wait.
+    let candidate = h.root.house_transfer_recovery(source.game_session_id).await.map_err(debug)?.ok_or("current house-exit recovery")?;
+    assert!(candidate.ack.house.is_none());
+    let credential = RecoverySource::token(250)?;
+    let kid = crate::foundation::fnd04_verifier::fresh_grant_signing_key_id(&credential).ok_or("recovery key")?;
+    recovery_source.evidence.refresh_recovery(&h.root,&h.node,&candidate.current.account_id,&kid).await.map_err(debug)?;
+    let subject = crate::durability::recovery_evidence_composition::RecoveryEvidenceSubject::new(&candidate.current.account_id,&kid).map_err(debug)?;
+    let facts=h.root.verify_registered_recovery(&h.node,&subject,&credential,&candidate.current).await.map_err(debug)?.map_err(debug)?;
+    let before: i64=sqlx::query_scalar("SELECT count(*) FROM game_durability_recovery_grant_consumptions").fetch_one(&h.pool).await?;
+    let clock=super::security_revocation_fixtures::RecoveryExpiryClock::install(h,facts.verified_at()).await?;
+    let expired=h.root.recover_house_transfer(&authority,&h.node,candidate.with_security_revocation_freshness(true),facts,
+        crate::foundation::AuthenticatedTransportRefV1::decode(&[250;16]).map_err(debug)?,clock.check.clone()).await;
+    clock.finish(h).await?;
+    assert!(matches!(expired,Err(crate::durability::DurabilityError::Unavailable)),"expired house recovery must not issue control");
+    let after: i64=sqlx::query_scalar("SELECT count(*) FROM game_durability_recovery_grant_consumptions").fetch_one(&h.pool).await?;
+    assert_eq!(after,before,"expired recovery must not consume its grant");
     let pending = lose_ack(&owner, outside, false).await?;
     assert_ne!(pending.game_session_id, outside.game_session_id);
+    let generations: Vec<(Option<String>,bool)>=sqlx::query_as("SELECT admission_security_generation::text,security_revoked FROM game_durability_reconnect_sessions WHERE account_id=encode($1,'hex')::uuid ORDER BY character_lease_generation")
+        .bind(super::fixture::id(40).as_slice()).fetch_all(&h.pool).await?;
+    assert!(generations.len()>=4,"real house entry/exit and another entry must all have successors");
+    assert!(generations.iter().all(|(generation,revoked)|generation.as_deref()==Some("1") && !revoked),"every house successor inherits the original admission generation");
+
     assert_eq!(
         pending
             .item_fence
@@ -976,295 +1002,6 @@ async fn drive(
         );
     }
     Ok((next, status, payload))
-}
-
-// Initial authority fixture: the composition owns these two guards before the
-// transfer. The runtime readiness still comes from the native assignment API.
-// Negative cases above never derive their current facts from the transfer record.
-pub(super) async fn prepare_owned_session(h: &Harness) -> TestResult {
-    use crate::durability::admission_authority_guards::AdmissionGuardStore;
-    use crate::foundation::admission_authority_publication::*;
-    let now: i64 =
-        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
-            .fetch_one(&h.pool)
-            .await?;
-    let mut source = super::fresh_fixture::fresh::Source::new(now)?;
-    for row in &mut source.rows {
-        if matches!(
-            row.key,
-            AdmissionAuthorityGuardKeyV1::Account { .. }
-                | AdmissionAuthorityGuardKeyV1::Character(_)
-        ) {
-            row.source.authority =
-                crate::durability::fresh_admission_composition::COMPOSITION_SOURCE_AUTHORITY.into();
-            if let AdmissionAuthorityGuardStateV1::Account { security, .. } = &mut row.state {
-                security.provenance.source_authority = "platform-test".into();
-            }
-        }
-    }
-    let mut runtime = super::fresh_fixture::fresh::Source::new(now)?;
-    runtime
-        .rows
-        .retain(|r| matches!(r.key, AdmissionAuthorityGuardKeyV1::Runtime(_)));
-    h.root
-        .publish_runtime_readiness(
-            &h.node,
-            &AdmissionAuthorityPublicationV1::prepare(&runtime, now).map_err(debug)?,
-        )
-        .await
-        .map_err(debug)?;
-    let mut claims = super::fresh_fixture::fresh::Source::new(now)?;
-    claims.rows = source
-        .rows
-        .iter()
-        .filter(|r| !matches!(r.key, AdmissionAuthorityGuardKeyV1::Runtime(_)))
-        .cloned()
-        .collect();
-    AdmissionGuardStore::from_root(h.root.clone())
-        .publish(&AdmissionAuthorityPublicationV1::prepare(&claims, now).map_err(debug)?)
-        .await
-        .map_err(debug)?;
-    let outcome = FreshAdmissionStore::from_root(h.root.clone())
-        .commit(&source.request()?)
-        .await
-        .map_err(debug)?;
-    assert!(matches!(
-        outcome,
-        crate::foundation::fresh_admission_durability::FreshAdmissionDurableOutcomeV1::Committed(_)
-    ));
-    Ok(())
-}
-
-pub(super) struct RecoverySource {
-    pub(super) evidence: crate::gameplay_transport::fresh_evidence::FreshEvidenceSource,
-    task: tokio::task::JoinHandle<()>,
-}
-impl Drop for RecoverySource {
-    fn drop(&mut self) {
-        self.task.abort();
-    }
-}
-impl RecoverySource {
-    pub(super) async fn start(h: &Harness) -> TestResult<Self> {
-        Self::start_at(h, None).await
-    }
-    pub(super) async fn start_at(h: &Harness, fixed_now: Option<u64>) -> TestResult<Self> {
-        use crate::durability::native_admission_source::{
-            DescriptorRegistration, FreshStoreProvenance,
-        };
-        use rustls::pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
-        use std::sync::Arc;
-        let material = rcgen::generate_simple_self_signed(vec!["source.test".into()])?;
-        let certificate = material.cert.der().clone();
-        let key = PrivatePkcs8KeyDer::from(material.signing_key.serialize_der());
-        let mut config = rustls::ServerConfig::builder_with_provider(Arc::new(
-            rustls::crypto::aws_lc_rs::default_provider(),
-        ))
-        .with_protocol_versions(&[&rustls::version::TLS13])?
-        .with_no_client_auth()
-        .with_single_cert(vec![certificate.clone()], key.into())?;
-        config.alpn_protocols = vec![b"http/1.1".to_vec()];
-        let acceptor = tokio_rustls::TlsAcceptor::from(Arc::new(config));
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
-        let port = listener.local_addr()?.port();
-        let descriptor=crate::native_admission_source::descriptor::ProducerDescriptor::new("platform-test".into(),("127.0.0.1".into(),port),"source.test".into(),"source.test".into(),vec![certificate],vec![CertificateDer::from(include_bytes!("../../../../../../apps/game-server/tests/support/spell-save-tls-fixture/client.der").to_vec())],PrivateKeyDer::try_from(include_bytes!("../../../../../../apps/game-server/tests/support/spell-save-tls-fixture/client-key.der").to_vec())?).map_err(debug)?;
-        let registration = DescriptorRegistration {
-            revision: 1,
-            facts: vec![1],
-            installed_at: 1,
-        };
-        let provenance = FreshStoreProvenance {
-            namespace: "house-transfer-fixture".into(),
-            authorization: "owner:test".into(),
-            source_authority: "platform-test".into(),
-            initialized_at: 1,
-        };
-        h.root
-            .record_native_source_descriptor_issuance(
-                "platform-test",
-                registration.clone(),
-                Some(provenance.clone()),
-            )
-            .await?;
-        h.root
-            .initialize_native_admission_source(&h.node, provenance, registration)
-            .await?;
-        let task = tokio::spawn(async move {
-            let mut revision = 1_u64;
-            loop {
-                let Ok((socket, _)) = listener.accept().await else {
-                    return;
-                };
-                let Ok(mut io) = acceptor.accept(socket).await else {
-                    continue;
-                };
-                let mut request = Vec::new();
-                loop {
-                    let mut byte = [0];
-                    if io.read_exact(&mut byte).await.is_err() {
-                        return;
-                    }
-                    request.push(byte[0]);
-                    if request.ends_with(b"\r\n\r\n") {
-                        break;
-                    }
-                    assert!(request.len() < 4096);
-                }
-                let header = String::from_utf8_lossy(&request);
-                let length = header
-                    .lines()
-                    .find_map(|l| l.strip_prefix("Content-Length: "))
-                    .and_then(|n| n.parse::<usize>().ok())
-                    .unwrap_or(0);
-                assert!(length <= 1024);
-                let mut body = vec![0; length];
-                if io.read_exact(&mut body).await.is_err() {
-                    return;
-                }
-                let Ok(input) = serde_json::from_slice::<serde_json::Value>(&body) else {
-                    return;
-                };
-                let now = fixed_now.unwrap_or_else(|| {
-                    std::time::SystemTime::now()
-                        .duration_since(std::time::UNIX_EPOCH)
-                        .map(|v| v.as_secs())
-                        .unwrap_or(0)
-                });
-                revision += 1;
-                let recovery = input["operation"]
-                    .as_str()
-                    .is_some_and(|s| s.contains("Recovery"));
-                let mut reply = serde_json::json!({"version":if recovery{2}else{1},"operation":input["operation"],"result":"observed","source_authority":"platform-test","source_revision":revision.to_string(),"decision_identity":revision.to_string(),"source_observed_at":now.to_string(),"clock_uncertainty_seconds":"0"});
-                if input["operation"]
-                    .as_str()
-                    .is_some_and(|s| s.contains("AccountSecurity"))
-                {
-                    reply["account_id"] = input["account_id"].clone();
-                    reply["purpose"] = "platform_security".into();
-                    reply["scope"] = if recovery {
-                        "existing_actor_recovery"
-                    } else {
-                        "fresh_admission"
-                    }
-                    .into();
-                    reply["allowed"] = true.into();
-                    reply["minimum_valid_generation"] = "1".into();
-                } else {
-                    use base64::Engine;
-                    reply["issuer"] = if recovery {
-                        "urn:oteryn:platform:game-recovery"
-                    } else {
-                        "urn:oteryn:platform:game-admission"
-                    }
-                    .into();
-                    reply["profile"] = if recovery {
-                        "oteryn-reauth-recovery-v1"
-                    } else {
-                        "oteryn-pre-admission-v1"
-                    }
-                    .into();
-                    reply["key_purpose"] = if recovery {
-                        "existing_actor_recovery"
-                    } else {
-                        "fresh_admission"
-                    }
-                    .into();
-                    reply["key_id"] = if recovery {
-                        "house-recovery"
-                    } else {
-                        "house-fresh"
-                    }
-                    .into();
-                    reply["trusted"] = true.into();
-                    reply["public_key"] = base64::engine::general_purpose::URL_SAFE_NO_PAD
-                        .encode(
-                            ed25519_dalek::SigningKey::from_bytes(
-                                &[if recovery { 23 } else { 31 }; 32],
-                            )
-                            .verifying_key()
-                            .to_bytes(),
-                        )
-                        .into();
-                }
-                let body = reply.to_string();
-                let response = format!(
-                    "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
-                    body.len()
-                );
-                if io.write_all(response.as_bytes()).await.is_err() {
-                    return;
-                }
-                let _ = io.shutdown().await;
-            }
-        });
-        Ok(Self {
-            evidence: crate::gameplay_transport::fresh_evidence::FreshEvidenceSource::new(
-                descriptor,
-            ),
-            task,
-        })
-    }
-    pub(super) fn token(nonce: u8) -> TestResult<String> {
-        use base64::Engine;
-        use ed25519_dalek::Signer;
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)?
-            .as_secs();
-        let encode = |v: String| base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(v);
-        let header =
-            serde_json::json!({"alg":"Ed25519","kid":"house-recovery","typ":"oteryn-recovery+jwt"});
-        let payload = serde_json::json!({"iss":"urn:oteryn:platform:game-recovery","aud":"urn:oteryn:game:recovery","iat":now,"nbf":now,"exp":now+10,"jti":base64::engine::general_purpose::URL_SAFE_NO_PAD.encode([nonce;32]),"profile":"oteryn-reauth-recovery-v1","purpose":"existing_actor_recovery","attempt_ref":"00000000-0000-7000-8000-000000000001","account_id":"28020304-0506-7008-800a-0b0c0d0e0f28","character_id":"29020304-0506-7008-800a-0b0c0d0e0f29","world_id":"2a020304-0506-7008-800a-0b0c0d0e0f2a","account_security_generation":"1","protocol_major":1,"transport_profile":1,"ruleset_revision":"ruleset-1","content_revision":"content-1","map_revision":"map-1","world_policy_revision":"policy-1"});
-        let input = format!(
-            "{}.{}",
-            encode(header.to_string()),
-            encode(payload.to_string())
-        );
-        let signature = ed25519_dalek::SigningKey::from_bytes(&[23; 32]).sign(input.as_bytes());
-        Ok(format!(
-            "{input}.{}",
-            base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(signature.to_bytes())
-        ))
-    }
-
-    /// A separately scoped fresh grant from this registered independent test
-    /// producer. The native fresh-admission verifier/publication/commit remain
-    /// unchanged; a recovery credential cannot be reused as a fresh grant.
-    pub(super) fn fresh_token(nonce: u8) -> TestResult<String> {
-        use base64::Engine;
-        use ed25519_dalek::Signer;
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)?
-            .as_secs();
-        let encode = |value: String| base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(value);
-        let header =
-            serde_json::json!({"alg":"Ed25519","kid":"house-fresh","typ":"oteryn-admission+jwt"});
-        let payload = serde_json::json!({
-            "iss":"urn:oteryn:platform:game-admission", "aud":"urn:oteryn:game:admission",
-            "iat":now, "nbf":now, "exp":now+10,
-            "jti":base64::engine::general_purpose::URL_SAFE_NO_PAD.encode([nonce;32]),
-            "profile":"oteryn-pre-admission-v1", "purpose":"fresh_entry",
-            "attempt_ref":crate::gameplay_transport::canonical_uuid(&id(nonce)),
-            "account_id":"28020304-0506-7008-800a-0b0c0d0e0f28",
-            "character_id":"29020304-0506-7008-800a-0b0c0d0e0f29",
-            "world_id":"2a020304-0506-7008-800a-0b0c0d0e0f2a",
-            "channel_id":"2b020304-0506-7008-800a-0b0c0d0e0f2b",
-            "account_security_generation":"1", "route_revision":"route-1",
-            "runtime_observation_revision":"runtime-1", "scope_ownership_generation":"1",
-            "protocol_major":1, "transport_profile":1, "ruleset_revision":"ruleset-1",
-            "content_revision":"content-1", "map_revision":"map-1",
-            "world_policy_revision":"policy-1", "offer_revision":"offer-1"
-        });
-        let input = format!(
-            "{}.{}",
-            encode(header.to_string()),
-            encode(payload.to_string())
-        );
-        let signature = ed25519_dalek::SigningKey::from_bytes(&[31; 32]).sign(input.as_bytes());
-        Ok(format!(
-            "{input}.{}",
-            base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(signature.to_bytes())
-        ))
-    }
 }
 
 struct DroppedAck {
@@ -1512,7 +1249,6 @@ fn transfer_bundle(
     .map_err(debug)
 }
 
-
 #[test]
 fn c08_conditions_postgres_logout_fresh_login_preserves_poison_haste_regeneration() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -1520,10 +1256,15 @@ fn c08_conditions_postgres_logout_fresh_login_preserves_poison_haste_regeneratio
     }
     let started = std::time::Instant::now();
     eprintln!("C08_LOGOUT_LOGIN POSTGRES_CASE_STARTED");
-    let result = std::thread::Builder::new().stack_size(256 << 20)
+    let result = std::thread::Builder::new()
+        .stack_size(256 << 20)
         .spawn(|| c08_logout_scenario().map_err(|e| e.to_string()))?
-        .join().map_err(|_| "C08 logout/login thread panicked");
-    eprintln!("C08_LOGOUT_LOGIN POSTGRES_CASE_FINISHED duration={:.3}s", started.elapsed().as_secs_f64());
+        .join()
+        .map_err(|_| "C08 logout/login thread panicked");
+    eprintln!(
+        "C08_LOGOUT_LOGIN POSTGRES_CASE_FINISHED duration={:.3}s",
+        started.elapsed().as_secs_f64()
+    );
     result??;
     eprintln!("C08_LOGOUT_LOGIN POSTGRES_CASE_COMPLETED");
     Ok(())
@@ -1532,38 +1273,91 @@ fn c08_conditions_postgres_logout_fresh_login_preserves_poison_haste_regeneratio
 fn c08_logout_scenario() -> TestResult {
     let admin = crate::bestiary_postgres_harness::configured_admin().ok_or("PG route required")?;
     let rt = crate::bestiary_postgres_harness::runtime()?;
-    let h = rt.block_on(Harness::create_with_admission_seed(admin, "c08_logout_login", true, false))?;
-    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| rt.block_on(c08_logout_case(&h))));
+    let h = rt.block_on(Harness::create_with_admission_seed(
+        admin,
+        "c08_logout_login",
+        true,
+        false,
+    ))?;
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        rt.block_on(c08_logout_case(&h))
+    }));
     let cleanup = rt.block_on(h.cleanup());
-    match result { Ok(result) => { result?; cleanup }, Err(panic) => std::panic::resume_unwind(panic) }
+    match result {
+        Ok(result) => {
+            result?;
+            cleanup
+        }
+        Err(panic) => std::panic::resume_unwind(panic),
+    }
 }
 
 async fn c08_logout_case(h: &Harness) -> TestResult {
     use oteryn_gameplay_domain::domain::condition::ConditionValues;
-    use oteryn_gameplay_foundation::foundation::condition::{ApplicationFacts, ConditionDefinition, TickFacts};
+    use oteryn_gameplay_foundation::foundation::condition::{
+        ApplicationFacts, ConditionDefinition, TickFacts,
+    };
     use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
     let recovery = RecoverySource::start(h).await?;
     prepare_owned_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
-    let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
     let deps = Dependencies::new()?;
     let mut owner = deps.owner(h, &authority);
     owner.evidence = &recovery.evidence;
     owner.clock_origin = std::time::Instant::now() - std::time::Duration::from_secs(10);
-    let character = crate::domain::CharacterId::from_bytes(super::fixture::id(41)).map_err(debug)?;
-    let facts = match crate::gameplay_transport::spell_character_facts::load_character_cast_facts(&h.root, &authority, character).await {
-        crate::gameplay_transport::spell_character_facts::CastFactsLoad::Ready { facts, .. }
-        | crate::gameplay_transport::spell_character_facts::CastFactsLoad::NoVocation { facts, .. } => facts,
+    let character =
+        crate::domain::CharacterId::from_bytes(super::fixture::id(41)).map_err(debug)?;
+    let facts = match crate::gameplay_transport::spell_character_facts::load_character_cast_facts(
+        &h.root, &authority, character,
+    )
+    .await
+    {
+        crate::gameplay_transport::spell_character_facts::CastFactsLoad::Ready {
+            facts, ..
+        }
+        | crate::gameplay_transport::spell_character_facts::CastFactsLoad::NoVocation {
+            facts,
+            ..
+        } => facts,
         _ => return Err("fixture character facts".into()),
     };
-    let monk = owner.load_monk_state(character).await.ok_or("fixture monk state")?;
+    let monk = owner
+        .load_monk_state(character)
+        .await
+        .ok_or("fixture monk state")?;
     {
         let runtime = owner.runtime.lock().await;
-        assert!(owner.states.spell_states.lock().await.initialize(&runtime, deps.actor,
-            deps.admitted.game_session_id, facts, monk, owner.owner_now()).is_some());
+        assert!(
+            owner
+                .states
+                .spell_states
+                .lock()
+                .await
+                .initialize(
+                    &runtime,
+                    deps.actor,
+                    deps.admitted.game_session_id,
+                    facts,
+                    monk,
+                    owner.owner_now()
+                )
+                .is_some()
+        );
     }
-    owner.runtime.lock().await.initialize_first_entry_position(deps.actor).map_err(debug)?;
-    let (current, _) = FreshAdmissionStore::from_root(h.root.clone()).current_session_at(deps.admitted.game_session_id).await?;
+    owner
+        .runtime
+        .lock()
+        .await
+        .initialize_first_entry_position(deps.actor)
+        .map_err(debug)?;
+    let (current, _) = FreshAdmissionStore::from_root(h.root.clone())
+        .current_session_at(deps.admitted.game_session_id)
+        .await?;
     let mut admitted = deps.admitted;
     admitted.first_entry = FirstEntryOutcome::Positioned;
     admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
@@ -1572,30 +1366,68 @@ async fn c08_logout_case(h: &Harness) -> TestResult {
     let before = {
         let runtime = owner.runtime.lock().await;
         let mut states = owner.states.spell_states.lock().await;
-        let state = states.get_mut(&runtime, deps.actor, admitted.game_session_id).ok_or("source state")?;
+        let state = states
+            .get_mut(&runtime, deps.actor, admitted.game_session_id)
+            .ok_or("source state")?;
         let expected = state.owned_conditions().clone();
         let mut next = expected.clone();
         let root = GameplayDecisionRoot::from_bytes([8; 32]);
-        let regeneration = ConditionDefinition::new("fixture:c08.regeneration", 1,
-            ConditionValues::SpellRegeneration { duration_ms: 60_000, sub_id: 0,
-                health_gain: 3, health_interval_ms: 2_000, mana_gain: 2, mana_interval_ms: 3_000 })
-            .ok_or("regeneration definition")?;
-        next.apply(&regeneration, None, oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind::SelfUse,
-            &[], &ApplicationFacts { now: before_at, base_speed: 220, mana_shield_capacity: 0,
-                target_reentry_protected: false, source_reentry_protected: false, target_is_player: true,
-                decision_root: &root, occurrence: DecisionOccurrenceId::from_bytes([8; 16]) }).map_err(debug)?;
+        let regeneration = ConditionDefinition::new(
+            "fixture:c08.regeneration",
+            1,
+            ConditionValues::SpellRegeneration {
+                duration_ms: 60_000,
+                sub_id: 0,
+                health_gain: 3,
+                health_interval_ms: 2_000,
+                mana_gain: 2,
+                mana_interval_ms: 3_000,
+            },
+        )
+        .ok_or("regeneration definition")?;
+        next.apply(
+            &regeneration,
+            None,
+            oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind::SelfUse,
+            &[],
+            &ApplicationFacts {
+                now: before_at,
+                base_speed: 220,
+                mana_shield_capacity: 0,
+                target_reentry_protected: false,
+                source_reentry_protected: false,
+                target_is_player: true,
+                decision_root: &root,
+                occurrence: DecisionOccurrenceId::from_bytes([8; 16]),
+            },
+        )
+        .map_err(debug)?;
         // Advance through actual due ticks before saving; a reload must not restart a recipe.
         // Rebase the owner's clock by six seconds, without waiting on wall time.
         let ticks = next.take_due(before_at + 6_000_000, TickFacts::default());
         assert!(!ticks.is_empty());
-        state.apply_batch_conditions(&expected, &next).map_err(debug)?;
+        state
+            .apply_batch_conditions(&expected, &next)
+            .map_err(debug)?;
         next
     };
     owner.clock_origin -= std::time::Duration::from_secs(6);
     let logout_before = owner.owner_now().get();
-    assert_eq!(owner.logout_session(admitted).await,
-        crate::gameplay_transport::connection::LogoutReply::Result(oteryn_protocol_oteryn::logout::LogoutResult::Accepted));
-    assert!(owner.runtime.lock().await.player_control_facts(deps.actor, admitted.game_session_id).is_err(), "logout retires runtime authority");
+    assert_eq!(
+        owner.logout_session(admitted).await,
+        crate::gameplay_transport::connection::LogoutReply::Result(
+            oteryn_protocol_oteryn::logout::LogoutResult::Accepted
+        )
+    );
+    assert!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .player_control_facts(deps.actor, admitted.game_session_id)
+            .is_err(),
+        "logout retires runtime authority"
+    );
     let logout_after = owner.owner_now().get();
     drop(owner);
     // A new owner clock and an empty runtime: no same-session or in-memory copy can survive.
@@ -1603,38 +1435,94 @@ async fn c08_logout_case(h: &Harness) -> TestResult {
     let mut fresh_owner = fresh_deps.owner(h, &authority);
     fresh_owner.evidence = &recovery.evidence;
     let token = RecoverySource::fresh_token(91)?;
-    let frame = oteryn_protocol_oteryn::encode_client_bootstrap(&oteryn_protocol_oteryn::ClientBootstrapValue {
-        schema_revision: 1, character_id: crate::foundation::CharacterId::decode(admitted.item_fence.ok_or("fence")?.character_id.as_bytes()).map_err(debug)?,
-        admission_material: token.as_bytes(), client_build_id: "c08-conditions", supported_capabilities: &[],
-    }).map_err(debug)?;
+    let frame = oteryn_protocol_oteryn::encode_client_bootstrap(
+        &oteryn_protocol_oteryn::ClientBootstrapValue {
+            schema_revision: 1,
+            character_id: crate::foundation::CharacterId::decode(
+                admitted.item_fence.ok_or("fence")?.character_id.as_bytes(),
+            )
+            .map_err(debug)?,
+            admission_material: token.as_bytes(),
+            client_build_id: "c08-conditions",
+            supported_capabilities: &[],
+        },
+    )
+    .map_err(debug)?;
     struct FreshIds;
     impl crate::gameplay_transport::connection::ConnectionIdentifiers for FreshIds {
-        fn game_session_id(&self) -> Option<crate::foundation::GameSessionId> { crate::foundation::GameSessionId::decode(&super::fixture::id(91)).ok() }
-        fn transport_ref(&self) -> Option<crate::foundation::AuthenticatedTransportRefV1> { crate::foundation::AuthenticatedTransportRefV1::decode(&[91; 16]).ok() }
+        fn game_session_id(&self) -> Option<crate::foundation::GameSessionId> {
+            crate::foundation::GameSessionId::decode(&super::fixture::id(91)).ok()
+        }
+        fn transport_ref(&self) -> Option<crate::foundation::AuthenticatedTransportRefV1> {
+            crate::foundation::AuthenticatedTransportRefV1::decode(&[91; 16]).ok()
+        }
     }
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let admission_before = fresh_owner.owner_now().get();
-    let fresh = crate::gameplay_transport::connection::admit_frame(&mut server, &frame, &fresh_owner, &FreshIds)
-        .await.map_err(|e| format!("C08 fresh admission: {e:?}"))?;
+    let fresh = crate::gameplay_transport::connection::admit_frame(
+        &mut server,
+        &frame,
+        &fresh_owner,
+        &FreshIds,
+    )
+    .await
+    .map_err(|e| format!("C08 fresh admission: {e:?}"))?;
     drop(server);
-    let mut output = Vec::new(); client.read_to_end(&mut output).await?;
+    let mut output = Vec::new();
+    client.read_to_end(&mut output).await?;
     assert_ne!(fresh.game_session_id, admitted.game_session_id);
-    assert!(matches!(fresh.first_entry, FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled), "C08 fresh placement: {:?}", fresh.first_entry);
+    assert!(
+        matches!(
+            fresh.first_entry,
+            FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
+        ),
+        "C08 fresh placement: {:?}",
+        fresh.first_entry
+    );
     let runtime = fresh_owner.runtime.lock().await;
     let states = fresh_owner.states.spell_states.lock().await;
-    let after = states.get(&runtime, fresh.runtime_actor.ok_or("fresh actor")?, fresh.game_session_id)
-        .ok_or("fresh state")?.owned_conditions();
-    assert_eq!(after.instances().len(), 3, "fresh login must restore poison, haste and regeneration");
+    let after = states
+        .get(
+            &runtime,
+            fresh.runtime_actor.ok_or("fresh actor")?,
+            fresh.game_session_id,
+        )
+        .ok_or("fresh state")?
+        .owned_conditions();
+    assert_eq!(
+        after.instances().len(),
+        3,
+        "fresh login must restore poison, haste and regeneration"
+    );
     let after_at = fresh_owner.owner_now().get();
     for old in before.instances() {
-        let new = after.instances().iter().find(|i| i.definition() == old.definition()).ok_or("restored definition")?;
-        assert_eq!(new.remaining_total(), old.remaining_total(), "remaining DOT damage");
+        let new = after
+            .instances()
+            .iter()
+            .find(|i| i.definition() == old.definition())
+            .ok_or("restored definition")?;
+        assert_eq!(
+            new.remaining_total(),
+            old.remaining_total(),
+            "remaining DOT damage"
+        );
         assert_eq!(new.speed_delta(), old.speed_delta(), "applied speed draw");
-        let upper = old.remaining_duration_ms(logout_before).ok_or("upper duration")?;
-        let lower = old.remaining_duration_ms(logout_after.saturating_add(after_at - admission_before).saturating_add(1000)).ok_or("lower duration")?;
+        let upper = old
+            .remaining_duration_ms(logout_before)
+            .ok_or("upper duration")?;
+        let lower = old
+            .remaining_duration_ms(
+                logout_after
+                    .saturating_add(after_at - admission_before)
+                    .saturating_add(1000),
+            )
+            .ok_or("lower duration")?;
         let restored = new.remaining_duration_ms(after_at).ok_or("new duration")?;
         if upper >= 0 {
-            assert!((lower..=upper).contains(&restored), "remaining duration {lower}..={upper} vs {restored}");
+            assert!(
+                (lower..=upper).contains(&restored),
+                "remaining duration {lower}..={upper} vs {restored}"
+            );
         }
     }
     drop(states);
@@ -1643,29 +1531,85 @@ async fn c08_logout_case(h: &Harness) -> TestResult {
         let mut runtime = fresh_owner.runtime.lock().await;
         let mut states = fresh_owner.states.spell_states.lock().await;
         let actor = fresh.runtime_actor.ok_or("live fresh actor")?;
-        let result = states.tick_current_creature_field_damage(&mut runtime, actor, fresh.game_session_id,
-            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(after_at + 5_000_000), TickFacts::default(), None);
-        assert!(matches!(result, Some(Some(_))), "restored ticks must reach the current HP owner");
-        let poison = states.get(&runtime, actor, fresh.game_session_id).ok_or("ticked player")?
-            .owned_conditions().get(oteryn_gameplay_domain::domain::condition::ConflictKey::Element(
-                oteryn_gameplay_domain::domain::condition::DotElement::Poison)).ok_or("ticked poison")?;
-        assert!(poison.remaining_total() < before.instances().iter().find(|i| i.definition().key() == "fixture:reconnect.poison").ok_or("old poison")?.remaining_total());
+        let result = states.tick_current_creature_field_damage(
+            &mut runtime,
+            actor,
+            fresh.game_session_id,
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(after_at + 5_000_000),
+            TickFacts::default(),
+            None,
+        );
+        assert!(
+            matches!(result, Some(Some(_))),
+            "restored ticks must reach the current HP owner"
+        );
+        let poison = states
+            .get(&runtime, actor, fresh.game_session_id)
+            .ok_or("ticked player")?
+            .owned_conditions()
+            .get(
+                oteryn_gameplay_domain::domain::condition::ConflictKey::Element(
+                    oteryn_gameplay_domain::domain::condition::DotElement::Poison,
+                ),
+            )
+            .ok_or("ticked poison")?;
+        assert!(
+            poison.remaining_total()
+                < before
+                    .instances()
+                    .iter()
+                    .find(|i| i.definition().key() == "fixture:reconnect.poison")
+                    .ok_or("old poison")?
+                    .remaining_total()
+        );
     }
     let fence = fresh.item_fence.ok_or("fresh fence")?;
-    let saved = h.root.read_character_conditions(&authority, fence.character_id).await.map_err(debug)?.ok_or("saved conditions")?;
+    let saved = h
+        .root
+        .read_character_conditions(&authority, fence.character_id)
+        .await
+        .map_err(debug)?
+        .ok_or("saved conditions")?;
     assert!(saved.lease_generation < fence.character_lease_generation);
     for field in 0..3 {
         let mut stale = fence;
         match field {
             0 => stale.character_lease_generation += 1,
-            1 => stale.connection_generation = crate::foundation::ConnectionGeneration::new(2).map_err(debug)?,
-            _ => stale.scope_ownership_generation = crate::foundation::ScopeOwnershipGeneration::new(2).map_err(debug)?,
+            1 => {
+                stale.connection_generation =
+                    crate::foundation::ConnectionGeneration::new(2).map_err(debug)?
+            }
+            _ => {
+                stale.scope_ownership_generation =
+                    crate::foundation::ScopeOwnershipGeneration::new(2).map_err(debug)?
+            }
         }
         let mut candidate = saved.clone();
         candidate.lease_generation = stale.character_lease_generation;
-        assert!(matches!(h.root.save_character_conditions(&authority, &h.node, stale, *fresh.channel_id.as_bytes(), candidate).await,
-            Err(crate::durability::item_use::ItemUseError::AuthorityRejected)), "stale condition fence {field}");
+        assert!(
+            matches!(
+                h.root
+                    .save_character_conditions(
+                        &authority,
+                        &h.node,
+                        stale,
+                        *fresh.channel_id.as_bytes(),
+                        candidate
+                    )
+                    .await,
+                Err(crate::durability::item_use::ItemUseError::AuthorityRejected)
+            ),
+            "stale condition fence {field}"
+        );
     }
-    assert_eq!(h.root.read_character_conditions(&authority, fence.character_id).await.map_err(debug)?.ok_or("unchanged snapshot")?.conditions, saved.conditions);
+    assert_eq!(
+        h.root
+            .read_character_conditions(&authority, fence.character_id)
+            .await
+            .map_err(debug)?
+            .ok_or("unchanged snapshot")?
+            .conditions,
+        saved.conditions
+    );
     Ok(())
 }

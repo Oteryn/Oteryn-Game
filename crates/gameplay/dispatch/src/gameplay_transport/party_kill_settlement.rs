@@ -226,15 +226,58 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_err(Into::into)
     }
 
+    async fn current_overlord_fence(
+        &self,
+        character: crate::domain::CharacterId,
+        session: crate::foundation::GameSessionId,
+        lease: u64,
+    ) -> Result<Option<CurrentCharacterGameplayFence>, CharacterProgressionError> {
+        match self.current_quest_fence_durable(session).await {
+            Ok(fence) => Ok(fence.filter(|fence| {
+                fence.character_id == character && fence.character_lease_generation == lease
+            })),
+            Err(DurabilityError::CommitRejected) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+
     pub(super) async fn settle_party_experience(
         &self,
         permit: &SpellLanePermit,
         entry: &PendingKillSettlement,
     ) -> Result<SettledPartyXp, CharacterProgressionError> {
+        self.settle_party_experience_inner(permit, entry, None)
+            .await
+    }
+
+    pub(super) async fn settle_source_soul_war_experience(
+        &self,
+        permit: &SpellLanePermit,
+        entry: &PendingKillSettlement,
+        source: &super::source_death::SoulWarAction,
+    ) -> Result<SettledPartyXp, CharacterProgressionError> {
+        if !source.matches_entry(entry) {
+            return Err(rejected());
+        }
+        self.settle_party_experience_inner(permit, entry, Some(source))
+            .await
+    }
+
+    async fn settle_party_experience_inner(
+        &self,
+        permit: &SpellLanePermit,
+        entry: &PendingKillSettlement,
+        source: Option<&super::source_death::SoulWarAction>,
+    ) -> Result<SettledPartyXp, CharacterProgressionError> {
         // Early/replayed XP settlement can enter before the outer kill drain freezes
         // task credit. Qualify once here as well, under the same lane and native fences.
         if entry.row.as_ref().is_some_and(|row| row.race.is_some()) {
             self.freeze_task_board_recipients(permit, entry).await?;
+        }
+        if !self.prepare_boss_rewards(entry).await {
+            return Err(CharacterProgressionError::Unavailable(
+                DurabilityError::Unavailable,
+            ));
         }
         let plan = self.discover_party_xp(permit, entry).await?;
         let analyser_receipts = self.analyser_receipts(entry.target).await;
@@ -253,31 +296,56 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Err(rejected());
         }
-        let mut slots = Vec::with_capacity(plan.members.len());
-        let mut members = Vec::with_capacity(plan.members.len());
+        let mut recipients = std::collections::BTreeMap::new();
         for member in &plan.members {
-            let mut slot = self.revision_sequencer.acquire(member.character).await;
-            let mut fence = self
-                .current_quest_fence(member.session)
-                .await
-                .map_err(|_| CharacterProgressionError::Unavailable(DurabilityError::Unavailable))?
-                .ok_or_else(rejected)?;
-            if fence.character_id != member.character {
-                return Err(rejected());
-            }
-            if member.character.as_bytes() == entry.facts.principal.character.as_bytes()
+            recipients.insert(member.character, (member.session, None));
+        }
+        for (character, session, lease) in super::quest_kill_objectives::overlord_recipients(entry)
+        {
+            // The current XP member keeps its own fence. Only an exact match
+            // against the frozen quest recipient can earn BossStorage later.
+            recipients
+                .entry(character)
+                .or_insert((session, Some(lease)));
+        }
+        let mut slots = Vec::with_capacity(recipients.len());
+        let mut quest_fences = Vec::with_capacity(recipients.len());
+        for (character, (session, lease)) in recipients {
+            let mut slot = self.revision_sequencer.acquire(character).await;
+            let mut fence = if let Some(lease) = lease {
+                let Some(fence) = self
+                    .current_overlord_fence(character, session, lease)
+                    .await?
+                else {
+                    continue;
+                };
+                fence
+            } else {
+                self.current_quest_fence(session)
+                    .await
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .filter(|fence| fence.character_id == character)
+                    .ok_or_else(rejected)?
+            };
+            if character.as_bytes() == entry.facts.principal.character.as_bytes()
                 && (fence.game_session_id != entry.facts.principal.session
                     || fence.character_lease_generation != entry.facts.principal.lease_generation)
             {
                 return Err(rejected());
             }
-            fence.expected_character_revision = slot
-                .cursor(self.root, self.character)
-                .await
-                .map_err(|error|match error {
-                    crate::durability::character_authority::CharacterAuthorityError::Unavailable(error)=>CharacterProgressionError::Unavailable(error),
-                    _=>rejected(),
-                })?;
+            fence.expected_character_revision = slot.cursor(self.root, self.character).await.map_err(|error| match error {
+                crate::durability::character_authority::CharacterAuthorityError::Unavailable(error) => CharacterProgressionError::Unavailable(error),
+                _ => rejected(),
+            })?;
+            quest_fences.push(fence);
+            slots.push(slot);
+        }
+        let mut members = Vec::with_capacity(plan.members.len());
+        for member in &plan.members {
+            let fence = *quest_fences
+                .iter()
+                .find(|fence| fence.character_id == member.character)
+                .ok_or_else(rejected)?;
             let binding = self
                 .progression_binding(member.session)
                 .ok_or(CharacterProgressionError::MissingProgressionState)?;
@@ -315,9 +383,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 party_id: member.party_id,
                 party_revision: member.party_revision,
             });
-            slots.push(slot);
         }
-        let endgame_kill = super::kill_reward::tracks_native_progression(&entry.creature);
+        let endgame_kill = entry.soulpit_experience.is_none()
+            && super::kill_reward::tracks_native_progression(&entry.creature);
         let objective_kill = super::grizzly_kills::native_goals::session(entry).is_some()
             || entry
                 .objectives
@@ -334,6 +402,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         let attack = self.states.attack.lock().await;
+        if source.is_some_and(|source| !source.current_for(&runtime)) {
+            return Err(rejected());
+        }
         let mut ctx = (
             self,
             &*runtime,
@@ -342,13 +413,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             entry,
             Some(members),
             &plan,
+            &quest_fences,
         );
         let result = self
             .root
             .try_issue_semantic_pass()?
             .run_with_context(&mut ctx, move |holder, deadline, ctx| {
                 Box::pin(async move {
-                    let (owner, runtime, states, _attack, entry, members, previous) = ctx;
+                    let (owner, runtime, states, _attack, entry, members, previous, quest_fences) = ctx;
                     let b = runtime.binding();
                     let mut tx = item_tx::begin_spell_owner_transaction(holder, deadline).await?;
                     let scope = item_tx::assert_spell_item_scope_in_transaction(
@@ -362,6 +434,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
+                    if let Some(plan) = entry.boss_reward_plan.get()
+                        && !owner.root.settle_boss_death_atomic(&mut tx, owner.character, owner.holder,
+                            entry.facts.death.runtime_scope(), entry.facts.death.scope_ownership_generation(), plan.clone()).await?
+                    {
+                        return Err(DurabilityError::Unavailable);
+                    }
                     let death = key(entry);
                     if let Some(awards) = party_kill_xp::reconcile_in_transaction(
                         &mut tx,
@@ -391,7 +469,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 && damage.lease_generation == Some(member.fence.character_lease_generation))))
                             .collect::<Vec<_>>();
                         let objectives = match super::quest_kill_objectives::apply_in_transaction(
-                            &mut tx, owner.holder, entry, &participants, owner.quest_catalogue.as_deref()).await {
+                            &mut tx, owner.holder, entry, &participants, quest_fences, owner.quest_catalogue.as_deref()).await {
                             Ok(committed) => committed, Err(error) => return Ok(Err(error)),
                         };
                         party_kill_xp::commit_party_kill_transaction(tx, deadline).await?;
@@ -418,7 +496,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     // Freeze original fences and true native damage participation before XP
                     // moves the member requests. A shared-XP bystander is not a boss killer.
                     let participants = members.iter().map(|member| {
-                        let dealt_damage = entry.damage_shares.iter().any(|damage| {
+                        let dealt_damage = source.map_or_else(|| entry.damage_shares.iter().any(|damage| {
                             damage.total > 0
                                 && damage.character.as_bytes() == member.fence.character_id.as_bytes()
                                 && damage.session == Some(member.fence.game_session_id)
@@ -428,9 +506,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 && damage.last_damage_at_ms.is_some_and(|at| {
                                     entry.facts.death_at_ms.checked_sub(at).is_some_and(|age| age <= 60_000)
                                 })
-                        });
+                        }), |source| source.credits(&member.fence));
                         (member.fence, dealt_damage)
                     }).collect::<Vec<_>>();
+                    if source.is_some_and(|source| !source.contains_all_killers(&participants)) {
+                        return Err(DurabilityError::Unavailable);
+                    }
                     for (request, current) in members.iter_mut().zip(&current.members) {
                         let amount = match crate::durability::quest_state::soul_war::soul_war_experience_in_transaction(
                             &mut tx, request.fence.character_id, &entry.creature, current.share,
@@ -510,9 +591,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         Ok(awards) => awards,
                         Err(error) => return Ok(Err(error)),
                     };
-                    if endgame_kill && crate::durability::activity_handoff::boss_room::native_defeat_earned_in_transaction(
+                    // A copied death callback settles XP before the ordinary reward
+                    // drain. Record its same captured room victory here so the
+                    // Quest gate observes it in this pre-taint XP transaction.
+                    if source.is_some()
+                        && let Some(captured) = &entry.activity_death
+                        && !crate::durability::activity_handoff::boss_room::record_defeat_in_transaction(
+                            &mut tx, entry.facts.death.runtime_scope(), entry.facts.death.scope_ownership_generation(),
+                            &captured.creature, super::kill_reward::personal_death_id(entry.facts.death),
+                            entry.boss_reward.as_ref().map_or(Ok(captured.died_at_unix_ms), |reward|
+                                i64::try_from(reward.died_at_unix_ms).map_err(|_| DurabilityError::InvalidStoredState))?,
+                        ).await? {
+                            return Err(DurabilityError::Unavailable);
+                        }
+                    if endgame_kill && crate::durability::activity_handoff::boss_room::record_native_defeat_earned_in_transaction(
                         &mut tx, entry.facts.death.runtime_scope(), entry.facts.death.scope_ownership_generation(),
                         &entry.creature, super::kill_reward::personal_death_id(entry.facts.death),
+                        // The chest owner uses its frozen wall clock; nonreward
+                        // deaths use the separately retained activity occurrence.
+                        entry.boss_reward.as_ref()
+                            .map(|death| i64::try_from(death.died_at_unix_ms))
+                            .transpose().map_err(|_| DurabilityError::InvalidStoredState)?
+                            .or_else(|| entry.activity_death.as_ref().map(|death| death.died_at_unix_ms)),
                     ).await? {
                         let death = death.as_slice();
                         // Quest/Hazard gains observe pre-gain XP and commit in the same
@@ -528,7 +628,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         ).await { return Ok(Err(error)); }
                     }
                     let objectives = match super::quest_kill_objectives::apply_in_transaction(
-                        &mut tx, owner.holder, entry, &participants, owner.quest_catalogue.as_deref()).await {
+                        &mut tx, owner.holder, entry, &participants, quest_fences, owner.quest_catalogue.as_deref()).await {
                         Ok(committed) => committed, Err(error) => return Ok(Err(error)),
                     };
                     party_kill_xp::commit_party_kill_transaction(tx, deadline).await?;
@@ -687,5 +787,124 @@ fn publish_stamina(
         {
             states.hunting_experience(runtime, member.actor, member.session, now.get());
         }
+    }
+}
+
+impl ComposedFreshAdmission<'_, '_, '_> {
+    /// A departed top damager still refuses XP. The frozen personal rewards and
+    /// remaining physical damagers' BossStorage share the same durable owner.
+    pub(super) async fn settle_boss_without_experience(
+        &self,
+        permit: &SpellLanePermit,
+        entry: &PendingKillSettlement,
+    ) -> Result<(), CharacterProgressionError> {
+        if entry.boss_reward.is_none()
+            && oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature).is_none()
+        {
+            return Ok(());
+        }
+        if !self.prepare_boss_rewards(entry).await {
+            return Err(CharacterProgressionError::Unavailable(
+                DurabilityError::Unavailable,
+            ));
+        }
+        let mut recipients = std::collections::BTreeMap::new();
+        for (character, session, lease) in super::quest_kill_objectives::overlord_recipients(entry)
+        {
+            recipients.insert(character, (session, lease));
+        }
+        let mut slots = Vec::new();
+        let mut fences = Vec::new();
+        for (character, (session, lease)) in recipients {
+            let mut slot = self.revision_sequencer.acquire(character).await;
+            let Some(mut fence) = self
+                .current_overlord_fence(character, session, lease)
+                .await?
+            else {
+                continue;
+            };
+            fence.expected_character_revision = slot.cursor(self.root, self.character).await.map_err(|error| match error {
+                crate::durability::character_authority::CharacterAuthorityError::Unavailable(error) => CharacterProgressionError::Unavailable(error),
+                _ => rejected(),
+            })?;
+            slot.observe_endgame_progression();
+            slots.push(slot);
+            fences.push(fence);
+        }
+        let runtime = self.runtime.lock().await;
+        if runtime.owner_fence().is_err() {
+            return Err(rejected());
+        }
+        let attack = self.states.attack.lock().await;
+        let mut context = (self, &*runtime, &*attack, entry, &fences);
+        let result = self
+            .root
+            .try_issue_semantic_pass()?
+            .run_with_context(&mut context, move |holder, deadline, context| {
+                Box::pin(async move {
+                    let (owner, runtime, attack, entry, fences) = context;
+                    let binding = runtime.binding();
+                    let mut tx = item_tx::begin_spell_owner_transaction(holder, deadline).await?;
+                    let _scope = item_tx::assert_spell_item_scope_in_transaction(
+                        &mut tx,
+                        permit,
+                        owner.root,
+                        owner.character,
+                        owner.holder,
+                        binding.runtime_scope(),
+                        binding.scope_generation().get(),
+                    )
+                    .await
+                    .map_err(|_| DurabilityError::Unavailable)?;
+                    let plan = entry
+                        .boss_reward_plan
+                        .get()
+                        .ok_or(DurabilityError::InvalidStoredState)?;
+                    if !owner
+                        .root
+                        .settle_boss_death_atomic(
+                            &mut tx,
+                            owner.character,
+                            owner.holder,
+                            entry.facts.death.runtime_scope(),
+                            entry.facts.death.scope_ownership_generation(),
+                            plan.clone(),
+                        )
+                        .await?
+                    {
+                        return Err(DurabilityError::Unavailable);
+                    }
+                    let objectives =
+                        if oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature)
+                            .is_some()
+                        {
+                            super::quest_kill_objectives::apply_in_transaction(
+                                &mut tx,
+                                owner.holder,
+                                entry,
+                                &[],
+                                fences,
+                                owner.quest_catalogue.as_deref(),
+                            )
+                            .await
+                            .map_err(|error| {
+                                super::operator_event(&format!(
+                                    "boss_quest_settle_deferred reason={error:?}"
+                                ));
+                                DurabilityError::Unavailable
+                            })?
+                        } else {
+                            Vec::new()
+                        };
+                    party_kill_xp::commit_party_kill_transaction(tx, deadline).await?;
+                    super::quest_kill_objectives::publish(attack.kills(), &objectives);
+                    Ok(())
+                })
+            })
+            .await;
+        drop(attack);
+        drop(runtime);
+        drop(slots);
+        result.map_err(CharacterProgressionError::Unavailable)
     }
 }

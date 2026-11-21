@@ -4,7 +4,7 @@
     dead_code,
     reason = "spell import candidate; awaits its production owner caller"
 )]
-use super::super::ComposedFreshAdmission;
+use super::super::{AdmissionRefusal, AdmissionRetryBudget, ComposedFreshAdmission};
 use super::{ChannelSpellStates, SpellCastIntent, SpellCastOutcome};
 use crate::durability::character_familiar::{FamiliarCleanEndResolution, FamiliarStateRequest};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
@@ -59,6 +59,8 @@ pub struct FamiliarSourceSettings {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum FamiliarBenefitUse {
     CurrentEligibility,
+    RestoreDenied,
+    RestoreWithoutPremium,
     NotApplicableEnd,
 }
 #[derive(Debug, Clone)]
@@ -345,6 +347,14 @@ pub trait CurrentFamiliarSourceOwner: source_registration::Registered {
         binding: &CastFactsBinding,
         now_micros: u64,
     ) -> Option<CurrentProjection<FamiliarSourceSettings>>;
+
+    fn read_for_restore(
+        &self,
+        binding: &CastFactsBinding,
+        now_micros: u64,
+    ) -> Option<CurrentProjection<FamiliarSourceSettings>> {
+        self.read_current(binding, now_micros)
+    }
 }
 use super::native_combat_cast::UnresolvedSpellCommit;
 use crate::content::native_gameplay::NativeGameplayState;
@@ -446,6 +456,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(clippy::too_many_arguments)]
     pub(in crate::gameplay_transport) async fn initialize_familiar_login(
         &self,
+        budget: &AdmissionRetryBudget<'_>,
         actor: ExactActorRef,
         session: GameSessionId,
         admission: &crate::foundation::fresh_admission_durability::FreshAdmissionCommitRequestV1,
@@ -495,6 +506,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 content,
                 &owned,
                 &source,
+                Some(budget),
             )
             .await?;
         // #2199 Codex P2 4302041461: no free tile kept the stored familiar waiting; the
@@ -606,6 +618,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         end: FamiliarActorEnd,
     ) -> FamiliarLogoutSave {
         use crate::durability::character_familiar::{FamiliarCleanEndProof, FamiliarStateOutcome};
+        use crate::durability::character_progression::CharacterProgressionError;
         let retained = self
             .states
             .spell_states
@@ -811,6 +824,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 FamiliarStateOutcome::Committed(value)
                 | FamiliarStateOutcome::AlreadyCommitted(value),
             ) => value,
+            Err(
+                CharacterProgressionError::AuthorityRejected
+                | CharacterProgressionError::RespawnPending,
+            ) => {
+                // A definite refusal wrote no clean end. Login reconciles the familiar.
+                states
+                    .pending_familiar_logouts
+                    .retain(|v| v.actor != actor || v.session != session || v.end != end);
+                return FamiliarLogoutSave::FencedOut;
+            }
             Err(_) => return FamiliarLogoutSave::Unknown,
         };
         if !committed.matches_request(&prepared.fence, &prepared.request) {
@@ -1139,7 +1162,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             let facts = FamiliarOwnerFacts {
                 vocation: base_familiar_vocation(caster.vocation).to_owned(),
-                premium: caster.premium.is_current(),
+                premium: Some(caster.premium.is_current()),
                 level: caster.level,
                 account_at_least_god: value.account_at_least_god,
                 current_speed: i32::from(crate::spell::actor_conditions::movement_speed(
@@ -1694,25 +1717,81 @@ impl<
         binding: &CastFactsBinding,
         now: u64,
     ) -> Option<CurrentProjection<FamiliarSourceSettings>> {
+        self.read_settings(binding, now, false)
+    }
+
+    fn read_for_restore(
+        &self,
+        binding: &CastFactsBinding,
+        now: u64,
+    ) -> Option<CurrentProjection<FamiliarSourceSettings>> {
+        self.read_settings(binding, now, true)
+    }
+}
+
+impl<
+    P: super::super::spell_access_facts::CurrentSpellAccessOwner,
+    A: CurrentFamiliarAdministrativeOwner,
+> FamiliarSourceAdapter<'_, P, A>
+{
+    fn read_settings(
+        &self,
+        binding: &CastFactsBinding,
+        now: u64,
+        restoring: bool,
+    ) -> Option<CurrentProjection<FamiliarSourceSettings>> {
         if self.config.source_digest() != binding.content_digest {
             return None;
         }
-        let premium = self.premium.read_current(binding, now).ok()?.premium?;
+        let premium = self
+            .premium
+            .read_current(binding, now)
+            .ok()?
+            .premium
+            .filter(|proof| proof.current(binding, now));
         let group = self.administrative.read_current_group(binding, now)?;
-        if !premium.current(binding, now) || !group.current(binding, now) {
+        if !group.current(binding, now) {
             return None;
         }
+        let (benefit_use, premium, premium_revision, valid_until_micros) = match premium {
+            Some(proof) => (
+                FamiliarBenefitUse::CurrentEligibility,
+                proof.value,
+                proof.authority_revision,
+                proof.valid_until_micros.min(group.valid_until_micros),
+            ),
+            None if restoring => match self
+                .premium
+                .read_familiar_restore_denial(binding, now)
+                .filter(|proof| proof.current(binding, now))
+            {
+                Some(proof) => (
+                    FamiliarBenefitUse::RestoreDenied,
+                    false,
+                    proof.authority_revision,
+                    proof.valid_until_micros.min(group.valid_until_micros),
+                ),
+                // Unresolved Premium leaves the durable look decision intact.
+                None => (
+                    FamiliarBenefitUse::RestoreWithoutPremium,
+                    false,
+                    0,
+                    group.valid_until_micros,
+                ),
+            },
+            None => return None,
+        };
         Some(CurrentProjection {
             binding: binding.clone(),
             authority_revision: group.authority_revision,
-            valid_until_micros: premium.valid_until_micros.min(group.valid_until_micros),
+            valid_until_micros,
             value: FamiliarSourceSettings {
-                benefit_use: FamiliarBenefitUse::CurrentEligibility,
+                benefit_use,
                 account_at_least_god: group.value,
-                premium: premium.value,
-                premium_revision: premium.authority_revision,
+                premium,
+                premium_revision,
                 familiar_minutes: self.config.familiar_minutes(),
-                vip: self.config.vip_enabled() && premium.value,
+                vip: self.config.vip_enabled() && premium,
                 vip_reduction_minutes: self.config.vip_reduction_minutes(),
                 cooldown_rate: self.config.cooldown_rate(),
             },
@@ -1911,6 +1990,17 @@ fn lifecycle_nonce(
     id[8] = (id[8] & 63) | 0x80;
     id
 }
+enum FamiliarLifecycleFinishError {
+    Refused,
+    CheckoutUnavailable,
+}
+
+impl From<()> for FamiliarLifecycleFinishError {
+    fn from((): ()) -> Self {
+        Self::Refused
+    }
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// Actual Login/XP/physical lethal callback composition. The root invokes this at those
     /// committed source sites, with its current account/config/equipment producers. Historical
@@ -1925,6 +2015,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         content: &NativeGameplayState,
         owned: &OwnedCastFacts,
         source: &impl CurrentFamiliarSourceOwner,
+        login_budget: Option<&AdmissionRetryBudget<'_>>,
     ) -> Result<crate::spell::companion_lifecycle::LifecycleFamiliarApplyReceipt, ()> {
         use crate::spell::companion_lifecycle::{
             FamiliarLifecycleBinding, prepare_lifecycle_familiar, restore_familiar_cooldown,
@@ -1978,7 +2069,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .find(|p| p.actor == actor && p.session == session)
             .cloned();
-        let prepared = if let Some(prepared) = retained {
+        let mut prepared = if let Some(prepared) = retained {
             if prepared.spell_index != index
                 || !matches_owner_event(prepared.familiar.binding(), &event)
                 || states.get(&runtime, actor, session) != Some(&prepared.before)
@@ -1996,8 +2087,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     | FamiliarOwnerEvent::Expiry { .. }
                     | FamiliarOwnerEvent::OwnerDeath { .. }
             );
+            let restoring = matches!(
+                event,
+                FamiliarOwnerEvent::Login(_) | FamiliarOwnerEvent::Return
+            );
             let caster = if is_end {
                 None
+            } else if restoring {
+                Some(
+                    owned
+                        .numerical_caster(
+                            state,
+                            spell,
+                            content,
+                            crate::spell::harmony::HarmonyMultiplier::ONE,
+                            now.get(),
+                        )
+                        .map_err(|_| ())?,
+                )
             } else {
                 Some(
                     owned
@@ -2011,18 +2118,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .map_err(|_| ())?,
                 )
             };
-            let settings = source
-                .read_current(owned.binding(), now.get())
-                .filter(|v| v.current(owned.binding(), now.get()))
-                .ok_or(())?;
-            if (is_end && settings.value.benefit_use != FamiliarBenefitUse::NotApplicableEnd)
-                || (!is_end && settings.value.benefit_use != FamiliarBenefitUse::CurrentEligibility)
-                || caster
-                    .as_ref()
-                    .is_some_and(|c| settings.value.premium != c.premium.is_current())
-            {
-                return Err(());
+            let settings = if restoring {
+                source.read_for_restore(owned.binding(), now.get())
+            } else {
+                source.read_current(owned.binding(), now.get())
             }
+            .filter(|v| v.current(owned.binding(), now.get()))
+            .ok_or(())?;
+            let cast_premium = owned.current_premium(now.get()).map(|proof| proof.value);
+            let premium = match settings.value.benefit_use {
+                FamiliarBenefitUse::CurrentEligibility
+                    if !is_end && cast_premium == Some(settings.value.premium) =>
+                {
+                    cast_premium
+                }
+                // The paid-cast port never projects the restore-only denial.
+                FamiliarBenefitUse::RestoreDenied if restoring && cast_premium.is_none() => {
+                    Some(false)
+                }
+                FamiliarBenefitUse::RestoreWithoutPremium
+                    if restoring && cast_premium.is_none() =>
+                {
+                    None
+                }
+                FamiliarBenefitUse::NotApplicableEnd if is_end => None,
+                _ => return Err(()),
+            };
             let equipment_speed = if is_end {
                 0
             } else {
@@ -2039,7 +2160,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // The explicit NotApplicableEnd mode reaches only the source's Death and
                 // Expiry branches, which never read benefit/level/speed/cooldown inputs. These
                 // representation values grant no benefit; Cast/Login/Advance reject it.
-                premium: caster.as_ref().is_some_and(|c| c.premium.is_current()),
+                premium,
                 level: caster.as_ref().map_or(0, |c| c.level),
                 account_at_least_god: settings.value.account_at_least_god,
                 current_speed: i32::from(crate::spell::actor_conditions::movement_speed(
@@ -2211,8 +2332,55 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             states.pending_familiar_lifecycle.push(prepared.clone());
             prepared
         };
-        self.finish_familiar_lifecycle(&mut runtime, &mut states, prepared, owned.binding(), source)
+        let deadline = login_budget.map(|budget| budget.deadline.into_std());
+        let event_id = prepared.source_event_id;
+        let binding_digest = prepared.source_binding_digest;
+        loop {
+            match Box::pin(self.finish_familiar_lifecycle(
+                &mut runtime,
+                &mut states,
+                prepared,
+                owned.binding(),
+                source,
+                deadline,
+            ))
             .await
+            {
+                Err(FamiliarLifecycleFinishError::CheckoutUnavailable)
+                    if let Some(budget) = login_budget =>
+                {
+                    drop(states);
+                    drop(runtime);
+                    if !budget
+                        .retries_unavailable(AdmissionRefusal::Unavailable)
+                        .await
+                    {
+                        return Err(());
+                    }
+                    (runtime, states) = tokio::time::timeout_at(budget.deadline, async {
+                        let runtime = self.runtime.lock().await;
+                        let states = self.states.spell_states.lock().await;
+                        (runtime, states)
+                    })
+                    .await
+                    .map_err(|_| ())?;
+                    // Keep the same prepared operation and reservation. Finish rechecks the
+                    // live owner and authorization before trying its original fenced write.
+                    prepared = states
+                        .pending_familiar_lifecycle
+                        .iter()
+                        .find(|pending| {
+                            pending.actor == actor
+                                && pending.session == session
+                                && pending.source_event_id == event_id
+                                && pending.source_binding_digest == binding_digest
+                        })
+                        .cloned()
+                        .ok_or(())?;
+                }
+                result => return result.map_err(|_| ()),
+            }
+        }
     }
 
     #[allow(
@@ -2226,10 +2394,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         mut prepared: PreparedFamiliarLifecycle,
         actual_binding: &CastFactsBinding,
         source: &impl CurrentFamiliarSourceOwner,
-    ) -> Result<crate::spell::companion_lifecycle::LifecycleFamiliarApplyReceipt, ()> {
+        deadline: Option<std::time::Instant>,
+    ) -> Result<
+        crate::spell::companion_lifecycle::LifecycleFamiliarApplyReceipt,
+        FamiliarLifecycleFinishError,
+    > {
+        use crate::durability::DurabilityError;
         use crate::durability::character_familiar::FamiliarStateOutcome;
+        use crate::durability::character_progression::CharacterProgressionError;
         use crate::spell::companion_lifecycle::commit_lifecycle_familiar;
         use crate::spell::delayed_execution::LifecycleScheduleRequest;
+        use FamiliarLifecycleFinishError::{CheckoutUnavailable, Refused};
         let actor = prepared.actor;
         let session = prepared.session;
         let index = prepared.spell_index;
@@ -2237,22 +2412,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if states.get(runtime, actor, session) != Some(&prepared.before)
             || !current_owner(runtime, &prepared.fence, actor, session)
         {
-            return Err(());
+            return Err(Refused);
         }
         let mut expected_binding = prepared.facts_binding.clone();
         expected_binding.character_revision = actual_binding.character_revision;
         if actual_binding != &expected_binding {
-            return Err(());
+            return Err(Refused);
         }
-        let current = source
-            .read_current(actual_binding, now.get())
-            .filter(|v| v.current(actual_binding, now.get()));
+        // Revalidate with the sealed original event's authority, including a lost
+        // response to a fenced Login or Return write.
+        use crate::spell::companion_lifecycle::FamiliarLifecycleOrigin;
+        let current = if matches!(
+            prepared.familiar.binding().origin(),
+            FamiliarLifecycleOrigin::Login { .. } | FamiliarLifecycleOrigin::Return { .. }
+        ) {
+            source.read_for_restore(actual_binding, now.get())
+        } else {
+            source.read_current(actual_binding, now.get())
+        }
+        .filter(|v| v.current(actual_binding, now.get()));
+        // Settings carry the denial's authority revision and are read again from
+        // the live latch, clock and consumer for the sealed restore occurrence.
         let allow_new_mutation = current.as_ref().is_some_and(|v| {
             v.value == prepared.settings.value
                 && v.authority_revision == prepared.settings.authority_revision
         });
         if prepared.request.is_none() && !allow_new_mutation {
-            return Err(());
+            return Err(Refused);
         }
         prepared
             .familiar
@@ -2304,7 +2490,51 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok_or(())?;
         *original = prepared.clone();
         let committed = if let Some(request) = &prepared.request {
-            let result = if allow_new_mutation {
+            // The earlier FirstEntry barriers cannot target this checkout: Familiar Login
+            // has several durable reads after placement. Take the actual holder only here,
+            // after preparation and source revalidation, and return it before classifying.
+            #[cfg(test)]
+            let held_for_test = if matches!(
+                prepared.familiar.binding().origin(),
+                FamiliarLifecycleOrigin::Login { .. }
+            ) && super::super::composed_admission::FAMILIAR_LOGIN_CHECKOUT
+                .try_with(|probe| {
+                    assert!(
+                        allow_new_mutation,
+                        "current fenced restore must still authorize its write"
+                    );
+                    assert_eq!(
+                        prepared.settings.value.benefit_use,
+                        FamiliarBenefitUse::RestoreDenied
+                    );
+                    assert_eq!(prepared.settings.value.premium_revision, 8);
+                    assert_eq!(prepared.familiar.owner_facts().premium, Some(false));
+                    probe.writes.set(probe.writes.get() + 1);
+                    probe.writes.get() == 1
+                })
+                .unwrap_or(false)
+            {
+                let held = self.root.try_issue_semantic_pass().map_err(|_| ())?;
+                assert!(
+                    !self.root.is_ready(),
+                    "the fixture must have exactly one holder"
+                );
+                Some(held)
+            } else {
+                None
+            };
+            let result = if let Some(deadline) = deadline {
+                self.root
+                    .write_familiar_owner_state_by(
+                        self.character,
+                        self.holder,
+                        prepared.fence,
+                        request.clone(),
+                        allow_new_mutation,
+                        deadline,
+                    )
+                    .await
+            } else if allow_new_mutation {
                 self.root
                     .commit_character_familiar_state(
                         self.character,
@@ -2323,8 +2553,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await
             };
+            #[cfg(test)]
+            if let Some(held) = held_for_test {
+                assert!(
+                    matches!(
+                        &result,
+                        Err(CharacterProgressionError::Unavailable(
+                            DurabilityError::RootUnavailable
+                        ))
+                    ),
+                    "the first real checkout must fail before BEGIN"
+                );
+                held.run(|_, _| Box::pin(async { Ok(()) }))
+                    .await
+                    .map_err(|_| ())?;
+                assert!(
+                    self.root.is_ready(),
+                    "the held connection must be idle again"
+                );
+                super::super::composed_admission::FAMILIAR_LOGIN_CHECKOUT.with(|probe| {
+                    probe.checkout_misses.set(probe.checkout_misses.get() + 1);
+                });
+            }
             let outcome = match result {
                 Ok(value) => value,
+                // The Familiar writer emits RootUnavailable only for checkout, before BEGIN.
+                // Preserve the original reservation while the admission budget waits.
+                Err(CharacterProgressionError::Unavailable(DurabilityError::RootUnavailable)) => {
+                    return Err(CheckoutUnavailable);
+                }
                 Err(error) => {
                     if definite_familiar_rejection(&error)
                         && runtime
@@ -2339,7 +2596,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             v.actor != actor || v.session != session || v.spell_index != index
                         });
                     }
-                    return Err(());
+                    return Err(Refused);
                 }
             };
             Some(match outcome {
@@ -2361,7 +2618,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || !current_owner(runtime, &fresh, actor, session)
             || states.get(runtime, actor, session) != Some(&prepared.before)
         {
-            return Err(());
+            return Err(Refused);
         }
         prepared
             .familiar

@@ -43,7 +43,7 @@ fn scenario() -> TestResult {
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (controller, pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
         let generation = controller.active().ok_or("active")?;
         let room = pin.qualified_room().clone();
         let frame_digest = pin.frame_binding().digest();
@@ -122,6 +122,7 @@ fn scenario() -> TestResult {
                 ItemKey::Instance(id(target)),
             )
             .await
+            .expect("known catalyst outcome")
             .map(|outcome| outcome.disposition)
         };
 
@@ -208,4 +209,89 @@ async fn seed_bag(h: &Harness) -> TestResult {
     }
     tx.commit().await?;
     Ok(())
+}
+
+#[test]
+fn proficiency_catalyst_unknown_commit_does_not_decline_ownership() -> TestResult {
+    std::thread::Builder::new()
+        .name("proficiency_catalyst_unknown".into())
+        .stack_size(64 << 20)
+        .spawn(|| unknown_scenario().map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "proficiency catalyst unknown scenario panicked")?
+        .map_err(Into::into)
+}
+
+fn unknown_scenario() -> TestResult {
+    run(async |admin| {
+        let harness =
+            Harness::create_with_admission_seed(admin, "proficiency_catalyst_unknown", false, false)
+                .await?;
+        prepare_current_session(&harness).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
+        let (controller, pin) =
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
+        let generation = controller.active().ok_or("active")?;
+        let room = pin.qualified_room().clone();
+        let frame_digest = pin.frame_binding().digest();
+        let deps = Dependencies::with_content(
+            pin.into_channel_pin(),
+            room,
+            crate::spell::cast::v1_spell_book().map_err(debug)?,
+        )?;
+        deps.runtime
+            .lock()
+            .await
+            .initialize_pinned_test_position(
+                deps.actor,
+                MovementLocalPosition {
+                    x: 7,
+                    y: 0,
+                    floor: 7,
+                },
+            )
+            .map_err(debug)?;
+        let catalogue = ProductionProficiencyCatalogue::embedded().ok_or("catalogue")?;
+        let mut owner = deps.owner(&harness, &authority);
+        owner.active_generation = Some(generation);
+        owner.proficiency_catalogue = Some(Arc::clone(&catalogue));
+        deps.initialize(&owner).await;
+        let actor = deps.actor;
+        let session = deps.admitted.game_session_id;
+        let mut admitted = deps.admitted;
+        owner.admit_progression_session(&mut admitted).await;
+        sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
+        sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
+        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(generation.identity().server_artifact_digest().as_slice()).bind(generation.identity().client_artifact_digest().as_slice()).bind(frame_digest.as_slice()).execute(&harness.pool).await?;
+        seed_bag(&harness).await?;
+        let fence = owner
+            .current_quest_fence(session)
+            .await
+            .map_err(|_| "fence")?
+            .ok_or("fence")?
+            .item_fence();
+        let command = |command_id| UseCommand {
+            game_session_id: session,
+            command_id,
+            item_fence: Some(fence),
+        };
+
+        // Force the production commit to fail; reconciliation finds no receipt.
+        sqlx::raw_sql("CREATE FUNCTION reject_catalyst() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'injected catalyst commit failure'; END $$; CREATE TRIGGER reject_catalyst BEFORE INSERT ON game_character_proficiency_receipts FOR EACH ROW EXECUTE FUNCTION reject_catalyst()")
+            .execute(&harness.pool).await?;
+        let outcome = FreshAdmissionAuthority::use_proficiency_catalyst(
+            &owner, actor, command(1), ItemKey::Instance(id(UNITS)), ItemKey::Instance(id(WEAPON)),
+        ).await;
+        assert_eq!(format!("{outcome:?}"), "Err(())", "unknown commit must disconnect, not decline ownership");
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
 }

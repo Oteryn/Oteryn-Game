@@ -1,12 +1,18 @@
 //! Soulpit's physical variants in the existing actor carrier. Every admission requires
 //! the shared activity owner's actual Instance continuity; this module allocates no scope.
+use super::native_callback_placement::native_source_monster_movement;
 use super::runtime_actor_companion::{CompanionState, CompiledCreaturePolicies};
 use super::*;
+use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
 use oteryn_gameplay_domain::domain::soulpit::{
-    BossAbility, MONSTERS_PER_WAVE, OPPRESSOR_INTERVAL_MICROS, SoulpitStack,
+    ARENA_X, ARENA_Y, BossAbility, MONSTERS_PER_WAVE, OPPRESSOR_INTERVAL_MICROS, SoulpitStack,
     enrage_retained_percent, overpower_damage, wave_stacks,
 };
 use oteryn_gameplay_foundation::foundation::condition::ConditionStore;
+use oteryn_simulation_determinism::{
+    DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
+};
+use sha2::{Digest, Sha256};
 
 #[path = "soulpit/oppressor.rs"]
 mod oppressor;
@@ -93,7 +99,7 @@ pub struct SoulpitWaveRequest {
     pub wave: u8,
     pub species: String,
     /// Runtime positions use the source z; native map positions use its checked negation.
-    pub positions: [MovementLocalPosition; MONSTERS_PER_WAVE],
+    pub positions: [Option<MovementLocalPosition>; MONSTERS_PER_WAVE],
     pub boss_ability: BossAbility,
     pub now_micros: u64,
 }
@@ -130,12 +136,44 @@ struct WaveReceipt {
     actors: [Option<SoulpitWaveActor>; MONSTERS_PER_WAVE],
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct PreparedWave {
+    request: SoulpitWaveRequest,
+    next_cue: u8,
+}
+
+fn shuffled_spawn_neighbours(
+    root: &GameplayDecisionRoot,
+    occurrence: DecisionOccurrenceId,
+    ordinal: usize,
+) -> Result<[(i32, i32); 8], CarrierError> {
+    let mut offsets = [
+        (-1, -1),
+        (0, -1),
+        (1, -1),
+        (-1, 0),
+        (1, 0),
+        (-1, 1),
+        (0, 1),
+        (1, 1),
+    ];
+    for end in (1..offsets.len()).rev() {
+        let index = (ordinal * offsets.len() + end) as u64;
+        let draw = deterministic_decision_u64(root, occurrence, "soulpit_spawn_fallback", index)
+            .map_err(|_| CarrierError::InvalidCommitBinding)?;
+        let selected = (draw % (end as u64 + 1)) as usize;
+        offsets.swap(end, selected);
+    }
+    Ok(offsets)
+}
+
 /// Physical admission receipts only. The durable SoulpitEncounter owns phases, survivors,
 /// deadlines and rewards. Keeping failed attempts prevents a retry from creating extra adds.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SoulpitPhysicalState {
     handoff_id: [u8; 16],
     waves: Vec<WaveReceipt>,
+    plans: Vec<PreparedWave>,
     next_summon_id: u64,
 }
 
@@ -268,13 +306,156 @@ impl ChannelActorCarrier {
         })
     }
 
-    /// Executes each donor spawn attempt once. A blocked cell or full existing carrier is
-    /// recorded as None, matching Game.createSoulPitMonster's skipped failure; no redraw.
+    /// The source selects positions when preparing a wave, before its delayed
+    /// creation callback. These process-local plans grant no actor admission.
+    pub fn soulpit_wave_plan(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        handoff_id: [u8; 16],
+        wave: u8,
+    ) -> Result<Option<SoulpitWaveRequest>, CarrierError> {
+        self.require_soulpit_instance(continuity)?;
+        Ok(self
+            .soulpit
+            .as_ref()
+            .filter(|state| state.handoff_id == handoff_id)
+            .and_then(|state| state.plans.iter().find(|plan| plan.request.wave == wave))
+            .map(|plan| plan.request.clone()))
+    }
+    pub fn retain_soulpit_wave_plan(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        request: SoulpitWaveRequest,
+    ) -> Result<SoulpitWaveRequest, CarrierError> {
+        self.require_soulpit_instance(continuity)?;
+        if request.handoff_id == [0; 16] || wave_stacks(request.wave).is_err() {
+            return Err(CarrierError::InvalidCommitBinding);
+        }
+        let state = self.soulpit.get_or_insert_with(|| {
+            Box::new(SoulpitPhysicalState {
+                handoff_id: request.handoff_id,
+                waves: Vec::new(),
+                plans: Vec::new(),
+                next_summon_id: 29,
+            })
+        });
+        if state.handoff_id != request.handoff_id {
+            return Err(CarrierError::PlanConflict);
+        }
+        if let Some(known) = state
+            .plans
+            .iter()
+            .find(|known| known.request.wave == request.wave)
+        {
+            return if known.request == request {
+                Ok(known.request.clone())
+            } else {
+                Err(CarrierError::PlanConflict)
+            };
+        }
+        if state.plans.len() >= 4 {
+            return Err(CarrierError::CapacityExceeded);
+        }
+        state
+            .plans
+            .try_reserve(1)
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        state.plans.push(PreparedWave {
+            request: request.clone(),
+            next_cue: 0,
+        });
+        Ok(request)
+    }
+
+    /// The existing physical wave plan also retains its process-local delayed
+    /// callbacks. A cue is acknowledged only after its owned map accepts it.
+    pub fn next_soulpit_wave_cue(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        handoff_id: [u8; 16],
+        wave: u8,
+    ) -> Result<Option<u8>, CarrierError> {
+        self.require_soulpit_instance(continuity)?;
+        let plan = self
+            .soulpit
+            .as_ref()
+            .filter(|state| state.handoff_id == handoff_id)
+            .and_then(|state| state.plans.iter().find(|plan| plan.request.wave == wave))
+            .ok_or(CarrierError::InvalidCommitBinding)?;
+        Ok((plan.next_cue < 28).then_some(plan.next_cue))
+    }
+
+    pub fn acknowledge_soulpit_wave_cue(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        handoff_id: [u8; 16],
+        wave: u8,
+        cue: u8,
+    ) -> Result<(), CarrierError> {
+        self.require_soulpit_instance(continuity)?;
+        let plan = self
+            .soulpit
+            .as_mut()
+            .filter(|state| state.handoff_id == handoff_id)
+            .and_then(|state| {
+                state
+                    .plans
+                    .iter_mut()
+                    .find(|plan| plan.request.wave == wave)
+            })
+            .ok_or(CarrierError::InvalidCommitBinding)?;
+        if plan.next_cue != cue || cue >= 28 {
+            return Err(CarrierError::PlanConflict);
+        }
+        plan.next_cue += 1;
+        Ok(())
+    }
+
+    /// Executes each retained spawn attempt once. If the preferred tile is blocked,
+    /// try shuffled neighbours on the same floor. Retain None if the attempt fails.
+    pub fn spawn_native_soulpit_wave(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        content: &ChannelContentPin,
+        native: &NativeGameplayState,
+        request: SoulpitWaveRequest,
+        ground_allows: impl FnMut(MovementLocalPosition) -> bool,
+    ) -> Result<[Option<SoulpitWaveActor>; MONSTERS_PER_WAVE], CarrierError> {
+        self.spawn_soulpit_wave_with_policies(
+            continuity,
+            content,
+            native.policies(),
+            Some(native),
+            request,
+            ground_allows,
+        )
+    }
+
+    #[cfg(any(test, feature = "test-support"))]
     pub fn spawn_soulpit_wave(
         &mut self,
         continuity: &NamespaceContinuityGuard,
         content: &ChannelContentPin,
         policies: &CompiledCreaturePolicies,
+        request: SoulpitWaveRequest,
+        ground_allows: impl FnMut(MovementLocalPosition) -> bool,
+    ) -> Result<[Option<SoulpitWaveActor>; MONSTERS_PER_WAVE], CarrierError> {
+        self.spawn_soulpit_wave_with_policies(
+            continuity,
+            content,
+            policies,
+            None,
+            request,
+            ground_allows,
+        )
+    }
+
+    fn spawn_soulpit_wave_with_policies(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        content: &ChannelContentPin,
+        policies: &CompiledCreaturePolicies,
+        native: Option<&NativeGameplayState>,
         request: SoulpitWaveRequest,
         mut ground_allows: impl FnMut(MovementLocalPosition) -> bool,
     ) -> Result<[Option<SoulpitWaveActor>; MONSTERS_PER_WAVE], CarrierError> {
@@ -296,6 +477,9 @@ impl ChannelActorCarrier {
             .find(|policy| policy.definition_key == request.species)
             .cloned()
             .ok_or(CarrierError::InvalidCreatureTarget)?;
+        let can_push = native
+            .and_then(|native| native_source_monster_movement(native, &policy))
+            .is_some_and(|movement| movement.push_creatures);
         if let Some(state) = &self.soulpit {
             if state.handoff_id != request.handoff_id {
                 return Err(CarrierError::PlanConflict);
@@ -327,9 +511,15 @@ impl ChannelActorCarrier {
                 .ok_or(CarrierError::DamageOverflow)?;
         }
         for (position, stack) in request.positions.iter().zip(stacks) {
-            if position.floor != 8
-                || !(32362..=32390).contains(&position.x)
-                || !(31132..=31153).contains(&position.y)
+            let Some(position) = position else {
+                if stack == SoulpitStack::Boss {
+                    return Err(CarrierError::PositionSnapshotMismatch);
+                }
+                continue;
+            };
+            if position.floor != content.entry_start().floor
+                || !ARENA_X.contains(&position.x)
+                || !ARENA_Y.contains(&position.y)
                 || (stack == SoulpitStack::Boss && (position.x, position.y) != (32376, 31144))
             {
                 return Err(CarrierError::PositionSnapshotMismatch);
@@ -353,6 +543,7 @@ impl ChannelActorCarrier {
             Box::new(SoulpitPhysicalState {
                 handoff_id: request.handoff_id,
                 waves: Vec::new(),
+                plans: Vec::new(),
                 next_summon_id: 29,
             })
         });
@@ -360,18 +551,77 @@ impl ChannelActorCarrier {
             .waves
             .try_reserve(1)
             .map_err(|_| CarrierError::AllocationFailed)?;
+        let root = GameplayDecisionRoot::from_bytes(content.server_artifact_digest());
+        let digest = Sha256::new()
+            .chain_update(b"oteryn.soulpit.spawn.v1")
+            .chain_update(request.handoff_id)
+            .chain_update(self.scope_generation.get().to_be_bytes())
+            .chain_update([request.wave])
+            .finalize();
+        let mut occurrence = [0; 16];
+        occurrence.copy_from_slice(&digest[..16]);
+        let occurrence = DecisionOccurrenceId::from_bytes(occurrence);
         let mut actors = [None; MONSTERS_PER_WAVE];
         for (ordinal, (position, stack)) in
             request.positions.iter().copied().zip(stacks).enumerate()
         {
+            let Some(position) = position else {
+                continue;
+            };
             let local = LocalPosition {
                 x: position.x,
                 y: position.y,
                 floor: position.floor,
             };
-            if !ground_allows(position) || self.cell_occupied(context, local) {
+            let mut available = |cell: &LocalPosition| {
+                ARENA_X.contains(&cell.x)
+                    && ARENA_Y.contains(&cell.y)
+                    && ground_allows(MovementLocalPosition {
+                        x: cell.x,
+                        y: cell.y,
+                        floor: cell.floor,
+                    })
+                    && !self.cell_occupied_unless(context, *cell, |occupant| {
+                        let Slot::CreatureOccupied {
+                            companion: Some(occupant),
+                            ..
+                        } = occupant
+                        else {
+                            return false;
+                        };
+                        can_push
+                            && native.is_some_and(|native| {
+                                let pushable = occupant.policy.base_speed != 0
+                                    && native_source_monster_movement(native, &occupant.policy)
+                                        .is_some_and(|movement| movement.pushable);
+                                // Placement can share the tile. Crystal displaces creatures on a later walk step.
+                                native_source_monster_occupancy_admits(
+                                    can_push,
+                                    &[NativeSourcePlacementOccupant::Monster {
+                                        pushable,
+                                        player_owned_summon: occupant.master.is_some(),
+                                    }],
+                                )
+                            })
+                    })
+            };
+            let landing = if available(&local) {
+                Some(local)
+            } else {
+                // Crystal shuffles the eight neighbours. Key the shuffle to the
+                // wave and slot so unrelated draws cannot affect placement.
+                shuffled_spawn_neighbours(&root, occurrence, ordinal)?
+                    .into_iter()
+                    .map(|(dx, dy)| LocalPosition {
+                        x: local.x + dx,
+                        y: local.y + dy,
+                        ..local
+                    })
+                    .find(available)
+            };
+            let Some(local) = landing else {
                 continue;
-            }
+            };
             let maximum = maximum_health[ordinal];
             let actor = match self.admit_creature(
                 continuity,
@@ -779,5 +1029,24 @@ impl ScopeRuntimeV1 {
             continuity: &self.continuity,
             content: &self.content,
         })
+    }
+}
+
+impl super::ChannelRuntimeV1 {
+    /// Borrow the existing scoped carrier under its current owner and namespace fence.
+    /// The caller retains the runtime lock and releases this borrow before durable work.
+    pub fn soulpit_kernel_parts(
+        &mut self,
+    ) -> Result<
+        (
+            &mut super::ChannelActorCarrier,
+            &super::NamespaceContinuityGuard,
+            &super::ChannelContentPin,
+        ),
+        super::CarrierError,
+    > {
+        self.owner_fence()?;
+        self.carrier.validate_current_continuity(&self.continuity)?;
+        Ok((&mut self.carrier, &self.continuity, &self.content))
     }
 }

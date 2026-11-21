@@ -68,6 +68,7 @@ pub(in crate::gameplay_transport) fn project(
         let item_facts = definition_facts(&policy.record().semantics);
         candidates.push((
             ViewItem {
+                appearance_id: entry.facts.appearance_id,
                 key,
                 item_definition_ref: reference,
                 count: NonZeroU32::new(entry.facts.count)?,

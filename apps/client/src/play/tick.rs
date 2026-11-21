@@ -6,6 +6,11 @@ use super::{
 use oteryn_platform_client::native_login::PublicClass;
 
 impl PlayView {
+    #[cfg(feature = "bevy-shell")]
+    pub(crate) const fn step_receipt(&self) -> Option<super::StepReceipt> {
+        self.last_step
+    }
+
     /// One shell tick, never waiting on the network: applies every outcome the session task has
     /// delivered, then hands it the next step if one is due. A session end returns to login with
     /// its public class, a committed logout to character selection; a view error is a render
@@ -20,9 +25,24 @@ impl PlayView {
                 PlayEvent::ActionFeedback(line) => self.action_line = line,
                 PlayEvent::Stepped(outcome) => {
                     self.apply(&outcome).map_err(|_error| UNAVAILABLE)?;
+                    #[cfg(feature = "bevy-shell")]
+                    {
+                        self.last_step = Some(super::StepReceipt {
+                            reply_count: self
+                                .last_step
+                                .map_or(1, |last| last.reply_count.saturating_add(1)),
+                            command_id: outcome.command_id,
+                            result_server_sequence: outcome.result_server_sequence,
+                            accepted: outcome.status == oteryn_session::CommandStatus::Accepted,
+                            moved: outcome.disposition == oteryn_session::StepDisposition::Moved,
+                        });
+                    }
                 }
                 PlayEvent::Pushed(pushed) => {
                     self.apply_pushed(&pushed).map_err(|_error| UNAVAILABLE)?;
+                    if let Some(scope) = &pushed.activity_scope {
+                        link.scope_presented(scope.session);
+                    }
                     self.enqueue(pushed.sounds);
                 }
                 PlayEvent::Combat(report) => self.apply_combat(report),
@@ -33,6 +53,15 @@ impl PlayView {
         }
         link.cyclopedia_atlas_pump();
         self.present_cyclopedia_discovery(link);
+        self.project_arena_hazards(link, std::time::Instant::now())
+            .map_err(|_error| UNAVAILABLE)?;
+        link.arena_refresh(std::time::Instant::now());
+        let marks_changed = super::feature_local_minimap::state::lock(&self.minimap)
+            .replace_quest_markers(&link.quest_panel().state.log.map_marks);
+        if marks_changed {
+            self.rebuild().map_err(|_error| UNAVAILABLE)?;
+        }
+        self.present_vip_channel_notices(link);
         self.apply_target_turn(link).map_err(|_error| UNAVAILABLE)?;
         self.advance_presentation(std::time::Instant::now())
             .map_err(|_error| UNAVAILABLE)?;

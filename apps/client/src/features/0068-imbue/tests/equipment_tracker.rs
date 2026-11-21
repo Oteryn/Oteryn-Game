@@ -17,6 +17,7 @@ fn equipment_tracker_reads_real_inspection_commands_and_prunes_unequipped_items(
             m.depot.items.inventory.equipment.push(EquippedItem {
                 slot,
                 item: ItemEntry {
+                    appearance_id: 0,
                     handle: NonZeroU64::MIN.saturating_add(number),
                     item_definition_ref: NonZeroU32::MIN.saturating_add(number as u32),
                     count: NonZeroU32::MIN,
@@ -93,6 +94,7 @@ fn equipped_imbuement_widget_shortcut_and_time_filters_use_the_confirmed_feed() 
             m.depot.items.inventory.equipment.push(EquippedItem {
                 slot,
                 item: ItemEntry {
+                    appearance_id: 0,
                     handle: NonZeroU64::MIN.saturating_add(number),
                     item_definition_ref: NonZeroU32::MIN.saturating_add(number as u32),
                     count: NonZeroU32::MIN,
@@ -176,6 +178,7 @@ fn equipment_tracker_discards_an_inflight_reply_after_unequip() -> Result<(), St
         m.depot.items.inventory.equipment.push(EquippedItem {
             slot: EquipmentSlot::Head,
             item: ItemEntry {
+                appearance_id: 0,
                 handle: NonZeroU64::MIN,
                 item_definition_ref: NonZeroU32::MIN,
                 count: NonZeroU32::MIN,

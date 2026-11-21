@@ -1,0 +1,76 @@
+{
+  "spdx_url": "https://spdx.org/licenses/MIT-0.json",
+  "license_matches_standard_permission_and_disclaimer": true,
+  "registry_license_sha256": "8876cdca96eb380d16d5ea32bf4529d85e87dedc7765ae2861a9bec7f34acbed",
+  "packages": [
+    {
+      "name": "bevy",
+      "version": "0.20.1",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/bevyengine/bevy",
+      "registry": "registry+https://github.com/rust-lang/crates.io-index",
+      "crate_sha256": "78a6c6136c38a50f3d20069adb99064636afcb109cbdf27a00a8c1742f5d630c",
+      "manifest_sha256": "bee87f56fb68298e0e7d91d17818faed58853f000516d2be2e4e567cba68d85a",
+      "vcs": {
+        "git": {
+          "sha1": "a0577b5c6a7b208719dd761c5c6a7a539e472a97"
+        },
+        "path_in_vcs": ""
+      },
+      "bundled_LICENSE": false
+    },
+    {
+      "name": "encase",
+      "version": "0.12.1",
+      "license": "MIT-0",
+      "repository": "https://github.com/teoxoy/encase",
+      "registry": "registry+https://github.com/rust-lang/crates.io-index",
+      "crate_sha256": "b1acbc46b960480c4959213714511e22f9a2e0d361520693bcf5057b5924f53e",
+      "manifest_sha256": "f226128f8f520ad18446292da1da4cef89147726fd1b584cd24c145a69526489",
+      "vcs": {
+        "git": {
+          "sha1": "561121cd17298355de74c07a7206eb8329fd8347"
+        },
+        "path_in_vcs": ""
+      },
+      "bundled_LICENSE": true
+    },
+    {
+      "name": "encase_derive",
+      "version": "0.12.1",
+      "license": "MIT-0",
+      "repository": "https://github.com/teoxoy/encase",
+      "registry": "registry+https://github.com/rust-lang/crates.io-index",
+      "crate_sha256": "1e30d38c47336a0afbdfde297b442944041cf6dccbb1a79eceea16abfb27a92a",
+      "manifest_sha256": "10f68ff39b52cb939cba888165722c691ddbd543d6619c2b7b109f19ebd8e112",
+      "vcs": {
+        "git": {
+          "sha1": "561121cd17298355de74c07a7206eb8329fd8347"
+        },
+        "path_in_vcs": "derive"
+      },
+      "bundled_LICENSE": false
+    },
+    {
+      "name": "encase_derive_impl",
+      "version": "0.12.1",
+      "license": "MIT-0",
+      "repository": "https://github.com/teoxoy/encase",
+      "registry": "registry+https://github.com/rust-lang/crates.io-index",
+      "crate_sha256": "495d24abe406f090f2ba8fc362ecaa8a001e192522aa75eae7b144163c3235ff",
+      "manifest_sha256": "7e6b0e397ae0bec30122ecb1166373259748f2be43350e19031b6f8fd290703f",
+      "vcs": {
+        "git": {
+          "sha1": "561121cd17298355de74c07a7206eb8329fd8347"
+        },
+        "path_in_vcs": "derive/impl"
+      },
+      "bundled_LICENSE": false
+    }
+  ],
+  "derive_license_evidence": {
+    "note": "derive crate archives omit a LICENSE file; their exact manifests declare MIT-0 and all three vcs_info files identify the same upstream commit whose root LICENSE matches standard SPDX MIT-0",
+    "upstream_license_url": "https://raw.githubusercontent.com/teoxoy/encase/561121cd17298355de74c07a7206eb8329fd8347/LICENSE",
+    "upstream_license_sha256": "8876cdca96eb380d16d5ea32bf4529d85e87dedc7765ae2861a9bec7f34acbed"
+  }
+}

@@ -278,10 +278,16 @@ pub mod wheel_allocation;
 #[path = "features/0031-tutorial-notices/mod.rs"]
 pub mod tutorial_notices;
 
+/// The in-game Change Channel window (capability 512).
+#[path = "features/0512-channel-switch/mod.rs"]
+pub mod channel_switch;
 #[path = "features/0497-sanction-record/mod.rs"]
 pub mod sanction_record;
 #[path = "features/0075-server-save-countdown/protocol.rs"]
 pub mod server_save_countdown;
+/// The Channel on Party, VIP and Guild rows (capability 513).
+#[path = "features/0513-social-channel/mod.rs"]
+pub mod social_channel;
 
 /// Weekly Task Board state and controls.
 #[path = "features/0072-task-board/mod.rs"]
@@ -387,3 +393,12 @@ pub mod store_cosmetic_tokens;
 pub mod action_bar_cooldowns;
 #[path = "features/0462-support-intake/mod.rs"]
 pub mod support_intake;
+
+#[path = "features/0499-item-appearance/protocol.rs"]
+pub mod item_appearance;
+
+#[path = "features/0372-native-creature-icons/mod.rs"]
+pub mod native_creature_icons;
+
+#[path = "features/0451-personal-map-marks/mod.rs"]
+pub mod personal_map_marks;

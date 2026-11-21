@@ -83,6 +83,7 @@ fn session(selected: &[u32], continuity: SessionContinuity) -> AdmittedSession {
 
 fn view_item(key: [u8; 16], reference: u32, count: u32) -> ViewItem {
     ViewItem {
+        appearance_id: 0,
         key: ItemKey::Instance(key),
         item_definition_ref: NonZeroU32::new(reference).expect("reference"),
         count: NonZeroU32::new(count).expect("count"),
@@ -129,6 +130,9 @@ impl FreshAdmissionAuthority for Owners {
             observer: own,
             entities: vec![
                 ChannelEntity {
+                    source_icons:
+                        oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(
+                        ),
                     display_name: None,
                     health_percent: 100,
                     direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
@@ -139,6 +143,9 @@ impl FreshAdmissionAuthority for Owners {
                     revision: 0,
                 },
                 ChannelEntity {
+                    source_icons:
+                        oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(
+                        ),
                     display_name: None,
                     health_percent: 100,
                     direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,

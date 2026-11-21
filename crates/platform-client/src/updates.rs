@@ -1,11 +1,36 @@
 //! Accepted Platform update-origin contract; HTTPS transports bytes, TUF grants trust.
 mod policy;
 mod transport;
+use crate::native_login::ReleaseIdentity;
 pub use policy::UpdatePolicy;
+use serde::{Deserialize, Serialize};
 use std::path::Path;
 use tough::{IntoVec, Repository, RepositoryLoader, TargetName, Transport};
 pub use transport::OriginTransport;
 use url::Url;
+
+/// Release sequences are scoped to one update channel.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum UpdateChannel {
+    Stable,
+    Beta,
+}
+
+impl UpdateChannel {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Stable => "stable",
+            Self::Beta => "beta",
+        }
+    }
+}
+
+pub const MAX_RELEASE_SEQUENCE: u64 = (1 << 53) - 1;
+
+pub(crate) const fn valid_release_sequence(sequence: u64) -> bool {
+    sequence > 0 && sequence <= MAX_RELEASE_SEQUENCE
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UpdateError {
@@ -188,6 +213,32 @@ impl UpdateClient {
             length,
         })
     }
+    /// Apply the login gate's floor to the current release in the verified policy.
+    pub fn require_minimum(
+        &self,
+        minimum_release_sequence: Option<u64>,
+    ) -> Result<(), UpdateError> {
+        require_minimum(
+            self.policy.current_release_sequence,
+            minimum_release_sequence,
+        )
+    }
+
+    /// Apply refusal constraints to the current release in the verified policy.
+    pub fn require_login_update(
+        &self,
+        minimum_release_sequence: Option<u64>,
+        refused: ReleaseIdentity,
+    ) -> Result<(), UpdateError> {
+        require_login_update(
+            &self.policy.channel,
+            &self.policy.current_release_id,
+            self.policy.current_release_sequence,
+            minimum_release_sequence,
+            refused,
+        )
+    }
+
     /// Streams a signed-length, signed-hash checked target; never buffers a package in memory.
     pub async fn download(&self, destination: &Path) -> Result<(), UpdateError> {
         use futures::StreamExt;
@@ -217,5 +268,83 @@ impl UpdateClient {
             let _ = std::fs::remove_file(partial);
         }
         result
+    }
+}
+
+fn require_minimum(current: u64, minimum: Option<u64>) -> Result<(), UpdateError> {
+    if minimum.is_some_and(|minimum| !valid_release_sequence(minimum) || current < minimum) {
+        return Err(UpdateError::Unavailable);
+    }
+    Ok(())
+}
+
+fn require_login_update(
+    channel: &str,
+    release_id: &str,
+    current: u64,
+    minimum: Option<u64>,
+    refused: ReleaseIdentity,
+) -> Result<(), UpdateError> {
+    if channel != refused.update_channel().as_str()
+        || !valid_release_sequence(current)
+        || refused.matches_target(release_id, current)
+    {
+        return Err(UpdateError::Unavailable);
+    }
+    require_minimum(current, minimum)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn login_update_rejects_the_refused_release_after_policy_rollback() -> Result<(), UpdateError> {
+        let refused = ReleaseIdentity::new(UpdateChannel::Beta, "rel-42", 42)
+            .ok_or(UpdateError::Configuration)?;
+        assert_eq!(
+            require_login_update("beta", "rel-42", 42, None, refused),
+            Err(UpdateError::Unavailable)
+        );
+        assert_eq!(
+            require_login_update("beta", "rel-42", 44, None, refused),
+            Err(UpdateError::Unavailable)
+        );
+        assert_eq!(
+            require_login_update("beta", "other-build", 42, None, refused),
+            Err(UpdateError::Unavailable)
+        );
+        assert_eq!(
+            require_login_update("beta", "rel-43", 43, Some(44), refused),
+            Err(UpdateError::Unavailable)
+        );
+        assert_eq!(
+            require_login_update("beta", "rel-44", 44, Some(44), refused),
+            Ok(())
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn login_update_requires_the_refused_channel() -> Result<(), UpdateError> {
+        let refused = ReleaseIdentity::new(UpdateChannel::Beta, "rel-42", 42)
+            .ok_or(UpdateError::Configuration)?;
+        assert_eq!(
+            require_login_update("stable", "rel-44", 44, None, refused),
+            Err(UpdateError::Unavailable)
+        );
+        assert_eq!(
+            require_login_update("beta", "rel-44", 44, None, refused),
+            Ok(())
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn gate_minimum_applies_to_verified_current_sequence() {
+        assert_eq!(require_minimum(42, Some(43)), Err(UpdateError::Unavailable));
+        assert_eq!(require_minimum(43, Some(43)), Ok(()));
+        assert_eq!(require_minimum(44, Some(43)), Ok(()));
+        assert_eq!(require_minimum(42, None), Ok(()));
     }
 }

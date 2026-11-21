@@ -180,7 +180,9 @@ impl Database {
             "PostgreSQL 18 required: {version}"
         );
         eprintln!("MAP-ITEM-MINT-PG: database {name} on server_version_num={version}");
-        sqlx::migrate!("./migrations").run(&mut connection).await?;
+        oteryn_gameplay_durability::GAME_MIGRATOR
+            .run(&mut connection)
+            .await?;
         connection.close().await?;
         Ok(Self {
             admin_url,
@@ -828,6 +830,8 @@ fn entry(x: u16, y: u16, ordinal: u8) -> TestResult<u64> {
 /// The pickup of `quantity` coins of the entry `key` in reset epoch `epoch`.
 fn pickup(command: CommandRef, key: u64, epoch: u64, quantity: u32) -> MapItemMintRequest {
     MapItemMintRequest {
+        flat_crate: None,
+        key_number: None,
         command,
         base_bundle_digest: DIGEST,
         placement_key: key,
@@ -1172,6 +1176,7 @@ fn map_item_mint_refusals_and_invalid_input_write_nothing() -> TestResult {
         let refusals: [(MapItemMintRequest, MapItemMintRefusal); 3] = [
             (
                 MapItemMintRequest {
+                    flat_crate: None,
                     item: backpack_facts(),
                     quantity: 1,
                     ..pickup(command(1)?, key, 0, 1)
@@ -1180,6 +1185,7 @@ fn map_item_mint_refusals_and_invalid_input_write_nothing() -> TestResult {
             ),
             (
                 MapItemMintRequest {
+                    flat_crate: None,
                     item: facts(STONE, ItemStackClass::Unknown),
                     ..pickup(command(2)?, key, 0, 1)
                 },
@@ -1187,6 +1193,7 @@ fn map_item_mint_refusals_and_invalid_input_write_nothing() -> TestResult {
             ),
             (
                 MapItemMintRequest {
+                    flat_crate: None,
                     item: facts(STONE, ItemStackClass::NonStackable),
                     ..pickup(command(3)?, key, 0, 2)
                 },
@@ -1207,6 +1214,7 @@ fn map_item_mint_refusals_and_invalid_input_write_nothing() -> TestResult {
             (
                 "not an Item definition",
                 MapItemMintRequest {
+                    flat_crate: None,
                     item: ItemDefinitionFacts {
                         weight: Some(1),
                         definition: definition("Outfit", COIN),
@@ -1218,6 +1226,7 @@ fn map_item_mint_refusals_and_invalid_input_write_nothing() -> TestResult {
             (
                 "empty content revision",
                 MapItemMintRequest {
+                    flat_crate: None,
                     content_revision: String::new(),
                     ..pickup(command(7)?, key, 0, 1)
                 },
@@ -1595,7 +1604,10 @@ mod map_overlay_pickup {
     /// A bundle of one sector at native floor -7, assembled byte by byte (as the MAP-LOAD-1 tests
     /// do) so a tile can hold more top-level entries than the compiler writes, and its digest.
     fn assemble(tiles: &[Tile]) -> Result<(Vec<u8>, [u8; 32]), Box<dyn StdError>> {
-        let json = serde_json::to_vec(&manifest()?)?;
+        let mut manifest = manifest()?;
+        manifest.format = bundle::LEGACY_FORMAT.into();
+        manifest.min_reader_version = bundle::LEGACY_VERSION;
+        let json = serde_json::to_vec(&manifest)?;
         let raw = sector::encode(tiles)?;
         let frame = compress(&raw)?;
         let spawn_raw = spawn::encode(&spawn::Table::default());
@@ -1604,7 +1616,7 @@ mod map_overlay_pickup {
         let npc_frame = compress(&npc_raw)?;
         let u32_of = |value: usize| (value as u32).to_le_bytes();
         let mut out = b"OTWB".to_vec();
-        out.extend_from_slice(&bundle::VERSION.to_le_bytes());
+        out.extend_from_slice(&bundle::LEGACY_VERSION.to_le_bytes());
         out.extend_from_slice(&[0, 0]);
         out.extend_from_slice(&u32_of(json.len()));
         out.extend_from_slice(&u32_of(1));

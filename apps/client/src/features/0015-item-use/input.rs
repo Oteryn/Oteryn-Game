@@ -5,6 +5,11 @@ use oteryn_input_actions::{ButtonState, NormalizedInputEvent};
 use oteryn_renderer::TileCoord;
 
 impl PlayLink {
+    /// Whether an item is waiting for a use-with target.
+    pub fn use_with_armed(&self) -> bool {
+        lock(&self.mailbox).world_context.targeting.is_some()
+    }
+
     pub fn inventory_use_rune(&self) -> bool {
         self.inventory_use(true)
     }

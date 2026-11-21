@@ -1,5 +1,5 @@
 //! Credential-verified lost-ack recovery against the real activity/session owners.
-use super::activity_runtime::enter_fixture;
+use super::activity_runtime_fixtures::enter_fixture;
 use super::fixture::{Harness, debug};
 use super::{TestResult, reset};
 use crate::durability::activity_handoff::{ActivityHandoffOwner, ActivityTransferRecovery};
@@ -52,11 +52,11 @@ fn scenario() -> TestResult {
 
 async fn verified(
     h: &Harness,
-    evidence: &super::house_transfer::RecoverySource,
+    evidence: &super::house_transfer_fixtures::RecoverySource,
     candidate: &ActivityTransferRecovery,
     nonce: u8,
 ) -> TestResult<VerifiedRecoveryDurabilityFactsV2> {
-    let token = super::house_transfer::RecoverySource::token(nonce)?;
+    let token = super::house_transfer_fixtures::RecoverySource::token(nonce)?;
     let key = fresh_grant_signing_key_id(&token).ok_or("fixture signing key")?;
     evidence
         .evidence
@@ -149,6 +149,17 @@ async fn case(h: &Harness) -> TestResult {
             .is_err()
     );
     assert_eq!(counts(h).await?, before);
+
+    // Entry was fresh at exactly 30 seconds; the deciding callback advances
+    // the injected clock while the recovery transaction already owns its locks.
+    let facts = verified(h, &entered.evidence, &candidate, 249).await?;
+    let clock = super::security_revocation_fixtures::RecoveryExpiryClock::install(h, facts.verified_at()).await?;
+    let expired = owner.recover_transfer(&authority, &h.node,
+        candidate.clone().with_security_revocation_freshness(true), facts,
+        transport, clock.check.clone()).await;
+    clock.finish(h).await?;
+    assert!(matches!(expired, Err(crate::durability::DurabilityError::Unavailable)), "expired activity recovery must not issue control");
+    assert_eq!(counts(h).await?, before, "expired recovery leaves every ledger unchanged");
 
     let recovered = owner
         .recover_transfer(

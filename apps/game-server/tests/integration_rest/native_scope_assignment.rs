@@ -593,13 +593,10 @@ fn report_config_refuses_invalid_documents() {
     assert!(ReportConfig::parse(duplicate.as_bytes()).is_err());
 }
 
-fn subject_certificate(subject: &[(DnType, &str)]) -> CertificateDer<'static> {
-    let mut params = CertificateParams::new(vec![NODE.to_owned()]).unwrap();
-    let mut name = DistinguishedName::new();
-    for (kind, value) in subject {
-        name.push(kind.clone(), *value);
-    }
-    params.distinguished_name = name;
+fn identity_certificate(names: Vec<String>, subject: &str) -> CertificateDer<'static> {
+    let mut params = CertificateParams::new(names).unwrap();
+    params.distinguished_name = DistinguishedName::new();
+    params.distinguished_name.push(DnType::CommonName, subject);
     params
         .self_signed(&KeyPair::generate().unwrap())
         .unwrap()
@@ -609,54 +606,67 @@ fn subject_certificate(subject: &[(DnType, &str)]) -> CertificateDer<'static> {
 
 #[test]
 fn node_certificate_must_carry_its_configured_node_identity() {
-    let node_a = subject_certificate(&[(DnType::CommonName, NODE)]);
-    assert!(sa::certificate_has_node_identity(
+    let node_a = identity_certificate(vec![NODE.into()], "unrelated subject");
+    assert!(sa::certificate_has_node_identity(&node_a, NODE));
+    assert!(!sa::certificate_has_node_identity(
         &node_a,
+        "node-b.runtime-status"
+    ));
+    let wrong_san = identity_certificate(vec!["node-b.runtime-status".into()], NODE);
+    assert!(!sa::certificate_has_node_identity(&wrong_san, NODE));
+    assert!(!sa::certificate_has_node_identity(
+        &wrong_san,
         "CN=node-a.runtime-status"
     ));
-    // The bare common name is not the complete subject.
-    assert!(!sa::certificate_has_node_identity(&node_a, NODE));
-    // Node B's certificate configured under node A's key is refused.
-    let node_b = subject_certificate(&[(DnType::CommonName, "node-b.runtime-status")]);
-    assert!(!sa::certificate_has_node_identity(
-        &node_b,
-        "CN=node-a.runtime-status"
-    ));
-    assert!(sa::certificate_has_node_identity(
-        &node_b,
-        "CN=node-b.runtime-status"
-    ));
-    // Extra attributes are part of the subject.
-    let full = subject_certificate(&[
-        (DnType::OrganizationName, "Oteryn"),
-        (DnType::CommonName, NODE),
-    ]);
-    assert!(!sa::certificate_has_node_identity(&full, NODE));
-    assert!(!sa::certificate_has_node_identity(
-        &full,
-        "CN=node-a.runtime-status"
-    ));
-    assert!(sa::certificate_has_node_identity(
-        &full,
-        "CN=node-a.runtime-status,O=Oteryn"
-    ));
-    assert!(!sa::certificate_has_node_identity(
-        &full,
-        "O=Oteryn,CN=node-a.runtime-status"
-    ));
-    // A subject alternative name alone is not the subject.
-    let no_subject = subject_certificate(&[(DnType::OrganizationName, "Oteryn")]);
-    assert!(!sa::certificate_has_node_identity(&no_subject, NODE));
-    // A value that needs escaping never matches.
-    let escaped = subject_certificate(&[(DnType::CommonName, "node-a,O=x")]);
-    assert!(!sa::certificate_has_node_identity(
-        &escaped,
-        "CN=node-a,O=x"
-    ));
+    for names in [
+        vec![NODE.into(), "node-b.runtime-status".into()],
+        vec!["127.0.0.1".into()],
+        vec![],
+    ] {
+        let certificate = identity_certificate(names, NODE);
+        assert!(!sa::certificate_has_node_identity(&certificate, NODE));
+    }
     assert!(!sa::certificate_has_node_identity(
         &CertificateDer::from(vec![0x30, 0x03, 0x02, 0x01, 0x01]),
         NODE
     ));
+}
+
+#[test]
+fn node_identity_never_falls_back_to_a_matching_distinguished_name() {
+    let leaf = identity_certificate(vec!["node-b.runtime-status".into()], NODE);
+    assert!(!sa::certificate_has_node_identity(
+        &leaf,
+        "CN=node-a.runtime-status"
+    ));
+}
+
+#[test]
+fn node_identity_is_a_lowercase_dns_name() {
+    assert!(sa::valid_node_identity(NODE));
+    for name in [
+        "Node.test",
+        "node_test.test",
+        "node..test",
+        "node",
+        "-node.test",
+        "node-.test",
+        "node.test.",
+        "",
+    ] {
+        assert!(!sa::valid_node_identity(name), "{name}");
+    }
+    assert!(!sa::valid_node_identity(&format!(
+        "{}.test",
+        "a".repeat(64)
+    )));
+    assert!(!sa::valid_node_identity(&format!(
+        "{}.{}.{}.{}",
+        "a".repeat(63),
+        "b".repeat(63),
+        "c".repeat(63),
+        "d".repeat(62)
+    )));
 }
 
 // ---------------------------------------------------------------------------

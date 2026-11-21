@@ -49,6 +49,9 @@ pub(super) fn current<S: SessionStream>(session: &Session<S>, command: &Command)
                         EntityDetail::Actor {
                             health_percent: 1..=100,
                             ..
+                        } | EntityDetail::ActorWithIcons {
+                            health_percent: 1..=100,
+                            ..
                         }
                     )
             })
@@ -80,7 +83,7 @@ pub(super) fn current<S: SessionStream>(session: &Session<S>, command: &Command)
         }
     }
     session.world_entities().is_some_and(|entities| entities.iter().any(|entity| {
-        entity.position == selection.position && matches!((&command.target, entity.detail), (Target::Item(handle), EntityDetail::Object { item_handle: Some(current), .. }) if *handle == current)
+        entity.position == selection.position && matches!((&command.target, entity.detail), (Target::Item(handle), EntityDetail::Object { item_handle: Some(current), .. } | EntityDetail::ObjectWithAppearance { item_handle: Some(current), .. }) if *handle == current)
     }))
 }
 fn placement(
@@ -90,7 +93,7 @@ fn placement(
 ) -> Option<Vec<u8>> {
     let x = u16::try_from(position.x).ok()?;
     let y = u16::try_from(position.y).ok()?;
-    let z = u8::try_from(position.floor.checked_neg()?).ok()?;
+    let z = u8::try_from(position.floor).ok()?;
     let key =
         (u64::from(x) << 32) | (u64::from(y) << 16) | (u64::from(z) << 8) | u64::from(ordinal);
     let mut placement = header.bundle_digest.to_vec();
@@ -107,6 +110,7 @@ fn inventory_or_container_has<S: SessionStream>(
             .main_backpack
             .iter()
             .chain(&inventory.entries)
+            .chain(inventory.equipment.iter().map(|equipped| &equipped.item))
             .any(|item| item.handle == handle)
     }) || session.container_views().is_some_and(|containers| {
         containers.views.iter().any(|view| {
@@ -120,5 +124,5 @@ pub fn item_current<S: SessionStream>(
 ) -> bool {
     inventory_or_container_has(session, handle)
         || session.world_map_snapshot().is_some_and(|map| map.tiles.iter().flat_map(|tile| &tile.items).any(|item| item.origin == MapOrigin::Handle(handle)))
-        || session.world_entities().is_some_and(|entities| entities.others().any(|entity| matches!(entity.detail, EntityDetail::Object { item_handle: Some(current), .. } if current == handle)))
+        || session.world_entities().is_some_and(|entities| entities.iter().any(|entity| matches!(entity.detail, EntityDetail::Object { item_handle: Some(current), .. } | EntityDetail::ObjectWithAppearance { item_handle: Some(current), .. } if current == handle)))
 }

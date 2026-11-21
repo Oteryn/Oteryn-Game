@@ -1,0 +1,294 @@
+{
+  "schema": "OTERYN_CHARMS_PRIMARY_VIDEO_CASES/v1",
+  "created_utc": "2026-11-13T12:05:54.940478+00:00",
+  "source_head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+  "predecessor_pr_head": "df294e419b806df827b75e91d06153fb2076dbb2",
+  "cases": [
+    {
+      "id": "ALY-AOE-off-795",
+      "video": "https://www.youtube.com/watch?v=MxiCFl3OT_8",
+      "observed_seconds": 705,
+      "observation_type": "VISIBLE_CREATOR_DATA_TABLE",
+      "inputs": {
+        "hit": 795,
+        "gear_life_leech_hundredths": 5000,
+        "historical_vampiric_bonus_hundredths": 0,
+        "target_count": 2
+      },
+      "observed_heal": 219,
+      "candidate_factor": "11/20",
+      "candidate_exact_numerator": 43725000,
+      "candidate_exact_denominator": 200000,
+      "candidate_rounded": 219,
+      "unscaled_helper_output_if_real_equals_hit": 398,
+      "current_global_verified": false,
+      "half_tie_rounding_verified": false,
+      "limitations": [
+        "Creator tabulated experiment, not independent replay of original combat logs.",
+        "Historical4% bonus only; current stage values not qualified.",
+        "Input real equals displayed Hit is conditional for helper comparison; no deployed Oteryn run."
+      ]
+    },
+    {
+      "id": "ALY-AOE-off-784",
+      "video": "https://www.youtube.com/watch?v=MxiCFl3OT_8",
+      "observed_seconds": 705,
+      "observation_type": "VISIBLE_CREATOR_DATA_TABLE",
+      "inputs": {
+        "hit": 784,
+        "gear_life_leech_hundredths": 5000,
+        "historical_vampiric_bonus_hundredths": 0,
+        "target_count": 2
+      },
+      "observed_heal": 216,
+      "candidate_factor": "11/20",
+      "candidate_exact_numerator": 43120000,
+      "candidate_exact_denominator": 200000,
+      "candidate_rounded": 216,
+      "unscaled_helper_output_if_real_equals_hit": 392,
+      "current_global_verified": false,
+      "half_tie_rounding_verified": false,
+      "limitations": [
+        "Creator tabulated experiment, not independent replay of original combat logs.",
+        "Historical4% bonus only; current stage values not qualified.",
+        "Input real equals displayed Hit is conditional for helper comparison; no deployed Oteryn run."
+      ]
+    },
+    {
+      "id": "ALY-AOE-on-958",
+      "video": "https://www.youtube.com/watch?v=MxiCFl3OT_8",
+      "observed_seconds": 705,
+      "observation_type": "VISIBLE_CREATOR_DATA_TABLE",
+      "inputs": {
+        "hit": 958,
+        "gear_life_leech_hundredths": 5000,
+        "historical_vampiric_bonus_hundredths": 400,
+        "target_count": 2
+      },
+      "observed_heal": 285,
+      "candidate_factor": "11/20",
+      "candidate_exact_numerator": 56905200,
+      "candidate_exact_denominator": 200000,
+      "candidate_rounded": 285,
+      "unscaled_helper_output_if_real_equals_hit": 517,
+      "current_global_verified": false,
+      "half_tie_rounding_verified": false,
+      "limitations": [
+        "Creator tabulated experiment, not independent replay of original combat logs.",
+        "Historical4% bonus only; current stage values not qualified.",
+        "Input real equals displayed Hit is conditional for helper comparison; no deployed Oteryn run."
+      ]
+    },
+    {
+      "id": "ALY-AOE-on-948",
+      "video": "https://www.youtube.com/watch?v=MxiCFl3OT_8",
+      "observed_seconds": 705,
+      "observation_type": "VISIBLE_CREATOR_DATA_TABLE",
+      "inputs": {
+        "hit": 948,
+        "gear_life_leech_hundredths": 5000,
+        "historical_vampiric_bonus_hundredths": 400,
+        "target_count": 2
+      },
+      "observed_heal": 282,
+      "candidate_factor": "11/20",
+      "candidate_exact_numerator": 56311200,
+      "candidate_exact_denominator": 200000,
+      "candidate_rounded": 282,
+      "unscaled_helper_output_if_real_equals_hit": 512,
+      "current_global_verified": false,
+      "half_tie_rounding_verified": false,
+      "limitations": [
+        "Creator tabulated experiment, not independent replay of original combat logs.",
+        "Historical4% bonus only; current stage values not qualified.",
+        "Input real equals displayed Hit is conditional for helper comparison; no deployed Oteryn run."
+      ]
+    },
+    {
+      "id": "ALY-OVERKILL",
+      "video": "https://www.youtube.com/watch?v=MxiCFl3OT_8",
+      "observed_seconds": 1400,
+      "observation_type": "VISIBLE_RECORDED_CLIENT_LOG",
+      "inputs": {
+        "recorded_hp_loss": 30,
+        "gear_life_leech_hundredths": 5000
+      },
+      "observed_heal": 258,
+      "source_helper_output": 15,
+      "recording_date_visible": "2022-06-26",
+      "test_server_basis": "Creator narration21:48 and23:01 identifies test server.",
+      "current_global_verified": false,
+      "half_tie_rounding_verified": false,
+      "limitations": [
+        "Webcam obscures beginnings of the log lines, but30 hitpoints lost and258 hitpoints healed are readable; narration23:06–23:16 corroborates.",
+        "Historical test-server behavior, not a current Global combat verification.",
+        "No exact nominal pre-HP-clamp attack magnitude is readable; do not invert258 to assert a unique raw hit."
+      ]
+    },
+    {
+      "id": "ITEXO-CLEANSE",
+      "video": "https://www.youtube.com/watch?v=W_0EnSycMNI",
+      "observed_seconds": 66,
+      "observation_type": "VISIBLE_PROC_AND_CREATOR_TEST_EXPLANATION",
+      "caption_interval_seconds": [
+        61,
+        73
+      ],
+      "visible_outcome": "Poison-removal Cleanse notification; game footage shows attacks and status-icon strip.",
+      "creator_test_conclusion": "Second successful Cleanse of another status replaces previous immunity; immunities do not accumulate.",
+      "oteryn_source_behavior": "commit_cleanse removes only matching-key immunity, preserving other keys. Receipt replay cannot remove a replacement instance; different successful procs are distinct from replay.",
+      "illustrative_distinct_key_sequence": {
+        "kind": "DERIVED_NOT_VIDEO_TIMINGS",
+        "existing_key": "poison",
+        "existing_expiry_ms": 11000,
+        "new_key": "fire",
+        "new_proc_at_ms": 2000,
+        "new_expiry_ms": 13000,
+        "oteryn_retained_keys": [
+          "poison",
+          "fire"
+        ],
+        "historical_creator_rule_retained_keys": [
+          "fire"
+        ]
+      },
+      "current_global_verified": false,
+      "raw_timer_sequence_frame_verified": false,
+      "limitations": [
+        "Own-test conclusion is explicit in exported Spanish captions (authored or unspecified), not a complete independently timed reproc replay.",
+        "Sampled frames0:38,0:51,1:01,1:06; no full11sec expiry trace or controlled reapplication frame sequence.",
+        "Video2020-06-11 predates2024 charm revamp.",
+        "Danashi context supplied no URL; YouTube search found matching creator/title/trio/date/conclusion. This is a strong contextual match, not a message-linked identification."
+      ]
+    }
+  ],
+  "source_ranges": [
+    {
+      "path": "crates/gameplay/combat-rules/src/resolution/equipped_offence.rs",
+      "start": 153,
+      "end": 159,
+      "function": "leech_amount"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/attack/equipped_offence.rs",
+      "start": 74,
+      "end": 100,
+      "function": "leech_hit"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/attack/drain.rs",
+      "start": 850,
+      "end": 864,
+      "function": "native leech call site"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/attack/charm_combat.rs",
+      "start": 199,
+      "end": 225,
+      "function": "bonuses"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/condition.rs",
+      "start": 81,
+      "end": 87,
+      "function": "shared_mutation_slot"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/condition.rs",
+      "start": 1417,
+      "end": 1459,
+      "function": "prepare_cleanse"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/condition.rs",
+      "start": 1463,
+      "end": 1480,
+      "function": "commit_cleanse"
+    }
+  ],
+  "source_receipts": [
+    {
+      "path": "crates/gameplay/combat-rules/src/resolution/equipped_offence.rs",
+      "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+      "bytes": 12521,
+      "sha256": "42c6832c817302f540044daac545b07ae844a6211c1ced57a3fc96128384c0d9"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/attack/charm_combat.rs",
+      "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+      "bytes": 20851,
+      "sha256": "51763f2e41469df8e85097f4328c775a3e7a50fd338c74b1cdb15d2d5248aae5"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/attack/drain.rs",
+      "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+      "bytes": 93567,
+      "sha256": "0540b74d858964c5bb16a9b5f7465a03e42303bebb821066e6f43570db8d83a9"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/attack/equipped_offence.rs",
+      "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+      "bytes": 5846,
+      "sha256": "50eeebdc0f6ad2a6803f019b8b855125f7071fa7081ad604ddf6a0920bdef907"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/condition.rs",
+      "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+      "bytes": 84802,
+      "sha256": "bc8f20b6a6ba76dca1f78c41511a56672c15bc23685e6a9f6e72641dd6470888"
+    }
+  ],
+  "private_transcript_receipts": [
+    {
+      "creator": "Itexo",
+      "path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\web-research\\video-pass\\itexo-transcript-private.txt",
+      "bytes": 1914,
+      "sha256": "ec84abad4710a0eb0c5f9ee5f7c9ede351119a8ea654d976ec2ccedcf27c2d25",
+      "published": false
+    },
+    {
+      "creator": "Alytreta",
+      "path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\web-research\\video-pass\\alytreta-transcript-private.txt",
+      "bytes": 37287,
+      "sha256": "8ffdc35e89e010ed4545d1eb09b1f49344cf7c74c415342b37c0475c889d1fbe",
+      "published": false
+    }
+  ],
+  "itexo_identification": {
+    "url": "https://www.youtube.com/watch?v=W_0EnSycMNI",
+    "creator": "Itexo",
+    "title": "CHARMS: NUMB, CLEANSE and LOW BLOW: Testing and Explanation",
+    "published_date_ui": "2020-06-11",
+    "cleanse_chapter_start_seconds": 38,
+    "cleanse_chapter_end_seconds": 76,
+    "discord_explicit_url_found": false,
+    "match_basis": [
+      "creator",
+      "same three charms",
+      "six-year age/date",
+      "specific immunity replacement conclusion"
+    ]
+  },
+  "alytreta_identification": {
+    "url": "https://www.youtube.com/watch?v=MxiCFl3OT_8",
+    "creator": "Alytreta",
+    "primary_link_route": "https://www.reddit.com/r/TibiaMMO/comments/vtilgh/",
+    "caption_language": "pt",
+    "automatic_captions": true
+  },
+  "extra_owner_url": {
+    "url": "https://discord.com/channels/836592213327609957/1392508385475166248",
+    "observed_channel": "community-tools-list",
+    "post_date": "2025-07-09",
+    "edited_date": "2026-10-21",
+    "role": "Tools registry includes TibiaTools damage calculator; no Itexo film in inspected list.",
+    "runtime_authority": false
+  },
+  "runtime_changed": false,
+  "game_actions": false,
+  "raw_media_or_transcripts_published": false,
+  "current_global_combat_parity_verified": false,
+  "source_rule_status_promotions": [],
+  "rounding_limit": "Four non-tie positive samples agree with candidate nearest-integer arithmetic and reject direct floor on those inputs. They do not distinguish ties-to-even vs half-away, all-target aggregation order or full modern formula.",
+  "search_scope_correction": "Prior Discord pass was shallow first-window research, not exhaustive. Owner supplied filtered Wound/pierce screenshot as next concrete lead; do not claim it was investigated in this video-only successor."
+}

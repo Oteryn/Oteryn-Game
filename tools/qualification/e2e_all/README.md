@@ -13,6 +13,16 @@ to run against a production server. See that runner for its host prerequisites.
 The absolute cargo wrapper is used for the client tests; node_boot owns the
 cargo commands and PostgreSQL environment inside its topology.
 
+## Modes (owner decision 2026-11-18)
+
+- **JOURNEY** follows one character from level 2 to the end through gameplay,
+  with no grants. It goes beyond Newhaven via travel to other towns. A failing
+  row is a game gap.
+- **ISOLATED** runs each row on a fresh character. The row declares its
+  requirements, the qualification fixture grants them, and the row tests only
+  its mechanic. Grants are qualification-only. The mode switch is being
+  implemented on the `e2eisol` branch.
+
 Evidence stays in a private `.e2e-all.*` directory inside this worktree. The
 quest capture contains raw domain payloads and revision metadata, no admission
 grant, database URL or private key. The client replay test must read that run's

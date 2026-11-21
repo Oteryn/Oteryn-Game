@@ -77,7 +77,7 @@ impl BundleChannel {
     fn observation(&self) -> WorldSpatialObservation {
         WorldSpatialObservation {
             content_generation: [7; 32],
-            actor_position: at(self.position.get()),
+            actor_position: position(self.position.get()),
         }
     }
 }
@@ -380,6 +380,53 @@ fn door_origin(revision: u64) -> MapOrigin {
 }
 
 #[test]
+fn served_bundle_snapshot_reports_map_tiles_and_origin() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), String> {
+            let mut result = Ok(());
+            let lines = oteryn_error_codes::capture(|| {
+                result =
+                    run(async {
+                        let channel = BundleChannel::new();
+                        let sent = serve(&channel, bundle_session(), &[], NO_HOLD).await;
+                        let map = map_snapshot(&sent)?;
+                        assert_eq!(map.tiles.len(), 2);
+                        assert_eq!(map.header.origin, position(ACTOR));
+                        assert!(map.tiles.iter().any(
+                            |tile| tile.position == map.header.origin && !tile.items.is_empty()
+                        ));
+                        Ok(())
+                    })
+                    .map_err(|error| error.to_string());
+            });
+            result?;
+            assert!(
+                lines
+                    .iter()
+                    .any(|line| line.contains("event=map_view_snapshot")
+                        && line.contains("tiles=2")
+                        && line.contains("origin_tile=true")),
+                "missing map contents diagnostic: {lines:?}"
+            );
+            assert!(lines.iter().any(|line| {
+                line.contains("event=join_snapshot_summary")
+                    && line.contains("map_selected=true")
+                    && line.contains("map_present=true")
+            }));
+            assert!(
+                lines
+                    .iter()
+                    .any(|line| line.contains("phase=snapshot_flushed"))
+            );
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "map diagnostics thread panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
 fn a_session_with_18_joins_steps_and_resumes_with_domain_17_and_never_domain_2() -> TestResult {
     run(async {
         let channel = BundleChannel::new();
@@ -410,7 +457,7 @@ fn a_session_with_18_joins_steps_and_resumes_with_domain_17_and_never_domain_2()
         let door = map
             .tiles
             .iter()
-            .find(|tile| tile.position == at(DOOR_AT))
+            .find(|tile| tile.position == position(DOOR_AT))
             .ok_or("door tile")?;
         assert_eq!(door.items[1].origin, door_origin(DOOR_REVISION));
 
@@ -495,7 +542,7 @@ fn a_committed_bundle_door_use_is_a_domain_17_change_and_no_domain_2_delta_for_a
             .map_err(|error| format!("{error:?}"))?
             .into_iter()
             .flat_map(|delta| delta.tiles)
-            .find(|tile| tile.position == at(DOOR_AT))
+            .find(|tile| tile.position == position(DOOR_AT))
             .ok_or("no domain 17 delta for the door after the USE")?;
         assert_eq!(door.items[1].origin, door_origin(DOOR_REVISION + 1));
         assert_eq!(sent.ended().continuity.overlay_revision, 0);
@@ -996,16 +1043,21 @@ fn floor_change_replaces_map_and_keeps_serving_without_old_floor_tiles() -> Test
                         map_revision = domain.revision;
                         let replacement =
                             decode_world_map_snapshot(domain.payload).expect("map snapshot");
-                        assert_eq!(replacement.header.origin, at(destination));
+                        assert_eq!(replacement.header.origin, position(destination));
                         assert!(
                             replacement
                                 .tiles
                                 .iter()
-                                .any(|t| t.position == at(destination))
+                                .any(|t| t.position == position(destination))
                         );
                         if command_id != 0 {
-                            assert!(replacement.tiles.iter().all(|t| t.position.floor == -10));
-                            assert!(!replacement.tiles.iter().any(|t| t.position == at(ACTOR)));
+                            assert!(replacement.tiles.iter().all(|t| t.position.floor == 10));
+                            assert!(
+                                !replacement
+                                    .tiles
+                                    .iter()
+                                    .any(|t| t.position == position(ACTOR))
+                            );
                         }
                         let frame = read(&mut client).await;
                         let envelope = decode_wire_envelope(&frame).expect("commit envelope");
@@ -1037,8 +1089,8 @@ fn floor_change_replaces_map_and_keeps_serving_without_old_floor_tiles() -> Test
                                     delta.payload,
                                 )
                                 .expect("map delta");
-                                assert_eq!(map.header.origin, at(tp(60, 21, -10)));
-                                assert!(map.tiles.iter().all(|t| t.position.floor == -10));
+                                assert_eq!(map.header.origin, position(tp(60, 21, -10)));
+                                assert!(map.tiles.iter().all(|t| t.position.floor == 10));
                                 break;
                             }
                         }

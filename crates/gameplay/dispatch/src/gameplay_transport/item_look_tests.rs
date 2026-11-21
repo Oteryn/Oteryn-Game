@@ -170,6 +170,7 @@ fn observed_target_requires_live_handle_exact_binding_and_current_pin() {
     };
     let index = pinned_index(&pinned, Some(generation)).unwrap();
     let item = ViewItem {
+        appearance_id: 0,
         key: ItemKey::Instance(id(3)),
         item_definition_ref: index
             .definition_ref(
@@ -186,6 +187,7 @@ fn observed_target_requires_live_handle_exact_binding_and_current_pin() {
         .snapshot(
             InventoryItems {
                 main_backpack: Some(ViewItem {
+                    appearance_id: 0,
                     key: ItemKey::Instance(id(5)),
                     item_definition_ref: index
                         .definition_ref("Item", "oteryn:item.tibia.i2854", "definition-r1")
@@ -893,6 +895,7 @@ fn reading_map_base_is_readable_without_materialization_or_a_handle() {
                 policy,
                 ObservedLookItem {
                     item: ViewItem {
+                        appearance_id: 0,
                         key: ItemKey::Instance(id(3)),
                         item_definition_ref: reference,
                         count: NonZeroU32::MIN,

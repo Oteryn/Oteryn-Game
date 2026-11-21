@@ -77,7 +77,7 @@ fn snapshot_body(inventory: &[u8], vitals: &[u8]) -> Result<Vec<u8>, TestError> 
             actor_position: oteryn_protocol_oteryn::world_spatial::ActorPosition {
                 x: 1,
                 y: 2,
-                floor: -7,
+                floor: 7,
             },
         },
     );

@@ -1,0 +1,54 @@
+name: PostgreSQL Cargo dependency cache
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - Cargo.lock
+      - .github/workflows/pg-cargo-dependency-cache.yml
+  # Refill an evicted entry even if Cargo.lock has not changed.
+  schedule:
+    - cron: '37 4 * * 3'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  seed:
+    if: github.ref == 'refs/heads/main' && github.ref_protected
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out protected revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Look up Cargo dependency cache
+        id: deps
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          lookup-only: true
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: pg-cargo-deps-linux-v1-${{ hashFiles('Cargo.lock') }}
+
+      - name: Fetch locked dependencies
+        if: steps.deps.outputs.cache-hit != 'true'
+        run: |
+          rustup toolchain install 1.100.0 --profile minimal
+          cargo +1.100.0 fetch --locked
+
+      - name: Save Cargo dependency cache
+        if: steps.deps.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ steps.deps.outputs.cache-primary-key }}

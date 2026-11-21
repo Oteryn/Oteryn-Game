@@ -4,11 +4,17 @@ use oteryn_platform_client::PlatformClientConfig;
 use oteryn_platform_client::native_login::{PublicClass, parse_uuid_v7};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
+use std::time::Instant;
 
 #[cfg(windows)]
 mod native;
 #[cfg(windows)]
 pub use native::LoginWindow;
+
+mod refusal;
+pub use refusal::error_text;
+#[cfg(test)]
+mod tests;
 
 pub const FIELDS: [(&str, &str); 6] = [
     ("Platform URL", "OTERYN_PLATFORM_URL"),
@@ -73,7 +79,8 @@ impl LoginSettings {
     }
 
     pub fn validate(&self) -> Result<(), String> {
-        for (index, value) in self.values().iter().enumerate() {
+        // Gameplay trust is validated after the Gateway grant.
+        for (index, value) in self.values().iter().take(5).enumerate() {
             if (value.trim().is_empty() && ![3, 4].contains(&index))
                 || value.contains('\0')
                 || value.len() > 4096
@@ -102,9 +109,6 @@ impl LoginSettings {
         if !self.character_id.is_empty() && parse_uuid_v7(&self.character_id).is_none() {
             return Err(tr!("Character: enter a canonical lowercase UUIDv7.").into());
         }
-        oteryn_session_tcp::load_root_certificate(Path::new(&self.dev_root)).map_err(|_| {
-            tr!("Certificate: choose a readable PEM or DER trust certificate.").to_owned()
-        })?;
         Ok(())
     }
 
@@ -153,14 +157,13 @@ impl LoginSettings {
 }
 
 pub fn settings_path() -> Result<PathBuf, String> {
-    #[cfg(windows)]
-    let base = std::env::var_os("LOCALAPPDATA").map(PathBuf::from);
-    #[cfg(not(windows))]
-    let base = std::env::var_os("XDG_CONFIG_HOME")
-        .map(PathBuf::from)
-        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".config")));
-    base.map(|base| base.join("Oteryn").join("native-login.json"))
+    crate::play::PreferenceStore::configuration_path("native-login.json")
         .ok_or_else(|| tr!("Cannot locate the user configuration directory.").into())
+}
+
+enum SignInGate {
+    UpdateRequired,
+    Maintenance(Instant),
 }
 
 pub struct LoginForm {
@@ -168,12 +171,13 @@ pub struct LoginForm {
     connected: bool,
     pending: bool,
     retry: bool,
+    gate: Option<SignInGate>,
     message: String,
 }
 
 impl LoginForm {
     pub fn new(settings: LoginSettings) -> Self {
-        Self { settings, connected: false, pending: false, retry: false, message: tr!("Enter connection settings, then choose Save and sign in. Sign-in opens your browser.").into() }
+        Self { settings, connected: false, pending: false, retry: false, gate: None, message: tr!("Enter connection settings, then choose Save and sign in. Sign-in opens your browser.").into() }
     }
     /// Action shown after a failed attempt starts a fresh browser admission.
     pub fn submit_caption(&self) -> &'static str {
@@ -184,10 +188,25 @@ impl LoginForm {
         }
     }
     pub fn can_submit(&self) -> bool {
-        !self.pending && !self.connected
+        !self.pending && !self.connected && !self.gate_blocks_sign_in()
+    }
+    fn gate_blocks_sign_in(&self) -> bool {
+        match self.gate {
+            Some(SignInGate::UpdateRequired) => true,
+            Some(SignInGate::Maintenance(retry_at)) => Instant::now() < retry_at,
+            None => false,
+        }
     }
     pub fn offline(&mut self) {
         self.connected = false;
+    }
+    pub fn refresh_gate_message(&mut self, now: Instant) {
+        if let Some(SignInGate::Maintenance(retry_at)) = self.gate {
+            self.message = refusal::maintenance_text(retry_at, now);
+            if now >= retry_at {
+                self.gate = None;
+            }
+        }
     }
     pub fn pending(&self) -> bool {
         self.pending
@@ -196,9 +215,12 @@ impl LoginForm {
         &self.message
     }
     pub fn feedback(&mut self, message: String) {
-        self.message = message;
+        if !self.gate_blocks_sign_in() {
+            self.message = message;
+        }
     }
     pub fn submit(&mut self) -> Result<NativeLoginConfig, String> {
+        self.refresh_gate_message(Instant::now());
         if self.connected {
             return Err("Already connected. Log out before signing in again.".into());
         }
@@ -208,6 +230,10 @@ impl LoginForm {
             )
             .into());
         }
+        if self.gate_blocks_sign_in() {
+            return Err(self.message.clone());
+        }
+        self.gate = None;
         let config = self
             .settings
             .config()
@@ -220,52 +246,17 @@ impl LoginForm {
         self.pending = false;
         self.connected = result.is_ok();
         self.retry = result.is_err();
-        self.message = result.map_or_else(
-            |error| error_text(error).to_owned(),
-            |()| tr!("Connected.").into(),
-        );
-    }
-}
-
-pub fn error_text(error: GameplayEntryError) -> &'static str {
-    match error {
-        GameplayEntryError::NativeProtocolUnavailable => {
-            tr!("Enter connection settings and choose Save and sign in.")
-        }
-        GameplayEntryError::InvalidConfiguration => {
-            tr!(
-                "Check Platform and Gateway URLs, OAuth client ID, optional character preselect and the trust certificate path, then sign in again."
-            )
-        }
-        GameplayEntryError::WorldUnavailable => {
-            tr!(
-                "World is absent from the Platform directory. Check the World reference and Platform URL, then sign in again."
-            )
-        }
-        GameplayEntryError::Rejected(
-            PublicClass::RetryLogin | PublicClass::AuthenticationRequired,
-        ) => {
-            tr!(
-                "Browser sign-in failed or expired. Check the OAuth client ID and complete a fresh browser sign-in within five minutes."
-            )
-        }
-        GameplayEntryError::Rejected(PublicClass::TemporarilyUnavailable) => {
-            tr!(
-                "Connection unavailable. Check your network and the Platform/Gateway URLs; if correct, try again later."
-            )
-        }
-        GameplayEntryError::Rejected(PublicClass::SessionUnavailable) => {
-            tr!(
-                "Game connection ended or could not be established. Check your network and trust certificate; sign in again. Contact the operator if this repeats."
-            )
-        }
-        GameplayEntryError::Rejected(PublicClass::ClientUpdateRequired) => {
-            tr!("Install the current Oteryn client, then sign in again.")
-        }
-        GameplayEntryError::Rejected(PublicClass::CharacterAlreadyActive) => {
-            tr!(
-                "Character is already active. Log out its other session or wait for it to end, then sign in again."
-            )
-        }
+        self.gate = match &result {
+            Err(
+                GameplayEntryError::ClientUpdateRequired { .. }
+                | GameplayEntryError::Rejected(PublicClass::ClientUpdateRequired),
+            ) => Some(SignInGate::UpdateRequired),
+            Err(GameplayEntryError::Maintenance { retry_at }) => {
+                Some(SignInGate::Maintenance(*retry_at))
+            }
+            _ => None,
+        };
+        self.message = result.map_or_else(error_text, |()| tr!("Connected.").into());
+        self.refresh_gate_message(Instant::now());
     }
 }

@@ -1,4 +1,4 @@
-//! The two free tutorial departures. Anna's landing is owner-selected Oteryn design;
+//! The two free tutorial departures. Anna follows Crystal 201189f8 anna.lua:67-107;
 //! the seagull's destination and double confirmation follow pinned Crystal e5519f2e.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NewhavenRoute {
@@ -16,13 +16,13 @@ impl NewhavenRoute {
     }
     pub const fn key(self) -> &'static str {
         match self {
-            Self::Anna => "thais_peninsula",
+            Self::Anna => "targuna",
             Self::Seagull => "rookgaard",
         }
     }
     pub const fn destination(self) -> (i32, i32, i16) {
         match self {
-            Self::Anna => (32472, 32288, 7),
+            Self::Anna => (31938, 31928, 7),
             Self::Seagull => (32097, 32219, 7),
         }
     }

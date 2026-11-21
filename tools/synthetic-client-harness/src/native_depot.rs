@@ -28,6 +28,7 @@ fn bag() -> ItemEntry {
 }
 fn item() -> ItemEntry {
     ItemEntry {
+        appearance_id: 0,
         handle: NonZeroU64::MIN,
         item_definition_ref: NonZeroU32::MIN,
         count: NonZeroU32::MIN,

@@ -8,6 +8,17 @@ use oteryn_input_actions::NormalizedInputEvent;
 use tokio::sync::mpsc::UnboundedSender;
 
 impl PlayLink {
+    pub fn prey_set_open(&self, open: bool) {
+        lock(&self.mailbox).prey.open = open;
+    }
+
+    pub fn prey_select(&self, slot: u8, index: u8) {
+        let mut mailbox = lock(&self.mailbox);
+        if mailbox.prey.choose_candidate(slot, index) {
+            enqueue(&mut mailbox, &self.commands, Intent::Select { slot });
+        }
+    }
+
     pub fn prey_request(&self, intent: Intent) {
         enqueue(&mut lock(&self.mailbox), &self.commands, intent);
     }
@@ -18,9 +29,10 @@ impl PlayLink {
         }
         self.prey_request(Intent::Refresh);
         #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            super::view::open_window(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).prey.open = true;
         }
         true

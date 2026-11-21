@@ -189,9 +189,14 @@ impl SoundCatalog {
 #[cfg(windows)]
 #[path = "native.rs"]
 pub mod native;
-
 #[cfg(windows)]
-pub use native::{AudioOutput, NativeAudio, audio_device_names};
+pub use native::NativeAudio;
+
+#[cfg(any(windows, feature = "bevy-shell"))]
+#[path = "output.rs"]
+mod output;
+#[cfg(any(windows, feature = "bevy-shell"))]
+pub use output::{AudioOutput, audio_device_names};
 
 pub const MAX_VISUAL_CUES: usize = 64;
 pub const VISUAL_LIFETIME: std::time::Duration = std::time::Duration::from_millis(30_000);

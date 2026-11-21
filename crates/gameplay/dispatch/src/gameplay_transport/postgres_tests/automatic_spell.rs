@@ -12,7 +12,7 @@ use oteryn_simulation_determinism::ExactI64;
 
 #[test]
 fn automatic_spell_known_spell_level_up_replay_and_fence_postgres() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("automatic-spell", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("automatic-spell", || {
         run(async |admin| {
             let h = Harness::create_with_admission_seed(admin, "automatic_spell", false, false).await?;
             let request = prepare_current_session(&h).await?;
@@ -20,7 +20,7 @@ fn automatic_spell_known_spell_level_up_replay_and_fence_postgres() -> TestResul
             let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
             let deps = Dependencies::new()?;
             let session = deps.admitted.game_session_id;
-            let (controller, _) = super::death_ml_loss_composed::production_generation_with_pin(
+            let (controller, _) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id, "content-1",
             )?;
             let active = controller.active().ok_or("active generation")?;

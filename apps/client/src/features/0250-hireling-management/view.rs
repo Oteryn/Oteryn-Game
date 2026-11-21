@@ -2,9 +2,10 @@ use crate::play::{PlayLink, mailbox::lock};
 impl PlayLink {
     pub fn hireling_management_open(&self) {
         #[cfg(windows)]
-        native::open_window(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            native::open_window(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).hireling_management.open = true;
             self.hireling_management_request(oteryn_client_ui::hireling_management::Intent::List);
         }

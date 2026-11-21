@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.barbarian_arena_quest",
+  "transition": "oteryn:quest-transition/chosen-source/barbarian_arena_quest/completion",
+  "stages": [
+    {
+      "track": "oteryn:quest-progress/chosen-source/barbarian_arena_quest/s1",
+      "goal": 1
+    },
+    {
+      "track": "oteryn:quest-progress/chosen-source/barbarian_arena_quest/s2",
+      "goal": 10
+    },
+    {
+      "track": "oteryn:quest-progress/chosen-source/barbarian_arena_quest/s3",
+      "goal": 10
+    },
+    {
+      "track": "oteryn:quest-progress/chosen-source/barbarian_arena_quest/s4",
+      "goal": 10
+    },
+    {
+      "track": "oteryn:quest-progress/chosen-source/barbarian_arena_quest/s5",
+      "goal": 3
+    }
+  ],
+  "completed_rank": 3,
+  "trophy_claims": [
+    "oteryn:reward.svargrond-arena.1.4",
+    "oteryn:reward.svargrond-arena.2.4",
+    "oteryn:reward.svargrond-arena.3.4"
+  ],
+  "requires_premium": true,
+  "prerequisite": "oteryn:quest.barbarian_test",
+  "recipe_sha256": "f825d9f1e74a45ca4ed4cdcc76d1c18de13b376488f3f1f20a6bd6b2f80e93ec",
+  "sources": [
+    "content/quests/definitions/quests-00100-00199.json#/records/12",
+    "OTS_HYPOTHESIS_ONLY:Crystal ff7ede59 data-global/lib/quests/svargrond_arena.lua"
+  ]
+}

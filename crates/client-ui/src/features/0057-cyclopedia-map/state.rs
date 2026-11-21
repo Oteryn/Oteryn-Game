@@ -117,6 +117,7 @@ impl Panel {
             )
             .collect::<std::collections::BTreeSet<_>>()
             .into_iter()
+            .rev()
             .collect();
         if floors.is_empty() {
             return;

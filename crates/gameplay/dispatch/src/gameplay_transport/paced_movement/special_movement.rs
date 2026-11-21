@@ -172,28 +172,57 @@ pub(in crate::gameplay_transport) fn tile_entries(
     position: MovementLocalPosition,
 ) -> Option<TileEntries> {
     let pos = tile_position(position)?;
-    let tile = map.overlay.base().tile(pos.x, pos.y, pos.floor)?;
-    let mut ordinal = 0_u8;
+    let protection_zone = map.zone_flags(pos)?.1;
     let mut appearances = Vec::new();
-    for (&id, &depth) in tile.ids().iter().zip(tile.depths()) {
-        if depth != 0 {
-            continue;
-        }
-        if let Some(entry) = map.facts.base_entry(pos, ordinal, id) {
-            let key = placement_key(pos, ordinal)?;
-            if !map.facts.base_hidden(key) {
-                appearances.push((key, entry));
+    if let Some(tile) = map.facts.phase_tile(pos).ok()? {
+        // Timed World maps replace the whole stack, including ordinals which
+        // never existed in the immutable bundle. Read the same phase as rendering.
+        for entry in tile.entries {
+            if let crate::map::view::EntrySource::Base { placement_key, .. } = entry.source {
+                appearances.push((placement_key, entry.facts));
             }
         }
-        ordinal = ordinal.checked_add(1)?;
+    } else {
+        let tile = map.overlay.base().tile(pos.x, pos.y, pos.floor)?;
+        let mut ordinal = 0_u8;
+        for (&id, &depth) in tile.ids().iter().zip(tile.depths()) {
+            if depth != 0 {
+                continue;
+            }
+            if let Some(entry) = map.facts.base_entry(pos, ordinal, id) {
+                let key = placement_key(pos, ordinal)?;
+                if !map.facts.base_hidden(key) {
+                    appearances.push((key, entry));
+                }
+            }
+            ordinal = ordinal.checked_add(1)?;
+        }
     }
+    appearances.extend(
+        map.facts
+            .movement_items(pos)
+            .into_iter()
+            .filter_map(|entry| match entry.source {
+                crate::map::view::EntrySource::Added(id) if id.get() >> 62 == 2 => {
+                    Some((id.get(), entry.facts))
+                }
+                _ => None,
+            }),
+    );
     Some(TileEntries {
-        protection_zone: tile.protection_zone(),
+        protection_zone,
         entries: appearances,
     })
 }
 
 pub(super) fn transform(map: &BundleMap, key: u64, appearance: u16) -> bool {
+    if key >> 62 == 2 {
+        return map.facts.compare_transform_movement_item(
+            key,
+            map.facts.object_revision(key),
+            appearance,
+        );
+    }
     let Some(replacement) = map.facts.quest_callback_replacement(key, appearance) else {
         return false;
     };
@@ -420,7 +449,8 @@ impl ChannelSpellStates {
                         speaker: actor,
                         position,
                         talk_type,
-                        text,
+                        text: text.to_owned(),
+                        captured_name: None,
                     });
                 changed |= map.facts.emit_movement_effect(position, effect);
             }
@@ -446,6 +476,29 @@ impl ChannelSpellStates {
             .iter()
             .any(|(_, entry)| SWIMMING_GROUND_IDS.contains(&entry.appearance_id));
         let mut next = current.clone();
+        // Crystal movements_crate.lua's final source cell removes CONDITION_OUTFIT
+        // unconditionally, revealing the selected base without changing other families.
+        if let Some(rules) = oteryn_gameplay_quests::quest::item_disguises::rules()
+            && let Some(rule) = rules.iter().find(|rule| {
+                rule.restore.is_some_and(|restore| {
+                    i32::from(restore.x) == destination.x
+                        && i32::from(restore.y) == destination.y
+                        && -i16::from(restore.floor) == destination.floor
+                })
+            })
+            && next.conditions.remove_type(ConditionType::Outfit)
+            && let Some(position) = tile_position(destination)
+        {
+            changed |= map
+                .facts
+                .emit_movement_speech(crate::map::facts::MovementSpeech {
+                    speaker: actor,
+                    position,
+                    talk_type: rule.speech_type,
+                    text: rule.restore_text.to_owned(),
+                    captured_name: None,
+                });
+        }
         let from_bath = origin_entries.as_ref().is_some_and(|tile| {
             tile.entries
                 .iter()
@@ -1073,8 +1126,12 @@ mod tests {
             let speech = map.facts.movement_speech_since(0);
             assert_eq!(speech.len(), 1);
             assert_eq!(
-                (speech[0].1.speaker, speech[0].1.text, speech[0].1.talk_type),
-                (actor, "Faaart!", 36)
+                (
+                    speech[0].1.speaker,
+                    speech[0].1.text.clone(),
+                    speech[0].1.talk_type
+                ),
+                (actor, "Faaart!".to_owned(), 36)
             );
             assert_eq!(
                 map.facts

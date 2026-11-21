@@ -71,7 +71,7 @@ fn task_board_real_dispatch_weekly_bounty_custody_reset_and_replay() -> TestResu
         eprintln!("<TASK_BOARD> POSTGRES_CASE_SKIPPED: OTERYN_TEST_POSTGRES_ADMIN_URL is not set");
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("task-board-e2e", scenario)
+    super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-e2e", scenario)
 }
 
 fn request(action: u8, task: u8) -> Vec<u8> {
@@ -205,13 +205,28 @@ fn task_board_elite_real_dispatch_rarity_combat_xp_and_premium_dust() -> TestRes
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("task-board-elite", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-elite", || {
         scenario_with_mode(None, true)
     })
 }
 
-#[allow(clippy::too_many_lines)]
 fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) -> TestResult {
+    scenario_with_bootstrap(fault, elite_case_enabled, false)
+}
+
+#[test]
+fn task_board_control_epoch_initializer_allows_live_query_postgres() -> TestResult {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-control-epoch", || {
+        scenario_with_bootstrap(None, false, true)
+    })
+}
+
+#[allow(clippy::too_many_lines)]
+fn scenario_with_bootstrap(
+    fault: Option<RollbackFault>,
+    elite_case_enabled: bool,
+    control_epoch_case: bool,
+) -> TestResult {
     run(async move |admin| {
         let tag = fault.map_or("task_board_e2e", RollbackFault::tag);
         let harness = Harness::create_with_admission_seed(admin, tag, false, false).await?;
@@ -453,6 +468,53 @@ fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) ->
         admitted.item_fence = Some(current.item_fence());
         admitted.first_entry = FirstEntryOutcome::Positioned;
 
+        if control_epoch_case {
+            // Execute the same Control initializer as login_local, against its
+            // recorded activation. Runtime queries still cannot invent a calendar.
+            let sql =
+                include_str!("../../../../../../tools/qualification/node_boot/world_epoch.sql");
+            let digest = pin
+                .identity()
+                .server_artifact_digest()
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>();
+            let initialized: bool = sqlx::query_scalar(sql)
+                .bind(sqlx::types::Uuid::from_bytes(*world.as_bytes()))
+                .bind(sqlx::types::Uuid::from_bytes(*channel.as_bytes()))
+                .bind(&digest)
+                .fetch_one(&harness.pool)
+                .await?;
+            assert!(initialized);
+            let period: Option<i64> =
+                sqlx::query_scalar("SELECT game_task_board_period(encode($1,'hex')::uuid)")
+                    .bind(world.as_bytes().as_slice())
+                    .fetch_one(&harness.pool)
+                    .await?;
+            assert!(period.is_some());
+            admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                BUNDLE_WORLD_OFFERED_CAPABILITIES,
+                &[1, wire::CAPABILITY_TASK_BOARD_V1],
+            )
+            .ok_or("board selection")?;
+            let first = admitted.continuity.next_command_id;
+            let values = serve_from(
+                &owner,
+                &mut admitted,
+                first,
+                &[request(0, 0), request(0, 0)],
+            )
+            .await?;
+            for (_, status, payload) in values {
+                assert_eq!(status, CommandStatus::Accepted);
+                wire::decode_task_board_reply(&payload).map_err(debug)?;
+            }
+            eprintln!("PG_EXECUTED task_board_control_epoch initialized=1 live_queries=2");
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         inactive_death_without_calendar(&owner, &harness, &admitted).await?;
         // The existing reset owner supplies period identity. Initializer is owner-only;
         // this fixture calls it with the actual active native generation's digests.

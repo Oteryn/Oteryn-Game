@@ -56,6 +56,7 @@ fn synthetic_inventory_session_scenario() -> Result<(), Box<dyn std::error::Erro
 fn scenario() -> Result<(), String> {
     let item = |handle: u64| -> Result<ItemEntry, String> {
         Ok(ItemEntry {
+            appearance_id: 0,
             handle: handle.try_into().map_err(|_| "handle")?,
             item_definition_ref: 2854.try_into().map_err(|_| "definition")?,
             count: 1.try_into().map_err(|_| "count")?,

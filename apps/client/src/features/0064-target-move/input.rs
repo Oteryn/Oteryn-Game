@@ -39,7 +39,7 @@ impl PlayView {
                     }
                     TargetMoveIntent::Follow(target)
                 } else if let Some(direction) =
-                    crate::input::arrow_step(std::slice::from_ref(event))
+                    crate::input::arrow_step(std::slice::from_ref(event), false)
                 {
                     TargetMoveIntent::Turn(super::super::step_direction(direction))
                 } else {

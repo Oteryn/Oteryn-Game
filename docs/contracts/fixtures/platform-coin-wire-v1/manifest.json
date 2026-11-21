@@ -57,7 +57,7 @@
     },
     "transfers-ok.json": {
       "canonical_bytes": 343,
-      "sha256": "e5c6b8c330665daab5fc486022695db0c3a6001cdf70be1a745932342ca21234"
+      "sha256": "d0f7acd976fd7987c6b22706315b12884a2faba03bc62a4948e3fce1918a75f3"
     },
     "offers-request.json": {
       "canonical_bytes": 147,
@@ -65,7 +65,7 @@
     },
     "offers-ok.json": {
       "canonical_bytes": 309,
-      "sha256": "9f49820a71278222ef51010abaea51320984e674d7e80dace54005dffa18f9af"
+      "sha256": "ee7abcedd77296747b817b334b68b42748a2bff5d3cd46dc58655f116ee5cefe"
     },
     "settlements-request.json": {
       "canonical_bytes": 183,
@@ -73,7 +73,7 @@
     },
     "settlements-ok.json": {
       "canonical_bytes": 346,
-      "sha256": "9f5ee493ba83dfd122459758d903416787d2fee4f7da3d548cf8dec81f857994"
+      "sha256": "3dd23e7fb9b279d1cc82f35d269b0bf24def836d71a63df7a407a1c282bb9a76"
     },
     "cancellations-request.json": {
       "canonical_bytes": 170,
@@ -81,7 +81,7 @@
     },
     "cancellations-ok.json": {
       "canonical_bytes": 308,
-      "sha256": "e6a7b195abc6f37748deee0053d38a3cc1682bd3b2e111b913e0ec49e2aec426"
+      "sha256": "77b0d5f52ed90d2fbdb0e5dfe5d6de93971fbb6a9f7cc6a524499e8f4bbbe58a"
     },
     "operation-request.json": {
       "canonical_bytes": 2,
@@ -89,7 +89,7 @@
     },
     "operation-ok.json": {
       "canonical_bytes": 343,
-      "sha256": "e5c6b8c330665daab5fc486022695db0c3a6001cdf70be1a745932342ca21234"
+      "sha256": "d0f7acd976fd7987c6b22706315b12884a2faba03bc62a4948e3fce1918a75f3"
     },
     "balance-request.json": {
       "canonical_bytes": 2,
@@ -97,7 +97,7 @@
     },
     "balance-ok.json": {
       "canonical_bytes": 125,
-      "sha256": "3b6c0fa82447c52c97a1c74611f62a4b6abd862a716a4df5c2c57751aedfbd47"
+      "sha256": "719e157c9d319e1bb6ab7fb6ca34ee7e9f95f8de7a3525db4a0aefe5d743199f"
     },
     "history-request.json": {
       "canonical_bytes": 2,
@@ -109,7 +109,7 @@
     },
     "replay.json": {
       "canonical_bytes": 347,
-      "sha256": "8c466ab1bd43a1784013b845d338aecbb38e2aac55cc2b1416d5e906d7b40616"
+      "sha256": "cfd1e692b14a9db5b32fb0f99cc3648b3c9076fd426a37228fc9b5a3ddf01020"
     },
     "insufficient_transferable.json": {
       "canonical_bytes": 38,

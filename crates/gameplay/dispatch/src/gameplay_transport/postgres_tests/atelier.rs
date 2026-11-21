@@ -1,5 +1,9 @@
 //! GEM2: real composed admission -> Character sequencer -> PostgreSQL -> restart/replay.
 #![allow(clippy::expect_used)]
+use tokio::io::AsyncReadExt;
+use tokio::io::AsyncWriteExt;
+use super::atelier_fixtures::{fixture};
+
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::character_atelier::{AtelierMutation, AtelierOutcome, AtelierRequest};
@@ -15,10 +19,7 @@ use crate::gameplay_transport::connection::{
 use oteryn_gameplay_progression::atelier::{AtelierAction, AtelierState, FragmentKind, GemQuality};
 use oteryn_gameplay_progression::wheel_gem_data::WheelGemData;
 use std::sync::Arc;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-#[path = "atelier/fixture.rs"]
-pub(super) mod fixture;
 #[path = "atelier/paid.rs"]
 mod paid;
 #[path = "atelier/reshape.rs"]

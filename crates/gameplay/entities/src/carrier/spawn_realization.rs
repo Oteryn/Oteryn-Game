@@ -24,6 +24,11 @@ pub struct SpawnDefinition {
     points: Vec<SpawnPointDefinition>,
     /// D115: 5,000,000 (5 s).
     occupancy_retry_interval_micros: u64,
+    /// Only the full-pin Content XML qualifier can select source warning phases.
+    /// Ordinary D115 definitions retain their accepted warning policy.
+    pub(super) xml_source: Option<
+        oteryn_gameplay_content::content::bosses::activity_template::QualifiedAmbientXmlSpawns,
+    >,
 }
 
 /// SPAWN-1b: what one spawn point realizes and when it respawns.
@@ -117,6 +122,7 @@ impl SpawnDefinition {
             population,
             points: definitions,
             occupancy_retry_interval_micros,
+            xml_source: None,
         })
     }
 
@@ -489,7 +495,7 @@ impl ChannelRuntimeV1 {
     /// fence, no realized or pending activation, every registered ceiling and the slot
     /// capacity, which keeps [`SPAWN_ACTIVATION_PLAYER_HEADROOM`] slots free for player
     /// admission. Returns the total points.
-    fn check_spawn_activation(
+    pub(super) fn check_spawn_activation(
         &self,
         definitions: &[SpawnDefinition],
     ) -> Result<usize, CarrierError> {
@@ -1068,28 +1074,40 @@ impl ChannelActorCarrier {
         position_context: PreProductionPositionContext,
         cell: LocalPosition,
     ) -> bool {
-        self.slots.iter().any(|slot| match slot {
-            Slot::Occupied { lifecycle, .. } if lifecycle.staff_ghost => false,
-            Slot::Occupied {
-                committed: true,
-                position: Some(version),
-                ..
-            }
-            | Slot::CreatureOccupied {
-                position: Some(version),
-                health: 1..,
-                ..
-            } => version.context == position_context && version.position == cell,
-            Slot::CreatureReserved { planned, .. } => matches!(planned.as_ref(),
+        self.cell_occupied_unless(position_context, cell, |_| false)
+    }
+
+    pub(super) fn cell_occupied_unless(
+        &self,
+        position_context: PreProductionPositionContext,
+        cell: LocalPosition,
+        mut admits_occupant: impl FnMut(&Slot) -> bool,
+    ) -> bool {
+        self.slots
+            .iter()
+            .filter(|slot| match slot {
+                Slot::Occupied { lifecycle, .. } if lifecycle.staff_ghost => false,
+                Slot::Occupied {
+                    committed: true,
+                    position: Some(version),
+                    ..
+                }
+                | Slot::CreatureOccupied {
+                    position: Some(version),
+                    health: 1..,
+                    ..
+                } => version.context == position_context && version.position == cell,
+                Slot::CreatureReserved { planned, .. } => matches!(planned.as_ref(),
                 Slot::CreatureOccupied { position: Some(version), .. }
                     if version.context == position_context && version.position == cell),
-            Slot::NpcOccupied {
-                position: version,
-                hireling: None,
-                ..
-            } => version.context == position_context && version.position == cell,
-            _ => false,
-        })
+                Slot::NpcOccupied {
+                    position: version,
+                    hireling: None,
+                    ..
+                } => version.context == position_context && version.position == cell,
+                _ => false,
+            })
+            .any(|slot| !admits_occupant(slot))
     }
     /// True when `actor`, at its exact actor-local generation, is still this carrier's live
     /// creature (`health > 0`). A spawn cell may still name a removed creature (removal does

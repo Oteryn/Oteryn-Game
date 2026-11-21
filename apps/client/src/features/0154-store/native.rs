@@ -56,6 +56,7 @@ pub(in crate::play) fn customization(
         .flatten();
 }
 
+#[cfg(any(windows, test))]
 pub(in crate::play) fn panel_text(panel: &StorePanel) -> String {
     if !panel.selected {
         return tr!("Store unavailable in this session").into();
@@ -70,13 +71,7 @@ pub(in crate::play) fn panel_text(panel: &StorePanel) -> String {
     } else {
         panel.catalogue.as_ref().map_or_else(
             || tr!("Load the server catalogue").into(),
-            |page| {
-                lfmt!(
-                    "Balance: {} coins; transferable: {}",
-                    page.total_coins,
-                    page.transferable_coins
-                )
-            },
+            |page| lfmt!("Balance: {} coins", page.total_coins),
         )
     };
     if let Some(preview) = store::offer_preview(panel) {

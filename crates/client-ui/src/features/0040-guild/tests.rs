@@ -41,6 +41,7 @@ fn no_next_page_does_not_repeat_the_first_page() {
     };
     assert_eq!(request(&mut panel, Intent::MoreRoster), None);
     panel.roster.push(guild::GuildMember {
+        channel: None,
         character: [2; 16],
         name: "Alice".into(),
         level: 2,

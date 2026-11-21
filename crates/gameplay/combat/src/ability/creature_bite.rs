@@ -51,6 +51,7 @@ struct NativeBiteBinding {
     session: GameSessionId,
     source_index: u16,
     content_digest: [u8; 32],
+    critical_roll: u8,
 }
 
 impl CreatureBiteDefinition {
@@ -74,7 +75,18 @@ impl CreatureBiteDefinition {
         definition: oteryn_gameplay_domain::domain::melee_definition::MeleeDefinition,
         magnitude: u32,
     ) -> Option<Self> {
-        if intent.think_sequence == 0
+        Self::from_native_source_with_roll(source, runtime, intent, definition, magnitude, 100)
+    }
+    pub fn from_native_source_with_roll(
+        source: &crate::creature_auto_attack::MeleeSource,
+        runtime: &ChannelRuntimeV1,
+        intent: AiBiteIntent,
+        definition: oteryn_gameplay_domain::domain::melee_definition::MeleeDefinition,
+        magnitude: u32,
+        critical_roll: u8,
+    ) -> Option<Self> {
+        if !(1..=100).contains(&critical_roll)
+            || intent.think_sequence == 0
             || !source.admits_bite_definition(runtime, intent.issuer, definition)
             || magnitude < source.minimum
             || magnitude > source.maximum
@@ -89,6 +101,7 @@ impl CreatureBiteDefinition {
             session: intent.target_session,
             source_index: definition.entry_index,
             content_digest: definition.content_digest,
+            critical_roll,
         });
         Some(result)
     }
@@ -211,6 +224,18 @@ pub enum BiteRejection {
 /// The Channel owner's vitals of its present player actors (SPELL-D2). The vitals owner
 /// implements it; a bite reaches the player's health only through this one method.
 pub trait CreatureBiteVitals {
+    /// Source event callbacks modify one raw component before victim blocking.
+    /// Native production implements this from its independently current scene facts.
+    fn source_combat_component_damage(
+        &self,
+        _runtime: &ChannelRuntimeV1,
+        _issuer: ExactActorRef,
+        _target: ExactActorRef,
+        magnitude: u32,
+        _now: u64,
+    ) -> Option<u32> {
+        Some(magnitude)
+    }
     /// Called only for melee auto-attacks, after defence, armor and physical protection.
     fn melee_damage_taken(
         &self,
@@ -337,10 +362,9 @@ impl CreatureBiteLedger {
         self.entries.len()
     }
 
-    /// The live `issuer`'s entry, made on its first bite. A full ledger first drops the entries
-    /// of dead issuers. The carrier admits at most `CREATUREAI0-RL-04` creatures, and `issuer` is
-    /// one of them without an entry, so the live entries left are fewer than the maximum and a
-    /// live issuer is never refused `LedgerFull`.
+    /// The current issuer's entry, made on its first bite. A full ledger first drops
+    /// retired incarnations, retaining a qualified Parry kill until its slot retires.
+    /// The carrier bounds current incarnations by `CREATUREAI0-RL-04`.
     fn entry(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -349,8 +373,12 @@ impl CreatureBiteLedger {
     ) -> Result<&mut BiteEntry, BiteRejection> {
         let key = issuer.placement_identity();
         if !self.entries.contains_key(&key) && self.entries.len() >= CREATURE_BITE_LEDGER_MAX {
-            self.entries
-                .retain(|_, entry| runtime.contains_live_creature(entry.issuer));
+            self.entries.retain(|_, entry| {
+                runtime.contains_live_creature(entry.issuer)
+                    || runtime
+                        .companion_snapshot_including_dead(entry.issuer)
+                        .is_ok()
+            });
             if self.entries.len() >= CREATURE_BITE_LEDGER_MAX {
                 return Err(BiteRejection::LedgerFull);
             }
@@ -386,7 +414,12 @@ pub fn commit_ai_bite(
     protection: ReentryProtection,
     now: SemanticTimeMicros,
 ) -> Result<AppliedBite, BiteRejection> {
-    if !runtime.contains_live_creature(intent.issuer) {
+    let live = runtime.contains_live_creature(intent.issuer);
+    if !live
+        && runtime
+            .companion_snapshot_including_dead(intent.issuer)
+            .is_err()
+    {
         return Err(BiteRejection::StaleIssuer);
     }
     if let Some(binding) = definition.native_schedule
@@ -401,7 +434,18 @@ pub fn commit_ai_bite(
     let source_index = definition
         .native_schedule
         .map(|binding| binding.source_index);
-    let entry = *ledger.entry(runtime, intent.issuer, source_index)?;
+    let entry = if live {
+        *ledger.entry(runtime, intent.issuer, source_index)?
+    } else {
+        let actor = ledger
+            .entries
+            .get(&intent.issuer.placement_identity())
+            .ok_or(BiteRejection::StaleIssuer)?;
+        match source_index {
+            Some(index) => *actor.native.get(&index).ok_or(BiteRejection::StaleIssuer)?,
+            None => actor.legacy,
+        }
+    };
     if let Some((sequence, target, result)) = entry.last {
         if intent.think_sequence < sequence {
             return Err(BiteRejection::OccurrenceSuperseded);
@@ -413,6 +457,9 @@ pub fn commit_ai_bite(
                 Err(BiteRejection::OccurrenceConflict)
             };
         }
+    }
+    if !runtime.contains_live_creature(intent.issuer) {
+        return Err(BiteRejection::StaleIssuer);
     }
     let result = resolve_and_apply(
         runtime, vitals, &entry, intent, definition, revisions, protection, now,
@@ -447,6 +494,16 @@ fn resolve_and_apply(
         }
         _ => return Err(BiteRejection::InvalidPlan),
     };
+    let critical_roll = definition
+        .native_schedule
+        .map_or(100, |binding| binding.critical_roll);
+    let (scaled, _) = runtime
+        .encounter_source_damage(intent.issuer, u64::from(magnitude), critical_roll)
+        .map_err(|_| BiteRejection::InvalidPlan)?;
+    let magnitude = u32::try_from(scaled).map_err(|_| BiteRejection::InvalidPlan)?;
+    let magnitude = vitals
+        .source_combat_component_damage(runtime, intent.issuer, intent.target, magnitude, now.get())
+        .ok_or(BiteRejection::InvalidPlan)?;
     if vitals.dodge_creature_attack(runtime, intent.target, intent.target_session, magnitude) {
         let hit = vitals
             .apply_creature_damage(runtime, intent.target, intent.target_session, 0, now)

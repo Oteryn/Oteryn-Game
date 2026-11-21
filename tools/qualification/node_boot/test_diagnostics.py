@@ -31,6 +31,20 @@ def function(name):
 
 
 class RuntimeEvidenceTests(unittest.TestCase):
+    def test_served_content_revision_is_the_characters_interpretation(self):
+        # NBSEAM: the quest and Task Board owners refuse a Character whose stored progression
+        # content differs from the served readiness.content_revision (ProgressionContextMismatch).
+        interpretation = re.search(r'^readonly INTERPRETATION=\(([^)]*)\)$', TEXT, re.M).group(1).split()
+        readiness = TEXT.split('[readiness]\n', 1)[1].split('\n[', 1)[0]
+        served = re.search(r'^content_revision = "([^"]*)"$', readiness, re.M).group(1)
+        self.assertEqual(served.replace('${INTERPRETATION[2]}', interpretation[2]), interpretation[2])
+        harness = SOURCE.parents[3].joinpath('apps/game-server/src/qualification.rs')
+        if harness.exists():
+            rust = harness.read_text()
+            content = re.search(r'const INTERPRETATION: \[&str; 4\] = \[\s*"[^"]*",\s*"[^"]*",\s*"([^"]*)"', rust).group(1)
+            self.assertEqual(content, interpretation[2])
+            self.assertNotRegex(rust, r'content_revision"?: "')
+
     def test_logout_failures_keep_only_closed_schema_stage_and_kind(self):
         monitor = function('start_runtime_diagnostics').split("<<'PY_RUNTIME_DIAGNOSTICS' &\n", 1)[1]
         prefix = monitor.split("print(f'NODE_BOOT_RUNTIME_MONITOR", 1)[0]
@@ -64,6 +78,7 @@ class RuntimeEvidenceTests(unittest.TestCase):
             ('control_loss_reconcile_pending', 'item_effects'),
             ('control_loss_reconcile_pending', 'gourmet_checkpoint'),
             ('control_loss_reconcile_pending', 'native_cast'),
+            ('control_loss_reconcile_pending', 'soul_war_source_use'),
             ('control_loss_reconcile_pending', 'familiar_cast'),
             ('control_loss_reconcile_pending', 'world_items'),
             ('control_loss_reconcile_pending', 'parameters'),
@@ -390,6 +405,39 @@ stage seam_stages -- blocked
 
     def test_int_preserves_bounded_safe_evidence_before_cleanup(self):
         self.exercise(signal.SIGINT)
+
+
+class KnownFailRowsTests(unittest.TestCase):
+    """A FAIL row fails its stage unless known_fail_rows.txt lists it."""
+
+    def rows(self, log, status, known):
+        helpers = '\n'.join(re.search(rf"(?m)^{name}\(\).*$", TEXT).group(0) for name in ('stage_rows', 'known_rows'))
+        with tempfile.TemporaryDirectory() as tmp:
+            Path(tmp, 'stage.log').write_text(log)
+            Path(tmp, 'known.txt').write_text(known)
+            script = (helpers + '\nstage_rows "$1/stage.log" "$2" | grep -vxFf <(known_rows "$1/known.txt") | paste -sd, - || true\n'
+                      'stage_rows "$1/stage.log" "$2" | grep -xFf <(known_rows "$1/known.txt") | paste -sd, - || true\n')
+            out = subprocess.run(['bash', '-c', 'set -Eeuo pipefail\n' + script, 'x', tmp, status],
+                                 capture_output=True, text=True, check=True).stdout.split('\n')
+        return out[0], out[1]
+
+    def test_new_failure_is_not_hidden_and_known_failure_is_listed(self):
+        log = ('SEAM_EVIDENCE e2e_all scenario=C01.full status=FAIL seconds=1 cause=assertion\n'
+               'SEAM_EVIDENCE e2e_all scenario=Q01a.full status=FAIL seconds=1 cause=assertion\n'
+               'SEAM_EVIDENCE e2e_all scenario=C03.full status=PASS seconds=1\n')
+        known = '# comment\n\nC01.full assertion at C01.full/admission\nC03.full flaky\n'
+        self.assertEqual(self.rows(log, 'FAIL', known), ('Q01a.full', 'C01.full'))
+        self.assertEqual(self.rows(log, 'PASS', known)[1], 'C03.full')
+
+    def test_missing_list_hides_nothing(self):
+        log = 'SEAM_EVIDENCE e2e_all scenario=C01.full status=FAIL seconds=1\n'
+        self.assertEqual(self.rows(log, 'FAIL', ''), ('C01.full', ''))
+
+    def test_seed_list_has_one_reason_per_row(self):
+        listed = SOURCE.with_name('known_fail_rows.txt').read_text().splitlines()
+        rows = [line.split(None, 1) for line in listed if line.strip() and not line.startswith('#')]
+        self.assertTrue(all(len(row) == 2 and row[0].endswith('.full') for row in rows))
+        self.assertEqual(len({row[0] for row in rows}), len(rows))
 
 
 if __name__ == '__main__':

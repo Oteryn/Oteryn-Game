@@ -36,3 +36,9 @@ pub(in crate::play) fn reduce(
         }
     }
 }
+
+/// Uses the production decoder/initializer for shared frontend caller tests only.
+#[cfg(all(test, feature = "bevy-shell"))]
+pub(crate) fn bevy_catalog_fixture(outbox: &Outbox, payload: Vec<u8>) -> Result<(), SessionError> {
+    outbox.spell_catalog_initialize(true, Some(payload))
+}

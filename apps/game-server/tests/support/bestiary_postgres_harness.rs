@@ -212,15 +212,54 @@ impl Harness {
     /// `initialized`: seed the typed progression row at revision one (level
     /// 50, 1000 experience) instead of leaving the Character bootstrap-only.
     pub(crate) async fn create(admin: String, tag: &str, initialized: bool) -> TestResult<Self> {
+        Self::create_with_admission_seed(admin, tag, initialized, true).await
+    }
+
+    /// Omit legacy session/readiness rows when a caller commits typed fresh admission.
+    pub(crate) async fn create_with_admission_seed(
+        admin: String,
+        tag: &str,
+        initialized: bool,
+        seed_session: bool,
+    ) -> TestResult<Self> {
+        Self::create_fixture(admin, tag, initialized, seed_session, None).await
+    }
+
+    #[cfg(test)]
+    #[allow(
+        dead_code,
+        reason = "only the qualification provenance case seeds bootstrap v4"
+    )]
+    pub(crate) async fn create_with_bootstrap_vocation(
+        admin: String,
+        tag: &str,
+        vocation: &'static str,
+    ) -> TestResult<Self> {
+        Self::create_fixture(admin, tag, false, true, Some(vocation)).await
+    }
+
+    async fn create_fixture(
+        admin: String,
+        tag: &str,
+        initialized: bool,
+        seed_session: bool,
+        birth_vocation: Option<&'static str>,
+    ) -> TestResult<Self> {
         let database = Database::create(admin, tag).await?;
         let cleanup = database.clone();
         let tag = tag.to_owned();
         let setup = tokio::task::LocalSet::new()
             .run_until(async move {
                 tokio::task::spawn_local(async move {
-                    Self::create_on_database(database, &tag, initialized)
-                        .await
-                        .map_err(|error| error.to_string())
+                    Self::create_on_database(
+                        database,
+                        &tag,
+                        initialized,
+                        seed_session,
+                        birth_vocation,
+                    )
+                    .await
+                    .map_err(|error| error.to_string())
                 })
                 .await
             })
@@ -242,6 +281,8 @@ impl Harness {
         database: Database,
         tag: &str,
         initialized: bool,
+        seed_session: bool,
+        birth_vocation: Option<&str>,
     ) -> TestResult<Self> {
         let root = DurabilityRoot::connect_test_runtime(&database.url)?;
         assert!(root.maintain_ready_once().await?);
@@ -256,7 +297,7 @@ impl Harness {
                 .map_err(debug)?;
         }
         let node = register(&root, 1).await?;
-        seed_character(&pool, initialized).await?;
+        seed_character(&pool, initialized, seed_session, birth_vocation).await?;
         sqlx::query(
             "INSERT INTO game_control_scope_grants \
              (control_role, world_id, channel_id, operation) \
@@ -285,7 +326,9 @@ impl Harness {
             return Err(format!("unexpected assignment outcome: {outcome:?}").into());
         };
         assert_eq!(assignment.assignment.ownership_generation, 1);
-        publish_readiness(&pool, &root, &node, 1).await?;
+        if seed_session {
+            publish_readiness(&pool, &root, &node, 1).await?;
+        }
         Ok(Self {
             database,
             root,
@@ -324,8 +367,8 @@ impl Harness {
     }
 }
 
-fn bootstrap_binding() -> Vec<u8> {
-    let mut binding = vec![3];
+fn bootstrap_binding(birth_vocation: Option<&str>) -> Vec<u8> {
+    let mut binding = vec![if birth_vocation.is_some() { 4 } else { 3 }];
     binding.extend_from_slice(&id(31));
     binding.extend_from_slice(&1_i64.to_be_bytes());
     binding.extend_from_slice(&id(30));
@@ -342,6 +385,10 @@ fn bootstrap_binding() -> Vec<u8> {
     binding.extend_from_slice(&12_u16.to_be_bytes());
     binding.extend_from_slice(b"Fixture Hero");
     binding.push(2); // Authenticated creation sex: Male.
+    if let Some(vocation) = birth_vocation {
+        binding.push(u8::try_from(vocation.len()).unwrap_or(u8::MAX));
+        binding.extend_from_slice(vocation.as_bytes());
+    }
     binding
 }
 
@@ -457,7 +504,12 @@ pub(crate) async fn publish_readiness_for_scope(
     Ok(())
 }
 
-async fn seed_character(pool: &sqlx::PgPool, initialized: bool) -> TestResult {
+async fn seed_character(
+    pool: &sqlx::PgPool,
+    initialized: bool,
+    seed_session: bool,
+    birth_vocation: Option<&str>,
+) -> TestResult {
     sqlx::query(
         "INSERT INTO game_character_interpretations VALUES \
          (1,'profile-1','ruleset-1','content-1','starter-1',1)",
@@ -469,15 +521,17 @@ async fn seed_character(pool: &sqlx::PgPool, initialized: bool) -> TestResult {
         .execute(pool)
         .await?;
     sqlx::query(
-        "INSERT INTO game_character_roots(character_id, account_id, world_id, lifecycle, character_revision, profile_revision, ruleset_revision, content_revision, starter_template_revision, name, sex) VALUES \
+        "INSERT INTO game_character_roots(character_id, account_id, world_id, lifecycle, character_revision, profile_revision, ruleset_revision, content_revision, starter_template_revision, name, sex, creation_vocation) VALUES \
          (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
-          1,1,'profile-1','ruleset-1','content-1','starter-1','Fixture Hero',2)",
+          1,1,'profile-1','ruleset-1','content-1','starter-1','Fixture Hero',2,$4)",
     )
     .bind(id(CHARACTER).as_slice())
     .bind(id(40).as_slice())
     .bind(id(WORLD).as_slice())
+    .bind(birth_vocation.map(str::to_ascii_lowercase))
     .execute(pool)
     .await?;
+    let binding = bootstrap_binding(birth_vocation);
     sqlx::query(
         "INSERT INTO game_character_operation_receipts(\
            operation_id,command_binding,account_id,character_id,world_id,character_revision,\
@@ -488,7 +542,7 @@ async fn seed_character(pool: &sqlx::PgPool, initialized: bool) -> TestResult {
            encode($7,'hex')::uuid,encode($8,'hex')::uuid,1,1,120)",
     )
     .bind(id(30).as_slice())
-    .bind(bootstrap_binding())
+    .bind(&binding)
     .bind(id(40).as_slice())
     .bind(id(CHARACTER).as_slice())
     .bind(id(WORLD).as_slice())
@@ -502,7 +556,7 @@ async fn seed_character(pool: &sqlx::PgPool, initialized: bool) -> TestResult {
          (1,1,encode($1,'hex')::uuid,$2)",
     )
     .bind(id(31).as_slice())
-    .bind(bootstrap_binding())
+    .bind(&binding)
     .execute(pool)
     .await?;
     if initialized {
@@ -514,6 +568,9 @@ async fn seed_character(pool: &sqlx::PgPool, initialized: bool) -> TestResult {
         .bind(id(CHARACTER).as_slice())
         .execute(pool)
         .await?;
+    }
+    if !seed_session {
+        return Ok(());
     }
     sqlx::query(
         "INSERT INTO game_durability_reconnect_sessions(\

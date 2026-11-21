@@ -8,6 +8,12 @@ use std::path::Path;
 #[path = "general_stats.rs"]
 mod general_stats;
 
+#[path = "creature_sweep.rs"]
+mod creature_sweep;
+#[path = "mp/mount.rs"]
+mod mp;
+pub(in crate::qualification) use mp::legacy_d150;
+
 include!("character_core.rs");
 include!("character_release.rs");
 include!("e2e_row_batch.rs");
@@ -322,6 +328,8 @@ include!("native_content.rs");
 #[path = "full_e2ef1.rs"]
 mod provisioning;
 include!("quest_journal.rs");
+#[path = "spatial_basis.rs"]
+mod spatial_basis;
 #[path = "starter_inventory.rs"]
 mod starter_inventory;
 #[path = "verdict.rs"]
@@ -333,29 +341,40 @@ pub(crate) const TOWN: TilePos = TilePos {
     floor: -7,
 };
 
-/// One production world per test process: every journey shares it, so the
-/// ~110 s bundle boot runs once instead of once per row.
+struct QualificationWorld {
+    world_id: WorldId,
+    channel_id: ChannelId,
+    bundle: BundleWorld,
+    rewards: std::sync::Arc<crate::content::creature_reward::CreatureRewardTable>,
+}
+
+/// One production generation per test process. Keep its pinned reward table for
+/// the sweep's seeded loot expectation as well as the observed World bundle.
+fn load_world_generation(
+    data: Vec<u8>,
+    pin: &serde_json::Value,
+    world: WorldId,
+    channel: ChannelId,
+) -> TestResult<&'static QualificationWorld> {
+    static LOADED: std::sync::OnceLock<QualificationWorld> = std::sync::OnceLock::new();
+    if LOADED.get().is_none() {
+        let booted = boot_world(data, pin, world, channel)?;
+        let _ = LOADED.set(booted);
+    }
+    match LOADED.get() {
+        Some(loaded) if loaded.world_id == world && loaded.channel_id == channel => Ok(loaded),
+        Some(_) => Err("world loader asked for a different world or channel".into()),
+        None => Err("world loader cache empty".into()),
+    }
+}
+
 pub(crate) fn load_world(
     data: Vec<u8>,
     pin: &serde_json::Value,
     world: WorldId,
     channel: ChannelId,
 ) -> TestResult<&'static BundleWorld> {
-    static LOADED: std::sync::OnceLock<(WorldId, ChannelId, BundleWorld)> =
-        std::sync::OnceLock::new();
-    if LOADED.get().is_none() {
-        let booted = boot_world(data, pin, world, channel)?;
-        let _ = LOADED.set((world, channel, booted));
-    }
-    match LOADED.get() {
-        Some((loaded_world, loaded_channel, booted))
-            if *loaded_world == world && *loaded_channel == channel =>
-        {
-            Ok(booted)
-        }
-        Some(_) => Err("world loader asked for a different world or channel".into()),
-        None => Err("world loader cache empty".into()),
-    }
+    Ok(&load_world_generation(data, pin, world, channel)?.bundle)
 }
 
 fn boot_world(
@@ -363,7 +382,7 @@ fn boot_world(
     pin: &serde_json::Value,
     world: WorldId,
     channel: ChannelId,
-) -> TestResult<BundleWorld> {
+) -> TestResult<QualificationWorld> {
     let digest = hex32(pin["digest"].as_str().ok_or("World digest")?)?;
     let checked = crate::map::boot::check(
         data,
@@ -418,15 +437,14 @@ fn boot_world(
     if rat.loot_table.entries.is_empty() {
         return Err("town hunt has no production loot table".into());
     }
-    crate::node::serve::boot_bundle_world(
-        checked,
-        world,
-        channel,
-        controller
-            .active()
-            .and_then(|active| active.native_gameplay()),
-    )
-    .map_err(|error| format!("production world loader: {error:?}").into())
+    let bundle = crate::node::serve::boot_bundle_world(checked, world, channel, Some(native))
+        .map_err(|error| format!("production world loader: {error:?}"))?;
+    Ok(QualificationWorld {
+        world_id: world,
+        channel_id: channel,
+        bundle,
+        rewards: native.reward_table().clone(),
+    })
 }
 
 fn tile(position: ActorPosition) -> TestResult<TilePos> {
@@ -550,6 +568,179 @@ fn town_route_retry_delay(
         .then_some(Duration::from_millis(500))
 }
 
+struct HuntDeath {
+    actor: crate::foundation::ExactActorRef,
+    stamina: u16,
+    reward_occurrence: Option<[u8; 16]>,
+    shared: bool,
+    awards: BTreeMap<[u8; 16], u64>,
+}
+
+/// Match the durable Channel death key to the exact wire incarnation before deriving
+/// its corpse identity. Creature type and a neighbouring floor tile are insufficient.
+async fn committed_hunt_death(
+    client: &mut oteryn_dev_client::DevClientSession,
+    clients: &SeamClients<'_>,
+    principal: Option<[u8; 16]>,
+    key: &str,
+    target: oteryn_dev_client::EntityRef,
+    deadline: tokio::time::Instant,
+) -> TestResult<HuntDeath> {
+    use crate::foundation::{
+        ActorLocalGeneration, ActorLocalId, ActorRef, ExactActorRef, ScopeOwnershipGeneration,
+    };
+    let world = WorldId::decode(&clients.world)?;
+    let channel = ChannelId::decode(&clients.channel)?;
+    let scope = ScopeOwnershipGeneration::new(clients.scope_generation)
+        .map_err(|error| format!("invalid hunt scope generation: {error:?}"))?;
+    let prefix = [
+        clients.world.as_slice(),
+        clients.channel.as_slice(),
+        &clients.scope_generation.to_be_bytes(),
+    ]
+    .concat();
+    type ReceiptRow = (Vec<u8>, i32, bool, Option<Vec<u8>>);
+    tokio::time::timeout_at(deadline, async {
+        let mut database = sqlx::PgConnection::connect(clients.url).await?;
+        loop {
+            // The Channel death key is the exact byte sequence hashed by
+            // ExactActorRef::placement_identity after its domain separator.
+            let row: Option<ReceiptRow> = sqlx::query_as(
+                "SELECT r.death_key, m.stamina_minutes, r.shared, uuid_send(m.reward_occurrence_id)
+                 FROM game_party_kill_xp_receipts r JOIN game_party_kill_xp_members m
+                 ON m.death_key=r.death_key AND m.character_id=r.principal_id
+                 WHERE ($1::bytea IS NULL OR r.principal_id=encode($1,'hex')::uuid)
+                 AND r.creature_key=$2
+                 AND octet_length(r.death_key)=52 AND substring(r.death_key FROM 1 FOR 40)=$3
+                 AND substring(r.death_key FROM 45 FOR 8)=$4
+                 AND substring(sha256(convert_to('oteryn:runtime-player-placement:v1','UTF8')
+                     || r.death_key) FROM 1 FOR 16)=$5",
+            )
+            .bind(principal.as_ref().map(|id| id.as_slice()))
+            .bind(key)
+            .bind(&prefix)
+            .bind(target.generation.to_be_bytes().as_slice())
+            .bind(target.identity.as_slice())
+            .fetch_optional(&mut database)
+            .await?;
+            if let Some((death_key, stamina, shared, reward_occurrence)) = row {
+                let slot = death_key
+                    .get(40..44)
+                    .ok_or("missing death actor slot")?
+                    .try_into()?;
+                let actor = ExactActorRef(ActorRef::from_owner_parts(
+                    world,
+                    channel,
+                    scope,
+                    ActorLocalId(u32::from_be_bytes(slot)),
+                    ActorLocalGeneration(target.generation),
+                ));
+                if actor.placement_identity() != target.identity {
+                    return Err("durable death key did not match target".into());
+                }
+                let awards: Vec<(Vec<u8>, i64)> = sqlx::query_as(
+                    "SELECT uuid_send(character_id), xp_awarded FROM game_party_kill_xp_members
+                     WHERE death_key=$1 AND xp_awarded>0 LIMIT 51",
+                )
+                .bind(death_key)
+                .fetch_all(&mut database)
+                .await?;
+                if awards.len() > 50 {
+                    return Err("too many hunt award members".into());
+                }
+                return Ok(HuntDeath {
+                    actor,
+                    stamina: u16::try_from(stamina)?,
+                    reward_occurrence: reward_occurrence
+                        .map(|id| id.as_slice().try_into())
+                        .transpose()?,
+                    shared,
+                    awards: awards
+                        .into_iter()
+                        .map(|(id, xp)| {
+                            TestResult::Ok((id.as_slice().try_into()?, u64::try_from(xp)?))
+                        })
+                        .collect::<TestResult<_>>()?,
+                });
+            }
+            client.service_liveness(Duration::from_millis(100)).await?;
+            client.take_events();
+        }
+    })
+    .await
+    .map_err(|_| "no committed death receipt for the spawned creature")?
+}
+
+fn parse_spawned_entity(answer: &str) -> TestResult<oteryn_dev_client::EntityRef> {
+    let fields: Vec<_> = answer.split_ascii_whitespace().collect();
+    let ["spawned", identity, generation] = fields.as_slice() else {
+        return Err(format!("invalid hunt spawn response: {answer}").into());
+    };
+    let identity = crate::node::operator_files::hex_bytes::<16>(identity)
+        .map_err(|_| "invalid hunt spawn identity")?;
+    let generation = generation.parse::<std::num::NonZeroU64>()?.get();
+    Ok(oteryn_dev_client::EntityRef {
+        identity,
+        generation,
+    })
+}
+
+/// `spawn <session> <key>` through `provision.py --spawn`; Err carries the rejected token.
+/// Shared by `creature_sweep` and MP09 (both reach it through `use super::*`).
+async fn request_spawn(session: String, key: String) -> Result<String, String> {
+    request_fixture_control(session, "--spawn", key).await
+}
+
+async fn request_fixture_control(
+    session: String,
+    operation: &'static str,
+    argument: String,
+) -> Result<String, String> {
+    let socket = required("NODE_BOOT_CONTROL_SOCKET").map_err(|error| error.to_string())?;
+    let script = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../tools/qualification/node_boot/provision.py");
+    let output = tokio::task::spawn_blocking(move || {
+        std::process::Command::new("sudo")
+            .args(["-n", "python3"])
+            .arg(script)
+            .args([
+                "--socket",
+                &socket,
+                "--session",
+                &session,
+                operation,
+                &argument,
+            ])
+            .output()
+    })
+    .await
+    .map_err(|error| error.to_string())?
+    .map_err(|error| error.to_string())?;
+    if output.status.success() {
+        return Ok(String::from_utf8_lossy(&output.stdout).trim().to_owned());
+    }
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    Err(match stderr.split_once("reason=") {
+        Some((_, rest)) => rest
+            .chars()
+            .take_while(|character| character.is_ascii_alphanumeric() || *character == '_')
+            .collect(),
+        None => format!(
+            "status={};stderr_tail={}",
+            output.status,
+            stderr
+                .replace('\n', " | ")
+                .chars()
+                .rev()
+                .take(400)
+                .collect::<String>()
+                .chars()
+                .rev()
+                .collect::<String>()
+        ),
+    })
+}
+
 async fn walk(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
@@ -608,17 +799,35 @@ pub(super) async fn logout_retrying_busy(
     usize,
     bool,
 )> {
+    logout_retrying_busy_observed(client, None).await
+}
+
+type LogoutObserver<'a> = dyn FnMut(usize, &str) + 'a;
+
+pub(super) async fn logout_retrying_busy_observed(
+    client: &mut oteryn_dev_client::DevClientSession,
+    mut observe: Option<&mut LogoutObserver<'_>>,
+) -> TestResult<(
+    Option<oteryn_protocol_oteryn::logout::LogoutResult>,
+    String,
+    usize,
+    bool,
+)> {
     use oteryn_protocol_oteryn::logout::LogoutResult;
 
     let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
     let mut attempts = 0;
     loop {
         attempts += 1;
-        let outcome = client
-            .session_mut()
-            .logout()
-            .await
-            .map_err(|error| format!("logout attempt {attempts} failed: {error}"))?;
+        let outcome = client.session_mut().logout().await.map_err(|error| {
+            if let Some(observe) = observe.as_mut() {
+                observe(attempts, &format!("command_error={error}"));
+            }
+            format!("logout attempt {attempts} failed: {error}")
+        })?;
+        if let Some(observe) = observe.as_mut() {
+            observe(attempts, &format!("reply={outcome:?}"));
+        }
         if outcome.result != Some(LogoutResult::Busy) {
             return Ok((outcome.result, format!("{outcome:?}"), attempts, false));
         }
@@ -626,8 +835,84 @@ pub(super) async fn logout_retrying_busy(
             return Ok((outcome.result, format!("{outcome:?}"), attempts, true));
         }
         client.service_liveness(Duration::from_millis(250)).await
-            .map_err(|error| format!("logout Busy retry liveness failed after attempt {attempts}: {outcome:?}; error={error}"))?;
+            .map_err(|error| {
+                if let Some(observe) = observe.as_mut() {
+                    observe(attempts, &format!("busy_liveness_error={error}"));
+                }
+                format!("logout Busy retry liveness failed after attempt {attempts}: {outcome:?}; error={error}")
+            })?;
     }
+}
+
+struct WorldFixturePair {
+    accounts: [String; 2],
+    characters: [[u8; 16]; 2],
+}
+
+impl WorldFixturePair {
+    fn clients<'a>(&'a self, scope: &SeamClients<'a>) -> SeamClients<'a> {
+        SeamClients {
+            accounts: &self.accounts,
+            characters: &self.characters,
+            ..*scope
+        }
+    }
+}
+
+async fn extra_world_fixtures(
+    core: &SeamClients<'_>,
+    packets: &SeamClients<'_>,
+) -> TestResult<[WorldFixturePair; 3]> {
+    let configured = required("NODE_BOOT_EXTRA_WORLD_ACCOUNTS")?;
+    let ids: [String; 6] = configured
+        .split(',')
+        .map(str::to_owned)
+        .collect::<Vec<_>>()
+        .try_into()
+        .map_err(|_| "expected six dedicated MP and sweep Accounts")?;
+    let mut accounts = std::collections::BTreeSet::new();
+    let mut characters = std::collections::BTreeSet::new();
+    for pair in [core, packets] {
+        for account in pair.accounts {
+            accounts.insert(crate::node::uuid_bytes(account).ok_or("invalid fixture Account")?);
+        }
+        characters.extend(pair.characters.iter().copied());
+    }
+    let mut database = sqlx::PgConnection::connect(core.url).await?;
+    let mut resolved = Vec::new();
+    let [a, b, c, d, e, f] = ids;
+    for pair_accounts in [[a, b], [c, d], [e, f]] {
+        let mut pair = WorldFixturePair {
+            accounts: pair_accounts,
+            characters: [[0; 16]; 2],
+        };
+        for (account, character) in pair.accounts.iter().zip(&mut pair.characters) {
+            if !accounts.insert(crate::node::uuid_bytes(account).ok_or("invalid fixture Account")?)
+            {
+                return Err("dedicated World fixture reused an Account".into());
+            }
+            let rows: Vec<Vec<u8>> = sqlx::query_scalar(
+                "SELECT uuid_send(character_id) FROM game_character_roots
+                 WHERE account_id=$1::uuid AND world_id=encode($2,'hex')::uuid",
+            )
+            .bind(account)
+            .bind(core.world.as_slice())
+            .fetch_all(&mut database)
+            .await?;
+            let [row] = rows.as_slice() else {
+                return Err("dedicated World fixture must own one Character".into());
+            };
+            *character = row.as_slice().try_into()?;
+            if !characters.insert(*character) {
+                return Err("dedicated World fixture reused a Character".into());
+            }
+        }
+        resolved.push(pair);
+    }
+    database.close().await?;
+    resolved
+        .try_into()
+        .map_err(|_| "dedicated World fixture count".into())
 }
 
 pub(super) async fn journeys(
@@ -639,12 +924,13 @@ pub(super) async fn journeys(
     let bytes = std::fs::read(path)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(
+    let generation = load_world_generation(
         bytes.clone(),
         &pin,
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
+    let world = &generation.bundle;
     evidence(&format!(
         "world_loader state=booted duration_ms={} start={TOWN:?}",
         started.elapsed().as_millis()
@@ -2800,6 +3086,24 @@ pub(super) async fn journeys(
             clients.accounts.len()
         ));
     }
+    let mp_selected = groups.runs("mp");
+    let sweep_selected = groups.runs("creature_sweep")
+        && std::env::var("NODE_BOOT_E2E_ONLY").is_ok_and(|list| !list.trim().is_empty());
+    if mp_selected || sweep_selected {
+        let [mp_first, mp_second, sweep] = extra_world_fixtures(clients, packet_clients).await?;
+        if sweep_selected {
+            creature_sweep::run(&sweep.clients(clients), world, &generation.rewards).await?;
+        }
+        if mp_selected {
+            mp::run(
+                &mp_first.clients(clients),
+                &mp_second.clients(clients),
+                world,
+                &metadata.manifest.subareas,
+            )
+            .await;
+        }
+    }
     // The core/profile pair has not inherited packet movement, loot or death.
     if !groups.runs("core") {
         evidence("e2e_groups core=skipped");
@@ -3209,6 +3513,7 @@ async fn shop_journey(
     npcs: &oteryn_world_bundle::npc::Table,
     clients: &SeamClients<'_>,
 ) -> TestResult<()> {
+    let basis = spatial_basis::current(client)?;
     let Some(npc) = npcs.npcs.iter().find(|npc| npc.key == "oteryn:npc.sam") else {
         evidence(
             "mechanic=npc_shop skipped=authored_shop_npc_missing content_id=oteryn:npc.sam source=content/npcs/definitions/index.json:1",
@@ -3236,7 +3541,7 @@ async fn shop_journey(
                     && npc.placements.iter().any(|placement| {
                         entity.position.x == i32::from(placement.x)
                             && entity.position.y == i32::from(placement.y)
-                            && entity.position.floor == -i16::from(placement.floor)
+                            && entity.position.floor == basis.floor(placement.floor)
                     })
             })
         })

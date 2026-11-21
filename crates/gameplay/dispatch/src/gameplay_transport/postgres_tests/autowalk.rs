@@ -1,4 +1,6 @@
 //! USE-AUTOWALK-1: real session ingress, Movement, door USE and PostgreSQL map pickup.
+use super::autowalk_fixtures::{COIN, DOOR, at, bundle, object, place, pos, read, result, send};
+
 use super::fixture::{Harness, debug, id, join_two, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
@@ -18,152 +20,20 @@ use oteryn_protocol_oteryn::item_view::{
     ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome, ItemMoveSelection,
     encode_item_move_intent_for,
 };
-use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget, encode_use_intent};
+use oteryn_protocol_oteryn::world_object::{UseDisposition, encode_use_intent};
 use oteryn_protocol_oteryn::{
-    ClientCommandValue, MessageType, decode_command_result, decode_snapshot_chunk,
-    decode_state_delta, decode_wire_envelope, encode_client_command,
+    MessageType, decode_command_result, decode_snapshot_chunk,
+    decode_state_delta, decode_wire_envelope,
 };
 use std::time::Duration;
-use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};
+use tokio::io::{AsyncWriteExt, DuplexStream};
 
-pub(super) const DOOR: &str = "oteryn:item.tibia.i1629";
-pub(super) const COIN: &str = "oteryn:item.tibia.i3031";
 const BAG: &str = "oteryn:item.tibia.i2854";
 const MOVE_SELECTION: ItemMoveSelection = ItemMoveSelection {
     equip_drop: false,
     container_tree: false,
     world_interaction: true,
 };
-
-pub(super) fn pos(x: u16, y: u16) -> TilePos {
-    TilePos { x, y, floor: -7 }
-}
-pub(super) fn at(x: i32, y: i32) -> MovementLocalPosition {
-    MovementLocalPosition { x, y, floor: 7 }
-}
-
-pub(super) fn bundle(door: u32, coin: u32) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    use oteryn_world_bundle::sector::{Attrs, Item, Tile};
-    use oteryn_world_bundle::writer::{
-        self as writer, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector,
-        Terrain, TerrainKind,
-    };
-    let manifest = Manifest {
-        subareas: Default::default(),
-        format: writer::FORMAT.into(),
-        min_reader_version: writer::VERSION,
-        projection_class: "server".into(),
-        compiler_version: "engineering".into(),
-        build_class: BuildClass::Production,
-        identity: Identity {
-            project_format_version: "OTERYN_WORLD_PROJECT/v2".into(),
-            world_schema_version: "world-schema-1".into(),
-            content_revision: "rev-1".into(),
-            ..Identity::default()
-        },
-        world: Extent {
-            min_x: 0,
-            min_y: 0,
-            max_x: 32,
-            max_y: 32,
-            floors: vec![-7],
-        },
-        palette: vec![
-            PaletteEntry {
-                key: "terrain:grass".into(),
-                family: Family::Terrain,
-                id: 0,
-                terrain: Some(Terrain {
-                    kind: TerrainKind::Ground,
-                    walkable: Some(true),
-                    ground_speed: Some(150),
-                    blocks_projectile: None,
-                }),
-            },
-            PaletteEntry {
-                key: "terrain:wall".into(),
-                family: Family::Terrain,
-                id: 1,
-                terrain: Some(Terrain {
-                    kind: TerrainKind::Wall,
-                    walkable: None,
-                    ground_speed: None,
-                    blocks_projectile: None,
-                }),
-            },
-            PaletteEntry {
-                key: DOOR.into(),
-                family: Family::Item,
-                id: door,
-                terrain: None,
-            },
-            PaletteEntry {
-                key: COIN.into(),
-                family: Family::Item,
-                id: coin,
-                terrain: None,
-            },
-        ],
-        draft_areas: vec![],
-        skipped_provisional_keys: vec![],
-        dropped_teleports: vec![],
-        spawns: Default::default(),
-        npcs: Default::default(),
-    };
-    let mut tiles = Vec::new();
-    for y in 0..=6 {
-        for x in 0..=14 {
-            let mut palettes = vec![0];
-            // One finite wall forces a detour; a second separates an unreachable room.
-            if (x == 3 && y <= 2) || x == 9 {
-                palettes.push(1);
-            }
-            if ((x == 6 || x == 12) && y == 1) || (x, y) == (1, 6) {
-                palettes.push(2);
-            }
-            if (x, y) == (1, 5) || (x, y) == (7, 5) {
-                palettes.push(3);
-            }
-            tiles.push(Tile {
-                x,
-                y,
-                flags: 0,
-                house: 0,
-                zones: vec![],
-                items: palettes
-                    .into_iter()
-                    .map(|palette| Item {
-                        palette,
-                        depth: 0,
-                        attrs: Attrs::default(),
-                    })
-                    .collect(),
-            });
-        }
-    }
-    let bytes = writer::write(
-        &manifest,
-        &[Sector {
-            floor: -7,
-            sx: 0,
-            sy: 0,
-            tiles,
-        }],
-        &Default::default(),
-    )
-    .map_err(debug)?;
-    let digest = writer::read(&bytes).map_err(debug)?.digest;
-    Ok((
-        bytes,
-        crate::map::BundlePins {
-            digest,
-            project_format_version: "OTERYN_WORLD_PROJECT/v2".into(),
-            world_schema_version: "world-schema-1".into(),
-            content_revision: "rev-1".into(),
-            production: false,
-        },
-    ))
-}
 
 #[test]
 fn autowalk_real_session_use_move_cancel_and_stale_on_postgres() -> TestResult {
@@ -285,7 +155,7 @@ fn scenario(target_move: bool) -> TestResult {
             .await
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
-        let (controller, pin) = super::death_ml_loss_composed::production_generation_with_pin(
+        let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
             deps.admitted.world_id,
             "content-1",
         )?;
@@ -329,12 +199,27 @@ fn scenario(target_move: bool) -> TestResult {
         let cells = world
             .movement_cells(deps.room.movement_cells())
             .map_err(debug)?;
+        let frame = world.frame_binding_digest(deps.admitted.world_id);
+        deps.combat_room = Some(
+            deps.room
+                .bundle_view(
+                    cells.clone(),
+                    frame,
+                    world.map_revision_digest(),
+                    crate::content::NativeEntryStart {
+                        x: 1,
+                        y: 1,
+                        floor: 7,
+                    },
+                )
+                .ok_or("bundle combat view")?,
+        );
         let channel_pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
             active.identity().server_artifact_digest(),
             active.identity().client_artifact_digest(),
-            pin.frame_binding().digest(),
+            frame,
             world.map_revision_digest(),
             (1, 1, 7),
         );
@@ -371,7 +256,7 @@ fn scenario(target_move: bool) -> TestResult {
             .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, NULL, $3, $4, $5)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(active.identity().server_artifact_digest().as_slice())
-            .bind(active.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
+            .bind(active.identity().client_artifact_digest().as_slice()).bind(frame.as_slice()).execute(&h.pool).await?;
         // Seed a real carried backpack; the map coin is minted only by command 9 below.
         seed_backpack(&h, &owner, fence).await?;
         let mut admitted = deps.admitted;
@@ -665,77 +550,14 @@ async fn seed_backpack(
     Ok(())
 }
 
-pub(super) fn object(
-    digest: [u8; 32],
-    pos: TilePos,
-    revision: u64,
-) -> TestResult<WorldObjectTarget> {
-    let mut placement = digest.to_vec();
-    placement.extend_from_slice(
-        &crate::map::view::placement_key(pos, 1)
-            .ok_or("placement")?
-            .to_be_bytes(),
-    );
-    Ok(WorldObjectTarget {
-        placement,
-        expected_revision: revision,
-    })
-}
 fn next(
     mut at: MovementLocalPosition,
     step: oteryn_protocol_oteryn::world_spatial::StepDirection,
 ) -> MovementLocalPosition {
-    use oteryn_protocol_oteryn::world_spatial::StepDirection as D;
-    match step {
-        D::North => at.y -= 1,
-        D::East => at.x += 1,
-        D::South => at.y += 1,
-        D::West => at.x -= 1,
-        D::NorthEast => {
-            at.x += 1;
-            at.y -= 1;
-        }
-        D::SouthEast => {
-            at.x += 1;
-            at.y += 1;
-        }
-        D::SouthWest => {
-            at.x -= 1;
-            at.y += 1;
-        }
-        D::NorthWest => {
-            at.x -= 1;
-            at.y -= 1;
-        }
-    }
+    let (dx, dy) = step.delta();
+    at.x += dx;
+    at.y += dy;
     at
-}
-
-pub(super) async fn send(
-    client: &mut DuplexStream,
-    id: u64,
-    kind: u32,
-    payload: &[u8],
-) -> TestResult {
-    let frame = encode_client_command(
-        1,
-        &ClientCommandValue {
-            command_id: id,
-            command_type: kind,
-            payload,
-        },
-    )?;
-    client
-        .write_all(&u32::try_from(frame.len())?.to_be_bytes())
-        .await?;
-    client.write_all(&frame).await?;
-    Ok(())
-}
-pub(super) async fn read(client: &mut DuplexStream) -> TestResult<Vec<u8>> {
-    let len = tokio::time::timeout(Duration::from_secs(20), client.read_u32()).await??;
-    let mut frame = vec![0; usize::try_from(len)?];
-    client.read_exact(&mut frame).await?;
-    Ok(frame)
 }
 
 async fn client_scenario(
@@ -1052,6 +874,8 @@ async fn pick_origin(
     let item = generation_item_facts(native, &definition).map_err(debug)?;
     let fence = admitted.item_fence.ok_or("fence")?;
     let request = MapItemMintRequest {
+        flat_crate: None,
+        key_number: None,
         command: crate::foundation::CommandRef::new(
             admitted.game_session_id,
             crate::foundation::CommandId::new(901).map_err(debug)?,
@@ -1127,6 +951,8 @@ async fn result_at_rest(
                 // The relocation's revision update is legitimate even after returning to the
                 // same tile. Every observed position must stay at that tile after cancellation.
                 let value = oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_entities_delta_with_item_handles(delta.payload).map_err(debug)?;
+                // A generic bundle_view carries no pinned activity source role, so
+                // wire_position keeps the legacy +z floor (only source rooms negate).
                 assert_eq!(
                     (
                         value.actor_position.x,
@@ -1142,47 +968,5 @@ async fn result_at_rest(
             assert_eq!(result.command_id, id);
             return Ok(result.payload.to_vec());
         }
-    }
-}
-
-pub(super) async fn result(client: &mut DuplexStream, id: u64) -> TestResult<(Vec<u8>, usize)> {
-    let mut steps = 0;
-    loop {
-        let frame = read(client).await?;
-        let envelope = decode_wire_envelope(&frame)?;
-        if envelope.message_type() == MessageType::StateDelta
-            && decode_state_delta(envelope.payload())?.domain_id == 1
-        {
-            steps += 1;
-        }
-        if envelope.message_type() == MessageType::CommandResult {
-            let result = decode_command_result(envelope.payload())?;
-            assert_eq!(result.command_id, id);
-            return Ok((result.payload.to_vec(), steps));
-        }
-    }
-}
-
-pub(super) async fn place(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
-    admitted: AdmittedSession,
-    destination: MovementLocalPosition,
-) -> TestResult {
-    let mut runtime = owner.runtime.lock().await;
-    let mut movement = runtime.borrow_movement_position();
-    loop {
-        let before = movement
-            .read(admitted.runtime_actor.ok_or("actor")?)
-            .map_err(debug)?;
-        let mut at = before.position();
-        if at == destination {
-            return Ok(());
-        }
-        if at.x != destination.x {
-            at.x += (destination.x - at.x).signum();
-        } else {
-            at.y += (destination.y - at.y).signum();
-        }
-        movement.commit_cardinal(before, at).map_err(debug)?;
     }
 }

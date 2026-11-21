@@ -258,6 +258,10 @@
     }
   },
   "item_facts": {
+    "10297": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
     "12557": {
       "fluid_container": false,
       "max_stack": 100
@@ -273,6 +277,10 @@
     "13992": {
       "fluid_container": false,
       "max_stack": 100
+    },
+    "22008": {
+      "fluid_container": false,
+      "max_stack": 1
     },
     "236": {
       "fluid_container": false,
@@ -446,6 +454,10 @@
       "fluid_container": false,
       "max_stack": 100
     },
+    "3736": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
     "5466": {
       "fluid_container": false,
       "max_stack": 100
@@ -576,6 +588,13 @@
       "repository": "opentibiabr/canary",
       "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
       "sha256": "c1e04acfab4a9e625dc445125eafd89afbafe166c73948aad5ed37bb3a3e14e1"
+    },
+    "tainted_star_herb": {
+      "lines": 19,
+      "path": "data-otservbr-global/scripts/quests/the_tainted_soul/actions_star_herb.lua",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "f3ffe07cf0538c6a072cc0145e340ea9bf1a74a83601e3e7c42c6a90d03f13e4"
     }
   }
 }

@@ -153,3 +153,29 @@ fn platform_coin_transfer_matches_pinned_request_receipt_and_rejects_recipient_s
     assert!(decode(&wrong, 200, bytes).is_err());
     Ok(())
 }
+
+#[test]
+fn coin1_balance_fixture_and_legacy_fields_decode() -> Result<(), Box<dyn std::error::Error>> {
+    let bytes = include_bytes!(
+        "../../../../../docs/contracts/fixtures/platform-coin-wire-v1/balance-ok.json"
+    );
+    let request = Request::Balance("019a65f0-0000-7000-8000-000000000001".into());
+    let Reply::Balance(balance) = decode(&request, 200, bytes)? else {
+        return Err("balance reply".into());
+    };
+    assert_eq!(
+        (&*balance.transferable, &*balance.non_transferable),
+        ("95", "0")
+    );
+    let mut legacy = balance;
+    legacy.transferable = "90".into();
+    legacy.non_transferable = "5".into();
+    let Reply::Balance(balance) = decode(&request, 200, &serde_json::to_vec(&legacy)?)? else {
+        return Err("legacy reply".into());
+    };
+    assert_eq!(
+        (&*balance.transferable, &*balance.non_transferable),
+        ("90", "5")
+    );
+    Ok(())
+}

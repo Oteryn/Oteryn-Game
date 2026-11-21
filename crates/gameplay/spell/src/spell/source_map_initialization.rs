@@ -26,11 +26,11 @@ impl NativeMapInitializationProof for CurrentNativeMapInitialization<'_> {
     }
 }
 impl<'owner> CurrentNativeMapInitialization<'owner> {
-    pub fn qualify_current_binding(
+    fn qualify_map_owner(
         runtime: &ChannelRuntimeV1,
         room: &QualifiedNativeEntryRoom,
         content: &NativeGameplayState,
-    ) -> Result<NativeMapOwnerBinding, &'static str> {
+    ) -> Result<(), &'static str> {
         runtime
             .owner_fence()
             .map_err(|_| "current native map owner unavailable")?;
@@ -52,6 +52,42 @@ impl<'owner> CurrentNativeMapInitialization<'owner> {
         if source.scope() != scope {
             return Err("source map scope substitution");
         }
+        Ok(())
+    }
+
+    /// A static source Instance needs no Item initialization. This grants no
+    /// mutable placement custody: even one pending source Item requires its
+    /// real Instance Item owner and must refuse this path.
+    pub fn qualify_static_instance(
+        runtime: &ChannelRuntimeV1,
+        room: &QualifiedNativeEntryRoom,
+        content: &NativeGameplayState,
+    ) -> Result<(), &'static str> {
+        Self::qualify_map_owner(runtime, room, content)?;
+        if !matches!(
+            runtime.binding().runtime_scope(),
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+        ) {
+            return Err("static source initialization requires Instance custody");
+        }
+        if !room
+            .source_world()
+            .ok_or("missing source map")?
+            .pending_mutable_placements()
+            .is_empty()
+        {
+            return Err("static source Instance has pending native Items");
+        }
+        Ok(())
+    }
+
+    pub fn qualify_current_binding(
+        runtime: &ChannelRuntimeV1,
+        room: &QualifiedNativeEntryRoom,
+        content: &NativeGameplayState,
+    ) -> Result<NativeMapOwnerBinding, &'static str> {
+        Self::qualify_map_owner(runtime, room, content)?;
+        let pin = runtime.content_pin();
         Ok(NativeMapOwnerBinding {
             world: runtime.binding().world_id(),
             channel: runtime

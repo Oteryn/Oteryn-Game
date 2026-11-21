@@ -30,7 +30,7 @@ fn custom_hotkeys_suppress_builtin_input_and_survive_profiles()
 }
 
 #[test]
-fn custom_actions_dispatch_chat_live_items_and_confirmed_cooldowns()
+fn hotkey_use_with_crosshair_arms_mode()
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::combat_input::PlayCommand;
     use crate::play::{CustomAction, ObjectTarget, SettingsState};
@@ -95,6 +95,7 @@ fn custom_actions_dispatch_chat_live_items_and_confirmed_cooldowns()
     assert!(commands.try_recv().is_err());
     let item = |handle: u64| -> Result<oteryn_session::ItemEntry, Box<dyn std::error::Error>> {
         Ok(oteryn_session::ItemEntry {
+            appearance_id: 0,
             handle: handle.try_into()?,
             item_definition_ref: 900u32.try_into()?,
             count: 1u32.try_into()?,
@@ -162,6 +163,7 @@ fn custom_actions_dispatch_chat_live_items_and_confirmed_cooldowns()
             target: ObjectTarget::Cursor
         }
     ));
+    assert!(link.use_with_armed());
     play.primary_click(oteryn_renderer::TileCoord::new(98, 200), &link)?;
     assert!(
         matches!(commands.try_recv()?, PlayCommand::WorldContext(command) if command.action == Action::UseOn(99u64.try_into()?))
@@ -236,3 +238,9 @@ fn custom_actions_dispatch_chat_live_items_and_confirmed_cooldowns()
 
 #[path = "custom_interfaces.rs"]
 mod custom_interfaces;
+
+#[test]
+fn hotkey_use_with_label() {
+    let action = crate::play::CustomAction::Object { definition: 900, sub_type: 7, target: crate::play::ObjectTarget::Cursor };
+    assert_eq!(action.hotkey_label("F1"), "F1: (use object with crosshair)");
+}

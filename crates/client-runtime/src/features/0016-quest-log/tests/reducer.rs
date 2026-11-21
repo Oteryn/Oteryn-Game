@@ -17,6 +17,7 @@ fn delta(base: u64, value: QuestLog) -> AppliedDelta<QuestLog> {
 }
 fn list() -> QuestLog {
     QuestLog {
+        map_marks: Vec::new(),
         view: Some(QuestLogView::List(vec![
             QuestListEntry {
                 quest_index: 1,
@@ -56,6 +57,7 @@ fn quest_snapshot_and_delta_replace_the_view_and_tracked_set() -> Result<(), Que
     state.apply(&delta(
         7,
         QuestLog {
+            map_marks: Vec::new(),
             view: Some(QuestLogView::Line(line())),
             tracked: vec![line()],
         },
@@ -160,6 +162,7 @@ fn quest_line_completion_updates_cached_rows_and_bad_delta_is_atomic() -> Result
     state.apply(&delta(
         1,
         QuestLog {
+            map_marks: Vec::new(),
             view: Some(QuestLogView::Line(done)),
             tracked: vec![],
         },
@@ -172,6 +175,7 @@ fn quest_line_completion_updates_cached_rows_and_bad_delta_is_atomic() -> Result
         state.apply(&delta(
             2,
             QuestLog {
+                map_marks: Vec::new(),
                 view: Some(QuestLogView::Line(invalid)),
                 tracked: vec![]
             }

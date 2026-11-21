@@ -5,6 +5,7 @@
 extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
 pub use oteryn_gameplay_dispatch::gameplay_transport;
+pub use oteryn_gameplay_social::platform_streams;
 pub use production_server::admission_evidence;
 pub use production_server::{
     character_bootstrap_intent, character_recovery_fence, domain, durability, foundation,
@@ -252,7 +253,7 @@ impl Database {
             oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
             "canonical target requires PostgreSQL 18.6"
         );
-        let migrator = sqlx::migrate!("./migrations");
+        let migrator = &oteryn_gameplay_durability::GAME_MIGRATOR;
         match through {
             Some(version) => migrator.run_to(version, &mut connection).await?,
             None => migrator.run(&mut connection).await?,
@@ -363,7 +364,7 @@ impl Wire {
 
     fn json(&self) -> String {
         format!(
-            r#"{{"contract_version":3,"variant":"{}","issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY","issuer_decision_id":"3f0c5b7e-1d2a-4c3b-9a8f-{:012x}","source_revision":"{}","operation_id":"{}","operation":"INITIAL_CHARACTER_BOOTSTRAP","account_id":"{}","target_world_id":"{}","requested_sex":"Male","requested_name":"{}","interpretation_context":{{"profile_revision":"profile-1","ruleset_revision":"ruleset-1","content_revision":"{}","starter_template_revision":"starter-1"}},"issued_at_source":"{}","expires_at_source":"{}","audience":"OTERYN_GAME_CHARACTER_AUTHORITY"}}"#,
+            r#"{{"contract_version":4,"variant":"{}","issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY","issuer_decision_id":"3f0c5b7e-1d2a-4c3b-9a8f-{:012x}","source_revision":"{}","operation_id":"{}","operation":"INITIAL_CHARACTER_BOOTSTRAP","account_id":"{}","target_world_id":"{}","requested_name":"{}","requested_sex":"Male","requested_vocation":"Knight","interpretation_context":{{"profile_revision":"profile-1","ruleset_revision":"ruleset-1","content_revision":"{}","starter_template_revision":"starter-1"}},"issued_at_source":"{}","expires_at_source":"{}","audience":"OTERYN_GAME_CHARACTER_AUTHORITY"}}"#,
             self.variant,
             self.decision,
             self.revision,
@@ -2118,7 +2119,9 @@ async fn name_migration_refusal(database: &Database) -> TestResult {
     .execute(&mut connection)
     .await?;
 
-    let refused = sqlx::migrate!("./migrations").run(&mut connection).await;
+    let refused = oteryn_gameplay_durability::GAME_MIGRATOR
+        .run(&mut connection)
+        .await;
     let Err(sqlx::migrate::MigrateError::ExecuteMigration(error, 22)) = refused else {
         return Err(format!("0022 must refuse a store with a Character: {refused:?}").into());
     };
@@ -2596,7 +2599,9 @@ mod monk_state_postgres_cases {
         .execute(&mut connection)
         .await?;
 
-        sqlx::migrate!("./migrations").run(&mut connection).await?;
+        oteryn_gameplay_durability::GAME_MIGRATOR
+            .run(&mut connection)
+            .await?;
         let values: (i16, i64) = sqlx::query_as(
             "SELECT harmony, serene_forced_remaining_micros \
                FROM game_character_progression_state",
@@ -3151,7 +3156,7 @@ fn create_intent(
     (issued, expires): (i64, i64),
 ) -> String {
     format!(
-        r#"{{"contract_version":1,"command":"CreateCharacter","variant":"PLATFORM_USER_CREATE","issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY","issuer_decision_id":"0192a000-0000-7000-8000-{revision:012x}","source_revision":"{revision}","operation_id":"{}","account_id":"{}","target_world_id":"{}","requested_name":"{name}","issued_at_source":"{issued}","expires_at_source":"{expires}","audience":"OTERYN_GAME_CHARACTER_AUTHORITY"}}"#,
+        r#"{{"contract_version":2,"command":"CreateCharacter","variant":"PLATFORM_USER_CREATE","issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY","issuer_decision_id":"0192a000-0000-7000-8000-{revision:012x}","source_revision":"{revision}","operation_id":"{}","account_id":"{}","target_world_id":"{}","requested_name":"{name}","requested_sex":"Male","requested_vocation":"Knight","issued_at_source":"{issued}","expires_at_source":"{expires}","audience":"OTERYN_GAME_CHARACTER_AUTHORITY"}}"#,
         uuid(id(operation)),
         uuid(id(account)),
         uuid(id(world)),
@@ -3408,3 +3413,6 @@ async fn character_commands_flow(database: &Database) -> TestResult {
 // Every case file in `support/authority_cases/` is mounted here by `build.rs`, so a new mechanic
 // adds its file there instead of editing this shared target.
 include!(concat!(env!("OUT_DIR"), "/authority_cases_mounts.rs"));
+
+#[path = "support/qworld_live_admission_cases.rs"]
+mod qm03_world_admission;

@@ -1,5 +1,5 @@
 //! Mounted once by the real dispatch owner, reusing its existing admission fixture.
-use super::planned_world_reset::reset_fixture;
+use super::planned_world_reset_fixtures::reset_fixture;
 use super::*;
 use crate::foundation::GameSessionState;
 

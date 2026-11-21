@@ -1,0 +1,342 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/m07/dreamer-lever-north",
+      "quest": "oteryn:quest.dreamer_s_challenge_quest",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32761,
+          "y": 32289,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2772,
+        "native": {
+          "position": {
+            "x": 32761,
+            "y": 32289,
+            "floor": -14
+          },
+          "ordinal": 1,
+          "appearance": 2772
+        }
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 32760,
+            "y": 32288,
+            "floor": -14
+          },
+          "appearance": 1027,
+          "if_present": true
+        },
+        {
+          "position": {
+            "x": 32761,
+            "y": 32288,
+            "floor": -14
+          },
+          "appearance": 1271,
+          "if_present": true
+        },
+        {
+          "position": {
+            "x": 32762,
+            "y": 32288,
+            "floor": -14
+          },
+          "appearance": 1271,
+          "if_present": true
+        },
+        {
+          "position": {
+            "x": 32763,
+            "y": 32288,
+            "floor": -14
+          },
+          "appearance": 1271,
+          "if_present": true
+        },
+        {
+          "position": {
+            "x": 32764,
+            "y": 32288,
+            "floor": -14
+          },
+          "appearance": 1273,
+          "if_present": true
+        },
+        {
+          "position": {
+            "x": 32760,
+            "y": 32288,
+            "floor": -14
+          },
+          "appearance": 1272,
+          "if_present": true
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "reset_after_ms": 8000,
+        "passages_reset_after_ms": 7000
+      },
+      "sources": [
+        "docs/reference/content-prep/questpc4-M07-native-trials.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/actions_walls.lua:1-71"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m07/dreamer-lever-east",
+      "quest": "oteryn:quest.dreamer_s_challenge_quest",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32763,
+          "y": 32289,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2772,
+        "native": {
+          "position": {
+            "x": 32763,
+            "y": 32289,
+            "floor": -14
+          },
+          "ordinal": 1,
+          "appearance": 2772
+        }
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 32764,
+            "y": 32292,
+            "floor": -14
+          },
+          "appearance": 1274,
+          "if_present": true
+        },
+        {
+          "position": {
+            "x": 32764,
+            "y": 32291,
+            "floor": -14
+          },
+          "appearance": 1270,
+          "if_present": true
+        },
+        {
+          "position": {
+            "x": 32764,
+            "y": 32290,
+            "floor": -14
+          },
+          "appearance": 1270,
+          "if_present": true
+        },
+        {
+          "position": {
+            "x": 32764,
+            "y": 32289,
+            "floor": -14
+          },
+          "appearance": 1270,
+          "if_present": true
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "reset_after_ms": 8000,
+        "passages_reset_after_ms": 7000
+      },
+      "sources": [
+        "docs/reference/content-prep/questpc4-M07-native-trials.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/actions_walls.lua:1-71"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m07/dreamer-lever-west",
+      "quest": "oteryn:quest.dreamer_s_challenge_quest",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32761,
+          "y": 32291,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2772,
+        "native": {
+          "position": {
+            "x": 32761,
+            "y": 32291,
+            "floor": -14
+          },
+          "ordinal": 1,
+          "appearance": 2772
+        }
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 32760,
+            "y": 32289,
+            "floor": -14
+          },
+          "appearance": 1270,
+          "if_present": true
+        },
+        {
+          "position": {
+            "x": 32760,
+            "y": 32290,
+            "floor": -14
+          },
+          "appearance": 1270,
+          "if_present": true
+        },
+        {
+          "position": {
+            "x": 32760,
+            "y": 32291,
+            "floor": -14
+          },
+          "appearance": 1270,
+          "if_present": true
+        },
+        {
+          "position": {
+            "x": 32760,
+            "y": 32292,
+            "floor": -14
+          },
+          "appearance": 1275,
+          "if_present": true
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "reset_after_ms": 8000,
+        "passages_reset_after_ms": 7000
+      },
+      "sources": [
+        "docs/reference/content-prep/questpc4-M07-native-trials.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/actions_walls.lua:1-71"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m07/dreamer-lever-south",
+      "quest": "oteryn:quest.dreamer_s_challenge_quest",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32763,
+          "y": 32291,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2772,
+        "native": {
+          "position": {
+            "x": 32763,
+            "y": 32291,
+            "floor": -14
+          },
+          "ordinal": 1,
+          "appearance": 2772
+        }
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 32763,
+            "y": 32292,
+            "floor": -14
+          },
+          "appearance": 1271,
+          "if_present": true
+        },
+        {
+          "position": {
+            "x": 32762,
+            "y": 32292,
+            "floor": -14
+          },
+          "appearance": 1271,
+          "if_present": true
+        },
+        {
+          "position": {
+            "x": 32761,
+            "y": 32292,
+            "floor": -14
+          },
+          "appearance": 1271,
+          "if_present": true
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "reset_after_ms": 8000,
+        "passages_reset_after_ms": 7000
+      },
+      "sources": [
+        "docs/reference/content-prep/questpc4-M07-native-trials.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/actions_walls.lua:1-71"
+      ]
+    }
+  ]
+}

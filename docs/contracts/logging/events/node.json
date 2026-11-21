@@ -139,6 +139,14 @@
       "note": "Seeded from current server code."
     },
     {
+      "event": "character_services",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "G-3 bounded operation/result/timing only; never subject identifiers, names or payloads."
+    },
+    {
       "event": "charm_catalogue",
       "level": "info",
       "span": false,
@@ -261,6 +269,14 @@
       "note": "Seeded from current server code."
     },
     {
+      "event": "npc_event_presence",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seasonal NPC presence refresh retries on transient failure."
+    },
+    {
       "event": "ops_diagnose",
       "level": "info",
       "span": false,
@@ -283,6 +299,40 @@
       "fields": [],
       "codes": [],
       "note": "Seeded from current server code."
+    },
+    {
+      "event": "qualification_fixture_refused",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "reason",
+        "session",
+        "profile"
+      ],
+      "codes": [],
+      "note": "Qualification fixture preparation refused; session and profile only past the early refusal."
+    },
+    {
+      "event": "qualification_spawn_cleanup_failed",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "phase",
+        "cause"
+      ],
+      "codes": [],
+      "note": "Qualification fixture spawn cleanup failed; cause is bounded to 200 characters."
+    },
+    {
+      "event": "qualification_spawn_refused",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "reason",
+        "detail"
+      ],
+      "codes": [],
+      "note": "Qualification fixture spawn refused; detail is bounded to 200 characters."
     },
     {
       "event": "quest_catalogue",

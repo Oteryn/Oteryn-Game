@@ -48,7 +48,9 @@ class RewardBagProfilesTests(unittest.TestCase):
               patch.object(bags.source, 'profile', side_effect=profile),
               patch.object(bags.source, 'attrs', return_value={}),
               patch.object(bags, 'binding_index', return_value={}),
-              patch.object(bags, 'bind_profiles', side_effect=lambda doc, *_: doc)):
+              patch.object(bags, 'bind_profiles', side_effect=lambda doc, *_: doc),
+              # Path.read_bytes is stubbed above; the Cyclopedia capture is not under test here.
+              patch.object(bags, 'apply_profile_weights')):
             return bags.capture(Path('canary'), Path('crystal'))
 
     def test_desire_and_empty_quiver_are_admitted(self):

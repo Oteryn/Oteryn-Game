@@ -15,6 +15,7 @@ release-role = "production"
 test-support = ["oteryn-gameplay-content/test-support", "oteryn-gameplay-durability/test-support", "oteryn-gameplay-entities/test-support", "oteryn-gameplay-foundation/test-support"]
 
 [dependencies]
+oteryn-error-codes = { version = "=0.1.0", path = "../../error-codes" }
 unicode-normalization = "=0.1.26"
 oteryn-gameplay-progression = { version = "=0.1.0", path = "../progression" }
 oteryn-gameplay-social-rules = { version = "=0.1.0", path = "../social-rules" }

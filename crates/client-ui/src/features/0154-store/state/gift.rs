@@ -114,6 +114,13 @@ pub fn gift_control(
         payload,
     })
 }
+fn balance(v: &Value, transferable: &str, non_transferable: &str) -> String {
+    let coins = |key: &str| v[key].as_str().and_then(|s| s.parse::<u64>().ok());
+    match (coins(transferable), coins(non_transferable)) {
+        (Some(a), Some(b)) => a.saturating_add(b).to_string(),
+        _ => "?".into(),
+    }
+}
 pub fn gift_result(p: &mut StorePanel, response: &ServerMechanicResponse) {
     let Some(request) = p.gift.pending.take() else {
         return;
@@ -158,9 +165,8 @@ pub fn gift_result(p: &mut StorePanel, response: &ServerMechanicResponse) {
         });
         p.gift.quote = Some(r);
         p.feedback = Some(format!(
-            "Review gift to {name}: {amount} transferable coins. Transferable: {}; non-transferable: {}. Confirm within 60 seconds. Gifts cannot be recalled.",
-            v["transferable"].as_str().unwrap_or("?"),
-            v["non_transferable"].as_str().unwrap_or("?")
+            "Review gift to {name}: {amount} coins. Balance: {}. Confirm within 60 seconds. Gifts cannot be recalled.",
+            balance(&v, "transferable", "non_transferable")
         ));
         return;
     }
@@ -174,10 +180,10 @@ pub fn gift_result(p: &mut StorePanel, response: &ServerMechanicResponse) {
             p.gift_reviewed = None;
             let receipt = &v["receipt"]["receipt"];
             p.gift.receipt = format!(
-                "Gift receipt: {}\r\nAmount: {}\r\nTransferable after: {}\r\nTime: {}",
+                "Gift receipt: {}\r\nAmount: {}\r\nBalance after: {}\r\nTime: {}",
                 uuid(&request.operation),
                 receipt["amount"].as_str().unwrap_or("?"),
-                receipt["transferable_after"].as_str().unwrap_or("?"),
+                balance(receipt, "transferable_after", "non_transferable_after"),
                 receipt["occurred_at"].as_str().unwrap_or("?")
             );
             p.feedback = Some(p.gift.receipt.clone());
@@ -202,4 +208,56 @@ pub fn gift_result(p: &mut StorePanel, response: &ServerMechanicResponse) {
     p.feedback = Some(format!(
         "Gift: {result}. No local coin balance was changed."
     ));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn coin1_gift_review_uses_one_balance_and_allows_confirmation()
+    -> Result<(), Box<dyn std::error::Error>> {
+        for (transferable, non_transferable, total) in [
+            ("95", "0", "95"),
+            ("90", "5", "95"),
+            ("0", "95", "95"),
+            ("18446744073709551615", "1", "18446744073709551615"),
+        ] {
+            let mut panel = StorePanel {
+                selected: true,
+                ..Default::default()
+            };
+            let fields = ["Alice".into(), "75".into()];
+            assert!(gift_control(&mut panel, 0, fields.clone(), [0; 16]).is_some());
+            let payload = wire::encode_reply(
+                &serde_json::json!({
+                    "result": "ok", "quote": "019a65f0-0000-7000-8000-000000000001",
+                    "recipient": "Alice", "amount": "75",
+                    "transferable": transferable, "non_transferable": non_transferable
+                })
+                .to_string(),
+            )
+            .map_err(|e| format!("{e:?}"))?;
+            gift_result(
+                &mut panel,
+                &ServerMechanicResponse {
+                    command_id: 1,
+                    server_sequence: 1,
+                    status: oteryn_client_runtime::CommandStatus::Accepted,
+                    payload,
+                },
+            );
+            let text = panel.feedback.as_deref().ok_or("feedback")?;
+            assert!(
+                text.contains(&format!("75 coins. Balance: {total}.")),
+                "{text}"
+            );
+            assert!(!text.to_lowercase().contains("transferable"), "{text}");
+            let mut operation = [1; 16];
+            operation[6] = 0x70;
+            operation[8] = 0x80;
+            assert!(gift_control(&mut panel, 1, fields, operation).is_some());
+        }
+        Ok(())
+    }
 }

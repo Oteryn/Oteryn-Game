@@ -47,12 +47,15 @@ jobs:
           bash deploy/synology-game/test-supervisor-npc.sh
           python3 deploy/synology-game/test_stage_npc_data.py
 
+      # The binaries name their exact source (`<version>+<sha12>`) in --version and every log.
       - name: Build release binaries
         shell: bash
+        env:
+          OTERYN_BUILD_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          rustup toolchain install 1.99.1 --profile minimal
-          cargo +1.99.1 build --release --locked -p oteryn-game-server --bins
+          rustup toolchain install 1.100.0 --profile minimal
+          cargo +1.100.0 build --release --locked -p oteryn-game-server --bins
 
       - name: Build the pinned World Bundle (opt-in)
         if: ${{ inputs.stage_world_bundle }}
@@ -60,7 +63,7 @@ jobs:
         run: |
           set -euo pipefail
           # pin-check fails unless the tree builds twice to exactly the digest of content/world/pins/oteryn.json.
-          cargo +1.99.1 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$RUNNER_TEMP/world-bundle"
+          cargo +1.100.0 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$RUNNER_TEMP/world-bundle"
 
       - name: Stage release bundle
         shell: bash

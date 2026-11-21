@@ -24,6 +24,9 @@ fn wide(s: &str) -> Vec<u16> {
     s.replace('\0', "�").encode_utf16().chain(Some(0)).collect()
 }
 pub(in crate::play) fn open_window(link: &PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     {
         let mut mailbox = lock(&link.mailbox);
         if mailbox.depot_search.open {

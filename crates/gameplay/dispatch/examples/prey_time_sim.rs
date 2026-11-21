@@ -635,9 +635,18 @@ mod tests {
             .map_err(|reason| reason.as_str())?;
         // Crystal data-global/monster/quests/a_piece_of_cake/cake_golem.lua:73:
         // one sweet substance has chance50000/MAX_LOOTCHANCE100000.
-        assert_eq!(cake.corpse_item.production_key, "oteryn:item.tibia.i12141");
         assert_eq!(
-            cake.loot_table_ref.production_key,
+            cake.corpse_item
+                .as_ref()
+                .ok_or("source Cake Golem corpse")?
+                .production_key,
+            "oteryn:item.tibia.i12141"
+        );
+        assert_eq!(
+            cake.loot_table_ref
+                .as_ref()
+                .ok_or("source Cake Golem loot")?
+                .production_key,
             "oteryn:loot.creature.cake_golem"
         );
         assert_eq!(cake.loot_table.entries.len(), 1);

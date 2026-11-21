@@ -147,6 +147,7 @@ pub async fn check_ground_cell_root_insert_in_transaction(
     item_instance_id: &[u8; 16],
 ) -> Result<(), GroundCellAdmissionError> {
     let target = SpellGroundTarget {
+        item_profile_source: None,
         spatial_position: ground.spatial_position.clone(),
         map_revision: ground.map_revision.clone(),
         content_revision: ground.content_revision.clone(),

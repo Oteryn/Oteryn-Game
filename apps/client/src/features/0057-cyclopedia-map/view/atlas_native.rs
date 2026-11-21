@@ -45,6 +45,9 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
     }
 }
 pub(super) fn open(link: &PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     {
         let mut m = lock(&link.mailbox);
         let p = &mut m.properties.cyclopedia_map;

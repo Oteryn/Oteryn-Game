@@ -214,7 +214,7 @@ pub async fn authorize_aleta_kick_in_transaction(
     name: &str,
 ) -> Result<HouseKickAuthorization, Error> {
     use super::native_house_movement::HouseAccess;
-    use crate::durability::house_spell_acl::house_access_for_character;
+    use crate::durability::house_spell_acl::house_access_for_characters;
     use sqlx::Row;
     check_transaction(tx, authority)
         .await
@@ -281,29 +281,24 @@ pub async fn authorize_aleta_kick_in_transaction(
     let target =
         current_house_presence(room, runtime, target_session, target_actor, target_snapshot)?;
     if target_actor != actor {
-        let (_, caster_own_access) = house_access_for_character(
+        let [
+            (_, caster_own_access),
+            (_, caster_target_access),
+            (_, target_access),
+        ] = house_access_for_characters(
             tx,
             caster.world(),
-            caster.house_key(),
-            authority.character_id_bytes(),
+            [
+                (caster.house_key(), authority.character_id_bytes()),
+                (target.house_key(), authority.character_id_bytes()),
+                (target.house_key(), target_character),
+            ],
         )
         .await
         .map_err(Error::Storage)?;
         if caster_own_access < HouseAccess::Subowner {
             return Err(Error::Authority);
         }
-        let (_, caster_target_access) = house_access_for_character(
-            tx,
-            caster.world(),
-            target.house_key(),
-            authority.character_id_bytes(),
-        )
-        .await
-        .map_err(Error::Storage)?;
-        let (_, target_access) =
-            house_access_for_character(tx, caster.world(), target.house_key(), target_character)
-                .await
-                .map_err(Error::Storage)?;
         if caster_target_access < target_access {
             return Err(Error::Authority);
         }

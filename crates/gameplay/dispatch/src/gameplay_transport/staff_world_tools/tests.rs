@@ -15,6 +15,7 @@ fn nx1_staff_ghost_uses_donor_access_and_always_retains_own_entity()
         .iter()
         .filter(|(_, _, session)| session.is_some())
         .map(|(a, p, _)| world_spatial::ChannelEntity {
+            source_icons: Default::default(),
             display_name: None,
             health_percent: 100,
             direction: world_spatial::StepDirection::South,

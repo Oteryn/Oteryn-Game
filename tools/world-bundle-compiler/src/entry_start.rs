@@ -5,7 +5,7 @@ use oteryn_world_bundle_compiler::compile::KeyResolver;
 pub(super) fn check(bytes: &[u8], at: EntryStart, registry: &Registry) -> Result<(), Error> {
     let mut cells = std::collections::BTreeMap::new();
     bundle::visit(bytes, |manifest: &Manifest, sector| {
-        if sector.floor != at.floor {
+        if sector.floor != -at.floor {
             return Ok(());
         }
         for tile in &sector.tiles {

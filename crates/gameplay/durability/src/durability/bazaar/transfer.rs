@@ -202,11 +202,10 @@ pub(super) async fn decide(
         {
             return rejected(tx, r, "CHAR_CMD_CHARACTER_NOT_TRANSFERABLE", now).await;
         }
-        let configuration: String = sqlx::query_scalar(
-            "SELECT policy::text FROM game_bazaar_configuration WHERE singleton FOR SHARE",
-        )
-        .fetch_one(&mut **tx)
-        .await?;
+        let configuration: String =
+            sqlx::query_scalar("SELECT policy FROM game_character_service_bazaar_policy()")
+                .fetch_one(&mut **tx)
+                .await?;
         let policy: Policy = serde_json::from_str(&configuration)
             .map_err(|_| DurabilityError::InvalidStoredState)?;
         let returning = intent.purpose == wire::TransferPurpose::BazaarEscrowReturn;
@@ -353,23 +352,21 @@ pub(super) async fn decide(
             Security::Unknown => return Ok(None),
         }
     }
-    let count: i64 =
-        sqlx::query_scalar("SELECT count(*) FROM game_character_roots WHERE account_id=$1::uuid")
-            .bind(to)
-            .fetch_one(&mut **tx)
-            .await?;
+    let count: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_live_roots WHERE account_id=$1::uuid",
+    )
+    .bind(to)
+    .fetch_one(&mut **tx)
+    .await?;
     if count >= escrow_capacity.map(i64::from).unwrap_or(64) {
         return rejected(tx, r, "CHAR_CMD_ACCOUNT_CHARACTER_LIMIT", now).await;
     }
     // Housing remains with its owner. Until the owning domain exposes a matching
     // prepare-consumption API, no house-carrying Character may cross accounts.
-    if sqlx::query(
-        "SELECT 1 FROM game_house_ownership WHERE owner_character_id=$1::uuid LIMIT 1 FOR SHARE",
-    )
-    .bind(character)
-    .fetch_optional(&mut **tx)
-    .await?
-    .is_some()
+    if sqlx::query_scalar::<_, bool>("SELECT game_character_service_has_house($1::uuid)")
+        .bind(character)
+        .fetch_one(&mut **tx)
+        .await?
     {
         return rejected(tx, r, "CHAR_CMD_HOUSING_NOT_PREPARED", now).await;
     }

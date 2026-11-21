@@ -36,6 +36,9 @@ CLIENT_DIGEST = "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e
 CLIENT_PATH = f"content/assets/files/appearances-{CLIENT_DIGEST}.dat"
 FALLBACK_PATH = "imports/tibiawiki/facts/items-family-fallback.json"
 BULK_FALLBACK_PATH = "imports/tibiawiki/facts/items-family-fallback-bulk-20261001.json"
+# Accepted M49 Terrain route supersedes the older bulk navigation observation.
+# Keep the retained snapshot intact and reject every other unexpected owner overlap.
+BULK_WORLD_OWNER_EXCLUSIONS = {"oteryn:item.tibia.i7748"}
 # Only semantic clothing slots are admitted; hand slots do not identify a family.
 MARKET_PROFILES = {
     1: "equipment_armor",
@@ -288,6 +291,10 @@ def load_taxonomy_fallback(
     bulk_path = root / BULK_FALLBACK_PATH
     bulk_digest = json.loads(bulk_path.read_text())["snapshot_sha256"]
     bulk = load_wiki_family_fallback(bulk_path, identity_index)
+    bulk = {
+        key: entry for key, entry in bulk.items()
+        if key not in BULK_WORLD_OWNER_EXCLUSIONS or key not in routed_keys
+    }
     if fallback.keys() & bulk.keys():
         raise ValueError("TAXONOMY_BULK_RETAINED_FALLBACK_OVERLAP")
     primary_keys = {

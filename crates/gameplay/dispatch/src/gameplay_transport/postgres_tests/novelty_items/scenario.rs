@@ -3,10 +3,18 @@ use super::*;
 pub(super) fn scenario(case: Case) -> TestResult {
     run(async |admin| {
         let key = case.key();
+        let origin = case.origin();
+        let ground_origin = MovementLocalPosition { x: origin.x - i32::from(case.feroxa()), ..origin };
         let harness =
             Harness::create_with_admission_seed(admin, "novelty_items", true, false).await?;
         super::super::reset();
         prepare_current_session(&harness).await?;
+        if case.feroxa() {
+            let version: i32 = sqlx::query_scalar("SELECT current_setting('server_version_num')::int")
+                .fetch_one(&harness.pool).await?;
+            eprintln!("QN5_FEROXA_TRAP_POSTGRES_READY version={version}");
+        }
+
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
             .root
@@ -25,10 +33,30 @@ pub(super) fn scenario(case: Case) -> TestResult {
         let oven = "oteryn:item.tibia.i2535";
         let bag = "oteryn:item.tibia.i2854";
         let reference = |key: &str| index.definition_ref("Item", key, "definition-r1");
-        let (bytes, pins) = crate::map::boot::tests::bundle_with_item_ids(
+        let (mut bytes, mut pins) = crate::map::boot::tests::bundle_with_item_ids(
             (bag, reference(bag).ok_or("bag")?.get() - 1),
             (oven, reference(oven).ok_or("oven")?.get() - 1),
         );
+        if case.feroxa() {
+            let mut data = oteryn_world_bundle::bundle::read(&bytes)?;
+            let dx = u16::try_from(origin.x - 6)?;
+            let dy = u16::try_from(origin.y)?;
+            let floor = -i8::try_from(origin.floor)?;
+            let mut grouped = std::collections::BTreeMap::new();
+            for sector in data.sectors.drain(..) {
+                for mut tile in sector.tiles {
+                    tile.x += dx; tile.y += dy; tile.items.truncate(1);
+                    grouped.entry((tile.y / 32, tile.x / 32)).or_insert_with(Vec::new).push(tile);
+                }
+            }
+            data.manifest.world.min_x += dx; data.manifest.world.max_x += dx;
+            data.manifest.world.min_y += dy; data.manifest.world.max_y += dy;
+            data.manifest.world.floors = vec![floor];
+            let sectors: Vec<_> = grouped.into_iter().map(|((sy, sx), tiles)|
+                oteryn_world_bundle::bundle::Sector { floor, sx, sy, tiles }).collect();
+            bytes = oteryn_world_bundle::writer::write(&data.manifest, &sectors, &Default::default())?;
+            pins.digest = oteryn_world_bundle::bundle::read(&bytes)?.digest;
+        }
         let base = crate::map::load(&bytes, &pins).map_err(debug)?;
         let map = crate::map::boot::boot(
             &bytes,
@@ -36,9 +64,9 @@ pub(super) fn scenario(case: Case) -> TestResult {
                 map_revision: crate::map::overlay::map_revision(&base),
                 bundle: pins,
                 start: crate::map::overlay::TilePos {
-                    x: 6,
-                    y: 0,
-                    floor: -7,
+                    x: u16::try_from(origin.x)?,
+                    y: u16::try_from(origin.y)?,
+                    floor: -i8::try_from(origin.floor)?,
                 },
             },
             deps.admitted.world_id,
@@ -64,7 +92,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
         let cells = map
             .movement_cells(pin.qualified_room().movement_cells())
             .map_err(debug)?;
-        let bundle_room = super::super::rust_lottery::bundle_action_room(
+        let bundle_room = super::super::rust_lottery_fixtures::bundle_action_room(
             pin.qualified_room(),
             &map,
             deps.admitted.world_id,
@@ -77,7 +105,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
             pin.identity().client_artifact_digest(),
             bundle_room.frame_binding().digest(),
             bundle_room.map_revision_digest(),
-            (6, 0, 7),
+            (origin.x, origin.y, origin.floor),
         );
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             deps.admitted.world_id,
@@ -98,11 +126,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
         runtime
             .initialize_pinned_test_position(
                 deps.actor,
-                MovementLocalPosition {
-                    x: 6,
-                    y: 0,
-                    floor: 7,
-                },
+                origin,
             )
             .map_err(debug)?;
         runtime
@@ -133,9 +157,9 @@ pub(super) fn scenario(case: Case) -> TestResult {
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
         if case.nested() {
-            super::super::item_look::seed_main_backpack(&harness, &[(key, 1), (bag, 1)]).await?;
+            super::super::item_look_fixtures::seed_main_backpack(&harness, &[(key, 1), (bag, 1)]).await?;
         } else {
-            super::super::item_look::seed_main_backpack(&harness, &[(key, 1)]).await?;
+            super::super::item_look_fixtures::seed_main_backpack(&harness, &[(key, 1)]).await?;
         }
         let used = crate::gameplay_transport::item_look::typed_definition(
             index,
@@ -214,11 +238,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
                     crate::durability::item_loop_move::LoopGround::from_native_owner(
                         &bundle_room,
                         &runtime,
-                        MovementLocalPosition {
-                            x: 6,
-                            y: 0,
-                            floor: 7,
-                        },
+                        ground_origin,
                         &crate::map::overlay::map_revision(&base),
                     )
                     .map_err(debug)?
@@ -235,7 +255,25 @@ pub(super) fn scenario(case: Case) -> TestResult {
             }
             tx.commit().await?;
         }
-        let expected = if case.ground() {
+        let expected = if case.feroxa() {
+            let output = &native.item_policy_for_source_id(22059).ok_or("open trap policy")?.record().production_definition;
+            novelty_items::NoveltyPlan {
+                recipe: "oteryn:feroxa-silvered-trap.v1".into(),
+                outputs: vec![(crate::domain::item_definition::TypedDefinitionRef {
+                    family: output.family.clone(), production_key: output.production_key.clone(),
+                    revision_ref: output.revision_ref.clone(),
+                }, 1)],
+                consume_source: true,
+                effects: serde_json::json!({
+                    "kind":"transform", "source_item_id":22074,
+                    "donor":"crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua",
+                    "ground":{"x":ground_origin.x,"y":ground_origin.y,"floor":ground_origin.floor},
+                    "cues":[{"binding":"canary.appearance:effect/poff","effect_id":3}],
+                    "private_speech":false,"require_head":false,"require_player_target":false,
+                    "achievement_progress":[],
+                }),
+            }
+        } else if case.ground() {
             novelty_items::plan_ground(
                 native,
                 &used,
@@ -336,7 +374,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
             return harness.cleanup().await;
         }
         let (mut end, result, actual, wire_cues) =
-            super::super::rust_lottery::exchange_with_visuals(
+            super::super::rust_lottery_fixtures::exchange_with_visuals(
                 &owner,
                 admitted,
                 command_id,
@@ -549,7 +587,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
                 .ok_or("receipt replay")?;
             assert_eq!(replay.disposition, UseDisposition::Committed);
             let (replayed_end, replayed, _) =
-                super::super::rust_lottery::exchange(&owner, end, command_id, &actual, None, None)
+                super::super::rust_lottery_fixtures::exchange(&owner, end, command_id, &actual, None, None)
                     .await?;
             end = replayed_end;
             assert_eq!(replayed, UseDisposition::Committed);
@@ -658,7 +696,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
                 sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) SELECT encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,coalesce(max(placement_ordinal),0)+1,game_character_uuid_v7() FROM game_item_container_entries WHERE parent_item_instance_id=encode($4,'hex')::uuid")
                     .bind(source.as_slice()).bind(id(42).as_slice()).bind(id(41).as_slice()).bind(id(70).as_slice()).execute(&mut *tx).await?;
                 tx.commit().await?;
-                let (next, outcome, actual) = super::super::rust_lottery::exchange_latest_source(
+                let (next, outcome, actual) = super::super::rust_lottery_fixtures::exchange_latest_source(
                     &owner,
                     admitted,
                     command,
@@ -676,7 +714,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
                     i64::from(command == 6)
                 );
                 if command == 6 {
-                    let (_, outcome, _) = super::super::rust_lottery::exchange(
+                    let (_, outcome, _) = super::super::rust_lottery_fixtures::exchange(
                         &owner, admitted, command, &actual, None, None,
                     )
                     .await?;

@@ -2,7 +2,7 @@
 //! wire command, the cast route and the ordinary combat preparation, with real Character owners.
 //! The old `aim_at_target` flag with a POSITION is the CURSOR option; a session holding capability
 //! 480 sends field 5 `aim_mode` CURSOR instead, which a session without it has refused.
-use super::death_ml_loss_composed::{current_fence, production_generation_with_source};
+use super::death_ml_loss_composed_fixtures::{current_fence, production_generation_with_source};
 use super::fixture::{Harness, debug, id, join_two, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::character_build::{
@@ -286,7 +286,7 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
     let cursor = actor_spell::SpellTarget::Position(actor_spell::SpellTargetPosition {
         x: caster.x + 5,
         y: caster.y,
-        floor: caster.floor,
+        floor: caster.floor.abs(),
     });
     let payload = if negotiated {
         actor_spell::encode_aimed_spell_cast_intent(&actor_spell::AimedSpellCastIntent {
@@ -392,7 +392,7 @@ async fn exchange(
     let serving = async move { serve_admitted(&mut server, session, owner, IDLE_LIVENESS).await };
     let driving = async move {
         loop {
-            let frame = super::item_look::read_frame(&mut client).await?;
+            let frame = super::item_look_fixtures::read_frame(&mut client).await?;
             if decode_wire_envelope(&frame).map_err(debug)?.message_type()
                 == MessageType::SnapshotCommit
             {
@@ -413,7 +413,7 @@ async fn exchange(
             client.write_u32(u32::try_from(frame.len())?).await?;
             client.write_all(&frame).await?;
             loop {
-                let frame = super::item_look::read_frame(&mut client).await?;
+                let frame = super::item_look_fixtures::read_frame(&mut client).await?;
                 let envelope = decode_wire_envelope(&frame).map_err(debug)?;
                 if envelope.message_type() == MessageType::CommandResult {
                     let result = decode_command_result(envelope.payload()).map_err(debug)?;

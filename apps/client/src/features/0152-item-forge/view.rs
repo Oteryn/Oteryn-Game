@@ -1,3 +1,7 @@
+#[cfg(feature = "bevy-shell")]
+mod bevy;
+#[cfg(feature = "bevy-shell")]
+pub(crate) use bevy::{ForgeControl, forge_action_enabled};
 use crate::play::{PlayLink, mailbox::lock};
 impl PlayLink {
     #[must_use]

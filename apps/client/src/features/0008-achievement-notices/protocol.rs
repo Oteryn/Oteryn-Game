@@ -34,7 +34,20 @@ pub(in crate::play) fn achievement_earned(
 impl Mailbox {
     pub(in crate::play) fn reduce_achievement_notices(&mut self, notices: Vec<AchievementEarned>) {
         for notice in notices {
+            #[cfg(feature = "bevy-shell")]
+            if self.achievement_notices.selected {
+                self.achievement_banners.push_back(
+                    oteryn_client_ui::achievement_notices::advancement_text(&notice.name),
+                );
+            }
             reduce(&mut self.achievement_notices, notice);
         }
+    }
+}
+
+#[cfg(all(test, feature = "bevy-shell"))]
+impl Outbox {
+    pub(crate) fn achievement_notices_select_for_test(&self) {
+        lock(&self.0).achievement_notices.selected = true;
     }
 }

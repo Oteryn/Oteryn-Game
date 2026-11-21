@@ -1,4 +1,6 @@
 //! Native grant custody and durable single-consume at the real handshake.
+use super::preadmission_fixtures::{FrozenAdmissionClock};
+
 use super::{
     TestResult,
     fixture::{debug, id},
@@ -11,7 +13,7 @@ use crate::gameplay_transport::connection::{
 
 #[test]
 fn preadm_attempt_debug_never_exposes_grant_material() -> TestResult {
-    let token = super::house_transfer::RecoverySource::fresh_token(91)?;
+    let token = super::house_transfer_fixtures::RecoverySource::fresh_token(91)?;
     let attempt = FreshAdmissionAttempt {
         character_id: CharacterId::decode(&id(41)).map_err(debug)?,
         admission_material: token.as_bytes(),
@@ -47,7 +49,7 @@ fn preadm_handshake_has_one_concurrent_winner_and_rejects_consumed_grant_replay(
                 let result: TestResult = async {
                     let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_secs();
                     let _clock = FrozenAdmissionClock::install(&h, i64::try_from(now)?).await?;
-                    let source = super::house_transfer::RecoverySource::start_at(&h, Some(now)).await?;
+                    let source = super::house_transfer_fixtures::RecoverySource::start_at(&h, Some(now)).await?;
                     let mut runtime = super::fresh_fixture::fresh::Source::new(i64::try_from(now)?)?;
                     runtime.rows.retain(|row| matches!(row.key, crate::foundation::admission_authority_publication::AdmissionAuthorityGuardKeyV1::Runtime(_)));
                     let publication = crate::foundation::admission_authority_publication::AdmissionAuthorityPublicationV1::prepare(&runtime, i64::try_from(now)?).map_err(debug)?;
@@ -149,7 +151,7 @@ impl crate::gameplay_transport::connection::ConnectionIdentifiers for Identifier
 fn race_grant(now: u64) -> TestResult<String> {
     use base64::Engine as _;
     use ed25519_dalek::Signer as _;
-    let token = super::house_transfer::RecoverySource::fresh_token(91)?;
+    let token = super::house_transfer_fixtures::RecoverySource::fresh_token(91)?;
     let mut parts = token.split('.');
     let header = parts.next().ok_or("grant header")?;
     let payload = parts.next().ok_or("grant payload")?;
@@ -172,47 +174,4 @@ fn assert_refusal_frame(bytes: &[u8], error: FoundationProtocolError) -> TestRes
         "exactly one classified refusal frame, no acceptance"
     );
     Ok(())
-}
-
-// The existing verifier host-clock hook, the fake Platform's timestamps, and
-// the commit query all use one fixed instant in this disposable test database.
-struct FrozenAdmissionClock(Option<i64>);
-impl FrozenAdmissionClock {
-    async fn install(h: &super::fixture::Harness, now: i64) -> TestResult<Self> {
-        sqlx::query("CREATE SCHEMA preadm_clock")
-            .execute(&h.pool)
-            .await?;
-        sqlx::query("CREATE TABLE preadm_clock.instant(singleton BOOLEAN PRIMARY KEY CHECK(singleton), value BIGINT NOT NULL)").execute(&h.pool).await?;
-        sqlx::query("INSERT INTO preadm_clock.instant VALUES(true,$1)")
-            .bind(now)
-            .execute(&h.pool)
-            .await?;
-        sqlx::query("CREATE FUNCTION preadm_clock.clock_timestamp() RETURNS timestamptz LANGUAGE sql STABLE AS 'SELECT pg_catalog.to_timestamp(value::double precision) FROM preadm_clock.instant WHERE singleton'").execute(&h.pool).await?;
-        sqlx::query("CREATE FUNCTION preadm_clock.statement_timestamp() RETURNS timestamptz LANGUAGE sql STABLE AS 'SELECT pg_catalog.to_timestamp(value::double precision) FROM preadm_clock.instant WHERE singleton'").execute(&h.pool).await?;
-        sqlx::query("GRANT USAGE ON SCHEMA preadm_clock TO oteryn_game_runtime")
-            .execute(&h.pool)
-            .await?;
-        sqlx::query("GRANT SELECT ON preadm_clock.instant TO oteryn_game_runtime")
-            .execute(&h.pool)
-            .await?;
-        let mut connection = h.root.try_acquire_ready()?;
-        sqlx::query("SET search_path=preadm_clock,pg_catalog,public")
-            .execute(&mut *connection)
-            .await?;
-        let returned = connection
-            .return_to_pool_observed_until(
-                std::time::Instant::now() + std::time::Duration::from_secs(5),
-            )
-            .await;
-        assert!(matches!(
-            returned,
-            sqlx::pool::PoolConnectionReturnDisposition::ReturnedToIdle
-        ));
-        Ok(Self(super::HOST_NOW.replace(Some(now))))
-    }
-}
-impl Drop for FrozenAdmissionClock {
-    fn drop(&mut self) {
-        super::HOST_NOW.set(self.0);
-    }
 }

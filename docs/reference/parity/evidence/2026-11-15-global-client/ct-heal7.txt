@@ -1,0 +1,246 @@
+BATCH ML52 k=2 hp0=4697 hp1=7182 sum=0 got=0
+BATCH ML52 k=5 hp0=1 hp1=5853 sum=0 got=0
+BATCH ML52 k=5 hp0=1 hp1=5957 sum=0 got=0
+BATCH ML52 k=5 hp0=1 hp1=5933 sum=0 got=0
+BATCH ML52 k=5 hp0=1 hp1=5702 sum=0 got=0
+BATCH ML52 k=1 hp0=5708 hp1=6946 sum=0 got=0
+DONE ML52
+ML52/utura tio 16:33:28 heal=1083 (from log copy, verified ML52+Sustain)
+ML52/utura tio 16:33:42 heal=1085 (from log copy, verified ML52+Sustain)
+ML52/utura tio 16:33:44 heal=1180 (from log copy, verified ML52+Sustain)
+ML52/utura tio 16:33:51 heal=1187 (from log copy, verified ML52+Sustain)
+ML52/utura tio 16:33:54 heal=1080 (from log copy, verified ML52+Sustain)
+ML52/utura tio 16:35:02 heal=1241 (from log copy, verified ML52+Sustain)
+ML52/utura tio 16:35:04 heal=1232 (from log copy, verified ML52+Sustain)
+ML52/utura tio 16:35:22 heal=1164 (from log copy, verified ML52+Sustain)
+ML52/utura tio 16:35:24 heal=1176 (from log copy, verified ML52+Sustain)
+ML52/utura tio 16:35:27 heal=1190 (from log copy, verified ML52+Sustain)
+ML52/utura tio 16:35:29 heal=1078 (from log copy, verified ML52+Sustain)
+ML52/utura tio 16:35:32 heal=1176 (from log copy, verified ML52+Sustain)
+ML52/utura tio 16:35:49 heal=1183 (from log copy, verified ML52+Sustain)
+ML52/utura tio 16:35:52 heal=1241 (from log copy, verified ML52+Sustain)
+ML52/utura tio 16:35:54 heal=1206 (from log copy, verified ML52+Sustain)
+ML52/utura tio 16:35:57 heal=1129 (from log copy, verified ML52+Sustain)
+ML52/utura tio 16:35:59 heal=1173 (from log copy, verified ML52+Sustain)
+ML52/utura tio 16:36:17 heal=1178 (from log copy, verified ML52+Sustain)
+ML52/utura tio 16:36:19 heal=1150 (from log copy, verified ML52+Sustain)
+ML52/utura tio 16:36:21 heal=1190 (from log copy, verified ML52+Sustain)
+ML52/utura tio 16:36:24 heal=1220 (from log copy, verified ML52+Sustain)
+ML52/utura tio 16:36:26 heal=1176 (from log copy, verified ML52+Sustain)
+ML52/utura tio 16:36:44 heal=1101 (from log copy, verified ML52+Sustain)
+ML52/utura tio 16:36:46 heal=1190 (from log copy, verified ML52+Sustain)
+ML52/utura tio 16:36:49 heal=1087 (from log copy, verified ML52+Sustain)
+ML52/utura tio 16:36:51 heal=1148 (from log copy, verified ML52+Sustain)
+ML52/utura tio 16:36:54 heal=1157 (from log copy, verified ML52+Sustain)
+ML52/utura tio 16:37:00 heal=1232 (from log copy, verified ML52+Sustain)
+BATCH ML52 k=5 hp0=51 hp1=5656 sum=5587 got=5
+ML52 16:38:23 heal=1059
+ML52 16:38:25 heal=1080
+ML52 16:38:28 heal=1131
+ML52 16:38:30 heal=1183
+ML52 16:38:32 heal=1134
+BATCH ML52 k=1 hp0=5662 hp1=6739 sum=1071 got=1
+ML52 16:38:39 heal=1071
+BATCH ML52 k=1 hp0=1 hp1=1110 sum=1059 got=1
+ML52 16:38:58 heal=1059
+VIRTUE utito virtu
+BATCH ML52/utito virtu k=5 hp0=1128 hp1=4872 sum=3726 got=5
+ML52/utito virtu 16:39:12 heal=710
+ML52/utito virtu 16:39:14 heal=817
+ML52/utito virtu 16:39:17 heal=735
+ML52/utito virtu 16:39:19 heal=801
+ML52/utito virtu 16:39:21 heal=663
+BATCH ML52/utito virtu k=2 hp0=4878 hp1=6310 sum=1420 got=2
+ML52/utito virtu 16:39:28 heal=696
+ML52/utito virtu 16:39:31 heal=724
+BATCH ML52/utito virtu k=5 hp0=1 hp1=3537 sum=3518 got=5
+ML52/utito virtu 16:39:49 heal=661
+ML52/utito virtu 16:39:52 heal=712
+ML52/utito virtu 16:39:54 heal=763
+ML52/utito virtu 16:39:56 heal=663
+ML52/utito virtu 16:39:59 heal=719
+BATCH ML52/utito virtu k=3 hp0=3543 hp1=5847 sum=2292 got=3
+ML52/utito virtu 16:40:05 heal=822
+ML52/utito virtu 16:40:08 heal=812
+ML52/utito virtu 16:40:10 heal=658
+BATCH ML52/utito virtu k=5 hp0=1 hp1=3764 sum=3745 got=5
+ML52/utito virtu 16:40:29 heal=796
+ML52/utito virtu 16:40:31 heal=696
+ML52/utito virtu 16:40:33 heal=686
+ML52/utito virtu 16:40:36 heal=808
+ML52/utito virtu 16:40:38 heal=759
+BATCH ML52/utito virtu k=3 hp0=3770 hp1=5901 sum=2119 got=3
+ML52/utito virtu 16:40:45 heal=726
+ML52/utito virtu 16:40:47 heal=672
+ML52/utito virtu 16:40:50 heal=721
+BATCH ML52/utito virtu k=5 hp0=1 hp1=3536 sum=3517 got=5
+ML52/utito virtu 16:41:09 heal=658
+ML52/utito virtu 16:41:11 heal=791
+ML52/utito virtu 16:41:13 heal=747
+ML52/utito virtu 16:41:16 heal=658
+ML52/utito virtu 16:41:18 heal=663
+BATCH ML52/utito virtu k=2 hp0=3542 hp1=5065 sum=1511 got=2
+ML52/utito virtu 16:41:25 heal=829
+ML52/utito virtu 16:41:27 heal=682
+VIRTUE utori virtu
+BATCH ML52/utori virtu k=2 hp0=5077 hp1=6740 sum=1651 got=2
+ML52/utori virtu 16:41:42 heal=822
+ML52/utori virtu 16:41:44 heal=829
+BATCH ML52/utori virtu k=5 hp0=51 hp1=3732 sum=3663 got=5
+ML52/utori virtu 16:42:03 heal=742
+ML52/utori virtu 16:42:05 heal=679
+ML52/utori virtu 16:42:08 heal=682
+ML52/utori virtu 16:42:10 heal=731
+ML52/utori virtu 16:42:12 heal=829
+BATCH ML52/utori virtu k=3 hp0=3738 hp1=5874 sum=2124 got=3
+ML52/utori virtu 16:42:19 heal=735
+ML52/utori virtu 16:42:22 heal=677
+ML52/utori virtu 16:42:24 heal=712
+BATCH ML52/utori virtu k=5 hp0=51 hp1=4099 sum=4030 got=5
+ML52/utori virtu 16:42:44 heal=798
+ML52/utori virtu 16:42:46 heal=787
+ML52/utori virtu 16:42:49 heal=829
+ML52/utori virtu 16:42:51 heal=815
+ML52/utori virtu 16:42:53 heal=801
+BATCH ML52/utori virtu k=2 hp0=4105 hp1=5541 sum=1424 got=2
+ML52/utori virtu 16:43:01 heal=654
+ML52/utori virtu 16:43:04 heal=770
+BATCH ML52/utori virtu k=1 hp0=5547 hp1=6299 sum=752 got=1
+ML52/utori virtu 16:43:11 heal=752
+BATCH ML52/utori virtu k=5 hp0=1 hp1=3600 sum=3581 got=5
+ML52/utori virtu 16:43:29 heal=768
+ML52/utori virtu 16:43:32 heal=780
+ML52/utori virtu 16:43:34 heal=686
+ML52/utori virtu 16:43:36 heal=661
+ML52/utori virtu 16:43:39 heal=686
+BATCH ML52/utori virtu k=3 hp0=3606 hp1=6048 sum=2430 got=3
+ML52/utori virtu 16:43:46 heal=810
+ML52/utori virtu 16:43:48 heal=798
+ML52/utori virtu 16:43:50 heal=822
+BATCH ML52/utori virtu k=4 hp0=1 hp1=3095 sum=3076 got=4
+ML52/utori virtu 16:44:09 heal=756
+ML52/utori virtu 16:44:11 heal=819
+ML52/utori virtu 16:44:13 heal=691
+ML52/utori virtu 16:44:16 heal=810
+DONE ML52
+BATCH ML54 k=3 hp0=3125 hp1=5377 sum=2234 got=3
+ML54 16:44:42 heal=721
+ML54 16:44:44 heal=676
+ML54 16:44:47 heal=837
+BATCH ML54 k=2 hp0=5377 hp1=69211 sum=1532 got=2 CAPPED?
+ML54 16:44:53 heal=748
+REJECT ML54 16:44:56 heal=784 (possible overheal)
+BATCH ML54 k=5 hp0=1 hp1=4070 sum=4001 got=5
+ML54 16:45:14 heal=693
+ML54 16:45:16 heal=782
+ML54 16:45:19 heal=840
+ML54 16:45:21 heal=856
+ML54 16:45:23 heal=830
+BATCH ML54 k=2 hp0=4070 hp1=5623 sum=1541 got=2
+ML54 16:45:30 heal=750
+ML54 16:45:33 heal=791
+BATCH ML54 k=1 hp0=5629 hp1=6349 sum=714 got=1
+ML54 16:45:39 heal=714
+BATCH ML54 k=5 hp0=1 hp1=3934 sum=3909 got=5
+ML54 16:45:57 heal=852
+ML54 16:46:00 heal=789
+ML54 16:46:02 heal=733
+ML54 16:46:05 heal=811
+ML54 16:46:07 heal=724
+BATCH ML54 k=3 hp0=3934 hp1=6240 sum=2294 got=3
+ML54 16:46:14 heal=856
+ML54 16:46:16 heal=700
+ML54 16:46:19 heal=738
+BATCH ML54 k=5 hp0=1 hp1=3951 sum=3932 got=5
+ML54 16:46:37 heal=767
+ML54 16:46:39 heal=813
+ML54 16:46:42 heal=777
+ML54 16:46:44 heal=743
+ML54 16:46:47 heal=832
+BATCH ML54 k=3 hp0=3957 hp1=6269 sum=2300 got=3
+ML54 16:46:53 heal=782
+ML54 16:46:56 heal=772
+ML54 16:46:58 heal=746
+BATCH ML54 k=2 hp0=1 hp1=1644 sum=1631 got=2
+ML54 16:47:17 heal=806
+ML54 16:47:19 heal=825
+VIRTUE utura tio
+BATCH ML54/utura tio k=4 hp0=1656 hp1=6370 sum=4696 got=4
+ML54/utura tio 16:47:32 heal=1160
+ML54/utura tio 16:47:35 heal=1261
+ML54/utura tio 16:47:37 heal=1093
+ML54/utura tio 16:47:40 heal=1182
+BATCH ML54/utura tio k=5 hp0=1 hp1=6207 sum=6138 got=5
+ML54/utura tio 16:47:58 heal=1240
+ML54/utura tio 16:48:00 heal=1146
+ML54/utura tio 16:48:03 heal=1273
+ML54/utura tio 16:48:05 heal=1220
+ML54/utura tio 16:48:08 heal=1259
+BATCH ML54/utura tio k=5 hp0=1 hp1=5859 sum=5790 got=5
+ML54/utura tio 16:48:26 heal=1261
+ML54/utura tio 16:48:29 heal=1136
+ML54/utura tio 16:48:31 heal=1134
+ML54/utura tio 16:48:34 heal=1109
+ML54/utura tio 16:48:36 heal=1150
+BATCH ML54/utura tio k=5 hp0=51 hp1=5990 sum=5921 got=5
+ML54/utura tio 16:48:55 heal=1199
+ML54/utura tio 16:48:57 heal=1182
+ML54/utura tio 16:48:59 heal=1213
+ML54/utura tio 16:49:02 heal=1167
+ML54/utura tio 16:49:04 heal=1160
+BATCH ML54/utura tio k=5 hp0=51 hp1=5956 sum=5887 got=5
+ML54/utura tio 16:49:23 heal=1206
+ML54/utura tio 16:49:25 heal=1213
+ML54/utura tio 16:49:27 heal=1148
+ML54/utura tio 16:49:30 heal=1215
+ML54/utura tio 16:49:32 heal=1105
+BATCH ML54/utura tio k=5 hp0=51 hp1=6139 sum=6070 got=5
+ML54/utura tio 16:49:51 heal=1191
+ML54/utura tio 16:49:53 heal=1252
+ML54/utura tio 16:49:56 heal=1278
+ML54/utura tio 16:49:58 heal=1230
+ML54/utura tio 16:50:00 heal=1119
+BATCH ML54/utura tio k=1 hp0=51 hp1=1240 sum=1189 got=1
+ML54/utura tio 16:50:19 heal=1189
+VIRTUE utito virtu
+BATCH ML54/utito virtu k=4 hp0=1258 hp1=4224 sum=2948 got=4
+ML54/utito virtu 16:50:33 heal=736
+ML54/utito virtu 16:50:35 heal=721
+ML54/utito virtu 16:50:38 heal=784
+ML54/utito virtu 16:50:40 heal=707
+BATCH ML54/utito virtu k=2 hp0=4250 hp1=5696 sum=1460 got=2
+ML54/utito virtu 16:50:47 heal=760
+ML54/utito virtu 16:50:49 heal=700
+BATCH ML54/utito virtu k=1 hp0=5702 hp1=6405 sum=695 got=1
+ML54/utito virtu 16:50:56 heal=695
+BATCH ML54/utito virtu k=5 hp0=1 hp1=4052 sum=3983 got=5
+ML54/utito virtu 16:51:14 heal=818
+ML54/utito virtu 16:51:17 heal=748
+ML54/utito virtu 16:51:19 heal=791
+ML54/utito virtu 16:51:21 heal=849
+ML54/utito virtu 16:51:24 heal=777
+BATCH ML54/utito virtu k=3 hp0=4058 hp1=62711 sum=2201 got=3 CAPPED?
+ML54/utito virtu 16:51:31 heal=702
+ML54/utito virtu 16:51:33 heal=787
+REJECT ML54/utito virtu 16:51:36 heal=712 (possible overheal)
+BATCH ML54/utito virtu k=5 hp0=1 hp1=3628 sum=3559 got=5
+ML54/utito virtu 16:51:54 heal=714
+ML54/utito virtu 16:51:57 heal=719
+ML54/utito virtu 16:51:59 heal=678
+ML54/utito virtu 16:52:01 heal=770
+ML54/utito virtu 16:52:04 heal=678
+BATCH ML54/utito virtu k=3 hp0=3634 hp1=6034 sum=2388 got=3
+ML54/utito virtu 16:52:11 heal=796
+ML54/utito virtu 16:52:13 heal=813
+ML54/utito virtu 16:52:15 heal=779
+BATCH ML54/utito virtu k=5 hp0=1 hp1=3894 sum=3825 got=5
+ML54/utito virtu 16:52:34 heal=705
+ML54/utito virtu 16:52:36 heal=770
+ML54/utito virtu 16:52:38 heal=683
+ML54/utito virtu 16:52:41 heal=818
+ML54/utito virtu 16:52:43 heal=849
+BATCH ML54/utito virtu k=3 hp0=3894 hp1=6060 sum=2154 got=3
+ML54/utito virtu 16:52:50 heal=726
+ML54/utito virtu 16:52:52 heal=707
+ML54/utito virtu 16:52:55 heal=721
+DONE ML54

@@ -5,6 +5,7 @@ use oteryn_session::{AppliedDelta, CharacterInventory, ItemEntry, SessionEvent};
 
 fn item(handle: u64, count: u32) -> Result<ItemEntry, Box<dyn std::error::Error>> {
     Ok(ItemEntry {
+        appearance_id: 0,
         handle: handle.try_into()?,
         item_definition_ref: 2854.try_into()?,
         count: count.try_into()?,

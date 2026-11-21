@@ -5,6 +5,17 @@ use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::*;
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    async fn repair_pending_spells(&self, admitted: AdmittedSession) -> bool {
+        let Some(_permit) = self.states.input_gate.enter().await else {
+            return false;
+        };
+        self.repair_pending_spell_entry(admitted).await
+    }
+
+    async fn background_operation<F: Future>(&self, future: F) -> F::Output {
+        self.root.with_background_operation(future).await
+    }
+
     async fn client_bulletin(&self) -> Option<String> {
         self.states.bulletin_source.as_ref()?.load().await
     }
@@ -74,6 +85,86 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.bundle_map()
             .map(|map| map.facts.movement_effects_since(after))
             .unwrap_or_else(|| self.source_volatile_effects(after))
+    }
+    async fn observe_current_actor_movement_effects(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        after: u64,
+    ) -> Vec<(u64, crate::map::overlay::TilePos, u16)> {
+        use sha2::Digest as _;
+        let Some(map) = self.bundle_map() else {
+            return Vec::new();
+        };
+        let Ok((current, _)) =
+            crate::durability::fresh_admission::FreshAdmissionStore::from_root(self.root.clone())
+                .current_session_at(session)
+                .await
+        else {
+            return Vec::new();
+        };
+        if current.session_state() != crate::foundation::GameSessionState::Active {
+            return Vec::new();
+        }
+        let runtime = self.runtime.lock().await;
+        let pin = runtime.content_pin();
+        if runtime.owner_fence().is_err()
+            || self
+                .active_generation
+                .and_then(|active| active.native_gameplay())
+                .is_none_or(|native| native.source_digest() != pin.server_artifact_digest())
+            || self.wire_position_frame(&runtime).is_none()
+            || self.effective_movement_cells().scope().world_id != pin.world_id()
+            || self.effective_movement_cells().scope().generation_digest
+                != pin.server_artifact_digest()
+            || <[u8; 32]>::from(sha2::Sha256::digest(
+                self.effective_movement_cells()
+                    .scope()
+                    .map_revision
+                    .as_str()
+                    .as_bytes(),
+            )) != pin.map_revision_digest()
+        {
+            return Vec::new();
+        }
+        let lease = current.current_character_lease();
+        if let Ok(house) = runtime.house_actor_state(actor, session) {
+            if house.scope != current.current_runtime_scope()
+                || house.generation != current.current_scope_generation()
+                || house.lease != lease
+                || !runtime
+                    .house_player_control_facts(actor, session)
+                    .is_ok_and(|facts| facts.control_loss.is_none())
+            {
+                return Vec::new();
+            }
+            return map
+                .facts
+                .scoped_movement_effects_since(house.scope, house.generation, after);
+        }
+        if runtime.binding().runtime_scope() != current.current_runtime_scope()
+            || runtime.binding().scope_generation() != current.current_scope_generation()
+            || runtime.bound_attacker_lease(actor, session).ok() != Some(lease)
+            || !runtime
+                .player_control_facts(actor, session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+        {
+            return Vec::new();
+        }
+        map.facts.movement_effects_since(after)
+    }
+    fn observe_movement_speech(&self, after: u64) -> Vec<(u64, crate::map::facts::MovementSpeech)> {
+        self.bundle_map()
+            .map(|map| map.facts.movement_speech_since(after))
+            .unwrap_or_default()
+    }
+    fn observe_creature_visuals(
+        &self,
+        after: u64,
+    ) -> Vec<(u64, crate::map::facts::CreatureVisualKind)> {
+        self.bundle_map()
+            .map(|map| map.facts.creature_visuals_since(after))
+            .unwrap_or_default()
     }
     async fn resolve_native_scope(&self, admitted: AdmittedSession) -> Result<Option<Self>, ()> {
         self.resolve_runtime_view(admitted).await
@@ -145,7 +236,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         ComposedFreshAdmission::analyser_next(self, admitted).await
     }
     mechanic_composed_methods!();
-    async fn activity_transfer_input(&self, admitted: AdmittedSession) -> bool {
+    async fn activity_transfer_input(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<(), crate::durability::DurabilityError> {
         self.note_activity_input(admitted).await
     }
     async fn activity_scope_snapshot(
@@ -155,7 +249,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.project_activity_scope(admitted).await
     }
 
-    async fn house_transfer_input(&self, admitted: AdmittedSession) -> bool {
+    async fn house_transfer_input(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<(), crate::durability::DurabilityError> {
         self.note_house_input(admitted).await
     }
     async fn observe_house_map(
@@ -568,6 +665,22 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     /// the active generation pins a non-empty Item key set. ADMIT0: boot validated
     /// `required_capabilities` against this same offer; a bundle World's floor holds 18, so
     /// admission requires it through the authenticated check in `admit`, not here.
+    async fn native_world_presentation_available(&self) -> bool {
+        self.native_map_cue_source_frame().await.is_some()
+    }
+
+    async fn native_map_cue_uses_native_floor(&self) -> Option<bool> {
+        self.native_map_cue_source_frame().await
+    }
+
+    async fn native_current_actor_map_cue_frame(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<bool> {
+        self.current_actor_map_cue_frame(actor, session).await
+    }
+
     fn offered_capabilities(&self) -> &'static [capabilities::OfferedCapability] {
         store::with_store_offer(
             loop_training::offer(
@@ -617,19 +730,24 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             item_view::ViewItem,
         )>,
     > {
-        // Named-House custody retains the Channel carrier's ExactActorRef.
-        // Select the reader from the actual resident, not that carrier namespace.
-        let in_house = self
-            .runtime
-            .lock()
+        self.root
+            .with_background_operation(async {
+                // Named-House custody retains the Channel carrier's ExactActorRef.
+                // Select the reader from the actual resident, not that carrier namespace.
+                let in_house = self
+                    .runtime
+                    .lock()
+                    .await
+                    .house_actor_state(actor, game_session_id)
+                    .is_ok();
+                if in_house {
+                    equipment_move::observe_house_character_equipment(self, actor, game_session_id)
+                        .await
+                } else {
+                    equipment_move::observe_character_equipment(self, game_session_id).await
+                }
+            })
             .await
-            .house_actor_state(actor, game_session_id)
-            .is_ok();
-        if in_house {
-            equipment_move::observe_house_character_equipment(self, actor, game_session_id).await
-        } else {
-            equipment_move::observe_character_equipment(self, game_session_id).await
-        }
     }
 
     async fn committed_equipment_move(
@@ -696,7 +814,11 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         request: item_move::LoopMove,
     ) -> item_move::LoopMoveResult {
-        loop_move::move_loop_item(self, actor, command, request).await
+        let result = loop_move::move_loop_item(self, actor, command, request).await;
+        if result == item_move::LoopMoveResult::Committed {
+            quest_collections::after_move(self, actor, command).await;
+        }
+        result
     }
 
     /// Carried or reachable proven direct Ground container (capability 14).
@@ -716,14 +838,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         request: item_move::LoopMove,
         house_capacity_v2: bool,
     ) -> item_move::LoopMoveResult {
-        loop_move::move_loop_item_with_house_capacity(
+        let result = loop_move::move_loop_item_with_house_capacity(
             self,
             actor,
             command,
             request,
             house_capacity_v2,
         )
-        .await
+        .await;
+        if result == item_move::LoopMoveResult::Committed {
+            quest_collections::after_move(self, actor, command).await;
+        }
+        result
     }
 
     async fn observe_container_with_house_capacity(
@@ -750,7 +876,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
     ) -> Option<world_spatial::ChannelEntities> {
-        self.named_channel_entities(actor).await
+        Box::pin(self.named_channel_entities(actor)).await.ok()
+    }
+
+    async fn observe_named_visible_entities_result(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<world_spatial::ChannelEntities, AdmissionRefusal> {
+        Box::pin(self.named_channel_entities(actor)).await
     }
 
     async fn observe_visible_entities(
@@ -793,6 +926,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return self.house_paced_step(actor, session, direction).await;
         }
         self.tutorial_paced_step(actor, session, direction).await
+    }
+
+    async fn committed_paced_movement(
+        &self,
+        admitted: AdmittedSession,
+        moved_to: Option<oteryn_protocol_oteryn::world_spatial::WorldSpatialObservation>,
+    ) {
+        if let Some(actor) = admitted.runtime_actor {
+            self.source_boss_exit_after_movement(actor, admitted.game_session_id, moved_to)
+                .await;
+        }
     }
 
     async fn turn_actor_valid(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
@@ -1042,6 +1186,38 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             })
     }
 
+    async fn use_quest_tool(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        target: Option<item_view::ItemKey>,
+    ) -> Result<Option<UseOutcome>, ()> {
+        if intent.use_with.is_none()
+            && intent.use_with_map_item.is_none()
+            && intent.use_with_position.is_none()
+        {
+            return self
+                .use_carried_item_disguise(actor, command, &intent, source)
+                .await;
+        }
+        let corpse = match target {
+            Some(item_view::ItemKey::Instance(id)) if intent.use_with_map_item.is_some() => {
+                Some(id)
+            }
+            _ => None,
+        };
+        if let Some(outcome) = self
+            .use_carried_quest_item(actor, command, &intent, source, corpse)
+            .await?
+        {
+            return Ok(Some(outcome));
+        }
+        self.use_carried_quest_item_with_target(actor, command, &intent, source, target)
+            .await
+    }
+
     async fn use_event_item(
         &self,
         actor: ExactActorRef,
@@ -1092,7 +1268,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return Ok(Some(outcome));
         }
         if let Some(outcome) = self
-            .use_carried_quest_item(actor, command, &intent, source)
+            .use_carried_item_disguise(actor, command, &intent, source)
+            .await?
+        {
+            return Ok(Some(outcome));
+        }
+        if let Some(outcome) = self
+            .use_carried_quest_item(actor, command, &intent, source, None)
             .await?
         {
             return Ok(Some(outcome));
@@ -1125,9 +1307,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         converter: item_view::ItemKey,
         coin: item_view::ItemKey,
-    ) -> Option<UseOutcome> {
+    ) -> Result<Option<UseOutcome>, ()> {
         self.use_gold_converter(actor, command, converter, coin)
             .await
+            .transpose()
     }
 
     async fn use_fluid_container(
@@ -1157,6 +1340,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         definition: std::num::NonZeroU32,
     ) -> UseOutcome {
         self.use_item_definition(actor, command, definition).await
+    }
+
+    async fn use_soul_war_source_items(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        target: Option<item_view::ItemKey>,
+    ) -> Result<Option<UseOutcome>, ()> {
+        self.dispatch_soul_war_source_use(actor, command, &intent, source, target)
+            .await
     }
 
     async fn use_soulpit_items(
@@ -1224,33 +1419,56 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     }
 
     async fn prepare_quest_callback_resume(&self, admitted: &mut AdmittedSession) -> bool {
+        let started = tokio::time::Instant::now();
         if let Some(actor) = admitted.runtime_actor
             && !self
                 .resume_dawnport_departure(actor, admitted.game_session_id)
                 .await
         {
+            record_entry_decision("unplayable", 1, started.elapsed(), "callback_dawnport");
             return false;
         }
+        record_entry_decision("playable", 1, started.elapsed(), "callback_dawnport");
+        let mut phase = "grizzly_resume";
+        let mut started = tokio::time::Instant::now();
         if !tokio::time::timeout(std::time::Duration::from_secs(10), async {
-            self.prepare_grizzly_npc_resume(admitted).await
-                && self
-                    .reconcile_quest_callbacks(admitted.game_session_id)
-                    .await
+            if !self.prepare_grizzly_npc_resume(admitted).await {
+                return false;
+            }
+            record_entry_decision("playable", 1, started.elapsed(), phase);
+            phase = "quest_callbacks";
+            started = tokio::time::Instant::now();
+            self.reconcile_quest_callbacks(admitted.game_session_id)
+                .await
         })
         .await
         .unwrap_or(false)
         {
+            record_entry_decision("unplayable", 1, started.elapsed(), phase);
             return false;
         }
+        record_entry_decision("playable", 1, started.elapsed(), phase);
+        let started = tokio::time::Instant::now();
         if !crate::gameplay_transport::hireling::recover_pending_lamp_ingress(self, admitted).await
         {
+            record_entry_decision("unplayable", 1, started.elapsed(), "hireling_ingress");
             return false;
         }
-        self.states
+        record_entry_decision("playable", 1, started.elapsed(), "hireling_ingress");
+        let started = tokio::time::Instant::now();
+        let recovered = self
+            .states
             .command_ingress
             .recover_trade_continuity(admitted)
             .is_some()
-            || admitted.continuity.next_command_id == 1
+            || admitted.continuity.next_command_id == 1;
+        record_entry_decision(
+            if recovered { "playable" } else { "unplayable" },
+            1,
+            started.elapsed(),
+            "trade_continuity",
+        );
+        recovered
     }
 
     async fn use_event_world_object(
@@ -1289,6 +1507,25 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
 
     /// One cast as one Channel-owner work item (`SPELL-RL-01` = 1), under the same runtime lock
     /// `step` and `use_object` take.
+    async fn physical_native_cast_position(
+        &self,
+        position: oteryn_protocol_oteryn::actor_spell::SpellTargetPosition,
+    ) -> Option<oteryn_protocol_oteryn::actor_spell::SpellTargetPosition> {
+        let runtime = self.runtime.lock().await;
+        let physical = self.wire_position_frame(&runtime)?.unproject(
+            oteryn_protocol_oteryn::world_spatial::ActorPosition {
+                x: position.x,
+                y: position.y,
+                floor: position.floor,
+            },
+        )?;
+        Some(oteryn_protocol_oteryn::actor_spell::SpellTargetPosition {
+            x: physical.x,
+            y: physical.y,
+            floor: physical.floor,
+        })
+    }
+
     async fn cast_spell(
         &self,
         actor: ExactActorRef,
@@ -1670,6 +1907,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         crate::durability::item_transfer::ItemTransferOutcome,
         crate::combat_pickup::GroundPickupError,
     > {
-        item_ref_admission::take_corpse_entry(self, actor, command, corpse, entry).await
+        let result =
+            item_ref_admission::take_corpse_entry(self, actor, command, corpse, entry).await;
+        if matches!(
+            result,
+            Ok(crate::durability::item_transfer::ItemTransferOutcome::Committed(_))
+        ) {
+            quest_collections::after_move(self, actor, command).await;
+        }
+        result
     }
 }

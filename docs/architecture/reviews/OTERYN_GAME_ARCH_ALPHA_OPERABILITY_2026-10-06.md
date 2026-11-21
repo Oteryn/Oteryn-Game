@@ -932,7 +932,7 @@ Classes: PROVEN (read in the file), DERIVED (follows from PROVEN facts), UNKNOWN
 ### Rulings
 
 1. **Build identity.** A client build id is `oteryn-client/<semver>`. Release builds use the
-   ARCH-ERROR-CODES-0 form `<CARGO_PKG_VERSION>+<sha12>`; local builds use `+<sha12>.local`.
+   ARCH-ERROR-CODES-0 form `<CARGO_PKG_VERSION>+<sha12>`; local builds use `+dev.local` (ECSHA).
    Both are valid SemVer, and the workspace pins the `semver` crate (`=1.0.28`) to parse them.
    Every client release raises the workspace version. Comparison uses SemVer precedence, which
    ignores the `+` metadata. The same string goes to the Gateway (64 characters at most) and to

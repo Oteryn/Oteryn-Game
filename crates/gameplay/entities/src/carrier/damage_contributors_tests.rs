@@ -221,6 +221,7 @@ fn a_same_ordinal_tie_resolves_to_the_lowest_character_id() {
     // accumulation path alone. D132 rule 2 (simultaneous application within the same deterministic ordinal)
     // is still a defined, deterministic outcome, proven here directly against the data.
     let higher = DamageContributor {
+        source_player: None,
         character: character(9),
         total: 7,
         current_session_total: 0,
@@ -229,6 +230,7 @@ fn a_same_ordinal_tie_resolves_to_the_lowest_character_id() {
         last_damage_at_ms: None,
     };
     let lower = DamageContributor {
+        source_player: None,
         character: character(3),
         total: 7,
         current_session_total: 0,
@@ -237,11 +239,13 @@ fn a_same_ordinal_tie_resolves_to_the_lowest_character_id() {
         last_damage_at_ms: None,
     };
     let contributors = DamageContributors {
+        source_players: Vec::new(),
         entries: vec![higher, lower],
     };
     assert_eq!(contributors.top_damage_character(), Some(character(3)));
     // Order-independent: the reverse entry order resolves identically.
     let reversed = DamageContributors {
+        source_players: Vec::new(),
         entries: vec![lower, higher],
     };
     assert_eq!(reversed.top_damage_character(), Some(character(3)));
@@ -251,6 +255,7 @@ fn a_same_ordinal_tie_resolves_to_the_lowest_character_id() {
 fn top_damage_character_is_independent_of_entry_insertion_order() {
     let base = [
         DamageContributor {
+            source_player: None,
             character: character(4),
             total: 12,
             current_session_total: 0,
@@ -259,6 +264,7 @@ fn top_damage_character_is_independent_of_entry_insertion_order() {
             last_damage_at_ms: None,
         },
         DamageContributor {
+            source_player: None,
             character: character(1),
             total: 20,
             current_session_total: 0,
@@ -267,6 +273,7 @@ fn top_damage_character_is_independent_of_entry_insertion_order() {
             last_damage_at_ms: None,
         },
         DamageContributor {
+            source_player: None,
             character: character(8),
             total: 20,
             current_session_total: 0,
@@ -275,6 +282,7 @@ fn top_damage_character_is_independent_of_entry_insertion_order() {
             last_damage_at_ms: None,
         },
         DamageContributor {
+            source_player: None,
             character: character(2),
             total: 3,
             current_session_total: 0,
@@ -297,7 +305,10 @@ fn top_damage_character_is_independent_of_entry_insertion_order() {
     ];
     for permutation in permutations {
         let entries = permutation.into_iter().map(|index| base[index]).collect();
-        let shuffled = DamageContributors { entries };
+        let shuffled = DamageContributors {
+            entries,
+            source_players: Vec::new(),
+        };
         assert_eq!(shuffled.top_damage_character(), expected);
     }
 }

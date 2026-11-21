@@ -88,3 +88,26 @@ fn party_chat_offer_is_bundle_only_and_needs_chat_and_party() {
     assert!(BUNDLE_WORLD_OFFERED_CAPABILITIES.len() <= SELECTED_CAPACITY);
     assert!(!selected.resumable_with(&[6, 7, 42]));
 }
+
+#[test]
+fn item_appearance_is_offered_with_item_views_and_requires_their_selection() {
+    for offered in [
+        PRODUCTION_OFFERED_CAPABILITIES,
+        ITEM_VIEW_OFFERED_CAPABILITIES,
+        BUNDLE_WORLD_OFFERED_CAPABILITIES,
+    ] {
+        assert_eq!(
+            offered.iter().any(|offer| offer.id == 499),
+            offered.iter().any(|offer| offer.id == 4)
+        );
+        for supported in [&[499][..], &[6, 499][..], &[4, 6][..]] {
+            assert!(
+                !SelectedCapabilities::select(offered, supported)
+                    .expect("bounded")
+                    .contains(499)
+            );
+        }
+        let selected = SelectedCapabilities::select(offered, &[4, 6, 499]).expect("bounded");
+        assert_eq!(selected.contains(499), selected.contains(4));
+    }
+}

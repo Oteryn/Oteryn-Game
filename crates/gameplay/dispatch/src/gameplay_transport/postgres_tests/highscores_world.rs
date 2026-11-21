@@ -1,6 +1,6 @@
 //! T143: the composed authority reads persisted cross-World snapshots, never another actor.
 use super::fixture::{Harness, debug, id};
-use super::kill_reward_e2e::scenario_thread::run_async;
+use super::kill_reward_e2e_fixtures::scenario_thread::run_async;
 use super::{Dependencies, TestResult, maintain_ready, prepare_current_session};
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::durability::highscore_snapshot::reply::HighscoresReply;

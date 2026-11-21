@@ -19,6 +19,7 @@ pub(crate) use mismatch::OfflineActivityMismatchRelease;
 /// actor/spell state; the authored destination cell is not permission to reset it.
 #[derive(Clone)]
 pub struct ActivityTransferRecovery {
+    security_revocation_freshness_required: bool,
     pub handoff_id: [u8; 16],
     pub return_id: Option<[u8; 16]>,
     pub source_session: GameSessionId,
@@ -37,6 +38,12 @@ pub struct ActivityTransferRecovery {
 }
 
 impl ActivityTransferRecovery {
+    /// Apply the current consumer policy again inside the deciding transaction.
+    pub fn with_security_revocation_freshness(mut self, required: bool) -> Self {
+        self.security_revocation_freshness_required = required;
+        self
+    }
+
     fn same_handoff(&self, other: &Self) -> bool {
         self.handoff_id == other.handoff_id
             && self.return_id == other.return_id
@@ -168,6 +175,9 @@ impl ActivityHandoffOwner {
             if current.started || current.has_owning_loss || !candidate.same_handoff(&current) {
                 return Err(DurabilityError::Unavailable);
             }
+            let revoked: bool = sqlx::query_scalar("SELECT game_security_session_revoked(encode($1,'hex')::uuid)")
+                .bind(current.current_session.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+            if revoked { return Err(DurabilityError::Unavailable); }
             let audit = verified.audit();
             let subject = RecoveryEvidenceSubject::new(&audit.account_id, &audit.signing.key_id)?;
             let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
@@ -200,6 +210,12 @@ impl ActivityHandoffOwner {
                     || parse_u64(prior.try_get("connection_generation")?)? != current.connection_generation
                     || snapshot.current_transport() != Some(transport)
                     || snapshot.session_state() != GameSessionState::Active {
+                    return Err(DurabilityError::Unavailable);
+                }
+
+                if candidate.security_revocation_freshness_required
+                    && !super::super::platform_streams::revocation_fresh_in_transaction(&mut tx).await?
+                {
                     return Err(DurabilityError::Unavailable);
                 }
                 commit_semantic_transaction(tx, deadline).await?;
@@ -257,6 +273,12 @@ impl ActivityHandoffOwner {
             // predecessor, not an owning-loss receipt for this new session. Its
             // explicit recovery receipt now closes that awaiting-controller state.
             // A later real loss starts through the ordinary loss owner.
+
+            if candidate.security_revocation_freshness_required
+                && !super::super::platform_streams::revocation_fresh_in_transaction(&mut tx).await?
+            {
+                return Err(DurabilityError::Unavailable);
+            }
             let changed = sqlx::query("UPDATE game_durability_reconnect_sessions SET current_generation=$2::text::numeric,current_transport_ref=$3,session_state=2,control_loss_epoch=NULL,original_grace_deadline=NULL,predecessor_generation=NULL WHERE game_session_id=encode($1,'hex')::uuid AND current_generation=$4::text::numeric AND prepared_attempt_ref IS NULL AND attempt_count=0 AND session_state IN(1,2)")
                 .bind(current.current_session.as_bytes().as_slice()).bind(next.to_string()).bind(transport.to_bytes().as_slice())
                 .bind(current.connection_generation.to_string()).execute(&mut *tx).await?;
@@ -413,6 +435,7 @@ async fn load(
         None => false,
     };
     Ok(Some(ActivityTransferRecovery {
+        security_revocation_freshness_required: false,
         handoff_id: bytes16(row.try_get("handoff")?)?,
         return_id,
         source_session: GameSessionId::decode(&bytes16(row.try_get("source")?)?)

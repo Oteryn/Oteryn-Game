@@ -71,6 +71,7 @@ mod tests {
     fn projection_preserves_server_display_order() -> Result<(), Box<dyn std::error::Error>> {
         let entry = |handle: u64| -> Result<ItemEntry, Box<dyn std::error::Error>> {
             Ok(ItemEntry {
+                appearance_id: 3031,
                 handle: handle.try_into()?,
                 item_definition_ref: 42.try_into()?,
                 count: 1.try_into()?,

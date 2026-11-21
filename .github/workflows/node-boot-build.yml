@@ -1,0 +1,94 @@
+name: Node boot build artifacts
+
+on:
+  workflow_call:
+    inputs:
+      revision:
+        required: true
+        type: string
+      variants:
+        required: true
+        type: string
+    outputs:
+      default:
+        value: ${{ jobs.build.outputs.default }}
+      qualification-clock:
+        value: ${{ jobs.build.outputs.qualification-clock }}
+      world-compiler:
+        value: ${{ jobs.build.outputs.world-compiler }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Compile ${{ matrix.variant }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: ${{ fromJSON(inputs.variants) }}
+    env:
+      CARGO_BUILD_JOBS: '2'
+    outputs:
+      default: ${{ steps.digest.outputs.default }}
+      qualification-clock: ${{ steps.digest.outputs.qualification-clock }}
+      world-compiler: ${{ steps.digest.outputs.world-compiler }}
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.revision }}
+          persist-credentials: false
+
+      - name: Verify exact candidate
+        env:
+          EXPECTED_SHA: ${{ inputs.revision }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install 1.100.0 --profile minimal
+
+      - name: Free runner disk for cached and new build artifacts
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+
+      - name: Restore trimmed Cargo cache from protected main
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-${{ inputs.revision }}
+          restore-keys: |
+            rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-
+            rust-linux-v2-1.100.0-
+
+      - name: Normalize source mtimes for the restored Cargo cache
+        run: python3 tools/repository/normalize_cargo_mtimes.py
+
+      - name: Compile and package exact-candidate binaries
+        env:
+          VARIANT: ${{ matrix.variant }}
+        run: python3 tools/qualification/node_boot/prebuilt.py build "$VARIANT" "$RUNNER_TEMP/node-boot-build"
+
+      - name: Bind digest to the build variant
+        id: digest
+        env:
+          VARIANT: ${{ matrix.variant }}
+        run: |
+          set -euo pipefail
+          digest="$(sha256sum "$RUNNER_TEMP/node-boot-build/bundle.tar.gz" | cut -d' ' -f1)"
+          printf '%s=%s\n' "$VARIANT" "$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Upload qualification build
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: node-boot-build-${{ matrix.variant }}
+          path: ${{ runner.temp }}/node-boot-build/bundle.tar.gz
+          if-no-files-found: error
+          compression-level: 0
+          overwrite: true
+          retention-days: 3

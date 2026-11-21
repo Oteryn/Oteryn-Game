@@ -31,7 +31,10 @@ pub use oteryn_client_domain::world::{Draw, MapTile, START, START_FLOOR};
 #[derive(Debug, Clone)]
 pub struct World {
     effects: oteryn_client_assets::EffectCatalog,
+    #[cfg(test)]
+    native_resolved_items: Vec<(oteryn_session::ActorPosition, u32)>,
     center: (i32, i32, i16),
+    pub(crate) first_visible_floor: i16,
     atlas: AtlasImage,
     tiles: HashMap<(i32, i32), MapTile>,
     /// Other floors keep independent stacks at coordinates projected onto the own-floor plane.
@@ -56,7 +59,10 @@ impl World {
         let atlas = atlas_from_cells(builtin_rgba(), BUILTIN_CELLS)?;
         Ok(Self {
             effects: Default::default(),
+            #[cfg(test)]
+            native_resolved_items: Vec::new(),
             center: (START.0, START.1, i16::from(START_FLOOR)),
+            first_visible_floor: i16::from(START_FLOOR),
             atlas,
             layers: BTreeMap::new(),
             tiles: HashMap::new(),
@@ -126,7 +132,10 @@ impl World {
         let atlas = atlas.into_image();
         Ok(Self {
             effects: Default::default(),
+            #[cfg(test)]
+            native_resolved_items: Vec::new(),
             center,
+            first_visible_floor: center.2,
             atlas,
             tiles,
             layers: BTreeMap::new(),
@@ -140,6 +149,15 @@ impl World {
         &self.atlas
     }
 
+    #[cfg(test)]
+    pub(crate) fn native_item_resolved_at(
+        &self,
+        at: oteryn_session::ActorPosition,
+        reference: u32,
+    ) -> bool {
+        self.native_resolved_items.contains(&(at, reference))
+    }
+
     /// The map tile at an absolute map position, if it lies in the loaded area.
     #[must_use]
     pub fn tile(&self, x: i32, y: i32) -> Option<&MapTile> {
@@ -148,7 +166,13 @@ impl World {
 
     #[must_use]
     pub fn tile_count(&self) -> usize {
-        self.tiles.len() + self.layers.values().map(HashMap::len).sum::<usize>()
+        self.tiles.len()
+            + self
+                .layers
+                .iter()
+                .filter(|(floor, _)| **floor >= self.first_visible_floor)
+                .map(|(_, tiles)| tiles.len())
+                .sum::<usize>()
     }
 
     /// The own player's cells facing `facing`, standing on a tile.

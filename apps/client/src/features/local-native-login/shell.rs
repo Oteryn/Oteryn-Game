@@ -2,7 +2,7 @@
 use super::*;
 
 impl Application {
-    pub(super) fn poll_entry(&mut self) {
+    pub(super) fn poll_entry(&mut self, event_loop: &ActiveEventLoop) {
         if self
             .login
             .as_ref()
@@ -33,11 +33,21 @@ impl Application {
         let Some(result) = self.entry.as_mut().and_then(Reentry::poll) else {
             return;
         };
+        if matches!(
+            &result,
+            Err(GameplayEntryError::ClientUpdateRequired {
+                updater_started: true,
+                ..
+            })
+        ) {
+            event_loop.exit();
+            return;
+        }
         if let Some(login) = &self.login {
             if let Some(document) = self.entry.as_mut().and_then(Reentry::take_bulletin) {
                 login.bulletin(document);
             }
-            login.finish(result.as_ref().map(|_| ()).map_err(|error| *error));
+            login.finish(result.as_ref().map(|_| ()).map_err(Clone::clone));
         }
         match result {
             Ok((mut view, link)) => {
@@ -49,7 +59,7 @@ impl Application {
                     status: String::new(),
                 });
             }
-            Err(error) => self.leave_play(error_text(error)),
+            Err(error) => self.leave_play(&error_text(error)),
         }
     }
     /// Reauthenticate after the consumed ticket, then show account character selection.

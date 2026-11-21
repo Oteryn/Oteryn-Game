@@ -1,17 +1,17 @@
 //! CRAFT-1: admitted USE bytes → real composed owner → atomic PG rows → result/reload.
+use super::item_craft_fixtures::{exchange};
+
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
-use crate::gameplay_transport::ComposedFreshAdmission;
+
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
-    AdmittedSession, ConnectionEnd, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS,
-    serve_admitted,
+    FirstEntryOutcome, FreshAdmissionAuthority,
 };
 use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
 };
-use tokio::io::{AsyncWriteExt};
 
 #[test]
 fn item_craft_cooking_wire_atomic_replay_restart_and_refusals() -> TestResult {
@@ -135,7 +135,7 @@ fn scenario() -> TestResult {
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-        super::item_look::seed_main_backpack(
+        super::item_look_fixtures::seed_main_backpack(
             &harness,
             &[(dough, 3), ("oteryn:item.tibia.i3577", 1)],
         )
@@ -265,92 +265,4 @@ fn scenario() -> TestResult {
         drop(seal);
         harness.cleanup().await
     })
-}
-
-pub(super) async fn exchange(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
-    admitted: AdmittedSession,
-    command_id: u64,
-    payload: &[u8],
-    current_source: Option<std::num::NonZeroU32>,
-) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>)> {
-    if owner.root.has_ready_demand() {
-        owner.root.maintain_ready_once().await.map_err(debug)?;
-    }
-    let (mut server, mut client) = tokio::io::duplex(1 << 20);
-    let client_task = async {
-        let mut source = None;
-        loop {
-            let raw = super::item_look::read_frame(&mut client).await?;
-            let envelope = crate::foundation::decode_wire_envelope(&raw)?;
-            if envelope.message_type() == crate::foundation::MessageType::SnapshotChunk {
-                let (_, domains) = oteryn_protocol_oteryn::decode_snapshot_chunk(envelope.payload())?;
-                for domain in domains {
-                    if domain.domain_id == oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY {
-                        let inventory = oteryn_protocol_oteryn::item_view::decode_character_inventory(domain.payload).map_err(debug)?;
-                        source = inventory.entries.iter().find(|entry| Some(entry.item_definition_ref) == current_source).map(|entry| entry.handle);
-                    }
-                }
-            }
-            if envelope.message_type() == crate::foundation::MessageType::SnapshotCommit { break; }
-        }
-        let actual = if current_source.is_some() {
-            let mut intent = oteryn_protocol_oteryn::world_object::decode_use_intent_target(admitted.continuity.selected_capabilities.as_slice(), payload).map_err(debug)?;
-            intent.target = UseTarget::Item(source.ok_or("current source handle")?);
-            encode_item_use_intent(&intent).map_err(debug)?
-        } else { payload.to_vec() };
-        let frame = oteryn_protocol_oteryn::encode_client_command(1, &oteryn_protocol_oteryn::ClientCommandValue { command_id, command_type: 2, payload: &actual })?;
-        client.write_u32(u32::try_from(frame.len())?).await?;
-        client.write_all(&frame).await?;
-        client.shutdown().await?;
-        loop {
-            let raw = super::item_look::read_frame(&mut client).await?;
-            let envelope = crate::foundation::decode_wire_envelope(&raw)?;
-            if envelope.message_type() == crate::foundation::MessageType::CommandResult {
-                let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
-                if result.command_id == command_id {
-                    let disposition = oteryn_protocol_oteryn::world_object::decode_use_result(result.payload).map_err(debug)?;
-                    return Ok::<_, Box<dyn std::error::Error>>((disposition, actual));
-                }
-            }
-        }
-    };
-    use std::future::Future;
-    use std::task::Poll;
-    let serving = async {
-        let end = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
-        drop(server);
-        end
-    };
-    let mut serving = std::pin::pin!(serving);
-    let mut client_task = std::pin::pin!(client_task);
-    let mut end = None;
-    let mut result = None;
-    let mut maintenance = std::pin::pin!(maintain_ready(owner));
-    tokio::time::timeout(std::time::Duration::from_secs(30), std::future::poll_fn(|context| {
-        if let Poll::Ready(result) = maintenance.as_mut().poll(context) {
-            return Poll::Ready(result);
-        }
-        if end.is_none() && let Poll::Ready(value) = serving.as_mut().poll(context) {
-            end = Some(value);
-        }
-        if result.is_none() && let Poll::Ready(value) = client_task.as_mut().poll(context) {
-            result = Some(value);
-        }
-        if end.is_some() && result.is_some() { Poll::Ready(Ok(())) } else { Poll::Pending }
-    })).await??;
-    let end = end.ok_or("server did not finish")?;
-    let ConnectionEnd::AdmittedThenDisconnected(admitted) = end else { return Err(format!("{end:?}").into()); };
-    let (result, actual) = result.ok_or("client did not finish")??;
-    Ok((admitted, result, actual))
-}
-
-/// Stand in for the node maintenance driver while a fixture serves a connection.
-pub(super) async fn maintain_ready(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult {
-    loop {
-        if owner.root.has_ready_demand() {
-            owner.root.maintain_ready_once().await.map_err(debug)?;
-        }
-        tokio::task::yield_now().await;
-    }
 }

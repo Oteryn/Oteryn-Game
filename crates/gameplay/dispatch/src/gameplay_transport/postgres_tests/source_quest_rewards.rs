@@ -1,7 +1,9 @@
 //! T..Z reward claims: source placements -> wire USE -> durable custody and replay.
 //! This certifies the reward path, not any untested access puzzle or NPC mission.
+use super::source_quest_rewards_fixtures::{legacy_world_owned};
+
 use super::fixture::{Harness, debug, id, run};
-use super::quest_callbacks::{source_world_positions, wire_use_targets_retained};
+use super::quest_callbacks_fixtures::{source_world_positions, wire_use_targets_retained};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::durability::item_mint::TypedDefinitionRef;
@@ -142,7 +144,7 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activated) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;
@@ -163,13 +165,15 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
                 .filter(|(key, _)| key == &chest.claim)
                 .collect::<Vec<_>>()
         );
+        let world_owned = legacy_world_owned(&chest.claim)?;
         let catalogue = if bound.served.iter().any(|claim| {
             claim.key.as_str() == chest.claim
                 && claim
                     .placements
                     .iter()
                     .any(|placement| placement.placement.quest_transition.is_some())
-        }) {
+        }) || world_owned
+        {
             let lowered =
                 oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                     .map_err(debug)?;
@@ -185,6 +189,21 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
             y: i32::from(chest.position.1),
             floor: -i16::from(chest.position.2),
         };
+        deps.combat_room = Some(
+            activated
+                .qualified_room()
+                .bundle_view(
+                    cells.clone(),
+                    activated.frame_binding().digest(),
+                    world.map_revision_digest(),
+                    crate::content::NativeEntryStart {
+                        x: at.x,
+                        y: at.y,
+                        floor: at.floor,
+                    },
+                )
+                .ok_or("qualified source reward Bundle room")?,
+        );
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
@@ -282,7 +301,7 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
             stale_fence.character_lease_generation += 1;
             stale.item_fence = Some(stale_fence);
             assert_eq!(
-                super::quest_callbacks::wire_uses(&owner, stale, &[1], &target).await?,
+                super::quest_callbacks_fixtures::wire_uses(&owner, stale, &[1], &target).await?,
                 [UseDisposition::Rejected],
                 "{} UID{} {}",
                 chest.claim,
@@ -315,7 +334,7 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
                 (1, StepDirection::West, at.x - 1),
                 (2, StepDirection::East, at.x),
             ] {
-                let reply = super::quest_world_callbacks::wire(
+                let reply = super::quest_world_callbacks_fixtures::wire(
                     &owner,
                     &mut stream,
                     command,
@@ -340,10 +359,19 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
             let expected = if cold {
                 vec![(CommandStatus::Accepted, UseDisposition::Committed)]
             } else {
+                // Crystal answers a repeated use of a claimed World-owned
+                // chest with its "it is empty" refusal, a Rejected command
+                // with a Rejected disposition (as quest_container_chests
+                // asserts); a RewardClaim chest owner reports NothingToUse.
+                let repeated = if world_owned {
+                    (CommandStatus::Rejected, UseDisposition::Rejected)
+                } else {
+                    (CommandStatus::Accepted, UseDisposition::NothingToUse)
+                };
                 vec![
                     (CommandStatus::Accepted, UseDisposition::Committed),
                     (CommandStatus::DuplicateReplay, UseDisposition::Committed),
-                    (CommandStatus::Accepted, UseDisposition::NothingToUse),
+                    repeated,
                 ]
             };
             let commands = if cold {
@@ -506,7 +534,10 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
                 )
                 .fetch_one(&h.pool)
                 .await?;
-                assert_eq!(quest_counts, (1, 1, 0), "{}", chest.claim);
+                // A World callback's storage write is one receipt; only a
+                // placement quest transition consumes a claim obligation.
+                let obligations = i64::from(!world_owned);
+                assert_eq!(quest_counts, (1, obligations, 0), "{}", chest.claim);
             }
         }
         drop(authority);
@@ -537,7 +568,7 @@ async fn walk(
         } else {
             (StepDirection::North, 0, -1)
         };
-        let reply = super::quest_world_callbacks::wire(
+        let reply = super::quest_world_callbacks_fixtures::wire(
             owner,
             stream,
             *command,

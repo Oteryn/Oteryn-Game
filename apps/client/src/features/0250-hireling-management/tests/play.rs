@@ -29,10 +29,10 @@ fn hireling_management_crosses_the_real_session_loop()
                                 colors: [1, 2, 3, 4],
                                 skills: 15,
                                 outfits: 1,
-                                position: Some((7, 9, -1)),
+                                position: Some((7, 9, 1)),
                             },
                         ])
-                        .encode()
+                        .encode_wire()
                         .ok_or(SessionError::SessionUnusable)?
                     } else {
                         vec![255]

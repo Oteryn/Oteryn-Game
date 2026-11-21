@@ -2,7 +2,8 @@ use super::*;
 
 impl DurabilityRoot {
     /// Reload due work using a current execution Channel in the same World, without an actor.
-    /// Each house commits separately; a native error aborts its whole transaction, without retry.
+    /// Background advances one selected house; foreground traverses all candidates.
+    /// A native error aborts that house's transaction without retry.
     pub async fn drain_house_dispositions(
         &self,
         permit: &super::super::spell_owner_commit::SpellLanePermit,
@@ -11,7 +12,20 @@ impl DurabilityRoot {
         scope: RuntimeScopeRefV1,
         generation: u64,
     ) -> Result<()> {
-        super::guildhall::drain(self, permit, authority, node, scope, generation).await?;
+        self.with_background_operation(self.drain_house_disposition_unit(
+            permit, authority, node, scope, generation,
+        )).await
+    }
+
+    async fn drain_house_disposition_unit(
+        &self,
+        permit: &super::super::spell_owner_commit::SpellLanePermit,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        scope: RuntimeScopeRefV1,
+        generation: u64,
+    ) -> Result<()> {
+        let guildhalls = super::guildhall::candidates(self, permit, authority, node, scope, generation).await?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| HouseDispositionError::Rejected)?;
@@ -55,8 +69,19 @@ impl DurabilityRoot {
                 })
             })
             .await?;
+        let count = candidates.len() + guildhalls.len();
+        if count == 0 { return Ok(()); }
+        let selected = self.next_house_disposition(count);
         let mut failure = None;
-        for operation in candidates {
+        for (index, house) in guildhalls.iter().enumerate() {
+            if selected.is_some_and(|selected| selected != index) { continue; }
+            if let Err(error) = super::guildhall::advance(self, permit, authority, node, scope, generation, house.clone()).await {
+                if selected.is_none() { return Err(error); }
+                failure = Some(error);
+            }
+        }
+        for (index, operation) in candidates.into_iter().enumerate() {
+            if selected.is_some_and(|selected| selected != index + guildhalls.len()) { continue; }
             let record = recovery.clone();
             let node = node.clone();
             let mut p = p.clone();
@@ -80,9 +105,9 @@ impl DurabilityRoot {
                 Ok(())
             })).await;
             if let Err(error) = result {
-                failure = Some(error);
+                failure = Some(error.into());
             }
         }
-        failure.map_or(Ok(()), |e| Err(e.into()))
+        failure.map_or(Ok(()), Err)
     }
 }

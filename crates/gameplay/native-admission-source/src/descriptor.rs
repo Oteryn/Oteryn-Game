@@ -16,6 +16,11 @@ pub const PEER_CERT_DER_MAX: usize = 4096;
 pub const PEER_CERT_DER_AGGREGATE_MAX: usize = 16384;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Operation {
+    ListPendingCharacterCommandsV2,
+    ReadCharacterCommandIntentV2,
+    PublishCharacterCommandReceiptV2,
+    PublishCharacterServiceStateV2,
+    PublishCharacterServiceWatermarkV2,
     PublishGameJournalRecordV1,
     ReadGameJournalCursorV1,
     ReadAccountSecurityV1,
@@ -64,6 +69,10 @@ pub enum Operation {
     PublishCharacterDeathsV2,
     PublishGuildV2,
     PublishHouseV2,
+    PublishCharacterSkillsV2,
+    PublishCharacterAchievementsV2,
+    PublishCharacterEquipmentV2,
+    PublishCharacterOutfitV2,
     PublishCharacterOnlineSessionV2,
     PublishWorldDailyKillsV2,
     PublishPublicProjectionWatermarkV2,
@@ -88,6 +97,14 @@ impl Operation {
         match self {
             Self::PublishGameJournalRecordV1 => "/internal/v1/playerdata/journal/records",
             Self::ReadGameJournalCursorV1 => "/internal/v1/playerdata/journal/cursor",
+            Self::ListPendingCharacterCommandsV2 => super::character_services_v2::PENDING_PATH,
+            Self::ReadCharacterCommandIntentV2 => super::character_services_v2::READ_PATH,
+            Self::PublishCharacterCommandReceiptV2 => super::character_services_v2::RECEIPT_PATH,
+            Self::PublishCharacterServiceStateV2 => super::character_services_v2::STATE_PATH,
+            Self::PublishCharacterServiceWatermarkV2 => {
+                super::character_services_v2::WATERMARK_PATH
+            }
+
             // The four closed evidence tags share the accepted Platform endpoint.
             // Operation identity remains bound by the existing request/response codec.
             Self::ReadAccountSecurityV1
@@ -128,6 +145,12 @@ impl Operation {
             Self::PublishCharacterDeathsV2 => "/internal/v2/game-public/character-deaths",
             Self::PublishGuildV2 => "/internal/v2/game-public/guild",
             Self::PublishHouseV2 => "/internal/v2/game-public/house",
+            Self::PublishCharacterSkillsV2 => "/internal/v2/game-public/character-skills",
+            Self::PublishCharacterAchievementsV2 => {
+                "/internal/v2/game-public/character-achievements"
+            }
+            Self::PublishCharacterEquipmentV2 => "/internal/v2/game-public/character-equipment",
+            Self::PublishCharacterOutfitV2 => "/internal/v2/game-public/character-outfit",
             Self::PublishWorldDailyKillsV2 => "/internal/v2/game-public/world-daily-kills",
             Self::PublishCharacterOnlineSessionV2 => {
                 "/internal/v2/game-public/character-online-session"
@@ -194,11 +217,20 @@ impl Operation {
             Self::PublishCharacterDeathsV2 => 32_768,
             Self::PublishGuildV2 => 393_216,
             Self::PublishHouseV2 => 2_048,
+            Self::PublishCharacterSkillsV2 => 4_096,
+            Self::PublishCharacterAchievementsV2 => 262_144,
+            Self::PublishCharacterEquipmentV2 => 8_192,
+            Self::PublishCharacterOutfitV2 => 2_048,
             Self::PublishWorldDailyKillsV2 => 2_048,
             Self::PublishCharacterOnlineSessionV2 => 2_048,
             Self::PublishPublicProjectionWatermarkV2 => 512,
             Self::PublishPublicProjectionWatermarkV1 => super::public_projections::WATERMARK_BYTES,
             Self::PublishGameRestoreNoticeV1 => super::restore_notice::NOTICE_BYTES,
+            Self::ListPendingCharacterCommandsV2 => 512,
+            Self::ReadCharacterCommandIntentV2 => 512,
+            Self::PublishCharacterCommandReceiptV2 => 1024,
+            Self::PublishCharacterServiceStateV2 => 2048,
+            Self::PublishCharacterServiceWatermarkV2 => 512,
             Self::PublishWorldEventOutcomeV1 => super::world_event_outcomes::EVENT_BYTES,
             Self::PublishGuildSeasonV1 => super::world_event_outcomes::SEASON_BYTES,
             Self::PublishLeagueWatermarkV1 => super::world_event_outcomes::WATERMARK_BYTES,

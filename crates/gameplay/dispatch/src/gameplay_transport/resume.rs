@@ -226,7 +226,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Err(Rejected);
         };
         if !tokio::time::timeout(std::time::Duration::from_secs(10), async {
-            self.prepare_grizzly_npc_resume(&lost).await
+            self.recover_pending_soul_war_source_use(actor, lost.game_session_id)
+                .await
+                && self.prepare_grizzly_npc_resume(&lost).await
                 && self
                     .reconcile_quest_callback_receipts(lost.game_session_id)
                     .await
@@ -862,6 +864,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Result<CompleteReconnectOutcomeV1, AdmissionRefusal> {
         loop {
             let unissued = match store
+                .clone()
+                .with_security_revocation_freshness(self.states.security_revocation_stream_enabled)
                 .apply_registered_complete_reconnect(
                     self.holder,
                     request.clone(),

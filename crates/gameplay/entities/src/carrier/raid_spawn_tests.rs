@@ -53,10 +53,13 @@ fn runtime(generation: u64) -> TestResult<ChannelRuntimeV1> {
             health_hidden: false,
         },
     };
+    let mut form = policy.clone();
+    form.definition_key = "creature:rat.form".into();
+    form.maximum_health = 40;
     checked(runtime.install_companion_policies(checked(
         CompiledCreaturePolicies::from_active_artifact(
             runtime.content_pin().server_artifact_digest(),
-            vec![policy],
+            vec![policy, form],
         ),
     )?))?;
     Ok(runtime)
@@ -86,6 +89,65 @@ fn position(x: i32) -> MovementLocalPosition {
         y: 100,
         floor: 7,
     }
+}
+
+#[test]
+fn qn5_raid_body_handoff_replaces_actor_preserves_occurrence_and_cleanup() -> TestResult {
+    let mut runtime = runtime(1)?;
+    let base = spec(&runtime, true)?;
+    let next = checked(NativeRaidSpawnSpec::qualified(
+        "creature:rat.form",
+        "test-1",
+        runtime.content_pin().server_artifact_digest(),
+        true,
+    ))?;
+    let stamp = checked(runtime.issue_owner_work())?;
+    let first = checked(runtime.realize_raid_spawn(
+        stamp,
+        identity(0),
+        &base,
+        Some(position(100)),
+        |_, _| Some(true),
+    ))?;
+    let RaidSpawnOutcome::Placed(old) = first.outcome else {
+        return Err("initial boss".into());
+    };
+    checked(runtime.commit_monster_lab_damage(old, b"feroxa-half-health", 11))?;
+    let before = checked(runtime.companion_snapshot(old))?;
+    let result = runtime.replace_raid_body(stamp, identity(0), &before, &next);
+    assert!(
+        result.is_ok(),
+        "a source form must replace the physical body without ending its raid: {result:?}"
+    );
+    let actor = checked(result)?;
+    assert_ne!(
+        actor, old,
+        "source create/remove invalidates the old target"
+    );
+    assert!(!runtime.contains_live_creature(old));
+    let after = checked(runtime.companion_snapshot(actor))?;
+    assert_eq!((after.health, after.maximum_health), (40, 40));
+    assert_eq!(after.position, before.position);
+    assert_eq!(after.state.policy.definition_key, "creature:rat.form");
+    assert_eq!(runtime.visible_entities().creatures.len(), 1);
+    assert_eq!(
+        checked(runtime.raid_identity_for_actor(actor))?,
+        Some(identity(0))
+    );
+    assert_eq!(checked(runtime.raid_identity_for_actor(old))?, None);
+    let status = checked(runtime.raid_creatures(id(4)))?;
+    assert_eq!(status[0].outcome, RaidSpawnOutcome::Placed(actor));
+    assert!(status[0].alive && status[0].boss);
+    let replay = checked(runtime.realize_raid_spawn(stamp, identity(0), &base, None, |_, _| None))?;
+    assert!(replay.replayed);
+    assert_eq!(
+        replay.outcome, first.outcome,
+        "placement receipt remains immutable"
+    );
+    assert_eq!(checked(runtime.finish_raid_run(stamp, id(4), true))?, 1);
+    assert!(!runtime.contains_live_creature(actor));
+    assert_eq!(checked(runtime.acknowledge_raid_run_end(stamp, id(4)))?, 1);
+    Ok(())
 }
 
 #[test]
@@ -405,5 +467,206 @@ fn raid_owner_shared_wave_attempt_budget_survives_partial_retry_and_fences() -> 
         checked(replacement.spend_raid_shared_attempt(replacement_stamp, id(5), 0))?,
         Some(0)
     );
+    Ok(())
+}
+
+#[test]
+fn qn5_raid_body_handoff_rejects_stale_owner_snapshot_and_closed_run() -> TestResult {
+    let mut owner = runtime(1)?;
+    let base = spec(&owner, true)?;
+    let next = checked(NativeRaidSpawnSpec::qualified(
+        "creature:rat.form",
+        "test-1",
+        owner.content_pin().server_artifact_digest(),
+        true,
+    ))?;
+    let stamp = checked(owner.issue_owner_work())?;
+    let placed = checked(owner.realize_raid_spawn(
+        stamp,
+        identity(0),
+        &base,
+        Some(position(100)),
+        |_, _| Some(true),
+    ))?;
+    let RaidSpawnOutcome::Placed(actor) = placed.outcome else {
+        return Err("initial boss".into());
+    };
+    let stale = checked(owner.companion_snapshot(actor))?;
+    checked(owner.commit_monster_lab_damage(actor, b"fresh-body-health", 1))?;
+    assert!(
+        owner
+            .replace_raid_body(stamp, identity(0), &stale, &next)
+            .is_err()
+    );
+    let before = checked(owner.companion_snapshot(actor))?;
+    let foreign = checked(runtime(2)?.issue_owner_work())?;
+    assert!(
+        owner
+            .replace_raid_body(foreign, identity(0), &before, &next)
+            .is_err()
+    );
+    let wrong_role = checked(NativeRaidSpawnSpec::qualified(
+        "creature:rat.form",
+        "test-1",
+        owner.content_pin().server_artifact_digest(),
+        false,
+    ))?;
+    assert!(
+        owner
+            .replace_raid_body(stamp, identity(0), &before, &wrong_role)
+            .is_err()
+    );
+    assert_eq!(checked(owner.companion_snapshot(actor))?, before);
+    assert_eq!(owner.visible_entities().creatures.len(), 1);
+    checked(owner.finish_raid_run(stamp, id(4), false))?;
+    assert!(
+        owner
+            .replace_raid_body(stamp, identity(0), &before, &next)
+            .is_err()
+    );
+    assert_eq!(checked(owner.companion_snapshot(actor))?, before);
+    Ok(())
+}
+
+#[test]
+fn qn5_raid_body_handoff_capacity_refusal_restores_original_position_and_identity() -> TestResult {
+    let mut owner = runtime(1)?;
+    let base = spec(&owner, true)?;
+    let stamp = checked(owner.issue_owner_work())?;
+    for index in 0..8 {
+        checked(owner.realize_raid_spawn(
+            stamp,
+            identity(index),
+            &base,
+            Some(position(100 + i32::from(index))),
+            |_, _| Some(true),
+        ))?;
+    }
+    let RaidSpawnOutcome::Placed(actor) = checked(owner.raid_creatures(id(4)))?[0].outcome else {
+        return Err("initial boss".into());
+    };
+    let before = checked(owner.companion_snapshot(actor))?;
+    let next = checked(NativeRaidSpawnSpec::qualified(
+        "creature:rat.form",
+        "test-1",
+        owner.content_pin().server_artifact_digest(),
+        true,
+    ))?;
+    assert!(
+        owner
+            .replace_raid_body(stamp, identity(0), &before, &next)
+            .is_err()
+    );
+    assert_eq!(checked(owner.companion_snapshot(actor))?, before);
+    assert_eq!(owner.visible_entities().creatures.len(), 8);
+    assert_eq!(
+        checked(owner.raid_identity_for_actor(actor))?,
+        Some(identity(0))
+    );
+    assert!(
+        owner.raid_spawns.bodies.is_empty(),
+        "failed handoff leaves no successor pointer"
+    );
+    Ok(())
+}
+
+#[test]
+fn qn5_raid_death_handoff_requires_actual_zero_hp_and_keeps_boss_alive() -> TestResult {
+    let mut owner = runtime(1)?;
+    let base = spec(&owner, true)?;
+    let next = checked(NativeRaidSpawnSpec::qualified(
+        "creature:rat.form",
+        "test-1",
+        owner.content_pin().server_artifact_digest(),
+        true,
+    ))?;
+    let stamp = checked(owner.issue_owner_work())?;
+    let first = checked(owner.realize_raid_spawn(
+        stamp,
+        identity(0),
+        &base,
+        Some(position(100)),
+        |_, _| Some(true),
+    ))?;
+    let RaidSpawnOutcome::Placed(actor) = first.outcome else {
+        return Err("initial boss".into());
+    };
+    let live = checked(owner.companion_snapshot(actor))?;
+    assert!(
+        owner
+            .replace_dead_raid_body(stamp, identity(0), &live, &next)
+            .is_err()
+    );
+    checked(owner.commit_monster_lab_damage(actor, b"feroxa-intermediate-death", 20))?;
+    let dead = checked(owner.companion_snapshot_including_dead(actor))?;
+    assert_eq!(dead.health, 0);
+    assert!(
+        owner
+            .replace_raid_body(stamp, identity(0), &dead, &next)
+            .is_err()
+    );
+    let result = owner.replace_dead_raid_body(stamp, identity(0), &dead, &next);
+    assert!(
+        result.is_ok(),
+        "the actual intermediate death must admit its successor: {result:?}"
+    );
+    let next_actor = checked(result)?;
+    assert_ne!(next_actor, actor);
+    assert_eq!(checked(owner.companion_snapshot(next_actor))?.health, 40);
+    assert!(checked(owner.raid_creatures(id(4)))?[0].alive);
+    assert!(
+        owner
+            .replace_dead_raid_body(stamp, identity(0), &dead, &next)
+            .is_err(),
+        "a replay of the old death cannot create another successor"
+    );
+    assert_eq!(checked(owner.finish_raid_run(stamp, id(4), true))?, 1);
+    assert!(!owner.contains_live_creature(next_actor));
+    Ok(())
+}
+
+#[test]
+fn qn5_raid_pending_death_survives_capacity_refusal_and_deadline_cleanup() -> TestResult {
+    let mut owner = runtime(1)?;
+    let base = spec(&owner, true)?;
+    let stamp = checked(owner.issue_owner_work())?;
+    for index in 0..8 {
+        checked(owner.realize_raid_spawn(
+            stamp,
+            identity(index),
+            &base,
+            Some(position(100 + i32::from(index))),
+            |_, _| Some(true),
+        ))?;
+    }
+    let RaidSpawnOutcome::Placed(actor) = checked(owner.raid_creatures(id(4)))?[0].outcome else {
+        return Err("initial boss".into());
+    };
+    checked(owner.commit_monster_lab_damage(actor, b"pending-feroxa-death", 20))?;
+    let dead = checked(owner.companion_snapshot_including_dead(actor))?;
+    let next = checked(NativeRaidSpawnSpec::qualified(
+        "creature:rat.form",
+        "test-1",
+        owner.content_pin().server_artifact_digest(),
+        true,
+    ))?;
+    assert!(
+        owner
+            .replace_dead_raid_body(stamp, identity(0), &dead, &next)
+            .is_err()
+    );
+    let status = checked(owner.raid_creatures(id(4)))?[0];
+    assert!(!status.alive && status.replacement_pending);
+    assert_eq!(
+        checked(owner.companion_snapshot_including_dead(actor))?,
+        dead
+    );
+    assert_eq!(
+        checked(owner.finish_raid_run(stamp, id(4), true))?,
+        8,
+        "expiry removes the pending dead body as well as its seven live peers"
+    );
+    assert!(owner.companion_snapshot_including_dead(actor).is_err());
+    assert_eq!(checked(owner.acknowledge_raid_run_end(stamp, id(4)))?, 8);
     Ok(())
 }
