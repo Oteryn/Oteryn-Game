@@ -554,16 +554,10 @@ impl PlayerSpellState {
             || self.facts.level <= oteryn_gameplay_progression::wheel::WHEEL_LEVEL_OFFSET;
         let clear_wheel_windows =
             wheel_disabled && (self.wheel_sanctuary.is_some() || self.wheel_focus_until.is_some());
-        // Every Wheel maximum (dedication, Workshop, gems) needs current Premium. Drop it with
-        // the transition so no cast can heal into it before the next Wheel vitals refresh.
-        let clear_wheel_maxima = wheel_disabled
-            && (self.facts.max_health, self.facts.max_mana)
-                != (self.base_max_health, self.base_max_mana);
         let changed = self.premium_current != current
             || self.stored_promotion != promoted
             || self.facts.max_soul != maximum
-            || clear_wheel_windows
-            || clear_wheel_maxima;
+            || clear_wheel_windows;
         let revision = if changed {
             self.revision
                 .checked_add(1)
@@ -580,12 +574,6 @@ impl PlayerSpellState {
         if clear_wheel_windows {
             self.wheel_sanctuary = None;
             self.wheel_focus_until = None;
-        }
-        if clear_wheel_maxima {
-            self.facts.max_health = self.base_max_health;
-            self.facts.max_mana = self.base_max_mana;
-            self.health = self.health.min(self.base_max_health);
-            self.mana = self.mana.min(self.base_max_mana);
         }
         self.revision = revision;
         Ok(changed)

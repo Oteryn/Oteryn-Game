@@ -42,7 +42,8 @@ full Global parity, protected integration or production deployment complete.
 
 The [audit](../../reference/wheel-of-destiny-testserver-20261113.md) records current sources,
 producer/consumer coverage, remaining blockers and a bounded durable/protocol repair plan.
-Three numeric defects are repaired in the common progression projector. Eight-slot
+Two numeric defects (Mastery, Monk Mana) are repaired in the common progression projector;
+Workshop Health/Mana/Capacity is deferred to a separate PR (owner decision 2026-11-21). Eight-slot
 migration, new Mastery Convictions, 20 new mods and Sorcerer elemental-state integration
 remain open; this PR is a draft. Six further current-menu value/type mismatches are
 qualified in W07 and remain open pending combat/stat qualification.
@@ -69,7 +70,7 @@ qualified in W07 and remain open pending combat/stat qualification.
 
 No durable mutation, migration, session/lease gate, receipt or wire boundary is changed.
 The production delta changes only shared stat/gem arithmetic. Existing caller eligibility,
-current-revision checks and paid Workshop transitions are preserved. The three arithmetic
+current-revision checks and paid Workshop transitions are preserved. The two arithmetic
 changes have negative regressions and composed projection coverage.
 
 The unimplemented twelve-to-eight transition is high risk and has explicit migration,
@@ -91,7 +92,7 @@ represented as a constant-only fix.
 
 | Finding | Reference | Original behavior | Result |
 | --- | --- | --- | --- |
-| Workshop stats | +5 HP/Mana/Capacity per upgrade, without gems | No shared stat contribution | Added once under current grade revision; all five vocations tested |
+| Workshop stats | +5 HP/Mana/Capacity per upgrade, without gems | No shared stat contribution | Deferred to a separate PR (owner decision 2026-11-21, after rv-3363-2) |
 | Gem Revelation Mastery | 150/165/180/225, official composed preset has Outburst I | Values doubled; preset had Outburst II | Single contribution; all 16 IDs/all grades and exact preset tested |
 | Monk mixed Mana | 100/110/120/150; official mod 33 Grade IV shows150 | Zero for IDs33–36 | Catalogue values restored with resistance retained |
 | Vessel layout | Eight, L/R/G/L/G/R/G/G, four +125 Convictions | Twelve, L/R/G repeated; old Convictions | Confirmed open implementation/migration gap |
@@ -105,7 +106,6 @@ represented as a constant-only fix.
 Executed for the implementation batch, and repeated on the published source-qualified
 candidate `cec30251a3592eaf6b69c1bd28ae7c8c738b821a`:
 
-- Workshop RED: actual `(0,0,0)`, expected `(5,5,5)` after a paid grade upgrade.
 - Gem RED: Grade I Mastery300000 vs150000; Monk Mana0 vs100000.
 - Composed preset RED: Spiritual Outburst stageII vs official stageI when only the original
   Mastery multiplier was temporarily restored; the repair was restored before all gates.

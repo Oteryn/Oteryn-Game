@@ -313,20 +313,6 @@ impl WheelRuntimeEffects {
         } else {
             0
         };
-        // Winter Update 2026: each modifier-grade upgrade grants +5 health, mana and
-        // capacity, even without a socketed gem. The base Grade I is stored as zero.
-        let workshop_bonus = if grades_current {
-            state
-                .grades
-                .values()
-                .try_fold(0_u32, |total, grade| total.checked_add(u32::from(*grade)))?
-                .checked_mul(5)?
-        } else {
-            0
-        };
-        self.max_health = self.max_health.checked_add(workshop_bonus)?;
-        self.max_mana = self.max_mana.checked_add(workshop_bonus)?;
-        self.capacity = self.capacity.checked_add(workshop_bonus)?;
         // Crystal player_wheel.cpp:2931-2945 adds every Grade IV modifier to each
         // revelation domain, independently of whether a gem using it is socketed.
         for domain in ["green", "red", "purple", "blue"] {
@@ -825,70 +811,9 @@ mod tests {
 mod atelier_tests {
     use super::*;
     use crate::atelier::vessels::{GEM_VESSEL_SLOT_QUALITIES, GEM_VESSEL_SLOTS};
-    use crate::atelier::{AtelierAction, AtelierState, FragmentKind, Gem, GemQuality};
+    use crate::atelier::{AtelierState, FragmentKind, Gem, GemQuality};
     use crate::wheel::WheelSlots;
     use crate::wheel_gem_data::WheelGemData;
-
-    #[test]
-    fn workshop_upgrades_grant_shared_stats_without_socketed_gems()
-    -> Result<(), Box<dyn std::error::Error>> {
-        let data = WheelGemData::embedded()?;
-        let allocation = WheelAllocation {
-            wheel_ruleset_revision: Some(data.revision().into()),
-            wheel_revision: 1,
-            slots: WheelSlots::ZERO,
-            current: true,
-        };
-        // Official client 15.33.dd0955, client.en.qm: every unlocked modifier grade
-        // grants +5 Health, Mana and Capacity, independently of socketed gems.
-        for vocation in ["knight", "paladin", "sorcerer", "druid", "monk"] {
-            let mut state = AtelierState {
-                vocation: vocation.into(),
-                gold: 100_000_000,
-                ..Default::default()
-            };
-            state.fragments.insert(FragmentKind::Basic, 100);
-            for (mod_id, expected) in [(0, 5), (0, 10), (0, 15), (1, 20), (1, 25)] {
-                state
-                    .commit(
-                        state.revision,
-                        AtelierAction::GradeUp {
-                            kind: FragmentKind::Basic,
-                            mod_id,
-                        },
-                    )
-                    .map_err(|refusal| format!("grade upgrade refused: {refusal:?}"))?;
-                let mut effects =
-                    derive_runtime_effects(data.wheel(), &allocation, vocation, 1000, true, true)
-                        .ok_or("Wheel effects")?;
-                effects
-                    .contribute_gems(&state, &data, &allocation)
-                    .ok_or("Workshop contribution")?;
-                assert_eq!(
-                    (effects.max_health, effects.max_mana, effects.capacity),
-                    (expected, expected, expected),
-                    "{vocation} shared grades {:?}",
-                    state.grades,
-                );
-                assert!(effects.sockets.effective_grades.is_empty());
-                assert_eq!(effects.sockets.grade_iv_points, u32::from(expected >= 15));
-            }
-            // A former catalogue cannot authorize current shared-grade stats.
-            state.grade_ruleset_revision = Some("old".into());
-            let mut effects =
-                derive_runtime_effects(data.wheel(), &allocation, vocation, 1000, true, true)
-                    .ok_or("Wheel effects")?;
-            effects
-                .contribute_gems(&state, &data, &allocation)
-                .ok_or("stale Workshop contribution")?;
-            assert_eq!(
-                (effects.max_health, effects.max_mana, effects.capacity),
-                (0, 0, 0)
-            );
-            assert_eq!(effects.sockets.grade_iv_points, 0);
-        }
-        Ok(())
-    }
 
     #[test]
     fn atelier_vessel_uses_independent_shared_grades_and_revelation_mastery() {

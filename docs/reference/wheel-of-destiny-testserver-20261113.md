@@ -1,7 +1,7 @@
 # Wheel of Destiny: Winter Update test-server audit, 2026-11-13
 
 **Result: Oteryn does not yet implement the complete current test-server Wheel.**
-This PR repairs three reproduced numeric defects. The eight-vessel layout, four new
+This PR repairs two reproduced numeric defects (Workshop stats are deferred, W01). The eight-vessel layout, four new
 Conviction Mastery perks, 20 additional supreme modifiers and Sorcerer elemental-state
 integration remain gaps. Native combat, paid-operation and reconnect acceptance is incomplete.
 
@@ -68,20 +68,14 @@ stages agree. No native combat-damage or controlled paid-upgrade measurement was
 
 ### W01 — Missing Workshop Health, Mana and Capacity
 
-**FACT, repaired:** the UI advertised `5 * sum(zero_based_grades)`, but
-`WheelRuntimeEffects::contribute_gems` did not add those stats. S2/S5 confirm +5 to each
+**FACT, open (deferred):** the UI advertises `5 * sum(zero_based_grades)`, but
+`WheelRuntimeEffects::contribute_gems` does not add those stats. S2/S5 confirm +5 to each
 stat for every upgrade I→II, II→III and III→IV, including without a socketed gem.
 
-The repair contributes this once in the shared effect projector for the current grade
-revision. Grade I adds zero; a fully enhanced modifier adds +15 to each stat. Existing
-caller checks for current allocation, level, promotion and Premium remain. The projector
-feeds vitals, spell facts, presentation and durable capacity; capacity's conversion to
-hundredths remains in its existing owner.
-
-The regression performs five real `AtelierState::commit(GradeUp)` transitions for each
-vocation. Before the fix, the first upgrade returned `(0, 0, 0)` instead of `(5, 5, 5)`.
-Afterwards every step through `(25, 25, 25)` passes without socketed gems. It also proves
-that old-revision grades add zero and preserves the separate Grade IV point count.
+A projector repair was drafted in #3363 and withdrawn by owner decision (2026-11-21):
+review found that the bonus also needs the House vitals path and a Premium-expiry clamp
+that respects the stored deadline. Workshop Health, Mana and Capacity are deferred to a
+separate PR that covers every vitals consumer.
 
 ### W02 — Gem Revelation Mastery applied twice
 
@@ -186,7 +180,7 @@ six retained donor overrides in `wheel_effects/gems.rs` produce these difference
 | Paladin supreme29, Divine Caldera | Critical Extra Damage12% | Critical Extra Damage18% |
 | Druid supreme60, Nature's Embrace | Cooldown−10s, Momentum1% | Cooldown−5s, Momentum1% |
 
-These are verified reference value/type mismatches. They remain outside this PR's three
+These are verified reference value/type mismatches. They remain outside this PR's two
 numeric repairs pending combat/stat qualification; they are not declared accepted Oteryn
 differences. The current client table also corroborates the Flurry82/83 effect types and
 all four values. ID60 is **Nature's Embrace**, not Heal Friend; current ID71 is Heal Friend
@@ -224,7 +218,7 @@ not inspected, so an actual live beam/wave refusal is **not** claimed.
 | --- | --- | --- |
 | Eligibility, budget, connectivity, caps | `crates/gameplay/progression/src/wheel.rs` | Component tests executed; native level/Premium/promotion transitions remain |
 | Non-Workshop point budget | `character_wheel/presentation.rs::compose_budget/read_budget` | Durable Task Board points and completed Monk pilgrimage join level points; the shared reader feeds presentation and writer. Native32-point source breakdown and broader rare-item parity are unqualified |
-| Shared stats and gems | `wheel_effects.rs`, `wheel_effects/gems.rs` | Three repairs, failing regressions, all-grade tests and composed planner fixture executed |
+| Shared stats and gems | `wheel_effects.rs`, `wheel_effects/gems.rs` | Two repairs (Workshop stats deferred, W01), failing regressions, all-grade tests and composed planner fixture executed |
 | Knight | `spell/cast/wheel.rs`, `spell/wheel_formula.rs`, `spell/magnitude_owner.rs` | Combat Mastery, Battle Instinct and Battle Healing consumers traced; live numeric qualification remains |
 | Paladin | `attack/ranged.rs`, `attack/drain.rs`, native delayed owners | Ballistic/Positional effects, Grenade and Empowerment consumers traced; delayed/PZ runtime tests not executed here |
 | Druid | `spell/magnitude_owner.rs`, `spell/native_combat.rs` | Grove, Healing Link/echo and Twin Bursts consumers traced; live threshold/batch validation remains |
@@ -284,7 +278,7 @@ protocol and client change, with these gates:
 8. Complete the Sorcerer elemental contract/owner and live five-vocation acceptance:
    damage/healing, thresholds, grades, paid operations, Premium expiry, reset and relog.
 
-This PR intentionally delivers the three verified numeric repairs and the audit evidence.
+This PR intentionally delivers the two verified numeric repairs and the audit evidence.
 It does not claim that a persisted twelve-slot build can safely use the new layout yet.
 
 ## Validation
