@@ -899,12 +899,13 @@ async fn party(
 
 async fn guild(row: &mut Row, client: &mut DevClientSession) -> TestResult {
     use oteryn_dev_client::client_runtime::guild as runtime;
-    row.missing_server = Some("source:crates/protocol-oteryn/src/guild.rs:17");
     let reply = runtime::send(
         client.session_mut(),
         &runtime::GuildCommand::Query(runtime::guild::GuildQuery::Own),
     )
     .await?;
+    // Only an answered query reaches the missing MOTD route; a failed one stays FAIL.
+    row.missing_server = verdict::guild_motd_missing(&reply);
     // Native GuildIntent has membership/rank writers but no MOTD writer. Reading
     // GuildSummary.message cannot prove an update. Keep every other gap visible too.
     evidence(

@@ -807,6 +807,22 @@ impl Groups {
     }
 }
 
+/// S03's MOTD gap is reported only once the server accepted and answered the guild query;
+/// a timeout, lost transport or refusal stays an ordinary FAIL.
+pub(crate) fn guild_motd_missing(
+    reply: &oteryn_dev_client::client_runtime::guild::GuildReply,
+) -> Option<&'static str> {
+    use oteryn_dev_client::client_runtime::guild::{CommandStatus, GuildReply};
+    matches!(
+        reply,
+        GuildReply::Query {
+            status: CommandStatus::Accepted,
+            result: Some(_),
+        }
+    )
+    .then_some("source:crates/protocol-oteryn/src/guild.rs:17")
+}
+
 #[cfg(test)]
 mod verdict_tests {
     use super::*;
@@ -1140,5 +1156,43 @@ mod verdict_tests {
         let chained = Groups::parse(Some("a"), CHAIN)?;
         assert!(chained.runs("a") && chained.runs("b") && chained.runs("c") && !chained.runs("d"));
         Ok(())
+    }
+
+    #[test]
+    fn failed_guild_query_is_not_reported_as_missing_server() {
+        use oteryn_dev_client::client_runtime::guild::{CommandStatus, GuildReply, guild};
+        for (status, result) in [
+            (CommandStatus::Rejected, None),
+            (CommandStatus::Accepted, None),
+            (
+                CommandStatus::Rejected,
+                Some(guild::GuildQueryResult::Own(None)),
+            ),
+        ] {
+            assert_eq!(
+                guild_motd_missing(&GuildReply::Query { status, result }),
+                None
+            );
+        }
+        assert_eq!(
+            guild_motd_missing(&GuildReply::Intent {
+                status: CommandStatus::Accepted,
+                result: None,
+            }),
+            None
+        );
+    }
+
+    #[test]
+    fn answered_guild_query_reports_the_missing_motd_route() {
+        use oteryn_dev_client::client_runtime::guild::{CommandStatus, GuildReply, guild};
+        let reply = GuildReply::Query {
+            status: CommandStatus::Accepted,
+            result: Some(guild::GuildQueryResult::Own(None)),
+        };
+        assert_eq!(
+            guild_motd_missing(&reply),
+            Some("source:crates/protocol-oteryn/src/guild.rs:17")
+        );
     }
 }
