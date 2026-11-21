@@ -311,6 +311,18 @@ pub trait FreshAdmissionAuthority {
         self.observe_visible_entities(actor)
     }
 
+    /// Periodic named visibility distinguishes holder contention from a lost observation.
+    fn observe_named_visible_entities_result(
+        &self,
+        actor: ExactActorRef,
+    ) -> impl Future<Output = Result<ChannelEntities, AdmissionRefusal>> {
+        async move {
+            Box::pin(self.observe_named_visible_entities(actor))
+                .await
+                .ok_or(AdmissionRefusal::Rejected)
+        }
+    }
+
     /// VIS-3 (MOVE-RL-11 §4): every entity of the admitted actor's Channel with the actor's own
     /// identity among them, read in one Channel-owner work item, for domain 1 under capability 6.
     /// `None` when it cannot be read: a session that selected capability 6 then fails closed.

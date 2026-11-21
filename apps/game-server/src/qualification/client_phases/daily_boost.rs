@@ -1,5 +1,64 @@
 //! Daily boost and reward over the real node; reference: `client_e2e/daily_boost.rs`.
 use super::*;
+pub(super) async fn reward_selection(
+    client: &mut oteryn_dev_client::DevClientSession,
+) -> TestResult<oteryn_protocol_oteryn::daily_boost::DailyBoostView> {
+    use oteryn_dev_client::client_ui::daily_boost::{self, DailyBoostPanel};
+    use oteryn_protocol_oteryn::daily_boost as wire;
+    if !client
+        .selected_capabilities()
+        .contains(&wire::CAPABILITY_DAILY_BOOST_V1)
+    {
+        return Err("World reward qualification requires the daily boost capability".into());
+    }
+    let response = client
+        .session_mut()
+        .gated_command(
+            wire::CAPABILITY_DAILY_BOOST_V1,
+            wire::COMMAND_TYPE_DAILY_BOOST_QUERY,
+            &[],
+        )
+        .await?;
+    let mut panel = DailyBoostPanel {
+        selected: true,
+        ..Default::default()
+    };
+    daily_boost::apply_result(&mut panel, &response);
+    if response.status != CommandStatus::Accepted {
+        return Err(format!("daily reward selection refused: {:?}", response.status).into());
+    }
+    panel
+        .boost
+        .ok_or_else(|| "daily reward selection did not decode".into())
+}
+
+pub(super) fn boosted_xp(
+    base: u64,
+    species: &str,
+    selection: &oteryn_protocol_oteryn::daily_boost::DailyBoostView,
+) -> TestResult<u64> {
+    if selection.creature_key == species {
+        base.checked_mul(2)
+            .ok_or_else(|| "daily creature XP overflow".into())
+    } else {
+        Ok(base)
+    }
+}
+
+#[test]
+fn qualification_daily_boost_doubles_only_the_selected_creature_pool() -> TestResult {
+    use oteryn_protocol_oteryn::daily_boost::DailyBoostView;
+    let selection = DailyBoostView {
+        reset_epoch: 1,
+        creature_key: "oteryn:creature.bonelord".into(),
+        boss_key: "oteryn:creature.abyssador".into(),
+    };
+    assert_eq!(boosted_xp(170, &selection.creature_key, &selection)?, 340);
+    assert_eq!(boosted_xp(170, &selection.boss_key, &selection)?, 170);
+    assert_eq!(boosted_xp(10, "oteryn:creature.cave_rat", &selection)?, 10);
+    Ok(())
+}
+
 pub(super) async fn daily_boost(
     client: &mut oteryn_dev_client::DevClientSession,
 ) -> TestResult<()> {

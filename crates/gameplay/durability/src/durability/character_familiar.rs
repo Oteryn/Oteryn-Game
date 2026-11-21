@@ -21,6 +21,7 @@ use crate::foundation::RuntimeScopeRefV1;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use sqlx::Row;
+use std::time::Instant;
 type Result<T> = std::result::Result<T, CharacterProgressionError>;
 const BINDING_VERSION: u8 = 1;
 
@@ -502,8 +503,10 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         request: FamiliarStateRequest,
     ) -> Result<FamiliarStateOutcome> {
-        self.commit_character_familiar_state_inner(authority, node, fence, request, true, None)
-            .await
+        self.commit_character_familiar_state_inner(
+            authority, node, fence, request, true, None, None,
+        )
+        .await
     }
 
     pub async fn reconcile_familiar_owner_state(
@@ -513,8 +516,33 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         request: FamiliarStateRequest,
     ) -> Result<FamiliarStateOutcome> {
-        self.commit_character_familiar_state_inner(authority, node, fence, request, false, None)
-            .await
+        self.commit_character_familiar_state_inner(
+            authority, node, fence, request, false, None, None,
+        )
+        .await
+    }
+
+    /// The sealed admission Login write or replay under the caller's original deadline.
+    /// The same transaction checks the original session/Character fence and receipt.
+    pub async fn write_familiar_owner_state_by(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: FamiliarStateRequest,
+        allow_new_mutation: bool,
+        deadline: Instant,
+    ) -> Result<FamiliarStateOutcome> {
+        self.commit_character_familiar_state_inner(
+            authority,
+            node,
+            fence,
+            request,
+            allow_new_mutation,
+            None,
+            Some(deadline),
+        )
+        .await
     }
 
     /// Only the actor-end producer (Logout or terminal grace expiry) supplies this proof.
@@ -534,10 +562,15 @@ impl DurabilityRoot {
             request,
             true,
             Some(proof),
+            None,
         )
         .await
     }
 
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the exact write fence, clean-end proof and admission deadline are independent"
+    )]
     async fn commit_character_familiar_state_inner(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -546,6 +579,7 @@ impl DurabilityRoot {
         request: FamiliarStateRequest,
         allow_new_mutation: bool,
         clean_end_proof: Option<FamiliarCleanEndProof>,
+        deadline: Option<Instant>,
     ) -> Result<FamiliarStateOutcome> {
         request.validate()?;
         let binding = command_binding(&fence, &request)?;
@@ -553,41 +587,44 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
-        self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
-                Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    let outcome = apply_familiar_transaction(
-                        &mut tx,
-                        &recovery,
-                        &node,
-                        fence,
-                        request,
-                        binding,
-                        allow_new_mutation,
-                        clean_end_proof,
-                    )
-                    .await?;
-                    let outcome = match outcome {
-                        Ok(outcome) => outcome,
-                        Err(error) => return Ok(Err(error)),
-                    };
-                    match outcome {
-                        PendingFamiliarStateOutcome::Prepared(pending) => {
-                            pending.verify_staged_row(&mut tx).await?;
-                            commit_semantic_transaction(tx, deadline).await?;
-                            Ok(Ok(FamiliarStateOutcome::Committed(
-                                pending.after_successful_commit(),
-                            )))
-                        }
-                        PendingFamiliarStateOutcome::AlreadyCommitted(receipt) => {
-                            commit_semantic_transaction(tx, deadline).await?;
-                            Ok(Ok(FamiliarStateOutcome::AlreadyCommitted(receipt)))
-                        }
+        let pass = match deadline {
+            Some(deadline) => self.try_issue_semantic_pass_by(deadline)?,
+            None => self.try_issue_semantic_pass()?,
+        };
+        pass.run(move |holder, deadline| {
+            Box::pin(async move {
+                let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                let outcome = apply_familiar_transaction(
+                    &mut tx,
+                    &recovery,
+                    &node,
+                    fence,
+                    request,
+                    binding,
+                    allow_new_mutation,
+                    clean_end_proof,
+                )
+                .await?;
+                let outcome = match outcome {
+                    Ok(outcome) => outcome,
+                    Err(error) => return Ok(Err(error)),
+                };
+                match outcome {
+                    PendingFamiliarStateOutcome::Prepared(pending) => {
+                        pending.verify_staged_row(&mut tx).await?;
+                        commit_semantic_transaction(tx, deadline).await?;
+                        Ok(Ok(FamiliarStateOutcome::Committed(
+                            pending.after_successful_commit(),
+                        )))
                     }
-                })
+                    PendingFamiliarStateOutcome::AlreadyCommitted(receipt) => {
+                        commit_semantic_transaction(tx, deadline).await?;
+                        Ok(Ok(FamiliarStateOutcome::AlreadyCommitted(receipt)))
+                    }
+                }
             })
-            .await?
+        })
+        .await?
     }
 
     /// Stage within the common cast transaction. It never commits or upgrades the pending token.
