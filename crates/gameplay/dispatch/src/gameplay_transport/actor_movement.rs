@@ -397,18 +397,11 @@ pub fn step_in_channel_with_source_step(
     let expected = runtime
         .read_actor_position(actor)
         .map_err(MovementError::Actor)?;
-    let bundle = if crate::map::floor::table_of(cells).is_some() {
-        if prepared_source_step.is_some() {
-            return Err(MovementError::NotQualified);
-        }
-        Some(prepare_player_bundle_step(
+    let starts_stairhop = if crate::map::floor::table_of(cells).is_some() {
+        prepare_player_bundle_step(
             runtime, states, cells, actor, session, expected, direction, blocking,
-        )?)
-    } else {
-        None
-    };
-    let starts_stairhop = if let Some(proof) = &bundle {
-        proof.starts_stairhop()
+        )?
+        .starts_stairhop()
     } else if let Some(proof) = prepared_source_step.as_ref() {
         proof.destination().floor != expected.position().floor
     } else if crate::movement::source_floor_change::is_source_profile(cells) {
@@ -441,47 +434,18 @@ pub fn step_in_channel_with_source_step(
     } else {
         None
     };
-    let bundle_result = bundle.map(|proof| {
-        let speed = states.get(runtime, actor, session).map_or_else(
-            || baseline_speed(runtime, actor, session, now_us),
-            |state| {
-                spell_state_speed(
-                    runtime,
-                    state,
-                    actor,
-                    session,
-                    now_us,
-                    equipment_delta,
-                    false,
-                )
-            },
-        );
-        let onto = proof.destination();
-        if blocking.blocks(cell(onto)) {
-            return Err(MovementError::Blocked);
-        }
-        let duration = duration_onto(&EngineeringGroundSpeed, onto, speed, direction)?;
-        runtime
-            .commit_source_step(proof)
-            .map(|snapshot| (snapshot, duration))
-            .map_err(MovementError::Actor)
-    });
-    let result = if let Some(result) = bundle_result {
-        result?
-    } else {
-        step_in_channel_inner(
-            runtime,
-            states,
-            cells,
-            actor,
-            session,
-            now_us,
-            direction,
-            blocking,
-            equipment_delta,
-            prepared_source_step,
-        )?
-    };
+    let result = step_in_channel_inner(
+        runtime,
+        states,
+        cells,
+        actor,
+        session,
+        now_us,
+        direction,
+        blocking,
+        equipment_delta,
+        prepared_source_step,
+    )?;
     if let Some(cooldowns) = cooldowns
         && let Some(state) = states.get_mut(runtime, actor, session)
     {
@@ -538,7 +502,9 @@ fn step_in_channel_inner(
                 .map(|snapshot| (snapshot, duration))
                 .map_err(MovementError::Actor);
         }
-        return baseline_step(runtime, cells, actor, session, direction, blocking, speed);
+        return baseline_step(
+            runtime, states, cells, actor, session, direction, blocking, speed,
+        );
     };
     let expected = match runtime.borrow_movement_position().read(actor) {
         Ok(v) => v,
@@ -550,6 +516,24 @@ fn step_in_channel_inner(
         || expected.context() != runtime.pinned_movement_context()
     {
         return failure(MovementError::ScopeMismatch);
+    }
+    if crate::map::floor::table_of(cells).is_some() {
+        // MAP-FLOOR-1: a bundle World resolves the step over its floor table.
+        if prepared_source_step.is_some() {
+            return failure(MovementError::NotQualified);
+        }
+        let speed = spell_state_speed(
+            runtime,
+            state,
+            actor,
+            session,
+            now_us,
+            equipment_delta,
+            false,
+        );
+        return bundle_step(
+            runtime, states, cells, actor, session, direction, blocking, speed, expected,
+        );
     }
     let source_step = if let Some(proof) = prepared_source_step {
         if proof.expected() != expected || proof.validate_current(runtime).is_err() {
@@ -626,8 +610,49 @@ fn step_in_channel_inner(
     }
 }
 
+/// MAP-FLOOR-1: one step of a bundle World, which may change floors. The destination is proven
+/// against the bundle collision and floor table and committed by the owner turn like a source
+/// step; the pacing is the Engineering 150 source onto the destination.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the owner turn binds every independently resolved fact explicitly"
+)]
+fn bundle_step(
+    runtime: &mut ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    cells: &NativeEntryMovementCells,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    direction: CardinalStep,
+    blocking: &dyn crate::map::floor::CellBlocker,
+    speed: Option<u16>,
+    expected: MovementPositionSnapshot,
+) -> StepInChannel {
+    // WORLD-INTERACTION-0 §6.6: a teleport landing reads the actor's PZ block (PARTY-PVP-0
+    // §8.1). PVP-RT-1 owns that block (conformance case PVP-CC-03); no runtime path sets one
+    // yet, so no actor is under a PZ block here. The floor resolver already refuses a
+    // protection-zone landing to a blocked actor.
+    let proof = prepare_player_bundle_step(
+        runtime, states, cells, actor, session, expected, direction, blocking,
+    )?;
+    let onto = proof.destination();
+    if blocking.blocks(cell(onto)) {
+        return Err(MovementError::Blocked);
+    }
+    let duration = duration_onto(&EngineeringGroundSpeed, onto, speed, direction)?;
+    runtime
+        .commit_source_step(proof)
+        .map(|snapshot| (snapshot, duration))
+        .map_err(MovementError::Actor)
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the baseline step binds independently owned movement and player facts"
+)]
 fn baseline_step(
     runtime: &mut ChannelRuntimeV1,
+    states: &ChannelSpellStates,
     cells: &NativeEntryMovementCells,
     actor: ExactActorRef,
     session: GameSessionId,
@@ -646,6 +671,11 @@ fn baseline_step(
         || expected.context() != owner_context
     {
         return Err(MovementError::ScopeMismatch);
+    }
+    if crate::map::floor::table_of(cells).is_some() {
+        return bundle_step(
+            runtime, states, cells, actor, session, direction, blocking, speed, expected,
+        );
     }
     if crate::movement::source_floor_change::is_source_profile(cells) {
         let proof = crate::movement::source_floor_change::prepare_source_step(
@@ -1136,6 +1166,40 @@ mod tests {
         // So does one whose destination tile the bundle lacks.
         step(&mut runtime, CardinalStep::West).unwrap();
         assert_eq!(at(&mut runtime, actor), (3, 1, 8));
+    }
+
+    #[test]
+    fn bundle_step_refuses_player_without_step_allowance() {
+        let (mut runtime, mut states, cells, actor, session) = bundle_owner();
+        let direction = CardinalStep::East;
+        let before = runtime.read_actor_position(actor).unwrap();
+        assert!(runtime.player_step_allowed(actor, session, direction.delta()));
+        runtime
+            .record_control_loss(
+                actor,
+                session,
+                crate::foundation::ControlLossMark {
+                    epoch: 1,
+                    grace_deadline: 100,
+                },
+            )
+            .unwrap();
+        assert!(!runtime.player_step_allowed(actor, session, direction.delta()));
+
+        let result = step_in_channel(
+            &mut runtime,
+            &mut states,
+            &cells,
+            actor,
+            session,
+            1,
+            direction,
+            &std::collections::BTreeSet::new(),
+            None,
+        );
+
+        assert!(matches!(result, Err(MovementError::NotQualified)));
+        assert_eq!(runtime.read_actor_position(actor).unwrap(), before);
     }
 
     #[test]
