@@ -3,6 +3,8 @@
 from pathlib import Path
 import json
 import re
+import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -150,8 +152,78 @@ class EvidenceTests(unittest.TestCase):
         self.assertEqual(result["result"], "NODE_BOOT_FAIL")
         self.assertTrue(result["incomplete"])
         self.assertFalse(matrix.shard_passed(result))
-        self.assertTrue(matrix.shard_passed({**result, "exit_code": 0, "result": "NODE_BOOT_PASS"}))
+        self.assertFalse(matrix.shard_passed({**result, "exit_code": 0, "result": "NODE_BOOT_PASS"}))
+        self.assertTrue(matrix.shard_passed({**result, "exit_code": 0, "result": "NODE_BOOT_PASS",
+                                            "incomplete": False, "scenarios": []}))
         self.assertFalse(matrix.shard_passed({**result, "exit_code": 1, "result": "NODE_BOOT_PASS"}))
+
+    def test_extract_cli_rejects_failed_or_incomplete_scenarios_after_a_successful_boot(self):
+        failed_rows = "".join(
+            f"SEAM_EVIDENCE e2e_all scenario={row}.full status=FAIL seconds=1\n"
+            for row in ("C03", "C12", "C09", "C06", "C02", "C01", "W22b", "C05", "C04")
+        )
+        incomplete = (
+            "SEAM_EVIDENCE e2e_all scenario=M01.full status=PASS seconds=1\n"
+            "SEAM_EVIDENCE E2EF1_INCOMPLETE full_row_failures_reported_to_e2e_all\n"
+        )
+        for evidence in (failed_rows, incomplete):
+            with self.subTest(evidence=evidence), tempfile.TemporaryDirectory() as tmp:
+                log = self.write(tmp, "log", evidence + "NODE_BOOT_RESULT=NODE_BOOT_PASS\n")
+                destination = Path(tmp) / "result.json"
+                run = subprocess.run(
+                    [sys.executable, str(ROOT / "tools/qualification/node_boot/matrix.py"),
+                     "extract", str(log), str(destination), "--shard", "rows-000-010",
+                     "--entry", "node_boot", "--exit-code", "0", "--seconds", "60"],
+                    capture_output=True, text=True, check=False,
+                )
+                self.assertEqual(run.returncode, 1, run.stdout + run.stderr)
+                result = json.loads(destination.read_text())
+                self.assertEqual(result["exit_code"], 0)
+                self.assertEqual(result["result"], "NODE_BOOT_PASS")
+                self.assertTrue(result["scenarios"])
+
+    def test_summary_cli_rejects_failed_evidence_without_missing_scenarios(self):
+        cases = (
+            ("SEAM_EVIDENCE e2e_all scenario=C03.full status=FAIL seconds=1\n"
+             "NODE_BOOT_RESULT=NODE_BOOT_PASS\n", 0),
+            ("SEAM_EVIDENCE e2e_all scenario=C03.full status=PASS seconds=1\n"
+             "SEAM_EVIDENCE E2EF1_INCOMPLETE full_row_failures_reported_to_e2e_all\n"
+             "NODE_BOOT_RESULT=NODE_BOOT_PASS\n", 0),
+            ("SEAM_EVIDENCE e2e_all scenario=C03.full status=PASS seconds=1\n"
+             "NODE_BOOT_RESULT=NODE_BOOT_FAIL\n", 1),
+        )
+        shards = matrix.plan("custom", rows="0:10", batch="10")
+        for evidence, exit_code in cases:
+            with self.subTest(evidence=evidence), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                log = self.write(tmp, "log", evidence)
+                result = matrix.extract(log, name="rows-000-010", entry="node_boot",
+                                        exit_code=exit_code, seconds=60)
+                self.write(tmp, "result.json", json.dumps(result))
+                plan = self.write(tmp, "plan.json", json.dumps(shards))
+                run = subprocess.run(
+                    [sys.executable, str(ROOT / "tools/qualification/node_boot/matrix.py"),
+                     "summarize", str(plan), str(root), "--prefix", "",
+                     "--missing-informational"],
+                    capture_output=True, text=True, check=False,
+                )
+                self.assertEqual(run.returncode, 1, run.stdout + run.stderr)
+                self.assertIn("rows-000-010: failed shard evidence", run.stdout)
+
+    def test_missing_scenarios_remain_fatal_unless_explicitly_informational(self):
+        shards = matrix.plan("custom", rows="0:10", batch="10")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            log = self.write(tmp, "log",
+                             "SEAM_EVIDENCE e2e_all scenario=S03.full status=MISSING-SERVER seconds=1\n"
+                             "NODE_BOOT_RESULT=NODE_BOOT_PASS\n")
+            result = matrix.extract(log, name="rows-000-010", entry="node_boot",
+                                    exit_code=0, seconds=60)
+            self.write(tmp, "result.json", json.dumps(result))
+            _, problems = matrix.summarize(shards, root, "")
+            self.assertEqual(problems, ["rows-000-010: 1 MISSING scenario(s)"])
+            _, problems = matrix.summarize(shards, root, "", missing_fatal=False)
+            self.assertEqual(problems, [])
 
     def test_summary_fails_on_missing_evidence_empty_world_shard_and_missing_status(self):
         shards = matrix.plan("pr")

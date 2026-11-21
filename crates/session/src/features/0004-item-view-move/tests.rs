@@ -3,6 +3,147 @@ use crate::item_movement::{MoveRequest, RefusalDetail};
 use oteryn_protocol_oteryn::{item_view, refusal_detail};
 
 #[test]
+fn plain_item_moves_follow_negotiated_destinations() -> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            block_on(async {
+                const SUPPORTED: &[u32] = &[4, 6, 11, 12, 14, 15, 18];
+                let backpack = ItemMoveDestination::MainBackpack;
+                let ground = ItemMoveDestination::Ground(item_view::WorldTilePosition {
+                    x: 32369,
+                    y: 32238,
+                    floor: 7,
+                });
+                let equipment = ItemMoveDestination::Equipment(item_view::EquipmentSlot::Head);
+                let container = ItemMoveDestination::Container(handle(10));
+                let cases: [(&'static [u32], Vec<ItemMoveDestination>); 4] = [
+                    (&[4, 6], vec![backpack]),
+                    (&[4, 6, 11, 15, 18], vec![ground, backpack]),
+                    (&[4, 6, 12], vec![ground, equipment, backpack]),
+                    (
+                        &[4, 6, 12, 14],
+                        vec![ground, equipment, container, backpack],
+                    ),
+                ];
+                for (selected, permitted) in cases {
+                    let (client, mut server) = tokio::io::duplex(64 * 1024);
+                    let expected = permitted.clone();
+                    let peer = tokio::spawn(async move {
+                        let mut domains =
+                            vec![inventory_domain(1, &CharacterInventory::default())?];
+                        if selected.contains(&14) {
+                            domains.push((14, 1, 1, vec![]));
+                        }
+                        if selected.contains(&18) {
+                            use oteryn_protocol_oteryn::world_map::{
+                                MapViewHeader, WorldMapViewSnapshot, encode_world_map_snapshot,
+                            };
+                            let map = encode_world_map_snapshot(&WorldMapViewSnapshot {
+                                header: MapViewHeader {
+                                    content_generation: CONTENT_GENERATION,
+                                    bundle_digest: [0x22; 32],
+                                    reset_epoch: 0,
+                                    origin: at(0, 0),
+                                    first_visible_floor: 0,
+                                },
+                                tiles: vec![],
+                            })
+                            .map_err(|e| format!("{e:?}"))?;
+                            domains.push((17, 0, 1, map));
+                        }
+                        join_peer_with(
+                            &mut server,
+                            SUPPORTED,
+                            selected,
+                            &[],
+                            item_snapshot(vec![])?,
+                            &domains,
+                        )
+                        .await?;
+                        for (index, destination) in expected.into_iter().enumerate() {
+                            let frame = read_frame(&mut server).await?;
+                            let envelope = decode_wire_envelope(&frame)?;
+                            let command = envelope.client_command(1)?;
+                            assert_eq!(command.command_type, COMMAND_TYPE_ITEM_MOVE_INTENT);
+                            // Refused destinations neither send a frame nor consume an ID.
+                            assert_eq!(command.command_id, 7 + index as u64);
+                            let intent = item_view::decode_item_move_intent_for(
+                                command.payload,
+                                item_view::ItemMoveSelection {
+                                    equip_drop: selected.contains(&12),
+                                    container_tree: selected.contains(&14),
+                                    world_interaction: selected.contains(&11),
+                                },
+                            )
+                            .map_err(|e| format!("{e:?}"))?;
+                            assert_eq!(intent.source, handle(2));
+                            assert_eq!(intent.destination, destination);
+                            let payload =
+                                item_view::encode_item_move_result(ItemMoveOutcome::Moved)
+                                    .map_err(|e| format!("{e:?}"))?;
+                            write_frame(
+                                &mut server,
+                                &encode_command_result(
+                                    1,
+                                    41 + index as u64,
+                                    command.command_id,
+                                    CommandStatus::Accepted,
+                                    &payload,
+                                )?,
+                            )
+                            .await?;
+                        }
+                        Ok::<(), BoxError>(())
+                    });
+                    let mut session = match Session::admit(client, admission_with(SUPPORTED)?).await
+                    {
+                        Ok(session) => session,
+                        Err(error) => {
+                            let peer_result = peer.await;
+                            return Err(format!(
+                                "move admission {selected:?}: {error}; peer={peer_result:?}"
+                            )
+                            .into());
+                        }
+                    };
+                    for destination in [ground, equipment, container] {
+                        if !permitted.contains(&destination) {
+                            assert!(matches!(
+                                session
+                                    .move_item(&ItemMoveIntent {
+                                        source: handle(2),
+                                        destination,
+                                    })
+                                    .await,
+                                Err(SessionError::ItemView(
+                                    item_view::ItemViewWireError::Malformed
+                                ))
+                            ));
+                        }
+                    }
+                    for destination in permitted {
+                        let result = session
+                            .move_item(&ItemMoveIntent {
+                                source: handle(2),
+                                destination,
+                            })
+                            .await?;
+                        assert_eq!(result.status, CommandStatus::Accepted);
+                        assert_eq!(result.outcome, ItemMoveOutcome::Moved);
+                    }
+                    peer.await??;
+                }
+                Ok::<(), BoxError>(())
+            })
+            .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "plain item move session test panicked")?
+        .map_err(BoxError::from)?
+}
+
+#[test]
 fn counted_moves_use_live_selection_and_preserve_refusals_and_updates() -> Result<(), BoxError> {
     std::thread::Builder::new()
         .stack_size(64 << 20)

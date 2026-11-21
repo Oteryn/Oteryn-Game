@@ -184,13 +184,7 @@ async fn cast(
             text: format!("exiva \"{target}\""),
         })
         .await?;
-    if outcome.status != CommandStatus::Accepted || outcome.disposition != expected {
-        return Err(format!(
-            "Exiva reply: status={:?} disposition={:?} expected={expected:?}",
-            outcome.status, outcome.disposition
-        )
-        .into());
-    }
+    check_cast_reply(outcome.status, outcome.disposition, expected)?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let mut messages = private_messages(caster);
     while messages.is_empty() && tokio::time::Instant::now() < deadline {
@@ -211,6 +205,78 @@ async fn cast(
         return Err(format!("allowed Exiva did not debit mana: {before:?} -> {after:?}").into());
     }
     Ok((outcome.result_server_sequence, messages))
+}
+
+fn check_cast_reply(
+    status: CommandStatus,
+    disposition: ChatDisposition,
+    expected: ChatDisposition,
+) -> TestResult {
+    // CHAT results use a rejected command status exactly for the Rejected disposition.
+    let expected_status = if expected == ChatDisposition::Rejected {
+        CommandStatus::Rejected
+    } else {
+        CommandStatus::Accepted
+    };
+    if status != expected_status || disposition != expected {
+        return Err(format!(
+            "Exiva reply: status={:?} disposition={:?} expected={expected:?}",
+            status, disposition
+        )
+        .into());
+    }
+    Ok(())
+}
+
+#[test]
+fn exiva_denied_cast_accepts_the_observed_refusal_reply() -> TestResult {
+    check_cast_reply(
+        CommandStatus::Rejected,
+        ChatDisposition::Rejected,
+        ChatDisposition::Rejected,
+    )
+}
+
+#[test]
+fn exiva_cast_requires_consistent_status_and_disposition() -> TestResult {
+    check_cast_reply(
+        CommandStatus::Accepted,
+        ChatDisposition::Ok,
+        ChatDisposition::Ok,
+    )?;
+    for (status, disposition, expected) in [
+        (
+            CommandStatus::Accepted,
+            ChatDisposition::Rejected,
+            ChatDisposition::Rejected,
+        ),
+        (
+            CommandStatus::Rejected,
+            ChatDisposition::Ok,
+            ChatDisposition::Ok,
+        ),
+        (
+            CommandStatus::Accepted,
+            ChatDisposition::Rejected,
+            ChatDisposition::Ok,
+        ),
+        (
+            CommandStatus::Rejected,
+            ChatDisposition::Ok,
+            ChatDisposition::Rejected,
+        ),
+        (
+            CommandStatus::Rejected,
+            ChatDisposition::Exhausted,
+            ChatDisposition::Rejected,
+        ),
+    ] {
+        assert!(
+            check_cast_reply(status, disposition, expected).is_err(),
+            "unexpected Exiva reply accepted: {status:?}/{disposition:?}, expected {expected:?}"
+        );
+    }
+    Ok(())
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {

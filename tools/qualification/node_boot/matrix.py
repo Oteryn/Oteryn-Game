@@ -283,7 +283,9 @@ def extract(log: Path, *, name: str, entry: str, exit_code: int, seconds: int) -
 
 def shard_passed(result: dict) -> bool:
     expected = "PASS" if result["entry"] == "game_platform" else "NODE_BOOT_PASS"
-    return result["exit_code"] == 0 and result["result"] == expected
+    return (result["exit_code"] == 0 and result["result"] == expected
+            and not result["incomplete"]
+            and not any(scenario["status"] == "FAIL" for scenario in result["scenarios"]))
 
 
 def redact(source: Path, destination: Path) -> None:
@@ -297,11 +299,11 @@ def redact(source: Path, destination: Path) -> None:
 def summarize(shards: list[dict], directory: Path, prefix: str, *, missing_fatal: bool = True) -> tuple[str, list[str]]:
     """Markdown table plus the problems that fail the summary.
 
-    Fatal: a planned shard without a readable result, a World shard that ran
-    no scenario, and any MISSING* scenario status unless `missing_fatal` is
-    false (the PR heavy and Merge Queue gates, whose single-machine run never
-    failed on MISSING rows). Scenario FAIL rows and E2EF1_INCOMPLETE are
-    reported; each shard job already fails on its own NODE_BOOT_RESULT.
+    Fatal: failed shard evidence (including scenario FAIL and E2EF1_INCOMPLETE),
+    a planned shard without a readable result, a World shard that ran no
+    scenario, and any MISSING* scenario status unless `missing_fatal` is false
+    (the PR heavy and Merge Queue gates, whose single-machine run never failed
+    on MISSING rows).
     """
     problems: list[str] = []
     rows = ["| shard | result | exit | minutes | scenarios | PASS | FAIL | MISSING | other |",
@@ -336,6 +338,8 @@ def summarize(shards: list[dict], directory: Path, prefix: str, *, missing_fatal
             problems.append(f"{item['name']}: World shard ran no scenario")
         if result["incomplete"]:
             details.append(f"- `{item['name']}` E2EF1_INCOMPLETE")
+        if not shard_passed(result):
+            problems.append(f"{item['name']}: failed shard evidence")
         verdict = result["result"] + ("" if shard_passed(result) else " (failed)")
         rows.append(
             f"| {item['name']} | {verdict} | {result['exit_code']} | {result['seconds'] / 60:.1f} | "
