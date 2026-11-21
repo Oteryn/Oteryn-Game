@@ -44,6 +44,8 @@ authorised; this file only says how the flow behaves.
 The PR fast Rust gate builds each archive in `rust-fast-archive.yml` and starts
 that archive's five test workers as soon as its producer finishes. The parent
 collects the complete planned archive union before recording a package result.
+The reusable producer is a canonical routing control and a consumer root:
+changes to its referenced build helpers retain full qualification coverage.
 The collector resolves each role's latest actual job attempt: an unchanged
 producer may be reused after a partial rerun, but an older success cannot hide
 a newer failed, skipped or incomplete attempt. Preserve the exact run, source

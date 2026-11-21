@@ -65,7 +65,9 @@ Fast Rust selection on the PR:
 | Audited Atlas fullworld producer/self-test surface | always-required fast PR checks and any applicable dedicated workflow; add Rust checks only if another consumer selects them |
 | Server-only, including server-consumed auxiliary inputs | changed-crate Clippy/unit tests + Rust policy/supply chain |
 | Client/shared/simulation, including their consumed auxiliary inputs | changed-crate Clippy/unit tests + Rust policy/supply chain |
-| Canonical routing controls (`merge-gate.yml`, `merge-group-gate.yml`, `rust.yml`), `.github/actions/**`, `tools/repository/**`, `docs/migration/**`, Cargo/toolchain/build inputs, unknown/mixed/incomplete evidence | conservative workspace fast Rust checks + policy/supply chain |
+| Canonical routing controls (`merge-gate.yml`, `merge-group-gate.yml`, `rust-fast-archive.yml`, `rust.yml`), `.github/actions/**`, `tools/repository/**`, `docs/migration/**`, Cargo/toolchain/build inputs, unknown/mixed/incomplete evidence | conservative workspace fast Rust checks + policy/supply chain |
+
+The reusable fast archive producer `rust-fast-archive.yml` is also a canonical control and a source of exact-candidate consumer references. Its own changes and referenced build-helper changes remain fully qualified.
 
 Physical server qualification runs only in the post-merge full gate (`merge-group-gate.yml`). It runs node boot and Server Seam against the real Platform (`Merge Queue / Node boot against the real Platform`, `Merge Queue / Server Seam over TCP+TLS`). These run when a change can reach the shipped server's boot, admission, transport, durability or reconnect paths:
 
@@ -83,7 +85,7 @@ Reduced lanes are derived from the exact candidate tree. Cargo metadata owns pac
 
 `docs/agents/evidence/**` is not blanket runtime material. Evidence that current Rust source/tests actually consume through paths such as `include_str!` / `include_bytes!` inherits the consuming package lane; unconsumed evidence remains auxiliary.
 
-Cross product/auxiliary renames, symlinks/submodules, special modes, malformed consumer evidence and incomplete file enumeration fail closed. The classifier itself and canonical routing controls always self-qualify through FULL.
+Cross product/auxiliary renames, symlinks/submodules, special modes, malformed consumer evidence and incomplete file enumeration fail closed. The classifier itself and canonical routing controls always self-qualify through FULL. Canonical routing controls are `merge-gate.yml`, `merge-group-gate.yml`, `rust.yml`, `.github/actions/**`, `tools/repository/**`, `docs/migration/**` and the gate workflows in `GATE_WORKFLOW_PATHS` (every reusable-workflow callee, the PostgreSQL harness and partitions, the node boot and the server seam); the merge authority audit is FULL unless it is a pin-only rotation. Any other workflow is routed by its exact-candidate consumers like any other auxiliary input, so a workflow that no gate selects runs only its own jobs and the always-required gates (owner decision 2026-11-21).
 
 ## Post-merge full gate
 

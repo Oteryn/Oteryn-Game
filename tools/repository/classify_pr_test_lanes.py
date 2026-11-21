@@ -34,9 +34,22 @@ BUILD_INPUTS = {
 CANONICAL_CONTROL_PATHS = {
     ".github/workflows/merge-gate.yml",
     ".github/workflows/merge-group-gate.yml",
+    ".github/workflows/rust-fast-archive.yml",
     ".github/workflows/rust.yml",
 }
 MERGE_AUTHORITY_AUDIT_PATH = ".github/workflows/merge-authority-audit.yml"
+# Workflows that build or test product code for a gate without being named by a
+# canonical workflow (reusable-workflow callees, the PostgreSQL harness and the
+# node boot). They stay FULL like the canonical workflows, and the merge authority
+# audit stays FULL unless it is a pin-only rotation; every other workflow is routed
+# by its exact-candidate consumers.
+GATE_WORKFLOW_PATHS = frozenset({
+    ".github/workflows/gameplay-server-seam.yml",
+    ".github/workflows/node-boot-build.yml",
+    ".github/workflows/node-boot-qualification.yml",
+    ".github/workflows/postgres-test-partitions.yml",
+    ".github/workflows/pr-postgres-harness.yml",
+})
 # Explicit tool roles. New/unreviewed repository tools remain FULL until classified.
 REPOSITORY_CONTROL_TOOLS = frozenset({
     "tools/repository/" + name for name in (
@@ -52,6 +65,12 @@ REPOSITORY_AUXILIARY_TOOLS = frozenset({
     "tools/repository/test_validate_game_atlas_semantic_search_triggers.py",
 })
 ROUTING_ONLY_CONTROL_DIRECTORY_PREDICATES = {
+    # The trusted-base verifier sparse-checks out the base workflows as data.
+    (".github/workflows/merge-gate.yml", ".github/workflows"):
+        b".github/workflows\n            tools/repository",
+    # The merge queue pins and calls exactly node-boot-build.yml, which is FULL itself.
+    (".github/workflows/merge-group-gate.yml", ".github/workflows"):
+        b".github/workflows/node-boot-build.yml",
     (".github/workflows/merge-group-gate.yml", "docs/architecture"):
         b"path.startswith('docs/architecture/')",
 }
@@ -232,6 +251,7 @@ def deferrable_content_path(path: str) -> bool:
 def canonical_control(path: str) -> bool:
     return (
         path in CANONICAL_CONTROL_PATHS
+        or path in GATE_WORKFLOW_PATHS
         or path.startswith(".github/actions/")
         or path in REPOSITORY_CONTROL_TOOLS
         or (path.startswith("tools/repository/") and path not in REPOSITORY_AUXILIARY_TOOLS)
@@ -802,6 +822,9 @@ def classify(
                 return full("explicit-build-or-dependency-input", "dependencies-build")
             if canonical_control(path):
                 return full("explicit-build-or-control-input", "control-plane")
+            if path == MERGE_AUTHORITY_AUDIT_PATH:
+                # FULL, narrowed afterwards only for an exact pin rotation.
+                return full("canonical-control-consumer-affected", "control-plane")
             if atlas_path_disposition(path) == "full":
                 return full("explicit-atlas-non-cargo-full", "atlas")
 

@@ -10,13 +10,13 @@ base_branch: main
 branch: chatgpt/ci-bottlenecks-single-pr-20261121
 issue: 3352
 pr: 3367
-base_sha: 984aefe4b93e1849fe92764e62ae26a66984fcd6
+base_sha: 5695f7b8af567086efa11bdeb47a2fd609f24c2c
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT standalone CI programme coordinator, issue 3352
 created_at: 2026-11-21T09:29:01Z
-updated_at: 2026-11-21T18:36:25Z
+updated_at: 2026-11-21T19:08:04Z
 execution_policy: continuous_progress
 owned_paths:
   - .github/workflows/
@@ -51,13 +51,15 @@ checks and protected-main integration. No achieved latency target is claimed.
 - Owner request: repair all audited CI bottlenecks in **one PR**; prior merge and
   force-merge authorization remains in the session. This is standalone CI work,
   not quest automation or a change to that programme's control plane.
-- Integrated base: `984aefe4b93e1849fe92764e62ae26a66984fcd6`; sole writer:
+- Integrated main: `5695f7b8af567086efa11bdeb47a2fd609f24c2c`; sole writer:
   `chatgpt/ci-bottlenecks-single-pr-20261121`, PR #3367. State: **AUTHORING**
-  for a repair successor of `7533aaef77924f71a1402267824e538362bade3b`.
-  Root ended the first freeze at 18:04 UTC. Repair set: mold environment,
-  ignored-case inventory, independent content jobs, Platform route metadata,
-  and MAX501 runner-slot isolation. All five findings form one repair push.
-  #3361 and #3362's two-job build limit remain included.
+  for a successor of `b75d1098e052af3f17d5b8d4163ae79eb9b88f1f`.
+  Root ended that freeze at 19:08 UTC to integrate main's named #3366 fix:
+  the revert of #3361's confirmed field-cursor PG regression. Preserve #3365's
+  narrower auxiliary-workflow routing and register the new reusable fast
+  workflow as a canonical control. Its real routing test reproduced the
+  missing registration before passing with the one-line repair. #3362's
+  two-job build limit and all five earlier CI repairs remain included.
 - Publication: native Git dry-run returned `fatal: unable to get password from
   user`. Use the already selected META 3.1.0 API-native new-candidate route with
   a complete bounded delta, sole-parent commit, fresh expected-head lease,
@@ -70,11 +72,9 @@ checks and protected-main integration. No achieved latency target is claimed.
 | C: qualification executables | audit_postmerge_failures | Shared Platform binary; independent Server Seam producer; correct spawn/clock features; per-archive fast workers and older-head compatibility. Fresh databases, keys and real Platform issuance remain per consumer. |
 | Integration and publication | coordinator | Workflow wiring, package ledger completeness, protected pin rotation, one integrated review and CI, exact-head squash/readback. |
 
-The reported offline-death job in run `44919024484`, job `136890762651`,
-failed after 57m02s. Its downloadable log was unavailable; no OOM cause is
-claimed. The new workflow measures compilation and the exact PG-backed test
-separately and retains both diagnostics. Source inventory resolves the selected
-case instead of hard-coding a shard number.
+Offline-death run `44919024484`/job `136890762651` failed after 57m02s;
+its final log was unavailable, so the cause is unknown. Resolve the exact
+case's shard from source and retain separate compile/test resource diagnostics.
 
 The final production smoke build is deliberately retained. Its package-scoped
 feature graph differs from the workspace build with examples/dev dependencies;
@@ -87,20 +87,22 @@ may be fabricated. Any rejection remains visible. No latency or monetary saving
 is claimed until the integrated head has run; compare both critical-path time
 and summed runner time, including artifact transfer and fallback builds.
 
-Acceptance pending: repaired-head CI/review and post-merge observation. First-head
-review was clean; CI found the five failures above. Its manual integration
-44932248950 passed 38 tests using the shared compiler; native entry passed three
-tests using fallback. WorldProject passed 55 Rust tests in 26m57s, not a speedup.
+Acceptance pending: final-head CI/review and post-merge observation. First-head
+review was clean. On b75, fast 44936586415 passed all 25 workers and collectors;
+content took 7m38, retained PG 13m28, native passed 3 tests, manual integration
+passed 2043+38 tests and WorldProject passed 55 Rust+15 Python tests in 23m53.
+Two actual PG archives were reused without compilation. These results qualify
+only b75; the main-integrated successor needs fresh qualification and review.
 
-Prior main `44920758625` failed Node admission contention and MAX501. PR run
-44931703117 repeated MAX501 while three unrelated tests overlapped its timed
-transaction. Exact-test slot reservation preserves the 2000ms contract and
-501-item atomicity; real PG qualification remains pending. No production SQL
-or Node runtime repair is claimed. Review includes protected pins and compatibility.
+Prior main `44920758625` failed Node admission contention and MAX501; the first
+PR run repeated MAX501 with three competing tests. On b75, PG job136951451690
+passed 219/219, including MAX501 with no overlapping sibling test. Slot
+reservation preserves the 2000ms contract and 501-item atomicity. The final
+successor needs its own qualification; no SQL or Node runtime repair is claimed.
 
 ### Second-wave local validation on the integrated tree
 
-- Repair repository-tool suite: 282/282 tests, zero failures/errors/skips.
+- Repository-tool suite: 283/283 tests, zero failures/errors/skips.
   The earlier integrated run had 278 tests. The old heavy-gate fixtures were
   updated for the actual canonical producer and new dependencies; all prior
   failure/skip cases remain and the focused 26-test suite passes.
@@ -127,8 +129,7 @@ or Node runtime repair is claimed. Review includes protected pins and compatibil
   Manual integration dispatch uses the owner-authorized Molehill GitHub CLI
   after exact-head verification; no Git publication uses that route.
 
-These results qualify the authoring tree for publication and independent review;
-they do not establish hosted CI success, deployment or performance savings.
+Local results qualify authoring only; immutable hosted evidence is in #3352.
 
 ## First-wave architecture and source of truth
 
