@@ -809,10 +809,18 @@ impl ChannelRuntimeV1 {
         if self.carrier.slots.get(index) != Some(&prepared.original_slot) {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
         }
-        self.carrier
-            .reserve_cloak_blood_capacity(&prepared.health_events.blood)?;
-        self.carrier
-            .reserve_native_death_capacity(prepared.native_death.as_slice())?;
+        // Only this turn's own events need capacity: every pending reservation
+        // reserved its own when it was staged, and neither store gives capacity
+        // back. Both helpers scan every slot, so calling them with nothing to add
+        // made a creature periodic pass quadratic in the creature count.
+        if !prepared.health_events.blood.is_empty() {
+            self.carrier
+                .reserve_cloak_blood_capacity(&prepared.health_events.blood)?;
+        }
+        if prepared.native_death.is_some() {
+            self.carrier
+                .reserve_native_death_capacity(prepared.native_death.as_slice())?;
+        }
         let Slot::CreatureOccupied {
             health,
             companion,

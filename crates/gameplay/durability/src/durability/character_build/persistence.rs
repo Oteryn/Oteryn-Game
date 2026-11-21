@@ -227,6 +227,44 @@ impl DurabilityRoot {
             .await?
     }
 
+    /// Qualification-only read of reconciled birth provenance. Build receipts that
+    /// preserve the vocation, including admission settlement, do not invalidate it.
+    pub async fn has_unchanged_bootstrap_vocation(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        character_id: CharacterId,
+        vocation: &str,
+    ) -> Result<bool> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        let vocation = vocation.to_owned();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    let unchanged = sqlx::query_scalar(
+                        "SELECT EXISTS (SELECT 1 FROM game_character_roots r \
+                           JOIN game_character_operation_receipts o USING (character_id) \
+                          WHERE r.character_id = encode($1,'hex')::uuid \
+                            AND r.creation_vocation = $2 \
+                            AND substring(o.command_binding FROM 1 FOR 1) = decode('04','hex') \
+                            AND NOT EXISTS (SELECT 1 FROM game_character_build_receipts b \
+                                WHERE b.character_id = r.character_id \
+                                  AND b.vocation_before <> b.vocation_after))",
+                    )
+                    .bind(character_id.as_bytes().as_slice())
+                    .bind(vocation)
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(unchanged))
+                })
+            })
+            .await?
+    }
+
     /// The admission load (A13 §4.1): the build row a new runtime actor starts from, or the seed
     /// when the Character has none. It writes nothing. A stored value outside the bounds fails
     /// closed with `Unavailable(InvalidStoredState)`.

@@ -26,18 +26,22 @@ use std::time::Duration;
 use tokio::{io::AsyncWriteExt, sync::Mutex};
 
 pub(super) fn run(partyskull: bool) -> TestResult {
-    run_case(partyskull, false, false)
+    run_case(partyskull, false, false, false)
 }
 
 pub(super) fn run_reference_level() -> TestResult {
-    run_case(false, true, false)
+    run_case(false, true, false, false)
 }
 
 pub(super) fn run_chat() -> TestResult {
-    run_case(false, false, true)
+    run_case(false, false, true, false)
 }
 
-fn run_case(partyskull: bool, reference_level: bool, chat: bool) -> TestResult {
+pub(super) fn run_busy_holder() -> TestResult {
+    run_case(false, false, false, true)
+}
+
+fn run_case(partyskull: bool, reference_level: bool, chat: bool, busy: bool) -> TestResult {
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
     };
@@ -45,10 +49,18 @@ fn run_case(partyskull: bool, reference_level: bool, chat: bool) -> TestResult {
         .stack_size(64 << 20)
         .spawn(move || {
             fixture::runtime().map_err(debug)?.block_on(async move {
-                let h = Harness::create(admin, "party_membership_wire", false)
-                    .await
-                    .map_err(debug)?;
-                let result = scenario(&h, partyskull, reference_level, chat)
+                let h = Harness::create(
+                    admin,
+                    if busy {
+                        "party_busy_holder"
+                    } else {
+                        "party_membership_wire"
+                    },
+                    false,
+                )
+                .await
+                .map_err(debug)?;
+                let result = scenario(&h, partyskull, reference_level, chat, busy)
                     .await
                     .map_err(|e| e.to_string());
                 h.cleanup().await.map_err(debug)?;
@@ -208,7 +220,7 @@ pub(super) async fn roundtrip(
     result
 }
 
-async fn scenario(h: &Harness, partyskull: bool, reference_level: bool, chat: bool) -> TestResult {
+async fn scenario(h: &Harness, partyskull: bool, reference_level: bool, chat: bool, busy: bool) -> TestResult {
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&h.pool)
@@ -326,6 +338,9 @@ async fn scenario(h: &Harness, partyskull: bool, reference_level: bool, chat: bo
         a.continuity.selected_capabilities =
             SelectedCapabilities::select(owner.offered_capabilities(), &[6, 42])
                 .ok_or("party offer")?;
+    }
+    if busy {
+        return super::party_busy_holder_fixtures::check(&owner, &mut admitted, &targets, h).await;
     }
     if partyskull {
         super::party_skull_fixtures::check(&owner, &mut admitted[0], &targets, &[0, 0, 0], &[0, 0, 0])

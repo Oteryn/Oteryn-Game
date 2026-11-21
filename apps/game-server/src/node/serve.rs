@@ -104,7 +104,9 @@ const LAST_POSITION_FLUSH_BUDGET: Duration = Duration::from_secs(3);
 const AUDIT_INTERVAL: Duration = Duration::from_secs(60 * 60);
 const AUDIT_BATCH: u16 = 64;
 const AUDIT_RUN_CAP: u32 = 64;
-const CONTROL_REQUEST_BYTES: usize = 64;
+/// The longest valid control line: `spawn <36-byte session> <key of at most 128 bytes>\n`
+/// (172 bytes); `qualify` and operation ids are shorter. A longer line is refused unread.
+const CONTROL_REQUEST_BYTES: usize = 6 + 36 + 1 + 128 + 1;
 const CONTROL_DEADLINE: Duration = Duration::from_secs(30);
 const MAX_GAMEPLAY_KEY_BYTES: usize = 16 * 1024;
 
@@ -2975,6 +2977,7 @@ async fn control_loop(
     intents: &ProducerDescriptor,
     config: &NodeConfig,
     native: Option<&crate::content::native_gameplay::NativeGameplayState>,
+    spawn: Option<qualification_fixture::SpawnOwners<'_>>,
     stop: &CancellationToken,
 ) {
     let capacity = TransientCapacity::new();
@@ -3002,11 +3005,27 @@ async fn control_loop(
                     "ops_diagnose",
                 ),
                 Some(request) if request.starts_with(b"qualify ") => (
-                    qualification_fixture::prepare(
+                    Box::pin(qualification_fixture::prepare(
                         root, authority, proof, config, native, &request,
-                    )
+                    ))
                     .await
                     .to_owned(),
+                    "character_bootstrap",
+                ),
+                #[cfg(any(test, feature = "qualification-spawn"))]
+                Some(request) if request.starts_with(b"inspect-damage ") => (
+                    Box::pin(qualification_fixture::inspect_damage(
+                        config, spawn, &request,
+                    ))
+                    .await
+                    .unwrap_or_else(|| "rejected reason=damage_unavailable".to_owned()),
+                    "qualification_damage",
+                ),
+                Some(request) if request.starts_with(b"spawn ") => (
+                    Box::pin(qualification_fixture::spawn(
+                        root, authority, proof, config, native, spawn, &request,
+                    ))
+                    .await,
                     "character_bootstrap",
                 ),
                 Some(request) if parse_operation_id(&request).is_some() => {
@@ -3026,6 +3045,7 @@ async fn control_loop(
             };
             match event_name {
                 "ops_health" => event_traced("event=ops_health result=served", connection),
+                "qualification_damage" => {}
                 "ops_diagnose" => {
                     event_traced("event=ops_diagnose result=served", connection);
                 }
@@ -3866,10 +3886,10 @@ async fn boot_and_serve(
         )
         .map_err(|_| BootError::Bind("control socket mode"))?;
     }
-    event(&format!(
-        "event=listener_bound address={}",
-        config.listener.address
-    ));
+    let bound_address = listener
+        .local_addr()
+        .map_err(|_| BootError::Bind("gameplay listener address"))?;
+    event(&format!("event=listener_bound address={bound_address}"));
     let readiness = Readiness {
         root,
         proof: &proof,
@@ -4030,6 +4050,7 @@ async fn boot_and_serve(
         generation,
         signalled,
         timed_npcs,
+        spawn_room: combat_room.as_ref().unwrap_or(&qualified_room),
     }));
     let catalogue = async {
         public_house_catalogue::capture(

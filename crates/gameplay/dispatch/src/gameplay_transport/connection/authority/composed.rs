@@ -903,17 +903,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
         selected: SelectedCapabilities,
-    ) -> Option<world_spatial::ChannelEntities> {
+    ) -> Result<world_spatial::ChannelEntities, AdmissionRefusal> {
         let forecasts =
             selected.contains(oteryn_protocol_oteryn::actor_motion::CAPABILITY_ACTOR_MOTION_V1);
         if selected
             .contains(oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2)
         {
-            self.named_channel_entities_projected(actor, forecasts)
-                .await
+            Box::pin(self.named_channel_entities(actor, forecasts)).await
         } else {
             self.observe_channel_entities_projected(actor, forecasts)
                 .await
+                .ok_or(AdmissionRefusal::Rejected)
         }
     }
 
@@ -921,7 +921,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
     ) -> Option<world_spatial::ChannelEntities> {
-        self.named_channel_entities(actor).await
+        Box::pin(self.named_channel_entities(actor, false))
+            .await
+            .ok()
+    }
+
+    async fn observe_named_visible_entities_result(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<world_spatial::ChannelEntities, AdmissionRefusal> {
+        Box::pin(self.named_channel_entities(actor, false)).await
     }
 
     async fn observe_visible_entities(

@@ -103,6 +103,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return Err(FirstEntryOutcome::RefusedUnavailable);
             };
+            #[cfg(test)]
+            let _ = FAMILIAR_LOGIN_CHECKOUT.try_with(|probe| {
+                probe.backpack.set(probe.backpack.get() + 1);
+            });
             let backpack_result = self
                 .root
                 .grant_newhaven_backpack(
@@ -126,6 +130,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Err(FirstEntryOutcome::RefusedUnavailable);
             }
             phase.set("starter_kit");
+            #[cfg(test)]
+            let _ = FAMILIAR_LOGIN_CHECKOUT.try_with(|probe| {
+                probe.kit.set(probe.kit.get() + 1);
+            });
             let kit_result = if vocation != crate::spell::Vocation::None {
                 Some(self.grant_newhaven_starter(fence).await)
             } else {
