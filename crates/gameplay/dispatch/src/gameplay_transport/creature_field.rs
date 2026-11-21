@@ -37,6 +37,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Ok(snapshot) = runtime.companion_snapshot(visible.actor) else {
                 continue;
             };
+            // The periodic owner refuses an encounter-hooked actor and one reserved
+            // by a pending spell batch. Leave both untouched for this pass instead
+            // of failing it for every other creature.
+            if runtime.actor_spell_reserved(visible.actor)
+                || runtime
+                    .encounter_hooks()
+                    .is_some_and(|hooks| hooks.contains(visible.actor))
+            {
+                continue;
+            }
             let read = map
                 .read_items(runtime, visible.position)
                 .await

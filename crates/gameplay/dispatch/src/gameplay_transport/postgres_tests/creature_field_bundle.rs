@@ -320,6 +320,147 @@ async fn exercise(harness: &Harness) -> TestResult {
     Ok(())
 }
 
+#[test]
+fn creature_field_pass_completes_beside_a_hooked_guardian_postgres() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| hooked_scenario().map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "hooked guardian field scenario panicked")?
+        .map_err(Into::into)
+}
+
+fn hooked_scenario() -> TestResult {
+    run(async |admin| {
+        let harness =
+            Harness::create_with_admission_seed(admin, "creature_field_hooked", false, false)
+                .await?;
+        let result = exercise_hooked(&harness).await;
+        let cleanup = harness.cleanup().await;
+        result?;
+        cleanup
+    })
+}
+
+/// A Cults stop form is protected by the encounter damage gates, so the periodic
+/// owner refuses its turn. The field pass still completes for every other creature.
+async fn exercise_hooked(harness: &Harness) -> TestResult {
+    prepare_current_session(harness).await?;
+    let seal = harness.recovery.seal_current().map_err(debug)?;
+    let authority = harness
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let original = Dependencies::new()?;
+    let (controller, pin) = crate::content::native_gameplay::test_support::activated_loop_monster(
+        original.admitted.world_id,
+        false,
+    );
+    let active = controller.active().ok_or("active generation")?;
+    let native = active.native_gameplay().ok_or("native gameplay")?;
+    let (deps, [rat, guardian]) = dependencies(original, active, &pin)?;
+    let mut owner = deps.owner(harness, &authority);
+    owner.active_generation = Some(active);
+    owner.movement_cells = deps.room.movement_cells().into();
+    let permit = owner.spell_lane_permit().await.ok_or("field lane")?;
+    let health_names = owner.read_native_health_names(&permit).await.map_err(debug)?;
+    let mut runtime = deps.runtime.lock().await;
+    let native_health_names = owner.seal_native_health_names(&runtime, health_names).map_err(debug)?;
+    let objects = deps.door.lock().await;
+    let states = owner.states.spell_states.lock().await;
+    let field = CreatureFieldEntry {
+        definition: ConditionDefinition::new(
+            "test.bundle.creature.residual",
+            1,
+            ConditionValues::DamageOverTime {
+                element: DotElement::Drown,
+                total_min: 10,
+                total_max: 10,
+                per_tick: 5,
+                interval_ms: 1000,
+                delayed: true,
+            },
+        )
+        .ok_or("residual condition")?,
+        source: None,
+        lineage: None,
+        occurrence: oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(id(1)),
+    };
+    runtime
+        .commit_creature_field_entry(rat, 0, Some(&field))
+        .map_err(debug)?;
+    oteryn_gameplay_encounters::bosses::phase_controller::gates::protect(&mut runtime, &[guardian])
+        .map_err(debug)?;
+    assert!(
+        runtime
+            .encounter_hooks()
+            .is_some_and(|hooks| hooks.contains(guardian))
+    );
+    let mut context = (
+        &owner,
+        &mut *runtime,
+        &*states,
+        &deps.room,
+        &*objects,
+        native,
+        &permit,
+        (rat, guardian),
+        &native_health_names,
+    );
+    let pass = owner.root.try_issue_semantic_pass().map_err(debug)?;
+    pass.run_with_context(&mut context, |holder, deadline, context| {
+        Box::pin(async move {
+            let (owner, runtime, states, room, objects, native, permit, actors, native_health_names) =
+                context;
+            let (rat, guardian) = *actors;
+            let mut tx = crate::durability::spell_item_transaction::begin_spell_owner_transaction(
+                holder, deadline,
+            )
+            .await?;
+            let binding = runtime.binding();
+            let authority =
+                crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction(
+                    &mut tx,
+                    permit,
+                    owner.root,
+                    owner.character,
+                    owner.holder,
+                    binding.runtime_scope(),
+                    binding.scope_generation().get(),
+                )
+                .await
+                .map_err(|_| DurabilityError::Unavailable)?;
+            let health = |runtime: &crate::foundation::ChannelRuntimeV1, actor| {
+                runtime
+                    .companion_snapshot(actor)
+                    .map(|snapshot| snapshot.health)
+                    .map_err(|_| DurabilityError::Unavailable)
+            };
+            let (rat_before, guardian_before) = (health(runtime, rat)?, health(runtime, guardian)?);
+            let mut map =
+                CurrentMonsterMap::new(&mut tx, &authority, runtime, room, objects, native);
+            let pass = owner
+                .tick_creature_fields(&mut map, runtime, states, native, 1_000_000, native_health_names)
+                .await;
+            assert!(pass.is_ok(), "a hooked guardian aborted the field pass: {pass:?}");
+            assert!(map.validate_transaction(runtime).await);
+            drop(map);
+            let after = runtime
+                .companion_snapshot(rat)
+                .map_err(|_| DurabilityError::Unavailable)?;
+            assert!(after.health < rat_before, "the ordinary creature still ticks");
+            assert_eq!(after.state.conditions.instances()[0].remaining_total(), 5);
+            assert_eq!(health(runtime, guardian)?, guardian_before);
+            tx.rollback().await?;
+            Ok(())
+        })
+    })
+    .await
+    .map_err(debug)?;
+    Ok(())
+}
+
 fn at(x: i32) -> MovementLocalPosition {
     MovementLocalPosition { x, y: 0, floor: 7 }
 }
