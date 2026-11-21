@@ -8,6 +8,7 @@ use crate::combat::{LootDefinitionRef, LootSelectionAlgorithm};
 use crate::content::creature_reward::{CreatureRewardTable, LootTablesSection, NoSettlementReason};
 use crate::content::native_gameplay::CreatureProfilesDocument;
 use crate::domain::bestiary::BestiaryRace;
+use crate::domain::loot_data::CORPSE_CONTAINER_ENTRIES_MAX;
 
 const RAT: &str = "canary:creature/rat";
 const FAMILIAR: &str = "canary:creature/knight_familiar";
@@ -150,7 +151,7 @@ fn corpse_must_be_an_admitted_materializable_bounded_container() {
         json!({"materializable": false, "container_capacity": 16}),
         json!({"materializable": true, "container_capacity": null}),
         json!({"materializable": true, "container_capacity": 0}),
-        json!({"materializable": true, "container_capacity": 31}),
+        json!({"materializable": true, "container_capacity": CORPSE_CONTAINER_ENTRIES_MAX + 1}),
     ] {
         let mut value = section();
         value["items"][0]["materializable"] = facts["materializable"].clone();
@@ -167,14 +168,14 @@ fn corpse_must_be_an_admitted_materializable_bounded_container() {
         reason(&build(&value), RAT),
         NoSettlementReason::CorpseItemInadmissible
     );
-    // Decision 20 raises the shared ceiling to 30; the source container need
+    // CORPSE48 (owner 2026-11-17) raises the shared ceiling from 30 to 48; the source container need
     // not have the rat's original capacity of 16 or equal the loot-plan limit.
-    for capacity in [1, 16, 17, 30] {
+    for capacity in [1, 16, 17, 30, CORPSE_CONTAINER_ENTRIES_MAX] {
         let mut value = section();
         value["items"][0]["container_capacity"] = json!(capacity);
         build(&value)
             .row(RAT)
-            .expect("capacity within 1..=30 is admitted");
+            .expect("capacity within the corpse container bound is admitted");
     }
 }
 

@@ -51,11 +51,17 @@ class SourceRewardBossCorpseCapacity(unittest.TestCase):
         rows=json.loads((m26.ROOT/'content/creatures/definitions/spell-native-profiles.json').read_bytes())['records']
         spite=next(r for r in rows if r['profile']['target']['key']==m26.BOSSES[0])
         profiles=json.loads((m26.ROOT/m26.PROFILE).read_bytes())
-        for reward_boss,expected in [(True,True),(False,False)]:
+        # Crystal201189f items.xml declares 48 for this Soul War corpse. Under CORPSE48
+        # (owner 2026-11-17) the ordinary 48-entry bound admits it too, so both modes
+        # materialize it; 49 stays refused (test_corpse_loot_admission).
+        for reward_boss,expected in [(True,True),(False,True)]:
             with self.subTest(reward_boss=reward_boss):
                 creature=copy.deepcopy(spite)
                 creature['profile']['data']['profile']['details']['system_eligibility']['reward_boss']=reward_boss
-                payload=json.loads(loot.loot_tables({'records':[creature]},native_item_profiles=profiles))
+                # Authored Quest death rules bind the complete canonical Creature set
+                # (quest_corpse_profiles.required_with_loot_scope), so only Spite changes.
+                records=[creature if r is spite else r for r in rows]
+                payload=json.loads(loot.loot_tables({'records':records},native_item_profiles=profiles))
                 fact=next(r for r in payload['items'] if r['item']['key']=='oteryn:item.tibia.i33867')
                 self.assertEqual(fact['materializable'],expected)
                 self.assertEqual(fact['container_capacity'],48)
