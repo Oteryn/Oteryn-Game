@@ -1,6 +1,9 @@
 use super::*;
 use bevy::ecs::message::MessageCursor;
 use serde::{Deserialize, Serialize};
+use std::io::Read;
+
+const MAX_LAYOUT_BYTES: u64 = 256 * 1024;
 
 /// What persists per window: size, zoom and position; the Global geometry is code.
 #[derive(Serialize, Deserialize)]
@@ -60,12 +63,18 @@ impl<'de> Deserialize<'de> for WindowLayouts {
 impl WindowLayouts {
     /// A missing file is the first start: every window at its Global size.
     pub(in crate::bevy_shell) fn load(path: &Path) -> io::Result<Self> {
-        match std::fs::read(path) {
-            Ok(bytes) => serde_json::from_slice(&bytes)
-                .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error)),
-            Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(Self::default()),
-            Err(error) => Err(error),
+        let file = match std::fs::File::open(path) {
+            Ok(file) => file,
+            Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(Self::default()),
+            Err(error) => return Err(error),
+        };
+        let mut bytes = Vec::new();
+        file.take(MAX_LAYOUT_BYTES + 1).read_to_end(&mut bytes)?;
+        if bytes.len() as u64 > MAX_LAYOUT_BYTES {
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "window layout is too large"));
         }
+        serde_json::from_slice(&bytes)
+            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))
     }
     /// The window menu's Reset window layout: Global position, size and zoom, saved at once.
     pub(in crate::bevy_shell) fn reset(&mut self, path: Option<&Path>) -> io::Result<()> {

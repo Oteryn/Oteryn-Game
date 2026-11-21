@@ -328,12 +328,21 @@ pub fn take_unseen_crash(directory: &Path) -> io::Result<Option<PathBuf>> {
         return Ok(None);
     };
     let marker = directory.join(SEEN_MARKER);
-    let seen = match fs::read_to_string(&marker) {
-        Ok(seen) => Some(seen.trim().to_owned()),
+    let seen = match fs::File::open(&marker) {
+        Ok(file) => {
+            use std::io::Read;
+            const MAX_MARKER_BYTES: u64 = 1024;
+            let mut seen = String::new();
+            file.take(MAX_MARKER_BYTES + 1).read_to_string(&mut seen)?;
+            if seen.len() as u64 > MAX_MARKER_BYTES {
+                return Err(io::Error::new(io::ErrorKind::InvalidData, "crash marker is too large"));
+            }
+            Some(seen)
+        }
         Err(error) if error.kind() == io::ErrorKind::NotFound => None,
         Err(error) => return Err(error),
     };
-    if seen.as_deref().is_some_and(|seen| seen >= newest.as_str()) {
+    if seen.as_deref().is_some_and(|seen| seen.trim() >= newest.as_str()) {
         return Ok(None);
     }
     fs::write(&marker, format!("{newest}\n"))?;

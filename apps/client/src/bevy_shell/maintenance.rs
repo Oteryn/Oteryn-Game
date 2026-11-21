@@ -132,7 +132,7 @@ fn ui_assets(directory: &Path, args: &[OsString]) -> Option<PathBuf> {
         .position(|argument| argument == "--ui-assets")
         .and_then(|at| args.get(at + 1))
         .map(PathBuf::from);
-    let release = std::fs::read_to_string(directory.join("current.txt"))
+    let release = crate::updater::read_release_pointer(directory)
         .ok()
         .map(|current| current.trim().to_owned())
         .filter(|current| crate::updater::release_directory(current))

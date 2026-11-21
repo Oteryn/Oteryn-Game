@@ -129,3 +129,12 @@ fn a_new_crash_file_is_reported_once_on_the_next_start() -> TestResult {
     directory.close()?;
     Ok(())
 }
+
+#[test]
+fn oversized_seen_marker_is_rejected() -> TestResult {
+    let directory = TempDir::new()?;
+    std::fs::write(directory.path().join("crash-test.log"), "")?;
+    std::fs::write(directory.path().join(SEEN_MARKER), vec![b' '; 1025])?;
+    assert!(matches!(take_unseen_crash(directory.path()), Err(error) if error.kind() == io::ErrorKind::InvalidData));
+    Ok(())
+}
