@@ -4,6 +4,8 @@ use oteryn_session::activity_scope::{ActivityScope, ActivityScopeSnapshot, encod
 
 #[path = "tests_marker_scope/connection_handoff.rs"]
 mod connection_handoff;
+#[path = "tests_marker_scope/guild_projection.rs"]
+mod guild_projection;
 #[path = "tests_marker_scope/presentation_gate.rs"]
 mod presentation_gate;
 #[path = "tests_marker_scope/wire_handoff.rs"]
