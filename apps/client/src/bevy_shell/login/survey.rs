@@ -2,17 +2,32 @@
 use super::*;
 use crate::about;
 use bevy::diagnostic::FrameCount;
+use bevy_tasks::{IoTaskPool, Task, futures::check_ready};
+use std::io;
+
+#[cfg(test)]
+type Writer = std::sync::Arc<dyn Fn(&std::path::Path, &str) -> io::Result<bool> + Send + Sync>;
+
+struct Save {
+    generation: u64,
+    task: Task<io::Result<bool>>,
+}
 
 enum Step {
     Invite,
     Question,
     /// The exact response that Yes queues for delivery.
     Consent(String),
+    Saving,
 }
 
 pub(in crate::bevy_shell) struct State {
     step: Option<Step>,
     shown: Option<(std::mem::Discriminant<Step>, u32)>,
+    generation: u64,
+    save: Option<Save>,
+    #[cfg(test)]
+    writer: Option<Writer>,
     /// Where consented responses wait for the next signed-in play session.
     directory: Option<PathBuf>,
 }
@@ -21,6 +36,10 @@ impl Default for State {
         Self {
             step: None,
             shown: None,
+            generation: 0,
+            save: None,
+            #[cfg(test)]
+            writer: None,
             directory: crate::support_delivery::directory(),
         }
     }
@@ -30,8 +49,21 @@ impl State {
         self.step.is_some()
     }
     pub(super) fn open(&mut self) {
+        self.generation = self.generation.wrapping_add(1);
         self.step = Some(Step::Invite);
         self.shown = None;
+    }
+    fn close(&mut self) {
+        if self.step.take().is_some() {
+            self.generation = self.generation.wrapping_add(1);
+        }
+    }
+    fn action_enabled(&self, action: Action) -> bool {
+        match &self.step {
+            Some(Step::Saving) => false,
+            Some(Step::Consent(_)) if action == Action::Yes => self.save.is_none(),
+            _ => true,
+        }
     }
     fn can_answer(&self, frame: u32) -> bool {
         self.shown.is_some_and(|(shown, shown_frame)| {
@@ -47,29 +79,54 @@ impl State {
             Some(Step::Invite) => about::survey_invitation().to_owned(),
             Some(Step::Question) => about::survey_question().to_owned(),
             Some(Step::Consent(response)) => about::survey_consent(response),
+            Some(Step::Saving) => "Saving survey response…".into(),
             None => String::new(),
         }
     }
-    /// Applies Yes or No to the shown step; returns the login message once a response is queued
-    /// or cannot be saved.
-    fn answer(&mut self, yes: bool) -> Option<&'static str> {
-        match self.step.take()? {
-            Step::Invite if yes => self.step = Some(Step::Question),
-            Step::Question => self.step = Some(Step::Consent(about::survey_response(yes))),
-            Step::Consent(response) if yes => {
-                let saved = self.directory.as_ref().map(|directory| {
-                    about::queue_survey_response(&directory.join("approved-survey.txt"), &response)
-                });
-                return Some(match saved {
-                    Some(Ok(true)) => {
-                        tr!("Survey response queued for delivery on your next play session.")
-                    }
-                    _ => tr!("Cannot save the response. No response was sent."),
-                });
+    fn answer(&mut self, action: Action) {
+        let yes = action == Action::Yes;
+        self.step = match self.step.take() {
+            Some(Step::Invite) if yes => Some(Step::Question),
+            Some(Step::Question) => Some(Step::Consent(about::survey_response(yes))),
+            Some(Step::Consent(response)) if yes => {
+                self.start_save(response);
+                Some(Step::Saving)
             }
-            Step::Invite | Step::Consent(_) => {}
+            _ => None,
+        };
+    }
+    fn start_save(&mut self, response: String) {
+        let directory = self.directory.clone();
+        #[cfg(test)]
+        let writer = self.writer.clone();
+        let task = IoTaskPool::get().spawn(async move {
+            let path = directory
+                .ok_or_else(|| io::Error::other("No survey directory"))?
+                .join("approved-survey.txt");
+            #[cfg(test)]
+            if let Some(writer) = writer {
+                return writer(&path, &response);
+            }
+            about::queue_survey_response(&path, &response)
+        });
+        self.save = Some(Save {
+            generation: self.generation,
+            task,
+        });
+    }
+    fn poll_save(&mut self) -> Option<&'static str> {
+        let save = self.save.as_mut()?;
+        let result = check_ready(&mut save.task)?;
+        let current = save.generation == self.generation;
+        self.save = None;
+        if !current {
+            return None;
         }
-        None
+        self.close();
+        Some(match result {
+            Ok(true) => tr!("Survey response queued for delivery on your next play session."),
+            _ => tr!("Cannot save the response. No response was sent."),
+        })
     }
 }
 #[derive(Component)]
@@ -84,7 +141,10 @@ enum Action {
 
 pub(super) fn install(app: &mut App) {
     app.add_message::<bevy::input::keyboard::KeyboardInput>();
-    app.add_systems(Update, (keyboard, project).chain().after(super::project));
+    app.add_systems(
+        Update,
+        (keyboard, poll_save, project).chain().after(super::project),
+    );
 }
 pub(super) fn setup(commands: &mut Commands, skins: &Skins) {
     let modal = commands
@@ -180,8 +240,8 @@ fn activate(
     let Ok(action) = actions.get(event.entity) else {
         return;
     };
-    if let Some(message) = owner.login.survey.answer(matches!(action, Action::Yes)) {
-        owner.login.form.inform(tr!("Survey"), message.to_owned());
+    if owner.login.survey.action_enabled(*action) {
+        owner.login.survey.answer(*action);
     }
 }
 fn keyboard(
@@ -196,24 +256,30 @@ fn keyboard(
                 && key.state == bevy::input::ButtonState::Pressed
                 && !key.repeat
             {
-                owner.login.survey.step = None;
+                owner.login.survey.close();
             }
         }
     } else {
         keys.clear();
     }
 }
+fn poll_save(mut owner: NonSendMut<HostOwner>) {
+    if !owner.login.visible {
+        owner.login.survey.close();
+    }
+    if let Some(message) = owner.login.survey.poll_save() {
+        owner.login.form.inform(tr!("Survey"), message.to_owned());
+    }
+}
 fn project(
     mut owner: NonSendMut<HostOwner>,
     mut dialogs: Query<&mut Node, With<Dialog>>,
     mut bodies: Query<&mut Text, With<Body>>,
-    actions: Query<(Entity, &Action)>,
+    actions: Query<(Entity, &Action, Has<InteractionDisabled>)>,
+    mut commands: Commands,
     mut focus: ResMut<InputFocus>,
     frame: Res<FrameCount>,
 ) {
-    if !owner.login.visible {
-        owner.login.survey.step = None;
-    }
     let step = owner.login.survey.step.as_ref().map(std::mem::discriminant);
     let visible = step.is_some();
     for mut node in &mut dialogs {
@@ -232,18 +298,23 @@ fn project(
         }
     }
     let shown = owner.login.survey.shown.map(|(shown, _)| shown);
-    if visible && shown != step {
-        // Declining is the safe default for an optional survey.
-        if let Some((entity, _)) = actions.iter().find(|(_, action)| **action == Action::No) {
-            focus.set(entity, FocusCause::Navigated);
+    for (entity, action, disabled) in &actions {
+        let enabled = owner.login.survey.action_enabled(*action);
+        if enabled == disabled {
+            if enabled {
+                commands.entity(entity).remove::<InteractionDisabled>();
+            } else {
+                commands.entity(entity).insert(InteractionDisabled);
+            }
         }
-    } else if !visible
-        && shown.is_some()
-        && focus
-            .get()
-            .is_some_and(|entity| actions.get(entity).is_ok())
-    {
-        focus.clear();
+        if !enabled && focus.get() == Some(entity) {
+            focus.clear();
+        } else if enabled && visible && shown != step && *action == Action::No {
+            // Declining is the safe default for an optional survey.
+            focus.set(entity, FocusCause::Navigated);
+        } else if !visible && focus.get() == Some(entity) {
+            focus.clear();
+        }
     }
     if shown != step {
         owner.login.survey.shown = step.map(|step| (step, frame.0));

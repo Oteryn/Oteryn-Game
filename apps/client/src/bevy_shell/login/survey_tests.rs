@@ -1,7 +1,14 @@
 use super::*;
 use crate::bevy_shell::{login, ui};
 use bevy::asset::AssetPlugin;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::{
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicU64, AtomicUsize, Ordering},
+        mpsc,
+    },
+    time::{Duration, Instant},
+};
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 static NEXT: AtomicU64 = AtomicU64::new(0);
 struct Temp(PathBuf);
@@ -67,6 +74,24 @@ fn answer(app: &mut App, action: Action) -> TestResult {
     app.update();
     Ok(())
 }
+fn wait_for_save(app: &mut App) -> TestResult {
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while app
+        .world()
+        .non_send::<HostOwner>()
+        .login
+        .survey
+        .save
+        .is_some()
+    {
+        if Instant::now() >= deadline {
+            return Err("survey save did not finish".into());
+        }
+        app.update();
+        std::thread::yield_now();
+    }
+    Ok(())
+}
 fn body(app: &mut App) -> Result<String, Box<dyn std::error::Error>> {
     Ok(app
         .world_mut()
@@ -107,6 +132,7 @@ fn login_survey_reviews_the_answer_in_client_and_queues_it_after_consent() -> Te
     let path = temp.0.join("approved-survey.txt");
     assert!(!path.exists());
     answer(&mut app, Action::Yes)?;
+    wait_for_save(&mut app)?;
     assert!(!shown(&mut app)?);
     let queued = std::fs::read_to_string(&path)?;
     assert!(review.starts_with(queued.as_str()));
@@ -143,6 +169,7 @@ fn login_survey_declined_or_refused_queues_nothing() -> TestResult {
     answer(&mut app, Action::Yes)?;
     answer(&mut app, Action::Yes)?;
     answer(&mut app, Action::Yes)?;
+    wait_for_save(&mut app)?;
     assert_eq!(std::fs::read(&path)?, b"earlier response");
     assert!(
         app.world()
@@ -162,6 +189,16 @@ fn login_survey_same_frame_activations_cannot_skip_consent() -> TestResult {
     let temp = Temp::new()?;
     let path = temp.0.join("approved-survey.txt");
     let mut app = app(&temp)?;
+    let writes = Arc::new(AtomicUsize::new(0));
+    let count = Arc::clone(&writes);
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .login
+        .survey
+        .writer = Some(Arc::new(move |path, response| {
+        count.fetch_add(1, Ordering::Relaxed);
+        about::queue_survey_response(path, response)
+    }));
     open(&mut app)?;
     answer(&mut app, Action::Yes)?;
     activate_answer(&mut app, Action::Yes)?;
@@ -174,8 +211,104 @@ fn login_survey_same_frame_activations_cannot_skip_consent() -> TestResult {
     let review = body(&mut app)?;
     assert!(shown(&mut app)?);
     assert!(review.contains("Send exactly this response"));
-    answer(&mut app, Action::Yes)?;
+    activate_answer(&mut app, Action::Yes)?;
+    activate_answer(&mut app, Action::Yes)?;
+    wait_for_save(&mut app)?;
+    assert_eq!(writes.load(Ordering::Relaxed), 1);
     assert!(review.starts_with(&std::fs::read_to_string(path)?));
     assert_eq!(std::fs::read_dir(&temp.0)?.count(), 1);
     Ok(())
+}
+
+fn gated_save(reopen: bool) -> TestResult {
+    let (started, writing) = mpsc::channel();
+    let (release, gate) = mpsc::channel();
+    let (activated, responsive) = mpsc::channel();
+    let driver = std::thread::spawn(move || -> Result<(), String> {
+        let run = || -> TestResult {
+            let temp = Temp::new()?;
+            let path = temp.0.join("approved-survey.txt");
+            let mut app = app(&temp)?;
+            let gate = Mutex::new(gate);
+            app.world_mut()
+                .non_send_mut::<HostOwner>()
+                .login
+                .survey
+                .writer = Some(Arc::new(move |path, response| {
+                started.send(()).map_err(std::io::Error::other)?;
+                gate.lock()
+                    .map_err(|_| std::io::Error::other("survey test gate poisoned"))?
+                    .recv()
+                    .map_err(std::io::Error::other)?;
+                about::queue_survey_response(path, response)
+            }));
+            open(&mut app)?;
+            answer(&mut app, Action::Yes)?;
+            answer(&mut app, Action::Yes)?;
+            activate_answer(&mut app, Action::Yes)?;
+            app.update();
+            assert!(!path.exists());
+            assert!(
+                app.world()
+                    .non_send::<HostOwner>()
+                    .login
+                    .form
+                    .alert()
+                    .is_none()
+            );
+            assert!(shown(&mut app)?);
+            if reopen {
+                use bevy::input::keyboard::{Key, KeyboardInput};
+                let window = app.world_mut().spawn_empty().id();
+                app.world_mut().write_message(KeyboardInput {
+                    key_code: KeyCode::Escape,
+                    logical_key: Key::Escape,
+                    state: bevy::input::ButtonState::Pressed,
+                    text: None,
+                    repeat: false,
+                    window,
+                });
+                app.update();
+                assert!(!shown(&mut app)?);
+                open(&mut app)?;
+            }
+            activated.send(())?;
+            wait_for_save(&mut app)?;
+            assert!(path.exists());
+            let alert = app.world().non_send::<HostOwner>().login.form.alert();
+            if reopen {
+                assert!(alert.is_none());
+                assert!(body(&mut app)?.contains("optional one-question"));
+            } else {
+                assert!(
+                    alert.is_some_and(|(_, message)| message.contains("Survey response queued"))
+                );
+                assert!(!shown(&mut app)?);
+            }
+            Ok(())
+        };
+        run().map_err(|error| error.to_string())
+    });
+    let deadline = Duration::from_secs(5);
+    let returned = writing
+        .recv_timeout(deadline)
+        .and_then(|()| responsive.recv_timeout(deadline));
+    let _ = release.send(());
+    let result = driver.join().map_err(|_| "survey fixture panicked");
+    assert!(
+        returned.is_ok(),
+        "Activate or the frame waited for the blocked survey writer"
+    );
+    result??;
+    Ok(())
+}
+
+#[test]
+fn login_survey_blocked_writer_does_not_block_activation() -> TestResult {
+    gated_save(false)
+}
+
+#[test]
+fn login_survey_ignores_save_completion_after_close_and_reopen() -> TestResult {
+    gated_save(true)
 }
