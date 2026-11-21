@@ -182,7 +182,8 @@ fn morguthis_gate_requires_all_seven_flags_and_preserves_completed_treasure() ->
         );
         assert_eq!(state, before);
     }
-    for old in [-1, 0, 1, 2] {
+    // Global spoiler curid 5073 oldid 1174796 makes all seven flames sufficient.
+    for old in [-1, 0, 1, 2, 3, i64::MAX] {
         let mut state = all_flags.clone();
         state.insert(treasure.clone(), old);
         let changes = catalogue
@@ -191,20 +192,11 @@ fn morguthis_gate_requires_all_seven_flags_and_preserves_completed_treasure() ->
         assert_eq!(changes.len(), 8);
         for change in changes {
             if change.track == treasure {
-                assert_eq!((change.before, change.after), (old, 2));
+                assert_eq!((change.before, change.after), (old, old.max(2)));
             } else {
                 assert_eq!((change.before, change.after), (1, 1));
             }
         }
-    }
-    for unsupported in [3, i64::MAX] {
-        let mut state = all_flags.clone();
-        state.insert(treasure.clone(), unsupported);
-        assert_eq!(
-            catalogue.evaluate(transition, &state, 0),
-            Err(QuestRefusal::StageMismatch)
-        );
-        assert_eq!(state[&treasure], unsupported);
     }
     let callbacks = world_callbacks::load().map_err(|error| format!("{error:?}"))?;
     let callback = callbacks

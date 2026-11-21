@@ -1,5 +1,5 @@
 //! Exact source carried-item STEP branches, with no invented Quest progress.
-use super::world_callbacks::{Callback, Position, Selector, Trigger};
+use super::world_callbacks::{Callback, NativeSelector, Position, Selector, Trigger};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Recipe {
@@ -157,7 +157,7 @@ world_change: None,
         trigger: Trigger::StepIn,
         selector: Selector { target_definition: None, position_aliases: Vec::new(),
  ordinal: None,
- native: None, position: None, unique: Some(recipe.unique), action: None, appearance: None },
+ native: boss_forcefield(recipe.unique), position: None, unique: Some(recipe.unique), action: None, appearance: None },
         lever: None, reversible: false, passages: Vec::new(),
         teleport: Some(recipe.missing), facing: None, effects: Default::default(),
         storage: Vec::new(), minimum_level: None, character_requirements: None, experience: None, monk_reward: None,
@@ -173,7 +173,27 @@ reward_bundle: false,
 })
 }
 
-/// An exact native counterpart of a source UID omitted by the B3 import.
+// The Global spoiler calls for the forcefield in the boss room. Crystal startup
+// item.lua:4437-4463 identifies the corresponding bare B3 objects.
+fn boss_forcefield(unique: u16) -> Option<NativeSelector> {
+    let (x, y, floor) = match unique {
+        3950 => (33174, 32694, -14),
+        3951 => (33396, 32852, -14),
+        3952 => (33191, 32959, -15),
+        3953 => (33195, 33002, -14),
+        3954 => (33073, 32781, -14),
+        3955 => (33103, 32590, -15),
+        3956 => (33116, 32656, -15),
+        _ => return None,
+    };
+    Some(NativeSelector {
+        position: Position { x, y, floor },
+        ordinal: 1,
+        appearance: 1949,
+    })
+}
+
+/// Retained compatibility counterparts at two original native teleport exits.
 /// Matching includes the original native teleport; destination alone is never identity.
 #[derive(Clone, Copy, Debug)]
 pub struct NativeBinding {
@@ -185,42 +205,6 @@ pub struct NativeBinding {
 
 pub fn native_binding(key: &str) -> Option<NativeBinding> {
     let (position, raw_destination) = match recipe(key)?.unique {
-        3950 => (
-            Position {
-                x: 33183,
-                y: 32717,
-                floor: -14,
-            },
-            Position {
-                x: 33231,
-                y: 32705,
-                floor: -8,
-            },
-        ),
-        3951 => (
-            Position {
-                x: 33175,
-                y: 32937,
-                floor: -15,
-            },
-            Position {
-                x: 33250,
-                y: 32832,
-                floor: -8,
-            },
-        ),
-        3952 => (
-            Position {
-                x: 33127,
-                y: 32594,
-                floor: -15,
-            },
-            Position {
-                x: 33131,
-                y: 32566,
-                floor: -8,
-            },
-        ),
         3953 => (
             Position {
                 x: 33146,
@@ -230,30 +214,6 @@ pub fn native_binding(key: &str) -> Option<NativeBinding> {
             Position {
                 x: 33206,
                 y: 32592,
-                floor: -8,
-            },
-        ),
-        3954 => (
-            Position {
-                x: 33042,
-                y: 32777,
-                floor: -14,
-            },
-            Position {
-                x: 33133,
-                y: 32642,
-                floor: -8,
-            },
-        ),
-        3955 => (
-            Position {
-                x: 33350,
-                y: 32830,
-                floor: -14,
-            },
-            Position {
-                x: 33282,
-                y: 32744,
                 floor: -8,
             },
         ),

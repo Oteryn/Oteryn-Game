@@ -87,6 +87,22 @@ fn accepts_source_overlay(
 }
 
 #[cfg(test)]
+tokio::task_local! {
+    static NATIVE_PROFILE_TEST_SEED: [u8; 32];
+}
+
+#[cfg(test)]
+pub(super) async fn with_main_native_ai_seed<T>(turn: impl std::future::Future<Output = T>) -> T {
+    // Replay the native think sequence from main 294cc0a4.
+    const SEED: [u8; 32] = [
+        0x24, 0x71, 0x97, 0xb3, 0x23, 0x78, 0xb6, 0x60, 0xc0, 0x91, 0xe3, 0x4f, 0x45, 0x56, 0x0d,
+        0x9d, 0xfa, 0x46, 0xa5, 0x46, 0x73, 0x01, 0x18, 0xe8, 0x6a, 0xe7, 0xb9, 0xca, 0x43, 0x3b,
+        0x73, 0x75,
+    ];
+    NATIVE_PROFILE_TEST_SEED.scope(SEED, turn).await
+}
+
+#[cfg(test)]
 pub(super) fn native_owner_turn(
     room: &QualifiedNativeEntryRoom,
     phase: &'static str,
@@ -382,7 +398,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     native_owner_turn(room, "profile_guard", "movement_before_think");
                     return Err(crate::durability::DurabilityError::Unavailable);
                 }
-                let root = GameplayDecisionRoot::from_bytes(native.source_digest());
+                let seed = native.source_digest();
+                #[cfg(test)]
+                let seed = NATIVE_PROFILE_TEST_SEED.try_with(|seed| *seed).unwrap_or(seed);
+                let root = GameplayDecisionRoot::from_bytes(seed);
                 let bloodjaw_players = if wave_enabled {
                     bloodjaw_targeting::current_players(runtime, states)
                 } else { None };

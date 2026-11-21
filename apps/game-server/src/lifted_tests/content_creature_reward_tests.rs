@@ -179,19 +179,55 @@ fn corpse_must_be_an_admitted_materializable_bounded_container() {
 }
 
 #[test]
-fn entry_item_must_be_admitted_and_materializable() {
-    let mut value = section();
-    value["items"][1]["materializable"] = json!(false);
-    assert_eq!(
-        reason(&build(&value), RAT),
-        NoSettlementReason::LootItemInadmissible
-    );
-    let mut value = section();
-    value["items"].as_array_mut().unwrap().remove(1);
-    assert_eq!(
-        reason(&build(&value), RAT),
-        NoSettlementReason::LootItemInadmissible
-    );
+fn unavailable_entries_are_pruned_only_for_ordinary_independent_loot() {
+    for missing in [false, true] {
+        let mut value = section();
+        if missing {
+            value["items"].as_array_mut().unwrap().remove(1);
+        } else {
+            value["items"][1]["materializable"] = json!(false);
+        }
+
+        let rat = build(&value).row(RAT).expect("ordinary Rat row settles");
+        assert_eq!(rat.xp_amount, ExactI64::new(5));
+        assert_eq!(
+            rat.corpse_item,
+            Some(LootDefinitionRef::new("Item", CORPSE, REVISION))
+        );
+        assert_eq!(
+            rat.loot_table_ref,
+            Some(LootDefinitionRef::new("Loot", TABLE, REVISION))
+        );
+        assert_eq!(
+            rat.loot_table.algorithm,
+            LootSelectionAlgorithm::IndependentBernoulliPpm
+        );
+        assert!(rat.loot_table.entries.is_empty(), "missing={missing}");
+
+        let mut coupled = value.clone();
+        coupled["tables"][0]["algorithm"] = json!("WeightedSingleSelection");
+        assert_eq!(
+            reason(&build(&coupled), RAT),
+            NoSettlementReason::LootItemInadmissible,
+            "coupled loot with missing={missing}"
+        );
+
+        // The Oriental Outfit addon requires this exact ape fur item.
+        let ape_fur = json!({
+            "family": "Item",
+            "key": "oteryn:item.tibia.i5883",
+            "revision": "definition-r1",
+        });
+        value["tables"][0]["entries"][0]["item"] = ape_fur.clone();
+        if !missing {
+            value["items"][1]["item"] = ape_fur;
+        }
+        assert_eq!(
+            reason(&build(&value), RAT),
+            NoSettlementReason::LootItemInadmissible,
+            "quest loot with missing={missing}"
+        );
+    }
 }
 
 #[test]

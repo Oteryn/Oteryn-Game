@@ -46,6 +46,36 @@
       }
     },
     {
+      "key": "oteryn:quest-reward/qc-sinatuki-legacy-completion",
+      "quest": "oteryn:quest.sinatuki_quest",
+      "npc": "oteryn:npc.sinatuki",
+      "keywords": [
+        "nupi"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/sinatuki/fish",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "present": [],
+      "give": null,
+      "outfit": null,
+      "achievement": "oteryn:achievement/jamjam",
+      "reply": [
+        "Thank you for the fish you brought me!"
+      ],
+      "sources": [
+        "apps/game-server/migrations/2896_sinatuki_fish_exchange.sql"
+      ],
+      "completes": true
+    },
+    {
       "key": "oteryn:quest-reward/qc-sinatuki-perch-99",
       "quest": "oteryn:quest.sinatuki_quest",
       "npc": "oteryn:npc.sinatuki",

@@ -261,6 +261,32 @@ impl CurrentSpellAccessOwner for RegisteredSpellAccessOwner {
             },
         })
     }
+
+    fn read_familiar_restore_denial(
+        &self,
+        binding: &CastFactsBinding,
+        now: u64,
+    ) -> Option<CurrentProjection<()>> {
+        let Self::Premium {
+            account,
+            consumer,
+            clock,
+            delivery,
+        } = self
+        else {
+            return None;
+        };
+        let trusted = delivery.delivered_now(clock.read_current_window())?;
+        let denial = consumer.current_premium_denial(*account, trusted)?;
+        let remaining =
+            u64::try_from(denial.valid_until_us.checked_sub(trusted.upper_us())?).ok()?;
+        Some(CurrentProjection {
+            binding: binding.clone(),
+            authority_revision: denial.authority_revision,
+            valid_until_micros: now.checked_add(remaining)?,
+            value: (),
+        })
+    }
 }
 impl owner_registration::Registered for Arc<RegisteredSpellAccessOwner> {}
 impl CurrentSpellAccessOwner for Arc<RegisteredSpellAccessOwner> {
@@ -273,6 +299,14 @@ impl CurrentSpellAccessOwner for Arc<RegisteredSpellAccessOwner> {
         now: u64,
     ) -> Result<AccessProjections, AccessFactsError> {
         self.as_ref().read_current(binding, now)
+    }
+
+    fn read_familiar_restore_denial(
+        &self,
+        binding: &CastFactsBinding,
+        now: u64,
+    ) -> Option<CurrentProjection<()>> {
+        self.as_ref().read_familiar_restore_denial(binding, now)
     }
 }
 /// The node's Premium reads: the one PREM-1 consumer, the registered trusted clock owner, the

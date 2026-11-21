@@ -41,13 +41,13 @@ EXPECTED_MERGE_GATE_TRIGGER_BLOCK = """on:
       - edited
 """
 EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = "fa39175ae4cd95951781d3955f63a005f7ea16398159a37ab9018c2d916cc890"
-EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = "5f890a26eae21191689fc2b5696288ed36e4d6dcb70c88d2798c40011a0b6063"
-EXPECTED_MERGE_GATE_FINAL_JOB_SHA256 = "c4c54ae3b3ca74e2a88444e6c9874ba2ea6d37e30607d1d61906d298a659d247"
-EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "6b6a5a3101e090663adcbec2b32a268e1f8a57fb2aab1c4ed708f28a809caae7"
+EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = "2b2a88ed7e73595a349286cbb029264f3989a8e5b3f6c312101e1759154fa4c1"
+EXPECTED_MERGE_GATE_FINAL_JOB_SHA256 = "96caca0e141757f3b18e9d97b574aa6362f147791b6e01a53a4c11e2597bdedd"
+EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "3f488a4e42d3c3c61186ec6a7d38ea5528b43b852da51b0d98a58d2ff090a7bd"
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "1a1f98f8f2df7b981fa6a85f0f4bf3ac218247121ab330bf5348a703ce0b1e0d"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "b3423b858c7cad5c2814cef0708819f41c4b5bb328bae5450d202c2e18a92631"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "55c403a1e0c53972efb287720aa53650b8520a73"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "fc84a163207949f3e207c7114c8d818ee7bc2d3c"
 EXPECTED_POST_MERGE_RUST_SHA256 = "0393a1f9243c6134a5c3814983b099b4eb0ca04acf1cb6eb068d86b5b8df2ac6"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
@@ -380,8 +380,8 @@ def main() -> int:
             )
         if "workflow_dispatch:" in text:
             errors.append("merge gate must not execute pull-request code through workflow_dispatch")
-        if "  group: ${{ format('merge-gate-{0}', github.event.pull_request.number) }}\n" not in text:
-            errors.append("merge gate runs of one pull request must share one concurrency group")
+        if "  group: ${{ github.event.action == 'edited' && github.event.changes.base == null && format('merge-gate-{0}-edits', github.event.pull_request.number) || format('merge-gate-{0}', github.event.pull_request.number) }}\n" not in text:
+            errors.append("metadata edits must not displace pending product qualifications")
         if "  cancel-in-progress: ${{ !(github.event.action == 'edited' && github.event.changes.base == null) }}\n" not in text:
             errors.append("merge gate metadata edits must not cancel product qualifications")
         scope_block = indented_yaml_mapping_block(text, "scope", 2)
@@ -407,7 +407,7 @@ def main() -> int:
         if world_digest != EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256:
             errors.append("merge gate World bundle must retain its reviewed fail-closed qualification")
         jobs = yaml_mapping_keys_at_indent(top_level_yaml_mapping_block(text, "jobs") or "", 2)
-        if jobs != ["scope", "lanes", "governance", "dependency_review", "routing_contract", "world_bundle", "rust_policy", "runner_route", "rust_fast_build", "rust_fast", "rust_supply_chain", "rust_client_ui", "validate", "game_gate"]:
+        if jobs != ["scope", "lanes", "governance", "dependency_review", "routing_contract", "world_bundle", "rust_policy", "runner_route", "rust_fast_build", "rust_fast", "rust_clippy", "rust_supply_chain", "rust_client_ui", "validate", "game_gate"]:
             errors.append("merge gate must contain only the canonical fast PR jobs")
         validate_block = indented_yaml_mapping_block(text, "validate", 2)
         validate_digest = hashlib.sha256(validate_block.encode("utf-8")).hexdigest() if validate_block else None
@@ -423,7 +423,7 @@ def main() -> int:
             for fragment in (
                 "    name: game-gate\n",
                 "    if: always() && (github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref)\n",
-                "    needs: [scope, rust_fast_build, validate]\n",
+                "    needs: [scope, lanes, rust_fast_build, validate]\n",
                 "          LEGACY_VALIDATE: ${{ needs.validate.result }}\n",
                 "          RUST_FAST_BUILD: ${{ needs.rust_fast_build.result }}\n",
                 '          test "$LEGACY_VALIDATE" = "success" &&\n',
@@ -569,7 +569,7 @@ def main() -> int:
             ),
             "durability_postgres_build": (
                 "    name: Merge Queue / Durability PostgreSQL harness build (${{ matrix.archive }})\n",
-                "        archive: [e2e, lib, lib-1, lib-2, lib-3]\n",
+                '        archive: ${{ fromJSON(needs.candidate.outputs.postgres == \'false\' && \'["e2e","lib-1","lib-2","lib-3"]\' || \'["e2e","lib","lib-1","lib-2","lib-3"]\') }}\n',
                 "python3 tools/repository/check_dispatch_pg_shards.py 3",
                 "    if: needs.candidate.outputs.rust == 'true'\n",
                 "ref: ${{ github.event.merge_group.head_sha || github.sha }}",
@@ -613,7 +613,7 @@ def main() -> int:
             "durability_postgres": (
                 "    name: Merge Queue / Durability PostgreSQL harness\n",
                 "    needs: [candidate, durability_postgres_build]\n",
-                "    if: needs.candidate.outputs.rust == 'true'\n",
+                "    if: needs.candidate.outputs.rust == 'true' && needs.candidate.outputs.postgres != 'false'\n",
                 "image: postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc",
                 "ref: ${{ github.event.merge_group.head_sha || github.sha }}",
                 "NEXTEST_SHA256: 682c21b777c333e96fd532e114d3a5a894e0729ab88d94c0a9f20f8419695428",
@@ -749,7 +749,10 @@ def main() -> int:
                 "          WORLD_BUNDLE: ${{ needs.world_bundle.result }}\n",
                 "          RUST_LINUX: ${{ needs.rust_linux.result }}\n",
                 "          RUST_DISPATCH: ${{ needs.rust_dispatch.result }}\n",
-                'for result in "$RUST_LINUX" "$RUST_DISPATCH" "$DURABILITY_POSTGRES" "$RUST_SUPPLY_CHAIN"; do',
+                'for result in "$RUST_LINUX" "$RUST_DISPATCH" "$RUST_SUPPLY_CHAIN"; do',
+                'if [[ "$RUST_REQUIRED" == "true" && "${PG_REQUIRED:-}" != "false" ]]; then',
+                'test "$DURABILITY_POSTGRES" = success',
+                "          PG_REQUIRED: ${{ needs.candidate.outputs.postgres }}\n",
                 "          DURABILITY_POSTGRES: ${{ needs.durability_postgres.result }}\n",
                 "          RUST_WINDOWS: ${{ needs.rust_windows.result }}\n",
                 "          RUST_SUPPLY_CHAIN: ${{ needs.rust_supply_chain.result }}\n",

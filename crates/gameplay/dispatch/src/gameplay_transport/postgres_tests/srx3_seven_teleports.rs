@@ -5,6 +5,7 @@ use super::srx3_native_source_cast_fixtures::{
 };
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
+use crate::gameplay_transport::monster_profile_cycle::with_main_native_ai_seed;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 struct CaseDuration {
@@ -105,7 +106,12 @@ fn source_teleport_case(maxxen: bool) -> TestResult {
             let time_limit = started_at.saturating_add(256_000_000);
             while now < time_limit {
                 let cursor=map.facts.movement_effects_since(0).last().map_or(0,|entry|entry.0);
-                settle_monster_melee_at(&owner, now).await?;
+                let turn = settle_monster_melee_at(&owner, now);
+                if maxxen {
+                    with_main_native_ai_seed(turn).await?;
+                } else {
+                    turn.await?;
+                }
                 let runtime=owner.runtime.lock().await;
                 let states=owner.states.spell_states.lock().await;
                 if let Some(report)=states.monster_melee.creature_ai.last_report_for_test(caster){

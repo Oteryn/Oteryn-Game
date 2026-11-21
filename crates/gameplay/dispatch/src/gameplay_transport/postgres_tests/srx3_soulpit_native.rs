@@ -344,9 +344,17 @@ fn run_native_soulpit_scenario(
                         oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT,
                         build_payload,11,&mut entry_frames).await?
                 } else {
-                    super::guild_wire_fixtures::exchange_capture(&owner,&mut admitted,1,
+                    let capture = super::guild_wire_fixtures::exchange_capture(&owner,&mut admitted,1,
                         oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT,
-                        build_payload,true,&mut entry_frames).await?
+                        build_payload,true,&mut entry_frames);
+                    if early_exit || retained_grace {
+                        capture.await?
+                    } else {
+                        // Select a wave plan whose ordinary draws leave the boss cell free.
+                        crate::gameplay_transport::soulpit::SOULPIT_TEST_HANDOFF_ID
+                            .scope(id(199), capture)
+                            .await?
+                    }
                 };
                 actual_entry_command = actual_command;
                 assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);

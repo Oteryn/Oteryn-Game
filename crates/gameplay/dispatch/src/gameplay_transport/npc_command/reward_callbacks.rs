@@ -132,12 +132,16 @@ pub(super) fn prepare(
                 })
             };
             if phase == Phase::Rewards {
+                let legacy_paid = inventory.is_some_and(|facts| facts.sinatuki_legacy_paid);
                 let matching_stage = callbacks.iter().filter(|c| {
+                    let legacy = c.key == reward_callbacks::SINATUKI_LEGACY_COMPLETION;
                     c.carried_item.is_none()
                         && c.npc == context.2
                         && c.topic == topic.number
                         && c.keywords.contains(&text)
-                        && eligible(&c.storage)
+                        && legacy == legacy_paid
+                        // Let the writer use the same key when replaying a completed quest.
+                        && (legacy || eligible(&c.storage))
                         && c.state_ops
                             .iter()
                             .all(|op| op.advisory_holds(catalogue, tracks))
@@ -234,6 +238,7 @@ pub(super) fn prepare(
             // through to an unrelated legacy dialogue with the same text.
             let mut matching = callbacks.iter().filter(|c| {
                 c.carried_item.is_none()
+                    && c.key != reward_callbacks::SINATUKI_LEGACY_COMPLETION
                     && c.npc == context.2
                     && c.topic == topic.number
                     && c.keywords.contains(&text)

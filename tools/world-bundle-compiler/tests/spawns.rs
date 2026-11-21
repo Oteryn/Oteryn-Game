@@ -583,6 +583,60 @@ fn boss_spawn_world_points_reach_bundle_at_fixed_cells() -> TestResult {
             checked += 1;
         }
     }
-    assert_eq!(checked, 27);
+    assert_eq!(checked, 34);
+    Ok(())
+}
+
+#[test]
+fn ancient_tombs_pharaohs_are_realized_at_their_source_spawn_points() -> TestResult {
+    use oteryn_world_bundle_compiler::source;
+    let root = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."));
+    let pharaohs = [
+        ("dipthrah", 33097, 32589, 15),
+        ("mahrdis", 33191, 32957, 15),
+        ("morguthis", 33172, 32694, 14),
+        ("omruc", 33201, 33001, 14),
+        ("rahemos", 33076, 32780, 14),
+        ("thalas", 33396, 32839, 14),
+        ("vashresamun", 33121, 32655, 15),
+    ];
+    let regions = pharaohs
+        .iter()
+        .map(|&(_, x, y, _)| (x / 256, y / 256))
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
+        .collect::<Vec<_>>();
+    let project = source::project_regions(root, &regions)?;
+    let (resolver, palette) = source::registry(root, &project)?;
+    let input = Input {
+        regions: &project.regions,
+        palette: &palette,
+        identity: Identity::default(),
+        world: source::world_extent(root)?,
+        build_class: BuildClass::NonProduction,
+        draft_areas: Vec::new(),
+        families: &project.families,
+    };
+    let (table, report) = realize_spawns(&input, &resolver)?;
+    for (name, x, y, floor) in pharaohs {
+        let key = format!("oteryn:creature.{name}");
+        let expected = spawn::BossPolicy::Respawn {
+            min_s: 90,
+            max_s: 90,
+        };
+        assert!(
+            table.sources.iter().any(|s| s.floor == -floor
+                && s.points.iter().any(|p| p.x == x
+                    && p.y == y
+                    && p.boss_policy == Some(expected)
+                    && table.creatures[p.creature as usize].key == key)),
+            "source spawn {key} was refused: {:?}",
+            report
+                .dropped
+                .iter()
+                .filter(|p| p.creature == key)
+                .collect::<Vec<_>>()
+        );
+    }
     Ok(())
 }

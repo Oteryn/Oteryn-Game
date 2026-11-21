@@ -7,7 +7,8 @@ use super::super::{
 use super::*;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::npc_trade::{
-    NpcTradeCause, NpcTradeCoins, NpcTradeError, NpcTradeRequest, NpcTradeSide,
+    NpcTradeCause, NpcTradeCoins, NpcTradeError,
+    NpcTradeRequest, NpcTradeSide, sinatuki_exchange,
 };
 use crate::foundation::{CommandId, CommandRef};
 use oteryn_protocol_oteryn::npc_service::NpcTalkIntent;
@@ -19,7 +20,7 @@ struct Recipe {
     npc: &'static str,
     keyword: &'static str,
     output: &'static str,
-    prompt: &'static str,
+    prompt: Option<&'static str>,
     success: &'static str,
     cancel: Option<&'static str>,
 }
@@ -27,7 +28,9 @@ const PICK_RECIPE: Recipe = Recipe {
     npc: "oteryn:npc.al_dee",
     keyword: "pick",
     output: "oteryn:item.tibia.i3456",
-    prompt: "Picks are hard to come by. I trade them only in exchange for high quality small axes. Would you like to make that deal?",
+    prompt: Some(
+        "Picks are hard to come by. I trade them only in exchange for high quality small axes. Would you like to make that deal?",
+    ),
     success: "Splendid! Here, take your pick.",
     cancel: Some("Well, then don't."),
 };
@@ -35,7 +38,9 @@ const KNIFE_RECIPE: Recipe = Recipe {
     npc: "oteryn:npc.uzgod",
     keyword: "draconian steel",
     output: "oteryn:item.tibia.i5908",
-    prompt: "You bringing me draconian steel and obsidian lance in exchange for obsidian knife?",
+    prompt: Some(
+        "You bringing me draconian steel and obsidian lance in exchange for obsidian knife?",
+    ),
     success: "Here you have it.",
     cancel: None,
 };
@@ -43,7 +48,7 @@ const PRESENT_RECIPE: Recipe = Recipe {
     npc: "oteryn:npc.seymour",
     keyword: "box",
     output: "oteryn:item.tibia.i3374",
-    prompt: "Do you have a suitable present box for me?",
+    prompt: Some("Do you have a suitable present box for me?"),
     success: "THANK YOU! Here is a helmet that will serve you well.",
     cancel: None,
 };
@@ -77,9 +82,20 @@ pub(super) async fn talk(
         intent.npc_actor,
     );
     let yes = intent.text.trim().eq_ignore_ascii_case("yes");
+    let nupi = oteryn_gameplay_npc::greeting::words(&intent.text)
+        .iter()
+        .any(|word| word == "nupi");
+    let chat = &admission.states.chat;
+    let fish_default_message = nupi
+        && chat
+            .npc_talk()
+            .and_then(|book| book.get(sinatuki_exchange::NPC))
+            .is_none_or(|entry| !entry.matches_focus_or_dialogue(&intent.text));
     // Exact durable replay precedes the live NPC, inventory and conversation. A removed
     // source or ended dialogue cannot make a committed exchange run a second time.
-    if yes && let Some(fence) = command.item_fence {
+    if (yes || fish_default_message)
+        && let Some(fence) = command.item_fence
+    {
         match admission
             .root
             .read_npc_trade(
@@ -91,7 +107,10 @@ pub(super) async fn talk(
             .await
         {
             Ok(Some(receipt))
-                if receipt.side == NpcTradeSide::Exchange && recipe(&receipt.npc_key).is_some() =>
+                if receipt.side == NpcTradeSide::Exchange
+                    && (recipe(&receipt.npc_key).is_some()
+                        || receipt.npc_key == sinatuki_exchange::NPC)
+                    && (receipt.npc_key == sinatuki_exchange::NPC) == nupi =>
             {
                 return Some(NpcTalkOutcome {
                     inventory_changed: true,
@@ -106,6 +125,8 @@ pub(super) async fn talk(
     let runtime = admission.runtime.lock().await;
     let npc =
         service_context::live_npc(&runtime, actor, command.game_session_id, intent.npc_actor)?;
+    // Sinatuki's live dialogue belongs to the quest callback owner. The trade
+    // receipt lookup above is only for commands committed before the cutover.
     let recipe = recipe(&npc.key);
     if recipe.is_none() && npc.key != "oteryn:npc.yasir" {
         return None;
@@ -129,7 +150,7 @@ pub(super) async fn talk(
                     &words,
                     &oteryn_gameplay_npc::greeting::words(recipe.keyword),
                 ) {
-                    (Some(recipe.prompt), 1)
+                    (recipe.prompt, 1)
                 } else if !fresh
                     && topic.number == 1
                     && topic.value.as_deref() == Some(recipe.output)
@@ -160,7 +181,7 @@ pub(super) async fn talk(
         None
     };
     let ordinary = admission.states.npc_conversations.talk_in(
-        &admission.states.chat,
+        chat,
         &runtime,
         actor,
         command.game_session_id,
@@ -172,15 +193,13 @@ pub(super) async fn talk(
         return Some(ordinary);
     }
     let Some(recipe) = recipe else {
-        let outcome =
-            oriental_trader::open_alias(admission, actor, command, intent, &runtime, ordinary);
-        let opened = oriental_trader::opened_source(&runtime, intent, &outcome);
+        let opened = oriental_trader::opened_source(&runtime, intent, &ordinary);
         drop(runtime);
         if let Some(source) = opened {
             // A failed grant keeps the open window; see `grant_on_open`.
             let _granted = oriental_trader::grant_on_open(admission, command, source).await;
         }
-        return Some(outcome);
+        return Some(ordinary);
     };
     let context = admission.states.npc_conversations.current_npc(
         &admission.states.chat,
@@ -191,9 +210,8 @@ pub(super) async fn talk(
     );
     let coins = bank_coin_definitions(admission, &runtime);
     drop(runtime);
-    let step = step?;
     if !confirmed {
-        return Some(quest_dialogue::apply(admission, actor, command, intent.clone(), step).await);
+        return Some(quest_dialogue::apply(admission, actor, command, intent.clone(), step?).await);
     }
     let Some(fence) = command.item_fence else {
         return Some(rejected());
@@ -338,7 +356,7 @@ pub(super) async fn talk(
     match result {
         Ok(_) => {
             let mut outcome =
-                quest_dialogue::apply(admission, actor, command, intent.clone(), step).await;
+                quest_dialogue::apply(admission, actor, command, intent.clone(), step?).await;
             // The transaction committed even if the conversation ended before publication.
             if outcome.disposition != NpcIntentDisposition::Ok {
                 outcome = NpcTalkOutcome::only(NpcIntentDisposition::Ok);

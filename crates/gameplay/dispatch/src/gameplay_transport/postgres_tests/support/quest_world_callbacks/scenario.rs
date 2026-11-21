@@ -1225,6 +1225,7 @@ fn scenario_case(
             super::super::l6_tomb_native_fixtures::world(
                 generation.native_gameplay().ok_or("native Tomb policies")?,
                 callback.selector.unique.ok_or("source UID")?,
+                trigger,
             )?
         } else if small_ruby {
             super::super::l6_world_pickups_fixtures::small_ruby(
@@ -1699,11 +1700,17 @@ fn scenario_case(
             || name == "questpc7-hoist-story"
             || (name.starts_with("questpc7-eligibility-") && !name.ends_with("no-premium"))
             || name.starts_with("questpc7-outfits-")
+            || name.starts_with("qengine-rewards-qb-")
         {
             use crate::gameplay_transport::spell_premium_coordinator::{
                 SpellPremiumCoordinator, purchase_fixture,
             };
-            let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
+            let premium_account = if name.ends_with("-free-account") {
+                id(41)
+            } else {
+                id(40)
+            };
+            let (consumer, clock, activation, _) = purchase_fixture::current(premium_account);
             Some(SpellPremiumCoordinator::new(
                 consumer,
                 Some(clock),
@@ -1724,11 +1731,12 @@ fn scenario_case(
         if let Some(premium) = &eligibility_premium {
             owner.premium_coordinator = Some(premium);
             owner.admit_premium(id(40), deps.admitted.game_session_id);
-            assert!(
+            assert_eq!(
                 owner
                     .session_premium_gate(deps.admitted.game_session_id)
                     .await
-                    .premium_current()
+                    .premium_current(),
+                !name.ends_with("-free-account")
             );
         }
 
@@ -2440,18 +2448,24 @@ fn scenario_case(
                     .iter()
                     .find(|r| Some(r.unique) == callback.selector.unique)
                     .ok_or("source key recipe")?;
-                super::input_item(
-                    &owner,
-                    fence.item_fence(),
-                    &oteryn_gameplay_quests::quest::world_callbacks::Offering {
-                        position: trigger,
-                        item: recipe.item.into(),
-                        count: 1,
-                    },
-                    71,
-                    true,
-                )
-                .await?;
+                if tomb_native {
+                    Box::pin(super::super::l6_tomb_native_fixtures::hunt_pass(
+                        &owner, &admitted, &h, recipe,
+                    )).await?;
+                } else {
+                    super::input_item(
+                        &owner,
+                        fence.item_fence(),
+                        &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+                            position: trigger,
+                            item: recipe.item.into(),
+                            count: 1,
+                        },
+                        71,
+                        true,
+                    )
+                    .await?;
+                }
             }
             Box::pin(super::stateless::exercise(
                 &owner,
