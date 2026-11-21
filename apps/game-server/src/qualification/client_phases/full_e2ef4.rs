@@ -92,6 +92,57 @@ pub(super) async fn run(
     // Each row reports even when another row has missing content or a refused command.
     // Socket waits are bounded; a timed-out session is not evidence of server absence.
     macro_rules! row {
+        // The walk to the row's start (`locker`: the depot locker, `town`: the entry tile) is
+        // travel outside the journey budget, as E01's walk to Sam is; each walked tile is
+        // progress, so a stalled walk ends on the no-progress watchdog.
+        (travel $to:ident, $id:literal, $actions:ident, $journey:ident $(, $arg:expr)*) => {{
+            let mut row = Row::new("E2EF4", $id, $actions).evidence(EVIDENCE, EVIDENCE);
+            let watch = row.watch();
+            let result = if let Some(active) = client.as_mut() {
+                let mut arrived = false;
+                let walked = watch
+                    .travel(
+                        concat!($id, " walk to ", stringify!($to), " stalled;remaining-assertions-unproven"),
+                        async {
+                            let walked = $to(active, world).await;
+                            arrived = true;
+                            walked
+                        },
+                    )
+                    .await;
+                if !arrived {
+                    // An interrupted command or frame cannot be resumed by another row.
+                    *client = None;
+                    walked
+                } else if walked.is_err() {
+                    walked
+                } else {
+                    row!(@journey client, row, watch, active, $journey $(, $arg)*)
+                }
+            } else {
+                Err("prior-native-journey-deadline;connection-closed;actions-unproven".into())
+            };
+            row.finish(&result);
+        }};
+        (@journey $client:ident, $row:ident, $watch:ident, $active:ident, $journey:ident $(, $arg:expr)*) => {{
+            let mut completed = false;
+            let result = $watch
+                .bound(
+                    Duration::from_secs(90),
+                    "native-journey-deadline;remaining-assertions-unproven",
+                    async {
+                        let result = $journey(&mut $row, $active $(, $arg)*).await;
+                        completed = true;
+                        result
+                    },
+                )
+                .await;
+            if !completed {
+                // An interrupted command or frame cannot be resumed by another row.
+                *$client = None;
+            }
+            result
+        }};
         ($id:literal, $actions:ident, $journey:ident $(, $arg:expr)*) => {{
             let mut row = Row::new("E2EF4", $id, $actions).evidence(EVIDENCE, EVIDENCE);
             let watch = row.watch();
@@ -117,12 +168,25 @@ pub(super) async fn run(
             row.finish(&result);
         }};
     }
-    row!("E01", E01, shop, clients, world, npcs);
+    {
+        let mut row = Row::new("E2EF4", "E01", E01).evidence(EVIDENCE, EVIDENCE);
+        let result = if let Some(active) = client.as_mut() {
+            let (result, completed) = shop_row(&mut row, active, world, npcs).await;
+            if !completed {
+                // An interrupted command or frame cannot be resumed by another row.
+                *client = None;
+            }
+            result
+        } else {
+            Err("prior-native-journey-deadline;connection-closed;actions-unproven".into())
+        };
+        row.finish(&result);
+    }
     row!("E03", E03, coins);
     row!("E04", E04, trade, clients, world);
-    row!("E05", E05, market, world);
-    row!("E07", E07, storage, clients, world);
-    row!("S01", S01, party, clients, world);
+    row!(travel locker, "E05", E05, market);
+    row!(travel locker, "E07", E07, storage, clients);
+    row!(travel town, "S01", S01, party, clients, world);
     row!("S03", S03, guild);
     row!("S09", S09, logout, clients, world);
     row!("S18", S18, speech);
@@ -219,42 +283,148 @@ async fn locker(client: &mut DevClientSession, world: &BundleWorld) -> TestResul
     walk(client, world, &path).await
 }
 
-async fn shop(
+/// Walks back to the entry tile before S01 approaches its peer from there.
+async fn town(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        at == TOWN
+    })
+    .ok_or("E2EF4 town route unavailable")?;
+    walk(client, world, &path).await
+}
+
+/// Sam's authored wander radius: `oteryn:behavior.npc.sam` movement.wander.radius_tiles in
+/// content/behaviors/behaviors-02500-02999.json. He is seldom on his placement tile.
+const SAM_WANDER_RADIUS: u32 = 2;
+
+/// E01 walks from the entry tile to Sam and back as travel, outside the 90 s journey budget:
+/// at level 1 the walk to Sam alone took 87.6 s of it on main (node boot run 44884398508).
+/// Each walked tile is progress, so a stalled walk still ends on the no-progress watchdog.
+/// Returns the row result and whether the connection is still usable.
+async fn shop_row(
     row: &mut Row,
     client: &mut DevClientSession,
-    _clients: &SeamClients<'_>,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
-) -> TestResult {
+) -> (TestResult, bool) {
+    let watch = row.watch();
+    let entry = match tile(client.world_spatial().actor_position) {
+        Ok(entry) => entry,
+        Err(error) => return (Err(error), true),
+    };
+    let mut arrived = false;
+    let actor = watch
+        .travel(
+            "E01 walk to Sam stalled;remaining-assertions-unproven",
+            async {
+                let actor = approach_sam(client, world, npcs).await;
+                arrived = true;
+                actor
+            },
+        )
+        .await;
+    if !arrived {
+        return (actor.map(|_| ()), false);
+    }
+    let mut completed = false;
+    let result = match actor {
+        Ok(actor) => {
+            watch
+                .bound(
+                    Duration::from_secs(90),
+                    "native-journey-deadline;remaining-assertions-unproven",
+                    async {
+                        let result = shop(row, client, actor).await;
+                        completed = true;
+                        result
+                    },
+                )
+                .await
+        }
+        Err(error) => {
+            completed = true;
+            Err(error)
+        }
+    };
+    if !completed {
+        return (result, false);
+    }
+    // The rows after E01 start on the entry tile, as they did before Sam was reachable.
+    let mut returned = false;
+    let back = watch
+        .travel("E01 return walk stalled", async {
+            let back = async {
+                let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+                    at == entry
+                })
+                .ok_or("E01 return route unavailable")?;
+                walk(client, world, &path).await
+            }
+            .await;
+            returned = true;
+            back
+        })
+        .await;
+    if let Err(error) = back {
+        evidence(&format!("E2EF4_GAP E01 return {error}"));
+    }
+    (result, returned)
+}
+
+async fn approach_sam(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+) -> TestResult<EntityRef> {
     let basis = spatial_basis::current(client)?;
-    use oteryn_dev_client::client_runtime::npc_shop as runtime;
-    use oteryn_protocol_oteryn::{npc_service as wire, npc_shop as shop};
     let npc = npcs
         .npcs
         .iter()
         .find(|npc| npc.key == "oteryn:npc.sam")
         .ok_or("content:oteryn:npc.sam absent")?;
+    // Next to the placement, Sam stays within TALK_RANGE_TILES (4) while he wanders.
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         npc.placements
             .iter()
-            .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)
+            .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 1)
     })
     .ok_or("content:oteryn:npc.sam unreachable")?;
     walk(client, world, &path).await?;
-    let actor = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|entity| {
-                entity.kind == oteryn_dev_client::EntityKind::Npc
-                    && npc.placements.iter().any(|p| {
-                        entity.position.x == i32::from(p.x)
-                            && entity.position.y == i32::from(p.y)
-                            && entity.position.floor == basis.floor(p.floor)
-                    })
-            })
+    let entities = client.world_entities().ok_or("native entities absent")?;
+    let near: Vec<_> = entities
+        .iter()
+        .filter(|entity| {
+            entity.kind == oteryn_dev_client::EntityKind::Npc
+                && npc.placements.iter().any(|p| {
+                    entity.position.floor == basis.floor(p.floor)
+                        && entity.position.x.abs_diff(i32::from(p.x)) <= SAM_WANDER_RADIUS
+                        && entity.position.y.abs_diff(i32::from(p.y)) <= SAM_WANDER_RADIUS
+                })
         })
-        .map(|entity| entity.entity)
-        .ok_or("Sam actor not visible at authored placement")?;
+        .collect();
+    let named: Vec<_> = near
+        .iter()
+        .copied()
+        .filter(|entity| {
+            entity
+                .display_name
+                .as_ref()
+                .is_some_and(|name| name.as_str().is_ok_and(|name| name == "Sam"))
+        })
+        .collect();
+    match (near.as_slice(), named.as_slice()) {
+        ([sam], _) | (_, [sam]) => Ok(sam.entity),
+        ([], _) => Err("Sam actor not visible within his authored wander radius".into()),
+        _ => Err(format!(
+            "{} NPC actors within Sam's wander radius and none uniquely named Sam",
+            near.len()
+        )
+        .into()),
+    }
+}
+
+async fn shop(row: &mut Row, client: &mut DevClientSession, actor: EntityRef) -> TestResult {
+    use oteryn_dev_client::client_runtime::npc_shop as runtime;
+    use oteryn_protocol_oteryn::{npc_service as wire, npc_shop as shop};
     for text in ["hi", "trade"] {
         let result = runtime::talk(
             client.session_mut(),
@@ -425,9 +595,9 @@ async fn trade(
     result
 }
 
-async fn market(row: &mut Row, client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+async fn market(row: &mut Row, client: &mut DevClientSession) -> TestResult {
     use oteryn_dev_client::{client_runtime::market as runtime, client_ui::market as ui};
-    locker(client, world).await?;
+    // The row walked to the depot locker before this journey.
     let mut panel = ui::MarketPanel {
         selected: true,
         ..Default::default()
@@ -492,11 +662,10 @@ async fn storage(
     row: &mut Row,
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
-    world: &BundleWorld,
 ) -> TestResult {
     use oteryn_dev_client::{client_runtime::stash as runtime, client_ui::stash as ui};
     use oteryn_protocol_oteryn::depot;
-    locker(client, world).await?;
+    // The row walked to the depot locker before this journey.
     for box_number in [1] {
         let payload = depot::encode_depot_intent(depot::DepotIntent {
             town: None,
