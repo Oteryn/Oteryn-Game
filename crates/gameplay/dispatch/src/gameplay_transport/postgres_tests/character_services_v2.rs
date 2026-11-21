@@ -148,6 +148,7 @@ fn scenario(race: bool, tag: &'static str, projection_only: bool) -> TestResult 
                     .bind(&character)
                     .execute(&mut *held)
                     .await?;
+                let blocker: i32 = sqlx::query_scalar("SELECT pg_backend_pid()").fetch_one(&mut *held).await?;
                 let back = transfer_intent(31, now, &character, &other, &account);
                 let back_operation = operation(31);
                 let transfer = h.root.decide_character_command(
@@ -159,12 +160,12 @@ fn scenario(race: bool, tag: &'static str, projection_only: bool) -> TestResult 
                     Input::Intent(&back),
                 );
                 tokio::pin!(transfer);
-                tokio::select! {
+                let transfer_pid = tokio::select! {
                     result = &mut transfer => {
                         return Err(format!("transfer finished before the root lock: {result:?}").into());
                     }
-                    waiting = wait_for_review_lock(&h.pool, "game_character_roots") => waiting?,
-                }
+                    waiting = wait_for_review_lock(&h.pool, "game_character_roots", blocker) => waiting?,
+                };
                 let coordinate = async {
                     let mut resync = h.pool.begin().await?;
                     let run = async {
@@ -180,7 +181,7 @@ fn scenario(race: bool, tag: &'static str, projection_only: bool) -> TestResult 
                             result?;
                             return Err("resync finished before the portfolio lock".into());
                         }
-                        waiting = wait_for_review_lock(&h.pool, "game_character_service_resync_page") => waiting?,
+                        waiting = wait_for_review_lock(&h.pool, "game_character_service_resync_page", transfer_pid) => { waiting?; }
                     }
                     held.commit().await?;
                     run.await
@@ -538,9 +539,16 @@ fn create_intent(n: u8, now: i64, account: &str, world: &str, name: &str) -> Tes
 fn transfer_intent(n:u8,now:i64,character:&str,from:&str,to:&str)->Vec<u8> {
     format!(r#"{{"contract_version":1,"command":"TransferCharacterOwnership","variant":"PLATFORM_BAZAAR_TRANSFER","issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY","issuer_decision_id":"{}","source_revision":"{}","operation_id":"{}","character_id":"{}","expected_from_account_id":"{}","to_account_id":"{}","purpose":"BAZAAR_LISTING_ESCROW","issued_at_source":"{}","expires_at_source":"{}","audience":"OTERYN_GAME_CHARACTER_AUTHORITY"}}"#,operation(n+100),n,operation(n),character,from,to,now,now+300).into_bytes()
 }
-async fn wait_for_review_lock(pool:&sqlx::PgPool,query:&str)->TestResult {
-    loop {
-        if sqlx::query_scalar::<_,bool>("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND pid<>pg_backend_pid() AND wait_event_type='Lock' AND query LIKE '%'||$1||'%')").bind(query).fetch_one(pool).await? {return Ok(());}
-        tokio::task::yield_now().await;
-    }
+async fn wait_for_review_lock(pool: &sqlx::PgPool, query: &str, blocker: i32) -> TestResult<i32> {
+    tokio::time::timeout(std::time::Duration::from_secs(5), async {
+        loop {
+            let waiter = sqlx::query_scalar::<_, i32>(
+                "SELECT pid FROM pg_stat_activity WHERE datname=current_database() AND query LIKE '%'||$1||'%' AND $2=ANY(pg_blocking_pids(pid)) LIMIT 1",
+            ).bind(query).bind(blocker).fetch_optional(pool).await?;
+            if let Some(waiter) = waiter {
+                return Ok(waiter);
+            }
+            tokio::task::yield_now().await;
+        }
+    }).await?
 }
