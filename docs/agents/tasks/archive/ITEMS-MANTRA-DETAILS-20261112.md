@@ -8,14 +8,14 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/happy-davinci-ijz3wy-mantra
-pr: 3154
+pr: 3368
 base_sha: 4d36c23b2645f03e443a65d170dbc2a60c33d533
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: /root/mantra_resume
 created_at: 2026-11-12T22:57:37Z
-updated_at: 2026-11-21T17:58:47Z
+updated_at: 2026-11-21T19:43:44Z
 execution_policy: continuous_progress
 owned_paths:
   - crates/gameplay/dispatch/src/gameplay_transport/inspection.rs
@@ -252,3 +252,48 @@ The takeover completed on `claude/happy-davinci-ijz3wy-mantra` with this
 archived record in its final authoring commit. PR #3154 identifies the source
 draft. The takeover branch is delivered directly for the coordinator's use.
 Exact-head CI and independent review remain pending for future integration.
+
+## PR #3368 review follow-up
+
+The native importer used the donor engine's missing-weight default of zero.
+The Crystal reward capture inherited that default for the four Rotten Blood
+essences and the three appearance-only rewards. Cursed wood and darklight
+geode retained earlier zero-weight native profiles when the event overlay
+preserved their existing owners. The Galthen loot overlay used Canary profiles
+with no XML weight for the two Mitmah items. Crystal explicitly gives those
+two 250 and 100 centi-ounces.
+
+The final profile generator now applies the verified Global Cyclopedia weights
+to these eleven exact Item keys. The decoration kit retains its existing
+zero-weight native profile. The projection code stayed the same. Native reward
+verification accepts a correction only when the generated weight evidence
+matches the exact Item ID and the corrected record matches the pinned donor
+record in every other field.
+
+The generic Item importer left the equipment modifier vectors unknown. Its
+native providers omitted the qualified Global vectors for sanguine trousers
+and ethereal coned hat, and the canonical legs of enlightenment record had
+no vector for the Monk reward overlay to copy. The generator now replays the
+Global vectors for sanguine trousers and ethereal coned hat (10 and 12), and
+the Crystal vectors for soulgarb and legs of enlightenment (19 and 3). Crystal
+lists the hat at 10. For soulgarb, the pinned XML's `mantra=19` takes precedence
+over the Global promotion's 17 because Crystal's parser assigns the XML value
+directly to the server item. [Pinned items.xml](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml)
+
+### Follow-up validation
+
+- `cargo test --locked -p oteryn-gameplay-dispatch --lib inspection` RED on
+  `5ed80187` plus the regression tests. 14 passed and the two added tests
+  failed on the eleven false zero weights and four absent Mantra values.
+- `cargo test --locked -p oteryn-gameplay-dispatch --lib inspection` GREEN with
+  16 passed. The weight regression also checks that the decoration kit still
+  shows 0.00 oz.
+- `cargo test --locked -p oteryn-gameplay-dispatch --lib` passed across all
+  three route-less shards with 4544 unique tests passed, zero failures and
+  16 pre-existing ignored tests. The test runs used two build jobs.
+- `cargo test --locked -p oteryn-gameplay-content --lib srx3_reward_binding_requires_complete_source_profile_at_real_decoder` passed.
+- `cargo fmt --all --check` and `cargo clippy --locked -p oteryn-gameplay-dispatch --all-targets -- -D warnings` passed.
+- Profile registration and its `--check` passed. The equipment custody
+  census and Grizzly room generators refreshed their profile-input digests.
+- `cargo run --locked --release -p oteryn-world-bundle-compiler -- pin-check . /tmp/mantra-review/world` passed.
+- `python3 tools/agents/validate_governance.py`, `python3 -m unittest discover -s tools/agents/tests` and `git diff --check` passed.

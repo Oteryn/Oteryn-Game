@@ -954,6 +954,64 @@ mod tests {
     use crate::content::native_gameplay::test_support::activated_with_loot_tables;
     use crate::content::{ReferenceItemField, ReferenceItemImbuement};
     use crate::durability::imbuement::StoredImbuement;
+
+    fn inspection_profile_attributes<const N: usize>(
+        source_ids: [u32; N],
+        label: &str,
+    ) -> Result<Vec<Option<String>>, Box<dyn std::error::Error>> {
+        use crate::content::native_gameplay::ItemProfilesDocument;
+        let profiles: ItemProfilesDocument = serde_json::from_slice(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        ))?;
+        source_ids
+            .into_iter()
+            .map(|id| {
+                let key = format!("oteryn:item.tibia.i{id}");
+                let record = profiles
+                    .records
+                    .iter()
+                    .find(|row| row.production_definition.production_key == key)
+                    .ok_or_else(|| format!("missing profile {key}"))?;
+                let item = details(record, 0, 1, 1, None, None)
+                    .ok_or_else(|| format!("missing details for {key}"))?;
+                Ok(item
+                    .attributes
+                    .into_iter()
+                    .find(|(attribute, _)| attribute == label)
+                    .map(|(_, value)| value))
+            })
+            .collect()
+    }
+
+    #[test]
+    fn inspection_projects_source_weights_for_reviewed_items_and_retains_real_zero()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let source_ids = [
+            43501, 43502, 43503, 43504, 43899, 43900, 43946, 43947, 44048, 44727, 44728, 23398,
+        ];
+        let expected = [
+            "1.50 oz", "1.50 oz", "1.50 oz", "1.50 oz", "4.50 oz", "4.50 oz", "1.20 oz", "1.20 oz",
+            "1.20 oz", "2.50 oz", "1.00 oz", "0.00 oz",
+        ];
+        assert_eq!(
+            inspection_profile_attributes(source_ids, "Weight")?,
+            expected.map(|value| Some(value.to_owned())),
+            "in source ID order {source_ids:?}"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn inspection_projects_mantra_for_reviewed_equipment() -> Result<(), Box<dyn std::error::Error>> {
+        let source_ids = [50146, 50188, 50254, 50269];
+        assert_eq!(
+            inspection_profile_attributes(source_ids, "Mantra")?,
+            ["10", "12", "19", "3"].map(|value| Some(value.to_owned())),
+            "in source ID order {source_ids:?}"
+        );
+        Ok(())
+    }
+
     #[test]
     fn inspection_current_profiles_project_literal_mantra_and_preserve_other_details()
     -> Result<(), Box<dyn std::error::Error>> {
