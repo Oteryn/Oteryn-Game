@@ -102,6 +102,263 @@
     "experience": 500000,
     "health": 360000,
     "look_type": 1802,
+    "loot": [
+      {
+        "chance": 100000,
+        "id": 3043,
+        "max_count": 3
+      },
+      {
+        "chance": 100000,
+        "id": 3035,
+        "max_count": 98
+      },
+      {
+        "chance": 35000,
+        "id": 237,
+        "max_count": 19
+      },
+      {
+        "chance": 35000,
+        "id": 237,
+        "max_count": 9
+      },
+      {
+        "chance": 35000,
+        "id": 7642,
+        "max_count": 4
+      },
+      {
+        "chance": 35000,
+        "id": 23373,
+        "max_count": 29
+      },
+      {
+        "chance": 35000,
+        "id": 7643,
+        "max_count": 14
+      },
+      {
+        "chance": 35000,
+        "id": 23375,
+        "max_count": 8
+      },
+      {
+        "chance": 35000,
+        "id": 23374,
+        "max_count": 14
+      },
+      {
+        "chance": 35000,
+        "id": 3041,
+        "max_count": 2
+      },
+      {
+        "chance": 35000,
+        "id": 3039,
+        "max_count": 1
+      },
+      {
+        "chance": 35000,
+        "id": 3037,
+        "max_count": 2
+      },
+      {
+        "chance": 20000,
+        "id": 3320,
+        "max_count": 1
+      },
+      {
+        "chance": 20000,
+        "id": 3281,
+        "max_count": 1
+      },
+      {
+        "chance": 20000,
+        "id": 3081,
+        "max_count": 1
+      },
+      {
+        "chance": 20000,
+        "id": 817,
+        "max_count": 1
+      },
+      {
+        "chance": 20000,
+        "id": 6299,
+        "max_count": 1
+      },
+      {
+        "chance": 20000,
+        "id": 3052,
+        "max_count": 1
+      },
+      {
+        "chance": 20000,
+        "id": 3373,
+        "max_count": 1
+      },
+      {
+        "chance": 20000,
+        "id": 3356,
+        "max_count": 1
+      },
+      {
+        "chance": 20000,
+        "id": 3284,
+        "max_count": 1
+      },
+      {
+        "chance": 20000,
+        "id": 3280,
+        "max_count": 1
+      },
+      {
+        "chance": 20000,
+        "id": 3063,
+        "max_count": 1
+      },
+      {
+        "chance": 20000,
+        "id": 3306,
+        "max_count": 1
+      },
+      {
+        "chance": 20000,
+        "id": 821,
+        "max_count": 1
+      },
+      {
+        "chance": 20000,
+        "id": 3048,
+        "max_count": 1
+      },
+      {
+        "chance": 20000,
+        "id": 3055,
+        "max_count": 1
+      },
+      {
+        "chance": 20000,
+        "id": 2848,
+        "max_count": 1
+      },
+      {
+        "chance": 20000,
+        "id": 3098,
+        "max_count": 1
+      },
+      {
+        "chance": 20000,
+        "id": 3054,
+        "max_count": 1
+      },
+      {
+        "chance": 20000,
+        "id": 3324,
+        "max_count": 1
+      },
+      {
+        "chance": 20000,
+        "id": 10438,
+        "max_count": 1
+      },
+      {
+        "chance": 20000,
+        "id": 8082,
+        "max_count": 1
+      },
+      {
+        "chance": 20000,
+        "id": 3071,
+        "max_count": 1
+      },
+      {
+        "chance": 10000,
+        "id": 3420,
+        "max_count": 1
+      },
+      {
+        "chance": 10000,
+        "id": 50067,
+        "max_count": 1
+      },
+      {
+        "chance": 10000,
+        "id": 3019,
+        "max_count": 1
+      },
+      {
+        "chance": 10000,
+        "id": 7382,
+        "max_count": 1
+      },
+      {
+        "chance": 10000,
+        "id": 32622,
+        "max_count": 1
+      },
+      {
+        "chance": 10000,
+        "id": 30060,
+        "max_count": 1
+      },
+      {
+        "chance": 10000,
+        "id": 30061,
+        "max_count": 1
+      },
+      {
+        "chance": 10000,
+        "id": 30059,
+        "max_count": 1
+      },
+      {
+        "chance": 10000,
+        "id": 3364,
+        "max_count": 1
+      },
+      {
+        "chance": 10000,
+        "id": 3366,
+        "max_count": 1
+      },
+      {
+        "chance": 700,
+        "id": 50061,
+        "max_count": 1
+      },
+      {
+        "chance": 700,
+        "id": 50064,
+        "max_count": 1
+      },
+      {
+        "chance": 400,
+        "id": 49531,
+        "max_count": 1
+      },
+      {
+        "chance": 400,
+        "id": 49532,
+        "max_count": 1
+      },
+      {
+        "chance": 400,
+        "id": 49533,
+        "max_count": 1
+      },
+      {
+        "chance": 400,
+        "id": 49534,
+        "max_count": 1
+      },
+      {
+        "chance": 800,
+        "id": 50189,
+        "max_count": 1
+      }
+    ],
     "mitigation": 218,
     "resistances": [
       [

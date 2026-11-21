@@ -90,6 +90,18 @@ impl ArbazilothEncounter {
         self.enraged.is_none().then_some(self.boss)
     }
 
+    pub fn retire(&self, runtime: &mut ChannelRuntimeV1) -> Result<(), CarrierError> {
+        for actor in [Some(self.boss), Some(self.forgemaster), self.enraged]
+            .into_iter()
+            .flatten()
+        {
+            if runtime.contains_live_creature(actor) {
+                runtime.remove_encounter_actor(actor)?;
+            }
+        }
+        Ok(())
+    }
+
     /// Crystal removes the Forgemaster and normal boss when the delayed event
     /// fires, then puts the enraged form at the original boss's current tile.
     pub fn advance(

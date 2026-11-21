@@ -15,6 +15,7 @@ const START: TilePos = TilePos {
     floor: -14,
 };
 const LEVER: TilePos = TilePos { x: 34058, y: 32394, floor: -14 };
+const ARENA_EXIT: TilePos = TilePos { x: 34058, y: 32403, floor: -14 };
 const STAGING: TilePos = TilePos { y: LEVER.y + 1, ..LEVER };
 const ARENA_ENTRY: MovementLocalPosition = MovementLocalPosition { x: 34034, y: 32340, floor: 14 };
 const WICKED_TRACK: &str =
@@ -55,24 +56,39 @@ fn nrwicked_two_admitted_players_can_leave_after_the_hard_win() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    run_case(admin, "nrwicked_party", FORGE, true)
+    run_case(admin, "nrwicked_party", FORGE, Scenario::HardWin)
+}
+
+#[test]
+fn nrwicked_abandoned_attempt_releases_actors_but_retains_admission_cooldown() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case(admin, "nrwicked_abandonment", FORGE, Scenario::Abandonment)
+}
+
+#[derive(Clone, Copy)]
+enum Scenario {
+    Portal,
+    HardWin,
+    Abandonment,
 }
 
 fn run(admin: String, fixture_name: &'static str, destination: TilePos) -> TestResult {
-    run_case(admin, fixture_name, destination, false)
+    run_case(admin, fixture_name, destination, Scenario::Portal)
 }
 
 fn run_case(
     admin: String,
     fixture_name: &'static str,
     destination: TilePos,
-    hard_win: bool,
+    case: Scenario,
 ) -> TestResult {
     let started = std::time::Instant::now();
     let result = std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || {
-            scenario(admin, fixture_name, destination, hard_win).map_err(|error| error.to_string())
+            scenario(admin, fixture_name, destination, case).map_err(|error| error.to_string())
         })?
         .join()
         .map_err(|_| "Doomforge scenario thread panicked")?;
@@ -88,15 +104,16 @@ fn scenario(
     admin: String,
     fixture_name: &'static str,
     destination: TilePos,
-    hard_win: bool,
+    case: Scenario,
 ) -> TestResult {
+    let encounter = !matches!(case, Scenario::Portal);
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
         .block_on(async move {
             let h = Harness::create_with_admission_seed(admin, fixture_name, true, false).await?;
             prepare_current_session(&h).await?;
-            if hard_win {
+            if encounter {
                 h.seed_appearance_observer().await?;
                 super::appearance_change_postgres_fixtures::observer_visibility_tests::admit(&h).await?;
             }
@@ -109,7 +126,7 @@ fn scenario(
             let initial = Dependencies::new()?;
             let world = initial.admitted.world_id;
             let channel = initial.admitted.channel_id;
-            let production = if hard_win {
+            let production = if encounter {
                 Some(super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?)
             } else {
                 None
@@ -132,7 +149,7 @@ fn scenario(
             }).map_err(debug)?;
             assert_eq!(map.floors().teleport(PORTAL), Some(destination));
             let cells = map.movement_cells(room.movement_cells()).map_err(debug)?;
-            let spawn = if hard_win { STAGING } else { START };
+            let spawn = if encounter { STAGING } else { START };
             let pin = ChannelContentPin::from_activation(
                 world,
                 1,
@@ -143,10 +160,10 @@ fn scenario(
                 (i32::from(spawn.x), i32::from(spawn.y), 14),
             );
             let deps = Dependencies::with_content_and_capacity(
-                pin,
+                pin.clone(),
                 room,
                 crate::spell::SpellBook::new(vec![]).map_err(debug)?,
-                if hard_win { 16 } else { 2 },
+                if encounter { 16 } else { 2 },
             )?;
             let mut owner = deps.owner(&h, &authority);
             owner.movement_cells = (&cells).into();
@@ -172,7 +189,7 @@ fn scenario(
                     )
                     .ok_or("spell state")?;
             }
-            if hard_win {
+            if encounter {
                 owner.quest_catalogue = Some(std::sync::Arc::new(
                     oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                         .map_err(debug)?
@@ -183,7 +200,15 @@ fn scenario(
                     .ok_or("lever placement")?;
                 let mut lever_placement = map.base().digest().to_vec();
                 lever_placement.extend_from_slice(&lever_key.to_be_bytes());
-                two_player_exit(&h, &mut owner, deps.actor, session, lever_placement, map.facts())
+                sqlx::query("INSERT INTO game_control_scope_grants VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)")
+                    .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).execute(&h.pool).await?;
+                sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, NULL, $3, $4, $5)")
+                    .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
+                    .bind(pin.server_artifact_digest().as_slice()).bind(pin.client_artifact_digest().as_slice())
+                    .bind(pin.frame_binding_digest().as_slice()).execute(&h.pool).await?;
+                two_player_encounter(
+                    &h, &mut owner, deps.admitted, lever_placement, map.facts(), case,
+                )
                     .await?;
                 drop(owner);
                 drop(authority);
@@ -232,7 +257,7 @@ fn portal_fixture(
         min_x: if native.is_some() { 34025 } else { START.x - 3 },
         min_y: if native.is_some() { 32322 } else { START.y },
         max_x: if native.is_some() { destination.x.max(STAGING.x) + 1 } else { destination.x + 1 },
-        max_y: if native.is_some() { STAGING.y + 5 } else { destination.y + 1 },
+        max_y: if native.is_some() { ARENA_EXIT.y } else { destination.y + 1 },
         floors: vec![START.floor],
     };
     let mut portal = manifest.palette.pop().ok_or("portal palette")?;
@@ -292,6 +317,7 @@ fn portal_fixture(
         for y in STAGING.y..=STAGING.y + 4 {
             add(tile(TilePos { y, ..STAGING }));
         }
+        add(tile(ARENA_EXIT));
         let mut lever = tile(LEVER);
         lever.items.extend([2, 3].map(|palette| sector::Item {
             palette, depth: 0, attrs: Default::default(),
@@ -316,13 +342,13 @@ fn portal_fixture(
     Ok((bytes, pins))
 }
 
-async fn two_player_exit(
+async fn two_player_encounter(
     h: &Harness,
     owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
-    first: crate::foundation::ExactActorRef,
-    session: crate::foundation::GameSessionId,
+    mut admitted: super::AdmittedSession,
     lever_placement: Vec<u8>,
     facts: &crate::map::facts::BundleFacts,
+    case: Scenario,
 ) -> TestResult {
     use super::fixture::id;
     use crate::foundation::{CommandId, CommandRef, GameSessionId, OwnerDamageCommand};
@@ -335,6 +361,8 @@ async fn two_player_exit(
     use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
     use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
     const ENRAGED: &str = "oteryn:creature.enraged_arbaziloth";
+    let first = admitted.runtime_actor.ok_or("first actor")?;
+    let session = admitted.game_session_id;
     let other_session = GameSessionId::decode(&id(110)).map_err(debug)?;
     let admissions =
         crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone());
@@ -343,27 +371,29 @@ async fn two_player_exit(
         .await?
         .0
         .current_character_lease();
-    let second_lease = admissions
-        .current_session_at(other_session)
-        .await?
-        .0
-        .current_character_lease();
-    // The second player starts one hard win away from qualifying for the key.
-    // Imported progress lands at the character's current committed revision,
-    // as the other quest fixtures seed it: bumping the revision without a
-    // receipt breaks the progression receipt chain at the next commit.
+    owner.admit_progression_session(&mut admitted).await;
+    assert!(owner.progression_binding(session).is_some());
+    let mut observer = super::AdmittedSession {
+        game_session_id: other_session,
+        runtime_actor: None,
+        ..admitted
+    };
+    owner.admit_progression_session(&mut observer).await;
+    let (seed_fence, revision) =
+        super::qengine_outfit_stories_fixtures::seed_quest_revision(owner, other_session, 111)
+            .await?;
+    assert_eq!(seed_fence.expected_character_revision.get(), 1);
+    assert_eq!(revision, 2);
     let mut import = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role = replica")
         .execute(&mut *import)
         .await?;
     for (track, value) in [
-        ("hard_kills", 9_i64),
+        ("hard_kills", 8_i64),
         ("kill_arbaziloth/questline", 2),
         ("questlog", 1),
         ("forgemaster_door/questline", 1),
     ] {
-        // The stored quest owner must match the catalogue's track owner, or
-        // the kill commit rejects the row as InvalidStoredState.
         let key = format!("{WICKED_TRACK}/{track}");
         let definition = owner
             .quest_catalogue
@@ -372,17 +402,18 @@ async fn two_player_exit(
             .track(&key)
             .ok_or("canonical wicked track")?;
         assert!((definition.min..=definition.max).contains(&value));
-        let quest = definition.quest.clone();
         let inserted = sqlx::query(
             "INSERT INTO game_character_quest_tracks
                 (character_id, track_key, quest_key, value, committed_character_revision)
              SELECT character_id, $2, $3, $4, character_revision
-             FROM game_character_roots WHERE character_id = encode($1, 'hex')::uuid",
+             FROM game_character_roots WHERE character_id = encode($1, 'hex')::uuid
+                AND character_revision = $5::text::numeric",
         )
-        .bind(second_lease.character_id().as_bytes().as_slice())
+        .bind(seed_fence.character_id.as_bytes().as_slice())
         .bind(key)
-        .bind(quest)
+        .bind(&definition.quest)
         .bind(value)
+        .bind(revision.to_string())
         .execute(&mut *import)
         .await?;
         assert_eq!(inserted.rows_affected(), 1);
@@ -434,8 +465,28 @@ async fn two_player_exit(
         .map_err(|()| "Arbaziloth lever fence")?.ok_or("missing Arbaziloth lever fence")?;
     let outcome = owner.use_object(first, UseCommand {
         game_session_id: session, command_id: 1, item_fence: Some(fence.item_fence()),
-    }, WorldObjectTarget { placement: lever_placement, expected_revision: 0 }).await;
+    }, WorldObjectTarget { placement: lever_placement.clone(), expected_revision: 0 }).await;
     assert_eq!(outcome.disposition, UseDisposition::Committed, "production Arbaziloth lever");
+    if matches!(case, Scenario::HardWin) {
+        // Complete the prior win's persisted count after admitting the current
+        // fight. The following real lethal settlement must choose the unlock.
+        let (_, saved_revision) =
+            super::qengine_outfit_stories_fixtures::seed_quest_revision(owner, other_session, 112).await?;
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
+        let changed = sqlx::query(
+            "UPDATE game_character_quest_tracks t SET value=9, committed_character_revision=r.character_revision
+               FROM game_character_roots r WHERE t.character_id=r.character_id
+                 AND t.character_id=encode($1,'hex')::uuid AND t.track_key=$2
+                 AND r.character_revision=$3::text::numeric AND t.value=8",
+        )
+        .bind(second_lease.character_id().as_bytes().as_slice())
+        .bind(format!("{WICKED_TRACK}/hard_kills"))
+        .bind(saved_revision.to_string())
+        .execute(&mut *tx).await?;
+        assert_eq!(changed.rows_affected(), 1);
+        tx.commit().await?;
+    }
     let queue = owner.states.attack.lock().await.kills().clone();
     let mut runtime = owner.runtime.lock().await;
     let states = owner.states.spell_states.lock().await;
@@ -484,6 +535,51 @@ async fn two_player_exit(
         let [fire]: [TilePos; 1] = purple_fire()
             .try_into()
             .map_err(|_| "expected exactly one production purple fire per shield")?;
+        if matches!(case, Scenario::Abandonment) {
+            let expires = owner.owner_now().get() + 20 * 60 * 1_000_000;
+            encounter_phases::tick(&mut runtime, &states, expires);
+            assert!(!runtime.contains_live_creature(boss));
+            assert!(!runtime.contains_live_creature(forgemaster));
+            assert!(purple_fire().is_empty());
+            assert!(states.encounter_phases.active.lock().map_err(|_| "phases")?.is_empty());
+            let exit = MovementLocalPosition { x: i32::from(ARENA_EXIT.x), y: i32::from(ARENA_EXIT.y), floor: 14 };
+            for (actor, _) in players {
+                assert_eq!(runtime.read_actor_position(actor).map_err(debug)?.position(), exit);
+            }
+            return_to_staging(owner, &mut runtime, facts, players)?;
+            drop(states);
+            drop(runtime);
+
+            let cooldowns: Vec<i64> = sqlx::query_scalar(
+                "SELECT available_at-floor(extract(epoch FROM clock_timestamp())*1000)::bigint
+                   FROM game_character_boss_cooldowns WHERE boss_key='oteryn:boss.arbaziloth'",
+            ).fetch_all(&h.pool).await?;
+            assert_eq!(cooldowns.len(), 2);
+            assert!(cooldowns.iter().all(|ms| (71_990_000..=72_000_000).contains(ms)));
+            let key = bundle::placement_key(LEVER.floor, LEVER.x, LEVER.y, 2).ok_or("lever key")?;
+            let revision = crate::map::view::MapFacts::object_revision(facts, key);
+            let target = WorldObjectTarget { placement: lever_placement.clone(), expected_revision: revision };
+            let retry = |nonce| UseCommand {
+                game_session_id: session, command_id: nonce, item_fence: Some(fence.item_fence()),
+            };
+            assert_eq!(owner.use_object(first, retry(2), target.clone()).await.disposition,
+                UseDisposition::Rejected, "the cooldown applies to a fresh lever use after the room clears");
+            sqlx::query("UPDATE game_character_boss_cooldowns SET available_at=1 WHERE boss_key='oteryn:boss.arbaziloth'")
+                .execute(&h.pool).await?;
+            assert_eq!(owner.use_object(first, retry(3), target).await.disposition,
+                UseDisposition::Committed, "the encounter registry released the expired attempt");
+            let mut runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            return_to_staging(owner, &mut runtime, facts, players)?;
+            encounter_phases::tick(&mut runtime, &states, owner.owner_now().get());
+            assert!(states.encounter_phases.active.lock().map_err(|_| "phases")?.is_empty(),
+                "leaving the room retires the next attempt before its deadline");
+            assert!(!runtime.positioned_actor_census().map_err(debug)?.into_iter().any(
+                |(actor, _, _)| runtime.matches_live_creature_identity(actor, BOSS.as_bytes())
+                    || runtime.matches_live_creature_identity(actor, FORGEMASTER.as_bytes()),
+            ));
+            return Ok(());
+        }
         let before = runtime.read_actor_position(boss).map_err(debug)?;
         runtime
             .borrow_movement_position()
@@ -569,6 +665,27 @@ async fn two_player_exit(
         owner.drain_kill_rewards(session).await,
         DrainOutcome::Drained
     );
+    let base_xp: i64 = sqlx::query_scalar(
+        "SELECT r.base_xp FROM game_party_kill_xp_receipts r
+          JOIN game_party_kill_xp_members m USING (death_key)
+          JOIN game_character_xp_receipts x USING (reward_occurrence_id)
+          WHERE r.creature_key=$1 AND m.character_id=encode($2,'hex')::uuid",
+    )
+        .bind(ENRAGED)
+        .bind(first_lease.character_id().as_bytes().as_slice())
+        .fetch_one(&h.pool).await?;
+    assert_eq!(base_xp, 500_000);
+    let corpse: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_item_mint_receipts r
+          JOIN game_item_instances i USING (item_instance_id)
+          WHERE i.definition_production_key='oteryn:item.tibia.i50029' AND r.materialized_at IS NOT NULL",
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(corpse, 1);
+    let paid_coin_loot: i64 = sqlx::query_scalar(
+        "SELECT count(DISTINCT definition_production_key) FROM game_boss_reward_items
+          WHERE definition_production_key IN ('oteryn:item.tibia.i3043','oteryn:item.tibia.i3035')",
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(paid_coin_loot, 2, "the hard-mode coin rows are settled into private loot");
     for (lease, hard_kills, door_stage) in [(first_lease, 1, 1), (second_lease, 10, 2)] {
         let character = oteryn_gameplay_domain::domain::CharacterId::from_bytes(
             *lease.character_id().as_bytes(),
@@ -597,6 +714,14 @@ async fn two_player_exit(
             Some(&door_stage)
         );
     }
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        encounter_phases::tick(&mut runtime, &states, owner.owner_now().get() + 20 * 60 * 1_000_000);
+        for (actor, _) in players {
+            assert_eq!(runtime.read_actor_position(actor).map_err(debug)?.position(), ARENA_ENTRY);
+        }
+    }
     for (actor, session) in players {
         for direction in std::iter::repeat_n(StepDirection::East, 6)
             .chain(std::iter::repeat_n(StepDirection::North, 10))
@@ -619,5 +744,24 @@ async fn two_player_exit(
             (i32::from(FORGE.x), i32::from(FORGE.y), 14)
         );
     }
+    Ok(())
+}
+
+fn return_to_staging(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    runtime: &mut crate::foundation::ChannelRuntimeV1,
+    facts: &crate::map::facts::BundleFacts,
+    players: [(crate::foundation::ExactActorRef, crate::foundation::GameSessionId); 2],
+) -> TestResult {
+    let closed = crate::map::floor::BundleDoors(facts);
+    let mut proofs = Vec::new();
+    for ((actor, session), y) in players.into_iter().zip(STAGING.y..=STAGING.y + 1) {
+        let previous = runtime.read_actor_position(actor).map_err(debug)?;
+        let staging = MovementLocalPosition { x: i32::from(STAGING.x), y: i32::from(y), floor: 14 };
+        proofs.push(crate::map::floor::prepare_quest_callback_teleport(
+            runtime, owner.movement_cells(), actor, session, previous, staging, false, &closed,
+        ).map_err(debug)?);
+    }
+    runtime.commit_quest_relocation(proofs, || true).map_err(debug)?;
     Ok(())
 }

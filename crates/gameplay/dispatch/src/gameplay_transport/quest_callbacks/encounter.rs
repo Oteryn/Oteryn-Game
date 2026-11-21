@@ -385,7 +385,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None
         };
         let mut phases = if encounter.phase.is_some() {
-            let Ok(active) = states.encounter_phases.reserve(runtime, key) else {
+            let Ok(active) =
+                states
+                    .encounter_phases
+                    .reserve(runtime, states, key, self.owner_now().get())
+            else {
                 return UseDisposition::Occupied;
             };
             Some(active)

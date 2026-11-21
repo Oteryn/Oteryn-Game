@@ -13,6 +13,9 @@ use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
 use std::sync::Mutex;
 
 const MAX_ENCOUNTERS: usize = 64;
+// Crystal 201189f8 boss_lever.lua uses the configured fallback for Arbaziloth.
+// config.lua.dist sets bossDefaultTimeToDefeat to 20 minutes.
+const ARBAZILOTH_ATTEMPT_US: u64 = 20 * 60 * 1_000_000;
 
 #[derive(Debug)]
 pub(super) struct ActivePhase {
@@ -24,6 +27,7 @@ pub(super) struct ActivePhase {
     frozen: Option<(ExactActorRef, Vec<super::quest_kills::Recipient>)>,
     cells: crate::content::NativeEntryMovementCells,
     fire: Option<crate::map::overlay::TilePos>,
+    arbaziloth_deadline: Option<u64>,
 }
 
 #[derive(Debug)]
@@ -111,10 +115,17 @@ impl Registry {
     pub(super) fn reserve<'a>(
         &'a self,
         runtime: &mut ChannelRuntimeV1,
+        states: &ChannelSpellStates,
         key: u64,
+        now_us: u64,
     ) -> Result<std::sync::MutexGuard<'a, Vec<ActivePhase>>, CarrierError> {
         let mut active = self.active.lock().map_err(|_| CarrierError::PlanConflict)?;
         active.retain_mut(|phase| {
+            match phase.retire_abandoned_arbaziloth(runtime, states, now_us) {
+                Ok(true) => return false,
+                Err(_) => return true,
+                Ok(false) => {}
+            }
             if !phase.fight.is_current(runtime) {
                 return !phase.clear_fire();
             }
@@ -268,6 +279,11 @@ pub(super) fn bind(
             frozen: None,
             cells,
             fire: None,
+            arbaziloth_deadline: Some(
+                now_us
+                    .checked_add(ARBAZILOTH_ATTEMPT_US)
+                    .ok_or(CarrierError::CapacityArithmeticOverflow)?,
+            ),
         });
     }
     if encounter.phase == Some(EncounterPhase::CourtWarlock) {
@@ -316,6 +332,7 @@ pub(super) fn bind(
             frozen: None,
             cells,
             fire: None,
+            arbaziloth_deadline: None,
         });
     }
     if encounter.phase != Some(EncounterPhase::Cults) || actors.len() != 10 {
@@ -376,6 +393,7 @@ pub(super) fn bind(
         frozen: None,
         cells,
         fire: None,
+        arbaziloth_deadline: None,
     })
 }
 
@@ -418,6 +436,88 @@ fn placement(
 }
 
 impl ActivePhase {
+    fn retire_abandoned_arbaziloth(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &ChannelSpellStates,
+        now_us: u64,
+    ) -> Result<bool, CarrierError> {
+        let (Fight::Arbaziloth(fight), Some(deadline)) = (&self.fight, self.arbaziloth_deadline)
+        else {
+            return Ok(false);
+        };
+        match fight.victors(runtime) {
+            Ok(None) => {}
+            // Let the normal registry cleanup release a won or stale phase.
+            Ok(Some(_)) | Err(CarrierError::ContentPinWorldMismatch) => return Ok(false),
+            Err(error) => return Err(error),
+        }
+        if !fight.is_current(runtime) {
+            fight.retire(runtime)?;
+            return self
+                .clear_fire()
+                .then_some(true)
+                .ok_or(CarrierError::PlanConflict);
+        }
+        if now_us < deadline
+            && self.participants.iter().any(|&(actor, session)| {
+                !states.is_dead(actor)
+                    && runtime
+                        .player_control_facts(actor, session)
+                        .is_ok_and(|facts| facts.control_loss.is_none())
+                    && runtime.read_actor_position(actor).is_ok_and(|at| {
+                        super::quest_callbacks::room_contains(&self.room, at.position())
+                    })
+            })
+        {
+            return Ok(false);
+        }
+
+        let players: Vec<_> = runtime
+            .positioned_melee_census()?
+            .into_iter()
+            .filter(|(_, at, session)| {
+                session.is_some()
+                    && super::quest_callbacks::room_contains(&self.room, at.position())
+            })
+            .collect();
+        if !players.is_empty() {
+            let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+                self.cells.index()
+            else {
+                return Err(CarrierError::PlanConflict);
+            };
+            let closed = crate::map::floor::BundleDoors(&index.map().facts);
+            // Crystal 201189f8 arbaziloth_lever.lua, exit.
+            let exit = MovementLocalPosition {
+                x: 34058,
+                y: 32403,
+                floor: 14,
+            };
+            let proofs = players
+                .into_iter()
+                .map(|(actor, expected, session)| {
+                    crate::map::floor::prepare_quest_encounter_ejection(
+                        runtime,
+                        &self.cells,
+                        actor,
+                        session.ok_or(CarrierError::PlanConflict)?,
+                        expected,
+                        exit,
+                        &closed,
+                    )
+                    .map_err(|_| CarrierError::PlanConflict)
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            runtime.commit_quest_relocation(proofs, || true)?;
+        }
+        fight.retire(runtime)?;
+        if !self.clear_fire() {
+            return Err(CarrierError::PlanConflict);
+        }
+        Ok(true)
+    }
+
     fn clear_fire(&mut self) -> bool {
         let Some(fire) = self.fire else { return true };
         let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
@@ -520,6 +620,17 @@ pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates, 
         return;
     };
     active.retain_mut(|phase| {
+        match phase.retire_abandoned_arbaziloth(runtime, states, now_us) {
+            Ok(true) => return false,
+            Err(error) => {
+                super::operator_event(&format!(
+                    "arbaziloth_retirement_deferred key={} reason={error:?}",
+                    phase.key
+                ));
+                return true;
+            }
+            Ok(false) => {}
+        }
         if !phase.fight.is_current(runtime) {
             return !phase.clear_fire();
         }

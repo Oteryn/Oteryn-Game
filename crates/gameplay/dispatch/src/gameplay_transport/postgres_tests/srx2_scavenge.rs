@@ -183,6 +183,8 @@ fn scenario(rabbit: bool) -> TestResult {
         .await?;
 
         if rabbit {
+            let mut admitted = deps.admitted;
+            owner.admit_progression_session(&mut admitted).await;
             nest_rabbit_knives(&harness).await?;
             let result = exercise_rabbit(&owner, &harness, native, fence, deps.actor).await;
             drop(owner);
@@ -1145,6 +1147,11 @@ async fn exercise_rabbit(
         UseDisposition::NothingToUse
     );
 
+    let (seed_fence, revision) =
+        super::qengine_outfit_stories_fixtures::seed_quest_revision(owner, session, 93).await?;
+    assert_eq!(seed_fence.expected_character_revision.get(), 1);
+    assert_eq!(revision, 2);
+
     // The exact active track must belong to Rottin Wood's quest.
     let mission =
         "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission01";
@@ -1153,12 +1160,20 @@ async fn exercise_rabbit(
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
-    sqlx::query("INSERT INTO game_character_quest_tracks VALUES(encode($1,'hex')::uuid,$2,$3,1,2)")
+    let inserted = sqlx::query(
+        "INSERT INTO game_character_quest_tracks
+           (character_id, track_key, quest_key, value, committed_character_revision)
+         SELECT character_id, $2, $3, 1, character_revision
+         FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid
+            AND character_revision=$4::text::numeric",
+    )
         .bind(fence.character_id.as_bytes().as_slice())
         .bind(mission)
         .bind("oteryn:quest.an_uneasy_alliance_quest")
+        .bind(revision.to_string())
         .execute(&mut *tx)
         .await?;
+    assert_eq!(inserted.rows_affected(), 1);
     tx.commit().await?;
     assert_eq!(
         attempt(corpse, command, obsidian_knife)
@@ -1298,14 +1313,22 @@ async fn exercise_rabbit(
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
-    sqlx::query("INSERT INTO game_character_quest_tracks VALUES(encode($1,'hex')::uuid,$2,$3,1,2)")
+    let inserted = sqlx::query(
+        "INSERT INTO game_character_quest_tracks
+           (character_id, track_key, quest_key, value, committed_character_revision)
+         SELECT character_id, $2, $3, 1, character_revision
+         FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid
+            AND character_revision=$4::text::numeric",
+    )
         .bind(fence.character_id.as_bytes().as_slice())
         .bind(
             "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/task01",
         )
         .bind("oteryn:quest.rottin_wood_and_the_married_men_quest")
+        .bind(revision.to_string())
         .execute(&mut *tx)
         .await?;
+    assert_eq!(inserted.rows_affected(), 1);
     tx.commit().await?;
 
     let failure = UseCommand {

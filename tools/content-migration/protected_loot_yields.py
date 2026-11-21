@@ -5,7 +5,9 @@ import json
 import authored_quest_item_custody as custody
 import encounter_loot_item_admissions as source
 
-ITEMS = {f'oteryn:item.tibia.i{i}' for i in (
+# Crystal 201189f8 enraged_arbaziloth.lua hard-mode equipment.
+ARBAZILOTH_HARD_ITEMS = {f'oteryn:item.tibia.i{i}' for i in (49531, 49532, 49533, 49534, 50189)}
+ITEMS = ARBAZILOTH_HARD_ITEMS | {f'oteryn:item.tibia.i{i}' for i in (
     2863, 2950, 3019, 3022, 3023, 3024, 3304, 3331, 3334, 3335, 3339, 3432,
     3573, 5883, 5930, 7396, 8897, 8898, 9615, 10244, 10290, 12482, 12483, 12509,
 )}

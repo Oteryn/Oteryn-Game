@@ -83,6 +83,41 @@ pub(super) async fn accept(
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(state, (1, 5, 5));
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)?
+        .as_secs();
+    let expired_timer = i64::try_from(now.checked_sub(1_802).ok_or("nest timer")?)?;
+    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+        h,
+        owner,
+        admitted,
+        &[(
+            "oteryn:quest-progress/crystalserver/kv/nest-timer".into(),
+            expired_timer,
+        )],
+        169,
+    )
+    .await?;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    assert_eq!(
+        talk(owner, admitted, npc, 1612, "mission").await?,
+        source_reply("line-131")?
+    );
+    for source in [START, "oteryn:quest-reward/rottin-wood/replace-nets"] {
+        let shape: (i64, i64) = sqlx::query_as(
+            "SELECT count(*), COALESCE(sum(jsonb_array_length(m.additional_plan)),0)::bigint
+               FROM game_quest_reward_sources r
+               JOIN game_reward_claim_mint_receipts m
+                 ON m.transaction_id=r.mint_transaction_id
+              WHERE r.transition_key=$1",
+        )
+        .bind(source)
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(shape, (1, 4), "{source}: one mint with four additional nets");
+    }
     Ok(())
 }
 

@@ -247,6 +247,33 @@ impl NativeQuestDeath {
     }
 }
 
+pub(super) async fn current_arbaziloth_counter(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: CharacterId,
+    catalogue: &QuestStateCatalogue,
+) -> StoredResult<Option<&'static str>> {
+    use oteryn_gameplay_quests::quest::source_deaths;
+    let rows = sqlx::query(
+        "SELECT track_key, quest_key, value FROM game_character_quest_tracks
+          WHERE character_id=encode($1,'hex')::uuid AND track_key=ANY($2::text[])
+          ORDER BY track_key FOR UPDATE",
+    )
+    .bind(character.as_bytes().as_slice())
+    .bind(&source_deaths::ARBAZILOTH_HARD_COUNTER_TRACKS[..])
+    .fetch_all(&mut **tx)
+    .await?;
+    let mut tracks = BTreeMap::new();
+    for row in rows {
+        let key: String = row.try_get("track_key")?;
+        let definition = catalogue.track(&key).ok_or(DurabilityError::InvalidStoredState)?;
+        if row.try_get::<String, _>("quest_key")? != definition.quest {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        tracks.insert(key, row.try_get("value")?);
+    }
+    Ok(source_deaths::arbaziloth_hard_counter(&tracks))
+}
+
 impl DurabilityRoot {
     pub async fn commit_character_native_quest_kill(
         &self,

@@ -1,4 +1,4 @@
-"""Admit the exact canonical Inferniarch weapons used by the Doomforge claim."""
+"""Admit the source-qualified Arbaziloth encounter, loot and Doomforge items."""
 import hashlib
 import json
 from fractions import Fraction
@@ -55,6 +55,37 @@ FACTS = 'docs/reference/content-prep/nrwicked/encounter-facts.json'
 REVISION = '201189f871d23597b82caf88fd611454a2ddefb8'
 FIRE = 'oteryn:item.tibia.i49362'
 ROLES = ('enraged_arbaziloth', 'the_forgemaster')
+HARD_CREATURE = 'oteryn:creature.enraged_arbaziloth'
+HARD_LOOT = 'oteryn:loot.creature.enraged_arbaziloth'
+
+
+def bind_hard_loot(root, creatures, definitions, tables):
+    """The phase replacement has a native profile and a separate donor loot table."""
+    if not any(row['profile']['target']['key'] == HARD_CREATURE for row in creatures['records']):
+        return
+    if HARD_CREATURE in definitions or HARD_LOOT in tables:
+        raise ValueError('Arbaziloth hard loot already has an owner')
+    source = json.loads((root / FACTS).read_bytes())['enraged_arbaziloth']
+    identity = {'family': 'Loot', 'key': HARD_LOOT, 'revision': 'definition-r1'}
+    entries = []
+    # Crystal201189f enraged_arbaziloth.lua uses a 100,000-point chance scale.
+    # Preserve ordered independent rows, including the two draws for source ID 237.
+    for row in source['loot']:
+        item, chance, maximum = row['id'], row['chance'], row['max_count']
+        if not (1 <= item <= 65535 and 1 <= chance <= 100_000 and 1 <= maximum <= 100):
+            raise ValueError('Arbaziloth hard loot source row is out of bounds')
+        entries.append({
+            'item': {'family': 'Item', 'key': f'oteryn:item.tibia.i{item}', 'revision': 'definition-r1'},
+            'probability_ppm': chance * 10,
+            'min_count': 1,
+            'max_count': maximum,
+        })
+    definitions[HARD_CREATURE] = {
+        'identity': {'family': 'Creature', 'key': HARD_CREATURE, 'revision': 'definition-r1'},
+        'loot': identity,
+    }
+    tables[HARD_LOOT] = {'identity': identity, 'algorithm': 'IndependentBernoulliPpm', 'entries': entries}
+
 
 
 def known(value):

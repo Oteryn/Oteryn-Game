@@ -1368,9 +1368,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 optional_pvp,
             );
         }
-        if court_warlock::owns(callback) && !close {
+        if !close && let Some(lever) = court_warlock::source_boss_lever(callback) {
             return self
-                .execute_court_warlock(
+                .execute_source_boss_lever(
                     runtime,
                     states,
                     actor,
@@ -1381,6 +1381,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     expected_revision,
                     after,
                     cause,
+                    lever,
                 )
                 .await;
         }

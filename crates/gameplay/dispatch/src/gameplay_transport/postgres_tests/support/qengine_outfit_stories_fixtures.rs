@@ -385,36 +385,19 @@ pub(super) async fn earn_level(
 
 /// Historical prerequisite arrangement for the three source fixtures below.
 /// The tested quest action still uses its canonical owner and bound operation.
-pub(super) async fn seed_quest_prerequisites(
-    h: &Harness,
+pub(super) async fn seed_quest_revision(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &AdmittedSession,
-    values: &[(String, i64)],
+    session: crate::foundation::GameSessionId,
     occurrence: u8,
-) -> TestResult {
+) -> TestResult<(crate::durability::character_progression::CurrentCharacterGameplayFence, u64)> {
     use crate::durability::character_progression::{
         ExperienceAwardRequest, ExperienceCommitOutcome, ExperienceRewardOccurrence,
     };
-    let catalogue = owner
-        .quest_catalogue
-        .as_ref()
-        .ok_or("prerequisite catalogue")?;
-    let mut tracks = BTreeMap::new();
-    for (key, value) in values {
-        let track = catalogue.track(key).ok_or("canonical prerequisite track")?;
-        assert!((track.min..=track.max).contains(value));
-        assert!(
-            tracks
-                .insert(key.clone(), (track.quest.clone(), *value))
-                .is_none()
-        );
-    }
-    assert!(!tracks.is_empty());
     let binding = owner
-        .progression_binding(admitted.game_session_id)
+        .progression_binding(session)
         .ok_or("progression")?;
     let fence = owner
-        .current_quest_fence(admitted.game_session_id)
+        .current_quest_fence(session)
         .await
         .map_err(|_| "prerequisite fence")?
         .ok_or("prerequisite fence")?;
@@ -452,6 +435,33 @@ pub(super) async fn seed_quest_prerequisites(
         fence.expected_character_revision.get() + 1
     );
     assert_eq!(receipt.level_after, receipt.level_before);
+    Ok((fence, receipt.committed_character_revision.get()))
+}
+
+pub(super) async fn seed_quest_prerequisites(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    values: &[(String, i64)],
+    occurrence: u8,
+) -> TestResult {
+    let catalogue = owner
+        .quest_catalogue
+        .as_ref()
+        .ok_or("prerequisite catalogue")?;
+    let mut tracks = BTreeMap::new();
+    for (key, value) in values {
+        let track = catalogue.track(key).ok_or("canonical prerequisite track")?;
+        assert!((track.min..=track.max).contains(value));
+        assert!(
+            tracks
+                .insert(key.clone(), (track.quest.clone(), *value))
+                .is_none()
+        );
+    }
+    assert!(!tracks.is_empty());
+    let (fence, revision) =
+        seed_quest_revision(owner, admitted.game_session_id, occurrence).await?;
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
@@ -459,7 +469,7 @@ pub(super) async fn seed_quest_prerequisites(
     for (key, (quest, value)) in &tracks {
         let changed = sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND character_revision=$5::text::numeric ON CONFLICT(character_id,track_key) DO UPDATE SET value=EXCLUDED.value,committed_character_revision=EXCLUDED.committed_character_revision WHERE game_character_quest_tracks.quest_key=EXCLUDED.quest_key")
             .bind(fence.character_id.as_bytes().as_slice()).bind(key).bind(quest).bind(value)
-            .bind(receipt.committed_character_revision.get().to_string())
+            .bind(revision.to_string())
             .execute(&mut *tx).await?;
         assert_eq!(changed.rows_affected(), 1);
     }

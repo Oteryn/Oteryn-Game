@@ -69,10 +69,11 @@ class CorpseQualification(unittest.TestCase):
             5960, 5962, 5967, 5968, 5973, 5975, 5995, 5999, 6006, 6017, 6025, 6030, 6031, 6044,
             6048, 6055, 6072, 6078, 8909, 11675, 17445, 17446,
             17449, 17454, 18099, 20972, 21910, 22010, 22066, 22067, 25085,
-            25815, 27714, 27718, 30272, 31453, 31599, 31611, 33821})
-        self.assertEqual(len(self.plan.records), 141)
+            25815, 27714, 27718, 30272, 31453, 31599, 31611, 33821, 50029})
+        self.assertEqual(len(self.plan.records), 144)
         for number, duration, target in [(6017, 10000, 4301), (4301, 300000, 4302),
-                                         (4302, 300000, 4303)]:
+                                         (4302, 300000, 4303), (50029, 300000, 50028),
+                                         (50028, 300000, 50027)]:
             row = self.plan.records[f'oteryn:item.tibia.i{number}']
             temporal = row['semantics']['temporal']['value']
             self.assertEqual(temporal['duration'], corpse.grizzly.source.K(duration))
@@ -94,6 +95,11 @@ class CorpseQualification(unittest.TestCase):
                          corpse.grizzly.source.NA)
         self.assertEqual(self.plan.records['oteryn:item.tibia.i4292']['semantics']['container'],
                          corpse.grizzly.source.K({'capacity': corpse.grizzly.source.K(20)}))
+        for number in (50029, 50028):
+            self.assertEqual(self.plan.records[f'oteryn:item.tibia.i{number}']['semantics']['container'],
+                             corpse.grizzly.source.K({'capacity': corpse.grizzly.source.K(15)}))
+        self.assertEqual(self.plan.records['oteryn:item.tibia.i50027']['semantics']['container'],
+                         corpse.grizzly.source.NA)
 
     def test_queen_corpse_keeps_source40_within_the_corpse48_bound(self):
         # CORPSE48 (owner 2026-11-17): corpses up to 48 keep their source capacity.

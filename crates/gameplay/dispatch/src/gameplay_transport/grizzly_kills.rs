@@ -741,7 +741,6 @@ pub(super) struct EncounterCredit {
     lease_generation: u64,
     observed_revision: u64,
     counters: Vec<&'static str>,
-    hard_counter: Option<&'static str>,
     source: PartySnapshot,
 }
 
@@ -790,9 +789,6 @@ pub(super) fn capture_encounter_admission(
             lease_generation: lease.generation(),
             observed_revision: revision,
             counters: oteryn_gameplay_quests::quest::native_kills::active_encounter(copy.tracks()),
-            hard_counter: oteryn_gameplay_quests::quest::source_deaths::arbaziloth_hard_counter(
-                copy.tracks(),
-            ),
             source,
         });
     }
@@ -837,7 +833,7 @@ pub(super) fn freeze_encounter_credit(
             use oteryn_gameplay_quests::quest::source_deaths;
             for transition in source_deaths::arbaziloth_hard_transitions().filter(|key| {
                 !source_deaths::is_arbaziloth_hard_counter(key)
-                    || participant.hard_counter == Some(*key)
+                    || *key == source_deaths::HARD_INCREMENT
             }) {
                 recipients.push(super::quest_kills::Recipient {
                     actor: participant.actor,
@@ -974,7 +970,6 @@ mod encounter_credit_tests {
                 observed_revision: 1,
                 source,
                 counters: vec!["oteryn:quest-transition/native-kills/cults-essence"],
-                hard_counter: None,
             });
         }
         let shares: Vec<_> = credits
@@ -1038,7 +1033,7 @@ mod encounter_credit_tests {
                 .all(|recipient| recipient.character != outsider.character)
         );
         use oteryn_gameplay_quests::quest::source_deaths::{
-            ARBAZILOTH_ENRAGED, arbaziloth_hard_counter, is_arbaziloth_hard_counter,
+            ARBAZILOTH_ENRAGED, is_arbaziloth_hard_counter,
         };
         let enraged = ExactActorRef(runtime.admit_encounter_fixture_actor(
             ActorState(0),
@@ -1050,8 +1045,7 @@ mod encounter_credit_tests {
                 floor: 7,
             }),
         )?);
-        for (participant, damage) in credits.iter_mut().zip([20, 30, 50]) {
-            participant.hard_counter = arbaziloth_hard_counter(&Default::default());
+        for (participant, damage) in credits.iter().zip([20, 30, 50]) {
             runtime
                 .borrow_exact_actor_commit()
                 .commit_damage_for_bound_attacker(

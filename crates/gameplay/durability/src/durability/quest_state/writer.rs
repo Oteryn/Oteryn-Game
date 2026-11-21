@@ -679,6 +679,11 @@ impl DurabilityRoot {
         reward_callbacks: Vec<oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback>,
         world_callbacks: Vec<oteryn_gameplay_quests::quest::world_callbacks::Callback>,
     ) -> Result<QuestTransitionOutcome> {
+        use oteryn_gameplay_quests::quest::source_deaths::{HARD_INCREMENT, HARD_UNLOCK};
+        use super::native_observation::NativeQuestObservation::Death;
+        let arbaziloth_counter = matches!(&native, Some(Death(death))
+            if matches!(&death.source, super::native_kills::NativeDeathSource::ArbazilothHard { .. })
+                && matches!(request.transition_key.as_str(), HARD_INCREMENT | HARD_UNLOCK));
         let required_mint = oteryn_gameplay_quests::quest::completion_sets::required_mint_claim(
             &request.transition_key,
         )
@@ -1208,6 +1213,9 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?
             .run_with_context(&mut context, move |holder, deadline, (context, grizzly_gate, grizzly_boss, grizzly_policy, reward_admission, benevola)| {
                 Box::pin(async move {
+                    let mut request = request;
+                    let mut native = native;
+                    let mut binding = binding;
                     let character = fence.character_id;
                     let mut reward_tuple=None;
                     let mut tx = if reward_admission.is_some() {
@@ -1260,7 +1268,36 @@ impl DurabilityRoot {
                     };
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
-                    lock_receipt_key(&mut tx, character, &request).await?;
+                    if arbaziloth_counter {
+                        // One death may own either counter receipt. Lock both possible
+                        // keys in the same order before testing historical replay.
+                        let candidates = [HARD_INCREMENT, HARD_UNLOCK].map(|key| QuestTransitionRequest {
+                            transition_key: key.into(),
+                            cause: request.cause,
+                        });
+                        for candidate in &candidates {
+                            lock_receipt_key(&mut tx, character, candidate).await?;
+                        }
+                        for candidate in &candidates {
+                            if let Some(row) = load_receipt(&mut tx, character, candidate).await? {
+                                let mut expected = request_binding(character, candidate);
+                                let Some(Death(death)) = &native else {
+                                    return Err(DurabilityError::InvalidStoredState);
+                                };
+                                if let Err(error) = death.bind(&mut expected) {
+                                    return Ok(Err(error));
+                                }
+                                if row.try_get::<Vec<u8>, _>("request_binding")? != expected {
+                                    return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
+                                }
+                                let committed = decode_receipt(&row)?;
+                                commit_semantic_transaction(tx, deadline).await?;
+                                return Ok(Ok(QuestTransitionOutcome::AlreadyCommitted(committed)));
+                            }
+                        }
+                    } else {
+                        lock_receipt_key(&mut tx, character, &request).await?;
+                    }
                     // The MINT cause precedes the Character root, matching the item owner.
                     if reward_callback.as_ref().is_some_and(|c|c.give.is_some())
                         && let QuestCause::Command(command) | QuestCause::Use(command)=request.cause {
@@ -1270,7 +1307,8 @@ impl DurabilityRoot {
                         && let QuestCause::Use(command) | QuestCause::Step(command)=request.cause {
                         super::super::reward_claim_mint::lock_cause(&mut tx,command).await?;
                     }
-                    if let Some(row) = load_receipt(&mut tx, character, &request).await? {
+                    if !arbaziloth_counter
+                        && let Some(row) = load_receipt(&mut tx, character, &request).await? {
                         if row.try_get::<Vec<u8>, _>("request_binding")? != binding {
                             return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
                         }
@@ -1315,6 +1353,23 @@ impl DurabilityRoot {
                     let root = match super::rotten_essence::assert_fence(&mut tx, &fence, &node, essence.is_some() || soul_input).await? {
                         Ok(root) => root,
                         Err(error) => return Ok(Err(error)),
+                    };
+                    let transition = if arbaziloth_counter {
+                        let Some(key) = super::native_kills::current_arbaziloth_counter(&mut tx, character, &catalogue).await? else {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        };
+                        let Some(Death(death)) = &mut native else {
+                            return Err(DurabilityError::InvalidStoredState);
+                        };
+                        request.transition_key = key.into();
+                        death.transition.clone_from(&request.transition_key);
+                        binding = request_binding(character, &request);
+                        if let Err(error) = death.bind(&mut binding) {
+                            return Ok(Err(error));
+                        }
+                        catalogue.transition(key).ok_or(DurabilityError::InvalidStoredState)?
+                    } else {
+                        transition
                     };
                     if carrot {
                         let Some((permit,context,_))=context.as_ref() else {return Ok(Err(CharacterProgressionError::InvalidInput));};

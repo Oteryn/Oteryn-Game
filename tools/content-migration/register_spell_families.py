@@ -710,6 +710,12 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     admit_dream_courts_supplies(root, items)
     import protected_loot_yields
     protected_loot_yields.admit(root, items, provider_order)
+    # These late Item admissions belong to the base provider. Apply their
+    # verified top-order facts before deriving the separate SRX-1 supplement.
+    hard_items = [row for row in items["records"]
+                  if row["production_definition"]["production_key"] in protected_loot_yields.ARBAZILOTH_HARD_ITEMS]
+    house_top_order = json.loads((root / house_decoration_actions.PROFILES).read_bytes())
+    house_decoration_actions.apply_top_order(hard_items, house_top_order)
     # The complete source closure must fit native_gameplay's existing 8 MiB
     # Item-profile input bound. Only the final active serialization is compact;
     # record order/values are unchanged and donor captures stay readable.

@@ -1,5 +1,6 @@
-//! Real lever USE -> shared encounter admission -> existing Character boss cooldowns.
+//! Source boss lever USE uses shared encounter admission and Character cooldowns.
 use super::*;
+use crate::durability::boss_encounter::SourceBossLever;
 use oteryn_gameplay_quests::quest::world_callbacks::court_warlock as source;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -7,7 +8,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         clippy::too_many_arguments,
         reason = "the source hook shares the existing lever owner turn"
     )]
-    pub(super) async fn execute_court_warlock(
+    pub(super) async fn execute_source_boss_lever(
         &self,
         runtime: &mut ChannelRuntimeV1,
         states: &mut ChannelSpellStates,
@@ -19,6 +20,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         revision: u64,
         after: crate::map::view::EntryFacts,
         cause: QuestCause,
+        lever: SourceBossLever,
     ) -> UseDisposition {
         let QuestCause::Use(command) = cause else {
             return UseDisposition::Rejected;
@@ -66,7 +68,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // exact party fences. A later lever revision or reconnect must still
         // pay the existing cooldown, even if a client repeats a command number.
         party.sort_by_key(|fence| *fence.character_id.as_bytes());
-        let mut identity = b"cwarlock:lever:v1".to_vec();
+        let mut identity = match lever {
+            SourceBossLever::CourtWarlock => b"cwarlock:lever:v1".to_vec(),
+            SourceBossLever::Arbaziloth => b"arbaziloth:lever:v1".to_vec(),
+        };
         identity.extend_from_slice(&key.to_be_bytes());
         identity.extend_from_slice(&revision.to_be_bytes());
         identity.extend_from_slice(&self.reset_epoch.to_be_bytes());
@@ -86,9 +91,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         );
         match self
             .root
-            .court_warlock_admission(
+            .source_boss_lever_admission(
                 self.character,
                 self.holder,
+                lever,
                 party.clone(),
                 admission,
                 self.reset_epoch,
@@ -112,9 +118,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if disposition != UseDisposition::Committed
             && let Err(error) = self
                 .root
-                .court_warlock_admission(
+                .source_boss_lever_admission(
                     self.character,
                     self.holder,
+                    lever,
                     party,
                     admission,
                     self.reset_epoch,
@@ -128,6 +135,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
-pub(super) fn owns(callback: &Callback) -> bool {
-    callback.key == source::KEY
+pub(super) fn source_boss_lever(callback: &Callback) -> Option<SourceBossLever> {
+    match callback.key.as_str() {
+        source::KEY => Some(SourceBossLever::CourtWarlock),
+        "oteryn:quest-callback/nrwicked/arbaziloth" => Some(SourceBossLever::Arbaziloth),
+        _ => None,
+    }
 }

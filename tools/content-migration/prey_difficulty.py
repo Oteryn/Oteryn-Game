@@ -206,7 +206,7 @@ def model_input(root, profiles=None):
     profiles = read(root, PROFILES) if profiles is None else profiles
     # These two encounter-only bodies have no Prey eligibility or spawn points.
     # Qualify their source bodies before keeping the existing model input stable.
-    from nrwicked_profiles import ROLES, inventory_extension
+    from nrwicked_profiles import HARD_CREATURE, HARD_LOOT, ROLES, inventory_extension
     phase_keys = {f"oteryn:creature.{name}" for name in ROLES}
     if any(row["profile"]["target"]["key"] in phase_keys for row in profiles["records"]):
         inventory_extension(root, profiles["records"])
@@ -216,12 +216,15 @@ def model_input(root, profiles=None):
     loot = json.loads(loot_bytes)
     isolated_loot = [row for row in loot["creature_loot"] if row["creature"]["key"] in phase_keys]
     if isolated_loot:
+        hard_loot = {"family": "Loot", "key": HARD_LOOT, "revision": "definition-r1"}
         if (len(isolated_loot) != len(phase_keys)
                 or {row["creature"]["key"] for row in isolated_loot} != phase_keys
-                or any(row["loot"] is not None for row in isolated_loot)):
+                or any(row["loot"] is not None
+                       and (row["creature"]["key"] != HARD_CREATURE or row["loot"] != hard_loot)
+                       for row in isolated_loot)):
             raise ValueError("Arbaziloth phase loot affects the Prey model input")
-        # These empty bindings are required by the native loot catalogue;
-        # neither creature participates in the Prey model.
+        # The full loot closure remains pinned. Neither phase creature takes
+        # part in Prey, even when its native binding carries hard-mode loot.
         from import_spell_families import canonical_bytes
         loot["creature_loot"] = [row for row in loot["creature_loot"]
                                  if row["creature"]["key"] not in phase_keys]
