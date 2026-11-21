@@ -115,7 +115,11 @@ impl ProfilePassClock {
 
     fn new() -> Self {
         let now = std::time::Instant::now();
-        Self { start: now, last: now, phases: Vec::new() }
+        Self {
+            start: now,
+            last: now,
+            phases: Vec::new(),
+        }
     }
 
     fn mark(&mut self, phase: &'static str) {
