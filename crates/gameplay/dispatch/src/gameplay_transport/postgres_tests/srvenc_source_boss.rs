@@ -376,7 +376,7 @@ fn scenario(case: equipment::Case) -> TestResult {
         if case != equipment::Case::Neither {
             equipment::activity_equipment_clocks_charge_worn_items(&h, &mut destination, admitted, case).await?;
             if case == equipment::Case::LostExpiry {
-                return equipment::settle_lost_expiry(&h, &mut destination, admitted).await;
+                return equipment::settle_lost_expiry(&h, &owner, &mut destination, admitted, handoff).await;
             }
             if !clock_handoff {
                 return Ok(());

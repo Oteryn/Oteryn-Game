@@ -33,10 +33,14 @@ fn lost_activity_participant_can_settle_expiring_equipment_postgres() -> TestRes
 
 pub(super) async fn settle_lost_expiry(
     h: &Harness,
+    origin: &ComposedFreshAdmission<'_, '_, '_>,
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
+    handoff: [u8; 16],
 ) -> TestResult {
+    use crate::durability::activity_handoff::ActivityReturnReason;
     use crate::gameplay_transport::connection::{ControlLossResult, FreshAdmissionAuthority};
+    use crate::gameplay_transport::native_activity::NativeActivityOutcome;
     let actor = admitted.runtime_actor.ok_or("activity actor")?;
     let session = admitted.game_session_id;
     let ring = "oteryn:item.tibia.i3088";
@@ -55,18 +59,55 @@ pub(super) async fn settle_lost_expiry(
     let permit = owner.spell_lane_permit().await.ok_or("activity spell lane")?;
     assert!(owner.checkpoint_timed_equipment(actor, session, true).await);
     drop(permit);
+    assert!(mana_spent_by_hit(owner, admitted).await? > 0, "the worn ring shields mana");
     assert_eq!(
         owner.lose_control(admitted, std::time::Duration::ZERO, None).await,
         ControlLossResult::Recorded,
     );
     owner.clock_origin -= std::time::Duration::from_secs(601);
-    let permit = owner.spell_lane_permit().await.ok_or("activity spell lane")?;
-    assert!(owner.settle_activity_equipment(actor, session).await);
-    drop(permit);
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    sqlx::query("UPDATE game_boss_room_activities SET deadline=opened_at+1 WHERE admission=encode($1,'hex')::uuid")
+        .bind(handoff.as_slice()).execute(&mut *tx).await?;
+    sqlx::query("UPDATE game_activity_runtime_entries SET deadline=0 WHERE handoff_id=encode($1,'hex')::uuid")
+        .bind(handoff.as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    let outcome = owner.return_due_activity(admitted, ActivityReturnReason::Timeout)
+        .await.map_err(|_| "return with expiring equipment failed")?;
+    let NativeActivityOutcome::Committed(commit) = outcome else {
+        return Err(format!("offline return refused: {outcome:?}").into());
+    };
+    origin.publish_activity_commit(&commit).map_err(|_| "publish offline return")?;
+    let next = origin.activity_runtimes.current_connection(admitted);
+    assert_ne!(next.game_session_id, session);
+    let (current, _) = FreshAdmissionStore::from_root(h.root.clone())
+        .current_session_at(next.game_session_id).await?;
+    assert_eq!(current.session_state(), crate::foundation::GameSessionState::Reconnectable);
+    assert!(matches!(current.current_runtime_scope(), RuntimeScopeRefV1::Channel { .. }));
+    assert_eq!(mana_spent_by_hit(origin, next).await?, 0, "the expired ring cannot shield mana");
     let equipped: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_character_equipment_slots WHERE item_instance_id=encode($1,'hex')::uuid)")
         .bind(id(73).as_slice()).fetch_one(&h.pool).await?;
     assert!(!equipped, "the durable settlement retired the expired energy ring");
     Ok(())
+}
+
+async fn mana_spent_by_hit(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+) -> TestResult<u32> {
+    use crate::ability::creature_bite::CreatureBiteVitals;
+    let actor = admitted.runtime_actor.ok_or("ring holder")?;
+    let session = admitted.game_session_id;
+    let mut runtime = owner.runtime.lock().await;
+    let mut states = owner.states.spell_states.lock().await;
+    let before = states.get(&runtime, actor, session).ok_or("before hit")?.vitals().mana;
+    states.apply_creature_damage(
+        &mut runtime, actor, session, 5,
+        crate::foundation::owner_timer::SemanticTimeMicros::from_micros(owner.owner_now().get()),
+    )
+        .ok_or("hit ring holder")?;
+    let after = states.get(&runtime, actor, session).ok_or("after hit")?.vitals().mana;
+    Ok(before.saturating_sub(after))
 }
 
 fn scenario_thread(case: Case) -> TestResult {
@@ -105,8 +146,11 @@ pub(super) async fn activity_equipment_clocks_charge_worn_items(
         .execute(&h.pool).await?;
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
-    sqlx::query("INSERT INTO game_item_imbuements(item_instance_id,slot,category,imbuement_key,imbuement_revision,tier,remaining_ms,applying_occurrence_id,applying_transaction_id) VALUES(encode($1,'hex')::uuid,0,8,'oteryn:imbuement.featherweight','r1',1,72000000,game_character_uuid_v7(),game_character_uuid_v7())")
-        .bind(id(70).as_slice()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_item_imbuements(item_instance_id,slot,category,imbuement_key,imbuement_revision,tier,remaining_ms,applying_occurrence_id,applying_transaction_id) VALUES(encode($1,'hex')::uuid,0,$2,$3,'r1',1,72000000,game_character_uuid_v7(),game_character_uuid_v7())")
+        .bind(id(70).as_slice())
+        .bind(if case == Case::LostExpiry { 0_i16 } else { 8_i16 })
+        .bind(if case == Case::LostExpiry { "oteryn:imbuement.strike" } else { "oteryn:imbuement.featherweight" })
+        .execute(&mut *tx).await?;
     sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id)
         VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,$4,1,1,game_character_uuid_v7())")
         .bind(id(72).as_slice()).bind(id(42).as_slice()).bind(boots).bind(revision).execute(&mut *tx).await?;
@@ -133,7 +177,9 @@ pub(super) async fn activity_equipment_clocks_charge_worn_items(
     }
     owner.tick_timed_items().await;
     let (boots_remaining, remaining) = remaining_budgets(h).await?;
-    assert!(remaining < 72_000_000, "a worn imbuement must tick in an activity");
+    if case != Case::LostExpiry {
+        assert!(remaining < 72_000_000, "a worn imbuement must tick in an activity");
+    }
     assert!(boots_remaining < 14_400_000, "timed equipment must tick in an activity");
     Ok(())
 }
