@@ -39,6 +39,19 @@ authorised; this file only says how the flow behaves.
   minutes old; otherwise the run goes hosted. The `Molehill fallback` workflow
   cancels and re-runs, every 15 minutes, runs still waiting on an offline PC.
 
+## Protected-main compilation cache
+
+The repository cache eviction limit was verified as 10GB. A successful save of
+an 11.26GB cache did not make it a durable reusable entry: the later full API
+inventory contained no Rust cache. Keep the four existing cache paths and keys,
+prepare a bounded target before recording normalized mtimes, and enforce a
+4GiB total raw-file budget including Cargo registry/git data before upload.
+Only generated target contents may be pruned; immutable source and dependency
+archives remain untouched. Missing build products must rebuild through Cargo.
+Report actual before/after bytes and preserve exact-candidate tests independently.
+A protected-main warmer finishes before the newest queued main revision starts;
+frequent merges must not continually cancel cache preparation.
+
 ## Shared build artifacts and partial reruns
 
 The PR fast Rust gate builds each archive in `rust-fast-archive.yml` and starts

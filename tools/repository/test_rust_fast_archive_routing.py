@@ -62,6 +62,7 @@ class RustFastArchiveRoutingTests(unittest.TestCase):
         exact_consumers = (
             ".github/workflows/native-entry-room-qualification.yml",
             ".github/workflows/rust-fast-archive.yml",
+            "tools/repository/trim_cargo_cache.py",
         )
         paths = [auxiliary, *exact_consumers]
         workflows = {

@@ -285,6 +285,25 @@ def restore(output, *, repo_root=ROOT, env=None, api=None, clock=time.monotonic,
         run = api.json(f"{base}/runs/{run_id}")
 
 
+def rejection_reason(error):
+    # Emit only fixed diagnostic codes. API payloads and arbitrary exception
+    # messages must never become log output or change the restore decision.
+    if not isinstance(error, ValueError):
+        return "unknown"
+    return {
+        "invalid, oversized or changing GitHub inventory": "github_inventory_invalid_or_changing",
+        "invalid or duplicate GitHub inventory identity": "github_inventory_identity_invalid",
+        "incomplete GitHub inventory": "github_inventory_incomplete",
+        "GitHub inventory exceeded the page bound": "github_inventory_page_limit",
+        "invalid native-entry expected source identity": "native_source_binding",
+        "selected producer run identity mismatch": "producer_run_identity",
+        "native-entry producer run or attempt changed": "producer_run_changed",
+        "native-entry producer run or attempt changed during restore": "producer_run_changed_during_restore",
+        "native-entry producer changed during restore": "producer_job_changed_during_restore",
+        "native-entry producer is no longer running or successful": "producer_failed_during_restore",
+    }.get(str(error), "unknown")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", choices=("build", "executable", "restore"))
@@ -301,7 +320,7 @@ def main():
             print(f"Native-entry producer unavailable: {error}", file=sys.stderr)
             return 3
         except (OSError, ValueError, subprocess.CalledProcessError, zipfile.BadZipFile, tarfile.TarError) as error:
-            print(f"Native-entry producer rejected: {type(error).__name__}", file=sys.stderr)
+            print(f"Native-entry producer rejected: reason={rejection_reason(error)}", file=sys.stderr)
             return 1
     elif args.command == "build":
         build(args.directory, rust_selection=args.rust_selection)

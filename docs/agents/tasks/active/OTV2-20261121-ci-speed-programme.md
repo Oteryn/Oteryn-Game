@@ -16,7 +16,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT standalone CI programme coordinator, issue 3352
 created_at: 2026-11-21T09:29:01Z
-updated_at: 2026-11-21T21:07:00Z
+updated_at: 2026-11-21T21:49:00Z
 execution_policy: continuous_progress
 owned_paths:
   - .github/workflows/
@@ -53,16 +53,17 @@ checks and protected-main integration. No achieved latency target is claimed.
   not quest automation or a change to that programme's control plane.
 - Integrated main: `5695f7b8af567086efa11bdeb47a2fd609f24c2c`; sole writer:
   `chatgpt/ci-bottlenecks-single-pr-20261121`, PR #3367. State: **AUTHORING**
-  for a successor of `cbdd2e2e3f5c0e9c85994009325ee24007c970bc`.
-  Root ended the freeze at 20:48:28 UTC after a real partial rerun exposed a P1:
-  GitHub copied old executions to new job IDs/attempts, so consumers requested
-  nonexistent new-attempt artifacts. A owns collector/Dispatch selection; B
-  wires native/World; C verifies the contract and unchanged Node mechanism.
-  Resolve only proven identical execution aliases, retaining the latest real
-  failure and every source/attempt/digest/inventory guard. The earlier exact-line
-  auxiliary-routing repair remains, with unknown/dynamic references still FULL.
-  Integrated #3366's field-cursor revert, #3362's two-job limit, canonical
-  fast-producer registration and all five earlier CI repairs remain intact.
+  for a successor of `90c80488e9c2674515a4c252dd9872a06cca054a`.
+  Root ended the freeze at 21:31:57 UTC: main36ca actually uploaded an
+  11,261,455,903-byte cache from a 61G target, exceeding the verified 10GB repo
+  limit; the later complete inventory had no Rust cache. GitHub documents
+  post-save eviction until under quota; the individual deletion event is unknown.
+  A owns bounded cache preparation/tests, C wires rust.yml/tests; root integrates
+  docs/pins/routing. Keep four existing cache roots and keys, cap raw bytes at
+  4GiB, preserve dependency reuse where possible and finish an active main warmer
+  before the latest queued one. No paid storage or quota change.
+  The proven copied-job resolver, exact-line auxiliary routing, #3366 revert,
+  #3362 build limit and earlier artifact/qualification fixes remain intact.
 - Publication: native Git dry-run returned `fatal: unable to get password from
   user`. Use the already selected META 3.1.0 API-native new-candidate route with
   a complete bounded delta, sole-parent commit, fresh expected-head lease,
@@ -91,13 +92,14 @@ is claimed until the integrated head has run; compare both critical-path time
 and summed runner time, including artifact transfer and fallback builds.
 
 Acceptance pending: successor qualification and post-merge observation. On 448,
-fast passed in 19m16 and all 36 PG partitions/heavy-gate passed in 26m11.
-On cbdd, all 12 content/World/native/regression/manual jobs passed: content7m53,
-retained PG13m03, World22m46, native3/3, manual2043+38. Fast attempt1 was stopped
-after cache download6.75GB completed in3m44 but tar/unzstd stalled for18m;
-34 successes remained and one job rerun exposed the copied-record P1.
-These results do not qualify the next head. QuestPC8 varied from19m36 to11m12.6;
-neither is a fixed floor. No whole-machine RAM or financial saving is claimed.
+fast passed in 19m16 and PG36/36 in26m11; cbdd PG36/36 passed in24m44.
+On 90c, content passed11m02, retained PG10m09, World20m10 and manual2043+38.
+Native initially rejected producer discovery with ValueError; its exact API
+response was not retained and stable snapshot replays did not reproduce it.
+Actual collector/native/World partial reruns passed on90c; native reused its
+original producer in2m04, and collector-only rerun took1m41/90 job-seconds.
+New cache-only changes do not turn earlier-head evidence into current-head PASS.
+No whole-machine RAM, financial saving or universal10–15min claim is made.
 
 Prior main `44920758625` failed Node admission contention and MAX501; the first
 PR run repeated MAX501 with three competing tests. On b75, PG job136951451690
@@ -107,9 +109,10 @@ successor needs its own qualification; no SQL or Node runtime repair is claimed.
 
 ### Second-wave local validation on the integrated tree
 
-- Execution-alias repair: 296 repository tests, 24 native and 18 World tests
-  pass. The earlier heavy-gate fixture repair retains all negative cases;
-  its focused 26-test suite passes.
+- Cache-cap/diagnostic successor: 314 repository, 27 native and 18 World tests
+  pass. Real offline Cargo proof retained a dependency fresh, rebuilt the removed
+  workspace executable, and passed its test. The helper has 13 budget/filesystem
+  tests; 4 actual-shell workflow tests and pin/routing mutations pass.
 - Governance: 135 tests and validation pass; repository policy passes for
   23 files and 78 workflows.
 - World/native helpers: 51 tests pass. Node prebuilt: 15; repaired Platform: 16;
@@ -171,21 +174,10 @@ NOT_APPLICABLE: build/CI infrastructure; no new player mechanic or reference val
 
 ## Implementation / findings
 
-One writer per branch. Workers prepare uncommitted changes and release their
-worktree; the coordinator reviews, publishes, freezes and qualifies candidates.
-Branches: `chatgpt/ci-pg-flow-20261121`,
-`chatgpt/ci-migrator-reuse-20261121`, `chatgpt/ci-build-deltas-20261121`.
-This card remains active across those PRs and later measured programme work.
-
-First-wave publication receipts remain in issue #3352. The current route and
-candidate lifecycle are recorded above.
-
-## First-wave validation history
-
-Merged first wave: #3353 (PG reruns), #3354 (benchmark), #3355 (PG scheduling/M23),
-#3356 (shared migrator). Exact evidence remains in #3352, not qualification of
-this candidate. The programme stays open for real-edit/persistent-builder
-measurements, the 10–15-minute goal and measured RAM/cost savings.
+One writer per branch. Workers release bounded source changes; the coordinator
+reviews, publishes, freezes and qualifies the complete candidate. First-wave
+PRs #3353/#3354/#3355/#3356 and their evidence remain in #3352. This programme
+stays open for edited-build/persistent-builder measurements and RAM/cost targets.
 
 ## Self-review
 
@@ -201,11 +193,12 @@ assessed as non-material with actual-workflow RED/GREEN and negative cases.
 The execution-alias repair materially changes CI job selection. It has direct
 coordinator source review and independent peer verification with real API pairs,
 an actual result ZIP, all 30 logical job histories and negative identity cases.
-The two native reviews do not cover this later code. No third paid review is
-dispatched. Current-session owner instructions authorize implementing and
-force-merging this bounded single-PR batch; retain that explicit authorization
-instead of claiming prior review coverage. Current-head required gates and a
-real collector/consumer partial rerun remain qualification conditions.
+The two native reviews do not cover later code. Cache-cap source review and
+independent filesystem/layout checks passed; a real Rust1.100 dependency-layout
+defect was reproduced and fixed RED/GREEN. No third paid review is dispatched.
+Current-session owner instructions authorize implementing and force-merging this
+bounded single-PR batch. Current-head required gates remain mandatory; actual
+collector/consumer partial-rerun proofs passed on90c before this cache delta.
 
 ## PR and closeout
 

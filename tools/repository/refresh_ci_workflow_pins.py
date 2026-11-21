@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 CORE = "tools/repository/validate_repository_policy_core.py"
 AUDIT = ".github/workflows/merge-authority-audit.yml"
 CONTRACT_TEST = "tools/repository/test_validate_merge_group_pg_sim.py"
+RUST_WORKFLOW = ".github/workflows/rust.yml"
 REFERENCES = (
     CORE,
     ".github/workflows/merge-group-gate.yml",
@@ -35,7 +36,9 @@ def git_blob(data):
 
 
 def replace_constant(text, name, digest):
-    pattern = rf'(?m)^(\s*{name}\s*[:=]\s*")[0-9a-f]{{40}}("\s*)$'
+    if len(digest) not in (40, 64) or re.fullmatch(r"[0-9a-f]+", digest) is None:
+        raise ValueError("invalid derived pin digest")
+    pattern = rf'(?m)^(\s*{name}\s*[:=]\s*")[0-9a-f]{{{len(digest)}}}("\s*)$'
     result, count = re.subn(pattern, lambda match: match[1] + digest + match[2], text)
     if count != 1:
         raise ValueError(f"expected one exact pin: {name}")
@@ -43,7 +46,7 @@ def replace_constant(text, name, digest):
 
 
 def proposal(root):
-    paths = set(REFERENCES) | {AUDIT, CONTRACT_TEST, ".github/workflows/merge-gate.yml"}
+    paths = set(REFERENCES) | {AUDIT, CONTRACT_TEST, ".github/workflows/merge-gate.yml", RUST_WORKFLOW}
     original = {path: (root / path).read_text(encoding="utf-8") for path in paths}
     changed = dict(original)
     digests = {path: hashlib.sha256((root / path).read_bytes()).hexdigest() for path in SOURCES}
@@ -66,6 +69,8 @@ def proposal(root):
     group = git_blob(changed[".github/workflows/merge-group-gate.yml"].encode())
     pr = git_blob(changed[".github/workflows/merge-gate.yml"].encode())
     changed[CORE] = replace_constant(changed[CORE], "EXPECTED_MERGE_GROUP_GATE_BLOB", group)
+    changed[CORE] = replace_constant(changed[CORE], "EXPECTED_POST_MERGE_RUST_SHA256",
+                                     hashlib.sha256(original[RUST_WORKFLOW].encode()).hexdigest())
     changed[AUDIT] = replace_constant(changed[AUDIT], "EXPECTED_MERGE_GROUP_GATE_BLOB", group)
     changed[AUDIT] = replace_constant(changed[AUDIT], "EXPECTED_MERGE_GATE_BLOB", pr)
     changed[CONTRACT_TEST] = replace_constant(changed[CONTRACT_TEST], "APPROVED", group)

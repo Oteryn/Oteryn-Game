@@ -1,5 +1,6 @@
 """A reused native-entry libtest must match source, build variant and test inventory."""
 import copy
+from contextlib import redirect_stderr
 import hashlib
 import io
 import json
@@ -386,6 +387,55 @@ class NativeEntryPrebuilt(unittest.TestCase):
                     self.restore(api)
                 self.assertEqual(api.downloaded, [])
                 self.assertFalse((self.root / "restored").exists())
+
+
+class NativeEntryRejectionDiagnostics(unittest.TestCase):
+    def invoke_restore_cli(self, error):
+        output = io.StringIO()
+        with patch("sys.argv", ["prebuilt.py", "restore", "unused-output"]), \
+                patch.object(prebuilt, "restore", side_effect=error), redirect_stderr(output):
+            result = prebuilt.main()
+        return result, output.getvalue()
+
+    def test_known_rejection_literals_emit_only_fixed_codes_and_keep_exit_one(self):
+        cases = (
+            ("invalid, oversized or changing GitHub inventory", "github_inventory_invalid_or_changing"),
+            ("invalid or duplicate GitHub inventory identity", "github_inventory_identity_invalid"),
+            ("incomplete GitHub inventory", "github_inventory_incomplete"),
+            ("GitHub inventory exceeded the page bound", "github_inventory_page_limit"),
+            ("invalid native-entry expected source identity", "native_source_binding"),
+            ("selected producer run identity mismatch", "producer_run_identity"),
+            ("native-entry producer run or attempt changed", "producer_run_changed"),
+            ("native-entry producer run or attempt changed during restore", "producer_run_changed_during_restore"),
+            ("native-entry producer changed during restore", "producer_job_changed_during_restore"),
+            ("native-entry producer is no longer running or successful", "producer_failed_during_restore"),
+        )
+        for message, reason in cases:
+            with self.subTest(reason=reason):
+                result, output = self.invoke_restore_cli(ValueError(message))
+                self.assertEqual(result, 1)
+                self.assertEqual(output, f"Native-entry producer rejected: reason={reason}\n")
+
+    def test_unknown_or_extended_messages_never_print_untrusted_details_or_become_fallback(self):
+        private = "PRIVATE_FIXTURE_TOKEN_DO_NOT_LOG"
+        errors = (
+            ValueError(private), ValueError("incomplete GitHub inventory " + private),
+            ValueError("incomplete GitHub inventory\n" + private),
+            OSError("incomplete GitHub inventory"), OSError(private),
+            subprocess.CalledProcessError(9, [private], stderr=private),
+            zipfile.BadZipFile(private), tarfile.TarError(private),
+        )
+        for error in errors:
+            with self.subTest(kind=type(error).__name__):
+                result, output = self.invoke_restore_cli(error)
+                self.assertEqual(result, 1)
+                self.assertEqual(output, "Native-entry producer rejected: reason=unknown\n")
+                self.assertNotIn(private, output)
+
+    def test_unavailable_producer_keeps_its_separate_fallback_exit_status(self):
+        result, output = self.invoke_restore_cli(prebuilt.transport().Unavailable("fixture unavailable"))
+        self.assertEqual(result, 3)
+        self.assertEqual(output, "Native-entry producer unavailable: fixture unavailable\n")
 
 
 class NativeEntryProcessControl(unittest.TestCase):
