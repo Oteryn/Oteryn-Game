@@ -46,3 +46,50 @@ fn only_a_busy_holder_counts_as_contention() {
     assert!(!contended(&SnapshotError::RetryableConflict));
     assert!(!contended(&SnapshotError::CapacityExceeded));
 }
+
+#[test]
+fn only_a_confirmed_success_ends_the_prompt_reset_retry() {
+    use crate::durability::{MigrationFailureClass, SchemaCompatibility, SqlxFailureClass};
+    use crate::foundation::admission_authority_publication::GameSessionUseAuthorizationErrorV1;
+
+    let success = Ok(SnapshotRefresh {
+        snapshots: Vec::new(),
+        next_check_after: Duration::from_secs(30 * 60),
+    });
+    assert!(!retry_soon_after_pass(&success, true));
+    assert!(!retry_soon_after_pass(&success, false));
+
+    let errors = [
+        SnapshotError::NotSupported,
+        SnapshotError::InvalidQuery,
+        SnapshotError::SnapshotExpired,
+        SnapshotError::RetryableConflict,
+        SnapshotError::CapacityExceeded,
+    ];
+    let durability_errors = [
+        DurabilityError::AdmissionGameSessionLedgerExhausted,
+        DurabilityError::SessionUseAuthorization(GameSessionUseAuthorizationErrorV1::StaleAuthority),
+        DurabilityError::Unavailable,
+        DurabilityError::Database(SqlxFailureClass::RetryableStatement),
+        DurabilityError::Database(SqlxFailureClass::Transport),
+        DurabilityError::Migration(MigrationFailureClass::Source),
+        DurabilityError::SchemaIncompatible(SchemaCompatibility::Incompatible),
+        DurabilityError::InvalidConfiguration,
+        DurabilityError::RootUnavailable,
+        DurabilityError::RootPassDeadlineExceeded,
+        DurabilityError::CommitRejected,
+        DurabilityError::CommitOutcomeUnknown,
+        DurabilityError::RootTaskFailed,
+        DurabilityError::InvalidStoredState,
+    ];
+
+    for error in errors
+        .into_iter()
+        .chain(durability_errors.into_iter().map(SnapshotError::Unavailable))
+    {
+        let ordinary_retry = contended(&error);
+        let outcome = Err(error);
+        assert!(retry_soon_after_pass(&outcome, true), "{outcome:?}");
+        assert_eq!(retry_soon_after_pass(&outcome, false), ordinary_retry, "{outcome:?}");
+    }
+}

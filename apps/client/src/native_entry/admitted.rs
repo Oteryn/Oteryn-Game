@@ -1,5 +1,7 @@
+use crate::traffic::{Counting, Traffic};
 use oteryn_session::Session;
 use oteryn_session_tcp::TcpTlsStream;
+use std::sync::Arc;
 
 /// An admitted game session on the routed World and Channel.
 #[derive(Debug)]
@@ -8,7 +10,8 @@ pub struct AdmittedSession {
     pub(super) preference_character_id: oteryn_session::CharacterId,
     pub(super) character_name: String,
     pub(super) training_requested: bool,
-    pub(super) session: Session<TcpTlsStream>,
+    pub(super) session: Session<Counting<TcpTlsStream>>,
+    pub(super) traffic: Arc<Traffic>,
     pub(super) world_id: String,
     pub(super) channel_id: String,
     /// The World's Channels as the directory listed them (chsw, capabilities 512 and 513).
@@ -52,23 +55,17 @@ impl AdmittedSession {
         let mut view = crate::play::PlayView::from_join(self.session.join_snapshot())?;
         view.bind_minimap_world(self.world_id());
         view.set_preference_character(*self.preference_character_id.as_bytes());
-        if let Some(entities) = self.session.world_entities() {
-            view.set_own_identity(*entities.own_identity());
-        }
-        if let Some(map) = self.session.world_map_snapshot() {
-            view.set_live_map(&map)?;
-        }
-        view.set_presentations(self.session.visible_appearances())?;
-        view.with_entities(
-            self.session
-                .world_entities()
-                .map(|entities| entities.others().copied().collect())
-                .unwrap_or_default(),
-        )
+        view.with_join_scene(&self.session)
+    }
+
+    /// The session's byte counters, for the diagnostics overlay.
+    #[must_use]
+    pub fn traffic(&self) -> Arc<Traffic> {
+        Arc::clone(&self.traffic)
     }
 
     #[must_use]
-    pub fn into_session(self) -> Session<TcpTlsStream> {
+    pub fn into_session(self) -> Session<Counting<TcpTlsStream>> {
         self.session
     }
 }

@@ -39,6 +39,19 @@ impl State {
             oteryn_client_ui::minimap::floor_down(self.floor)
         };
     }
+    // Exploration is ordered by (floor, x, y). Seek the visible y interval
+    // separately for each column so distant cells never enter the render cache.
+    fn visible_cells<'a>(
+        &self,
+        cells: &'a std::collections::BTreeMap<(i16, i32, i32), u8>,
+    ) -> impl Iterator<Item = (&'a (i16, i32, i32), &'a u8)> {
+        let floor = self.floor;
+        let left = self.x.saturating_sub(240 / self.scale);
+        let right = self.x.saturating_add(239 / self.scale);
+        let top = self.y.saturating_sub(180 / self.scale);
+        let bottom = self.y.saturating_add(179 / self.scale);
+        (left..=right).flat_map(move |x| cells.range((floor, x, top)..=(floor, x, bottom)))
+    }
     fn point(&self, x: i32, y: i32, floor: i16) -> Option<(f32, f32)> {
         let px = (i64::from(x) - i64::from(self.x)) as f32 * self.scale as f32 + 240.;
         let py = (i64::from(y) - i64::from(self.y)) as f32 * self.scale as f32 + 180.;
@@ -84,6 +97,7 @@ fn project(
     keys: Res<ButtonInput<KeyCode>>,
     skins: Res<Skins>,
     mut state: ResMut<State>,
+    guard: super::modal::ModalGuard,
 ) {
     let requested = owner.take_satellite_request();
     let Some(play) = owner.play.as_ref() else {
@@ -108,7 +122,8 @@ fn project(
             ..State::at(play.view.satellite_player())
         };
     }
-    if state.open && keys.just_pressed(KeyCode::Escape) {
+    let foreground = !owner.modal_active() && state.panel.is_some_and(|panel| guard.allows(panel));
+    if state.open && foreground && keys.just_pressed(KeyCode::Escape) {
         state.open = false;
     }
     if !state.open {
@@ -119,23 +134,28 @@ fn project(
         return;
     }
     let step = 16 / state.scale.max(1);
-    if keys.pressed(KeyCode::ArrowLeft) {
+    if foreground && keys.pressed(KeyCode::ArrowLeft) {
         state.x = state.x.saturating_sub(step);
     }
-    if keys.pressed(KeyCode::ArrowRight) {
+    if foreground && keys.pressed(KeyCode::ArrowRight) {
         state.x = state.x.saturating_add(step);
     }
-    if keys.pressed(KeyCode::ArrowUp) {
+    if foreground && keys.pressed(KeyCode::ArrowUp) {
         state.y = state.y.saturating_sub(step);
     }
-    if keys.pressed(KeyCode::ArrowDown) {
+    if foreground && keys.pressed(KeyCode::ArrowDown) {
         state.y = state.y.saturating_add(step);
     }
     use std::hash::{Hash, Hasher};
     let mut hash = std::collections::hash_map::DefaultHasher::new();
     play.view.satellite_map(|cells, markers| {
-        cells.hash(&mut hash);
-        for marker in markers {
+        for cell in state.visible_cells(cells) {
+            cell.hash(&mut hash);
+        }
+        for marker in markers
+            .iter()
+            .filter(|m| state.point(m.x, m.y, m.floor).is_some())
+        {
             (
                 marker.x,
                 marker.y,
@@ -176,6 +196,7 @@ fn project(
             BackgroundColor(Color::srgb(0.08, 0.08, 0.08)),
             GlobalZIndex(20),
             super::GameModal,
+            crate::bevy_shell::ui::window_layout::WindowLayer("satellite_map"),
         ))
         .id();
     let title = commands
@@ -222,9 +243,8 @@ fn project(
         .id();
     commands.entity(root).add_child(canvas);
     play.view.satellite_map(|cells, markers| {
-        for (&(floor, x, y), &color) in cells {
+        for (&(floor, x, y), &color) in state.visible_cells(cells) {
             if let Some((left, top)) = state.point(x, y, floor) {
-                let shade = f32::from(color) / 255.;
                 let cell = commands
                     .spawn((
                         Node {
@@ -235,7 +255,7 @@ fn project(
                             height: px(state.scale as f32),
                             ..default()
                         },
-                        BackgroundColor(Color::srgb(shade, shade, shade)),
+                        BackgroundColor(super::minimap::palette_color(color)),
                     ))
                     .id();
                 commands.entity(canvas).add_child(cell);
@@ -257,6 +277,13 @@ fn project(
                         },
                     ))
                     .id();
+                let color = [180, 5, 30, 210]
+                    .get(usize::from(marker.color))
+                    .copied()
+                    .unwrap_or(0);
+                commands
+                    .entity(label)
+                    .insert(TextColor(super::minimap::palette_color(color)));
                 commands.entity(canvas).add_child(label);
             }
         }
@@ -280,149 +307,5 @@ fn project(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn satellite_centres_on_player() {
-        let state = State::at((100, 200, 7));
-        assert_eq!((state.x, state.y, state.floor), (100, 200, 7));
-    }
-    #[test]
-    fn satellite_zoom_bounds() {
-        let mut state = State::at((0, 0, 7));
-        for _ in 0..20 {
-            state.zoom(true);
-        }
-        assert_eq!(state.scale, 16);
-        for _ in 0..20 {
-            state.zoom(false);
-        }
-        assert_eq!(state.scale, 1);
-    }
-    #[test]
-    fn satellite_floor_change() {
-        let mut state = State::at((0, 0, 7));
-        state.change_floor(true);
-        assert_eq!(state.floor, 6);
-        state.change_floor(false);
-        assert_eq!(state.floor, 7);
-    }
-    #[test]
-    fn satellite_shows_markers() {
-        let state = State::at((100, 200, 7));
-        assert_eq!(state.point(100, 200, 7), Some((240., 180.)));
-        assert_eq!(state.point(100, 200, 8), None);
-    }
-    use crate::{
-        bevy_shell::owner::{ActivePlay, Phase},
-        play::{PlayView, play_channel},
-    };
-    use oteryn_input_actions::{
-        ButtonState, KeyCode as Key, Modifier, Modifiers, NormalizedInputEvent,
-    };
-    fn key(
-        code: u16,
-        modifiers: Modifiers,
-    ) -> Result<NormalizedInputEvent, Box<dyn std::error::Error>> {
-        Ok(NormalizedInputEvent::Key {
-            code: Key::new(code)?,
-            state: ButtonState::Pressed,
-            modifiers,
-            repeat: false,
-        })
-    }
-    fn chord() -> Result<NormalizedInputEvent, Box<dyn std::error::Error>> {
-        key(29, Modifiers::one(Modifier::Control).with(Modifier::Alt))
-    }
-    fn host() -> Result<HostOwner, Box<dyn std::error::Error>> {
-        let mut owner = HostOwner::new(None)?;
-        let (link, _commands, _outbox) = play_channel();
-        link.use_shared_frontend();
-        let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
-        view.use_shared_frontend();
-        owner.play = Some(ActivePlay { view, link });
-        owner.phase = Phase::Playing;
-        Ok(owner)
-    }
-    #[test]
-    fn satellite_chord_reaches_only_unblocked_play_and_f10_stays_audio()
-    -> Result<(), Box<dyn std::error::Error>> {
-        let mut owner = host()?;
-        let chord = chord()?;
-        owner.route_input(std::slice::from_ref(&chord), true);
-        assert!(
-            !owner.take_satellite_request(),
-            "blocked input must not open it"
-        );
-        owner.open_graphics();
-        owner.route_input(std::slice::from_ref(&chord), false);
-        assert!(
-            !owner.take_satellite_request(),
-            "a modal fences the shortcut"
-        );
-        owner.cancel();
-        owner.route_input(&[key(67, Modifiers::NONE)?], false);
-        assert!(
-            !owner.take_satellite_request(),
-            "plain F10 belongs to audio mute"
-        );
-        owner.route_input(
-            &[key(
-                67,
-                Modifiers::one(Modifier::Control)
-                    .with(Modifier::Alt)
-                    .with(Modifier::Shift),
-            )?],
-            false,
-        );
-        assert!(!owner.take_satellite_request());
-        owner.route_input(&[chord], false);
-        assert!(owner.take_satellite_request());
-        assert!(!owner.take_satellite_request(), "one request per press");
-        Ok(())
-    }
-    #[test]
-    fn satellite_escape_despawns_the_panel_so_reopening_leaves_no_orphan()
-    -> Result<(), Box<dyn std::error::Error>> {
-        let mut app = App::new();
-        app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
-            .init_asset::<Font>()
-            .init_asset::<Image>()
-            .init_resource::<ButtonInput<KeyCode>>()
-            .insert_non_send(host()?)
-            .add_systems(Startup, crate::bevy_shell::ui::setup);
-        install(&mut app);
-        let modals = |app: &mut App| {
-            app.world_mut()
-                .query::<&super::super::GameModal>()
-                .iter(app.world())
-                .count()
-        };
-        let open = |app: &mut App| -> Result<(), Box<dyn std::error::Error>> {
-            app.world_mut()
-                .non_send_mut::<HostOwner>()
-                .route_input(&[chord()?], false);
-            app.update();
-            Ok(())
-        };
-        app.update();
-        let base = modals(&mut app);
-        open(&mut app)?;
-        assert_eq!(modals(&mut app), base + 1);
-        app.world_mut()
-            .resource_mut::<ButtonInput<KeyCode>>()
-            .press(KeyCode::Escape);
-        app.update();
-        app.world_mut()
-            .resource_mut::<ButtonInput<KeyCode>>()
-            .clear();
-        assert_eq!(
-            modals(&mut app),
-            base,
-            "Escape must remove the blocking panel"
-        );
-        open(&mut app)?;
-        assert_eq!(modals(&mut app), base + 1);
-        Ok(())
-    }
-}
+#[path = "satellite_map_tests.rs"]
+mod tests;

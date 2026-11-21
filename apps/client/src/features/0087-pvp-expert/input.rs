@@ -12,6 +12,9 @@ pub(in crate::play) fn submit(
     commands: &UnboundedSender<PlayCommand>,
     intent: Intent,
 ) {
+    if mailbox.battle.pending {
+        return;
+    }
     let panel = &mut mailbox.properties.pvp_expert;
     if !panel.selected {
         panel.feedback = tr!("Unavailable in this session").into();
@@ -40,13 +43,7 @@ impl PlayLink {
         submit(&mut lock(&self.mailbox), &self.commands, intent);
     }
     pub fn pvp_expert_open(&self) {
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).properties.pvp_expert.open = true;
-        }
+        lock(&self.mailbox).properties.pvp_expert.open = true;
     }
     pub fn pvp_expert_input(&self, events: &[NormalizedInputEvent]) -> bool {
         if !oteryn_client_ui::pvp_expert::open_key(events) {

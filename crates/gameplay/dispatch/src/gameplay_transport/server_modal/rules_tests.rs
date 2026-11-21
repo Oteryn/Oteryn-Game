@@ -364,3 +364,84 @@ fn server_modal_input_value_reaches_the_owner_only_when_checked() -> Result<(), 
     );
     Ok(())
 }
+
+#[test]
+fn modal_defaults_roundtrip_from_server_owner_to_client_keyboard_model() -> Result<(), String> {
+    use oteryn_client_ui::server_modal::{Panel, apply_result, keyboard_button, query};
+    use oteryn_session::{CommandStatus, GatedCommandResult};
+    let hub = ModalHub::default();
+    let root = root()?;
+    hub.select_defaults(root).ok_or("select modal defaults")?;
+    let mut dialog = bed_dialog();
+    dialog.buttons = vec![
+        (8, "Other".into()),
+        (7, "Confirm".into()),
+        (2, "Cancel".into()),
+    ];
+    dialog.default_button = Some(7);
+    let legacy_dialog = dialog.clone();
+    let mut panel = Panel {
+        selected: true,
+        defaults: true,
+        ..Panel::default()
+    };
+    let request = query(&mut panel).ok_or("client query")?;
+    let payload = hub
+        .execute(root, request.kind, &request.payload, Some(dialog))
+        .ok_or("server query")?;
+    assert!(apply_result(
+        &mut panel,
+        &GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: CommandStatus::Accepted,
+            payload,
+        }
+    ));
+    assert_eq!(keyboard_button(&panel, false), Some(7));
+    assert_eq!(keyboard_button(&panel, true), Some(2));
+    let shown = panel.active.as_ref().ok_or("client dialog")?;
+    let answer = Answer {
+        dialog_id: shown.id,
+        button_id: 7,
+        choice_id: Some(shown.choices[0].0),
+    };
+    let command =
+        oteryn_client_ui::server_modal::answer(&mut panel, answer).ok_or("client answer")?;
+    let payload = hub
+        .execute(root, command.kind, &command.payload, None)
+        .ok_or("server answer")?;
+    assert!(apply_result(
+        &mut panel,
+        &GatedCommandResult {
+            command_id: 2,
+            server_sequence: 2,
+            status: CommandStatus::Accepted,
+            payload,
+        }
+    ));
+    assert!(panel.active.is_none());
+    let legacy_hub = ModalHub::default();
+    let mut legacy_panel = Panel {
+        selected: true,
+        ..Default::default()
+    };
+    let command = query(&mut legacy_panel).ok_or("legacy query")?;
+    let payload = legacy_hub
+        .execute(root, command.kind, &command.payload, Some(legacy_dialog))
+        .ok_or("legacy reply")?;
+    assert_eq!(payload.first(), Some(&1));
+    assert!(apply_result(
+        &mut legacy_panel,
+        &GatedCommandResult {
+            command_id: 1,
+            status: CommandStatus::Accepted,
+            server_sequence: 1,
+            payload
+        }
+    ));
+    assert_eq!(keyboard_button(&legacy_panel, false), None);
+    assert_eq!(keyboard_button(&legacy_panel, true), Some(2));
+
+    Ok(())
+}

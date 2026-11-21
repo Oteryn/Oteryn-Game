@@ -89,9 +89,16 @@ message NpcOfferV1 {
 
 // State domain 8, snapshot type 1 and delta type 1: the whole window, replaced. Absent npc_actor
 // is a closed window with no revision and no offers. At most 1,024 offers (NPC0-RL-03, measured
-// 757), at most 22,570 bytes.
+// 757). At most 22,570 bytes without capability 501, 170,026 bytes with it.
 message NpcTradeWindowV1 {
   oteryn.protocol.v1.world_spatial.EntityRefV1 npc_actor = 1;
   uint64 catalogue_revision = 2;
   repeated NpcOfferV1 offers = 3;
+  repeated NpcQuoteDetailsV1 details = 4; // Only with capability 501; aligned with offers.
+}
+
+// Capability 501. A zero maximum means this offer cannot be traded in this form.
+message NpcQuoteDetailsV1 {
+  string name = 1; // 1..128 UTF-8 bytes, no NUL.
+  uint32 maximum_quantity = 2; // 0..10,000.
 }

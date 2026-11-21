@@ -140,3 +140,24 @@ fn tutorial_hints_loot_death_and_departure_follow_the_seven_steps() -> Result<()
     );
     Ok(())
 }
+
+#[test]
+fn forcefield_reentry_preserves_consumed_entitlements() {
+    for (hunting, corruptor) in [(false, false), (true, false), (false, true)] {
+        let progress = TutorialProgress {
+            step: TutorialStep::Island,
+            hunting,
+            corruptor,
+        };
+        assert_eq!(
+            tutorial_transition(
+                true,
+                Some(progress),
+                TutorialEvent::Forcefield,
+                "none",
+                false
+            ),
+            None
+        );
+    }
+}

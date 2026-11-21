@@ -22,6 +22,7 @@ pub async fn run_session<T: Stepper>(
             Ok(PlayCommand::Feature(command)) => match session.feature(&command).await {
                 Ok(result) => {
                     match command.capability {
+                        502 => outbox.mount_result(),
                         10 => outbox.analyser_result(&command, &result),
                         72 => outbox.task_board_full_result(&result),
                         14 => outbox.player_trade_container_result(&result),
@@ -160,7 +161,7 @@ pub async fn run_session<T: Stepper>(
                     Err(error) => error,
                 }
             }
-            Ok(command @ (PlayCommand::Combat(_) | PlayCommand::Battle(_))) => {
+            Ok(command @ (PlayCommand::Combat(_) | PlayCommand::Battle(_) | PlayCommand::StopAttacking(_))) => {
                 match outbox.battle_run(&mut session, command).await {
                     Ok(()) => {
                         publish(&mut session, &outbox, &mut held);

@@ -137,7 +137,6 @@ fn market_controls_reach_session_and_apply_encoded_reply() -> Result<(), Error> 
 }
 
 // Native HWND creation is Windows-only; exercise shared panel lifetime and input here.
-#[cfg(not(windows))]
 #[test]
 fn depot_market_open_preserves_panels_and_ctrl_m_can_reopen() -> Result<(), Error> {
     use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
@@ -214,3 +213,6 @@ fn market_side_filter_preserves_server_offer_identity() -> Result<(), Error> {
     assert!(!link.market_filter_side(3));
     Ok(())
 }
+
+#[path = "../native.rs"]
+mod native_form;

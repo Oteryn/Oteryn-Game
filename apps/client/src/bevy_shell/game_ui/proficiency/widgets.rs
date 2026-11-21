@@ -2,19 +2,22 @@ use super::*;
 use bevy::{
     input_focus::tab_navigation::TabGroup, ui::InteractionDisabled, ui_widgets::ScrollArea,
 };
-use oteryn_client_ui::weapon_proficiency::{mastery_target, progress_level, progress_percent};
+use oteryn_client_ui::weapon_proficiency::{
+    Intent, mastery_target, progress_level, progress_percent,
+};
 use oteryn_client_ui_bevy as source;
 
 pub(super) struct Widgets {
     pub overlay: Entity,
-    window: Entity,
-    content: Option<Entity>,
+    pub(super) window: Entity,
+    pub(super) content: Option<Entity>,
 }
 pub(super) fn build(commands: &mut Commands, skin: &Skins) -> Widgets {
     let overlay = commands
         .spawn((
             Overlay,
             GameModal,
+            crate::bevy_shell::ui::window_layout::WindowLayer("proficiency"),
             GlobalZIndex(160),
             TabGroup {
                 order: 3,
@@ -28,7 +31,6 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins) -> Widgets {
                 justify_content: JustifyContent::Center,
                 ..default()
             },
-            BackgroundColor(Color::srgba(0., 0., 0., 0.45)),
         ))
         .id();
     let window = commands
@@ -67,9 +69,7 @@ pub(super) fn render(
     key: Key,
     panel: &WeaponProficiencyPanel,
 ) {
-    if let Some(content) = widgets.content.take() {
-        commands.entity(content).despawn();
-    }
+    let previous = widgets.content;
     let window = commands
         .spawn(Node {
             width: percent(100.),
@@ -92,7 +92,7 @@ pub(super) fn render(
         })
         .id();
     commands.entity(window).add_child(body);
-    let list = pane(commands, skin, body, px(280.));
+    let list = pane(commands, skin, body, px(280.), 0);
     text(commands, skin, list, "Weapons");
     if let Some(catalogue) = &panel.catalogue {
         for row in panel.visible_weapons() {
@@ -155,7 +155,7 @@ pub(super) fn render(
     } else {
         text(commands, skin, list, "No weapon catalogue received");
     }
-    let tree = pane(commands, skin, body, Val::Auto);
+    let tree = pane(commands, skin, body, Val::Auto, 1);
     if let Some(entry) = panel.weapon_entry() {
         text(commands, skin, tree, &entry.name);
         let grid = commands
@@ -223,23 +223,21 @@ pub(super) fn render(
     } else {
         text(commands, skin, tree, "Select a weapon to view its perks");
     }
+    shaping(commands, skin, tree, key, panel);
+    let mut status = Vec::new();
     if !panel.selected {
-        text(
-            commands,
-            skin,
-            window,
-            "Weapon proficiency is unavailable in this session",
-        );
+        status.push("Weapon proficiency is unavailable in this session");
     }
     if panel.pending {
-        text(commands, skin, window, "Waiting for the server…");
+        status.push("Waiting for the server…");
     }
     if let Some(feedback) = panel.feedback {
-        text(commands, skin, window, feedback);
+        status.push(feedback);
     }
     if let Some(result) = &panel.result {
-        text(commands, skin, window, result);
+        status.push(result);
     }
+    text(commands, skin, window, &status.join("\n"));
     let footer = commands
         .spawn(Node {
             width: percent(100.),
@@ -272,12 +270,185 @@ pub(super) fn render(
         "Close",
         true,
     );
+    if let Some(previous) = previous {
+        // Polls update text, progress and action fences without replacing pane/control identities.
+        commands.queue(move |world: &mut World| {
+            update_tree(world, previous, window);
+            world.despawn(window);
+        });
+        widgets.content = Some(previous);
+    }
 }
-fn pane(commands: &mut Commands, skin: &Skins, parent: Entity, width: Val) -> Entity {
+/// Committed slot shaping (modify, rank, reshape, clear) over the server's state projection.
+fn shaping(
+    commands: &mut Commands,
+    skin: &Skins,
+    parent: Entity,
+    key: Key,
+    panel: &WeaponProficiencyPanel,
+) {
+    let Some(state) = panel
+        .shaping
+        .as_ref()
+        .filter(|state| state.definition == panel.weapon)
+    else {
+        if panel.state_selected && panel.weapon != 0 {
+            text(
+                commands,
+                skin,
+                parent,
+                "Shaping: waiting for the committed slot state",
+            );
+        }
+        return;
+    };
+    let enabled = panel.selected && !panel.pending && !panel.mutation_uncertain;
+    let control = |kind| Control { key, kind };
+    text(
+        commands,
+        skin,
+        parent,
+        &format!("Shaping (revision {})", state.revision),
+    );
+    for (number, slot) in (1u8..).zip(&state.slots) {
+        let marker = if panel.slot == number { "> " } else { "" };
+        let line = match slot {
+            Some(slot) => format!(
+                "{marker}Slot {number}: level {}, rank {}\nCurrent: {}\nNext: {}\nMaximum: {}",
+                slot.level + 1,
+                slot.rank,
+                slot.current,
+                slot.next,
+                slot.maximum
+            ),
+            None => format!("{marker}Slot {number}: empty"),
+        };
+        text(commands, skin, parent, &line);
+        button(
+            commands,
+            skin,
+            parent,
+            control(Kind::Slot(number)),
+            &format!("Select slot {number}"),
+            enabled && panel.slot != number,
+        );
+    }
+    let rank_dust = state
+        .rank_dust
+        .iter()
+        .map(u32::to_string)
+        .collect::<Vec<_>>()
+        .join(" / ");
+    text(
+        commands,
+        skin,
+        parent,
+        &format!(
+            "Modify dust: {} / {} | Rank dust: {rank_dust}\nReshape dust: {} | Clear dust: {} | Orbs: {}",
+            state.modify_dust[0],
+            state.modify_dust[1],
+            state.reshape_dust,
+            state.clear_dust,
+            state.orbs
+        ),
+    );
+    if !(1..=2).contains(&panel.slot) {
+        text(commands, skin, parent, "Select a slot to shape it");
+        return;
+    }
+    let current = state
+        .slots
+        .get(usize::from(panel.slot - 1))
+        .and_then(Option::as_ref);
+    let offers = current.map_or(&[][..], |slot| slot.offers.as_slice());
+    for (choice, offer) in (0u8..).zip(offers) {
+        let chosen = panel.shaping_choice == choice;
+        button(
+            commands,
+            skin,
+            parent,
+            control(Kind::Offer(choice)),
+            &format!(
+                "{}Offer {}: {offer}",
+                if chosen { "Chosen: " } else { "" },
+                choice + 1
+            ),
+            enabled && !chosen,
+        );
+    }
+    if let Some(entry) = panel.weapon_entry() {
+        for (level, data) in entry.levels.iter().enumerate() {
+            if data.selected.is_some() {
+                button(
+                    commands,
+                    skin,
+                    parent,
+                    control(Kind::Modify(level)),
+                    &format!("Modify slot with level {} perk", level + 1),
+                    enabled,
+                );
+            }
+        }
+    }
+    let shaped = enabled && current.is_some();
+    for (intent, caption, allowed) in [
+        (Intent::RankUp, "Rank up", shaped),
+        (Intent::OrbRank, "Rank up with orb", shaped),
+        (Intent::ReshapeOffer, "Request reshape offers", shaped),
+        (
+            Intent::ReshapeChoose,
+            "Choose selected offer",
+            shaped && !offers.is_empty(),
+        ),
+        (
+            Intent::DeclineOffer,
+            "Decline offers",
+            shaped && !offers.is_empty(),
+        ),
+    ] {
+        button(
+            commands,
+            skin,
+            parent,
+            control(Kind::Shape(intent)),
+            caption,
+            allowed,
+        );
+    }
+    if panel.clear_confirmation.is_some() {
+        button(
+            commands,
+            skin,
+            parent,
+            control(Kind::Shape(Intent::ConfirmClear)),
+            &format!("Confirm clear ({} clear dust)", state.clear_dust),
+            enabled,
+        );
+        button(
+            commands,
+            skin,
+            parent,
+            control(Kind::Shape(Intent::CancelClear)),
+            "Cancel clear",
+            true,
+        );
+    } else {
+        button(
+            commands,
+            skin,
+            parent,
+            control(Kind::Shape(Intent::Clear)),
+            "Clear slot",
+            shaped,
+        );
+    }
+}
+fn pane(commands: &mut Commands, skin: &Skins, parent: Entity, width: Val, role: u32) -> Entity {
     let entity = commands
         .spawn((
             source::frame(skin.inset.clone(), [1.; 4]),
             ScrollArea,
+            crate::bevy_shell::game_ui::install::RememberScroll("proficiency", role),
             Node {
                 width,
                 min_width: px(0.),
@@ -344,4 +515,72 @@ fn button(
         .id();
     commands.entity(entity).add_child(caption);
     commands.entity(parent).add_child(entity);
+}
+
+fn copy_component<T: Component + Clone>(world: &mut World, target: Entity, source: Entity) {
+    if let Some(value) = world.get::<T>(source).cloned() {
+        world.entity_mut(target).insert(value);
+    }
+}
+fn control_identity(control: &Control) -> (u8, usize, usize) {
+    match control.kind {
+        Kind::Close => (0, 0, 0),
+        Kind::Refresh => (1, 0, 0),
+        Kind::Weapon(row) => (2, row, 0),
+        Kind::Perk(level, perk) => (3, level, perk),
+        Kind::Apply => (4, 0, 0),
+        Kind::Reset => (5, 0, 0),
+        Kind::SaveClose => (6, 0, 0),
+        Kind::DiscardClose => (7, 0, 0),
+        Kind::CancelClose => (8, 0, 0),
+        Kind::Slot(slot) => (9, usize::from(slot), 0),
+        Kind::Offer(choice) => (10, usize::from(choice), 0),
+        Kind::Modify(level) => (11, level, 0),
+        Kind::Shape(intent) => (12, intent as usize, 0),
+    }
+}
+fn same_role(world: &World, target: Entity, source: Entity) -> bool {
+    world.get::<Control>(target).map(control_identity)
+        == world.get::<Control>(source).map(control_identity)
+        && world.get::<Text>(target).is_some() == world.get::<Text>(source).is_some()
+        && world.get::<ScrollArea>(target).is_some() == world.get::<ScrollArea>(source).is_some()
+}
+fn update_tree(world: &mut World, target: Entity, source: Entity) {
+    copy_component::<Node>(world, target, source);
+    copy_component::<Text>(world, target, source);
+    copy_component::<Control>(world, target, source);
+    copy_component::<BackgroundColor>(world, target, source);
+    if world.get::<InteractionDisabled>(source).is_some() {
+        world.entity_mut(target).insert(InteractionDisabled);
+    } else {
+        world.entity_mut(target).remove::<InteractionDisabled>();
+    }
+    let before = world
+        .get::<Children>(target)
+        .map(|children| children.to_vec())
+        .unwrap_or_default();
+    let after = world
+        .get::<Children>(source)
+        .map(|children| children.to_vec())
+        .unwrap_or_default();
+    let mut retained = Vec::with_capacity(after.len());
+    for (index, child) in after.into_iter().enumerate() {
+        if let Some(old) = before
+            .get(index)
+            .copied()
+            .filter(|old| same_role(world, *old, child))
+        {
+            update_tree(world, old, child);
+            retained.push(old);
+        } else {
+            world.entity_mut(child).remove::<ChildOf>();
+            retained.push(child);
+        }
+    }
+    world.entity_mut(target).replace_children(&retained);
+    for old in before {
+        if !retained.contains(&old) {
+            world.despawn(old);
+        }
+    }
 }

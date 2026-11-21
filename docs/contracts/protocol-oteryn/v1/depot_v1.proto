@@ -8,9 +8,13 @@ message DepotIntentV1 {
   uint32 page = 3; // zero based, 32 entries, 0..468
   optional uint32 town = 4; // 0..65535; required for moves, checked against current locker
   uint64 item = 5; // deposit: session item handle; withdraw: displayed depot ordinal; browse: 0
+  // Capability 510 (container-manual-sort-v1.md) only: a deposit's slot in the box's view order.
+  optional uint32 slot = 6;
 }
 message DepotEntryV1 {
-  uint64 ordinal = 1; // nonzero, descending, never reused
+  // Nonzero and descending. With capability 510 it is an opaque per-session withdrawal
+  // ordinal bound to this exact displayed item and page. Every page reply replaces its ordinals.
+  uint64 ordinal = 1;
   uint32 definition = 2; // admitted Item reference, nonzero
   uint32 count = 3; // 1..100; whole stack consumes one entry
 }

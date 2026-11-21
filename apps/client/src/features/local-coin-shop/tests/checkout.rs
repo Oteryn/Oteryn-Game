@@ -221,3 +221,76 @@ fn coin_order_ambiguous_retry_preserves_quote_identity_and_browser_retry_creates
         Ok(())
     })
 }
+
+#[test]
+fn refreshed_tracked_order_reconciles_paid_and_validates_immutable_binding() -> TestResult {
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        let browser: Browser = Arc::new(|_| true);
+        let mut view = View::new(None);
+        mock.runtime.block_on(async {
+            controller::execute(
+                &mut view,
+                Action::Refresh,
+                &client,
+                &token,
+                &browser,
+                CancellationToken::new(),
+            )
+            .await;
+            controller::execute(
+                &mut view,
+                Action::Purchase {
+                    package_id: PACKAGE.into(),
+                    confirmed: true,
+                },
+                &client,
+                &token,
+                &browser,
+                CancellationToken::new(),
+            )
+            .await;
+        });
+        let order = view.order.clone().ok_or("order")?;
+        assert!(view.can_checkout());
+        let (body, signature) = mock.signed_event(&order, EventKind::Paid)?;
+        assert_eq!(mock.webhook(&body, &signature)?, 200);
+        mock.runtime.block_on(controller::execute(
+            &mut view,
+            Action::Refresh,
+            &client,
+            &token,
+            &browser,
+            CancellationToken::new(),
+        ));
+        let paid = view.order.clone().ok_or("paid order")?;
+        assert_eq!(paid.state, PurchaseState::Paid);
+        assert!(!view.can_checkout());
+        {
+            let mut state = mock.authority.lock().map_err(|_| "lock")?;
+            let stored = &mut state
+                .coins
+                .as_mut()
+                .ok_or("coins")?
+                .orders
+                .get_mut(&order.request_id)
+                .ok_or("stored order")?
+                .1;
+            stored.coins += 1;
+            stored.revision += 1;
+        }
+        mock.runtime.block_on(controller::execute(
+            &mut view,
+            Action::Refresh,
+            &client,
+            &token,
+            &browser,
+            CancellationToken::new(),
+        ));
+        assert_eq!(view.order, Some(paid));
+        assert!(view.feedback.contains("Coin service unavailable"));
+        Ok(())
+    })
+}

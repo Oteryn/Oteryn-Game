@@ -30,7 +30,7 @@ fn depot_exchange(container_only: bool) -> Result<(), BoxError> {
                         current_server_sequence: 0,
                         next_command_id: 7,
                         schema_revision: 1,
-                        selected_capabilities: if container_only { &[4, 6, 12, 14, 18, 37] } else { &[4, 6, 18, 37] },
+                        selected_capabilities: if container_only { &[4, 6, 12, 14, 18, 37, 510] } else { &[4, 6, 18, 37] },
                     })?,
                 )
                 .await?;
@@ -99,10 +99,15 @@ fn depot_exchange(container_only: bool) -> Result<(), BoxError> {
                     let command = envelope.client_command(1)?;
                     assert_eq!(command.command_type, COMMAND_TYPE_DEPOT_INTENT);
                     assert_eq!(command.command_id, id);
-                    let request =
-                        decode_depot_intent(command.payload).map_err(|e| format!("{e:?}"))?;
+                    // Manual Sort Mode's slot reaches the wire only with 510 (the container
+                    // variant); otherwise the session drops it and the 37-only decoder accepts.
+                    let (request, slot) = decode_depot_intent_at(command.payload, container_only)
+                        .map_err(|e| format!("{e:?}"))?;
                     if id == 8 {
                         assert_eq!(request.action, DepotAction::Deposit(handle(2)));
+                        assert_eq!(slot, container_only.then_some(4));
+                    } else {
+                        assert_eq!(slot, None);
                     }
                     let reply = encode_depot_reply(&DepotReply {
                         outcome,
@@ -177,11 +182,14 @@ fn depot_exchange(container_only: bool) -> Result<(), BoxError> {
         assert_eq!(session.depot(browse).await?.ok_or("reply")?.town, Some(0));
         assert_eq!(
             session
-                .depot(DepotIntent {
-                    town: Some(0),
-                    action: DepotAction::Deposit(handle(2)),
-                    ..browse
-                })
+                .depot_at(
+                    DepotIntent {
+                        town: Some(0),
+                        action: DepotAction::Deposit(handle(2)),
+                        ..browse
+                    },
+                    Some(4),
+                )
                 .await?
                 .ok_or("reply")?
                 .outcome,

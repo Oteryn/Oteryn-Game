@@ -3,6 +3,18 @@ use super::*;
 use oteryn_session::{EntityDetail, VisibleAppearance};
 
 impl Scene {
+    pub(crate) fn item_multi_use(&mut self, id: u16) -> bool {
+        self.cache.begin(
+            self.world.atlas(),
+            std::env::var_os(crate::map::ASSET_DIR_ENV).map(std::path::PathBuf::from),
+        );
+        self.cache.item_multi_use(id)
+    }
+
+    pub(crate) fn set_outfit_palette(&mut self, palette: &[[u8; 3]]) -> bool {
+        self.cache.set_palette(palette)
+    }
+
     pub(crate) fn set_label_scale(&mut self, percentage: u16) {
         self.label_scale = percentage;
     }
@@ -14,6 +26,16 @@ impl Scene {
         self.npc_names = npc_names;
     }
 
+    /// Tibia's game font and the atlas cells of its HUD flags, once the bundle loaded.
+    pub(crate) fn hud_graphics(
+        &self,
+    ) -> (
+        Option<Arc<oteryn_client_assets::tibia_graphics::TibiaGraphics>>,
+        Option<super::HudIconCells>,
+    ) {
+        self.cache.hud_graphics()
+    }
+
     pub(crate) fn set_name_visibility(&mut self, visibility: [bool; 3]) {
         self.name_visibility = visibility;
     }
@@ -22,12 +44,12 @@ impl Scene {
     }
 
     /// Position relative to the actual visible name, fenced by entity generation.
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     pub(crate) fn typing_position(
         &self,
         indicator: &oteryn_client_ui::player_typing::TypingIndicator,
     ) -> Option<[f32; 2]> {
-        let (_, (tile, cells)) =
+        let (entity, (tile, label)) =
             self.name_entities
                 .iter()
                 .zip(&self.names)
@@ -36,8 +58,10 @@ impl Scene {
                         && entity.generation == indicator.generation.get()
                 })?;
         let [x, y] = self.view.tile_to_screen(*tile);
+        let [dx, dy] = self.actor_offset(*entity);
+        let (x, y) = (x + dx, y + dy);
         let scale = f32::from(self.label_scale) / 100.;
-        let half_width = cells.len() as f32 * 4. * scale;
+        let half_width = label.width / 2. * scale;
         let left = (x + self.view.tile_px() as f32 / 2. - half_width).max(0.);
         Some([left + half_width + 2., (y - 14. * scale).max(0.) - 4.])
     }
@@ -64,6 +88,7 @@ impl Scene {
         }
         next.own_identity = self.own_identity;
         next.drome_hazards = std::mem::take(&mut self.drome_hazards);
+        next.actor_clocks = self.actor_clocks.clone();
         *self = next;
         Ok(())
     }
@@ -90,11 +115,19 @@ impl Scene {
         self.object_draws.clear();
         self.own_draws = None;
         self.names.clear();
-        #[cfg(feature = "bevy-shell")]
         self.name_entities.clear();
         if !entries.is_empty() {
             self.cache.begin(self.world.atlas(), root);
         }
+        self.cache.retain_outfit_actors(entries);
+        self.actor_clocks
+            .entries
+            .retain(|entity, _| entries.iter().any(|entry| entry.entity.entity == *entity));
+        // Bevy fades the retained terrain and objects in the same floor pass.
+        #[cfg(bevy_shell)]
+        let object_floors = self.world.all_draw_floors();
+        #[cfg(not(bevy_shell))]
+        let object_floors = self.world.draw_floors();
         for entry in entries {
             let entity = oteryn_client_ui::native_creature_icons::project(&entry.entity);
             if let EntityDetail::ObjectWithAppearance {
@@ -114,13 +147,28 @@ impl Scene {
                 {
                     continue;
                 }
-                if entity.position.floor == floor
+                let shift = i32::from(floor) - i32::from(entity.position.floor);
+                let draw_floor = if shift == 0 {
+                    i32::from(floor)
+                } else {
+                    i32::from(self.world.center().2) - shift
+                };
+                if let (Ok(draw_floor), Some(x), Some(y)) = (
+                    i16::try_from(draw_floor),
+                    entity.position.x.checked_sub(shift),
+                    entity.position.y.checked_sub(shift),
+                ) && (shift == 0 || object_floors.contains(&draw_floor))
                     && let Some(draws) =
                         self.cache
                             .world_item(appearance_id, entity.position, quantity)
                 {
+                    let projected = oteryn_session::ActorPosition {
+                        x,
+                        y,
+                        floor: draw_floor,
+                    };
                     self.object_draws
-                        .push((entity.position, item_definition_ref, draws));
+                        .push((projected, item_definition_ref, draws));
                 }
                 continue;
             }
@@ -131,13 +179,25 @@ impl Scene {
                 continue;
             }
             let is_own = self.own_identity == Some(entity.entity.identity);
-            if !is_own && entity.position.floor != floor {
+            let draw_floor = self
+                .world
+                .center()
+                .2
+                .saturating_add(entity.position.floor.saturating_sub(floor));
+            if !is_own
+                && entity.position.floor != floor
+                && !self.world.draw_floors().contains(&draw_floor)
+            {
                 continue;
             }
             let tile = if is_own {
                 self.own
             } else {
-                TileCoord::new(entity.position.x, entity.position.y)
+                let shift = i32::from(floor) - i32::from(entity.position.floor);
+                TileCoord::new(
+                    entity.position.x.saturating_sub(shift),
+                    entity.position.y.saturating_sub(shift),
+                )
             };
             let direction = if is_own {
                 oteryn_client_ui::diagonal_movement::facing(self.facing)
@@ -153,11 +213,32 @@ impl Scene {
                     _ => 0,
                 }
             };
-            let draws = self.cache.outfit(entry.look.as_ref(), direction);
+            let (gait, offset) = self.actor_clocks.sample(entity, is_own);
+            let mount = entity.motion.map_or(0, |motion| motion.mount_look_type);
+            let mut draws = self.cache.animated_outfit(
+                entry.look.as_ref(),
+                direction,
+                gait,
+                mount,
+                Some(entity.entity),
+            );
+            if !is_own {
+                for draw in &mut draws {
+                    draw.offset[0] += offset[0].round() as i32;
+                    draw.offset[1] += offset[1].round() as i32;
+                }
+            }
             if is_own {
                 self.own_draws = Some(draws);
             } else {
-                self.actor_draws.push((tile, draws));
+                self.actor_draws.push(ActorDraw {
+                    floor: draw_floor,
+                    tile,
+                    draws,
+                });
+            }
+            if entity.position.floor != floor {
+                continue;
             }
             let name_group = if is_own {
                 0
@@ -194,8 +275,19 @@ impl Scene {
                     label.push_str(&icons);
                 }
                 if !label.is_empty() {
-                    self.names.push((tile, self.cache.name(&label)));
-                    #[cfg(feature = "bevy-shell")]
+                    self.names.push((
+                        tile,
+                        self.cache.name(
+                            &label,
+                            match entity.detail {
+                                EntityDetail::Actor { health_percent, .. }
+                                | EntityDetail::ActorWithIcons { health_percent, .. } => {
+                                    health_percent
+                                }
+                                _ => 100,
+                            },
+                        ),
+                    ));
                     self.name_entities.push(entity.entity);
                 }
             }
@@ -216,7 +308,7 @@ impl Scene {
 #[path = "tests/scene.rs"]
 mod tests;
 
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 impl Scene {
     pub(crate) fn item_icon(&self, item: &oteryn_session::ItemEntry) -> Option<&[Draw]> {
         self.cache.item(item)

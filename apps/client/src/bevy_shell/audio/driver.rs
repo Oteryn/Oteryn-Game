@@ -11,6 +11,7 @@ pub(super) struct Player<O: Output> {
     output: Option<Result<O, String>>,
     generation: Option<u64>,
     device: Option<String>,
+    retry_after: Option<std::time::Instant>,
     ambient: Option<SoundCue>,
     focused: bool,
 }
@@ -20,6 +21,7 @@ impl<O: Output> Default for Player<O> {
             output: None,
             generation: None,
             device: None,
+            retry_after: None,
             ambient: None,
             focused: false,
         }
@@ -30,7 +32,16 @@ impl<O: Output> Player<O> {
         &mut self,
         play: Option<(u64, &mut PlayView)>,
         focused: bool,
+        open: impl FnMut(&str) -> Result<O, String>,
+    ) {
+        self.poll_at(play, focused, open, std::time::Instant::now());
+    }
+    pub(super) fn poll_at(
+        &mut self,
+        play: Option<(u64, &mut PlayView)>,
+        focused: bool,
         mut open: impl FnMut(&str) -> Result<O, String>,
+        now: std::time::Instant,
     ) {
         let Some((generation, view)) = play else {
             self.reset();
@@ -59,10 +70,17 @@ impl<O: Output> Player<O> {
             return;
         }
         let requested = &view.preferences().audio_device;
-        let changed = self.output.is_none() || self.device.as_deref() != Some(requested);
+        let changed = self.output.is_none()
+            || self.device.as_deref() != Some(requested)
+            || self.retry_after.is_some_and(|deadline| now >= deadline);
         if changed {
             self.reset();
-            self.output = Some(open(requested));
+            let output = open(requested);
+            // Bound device probing to once per second while keeping failures recoverable.
+            self.retry_after = output
+                .is_err()
+                .then(|| now + std::time::Duration::from_secs(1));
+            self.output = Some(output);
             self.device = Some(requested.clone());
         }
         if (!self.focused || changed)
@@ -92,6 +110,7 @@ impl<O: Output> Player<O> {
         self.stop();
         self.output = None;
         self.device = None;
+        self.retry_after = None;
         self.focused = false;
     }
 }

@@ -221,6 +221,7 @@ impl CharacterRecoveryStore {
                         ..current.clone()
                     } == proposed =>
             {
+                self.sync_directory()?;
                 proposed = current;
             }
             Some(current) if current.recovery_generation == expected_predecessor => {
@@ -348,7 +349,7 @@ impl CharacterRecoveryStore {
         write: bool,
         create_new: bool,
     ) -> Result<Option<File>, CharacterRecoveryError> {
-        let mut flags = OFlags::NOFOLLOW | OFlags::CLOEXEC;
+        let mut flags = OFlags::NOFOLLOW | OFlags::CLOEXEC | OFlags::NONBLOCK;
         flags |= if write { OFlags::RDWR } else { OFlags::RDONLY };
         if create_new {
             flags |= OFlags::CREATE | OFlags::EXCL;
@@ -581,6 +582,56 @@ mod tests {
     }
 
     #[test]
+    fn reconciled_successors_require_successful_directory_sync() {
+        for predecessor in [0, 1] {
+            let directory = directory("reconcile-sync");
+            let mut store =
+                CharacterRecoveryStore::open(&directory, "scope", "issuer").expect("store");
+            if predecessor == 1 {
+                drop(store.authorize_fresh_store(event(1), 100).expect("fresh"));
+            }
+            let transition = if predecessor == 0 {
+                store.authorize_fresh_store(event(2), 200)
+            } else {
+                store.begin_recovery(predecessor, event(2), 200)
+            }
+            .expect("visible successor");
+            let expected = transition.record().clone();
+            drop(transition);
+
+            // O_PATH retains openat/read access to the same directory, but its
+            // real fsync fails. A visible successor alone cannot prove durability.
+            let path_only = rustix::fs::openat(
+                &store.directory,
+                ".",
+                OFlags::PATH | OFlags::DIRECTORY | OFlags::CLOEXEC,
+                Mode::empty(),
+            )
+            .expect("path descriptor");
+            let synchronized = std::mem::replace(&mut store.directory, path_only);
+            assert!(store.sync_directory().is_err());
+            let retry = if predecessor == 0 {
+                store.authorize_fresh_store(event(2), 200)
+            } else {
+                store.begin_recovery(predecessor, event(2), 200)
+            };
+            assert!(matches!(retry, Err(CharacterRecoveryError::Unavailable)));
+            drop(retry);
+
+            store.directory = synchronized;
+            let retry = if predecessor == 0 {
+                store.authorize_fresh_store(event(2), 200)
+            } else {
+                store.begin_recovery(predecessor, event(2), 200)
+            }
+            .expect("durable reconciliation");
+            assert_eq!(retry.record(), &expected);
+            drop(retry);
+            fs::remove_dir_all(directory).expect("cleanup");
+        }
+    }
+
+    #[test]
     fn strict_successor_and_same_event_reconciliation_are_exact() {
         let directory = directory("successor");
         let store = CharacterRecoveryStore::open(&directory, "character-primary", "game-ops")
@@ -638,6 +689,59 @@ mod tests {
             Err(CharacterRecoveryError::Unavailable)
         ));
         fs::remove_dir_all(directory).expect("cleanup");
+    }
+
+    #[test]
+    fn fifo_entries_are_rejected_without_waiting_for_a_writer() {
+        for name in [RECORD_NAME, LOCK_NAME] {
+            for operation in 0..3 {
+                let directory = directory("fifo");
+                let store =
+                    CharacterRecoveryStore::open(&directory, "scope", "issuer").expect("store");
+                rustix::fs::mknodat(
+                    &store.directory,
+                    name,
+                    rustix::fs::FileType::Fifo,
+                    Mode::RUSR | Mode::WUSR,
+                    0,
+                )
+                .expect("FIFO");
+                let (sender, receiver) = std::sync::mpsc::channel();
+                let worker = std::thread::spawn(move || {
+                    let rejected = match operation {
+                        0 => matches!(
+                            store.seal_current(),
+                            Err(CharacterRecoveryError::Unavailable)
+                        ),
+                        1 => matches!(
+                            store.authorize_fresh_store(event(1), 100),
+                            Err(CharacterRecoveryError::Unavailable)
+                        ),
+                        _ => matches!(
+                            store.begin_recovery(1, event(2), 200),
+                            Err(CharacterRecoveryError::Unavailable)
+                        ),
+                    };
+                    sender.send(rejected).expect("result receiver");
+                });
+                let result = receiver.recv_timeout(std::time::Duration::from_secs(2));
+                // Release a regressed blocking open before joining, so failure
+                // reports an assertion instead of hanging the test process.
+                let writer = result.is_err().then(|| {
+                    rustix::fs::openat(
+                        rustix::fs::CWD,
+                        directory.join(name),
+                        OFlags::RDWR | OFlags::NONBLOCK | OFlags::CLOEXEC,
+                        Mode::empty(),
+                    )
+                    .expect("release blocked FIFO open")
+                });
+                worker.join().expect("reader thread");
+                drop(writer);
+                fs::remove_dir_all(directory).expect("cleanup");
+                assert_eq!(result, Ok(true), "{name}, operation {operation}");
+            }
+        }
     }
 
     #[test]

@@ -10,8 +10,8 @@
 //!
 //! Key doors also admit their source action binding. Direct USE refuses locked appearances
 //! and the reserved bindings 101/1001; matching key USE-WITH can unlock or lock them.
-//! Level and quest doors retain their own predicates; house doors and unqualified open
-//! counterparts stay outside this book.
+//! Level and quest doors retain their own predicates. Registered open counterparts retain
+//! their authored pose; house doors stay outside this book.
 
 #[path = "door/key_use_observation.rs"]
 mod key_use_observation;
@@ -44,6 +44,7 @@ pub enum PaletteDoor {
         key_door: bool,
         key_forms: Option<[EntryFacts; 2]>,
         locked: bool,
+        authored_closed: Option<EntryFacts>,
     },
 }
 
@@ -52,6 +53,7 @@ struct Door {
     /// The bundle placement key of the closed door entry.
     key: u64,
     key_forms: Option<[EntryFacts; 2]>,
+    authored_closed: Option<EntryFacts>,
     /// Crystal action id carried by the placed door; key items must match it exactly.
     action: Option<u16>,
     required_level: Option<u32>,
@@ -116,6 +118,7 @@ impl DoorBook {
             result.doors.push(Door {
                 key: door.key,
                 key_forms: door.key_forms,
+                authored_closed: door.authored_closed,
                 action: door.action,
                 required_level: door.required_level,
                 required_storage: door.required_storage,
@@ -138,6 +141,7 @@ impl DoorBook {
             .map(|door| Door {
                 key: door.key,
                 key_forms: door.key_forms,
+                authored_closed: door.authored_closed,
                 action: door.action,
                 required_level: door.required_level,
                 required_storage: door.required_storage,
@@ -168,6 +172,7 @@ impl DoorBook {
         self.doors.push(Door {
             key,
             key_forms: None,
+            authored_closed: None,
             action,
             required_level,
             required_storage,
@@ -183,6 +188,17 @@ impl DoorBook {
     pub(super) fn set_key_forms(&mut self, forms: Option<[EntryFacts; 2]>) {
         if let Some(door) = self.doors.last_mut() {
             door.key_forms = forms;
+        }
+    }
+
+    pub(super) fn set_authored_open(&mut self, closed: Option<EntryFacts>) {
+        if let Some(door) = self.doors.last_mut() {
+            door.authored_closed = closed;
+            if closed.is_some() {
+                door.closed_solid = true;
+                door.initial_state = 1;
+                door.state = AtomicU64::new(1);
+            }
         }
     }
 
@@ -283,7 +299,9 @@ impl DoorBook {
                     door.open
                 } else {
                     door.key_forms
-                        .map_or(entry, |forms| forms[usize::from(state & 3 == 2)])
+                        .map_or(door.authored_closed.unwrap_or(entry), |forms| {
+                            forms[usize::from(state & 3 == 2)]
+                        })
                 };
                 EntryFacts {
                     definition: face.definition,
@@ -458,7 +476,9 @@ pub fn door_step_out<T: Copy>(
     east_enterable: bool,
     items: &[DoorTileItem<T>],
 ) -> DoorStepOut<T> {
-    let Some(closed_id) = open_id.checked_sub(1) else {
+    let Some(closed_id) =
+        super::door_registry::closed_of(u32::from(open_id)).and_then(|id| u16::try_from(id).ok())
+    else {
         return DoorStepOut::Nothing;
     };
     let closed = u32::from(closed_id);
@@ -490,6 +510,29 @@ pub fn door_step_out<T: Copy>(
 #[cfg(test)]
 mod step_out_tests {
     use super::*;
+
+    #[test]
+    fn step_out_uses_every_nonconsecutive_registry_pair() {
+        for (closed, open) in [
+            (30033, 30035),
+            (30034, 30036),
+            (30037, 30039),
+            (30038, 30040),
+            (5749, 5748),
+            (28658, 28885),
+            (28659, 28886),
+            (39351, 39353),
+            (39352, 39354),
+        ] {
+            assert_eq!(
+                door_step_out::<u8>(open, AT, false, true, &[]),
+                DoorStepOut::Close {
+                    item_moves: vec![],
+                    closed_id: closed
+                }
+            );
+        }
+    }
 
     const AT: TilePos = TilePos {
         x: 6,
@@ -881,3 +924,70 @@ mod tests {
 #[cfg(test)]
 #[path = "door/key_use_observation_tests.rs"]
 mod key_use_observation_tests;
+
+#[cfg(test)]
+mod authored_open_tests {
+    use super::*;
+    use crate::map::facts::{BundleFacts, ItemDefinition};
+    use crate::map::view::MapFacts;
+
+    #[test]
+    fn authored_open_doors_boot_open_and_close_to_registered_pose()
+    -> Result<(), Box<dyn std::error::Error>> {
+        for (closed, open, action) in [
+            (1629, 1630, None),
+            (1640, 1641, None),
+            (1632, 1633, Some(4321)),
+            (30033, 30035, Some(1050)),
+            (5749, 5748, Some(4500)),
+        ] {
+            let key = format!("oteryn:item.tibia.i{open}");
+            let (bytes, _) =
+                crate::map::boot::tests::bundle_with_items(&key, "oteryn:item.tibia.i1000");
+            let mut data = oteryn_world_bundle::bundle::read(&bytes)?;
+            for tile in data.sectors.iter_mut().flat_map(|s| &mut s.tiles) {
+                if tile.x == 6 {
+                    tile.items.last_mut().ok_or("door")?.attrs.action = action;
+                }
+            }
+            let mut facts = BundleFacts::palette(&data.manifest, |name| {
+                let appearance = crate::map::palette_appearance(name)?;
+                let solid = u32::from(appearance) != open;
+                Some(ItemDefinition {
+                    reference: std::num::NonZeroU32::new(if name == key { 1 } else { 2 })?,
+                    solid: Some(solid),
+                    blocks_projectile: solid,
+                    pickupable: false,
+                    door: name == key,
+                })
+            })
+            .map_err(|e| format!("{e:?}"))?;
+            let mut blocked = Default::default();
+            for sector in &data.sectors {
+                facts.push(&data.manifest, sector, &mut blocked);
+            }
+            facts.finish();
+            let at = TilePos {
+                x: 6,
+                y: 0,
+                floor: -7,
+            };
+            let placement = crate::map::view::placement_key(at, 1).ok_or("key")?;
+            assert!(facts.doors().contains(placement), "open {open}");
+            assert!(!facts.doors().blocks(at));
+            assert_eq!(
+                facts.doors().toggle(placement, 0, false, 100, true),
+                Some(DoorUse::Toggled {
+                    revision: 1,
+                    open: false
+                })
+            );
+            assert_eq!(
+                facts.base_entry(at, 1, 0).ok_or("entry")?.appearance_id,
+                closed
+            );
+            assert!(facts.doors().blocks(at));
+        }
+        Ok(())
+    }
+}

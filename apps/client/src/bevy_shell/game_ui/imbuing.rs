@@ -1,4 +1,5 @@
 //! Imbuing shrine presentation over the retained model and existing commands.
+mod costs;
 #[cfg(test)]
 mod tests;
 mod widgets;
@@ -24,6 +25,7 @@ struct Control {
 enum Kind {
     Close,
     Refresh,
+    Tracker,
     Item(ItemHandle),
     Slot(u8),
     BaseType(u8),
@@ -38,24 +40,46 @@ struct Selection {
     slot: Option<u8>,
     offer: Option<usize>,
     base_type: Option<u8>,
-    confirmation: Option<ImbuePanel>,
+    confirmation: Option<(ImbuePanel, Intent)>,
 }
 impl Selection {
+    fn same_terms(expected: &ImbuePanel, current: &ImbuePanel) -> bool {
+        expected.item == current.item
+            && expected.slot == current.slot
+            && expected.offer == current.offer
+            && expected.window == current.window
+            && expected.details == current.details
+            && expected.success == current.success
+            && expected.success_selected == current.success_selected
+            && expected.selected == current.selected
+            && expected.pending == current.pending
+            && expected.refresh_required == current.refresh_required
+    }
     fn can_apply(&self, panel: &ImbuePanel) -> bool {
         self.slot == Some(panel.slot) && self.offer == Some(panel.offer) && panel.can_apply()
     }
     fn intent(&mut self, panel: &ImbuePanel, kind: Kind) -> Option<Intent> {
         match kind {
-            Kind::Apply if self.can_apply(panel) => Some(Intent::Apply),
+            Kind::Apply if self.can_apply(panel) => {
+                self.confirmation = Some((panel.clone(), Intent::Apply));
+                None
+            }
             Kind::Clear if panel.can_clear() => {
-                self.confirmation = Some(panel.clone());
+                self.confirmation = Some((panel.clone(), Intent::Clear));
                 None
             }
             Kind::Confirm => self
                 .confirmation
                 .take()
-                .filter(|expected| expected == panel && panel.can_clear())
-                .map(|_| Intent::Clear),
+                .filter(|(expected, intent)| {
+                    Self::same_terms(expected, panel)
+                        && match intent {
+                            Intent::Apply => self.can_apply(panel),
+                            Intent::Clear => panel.can_clear(),
+                            Intent::Refresh => false,
+                        }
+                })
+                .map(|(_, intent)| intent),
             _ => {
                 self.confirmation = None;
                 None
@@ -74,7 +98,34 @@ struct State {
     dirty: bool,
 }
 pub(super) fn install(app: &mut App) {
-    app.init_resource::<State>().add_systems(Update, project);
+    app.init_resource::<State>().add_systems(
+        Update,
+        (escape.after(crate::bevy_shell::input::route), project).chain(),
+    );
+}
+fn escape(
+    owner: NonSend<HostOwner>,
+    guard: ModalGuard,
+    keys: Option<Res<ButtonInput<KeyCode>>>,
+    mut state: ResMut<State>,
+) {
+    if !keys
+        .as_ref()
+        .is_some_and(|keys| keys.just_pressed(KeyCode::Escape))
+        || owner.modal_active()
+        || state.generation != owner.generation()
+        || !state.root.is_some_and(|root| guard.allows(root))
+    {
+        return;
+    }
+    // A pending confirmation is cancelled first; otherwise close against the live panel.
+    if state.selection.confirmation.take().is_some() {
+        state.dirty = true;
+    } else if let Some(play) = &owner.play {
+        state.dirty = true;
+        play.link
+            .imbue_dispatch_bound(&play.link.imbue_panel(), ImbueViewAction::Close);
+    }
 }
 fn slot_rows(panel: &ImbuePanel) -> Vec<String> {
     panel.window.as_ref().map_or_else(Vec::new, |window| {
@@ -162,7 +213,11 @@ fn project(
         .selection
         .confirmation
         .as_ref()
-        .is_some_and(|expected| Some(expected) != panel.as_ref())
+        .is_some_and(|(expected, _)| {
+            panel
+                .as_ref()
+                .is_none_or(|current| !Selection::same_terms(expected, current))
+        })
     {
         state.selection.confirmation = None;
     }
@@ -220,6 +275,10 @@ fn perform(owner: &HostOwner, state: &mut State, control: &Control) {
     let action = match control.kind {
         Kind::Close => ImbueViewAction::Close,
         Kind::Refresh => ImbueViewAction::Request(Intent::Refresh),
+        Kind::Tracker => {
+            play.link.open_imbue_tracker();
+            return;
+        }
         Kind::Item(item) => ImbueViewAction::Item(item),
         Kind::Slot(slot) => {
             state.selection.confirmation = None;

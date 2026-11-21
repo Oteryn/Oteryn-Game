@@ -45,3 +45,76 @@ fn relocation_carrier_refuses_players_and_stale_snapshots_without_mutation()
     assert_eq!(runtime.read_actor_position(creature)?, after);
     Ok(())
 }
+
+#[test]
+fn bundle_step_rechecks_creature_occupancy() -> Result<(), Box<dyn Error>> {
+    let world = WorldId::decode(&uuid_v7(20))?;
+    let room = crate::content::qualify_native_entry_room(world)?;
+    let cells = crate::map::spell_tiles::tests::movement_arena::world()
+        .movement_cells(room.movement_cells())?;
+    let pin =
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::from_activation(
+            world,
+            1,
+            cells.scope().generation_digest,
+            [2; 32],
+            [3; 32],
+            [4; 32],
+            (4, 5, 7),
+        );
+    let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+        world,
+        ChannelId::decode(&uuid_v7(21))?,
+        NodeId::decode(&uuid_v7(22))?,
+        7,
+        3,
+        11,
+        "runtime-scope-assignment:11",
+        3,
+        pin,
+    )?;
+    let session = GameSessionId::decode(&uuid_v7(30))?;
+    let reserved = runtime.reserve_fresh_session(session)?;
+    let actor = runtime.commit_fresh_session(reserved)?;
+    runtime.initialize_first_entry_position(actor)?;
+    let before = runtime.read_actor_position(actor)?;
+    let closed = std::collections::BTreeSet::new();
+    assert!(!runtime.actor_spell_reserved(actor));
+    assert_eq!(
+        cells.scope().generation_digest,
+        runtime.content_pin().server_artifact_digest()
+    );
+    assert_eq!(before.context(), runtime.pinned_movement_context());
+    assert!(
+        runtime
+            .player_control_facts(actor, session)
+            .is_ok_and(|f| f.control_loss.is_none())
+    );
+    let proof = crate::map::floor::prepare_bundle_step(
+        &runtime,
+        &cells,
+        actor,
+        session,
+        before,
+        CardinalStep::East,
+        false,
+        &closed,
+    )?;
+    runtime.admit_pinned_test_creature(proof.destination())?;
+    assert!(runtime.commit_source_step(proof).is_err());
+    assert_eq!(runtime.read_actor_position(actor)?, before);
+    assert!(matches!(
+        crate::map::floor::prepare_bundle_step(
+            &runtime,
+            &cells,
+            actor,
+            session,
+            before,
+            CardinalStep::East,
+            false,
+            &closed,
+        ),
+        Err(MovementError::Blocked)
+    ));
+    Ok(())
+}

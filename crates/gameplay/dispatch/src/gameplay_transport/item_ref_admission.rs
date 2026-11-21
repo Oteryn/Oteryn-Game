@@ -109,7 +109,8 @@ fn native_corpse_appearance(
 }
 
 /// MAP-ITEM-REF-1 Part B: the bound corpses of the Channel as D85 objects (entity generation 0),
-/// read under the caller's runtime lock. A corpse whose definition the pinned index does not name
+/// read under the caller's runtime lock. Positions are in the runtime movement frame.
+/// A corpse whose definition the pinned index does not name
 /// is left out; with capability 4 not offered, or no pinned index, there are none.
 pub(super) fn visible_corpses(
     runtime: &ChannelRuntimeV1,
@@ -133,6 +134,7 @@ pub(super) fn visible_corpses(
             Some(ChannelEntity {
                 source_icons:
                     oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(),
+                motion: None,
                 display_name: None,
                 health_percent: 100,
                 direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,

@@ -129,6 +129,29 @@ impl DurabilityRoot {
         item: [u8; 16],
     ) -> std::result::Result<std::result::Result<LoopMoveReceipt, LoopMoveRefusal>, DurabilityError>
     {
+        self.commit_depot_move_at(
+            permit, recovery, node, fence, command, content, access, item, None,
+        )
+        .await
+    }
+
+    /// CONTAINER-MANUAL-SORT-1 (capability 510): a deposit with a `slot` places its entry at
+    /// that slot of the box's view order in the same transaction
+    /// (`container_sort::place_at_depot_slot`). A withdrawal ignores the slot.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_depot_move_at<C: ItemLoopContent>(
+        &self,
+        permit: &SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: &CurrentCharacterItemFence,
+        command: CommandRef,
+        content: &C,
+        access: DepotMove,
+        item: [u8; 16],
+        slot: Option<u32>,
+    ) -> std::result::Result<std::result::Result<LoopMoveReceipt, LoopMoveRefusal>, DurabilityError>
+    {
         if !(1..=DEPOT_BOXES).contains(&access.box_number) {
             return Ok(Err(LoopMoveRefusal::Rejected));
         }
@@ -147,6 +170,7 @@ impl DurabilityRoot {
             },
             Some(access),
             None,
+            slot.filter(|_| access.deposit),
         )
         .await
     }

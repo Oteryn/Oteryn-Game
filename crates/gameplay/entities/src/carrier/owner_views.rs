@@ -590,6 +590,9 @@ impl ChannelRuntimeV1 {
             return Err(CarrierError::PositionContextMismatch);
         }
         let cell = snapshot.position();
+        if self.position_occupied_by_other(actor, cell)? {
+            return Ok(false);
+        }
         for (i, slot) in self.carrier.slots.iter().enumerate() {
             if i == index {
                 continue;

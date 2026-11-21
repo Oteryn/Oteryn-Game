@@ -70,7 +70,6 @@ impl SceneLighting {
         Ok(())
     }
     /// Maximum channel contribution, with a linear radial falloff in screen pixels.
-    /// Sampling once per sprite keeps the native tile presentation deterministic.
     #[must_use]
     pub fn sample(&self, position: [f32; 2]) -> [f32; 3] {
         let mut rgb = self.ambient.map(|v| f32::from(v) / 255.0);
@@ -104,6 +103,27 @@ impl SceneLighting {
     /// Terrain ignores overlay opacity; all other painter-order rules are identical.
     #[must_use]
     pub fn quad_tint(&self, quad: &QuadInstance, index: usize, layer: QuadLayer) -> [f32; 4] {
+        self.quad_tint_at(
+            quad,
+            index,
+            layer,
+            [
+                quad.position[0] + quad.size[0] / 2.,
+                quad.position[1] + quad.size[1] / 2.,
+            ],
+        )
+    }
+
+    /// Continuous screen-space light for interpolated vertices, retaining the original
+    /// quad's emissivity, floor dimming and painter-order opacity rules.
+    #[must_use]
+    pub fn quad_tint_at(
+        &self,
+        quad: &QuadInstance,
+        index: usize,
+        layer: QuadLayer,
+        position: [f32; 2],
+    ) -> [f32; 4] {
         let emissive = self.emissive_from.is_some_and(|start| index >= start)
             || self.palette.is_some_and(|p| {
                 quad.uv[0] >= p[0] && quad.uv[1] >= p[1] && quad.uv[2] <= p[2] && quad.uv[3] <= p[3]
@@ -111,10 +131,7 @@ impl SceneLighting {
         let rgb = if emissive {
             [1.0; 3]
         } else {
-            self.sample([
-                quad.position[0] + quad.size[0] / 2.0,
-                quad.position[1] + quad.size[1] / 2.0,
-            ])
+            self.sample(position)
         };
         let brightness = self
             .dimmed
@@ -297,6 +314,7 @@ mod tint_tests {
             };
             for (index, quad) in instances.iter().enumerate() {
                 let tint = lighting.quad_tint(quad, index, layer);
+                assert_eq!(lighting.quad_tint_at(quad, index, layer, [0.; 2]), tint);
                 let alpha = if layer == QuadLayer::Terrain {
                     1.
                 } else {
@@ -320,5 +338,42 @@ mod tint_tests {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod smooth_tests {
+    use super::*;
+
+    #[test]
+    fn world_sprite_samples_vary_continuously_across_tile_and_sprite_boundaries() {
+        let lighting = SceneLighting {
+            ambient: [0; 3],
+            sources: vec![PointLight {
+                position: [0., 16.],
+                radius: 64.,
+                color: [255; 3],
+            }],
+            ..SceneLighting::default()
+        };
+        let quad = QuadInstance {
+            position: [0.; 2],
+            size: [32.; 2],
+            uv: [0., 0., 0.25, 0.25],
+        };
+        let left = lighting.quad_tint_at(&quad, 0, QuadLayer::Terrain, [0., 16.]);
+        let edge = lighting.quad_tint_at(&quad, 0, QuadLayer::Terrain, [32., 16.]);
+        let near = lighting.quad_tint_at(&quad, 0, QuadLayer::Terrain, [31.99, 16.]);
+        assert_eq!(left, [1.; 4]);
+        assert!(left[0] > edge[0]);
+        assert!((edge[0] - near[0]).abs() < 0.001);
+        let adjacent = QuadInstance {
+            position: [32., 0.],
+            ..quad
+        };
+        assert_eq!(
+            edge,
+            lighting.quad_tint_at(&adjacent, 1, QuadLayer::Terrain, [32., 16.])
+        );
     }
 }

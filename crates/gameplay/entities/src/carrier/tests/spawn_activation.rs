@@ -331,3 +331,61 @@ fn realize_spawn_with_an_invalid_context_mutates_nothing() {
         .realize_spawn(&continuity, SpawnSourceId(1), d116_definition(), context)
         .expect("a valid context still realizes the spawn afterward");
 }
+
+#[test]
+fn disconnected_present_players_block_respawns_and_staff_ghosts_do_not() {
+    for disconnected in [true, false] {
+        for ghost in [false, true] {
+            let mut runtime = spawned_runtime(den_definition().with_blockable(true));
+            let dead = den_creature(&runtime).expect("rat");
+            kill_creature(&mut runtime, dead);
+            place_player(
+                &mut runtime,
+                40,
+                MovementLocalPosition {
+                    x: 0,
+                    y: 0,
+                    floor: 7,
+                },
+            );
+            let actor = runtime
+                .positioned_actor_census()
+                .expect("census")
+                .into_iter()
+                .find(|(_, _, session_id)| *session_id == Some(session(40)))
+                .map(|(actor, _, _)| actor)
+                .expect("player");
+            runtime
+                .set_staff_visibility(actor, session(40), ghost, false)
+                .expect("staff visibility");
+            if disconnected {
+                runtime
+                    .record_control_loss(
+                        actor,
+                        session(40),
+                        ControlLossMark {
+                            epoch: 1,
+                            grace_deadline: 160,
+                        },
+                    )
+                    .expect("control loss");
+            }
+            runtime
+                .drive_spawn_respawns(0, reference_view)
+                .expect("observe");
+            let report = runtime
+                .drive_spawn_respawns(SPAWN_DELAY, reference_view)
+                .expect("due");
+            assert_eq!(
+                report.blocked,
+                usize::from(!ghost),
+                "disconnected={disconnected}, ghost={ghost}"
+            );
+            assert_eq!(
+                report.admitted.len(),
+                usize::from(ghost),
+                "disconnected={disconnected}, ghost={ghost}"
+            );
+        }
+    }
+}

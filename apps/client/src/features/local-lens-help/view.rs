@@ -40,7 +40,7 @@ impl PlayView {
         {
             return Some("minimap");
         }
-        let tile = self.scene().view().screen_to_tile(x, y)?;
+        let tile = self.click_tile(f64::from(x), f64::from(y))?;
         let creature = self.entities.iter().any(|entity| {
             entity.kind == oteryn_session::EntityKind::Creature
                 && entity.position.floor == self.floor

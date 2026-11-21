@@ -21,6 +21,7 @@ pub(super) fn encode(
     dispatch: &mut Dispatch,
 ) -> Result<Vec<u8>, ServeEnd> {
     session.integrity.observe(dispatch);
+    inventory_capacity::reread_after_command(session, command.command_type, dispatch);
     let (status, result_payload) = match dispatch {
         Dispatch::ServerModal(
             crate::gameplay_transport::server_modal::ServerModalOutcome::Reply(payload)
@@ -269,6 +270,15 @@ pub(super) fn encode(
         Dispatch::Guild(payload) | Dispatch::Highscores(HighscoresReply::Result(payload)) => {
             (CommandStatus::Accepted, std::mem::take(payload))
         }
+        // An unavailable input permit can refuse a core STEP before it reaches movement.
+        Dispatch::Unregistered if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT => (
+            CommandStatus::Rejected,
+            encode_step_outcome(
+                session.selected_capabilities.as_slice(),
+                StepDisposition::Rejected,
+                0,
+            ),
+        ),
         Dispatch::Unregistered
             if command.command_type
                 == oteryn_protocol_oteryn::appearance::COMMAND_TYPE_APPEARANCE_CHANGE

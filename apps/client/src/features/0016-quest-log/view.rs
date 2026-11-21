@@ -38,33 +38,16 @@ impl PlayLink {
     }
 }
 
-#[cfg(windows)]
-#[path = "native.rs"]
-mod native;
-#[cfg(windows)]
-pub(in crate::play) use native::open_window;
 
-#[cfg(windows)]
-#[path = "native/tracker.rs"]
-mod tracker;
 
 impl PlayLink {
     pub fn open_quest_tracker(&self) {
         self.quest_request(&oteryn_client_ui::quest_log::QuestLogQuery::ListOnly);
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            tracker::open(
-                std::sync::Arc::downgrade(&self.mailbox),
-                self.commands.clone(),
-            );
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).quest.tracker_open = true;
-        }
+        lock(&self.mailbox).quest.tracker_open = true;
     }
 }
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl crate::play::Outbox {
     pub(crate) fn bevy_journal_quest_state(
         &self,
@@ -73,7 +56,7 @@ impl crate::play::Outbox {
         self.quest_initialize(state);
     }
 }
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl crate::play::Outbox {
     pub(crate) fn bevy_journal_quest_result(&self, result: &oteryn_session::GatedCommandResult) {
         self.quest_result(result);

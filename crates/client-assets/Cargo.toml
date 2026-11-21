@@ -12,10 +12,16 @@ publish.workspace = true
 category = "client-assets"
 release-role = "production"
 
+[features]
+# The generated graphics bundle for tests of dependent crates.
+test-support = []
+
 [dependencies]
+flate2.workspace = true
 lzma-rs.workspace = true
 oteryn-client-domain = { version = "=0.1.0", path = "../client-domain" }
 oteryn-world-bundle = { version = "=0.1.0", path = "../world-bundle" }
+png.workspace = true
 prost.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true

@@ -9,6 +9,7 @@ use rustix::fd::{AsFd, OwnedFd};
 use rustix::fs::{AtFlags, CWD, FileType, Mode, OFlags, Uid};
 use std::io::{Read, Write};
 use std::path::{Component, Path};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 /// What a checked file may be.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -170,6 +171,9 @@ pub fn read_in_owned_by_any(
         return Err(FileError::Owner);
     }
     check_file(&stat, class, stat.st_uid)?;
+    // A publisher may have linked the synchronized file but not yet synced its directory.
+    // Make that entry durable before a retained-request reader can act on it.
+    rustix::fs::fsync(directory).map_err(|_| FileError::Unavailable)?;
     read_bounded(file, max)
 }
 
@@ -245,7 +249,7 @@ pub fn open_state_directory(path: &Path, invoking: u32) -> Result<OwnedFd, FileE
 /// no symbolic-link following, mode 0600. When `hand_to` names a user, the
 /// ownership is transferred through the open descriptor before any content is
 /// written. The file and directory are synchronized. A failure after creation
-/// removes the partial file.
+/// removes the temporary file. Publication never replaces an existing entry.
 pub fn create_exclusive(
     directory: &OwnedFd,
     name: &str,
@@ -255,15 +259,26 @@ pub fn create_exclusive(
     if !valid_entry_name(name) {
         return Err(FileError::InvalidPath);
     }
-    let file = match rustix::fs::openat(
-        directory,
-        name,
-        OFlags::WRONLY | OFlags::CREATE | OFlags::EXCL | OFlags::NOFOLLOW | OFlags::CLOEXEC,
-        Mode::from_raw_mode(0o600),
-    ) {
-        Ok(file) => file,
-        Err(rustix::io::Errno::EXIST) => return Err(FileError::Exists),
-        Err(_) => return Err(FileError::Unavailable),
+    static NEXT_TEMPORARY: AtomicU64 = AtomicU64::new(0);
+    let (temporary, file) = loop {
+        let temporary = format!(
+            ".retained-{}-{}",
+            std::process::id(),
+            NEXT_TEMPORARY.fetch_add(1, Ordering::Relaxed)
+        );
+        if temporary == name {
+            continue;
+        }
+        match rustix::fs::openat(
+            directory,
+            &temporary,
+            OFlags::WRONLY | OFlags::CREATE | OFlags::EXCL | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+            Mode::from_raw_mode(0o600),
+        ) {
+            Ok(file) => break (temporary, file),
+            Err(rustix::io::Errno::EXIST) => continue,
+            Err(_) => return Err(FileError::Unavailable),
+        }
     };
     let written = (|| {
         if let Some(owner) = hand_to {
@@ -275,10 +290,23 @@ pub fn create_exclusive(
             .write_all(content)
             .map_err(|_| FileError::Unavailable)?;
         handle.sync_all().map_err(|_| FileError::Unavailable)?;
+        rustix::fs::renameat_with(
+            directory,
+            &temporary,
+            directory,
+            name,
+            rustix::fs::RenameFlags::NOREPLACE,
+        )
+        .map_err(|error| match error {
+            rustix::io::Errno::EXIST => FileError::Exists,
+            _ => FileError::Unavailable,
+        })?;
         rustix::fs::fsync(directory.as_fd()).map_err(|_| FileError::Unavailable)
     })();
     if written.is_err() {
-        let _ = rustix::fs::unlinkat(directory, name, AtFlags::empty());
+        // After publication, a directory-sync error is ambiguous: keep the complete
+        // request for reconciliation rather than remove a file a reader may have used.
+        let _ = rustix::fs::unlinkat(directory, &temporary, AtFlags::empty());
         let _ = rustix::fs::fsync(directory.as_fd());
     }
     written
@@ -393,6 +421,42 @@ mod tests {
             Err(FileError::Mode)
         );
         std::fs::remove_dir_all(&directory).expect("cleanup");
+    }
+
+    #[test]
+    fn concurrent_retained_reader_never_observes_partial_publication() {
+        let me = effective_uid();
+        let directory = scratch("atomic-publication");
+        let handle = open_state_directory(&directory, me).expect("state directory");
+        let writer_directory = open_state_directory(&directory, me).expect("writer directory");
+        let content = vec![b'x'; 32 << 20];
+        let length = content.len();
+        let done = std::sync::atomic::AtomicBool::new(false);
+        let partial = std::thread::scope(|scope| {
+            let writer = scope.spawn(|| {
+                let result = create_exclusive(&writer_directory, "request", Some(me), &content);
+                done.store(true, std::sync::atomic::Ordering::Release);
+                result
+            });
+            let mut partial = false;
+            while !done.load(std::sync::atomic::Ordering::Acquire) {
+                match read_in_owned_by_any(&handle, "request", FileClass::Secret, &[me], length) {
+                    Ok(bytes) => {
+                        partial |= bytes.len() != length || bytes.iter().any(|b| *b != b'x')
+                    }
+                    Err(error) => assert_eq!(error, FileError::Missing),
+                }
+                std::thread::yield_now();
+            }
+            writer.join().expect("writer thread").expect("publication");
+            partial
+        });
+        assert_eq!(
+            read_in_owned_by_any(&handle, "request", FileClass::Secret, &[me], length),
+            Ok(content)
+        );
+        std::fs::remove_dir_all(directory).expect("cleanup");
+        assert!(!partial, "retained reader observed an incomplete request");
     }
 
     #[test]

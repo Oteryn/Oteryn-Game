@@ -422,6 +422,21 @@ pub async fn prove_current_incarnation(
     .await?)
 }
 
+/// Currentness as of a read-only snapshot; never a writer's incarnation proof.
+pub(super) async fn observe_current_incarnation(
+    transaction: &mut Transaction<'_, Postgres>,
+    proof: &NodeIncarnationProof,
+) -> Result<bool, DurabilityError> {
+    Ok(sqlx::query_scalar(
+        "SELECT game_node_prove_observed_incarnation(encode($1, 'hex')::uuid, $2::text::numeric(20,0), $3)",
+    )
+    .bind(proof.fact.node_id.as_bytes().as_slice())
+    .bind(proof.fact.registration_revision.to_string())
+    .bind(proof.secret.0.as_slice())
+    .fetch_one(&mut **transaction)
+    .await?)
+}
+
 /// Control-plane currentness check of an assignment target (no possession).
 async fn lock_current_registration(
     transaction: &mut Transaction<'_, Postgres>,

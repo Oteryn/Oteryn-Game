@@ -22,6 +22,10 @@ pub struct SpellHotkeys {
 }
 impl SpellHotkeys {
     pub fn new() -> Result<Self, InputError> {
+        Self::with_repeat_policy(RepeatPolicy::Allow)
+    }
+
+    pub fn with_repeat_policy(repeat: RepeatPolicy) -> Result<Self, InputError> {
         let gameplay = ContextId::new("spell-gameplay".to_owned())?;
         let text = ContextId::new("spell-text".to_owned())?;
         let mut bindings = Vec::new();
@@ -33,7 +37,7 @@ impl SpellHotkeys {
                     vec![InputAtom::Key(KeyCode::new(FIRST_DIGIT_KEY + slot - 1)?)],
                 )?,
                 ActionId::new(format!("{ACTION_PREFIX}{slot}"))?,
-                RepeatPolicy::Ignore,
+                repeat,
             ));
         }
         let map = BindingMap::new(
@@ -55,7 +59,7 @@ impl SpellHotkeys {
         events
             .iter()
             .flat_map(|event| self.router.process(event))
-            .filter(|action| action.phase() == ActionPhase::Started)
+            .filter(|action| matches!(action.phase(), ActionPhase::Started | ActionPhase::Repeated))
             .filter_map(|action| {
                 action
                     .action()

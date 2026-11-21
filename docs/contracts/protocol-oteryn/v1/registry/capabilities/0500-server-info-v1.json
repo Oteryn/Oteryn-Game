@@ -1,0 +1,13 @@
+{
+  "id": 500,
+  "name": "SERVER_INFO_V1",
+  "owner_decision": "srvinfo Tibia Global presentation",
+  "owner": "Game gameplay owners",
+  "requires": [],
+  "command_types": [
+    6241
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only; read-only admitted session facts."
+}

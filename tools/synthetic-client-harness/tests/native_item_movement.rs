@@ -48,7 +48,7 @@ impl Stepper for Items {
             assert_eq!(request.count, Some(7));
             assert!(matches!(
                 request.destination,
-                ItemMoveDestination::Container(_)
+                ItemMoveDestination::Container(..)
             ));
             self.inventory.entries[0].count =
                 13.try_into().map_err(|_| SessionError::SessionUnusable)?;
@@ -120,6 +120,7 @@ fn scenario() -> Result<(), String> {
     }));
     link.item_drag_drop(Some(ItemMoveDestination::Container(
         3.try_into().map_err(|_| "container")?,
+        None,
     )));
     assert!(link.item_movement().prompt.is_some());
     link.item_move_confirm(Some(0));

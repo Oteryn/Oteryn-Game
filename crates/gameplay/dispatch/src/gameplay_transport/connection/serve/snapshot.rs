@@ -297,7 +297,11 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
             ));
         };
         let mut view = SessionVisibility::with_objects(item_view.is_some())
-            .lit(selected_capabilities.contains(CAPABILITY_WORLD_LIGHT_V1));
+            .lit(selected_capabilities.contains(CAPABILITY_WORLD_LIGHT_V1))
+            .with_motion(
+                selected_capabilities
+                    .contains(oteryn_protocol_oteryn::actor_motion::CAPABILITY_ACTOR_MOTION_V1),
+            );
         let Some(encoded) = appearances
             .initial(
                 authority,

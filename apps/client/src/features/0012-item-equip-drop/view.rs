@@ -1,9 +1,4 @@
 //! Equipment shares the inventory window and the production cross-window drag bridge.
-#[cfg(windows)]
-#[path = "native.rs"]
-mod native;
-#[cfg(windows)]
-pub(in crate::play) use native::Slots;
 
 impl crate::play::PlayLink {
     #[must_use]

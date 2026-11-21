@@ -32,6 +32,7 @@ impl SettingsState {
         prefs.controls.movement = options.movement;
         prefs.controls.mouse = options.mouse;
         prefs.ui_scale = options.world_zoom;
+        prefs.performance = Default::default();
         prefs.frames.foreground = options.foreground_fps;
         prefs.frames.background = options.background_fps;
         prefs.foreground_fps = options.foreground_fps;
@@ -54,7 +55,8 @@ mod tests {
     fn basic_options_groups_save_atomically_and_drive_live_consumers()
     -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(BASIC_GROUPS, ["Gameplay", "Interface", "Graphics", "Sound"]);
-        let path = std::env::temp_dir().join(format!("basic-options-{}.json", std::process::id()));
+        let fixture = crate::play::screenshot::TestDir::new()?;
+        let path = fixture.join("basic-options.json");
         let mut state = SettingsState::new(Some(path.clone()));
         let mut options = BasicOptions::from(&state.preferences);
         options.movement = MovementKeys::ArrowsAndWasd;

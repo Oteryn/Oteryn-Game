@@ -15,9 +15,12 @@ impl Scene {
         floor: i16,
     ) -> Result<(VisualFrames, bool), BatchError> {
         let visible = |kind| match kind {
-            PresentationEventKind::MagicEffect { position, .. } => position.floor == floor,
+            PresentationEventKind::MagicEffect { position, .. } => {
+                position.floor == floor || self.world.draw_floors().contains(&position.floor)
+            }
             PresentationEventKind::Missile { from, to, .. } => {
-                from.floor == floor && to.floor == floor
+                from.floor == to.floor
+                    && (from.floor == floor || self.world.draw_floors().contains(&from.floor))
             }
             _ => false,
         };
@@ -81,4 +84,15 @@ impl Scene {
     pub(crate) fn prime_visual_assets(&mut self, root: std::path::PathBuf) {
         self.cache.begin(self.world.atlas(), Some(root));
     }
+
+    pub(crate) fn prime_tibia_graphics(
+        &mut self,
+        root: std::path::PathBuf,
+        pins: oteryn_client_assets::tibia_graphics::GraphicsPins,
+    ) {
+        self.cache.graphics_pins = Some(pins);
+        self.cache.begin(self.world.atlas(), Some(root));
+    }
 }
+
+include!("scene_lights.rs");

@@ -43,6 +43,7 @@ fn ground_prompt_revalidates_removed_definition_and_latest_count_before_confirm(
             vec![]
         } else {
             vec![WorldSpatialEntity {
+                motion: None,
                 display_name: None,
                 entity: EntityRef {
                     identity: [1; 16],

@@ -65,6 +65,7 @@ fn generated_dispatch_keeps_spatial_event_order_and_ignores_undrawn_domains() ->
 fn live_names_reach_scene_and_disappear_with_visibility() -> Result<(), BatchError> {
     let mut view = view()?;
     let entity = oteryn_session::WorldSpatialEntity {
+        motion: None,
         display_name: Some(
             oteryn_session::EntityDisplayName::new("Rat").map_err(|_| BatchError::InvalidView)?,
         ),
@@ -114,6 +115,7 @@ fn own_identity_draws_once_between_step_and_appearance_publish() -> Result<(), B
         forge_stacks: None,
         light: None,
         entity: oteryn_session::WorldSpatialEntity {
+            motion: None,
             display_name: None,
             kind: oteryn_session::EntityKind::Player,
             entity: oteryn_session::EntityRef {
@@ -160,6 +162,7 @@ fn own_identity_draws_once_between_step_and_appearance_publish() -> Result<(), B
 fn live_presentations_keep_target_clock_and_light_through_rebuilds() -> Result<(), BatchError> {
     let mut view = PlayView::new(TileCoord::new(100, 200), 0, &[])?;
     let entity = WorldSpatialEntity {
+        motion: None,
         display_name: Some(
             oteryn_session::EntityDisplayName::new("Rat").map_err(|_| BatchError::InvalidView)?,
         ),

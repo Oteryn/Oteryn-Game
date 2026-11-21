@@ -29,7 +29,7 @@ pub struct CueRequest {
     /// Exact positioned source or target; there is no opaque client address.
     pub actor: ExactActorRef,
 }
-/// Qualification describes a real placed map cell. Current owner authority
+/// Qualification describes a placed or known absent map cell. Current owner authority
 /// is independently checked again at outbox installation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct QualifiedCueTile {
@@ -47,6 +47,8 @@ impl QualifiedCueTile {
         oteryn_gameplay_durability::durability::native_world_items::SpellGroundTarget::from_native_owner(
             room, runtime, position,
         )
+        .map(|_| ())
+        .or_else(|_| Self::from_known_absent_cell(room, runtime, position).map(|_| ()))
         .map_err(|_| Error::UnqualifiedSource)?;
         let pin = runtime.content_pin();
         Ok(Self {

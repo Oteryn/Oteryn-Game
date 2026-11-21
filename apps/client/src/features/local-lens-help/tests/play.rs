@@ -7,6 +7,7 @@ const ROOT: [u16; 2] = [1280, 720];
 
 fn creature_at(x: i32, y: i32) -> Result<WorldSpatialEntity, &'static str> {
     Ok(WorldSpatialEntity {
+        motion: None,
         entity: EntityRef {
             identity: [5; 16],
             generation: 1,

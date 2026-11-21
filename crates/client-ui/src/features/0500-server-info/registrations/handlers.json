@@ -1,0 +1,18 @@
+{
+  "mechanic": "0500-server-info",
+  "kind": "handlers",
+  "id": "0500-server-info-command6241",
+  "status": "supported",
+  "commands": [
+    6241
+  ],
+  "direction": "client_to_server",
+  "capability": 500,
+  "entry": "protocol.rs::request",
+  "reducer": "protocol.rs::apply_result",
+  "test": "tests.rs::server_info_query_reply_is_bound_to_the_requested_owner",
+  "not_applicable": {
+    "input": "The quest log and spellbook controls request their presentation facts.",
+    "settings": "No setting; session-owned observations only."
+  }
+}

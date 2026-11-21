@@ -194,9 +194,19 @@ mod tests {
             modifiers,
         };
         let mut actions = MouseActions::new()?;
-        let clicks = actions.route(&[moved, click(Modifiers::one(Modifier::Alt))]);
+        assert!(
+            actions
+                .route(&[moved, click(Modifiers::one(Modifier::Alt))])
+                .is_empty()
+        );
+        let clicks = actions.route(&[NormalizedInputEvent::MouseButton {
+            button: MouseButton::PRIMARY,
+            state: ButtonState::Released,
+            modifiers: Modifiers::one(Modifier::Alt),
+        }]);
         assert_eq!(clicks.len(), 1);
-        assert!(clicks[0].toggle_attack && !clicks[0].secondary);
+        assert_eq!(clicks[0].shortcut, Some(Modifier::Alt));
+        assert!(!clicks[0].secondary);
         Ok(())
     }
 }
@@ -313,5 +323,46 @@ mod use_with_menu_tests {
             .entries
             .is_empty()
         );
+    }
+}
+
+#[cfg(test)]
+mod modifier_tests {
+    use crate::world_interaction::MouseActions;
+    use oteryn_input_actions::*;
+    #[test]
+    fn modifier_mouse_actions_wait_for_release_and_cancel_drags() -> Result<(), InputError> {
+        let point = |x| -> Result<NormalizedInputEvent, InputError> {
+            Ok(NormalizedInputEvent::PointerMoved {
+                position: PointerPosition::new(
+                    PointerCoordinate::new(x)?,
+                    PointerCoordinate::new(50)?,
+                ),
+                motion: PointerMotion::new(PointerDelta::new(0)?, PointerDelta::new(0)?),
+            })
+        };
+        for modifier in [Modifier::Shift, Modifier::Control, Modifier::Alt] {
+            for button in [MouseButton::PRIMARY, MouseButton::SECONDARY] {
+                let mut router = MouseActions::new()?;
+                let event = |state| NormalizedInputEvent::MouseButton {
+                    button,
+                    state,
+                    modifiers: Modifiers::one(modifier),
+                };
+                assert!(
+                    router
+                        .route(&[point(40)?, event(ButtonState::Pressed)])
+                        .is_empty()
+                );
+                assert_eq!(router.route(&[event(ButtonState::Released)]).len(), 1);
+                assert!(router.route(&[event(ButtonState::Pressed)]).is_empty());
+                assert!(
+                    router
+                        .route(&[point(80)?, event(ButtonState::Released)])
+                        .is_empty()
+                );
+            }
+        }
+        Ok(())
     }
 }

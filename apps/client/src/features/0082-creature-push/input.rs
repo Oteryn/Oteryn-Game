@@ -11,6 +11,12 @@ impl PlayView {
         link: &PlayLink,
         events: &[NormalizedInputEvent],
     ) -> Result<bool, BatchError> {
+        if !self.shared_frontend && self.death.awaiting_acknowledgement() {
+            if events.iter().any(|event| matches!(event, NormalizedInputEvent::Key { code, state: ButtonState::Pressed, modifiers, repeat: false } if matches!(code.get(), 40 | 88) && *modifiers == Modifiers::NONE)) {
+                self.acknowledge_death(link);
+            }
+            return Ok(true);
+        }
         if link.lens_active() {
             self.observe_creature_pointer(events);
             self.creature_drag.source = None;
@@ -34,7 +40,7 @@ impl PlayView {
                     let tile = self
                         .creature_drag
                         .pointer
-                        .and_then(|(x, y)| crate::input::click_tile(self.scene.view(), x, y));
+                        .and_then(|(x, y)| self.click_tile(x, y));
                     let mailbox = lock(&link.mailbox);
                     let blocked = mailbox.world_input_blocked()
                         || mailbox.world_context.pending
@@ -116,11 +122,13 @@ impl PlayView {
                                     });
                                     let intent = CreaturePushIntent {
                                         target,
-                                        destination: ActorPosition {
-                                            x: tile.x,
-                                            y: tile.y,
-                                            floor,
-                                        },
+                                        destination: lock(&link.mailbox).wire_position(
+                                            ActorPosition {
+                                                x: tile.x,
+                                                y: tile.y,
+                                                floor,
+                                            },
+                                        ),
                                     };
                                     if let Some(command) =
                                         oteryn_client_ui::creature_push::request(intent)

@@ -1,3 +1,5 @@
+#[path = "editor.rs"]
+pub(in crate::play) mod editor;
 #[path = "metadata.rs"]
 mod metadata;
 use crate::play::{PlayLink, mailbox::lock};
@@ -5,6 +7,8 @@ use crate::play::{PlayLink, mailbox::lock};
 mod preferences;
 #[cfg(test)]
 pub use preferences::BattleSort;
+#[cfg(bevy_shell)]
+pub(crate) use preferences::health;
 pub(crate) use preferences::next_edit;
 pub use preferences::{
     BattleListPreferences, BattleListsState, GuildFilter, default_lists, validate_lists,
@@ -50,8 +54,3 @@ impl PlayLink {
         }
     }
 }
-#[cfg(windows)]
-#[path = "native.rs"]
-mod native;
-#[cfg(windows)]
-pub(in crate::play) use native::open_window;

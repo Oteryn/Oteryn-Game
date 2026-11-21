@@ -186,3 +186,38 @@ fn dragged_market_frame_and_caption_survive_book_statistics_and_replies() -> Tes
     assert!(app.world().get_entity(replacement).is_err());
     Ok(())
 }
+#[test]
+fn market_rebuild_despawning_a_new_search_field_survives_the_hover_tracker() -> TestResult {
+    let (mut app, _commands, _outbox, _) = app()?;
+    app.init_resource::<InputFocus>()
+        .insert_resource(Skins {
+            buttons: source::ButtonImages {
+                up: Handle::default(),
+                down: Handle::default(),
+            },
+            checked: Handle::default(),
+            unchecked: Handle::default(),
+            frame: Handle::default(),
+            inset: Handle::default(),
+            font: Handle::default(),
+        })
+        // The shell leaves the hint tracker unordered with the window projections, so its
+        // insert can be applied after a projection's despawn in the same command flush.
+        .add_systems(
+            Update,
+            (project, crate::bevy_shell::hints::projection::track_inputs).chain_ignore_deferred(),
+        );
+    app.world_mut().resource_mut::<State>().seen = None;
+    app.update();
+    // The next frame rebuilds the body that holds the search field spawned a frame earlier.
+    app.world_mut().resource_mut::<State>().dirty = true;
+    app.update();
+    app.update();
+    let fields = app
+        .world_mut()
+        .query_filtered::<Entity, With<Search>>()
+        .iter(app.world())
+        .count();
+    assert_eq!(fields, 1, "the rebuilt body holds one live search field");
+    Ok(())
+}

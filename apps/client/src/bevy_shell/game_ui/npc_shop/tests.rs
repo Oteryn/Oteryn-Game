@@ -32,6 +32,7 @@ fn publish(outbox: &crate::play::Outbox, revision: u64, price: u32) {
         base_revision: 0,
         new_revision: revision,
         value: npc_service::NpcTradeWindow {
+            details: Vec::new(),
             open: Some((
                 EntityRef {
                     identity: [9; 16],
@@ -47,6 +48,197 @@ fn publish(outbox: &crate::play::Outbox, revision: u64, price: u32) {
             }],
         },
     })]);
+}
+#[test]
+fn idle_shop_frame_skips_catalogue_formatting() -> Result {
+    test_large_buy_catalogue(None, "", 1024)
+}
+
+#[test]
+fn regression_unrelated_inventory_delta_keeps_buy_offer_entities() -> Result {
+    test_large_buy_catalogue(Some(1025), "", 1024)
+}
+
+#[test]
+fn regression_hidden_offer_inventory_delta_keeps_search_results() -> Result {
+    test_large_buy_catalogue(Some(1), "item #1024", 1)
+}
+
+#[test]
+fn regression_carried_search_rebuild_filters_catalogue_once() -> Result {
+    test_large_buy_catalogue(Some(1), "carried 0", 1024)
+}
+
+fn test_large_buy_catalogue(
+    inventory_item: Option<u32>,
+    query: &str,
+    initial_rows: usize,
+) -> Result {
+    use std::hint::black_box;
+    let (host, _, outbox) = fixture()?;
+    let mut window = host
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .npc_shop_panel()
+        .live
+        .window;
+    window.offers = (1..=1024)
+        .map(|item| npc_service::NpcOffer {
+            item_definition_ref: item,
+            ..window.offers[0]
+        })
+        .collect();
+    outbox.push(vec![SessionEvent::NpcTradeWindow(AppliedDelta {
+        server_sequence: 8,
+        base_revision: 7,
+        new_revision: 8,
+        value: window,
+    })]);
+    let backpack = oteryn_session::ItemEntry {
+        appearance_id: 0,
+        handle: 6.try_into()?,
+        item_definition_ref: 1026.try_into()?,
+        count: 1.try_into()?,
+        sub_type: 0,
+    };
+    if inventory_item.is_some() {
+        outbox.push(vec![SessionEvent::Inventory(AppliedDelta {
+            server_sequence: 8,
+            base_revision: 0,
+            new_revision: 1,
+            value: oteryn_session::CharacterInventory {
+                main_backpack: Some(backpack),
+                entries: vec![],
+                equipment: vec![],
+            },
+        })]);
+    }
+    let mut app = App::new();
+    app.add_plugins((
+        MinimalPlugins,
+        bevy::asset::AssetPlugin::default(),
+        source::GlobalUiPlugin,
+    ))
+    .init_asset::<Image>()
+    .init_asset::<Font>()
+    .init_resource::<InputFocus>()
+    .insert_non_send(host)
+    .add_systems(Startup, crate::bevy_shell::ui::setup);
+    install(&mut app);
+    app.update();
+    let shop = app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .npc_shop_panel()
+        .live;
+    assert_eq!(shop.window.offers.len(), 1024);
+    let offers = |app: &mut App| {
+        app.world_mut()
+            .query::<(Entity, &Action)>()
+            .iter(app.world())
+            .filter_map(|(e, action)| matches!(action.kind, Kind::Select(_)).then_some(e))
+            .collect::<std::collections::BTreeSet<_>>()
+    };
+    let before = offers(&mut app);
+    assert_eq!(before.len(), 1024);
+    if let Some(item) = inventory_item {
+        let before = if query.is_empty() {
+            before
+        } else {
+            let world = app.world_mut();
+            let (_, mut editor) = world
+                .query::<(&Field, &mut EditableText)>()
+                .iter_mut(world)
+                .find(|(field, _)| **field == Field::Search)
+                .ok_or("search field")?;
+            editor.editor_mut().set_text(query);
+            app.update();
+            let filtered = offers(&mut app);
+            assert_eq!(filtered.len(), initial_rows);
+            filtered
+        };
+        outbox.push(vec![SessionEvent::Inventory(AppliedDelta {
+            server_sequence: 9,
+            base_revision: 1,
+            new_revision: 2,
+            value: oteryn_session::CharacterInventory {
+                main_backpack: Some(backpack),
+                entries: vec![oteryn_session::ItemEntry {
+                    appearance_id: 0,
+                    handle: 7.try_into()?,
+                    item_definition_ref: item.try_into()?,
+                    count: 1.try_into()?,
+                    sub_type: 0,
+                }],
+                equipment: vec![],
+            },
+        })]);
+        CATALOGUE_PASSES.with(|passes| passes.set(0));
+        app.update();
+        if query == "carried 0" {
+            let rows = app
+                .world_mut()
+                .query::<&Action>()
+                .iter(app.world())
+                .filter_map(|action| match action.kind {
+                    Kind::Select(quote) => Some(quote.item),
+                    _ => None,
+                })
+                .collect::<std::collections::BTreeSet<_>>();
+            assert_eq!(rows, (2..=1024).collect());
+            assert_eq!(CATALOGUE_PASSES.with(std::cell::Cell::get), 1);
+            return Ok(());
+        }
+        assert!(
+            offers(&mut app) == before,
+            "inventory delta rebuilt offer rows"
+        );
+        return Ok(());
+    }
+    let toggle = app
+        .world_mut()
+        .query::<(Entity, &Action)>()
+        .iter(app.world())
+        .find_map(|(e, action)| matches!(action.kind, Kind::IgnoreCapacity).then_some(e))
+        .ok_or("ignore capacity")?;
+    app.world_mut().trigger(Activate { entity: toggle });
+    app.update();
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .npc_shop_panel()
+            .live
+            .options
+            .ignore_capacity
+    );
+    assert!(
+        offers(&mut app) == before,
+        "option toggle rebuilt offer rows"
+    );
+    // Idle frames must not rebuild the catalogue. Counting passes is exact;
+    // a wall-clock comparison against one formatting pass depended on how
+    // many other systems the frame runs.
+    black_box(shop.filtered_quotes(Some(NpcTradeSide::Buy), ""));
+    CATALOGUE_PASSES.with(|passes| passes.set(0));
+    for _ in 0..5 {
+        app.update();
+    }
+    assert_eq!(
+        CATALOGUE_PASSES.with(std::cell::Cell::get),
+        0,
+        "idle frames rebuilt the offer catalogue"
+    );
+    Ok(())
 }
 #[test]
 fn npc_shop_actual_activate_emits_exact_retained_trade_and_pending_blocks_repeats() -> Result {
@@ -132,7 +324,7 @@ fn refreshed_quote_and_session_generation_reject_old_selection_and_buttons() -> 
     );
     for invalid in ["0", "101", "abc"] {
         assert!(!perform(&mut host, &mut state, action, invalid));
-        assert!(state.feedback.contains("1 to 100"));
+        assert!(state.feedback.contains("limit"));
     }
     assert!(commands.try_recv().is_err());
     Ok(())
@@ -216,3 +408,193 @@ fn floating_shop_remains_nonmodal_and_actual_controls_respect_higher_modal() -> 
 mod conversation_tests;
 #[path = "text_tests.rs"]
 mod text_tests;
+
+#[test]
+fn sell_only_catalogue_initially_selects_available_side() -> Result {
+    let (host, _, outbox) = fixture()?;
+    outbox.push(vec![SessionEvent::NpcTradeWindow(AppliedDelta {
+        server_sequence: 8,
+        base_revision: 7,
+        new_revision: 8,
+        value: npc_service::NpcTradeWindow {
+            details: Vec::new(),
+            open: Some((
+                EntityRef {
+                    identity: [9; 16],
+                    generation: 2,
+                },
+                8,
+            )),
+            offers: vec![npc_service::NpcOffer {
+                item_definition_ref: 42,
+                side: NpcTradeSide::Sell,
+                count: 1,
+                unit_price: 12,
+            }],
+        },
+    })]);
+    let mut app = App::new();
+    app.add_plugins((
+        MinimalPlugins,
+        bevy::asset::AssetPlugin::default(),
+        source::GlobalUiPlugin,
+    ))
+    .init_asset::<Image>()
+    .init_asset::<Font>()
+    .init_resource::<InputFocus>()
+    .insert_non_send(host)
+    .add_systems(Startup, crate::bevy_shell::ui::setup);
+    install(&mut app);
+    app.update();
+    assert_eq!(
+        app.world().resource::<State>().side,
+        Some(NpcTradeSide::Sell)
+    );
+    assert!(app.world_mut().query::<&Action>().iter(app.world()).any(
+        |action| matches!(action.kind, Kind::Select(quote) if quote.side == NpcTradeSide::Sell)
+    ));
+    Ok(())
+}
+
+#[test]
+fn npc_shop_explains_backpack_purchase_contract_limit() -> Result {
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .add_systems(Startup, crate::bevy_shell::ui::setup)
+        .add_systems(Update, |mut commands: Commands, skins: Res<Skins>| {
+            widgets::build(&mut commands, &skins, 1);
+        });
+    app.update();
+    assert!(app.world_mut().query::<&Text>().iter(app.world()).any(|text|
+        text.0 == "Buy in backpacks: unavailable from this server. Purchases use your existing backpack."));
+    Ok(())
+}
+
+#[test]
+fn npc_dialog_uses_global_geometry() -> Result {
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .init_resource::<crate::bevy_shell::ui::window_layout::WindowLayouts>()
+        .add_systems(Startup, crate::bevy_shell::ui::setup)
+        .add_systems(Update, |mut commands: Commands, skins: Res<Skins>| {
+            widgets::build(&mut commands, &skins, 1);
+        })
+        .add_systems(PostUpdate, crate::bevy_shell::ui::window_layout::project);
+    app.update();
+    let dialog = app
+        .world_mut()
+        .query::<(&Name, &Node)>()
+        .iter(app.world())
+        .find_map(|(name, node)| (name.as_str() == "npc-shop.dialog").then(|| node.clone()))
+        .ok_or("npc dialog")?;
+    // NpcDialog.qml: width 600, resizable from a 350px minimum height.
+    assert_eq!(
+        (dialog.width, dialog.height, dialog.min_height),
+        (px(600.), Val::Auto, px(350.))
+    );
+    let trade = app
+        .world_mut()
+        .query::<(&Name, &Node)>()
+        .iter(app.world())
+        .find_map(|(name, node)| (name.as_str() == "npc-shop.trade").then_some(node.width))
+        .ok_or("trade addon")?;
+    assert_eq!(trade, px(180.));
+    assert!(
+        !app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "NPC response")
+    );
+    Ok(())
+}
+
+#[test]
+fn npc_shop_decoded_names_and_extended_amounts_reach_rows_and_commands() -> Result {
+    let (host, mut commands, outbox) = fixture()?;
+    let mut window = host
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .npc_shop_panel()
+        .live
+        .window;
+    window.details = vec![npc_service::NpcQuoteDetails {
+        name: "meat".into(),
+        maximum_quantity: 150,
+    }];
+    let payload = npc_service::encode_npc_trade_window_for(&window, true)
+        .map_err(|error| format!("{error:?}"))?;
+    let value = npc_service::decode_npc_trade_window_for(&payload, true)
+        .map_err(|error| format!("{error:?}"))?;
+    outbox.push(vec![SessionEvent::NpcTradeWindow(AppliedDelta {
+        server_sequence: 8,
+        base_revision: 7,
+        new_revision: 8,
+        value,
+    })]);
+    let mut app = App::new();
+    app.add_plugins((
+        MinimalPlugins,
+        bevy::asset::AssetPlugin::default(),
+        source::GlobalUiPlugin,
+    ))
+    .init_asset::<Image>()
+    .init_asset::<Font>()
+    .init_resource::<InputFocus>()
+    .insert_non_send(host)
+    .add_systems(Startup, crate::bevy_shell::ui::setup);
+    super::super::modal::install(&mut app);
+    install(&mut app);
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "meat")
+    );
+    let select = app
+        .world_mut()
+        .query::<(Entity, &Action)>()
+        .iter(app.world())
+        .find(|(_, action)| matches!(action.kind, Kind::Select(_)))
+        .map(|(entity, _)| entity)
+        .ok_or("select")?;
+    app.world_mut().trigger(Activate { entity: select });
+    app.update();
+    let selection = app
+        .world()
+        .resource::<State>()
+        .selection
+        .ok_or("selection")?;
+    let mut state = State {
+        selection: Some(selection),
+        ..default()
+    };
+    let generation = app.world().non_send::<HostOwner>().generation();
+    let action = Action {
+        generation,
+        kind: Kind::Trade,
+    };
+    assert!(!perform(
+        &mut app.world_mut().non_send_mut::<HostOwner>(),
+        &mut state,
+        action,
+        "151"
+    ));
+    assert!(perform(
+        &mut app.world_mut().non_send_mut::<HostOwner>(),
+        &mut state,
+        action,
+        "150"
+    ));
+    let PlayCommand::NpcTrade(intent) = commands.try_recv()? else {
+        return Err("trade command".into());
+    };
+    assert_eq!(intent.quantity, 150);
+    Ok(())
+}

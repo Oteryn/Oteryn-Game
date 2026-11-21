@@ -5,7 +5,11 @@ extern crate oteryn_client_ui;
 pub mod about;
 #[path = "features/local-account-services/mod.rs"]
 pub mod account_services;
-#[cfg(feature = "bevy-shell")]
+#[cfg(any(test, bevy_shell))]
+#[path = "features/0025-appearance/mount_binding.rs"]
+mod appearance_mount_binding;
+mod atomic_file;
+#[cfg(bevy_shell)]
 pub mod bevy_shell;
 pub mod bulletin;
 pub mod cast_watch;
@@ -16,11 +20,12 @@ pub mod coin_shop;
 pub mod combat_input;
 pub mod crash_report;
 pub mod cyclopedia;
+#[cfg(bevy_shell)]
+pub mod desktop_startup;
 pub mod device_login;
 pub mod hud_error;
 pub mod input;
 pub mod map;
-pub mod miniwindow;
 #[path = "features/local-native-login/mod.rs"]
 pub mod native_login;
 pub mod package_integrity;
@@ -32,6 +37,7 @@ pub mod scene;
 pub mod screenshots;
 pub mod spell;
 mod support_delivery;
+pub mod traffic;
 pub mod updater;
 #[path = "features/local-web-links/mod.rs"]
 pub mod web_links;
@@ -159,6 +165,7 @@ impl ClientBootstrap {
                 .map(|config| config.platform_url.clone()),
         );
         link.house_world(admitted.world_id());
+        link.set_traffic(admitted.traffic());
         if admitted.training_requested() {
             let remaining = self
                 .native_login

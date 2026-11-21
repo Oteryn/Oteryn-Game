@@ -23,6 +23,9 @@ fn quest_list_search_and_all_sort_modes_preserve_confirmed_state() -> Result<(),
         missions: vec![],
     }));
     p.mission = Some(7);
+    crate::localization::with_language(crate::localization::Language::Es, || {
+        assert!(panel_text(&p).lines().any(|line| line == "El Quest 1"));
+    });
     let state = p.state.clone();
     for (sort, expected) in [
         (QuestSort::NumberAscending, vec![1, 2, 20]),

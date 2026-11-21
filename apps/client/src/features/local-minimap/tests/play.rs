@@ -39,14 +39,15 @@ fn mini(play: &PlayView) -> Vec<oteryn_renderer::QuadInstance> {
 fn minimap_projects_live_tiles_creatures_floor_changes_and_reset() -> Result<(), BatchError> {
     let mut play = minimap_view()?;
     assert!(mini(&play).is_empty());
-    let map = snapshot(101);
+    let mut map = snapshot(101);
+    map.tiles[0].ground_speed = 100;
     play.set_live_map(&map)?;
     let base = mini(&play);
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     {
         let range = play.scene().minimap_quad_range();
-        assert_eq!(range.len(),base.len());
-        assert_eq!(&play.scene().sprites().instances()[range],base.as_slice());
+        assert_eq!(range.len(), base.len());
+        assert_eq!(&play.scene().sprites().instances()[range], base.as_slice());
     }
     assert_eq!(base.len(), 31 * 25 + 2);
     assert!(
@@ -54,6 +55,7 @@ fn minimap_projects_live_tiles_creatures_floor_changes_and_reset() -> Result<(),
             .any(|q| q.size == [12.0; 2] && q.position == [56.0, 44.0])
     ); // Background, one received tile, own marker.
     let creature = WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: oteryn_session::EntityKind::Creature,
         entity: EntityRef {
@@ -102,10 +104,11 @@ fn minimap_projects_live_tiles_creatures_floor_changes_and_reset() -> Result<(),
     play.apply(&moved_to(101, 200, 6))?;
     assert_eq!(mini(&play).len(), 31 * 25 + 2); // Above-floor creature, no surface terrain.
     play.apply(&moved_to(101, 200, 7))?;
+    assert_eq!(mini(&play).len(), 31 * 25 + 3); // The creature and remembered terrain remain.
     let mut empty = map;
     empty.tiles.clear();
     play.set_live_map(&empty)?;
-    assert_eq!(mini(&play).len(), 31 * 25 + 2); // Creature remains; the authoritative clear removes terrain.
+    assert_eq!(mini(&play).len(), 31 * 25 + 2); // The player and creature remain.
     Ok(())
 }
 
@@ -160,6 +163,7 @@ fn minimap_rectangle_captures_clicks_before_world_selection() -> Result<(), Batc
     let beneath =
         crate::input::click_tile(play.scene().view(), 4.0, 4.0).ok_or(BatchError::InvalidView)?;
     let creature = WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: oteryn_session::EntityKind::Creature,
         entity: EntityRef {
@@ -256,7 +260,8 @@ fn minimap_transfer_round_trips_scoped_memory_and_markers_without_changing_world
         floor: 7,
         label: "Meeting place".into(),
     })?;
-    let root = std::env::temp_dir().join(format!("clientgap-map-{}", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let root = fixture.path().join("clientgap-map");
     std::fs::create_dir_all(&root)?;
     let file = root.join("map.json");
     memory.export_new(&file)?;
@@ -325,7 +330,6 @@ fn minimap_transfer_round_trips_scoped_memory_and_markers_without_changing_world
     let mut restarted = SettingsState::new(Some(scoped_path));
     restarted.select_character(Some([1; 16]));
     assert_eq!(restarted.preferences.minimap, remembered);
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }
 
@@ -508,5 +512,129 @@ fn committed_quest_markers_reach_minimap_and_snapshot_replacement_clears_them()
         crate::play::feature_local_minimap::state::lock(&play.minimap).quest_marks,
         personal
     );
+    Ok(())
+}
+
+#[cfg(bevy_shell)]
+impl PlayView {
+    pub(crate) fn bevy_minimap_colours_fixture(&mut self) {
+        let mut map = crate::play::feature_local_minimap::state::lock(&self.minimap);
+        map.cells.insert((self.floor, self.own.x, self.own.y), 180);
+        map.markers
+            .push(crate::play::feature_local_minimap::state::Marker {
+                x: self.own.x + 1,
+                y: self.own.y,
+                floor: self.floor,
+                label: "Blue marker".into(),
+                color: 1,
+            });
+    }
+}
+
+#[test]
+fn remembered_terrain_and_marks_follow_the_browsed_floor() -> Result<(), BatchError> {
+    let mut play = minimap_view()?;
+    play.set_live_map(&snapshot(100))?;
+    {
+        let mut map = crate::play::feature_local_minimap::state::lock(&play.minimap);
+        map.cells.clear();
+        map.tracking = false;
+        map.x = 140;
+        map.y = 240;
+        map.floor = 6;
+    }
+    play.scene.minimap_memory.tiles = vec![(140, 240, 7, 100), (141, 240, 6, 100)];
+    play.scene.minimap_memory.marks = [7, 6]
+        .into_iter()
+        .enumerate()
+        .map(|(i, floor)| crate::play::MinimapMark {
+            x: 140 + i as i32,
+            y: 240,
+            floor,
+            label: "Floor mark".into(),
+        })
+        .collect();
+    play.scene.set_minimap(true, play.minimap.clone(), 7)?;
+    let quads = mini(&play);
+    assert_eq!(
+        quads.iter().filter(|q| q.position == [60.0, 48.0]).count(),
+        1
+    );
+    assert_eq!(
+        quads.iter().filter(|q| q.position == [64.0, 48.0]).count(),
+        3
+    );
+    crate::play::feature_local_minimap::state::lock(&play.minimap).floor = 7;
+    play.scene.set_minimap(true, play.minimap.clone(), 7)?;
+    let quads = mini(&play);
+    assert_eq!(
+        quads.iter().filter(|q| q.position == [60.0, 48.0]).count(),
+        3
+    );
+    assert_eq!(
+        quads.iter().filter(|q| q.position == [64.0, 48.0]).count(),
+        1
+    );
+    Ok(())
+}
+
+#[test]
+fn zoomed_cells_retain_exploration_between_sampled_coordinates() -> Result<(), BatchError> {
+    for zoom in [2, 4, 8] {
+        let mut play = minimap_view()?;
+        play.set_live_map(&snapshot(100))?;
+        {
+            let mut map = crate::play::feature_local_minimap::state::lock(&play.minimap);
+            map.cells.clear();
+            map.tracking = false;
+            map.x = 140;
+            map.y = 240;
+            map.floor = 6;
+            map.zoom = zoom;
+            map.cells.insert((6, 140 + zoom - 1, 240 + zoom - 1), 55);
+            // Outside the cell, and on another floor, must not colour empty cells.
+            map.cells.insert((7, 140, 240 + zoom), 55);
+        }
+        play.scene.minimap_memory.tiles = vec![(140 + 2 * zoom - 1, 240 + zoom - 1, 6, 100)];
+        play.scene.minimap_memory.marks = vec![crate::play::MinimapMark {
+            x: 140 + 3 * zoom - 1,
+            y: 240 + zoom - 1,
+            floor: 6,
+            label: "Zoom mark".into(),
+        }];
+        play.scene.set_minimap(true, play.minimap.clone(), 7)?;
+        let quads = mini(&play);
+        for position in [[60.0, 48.0], [64.0, 48.0], [68.0, 48.0]] {
+            assert_eq!(
+                quads.iter().filter(|q| q.position == position).count(),
+                2,
+                "zoom {zoom} at {position:?}"
+            );
+        }
+        assert_eq!(
+            quads.iter().filter(|q| q.position == [60.0, 52.0]).count(),
+            1
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn live_minimap_uses_the_same_palette_cell_at_every_zoom() -> Result<(), BatchError> {
+    let mut play = minimap_view()?;
+    let mut snapshot = snapshot(101);
+    snapshot.tiles[0].ground_speed = 100;
+    play.set_live_map(&snapshot)?;
+    let at = [64., 48.];
+    let color = mini(&play).into_iter().rfind(|quad| quad.position == at).ok_or(BatchError::InvalidView)?;
+    assert_eq!(color.uv[0], color.uv[2]);
+    assert_eq!(color.uv[1], color.uv[3]);
+    {
+        let mut map = crate::play::feature_local_minimap::state::lock(&play.minimap);
+        map.zoom = 2;
+        map.x = 101;
+    }
+    play.rebuild()?;
+    assert!(mini(&play).iter().any(|q| q.uv == color.uv));
     Ok(())
 }

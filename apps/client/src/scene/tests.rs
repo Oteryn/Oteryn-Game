@@ -5,9 +5,15 @@ impl Scene {
     #[cfg(test)]
     pub(crate) fn native_name_fragment_rendered(&self, text: &str) -> bool {
         let mut cache = self.cache.clone();
-        let expected = cache.name(text);
+        let expected: Vec<u16> = cache
+            .name(text, 100)
+            .glyphs
+            .iter()
+            .map(|glyph| glyph.cell)
+            .collect();
         !expected.is_empty()
-            && self.names.iter().any(|(_, cells)| {
+            && self.names.iter().any(|(_, label)| {
+                let cells: Vec<u16> = label.glyphs.iter().map(|glyph| glyph.cell).collect();
                 cells
                     .windows(expected.len())
                     .any(|part| part == expected.as_slice())
@@ -102,9 +108,9 @@ fn a_visible_entity_is_drawn_and_a_click_selects_it_with_its_reference() -> Resu
 fn scene_view_fits_the_default_window_and_maps_clicks_to_tiles() -> Result<(), BatchError> {
     let scene = scene()?;
     assert_eq!(scene.view().viewport_px(), (720, 528));
-    // The player sprite sits on tile (0, 0), drawn last, and a click on it resolves to it.
+    // Diagonal painter order puts the player between the two marker tiles.
     let [x, y] = scene.view().tile_to_screen(TileCoord::new(0, 0));
-    assert_eq!(scene.sprites().instances()[2].position, [x, y]);
+    assert_eq!(scene.sprites().instances()[1].position, [x, y]);
     assert_eq!(
         scene.view().screen_to_tile(x + 1.0, y + 1.0),
         Some(TileCoord::new(0, 0))

@@ -1,0 +1,21 @@
+{
+  "id": 502,
+  "name": "ACTOR_MOTION_V1",
+  "constant": "actor_motion::CAPABILITY_ACTOR_MOTION_V1",
+  "requires": [
+    6,
+    13,
+    25
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    6242
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": false
+  }
+}

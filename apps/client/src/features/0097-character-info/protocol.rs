@@ -107,3 +107,14 @@ mod e2e_p12a;
 #[cfg(test)]
 #[path = "tests/e2e_p12c.rs"]
 mod e2e_p12c;
+
+#[cfg(all(test, bevy_shell))]
+impl crate::play::Outbox {
+    /// Admits character information (97) for the Bevy titles window tests.
+    pub(crate) fn bevy_character_info_selected(&self) {
+        crate::play::mailbox::lock(&self.0)
+            .properties
+            .character_info
+            .selected = true;
+    }
+}

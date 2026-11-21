@@ -3,7 +3,7 @@ use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::market::{Intent, request};
 impl PlayLink {
     /// Confirms one currently displayed sell offer under the mailbox's single owner lock.
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     pub(crate) fn market_buy_bound(
         &self,
         expected: &oteryn_client_ui::market::MarketPanel,
@@ -147,13 +147,7 @@ pub(in crate::play) fn open_from_depot(
         }
         enqueue(&mut m, commands, Intent::Refresh);
     }
-    #[cfg(windows)]
-    if !lock(mailbox).shared_frontend {
-        super::view::open_window(mailbox, commands);
-    }
-    if cfg!(not(windows)) || lock(mailbox).shared_frontend {
-        lock(mailbox).market.open = true;
-    }
+    lock(mailbox).market.open = true;
 }
 
 pub(in crate::play) fn stashback(
@@ -173,4 +167,4 @@ pub(in crate::play) fn stashback(
 }
 
 #[path="input/coins.rs"]
-mod coins;
+pub(in crate::play) mod coins;

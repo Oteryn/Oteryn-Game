@@ -2,7 +2,7 @@
 use super::*;
 use crate::foundation::HouseHirelingEntity;
 
-pub(super) async fn read_state(
+pub(in crate::gameplay_transport::appearance_change) async fn read_state(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     fence: CurrentCharacterGameplayFence,
     grant_keys: Vec<String>,
@@ -35,6 +35,11 @@ pub(super) async fn read_state(
         }
     };
     match result {
+        Err(AppearanceWriteError::Unavailable(crate::durability::DurabilityError::Database(
+            crate::durability::SqlxFailureClass::RetryableStatement,
+        ))) if matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. }) => {
+            Err(super::ReadFailure::HouseAccessBusy)
+        }
         Ok(state) => Ok(Some(state)),
         Err(
             AppearanceWriteError::Unavailable(error)
@@ -51,7 +56,7 @@ pub(super) async fn read_state(
     }
 }
 
-pub(super) fn current_runtime_for_read(
+pub(in crate::gameplay_transport::appearance_change) fn current_runtime_for_read(
     runtime: &ChannelRuntimeV1,
     actor: ExactActorRef,
     session: GameSessionId,

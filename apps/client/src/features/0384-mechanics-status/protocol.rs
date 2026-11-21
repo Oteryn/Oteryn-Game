@@ -26,18 +26,10 @@ impl PlayLink {
             return false;
         }
         self.mechanics_status_request();
-        #[cfg(windows)]
-        crate::play::status_window::open_window(
-            self,
-            tr!("Character effects — Ctrl+Alt+Shift+U"),
-            |mailbox| &mut mailbox.mechanics_status,
-        );
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).mechanics_status.open = true;
-        }
+        lock(&self.mailbox).mechanics_status.open = true;
         true
     }
-    #[cfg(any(test, feature = "bevy-shell"))]
+    #[cfg(any(test, bevy_shell))]
     pub(crate) fn mechanics_status_panel(
         &self,
     ) -> oteryn_client_ui::mechanics_status::MechanicsStatusPanel {
@@ -64,7 +56,7 @@ impl Outbox {
 }
 
 // Publish the same view models read by the Bevy HUD without a network peer.
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl PlayLink {
     pub(crate) fn bevy_status_fixture(
         &self,

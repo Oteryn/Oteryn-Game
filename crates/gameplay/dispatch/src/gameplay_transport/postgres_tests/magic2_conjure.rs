@@ -7,8 +7,8 @@ use crate::durability::character_build::{
     BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState, convert_vocation,
 };
 use crate::foundation::{ChannelContentPin, CharacterLease};
-use crate::gameplay_transport::SeamRooms;
-use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+use crate::gameplay_transport::connection::{AdmissionRefusal, FreshAdmissionAuthority};
+use crate::gameplay_transport::{AdmissionRetryBudget, SeamRooms};
 use crate::spell::cast::CharacterCastFacts;
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellCastIntent, SpellTarget};
 use std::num::NonZeroU32;
@@ -195,12 +195,39 @@ async fn scenario(
     };
     // Without a bag, use a reagent-free spell so the failure reaches the destination writer.
     let intent = find(if full || missing_reagent { 3198 } else { 3447 })?;
+    assert!(
+        AdmissionRetryBudget::for_root(&session, &h.root)
+            .retry_until(async || owner.ensure_source_map_initialized().await)
+            .await,
+        "source-map initialization before conjure"
+    );
+    // A pending response keeps the original command outstanding. The direct test
+    // owner must resubmit that command to obtain its terminal result.
+    let cast = async |command| {
+        AdmissionRetryBudget::for_root(&session, &h.root)
+            .retry_unavailable(async || {
+                owner
+                    .cast_spell_completion(actor, session, command, intent)
+                    .await
+                    .ok_or(AdmissionRefusal::Unavailable)
+            })
+            .await
+            .ok()
+    };
     let before = owner.observe_vitals(actor, session).await.ok_or("vitals")?;
-    let outcome = owner
-        .cast_spell_completion(actor, session, 1, intent)
-        .await
-        .ok_or("terminal no-room result")?;
+    if full {
+        let holder = h.root.try_acquire_ready().map_err(debug)?;
+        assert!(
+            owner.cast_spell_completion(actor, session, 1, intent).await.is_none(),
+            "a busy holder leaves the full-bag cast pending"
+        );
+        drop(holder);
+    }
+    let outcome = cast(1).await.ok_or("terminal no-room result")?;
     assert_eq!(outcome.disposition, SpellCastDisposition::Rejected);
+    if full {
+        assert_eq!(outcome.vitals, Some(before), "full-bag rollback result");
+    }
     assert_eq!(owner.observe_vitals(actor, session).await, Some(before));
     assert_eq!(receipt_count(&h).await?, 0);
     assert_eq!(quantity(&h, BLANK).await?, if full { 2 } else { 0 });
@@ -231,10 +258,7 @@ async fn scenario(
     } else {
         seed_main_backpack(&h, &[]).await?;
     }
-    let outcome = owner
-        .cast_spell_completion(actor, session, 3, intent)
-        .await
-        .ok_or("cast result after room repair")?;
+    let outcome = cast(3).await.ok_or("cast result after room repair")?;
     assert_eq!(outcome.disposition, SpellCastDisposition::Cast);
     let after = owner
         .observe_vitals(actor, session)
@@ -261,21 +285,13 @@ async fn scenario(
         assert_eq!(stacks, vec![5, 100]);
     }
     assert_eq!(
-        owner
-            .cast_spell_completion(actor, session, 3, intent)
-            .await
-            .ok_or("replay")?
-            .disposition,
+        cast(3).await.ok_or("replay")?.disposition,
         SpellCastDisposition::Cast
     );
     assert_eq!(owner.observe_vitals(actor, session).await, Some(after));
     assert_eq!(receipt_count(&h).await?, 1);
     assert_eq!(
-        owner
-            .cast_spell_completion(actor, session, 4, intent)
-            .await
-            .ok_or("cooldown result")?
-            .disposition,
+        cast(4).await.ok_or("cooldown result")?.disposition,
         SpellCastDisposition::CoolingDown
     );
     assert_eq!(owner.observe_vitals(actor, session).await, Some(after));

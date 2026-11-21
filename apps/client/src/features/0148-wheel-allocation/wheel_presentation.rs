@@ -9,7 +9,7 @@ use crate::{
 use oteryn_client_runtime::raw_feature::{FeatureCommand, GatedCommandResult};
 use oteryn_client_ui::wheel_allocation::{Intent, diagram};
 use tokio::sync::mpsc::UnboundedSender;
-#[cfg_attr(not(windows), allow(dead_code, reason = "Windows Wheel controls construct and dispatch these actions"))]
+#[allow(dead_code, reason = "Windows Wheel controls construct and dispatch these actions")]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(in crate::play) enum Action {
     Slot { nonce: u64, index: usize },
@@ -19,7 +19,7 @@ pub(in crate::play) enum Action {
     Refresh,
     Retry,
 }
-#[cfg_attr(not(windows), allow(dead_code, reason = "Windows Wheel controls construct and dispatch these actions"))]
+#[allow(dead_code, reason = "Windows Wheel controls construct and dispatch these actions")]
 pub(in crate::play) fn query(m: &mut Mailbox, s: &UnboundedSender<PlayCommand>) {
     if let Some(c) = oteryn_client_ui::wheel_allocation::wheel_presentation_query(&mut m.wheel)
         && s.send(PlayCommand::Feature(c)).is_err()
@@ -28,7 +28,7 @@ pub(in crate::play) fn query(m: &mut Mailbox, s: &UnboundedSender<PlayCommand>) 
         m.wheel.diagram.feedback = "The session has ended".into();
     }
 }
-#[cfg_attr(not(windows), allow(dead_code, reason = "Windows Wheel controls construct and dispatch these actions"))]
+#[allow(dead_code, reason = "Windows Wheel controls construct and dispatch these actions")]
 pub(in crate::play) fn activate(m: &mut Mailbox, s: &UnboundedSender<PlayCommand>, a: Action) {
     if !m.wheel.selected || m.wheel_shutdown {
         return;

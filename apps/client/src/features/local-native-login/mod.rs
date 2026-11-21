@@ -6,11 +6,6 @@ use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
-#[cfg(windows)]
-mod native;
-#[cfg(windows)]
-pub use native::LoginWindow;
-
 mod refusal;
 pub use refusal::error_text;
 #[cfg(test)]
@@ -161,6 +156,11 @@ pub fn settings_path() -> Result<PathBuf, String> {
         .ok_or_else(|| tr!("Cannot locate the user configuration directory.").into())
 }
 
+enum LoginAlert {
+    Status(&'static str),
+    Information(&'static str, String),
+}
+
 enum SignInGate {
     UpdateRequired,
     Maintenance(Instant),
@@ -173,11 +173,13 @@ pub struct LoginForm {
     retry: bool,
     gate: Option<SignInGate>,
     message: String,
+    /// Title of the message box that presents `message`, until the player dismisses it.
+    alert: Option<LoginAlert>,
 }
 
 impl LoginForm {
     pub fn new(settings: LoginSettings) -> Self {
-        Self { settings, connected: false, pending: false, retry: false, gate: None, message: tr!("Enter connection settings, then choose Save and sign in. Sign-in opens your browser.").into() }
+        Self { settings, connected: false, pending: false, retry: false, gate: None, message: tr!("Enter connection settings, then choose Save and sign in. Sign-in opens your browser.").into(), alert: None }
     }
     /// Action shown after a failed attempt starts a fresh browser admission.
     pub fn submit_caption(&self) -> &'static str {
@@ -208,16 +210,39 @@ impl LoginForm {
             }
         }
     }
+    #[cfg(bevy_shell)]
+    pub(crate) fn show_status(&self) -> bool {
+        self.pending || self.gate_blocks_sign_in()
+    }
     pub fn pending(&self) -> bool {
         self.pending
     }
     pub fn message(&self) -> &str {
         &self.message
     }
+    /// Progress while admission runs stays in the form; anything else opens the message box.
     pub fn feedback(&mut self, message: String) {
-        if !self.gate_blocks_sign_in() {
-            self.message = message;
+        if self.gate_blocks_sign_in() {
+            return;
         }
+        if !self.pending {
+            self.alert = Some(LoginAlert::Status("Login"));
+        }
+        self.message = message;
+    }
+    /// A message box with its own short title (About, Survey, Login Error).
+    pub fn inform(&mut self, title: &'static str, message: String) {
+        self.alert = Some(LoginAlert::Information(title, message));
+    }
+    /// The open message box: its title and text.
+    pub fn alert(&self) -> Option<(&'static str, &str)> {
+        match self.alert.as_ref()? {
+            LoginAlert::Status(title) => Some((title, &self.message)),
+            LoginAlert::Information(title, message) => Some((title, message)),
+        }
+    }
+    pub fn dismiss_alert(&mut self) {
+        self.alert = None;
     }
     pub fn submit(&mut self) -> Result<NativeLoginConfig, String> {
         self.refresh_gate_message(Instant::now());
@@ -234,11 +259,12 @@ impl LoginForm {
             return Err(self.message.clone());
         }
         self.gate = None;
-        let config = self
-            .settings
-            .config()
-            .inspect_err(|error| self.message = error.clone())?;
+        let config = self.settings.config().inspect_err(|error| {
+            self.message = error.clone();
+            self.alert = Some(LoginAlert::Status("Login Error"));
+        })?;
         self.pending = true;
+        self.alert = None;
         self.message = tr!("Signing in: complete sign-in in your browser (up to five minutes). Please wait for gateway admission.").into();
         Ok(config)
     }
@@ -246,6 +272,7 @@ impl LoginForm {
         self.pending = false;
         self.connected = result.is_ok();
         self.retry = result.is_err();
+        self.alert = result.is_err().then_some(LoginAlert::Status("Login Error"));
         self.gate = match &result {
             Err(
                 GameplayEntryError::ClientUpdateRequired { .. }

@@ -18,21 +18,37 @@ impl PlayLink {
         }
         {
             let mut mailbox = lock(&self.mailbox);
-            if mailbox.daily_boost.open {
-                return true;
-            }
             mailbox.daily_boost.open = true;
         }
-        self.daily_boost_request(Intent {
-            command: oteryn_client_runtime::cui3::daily_boost::COMMAND_TYPE_DAILY_BOOST_QUERY,
-            payload: Vec::new(),
-        });
-        // The XP boost lines come from the potion durations snapshot.
-        self.potion_durations_request();
-        #[cfg(all(windows, not(test)))]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
+        refresh(&mut lock(&self.mailbox), &self.commands);
         true
+    }
+}
+
+pub(in crate::play) fn window_open(mailbox: &crate::play::mailbox::Mailbox) -> bool {
+    mailbox.daily_boost.open && !mailbox.quest_shutdown
+}
+
+pub(in crate::play) fn refresh(
+    mailbox: &mut crate::play::mailbox::Mailbox,
+    commands: &tokio::sync::mpsc::UnboundedSender<PlayCommand>,
+) {
+    if !window_open(mailbox) {
+        return;
+    }
+    if let Some(command) = request(&mut mailbox.daily_boost, Intent {
+        command: oteryn_client_runtime::cui3::daily_boost::COMMAND_TYPE_DAILY_BOOST_QUERY,
+        payload: Vec::new(),
+    }) && commands.send(PlayCommand::Feature(command)).is_err() {
+        mailbox.daily_boost.pending = false;
+        mailbox.daily_boost.feedback = Some(tr!("The session has ended"));
+    }
+    if let Some(payload) = oteryn_client_ui::potion_durations::request(&mut mailbox.potion_durations)
+        && commands.send(PlayCommand::Feature(oteryn_client_runtime::raw_feature::FeatureCommand {
+            capability: 381, kind: 662, payload,
+        })).is_err()
+    {
+        mailbox.potion_durations.pending = false;
+        mailbox.potion_durations.error = Some(tr!("Session ended"));
     }
 }

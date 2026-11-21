@@ -443,8 +443,11 @@ mod defense_composition_tests {
             serde_json::from_value(packet["records"].clone()).expect("monster_combat_lane.rs:defense_composition_tests:3826: qualified fixture operation must succeed");
         let profiles: Vec<ProjectV2AuthoringProfile> =
             serde_json::from_value(packet["authoring_profiles"].clone()).expect("monster_combat_lane.rs:defense_composition_tests:3828: qualified fixture operation must succeed");
-        let (mut runtime, _, _) =
+        let (mut runtime, player, _) =
             crate::gameplay_transport::actor_spell::tests::runtime_with_player(0x5a);
+        runtime
+            .initialize_first_entry_position(player)
+            .expect("qualified player position");
         let creature = Ref {
             family: ProjectV2Family::Creature,
             key: "oteryn:creature.demon".into(),

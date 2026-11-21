@@ -77,15 +77,20 @@ fn scenario(plan: Plan) -> TestResult {
     std::thread::Builder::new()
         .stack_size(128 << 20)
         .spawn(move || {
-            run(async move |admin| scenario_inner(admin, plan).await)
-                .map_err(|error| error.to_string())
+            run(async move |admin| {
+                for native_frame in [false, true] {
+                    scenario_inner(admin.clone(), plan, native_frame).await?;
+                }
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
         })?
         .join()
         .map_err(|_| "crosshair spell thread panicked")?
         .map_err(Into::into)
 }
 
-async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
+async fn scenario_inner(admin: String, plan: Plan, native_frame: bool) -> TestResult {
     let h = Harness::create_with_admission_seed(admin, plan.tag, false, false).await?;
     prepare_current_session(&h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -105,7 +110,21 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
     .map_err(debug)?;
     let active = controller.active().ok_or("active")?;
     let native = active.native_gameplay().ok_or("native")?;
-    let room = pin.qualified_room().clone();
+    let bundle = native_frame.then(|| {
+        crate::map::spell_tiles::tests::movement_arena::rectangle((0, 0), (16, 16), -7)
+    });
+    let room = if let Some(bundle) = &bundle {
+        pin.qualified_room()
+            .bundle_view(
+                bundle.movement_cells(pin.qualified_room().movement_cells()).map_err(debug)?,
+                bundle.frame_binding_digest(world),
+                bundle.map_revision_digest(),
+                crate::content::NativeEntryStart { x: 2, y: 11, floor: 7 },
+            )
+            .ok_or("bundle room")?
+    } else {
+        pin.qualified_room().clone()
+    };
     let cp = ChannelContentPin::from_activation(
         world,
         1,
@@ -113,7 +132,7 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
         pin.identity().client_artifact_digest(),
         room.frame_binding().digest(),
         room.map_revision_digest(),
-        (2, 11, -7),
+        (2, 11, if native_frame { 7 } else { -7 }),
     );
     let mut deps = Dependencies::with_content_and_capacity(
         cp,
@@ -218,6 +237,7 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             .read_actor_position(actor)
             .map_err(debug)?
             .position();
+        assert_eq!(p.floor, if native_frame { 7 } else { -7 });
         position = crate::foundation::MovementLocalPosition {
             x: p.x + 1,
             y: p.y,

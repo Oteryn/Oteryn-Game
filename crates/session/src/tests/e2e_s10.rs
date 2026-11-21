@@ -15,6 +15,7 @@ fn e2e_s10_rashid_shop_conversation_and_window_replay() -> Result<(), BoxError> 
     } else {
         let open = Some((NPC, 2));
         let window = npc_service::NpcTradeWindow {
+            details: Vec::new(),
             open: Some((
                 EntityRef {
                     identity: NPC,

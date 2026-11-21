@@ -30,6 +30,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .ordinary_paced_step(actor, session, direction, expected, follow)
                 .await;
         }
+        if !self
+            .states
+            .tutorial_sessions
+            .vocation(session)
+            .is_ok_and(|pending| pending.is_none())
+        {
+            return (StepOutcome::rejected(), None);
+        }
         let here = {
             let mut runtime = self.runtime.lock().await;
             if runtime.player_control_facts(actor, session).is_err()

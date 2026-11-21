@@ -27,6 +27,16 @@ pub(super) fn entities(
         entities.push(world_spatial::ChannelEntity {
             source_icons:
                 oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(),
+            motion: runtime.house_actor_motion(entry.actor, entry_session).map(
+                |(translation_revision, step_duration_ms, mount_look_type, _)| {
+                    oteryn_protocol_oteryn::actor_motion::ActorMotion {
+                        translation_revision,
+                        step_duration_ms,
+                        mount_look_type,
+                        prewalk_ms: [0; 8],
+                    }
+                },
+            ),
             display_name: None,
             health_percent: 100,
             direction: direction(movement.facing()),
@@ -48,6 +58,7 @@ pub(super) fn entities(
             .map(|entry| world_spatial::ChannelEntity {
                 source_icons:
                     oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(),
+                motion: None,
                 display_name: None,
                 health_percent: 100,
                 direction: direction(Some(entry.direction)),

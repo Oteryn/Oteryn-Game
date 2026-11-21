@@ -132,7 +132,8 @@ fn audio_synthetic_flow_keeps_sources_secondary_cues_and_bounds_pending_events()
 fn audio_mapping_rejects_unsafe_paths_and_catalog_verifies_audio_bytes()
 -> Result<(), Box<dyn std::error::Error>> {
     use std::fs;
-    let dir = std::env::temp_dir().join(format!("oteryn-c28-{}", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let dir = fixture.path().join("oteryn-c28");
     fs::create_dir_all(&dir)?;
     let metadata = b"synthetic metadata";
     let audio = b"synthetic audio placeholder";
@@ -160,7 +161,6 @@ fn audio_mapping_rejects_unsafe_paths_and_catalog_verifies_audio_bytes()
     invalid["sound_cues"]["41"] = serde_json::json!(["../a.ogg"]);
     assert!(decode_mapping(&serde_json::to_vec(&invalid)?).is_err());
     assert!(decode_mapping(b"{").is_err());
-    fs::remove_dir_all(dir)?;
     Ok(())
 }
 
@@ -333,3 +333,36 @@ mod boss_area;
 
 #[path = "native_missile_merged.rs"]
 mod native_missile_merged;
+
+#[test]
+fn ground_floor_presentation_wire_events_reach_native_scene() -> Result<(), Box<dyn std::error::Error>> {
+    let (link, _commands, outbox) = crate::play::play_channel();
+    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), 7, &[])?;
+    let position = oteryn_session::ActorPosition { x: 0, y: 0, floor: 7 };
+    outbox.spell_catalog_initialize(true, Some(
+        oteryn_session::spell_catalog::encode_catalog(&[oteryn_session::spell_catalog::SpellCatalogEntry {
+            cast_index: 19, name: "Healing".into(), words: "exura".into(), level: 8,
+            mana: 20, mana_percent: false, soul: 0, learned: true, available: true,
+            cooldown_groups: vec![1], rune_item: None,
+        }]).map_err(|e| format!("{e:?}"))?
+    ))?;
+    for kind in [
+        PresentationEventKind::SpellWords { caster: oteryn_session::EntityRef { identity: [1; 16], generation: 1 }, position, spell: 19 },
+        PresentationEventKind::MagicEffect { position, effect_id: 1, source: PresentationSource::Own },
+        PresentationEventKind::Missile { from: position, to: position, missile_id: 1, source: PresentationSource::Own },
+        value_event(7),
+    ] {
+        let baseline = view.scene().sprites().instances().len();
+        outbox.push(vec![oteryn_session::SessionEvent::Presentation(AppliedDelta {
+            server_sequence: 42, base_revision: 0, new_revision: 1,
+            value: vec![PresentationEvent { decision_ordinal: 1, emission_ordinal: 1, kind }],
+        })]);
+        view.tick(&link).map_err(|e| format!("{e:?}"))?;
+        assert!(view.scene().sprites().instances().len() > baseline, "{kind:?}");
+        view.advance_presentation(std::time::Instant::now() + std::time::Duration::from_secs(2))?;
+    }
+    Ok(())
+}
+
+#[path = "tibia_graphics.rs"]
+mod tibia_graphics;

@@ -1,4 +1,4 @@
-//! G-3 v2 decisions: portfolio first, immutable operation binding and atomic projections.
+//! G-3 v2 decisions: admission then portfolio, immutable operation binding and atomic projections.
 use super::character_authority::{
     ReconciledCharacterAuthority, Security, account_security, assert_recovery_fence, uuid_text,
 };
@@ -145,7 +145,6 @@ impl DurabilityRoot {
             let Some(candidate) = candidate else { return Ok(false); };
             let character: String = candidate.try_get("character_id")?; let account: String = candidate.try_get("account_id")?;
             portfolio(&mut tx, &account).await?;
-            super::db::lock_admission_relations(&mut tx).await?;
             let root = sqlx::query("SELECT name,lifecycle,character_revision::text FROM game_character_roots WHERE character_id=$1::uuid AND account_id=$2::uuid FOR UPDATE")
                 .bind(&character).bind(&account).fetch_optional(&mut *tx).await?.ok_or(DurabilityError::Unavailable)?;
             let now = trusted_now(&mut tx, Some(&account)).await?;
@@ -178,17 +177,7 @@ async fn trusted_now(tx: &mut Tx<'_>, account: Option<&str>) -> Result<i64, Dura
     Ok(now)
 }
 async fn portfolio(tx: &mut Tx<'_>, account: &str) -> Result<(), DurabilityError> {
-    // The empty portfolio mutex carries no ownership authority. Match creation's
-    // lock protocol for a canonical account that has not owned a character yet.
-    sqlx::query("INSERT INTO game_character_account_guards(account_id) VALUES($1::uuid) ON CONFLICT DO NOTHING").bind(account).execute(&mut **tx).await?;
-    sqlx::query(
-        "SELECT account_id FROM game_character_account_guards WHERE account_id=$1::uuid FOR UPDATE",
-    )
-    .bind(account)
-    .fetch_optional(&mut **tx)
-    .await?
-    .ok_or(DurabilityError::Unavailable)?;
-    Ok(())
+    super::fresh_admission::lock_admission_portfolios(tx, &[account], true, false).await
 }
 async fn in_session(
     tx: &mut Tx<'_>,
@@ -265,7 +254,6 @@ async fn decide(
         let account = text(intent, "account_id")?;
         let character = text(intent, "character_id")?;
         portfolio(tx, account).await?;
-        super::db::lock_admission_relations(tx).await?;
         let root = sqlx::query("SELECT account_id::text,name,name_key,lifecycle,character_revision::text FROM game_character_roots WHERE character_id=$1::uuid FOR UPDATE")
             .bind(character).fetch_optional(&mut **tx).await?;
         now = trusted_now(tx, Some(account)).await?;
@@ -508,3 +496,6 @@ async fn change(tx: &mut Tx<'_>, c: Change<'_>) -> Result<(), DurabilityError> {
         .bind(c.character).bind(c.new_name).bind(c.new_lifecycle).bind(c.revision).execute(&mut **tx).await?;
     Ok(())
 }
+
+#[cfg(test)]
+mod lock_order_tests;

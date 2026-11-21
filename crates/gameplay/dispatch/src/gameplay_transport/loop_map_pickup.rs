@@ -392,27 +392,49 @@ pub(super) async fn move_map_item(
     {
         return stale;
     }
-    let result = admission
-        .root
-        .commit_item_loop_move(
-            permit,
-            admission.character,
-            admission.holder,
-            &fence,
-            candidate.request().command,
-            &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
-            LoopMoveRequest {
-                item: minted.item_instance_id,
-                count: None,
-                pickup_cell: Some(ground_cell(
-                    i32::from(pos.x),
-                    i32::from(pos.y),
-                    i16::from(pos.floor),
-                )),
-                destination,
-            },
-        )
-        .await;
+    let pickup = LoopMoveRequest {
+        item: minted.item_instance_id,
+        count: None,
+        pickup_cell: Some(ground_cell(
+            i32::from(pos.x),
+            i32::from(pos.y),
+            i16::from(pos.floor),
+        )),
+        destination,
+    };
+    let weights = NativeItemWeights(native).with_wheel(admission.premium_coordinator);
+    // Capability 510: the picked-up entry takes the requested container slot.
+    let result = match request.slot {
+        Some(slot) => {
+            admission
+                .root
+                .commit_item_loop_move_to_slot(
+                    permit,
+                    admission.character,
+                    admission.holder,
+                    &fence,
+                    candidate.request().command,
+                    &weights,
+                    pickup,
+                    slot,
+                )
+                .await
+        }
+        None => {
+            admission
+                .root
+                .commit_item_loop_move(
+                    permit,
+                    admission.character,
+                    admission.holder,
+                    &fence,
+                    candidate.request().command,
+                    &weights,
+                    pickup,
+                )
+                .await
+        }
+    };
     ground_cache.invalidate();
     admission
         .states

@@ -673,21 +673,39 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         session: crate::foundation::GameSessionId,
         fence: crate::durability::item_transfer::CurrentCharacterItemFence,
     ) -> Result<Option<AdmissionEffects>, ()> {
+        self.read_house_equipment_effects(actor, session, fence, false)
+            .await
+    }
+
+    pub(in crate::gameplay_transport) async fn read_house_equipment_effects(
+        &self,
+        actor: crate::foundation::ExactActorRef,
+        session: crate::foundation::GameSessionId,
+        fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+        clock: bool,
+    ) -> Result<Option<AdmissionEffects>, ()> {
         let Some(native) = self.active_generation.and_then(|a| a.native_gameplay()) else {
             return Ok(None);
         };
-        let equipment = super::read_current_house_equipment(self, actor, session, fence)
-            .await
-            .ok_or(())?;
-        let fence = self
+        let current = self
             .current_quest_fence(session)
             .await
             .map_err(|_| ())?
+            .filter(|current| current.item_fence() == fence)
             .ok_or(())?;
+        let equipment = if clock {
+            crate::gameplay_transport::equipment_move::read_house_clock_equipment(
+                self, actor, session, fence,
+            )
+            .await
+        } else {
+            super::read_fenced_house_equipment(self, actor, session, fence).await
+        }
+        .ok_or(())?;
         self.equipment_effects_from_snapshot(
             session,
             equipment,
-            fence,
+            current,
             native,
             Some(*self.channel_id.as_bytes()),
         )
@@ -702,20 +720,31 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         &self,
         expected: crate::durability::item_transfer::CurrentCharacterItemFence,
     ) -> Result<Option<AdmissionEffects>, ()> {
-        let Some(native) = self
-            .active_generation
-            .and_then(|active| active.native_gameplay())
-        else {
-            return Ok(None);
-        };
         if !matches!(
             expected.runtime_scope,
             crate::foundation::RuntimeScopeRefV1::Channel { .. }
         ) {
             return Err(());
         }
-        let fence = self
-            .current_quest_fence(expected.game_session_id)
+        self.read_fenced_equipment_effects(expected).await
+    }
+
+    /// The authoritative clock can refresh effects during reconnect grace.
+    pub(in crate::gameplay_transport) async fn read_fenced_equipment_effects(
+        &self,
+        expected: crate::durability::item_transfer::CurrentCharacterItemFence,
+    ) -> Result<Option<AdmissionEffects>, ()> {
+        let Some(native) = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+        else {
+            return Ok(None);
+        };
+        let retry = super::super::AdmissionRetryBudget::for_command(self.root);
+        let fence = retry
+            .retry_durability("equipment_effects_fence", || {
+                self.current_quest_fence_durable(expected.game_session_id)
+            })
             .await
             .map_err(|_| ())?
             .ok_or(())?;
@@ -732,22 +761,13 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 return Err(());
             }
         }
-        let read = self
-            .root
-            .read_movement_equipment(
-                self.character,
-                self.holder,
-                &expected,
-                native.source_digest(),
-            )
-            .await
-            .map_err(|_| ())?;
-        if read.fence() != &expected || read.equipment().content_digest != native.source_digest() {
-            return Err(());
-        }
+        let equipment =
+            super::read_equipment_within(self, &retry, &expected, native.source_digest())
+                .await
+                .ok_or(())?;
         self.equipment_effects_from_snapshot(
             expected.game_session_id,
-            read.equipment().clone(),
+            equipment,
             fence,
             native,
             None,
@@ -854,7 +874,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             let (proficiency_weapon, proficiency_defense, proficiency_shield_modifier) =
                 self.equipped_proficiency_defense(session, &equipment)?;
             let mut states = self.states.spell_states.lock().await;
-            let state = states.house_state_mut(runtime, actor, session, fence)?;
+            let state = states.house_equipment_state_mut(runtime, actor, session, fence)?;
             state.install_wheel_equipment(wheel_hands);
             state.install_wheel_proficiency(
                 proficiency_weapon.as_deref(),

@@ -3,6 +3,16 @@ use super::{CommandStatus, WalkDisposition, WalkResponse, WalkState};
 pub fn apply(state: &mut WalkState, response: WalkResponse) {
     state.pending = false;
     state.response = Some(response);
+    state.last_progress = None;
+    // No path or a refusal of the route request is final.
+    if response.disposition != Some(WalkDisposition::Accepted)
+        || !matches!(
+            response.status,
+            CommandStatus::Accepted | CommandStatus::DuplicateReplay
+        )
+    {
+        super::input::cancel(state);
+    }
     state.feedback = Some(
         if !matches!(
             response.status,

@@ -45,7 +45,7 @@ fn managed_container_moves_all_through_live_handles_and_stops_on_refusal()
     assert_eq!(requests[1].source, item(12)?.handle);
     assert_eq!(
         requests[0].destination,
-        ItemMoveDestination::Container(20.try_into()?)
+        ItemMoveDestination::Container(20.try_into()?, None)
     );
     assert_eq!(requests[0].count, None);
     assert!(!link.container_move_all(1));
@@ -247,7 +247,7 @@ fn scenario(refuse_second: bool) -> Result<(), Box<dyn std::error::Error>> {
                     assert_eq!(requests[1].source, 11_u64.try_into()?);
                     assert_eq!(
                         requests[0].destination,
-                        oteryn_session::ItemMoveDestination::Container(2_u64.try_into()?)
+                        oteryn_session::ItemMoveDestination::Container(2_u64.try_into()?, None)
                     );
                     assert_eq!(requests[0].count, None);
                     assert_eq!(

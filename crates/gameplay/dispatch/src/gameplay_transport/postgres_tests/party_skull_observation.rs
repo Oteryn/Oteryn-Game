@@ -63,6 +63,7 @@ async fn snapshot(server: &mut DuplexStream) -> TestResult {
             actor_position: position(),
             own_identity: entity().identity,
             entities: vec![spatial::WorldSpatialEntity {
+                motion: None,
                 display_name: None,
                 kind: spatial::EntityKind::Player,
                 entity: entity(),

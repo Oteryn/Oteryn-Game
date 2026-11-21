@@ -925,3 +925,28 @@ fn client_build_gate_refusal_requires_objects_in_all_positions() {
         Ok(GatewayRefusal::UpdateRequired(_))
     ));
 }
+
+#[test]
+fn owner_character_feed_rejects_invalid_names_and_duplicate_identities() -> TestResult {
+    std::thread::Builder::new().stack_size(64 << 20).spawn(|| {
+        let runtime = tokio::runtime::Builder::new_multi_thread().enable_all().build().map_err(|e| e.to_string())?;
+        let row = serde_json::json!({"character_id": CHARACTER, "world_id": WORLD, "name": "Ari", "availability": "AVAILABLE"});
+        let mut feeds = Vec::new();
+        for name in ["x".repeat(97), "A\nri".into(), "".into()] {
+            let mut invalid = row.clone();
+            invalid["name"] = name.into();
+            feeds.push(serde_json::json!({"protocol_version": 2, "characters": [invalid]}));
+        }
+        let mut conflicting = row.clone();
+        conflicting["world_id"] = CHANNEL.into();
+        feeds.push(serde_json::json!({"protocol_version": 2, "characters": [row.clone(), conflicting]}));
+        feeds.push(serde_json::json!({"protocol_version": 2, "characters": [row.clone(), row]}));
+        let server = spawn_server(&runtime, feeds.iter().map(|v| (200, "", v.to_string())).collect()).map_err(|e| e.to_string())?;
+        let client = client_for(&server).map_err(|e| e.to_string())?;
+        let token = AccessToken(SecretText("owner-access".into()));
+        for _ in feeds {
+            assert_eq!(runtime.block_on(client.owner_characters(&token, CancellationToken::new())).err(), Some(NativeLoginError::Platform(PlatformClientError::InvalidPayload)));
+        }
+        Ok::<(), String>(())
+    })?.join().map_err(|_| "character test panicked")?.map_err(Into::into)
+}

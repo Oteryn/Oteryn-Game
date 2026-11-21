@@ -31,7 +31,7 @@ fn request() -> PlayerTradeRequest {
             runtime_scope:RuntimeScopeRefV1::channel(WorldId::decode(&id(1)).unwrap(),ChannelId::decode(&id(2)).unwrap()),
             scope_ownership_generation:ScopeOwnershipGeneration::new(u64::MAX).unwrap(),
         };
-        TradeParticipant {accepted,command:CommandRef::new(accepted.game_session_id,CommandId::new(u64::MAX).unwrap()),leaf:TradeLeaf {
+        TradeParticipant {accepted,command:CommandRef::new(accepted.game_session_id,CommandId::new(u64::MAX).unwrap()),leaf:TradeLeaf {contents: Vec::new(),
             item:json!({"item_instance_id":uuid(30+n),"world_id":uuid(1),"definition_family":"Item",
                 "definition_production_key":"oteryn:item.coin","definition_revision_ref":"r1","quantity":100,
                 "lifecycle":1,"state_revision":"18446744073709551615",
@@ -41,6 +41,7 @@ fn request() -> PlayerTradeRequest {
             key:Some(json!({"item_instance_id":uuid(30+n),"key_number":65535,"minted_transaction_id":uuid(60+n),"created_xact_id":"18446744073709551615"})),
             timed:Some(json!({"item_instance_id":uuid(30+n),"charges":65535,"remaining_ms":604800000,"deadline_at":null,
                 "state_revision":"18446744073709551615"})),text:Some(json!({"sha256":"f".repeat(64)})),
+            attributes:None,
             text_revision:Some(json!({"item_instance_id":uuid(30+n),"last_revision":"18446744073709551615"})),
         }}
     });

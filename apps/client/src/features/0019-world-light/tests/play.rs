@@ -11,6 +11,7 @@ fn clxa_character_light_reaches_native_scene_and_expires_on_update()
     let entry = VisibleAppearance {
         forge_stacks: None,
         entity: oteryn_session::WorldSpatialEntity {
+            motion: None,
             display_name: None,
             kind: EntityKind::Player,
             entity: EntityRef {
@@ -119,5 +120,32 @@ fn ambient_preference_changes_confirmed_clock_lighting() -> Result<(), Box<dyn s
     assert_eq!(view.scene().sprites().lighting.ambient, [102; 3]);
     preferences.ambient_brightness = 101;
     assert!(view.set_preferences(preferences).is_err());
+    Ok(())
+}
+
+#[test]
+fn local_player_gets_minimum_light_without_reported_personal_light() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::{ActorPosition, EntityDetail, EntityKind, EntityRef, StepDirection, VisibleAppearance, WorldSpatialEntity};
+    let mut view = PlayView::new(TileCoord::new(0, 0), 7, &[])?;
+    view.scene.set_own_identity([1;16]);
+    let own = VisibleAppearance {
+        entity: WorldSpatialEntity {
+            motion: None,
+            entity: EntityRef { identity: [1;16], generation: 1 },
+            position: ActorPosition { x: 0, y: 0, floor: 7 },
+            kind: EntityKind::Player, display_name: None,
+            detail: EntityDetail::Actor { direction: StepDirection::South, appearance_ref: 1, health_percent: 100 },
+        },
+        light: None, look: None, forge_stacks: None,
+    };
+    for (reported, radius, color) in [(None, 3.0, 215), (Some((1,0)), 3.0, 215), (Some((8,180)), 8.0, 180)] {
+        view.appearances = vec![VisibleAppearance { light: reported, ..own.clone() }];
+        view.world_clock = Some(WorldClock { tibian_minute: 0, light_level: 0, light_color: 215 });
+        view.light_scene()?;
+        let sources = &view.scene().sprites().lighting.sources;
+        assert_eq!(sources.len(), 1);
+        assert_eq!(sources[0].radius, radius * view.scene().view().tile_px() as f32);
+        assert_eq!(sources[0].color, oteryn_renderer::lighting::light_color(color));
+    }
     Ok(())
 }

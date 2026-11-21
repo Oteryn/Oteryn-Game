@@ -8,6 +8,7 @@ use oteryn_protocol_oteryn::world_spatial_entities::{
 
 fn spatial(id: u8) -> WorldSpatialEntity {
     WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: EntityKind::Npc,
         entity: WireEntityRef {
@@ -72,6 +73,7 @@ fn hireling_dictionary_attaches_existing_npc_look_once_and_does_not_bind_static_
         entities: vec![ChannelEntity {
             source_icons:
                 oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(),
+            motion: None,
             display_name: None,
             kind: VisibleKind::Hireling,
             health_percent: 100,

@@ -1,0 +1,7 @@
+{
+  "mechanic": "0504-tutorial-vocation",
+  "kind": "panels",
+  "id": "0504-tutorial-vocation-panel",
+  "status": "supported",
+  "entry": "view.rs::choices"
+}

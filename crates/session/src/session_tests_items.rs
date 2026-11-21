@@ -905,7 +905,7 @@ fn item_commands_are_refused_before_sending_without_capability_4() -> Result<(),
             with_item
                 .move_item(&ItemMoveIntent {
                     source: handle(1),
-                    destination: ItemMoveDestination::Container(handle(2)),
+                    destination: ItemMoveDestination::Container(handle(2), None),
                 })
                 .await,
             Err(SessionError::ItemView(_))

@@ -5,7 +5,8 @@ fn console_and_action_bar_settings_reach_received_chat_and_cast_caller()
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::{SettingsState, play_channel};
     use oteryn_session::{ChatLine, ChatRoomSet};
-    let path = std::env::temp_dir().join(format!("o006-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("o006.json");
     let mut state = SettingsState::new(Some(path.clone()));
     let (link, mut commands, outbox) = play_channel();
     let mut preferences = state.preferences.clone();

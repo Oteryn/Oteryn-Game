@@ -17,9 +17,16 @@ pub(super) struct NoticeText;
 #[derive(Component)]
 pub(super) struct CloseNotice(u64);
 
+#[path = "death_controls.rs"]
+mod death_controls;
+pub(super) fn install(app: &mut App) {
+    app.add_systems(Update, death_controls::project.after(project));
+}
+
 pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     let death = overlay(&mut commands, 175, DeathOverlay);
     let panel = notice_panel(&mut commands, &skins, death, "You are dead");
+    commands.entity(panel).insert(death_controls::Panel);
     let text = commands
         .spawn((
             source::text("", source::font(skins.font.clone(), false)),
@@ -43,7 +50,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
         ))
         .insert(TextLayout::default());
     let notices = overlay(&mut commands, 170, NoticeOverlay);
-    let panel = notice_panel(&mut commands, &skins, notices, "Compendium — Notices");
+    let panel = notice_panel(&mut commands, &skins, notices, "Compendium — Player Guide");
     let scroll = commands
         .spawn((
             ScrollArea,
@@ -66,6 +73,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
         .id();
     commands.entity(scroll).add_child(text);
     commands.entity(panel).add_child(scroll);
+    super::guide::setup(&mut commands, &skins, panel);
     close_button(&mut commands, &skins, panel, 0);
 }
 fn overlay<C: Component>(commands: &mut Commands, z: i32, marker: C) -> Entity {
@@ -151,20 +159,45 @@ fn close(
 }
 pub(super) fn keyboard(
     mut keys: MessageReader<bevy::input::keyboard::KeyboardInput>,
-    owner: NonSend<HostOwner>,
+    mut owner: NonSendMut<HostOwner>,
     guard: ModalGuard,
     overlays: Query<Entity, With<NoticeOverlay>>,
+    deaths: Query<Entity, With<DeathOverlay>>,
 ) {
     if owner
         .play
         .as_ref()
         .is_some_and(|play| play.link.server_modal_active())
-        || !overlays.single().is_ok_and(|overlay| guard.allows(overlay))
     {
         keys.clear();
         return;
     }
-    if let Some(play) = &owner.play {
+    if let Some(play) = &mut owner.play {
+        if play.view.death_modal_notice().is_some() {
+            if deaths.single().is_ok_and(|entity| guard.allows(entity)) {
+                for event in keys.read().filter(|event| {
+                    event.state == bevy::input::ButtonState::Pressed && !event.repeat
+                }) {
+                    match event.key_code {
+                        KeyCode::Enter | KeyCode::NumpadEnter => {
+                            play.view.acknowledge_death(&play.link);
+                            break;
+                        }
+                        KeyCode::Escape => {
+                            play.view.logout();
+                            break;
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            keys.clear();
+            return;
+        }
+        if !overlays.single().is_ok_and(|entity| guard.allows(entity)) {
+            keys.clear();
+            return;
+        }
         if keys.read().any(|event| {
             event.state == bevy::input::ButtonState::Pressed
                 && !event.repeat
@@ -188,7 +221,9 @@ pub(super) fn project(
     close: Query<(Entity, &CloseNotice, &ChildOf)>,
     mut focus: ResMut<InputFocus>,
     mut previous: Local<(bool, bool)>,
+    mut guide: ResMut<super::guide::State>,
 ) {
+    guide.session(owner.generation());
     let dead = owner
         .play
         .as_ref()
@@ -259,7 +294,7 @@ pub(super) fn project(
             Some(
                 notices
                     .as_ref()
-                    .map(oteryn_client_ui::tutorial_notices::panel_text)
+                    .map(|panel| guide.text(panel))
                     .unwrap_or_default(),
             )
         } else {
@@ -272,3 +307,7 @@ pub(super) fn project(
         }
     }
 }
+
+#[cfg(test)]
+#[path = "notices_death_tests.rs"]
+mod tests;

@@ -31,13 +31,7 @@ impl PlayLink {
         if !self.quest_panel().open {
             self.quest_request(&QuestLogQuery::List);
         }
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).quest.open = true;
-        }
+        lock(&self.mailbox).quest.open = true;
         true
     }
 }

@@ -64,6 +64,7 @@ pub(super) async fn start(
             .map(|(i, hireling)| ((i + 1) as u8, format!("#{} - {}", i + 1, hireling.name)))
             .collect(),
         buttons: vec![(1, "Select".into()), (2, "Cancel".into())],
+        default_button: Some(1),
         cancel_button: Some(2),
         image: None,
     };
@@ -157,6 +158,7 @@ async fn complete(
             message: format!("Purchase: {:?}", result.code),
             choices: Vec::new(),
             buttons: vec![(1, "Close".into())],
+            default_button: Some(1),
             cancel_button: Some(1),
             image: None,
         },

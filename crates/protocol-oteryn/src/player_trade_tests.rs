@@ -32,6 +32,7 @@ fn player_trade_wire_roundtrip_and_bounds() -> Result<(), Error> {
     assert!(encode_intent(Intent::Accept { trade_id: [0; 16] }).is_err());
     assert_eq!(ResultCode::Completed.payload(), [8, 3]);
     let state = State {
+        contents: Default::default(),
         trade_id: Some([3; 16]),
         partner: Some(partner),
         own: Some(Offer {
@@ -94,4 +95,90 @@ fn player_trade_wire_roundtrip_and_bounds() -> Result<(), Error> {
         .is_err()
     );
     Ok(())
+}
+
+#[test]
+fn trade_contents_are_negotiated_bounded_and_parent_indexed() -> Result<(), Error> {
+    let root = Offer {
+        definition: 1,
+        count: 1,
+        sub_type: 0,
+    };
+    let mut state = State {
+        own: Some(root),
+        partner: Some(EntityRef {
+            identity: [1; 16],
+            generation: 1,
+        }),
+        phase: 1,
+        reason: 0,
+        ..Default::default()
+    };
+    state.contents[0] = vec![
+        ContentsItem {
+            item: root,
+            parent: None,
+            name: "backpack".into(),
+        },
+        ContentsItem {
+            item: Offer {
+                definition: 2,
+                count: 9,
+                sub_type: 0,
+            },
+            parent: Some(0),
+            name: "fish".into(),
+        },
+    ];
+    let mut omitted_root_parent = encode_state(&state)?;
+    let mut body = Vec::new();
+    push_message_field(&mut body, 1, &offer(root)?);
+    push_message_field(&mut body, 3, b"backpack");
+    push_message_field(&mut omitted_root_parent, 11, &body);
+    assert_eq!(
+        decode_state_for(&omitted_root_parent, true)?.contents[0],
+        state.contents[0][..1]
+    );
+    let encoded = encode_state_for(&state, true)?;
+    assert!(decode_state(&encoded).is_err());
+    assert_eq!(decode_state_for(&encoded, true)?, state);
+    assert!(decode_state_for(&encode_state(&state)?, true)?.contents[0].is_empty());
+    state.contents[0][1].parent = Some(1);
+    assert!(encode_state_for(&state, true).is_err());
+    state.contents[0][1].parent = None;
+    assert!(encode_state_for(&state, true).is_err());
+    state.contents[0][1].parent = Some(0);
+    let child = state.contents[0][1].clone();
+    state.contents[0].resize(MAX_CONTENTS_ITEMS, child.clone());
+    let maximum = encode_state_for(&state, true)?;
+    assert_eq!(decode_state_for(&maximum, true)?, state);
+    state.contents[0].push(child);
+    assert!(encode_state_for(&state, true).is_err());
+    Ok(())
+}
+
+#[test]
+fn player_trade_own_offer_look_accepts_omitted_false() -> Result<(), Error> {
+    let trade_id = [9; 16];
+    let mut bytes = vec![34, 18, 10, 16];
+    bytes.extend_from_slice(&trade_id);
+    assert_eq!(
+        decode_intent(&bytes)?,
+        Intent::Look {
+            trade_id,
+            counter_offer: false
+        }
+    );
+    Ok(())
+}
+
+#[test]
+fn player_trade_state_rejects_one_byte_above_registered_ceiling() {
+    let payload = vec![0; 65_537];
+    assert_eq!(
+        decode_state_for(&payload[..65_536], true),
+        Err(Error::Malformed)
+    );
+    assert_eq!(decode_state_for(&payload, true), Err(Error::LimitExceeded));
+    assert_eq!(MAX_CONTENTS_STATE_BYTES, 65_536);
 }

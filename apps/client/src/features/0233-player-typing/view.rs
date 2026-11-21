@@ -6,8 +6,3 @@ impl PlayLink {
         lock(&self.mailbox).player_typing.clone()
     }
 }
-#[cfg(windows)]
-#[path = "native.rs"]
-mod native;
-#[cfg(windows)]
-pub(in crate::play) use native::open_window;

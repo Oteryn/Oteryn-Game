@@ -30,6 +30,7 @@ impl PlayLink {
         oteryn_client_ui::chat::dialog_entries(
             mailbox.chat_private.list.as_ref(),
             mailbox.chat_public.rooms,
+            oteryn_client_ui::chat_guild_room::available(&mailbox.chat),
         )
     }
     /// OpenChannelList (Ctrl+O): show the channel list dialog next to the console.
@@ -106,11 +107,35 @@ impl PlayLink {
     pub fn chat_console_drop(&self, tab: ConsoleTab, x: i32, width: i32) -> bool {
         drop_tab(&mut lock(&self.mailbox), tab, x, width)
     }
+    /// Mirrors the selected tab, a channel tab with its own identity, read-only beside the
+    /// console. Refused while the console is closed.
+    pub fn chat_console_mirror(&self) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        if !mailbox.chat.open {
+            return false;
+        }
+        mailbox.chat.console.mirror_current();
+        true
+    }
+    /// Closes the read-only mirror; the original console stays.
+    pub fn chat_console_mirror_close(&self) {
+        lock(&self.mailbox).chat.console.close();
+    }
     pub fn chat_console_filter(&self) {
         toggle_filter(&mut lock(&self.mailbox));
     }
     pub fn chat_console_mode(&self) {
         cycle_mode(&mut lock(&self.mailbox));
+    }
+    /// Sets the chat mode, as restored from the character's preferences.
+    pub fn chat_set_mode(&self, mode: ComposerMode) {
+        let mut mailbox = lock(&self.mailbox);
+        mailbox.chat.console.mode = mode;
+        mailbox.chat.console.auto_focus = false;
+    }
+    /// Chat Auto: the chat input took (or gave back) the keyboard.
+    pub fn chat_auto_focus(&self, focused: bool) {
+        lock(&self.mailbox).chat.console.auto_focus = focused;
     }
     pub fn chat_communication(
         &self,
@@ -133,20 +158,12 @@ pub(in crate::play) fn select(mailbox: &mut Mailbox, tab: ConsoleTab) {
 pub(super) fn drop_tab(mailbox: &mut Mailbox, tab: ConsoleTab, x: i32, width: i32) -> bool {
     mailbox.chat.open && mailbox.chat.console.drop_tab(tab, x, width)
 }
-#[cfg(windows)]
-pub(super) fn close(mailbox: &mut Mailbox) {
-    mailbox.chat.open = false;
-    mailbox.chat.console.close();
-}
 pub(in crate::play) fn toggle_filter(mailbox: &mut Mailbox) {
     mailbox.chat.console.show_messages = !mailbox.chat.console.show_messages;
 }
 pub(in crate::play) fn cycle_mode(mailbox: &mut Mailbox) {
-    mailbox.chat.console.mode = match mailbox.chat.console.mode {
-        ComposerMode::On => ComposerMode::Off,
-        ComposerMode::Off => ComposerMode::Temporary,
-        ComposerMode::Temporary => ComposerMode::On,
-    };
+    mailbox.chat.console.mode = mailbox.chat.console.mode.next();
+    mailbox.chat.console.auto_focus = false;
 }
 pub(in crate::play) fn edit_lists(
     mailbox: &mut Mailbox,
@@ -259,6 +276,7 @@ pub(in crate::play) fn dialog_confirm(
     let entries = oteryn_client_ui::chat::dialog_entries(
         mailbox.chat_private.list.as_ref(),
         mailbox.chat_public.rooms,
+        oteryn_client_ui::chat_guild_room::available(&mailbox.chat),
     );
     match mailbox.chat.console.dialog.confirm(&entries) {
         Some(DialogAction::Entry(entry)) => {
@@ -288,11 +306,14 @@ impl Outbox {
         let mut mailbox = lock(&self.0);
         for event in events {
             match event {
-                oteryn_session::SessionEvent::ChatLine(delta) => mailbox
-                    .chat
-                    .console
-                    .metadata
-                    .received(&delta.value, received),
+                oteryn_session::SessionEvent::ChatLine(delta) => {
+                    mailbox.chat.pending_lines = mailbox.chat.pending_lines.wrapping_add(1);
+                    mailbox
+                        .chat
+                        .console
+                        .metadata
+                        .received(&delta.value, received);
+                }
                 oteryn_session::SessionEvent::ServerMessage(delta) => {
                     use oteryn_client_ui::chat::NoticeClass;
                     let (class, text) = match &delta.value {
@@ -309,6 +330,7 @@ impl Outbox {
                     mailbox.chat.console.notices.push(class, &text, received);
                 }
                 oteryn_session::SessionEvent::ChatSnapshot(_) => {
+                    mailbox.chat.scope = mailbox.chat.scope.wrapping_add(1);
                     mailbox.chat.console.metadata.reset_history();
                     mailbox.chat.console.reset_extensions();
                 }
@@ -348,7 +370,7 @@ impl Outbox {
 }
 
 /// Cache the complete captions; ownership can change a label without adding a tab.
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(super) fn update_tab_labels(held: &mut Vec<String>, labels: &[String]) -> bool {
     if held == labels {
         return false;
@@ -359,7 +381,7 @@ pub(super) fn update_tab_labels(held: &mut Vec<String>, labels: &[String]) -> bo
 }
 
 /// Called by the native window procedure, including nonqueued activation messages.
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(super) fn native_activation(input: &mut crate::play::PreferenceInput, active: bool) {
     if !active {
         let _ = input.route_chat(
@@ -371,7 +393,7 @@ pub(super) fn native_activation(input: &mut crate::play::PreferenceInput, active
 }
 
 /// Native editors use the same saved custom bindings as the game window.
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(super) fn native_key(
     link: &PlayLink,
     input: &mut crate::play::PreferenceInput,

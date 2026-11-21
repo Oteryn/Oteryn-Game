@@ -24,6 +24,7 @@ enum Kind {
     Vocation,
     World(Option<oteryn_client_runtime::highscores::wire::WorldId>),
     WorldInput,
+    WorldType(Option<oteryn_client_runtime::highscores::catalogue::WorldType>),
 }
 #[derive(Component, Clone, Copy)]
 struct Action {
@@ -42,6 +43,7 @@ struct State {
     generation: Option<u64>,
     revision: u64,
     seen: Option<HighscoresPanel>,
+    worlds: Vec<(oteryn_client_runtime::highscores::wire::WorldId, String)>,
     frame: Option<Entity>,
     body: Option<Entity>,
     seek: Option<Kind>,
@@ -58,6 +60,7 @@ fn setup(mut commands: Commands) {
     commands.spawn((
         Overlay,
         GameModal,
+        crate::bevy_shell::ui::window_layout::WindowLayer("highscores"),
         GlobalZIndex(158),
         Node {
             display: Display::None,
@@ -68,7 +71,6 @@ fn setup(mut commands: Commands) {
             justify_content: JustifyContent::Center,
             ..default()
         },
-        BackgroundColor(Color::srgba(0., 0., 0., 0.45)),
     ));
 }
 #[allow(clippy::too_many_arguments)] // Projection owns hierarchy, focus and retained session state together.
@@ -120,6 +122,18 @@ fn project(
             state.seek = None;
         }
     }
+    if state.frame.is_none() {
+        state.worlds = owner
+            .selection
+            .known_worlds()
+            .iter()
+            .filter_map(|(id, name)| {
+                oteryn_client_ui::highscores::parse_world(id)
+                    .flatten()
+                    .map(|id| (id, name.clone()))
+            })
+            .collect();
+    }
     let now = now_millis();
     if state.seen.as_ref() == Some(&panel) {
         let value = updated_text(&panel, now);
@@ -152,6 +166,7 @@ fn project(
         frame,
         action,
         &panel,
+        &state.worlds,
         state.feedback.as_deref(),
         now,
     ));

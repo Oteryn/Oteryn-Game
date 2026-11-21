@@ -397,3 +397,85 @@ fn daily_reward_postgres_schema_constraints_privileges_and_dst() -> TestResult {
         Ok(())
     })
 }
+
+#[test]
+fn daily_reward_projections_expire_only_uncovered_streaks_postgres() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            run("daily_effective_streak", async |h| {
+                let seal = h.recovery.seal_current().map_err(debug)?;
+                let authority = h
+                    .root
+                    .open_character_authority(&seal)
+                    .await
+                    .map_err(debug)?;
+                let fence = harness::item_fence()?;
+                let world = fence.runtime_scope.world_id();
+                assert_eq!(
+                    h.root
+                        .read_daily_reward_streak(&authority, fence.character_id, world)
+                        .await
+                        .map_err(debug)?,
+                    0
+                );
+                for (index, timestamp) in [
+                    "2026-01-28T08:00:00Z",
+                    "2026-01-29T08:00:00Z",
+                    "2026-01-30T08:00:00Z",
+                    "2026-01-31T08:00:00Z",
+                    "2026-02-01T08:00:00Z",
+                    "2026-02-02T08:00:00Z",
+                    "2026-02-03T08:00:00Z",
+                ]
+                .into_iter()
+                .enumerate()
+                {
+                    let epoch = u64::try_from(index)? + 1;
+                    reset(h, epoch, timestamp).await?;
+                    claim(h, request(epoch, 61 + u8::try_from(index)?)?).await?;
+                }
+                let saved = projection(h).await?;
+                for (epoch, timestamp, expected, jokers) in [
+                    (7, None, 7, 2),
+                    (8, Some("2026-03-04T08:00:00Z"), 7, 3),
+                    (11, Some("2026-03-07T08:00:00Z"), 7, 3),
+                    (12, Some("2026-03-08T08:00:00Z"), 0, 3),
+                ] {
+                    if let Some(timestamp) = timestamp {
+                        reset(h, epoch, timestamp).await?;
+                    }
+                    let view = h
+                        .root
+                        .read_daily_reward_view(
+                            &authority,
+                            &h.node,
+                            fence,
+                            request(epoch, 80)?.command,
+                        )
+                        .await
+                        .map_err(debug)?;
+                    assert_eq!(view.streak, expected, "view at epoch {epoch}");
+                    assert_eq!(view.jokers, jokers);
+                    assert_eq!(
+                        h.root
+                            .read_daily_reward_streak(&authority, fence.character_id, world)
+                            .await
+                            .map_err(debug)?,
+                        expected,
+                        "admission at epoch {epoch}"
+                    );
+                    assert_eq!(
+                        projection(h).await?,
+                        saved,
+                        "reads never claim or spend jokers"
+                    );
+                }
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "daily streak regression thread failed")??;
+    Ok(())
+}

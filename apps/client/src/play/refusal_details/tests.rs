@@ -31,6 +31,7 @@ impl Stepper for Peer {
             .pop_front()
             .ok_or(SessionError::SessionUnusable)?;
         Ok(StepOutcome {
+            step_wait_ms: 0,
             command_id: 1,
             status: CommandStatus::Accepted,
             disposition: if self.detail.is_some() {
@@ -45,7 +46,7 @@ impl Stepper for Peer {
         })
     }
 
-    async fn world_context(&mut self, command: &Command) -> Result<String, SessionError> {
+    async fn world_context(&mut self, command: &Command, _: bool) -> Result<String, SessionError> {
         assert_eq!(command.action, Action::Use);
         self.uses.pop_front().ok_or(SessionError::SessionUnusable)
     }

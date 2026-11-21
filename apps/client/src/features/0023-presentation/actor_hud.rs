@@ -1,7 +1,20 @@
 //! Server-owned health, party/PvP marks and NPC identity badges.
 use super::*;
 use oteryn_client_runtime::party_skull::PartyIcon;
+use oteryn_session::guild_emblem::GuildEmblem;
 use oteryn_session::{EntityDetail, EntityKind, EntityRef, WorldSpatialEntity};
+
+/// OTClient Creature::setHealthPercent uses strict thresholds, including >3%.
+pub(crate) fn health_rgb(percent: u8) -> [u8; 3] {
+    match percent {
+        93.. => [0, 188, 0],
+        61..=92 => [80, 161, 80],
+        31..=60 => [161, 161, 0],
+        9..=30 => [191, 10, 10],
+        4..=8 => [145, 15, 15],
+        _ => [133, 12, 12],
+    }
+}
 
 pub(super) struct Options {
     pvp_frame: bool,
@@ -14,6 +27,7 @@ pub(super) struct Options {
     own: Option<EntityRef>,
     scale: u16,
     age: std::time::Duration,
+    icon_cells: Option<HudIconCells>,
 }
 impl Options {
     pub(super) fn new(
@@ -21,12 +35,15 @@ impl Options {
         floor: i16,
         own: Option<EntityRef>,
         age: std::time::Duration,
+        shared_frontend: bool,
+        icon_cells: Option<HudIconCells>,
     ) -> Self {
         Self {
             age,
+            icon_cells,
             pvp_frame: preferences.game_window.pvp_frame,
             loot_highlight: preferences.game_window.loot_highlight,
-            health: preferences.creature_bars,
+            health: preferences.creature_bars && !shared_frontend,
             scale: preferences.interface_scale,
             own_marks: preferences.hud_marks_own,
             other_marks: preferences.hud_marks_other,
@@ -37,6 +54,8 @@ impl Options {
     }
 }
 
+// The guild emblems are a second server mark list beside the party icons.
+#[allow(clippy::too_many_arguments)]
 pub(super) fn draw(
     batch: &mut SpriteBatch,
     view: &TileView,
@@ -44,14 +63,18 @@ pub(super) fn draw(
     own: TileCoord,
     entities: &[WorldSpatialEntity],
     icons: &[PartyIcon],
+    emblems: &[GuildEmblem],
     options: Options,
-) -> Result<(), BatchError> {
+) -> Result<Vec<std::ops::Range<usize>>, BatchError> {
+    let mut fixed = Vec::new();
     let scale = f32::from(options.scale) / 100.0;
+    let icon_cells = options.icon_cells.as_ref();
     for entity in entities {
         let tile = TileCoord::new(entity.position.x, entity.position.y);
         if entity.position.floor != options.floor || !view.contains(tile) {
             continue;
         }
+        let start = batch.len();
         let [x, y] = view.tile_to_screen(tile);
         let pvp = options.pvp_frame && icons.iter().any(|icon| icon.entity == entity.entity && icon.skull != 0);
         let loot = options.loot_highlight && entity.kind == EntityKind::Corpse;
@@ -65,17 +88,17 @@ pub(super) fn draw(
         if options.health
             && let EntityDetail::Actor { health_percent, .. } = entity.detail
         {
-            let at = [x + 2.0 * scale, y + view.tile_px() as f32 - 5.0 * scale];
+            let at = [x + 2.0 * scale, (y - 4.0 * scale).max(10.0 * scale)];
             let width = (view.tile_px() as f32 - 4.0 * scale).max(1.0);
-            pixel(
+            pixel_rgb(
                 batch,
                 view,
                 atlas,
                 at,
                 [width, 3.0 * scale],
-                PresentationColor::DarkRed,
+                [0; 3],
             )?;
-            pixel(
+            pixel_rgb(
                 batch,
                 view,
                 atlas,
@@ -84,22 +107,43 @@ pub(super) fn draw(
                     width * f32::from(health_percent.min(100)) / 100.0,
                     3.0 * scale,
                 ],
-                PresentationColor::LightGreen,
+                health_rgb(health_percent).map(|channel| ((u16::from(channel) + 25) / 51) as u8),
             )?;
         }
         if options.other_marks
             && Some(entity.entity) != options.own
             && let Some(icon) = icons.iter().find(|icon| icon.entity == entity.entity)
         {
-            icons::draw(batch, view, atlas, [x, y], icon.shield, false, options.age)?;
+            icons::draw(batch, view, atlas, icon_cells, [x, y], icon.shield, false, options.age, scale)?;
             icons::draw(
                 batch,
                 view,
                 atlas,
+                icon_cells,
                 [x + 16.0 * scale, y],
                 icon.skull,
                 true,
                 options.age,
+                scale,
+            )?;
+        }
+        // Tibia's guild emblem follows the shield and skull in the same row.
+        let marks = if Some(entity.entity) == options.own {
+            options.own_marks
+        } else {
+            options.other_marks
+        };
+        if marks
+            && let Some(emblem) = oteryn_client_ui::guild_emblem::emblem_of(emblems, entity.entity)
+        {
+            icons::draw_emblem(
+                batch,
+                view,
+                atlas,
+                icon_cells,
+                [x + 32.0 * scale, y],
+                emblem as u8,
+                scale,
             )?;
         }
         if options.npc && entity.kind == EntityKind::Npc {
@@ -121,22 +165,57 @@ pub(super) fn draw(
                 }
             }
         }
+        if options.own.map_or(tile == own, |own| own == entity.entity) {
+            fixed.push(start..batch.len());
+        }
     }
+    let start = batch.len();
     if options.own_marks
         && let Some(own_ref) = options.own
         && let Some(icon) = icons.iter().find(|icon| icon.entity == own_ref)
     {
         let [x, y] = view.tile_to_screen(own);
-        icons::draw(batch, view, atlas, [x, y], icon.shield, false, options.age)?;
+        icons::draw(batch, view, atlas, icon_cells, [x, y], icon.shield, false, options.age, scale)?;
         icons::draw(
             batch,
             view,
             atlas,
+            icon_cells,
             [x + 16.0 * scale, y],
             icon.skull,
             true,
             options.age,
+            scale,
         )?;
     }
-    Ok(())
+    fixed.push(start..batch.len());
+    Ok(fixed)
+}
+
+#[cfg(test)]
+mod health_tests {
+    use super::*;
+    #[test]
+    fn creature_health_bar_uses_tibia_thresholds() -> Result<(), BatchError> {
+        let world = crate::map::World::builtin()?;
+        let view = TileView::new(TileCoord::new(0, 0), 32, 15, 11)?;
+        let preferences = crate::play::ReferencePreferences { creature_bars: true, ..Default::default() };
+        for (health, rgb) in [(100,[0,4,0]), (93,[0,4,0]), (92,[2,3,2]), (61,[2,3,2]), (60,[3,3,0]), (31,[3,3,0]), (30,[4,0,0]), (9,[4,0,0]), (8,[3,0,0]), (4,[3,0,0]), (3,[3,0,0]), (1,[3,0,0])] {
+            let entity = WorldSpatialEntity {
+                motion: None,
+                entity: EntityRef { identity: [1;16], generation: 1 },
+                position: oteryn_session::ActorPosition { x: 1, y: 1, floor: 0 },
+                kind: EntityKind::Creature, display_name: None,
+                detail: EntityDetail::Actor { direction: oteryn_session::StepDirection::South, appearance_ref: 1, health_percent: health },
+            };
+            let mut batch = SpriteBatch::new();
+            draw(&mut batch, &view, world.atlas(), TileCoord::new(0,0), &[entity], &[], &[], Options::new(&preferences, 0, None, std::time::Duration::ZERO, false, None))?;
+            let mut expected = SpriteBatch::new();
+            super::super::pixel_rgb(&mut expected, &view, world.atlas(), [0.0;2], [1.0;2], [0;3])?;
+            assert_eq!(batch.instances().first().map(|q| q.uv), expected.instances().first().map(|q| q.uv));
+            super::super::pixel_rgb(&mut expected, &view, world.atlas(), [0.0;2], [1.0;2], rgb)?;
+            assert_eq!(batch.instances().last().map(|q| q.uv), expected.instances().last().map(|q| q.uv), "health {health}");
+        }
+        Ok(())
+    }
 }

@@ -102,6 +102,7 @@ fn entity_snapshot() -> Result<(u32, Vec<u8>), BoxError> {
     };
     let own_identity = [0xa0; 16];
     let own = WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: EntityKind::Player,
         entity: EntityRef {

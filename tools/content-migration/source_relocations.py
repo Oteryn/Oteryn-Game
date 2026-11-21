@@ -91,13 +91,16 @@ RELOCATIONS = {
     # crate. Only its two include_bytes! prefixes gained one `../`; the explicit
     # APPEARANCE_ONLY_ITEM_IDS cohort the pins guard is unchanged. DUP-GUARD-1 later
     # moved its unit tests to the content crate's item_identity_tests.rs; production
-    # code and the cohort are byte-identical.
+    # code and the cohort are byte-identical. #3250 then made the key rule apply to a
+    # candidate draft and added the promotion-time unique Item key check; both are
+    # additions only, and the cohort is unchanged. The promotion tests now live
+    # in item_identity_promotion_tests.rs.
     (
         "apps/game-server/src/content/item_identity.rs",
         "0df52c391a1d56e5d82be269ddcd480233f923007cfdf35b9a79226bf2868dde",
     ): (
         "crates/gameplay/content-promotion/src/content/item_identity.rs",
-        "12b998650847975760f4f5abbbf38e2f0eba1c11b51e844e5c89c74854103544",
+        "21ad89460c333ee7f61bc16f70e7a81cd33f65bb8d18be513db937e11007d41e",
     ),
     # The same carve: the A12 helper reads the native admission through this ledger.
     (

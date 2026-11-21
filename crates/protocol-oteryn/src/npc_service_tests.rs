@@ -59,6 +59,7 @@ fn offer(item: u32) -> NpcOffer {
 
 fn window(offers: usize) -> NpcTradeWindow {
     NpcTradeWindow {
+        details: Vec::new(),
         open: Some((npc(u64::MAX), u64::MAX)),
         offers: (0..offers).map(|_| offer(u32::MAX)).collect(),
     }
@@ -477,10 +478,12 @@ fn a_trade_window_round_trips() {
     for window in [
         NpcTradeWindow::default(),
         NpcTradeWindow {
+            details: Vec::new(),
             open: Some((npc(3), 0)),
             offers: Vec::new(),
         },
         NpcTradeWindow {
+            details: Vec::new(),
             open: Some((npc(3), 12)),
             offers: vec![
                 NpcOffer {
@@ -540,7 +543,7 @@ fn a_757_offer_snapshot_encodes_within_its_registered_byte_bound() {
     for key in ["delta_types", "snapshot_types"] {
         let registered = domain[key][0]["max_payload_bytes"].as_u64().expect("bound");
         assert!(encoded.len() as u64 <= registered);
-        assert_eq!(registered, MAX_NPC_TRADE_WINDOW_BYTES as u64);
+        assert_eq!(registered, MAX_NPC_TRADE_WINDOW_DETAILS_BYTES as u64);
     }
     const { assert!(MAX_OFFERS >= 757) };
     const { assert!(MAX_NPC_TRADE_WINDOW_BYTES <= crate::MAX_SNAPSHOT_CHUNK_BYTES) };
@@ -563,6 +566,7 @@ fn a_trade_window_refuses_bad_offers_and_inconsistent_state() {
     for bad in bad_offers {
         assert_eq!(
             encode_npc_trade_window(&NpcTradeWindow {
+                details: Vec::new(),
                 open: Some((npc(1), 1)),
                 offers: vec![bad],
             }),
@@ -572,6 +576,7 @@ fn a_trade_window_refuses_bad_offers_and_inconsistent_state() {
     // Offers without an NPC.
     assert_eq!(
         encode_npc_trade_window(&NpcTradeWindow {
+            details: Vec::new(),
             open: None,
             offers: vec![offer(1)],
         }),
@@ -741,7 +746,7 @@ fn the_registries_bind_the_npc_service_constants() {
             STATE_DOMAIN_NPC_TRADE_WINDOW,
             "NPC_TRADE_WINDOW",
             "NpcTradeWindowV1",
-            MAX_NPC_TRADE_WINDOW_BYTES,
+            MAX_NPC_TRADE_WINDOW_DETAILS_BYTES,
         ),
     ] {
         let domain = find("state_domains", id);
@@ -868,3 +873,153 @@ fn the_intent_result_matches_the_hand_written_golden_bytes() {
 #[cfg(test)]
 #[path = "npc_service_fuzz_tests.rs"]
 mod fuzz_tests;
+
+#[test]
+fn authoritative_npc_quote_details_decode() {
+    // An open shop with one fish offer and index-aligned server metadata.
+    let mut payload = encode_npc_trade_window(&NpcTradeWindow {
+        open: Some((
+            EntityRef {
+                identity: [1; 16],
+                generation: 1,
+            },
+            9,
+        )),
+        offers: vec![NpcOffer {
+            item_definition_ref: 42,
+            side: NpcTradeSide::Buy,
+            count: 1,
+            unit_price: 17,
+        }],
+        details: Vec::new(),
+    })
+    .expect("window");
+    let mut unavailable = payload.clone();
+    unavailable.extend_from_slice(&[34, 6, 10, 4, b'f', b'i', b's', b'h']);
+    assert_eq!(
+        decode_npc_trade_window_for(&unavailable, true)
+            .expect("unavailable quote")
+            .details[0]
+            .maximum_quantity,
+        0
+    );
+    payload.extend_from_slice(&[34, 8, 10, 4, b'f', b'i', b's', b'h', 16, 37]);
+    assert!(decode_npc_trade_window(&payload).is_err());
+    let decoded = decode_npc_trade_window_for(&payload, true).expect("authoritative quote details");
+    assert_eq!(decoded.details[0].name, "fish");
+    assert_eq!(decoded.details[0].maximum_quantity, 37);
+}
+
+#[test]
+fn npc_quote_maximum_respects_bulk_transaction_limit() {
+    let mut window = NpcTradeWindow {
+        open: Some((
+            EntityRef {
+                identity: [1; 16],
+                generation: 1,
+            },
+            9,
+        )),
+        offers: vec![NpcOffer {
+            item_definition_ref: 42,
+            side: NpcTradeSide::Buy,
+            count: 1,
+            unit_price: 17,
+        }],
+        details: vec![crate::trade_details::NpcQuoteDetails {
+            name: "fish".into(),
+            maximum_quantity: 10_000,
+        }],
+    };
+    let bytes = encode_npc_trade_window_for(&window, true).expect("bulk quote");
+    assert_eq!(
+        decode_npc_trade_window_for(&bytes, true),
+        Ok(window.clone())
+    );
+    // The last varint is 10,000. Change it to 10,001 without using the encoder.
+    let mut invalid = bytes;
+    let quantity = invalid.len() - 2;
+    assert_eq!(&invalid[quantity..], &[0x90, 0x4e]);
+    invalid[quantity] = 0x91;
+    window.details[0].maximum_quantity = 10_001;
+    assert_eq!(
+        (
+            encode_npc_trade_window_for(&window, true),
+            decode_npc_trade_window_for(&invalid, true)
+        ),
+        (
+            Err(NpcServiceWireError::Malformed),
+            Err(NpcServiceWireError::Malformed)
+        )
+    );
+    window.offers[0].count = 2;
+    window.details[0].maximum_quantity = 5_000;
+    let bytes = encode_npc_trade_window_for(&window, true).expect("multi-unit bulk quote");
+    assert_eq!(
+        decode_npc_trade_window_for(&bytes, true),
+        Ok(window.clone())
+    );
+    let mut invalid = bytes;
+    let quantity = invalid.len() - 2;
+    assert_eq!(&invalid[quantity..], &[0x88, 0x27]);
+    invalid[quantity] = 0x89;
+    window.details[0].maximum_quantity = 5_001;
+    assert_eq!(
+        (
+            encode_npc_trade_window_for(&window, true),
+            decode_npc_trade_window_for(&invalid, true)
+        ),
+        (
+            Err(NpcServiceWireError::Malformed),
+            Err(NpcServiceWireError::Malformed)
+        )
+    );
+}
+
+#[test]
+fn npc_quote_schema_covers_negotiated_window() {
+    let window = NpcTradeWindow {
+        open: Some((
+            EntityRef {
+                identity: [1; 16],
+                generation: 1,
+            },
+            9,
+        )),
+        offers: vec![
+            NpcOffer {
+                item_definition_ref: 42,
+                side: NpcTradeSide::Buy,
+                count: 1,
+                unit_price: 17
+            };
+            200
+        ],
+        details: vec![
+            crate::trade_details::NpcQuoteDetails {
+                name: "a".repeat(128),
+                maximum_quantity: 1
+            };
+            200
+        ],
+    };
+    let bytes = encode_npc_trade_window_for(&window, true).expect("large shop");
+    assert!(bytes.len() > MAX_NPC_TRADE_WINDOW_BYTES);
+    assert_eq!(decode_npc_trade_window_for(&bytes, true), Ok(window));
+    let schema = include_str!("../../../docs/contracts/protocol-oteryn/v1/npc_service_v1.proto");
+    assert!(schema.contains("22,570 bytes without capability 501, 170,026 bytes with it"));
+}
+
+#[test]
+fn npc_quote_window_rejects_one_byte_above_registered_ceiling() {
+    let payload = vec![0; 170_027];
+    assert_eq!(
+        decode_npc_trade_window_for(&payload[..170_026], true),
+        Err(NpcServiceWireError::Malformed)
+    );
+    assert_eq!(
+        decode_npc_trade_window_for(&payload, true),
+        Err(NpcServiceWireError::LimitExceeded)
+    );
+    assert_eq!(MAX_NPC_TRADE_WINDOW_DETAILS_BYTES, 170_026);
+}

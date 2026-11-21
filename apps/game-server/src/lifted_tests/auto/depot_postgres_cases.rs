@@ -208,7 +208,7 @@ fn depot_rejects_bad_scope_boxes_ordinals_and_duplicate_custody_atomically() -> 
             "INSERT INTO game_item_character_depot_locations \
              (item_instance_id,world_id,character_id,town_id,box_number) \
              VALUES($1::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,0,1) \
-             ON CONFLICT DO NOTHING",
+             ON CONFLICT (item_instance_id) DO NOTHING",
         )
         .bind(&items[0])
         .bind(id(fixture::WORLD).as_slice())

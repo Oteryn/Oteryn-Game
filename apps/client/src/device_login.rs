@@ -8,16 +8,27 @@ use oteryn_platform_client::{
     device_sessions::{DeviceCredential, DeviceSession, SessionKey, now},
     native_login::{NativeLoginClient, NativeLoginError},
 };
-use std::{path::PathBuf, sync::Arc};
+use std::{
+    path::PathBuf,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+    time::Duration,
+};
+
+const CREDENTIAL_LOCK_TIMEOUT: Duration = Duration::from_secs(1);
 #[derive(Default)]
 struct State {
     session: Option<DeviceSession>,
-    pending: Option<DeviceCredential>,
+    pending: Vec<DeviceCredential>,
+    vault_clear_failed: bool,
     key: Option<SessionKey>,
     remembered: bool,
 }
 pub struct DeviceLogin {
     enabled: bool,
+    forget_requested: AtomicBool,
     vault: Arc<dyn vault::Vault>,
     state: Arc<tokio::sync::Mutex<State>>,
     folder: Option<PathBuf>,
@@ -26,6 +37,7 @@ impl Default for DeviceLogin {
     fn default() -> Self {
         Self {
             enabled: false,
+            forget_requested: AtomicBool::new(false),
             vault: vault::system("Oteryn/native-disabled".into()),
             state: Default::default(),
             folder: None,
@@ -46,6 +58,7 @@ impl DeviceLogin {
         };
         Self {
             enabled,
+            forget_requested: AtomicBool::new(false),
             vault: vault::system(format!("Oteryn/NativeDevice/{key}")),
             state: Default::default(),
             folder: Some(folder),
@@ -60,28 +73,86 @@ impl DeviceLogin {
         if !self.enabled {
             return Ok(None);
         }
-        let mut state = self.state.clone().lock_owned().await;
-        let lock = if let Some(folder) = &self.folder {
-            std::fs::create_dir_all(folder).map_err(|_| storage_error())?;
+        let Ok(mut state) =
+            tokio::time::timeout(CREDENTIAL_LOCK_TIMEOUT, self.state.clone().lock_owned()).await
+        else {
+            return Ok(None);
+        };
+        let Ok(lock) = self.lock_credential().await else {
+            return Ok(None);
+        };
+        let forget = self.forget_requested.load(Ordering::Acquire) || state.vault_clear_failed;
+        if self.load_remembered(&mut state).is_err() {
+            return Ok(None);
+        }
+        let remembered = options.remember_device && self.vault.available();
+        let mut attempt = DeviceAttempt {
+            state,
+            vault: self.vault.clone(),
+            _lock: lock,
+            remembered,
+            options,
+            folder: self.folder.clone(),
+        };
+        if forget || !options.stay_logged_in || attempt.state.remembered != remembered {
+            attempt.sign_out(client).await;
+            if !attempt.state.vault_clear_failed {
+                self.forget_requested.store(false, Ordering::Release);
+            }
+        } else {
+            let _ = attempt.revoke_pending(client).await;
+        }
+        if cancel.is_cancelled() {
+            attempt.sign_out(client).await;
+            return Err(storage_error());
+        }
+        Ok(Some(attempt))
+    }
+    async fn lock_credential(&self) -> Result<Option<std::fs::File>, NativeLoginError> {
+        let Some(folder) = self.folder.clone() else {
+            return Ok(None);
+        };
+        let deadline = std::time::Instant::now() + CREDENTIAL_LOCK_TIMEOUT;
+        let worker = tokio::task::spawn_blocking(move || {
+            use std::{fs::TryLockError, time::Instant};
+
+            std::fs::create_dir_all(&folder).map_err(|_| storage_error())?;
+            let path = folder.join("credential.lock");
+            match std::fs::symlink_metadata(&path) {
+                Ok(metadata) if !metadata.is_file() => return Err(storage_error()),
+                Err(error) if error.kind() != std::io::ErrorKind::NotFound => {
+                    return Err(storage_error());
+                }
+                _ => {}
+            }
             let file = std::fs::OpenOptions::new()
                 .create(true)
                 .truncate(false)
+                .read(true)
                 .write(true)
-                .open(folder.join("credential.lock"))
+                .open(path)
                 .map_err(|_| storage_error())?;
-            let file = tokio::task::spawn_blocking(move || file.lock().map(|()| file))
-                .await
-                .map_err(|_| storage_error())?
-                .map_err(|_| storage_error())?;
-            Some(file)
-        } else {
-            None
-        };
-        if let Some(pending) = state.pending.take() {
-            let _ = client
-                .revoke_device(&pending, CancellationToken::new())
-                .await;
-        }
+            if !file.metadata().map_err(|_| storage_error())?.is_file() {
+                return Err(storage_error());
+            }
+            while Instant::now() < deadline {
+                match file.try_lock() {
+                    Ok(()) => return Ok(Some(file)),
+                    Err(TryLockError::WouldBlock) if Instant::now() < deadline => {
+                        std::thread::sleep(Duration::from_millis(10));
+                    }
+                    Err(_) => return Err(storage_error()),
+                }
+            }
+            Err(storage_error())
+        });
+        tokio::time::timeout_at(tokio::time::Instant::from_std(deadline), worker)
+            .await
+            .map_err(|_| storage_error())?
+            .map_err(|_| storage_error())?
+    }
+
+    fn load_remembered(&self, state: &mut State) -> Result<(), NativeLoginError> {
         if state.remembered {
             state.session = None;
         }
@@ -102,41 +173,37 @@ impl DeviceLogin {
                 }
             }
         }
-        let remembered = options.remember_device && self.vault.available();
+        Ok(())
+    }
+
+    pub(crate) fn block_remembered(&self) {
+        self.forget_requested.store(true, Ordering::Release);
+    }
+
+    pub async fn sign_out(&self, client: &NativeLoginClient) -> Result<(), NativeLoginError> {
+        self.block_remembered();
+        let state = tokio::time::timeout(CREDENTIAL_LOCK_TIMEOUT, self.state.clone().lock_owned())
+            .await
+            .map_err(|_| storage_error())?;
+        let lock = self.lock_credential().await?;
         let mut attempt = DeviceAttempt {
             state,
             vault: self.vault.clone(),
             _lock: lock,
-            remembered,
-            options,
+            remembered: false,
+            options: MiscellaneousPreferences::default(),
             folder: self.folder.clone(),
         };
-        if !options.stay_logged_in || attempt.state.remembered != remembered {
-            attempt.sign_out(client).await;
+        let known_session = attempt.state.session.clone();
+        let loaded = self.load_remembered(&mut attempt.state);
+        if loaded.is_err() && attempt.state.session.is_none() {
+            attempt.state.session = known_session;
         }
-        if cancel.is_cancelled() {
-            attempt.sign_out(client).await;
-            return Err(storage_error());
+        let revoked = attempt.revoke(client).await;
+        if loaded.is_ok() && !attempt.state.vault_clear_failed {
+            self.forget_requested.store(false, Ordering::Release);
         }
-        Ok(Some(attempt))
-    }
-    pub async fn sign_out(&self, client: &NativeLoginClient) {
-        let active = Self {
-            enabled: true,
-            vault: self.vault.clone(),
-            state: self.state.clone(),
-            folder: self.folder.clone(),
-        };
-        if let Ok(Some(mut attempt)) = active
-            .begin(
-                client,
-                MiscellaneousPreferences::default(),
-                CancellationToken::new(),
-            )
-            .await
-        {
-            attempt.sign_out(client).await;
-        }
+        loaded.and(revoked)
     }
     pub fn vault_available(&self) -> bool {
         self.vault.available()
@@ -152,6 +219,8 @@ mod confirmation;
 #[cfg(windows)]
 pub use confirmation::confirm_action;
 
+#[cfg(test)]
+mod revocation_tests;
 #[cfg(test)]
 mod test_server;
 #[cfg(test)]

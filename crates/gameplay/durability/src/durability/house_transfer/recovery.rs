@@ -69,7 +69,9 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move |pass, deadline| {
             Box::pin(async move {
                 let mut tx = begin_semantic_transaction(pass, deadline).await?;
-                lock_admission_relations(&mut tx).await?;
+                // Let ingress retry a busy admission writer without holding the
+                // durability connection until the PostgreSQL lock deadline.
+                super::super::db::try_lock_admission_relations(&mut tx).await?;
                 if !prove_current_incarnation(&mut tx, &node).await? {
                     return Err(DurabilityError::Unavailable);
                 }

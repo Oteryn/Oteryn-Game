@@ -11,10 +11,18 @@ When selected, every player, creature/monster and NPC entry (including the own
 player and House hirelings) must carry a nonblank UTF-8 name of at most 64 bytes,
 without control characters. Objects must omit the field. Missing, repeated,
 invalid UTF-8, misplaced and overbound names fail closed on decoding; encoding
-validates the same bound. Names are never truncated. The entry bound becomes
-194 bytes and the payload bound 50,688 bytes (256 entries plus 1,024 header bytes).
-Without capability 286, entries retain the existing bytes, 128-byte entry bound
-and 33,792-byte payload bound; field 13 is rejected by that decoder.
+validates the same bound. Names are never truncated. Without capability 286, the decoder rejects field 13.
+
+Capability 286 adds 66 bytes to the entry limit and capability 502 (actor motion)
+adds 51. For type 2 snapshots and deltas the payload limit is 256 times the entry
+limit plus 1,024 bytes.
+
+| Capabilities | Max entry bytes | Max payload bytes |
+| --- | ---: | ---: |
+| Neither | 128 | 33792 |
+| 286 only | 194 | 50688 |
+| 502 only | 179 | 46848 |
+| 286 and 502 | 245 | 63744 |
 
 The server reads player Character names through the existing admitted chat-name
 cache or durable Character name reader, monster names from the runtime creature

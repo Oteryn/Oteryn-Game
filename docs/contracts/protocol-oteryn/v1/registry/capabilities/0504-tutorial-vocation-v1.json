@@ -1,0 +1,15 @@
+{
+  "id": 504,
+  "name": "TUTORIAL_VOCATION_V1",
+  "owner_decision": "Native Newhaven tutorial vocation task",
+  "owner": "Game Character build and tutorial owners",
+  "requires": [
+    31
+  ],
+  "command_types": [
+    6243
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Gated by BUNDLE_WORLD_OFFERED_CAPABILITIES. Bundle World only. See tutorial-vocation-v1.md."
+}

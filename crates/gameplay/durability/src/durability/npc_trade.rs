@@ -356,13 +356,30 @@ fn validate(request: &NpcTradeRequest, sell_all: bool) -> Result<Option<(u64, u3
             pick_exchange::validate(request, sell_all)?;
         }
     }
-    validate_sell_bound(request, sell_all, rules::NPC_TRADE_SELL_GOLD_UNITS_MAX)
+    validate_sell_bound(
+        request,
+        sell_all,
+        rules::NPC_TRADE_SELL_GOLD_UNITS_MAX,
+        false,
+    )
+}
+
+// Preserve the original single-stack validator for legacy recipes and callers.
+fn validate_extended(request: &NpcTradeRequest, sell_all: bool) -> Result<Option<(u64, u32)>> {
+    if sell_all
+        || request.cause.side == NpcTradeSide::Exchange
+        || (request.quantity <= rules::NPC_TRADE_QUANTITY_MAX && item_units(request).is_ok())
+    {
+        return validate(request, sell_all);
+    }
+    validate_sell_bound(request, false, rules::NPC_TRADE_SELL_GOLD_UNITS_MAX, true)
 }
 
 fn validate_sell_bound(
     request: &NpcTradeRequest,
     sell_all: bool,
     sell_max: u64,
+    bulk: bool,
 ) -> Result<Option<(u64, u32)>> {
     if request.fluid_subtype.is_some()
         && (request.fluid_subtype.is_some_and(|s| s > 20)
@@ -401,14 +418,22 @@ fn validate_sell_bound(
         None
     } else {
         Some(if cause.side == NpcTradeSide::Buy {
-            rules::trade_total(true, request.quantity, request.unit_price)?
+            if bulk {
+                rules::trade_total_for(true, request.quantity, request.unit_price)?
+            } else {
+                rules::trade_total(true, request.quantity, request.unit_price)?
+            }
         } else {
             let total = request
                 .unit_price
                 .checked_mul(u64::from(request.quantity))
                 .ok_or(NpcTradeError::InvalidInput)?;
-            if !(1..=rules::NPC_TRADE_QUANTITY_MAX).contains(&request.quantity) || total > sell_max
-            {
+            let quantity_maximum = if bulk {
+                rules::NPC_TRADE_BULK_QUANTITY_MAX
+            } else {
+                rules::NPC_TRADE_QUANTITY_MAX
+            };
+            if !(1..=quantity_maximum).contains(&request.quantity) || total > sell_max {
                 return Err(NpcTradeError::InvalidInput);
             }
             total
@@ -449,7 +474,16 @@ fn validate_sell_bound(
         return Err(NpcTradeError::InvalidInput);
     }
     match priced {
-        Some(total) => Ok(Some((total, item_units(request)?))),
+        Some(total) => {
+            let units = if bulk {
+                let (maximum, stackable) =
+                    stack_maximum(request.item.stack).map_err(|_| NpcTradeError::InvalidInput)?;
+                rules::item_units_for(request.quantity, request.offer_count, maximum, stackable)?
+            } else {
+                item_units(request)?
+            };
+            Ok(Some((total, units)))
+        }
         None => Ok(None),
     }
 }
@@ -622,6 +656,67 @@ fn plan_buy(
     .into())
 }
 
+async fn buy_weight_bounds(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: &CurrentCharacterItemFence,
+    weights: &dyn super::item_transfer::ItemWeightLookup,
+) -> Result<(u64, u64)> {
+    let carried = super::item_loop_move::carried_weight(
+        tx,
+        fence.character_id,
+        *fence.runtime_scope.world_id().as_bytes(),
+        weights,
+    )
+    .await
+    .map_err(|_| NpcTradeError::CapacityExceeded)?;
+    let capacity = super::item_transfer::read_derived_transfer_capacity_centi_oz(
+        tx,
+        fence.character_id,
+        weights,
+    )
+    .await?;
+    Ok((carried, capacity))
+}
+
+fn buy_weight_fits(
+    (carried, capacity): (u64, u64),
+    required: u64,
+    plan: &Plan,
+    request: &NpcTradeRequest,
+    weights: &dyn super::item_transfer::ItemWeightLookup,
+) -> Result<()> {
+    let mut paid_weight = 0_u64;
+    let mut change_weight = 0_u64;
+    for line in &plan.lines {
+        let Some(coin) = line.coin else {
+            continue;
+        };
+        let weight = u64::from(
+            weights
+                .weight_of(request.coins.of(coin))
+                .map_err(|_| NpcTradeError::InvalidInput)?,
+        );
+        if line.kind == NpcTradeLineKind::CoinBurn {
+            paid_weight = paid_weight
+                .checked_add(weight * u64::from(line.quantity_before - line.quantity_after))
+                .ok_or(NpcTradeError::CapacityExceeded)?;
+        } else if line.kind == NpcTradeLineKind::CoinMint {
+            change_weight = change_weight
+                .checked_add(weight * u64::from(line.quantity_after))
+                .ok_or(NpcTradeError::CapacityExceeded)?;
+        }
+    }
+    if carried
+        .checked_sub(paid_weight)
+        .and_then(|weight| weight.checked_add(required))
+        .and_then(|weight| weight.checked_add(change_weight))
+        .is_none_or(|weight| weight > capacity)
+    {
+        return Err(NpcTradeError::DoesNotFit);
+    }
+    Ok(())
+}
+
 fn plan_sell(
     request: &NpcTradeRequest,
     total: u64,
@@ -629,7 +724,7 @@ fn plan_sell(
     capacity: usize,
     entries: &[Entry],
 ) -> Result<Plan> {
-    Ok(rules::plan_sell(&plan_input(request), total, units, capacity, entries)?.into())
+    Ok(rules::plan_sell_for(&plan_input(request), total, units, capacity, entries)?.into())
 }
 
 /// A sell-all's plan with its total and the units it sells.
@@ -741,6 +836,37 @@ impl DurabilityRoot {
             fence,
             request,
             TradeCommitOptions::default(),
+        )
+        .await
+    }
+
+    /// Commit a live shop purchase with the active content's carry-weight lookup.
+    pub async fn commit_npc_shop_buy(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: NpcTradeRequest,
+        weights: &dyn super::item_transfer::ItemWeightLookup,
+        yasir_position: Option<(u16, u16, i8)>,
+    ) -> Result<NpcTradeOutcome> {
+        if request.cause.side != NpcTradeSide::Buy
+            || yasir_position.is_some_and(|source| {
+                request.cause.npc_key != YASIR || !(0..=15).contains(&source.2)
+            })
+        {
+            return Err(NpcTradeError::InvalidInput);
+        }
+        self.commit_trade(
+            authority,
+            node,
+            fence,
+            request,
+            TradeCommitOptions {
+                weights: Some(weights),
+                yasir_position,
+                ..TradeCommitOptions::default()
+            },
         )
         .await
     }
@@ -880,7 +1006,7 @@ impl DurabilityRoot {
         let priced = if hireling_sell {
             sell_hireling::validate(&request, sell_all)?
         } else {
-            validate(&request, sell_all)?
+            validate_extended(&request, sell_all)?
         };
         let mut binding = bind_yasir_position(
             request_binding(&fence, world_id, &request, sell_all),
@@ -1000,8 +1126,6 @@ impl DurabilityRoot {
                         .container_capacity
                         .and_then(|capacity| usize::try_from(capacity).ok())
                         .unwrap_or(0);
-                    if let Some(source)=&hireling
-                        && let Err(error)=source.package_preflight(&mut tx,&fence,&request,*weights).await {return Ok(Err(error));}
                     if request.cause.npc_key == yeo::NPC
                         && (yeo_position != Some(yeo::POSITION) || !yeo::matches(&request)) {
                         return Ok(Err(NpcTradeError::RequirementNotMet));
@@ -1039,9 +1163,6 @@ impl DurabilityRoot {
                         } else { pick_exchange::fits(&mut tx, fence, *weights, &[(pick_exchange::input(), 1)], (pick_exchange::output(), 1)).await? };
                         if !fits { return Ok(Err(NpcTradeError::DoesNotFit)); }
                     }
-                    if matches!(hireling,Some(hireling::Extra::Package(_))) && entries.len()>=capacity {
-                        return Ok(Err(NpcTradeError::DoesNotFit));
-                    }
                     let plan = if let Some(plan) = fish_plan { Ok(plan) } else if yeo_position.is_some() {yeo::plan(&request,capacity,&entries,tx.tuple().tuple()).map(|plan|(plan,0,1))} else if hireling_sell {sell_hireling::plan(&request,priced,capacity,&entries)} else {match (priced, request.cause.side) {
                         (None, _) => plan_sell_all(&request, capacity, &entries),
                         (Some((total, units)), NpcTradeSide::Buy) => plan_buy(&request, total, units, capacity, &entries, tx.tuple().tuple(), super::bank::fee_payer_is_junior(fence.character_id))
@@ -1059,6 +1180,39 @@ impl DurabilityRoot {
                         Err(NpcTradeError::Unavailable(error)) => return Err(error),
                         Err(error) => return Ok(Err(error)),
                     };
+                    // Direct slots and the carried tree are independent limits.
+                    // All planned burns are direct leaves; only whole burns free an entry.
+                    let direct_delta: i64 = plan.lines.iter().map(|line| {
+                        i64::from(line.quantity_before == 0) - i64::from(line.quantity_after == 0)
+                    }).sum();
+                    let added = direct_delta + hireling.as_ref().map_or(0, hireling::Extra::nested_outputs);
+                    if added > 0 {
+                        let carried: i64 = sqlx::query_scalar(
+                            "SELECT game_item_loop_tree_size(encode($1,'hex')::uuid)",
+                        )
+                        .bind(fence.character_id.as_bytes().as_slice())
+                        .fetch_one(&mut **tx)
+                        .await?;
+                        if carried + added > super::item_loop_move::ITEM_LOOP_TREE_ITEMS_MAX {
+                            return Ok(Err(NpcTradeError::DoesNotFit));
+                        }
+                    }
+                    if let Some(source) = &hireling
+                        && let Err(error) = source.package_preflight(&mut tx, &fence, &request, *weights, &plan, (entries.len(), capacity)).await {
+                        return Ok(Err(error));
+                    }
+                    if hireling.is_none() && request.cause.side == NpcTradeSide::Buy
+                        && let Some(weights) = *weights {
+                        let Some(unit_weight) = request.item.weight else {
+                            return Ok(Err(NpcTradeError::InvalidInput));
+                        };
+                        let required = u64::from(unit_weight) * u64::from(units);
+                        let weight_check = buy_weight_bounds(&mut tx, &fence, weights).await
+                            .and_then(|bounds| buy_weight_fits(bounds, required, &plan, &request, weights));
+                        if let Err(error) = weight_check {
+                            return Ok(Err(error));
+                        }
+                    }
                     // A sell-all records and audits the units it sold as its quantity.
                     let quantity = if sell_all { units } else { request.quantity };
 

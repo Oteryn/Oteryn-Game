@@ -232,8 +232,7 @@ fn device_and_generation_changes_stop_old_stream_and_never_replay_old_session_cu
 }
 
 #[test]
-fn unavailable_output_drains_queues_without_retries_until_device_or_session_changes() -> TestResult
-{
+fn unavailable_output_drains_queues_without_immediate_retries() -> TestResult {
     let mut play = Play::new()?;
     play.events(vec![sound(41)])?;
     let mut player: Player<Recording> = Player::default();
@@ -254,5 +253,67 @@ fn unavailable_output_drains_queues_without_retries_until_device_or_session_chan
         Err("Device unavailable".into())
     });
     assert_eq!(attempts, 2);
+    Ok(())
+}
+
+#[test]
+fn transient_output_failure_retries_after_backoff_and_restores_ambient() -> TestResult {
+    use std::time::{Duration, Instant};
+    let mut play = Play::new()?;
+    play.events(vec![PresentationEventKind::AmbientSound { cue_id: 7 }])?;
+    let mut player: Player<Recording> = Player::default();
+    let log = Rc::new(RefCell::new(Vec::new()));
+    let now = Instant::now();
+    let mut attempts = 0;
+    player.poll_at(
+        Some((1, &mut play.view)),
+        true,
+        |_| {
+            attempts += 1;
+            Err("Device unavailable".into())
+        },
+        now,
+    );
+    assert_eq!(player.status(), Some("Device unavailable"));
+    player.poll_at(
+        Some((1, &mut play.view)),
+        true,
+        |device| {
+            attempts += 1;
+            open(&log, device)
+        },
+        now + Duration::from_millis(500),
+    );
+    assert_eq!(attempts, 1);
+    player.poll_at(
+        Some((1, &mut play.view)),
+        true,
+        |device| {
+            attempts += 1;
+            open(&log, device)
+        },
+        now + Duration::from_secs(1),
+    );
+    assert_eq!(attempts, 2);
+    assert_eq!(player.status(), None);
+    assert_eq!(
+        rendered(&log)?.1,
+        [SoundCue {
+            id: 7,
+            source: PresentationSource::Global,
+            ambient: true
+        }]
+    );
+    player.poll_at(
+        Some((1, &mut play.view)),
+        true,
+        |device| {
+            attempts += 1;
+            open(&log, device)
+        },
+        now + Duration::from_secs(2),
+    );
+    assert_eq!(attempts, 2);
+    assert!(rendered(&log)?.1.is_empty());
     Ok(())
 }

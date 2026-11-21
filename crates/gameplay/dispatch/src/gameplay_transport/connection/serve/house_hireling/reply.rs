@@ -89,6 +89,21 @@ pub(in super::super) fn result(
                 ),
             )
         }
+        Dispatch::ItemMove(outcome, _, refusal) => (
+            CommandStatus::Accepted,
+            detail(
+                encode_item_move_result_for(
+                    *outcome,
+                    ItemMoveSelection {
+                        equip_drop: selected.contains(CAPABILITY_ITEM_EQUIP_DROP_V1),
+                        world_interaction: selected.contains(CAPABILITY_WORLD_INTERACTION_V1),
+                        ..ItemMoveSelection::default()
+                    },
+                )
+                .map_err(|_| ServeEnd::Disconnected)?,
+                refusal.or(RefusalDetail::of_item_move(*outcome)),
+            ),
+        ),
         Dispatch::ContainerView(outcome, _) => (
             CommandStatus::Accepted,
             encode_container_view_result(*outcome),

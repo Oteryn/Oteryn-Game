@@ -48,9 +48,20 @@ fn emit_launcher_version() {
     }
 }
 
+/// The Bevy host is the Windows client, so `cfg(bevy_shell)` is on for every Windows build;
+/// elsewhere the `bevy-shell` feature opts in.
+fn emit_bevy_shell_cfg() {
+    println!("cargo:rustc-check-cfg=cfg(bevy_shell)");
+    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+    if target_os == "windows" || std::env::var_os("CARGO_FEATURE_BEVY_SHELL").is_some() {
+        println!("cargo:rustc-cfg=bevy_shell");
+    }
+}
+
 fn main() -> Result<(), String> {
     emit_common_controls_manifest();
     emit_launcher_version();
+    emit_bevy_shell_cfg();
     update_trust::emit()?;
     println!("cargo:rerun-if-changed=build_support/update_trust.rs");
     let manifest = std::env::var("CARGO_MANIFEST_DIR").map_err(|e| e.to_string())?;

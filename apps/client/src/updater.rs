@@ -2,12 +2,10 @@
 mod install;
 mod launcher;
 mod login;
+pub use install::verify_archive;
 #[cfg(windows)]
 pub use login::login_update_requested;
 pub(crate) use login::start_login_update;
-#[cfg(windows)]
-mod window;
-pub use install::verify_archive;
 use oteryn_platform_client::native_login::ReleaseIdentity;
 use oteryn_platform_client::updates::{UpdateClient, UpdateConfig, UpdateError};
 use std::path::Path;
@@ -53,8 +51,7 @@ fn release_id_from_slot(value: &str) -> Option<&str> {
         }))
     .then_some(id)
 }
-
-fn compiled_platform() -> &'static str {
+pub(crate) fn compiled_platform() -> &'static str {
     if cfg!(windows) {
         "windows"
     } else if cfg!(target_os = "macos") {
@@ -63,7 +60,7 @@ fn compiled_platform() -> &'static str {
         "linux"
     }
 }
-fn compiled_arch() -> &'static str {
+pub(crate) fn compiled_arch() -> &'static str {
     if cfg!(target_arch = "aarch64") {
         "arm64"
     } else if cfg!(target_arch = "x86") {
@@ -102,7 +99,7 @@ async fn maintain_release(
         .map_err(|_| UpdateError::Storage)?;
     lock.try_lock().map_err(|_| UpdateError::Unavailable)?;
     #[cfg(windows)]
-    let _maintenance = window::acquire_maintenance()?;
+    let _maintenance = acquire_maintenance()?;
     let update = UpdateClient::check(config, &directory.join(".updates")).await?;
     if let Some((refused, minimum)) = gate {
         update.require_login_update(minimum, refused)?;
@@ -150,6 +147,19 @@ async fn maintain_release(
         installed = installed
     ))
 }
+/// Refuses maintenance while setup or the client runs (the install/client mutex handshake).
+#[cfg(windows)]
+fn acquire_maintenance() -> Result<crate::win_mutex::NamedMutex, UpdateError> {
+    let sid = crate::win_mutex::current_user_sid().map_err(|_| UpdateError::Unavailable)?;
+    let name = crate::win_mutex::setup_mutex_name(&sid);
+    let guard = crate::win_mutex::create_exclusive(&name).map_err(|_| UpdateError::Unavailable)?;
+    if crate::win_mutex::exists(&crate::win_mutex::client_mutex_name(&sid))
+        .map_err(|_| UpdateError::Unavailable)?
+    {
+        return Err(UpdateError::Unavailable);
+    }
+    Ok(guard)
+}
 /// Returns true when a maintenance command was consumed, without starting gameplay.
 pub fn requested(
     directory: &Path,
@@ -169,9 +179,11 @@ pub fn requested(
     } else if args.iter().any(|a| a == "--update") {
         Action::Update
     } else {
-        #[cfg(windows)]
+        #[cfg(bevy_shell)]
         if args.iter().any(|a| a == "--updates") {
-            return Some(window::show(directory, channel));
+            return Some(crate::bevy_shell::maintenance::run(
+                directory, args, channel,
+            ));
         }
         return None;
     };

@@ -19,6 +19,26 @@ pub(crate) struct State {
     pub tap: Option<(u64, [f64; 2])>,
 }
 
+impl State {
+    pub fn next_direction(&mut self, diagonals: bool) -> Option<StepDir> {
+        use StepDir::*;
+        let directions = self.direction?;
+        let diagonal = match directions {
+            [North, East] => Some(NorthEast),
+            [South, East] => Some(SouthEast),
+            [South, West] => Some(SouthWest),
+            [North, West] => Some(NorthWest),
+            _ => None,
+        };
+        if diagonals && let Some(direction) = diagonal {
+            return Some(direction);
+        }
+        let direction = directions[usize::from(self.alternate)];
+        self.alternate = !self.alternate;
+        Some(direction)
+    }
+}
+
 /// Shared drawing and hit geometry in the same scene pixels as mouse picking.
 pub(crate) struct Layout {
     pub center: [f64; 2],

@@ -46,6 +46,7 @@ use std::time::{Duration, Instant};
 
 pub use oteryn_client_runtime as client_runtime;
 pub use oteryn_client_ui as client_ui;
+pub use oteryn_session as native_session;
 
 /// Everything `connect_and_join` needs to admit with one grant and read its join snapshot.
 #[derive(Debug, Clone, Copy)]

@@ -39,6 +39,7 @@ fn o021_overhead_queries_server_icons_without_opening_status_window()
         },
     );
     outbox.entities(vec![oteryn_session::WorldSpatialEntity {
+        motion: None,
         entity,
         display_name: None,
         kind: oteryn_session::EntityKind::Creature,

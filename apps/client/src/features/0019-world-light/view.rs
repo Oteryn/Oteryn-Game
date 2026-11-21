@@ -5,6 +5,9 @@ impl PlayView {
             .map(oteryn_client_ui::world_light::clock_text)
     }
     pub(in crate::play) fn light_scene(&mut self) -> Result<(), oteryn_renderer::BatchError> {
+        self.light_scene_at(std::time::Instant::now())
+    }
+    pub(in crate::play) fn light_scene_at(&mut self, now: std::time::Instant) -> Result<(), oteryn_renderer::BatchError> {
         if !self.preferences().show_lights {
             self.scene.set_ambient([255; 3])?;
             self.scene.set_lights(Vec::new());
@@ -23,12 +26,20 @@ impl PlayView {
         self.scene.set_floor_separator(graphics.separator)?;
         let view = self.scene.view();
         let tile_px = view.tile_px() as f32;
-        let sources = self
+        let own = self.scene.own_identity();
+        let minimum_personal_light = self.world_clock.is_some_and(|clock| clock.light_level < 64)
+            || self.floor < -7;
+        let mut sources: Vec<_> = self
             .appearances
             .iter()
             .filter(|entry| entry.entity.position.floor == self.floor)
             .filter_map(|entry| {
-                let (level, color) = entry.light?;
+                let (level, color) = if minimum_personal_light && Some(entry.entity.entity.identity) == own {
+                    let (level, color) = entry.light.unwrap_or((0, 0));
+                    (level.max(3), if color == 0 || color > 215 { 215 } else { color })
+                } else {
+                    entry.light?
+                };
                 let at = entry.entity.position;
                 let [x, y] = view.tile_to_screen(oteryn_renderer::TileCoord::new(at.x, at.y));
                 Some(oteryn_renderer::lighting::PointLight {
@@ -38,6 +49,22 @@ impl PlayView {
                 })
             })
             .collect();
+        for &(at, level, color) in &self.local.world().item_lights {
+            if at.floor != self.floor { continue; }
+            let [x, y] = view.tile_to_screen(oteryn_renderer::TileCoord::new(at.x, at.y));
+            sources.push(oteryn_renderer::lighting::PointLight {
+                position: [x + tile_px / 2., y + tile_px / 2.], radius: f32::from(level) * tile_px,
+                color: oteryn_renderer::lighting::light_color(color),
+            });
+        }
+        if self.preferences().show_effects {
+            let visibility = self.preferences().game_window;
+            let visible = self
+                .visuals
+                .iter()
+                .filter(|cue| visibility.visible(&cue.kind));
+            sources.extend(self.scene.presentation_lights(visible, now, self.floor));
+        }
         self.scene.set_lights(sources);
         Ok(())
     }

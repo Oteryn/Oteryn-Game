@@ -5,6 +5,3 @@ impl PlayView {
             .text_at(popup, std::time::Instant::now())
     }
 }
-#[cfg(all(windows, not(test)))]
-#[path = "native.rs"]
-pub(in crate::play) mod native;

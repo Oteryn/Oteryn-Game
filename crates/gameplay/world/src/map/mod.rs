@@ -158,8 +158,8 @@ pub struct WorldBase {
     tiles: Vec<BaseTile>,
     ids: Vec<u32>,
     depths: Vec<u8>,
-    /// Compact ids can alias across palette families. Ambiguous appearances stay unbound.
-    appearances: std::collections::BTreeMap<u32, Option<u16>>,
+    /// Exact palette appearance for each entry, parallel to `ids` and `depths`.
+    appearances: Vec<Option<u16>>,
     /// `(global entry index, unique, appearance)` of every top-level entry with a `unique`, in
     /// ascending entry index.
     uniques: Vec<(u32, u16, Option<u16>)>,
@@ -249,14 +249,17 @@ impl<'a> TileView<'a> {
 
     /// Palette appearance at the exact top-level ordinal, without requiring a UID.
     pub fn appearance(&self, ordinal: u8) -> Option<u16> {
-        let id = self
-            .ids()
+        let at = self
+            .depths()
             .iter()
-            .zip(self.depths())
+            .enumerate()
             .filter(|(_, depth)| **depth == 0)
             .nth(usize::from(ordinal))?
             .0;
-        self.base.appearances.get(id).copied().flatten()
+        let entry = usize::try_from(self.tile.first_entry)
+            .ok()?
+            .checked_add(at)?;
+        self.base.appearances.get(entry).copied().flatten()
     }
 
     /// Whether the ground item is walkable; `false` without one.
@@ -349,6 +352,7 @@ impl WorldBase {
         let mut tiles = Vec::new();
         let mut ids = Vec::new();
         let mut depths = Vec::new();
+        let mut appearances = Vec::new();
         let mut uniques = Vec::new();
         for (key, positions) in selected {
             let mut sector = SectorTiles {
@@ -363,6 +367,8 @@ impl WorldBase {
                 tile.first_entry = u32::try_from(ids.len()).ok()?;
                 ids.extend_from_slice(self.ids.get(old_start as usize..old_end as usize)?);
                 depths.extend_from_slice(self.depths.get(old_start as usize..old_end as usize)?);
+                appearances
+                    .extend_from_slice(self.appearances.get(old_start as usize..old_end as usize)?);
                 let start = self
                     .uniques
                     .partition_point(|(entry, ..)| *entry < old_start);
@@ -400,7 +406,7 @@ impl WorldBase {
             tiles,
             ids,
             depths,
-            appearances: self.appearances.clone(),
+            appearances,
             uniques,
         })
     }
@@ -443,20 +449,7 @@ impl WorldBase {
             tiles: builder.tiles,
             ids: builder.ids,
             depths: builder.depths,
-            appearances: {
-                let mut appearances = std::collections::BTreeMap::new();
-                for entry in builder.palette.into_iter().flatten() {
-                    appearances
-                        .entry(entry.id)
-                        .and_modify(|appearance| {
-                            if *appearance != entry.appearance {
-                                *appearance = None;
-                            }
-                        })
-                        .or_insert(entry.appearance);
-                }
-                appearances
-            },
+            appearances: builder.appearances,
             uniques: builder.uniques,
         })
     }
@@ -688,20 +681,7 @@ fn load_daily_spawns(
             tiles: builder.tiles,
             ids: builder.ids,
             depths: builder.depths,
-            appearances: {
-                let mut appearances = std::collections::BTreeMap::new();
-                for entry in builder.palette.into_iter().flatten() {
-                    appearances
-                        .entry(entry.id)
-                        .and_modify(|appearance| {
-                            if *appearance != entry.appearance {
-                                *appearance = None;
-                            }
-                        })
-                        .or_insert(entry.appearance);
-                }
-                appearances
-            },
+            appearances: builder.appearances,
             uniques: builder.uniques,
         },
         spawns,
@@ -748,6 +728,7 @@ struct Builder {
     tiles: Vec<BaseTile>,
     ids: Vec<u32>,
     depths: Vec<u8>,
+    appearances: Vec<Option<u16>>,
     uniques: Vec<(u32, u16, Option<u16>)>,
 }
 
@@ -758,6 +739,7 @@ impl Builder {
         self.tiles.shrink_to_fit();
         self.ids.shrink_to_fit();
         self.depths.shrink_to_fit();
+        self.appearances.shrink_to_fit();
         self.uniques.shrink_to_fit();
     }
 
@@ -800,6 +782,7 @@ impl Builder {
                     .get(item.palette as usize)
                     .ok_or_else(|| malformed("palette index out of range"))?;
                 self.ids.push(resolved.id);
+                self.appearances.push(resolved.appearance);
                 self.depths.push(item.depth);
                 if item.depth != 0 {
                     continue;
@@ -863,5 +846,30 @@ impl crate::content::world_reward_claims::RewardClaimTile for TileView<'_> {
 
     fn appearance(&self, ordinal: u8) -> Option<u16> {
         self.appearance(ordinal)
+    }
+}
+
+#[cfg(test)]
+mod appearance_tests {
+    use super::*;
+
+    #[test]
+    fn exact_ordinal_appearance_survives_family_aliases_and_activity_copy()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (bytes, pins) = boot::tests::floor_bundle();
+        let bundle = bundle::read(&bytes)?;
+        for base in [
+            load(&bytes, &pins)?,
+            WorldBase::composed(&bundle, &[], &[])?,
+        ] {
+            let tile = base.tile(1, 0, -8).ok_or("tile")?;
+            assert_eq!(tile.appearance(0), Some(100));
+            assert_eq!(tile.appearance(1), Some(1950));
+            let copy = base.activity_region([0, 0, 3, 1, 7, 8]).ok_or("activity")?;
+            let tile = copy.tile(1, 0, -8).ok_or("activity tile")?;
+            assert_eq!(tile.appearance(0), Some(100));
+            assert_eq!(tile.appearance(1), Some(1950));
+        }
+        Ok(())
     }
 }

@@ -119,7 +119,7 @@ pub fn spotlight_cards(panel: &DailyBoostPanel) -> Vec<SpotlightCard> {
 }
 
 /// Separate "Daily Reward XP boost" (source 4) and "Store XP boost" (source 3) lines, each with
-/// its own remaining hours; a source without an active boost has no line. The potion durations
+/// its own remaining hours and minutes; a source without an active boost has no line. The potion durations
 /// wire carries no paused state.
 pub fn xp_boost_lines(
     active: &[oteryn_client_runtime::potion_durations::PotionDuration],
@@ -139,7 +139,9 @@ pub fn xp_boost_lines(
         } else {
             tr!("Store XP boost")
         };
-        let state = lfmt!("{} h remaining", remaining.div_ceil(3_600_000));
+        let minutes = remaining.div_ceil(60_000);
+        let duration = format!("{}:{:02}", minutes / 60, minutes % 60);
+        let state = lfmt!("{} h remaining", duration);
         text.push_str(&format!("- {name}: +{}% ({state})\n", entry.percent));
     }
     text
@@ -163,17 +165,44 @@ mod xp_boost_tests {
         let text = xp_boost_lines(&active, 0);
         assert_eq!(
             text,
-            "- Daily Reward XP boost: +25% (1 h remaining)\n- Store XP boost: +50% (2 h remaining)\n"
+            "- Daily Reward XP boost: +25% (0:30 h remaining)\n- Store XP boost: +50% (2:00 h remaining)\n"
         );
         assert!(!text.contains("paused"));
         assert_eq!(
             xp_boost_lines(&active[..1], 0),
-            "- Store XP boost: +50% (2 h remaining)\n"
+            "- Store XP boost: +50% (2:00 h remaining)\n"
         );
         assert_eq!(
             xp_boost_lines(&active[1..], 1_000_000),
-            "- Daily Reward XP boost: +25% (1 h remaining)\n"
+            "- Daily Reward XP boost: +25% (0:14 h remaining)\n"
         );
         assert_eq!(xp_boost_lines(&active, 7_200_000), "");
+    }
+}
+
+#[cfg(test)]
+mod duration_precision_tests {
+    use super::xp_boost_lines;
+    use oteryn_client_runtime::potion_durations::PotionDuration;
+    #[test]
+    fn xp_boost_remaining_time_uses_hours_and_minutes() {
+        for source in [3, 4] {
+            for (remaining_ms, expected) in [
+                (1000, "0:01 h"),
+                (1_800_000, "0:30 h"),
+                (3_660_000, "1:01 h"),
+            ] {
+                let text = xp_boost_lines(
+                    &[PotionDuration {
+                        source,
+                        item_id: 0,
+                        percent: 50,
+                        remaining_ms,
+                    }],
+                    0,
+                );
+                assert!(text.contains(expected), "{text}");
+            }
+        }
     }
 }

@@ -159,3 +159,30 @@ fn boss_reward_actions_emit_exact_payloads_and_apply_server_projection() -> Resu
         .join()
         .map_err(|_| "boss rewards UI test thread panicked")?
 }
+
+#[path = "../native.rs"]
+mod native;
+
+#[test]
+fn reward_death_id_rejects_unicode_without_panicking() {
+    assert_eq!(native::parse_death(&format!("a€{}", "0".repeat(28))), None);
+    assert_eq!(native::parse_death(&"g".repeat(32)), None);
+    assert_eq!(
+        native::parse_death(" 0123456789abcdefABCDEF0123456789 "),
+        Some([
+            1, 35, 69, 103, 137, 171, 205, 239, 171, 205, 239, 1, 35, 69, 103, 137,
+        ])
+    );
+}
+
+#[test]
+fn reopened_reward_form_uses_the_retained_death_and_ordinal() {
+    let panel = oteryn_client_ui::boss_rewards::BossRewardsPanel {
+        death: [0xab; 16],
+        selected_ordinal: 7,
+        ..Default::default()
+    };
+    let fields = native::initial_fields(&panel);
+    assert_eq!(native::parse_death(&fields[0]), Some(panel.death));
+    assert_eq!(fields[1], "7");
+}

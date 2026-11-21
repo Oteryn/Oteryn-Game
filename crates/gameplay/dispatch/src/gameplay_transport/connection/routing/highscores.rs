@@ -14,10 +14,37 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     admitted: &AdmittedSession,
     command: ClientCommandView<'_>,
 ) -> Dispatch {
+    use oteryn_protocol_oteryn::highscores_catalogue as catalogue;
+    let typed = command.command_type == catalogue::COMMAND_QUERY;
+    if typed || command.command_type == catalogue::COMMAND_CATALOGUE {
+        if !admitted
+            .continuity
+            .selected_capabilities
+            .contains(catalogue::CAPABILITY)
+        {
+            return Dispatch::Highscores(HighscoresReply::Rejected);
+        }
+        if command.command_type == catalogue::COMMAND_CATALOGUE {
+            return if command.payload.is_empty() {
+                Dispatch::Highscores(
+                    authority
+                        .highscores_catalogue(admitted.world_id, admitted.game_session_id, None)
+                        .await,
+                )
+            } else {
+                Dispatch::Highscores(HighscoresReply::Rejected)
+            };
+        }
+    }
+    let query = if typed {
+        catalogue::decode_query(command.payload).map(|(query, kind)| (query, Some(kind)))
+    } else {
+        decode_highscores_query(command.payload).map(|query| (query, None))
+    };
     // HIGHSCORES0 §6: the World and the asking Character are the admitted session's.
-    match decode_highscores_query(command.payload) {
+    match query {
         // highscores-loyalty-v1.md: Loyalty stays NOT_SUPPORTED unless capability 498 is selected.
-        Ok(query)
+        Ok((query, _))
             if query.category == LOYALTY_CATEGORY
                 && !admitted
                     .continuity
@@ -28,11 +55,19 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 crate::foundation::FoundationProtocolError::NotSupported,
             ))
         }
-        Ok(query) => Dispatch::Highscores(
+        Ok((query, kind)) => Dispatch::Highscores(if let Some(kind) = kind {
+            authority
+                .highscores_catalogue(
+                    admitted.world_id,
+                    admitted.game_session_id,
+                    Some((query, kind)),
+                )
+                .await
+        } else {
             authority
                 .highscores(admitted.world_id, admitted.game_session_id, query)
-                .await,
-        ),
+                .await
+        }),
         Err(_) => Dispatch::Highscores(HighscoresReply::Rejected),
     }
 }

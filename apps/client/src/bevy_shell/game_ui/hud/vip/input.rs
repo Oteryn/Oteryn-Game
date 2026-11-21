@@ -7,6 +7,7 @@ pub(super) fn activate(
     fields: Query<(Entity, &Field)>,
     mut owner: NonSendMut<HostOwner>,
     mut state: ResMut<State>,
+    mut presentation: ResMut<presentation::Preferences>,
 ) {
     if !guard.allows(event.entity) || !available(&owner) {
         return;
@@ -34,6 +35,7 @@ pub(super) fn activate(
         }
         state.draft = None;
         state.pending = None;
+        presentation.context = None;
         return;
     }
     if !panel.selected || panel.pending {
@@ -45,6 +47,20 @@ pub(super) fn activate(
             groups::activate(control.command, &owner, &mut state)
         }
         Action::Close => {}
+        Action::Sort => presentation.sort = presentation.sort.next(),
+        Action::HideOffline => presentation.hide_offline = !presentation.hide_offline,
+        Action::Context(entry) => {
+            presentation.context = Some((owner.generation(), panel.revision, entry))
+        }
+        Action::MenuClose => presentation.context = None,
+        Action::Message(entry) => {
+            if let Ok(snapshot) = Snapshot::read(&panel)
+                && let Some(contact) = snapshot.entries.iter().find(|row| row.entry == entry)
+            {
+                play.link.chat_open_conversation(&contact.name);
+                presentation.context = None;
+            }
+        }
         Action::Refresh => play.link.vip_request(Intent::Query(0)),
         Action::Next(cursor) => {
             if Snapshot::read(&panel)
@@ -70,6 +86,7 @@ pub(super) fn activate(
                 }
                 _ => None,
             };
+            presentation.context = None;
             state.serial = state.serial.saturating_add(1);
             state.pending = None;
             state.draft = Some(Draft {
@@ -100,15 +117,36 @@ pub(super) fn activate(
             }
         }
         Action::Save(serial) => prepare(&mut state, &fields, serial),
+        Action::Consent(action) => {
+            if let Ok(snapshot) = Snapshot::read(&panel)
+                && let Some(intent) = action.intent(&snapshot)
+            {
+                play.link.vip_request(intent);
+            }
+        }
+        Action::Withdraw(entry) => {
+            if presentation.context == Some((owner.generation(), panel.revision, entry))
+                && Snapshot::read(&panel)
+                    .is_ok_and(|snapshot| snapshot.entries.iter().any(|row| row.entry == entry))
+            {
+                play.link.vip_request(Intent::Withdraw(entry));
+                presentation.context = None;
+            }
+        }
         Action::Remove(entry) => {
-            if state.draft.as_ref().is_some_and(|draft| {
-                current(&owner, draft)
-                    && draft
-                        .contact
-                        .as_ref()
-                        .is_some_and(|contact| contact.entry == entry)
-            }) {
+            if (presentation.context == Some((owner.generation(), panel.revision, entry))
+                && Snapshot::read(&panel)
+                    .is_ok_and(|snapshot| snapshot.entries.iter().any(|row| row.entry == entry)))
+                || state.draft.as_ref().is_some_and(|draft| {
+                    current(&owner, draft)
+                        && draft
+                            .contact
+                            .as_ref()
+                            .is_some_and(|contact| contact.entry == entry)
+                })
+            {
                 play.link.vip_request(Intent::Remove(entry));
+                presentation.context = None;
                 if play.link.vip_panel().pending {
                     state.draft = None;
                     state.pending = None;

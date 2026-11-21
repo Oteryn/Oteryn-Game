@@ -22,13 +22,7 @@ impl PlayLink {
         if !oteryn_client_ui::browse_field::open_key(events) {
             return false;
         }
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).browse_field.open = true;
-        }
+        lock(&self.mailbox).browse_field.open = true;
         true
     }
 }

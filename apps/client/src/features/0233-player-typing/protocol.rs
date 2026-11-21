@@ -17,7 +17,7 @@ impl Outbox {
     }
 }
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 pub(crate) fn bevy_typing_fixture(outbox: &Outbox) {
     outbox.player_typing_initialize(true);
 }

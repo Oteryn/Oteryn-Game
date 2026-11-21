@@ -33,6 +33,11 @@ fn fire_devil_source_area_dispatch_damages_invisible_bystander_and_checkpoints_v
 }
 
 #[test]
+fn fire_devil_source_area_excludes_staff_ghost_postgres() -> TestResult {
+    run_case("monster_attacks_ghost_area", AttackCase::FireDevilGhostBystander)
+}
+
+#[test]
 fn fire_elemental_source_field_dispatch_commits_owned_ground_once_postgres() -> TestResult {
     run_case("monster_attacks_fire_field", AttackCase::FireElemental)
 }
@@ -53,6 +58,7 @@ enum AttackCase {
     Hunter,
     FireDevil,
     FireDevilInvisibleBystander,
+    FireDevilGhostBystander,
     FireElemental,
     Firestarter,
     TheMonster,
@@ -63,7 +69,7 @@ impl AttackCase {
         match self {
             Self::Rat => "oteryn:creature.rat",
             Self::Hunter => "oteryn:creature.hunter",
-            Self::FireDevil | Self::FireDevilInvisibleBystander => "oteryn:creature.fire_devil",
+            Self::FireDevil | Self::FireDevilInvisibleBystander | Self::FireDevilGhostBystander => "oteryn:creature.fire_devil",
             Self::FireElemental => "oteryn:creature.fire_elemental",
             Self::Firestarter => "oteryn:creature.firestarter",
             Self::TheMonster => "oteryn:creature.the_monster",
@@ -280,7 +286,8 @@ async fn scenario(harness: &Harness, case: AttackCase) -> TestResult {
     owner.active_generation = Some(active);
     owner.movement_cells = (deps.room.movement_cells()).into();
     let maximum = maximum_source_damage(active, case)?;
-    let area_case = matches!(case, AttackCase::FireDevil | AttackCase::FireDevilInvisibleBystander);
+    let area_case = matches!(case, AttackCase::FireDevil | AttackCase::FireDevilInvisibleBystander | AttackCase::FireDevilGhostBystander);
+    let ghost_bystander = case == AttackCase::FireDevilGhostBystander;
     let invisible_bystander = case == AttackCase::FireDevilInvisibleBystander;
     // Only the test player's pool is enlarged for the area case. Both source area entries
     // retain their original chances and damage while we wait for both players to be hit.
@@ -307,6 +314,9 @@ async fn scenario(harness: &Harness, case: AttackCase) -> TestResult {
             second
         };
         initialize_player(&owner, second, second_session, initial_health).await?;
+        if ghost_bystander {
+            deps.runtime.lock().await.set_staff_visibility(second, second_session, true, false).map_err(debug)?;
+        }
         Some((second, second_session))
     } else {
         None
@@ -329,7 +339,7 @@ async fn scenario(harness: &Harness, case: AttackCase) -> TestResult {
         invisible_area::install(&owner, &deps).await?;
     }
     let mut after = before;
-    let mut bystander_hit = bystander.is_none();
+    let mut bystander_hit = bystander.is_none() || ghost_bystander;
     for _ in 0..64 {
         if case != AttackCase::Rat {
             assert_distant(&owner, monster, deps.actor).await?;
@@ -345,7 +355,12 @@ async fn scenario(harness: &Harness, case: AttackCase) -> TestResult {
             assert_distant(&owner, monster, deps.actor).await?;
         }
         if let Some((actor, session)) = bystander {
-            bystander_hit = player_health(&owner, actor, session).await? < before;
+            let current = player_health(&owner, actor, session).await?;
+            if ghost_bystander {
+                assert_eq!(current, before, "a staff ghost must never receive source area damage");
+            } else {
+                bystander_hit = current < before;
+            }
         }
         if after < before && bystander_hit {
             break;

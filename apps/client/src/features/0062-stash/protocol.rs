@@ -30,7 +30,7 @@ impl Mailbox {
     }
 }
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl Outbox {
     pub(crate) fn bevy_stash_initialize(&self, selected: bool) {
         self.stash_initialize(selected);

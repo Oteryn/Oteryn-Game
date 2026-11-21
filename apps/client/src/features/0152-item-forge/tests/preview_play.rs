@@ -203,3 +203,68 @@ fn forge_stale_quote_and_removed_candidate_are_invalidated_with_legacy_fallback(
     }
     Ok(())
 }
+
+#[test]
+fn settled_pair_refreshes_metadata_when_observed_handles_do_not_change() -> Result<(), Error> {
+    use oteryn_client_runtime::server_mechanic::ServerMechanicResponse;
+    for (succeeded, bonus, second_tier) in [(false, 0, 1), (true, 5, 2)] {
+        let (link, _commands, outbox) = play_channel();
+        outbox.item_forge_initialize(true);
+        {
+            let mut mailbox = lock(&link.mailbox);
+            let panel = &mut mailbox.item_forge;
+            panel.preview.selected = true;
+            for handle in [2, 3] {
+                let mut candidate = item(handle)?;
+                candidate.tier = 2;
+                candidate.classification = 4;
+                candidate.maximum_tier = 10;
+                panel.preview.live.push(oteryn_client_runtime::depot::ItemEntry {
+                    appearance_id: 0,
+                    handle: candidate.handle,
+                    item_definition_ref: std::num::NonZeroU32::new(7).ok_or("ref")?,
+                    count: std::num::NonZeroU32::MIN,
+                    sub_type: 0,
+                });
+                panel.preview.remember(candidate);
+            }
+            panel.first_item = 2;
+            panel.second_item = 3;
+        }
+        let mut occurrence = [1; 16];
+        occurrence[6] = 0x70;
+        occurrence[8] = 0x80;
+        let request = Request {
+            operation: Operation::Fusion,
+            occurrence,
+            first_item: std::num::NonZeroU64::new(2),
+            second_item: std::num::NonZeroU64::new(3),
+            boost: false,
+            protect: false,
+            history_limit: 0,
+        };
+        link.item_forge_request(request.encode().ok_or("request")?.to_vec());
+        assert!(link.item_forge_panel().pending);
+        let receipt = serde_json::json!({
+            "operation": "fusion", "succeeded": succeeded, "applied": true,
+            "reason": null, "bonus": bonus,
+            "result": {"first_tier": if succeeded { 3 } else { 2 }, "second_tier": second_tier,
+                "dust": 0, "dust_limit": 100, "gold_spent": 25000,
+                "cores_spent": 0, "slivers_spent": 0, "slivers_created": 0,
+                "cores_created": 0}
+        });
+        outbox.item_forge_result(&ServerMechanicResponse {
+            command_id: 1, server_sequence: 1, status: CommandStatus::Accepted,
+            payload: serde_json::to_vec(&receipt)?,
+        });
+        let mut mailbox = lock(&link.mailbox);
+        assert!(mailbox.item_forge.retry.is_none());
+        // The ordinary publication sees the identical observation and returns early.
+        let live = mailbox.item_forge.preview.live.clone();
+        mailbox.item_forge.observe(live);
+        assert!(mailbox.item_forge.preview.items.is_empty());
+        assert!(mailbox.item_forge.preview.page.is_none());
+        assert!(mailbox.item_forge.preview.refresh);
+    }
+    Ok(())
+}
