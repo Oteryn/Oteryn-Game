@@ -458,7 +458,25 @@
       "take": [],
       "give": {
         "item": "oteryn:item.tibia.i12186",
-        "count": 5
+        "count": 1,
+        "additional": [
+          {
+            "item": "oteryn:item.tibia.i12186",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i12186",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i12186",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i12186",
+            "count": 1
+          }
+        ]
       },
       "outfit": null,
       "achievement": null,
@@ -545,7 +563,25 @@
       "take": [],
       "give": {
         "item": "oteryn:item.tibia.i12186",
-        "count": 5
+        "count": 1,
+        "additional": [
+          {
+            "item": "oteryn:item.tibia.i12186",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i12186",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i12186",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i12186",
+            "count": 1
+          }
+        ]
       },
       "outfit": null,
       "achievement": null,

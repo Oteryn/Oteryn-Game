@@ -68,7 +68,12 @@ pub(super) async fn accept(
          (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),
          (SELECT value FROM game_character_quest_tracks WHERE track_key=$2),
          (SELECT COALESCE(sum(item.quantity),0)::bigint FROM game_quest_reward_sources AS reward
+          JOIN game_reward_claim_mint_receipts AS receipt
+            ON receipt.transaction_id=reward.mint_transaction_id
           JOIN game_item_instances AS item ON item.minted_transaction_id=reward.mint_transaction_id
+            OR item.item_instance_id IN (
+              SELECT (sibling->>'item_instance_id')::uuid
+              FROM jsonb_array_elements(receipt.additional_plan) AS sibling)
           WHERE reward.transition_key=$3 AND item.definition_production_key='oteryn:item.tibia.i12186'
             AND item.lifecycle=1)",
     )

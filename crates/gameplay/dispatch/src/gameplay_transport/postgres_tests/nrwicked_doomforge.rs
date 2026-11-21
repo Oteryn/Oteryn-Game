@@ -349,12 +349,30 @@ async fn two_player_exit(
         .0
         .current_character_lease();
     // The second player starts one hard win away from qualifying for the key.
+    // Imported progress lands at the character's current committed revision,
+    // as the other quest fixtures seed it: bumping the revision without a
+    // receipt breaks the progression receipt chain at the next commit.
+    let mut import = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *import)
+        .await?;
     for (track, value) in [
         ("hard_kills", 9_i64),
         ("kill_arbaziloth/questline", 2),
         ("questlog", 1),
         ("forgemaster_door/questline", 1),
     ] {
+        // The stored quest owner must match the catalogue's track owner, or
+        // the kill commit rejects the row as InvalidStoredState.
+        let key = format!("{WICKED_TRACK}/{track}");
+        let definition = owner
+            .quest_catalogue
+            .as_ref()
+            .ok_or("wicked catalogue")?
+            .track(&key)
+            .ok_or("canonical wicked track")?;
+        assert!((definition.min..=definition.max).contains(&value));
+        let quest = definition.quest.clone();
         let inserted = sqlx::query(
             "INSERT INTO game_character_quest_tracks
                 (character_id, track_key, quest_key, value, committed_character_revision)
@@ -362,13 +380,19 @@ async fn two_player_exit(
              FROM game_character_roots WHERE character_id = encode($1, 'hex')::uuid",
         )
         .bind(second_lease.character_id().as_bytes().as_slice())
-        .bind(format!("{WICKED_TRACK}/{track}"))
-        .bind("oteryn:quest.no_rest_for_the_wicked_quest")
+        .bind(key)
+        .bind(quest)
         .bind(value)
-        .execute(&h.pool)
+        .execute(&mut *import)
         .await?;
         assert_eq!(inserted.rows_affected(), 1);
     }
+    import.commit().await?;
+    let second_lease = admissions
+        .current_session_at(other_session)
+        .await?
+        .0
+        .current_character_lease();
     let native = owner.active_generation.and_then(|g| g.native_gameplay())
         .ok_or("production native policies")?;
     let mut runtime = owner.runtime.lock().await;
@@ -456,7 +480,7 @@ async fn two_player_exit(
                 },
             )
             .map_err(debug)?;
-        encounter_phases::tick(&mut runtime, &states, 100);
+        encounter_phases::tick(&mut runtime, &states, 100_000);
         let [fire]: [TilePos; 1] = purple_fire()
             .try_into()
             .map_err(|_| "expected exactly one production purple fire per shield")?;
@@ -473,7 +497,7 @@ async fn two_player_exit(
                 },
             )
             .map_err(debug)?;
-        encounter_phases::tick(&mut runtime, &states, 100);
+        encounter_phases::tick(&mut runtime, &states, 100_000);
         assert!(purple_fire().is_empty(), "boss crossing consumes purple fire");
         assert!(
             runtime
@@ -487,7 +511,7 @@ async fn two_player_exit(
             .commit_creature_relocation(boss, before, boss_home)
             .map_err(debug)?;
     }
-    encounter_phases::tick(&mut runtime, &states, 3100);
+    encounter_phases::tick(&mut runtime, &states, 3_100_000);
     let enraged = runtime
         .positioned_actor_census()
         .map_err(debug)?
