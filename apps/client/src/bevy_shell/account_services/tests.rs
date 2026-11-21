@@ -358,6 +358,8 @@ fn get_coins_reopens_and_inspects_an_awaiting_payment_order_by_request_id() -> T
             .map(|(_, order)| order.clone())
             .ok_or("order")?;
         assert_ne!(order.order_id, order.request_id);
+        let expected_url = order.checkout_url.as_ref().ok_or("checkout URL")?.as_str();
+        assert_eq!(opens.lock().map_err(|_| "browser")?.as_slice(), [expected_url]);
         click(&mut app, Action::Back)?;
         let menu = wait(&mut app, Some(checkout))?;
         click_named(&mut app, "account.coins")?;
@@ -382,7 +384,7 @@ fn get_coins_reopens_and_inspects_an_awaiting_payment_order_by_request_id() -> T
                 )))
         );
         assert_eq!(state.coins.as_ref().ok_or("coin authority")?.creations, 1);
-        assert_eq!(opens.lock().map_err(|_| "browser")?.len(), 2);
+        assert_eq!(opens.lock().map_err(|_| "browser")?.as_slice(), [expected_url, expected_url]);
         Ok(())
     })
 }
