@@ -668,6 +668,9 @@ fn vocation_scenario(case: Case) -> TestResult {
             .await?;
             assert_eq!(status, CommandStatus::Accepted, "submit Paladin");
             assert_eq!(selected, [0, 4]);
+            let expected_kit = oteryn_gameplay_items::starter_grant::newhaven_starter_items("paladin")
+                .ok_or("paladin kit")?;
+            assert_eq!(kit_grant_count(&h).await?, i64::try_from(expected_kit.len())?);
             let build = h
                 .root
                 .read_character_build_state(&authority, fence.character_id)
@@ -713,8 +716,6 @@ fn vocation_scenario(case: Case) -> TestResult {
             if retained {
                 assert_eq!(occurrences[0], id(88));
             }
-            let grants: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_starter_grants WHERE template_key LIKE 'oteryn:starter.newhaven.%'").fetch_one(&h.pool).await?;
-            assert!(grants > 0, "the accepted profession kit is granted");
             if let Some(directory) = std::env::var_os("OTERYN_TUTORIAL_VOCATION_CAPTURE") {
                 let directory = std::path::Path::new(&directory);
                 std::fs::create_dir_all(directory)?;
