@@ -754,7 +754,8 @@ use oteryn_gameplay_spell_rules::native_companions::{
 #[derive(Debug, Clone, PartialEq)]
 pub struct FamiliarOwnerFacts {
     pub vocation: String,
-    pub premium: bool,
+    /// A missing current decision is distinct from an authoritative denial.
+    pub premium: Option<bool>,
     pub level: u32,
     pub account_at_least_god: bool,
     pub current_speed: i32,
@@ -1395,7 +1396,7 @@ fn prepare_familiar_parts(
     let facts = FamiliarFacts {
         event: event.clone(),
         vocation: current.vocation.clone(),
-        premium: current.premium,
+        premium: current.premium.unwrap_or(false),
         level: current.level,
         account_at_least_god: current.account_at_least_god,
         owned_summons: owned.len(),
@@ -1436,6 +1437,18 @@ fn prepare_familiar_parts(
     };
     let mut actions =
         plan_familiar_event_actions(spell, &facts, return_ms.is_some_and(|ms| ms > 0))?;
+    if event == FamiliarEvent::Login && current.premium.is_none() {
+        // Login and delayed Return may restore the familiar while entitlement is
+        // unresolved. Leave the durable look decision to a current Premium proof.
+        actions.retain(|action| {
+            !matches!(
+                action,
+                FamiliarAction::SelectLook(_)
+                    | FamiliarAction::GrantVocationLook(_)
+                    | FamiliarAction::RemoveVocationLook(_)
+            )
+        });
+    }
     if let Some(ms) = return_ms {
         let exact = i64::try_from(ms).map_err(|_| CompanionExecutionError::ArithmeticBounds)?;
         let rounded = return_seconds

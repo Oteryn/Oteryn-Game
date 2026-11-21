@@ -110,3 +110,78 @@ fn qengine_l8_mage_male_source_outfit_story() -> TestResult {
 fn qengine_l8_dream_warden_source_outfit_story() -> TestResult {
     super::qengine_rewards_fixtures::scenario("qengine-rewards-l8-dream-warden-story")
 }
+
+#[test]
+fn qb_outfit_progress_advances_from_main_definition() -> TestResult {
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-qb-main-predecessor")
+}
+
+#[test]
+fn qb_citizen_owned_hat_refuses_mainland_exchange_without_debit() -> TestResult {
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-qb-owned-hat")
+}
+
+#[test]
+fn qb_citizen_free_account_accepts_mainland_exchange() -> TestResult {
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-qb-free-account")
+}
+
+#[test]
+fn qb_citizen_hanna_opens_recipe_for_owned_hat() -> TestResult {
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-qb-start-owned-hat")
+}
+
+#[test]
+fn qb_citizen_hanna_opens_recipe_for_free_account() -> TestResult {
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-qb-start-free-account")
+}
+
+#[test]
+fn qb_crystal_citizen_lubo_completed_reply() -> TestResult {
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-qb-crystal-lubo-completed")
+}
+
+#[test]
+fn qb_crystal_citizen_amber_completed_reply() -> TestResult {
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-qb-crystal-amber-completed")
+}
+
+#[test]
+fn qb_crystal_citizen_lubo_refuses_owned_backpack_without_debit() -> TestResult {
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-qb-crystal-lubo-progress")
+}
+
+#[test]
+fn qb_crystal_citizen_lubo_accepts_free_character() -> TestResult {
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-qb-crystal-lubo-free-account")
+}
+
+#[test]
+fn qb_crystal_citizen_norma_refuses_second_hat_without_debit() -> TestResult {
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-qb-crystal-norma-restart")
+}
+
+#[test]
+fn qb_crystal_citizen_lubo_mission_zero() -> TestResult {
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-qb-crystal-lubo-mission-zero")
+}
+
+#[test]
+fn qb_crystal_citizen_amber_mission_zero() -> TestResult {
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-qb-crystal-amber-mission-zero")
+}
+
+#[test]
+fn qb_crystal_citizen_norma_mission_zero() -> TestResult {
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-qb-crystal-norma-mission-zero")
+}
+
+#[test]
+fn qb_crystal_citizen_hanna_mission_zero() -> TestResult {
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-qb-crystal-hanna-mission-zero")
+}
+
+#[test]
+fn qb_crystal_citizen_hanna_completed() -> TestResult {
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-qb-crystal-hanna-completed")
+}

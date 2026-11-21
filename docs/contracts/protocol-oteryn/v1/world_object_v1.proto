@@ -50,7 +50,7 @@ message UseIntentV1 {
 // the intent stays within 529. Exactly one arm; the entity arm needs capability 15 and the map arms
 // capabilities 15 and 11. Valid only with field 2 or 5, at most once. Under capability 22
 // RUNE_USE_V1 (RUNE-USE-0 §4, RUNE-WIRE-1), the `position` arm, field 5, names the tile a rune is
-// used on, in the SPELL-D7 frame (sint32 x and y, an int16 floor), at most 16 bytes; a session
+// used on, in the SPELL-D7 frame (sint32 x and y, Global z 0..15), at most 16 bytes; a session
 // that did not select capability 22 and sends it fails closed (REJECTED), and it is valid only
 // for a rune.
 message UseWithV1 {

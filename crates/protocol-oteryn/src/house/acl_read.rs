@@ -33,7 +33,7 @@ pub fn encode_house_acl_read_query(
     };
     scalar(&mut nested, 2, kind);
     if let HouseAclSelector::Door { x, y, floor } = read.selector {
-        if !(-15..=0).contains(&floor) {
+        if !(0..=15).contains(&floor) {
             return Err(Error::Malformed);
         }
         let floor = i64::from(floor);

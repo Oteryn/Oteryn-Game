@@ -15,6 +15,8 @@ import tarfile
 import xml.etree.ElementTree as ET
 import questl2_ready
 import taming_cosmetics
+import qb_barbarian
+import qb_citizen_warrior
 import wizard_cosmetics
 import engoutfit_m36
 import qmech_m39
@@ -26,10 +28,11 @@ PROVENANCE = 'crystal-9f5a72c-quest-rewards-v1'
 DECISION = 'owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06'
 
 # These independently registered documents retain their existing greeting owner.
-# Zalamon's chosen opening is explicitly authored; M10 and M13 retain source text.
+# Zalamon's chosen opening is explicitly authored; M10, M13 and L6 (Lubo) retain source text.
 REWARD_GREETING_OWNERS = {
     'oteryn:npc.zalamon': 'content/dialogues/quests/chosen-reward-greetings.json',
     'oteryn:npc.henricus': 'content/dialogues/quests/qnpcfx-m10-greetings.json',
+    'oteryn:npc.lubo': 'content/dialogues/quests/l6-story-greetings.json',
     'oteryn:npc.rafzan': 'content/dialogues/quests/m13-goblin-greetings.json',
 }
 
@@ -90,7 +93,7 @@ def sha(value):
 
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/XML/mounts.xml', 'data-crystal/scripts/special/addon_doll.lua', 'data-global/scripts/actions/mounts/mounts.lua', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
-        'morgan', 'navigator', 'rock_steady', *wizard_cosmetics.DONOR_NPCS, *qmech_m39.NPCS, 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
+        'morgan', 'navigator', 'rock_steady', *qb_barbarian.DONOR_NPCS, *qb_citizen_warrior.DONOR_NPCS, *wizard_cosmetics.DONOR_NPCS, *qmech_m39.NPCS, 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
         'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness', 'a_sweaty_cyclops', 'gnommander', 'flickering_soul', 'bloodshade_rotten', 'cledwyn', *questl2_ready.NPCS)]
     paths += ['data/scripts/actions/items/usable_outfit_items.lua', 'data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua', 'data-global/scripts/actions/valuables/random_items.lua',
               'data-global/scripts/quests/the_new_frontier/action_outfit.lua',
@@ -470,8 +473,9 @@ def build():
         ('helmet','demon_oak',prefix+'u8_2/the_demon_oak/done',3,4,2)]:
         add('l3-demon-'+name,quest,'avar_tar',[name],[storage(track,before,after)],
             outfit=('demon',bit),topic=2,requires=[requirement(annihilator,2)])
-    for word,topic,next_topic in [('outfit',0,1),('yes',1,2)]:
-        offers.append({'npc':'oteryn:npc.avar_tar','keywords':[word],'topic':topic,
+    # Avar Tar's donor selector matches the word outfit in the Demon Outfit phrase.
+    for words,topic,next_topic in [(['outfit','demon outfit'],0,1),(['yes'],1,2)]:
+        offers.append({'npc':'oteryn:npc.avar_tar','keywords':words,'topic':topic,
             'next_topic':next_topic,'storage':[],'reply':['Choose the base, shield or helmet.']})
     dark=prefix+'u10_50/dark_trails/'
     votes=prefix+'u10_50/oramond_quest/voting_points'
@@ -624,8 +628,9 @@ def build():
     for words,before,after in [(['addon','outfit'],0,1),(['backpack','minotaur','leather'],1,2)]:
         offers.append({'npc':'oteryn:npc.amber','keywords':words,'topic':before,'next_topic':after,
             'storage':states,'reply':['Would you bring 100 minotaur leathers for a handmade backpack?']})
-    states=[storage(backpack,1,2),storage(mission,1,2)]
+    states=[storage(backpack,1,2),storage(mission,0,2,4)]
     add('l6-citizen-rook-backpack-materials','citizen_outfits_quest_on_rook','amber',['yes'],states,take=[(5878,100)],topic=3)
+    callbacks[-1]['forbids_addons']=[{'outfit':'oteryn:outfit.citizen','addons':1}]
     callbacks[-1]['state_ops']=[{'track':timer,'from':{'kind':'any'},'effect':{'kind':'set_now'}}]
     offers.append({'npc':'oteryn:npc.amber','keywords':['addon','outfit','backpack','leather'],'topic':0,'next_topic':3,
         'storage':states,'reply':['Did you bring 100 minotaur leathers? Your backpack takes two hours to make.']})
@@ -633,17 +638,25 @@ def build():
         [storage(backpack,2,3),storage(mission,2,4)],outfit=('citizen',1))
     callbacks[-1]['state_ops']=[{'track':timer,'from':{'kind':'elapsed_at_least','seconds':7201},'effect':{'kind':'add','value':0}}]
     callbacks[-1]['participants']=[{'quest':'oteryn:quest.outfit_and_addon_quests','storage':[storage(rook_ref,0,0,2147483647)]}]
+    offers.append({'npc':'oteryn:npc.amber','keywords':['addon','outfit'],'topic':0,'next_topic':0,
+        'storage':[storage(backpack,3,3)],
+        'reply':["Sorry, but I can only make one backpack per person, else I'd have to close my shop and open a leather manufactory."]})
     hat=citizen_rook+'addon_hat_rook'
     hat_mission=citizen_rook+'mission_hat_rook'
-    states=[storage(hat,-1,1,0),storage(hat_mission,0,1)]
+    # The offer sort is stable. Crystal checks active hand-in before the mission-zero recipe.
+    states=[storage(hat,1,2),storage(hat_mission,0,0,1)]
+    add('l6-citizen-rook-hat','citizen_outfits_quest_on_rook','norma',['yes'],states,
+        take=[(3374,1),(5902,50),(5890,100)],outfit=('citizen',2),topic=2)
+    callbacks[-1]['forbids_addons']=[{'outfit':'oteryn:outfit.citizen','addons':2}]
+    offers.append({'npc':'oteryn:npc.norma','keywords':['addon','outfit','hat'],'topic':0,'next_topic':2,
+        'storage':states,'reply':['Have you brought a legion helmet, 50 honeycombs and 100 chicken feathers?']})
+    # Crystal reoffers the recipe when the mission returns to zero after hand-in.
+    states=[storage(hat,-1,1,2),storage(hat_mission,0,1)]
     add('l6-citizen-rook-hat-start','citizen_outfits_quest_on_rook','norma',['yes'],states,topic=1)
     offers.append({'npc':'oteryn:npc.norma','keywords':['addon','outfit','hat'],'topic':0,'next_topic':1,
         'storage':states,'reply':['Shall I teach you how to make a feather hat?']})
-    states=[storage(hat,1,2),storage(hat_mission,1,0)]
-    add('l6-citizen-rook-hat','citizen_outfits_quest_on_rook','norma',['yes'],states,
-        take=[(3374,1),(5902,50),(5890,100)],outfit=('citizen',2),topic=2)
-    offers.append({'npc':'oteryn:npc.norma','keywords':['addon','outfit','hat'],'topic':0,'next_topic':2,
-        'storage':states,'reply':['Have you brought a legion helmet, 50 honeycombs and 100 chicken feathers?']})
+    qb_citizen_warrior.append(add, storage, offers, callbacks, prefix)
+    qb_barbarian.append(add, storage, offers, callbacks, prefix)
     wizard_cosmetics.append(add, storage, offers, prefix)
     beggar=prefix+'u7_8/beggar_outfits/'
     beggar_stage=beggar+'beggar_outfit'
@@ -1084,6 +1097,19 @@ def build():
     callbacks = [c for c in callbacks if c not in programme_callbacks]
     l13_callbacks.sort(key=lambda c:c['key'])
     programme_callbacks.sort(key=lambda c:c['key'])
+    # Amber and Lubo teach the same account addon. Character storage retains
+    # the donor's separate routes and timer, while payment reserves one grant.
+    backpack = 'oteryn:quest-reservation/citizen-backpack'
+    for callback in callbacks:
+        name = callback['key'].split('/')[-1]
+        if name in ('l6-citizen-rook-backpack-materials', 'qb-citizen-backpack-materials'):
+            pending = callback['storage'][0]
+            callback['account_reservation'] = {
+                'action': 'start', 'key': backpack, 'track': pending['track'],
+                'pending_value': pending['set'],
+            }
+        elif name in ('l6-citizen-rook-backpack', 'qb-citizen-backpack'):
+            callback['account_reservation'] = {'action': 'finish', 'key': backpack}
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     item_disguises = load_module('quest_item_disguises', 'tools/content-schema/quest-authoring/quest_item_disguises.py').build(ROOT)

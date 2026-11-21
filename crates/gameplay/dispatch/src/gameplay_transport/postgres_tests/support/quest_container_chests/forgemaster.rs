@@ -2,7 +2,8 @@ use super::*;
 use serde_json::json;
 
 pub(super) const CLAIM: &str = "oteryn:reward-claim.nrwicked-forgemaster";
-const ACCESS_CALLBACK: &str = "oteryn:quest-reward/nrwicked-forgemaster-key";
+// The native claim binder validates these callback names as ProductionKeys.
+const FIXTURE_ACCESS_CALLBACK: &str = "oteryn:quest-reward/nrwicked-forgemaster-guard-check-key";
 const QUEST: &str = "oteryn:quest.no_rest_for_the_wicked_quest";
 const ACCESS: &str = "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/forge_master/access_door";
 const DOOR_STAGE: &str = "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/forgemaster_door/questline";
@@ -39,12 +40,16 @@ fn callback_key(uid: u16) -> String {
     format!("oteryn:quest-reward/nrwicked-forgemaster-{uid}")
 }
 
+fn fixture_callback_key(uid: u16) -> String {
+    format!("oteryn:quest-reward/nrwicked-forgemaster-guard-check-{uid}")
+}
+
 pub(super) fn claim_shard() -> String {
     let placements: Vec<_> = selectors().zip(REWARDS).map(|((x, uid), reward)| json!({
         "appearance_tibia_id": 2472,
         "source_binding": {"native_entry_ordinal":1,"project_position":{"x":x,"y":CHEST.1,"z":-CHEST.2}},
         "reward":{"items":[{"count":1,"item":{"family":"Item","key":key(reward),"revision":"definition-r1"}}]},
-        "reward_callback":callback_key(uid)
+        "reward_callback":fixture_callback_key(uid)
     })).collect();
     json!({"records":[{"definition":{
         "definition_profile":"native_authored_v1",
@@ -88,7 +93,7 @@ pub(super) fn catalogue(
     let mut stages: Vec<_> = selectors().zip(REWARDS).map(|((_, uid), reward)| json!({
         "key":format!("claim-{uid}"),"completes":false,"trigger":{
             "kind":"npc_dialogue","callback":{
-                "key":callback_key(uid),"quest":QUEST,"npc":"","keywords":[],"topic":0,"next_topic":0,
+                "key":fixture_callback_key(uid),"quest":QUEST,"npc":"","keywords":[],"topic":0,"next_topic":0,
                 "world_claim":{"key":CLAIM,"revision":"nrwicked-r1","authority_sha256":digest},
                 "requires":requirements,
                 "storage":[{"track":claim_track(uid),"minimum":0,"maximum":0,"set":1}],
@@ -100,7 +105,7 @@ pub(super) fn catalogue(
     stages.push(json!({
         "key": "access", "completes": false, "trigger": {
             "kind": "npc_dialogue", "callback": {
-                "key": ACCESS_CALLBACK, "quest": QUEST, "npc": "oteryn:npc.the_forgemaster",
+                "key": FIXTURE_ACCESS_CALLBACK, "quest": QUEST, "npc": "oteryn:npc.the_forgemaster",
                 "keywords": ["key"], "topic": 0, "next_topic": 0,
                 "storage": key_grant,
                 "give": null, "outfit": null, "achievement": null, "take": [], "present": [],
@@ -151,7 +156,7 @@ pub(super) async fn allow_access(
             owner.holder,
             fence,
             QuestTransitionRequest {
-                transition_key: ACCESS_CALLBACK.into(),
+                transition_key: FIXTURE_ACCESS_CALLBACK.into(),
                 cause: QuestCause::Command(CommandRef::new(
                     admitted.game_session_id,
                     CommandId::new(99).map_err(debug)?,
@@ -302,7 +307,7 @@ pub(super) fn production_chests(
         crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,
         crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
         |key| boot::native_item_definition(Some(native), key),
-    ).map_err(|error| debug(error).into())
+    ).map_err(debug)
 }
 
 pub(super) async fn ask_for_key(
@@ -311,13 +316,23 @@ pub(super) async fn ask_for_key(
     admitted: &crate::gameplay_transport::connection::AdmittedSession,
     character: oteryn_gameplay_domain::domain::CharacterId,
 ) -> TestResult {
-    use super::super::classic_quests_fixtures::{install, talk};
+    use super::super::classic_quests_fixtures::{install, talk, talk_expecting};
+    use super::super::qengine_outfit_stories_fixtures::seed_quest_prerequisites;
+    use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
     const NPC: &str = "oteryn:npc.the_forgemaster";
     const HARD_KILLS: &str = "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/hard_kills";
 
     let [npc] = install(owner, admitted, [NPC]).await?;
     talk(owner, admitted, npc, 10, "hi").await?;
-    let refusal = talk(owner, admitted, npc, 11, "key").await?;
+    let refusal = talk_expecting(
+        owner,
+        admitted,
+        npc,
+        11,
+        "key",
+        NpcIntentDisposition::Rejected,
+    )
+    .await?;
     assert_eq!(
         refusal,
         ["You are not ready yet. Proove yourself worthy first."]
@@ -330,13 +345,17 @@ pub(super) async fn ask_for_key(
     assert_ne!(rows.tracks().get(ACCESS), Some(&1));
     assert_ne!(rows.tracks().get(DOOR_STAGE), Some(&3));
 
-    for (track, value) in [(HARD_KILLS, 10_i64), (DOOR_STAGE, 2)] {
-        let inserted = sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
-            .bind(character.as_bytes().as_slice()).bind(track).bind(QUEST).bind(value)
-            .execute(&h.pool).await?;
-        assert_eq!(inserted.rows_affected(), 1);
-    }
-    owner.refresh_quest_session(admitted.game_session_id, true).await;
+    seed_quest_prerequisites(
+        h,
+        owner,
+        admitted,
+        &[(HARD_KILLS.into(), 10), (DOOR_STAGE.into(), 2)],
+        168,
+    )
+    .await?;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
     let lines = talk(owner, admitted, npc, 12, "key").await?;
     assert_eq!(
         lines,

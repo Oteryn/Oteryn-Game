@@ -423,34 +423,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             item_fence,
         };
         self.states.command_ingress.admit(admitted.game_session_id);
-        // ARCH-PROGRESSION-SOURCE-0 §1.5: before the respawn settle and the quest session, so
-        // before the session is input-eligible or writes anything that advances the root.
-        let positioned = matches!(
+        // A retained position also identifies progression exhaustion after placement.
+        let positioned = decided.is_some();
+        // NODEBOOT-1: the fenced hazard step retains its existing admission budget.
+        if matches!(
             admitted.first_entry,
             FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
-        );
-        // NODEBOOT-1: each step below is a read or an idempotent fenced write through the
-        // shared holder, so a step refused on a busy holder is repeated whole within the window.
-        if positioned {
-            let entered = admitted.first_entry;
-            loop {
-                self.admit_progression_session(&mut admitted).await;
-                if admitted.first_entry != FirstEntryOutcome::RefusedUnavailable
-                    || !budget.retries_unavailable(Unavailable).await
-                {
-                    break;
-                }
-                admitted.first_entry = entered;
-            }
-            if matches!(
-                admitted.first_entry,
-                FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
-            ) && !budget
-                .retry_until(async || self.admit_hazard(admitted).await)
-                .await
-            {
-                admitted.first_entry = FirstEntryOutcome::RefusedUnavailable;
-            }
+        ) && !budget
+            .retry_until(async || self.admit_hazard(admitted).await)
+            .await
+        {
+            admitted.first_entry = FirstEntryOutcome::RefusedUnavailable;
         }
         // DEATH-2b: a pending respawn that is not placed and consumed leaves the actor
         // input-ineligible, its pending row intact for the next admission.

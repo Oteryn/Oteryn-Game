@@ -10,7 +10,7 @@ use crate::durability::account_achievement::{
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::quest_state::QuestTransitionRequest;
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
-use oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback;
+use oteryn_gameplay_quests::quest::reward_callbacks::{AccountReservation, RewardCallback};
 
 mod claim;
 pub(crate) use claim::QuestMintClaim;
@@ -274,7 +274,10 @@ pub(crate) async fn apply(
             return Ok(false);
         }
     }
-    if !callback.forbids_addons.is_empty() || !callback.forbids_outfits.is_empty() {
+    if !callback.forbids_addons.is_empty()
+        || !callback.forbids_outfits.is_empty()
+        || callback.account_reservation.is_some()
+    {
         // Keep a negative ownership predicate stable through costs and grant.
         // Reuse the account grant owner's lock; another character cannot win
         // the same addon after this read and still let this transaction charge.
@@ -316,6 +319,11 @@ pub(crate) async fn apply(
                     })
                     ).await? { return Ok(false); }
             }
+        }
+        if let Some(reservation) = &callback.account_reservation
+            && !apply_account_reservation(tx, account, fence.character_id, reservation).await?
+        {
+            return Ok(false);
         }
     }
     if !callback.requires_outfits.is_empty() {
@@ -943,4 +951,70 @@ async fn mint_with_source(
     .map_err(|_| DurabilityError::InvalidStoredState)?;
     apply_claim(tx, &frozen, &reservation, destination, &envelope, tuple).await?;
     Ok(Some(reservation.transaction_id))
+}
+
+
+/// Serialize paid reservations with other appearance grants using the caller's
+/// account lock. The enclosing quest transaction rolls back on any refusal.
+async fn apply_account_reservation(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    account: sqlx::types::Uuid,
+    character: crate::domain::CharacterId,
+    reservation: &AccountReservation,
+) -> std::result::Result<bool, DurabilityError> {
+    let key = reservation.key();
+    // A reset, a finalized character deletion or a transfer to another
+    // account releases the old payment's reservation. The timer itself
+    // never expires a valid payment; the donor permits a later collection.
+    sqlx::query(
+        "DELETE FROM game_quest_account_reservations r
+         WHERE r.account_id=$1 AND r.reservation_key=$2 AND NOT EXISTS (
+             SELECT 1 FROM game_character_quest_tracks t
+             JOIN game_character_roots c USING(character_id)
+             WHERE t.character_id=r.character_id AND t.track_key=r.pending_track
+               AND t.value=r.pending_value AND c.account_id=r.account_id AND c.lifecycle<>4
+         )",
+    )
+    .bind(account)
+    .bind(key)
+    .execute(&mut **tx)
+    .await?;
+    let character = character.as_bytes().as_slice();
+    match reservation {
+        AccountReservation::Start { track, pending_value, .. } => {
+            let inserted = sqlx::query(
+                "INSERT INTO game_quest_account_reservations
+                 (account_id,reservation_key,character_id,pending_track,pending_value)
+                 VALUES ($1,$2,encode($3,'hex')::uuid,$4,$5)
+                 ON CONFLICT (account_id,reservation_key) DO NOTHING",
+            )
+            .bind(account)
+            .bind(key)
+            .bind(character)
+            .bind(track)
+            .bind(pending_value)
+            .execute(&mut **tx)
+            .await?;
+            Ok(inserted.rows_affected() == 1)
+        }
+        AccountReservation::Finish { .. } => {
+            sqlx::query(
+                "DELETE FROM game_quest_account_reservations
+                 WHERE account_id=$1 AND reservation_key=$2 AND character_id=encode($3,'hex')::uuid",
+            )
+            .bind(account)
+            .bind(key)
+            .bind(character)
+            .execute(&mut **tx)
+            .await?;
+            Ok(sqlx::query_scalar(
+                "SELECT NOT EXISTS (SELECT 1 FROM game_quest_account_reservations
+                 WHERE account_id=$1 AND reservation_key=$2)",
+            )
+            .bind(account)
+            .bind(key)
+            .fetch_one(&mut **tx)
+            .await?)
+        }
+    }
 }

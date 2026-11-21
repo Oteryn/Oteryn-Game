@@ -71,7 +71,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     settle(&mut client).await?;
     let after_position = *client.world_spatial();
     let after_vitals = client.actor_vitals().cloned().ok_or("missing post-cast vitals")?;
-    if after_position.actor_position.floor != before_position.actor_position.floor + 1 || before_vitals.mana.checked_sub(20) != Some(after_vitals.mana) {
+    if after_position.actor_position.floor != before_position.actor_position.floor - 1 || before_vitals.mana.checked_sub(20) != Some(after_vitals.mana) {
         return Err("rope cast did not produce expected client state".into());
     }
     let spatial_before = world_spatial::encode_world_spatial(&before_position);

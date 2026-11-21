@@ -419,7 +419,8 @@ async fn item_move_inner<A: FreshAdmissionAuthority>(
             )
             .await;
         }
-        ItemMoveDestination::Ground(at) => {
+        ItemMoveDestination::Ground(mut at) => {
+            at.floor = -at.floor;
             let target = LoopTarget::Ground(at);
             return loop_move(
                 authority,

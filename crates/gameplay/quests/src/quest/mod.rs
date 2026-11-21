@@ -75,6 +75,7 @@ pub mod native_rules;
 pub mod npc_magic;
 pub mod npc_rules;
 pub mod planegazer_finale;
+mod published_quest_pins;
 mod quests_2_focus;
 pub mod reward_callbacks;
 pub mod rotten_blood;
@@ -758,10 +759,13 @@ impl QuestStateCatalogue {
             .get(&shared_world_progress::save_event_restart_key(quest))
     }
 
-    /// The hash over the quest's tracks and transitions only (§6).
+    /// The published hash over the quest's tracks and transitions (§6).
+    /// Exact citation-only refreshes retain their published save identity.
     #[must_use]
     pub fn definition_hash(&self, quest: &str) -> Option<[u8; 32]> {
-        self.hashes.get(quest).copied()
+        self.hashes
+            .get(quest)
+            .map(|&current| published_quest_pins::published_hash(quest, current))
     }
 
     /// Validate `transition` against the stored values (`stored` lacks a track that has no

@@ -69,7 +69,7 @@ impl FreshAdmissionAuthority for NativeCueAuthority {
         match (
             u16::try_from(at.x),
             u16::try_from(at.y),
-            i8::try_from(at.floor),
+            i8::try_from(-at.floor),
         ) {
             (Ok(x), Ok(y), Ok(floor)) => {
                 vec![(1, crate::map::overlay::TilePos { x, y, floor }, 11)]
@@ -240,7 +240,7 @@ impl FreshAdmissionAuthority for CueEncodingOwner {
     async fn observe(&self, actor: ExactActorRef) -> Option<WorldSpatialObservation> {
         (actor == self.actor).then(|| {
             let mut observed = observation();
-            observed.actor_position.floor = -7;
+            observed.actor_position.floor = 7;
             observed
         })
     }
@@ -328,8 +328,7 @@ fn native_cue_encoders_follow_negotiation_for_effect_missile_and_speech() -> Tes
                 } else { oteryn_protocol_oteryn::presentation::decode_presentation_batch(delta.payload) }
                     .map_err(|e| format!("presentation: {e:?}"))?;
                 assert_eq!(events.len(), 2);
-                let mut expected = baseline.actor_position;
-                if !native_v1 { expected.floor = -expected.floor; }
+                let expected = baseline.actor_position;
                 let oteryn_protocol_oteryn::presentation::PresentationEventKind::MagicEffect {position, ..} = events[0].kind else { return Err("effect".into()); };
                 assert_eq!(position, expected);
                 let oteryn_protocol_oteryn::presentation::PresentationEventKind::Missile {from, to, ..} = events[1].kind else { return Err("missile".into()); };

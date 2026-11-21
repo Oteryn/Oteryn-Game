@@ -81,13 +81,28 @@ pub(super) async fn accept(
     Ok(())
 }
 
-pub(super) async fn seed(h: &Harness, wave: bool) -> TestResult {
-    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_secs();
-    super::rottin_rewards_fixtures::seed_tracks(h, &[
-        (MISSION, 1), (QUESTLINE, 5), (CAPTURES, if wave { 0 } else { 4 }),
-        (NETS, if wave { 3 } else { 0 }),
-        ("oteryn:quest-progress/crystalserver/kv/nest-timer", i64::try_from(now)?),
-    ]).await
+pub(super) async fn seed(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    wave: bool,
+) -> TestResult {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)?
+        .as_secs();
+    super::rottin_rewards_fixtures::seed_tracks(
+        h,
+        owner,
+        admitted,
+        &[
+            (MISSION, 1),
+            (QUESTLINE, 5),
+            (CAPTURES, if wave { 0 } else { 4 }),
+            (NETS, if wave { 3 } else { 0 }),
+            ("oteryn:quest-progress/crystalserver/kv/nest-timer", i64::try_from(now)?),
+        ],
+    )
+    .await
 }
 
 pub(super) async fn exercise(

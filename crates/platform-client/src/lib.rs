@@ -112,6 +112,19 @@ impl PlatformClientConfig {
         })
     }
 
+    /// Compares the resolved native login URL used by the Gateway client.
+    #[must_use]
+    pub fn matches_gateway_login_endpoint(&self, confirmed: &Self) -> bool {
+        self.base_url
+            .join(native_login::GATEWAY_LOGIN_PATH)
+            .is_ok_and(|endpoint| {
+                confirmed
+                    .base_url
+                    .join(native_login::GATEWAY_LOGIN_PATH)
+                    .is_ok_and(|other| endpoint == other)
+            })
+    }
+
     #[must_use]
     pub fn with_max_response_bytes(mut self, max_response_bytes: usize) -> Self {
         self.max_response_bytes = max_response_bytes.clamp(1, DEFAULT_MAX_RESPONSE_BYTES);

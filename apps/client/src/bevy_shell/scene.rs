@@ -91,7 +91,7 @@ pub(super) fn project(
             .any(|(_, current)| current == floor)
     });
     for (_, floor) in scene.floor_quad_ranges() {
-        let visible = *floor <= scene.first_visible_floor();
+        let visible = *floor >= scene.first_visible_floor();
         let alpha = cache
             .floor_alpha
             .entry(*floor)

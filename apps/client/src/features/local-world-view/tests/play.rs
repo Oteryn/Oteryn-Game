@@ -9,7 +9,7 @@ fn the_map_is_drawn_only_on_the_join_floor() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     view.set_world(world).map_err(|e| e.to_string())?;
     let on_floor = view.scene().sprites().len();
-    view.apply(&moved_to(100, 200, -1))
+    view.apply(&moved_to(100, 200, 1))
         .map_err(|e| e.to_string())?;
     let off_floor = view.scene().sprites().len();
     view.apply(&moved_to(crate::map::START.0, crate::map::START.1, 7))
@@ -198,14 +198,14 @@ fn floor_replacement_follows_origin_and_draws_visible_floors() -> Result<(), Bat
     let mut view = view()?;
     hide_minimap(&mut view)?;
     let mut map = live_snapshot(100);
-    map.header.origin.floor = -8;
-    map.header.first_visible_floor = -8;
+    map.header.origin.floor = 8;
+    map.header.first_visible_floor = 8;
     map.header.reset_epoch = 2;
     let base = map.tiles[0].clone();
-    map.tiles = [-10, -9, -8, -6]
+    map.tiles = [10, 9, 8, 6]
         .map(|floor| {
             let mut tile = base.clone();
-            let shift = i32::from(floor - map.header.origin.floor);
+            let shift = i32::from(map.header.origin.floor - floor);
             tile.position = ActorPosition {
                 x: 100 + shift,
                 y: 200 + shift,
@@ -215,11 +215,11 @@ fn floor_replacement_follows_origin_and_draws_visible_floors() -> Result<(), Bat
         })
         .to_vec();
     view.set_live_map(&map)?;
-    assert_eq!(view.map_center(), (100, 200, -8));
-    // -6 is hidden by the server's first-visible-floor boundary.
+    assert_eq!(view.map_center(), (100, 200, 8));
+    // 6 is hidden by the server's first-visible-floor boundary.
     assert_eq!(view.local.world().tile_count(), 3);
-    assert_eq!(view.local.world().draw_floors(), vec![-10, -9, -8]);
-    for floor in [-10, -9, -8] {
+    assert_eq!(view.local.world().draw_floors(), vec![10, 9, 8]);
+    for floor in [10, 9, 8] {
         assert!(view.local.world().floor_tile(floor, 100, 200).is_some());
     }
     #[cfg(not(feature = "bevy-shell"))]
@@ -238,8 +238,8 @@ fn floor_transition_cancels_the_previous_floor_click_walk() -> Result<(), BatchE
         floor: 0,
     }));
     let mut map = live_snapshot(100);
-    map.header.origin.floor = -8;
-    map.header.first_visible_floor = -8;
+    map.header.origin.floor = 8;
+    map.header.first_visible_floor = 8;
     map.tiles.clear();
     view.set_live_map(&map)?;
     assert!(view.inputs.is_empty());
@@ -251,10 +251,10 @@ fn surface_and_deep_windows_draw_every_server_visible_floor() -> Result<(), Batc
     use oteryn_session::world_map::floors_in_view;
     for (floor, first, count) in [
         (0, 0, 8),
-        (-7, 0, 8),
-        (-8, -8, 3),
-        (-10, -8, 5),
-        (-15, -13, 3),
+        (7, 0, 8),
+        (8, 8, 3),
+        (10, 8, 5),
+        (15, 13, 3),
     ] {
         let mut map = live_snapshot(100);
         map.header.origin.floor = floor;
@@ -263,7 +263,7 @@ fn surface_and_deep_windows_draw_every_server_visible_floor() -> Result<(), Batc
         map.tiles = floors_in_view(floor)
             .ok_or(BatchError::InvalidView)?
             .map(|layer| {
-                let shift = i32::from(layer - floor);
+                let shift = i32::from(floor - layer);
                 let mut tile = base.clone();
                 tile.position = ActorPosition {
                     x: 100 + shift,
@@ -333,7 +333,7 @@ fn failed_live_map_install_preserves_position_world_scene_and_walk() -> Result<(
     let world = view.local.world();
     let sprites = view.scene().sprites().instances().to_vec();
     let mut invalid = live_snapshot(i32::MAX);
-    invalid.header.origin.floor = -8;
+    invalid.header.origin.floor = 8;
     invalid.tiles.clear();
     assert!(view.set_live_map(&invalid).is_err());
     assert_eq!(view.map_center(), (100, 200, 0));
@@ -353,9 +353,9 @@ fn floor_replacement_preserves_ground_item_targets_without_extra_glyphs()
     let mut view = view()?;
     hide_minimap(&mut view)?;
     let mut map = live_snapshot(101);
-    map.header.origin.floor = -8;
-    map.header.first_visible_floor = -8;
-    map.tiles[0].position.floor = -8;
+    map.header.origin.floor = 8;
+    map.header.first_visible_floor = 8;
+    map.tiles[0].position.floor = 8;
     map.tiles[0].position.x += 1;
     map.tiles[0].items[0].origin = MapOrigin::BaseOrdinal {
         ordinal: 3,
@@ -366,12 +366,12 @@ fn floor_replacement_preserves_ground_item_targets_without_extra_glyphs()
         map: Some(Box::new(map)),
         ..Pushed::default()
     })?;
-    assert_eq!(view.map_center(), (101, 200, -8));
+    assert_eq!(view.map_center(), (101, 200, 8));
     // The map placeholder and player are drawn; item targets add no marker glyph.
     assert_eq!(view.scene().sprites().len(), 2);
     view.click(TileCoord::new(102, 200))?;
     let selected = view.scene().target().and_then(|target| target.item);
-    assert_eq!(selected.map(|item| item.floor()), Some(-8));
+    assert_eq!(selected.map(|item| item.floor()), Some(8));
     assert_eq!(selected.map(|item| item.quantity()), Some(7));
     assert!(!view.inputs.iter().any(|input| matches!(input, Input::TargetWalk(_))));
     Ok(())
@@ -388,11 +388,11 @@ fn hide_minimap(view: &mut PlayView) -> Result<(), BatchError> {
 fn first_visible_floor_under_roof() -> Result<(), BatchError> {
     // The wire header carries the server-computed roof boundary.
     let mut map = live_snapshot(100);
-    map.header.origin.floor = -7;
-    map.tiles[0].position.floor = -7;
-    map.header.first_visible_floor = -7;
+    map.header.origin.floor = 7;
+    map.tiles[0].position.floor = 7;
+    map.header.first_visible_floor = 7;
     let world = crate::map::World::from_live_map(&map)?;
-    assert_eq!(world.first_visible_floor, -7);
+    assert_eq!(world.first_visible_floor, 7);
     Ok(())
 }
 

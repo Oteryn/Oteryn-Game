@@ -3,6 +3,7 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use super::appearance_change_postgres_fixtures::observer_visibility_tests as observer;
 use super::autowalk_fixtures::{at, place, read, send};
 use super::fixture::{Harness, debug, id, join_two, run};
+use super::rottin_repairs_fixtures::{WALL_START, wall_world};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition};
@@ -262,19 +263,6 @@ pub(super) fn scenario(
             super::item_look_fixtures::seed_main_backpack(&h, &[]).await?;
         }
         prepare_current_session(&h).await?;
-        if (craft_lucky_charm && !craft_first_mission) || accept_bushwhacking {
-            use oteryn_gameplay_quests::quest::classic_talk::ROTTIN_STATE;
-            let questline = if craft_lucky_charm { 2 } else { 4 };
-            super::rottin_rewards_fixtures::seed_tracks(
-                &h, &[(&format!("{ROTTIN_STATE}questline"), questline)],
-            ).await?;
-        } else if weighted_reward {
-            super::rottin_rewards_fixtures::seed_loop(&h, repeat_reward).await?;
-        } else if repair {
-            super::rottin_repairs_fixtures::seed(&h, handyman).await?;
-        } else if merchant_loot || merchant_wave {
-            super::rottin_bushwhacking_fixtures::seed(&h, merchant_wave).await?;
-        }
         // The pushed player is a second durable session (character 101, session 110).
         h.seed_pvp_target().await?;
         observer::admit(&h).await?;
@@ -293,7 +281,7 @@ pub(super) fn scenario(
         let active = controller.active().ok_or("active")?;
         deps.room = pin.qualified_room().clone();
         let start = if repair {
-            super::rottin_walls::START
+            WALL_START
         } else if merchant_wave {
             oteryn_gameplay_quests::quest::world_callbacks::Position { x: 32659, y: 32181, floor: -7 }
         } else {
@@ -301,7 +289,7 @@ pub(super) fn scenario(
         };
         let start_pos = at(i32::from(start.x), i32::from(start.y));
         let world = if repair {
-            super::rottin_walls::world(active.native_gameplay().ok_or("active hammer profile")?)?
+            wall_world(active.native_gameplay().ok_or("active hammer profile")?)?
         } else {
             let (bytes, pins) = bundle_for(trap, merchant_wave, blocked_merchant_spawn)?;
             let base = crate::map::load(&bytes, &pins).map_err(debug)?;
@@ -440,9 +428,22 @@ pub(super) fn scenario(
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
             owner.admit_quest_session(&admitted).await;
+            if (craft_lucky_charm && !craft_first_mission) || accept_bushwhacking {
+                use oteryn_gameplay_quests::quest::classic_talk::ROTTIN_STATE;
+                let questline = if craft_lucky_charm { 2 } else { 4 };
+                super::rottin_rewards_fixtures::seed_tracks(
+                    &h, &owner, &admitted, &[(&format!("{ROTTIN_STATE}questline"), questline)],
+                ).await?;
+            } else if weighted_reward {
+                super::rottin_rewards_fixtures::seed_loop(&h, &owner, &admitted, repeat_reward).await?;
+            } else if repair {
+                super::rottin_repairs_fixtures::seed(&h, &owner, &admitted, handyman).await?;
+            } else if merchant_loot || merchant_wave {
+                super::rottin_bushwhacking_fixtures::seed(&h, &owner, &admitted, merchant_wave).await?;
+            }
             if accept_bushwhacking {
                 use super::classic_quests_fixtures::{install, talk};
-                let [npc] = install(&mut owner, &admitted, ["oteryn:npc.rottin_wood"]).await?;
+                let [npc] = install(&owner, &admitted, ["oteryn:npc.rottin_wood"]).await?;
                 talk(&mut owner, &admitted, npc, 1608, "hi").await?;
                 super::rottin_bushwhacking_fixtures::accept(&mut owner, &admitted, &h, npc).await?;
             } else if merchant_wave {

@@ -309,6 +309,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                     && facts.item.key == corpse.key
                     && facts.item.revision == corpse.revision
                     && facts.materializable
+                    && !facts.ordinary_corpse_only
                     // Reward-boss Ground bodies use their exact positive source capacity,
                     // independently of the portable container-entry admission limit.
                     && facts.container_capacity.is_some_and(|capacity| capacity > 0)

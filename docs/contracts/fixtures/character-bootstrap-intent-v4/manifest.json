@@ -1,0 +1,150 @@
+{
+  "fixture_set": "oteryn.character_bootstrap_intent.v4",
+  "contract": "docs/contracts/OTERYN_V2_CHARACTER_BOOTSTRAP_INTENT_PRODUCER_CONTRACT.md",
+  "contract_version": 4,
+  "retired_contract_versions": [
+    1,
+    2,
+    3
+  ],
+  "game_consumer": {
+    "repository": "Oteryn/Oteryn-Game",
+    "commit": "e2152d050038cecdb3728c222af2ac184e1cac5a",
+    "path": "crates/gameplay/durability/src/character_bootstrap_intent.rs",
+    "pinned_contract_version": 3,
+    "agreement": "Game session confirmed v4 with requested_vocation on 2026-11-17; the consumer moves CONTRACT_VERSION from 3 to 4"
+  },
+  "requested_vocation": [
+    "Knight",
+    "Paladin",
+    "Sorcerer",
+    "Druid",
+    "Monk"
+  ],
+  "fixed": {
+    "account_id": "01890f4e-7c00-7000-8000-000000000003",
+    "target_world_id": "01890f4e-7c00-7000-8000-000000000004",
+    "requested_name": "Aldric Vale",
+    "profile_revision": "profile:1",
+    "ruleset_revision": "ruleset:1",
+    "content_revision": "content:1",
+    "starter_template_revision": "newhaven-starter-r1",
+    "issued_at_source": "1790000000",
+    "expires_at_source": "1790000060"
+  },
+  "files": [
+    {
+      "file": "intent.knight.json",
+      "bytes": 775,
+      "sha256": "a18835282a8c8631b8b62de6ae15cf448a8a56fb4df753d021082221ac6ef3a5"
+    },
+    {
+      "file": "intent.paladin.json",
+      "bytes": 778,
+      "sha256": "0aa8f8c1f89d46791543951863932e94c3f2ec2581f5b7babb68277d7e54b144"
+    },
+    {
+      "file": "intent.sorcerer.json",
+      "bytes": 777,
+      "sha256": "bcacdc6e1c20713558f784b42ed4ed0a421a2b89e6100d382c791351d3317906"
+    },
+    {
+      "file": "intent.druid.json",
+      "bytes": 776,
+      "sha256": "e24e42694a3b21eabba9d852f009fb3ec0e867f4ebff4626a6644d978e032511"
+    },
+    {
+      "file": "intent.monk.json",
+      "bytes": 773,
+      "sha256": "4bce662818edbf0419625a00c7b20d2e0e1333e2fa93b533510eda5cf4f00206"
+    },
+    {
+      "file": "rejected.vocation-lower-case.json",
+      "bytes": 775,
+      "sha256": "d2fb7a875ec69459b9e73314136f72d0afb5d5d16c6e3d3116768c94e16af7cc"
+    },
+    {
+      "file": "rejected.vocation-none.json",
+      "bytes": 773,
+      "sha256": "b9abc1cc5907798308ffc94faa47e5c28f6db5d36f189977ad7e3216962fdf5e"
+    },
+    {
+      "file": "rejected.vocation-missing.json",
+      "bytes": 745,
+      "sha256": "36aaf107f948b8a5116abbd902bae65c250126d6f645dda09b6a076156860c45"
+    }
+  ],
+  "cases": [
+    {
+      "case": "intent-knight",
+      "file": "intent.knight.json",
+      "operation_id": "01890f4e-7c00-7000-8000-000000000011",
+      "issuer_decision_id": "01890f4e-7c00-7000-8000-000000000021",
+      "source_revision": "1",
+      "requested_sex": "Male",
+      "requested_vocation": "Knight",
+      "outcome": "accept"
+    },
+    {
+      "case": "intent-paladin",
+      "file": "intent.paladin.json",
+      "operation_id": "01890f4e-7c00-7000-8000-000000000012",
+      "issuer_decision_id": "01890f4e-7c00-7000-8000-000000000022",
+      "source_revision": "2",
+      "requested_sex": "Female",
+      "requested_vocation": "Paladin",
+      "outcome": "accept"
+    },
+    {
+      "case": "intent-sorcerer",
+      "file": "intent.sorcerer.json",
+      "operation_id": "01890f4e-7c00-7000-8000-000000000013",
+      "issuer_decision_id": "01890f4e-7c00-7000-8000-000000000023",
+      "source_revision": "3",
+      "requested_sex": "Male",
+      "requested_vocation": "Sorcerer",
+      "outcome": "accept"
+    },
+    {
+      "case": "intent-druid",
+      "file": "intent.druid.json",
+      "operation_id": "01890f4e-7c00-7000-8000-000000000014",
+      "issuer_decision_id": "01890f4e-7c00-7000-8000-000000000024",
+      "source_revision": "4",
+      "requested_sex": "Female",
+      "requested_vocation": "Druid",
+      "outcome": "accept"
+    },
+    {
+      "case": "intent-monk",
+      "file": "intent.monk.json",
+      "operation_id": "01890f4e-7c00-7000-8000-000000000015",
+      "issuer_decision_id": "01890f4e-7c00-7000-8000-000000000025",
+      "source_revision": "5",
+      "requested_sex": "Male",
+      "requested_vocation": "Monk",
+      "outcome": "accept"
+    },
+    {
+      "case": "vocation-lower-case",
+      "file": "rejected.vocation-lower-case.json",
+      "requested_vocation": "knight",
+      "outcome": "reject",
+      "derived_from": "intent.knight.json"
+    },
+    {
+      "case": "vocation-none",
+      "file": "rejected.vocation-none.json",
+      "requested_vocation": "None",
+      "outcome": "reject",
+      "derived_from": "intent.knight.json"
+    },
+    {
+      "case": "vocation-missing",
+      "file": "rejected.vocation-missing.json",
+      "requested_vocation": null,
+      "outcome": "reject",
+      "derived_from": "intent.knight.json"
+    }
+  ]
+}

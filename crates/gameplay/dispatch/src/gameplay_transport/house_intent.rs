@@ -147,6 +147,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 revision,
                 members,
             } => {
+                let floor = floor.checked_neg()?;
                 let cell = crate::content::LogicalCell {
                     x: i32::from(x),
                     y: i32::from(y),

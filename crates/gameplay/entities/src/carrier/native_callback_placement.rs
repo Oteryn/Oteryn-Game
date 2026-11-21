@@ -1,9 +1,10 @@
 //! Source callback placement DATA and current physical occupancy. These facts
 //! grant no callback, map location, force flag or actor admission by themselves.
+use super::runtime_actor_companion::CompiledCreaturePolicy;
 use super::*;
-use oteryn_gameplay_content::content::ProjectV2AuthoringProfileData;
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
 use oteryn_gameplay_content::content::native_monster_callbacks::QualifiedNativeCallbackSpawn;
+use oteryn_gameplay_content::content::{ProjectV2AuthoringProfileData, ProjectV2Movement};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NativeSourcePlacementOccupant {
@@ -27,6 +28,21 @@ pub fn native_source_monster_occupancy_admits(
         NativeSourcePlacementOccupant::PlayerOrNpc => false,
     })
 }
+
+pub(super) fn native_source_monster_movement<'a>(
+    native: &'a NativeGameplayState,
+    policy: &CompiledCreaturePolicy,
+) -> Option<&'a ProjectV2Movement> {
+    let record = native.creature_profiles().records.iter().find(|record| {
+        record.profile.target.key == policy.definition_key
+            && record.profile.target.revision == policy.definition_revision
+    })?;
+    let ProjectV2AuthoringProfileData::Behavior(profile) = &record.behavior.as_ref()?.data else {
+        return None;
+    };
+    Some(&profile.movement)
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct NativeSourceOccupancyFacts {
     pub admits_occupants: bool,
@@ -49,21 +65,11 @@ impl ChannelRuntimeV1 {
         {
             return Err(CarrierError::ContentPinWorldMismatch);
         }
-        let movement = |key: &str, revision: &str| {
-            let record = native.creature_profiles().records.iter().find(|record| {
-                record.profile.target.key == key && record.profile.target.revision == revision
-            })?;
-            let ProjectV2AuthoringProfileData::Behavior(profile) = &record.behavior.as_ref()?.data
-            else {
-                return None;
-            };
-            Some(&profile.movement)
-        };
         let child_policy = self.companion_policy(child)?;
         if child_policy.definition_key != child {
             return Err(CarrierError::CreatureTargetMismatch);
         }
-        let child_movement = movement(child, &child_policy.definition_revision)
+        let child_movement = native_source_monster_movement(native, &child_policy)
             .ok_or(CarrierError::InvalidCreatureTarget)?;
         let mut occupants = Vec::new();
         // Control loss does not vacate a committed physical cell.
@@ -83,7 +89,7 @@ impl ChannelRuntimeV1 {
             if self.companion_policy(&policy.definition_key)?.as_ref() != policy.as_ref() {
                 return Err(CarrierError::ContentPinWorldMismatch);
             }
-            let occupant = movement(&policy.definition_key, &policy.definition_revision)
+            let occupant = native_source_monster_movement(native, policy)
                 .ok_or(CarrierError::InvalidCreatureTarget)?;
             occupants.push(NativeSourcePlacementOccupant::Monster {
                 pushable: occupant.pushable,

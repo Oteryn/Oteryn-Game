@@ -173,14 +173,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.active_generation,
         ))
         .chain(self.source_volatile_entities(&runtime))
-        .map(|mut entry| {
-            entry.position = frame.project(crate::foundation::MovementLocalPosition {
-                x: entry.position.x,
-                y: entry.position.y,
-                floor: entry.position.floor,
-            })?;
-            Some(entry)
-        })
+        .map(|entry| frame.project_entity(entry))
         .collect::<Option<Vec<_>>>()?;
         // CLOCK-1 (§11.4): an actor's light is its brightest current LIGHT condition, from the
         // runtime actor-condition owner (players and creatures) and, for a player, its spell

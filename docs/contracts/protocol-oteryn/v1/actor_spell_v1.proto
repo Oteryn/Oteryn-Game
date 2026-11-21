@@ -43,7 +43,7 @@ message SpellTargetPositionV1 {
   sint32 x = 1;
   sint32 y = 2;
   // Limited to the int16 range.
-  sint32 floor = 3;
+  sint32 floor = 3; // Global z 0..15, ground 7
 }
 
 // ClientCommand.payload of command type 3. At most 32 encoded bytes (SPELL-D7).

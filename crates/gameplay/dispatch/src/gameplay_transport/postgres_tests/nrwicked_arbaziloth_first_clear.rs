@@ -4,7 +4,7 @@ use super::TestResult;
 
 #[test]
 fn nrwicked_arbaziloth_death_records_first_clear() -> TestResult {
-    super::srvenc_source_deaths::scenario(
+    super::srvenc_source_deaths_fixtures::scenario(
         "nrwicked_arbaziloth_death_records_first_clear",
         "arbaziloth",
     )

@@ -257,7 +257,7 @@ async fn use_sewer(
                             != (
                                 i32::from(position.x),
                                 i32::from(position.y),
-                                i16::from(position.floor),
+                                -i16::from(position.floor),
                             )
                         {
                             continue;

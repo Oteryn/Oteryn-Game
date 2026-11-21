@@ -77,7 +77,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             AutoWalkTarget::AdjacentCell(at) => MovementLocalPosition {
                 x: at.x,
                 y: at.y,
-                floor: at.floor.checked_neg().ok_or(())?,
+                floor: at.floor,
             },
             AutoWalkTarget::Cell(at) => self
                 .wire_position_frame(&runtime)

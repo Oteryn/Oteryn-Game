@@ -122,8 +122,8 @@ pub(super) async fn fits(
     tx: &mut Type2Transaction<'_>,
     fence: CurrentCharacterItemFence,
     weights: Option<&dyn super::super::item_transfer::ItemWeightLookup>,
-    take: &[&TypedDefinitionRef],
-    give: &TypedDefinitionRef,
+    take: &[(&TypedDefinitionRef, u32)],
+    (give, give_count): (&TypedDefinitionRef, u32),
 ) -> std::result::Result<bool, DurabilityError> {
     let weights = weights.ok_or(DurabilityError::InvalidStoredState)?;
     let weight = |definition: &TypedDefinitionRef| {
@@ -147,13 +147,13 @@ pub(super) async fn fits(
     )
     .await?;
     let mut taken = 0_u64;
-    for definition in take {
+    for &(definition, count) in take {
         taken = taken
-            .checked_add(weight(definition)?)
+            .checked_add(weight(definition)? * u64::from(count))
             .ok_or(DurabilityError::InvalidStoredState)?;
     }
     Ok(carried
         .checked_sub(taken)
-        .and_then(|w| w.checked_add(weight(give).ok()?))
+        .and_then(|w| w.checked_add(weight(give).ok()? * u64::from(give_count)))
         .is_some_and(|w| w <= capacity))
 }

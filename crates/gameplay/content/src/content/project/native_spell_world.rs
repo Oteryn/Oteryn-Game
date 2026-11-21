@@ -644,7 +644,9 @@ pub fn qualify(
             || doc.native_frame.map_revision != map
             || doc.native_frame.origin_x != 0
             || doc.native_frame.origin_y != 0
-            || doc.native_frame.floor_transform != "native_floor=-source_z"
+            || doc.native_frame.floor_transform != "native_floor=source_z"
+            || !(0..=15).contains(&doc.source_bounds[4])
+            || !(0..=15).contains(&doc.source_bounds[5])
             || doc.source_entry.is_none()
             || doc.source_regions.is_empty()
             || doc.source_regions.len() > 64
@@ -770,6 +772,7 @@ pub fn qualify(
     if ids.len() != policies.len() {
         return Err(invalid());
     }
+    let project_floor = |z: i32| if activity.is_some() { z } else { -z };
     let mut cells = BTreeMap::new();
     let mut immutable_tiles = BTreeMap::new();
     let mut pending_placements = Vec::new();
@@ -778,7 +781,7 @@ pub fn qualify(
         let native = [
             x - doc.native_frame.origin_x,
             y - doc.native_frame.origin_y,
-            -z,
+            project_floor(z),
         ];
         let [x0, y0, x1, y1, z0, z1] = doc.source_bounds;
         if !(x0..=x1).contains(&x)
@@ -963,7 +966,7 @@ pub fn qualify(
     let temple = LogicalCell {
         x: entry[0] - doc.native_frame.origin_x,
         y: entry[1] - doc.native_frame.origin_y,
-        z: -entry[2],
+        z: project_floor(entry[2]),
     };
     let start = cells
         .get(&temple)
@@ -983,8 +986,8 @@ pub fn qualify(
             doc.source_bounds[1] - doc.native_frame.origin_y,
             doc.source_bounds[2] - doc.native_frame.origin_x,
             doc.source_bounds[3] - doc.native_frame.origin_y,
-            -doc.source_bounds[5],
-            -doc.source_bounds[4],
+            project_floor(doc.source_bounds[4]).min(project_floor(doc.source_bounds[5])),
+            project_floor(doc.source_bounds[4]).max(project_floor(doc.source_bounds[5])),
         ],
         bindings: doc.source_identity_bindings,
         immutable_tiles,
@@ -1096,7 +1099,11 @@ pub fn client_projection(bytes: &[u8]) -> Result<Vec<u8>, ProjectError> {
         start: [
             entry[0] - doc.native_frame.origin_x,
             entry[1] - doc.native_frame.origin_y,
-            -entry[2],
+            if doc.source_entry.is_some() {
+                entry[2]
+            } else {
+                -entry[2]
+            },
         ],
         cells,
     })
@@ -1340,7 +1347,7 @@ mod tests {
             super::super::NativeEntryStart {
                 x: 33565,
                 y: 32758,
-                floor: -15
+                floor: 15
             }
         );
         assert_eq!(map.cell_count(), 537);
@@ -1350,7 +1357,7 @@ mod tests {
                 LogicalCell {
                     x: 33558,
                     y: 32759,
-                    z: -15
+                    z: 15
                 }
             ),
             Ok(CollisionClass::Walkable)
@@ -1361,7 +1368,7 @@ mod tests {
                 LogicalCell {
                     x: 33565,
                     y: 32758,
-                    z: -15
+                    z: 15
                 }
             ),
             Ok(CollisionClass::Walkable)
@@ -1372,7 +1379,7 @@ mod tests {
                 LogicalCell {
                     x: 33565,
                     y: 32758,
-                    z: -14
+                    z: 14
                 }
             )
             .is_err()
@@ -1719,7 +1726,7 @@ pub(in crate::content) fn qualifies_activity_bundle_cells(
     }
     doc.tiles.iter().all(|tile| {
         let [x, y, z] = tile.source_position;
-        let source_cell = LogicalCell { x, y, z: -z };
+        let source_cell = LogicalCell { x, y, z };
         let target = LogicalCell { x, y, z };
         let expected = room
             .movement_cells()

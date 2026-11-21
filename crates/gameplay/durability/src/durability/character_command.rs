@@ -21,6 +21,8 @@ use crate::native_admission_source::character_commands::{
     counter, source_authority_valid, uuid_v7,
 };
 pub mod account_deletion;
+mod retained_receipts;
+pub use retained_receipts::RetainedCreatePublisherStore;
 
 use oteryn_gameplay_characters::character_authority_audit::{
     EVENT_SCHEMA_REVISION, EVENT_TYPE_CHARACTER_AUTHORITY_BOOTSTRAPPED, RETENTION_PROFILE,
@@ -71,6 +73,8 @@ struct CreateWire {
     account_id: String,
     target_world_id: String,
     requested_name: String,
+    requested_sex: String,
+    requested_vocation: String,
     issued_at_source: String,
     expires_at_source: String,
     audience: String,
@@ -92,6 +96,8 @@ pub struct CreateIntent {
     pub account_id: [u8; 16],
     pub target_world_id: [u8; 16],
     pub requested_name: String,
+    pub requested_sex: String,
+    pub requested_vocation: String,
     pub issued_at_source: u64,
     pub expires_at_source: u64,
 }
@@ -121,7 +127,7 @@ pub fn classify_intent(raw: &[u8], command: &str, operation_id: &str) -> Classif
         Some(serde_json::Value::String(_)) => return Rejected(OPERATION_CONFLICT),
         _ => return Rejected(INTENT_INVALID),
     }
-    if head.contract_version != Some(serde_json::Value::from(1))
+    if head.contract_version != Some(serde_json::Value::from(2))
         || head.variant != Some(serde_json::Value::from(CREATE_VARIANT))
         || command != CREATE_COMMAND
     {
@@ -135,6 +141,8 @@ fn decode_create(raw: &[u8], operation_id: &str) -> Option<CreateIntent> {
     // Exact members in wire order, no whitespace and no escapes: the canonical
     // re-encoding is the received body.
     if serde_json::to_vec(&wire).ok()? != raw
+        || !matches!(wire.requested_sex.as_str(), "Female" | "Male")
+        || !matches!(wire.requested_vocation.as_str(), "Knight" | "Paladin" | "Sorcerer" | "Druid" | "Monk")
         || wire.issuer_authority != ISSUER_AUTHORITY
         || wire.audience != AUDIENCE
         || wire.operation_id != operation_id
@@ -158,6 +166,8 @@ fn decode_create(raw: &[u8], operation_id: &str) -> Option<CreateIntent> {
         account_id: uuid_bytes(&wire.account_id)?,
         target_world_id: uuid_bytes(&wire.target_world_id)?,
         requested_name: wire.requested_name,
+        requested_sex: wire.requested_sex,
+        requested_vocation: wire.requested_vocation,
         issued_at_source,
         expires_at_source,
     })
@@ -685,8 +695,10 @@ async fn commit_create(
     let world = intent.target_world_id;
     let [profile, ruleset, content, starter] = interpretation;
     let payload = encode_bootstrap(&account, &character, &world);
-    sqlx::query("INSERT INTO game_character_roots(character_id, account_id, world_id, lifecycle, character_revision, profile_revision, ruleset_revision, content_revision, starter_template_revision, name) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, 1, 1, $4, $5, $6, $7, $8)")
-        .bind(character.as_slice()).bind(account.as_slice()).bind(world.as_slice()).bind(profile).bind(ruleset).bind(content).bind(starter).bind(&intent.requested_name).execute(&mut **tx).await?;
+    sqlx::query("INSERT INTO game_character_roots(character_id, account_id, world_id, lifecycle, character_revision, profile_revision, ruleset_revision, content_revision, starter_template_revision, name, sex, creation_vocation) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, 1, 1, $4, $5, $6, $7, $8, $9, $10)")
+        .bind(character.as_slice()).bind(account.as_slice()).bind(world.as_slice()).bind(profile).bind(ruleset).bind(content).bind(starter).bind(&intent.requested_name)
+        .bind(if intent.requested_sex == "Female" { 1_i16 } else { 2_i16 })
+        .bind(intent.requested_vocation.to_ascii_lowercase()).execute(&mut **tx).await?;
     sqlx::query("INSERT INTO game_character_audit_outbox(event_id, transaction_id, transaction_ordinal, transaction_count, event_type_id, schema_revision, retention_profile_id, character_id, occurred_at, expires_at, payload, payload_sha256, server_build_id, publication_state) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, 1, $3, $4, $5, encode($6,'hex')::uuid, $9, $9 + $10, $7, sha256($7), $8, 1)")
         .bind(event.as_slice()).bind(transaction.as_slice()).bind(i64::from(EVENT_TYPE_CHARACTER_AUTHORITY_BOOTSTRAPPED)).bind(i64::from(EVENT_SCHEMA_REVISION)).bind(RETENTION_PROFILE).bind(character.as_slice()).bind(&payload).bind(SERVER_BUILD_ID).bind(occurred_at).bind(AUDIT_RETENTION_MS).execute(&mut **tx).await?;
     let projection = sqlx::query("SELECT p.projection_revision, e.projection_epoch FROM game_character_account_projections p, game_character_account_projection_epoch e WHERE p.account_id = encode($1,'hex')::uuid AND e.epoch_scope = 1")

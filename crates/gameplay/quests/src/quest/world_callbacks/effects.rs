@@ -322,6 +322,8 @@ pub struct Encounter {
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub enum EncounterPhase {
+    #[serde(rename = "court_warlock")]
+    CourtWarlock,
     #[serde(rename = "arbaziloth")]
     Arbaziloth,
     #[serde(rename = "cults_boss_phase_closures")]
@@ -422,6 +424,10 @@ impl Callback {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    let exact_arbaziloth = super::arbaziloth::exact(callback);
+    if callback.key == super::arbaziloth::KEY && !exact_arbaziloth {
+        return false;
+    }
     let inputs = &effects.carried_inputs;
     let unique: BTreeSet<_> = inputs.iter().map(|input| &input.item).collect();
     if inputs.len() > 8
@@ -893,6 +899,8 @@ pub(super) fn valid(callback: &Callback) -> bool {
         || (operations > 0
             && ((!personal_encounter
                 && !super::personal_trial::admitted(callback)
+                && !super::court_warlock::exact(callback)
+                && !exact_arbaziloth
                 && !callback.starts_merchant_wave()
                 && (!lever
                     || (effects.scene.is_none()
@@ -954,7 +962,10 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase.is_some();
-        if (encounter.minimum_level == 0 && !source_party && !callback.starts_merchant_wave())
+        let delayed = encounter.phase == Some(EncounterPhase::CourtWarlock);
+        if (delayed && !super::court_warlock::exact(callback))
+            || (encounter.phase == Some(EncounterPhase::Arbaziloth) && !exact_arbaziloth)
+            || (encounter.minimum_level == 0 && !source_party && !callback.starts_merchant_wave())
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()
@@ -975,7 +986,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 !(1..=if encounter.phase.is_some() { 16 } else { 8 })
                     .contains(&encounter.players.len())
             }
-            || !(1..=if encounter.phase.is_some() { 16 } else { 8 })
+            || !(usize::from(!delayed)..=if encounter.phase.is_some() { 16 } else { 8 })
                 .contains(&encounter.monsters.len())
             || (encounter.phase.is_some() && encounter.timing.is_some())
             || (callback.reversible && !source_party)

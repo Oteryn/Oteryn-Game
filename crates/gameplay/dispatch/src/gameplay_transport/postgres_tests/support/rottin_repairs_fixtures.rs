@@ -1,11 +1,11 @@
-//! Drive a real retained hammer USE and the resulting Disrepair hand-in.
+//! Shared Rottin wall map and retained hammer hand-in fixtures.
 use super::classic_quests_fixtures::{install, talk};
 use super::fixture::{Harness, id};
 use super::rottin_bushwhacking_fixtures::use_quest_tool;
 use super::rottin_rewards_fixtures::{experience, seed_tracks, source_reply};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::map::{overlay::TilePos, view::MapFacts};
-use oteryn_gameplay_quests::quest::classic_talk::ROTTIN_STATE;
+use oteryn_gameplay_quests::quest::{classic_talk::ROTTIN_STATE, world_callbacks::Position};
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
 const ROTTIN: &str = "oteryn:npc.rottin_wood";
@@ -18,10 +18,52 @@ const COOLDOWN: &str = "oteryn:quest-progress/crystalserver/kv/handyman-task";
 const QUESTLINE: &str =
     "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/questline";
 
-pub(super) async fn seed(h: &Harness, handyman: bool) -> TestResult {
+pub(super) const WALL_TARGET: Position = Position {
+    x: 32647,
+    y: 32216,
+    floor: -7,
+};
+pub(super) const WALL_START: Position = Position {
+    x: 32647,
+    y: 32217,
+    floor: -7,
+};
+
+pub(super) fn wall_world(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    use super::l6_world_pickups_fixtures::{ExpectedTile, NativeCrop, native_scene_with_appearances};
+    native_scene_with_appearances(
+        native,
+        vec![NativeCrop {
+            bytes: include_bytes!(
+                "../../../../../../../content/world/placements/region-z07-x127-y125.b3"
+            ),
+            region: (7, 127, 125),
+            bounds: (32646, 32216, 32648, 32218),
+            start: (WALL_START.x, WALL_START.y),
+            expected: vec![ExpectedTile {
+                position: (WALL_TARGET.x, WALL_TARGET.y),
+                ids: vec![11732, 4144, 12183],
+                counted_entry: None,
+            }],
+        }],
+        &[],
+        &[6474],
+    )
+}
+
+pub(super) async fn seed(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    handyman: bool,
+) -> TestResult {
     let (track, stage) = if handyman { ("task02", 4) } else { ("mission02", 3) };
     seed_tracks(
         h,
+        owner,
+        admitted,
         &[
             (&format!("{ROTTIN_STATE}{track}"), 1),
             (QUESTLINE, stage),

@@ -61,13 +61,16 @@ class CorpseQualification(unittest.TestCase):
             expected = self.plan.records[key]['semantics']['container']['value']['capacity']['value']
             self.assertTrue(facts[key]['materializable'], key)
             self.assertEqual(facts[key]['container_capacity'], expected, key)
+        for number in (5967, 5999, 6031, 25814):
+            self.assertTrue(facts[f'oteryn:item.tibia.i{number}']['ordinary_corpse_only'])
 
     def test_exact_source_capacities_and_complete_decay_chains(self):
         self.assertEqual(self.plan.roots, {
-            5960, 5962, 5968, 5973, 5975, 5995, 6006, 6017, 6048, 6078, 17445, 17446,
+            5960, 5962, 5967, 5968, 5973, 5975, 5995, 5999, 6006, 6017, 6025, 6030, 6031, 6044,
+            6048, 6055, 6072, 6078, 8909, 11675, 17445, 17446,
             17449, 17454, 18099, 20972, 21910, 22010, 22066, 22067, 25085,
-            27714, 27718, 30272, 31453, 31599, 31611, 33821})
-        self.assertEqual(len(self.plan.records), 99)
+            25815, 27714, 27718, 30272, 31453, 31599, 31611, 33821})
+        self.assertEqual(len(self.plan.records), 141)
         for number, duration, target in [(6017, 10000, 4301), (4301, 300000, 4302),
                                          (4302, 300000, 4303)]:
             row = self.plan.records[f'oteryn:item.tibia.i{number}']
@@ -76,7 +79,7 @@ class CorpseQualification(unittest.TestCase):
             self.assertEqual(temporal['decay_target'], corpse.grizzly.source.K(
                 {'key': f'oteryn:item.tibia.i{target}', 'revision': 'definition-r1'}))
         for number, capacity, target in [(5960, 7, 3987), (5962, 30, 3989),
-                                         (5968, 5, 4007), (5975, 20, 4291)]:
+                                         (5967, 10, 4266), (5968, 5, 4007), (5975, 20, 4291)]:
             row = self.plan.records[f'oteryn:item.tibia.i{number}']
             self.assertEqual(row['admission']['legal_destinations'], ['Ground'])
             self.assertEqual(row['semantics']['container'], corpse.grizzly.source.K(
@@ -95,7 +98,7 @@ class CorpseQualification(unittest.TestCase):
     def test_queen_projection_retains_source40_and_native30_without_changing_other_corpses(self):
         key = 'oteryn:item.tibia.i30272'
         self.assertEqual(corpse.grizzly.source.attrs(self.xml[30272])['containersize'], '40')
-        self.assertEqual(self.plan.projected_source_capacities, {key: 40})
+        self.assertEqual(self.plan.projected_source_capacities, {key: 40, 'oteryn:item.tibia.i5999': 50, 'oteryn:item.tibia.i8909': 36})
         self.assertEqual(self.plan.records[key]['semantics']['container'],
                          corpse.grizzly.source.K({'capacity': corpse.grizzly.source.K(30)}))
         packet = json.loads((corpse.ROOT / corpse.REQUIREMENTS).read_bytes())

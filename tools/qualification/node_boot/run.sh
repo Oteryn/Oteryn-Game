@@ -11,7 +11,7 @@
 set -Eeuo pipefail
 umask 077
 
-readonly PLATFORM_SHA=3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
+readonly PLATFORM_SHA=6d04b52a16145723eedb0c56640ad052dbd26e94
 readonly TOPOLOGY_REVISION=wp5-node-boot-v1
 readonly ACCOUNT_ID=01934f10-7c00-7000-8000-000000000001
 readonly SECOND_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000002
@@ -28,7 +28,7 @@ readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Pac
 # just as the S3-B seam does; progression is initialized from this interpretation.
 # The served readiness.content_revision is this same revision: the quest and Task Board
 # owners refuse a Character whose stored progression content differs from the served one.
-readonly INTERPRETATION=(nb-profile-1 nb-ruleset-1 s3b-content-1 nb-starter-1)
+readonly INTERPRETATION=(nb-profile-1 nb-ruleset-1 s3b-content-1 newhaven-starter-r1)
 readonly COMPOSE_FILE=tools/qualification/wp5_s3a/compose.yml
 readonly COMPOSE_S3B=tools/qualification/wp5_s3b/compose.override.yml
 readonly COMPOSE_OVERLAY=tools/qualification/node_boot/compose.override.yml
@@ -49,6 +49,8 @@ for node_boot_port in NODE_BOOT_PG_PORT NODE_BOOT_PLATFORM_PORT NODE_BOOT_GAME_P
   [[ -z "${!node_boot_port+x}" || ( "${!node_boot_port}" =~ ^[1-9][0-9]{3,4}$ && "${!node_boot_port}" -le 65535 ) ]] \
     || { echo "NODE_BOOT_RESULT=BLOCKED reason=invalid_port_${node_boot_port,,}"; exit 2; }
 done
+# The native Platform lifecycle reads the game port from the environment (prepare.py route).
+export NODE_BOOT_GAME_PORT="${NODE_BOOT_GAME_PORT:-17181}"
 readonly SERVICE_USER BASE
 # NODE_BOOT_KEEP_STACK=1 leaves the stack up after the seam stage; NODE_BOOT_REUSE_STACK=1
 # reruns only the seam stage against it, =teardown removes it. Local development only.
@@ -67,7 +69,10 @@ GAME_SOURCE="$(git rev-parse --show-toplevel)"
 # The separately pinned portal-rs lane owns only Platform lifecycle and its stages.
 # A fixed repository path prevents an environment variable from sourcing arbitrary code.
 case "${NODE_BOOT_LIFECYCLE:-}" in
-  '') ;;
+  ''|native_reference)
+    NODE_BOOT_LIFECYCLE=native_reference
+    source "$GAME_SOURCE/tools/qualification/game_platform/lifecycle.sh"
+    ;;
   game_platform)
     # shellcheck source=tools/qualification/game_platform/lifecycle.sh
     source "$GAME_SOURCE/tools/qualification/game_platform/lifecycle.sh"
@@ -75,9 +80,12 @@ case "${NODE_BOOT_LIFECYCLE:-}" in
     ;;
   *) echo 'NODE_BOOT_RESULT=BLOCKED reason=unknown_lifecycle'; exit 2 ;;
 esac
+for program in docker python3 node openssl cargo sudo psql setsid timeout; do
+  command -v "$program" >/dev/null 2>&1 || { echo "NODE_BOOT_RESULT=BLOCKED reason=missing_binary_$program"; exit 2; }
+done
 NODE_BOOT_PLATFORM_PIN="$PLATFORM_SHA"
 NODE_BOOT_TOPOLOGY="$TOPOLOGY_REVISION"
-if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
+if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform || "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
   # portal-rs pin is owned by game_platform/lifecycle.sh (includes Platform #1833).
   NODE_BOOT_PLATFORM_PIN="$GAME_PLATFORM_SHA"
   NODE_BOOT_TOPOLOGY=portal-rs-game-platform-v1
@@ -99,7 +107,8 @@ NODE_BOOT_WORLD="${NODE_BOOT_WORLD:-1}"
 case "$NODE_BOOT_WORLD" in 0|1) ;; *) echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_world_mode'; exit 2 ;; esac
 NODE_BOOT_WORLD_PROFILE="${NODE_BOOT_WORLD_PROFILE:-town}"
 case "$NODE_BOOT_WORLD_PROFILE" in
-  town) WORLD_REGIONS='126,125;126,126;127,127' ;;
+  # Real Thais/town outskirts and the default-start and seller regions.
+  town) WORLD_REGIONS="$(<"$GAME_SOURCE/tools/qualification/node_boot/town-regions.txt")" ;;
   quests) WORLD_REGIONS='125,121;126,124;126,125;126,126;126,127;127,123;127,125;127,126;127,127;128,122;128,125;128,126;128,128;129,123;129,124;129,126;129,127;130,126;132,125;133,123;133,124' ;;
   *) echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_world_profile'; exit 2 ;;
 esac
@@ -107,7 +116,7 @@ readonly NODE_BOOT_WORLD_PROFILE WORLD_REGIONS
 # A kept or reused stack is one topology, so it never runs the separate basic pass.
 # The game_platform lifecycle owns one Platform stack, so it never runs the basic pass either.
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 && "${NODE_BOOT_SKIP_BASIC:-0}" != 1 \
-  && -z "${NODE_BOOT_LIFECYCLE:-}" \
+  && "${NODE_BOOT_LIFECYCLE:-}" == native_reference \
   && "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
   NODE_BOOT_WORLD=0 bash "$GAME_SOURCE/tools/qualification/node_boot/run.sh"
 fi
@@ -277,6 +286,9 @@ save_reuse_state() { # the seam stage's inputs, for NODE_BOOT_REUSE_STACK=1
   local names=(WORK node_log failed_node_log WP5_PKI WP5_SCRATCH WP5_PORT WP5_DB_PASSWORD WP5_DB_ROOT_PASSWORD
     WP5_APP_KEY PG_PORT PG_ADMIN_PASSWORD CONTROL_PASSWORD RUNTIME_PASSWORD ADMIN_URL FRESH_SEED_HEX
     RECOVERY_SEED_HEX MAP_REVISION NODE_PID NODE_CLOCK_FEATURES NODE_GAMEPLAY_ENV PG_OBS)
+  if [[ "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
+    names+=(GP_HARNESS_PID GP_PG_CONTAINER)
+  fi
   [[ -z "${OTERYN_QUALIFICATION_CLOCK_FILE:-}" ]] || names+=(OTERYN_QUALIFICATION_CLOCK_FILE)
   ( umask 077
     { declare -p "${names[@]}"
@@ -301,7 +313,7 @@ cleanup() {
   else
     [[ -z "$NODE_PID" ]] || sudo kill -TERM "$NODE_PID" 2>/dev/null || true
     sudo pkill -TERM -u "$SERVICE_USER" 2>/dev/null || true
-    if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
+    if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform || "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
       game_platform_cleanup
     else
       compose down --volumes --remove-orphans --timeout 15 >/dev/null 2>&1 || true
@@ -405,21 +417,9 @@ echo "CREATE EXTENSION pg_stat_statements" | psql_admin postgres
 [[ "$(echo 'SHOW ssl' | psql_admin oteryn_node_boot)" == on ]] || fail "postgres_tls"
 ADMIN_URL="postgresql://oteryn_node_boot_admin:$PG_ADMIN_PASSWORD@127.0.0.1:$PG_PORT/oteryn_node_boot"
 
-# The Platform topology.
-if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
-  game_platform_start
-else
-compose config --quiet
-compose build --pull platform
-compose up --detach --wait db platform nginx
-# Platform output is kept: a failing operator command must be diagnosable.
-php_exec() { compose exec --no-TTY --user www-data platform php -r "$1"; }
-php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach ([["'"$ACCOUNT_ID"'","nb-one@example.invalid"],["'"$SECOND_ACCOUNT_ID"'","nb-two@example.invalid"]] as [$accountId,$email]) { Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>$email,"password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>$accountId,"native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]); } app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishTrustedKey(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission","'"$FRESH_KEY_ID"'",hex2bin("'"$FRESH_PUBLIC_HEX"'")); app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishTrustedKey("urn:oteryn:platform:game-recovery","oteryn-reauth-recovery-v1","existing_actor_recovery","'"$RECOVERY_KEY_ID"'",hex2bin("'"$RECOVERY_PUBLIC_HEX"'"));'
-if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
-  php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach ([["'"$PACKET_ACCOUNT_ID"'","nb-three@example.invalid"],["'"$SECOND_PACKET_ACCOUNT_ID"'","nb-four@example.invalid"]] as [$accountId,$email]) { Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>$email,"password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>$accountId,"native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]); }'
-fi
-evidence "platform_seed=synthetic_accounts=${#BOOTSTRAP_ACCOUNTS[@]} fresh_trust=published_public_key_only client_identities=1"
-fi # Platform lifecycle
+# Use the merged native producer for every shard; the PHP producer is retired.
+game_platform_start
+
 
 # Shipped binaries and the SEAM client harness.
 if [[ -z "$NODE_BOOT_LIBTEST" ]]; then
@@ -625,10 +625,10 @@ content_revision = "{pin['content_revision']}"
 production = false
 start_x = 32369
 start_y = 32238
-start_floor = -7''')
+start_floor = 7''')
 PY_WORLD
   fi
-  if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
+  if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform || "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
     game_platform_config "$WORK/node.toml"
   fi
   sudo install -o root -m 0644 "$WORK/node.toml" "$BASE/node/node.toml"
@@ -1045,10 +1045,18 @@ configuration_negatives() { # exit before binding, no secret in output
 }
 
 # Deployment administration: only the database owner writes these grant tables.
+assignment_report_args() { # fills the caller's report_args on the Platform lifecycles
+  if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform || "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
+    report_args=(--report-config "$BASE/ops/assignment-report.toml" --node-config "$BASE/node/node.toml"
+      --node-identity "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["clients"]["runtime-status"]["san"])' "$WORK/portal-report.json")")
+  fi
+}
 node_deployment_grants() {
   [[ "$(echo "SELECT current_user = pg_get_userbyid(datdba) FROM pg_database WHERE datname=current_database()" | psql_admin oteryn_node_boot)" == t ]] || fail "deployment issuer is not the database owner"
   local operations=1,2,3,4
   [[ "${NODE_BOOT_LIFECYCLE:-}" != game_platform ]] || operations=1,4
+  # The reference run also proves the superseding replacement (operation 2).
+  [[ "${NODE_BOOT_LIFECYCLE:-}" != native_reference ]] || operations=1,2,4
   psql_admin oteryn_node_boot <<SQL
 INSERT INTO game_control_scope_grants SELECT 'nb_control', '$WORLD_ID', '$CHANNEL_ID', op FROM unnest(ARRAY[$operations]::smallint[]) op;
 INSERT INTO game_control_field_policy_grants VALUES ('nb_control', '$WORLD_ID', 'policy-s3b-1');
@@ -1091,10 +1099,7 @@ node_complete_assignment() {
   ops content activate --request content-1.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 1 --previous empty
   ops content activate --request content-1.json
   local -a report_args=()
-  if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
-    report_args=(--report-config "$BASE/ops/assignment-report.toml" --node-config "$BASE/node/node.toml"
-      --node-identity "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["clients"]["runtime-status"]["san"])' "$WORK/portal-report.json")")
-  fi
+  assignment_report_args
   ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" "${report_args[@]}"
   await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
   await_log "event=readiness .*ready=true" 60
@@ -1142,12 +1147,14 @@ PY
 }
 
 character_bootstrap() { # §4.5 Characters from real Platform intents
-  local index=0 account operation name failed=0
+  local index=0 account operation name failed=0 vocation="${NODE_BOOT_PROFILE^}"
+  [[ "$NODE_BOOT_PROFILE" != explorer ]] || vocation=Knight
   for account in "${BOOTSTRAP_ACCOUNTS[@]}"; do
     operation="${INTENT_OPERATIONS[$index]}"
     name="${INTENT_NAMES[$index]}"
     index=$((index + 1))
-    if ! php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $id=Illuminate\Support\Facades\DB::table("identities")->where("account_id","'"$account"'")->value("id"); $code=Illuminate\Support\Facades\Artisan::call("game-auth:character-bootstrap-intent:issue",["--identity-id"=>(string)$id,"--operation-id"=>"'"$operation"'","--target-world-id"=>"'"$WORLD_ID"'","--requested-name"=>"'"$name"'","--requested-sex"=>"Female","--profile-revision"=>"'"${INTERPRETATION[0]}"'","--ruleset-revision"=>"'"${INTERPRETATION[1]}"'","--content-revision"=>"'"${INTERPRETATION[2]}"'","--starter-template-revision"=>"'"${INTERPRETATION[3]}"'"]); fwrite(STDERR, Illuminate\Support\Facades\Artisan::output()); exit($code);'; then
+    if ! python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" bootstrap \
+      "$WORK" "$account" "$WORLD_ID" "$operation" "${INTERPRETATION[@]}" "$name" "$vocation"; then
       echo "platform intent issue failed for operation $operation"
       failed=1
       continue
@@ -1197,7 +1204,9 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
       NODE_BOOT_GAMEPLAY_CERT="$WP5_PKI/gameplay.crt" \
       NODE_BOOT_DATABASE_URL="$ADMIN_URL" \
       NODE_BOOT_WORLD_ID="$WORLD_ID" NODE_BOOT_CHANNEL_ID="$CHANNEL_ID" \
-      WP5_S3A_PORT="$WP5_PORT" WP5_S3A_CA_CERT="$WP5_PKI/server-ca.crt" \
+      WP5_S3A_PORT="$WP5_PORT" WP5_S3A_SERVER_NAME="${WP5_SERVER_NAME:-source.test}" \
+      WP5_S3A_SOURCE_AUTHORITY="${WP5_SOURCE_AUTHORITY:-platform}" WP5_S3A_ROUTE_REVISION="${WP5_ROUTE_REVISION:-route-s3b-1}" \
+      WP5_S3A_CA_CERT="$WP5_PKI/server-ca.crt" \
       WP5_S3A_CLIENT_CERT="$WP5_PKI/client.crt" WP5_S3A_CLIENT_KEY="$WP5_PKI/client.key" \
       WP5_S3A_ACCOUNT_ID="$ACCOUNT_ID" WP5_S3B_SECOND_ACCOUNT_ID="$SECOND_ACCOUNT_ID" \
       WP5_S3B_FRESH_KEY_ID="$FRESH_KEY_ID" WP5_S3B_FRESH_KEY_SEED="$FRESH_SEED_HEX" \
@@ -1243,7 +1252,9 @@ superseding_replacement() { # claims custody, ready by CAS after replace
   local node revision
   node="$(node_field "$node_log" node_id)"; revision="$(node_field "$node_log" registration_revision)"
   remember node_c "$node"
-  ops assignment replace --request replace-c.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision"
+  local -a report_args=()
+  assignment_report_args
+  ops assignment replace --request replace-c.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" "${report_args[@]}"
   # A new incarnation starts with no active Content and reactivates only the current issuance.
   await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
   await_log "event=readiness .*ready=true" 60

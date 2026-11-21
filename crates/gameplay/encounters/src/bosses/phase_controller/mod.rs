@@ -7,6 +7,7 @@ use oteryn_gameplay_entities::{CarrierError, ChannelRuntimeV1, ExactActorRef, Ga
 use oteryn_gameplay_foundation::foundation::{RuntimeScopeRefV1, ScopeOwnershipGeneration};
 
 pub mod arbaziloth;
+pub mod court_warlock;
 pub mod cults;
 pub mod gates;
 #[cfg(test)]

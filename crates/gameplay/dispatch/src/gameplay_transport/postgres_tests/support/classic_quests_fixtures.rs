@@ -207,6 +207,25 @@ pub(super) async fn talk(
     command_id: u64,
     text: &str,
 ) -> TestResult<Vec<String>> {
+    talk_expecting(
+        owner,
+        admitted,
+        npc,
+        command_id,
+        text,
+        NpcIntentDisposition::Ok,
+    )
+    .await
+}
+
+pub(super) async fn talk_expecting(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    npc: EntityRef,
+    command_id: u64,
+    text: &str,
+    expected: NpcIntentDisposition,
+) -> TestResult<Vec<String>> {
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
@@ -230,11 +249,7 @@ pub(super) async fn talk(
             },
         )
         .await;
-    assert_eq!(
-        result.disposition,
-        NpcIntentDisposition::Ok,
-        "{command_id}: {text}"
-    );
+    assert_eq!(result.disposition, expected, "{command_id}: {text}");
     assert!(!result.unknown);
     Ok(result.conversation.map(|c| c.lines).unwrap_or_default())
 }

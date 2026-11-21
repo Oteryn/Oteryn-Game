@@ -20,11 +20,8 @@ Command 440 is a strict protobuf oneof, at most 12 bytes:
 | 1 | length-delimited Open | Browse a native tile position |
 | 2 | length-delimited Seek | Seek an existing view |
 
-Open has `sint32 x = 1`, `sint32 y = 2`, and `sint32 floor = 3`. The bundle's
-coordinates require x/y from 0 through 65535 and native floor from -15 through
-0 (`world-bundle/src/bundle.rs`, `placement_key`; protocol `world_map` floor
-constants). Coordinates use the same native frame as `WorldTilePositionV1`;
-native floor is the negation of donor z. Absent coordinates default to zero.
+Open has `sint32 x = 1`, `sint32 y = 2`, and `sint32 floor = 3`. Wire x and y range from 0 through 65535. Floor uses Global z from 0 through 15,
+with ground at 7. Absent coordinates default to zero.
 Seek has `uint32 view_id = 1` (0 through 15) and `uint32 index = 2` (0 through
 65535). Zero values may be omitted. The wire does not decide reach or whether
 the current view has that index.
@@ -55,7 +52,7 @@ sixteen view slots. Only when capability 230 is selected may a
 | --- | --- | --- |
 | 1 | sint32 | Native tile x, 0 through 65535 |
 | 2 | sint32 | Native tile y, 0 through 65535 |
-| 3 | sint32 | Native floor, -15 through 0 |
+| 3 | sint32 | Global z, 0 through 15 |
 | 4 | uint32 | First item index, within u16 |
 | 5 | uint32 | Total eligible items, within u16 |
 

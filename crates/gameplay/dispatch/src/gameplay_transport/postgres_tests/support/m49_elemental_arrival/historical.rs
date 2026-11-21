@@ -181,7 +181,7 @@ pub(super) async fn preserve_pending(
             destination: ItemMoveDestination::Ground(WorldTilePosition {
                 x: i32::from(rule.spawn.x),
                 y: i32::from(rule.spawn.y),
-                floor: i16::from(rule.spawn.floor),
+                floor: -i16::from(rule.spawn.floor),
             }),
         },
         selection,

@@ -1,12 +1,18 @@
 //! Soulpit's physical variants in the existing actor carrier. Every admission requires
 //! the shared activity owner's actual Instance continuity; this module allocates no scope.
+use super::native_callback_placement::native_source_monster_movement;
 use super::runtime_actor_companion::{CompanionState, CompiledCreaturePolicies};
 use super::*;
+use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
 use oteryn_gameplay_domain::domain::soulpit::{
-    BossAbility, MONSTERS_PER_WAVE, OPPRESSOR_INTERVAL_MICROS, SoulpitStack,
+    ARENA_X, ARENA_Y, BossAbility, MONSTERS_PER_WAVE, OPPRESSOR_INTERVAL_MICROS, SoulpitStack,
     enrage_retained_percent, overpower_damage, wave_stacks,
 };
 use oteryn_gameplay_foundation::foundation::condition::ConditionStore;
+use oteryn_simulation_determinism::{
+    DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
+};
+use sha2::{Digest, Sha256};
 
 #[path = "soulpit/oppressor.rs"]
 mod oppressor;
@@ -134,6 +140,31 @@ struct WaveReceipt {
 struct PreparedWave {
     request: SoulpitWaveRequest,
     next_cue: u8,
+}
+
+fn shuffled_spawn_neighbours(
+    root: &GameplayDecisionRoot,
+    occurrence: DecisionOccurrenceId,
+    ordinal: usize,
+) -> Result<[(i32, i32); 8], CarrierError> {
+    let mut offsets = [
+        (-1, -1),
+        (0, -1),
+        (1, -1),
+        (-1, 0),
+        (1, 0),
+        (-1, 1),
+        (0, 1),
+        (1, 1),
+    ];
+    for end in (1..offsets.len()).rev() {
+        let index = (ordinal * offsets.len() + end) as u64;
+        let draw = deterministic_decision_u64(root, occurrence, "soulpit_spawn_fallback", index)
+            .map_err(|_| CarrierError::InvalidCommitBinding)?;
+        let selected = (draw % (end as u64 + 1)) as usize;
+        offsets.swap(end, selected);
+    }
+    Ok(offsets)
 }
 
 /// Physical admission receipts only. The durable SoulpitEncounter owns phases, survivors,
@@ -380,13 +411,51 @@ impl ChannelActorCarrier {
         Ok(())
     }
 
-    /// Executes each donor spawn attempt once. A blocked cell or full existing carrier is
-    /// recorded as None, matching Game.createSoulPitMonster's skipped failure; no redraw.
+    /// Executes each retained spawn attempt once. If the preferred tile is blocked,
+    /// try shuffled neighbours on the same floor. Retain None if the attempt fails.
+    pub fn spawn_native_soulpit_wave(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        content: &ChannelContentPin,
+        native: &NativeGameplayState,
+        request: SoulpitWaveRequest,
+        ground_allows: impl FnMut(MovementLocalPosition) -> bool,
+    ) -> Result<[Option<SoulpitWaveActor>; MONSTERS_PER_WAVE], CarrierError> {
+        self.spawn_soulpit_wave_with_policies(
+            continuity,
+            content,
+            native.policies(),
+            Some(native),
+            request,
+            ground_allows,
+        )
+    }
+
+    #[cfg(any(test, feature = "test-support"))]
     pub fn spawn_soulpit_wave(
         &mut self,
         continuity: &NamespaceContinuityGuard,
         content: &ChannelContentPin,
         policies: &CompiledCreaturePolicies,
+        request: SoulpitWaveRequest,
+        ground_allows: impl FnMut(MovementLocalPosition) -> bool,
+    ) -> Result<[Option<SoulpitWaveActor>; MONSTERS_PER_WAVE], CarrierError> {
+        self.spawn_soulpit_wave_with_policies(
+            continuity,
+            content,
+            policies,
+            None,
+            request,
+            ground_allows,
+        )
+    }
+
+    fn spawn_soulpit_wave_with_policies(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        content: &ChannelContentPin,
+        policies: &CompiledCreaturePolicies,
+        native: Option<&NativeGameplayState>,
         request: SoulpitWaveRequest,
         mut ground_allows: impl FnMut(MovementLocalPosition) -> bool,
     ) -> Result<[Option<SoulpitWaveActor>; MONSTERS_PER_WAVE], CarrierError> {
@@ -408,6 +477,9 @@ impl ChannelActorCarrier {
             .find(|policy| policy.definition_key == request.species)
             .cloned()
             .ok_or(CarrierError::InvalidCreatureTarget)?;
+        let can_push = native
+            .and_then(|native| native_source_monster_movement(native, &policy))
+            .is_some_and(|movement| movement.push_creatures);
         if let Some(state) = &self.soulpit {
             if state.handoff_id != request.handoff_id {
                 return Err(CarrierError::PlanConflict);
@@ -446,8 +518,8 @@ impl ChannelActorCarrier {
                 continue;
             };
             if position.floor != content.entry_start().floor
-                || !(32362..=32390).contains(&position.x)
-                || !(31132..=31153).contains(&position.y)
+                || !ARENA_X.contains(&position.x)
+                || !ARENA_Y.contains(&position.y)
                 || (stack == SoulpitStack::Boss && (position.x, position.y) != (32376, 31144))
             {
                 return Err(CarrierError::PositionSnapshotMismatch);
@@ -479,6 +551,16 @@ impl ChannelActorCarrier {
             .waves
             .try_reserve(1)
             .map_err(|_| CarrierError::AllocationFailed)?;
+        let root = GameplayDecisionRoot::from_bytes(content.server_artifact_digest());
+        let digest = Sha256::new()
+            .chain_update(b"oteryn.soulpit.spawn.v1")
+            .chain_update(request.handoff_id)
+            .chain_update(self.scope_generation.get().to_be_bytes())
+            .chain_update([request.wave])
+            .finalize();
+        let mut occurrence = [0; 16];
+        occurrence.copy_from_slice(&digest[..16]);
+        let occurrence = DecisionOccurrenceId::from_bytes(occurrence);
         let mut actors = [None; MONSTERS_PER_WAVE];
         for (ordinal, (position, stack)) in
             request.positions.iter().copied().zip(stacks).enumerate()
@@ -491,9 +573,55 @@ impl ChannelActorCarrier {
                 y: position.y,
                 floor: position.floor,
             };
-            if !ground_allows(position) || self.cell_occupied(context, local) {
+            let mut available = |cell: &LocalPosition| {
+                ARENA_X.contains(&cell.x)
+                    && ARENA_Y.contains(&cell.y)
+                    && ground_allows(MovementLocalPosition {
+                        x: cell.x,
+                        y: cell.y,
+                        floor: cell.floor,
+                    })
+                    && !self.cell_occupied_unless(context, *cell, |occupant| {
+                        let Slot::CreatureOccupied {
+                            companion: Some(occupant),
+                            ..
+                        } = occupant
+                        else {
+                            return false;
+                        };
+                        can_push
+                            && native.is_some_and(|native| {
+                                let pushable = occupant.policy.base_speed != 0
+                                    && native_source_monster_movement(native, &occupant.policy)
+                                        .is_some_and(|movement| movement.pushable);
+                                // Placement can share the tile. Crystal displaces creatures on a later walk step.
+                                native_source_monster_occupancy_admits(
+                                    can_push,
+                                    &[NativeSourcePlacementOccupant::Monster {
+                                        pushable,
+                                        player_owned_summon: occupant.master.is_some(),
+                                    }],
+                                )
+                            })
+                    })
+            };
+            let landing = if available(&local) {
+                Some(local)
+            } else {
+                // Crystal shuffles the eight neighbours. Key the shuffle to the
+                // wave and slot so unrelated draws cannot affect placement.
+                shuffled_spawn_neighbours(&root, occurrence, ordinal)?
+                    .into_iter()
+                    .map(|(dx, dy)| LocalPosition {
+                        x: local.x + dx,
+                        y: local.y + dy,
+                        ..local
+                    })
+                    .find(available)
+            };
+            let Some(local) = landing else {
                 continue;
-            }
+            };
             let maximum = maximum_health[ordinal];
             let actor = match self.admit_creature(
                 continuity,

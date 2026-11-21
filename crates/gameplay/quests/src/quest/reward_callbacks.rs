@@ -113,6 +113,28 @@ pub struct OutfitReward {
     pub sex: Option<CreationSex>,
 }
 
+/// Account exclusivity for a paid start and the matching deferred addon grant.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
+pub enum AccountReservation {
+    Start {
+        key: String,
+        track: String,
+        pending_value: i64,
+    },
+    Finish {
+        key: String,
+    },
+}
+
+impl AccountReservation {
+    pub fn key(&self) -> &str {
+        match self {
+            Self::Start { key, .. } | Self::Finish { key } => key,
+        }
+    }
+}
+
 /// Exact source price; only the durable fee owner may consume the funds.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -303,6 +325,8 @@ pub struct RewardCallback {
     pub requires_actor_conditions: Vec<ActorConditionRequirement>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub forbids_addons: Vec<OutfitReward>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub account_reservation: Option<AccountReservation>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub requires: Vec<TrackRequirement>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -988,6 +1012,27 @@ fn validate_document_with_capacity(
                 .collect::<BTreeSet<_>>()
                 .len()
                 != c.requires_actor_conditions.len()
+            || c.account_reservation.as_ref().is_some_and(|reservation| {
+                !slug(reservation.key(), "oteryn:quest-reservation/", b"-", 128)
+                    || match reservation {
+                        AccountReservation::Start {
+                            track,
+                            pending_value,
+                            ..
+                        } => {
+                            c.take.is_empty()
+                                || c.forbids_addons.is_empty()
+                                || c.cosmetic_targets().next().is_some()
+                                || !c
+                                    .storage
+                                    .iter()
+                                    .any(|step| &step.track == track && step.set == *pending_value)
+                        }
+                        AccountReservation::Finish { .. } => {
+                            !c.cosmetic_targets().any(|outfit| outfit.addons > 0)
+                        }
+                    }
+            })
             || c.forbids_addons.len() > 8
             || c.forbids_addons
                 .iter()
@@ -1264,8 +1309,40 @@ pub(crate) fn declare_tracks(
     extend_callbacks(catalogue, Vec::new(), load_document()?.tracks)
 }
 
-pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
+// Active Outfit definition on main at 871c1dec7, after NPC and reward activation.
+const MAIN_OUTFIT_DEFINITION: [u8; 32] = [
+    0xf0, 0x3f, 0xaa, 0x35, 0xab, 0xd9, 0xaf, 0x89, 0xc2, 0x81, 0xd3, 0xb4, 0xf7, 0xdb, 0x2d, 0xd5,
+    0x69, 0xae, 0x32, 0xea, 0xdd, 0x91, 0x87, 0x72, 0x7e, 0x78, 0x82, 0xe4, 0xc9, 0x0e, 0x3c, 0xcf,
+];
+
+// The published Rookgaard definition before Norma's mission-zero restart.
+const ROOK_CITIZEN_BEFORE_NORMA_RESTART: [u8; 32] = [
+    0xb7, 0xfb, 0x18, 0x3d, 0x7d, 0xfa, 0x0a, 0xd8, 0x8b, 0x80, 0x6e, 0xcc, 0xb3, 0xcf, 0xc7, 0xdb,
+    0x3b, 0x94, 0x9b, 0x19, 0x08, 0x96, 0x3c, 0x93, 0x5a, 0x57, 0xfb, 0x99, 0x24, 0x4d, 0xef, 0x4a,
+];
+
+pub fn extend(mut catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
     let document = embedded_document()?;
+    // These changes preserve every track default.
+    for (quest, hash) in [
+        (
+            "oteryn:quest.citizen_outfits_quest_on_rook",
+            ROOK_CITIZEN_BEFORE_NORMA_RESTART,
+        ),
+        (
+            "oteryn:quest.outfit_and_addon_quests",
+            MAIN_OUTFIT_DEFINITION,
+        ),
+    ] {
+        catalogue
+            .predecessors
+            .entry(quest.into())
+            .or_default()
+            .push(super::NpcDefinitionPredecessor {
+                hash,
+                defaults: BTreeMap::new(),
+            });
+    }
     extend_document(catalogue, document)
 }
 
@@ -1518,6 +1595,18 @@ fn extend_callbacks(
     Ok(updated)
 }
 
+// The QB addon routes were first published after the retained Outfit definition.
+fn is_qb_outfit_extension(callback: &RewardCallback) -> bool {
+    callback
+        .key
+        .strip_prefix("oteryn:quest-reward/")
+        .is_some_and(|key| {
+            ["qb-barbarian-", "qb-citizen-", "qb-warrior-"]
+                .iter()
+                .any(|prefix| key.starts_with(prefix))
+        })
+}
+
 /// Recover the complete reward definition captured before Citizen NPC activation.
 /// The current loader still installs NPC prerequisites before active rewards.
 pub(super) fn retain_outfit_reward_predecessor(
@@ -1551,6 +1640,7 @@ pub(super) fn retain_outfit_reward_predecessor(
     let callbacks = document
         .callbacks
         .into_iter()
+        .filter(|callback| !is_qb_outfit_extension(callback))
         .filter(|callback| {
             callback.quest == QUEST
                 || callback
@@ -2188,6 +2278,7 @@ mod tests {
         Ok(())
     }
 
+    /// Regenerate with tools/content-schema/quest-authoring/refresh_reward_hash_baselines.py.
     #[test]
     fn published_ungated_quest_hash_baseline() -> Result<(), String> {
         let lowered = super::super::loader::load_embedded_quest_state("content-1")
@@ -2241,8 +2332,9 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Shared, QuestPC7, other shards, M43, Kingsday, Rottin and Forgemaster.
-        assert_eq!(load()?.len(), 207 + 59 + 125 + 1 + 1 + 13 + 12);
+        // Shared covers 207 existing and 31 QB routes. The final two terms are
+        // Rottin Wood and the Forgemaster's access and claim routes.
+        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1 + 13 + 12);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -2266,7 +2358,9 @@ mod tests {
     #[test]
     fn authored_shards_complete_only_the_selected_quest_and_preserve_old_plans()
     -> Result<(), String> {
-        let legacy = parse(DOCUMENTS[0])?;
+        let shared = parse(DOCUMENTS[0])?;
+        let (qb, legacy): (Vec<_>, Vec<_>) = shared.into_iter().partition(is_qb_outfit_extension);
+        assert_eq!(qb.len(), 31);
         let added_keys = [
             "oteryn:quest-reward/l2-wizard-flowers",
             "oteryn:quest-reward/l2-wizard-flowers-start",
@@ -2342,6 +2436,13 @@ mod tests {
                 .ok_or("completion transition")?
                 .completes
         );
+        for callback in qb {
+            assert!(
+                catalogue.catalogue().transition(&callback.key).is_some(),
+                "active QB outfit transition {}",
+                callback.key
+            );
+        }
         assert!(parse_documents(&[DOCUMENTS[0], DOCUMENTS[0]]).is_err());
         let mut malformed: serde_json::Value =
             serde_json::from_str(DOCUMENTS[1]).map_err(|e| e.to_string())?;
@@ -3111,8 +3212,34 @@ mod outfit_reward_predecessor_tests {
         Ok((before, active))
     }
 
+    #[test]
+    fn outfit_accepts_exact_main_active_definition() -> Result<(), String> {
+        let loaded = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        let hash = MAIN_OUTFIT_DEFINITION;
+        assert_ne!(catalogue.definition_hash(QUEST), Some(hash));
+        assert_eq!(
+            super::super::npc_rules::legacy_defaults(catalogue, QUEST, &hash),
+            Some(&BTreeMap::new())
+        );
+        Ok(())
+    }
+
     fn complete_rewards(before: &QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
-        let document = embedded_document()?;
+        let mut document = embedded_document()?;
+        assert_eq!(
+            document
+                .callbacks
+                .iter()
+                .filter(|callback| callback.quest == QUEST)
+                .count(),
+            // 112 retained rows plus 31 QB Barbarian/Citizen/Warrior rows.
+            143
+        );
+        document
+            .callbacks
+            .retain(|callback| !is_qb_outfit_extension(callback));
         let owned = document
             .callbacks
             .iter()

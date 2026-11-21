@@ -9,7 +9,6 @@ use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseDisposition, UseIntent, UseTarget};
 use serde_json::json;
 
-const QUEST: &str = "oteryn:quest.rottin_wood_and_the_married_men_quest";
 const TRACK: &str =
     "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/task01";
 const COOLDOWN: &str = "oteryn:quest-progress/crystalserver/kv/lucky-loop-task";
@@ -35,37 +34,43 @@ const RIBBON: &str = "oteryn:item.tibia.i12171";
 const FOOT: &str = "oteryn:item.tibia.i12172";
 const HORN: &str = "oteryn:item.tibia.i12260";
 
-pub(super) async fn seed_tracks(h: &Harness, tracks: &[(&str, i64)]) -> TestResult {
-    // Establish the predecessor snapshot without synthetic callback definitions.
-    let mut tx = h.pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role=replica")
-        .execute(&mut *tx)
-        .await?;
-    for (track, value) in tracks {
-        let inserted = sqlx::query(
-            "INSERT INTO game_character_quest_tracks
-              (character_id,track_key,quest_key,value,committed_character_revision)
-             SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots
-             WHERE character_id=encode($1,'hex')::uuid",
-        )
-        .bind(id(41).as_slice())
-        .bind(track)
-        .bind(QUEST)
-        .bind(value)
-        .execute(&mut *tx)
-        .await?;
-        assert_eq!(inserted.rows_affected(), 1);
-    }
-    tx.commit().await?;
+pub(super) async fn seed_tracks(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    tracks: &[(&str, i64)],
+) -> TestResult {
+    let values: Vec<_> = tracks
+        .iter()
+        .map(|(track, value)| ((*track).to_owned(), *value))
+        .collect();
+    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+        h, owner, admitted, &values, 168,
+    )
+    .await?;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
     Ok(())
 }
 
-pub(super) async fn seed_loop(h: &Harness, repeat: bool) -> TestResult {
-    seed_tracks(h, &[
-        (&format!("{ROTTIN_STATE}questline"), 2),
-        (TRACK, if repeat { 2 } else { 0 }),
-        (COOLDOWN, i64::from(repeat)),
-    ]).await
+pub(super) async fn seed_loop(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    repeat: bool,
+) -> TestResult {
+    seed_tracks(
+        h,
+        owner,
+        admitted,
+        &[
+            (&format!("{ROTTIN_STATE}questline"), 2),
+            (TRACK, if repeat { 2 } else { 0 }),
+            (COOLDOWN, i64::from(repeat)),
+        ],
+    )
+    .await
 }
 
 async fn minted_quantity(h: &Harness, transition: &str, item: &str) -> TestResult<i64> {

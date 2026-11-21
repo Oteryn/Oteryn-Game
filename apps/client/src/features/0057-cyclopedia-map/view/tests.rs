@@ -135,7 +135,7 @@ fn cyclopedia_host_navigation_round_trip_uses_the_live_map_protocol()
             command_id: 1,
             server_sequence: 1,
             status: CommandStatus::Accepted,
-            payload: wire::encode_result(&reply).map_err(|_| "map result")?,
+            payload: wire::encode_wire_result(&reply).map_err(|_| "map result")?,
         },
     );
     assert_eq!(link.cyclopedia_map_panel().map, Some(reply));

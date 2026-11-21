@@ -153,41 +153,6 @@ pub(super) fn native_basis<S: SessionStream>(session: &Session<S>) -> bool {
         && session.gated_snapshots.iter().any(|row| row.domain_id == STATE_DOMAIN_WORLD_PRESENTATION
             && row.snapshot_type == oteryn_protocol_oteryn::native_map_cues::SNAPSHOT_TYPE_NATIVE_MAP_CUE_BASIS_V1)
 }
-fn native_position(
-    position: &mut oteryn_protocol_oteryn::world_spatial::ActorPosition,
-) -> Result<(), SessionError> {
-    // Only called after the strict legacy decoder accepted 0..=15.
-    position.floor = position
-        .floor
-        .checked_neg()
-        .ok_or(SessionError::SessionUnusable)?;
-    Ok(())
-}
-fn project_legacy_events(events: &mut [PresentationEvent]) -> Result<(), SessionError> {
-    for event in events {
-        match &mut event.kind {
-            PresentationEventKind::AmbientSound { .. } => {}
-            PresentationEventKind::MagicEffect { position, .. }
-            | PresentationEventKind::SpellWords { position, .. }
-            | PresentationEventKind::ValueText { position, .. }
-            | PresentationEventKind::Sound { position, .. } => native_position(position)?,
-            PresentationEventKind::Missile { from, to, .. } => {
-                native_position(from)?;
-                native_position(to)?;
-            }
-        }
-    }
-    Ok(())
-}
-pub(super) fn project_legacy_chat(
-    line: &mut oteryn_protocol_oteryn::chat::ChatLine,
-) -> Result<(), SessionError> {
-    if let oteryn_protocol_oteryn::chat::ChatLine::Local { position, .. } = line {
-        native_position(position)?;
-    }
-    Ok(())
-}
-
 fn decode_events(
     payload: &[u8],
     native_delta: bool,
@@ -196,16 +161,12 @@ fn decode_events(
     if native_delta && !native_basis {
         return Err(SessionError::SessionUnusable);
     }
-    let mut events = if native_delta {
+    if native_delta {
         oteryn_protocol_oteryn::native_map_cues::decode_native_map_presentation_batch(payload)
     } else {
         decode_presentation_batch(payload)
     }
-    .map_err(|_| SessionError::SessionUnusable)?;
-    if native_basis && !native_delta {
-        project_legacy_events(&mut events)?;
-    }
-    Ok(events)
+    .map_err(|_| SessionError::SessionUnusable)
 }
 
 #[cfg(test)]
@@ -233,7 +194,7 @@ mod native_basis_tests {
         }
     }
     #[test]
-    fn srx3_native_epoch_projects_legacy_positions_once_and_refuses_wrong_basis()
+    fn srx3_native_epoch_preserves_global_positions_and_requires_native_marker()
     -> Result<(), String> {
         let legacy =
             encode_presentation_batch(&[missile(14, 0)]).map_err(|error| format!("{error:?}"))?;
@@ -243,20 +204,26 @@ mod native_basis_tests {
         );
         assert_eq!(
             decode_events(&legacy, false, true).map_err(|error| format!("{error:?}"))?,
-            [missile(-14, 0)]
+            [missile(14, 0)]
         );
         let native =
             oteryn_protocol_oteryn::native_map_cues::encode_native_map_presentation_batch(&[
-                missile(-14, -13),
+                missile(14, 13),
             ])
             .map_err(|error| format!("{error:?}"))?;
         assert_eq!(
             decode_events(&native, true, true).map_err(|error| format!("{error:?}"))?,
-            [missile(-14, -13)]
+            [missile(14, 13)]
         );
         assert!(decode_events(&native, true, false).is_err());
-        assert!(decode_events(&native, false, true).is_err());
-        assert!(decode_events(&legacy, true, true).is_err());
+        assert_eq!(
+            decode_events(&native, false, true).map_err(|error| format!("{error:?}"))?,
+            [missile(14, 13)]
+        );
+        assert_eq!(
+            decode_events(&legacy, true, true).map_err(|error| format!("{error:?}"))?,
+            [missile(14, 0)]
+        );
         let mut line = oteryn_protocol_oteryn::chat::ChatLine::Local {
             speaker: oteryn_protocol_oteryn::chat::ChatSpeaker {
                 identity: [1; 16],
@@ -275,11 +242,10 @@ mod native_basis_tests {
             .map_err(|error| format!("{error:?}"))?;
         line = oteryn_protocol_oteryn::chat::decode_chat_line(&bytes)
             .map_err(|error| format!("{error:?}"))?;
-        project_legacy_chat(&mut line).map_err(|error| format!("{error:?}"))?;
         assert!(matches!(
             line,
             oteryn_protocol_oteryn::chat::ChatLine::Local {
-                position: ActorPosition { floor: -14, .. },
+                position: ActorPosition { floor: 14, .. },
                 ..
             }
         ));

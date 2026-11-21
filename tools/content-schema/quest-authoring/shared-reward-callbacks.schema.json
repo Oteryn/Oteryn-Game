@@ -554,6 +554,64 @@
             ]
           }
         },
+        "account_reservation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "action",
+            "key"
+          ],
+          "properties": {
+            "action": {
+              "enum": [
+                "start",
+                "finish"
+              ]
+            },
+            "key": {
+              "type": "string",
+              "maxLength": 128,
+              "pattern": "^oteryn:quest-reservation/[a-z0-9-]+$"
+            },
+            "track": {
+              "type": "string",
+              "maxLength": 128,
+              "pattern": "^oteryn:quest-progress/[a-z0-9_./-]+$"
+            },
+            "pending_value": {
+              "type": "integer"
+            }
+          },
+          "if": {
+            "properties": {
+              "action": {
+                "const": "start"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "track",
+              "pending_value"
+            ]
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "track"
+                  ]
+                },
+                {
+                  "required": [
+                    "pending_value"
+                  ]
+                }
+              ]
+            }
+          }
+        },
         "forbids_addons": {
           "type": "array",
           "maxItems": 8,

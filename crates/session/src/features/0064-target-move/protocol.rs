@@ -55,12 +55,12 @@ mod tests {
             ActorPosition {
                 x: i32::MIN,
                 y: i32::MAX,
-                floor: i16::MIN,
+                floor: 1,
             },
             ActorPosition {
                 x: -1,
                 y: 200,
-                floor: i16::MAX,
+                floor: 15,
             },
         ] {
             let payload = encode_cell(position);

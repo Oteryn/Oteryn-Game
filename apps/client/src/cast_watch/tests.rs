@@ -29,7 +29,7 @@ fn s17b_native_picture_draws_map_and_creatures_then_blanks_on_terminal()
         Message::Media {
             epoch: 1,
             sequence: 2,
-            media: PublicMedia::Camera { floor: -7 },
+            media: PublicMedia::Camera { floor: 7 },
         },
         Message::Media {
             epoch: 1,
@@ -40,7 +40,7 @@ fn s17b_native_picture_draws_map_and_creatures_then_blanks_on_terminal()
                 tiles: vec![DisplayTile {
                     x: 16,
                     y: 16,
-                    floor: -7,
+                    floor: 7,
                     appearances: vec![100],
                 }],
             },

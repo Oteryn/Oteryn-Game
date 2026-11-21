@@ -203,7 +203,7 @@ fn list(body: &[u8], door: bool) -> Result<HouseAction> {
                     }
                 }
                 let floor = floor.ok_or(Error::Malformed)?;
-                if !(-15..=0).contains(&floor) {
+                if !(0..=15).contains(&floor) {
                     return Err(Error::Malformed);
                 }
                 set_once(
@@ -391,7 +391,7 @@ pub fn encode_house_page(
         }
         if let Some(details) = &row.details {
             text(details.name.as_bytes())?;
-            if details.size == 0 || !(-15..=0).contains(&details.entrance.2) {
+            if details.size == 0 || !(0..=15).contains(&details.entrance.2) {
                 return Err(Error::Malformed);
             }
             bytes(&mut b, 12, details.name.as_bytes());

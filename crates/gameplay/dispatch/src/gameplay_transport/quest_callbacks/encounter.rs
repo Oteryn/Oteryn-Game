@@ -256,6 +256,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let blocked =
                 super::super::pvp_live::pz_blocked(states, who, member_session, self.owner_now());
+            // Court Warlock requires a clear centre before the party relocates.
+            if encounter.phase
+                == Some(
+                    oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::CourtWarlock,
+                )
+                && crate::map::floor::prepare_quest_callback_teleport(
+                    runtime,
+                    &self.movement_cells,
+                    who,
+                    member_session,
+                    expected,
+                    local(member.to),
+                    blocked,
+                    &closed,
+                )
+                .is_err()
+            {
+                return UseDisposition::NotPossible;
+            }
+            // Source phase parties can share an arrival tile while still
+            // qualifying voluntary movement and protection-zone access.
             let Ok(proof) = crate::map::floor::prepare_quest_encounter_member(
                 runtime,
                 &self.movement_cells,
@@ -304,10 +325,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             monsters.push((monster.creature.as_str(), policy.maximum_health, at));
         }
         if preflight {
-            return if runtime
-                .preflight_quest_encounter_entry(proofs, &monsters)
-                .is_ok()
-            {
+            let result = if encounter.phase.is_some() {
+                runtime.preflight_quest_encounter_with_phase(proofs, &monsters)
+            } else {
+                runtime.preflight_quest_encounter_entry(proofs, &monsters)
+            };
+            return if result.is_ok() {
                 UseDisposition::Committed
             } else {
                 UseDisposition::Occupied
@@ -402,6 +425,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             &party,
                             credits,
                             self.movement_cells().clone(),
+                            self.owner_now().get(),
                         )
                     })
                     .transpose().map(|phase| (phase, actors.to_vec(), roster))

@@ -4914,6 +4914,27 @@ mod source_item_closure_tests {
         ))
     }
     #[test]
+    fn production_native_creature_attack_closures_validate() -> Result<(), String> {
+        let document = actual().map_err(|error| error.to_string())?;
+        for record in &document.records {
+            if let Some(definitions) = &record.attack_definitions {
+                for profile in &definitions.profiles {
+                    crate::content::project::validate_native_gameplay_profile(profile).map_err(
+                        |error| {
+                            format!(
+                                "{}: {}: {error}",
+                                record.profile.target.key, profile.target.key
+                            )
+                        },
+                    )?;
+                }
+                validate_attack_definitions(record)
+                    .map_err(|error| format!("{}: {error}", record.profile.target.key))?;
+            }
+        }
+        Ok(())
+    }
+    #[test]
     fn summer_attack_closure_requires_exact_creature_and_behavior()
     -> Result<(), Box<dyn std::error::Error>> {
         let doc = actual()?;

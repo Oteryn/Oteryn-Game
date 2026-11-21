@@ -1,6 +1,7 @@
 """Admit the exact canonical Inferniarch weapons used by the Doomforge claim."""
 import hashlib
 import json
+from fractions import Fraction
 
 REWARD_IDS = (49520, 49522, 49523, 49524, 49525, 49526, 49527, 49528, 49529, 49530, 50250)
 
@@ -165,10 +166,11 @@ def creature_profiles(root):
         }
         if source['corpse']:
             details['corpse_item'] = {'family': 'Item', 'key': f"oteryn:item.tibia.i{source['corpse']}", 'revision': 'definition-r1'}
+        mitigation = Fraction(source['mitigation'], 100)
         creature = profile(ref('Creature'), 'Creature', {
             'health': source['health'], 'experience': source['experience'],
             'speed': source['speed'], 'armor': source['armor'], 'abilities': abilities,
-            'mitigation': {'numerator': source['mitigation'], 'denominator': 100},
+            'mitigation': {'numerator': mitigation.numerator, 'denominator': mitigation.denominator},
             'resistances': [{'damage_type': element, 'percent': {'numerator': value, 'denominator': 1}}
                             for element, value in source['resistances']],
             'details': details,

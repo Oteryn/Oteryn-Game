@@ -5,6 +5,7 @@ use super::srx3_native_source_cast_fixtures::{
 };
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
+use crate::gameplay_transport::monster_profile_cycle::with_main_native_ai_seed;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 struct CaseDuration {
@@ -99,10 +100,18 @@ fn source_teleport_case(maxxen: bool) -> TestResult {
             let mut selected = false;
             let mut relocated=false;
             let map=crate::gameplay_transport::soul_war_scene::source_map(&room).ok_or("actualsourceMap")?;
-            let mut now = owner.owner_now().get();
-            for _ in 0..128 {
+            let started_at = owner.owner_now().get();
+            let mut now = started_at;
+            // Preserve the original 128 two-second steps as a semantic time budget.
+            let time_limit = started_at.saturating_add(256_000_000);
+            while now < time_limit {
                 let cursor=map.facts.movement_effects_since(0).last().map_or(0,|entry|entry.0);
-                settle_monster_melee_at(&owner, now).await?;
+                let turn = settle_monster_melee_at(&owner, now);
+                if maxxen {
+                    with_main_native_ai_seed(turn).await?;
+                } else {
+                    turn.await?;
+                }
                 let runtime=owner.runtime.lock().await;
                 let states=owner.states.spell_states.lock().await;
                 if let Some(report)=states.monster_melee.creature_ai.last_report_for_test(caster){
@@ -118,10 +127,16 @@ fn source_teleport_case(maxxen: bool) -> TestResult {
                     && cues.iter().any(|(_,position,effect)|*effect==11&&*position==wire);
                 drop(states);drop(runtime);
                 if selected{break;}
-                now = next_native_melee_deadline(&owner).await?;
+                let next = next_native_melee_deadline(&owner).await?;
+                assert!(next > now, "settled native deadline must advance for {ability}");
+                now = next;
             }
             assert!(selected,"actual native schedule must select {ability}");
             assert!(relocated,"selected {ability} must use source exact teleport owner and fixed qualified source frame");
+            eprintln!(
+                "SRX3_TELEPORT_PROVED {slug} ability={ability} elapsed_us={} selected={selected} relocated={relocated}",
+                now - started_at,
+            );
             drop(owner);
             drop(authority);
             drop(seal);
