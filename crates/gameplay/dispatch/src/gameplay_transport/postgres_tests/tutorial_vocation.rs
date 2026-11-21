@@ -364,11 +364,10 @@ fn vocation_scenario(case: Case) -> TestResult {
                         .map_err(|()| "retained choice")?.ok_or("retained choice")?;
                     assert!(owner.save_first_vocation_vitals(deps.actor, session, old, &retained.request.before).await);
                     if case == Case::RetainedBacktrack {
+                        assert_eq!(saved_tutorial_x(&h).await?, landing.x + 1);
                         move_tutorial_actor(&deps, landing.x).await?;
                         assert_eq!(owner.write_due_last_positions(true).await, 0);
-                        let saved: i32 = sqlx::query_scalar("SELECT tile_x FROM game_character_last_positions WHERE character_id=encode($1,'hex')::uuid")
-                            .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
-                        assert_eq!(saved, landing.x);
+                        assert_eq!(saved_tutorial_x(&h).await?, landing.x);
                         drop(owner);
                         drop(authority);
                         drop(seal);
@@ -543,10 +542,16 @@ fn vocation_scenario(case: Case) -> TestResult {
                     if matches!(case, Case::RetainedBusy | Case::RetainedStationary) {
                         if case == Case::RetainedBusy {
                             move_tutorial_actor(&deps, landing.x + 1).await?;
+                            let checked = owner.last_position_checked_for_test(session).ok_or("tracked actor")?;
                             let slot = owner.revision_sequencer.acquire(old.character_id).await;
-                            assert_eq!(owner.write_due_last_positions(true).await, 1);
+                            let failures = tokio::time::timeout(
+                                std::time::Duration::from_millis(500), owner.write_due_last_positions(true),
+                            ).await?;
+                            assert_eq!(failures, 1);
+                            assert_eq!(owner.last_position_checked_for_test(session), Some(checked));
                             drop(slot);
                             assert_eq!(owner.write_due_last_positions(true).await, 0);
+                            assert_eq!(saved_tutorial_x(&h).await?, landing.x + 1);
                         } else {
                             let checked = owner.last_position_checked_for_test(session).ok_or("tracked actor")?;
                             assert_eq!(owner.write_due_last_positions(true).await, 0);
@@ -812,5 +817,10 @@ async fn fill_nested_fixture(h: &Harness, fill: bool) -> TestResult {
 
 async fn kit_grant_count(h: &Harness) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT count(*) FROM game_character_starter_grants WHERE character_id=encode($1,'hex')::uuid AND template_key LIKE 'oteryn:starter.newhaven.%'")
+        .bind(id(41).as_slice()).fetch_one(&h.pool).await?)
+}
+
+async fn saved_tutorial_x(h: &Harness) -> TestResult<i32> {
+    Ok(sqlx::query_scalar("SELECT tile_x FROM game_character_last_positions WHERE character_id=encode($1,'hex')::uuid")
         .bind(id(41).as_slice()).fetch_one(&h.pool).await?)
 }
