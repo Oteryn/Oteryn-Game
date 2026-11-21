@@ -1824,6 +1824,7 @@ mod evidence_tests {
                 quantity: 1,
                 item_handle: None,
             },
+            motion: None,
         };
         let before = BTreeSet::new();
         assert!(!corpse_at(&entry, position, &before, [2; 16]));
@@ -1875,6 +1876,7 @@ mod evidence_tests {
                 appearance_ref: 1,
                 health_percent: 100,
             },
+            motion: None,
         };
         let existing = BTreeSet::new();
         assert!(
