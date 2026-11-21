@@ -414,3 +414,41 @@ fn sign_out_stays_failed_until_it_can_lock_and_clear_the_vault() -> TestResult {
         Ok(())
     })
 }
+
+#[test]
+fn refused_device_ticket_authorizes_same_character_and_channel_in_browser() -> TestResult {
+    on_large_stack(|| {
+        use crate::native_entry::test_support::{Stack, authorize_selection, channel_node};
+        let stack = Stack::start_two_channels()?;
+        tokio::runtime::Runtime::new()?.block_on(async {
+            let rotated = changed_response(&credential('A'), false)?;
+            let mut roster: serde_json::Value = serde_json::from_slice(&rotated)?;
+            roster = serde_json::json!({"protocol_version": 2, "characters": roster["characters"].take()});
+            let server = Server::start(vec![
+                (200, rotated),
+                (401, fixture("denied.json")?),
+                (200, fixture("revoke-response.json")?),
+                (200, br#"{"token_type":"Bearer","access_token":"fresh","expires_in":300,"scope":"game:ticket"}"#.to_vec()),
+                (200, serde_json::to_vec(&roster)?),
+                (200, br#"{"protocol_version":1,"ticket":"fresh-ticket","expires_in":60}"#.to_vec()),
+            ]).await?;
+            let scratch = tempfile::tempdir()?;
+            let vault = Arc::new(MemoryVault::default());
+            vault::Vault::write(vault.as_ref(), &enrollment_response()?).map_err(std::io::Error::other)?;
+            let mut config = stack.config();
+            config.device_sessions = Arc::new(manager(vault, scratch.path().to_owned()));
+            config.session_options = Some(options());
+            let character = config.character_id.clone();
+            config.channel_switch = Some((character.clone(), channel_node::CHANNEL_B.into()));
+            let result = authorize_selection(&server.client, &config).await;
+            let requests = server.requests.lock().map_err(|_| "requests")?;
+            assert!(requests[1].starts_with("POST /api/v1/game-auth/device-sessions/tickets "));
+            assert!(matches!(result, Ok((ref id, Some(ref channel)))
+                if id == &character && channel == channel_node::CHANNEL_B), "{result:?}");
+            assert!(requests[3].starts_with("POST /oauth/token "));
+            assert!(requests[4].starts_with("GET /api/v1/game-auth/native-characters "));
+            assert!(requests[5].starts_with("POST /api/v1/game-auth/tickets "));
+            Ok(())
+        })
+    })
+}

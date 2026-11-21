@@ -440,3 +440,11 @@ impl MockChallengeVerifier {
         (403, r#"{"error":"invalid_challenge"}"#)
     }
 }
+
+pub(crate) async fn authorize_selection(
+    client: &NativeLoginClient,
+    config: &NativeLoginConfig,
+) -> Result<(String, Option<String>), GameplayEntryError> {
+    let authorized = super::authorize::authorize(client, config, CancellationToken::new()).await?;
+    Ok((authorized.character_id, authorized.channel_id))
+}

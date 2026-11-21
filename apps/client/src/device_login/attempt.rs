@@ -85,6 +85,10 @@ impl DeviceAttempt {
         cancel: CancellationToken,
     ) -> Result<NativeTicket, NativeLoginError> {
         let previous = self.take()?;
+        if now().is_ok_and(|when| when >= previous.idle_expires_at) {
+            self.sign_out(client).await;
+            return Err(NativeLoginError::TicketSpent);
+        }
         match client.device_ticket(&previous, cancel).await {
             Ok((session, ticket)) => {
                 self.state

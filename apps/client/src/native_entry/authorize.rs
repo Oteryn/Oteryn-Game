@@ -1,4 +1,5 @@
 use super::*;
+use oteryn_platform_client::native_login::DeviceRefusal;
 
 pub(super) async fn access_token(
     client: &NativeLoginClient,
@@ -80,7 +81,7 @@ pub(super) async fn authorize(
         .map_err(|_| GameplayEntryError::InvalidConfiguration)?;
     let directory_client = oteryn_platform_client::PlatformClient::new(platform)
         .map_err(|_| GameplayEntryError::InvalidConfiguration)?;
-    let (character_id, channel_id, character_name, training_requested, channels) = loop {
+    let (character_id, channel_id, mut character_name, training_requested, mut channels) = loop {
         let characters = if let Some(token) = &token {
             client
                 .owner_characters(token, cancellation.clone())
@@ -247,10 +248,40 @@ pub(super) async fn authorize(
             .await
             .map_err(login_rejected)?
     } else if let Some(attempt) = &mut device {
-        attempt
-            .ticket(client, cancellation)
-            .await
-            .map_err(login_rejected)?
+        match attempt.ticket(client, cancellation.clone()).await {
+            Ok(ticket) => ticket,
+            Err(
+                NativeLoginError::TicketSpent
+                | NativeLoginError::DeviceRefused(DeviceRefusal { status: 401, .. }),
+            ) => {
+                let fresh = access_token(client, config, cancellation.clone(), false).await?;
+                let characters = client
+                    .owner_characters(&fresh, cancellation.clone())
+                    .await
+                    .map_err(login_rejected)?;
+                let directory = directory_client
+                    .fetch_directory_as(Some(&fresh), cancellation.clone())
+                    .await
+                    .map_err(retry_login)?;
+                let selected = crate::character_selection::join(characters, &directory)
+                    .into_iter()
+                    .find(|row| {
+                        row.available
+                            && row.character.character_id == character_id
+                            && channel_id
+                                .as_ref()
+                                .is_none_or(|id| row.channels.iter().any(|c| &c.id == id))
+                    })
+                    .ok_or_else(|| rejected(PublicClass::RetryLogin))?;
+                character_name = selected.character.name;
+                channels = selected.channels;
+                client
+                    .issue_native_ticket(fresh, cancellation)
+                    .await
+                    .map_err(login_rejected)?
+            }
+            Err(error) => return Err(login_rejected(error)),
+        }
     } else {
         return Err(rejected(PublicClass::RetryLogin));
     };
