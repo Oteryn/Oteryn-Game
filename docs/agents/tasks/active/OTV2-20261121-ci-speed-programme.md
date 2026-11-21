@@ -16,7 +16,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT standalone CI programme coordinator, issue 3352
 created_at: 2026-11-21T09:29:01Z
-updated_at: 2026-11-21T19:08:04Z
+updated_at: 2026-11-21T20:00:58Z
 execution_policy: continuous_progress
 owned_paths:
   - .github/workflows/
@@ -53,13 +53,13 @@ checks and protected-main integration. No achieved latency target is claimed.
   not quest automation or a change to that programme's control plane.
 - Integrated main: `5695f7b8af567086efa11bdeb47a2fd609f24c2c`; sole writer:
   `chatgpt/ci-bottlenecks-single-pr-20261121`, PR #3367. State: **AUTHORING**
-  for a successor of `b75d1098e052af3f17d5b8d4163ae79eb9b88f1f`.
-  Root ended that freeze at 19:08 UTC to integrate main's named #3366 fix:
-  the revert of #3361's confirmed field-cursor PG regression. Preserve #3365's
-  narrower auxiliary-workflow routing and register the new reusable fast
-  workflow as a canonical control. Its real routing test reproduced the
-  missing registration before passing with the one-line repair. #3362's
-  two-job build limit and all five earlier CI repairs remain included.
+  for a successor of `448efc0582425c22bd5b5daab7b64cee45475d7c`.
+  Root ended the freeze at 20:00:58 UTC after an actual-workflow reproduction
+  showed three new exact references defeating #3365's auxiliary narrowing.
+  The repair recognizes only those complete fixed-reference lines. Exact-file
+  consumers, unknown literals, globs and dynamic references remain FULL.
+  Integrated #3366's field-cursor revert, #3362's two-job limit, canonical
+  fast-producer registration and all five earlier CI repairs remain intact.
 - Publication: native Git dry-run returned `fatal: unable to get password from
   user`. Use the already selected META 3.1.0 API-native new-candidate route with
   a complete bounded delta, sole-parent commit, fresh expected-head lease,
@@ -87,12 +87,13 @@ may be fabricated. Any rejection remains visible. No latency or monetary saving
 is claimed until the integrated head has run; compare both critical-path time
 and summed runner time, including artifact transfer and fallback builds.
 
-Acceptance pending: final-head CI/review and post-merge observation. First-head
-review was clean. On b75, fast 44936586415 passed all 25 workers and collectors;
-content took 7m38, retained PG 13m28, native passed 3 tests, manual integration
-passed 2043+38 tests and WorldProject passed 55 Rust+15 Python tests in 23m53.
-Two actual PG archives were reused without compilation. These results qualify
-only b75; the main-integrated successor needs fresh qualification and review.
+Acceptance pending: successor qualification and post-merge observation. On 448,
+fast 44941494744 passed all 25 workers/collectors in 19m16; content 44941494805
+took 7m50, retained PG 44941494715 took 13m02, WorldProject 44941495199 took 24m15.
+Native 44941494679 passed 3 tests; manual 44941617744 passed 2043+38 tests.
+PG 44942645764 reused 2/3 eligible archives and all 14 reused workers passed;
+other PG/Node workers were still running. These results qualify only 448.
+QuestPC8 varied from 19m36 on b75 to 11m12.6 on 448; neither is a fixed floor.
 
 Prior main `44920758625` failed Node admission contention and MAX501; the first
 PR run repeated MAX501 with three competing tests. On b75, PG job136951451690
@@ -131,17 +132,11 @@ successor needs its own qualification; no SQL or Node runtime repair is claimed.
 
 Local results qualify authoring only; immutable hosted evidence is in #3352.
 
-## First-wave architecture and source of truth
+## First-wave source of truth
 
-- PROVEN: admitted main is `b20391213cde54511233bd02fae3370e019c7bf4`.
-- PROVEN: META policy binding is the repository's existing immutable 3.1.0 binding.
-- PROVEN: `GAME_MIGRATOR` already owns the canonical embedded migration chain.
-- PROVEN: PG producer emits five archive variants and bare filenames in SHA256SUMS;
-  the rerun consumer selected only e2e/lib and expected a leading `./`.
-- DERIVED: removing duplicate embedding can reduce compiler work; the speedup is
-  UNKNOWN until representative compilation measurements exist.
-- UNKNOWN: warm-builder end-to-end improvement, RAM high-water mark and PG 19
-  benefit on the accepted workload. Experiments must not change qualification pins.
+Issue #3352 retains the admitted main, five-variant PG archive repair and shared
+`GAME_MIGRATOR` evidence. Warm-builder improvement, RAM high-water mark and PG 19
+benefit remain unknown; experiments must preserve qualification pins.
 
 ## High-risk authority/recovery qualification
 
@@ -150,11 +145,8 @@ Required qualification includes negative source/digest/inventory/attempt tests,
 the actual protected-base audit behavior, all gate contract cases and an
 independent exact-head review. It changes no production authority or schema.
 
-First-wave scope: NOT_APPLICABLE; that batch changes diagnostic CI and reuses the identical
-existing migrator. It does not change a production authority/fence operator,
-migration SQL, durable-value rules or accepted merge eligibility. Archive source
-identity, integrity, inventory ownership and actual runtime selection have
-negative regression coverage in `tools/ci/test_pg_test_rerun.py`.
+First-wave scope: diagnostic CI and identical migrator reuse; negative archive
+custody regressions remain in `tools/ci/test_pg_test_rerun.py`.
 
 ## Acceptance criteria
 
@@ -173,13 +165,6 @@ negative regression coverage in `tools/ci/test_pg_test_rerun.py`.
 ## Reference parity
 
 NOT_APPLICABLE: build/CI infrastructure; no new player mechanic or reference value.
-
-## First-wave excluded scope
-
-No PostgreSQL version or durability change, skipped assertions, weaker provenance,
-protection bypass, paid runner purchase, unrelated PC cleanup or main workflow
-pin rotation is part of the initial three branches. Later protected workflow
-rotation requires its separately prepared exact audit/activation contract.
 
 ## Implementation / findings
 
@@ -206,9 +191,18 @@ before publication. Worker summaries do not replace source inspection.
 
 ## Independent review
 
-Root is the sole dispatcher under OWNER_FUNDED_AI_POLICY.md. First-head review
-completed clean (PR #3367 comment 7066802278). A material repair needs the second
-and final independent delta review after local validation and successor freeze.
+Root is the sole dispatcher under OWNER_FUNDED_AI_POLICY.md. Both authorized
+reviews completed clean: first 7533 (comment 7066802278), then 448
+(comment 7068364491, 19:54:29 UTC). The new bounded routing repair is outside
+those exact heads; it receives direct source review and behavioral validation.
+No third paid review is authorized or dispatched. The bound META review policy
+requires re-review only for a material risk-bearing delta; any such outstanding
+requirement must be reported rather than inventing review coverage.
+Coordinator assessment: this exact-line parser correction restores the existing
+auxiliary route without changing canonical dependencies, selected test inventories,
+permissions, gates or artifact custody. Actual-workflow RED/GREEN tests preserve
+FULL for exact consumers, unknown literals, globs and dynamic paths; the previous
+material review remains representative. No new material review is required.
 
 ## PR and closeout
 
