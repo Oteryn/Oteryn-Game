@@ -218,6 +218,36 @@ impl DurabilityRoot {
         })).await?
     }
 
+    /// Read a session's current authority snapshot and its Character record in one fenced
+    /// pass. The record is `None` for a terminal session or a Character without a current
+    /// record; callers apply their own session-state rules to the snapshot.
+    pub async fn read_session_character(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        session: crate::foundation::GameSessionId,
+    ) -> Result<(
+        crate::foundation::GameSessionAuthoritySnapshot<
+            crate::foundation::AuthenticatedTransportRefV1,
+        >,
+        Option<CharacterAuthorityRecord>,
+    )> {
+        let recovery = authority.record_for(self)?;
+        let store = super::fresh_admission::FreshAdmissionStore::from_root(self.clone());
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            super::db::lock_admission_relations(&mut tx).await?;
+            let current = store.current_session_in_transaction(&mut tx, session).await?;
+            let record = if current.session_state() == crate::foundation::GameSessionState::Terminal {
+                None
+            } else {
+                read_current_character_in_transaction(&mut tx, *current.commit().character_id().as_bytes()).await?
+            };
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok((current, record)))
+        })).await?
+    }
+
     /// Immutable creation sex, read beneath the reconciled Character authority.
     pub async fn read_character_sex(
         &self,

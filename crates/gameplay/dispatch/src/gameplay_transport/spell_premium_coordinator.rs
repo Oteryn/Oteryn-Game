@@ -19,8 +19,7 @@ use crate::durability::premium_activation_latch::{
     EmptyLatchHeld, PreDeliveryBypass, PremiumActivationLatch, PremiumActivationRead, PremiumGateTx,
 };
 use crate::durability::{
-    DurabilityError, DurabilityRoot, fresh_admission::FreshAdmissionStore,
-    item_transfer::CurrentCharacterItemFence,
+    DurabilityError, DurabilityRoot, item_transfer::CurrentCharacterItemFence,
 };
 use crate::foundation::{ExactActorRef, GameSessionId, GameSessionState};
 use crate::premium::{PremiumConsumer, TrustedNow};
@@ -599,22 +598,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
     ) -> Option<PremiumOwnerBinding> {
         let active = self.active_generation?;
-        let current = FreshAdmissionStore::from_root(self.root.clone())
-            .current_session_at(session)
+        let (current, record) = self
+            .root
+            .read_session_character(self.character, session)
             .await
-            .ok()?
-            .0;
+            .ok()?;
         if current.session_state() != GameSessionState::Active {
             return None;
         }
         let character =
             crate::domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes())
                 .ok()?;
-        let record = self
-            .root
-            .read_current_character(self.character, character)
-            .await
-            .ok()?;
+        let record = record?;
         if record.world_id.as_bytes() != self.world_id.as_bytes() {
             return None;
         }

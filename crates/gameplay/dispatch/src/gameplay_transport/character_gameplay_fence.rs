@@ -21,9 +21,19 @@ pub(super) async fn current_once(
     session_id: GameSessionId,
     reconnectable: bool,
 ) -> Result<Option<CurrentCharacterGameplayFence>, crate::durability::DurabilityError> {
-    let (session, _) = FreshAdmissionStore::from_root(admission.root.clone())
-        .current_session_at(session_id)
-        .await?;
+    let (session, record) = match admission
+        .root
+        .read_session_character(admission.character, session_id)
+        .await
+    {
+        Ok(read) => read,
+        Err(crate::durability::character_authority::CharacterAuthorityError::Unavailable(
+            error,
+        )) => {
+            return Err(error);
+        }
+        Err(_) => return Ok(None),
+    };
     if session.session_state() != GameSessionState::Active
         && !(reconnectable && session.session_state() == GameSessionState::Reconnectable)
     {
@@ -32,18 +42,8 @@ pub(super) async fn current_once(
     let Ok(character) = CharacterId::from_bytes(*session.commit().character_id().as_bytes()) else {
         return Ok(None);
     };
-    let record = match admission
-        .root
-        .read_current_character(admission.character, character)
-        .await
-    {
-        Ok(record) => record,
-        Err(crate::durability::character_authority::CharacterAuthorityError::Unavailable(
-            error,
-        )) => {
-            return Err(error);
-        }
-        Err(_) => return Ok(None),
+    let Some(record) = record else {
+        return Ok(None);
     };
     Ok(Some(CurrentCharacterGameplayFence {
         character_id: character,
