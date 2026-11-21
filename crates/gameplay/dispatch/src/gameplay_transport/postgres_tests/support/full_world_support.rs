@@ -222,6 +222,15 @@ pub(super) async fn relogin_as(
         .map(|(session, _)| session)
 }
 
+pub(super) async fn relogin_request(
+    h: &Harness,
+) -> TestResult<(
+    GameSessionId,
+    crate::foundation::fresh_admission_durability::FreshAdmissionCommitRequestV1,
+)> {
+    relogin_into(h, id(41), id(40), id(110), None).await
+}
+
 /// `relogin_as`, optionally into another assigned Channel of the World (chsw).
 pub(super) async fn relogin_into(
     h: &Harness,

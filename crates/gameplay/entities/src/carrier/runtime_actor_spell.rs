@@ -394,6 +394,12 @@ impl StagedSpellBatch {
     pub fn has_source_native_reaction(&self) -> bool {
         self.mirror.changed()
     }
+    /// Whether committing this batch must first reserve source work: a Mirror Image
+    /// reaction, a Cloak of Terror blood event or a native death. Without the
+    /// reservation a blood event keeps no owner stamp and its drain rejects it.
+    pub fn needs_source_reservation(&self) -> bool {
+        self.mirror.changed() || !self.cloak_blood.is_empty() || !self.native_deaths.is_empty()
+    }
     pub fn check_source_native_reservations(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -1394,10 +1400,7 @@ impl ChannelRuntimeV1 {
         if !staged.player_preflight_bound {
             return Err(Error::PlayerVitalsOwnerRequired);
         }
-        if staged.mirror.changed()
-            || !staged.cloak_blood.is_empty()
-            || !staged.native_deaths.is_empty()
-        {
+        if staged.needs_source_reservation() {
             self.reserve_spell_batch(&mut staged)?;
         }
         self.check_spell_batch_commit(&staged)?;

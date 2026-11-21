@@ -5,6 +5,7 @@ import importlib.util
 import json
 import os
 import re
+import socket
 import stat
 import subprocess
 import tempfile
@@ -60,6 +61,50 @@ class KnobTests(unittest.TestCase):
         self.assertIn('PG_PORT="${NODE_BOOT_PG_PORT:-15433}"', RUN_TEXT)
         self.assertIn('WP5_PORT="${NODE_BOOT_PLATFORM_PORT:-18463}"', RUN_TEXT)
 
+    def test_pvp_override_cannot_alias_another_listener(self):
+        for port in ('15433', '18463'):
+            result = self.knobs(NODE_BOOT_PVP_GAME_PORT=port)
+            self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+
+    def test_pvp_auto_port_is_allocated_by_the_real_listener(self):
+        script = 'set -Eeuo pipefail\n' + KNOBS + 'printf "%s" "$PVP_GAME_PORT"\n'
+        result = bash(script, {'NODE_BOOT_GAME_PORT': '65535'})
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(result.stdout, '0')
+
+    def test_pvp_port_can_override_an_unusable_adjacent_port(self):
+        script = 'set -Eeuo pipefail\n' + KNOBS + 'printf "%s" "$PVP_GAME_PORT"\n'
+        result = bash(script, {'NODE_BOOT_GAME_PORT': '65535', 'NODE_BOOT_PVP_GAME_PORT': '17191'})
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(result.stdout, '17191')
+
+    def test_pvp_port_allocation_leaves_an_occupied_adjacent_listener_untouched(self):
+        script = 'set -Eeuo pipefail\n' + KNOBS + 'printf "%s" "$PVP_GAME_PORT"\n'
+        with socket.socket() as listener:
+            listener.bind(('127.0.0.1', 0))
+            listener.listen()
+            adjacent = listener.getsockname()[1]
+            result = bash(script, {'NODE_BOOT_GAME_PORT': str(adjacent - 1)})
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual(result.stdout, '0')
+
+    def test_pvp_boot_reads_the_structured_listener_event(self):
+        for requested in ('0', '17191'):
+            for trace in ('', ' trace=01a1eafe-2553'):
+                with self.subTest(requested=requested, trace=trace), tempfile.TemporaryDirectory() as work:
+                    Path(work, 'pvp-node.log').write_text(
+                        f'oteryn-game-server ts=1 level=info module=node event=listener_bound{trace} '
+                        'detail="address=127.0.0.1:17191"\n'
+                    )
+                    script = ('set -Eeuo pipefail\n'
+                              'fail() { echo "$*" >&2; return 1; }\n'
+                              'remember() { printf "%s=%s" "$1" "$2"; }\n'
+                              'local() { :; }\n'
+                              + section('  local bound_address', '  local epoch_result'))
+                    result = bash(script, {'WORK': work, 'PVP_GAME_PORT': requested})
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(result.stdout, 'PVP_GAME_PORT=17191')
+
     def test_parallel_stack_overrides_are_accepted(self):
         with tempfile.TemporaryDirectory() as temp:
             temp = os.path.realpath(temp)
@@ -97,6 +142,18 @@ class KnobTests(unittest.TestCase):
                     self.assertEqual(result.stdout.strip(), f'NODE_BOOT_RESULT=BLOCKED reason={reason}')
 
 
+class WorldFixtureTests(unittest.TestCase):
+    def test_fresh_world_has_disjoint_core_packet_mp_and_sweep_fixtures(self):
+        fixtures = section('readonly ACCOUNT_ID=', 'readonly FRESH_KEY_ID=')
+        fixtures += section('BOOTSTRAP_ACCOUNTS=(', 'source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"')
+        result = bash('set -Eeuo pipefail\nNODE_BOOT_WORLD=1\n' + fixtures
+                      + 'printf "%s\\n" "${BOOTSTRAP_ACCOUNTS[@]}"\n')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        accounts = result.stdout.splitlines()
+        self.assertEqual(len(accounts), 10)
+        self.assertEqual(len(set(accounts)), 10)
+
+
 class ReuseTests(unittest.TestCase):
     GUARD = re.search(r'(?ms)^if \[\[ "\$NODE_BOOT_REUSE_STACK" != 0 \]\]; then.*?^fi\n', RUN_TEXT)
 
@@ -108,6 +165,8 @@ class ReuseTests(unittest.TestCase):
             BASE={temp}/base
             NODE_BOOT_REUSE_STACK={mode}
             NODE_BOOT_WORLD=1; NODE_BOOT_SPELLS=0
+            NODE_BOOT_E2E_ONLY=rows
+            PVP_GAME_PORT=17182; node_boot_pvp_default=17182
             PG_CONTAINER=fixture-postgres
             STACK_KEPT=0
             REUSE_STATE={temp}/state.env
@@ -122,6 +181,7 @@ class ReuseTests(unittest.TestCase):
             set -Eeuo pipefail
             REUSE_STATE={temp}/state.env
             NODE_BOOT_WORLD=1; NODE_BOOT_SPELLS=0; STACK_KEPT=0
+            PVP_GAME_PORT=17182
             WORK={temp}/kept; node_log="$WORK/node.log"; failed_node_log="$WORK/failed-node.log"
             WP5_PKI="$WORK/pki"; WP5_SCRATCH="$WORK/scratch"; WP5_PORT=18463
             WP5_DB_PASSWORD=a; WP5_DB_ROOT_PASSWORD=b; WP5_APP_KEY=c; PG_PORT=15433
@@ -129,6 +189,7 @@ class ReuseTests(unittest.TestCase):
             ADMIN_URL='postgresql://x:y@127.0.0.1:15433/oteryn_node_boot'
             FRESH_SEED_HEX=00; RECOVERY_SEED_HEX=11; MAP_REVISION=digest; NODE_PID=4242
             NODE_CLOCK_FEATURES=(--features qualification-clock)
+            NODE_SPAWN_FEATURES=(--features qualification-spawn)
             NODE_GAMEPLAY_ENV=("OTERYN_NATIVE_GAMEPLAY_MANIFEST=/srv/a b/m.json")
             PG_OBS="$WORK/postgres"
             ''') + function('save_reuse_state') + '\nsave_reuse_state\necho "kept=$STACK_KEPT"\n'
@@ -162,6 +223,17 @@ class ReuseTests(unittest.TestCase):
             result = self.run_guard(temp, 'teardown', 'sudo() { return 1; }')
             self.assertEqual(result.stdout.strip(), f'kept=0 work={temp}/kept pid=4242 fresh=no')
 
+    def test_world_mp_requires_fresh_stack_but_can_teardown(self):
+        with tempfile.TemporaryDirectory() as temp:
+            self.assertEqual(self.save_state(temp).returncode, 0)
+            for groups in ('', 'mp', 'rows, mp', '\u2003mp\u2003', '\u2003'):
+                with self.subTest(groups=groups):
+                    result = self.run_guard(temp, 1, f'export LC_ALL=C; NODE_BOOT_E2E_ONLY="{groups}"')
+                    self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+                    self.assertEqual(result.stdout.strip(),
+                                     'NODE_BOOT_RESULT=BLOCKED reason=mp_requires_fresh_stack')
+            self.assertEqual(self.run_guard(temp, 'teardown', 'NODE_BOOT_E2E_ONLY=mp').returncode, 0)
+
     def test_kept_or_reused_stack_never_reports_a_pass(self):
         self.assertIn('STATUS[stack_kept]="SKIP(shutdown and restart stages not run)"', RUN_TEXT)
         self.assertIn('result=NODE_BOOT_PARTIAL\n  exit 3', RUN_TEXT)
@@ -169,23 +241,47 @@ class ReuseTests(unittest.TestCase):
 
 
 class SeamPassThroughTests(unittest.TestCase):
+    def test_seam_runs_spawn_fence_regression_with_database_url(self):
+        seam = function('seam_stages')
+        self.assertIn('OTERYN_TEST_POSTGRES_ADMIN_URL="$ADMIN_URL"', seam)
+        self.assertIn('qualification_spawn_transaction_returns_pool_and_bounds_backend', seam)
+
+    def test_seam_rejects_an_exact_filter_that_matches_zero_tests(self):
+        with tempfile.TemporaryDirectory() as temp:
+            fake = Path(temp, 'cargo')
+            fake.write_text("#!/bin/sh\necho 'test result: ok. 0 passed; 0 failed; 0 ignored;'\n")
+            fake.chmod(0o755)
+            script = """
+                set -Eeuo pipefail
+                ADMIN_URL=fixture
+                NODE_BOOT_SPELLS=0; NODE_BOOT_WORLD=0; NODE_GAMEPLAY_ENV=()
+                NODE_CLOCK_FEATURES=(); NODE_SPAWN_FEATURES=()
+                BASE=/srv/x; WP5_PKI=/x; WORLD_ID=w; CHANNEL_ID=c; WP5_PORT=1
+                ACCOUNT_ID=a; SECOND_ACCOUNT_ID=b; FRESH_KEY_ID=f; FRESH_SEED_HEX=s
+                RECOVERY_KEY_ID=r; RECOVERY_SEED_HEX=t
+                sleep() { :; }
+            """ + function('seam_stages') + '\nseam_stages\n'
+            result = bash(script, env={'PATH': f'{temp}:{os.environ["PATH"]}'})
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('did not execute exactly one passing test', result.stderr)
+
     def test_seam_stage_passes_harness_knobs_only_when_set(self):
         with tempfile.TemporaryDirectory() as temp:
             fake = Path(temp, 'cargo')
-            fake.write_text('#!/bin/sh\nenv | grep -E "^NODE_BOOT_(E2E_ONLY|NO_FAILFAST|NO_PROGRESS_S)=" | sort\n')
+            fake.write_text('#!/bin/sh\ncase "$*" in *qualification_spawn_transaction*) echo "test result: ok. 1 passed; 0 failed; 0 ignored;"; exit 0;; esac\nenv | grep -E "^NODE_BOOT_(E2E_ONLY|NO_FAILFAST|NO_PROGRESS_S)=" | sort\n')
             fake.chmod(0o755)
             script = textwrap.dedent(f'''\
                 set -Eeuo pipefail
                 PATH={temp}:$PATH
                 sleep() {{ :; }}
-                NODE_BOOT_SPELLS=0; NODE_BOOT_WORLD=0; NODE_GAMEPLAY_ENV=(); NODE_CLOCK_FEATURES=()
+                NODE_BOOT_SPELLS=0; NODE_BOOT_WORLD=0; NODE_GAMEPLAY_ENV=(); NODE_CLOCK_FEATURES=(); NODE_SPAWN_FEATURES=()
                 BASE=/srv/x; WP5_PKI=/x; ADMIN_URL=u; WORLD_ID=w; CHANNEL_ID=c; WP5_PORT=1
                 ACCOUNT_ID=a; SECOND_ACCOUNT_ID=b; FRESH_KEY_ID=f; FRESH_SEED_HEX=s
                 RECOVERY_KEY_ID=r; RECOVERY_SEED_HEX=t
                 NODE_BOOT_E2E_ONLY=f6,core; NODE_BOOT_NO_PROGRESS_S=75
                 ''') + function('seam_stages') + '\nseam_stages\n'
             result = bash(script)
-            self.assertEqual(result.stdout, 'NODE_BOOT_E2E_ONLY=f6,core\nNODE_BOOT_NO_PROGRESS_S=75\n',
+            self.assertEqual(result.stdout, 'test result: ok. 1 passed; 0 failed; 0 ignored;\nNODE_BOOT_E2E_ONLY=f6,core\nNODE_BOOT_NO_PROGRESS_S=75\n',
                              result.stderr)
 
 

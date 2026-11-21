@@ -17,18 +17,26 @@ readonly ACCOUNT_ID=01934f10-7c00-7000-8000-000000000001
 readonly SECOND_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000002
 readonly PACKET_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000003
 readonly SECOND_PACKET_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000004
+readonly EXTRA_WORLD_ACCOUNTS=(01934f10-7c00-7000-8000-000000000007 01934f10-7c00-7000-8000-000000000008 01934f10-7c00-7000-8000-000000000009 01934f10-7c00-7000-8000-00000000000a 01934f10-7c00-7000-8000-00000000000b 01934f10-7c00-7000-8000-00000000000c)
 readonly FRESH_KEY_ID=node-boot-fresh-key-1
 readonly RECOVERY_KEY_ID=node-boot-recovery-key-1
 readonly WORLD_ID=01934f10-7c02-7001-805b-3b1122334401
 readonly CHANNEL_ID=01934f10-7c03-7001-805b-3b1122334401
-readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402 01934f10-7c04-7003-805b-3b1122334403 01934f10-7c04-7004-805b-3b1122334404)
-# CHAR-NAME-1: bootstrap intent contract version 2 names each Character (naming policy revision 1).
-readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Packet Two")
+readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402 01934f10-7c04-7003-805b-3b1122334403 01934f10-7c04-7004-805b-3b1122334404 01934f10-7c04-7007-805b-3b1122334407 01934f10-7c04-7008-805b-3b1122334408 01934f10-7c04-7009-805b-3b1122334409 01934f10-7c04-700a-805b-3b112233440a 01934f10-7c04-700b-805b-3b112233440b 01934f10-7c04-700c-805b-3b112233440c)
+# The v4 bootstrap intent explicitly binds name, sex and vocation.
+readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Packet Two" "Party One" "Party Two" "Party Three" "Party Four" "Sweep One" "Sweep Two")
 # Runtime build writers bind to the shipped training formula's content revision,
 # just as the S3-B seam does; progression is initialized from this interpretation.
 # The served readiness.content_revision is this same revision: the quest and Task Board
 # owners refuse a Character whose stored progression content differs from the served one.
 readonly INTERPRETATION=(nb-profile-1 nb-ruleset-1 s3b-content-1 newhaven-starter-r1)
+# The second, Open PvP (world_type=2) World of the World pass: its own Accounts, intents and node.
+readonly PVP_WORLD_ID=01934f10-7c02-7002-805b-3b1122334402
+readonly PVP_CHANNEL_ID=01934f10-7c03-7002-805b-3b1122334402
+readonly PVP_ACCOUNT_IDS=(01934f10-7c00-7000-8000-000000000005 01934f10-7c00-7000-8000-000000000006)
+readonly PVP_INTENT_OPERATIONS=(01934f10-7c04-7005-805b-3b1122334405 01934f10-7c04-7006-805b-3b1122334406)
+readonly PVP_INTENT_NAMES=("Arena One" "Arena Two")
+readonly PVP_DATABASE=oteryn_node_boot_pvp
 readonly COMPOSE_FILE=tools/qualification/wp5_s3a/compose.yml
 readonly COMPOSE_S3B=tools/qualification/wp5_s3b/compose.override.yml
 readonly COMPOSE_OVERLAY=tools/qualification/node_boot/compose.override.yml
@@ -45,13 +53,23 @@ if [[ "$BASE" != "$(realpath -m -- "$BASE")" ]] \
   echo 'NODE_BOOT_RESULT=BLOCKED reason=base_outside_srv_or_tmpdir'; exit 2
 fi
 [[ -z "${NODE_BOOT_PROJECT+x}" || "$NODE_BOOT_PROJECT" =~ ^[a-z0-9][a-z0-9_-]{0,47}$ ]] || { echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_project'; exit 2; }
-for node_boot_port in NODE_BOOT_PG_PORT NODE_BOOT_PLATFORM_PORT NODE_BOOT_GAME_PORT; do
+for node_boot_port in NODE_BOOT_PG_PORT NODE_BOOT_PLATFORM_PORT NODE_BOOT_GAME_PORT NODE_BOOT_PVP_GAME_PORT; do
   [[ -z "${!node_boot_port+x}" || ( "${!node_boot_port}" =~ ^[1-9][0-9]{3,4}$ && "${!node_boot_port}" -le 65535 ) ]] \
     || { echo "NODE_BOOT_RESULT=BLOCKED reason=invalid_port_${node_boot_port,,}"; exit 2; }
 done
 # The native Platform lifecycle reads the game port from the environment (prepare.py route).
 export NODE_BOOT_GAME_PORT="${NODE_BOOT_GAME_PORT:-17181}"
 readonly SERVICE_USER BASE
+# The Open PvP node has its own listener. Allow an override for parallel stacks.
+readonly PVP_BASE="$BASE/pvp"
+node_boot_game_port="${NODE_BOOT_GAME_PORT:-17181}"
+# Port zero lets the real listener bind atomically and report its assigned port.
+PVP_GAME_PORT="${NODE_BOOT_PVP_GAME_PORT:-0}"
+if [[ -n "${NODE_BOOT_PVP_GAME_PORT+x}" ]] && (( PVP_GAME_PORT == node_boot_game_port
+  || PVP_GAME_PORT == ${NODE_BOOT_PG_PORT:-15433}
+  || PVP_GAME_PORT == ${NODE_BOOT_PLATFORM_PORT:-18463} )); then
+  echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_port_node_boot_pvp_game_port'; exit 2
+fi
 # NODE_BOOT_KEEP_STACK=1 leaves the stack up after the seam stage; NODE_BOOT_REUSE_STACK=1
 # reruns only the seam stage against it, =teardown removes it. Local development only.
 NODE_BOOT_KEEP_STACK="${NODE_BOOT_KEEP_STACK:-0}"
@@ -64,6 +82,7 @@ case "$NODE_BOOT_KEEP_STACK/$NODE_BOOT_REUSE_STACK" in
     fi ;;
   *) echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_stack_reuse_mode'; exit 2 ;;
 esac
+
 
 GAME_SOURCE="$(git rev-parse --show-toplevel)"
 # The separately pinned portal-rs lane owns only Platform lifecycle and its stages.
@@ -105,6 +124,18 @@ esac
 # Keep every fixture-only transport/door assertion intact in its own disposable pass.
 NODE_BOOT_WORLD="${NODE_BOOT_WORLD:-1}"
 case "$NODE_BOOT_WORLD" in 0|1) ;; *) echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_world_mode'; exit 2 ;; esac
+NODE_BOOT_D150_LEGACY="${NODE_BOOT_D150_LEGACY:-0}"
+case "$NODE_BOOT_D150_LEGACY" in
+  0) ;;
+  1)
+    if [[ "$NODE_BOOT_LIFECYCLE/$NODE_BOOT_WORLD/$NODE_BOOT_SPELLS/$NODE_BOOT_KEEP_STACK/$NODE_BOOT_REUSE_STACK" != native_reference/1/0/0/0 \
+      || -n "${NODE_BOOT_E2E_ONLY:-}" || "${CI:-}" == true || -n "${GITHUB_ACTIONS:-}" ]]; then
+      echo 'NODE_BOOT_RESULT=BLOCKED reason=d150_requires_disposable_local_world'; exit 2
+    fi
+    NODE_BOOT_SKIP_BASIC=1
+    ;;
+  *) echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_d150_mode'; exit 2 ;;
+esac
 NODE_BOOT_WORLD_PROFILE="${NODE_BOOT_WORLD_PROFILE:-town}"
 case "$NODE_BOOT_WORLD_PROFILE" in
   # Real Thais/town outskirts and the default-start and seller regions.
@@ -124,7 +155,7 @@ if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then NODE_BOOT_WORLD=0; fi
 BOOTSTRAP_ACCOUNTS=("$ACCOUNT_ID" "$SECOND_ACCOUNT_ID")
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   # Packet journeys may move, loot or kill their Characters before the required core runs.
-  BOOTSTRAP_ACCOUNTS+=("$PACKET_ACCOUNT_ID" "$SECOND_PACKET_ACCOUNT_ID")
+  BOOTSTRAP_ACCOUNTS+=("$PACKET_ACCOUNT_ID" "$SECOND_PACKET_ACCOUNT_ID" "${EXTRA_WORLD_ACCOUNTS[@]}")
 fi
 readonly BOOTSTRAP_ACCOUNTS
 source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"
@@ -155,6 +186,8 @@ if [[ "$(git -C "$PLATFORM_SOURCE" rev-parse HEAD 2>/dev/null)" != "$NODE_BOOT_P
   echo 'NODE_BOOT_RESULT=BLOCKED reason=exact_platform_checkout_missing'
   exit 2
 fi
+readonly SPAWN_PROOF=node::serve::qualification_fixture::tests::qualification_spawn_transaction_returns_pool_and_bounds_backend
+NODE_SPAWN_FEATURES=(--features qualification-spawn)
 NODE_BOOT_LIBTEST=""
 WORLD_COMPILER=(cargo +1.100.0 run --locked --release -p oteryn-world-bundle-compiler --)
 if [[ "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
@@ -166,6 +199,9 @@ if [[ "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
     *) echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_real_clock_mode'; exit 2 ;;
   esac
   variant=default
+  if [[ "$NODE_BOOT_LIFECYCLE" == game_platform ]]; then
+    NODE_SPAWN_FEATURES=()
+  fi
   if [[ "$NODE_BOOT_WORLD" == 1 && "$OTERYN_NODE_BOOT_REAL_CLOCK" == 0 ]]; then
     NODE_CLOCK_FEATURES=(--features qualification-clock)
     variant=qualification-clock
@@ -178,6 +214,13 @@ if [[ "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
     fi
     TARGET="$(realpath -e -- "$NODE_BOOT_PREBUILT_DIR/$variant")"
     NODE_BOOT_LIBTEST="$TARGET/node-boot-libtest"
+    if [[ "$NODE_BOOT_LIFECYCLE" == native_reference ]] &&
+      ! "$NODE_BOOT_LIBTEST" --list --exact "$SPAWN_PROOF" | grep -Fx "$SPAWN_PROOF: test" >/dev/null; then
+      # Existing prebuilt artifacts may carry the clock but omit qualification-spawn.
+      echo 'NODE_BOOT_PREBUILT_GAME fallback=qualification_spawn_missing'
+      NODE_BOOT_LIBTEST=""
+      TARGET="$GAME_SOURCE/target/debug"
+    fi
     if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
       if ! python3 "$prebuilt" verify world-compiler "$NODE_BOOT_PREBUILT_DIR"; then
         echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_prebuilt_world_compiler'; exit 2
@@ -215,6 +258,7 @@ CONTROL_PASSWORD="$(openssl rand -hex 24)"
 RUNTIME_PASSWORD="$(openssl rand -hex 24)"
 NODE_PID=""
 RUNTIME_DIAGNOSTICS_PID=""
+PVP_RUNTIME_DIAGNOSTICS_PID=""
 ACTIVE_STAGE=setup
 # Redacted PostgreSQL samples and stage dumps (pg_observe.py); kept with node.log on failure.
 PG_OBS="$WORK/postgres"
@@ -233,28 +277,77 @@ if [[ "$NODE_BOOT_REUSE_STACK" != 0 ]]; then
     echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_mode_mismatch'; exit 2
   fi
   if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
+    if [[ "$NODE_BOOT_WORLD" == 1 ]] && ! python3 - "${NODE_BOOT_E2E_ONLY:-}" <<'PY_REUSED_GROUPS'
+import os
+import sys
+
+try:
+    selection = os.fsencode(sys.argv[1]).decode("utf-8").strip()
+except UnicodeDecodeError:
+    sys.exit(1)
+sys.exit(0 if selection and "mp" not in (group.strip() for group in selection.split(",")) else 1)
+PY_REUSED_GROUPS
+    then
+      echo 'NODE_BOOT_RESULT=BLOCKED reason=mp_requires_fresh_stack'; exit 2
+    fi
     if [[ "$(docker inspect -f '{{.State.Running}}' "$PG_CONTAINER" 2>/dev/null)" != true ]] \
       || ! sudo kill -0 "$NODE_PID" 2>/dev/null || ! sudo test -S "$BASE/run/control.sock"; then
       echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_not_running'; exit 2
     fi
+    if [[ -n "${NODE_BOOT_PVP_GAME_PORT+x}" && "${kept_pvp_port:-0}" != "$PVP_GAME_PORT" ]]; then
+      echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_mode_mismatch'; exit 2
+    fi
+    PVP_GAME_PORT="${kept_pvp_port:-$PVP_GAME_PORT}"
     STACK_KEPT=1
   fi
 fi
+
+# Seed only this run's extra synthetic accounts through the same portal binary
+# and disposable environment as the upstream harness and composition.py.
+seed_mp_accounts() {
+  python3 - "$WORK" "$PVP_WORLD_ID" "${PVP_ACCOUNT_IDS[@]}" "${EXTRA_WORLD_ACCOUNTS[@]}" <<'PY_MP_SEED'
+import json
+from pathlib import Path
+import secrets
+import subprocess
+import sys
+
+work = Path(sys.argv[1])
+world, *accounts = sys.argv[2:]
+env = json.loads((work / "portal/secrets/env.json").read_text())
+binary = json.loads((work / "identity.json").read_text())["portal_binary"]
+
+def seed(entity, args):
+    try:
+        subprocess.run([binary, "seed", entity, json.dumps(args)], env=env,
+                       capture_output=True, timeout=20, check=True)
+    except (OSError, subprocess.SubprocessError):
+        raise SystemExit(f"node_boot_mp_seed_failed entity={entity}") from None
+
+seed("world", {"worldId": world, "name": "Open PvP", "region": "local"})
+for account in accounts:
+    seed("account", {"accountId": account, "email": f"nb-{account}@example.invalid",
+                     "password": secrets.token_urlsafe(48)})
+PY_MP_SEED
+}
 
 result=NODE_BOOT_FAIL
 compose() {
   docker compose --project-name "$WP5_PROJECT" --file "$GAME_SOURCE/$COMPOSE_FILE" \
     --file "$GAME_SOURCE/$COMPOSE_S3B" --file "$GAME_SOURCE/$COMPOSE_OVERLAY" "$@"
 }
-psql_admin() { docker exec -i "$PG_CONTAINER" psql -v ON_ERROR_STOP=1 -qAt -U oteryn_node_boot_admin -d "$1"; }
+psql_admin() { docker exec -i "$PG_CONTAINER" psql -v ON_ERROR_STOP=1 -qAt -U oteryn_node_boot_admin -d "$1" "${@:2}"; }
 evidence() { printf 'NODE_BOOT_EVIDENCE %s\n' "$*"; }
 fail() { echo "NODE_BOOT_FAILURE $*"; return 1; }
 stop_runtime_diagnostics() {
-  [[ -z "$RUNTIME_DIAGNOSTICS_PID" ]] || {
-    kill -TERM "$RUNTIME_DIAGNOSTICS_PID" 2>/dev/null || true
-    wait "$RUNTIME_DIAGNOSTICS_PID" 2>/dev/null || true
-    RUNTIME_DIAGNOSTICS_PID=""
-  }
+  local pid
+  for pid in "$RUNTIME_DIAGNOSTICS_PID" "${PVP_RUNTIME_DIAGNOSTICS_PID:-}"; do
+    [[ -n "$pid" ]] || continue
+    kill -TERM "$pid" 2>/dev/null || true
+    wait "$pid" 2>/dev/null || true
+  done
+  RUNTIME_DIAGNOSTICS_PID=""
+  PVP_RUNTIME_DIAGNOSTICS_PID=""
 }
 pg_observe() { python3 "$GAME_SOURCE/tools/qualification/node_boot/pg_observe.py" "$@" --container "$PG_CONTAINER" --user oteryn_node_boot_admin --database oteryn_node_boot; }
 start_pg_sampler() {
@@ -285,13 +378,14 @@ pg_observability_dump() { # stage exit: statements, lock waits and slow statemen
 save_reuse_state() { # the seam stage's inputs, for NODE_BOOT_REUSE_STACK=1
   local names=(WORK node_log failed_node_log WP5_PKI WP5_SCRATCH WP5_PORT WP5_DB_PASSWORD WP5_DB_ROOT_PASSWORD
     WP5_APP_KEY PG_PORT PG_ADMIN_PASSWORD CONTROL_PASSWORD RUNTIME_PASSWORD ADMIN_URL FRESH_SEED_HEX
-    RECOVERY_SEED_HEX MAP_REVISION NODE_PID NODE_CLOCK_FEATURES NODE_GAMEPLAY_ENV PG_OBS)
+    RECOVERY_SEED_HEX MAP_REVISION NODE_PID NODE_CLOCK_FEATURES NODE_SPAWN_FEATURES NODE_GAMEPLAY_ENV PG_OBS)
   if [[ "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
-    names+=(GP_HARNESS_PID GP_PG_CONTAINER)
+    names+=(GP_HARNESS_PID GP_PG_CONTAINER WP5_SERVER_NAME WP5_SOURCE_AUTHORITY WP5_ROUTE_REVISION)
   fi
   [[ -z "${OTERYN_QUALIFICATION_CLOCK_FILE:-}" ]] || names+=(OTERYN_QUALIFICATION_CLOCK_FILE)
   ( umask 077
     { declare -p "${names[@]}"
+      printf 'kept_pvp_port=%q\n' "$PVP_GAME_PORT"
       printf 'kept_mode=%q\n' "$NODE_BOOT_WORLD/$NODE_BOOT_SPELLS/${NODE_BOOT_GAME_PORT:-17181}"
     } > "$REUSE_STATE" )
   STACK_KEPT=1
@@ -329,6 +423,7 @@ cleanup() {
     elif [[ -f "$node_log" ]]; then
       cp "$node_log" "$NODE_BOOT_FAILURE_LOG_DIR/node.log"
     fi
+    [[ ! -f "$WORK/pvp-node.log" ]] || cp "$WORK/pvp-node.log" "$NODE_BOOT_FAILURE_LOG_DIR/pvp-node.log"
     # The basic and World passes share the directory; each keeps its own PostgreSQL record.
     [[ ! -d "${PG_OBS:-}" ]] || cp -R "$PG_OBS" "$NODE_BOOT_FAILURE_LOG_DIR/postgres-world$NODE_BOOT_WORLD-spells$NODE_BOOT_SPELLS"
   fi
@@ -419,12 +514,14 @@ ADMIN_URL="postgresql://oteryn_node_boot_admin:$PG_ADMIN_PASSWORD@127.0.0.1:$PG_
 
 # Use the merged native producer for every shard; the PHP producer is retired.
 game_platform_start
-
+if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_LIFECYCLE" == native_reference && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
+  seed_mp_accounts
+fi
 
 # Shipped binaries and the SEAM client harness.
 if [[ -z "$NODE_BOOT_LIBTEST" ]]; then
-  cargo +1.100.0 build --locked -p oteryn-game-server --bins "${NODE_CLOCK_FEATURES[@]}"
-  cargo +1.100.0 test --locked -p oteryn-game-server --lib --no-run "${NODE_CLOCK_FEATURES[@]}"
+  cargo +1.100.0 build --locked -p oteryn-game-server --bins "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}"
+  cargo +1.100.0 test --locked -p oteryn-game-server --lib --no-run "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}"
 fi
 
 # Deployment administration: service user, directories, roles, migration.
@@ -715,9 +812,9 @@ PY_CHARACTER_AUTHORITY
 start_runtime_diagnostics() {
   # Read the regular file independently: neither a slow log consumer nor a stalled
   # qualification pipeline can hold up the server's stderr. No raw error text is copied.
-  local offset=0
-  [[ ! -f "$node_log" ]] || offset=$(stat -c '%s' "$node_log")
-  python3 -u - "$node_log" "$1" "$NODE_BOOT_WORLD" "$offset" <<'PY_RUNTIME_DIAGNOSTICS' &
+  local offset=0 log="${2:-$node_log}"
+  [[ ! -f "$log" ]] || offset=$(stat -c '%s' "$log")
+  python3 -u - "$log" "$1" "$NODE_BOOT_WORLD" "$offset" <<'PY_RUNTIME_DIAGNOSTICS' &
 import collections, os, re, signal, sys, time
 
 path, stage, world, initial_offset = sys.argv[1:]
@@ -888,7 +985,11 @@ finally:
     print(f'NODE_BOOT_RUNTIME_MONITOR state=stopped stage={stage} world_bundle={world} '
           f'records={emitted} pending_bytes={pending_bytes}')
 PY_RUNTIME_DIAGNOSTICS
-  RUNTIME_DIAGNOSTICS_PID=$!
+  if [[ $# == 2 ]]; then
+    PVP_RUNTIME_DIAGNOSTICS_PID=$!
+  else
+    RUNTIME_DIAGNOSTICS_PID=$!
+  fi
 }
 # Scenario ids of the e2e rows with the given status in a stage log, one per line.
 stage_rows() { grep -oE "e2e_all scenario=[^ ]+ status=$2( |$)" "$1" | sed -E 's/e2e_all scenario=([^ ]+) .*/\1/' | sort -u || true; }
@@ -911,7 +1012,12 @@ stage() { # name prerequisite... -- function
   ACTIVE_STAGE=$name
   echo "::group::stage $name"
   evidence "stage=$name state=start world_bundle=$NODE_BOOT_WORLD spells=$NODE_BOOT_SPELLS"
-  case "$name" in seam_stages|spell_scenarios) start_runtime_diagnostics "$name" ;; esac
+  case "$name" in
+    seam_stages|spell_scenarios) start_runtime_diagnostics "$name" ;;
+  esac
+  if [[ "$name" == seam_stages && ${STATUS[pvp_world_ready]:-} == PASS ]]; then
+    start_runtime_diagnostics "${name}_pvp" "$WORK/pvp-node.log"
+  fi
   set +e
   ( set -Eeuo pipefail; source "$VARS"; "$@" ) 2>&1 | tee "$WORK/stage-$name.log"
   local rc=${PIPESTATUS[0]}
@@ -1012,15 +1118,19 @@ node_field() { # log field
 }
 
 operator_setup() { # §4.1 operator setup before the node starts
+  local starter="${INTERPRETATION[3]}"
+  if [[ "$NODE_BOOT_D150_LEGACY" == 1 ]]; then
+    starter=nb-starter-1
+  fi
   ops authorization issue --file launch-a.json --binding node-boot-a
   write_node_config launch-a.json
   ops s2 issue --node-config "$BASE/node/node.toml" --file s2-fresh-store.json --namespace node-boot --authorization disposable-qualification
-  if ops character interpretation --profile "${INTERPRETATION[0]}" --ruleset "${INTERPRETATION[1]}" --content "${INTERPRETATION[2]}" --starter "${INTERPRETATION[3]}"; then
+  if ops character interpretation --profile "${INTERPRETATION[0]}" --ruleset "${INTERPRETATION[1]}" --content "${INTERPRETATION[2]}" --starter "$starter"; then
     fail "interpretation configured before the fresh store"
   fi
   ops character fresh-store --request fresh-store.json
   ops character fresh-store --request fresh-store.json
-  ops character interpretation --profile "${INTERPRETATION[0]}" --ruleset "${INTERPRETATION[1]}" --content "${INTERPRETATION[2]}" --starter "${INTERPRETATION[3]}"
+  ops character interpretation --profile "${INTERPRETATION[0]}" --ruleset "${INTERPRETATION[1]}" --content "${INTERPRETATION[2]}" --starter "$starter"
   evidence "operator=authorization,s2_issuance,fresh_store,interpretation interpretation_before_store=refused fresh_store_rerun=idempotent"
 }
 
@@ -1163,22 +1273,89 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
     # An exact retry of the same operation id is idempotent.
     ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$operation" || failed=1
   done
-  [[ $failed == 0 ]]
+  [[ $failed == 0 ]] || fail "Character bootstrap"
   evidence "characters=${#BOOTSTRAP_ACCOUNTS[@]} source=platform_intents path=control_socket retry=idempotent"
 }
 
+legacy_d150_seed() {
+  psql_admin oteryn_node_boot -v account="$ACCOUNT_ID" -v world="$WORLD_ID" \
+    -v profile="${INTERPRETATION[0]}" -v ruleset="${INTERPRETATION[1]}" -v content="${INTERPRETATION[2]}" \
+    < "$GAME_SOURCE/tools/qualification/node_boot/legacy_d150.sql"
+  evidence "d150_fixture=historical_tag3 database=disposable birth=null phase=before_node_launch"
+}
+
+legacy_d150_register_starter() {
+  # Migration 0982 registers the preceding Control interpretation for assigned Worlds.
+  ops character interpretation --profile "${INTERPRETATION[0]}" --ruleset "${INTERPRETATION[1]}" \
+    --content "${INTERPRETATION[2]}" --starter "${INTERPRETATION[3]}"
+  local registered
+  registered="$(psql_admin oteryn_node_boot -v account="$ACCOUNT_ID" -v world="$WORLD_ID" \
+    -v starter="${INTERPRETATION[3]}" <<'SQL'
+SELECT EXISTS (
+    SELECT 1
+      FROM game_character_roots r
+      JOIN game_world_registered_starter_revisions s USING (world_id, starter_template_revision)
+      CROSS JOIN (
+          SELECT interpretation_revision, starter_template_revision
+            FROM game_character_interpretations
+           ORDER BY interpretation_revision DESC LIMIT 1
+      ) current_interpretation
+     WHERE r.account_id = :'account'::uuid AND r.world_id = :'world'::uuid
+       AND r.creation_vocation IS NULL AND r.starter_template_revision = 'nb-starter-1'
+       AND s.interpretation_revision < current_interpretation.interpretation_revision
+       AND current_interpretation.starter_template_revision = :'starter'
+);
+SQL
+)"
+  [[ "$registered" == t ]] || { fail "D150 historical starter registration"; return 1; }
+  evidence "d150_starter_history=registered historical=nb-starter-1 current=${INTERPRETATION[3]}"
+}
+
 seam_stages() { # §4.6 every #823 stage against the node's own port
+  if [[ "${NODE_BOOT_D150_LEGACY:-0}" == 0 ]] &&
+    [[ -z "${NODE_BOOT_LIBTEST:-}" || "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
+    local spawn_proof spawn_test=node::serve::qualification_fixture::tests::qualification_spawn_transaction_returns_pool_and_bounds_backend
+    local spawn_command
+    if [[ -n "${NODE_BOOT_LIBTEST:-}" ]]; then
+      spawn_command=("$NODE_BOOT_LIBTEST" "$spawn_test" --exact)
+    else
+      spawn_command=(cargo +1.100.0 test --locked -p oteryn-game-server --lib
+        "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}" "$spawn_test" -- --exact)
+    fi
+    spawn_proof="$(OTERYN_TEST_POSTGRES_ADMIN_URL="$ADMIN_URL" "${spawn_command[@]}")" || {
+      printf '%s\n' "$spawn_proof"
+      return 1
+    }
+    printf '%s\n' "$spawn_proof"
+    grep -q '^test result: ok\. 1 passed; 0 failed; 0 ignored;' <<< "$spawn_proof" || {
+      printf '%s\n' 'Spawn PostgreSQL proof did not execute exactly one passing test' >&2
+      return 1
+    }
+  fi
   # The bootstrap evidence ages past five seconds, so each admission fetches its own.
   sleep 6
   local qualification=node_boot_seam_against_running_node
   local test_env=()
+  if [[ "${NODE_BOOT_D150_LEGACY:-0}" == 1 ]]; then
+    test_env+=("NODE_BOOT_D150_LEGACY=1")
+  fi
   if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then
     qualification=node_boot_spells_against_running_node
     test_env=("RUST_MIN_STACK=${RUST_MIN_STACK:-16777216}")
   fi
   if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
     test_env+=("NODE_BOOT_WORLD_BUNDLE=$BASE/world/world.otbundle" "NODE_BOOT_WORLD_PIN=$BASE/world/world.json" "NODE_BOOT_MAP_REVISION=$MAP_REVISION" "RUST_MIN_STACK=${RUST_MIN_STACK:-67108864}")
+    local extra_accounts
+    extra_accounts="$(IFS=,; echo "${EXTRA_WORLD_ACCOUNTS[*]}")"
+    test_env+=("NODE_BOOT_EXTRA_WORLD_ACCOUNTS=$extra_accounts")
     test_env+=("NODE_BOOT_PACKET_ACCOUNT_ID=$PACKET_ACCOUNT_ID" "NODE_BOOT_PACKET_SECOND_ACCOUNT_ID=$SECOND_PACKET_ACCOUNT_ID")
+  fi
+  if [[ "$NODE_BOOT_WORLD" == 1 && ${STATUS[pvp_character_bootstrap]:-} == PASS ]]; then
+    # MP01's PvP rows run against the Open PvP World's own node and database.
+    test_env+=("NODE_BOOT_PVP_ADDRESS=127.0.0.1:$PVP_GAME_PORT" "NODE_BOOT_PVP_CONTROL_SOCKET=$PVP_BASE/run/control.sock"
+      "NODE_BOOT_PVP_DATABASE_URL=${ADMIN_URL%/*}/$PVP_DATABASE" "NODE_BOOT_PVP_WORLD_ID=$PVP_WORLD_ID"
+      "NODE_BOOT_PVP_CHANNEL_ID=$PVP_CHANNEL_ID" "NODE_BOOT_PVP_ACCOUNT_ID=${PVP_ACCOUNT_IDS[0]}"
+      "NODE_BOOT_PVP_SECOND_ACCOUNT_ID=${PVP_ACCOUNT_IDS[1]}")
   fi
   # Row selection, fail-fast and the no-progress watchdog belong to the seam harness.
   local knob
@@ -1188,7 +1365,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   local staged_manifest="${NODE_GAMEPLAY_ENV[0]:-}"
   staged_manifest="${staged_manifest#OTERYN_NATIVE_GAMEPLAY_MANIFEST=}"
   local test_dir="$PWD"
-  local test_command=(cargo +1.100.0 test --locked -p oteryn-game-server --lib "${NODE_CLOCK_FEATURES[@]}"
+  local test_command=(cargo +1.100.0 test --locked -p oteryn-game-server --lib "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}"
     "qualification::$qualification" -- --ignored --exact --nocapture)
   if [[ -n "${NODE_BOOT_LIBTEST:-}" ]]; then
     # Cargo runs each test with its package directory as the working directory.
@@ -1282,6 +1459,136 @@ signal_before_ready() { # SIGTERM in the assignment wait: clean exit, never read
   evidence "signal_in_assignment_wait exit=0 ready=never socket=absent"
 }
 
+# The Open PvP World (world_type=2) of the World pass, beside the unchanged no-PvP World.
+# One `serve` process serves one World/Channel scope (node/config.rs ScopeConfig), and one
+# database holds one live node's S2 custody (native_admission_source.rs, custody claim),
+# so this World gets its own database in the same PostgreSQL container and its own node.
+# Platform, PKI, secrets, binaries, bundle and gameplay inputs are shared; the steps mirror
+# operator_setup, node_deployment_grants, node_complete_assignment and character_bootstrap.
+pvp_ops() { sudo env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$PVP_BASE/ops/ops.toml" "$@"; }
+pvp_fail() { echo "--- PvP node log"; tail -n 120 "$WORK/pvp-node.log" 2>/dev/null || true; fail "$@"; }
+pvp_await_log() { # pattern seconds
+  for _ in $(seq 1 "$2"); do grep -q "$1" "$WORK/pvp-node.log" && return 0; sleep 1; done
+  pvp_fail "missing PvP node event: $1"
+}
+
+pvp_world_ready() {
+  local boot_started=$SECONDS pvp_url="${ADMIN_URL%/*}/$PVP_DATABASE"
+  echo "CREATE DATABASE $PVP_DATABASE" | psql_admin postgres
+  OTERYN_GAME_MIGRATION_DATABASE_URL="$pvp_url" "$BASE/bin/oteryn-game-migrate"
+  echo "GRANT CONNECT ON DATABASE $PVP_DATABASE TO nb_control, nb_runtime" | psql_admin "$PVP_DATABASE"
+  sudo install -d -o root -g root -m 0755 "$PVP_BASE" "$PVP_BASE/state" "$PVP_BASE/fence-parent" "$PVP_BASE/node"
+  sudo install -d -o root -g root -m 0700 "$PVP_BASE/ops"
+  sudo install -d -o "$SERVICE_UID" -m 0700 "$PVP_BASE/fence-parent/fence" "$PVP_BASE/run"
+  sed -e "s|^state_directory = .*|state_directory = \"$PVP_BASE/state\"|" \
+    -e "s|^database = .*|database = \"$PVP_DATABASE\"|" \
+    -e "s|^fence_directory = .*|fence_directory = \"$PVP_BASE/fence-parent/fence\"|" \
+    "$WORK/ops.toml" > "$WORK/pvp-ops.toml"
+  sudo install -o root -m 0600 "$WORK/pvp-ops.toml" "$PVP_BASE/ops/ops.toml"
+  pvp_ops authorization issue --file launch-pvp.json --binding node-boot-pvp
+  # The existing World's launch-a configuration with this World's scope, port, store and paths.
+  sed -e "s|^address = .*|address = \"127.0.0.1:$PVP_GAME_PORT\"|" \
+    -e "s|^world_id = .*|world_id = \"$PVP_WORLD_ID\"|" \
+    -e "s|^channel_id = .*|channel_id = \"$PVP_CHANNEL_ID\"|" \
+    -e "s|^database = .*|database = \"$PVP_DATABASE\"|" \
+    -e "s|^fence_directory = .*|fence_directory = \"$PVP_BASE/fence-parent/fence\"|" \
+    -e "s|^socket_path = .*|socket_path = \"$PVP_BASE/run/control.sock\"|" \
+    -e "s|^authorization_file = .*|authorization_file = \"$PVP_BASE/state/launch-pvp.json\"|" \
+    -e "s|^s2_authorization_file = .*|s2_authorization_file = \"$PVP_BASE/state/s2-fresh-store.json\"|" \
+    -e "s|^epoch_fence_file = \"$BASE/run/lcfa-epoch-fence\"$|epoch_fence_file = \"$PVP_BASE/run/lcfa-epoch-fence\"|" \
+    -e '/^\[platform\.runtime_status\]$/,/^$/{ /^$/!d; }' \
+    "$WORK/node.toml" > "$WORK/pvp-node.toml"
+  # Platform's testing assignment reporter is authorized only for the baseline
+  # scope. PvP uses Game's scoped assignment and its own LCFA epoch fence.
+  printf '0\n' | sudo install -o "$SERVICE_UID" -m 0600 /dev/stdin "$PVP_BASE/run/lcfa-epoch-fence"
+  local line
+  for line in "address = \"127.0.0.1:$PVP_GAME_PORT\"" "world_id = \"$PVP_WORLD_ID\"" "channel_id = \"$PVP_CHANNEL_ID\"" \
+    "database = \"$PVP_DATABASE\"" "socket_path = \"$PVP_BASE/run/control.sock\"" "[world_bundle]"; do
+    grep -qxF "$line" "$WORK/pvp-node.toml" || fail "PvP node configuration lacks: $line"
+  done
+  sudo install -o root -m 0644 "$WORK/pvp-node.toml" "$PVP_BASE/node/node.toml"
+  pvp_ops s2 issue --node-config "$PVP_BASE/node/node.toml" --file s2-fresh-store.json --namespace node-boot-pvp --authorization disposable-qualification
+  pvp_ops character fresh-store --request fresh-store.json
+  pvp_ops character interpretation --profile "${INTERPRETATION[0]}" --ruleset "${INTERPRETATION[1]}" --content "${INTERPRETATION[2]}" --starter "${INTERPRETATION[3]}"
+  sudo -u "$SERVICE_USER" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$PVP_BASE/node/node.toml" \
+    < /dev/null > /dev/null 2> "$WORK/pvp-node.log" &
+  PVP_NODE_PID=$!
+  remember PVP_NODE_PID "$PVP_NODE_PID"
+  pvp_await_log awaiting_assignment 120
+  local node revision
+  node="$(node_field "$WORK/pvp-node.log" node_id)"; revision="$(node_field "$WORK/pvp-node.log" registration_revision)"
+  psql_admin "$PVP_DATABASE" <<SQL
+INSERT INTO game_control_scope_grants SELECT 'nb_control', '$PVP_WORLD_ID', '$PVP_CHANNEL_ID', op FROM unnest(ARRAY[1,2,3,4]::smallint[]) op;
+INSERT INTO game_control_field_policy_grants VALUES ('nb_control', '$PVP_WORLD_ID', 'policy-s3b-1');
+SQL
+  # Open PvP (world_type=2) under the same readiness revision; the granted login inserts it.
+  docker exec -i -e PGPASSWORD="$CONTROL_PASSWORD" "$PG_CONTAINER" \
+    psql -v ON_ERROR_STOP=1 -qAt -h 127.0.0.1 -U nb_control -d "$PVP_DATABASE" <<SQL
+INSERT INTO game_spell_field_world_policies (world_id, world_policy_revision, world_type, protection_level, in_fight_ms, source_pin, control_role, decision_identity)
+VALUES ('$PVP_WORLD_ID', 'policy-s3b-1', 2, 8, 60000, '99902524e052f37574194466c2949c576e4ab269', session_user, 'node-boot-qualification');
+SQL
+  [[ "$(echo "SELECT world_type FROM game_spell_field_world_policies WHERE world_id='$PVP_WORLD_ID'" | psql_admin "$PVP_DATABASE")" == 2 ]] || fail "PvP World policy is not Open PvP"
+  pvp_ops content activate --request content-1.json --world "$PVP_WORLD_ID" --channel "$PVP_CHANNEL_ID" --sequence 1 --previous empty
+  pvp_ops assignment assign --request assign-pvp.json --world "$PVP_WORLD_ID" --channel "$PVP_CHANNEL_ID" --node-id "$node" --revision "$revision"
+  pvp_await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
+  pvp_await_log "event=readiness .*ready=true" 60
+  local bound_address
+  bound_address="$(sed -nE 's/.* event=listener_bound (trace=[^ ]+ )?detail="address=([^"]+)"$/\2/p' "$WORK/pvp-node.log" | tail -n 1)"
+  if [[ ! "$bound_address" =~ ^127\.0\.0\.1:([1-9][0-9]{3,4})$ ]] || (( BASH_REMATCH[1] > 65535 )); then
+    fail "PvP node did not report a valid bound listener"; return 1
+  fi
+  PVP_GAME_PORT="${BASH_REMATCH[1]}"
+  remember PVP_GAME_PORT "$PVP_GAME_PORT"
+  local epoch_result
+  epoch_result="$({
+    echo 'PREPARE node_boot_world_epoch(UUID, UUID, TEXT) AS'
+    cat "$GAME_SOURCE/tools/qualification/node_boot/world_epoch.sql"
+    printf "EXECUTE node_boot_world_epoch('%s', '%s', '%s');\n" "$PVP_WORLD_ID" "$PVP_CHANNEL_ID" "$WORLD_DIGEST"
+  } | psql_admin "$PVP_DATABASE")"
+  [[ "$epoch_result" == t ]] || fail "PvP World epoch initialization"
+  [[ "$(sudo stat -c '%u %a' "$PVP_BASE/run/control.sock")" == "$SERVICE_UID 600" ]] || fail "PvP control socket mode"
+  [[ "$PVP_GAME_PORT" != "$NODE_BOOT_GAME_PORT" && "$PVP_NODE_PID" != "$NODE_PID" ]] || fail "PvP listener or process reused the baseline node"
+  [[ "$(echo "SELECT world_type FROM game_spell_field_world_policies WHERE world_id='$WORLD_ID'" | psql_admin oteryn_node_boot)" == 1 ]] || fail "Baseline World policy is not no-PvP"
+  evidence "pvp_world world_type=2 database=$PVP_DATABASE port=$PVP_GAME_PORT node=separate_process readiness=true world_epoch=0 boot_seconds=$((SECONDS - boot_started)) world=$PVP_WORLD_ID channel=$PVP_CHANNEL_ID pid=$PVP_NODE_PID baseline_port=$NODE_BOOT_GAME_PORT baseline_pid=$NODE_PID baseline_world_type=1"
+}
+
+pvp_character_bootstrap() { # two level-qualifiable Characters from real Platform intents
+  local index account operation name failed=0
+  local vocations=(Knight Sorcerer)
+  for index in 0 1; do
+    account="${PVP_ACCOUNT_IDS[$index]}"; operation="${PVP_INTENT_OPERATIONS[$index]}"; name="${PVP_INTENT_NAMES[$index]}"
+    if ! python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" bootstrap \
+      "$WORK" "$account" "$PVP_WORLD_ID" "$operation" "${INTERPRETATION[@]}" "$name" "${vocations[$index]}"; then
+      echo "platform intent issue failed for PvP operation $operation"
+      failed=1
+      continue
+    fi
+    pvp_ops character bootstrap --socket "$PVP_BASE/run/control.sock" --operation-id "$operation" || { failed=1; continue; }
+    pvp_ops character bootstrap --socket "$PVP_BASE/run/control.sock" --operation-id "$operation" || failed=1
+  done
+  [[ $failed == 0 ]] || pvp_fail "PvP Character bootstrap"
+  [[ "$(echo "SELECT count(*) FROM game_character_roots WHERE world_id='$PVP_WORLD_ID'" | psql_admin "$PVP_DATABASE")" == 2 ]] || fail "PvP World Characters"
+  local births
+  births="$(psql_admin "$PVP_DATABASE" <<SQL
+SELECT r.creation_vocation, r.starter_template_revision, p.projection_revision
+FROM game_character_roots r
+JOIN game_character_account_projections p USING (account_id)
+WHERE r.world_id = '$PVP_WORLD_ID' AND r.account_id IN ('${PVP_ACCOUNT_IDS[0]}', '${PVP_ACCOUNT_IDS[1]}')
+ORDER BY r.account_id;
+SQL
+)"
+  [[ "$births" == "knight|${INTERPRETATION[3]}|1"$'\n'"sorcerer|${INTERPRETATION[3]}|1" ]] || pvp_fail "PvP bootstrap vocation, starter or account projection readback"
+  evidence "pvp_characters=2 world=$PVP_WORLD_ID source=platform_intents path=pvp_control_socket retry=idempotent contract=4 starter=${INTERPRETATION[3]} births=knight,sorcerer projection_revision=1"
+}
+
+pvp_world_shutdown() { # the Open PvP World's node ends cleanly before the lifecycle probes
+  sudo kill -TERM "$PVP_NODE_PID"
+  for _ in $(seq 1 30); do sudo kill -0 "$PVP_NODE_PID" 2>/dev/null || break; sleep 1; done
+  grep -q "event=shutdown .*state=complete" "$WORK/pvp-node.log" || pvp_fail "PvP node did not shut down cleanly"
+  [[ ! -e "$PVP_BASE/run/control.sock" ]] || fail "PvP socket left after graceful shutdown"
+  evidence "pvp_world shutdown=complete socket=removed"
+}
+
 if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
   game_platform_identity
   exit "$?"
@@ -1294,12 +1601,30 @@ if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
 else
 stage operator_setup -- operator_setup
 stage configuration_negatives operator_setup -- configuration_negatives
-stage node_assigned_ready operator_setup -- node_assigned_ready
+assignment_needs=operator_setup
+if [[ "$NODE_BOOT_D150_LEGACY" == 1 ]]; then
+  stage legacy_d150_seed operator_setup -- legacy_d150_seed
+  assignment_needs=legacy_d150_seed
+fi
+stage node_assigned_ready "$assignment_needs" -- node_assigned_ready
 stage control_socket_peer node_assigned_ready -- control_socket_peer
-stage character_bootstrap node_assigned_ready -- character_bootstrap
-stage "$seam_stage_name" character_bootstrap -- seam_stages
+if [[ "$NODE_BOOT_D150_LEGACY" == 1 ]]; then
+  stage legacy_d150_register_starter node_assigned_ready -- legacy_d150_register_starter
+  stage "$seam_stage_name" legacy_d150_register_starter -- seam_stages
+else
+  stage character_bootstrap node_assigned_ready -- character_bootstrap
+  if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+    # MP01's PvP rows report this World's absence themselves, so the seam stage does not need it.
+    stage pvp_world_ready node_assigned_ready -- pvp_world_ready
+    stage pvp_character_bootstrap pvp_world_ready -- pvp_character_bootstrap
+  fi
+  stage "$seam_stage_name" character_bootstrap -- seam_stages
+fi
 fi
 if [[ "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
+if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
+  stage pvp_world_shutdown pvp_world_ready -- pvp_world_shutdown
+fi
 stage graceful_shutdown node_assigned_ready -- graceful_shutdown
 stage restart_without_supersession graceful_shutdown -- restart_without_supersession
 stage superseding_replacement graceful_shutdown -- superseding_replacement
@@ -1311,6 +1636,7 @@ elif [[ ${STATUS[node_assigned_ready]:-PASS} == PASS ]]; then
     # The node was started inside a stage subshell; its pid is in $VARS.
     # shellcheck source=/dev/null
     NODE_PID="$(source "$VARS"; printf '%s' "${NODE_PID:-}")"
+    PVP_GAME_PORT="$(source "$VARS"; printf '%s' "$PVP_GAME_PORT")"
     [[ -z "$NODE_PID" ]] || save_reuse_state
   fi
   ORDER+=(stack_kept)
@@ -1328,7 +1654,11 @@ for name in "${ORDER[@]}"; do
 done
 unset FRESH_SEED_HEX RECOVERY_SEED_HEX
 if [[ $failures == 0 ]]; then
-  result=NODE_BOOT_PASS
+  if [[ "$NODE_BOOT_D150_LEGACY" == 1 ]]; then
+    result=NODE_BOOT_D150_PASS
+  else
+    result=NODE_BOOT_PASS
+  fi
 elif [[ $failures == 1 && ${STATUS[stack_kept]:-} == SKIP* ]]; then
   # Every stage that ran passed and the stack stays up; still not a qualification pass.
   result=NODE_BOOT_PARTIAL
