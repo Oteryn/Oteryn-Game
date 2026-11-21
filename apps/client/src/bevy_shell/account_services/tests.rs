@@ -585,6 +585,13 @@ fn commerce_cancel_invalidates_queued_confirmation() -> TestResult {
             Ok(())
         })();
         cancellation.cancel();
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while !worker.is_finished() {
+            if Instant::now() >= deadline {
+                return Err("account presenter shutdown timed out".into());
+            }
+            thread::yield_now();
+        }
         let _ = worker.join().map_err(|_| "account presenter")?;
         result
     })
