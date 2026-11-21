@@ -226,6 +226,33 @@ fn premium_grant_renewal_and_expiry_keep_soul_without_refilling() {
 }
 
 #[test]
+fn premium_expiry_drops_wheel_maxima_before_a_heal_can_use_them() {
+    let mut state = PlayerSpellState::new(druid(60), 0, 0).expect("state");
+    state
+        .apply_owner_promotion_transition(true, true, Some(100))
+        .expect("grant");
+    // Workshop +5 Health and Mana, installed while Premium is current.
+    state.apply_wheel_maximum_bonus(5, 5).expect("wheel maxima");
+    state.restore_saved_vitals(190, 95);
+    assert_eq!(
+        (state.vitals().max_health, state.vitals().max_mana),
+        (190, 95)
+    );
+    assert!(state.expire_owner_premium(100).expect("expiry"));
+    assert_eq!(
+        (state.vitals().max_health, state.vitals().max_mana),
+        (185, 90)
+    );
+    assert_eq!((state.health, state.mana), (185, 90));
+    state.health = 180;
+    state.apply_batch_heal(100).expect("heal");
+    assert_eq!(
+        state.health, 185,
+        "a heal stays within the cap without the Wheel bonus"
+    );
+}
+
+#[test]
 fn non_promoted_premium_keeps_the_base_soul_maximum() {
     let mut state = PlayerSpellState::new(druid(8), 0, 0).expect("state");
     state

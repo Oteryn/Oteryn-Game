@@ -5,7 +5,7 @@ This PR repairs three reproduced numeric defects. The eight-vessel layout, four 
 Conviction Mastery perks, 20 additional supreme modifiers and Sorcerer elemental-state
 integration remain gaps. Native combat, paid-operation and reconnect acceptance is incomplete.
 
-Working PR: [Oteryn/Oteryn-Game#3181](https://github.com/Oteryn/Oteryn-Game/pull/3181).
+Working PR: [Oteryn/Oteryn-Game#3363](https://github.com/Oteryn/Oteryn-Game/pull/3363).
 Starting revision: `ce45063507c22a11e0db7e9c0ff86dacbe6ff834`.
 The target is the **13 November 2026 test build**, not older production or changes
 announced for a later update.

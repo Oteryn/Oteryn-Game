@@ -8,8 +8,8 @@ mode: AUDIT
 status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: chatgpt/wheel-testserver-audit-20261113
-pr: 3181
+branch: claude/happy-davinci-ijz3wy-wheel
+pr: 3363
 base_sha: ce45063507c22a11e0db7e9c0ff86dacbe6ff834
 head_sha: null
 final_head_sha: null
