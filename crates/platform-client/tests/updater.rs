@@ -62,6 +62,12 @@ fn signed_origin_checks_versions_downloads_and_refuses_corruption()
   let _=std::fs::remove_dir_all(&folder);std::fs::create_dir_all(&folder)?;
   let requests=Arc::new(std::sync::Mutex::new(Vec::new()));
   let client=UpdateClient::check_with_transport(UpdateConfig::new("stable",root,"windows","x86_64")?,&folder,Fixture{corrupted:false,requests:requests.clone()}).await?;
+  {
+    let requests = requests.lock().map_err(|_| "update fixture requests lock")?;
+    let base = "https://api.oteryn.com/updates/stable/";
+    assert!(requests.iter().any(|url| url == &format!("{base}metadata/timestamp.json")));
+    assert!(requests.iter().any(|url| url.starts_with(&format!("{base}targets/")) && url.ends_with("channels/stable/policy-v1.json")));
+  }
   assert_eq!(client.policy.current_release_id,"rel-a");assert_eq!(client.length,7);
   assert_eq!(client.require_minimum(Some(2)), Err(oteryn_platform_client::updates::UpdateError::Unavailable));
   assert_eq!(client.require_minimum(Some(1)), Ok(()));
