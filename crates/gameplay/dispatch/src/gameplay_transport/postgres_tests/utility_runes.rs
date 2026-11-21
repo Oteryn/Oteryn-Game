@@ -6,11 +6,11 @@
 // Creation fees are separate: docs/reference/spells/r22-audit/tibiopedia/tibiopedia-spell-facts-2026-10-02.json:928
 // (Convince) and :1988 (Animate). Source-qualified profiles retain the two-summon
 // cap (both spell.json:75) and movable real-corpse rules (Animate spell.json:89).
-use super::death_ml_loss_composed::{
+use super::death_ml_loss_composed_fixtures::{
     current_fence, production_generation_with_pin, production_generation_with_source,
 };
 use super::fixture::{Harness, debug, id, join_two, run};
-use super::item_look::{large_stack, read_frame, seed_main_backpack};
+use super::item_look_fixtures::{large_stack, read_frame, seed_main_backpack};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::character_build::{
     BuildCause, BuildChangeRequest, BuildCommitOutcome, BuildOccurrence, DurableBuildState,

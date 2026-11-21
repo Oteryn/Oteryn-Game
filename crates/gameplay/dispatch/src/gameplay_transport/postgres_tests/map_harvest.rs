@@ -1,6 +1,6 @@
 //! W19: map harvesting uses the production object USE path and one durable map/value commit.
 use super::fixture::{Harness, debug, id, run};
-use super::item_craft::exchange;
+use super::item_craft_fixtures::exchange;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
@@ -287,7 +287,7 @@ fn scenario(before: u16, yields: bool, source: Option<ThawingSource>) -> TestRes
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-        super::item_look::seed_main_backpack(&harness, &[]).await?;
+        super::item_look_fixtures::seed_main_backpack(&harness, &[]).await?;
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -790,7 +790,7 @@ async fn exchange_daily_flower(
     let client_task = async {
         let mut handle = None;
         loop {
-            let raw = super::item_look::read_frame(&mut client).await?;
+            let raw = super::item_look_fixtures::read_frame(&mut client).await?;
             let envelope = crate::foundation::decode_wire_envelope(&raw)?;
             if envelope.message_type() == crate::foundation::MessageType::SnapshotChunk {
                 let (_, domains) =
@@ -845,7 +845,7 @@ async fn exchange_daily_flower(
         client.write_all(&frame).await?;
         client.shutdown().await?;
         loop {
-            let raw = super::item_look::read_frame(&mut client).await?;
+            let raw = super::item_look_fixtures::read_frame(&mut client).await?;
             let envelope = crate::foundation::decode_wire_envelope(&raw)?;
             if envelope.message_type() == crate::foundation::MessageType::CommandResult {
                 let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
@@ -869,7 +869,7 @@ async fn exchange_daily_flower(
     let mut client_task = std::pin::pin!(client_task);
     let mut end = None;
     let mut result = None;
-    let mut maintenance = std::pin::pin!(super::item_craft::maintain_ready(owner));
+    let mut maintenance = std::pin::pin!(super::item_craft_fixtures::maintain_ready(owner));
     tokio::time::timeout(
         std::time::Duration::from_secs(30),
         std::future::poll_fn(|context| {

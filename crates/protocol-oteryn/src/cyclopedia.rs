@@ -80,7 +80,20 @@ pub struct MapResult {
     /// Only unfound points within the requesting character's same-floor viewport.
     pub visible: Vec<(u16, u16, i8)>,
 }
+/// Encode the retained Character receipt format.
 pub fn encode_result(result: &MapResult) -> Result<Vec<u8>, MapWireError> {
+    encode_result_in(result, -15..=0)
+}
+
+/// Encode Global floors for the client after projecting the retained receipt.
+pub fn encode_wire_result(result: &MapResult) -> Result<Vec<u8>, MapWireError> {
+    encode_result_in(result, 0..=15)
+}
+
+fn encode_result_in(
+    result: &MapResult,
+    floors: std::ops::RangeInclusive<i8>,
+) -> Result<Vec<u8>, MapWireError> {
     if result.code > 7
         || result.revision == 0
         || result.found > 7
@@ -94,7 +107,7 @@ pub fn encode_result(result: &MapResult) -> Result<Vec<u8>, MapWireError> {
         .visible
         .iter()
         .enumerate()
-        .any(|(i, p)| !(-15..=0).contains(&p.2) || result.visible[..i].contains(p))
+        .any(|(i, p)| !floors.contains(&p.2) || result.visible[..i].contains(p))
     {
         return Err(MapWireError);
     }
@@ -115,8 +128,19 @@ pub fn encode_result(result: &MapResult) -> Result<Vec<u8>, MapWireError> {
     }
     Ok(bytes)
 }
-/// Validate retained results again before the transport emits persisted bytes.
 pub fn decode_result(bytes: &[u8]) -> Result<MapResult, MapWireError> {
+    decode_result_in(bytes, 0..=15)
+}
+
+/// Read a retained receipt without changing its stored floor encoding.
+pub fn decode_retained_result(bytes: &[u8]) -> Result<MapResult, MapWireError> {
+    decode_result_in(bytes, -15..=0)
+}
+
+fn decode_result_in(
+    bytes: &[u8],
+    floors: std::ops::RangeInclusive<i8>,
+) -> Result<MapResult, MapWireError> {
     if !(30..=MAX_RESULT_BYTES).contains(&bytes.len()) {
         return Err(MapWireError);
     }
@@ -139,7 +163,7 @@ pub fn decode_result(bytes: &[u8]) -> Result<MapResult, MapWireError> {
             u16::from_le_bytes([point[2], point[3]]),
             point[4] as i8,
         );
-        if !(-15..=0).contains(&pos.2) || visible.contains(&pos) {
+        if !floors.contains(&pos.2) || visible.contains(&pos) {
             return Err(MapWireError);
         }
         visible.push(pos);
@@ -155,7 +179,7 @@ pub fn decode_result(bytes: &[u8]) -> Result<MapResult, MapWireError> {
         improved: bytes[28] == 2,
         visible,
     };
-    encode_result(&r)?;
+    encode_result_in(&r, floors)?;
     Ok(r)
 }
 
@@ -190,18 +214,18 @@ mod tests {
             pool: 0,
             epoch: 0,
             improved: false,
-            visible: (1..=8).map(|x| (x, 2, -7)).collect(),
+            visible: (1..=8).map(|x| (x, 2, 7)).collect(),
         };
-        assert!(encode_result(&r).is_ok_and(|bytes| bytes.len() <= MAX_RESULT_BYTES));
-        let bytes = encode_result(&r)
+        assert!(encode_wire_result(&r).is_ok_and(|bytes| bytes.len() <= MAX_RESULT_BYTES));
+        let bytes = encode_wire_result(&r)
             .map_err(|_| ())
             .expect("valid bounded result");
         assert_eq!(decode_result(&bytes), Ok(r.clone()));
         for length in 0..bytes.len() {
             assert!(decode_result(&bytes[..length]).is_err());
         }
-        r.visible.push((1, 2, -7));
-        assert!(encode_result(&r).is_err());
+        r.visible.push((1, 2, 7));
+        assert!(encode_wire_result(&r).is_err());
     }
 }
 

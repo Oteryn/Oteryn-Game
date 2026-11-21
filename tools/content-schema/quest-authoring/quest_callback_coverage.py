@@ -267,6 +267,302 @@ QUALIFIED.update({FALCON_PREFIX + suffix:
     for suffix in FALCON_SOURCES})
 
 
+QUALIFIED.update({
+    'oteryn:reward-claim.kv.ringquest1':
+        'quest_catalogue_chests_qchk1_ring_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.kv.ringquest2':
+        'quest_catalogue_chests_qchk1_ring_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.key.id0909':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.asuras.black_skull':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.asuras.ebony_piece':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.asuras.eye_key':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.asuras.lotus_key':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.asuras.peacock_ballad':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.asuras.scribbled_notes':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.asuras.silver_chimes':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.asuras.skeleton_notes':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.asuras.strand_hair':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.mo_ta.bony_rod':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.mo_ta.broken_compass':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.mo_ta.sample_blood':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.small_islands.fishing':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.small_islands.hawser':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.small_islands.parchment':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.small_islands.sapphire':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.small_islands.shovel':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+})
+
+
+QUALIFIED.update({
+    'oteryn:reward-claim.kv.bloodkiss_flower':
+        'quest_catalogue_chests_qchk2_shadows_of_yalahar_use_replay_and_refusal',
+    'oteryn:reward-claim.kv.dark_essence':
+        'quest_catalogue_chests_qchk2_shadows_of_yalahar_use_replay_and_refusal',
+    'oteryn:reward-claim.kv.deep_crystal':
+        'quest_catalogue_chests_qchk2_shadows_of_yalahar_use_replay_and_refusal',
+    'oteryn:reward-claim.kv.golem_blueprint':
+        'quest_catalogue_chests_qchk2_shadows_of_yalahar_use_replay_and_refusal',
+    'oteryn:reward-claim.kv.golem_head':
+        'quest_catalogue_chests_qchk2_shadows_of_yalahar_use_replay_and_refusal',
+    'oteryn:reward-claim.kv.golem_wrench':
+        'quest_catalogue_chests_qchk2_shadows_of_yalahar_use_replay_and_refusal',
+    'oteryn:reward-claim.kv.old_power_core':
+        'quest_catalogue_chests_qchk2_shadows_of_yalahar_use_replay_and_refusal',
+    'oteryn:reward-claim.kv.shadow_orb':
+        'quest_catalogue_chests_qchk2_shadows_of_yalahar_use_replay_and_refusal',
+    'oteryn:reward-claim.kv.stabilizer':
+        'quest_catalogue_chests_qchk2_shadows_of_yalahar_use_replay_and_refusal',
+    'oteryn:reward-claim.kv.worm_queen_tooth':
+        'quest_catalogue_chests_qchk2_shadows_of_yalahar_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u8_1.secret_service.ahx17_l89':
+        'quest_catalogue_chests_qchk2_secret_service_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u8_1.secret_service.book':
+        'quest_catalogue_chests_qchk2_secret_service_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u8_1.secret_service.building_plans':
+        'quest_catalogue_chests_qchk2_secret_service_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u8_1.secret_service.family_signet_ring':
+        'quest_catalogue_chests_qchk2_secret_service_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u8_1.secret_service.intelligence_reports':
+        'quest_catalogue_chests_qchk2_secret_service_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u8_1.secret_service.lottery_ticket':
+        'quest_catalogue_chests_qchk2_secret_service_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u8_1.secret_service.magic_spellbook':
+        'quest_catalogue_chests_qchk2_secret_service_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u8_1.secret_service.poem_scroll':
+        'quest_catalogue_chests_qchk2_secret_service_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u8_1.secret_service.rotten_heart_of_tree':
+        'quest_catalogue_chests_qchk2_secret_service_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u8_1.secret_service.suspicious_documents':
+        'quest_catalogue_chests_qchk2_secret_service_use_replay_and_refusal',
+})
+
+
+QUALIFIED.update({
+    "oteryn:reward-claim.kv.steelhelmet2":
+        "quest_catalogue_chests_qchk3_steel_helmet_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.steelhelmet3":
+        "quest_catalogue_chests_qchk3_steel_helmet_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.steelhelmet4":
+        "quest_catalogue_chests_qchk3_steel_helmet_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.key.id3700":
+        "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_6.explorer_society.books.cyclops":
+        "quest_catalogue_chests_qchk3_explorer_society_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_6.explorer_society.books.hengis":
+        "quest_catalogue_chests_qchk3_explorer_society_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.gold_coin":
+        "quest_catalogue_chests_qchk3_explorer_society_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.hammer":
+        "quest_catalogue_chests_qchk3_explorer_society_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.talon":
+        "quest_catalogue_chests_qchk3_explorer_society_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag1":
+        "quest_catalogue_chests_qchk3_explorer_society_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag2":
+        "quest_catalogue_chests_qchk3_explorer_society_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.chest_tible":
+        "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.corpse_book":
+        "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.corpse_pirate_bp":
+        "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_bp":
+        "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_frozen_starlight":
+        "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_platinum_coins":
+        "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_soft_boots":
+        "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_staff_avenger_arbalest":
+        "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_stuffed":
+        "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+})
+
+
+QUALIFIED.update({
+    claim: test
+    for test, claims in (
+        ("quest_catalogue_chests_qchk5_newhaven_legion_helmet_use_replay_and_refusal", (
+            "oteryn:reward-claim.kv.legiondawnport",
+        )),
+        ("quest_catalogue_chests_qchk5_the_queen_of_the_banshees_use_replay_and_refusal", (
+            "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.boots_of_haste",
+            "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.giant_sword",
+            "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.platinum_coin",
+            "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.stealth_ring",
+            "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.tower_shield",
+        )),
+        ("quest_catalogue_chests_qchk5_the_thieves_guild_use_replay_and_refusal", (
+            "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.compromising_letter",
+            "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.golden_goblet",
+            "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_book",
+            "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_end",
+            "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_oasis",
+        )),
+        ("quest_catalogue_chests_qchk5_to_blind_the_enemy_use_replay_and_refusal", (
+            "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp1",
+            "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp2",
+            "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.dwarven_shield",
+            "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.morning_star",
+        )),
+        ("quest_catalogue_chests_qchk5_tomes_of_knowledge_use_replay_and_refusal", (
+            "oteryn:reward-claim.quest.u8_54.tomes_of_knowledge.chest_tome_of_knowledge1",
+            "oteryn:reward-claim.quest.u8_54.tomes_of_knowledge.chest_tome_of_knowledge2",
+            "oteryn:reward-claim.quest.u8_54.tomes_of_knowledge.chest_tome_of_knowledge3",
+            "oteryn:reward-claim.quest.u8_54.tomes_of_knowledge.chest_tome_of_knowledge4",
+            "oteryn:reward-claim.quest.u8_54.tomes_of_knowledge.top_tower",
+        )),
+    )
+    for claim in claims
+})
+
+
+QUALIFIED.update({
+    "oteryn:reward-claim.quest.key.id3301":
+        "quest_catalogue_chests_qchk4_outlaw_camp_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.key.id3302":
+        "quest_catalogue_chests_qchk4_outlaw_camp_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.key.id3303":
+        "quest_catalogue_chests_qchk4_outlaw_camp_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.key.id3304":
+        "quest_catalogue_chests_qchk4_outlaw_camp_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.key.id3899":
+        "quest_catalogue_chests_qchk4_paradox_tower_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_24.the_paradox_tower.reward.egg":
+        "quest_catalogue_chests_qchk4_paradox_tower_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_24.the_paradox_tower.reward.gold":
+        "quest_catalogue_chests_qchk4_paradox_tower_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_24.the_paradox_tower.reward.talon":
+        "quest_catalogue_chests_qchk4_paradox_tower_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_24.the_paradox_tower.reward.wand":
+        "quest_catalogue_chests_qchk4_paradox_tower_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.bpthe_undeath_stare":
+        "quest_catalogue_chests_qchk4_beregar_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.corpse_gold_ingot":
+        "quest_catalogue_chests_qchk4_beregar_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.corpse_rusted_armor":
+        "quest_catalogue_chests_qchk4_beregar_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.corpse_small_topazes":
+        "quest_catalogue_chests_qchk4_beregar_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.firewalker_boots":
+        "quest_catalogue_chests_qchk4_beregar_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.prison_cell_key":
+        "quest_catalogue_chests_qchk4_beregar_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_54.the_new_frontier.chest_tome_of_knowledge1":
+        "quest_catalogue_chests_qchk4_new_frontier_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_54.the_new_frontier.chest_tome_of_knowledge2":
+        "quest_catalogue_chests_qchk4_new_frontier_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_54.the_new_frontier.reward.gold_ingot":
+        "quest_catalogue_chests_qchk4_new_frontier_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_54.the_new_frontier.reward.pig_bank":
+        "quest_catalogue_chests_qchk4_new_frontier_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_54.the_new_frontier.reward.potions":
+        "quest_catalogue_chests_qchk4_new_frontier_use_replay_and_refusal",
+})
+
+
+QUALIFIED.update({
+    "oteryn:reward-claim.kv.bananafree":
+        "quest_catalogue_chests_qchk6_studded_shield_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.bananapremium":
+        "quest_catalogue_chests_qchk6_studded_shield_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.lighthouse1":
+        "quest_catalogue_chests_qchk6_thais_lighthouse_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.lighthouse2":
+        "quest_catalogue_chests_qchk6_thais_lighthouse_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_6.old_parchment":
+        "quest_catalogue_chests_qchk6_the_ape_city_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_6.whisper_moss":
+        "quest_catalogue_chests_qchk6_the_ape_city_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_chest":
+        "quest_catalogue_chests_qchk6_the_ice_islands_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_skeleton":
+        "quest_catalogue_chests_qchk6_the_ice_islands_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_2.the_inquisition_quest.reward_room_text":
+        "quest_catalogue_chests_qchk6_the_inquisition_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_2.the_inquisition_quest.witches_grimoire":
+        "quest_catalogue_chests_qchk6_the_inquisition_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u11_40.threatened_dreams.mission01.poacher_chest":
+        "quest_catalogue_chests_qchk6_threatened_dreams_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u11_40.threatened_dreams.mission02.dark_moon_mirror":
+        "quest_catalogue_chests_qchk6_threatened_dreams_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.timering1":
+        "quest_catalogue_chests_qchk6_time_ring_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.timering2":
+        "quest_catalogue_chests_qchk6_time_ring_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.vampireshield1":
+        "quest_catalogue_chests_qchk6_vampire_shield_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.vampireshield2":
+        "quest_catalogue_chests_qchk6_vampire_shield_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.vampireshield3":
+        "quest_catalogue_chests_qchk6_vampire_shield_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_6.wrath_of_the_emperor.chest100_platinum_coins":
+        "quest_catalogue_chests_qchk6_wrath_of_the_emperor_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_6.wrath_of_the_emperor.chest_bag":
+        "quest_catalogue_chests_qchk6_wrath_of_the_emperor_use_replay_and_refusal",
+})
+
+
+QUALIFIED.update({
+    "oteryn:reward-claim.kv.powerring1": "quest_catalogue_chests_qchk7_power_ring_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.rookgaard05_brown_mushrooms": "quest_catalogue_chests_qchk7_unlinked_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.scalearmor": "quest_catalogue_chests_qchk7_scale_armor_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.shamantreasure": "quest_catalogue_chests_qchk7_shaman_treasure_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.shortswordbook": "quest_catalogue_chests_qchk7_short_sword_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.silverbrooch": "quest_catalogue_chests_qchk7_silver_brooch_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.witch_house_quest": "quest_catalogue_chests_qchk7_unlinked_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_3.serpentine_tower.white_pearl": "quest_catalogue_chests_qchk7_serpentine_tower_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_8.oriental_outfits.coral_comb": "quest_catalogue_chests_qchk7_oriental_outfits_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_1.what_afoolish_quest.bag_book_knife": "quest_catalogue_chests_qchk7_what_a_foolish_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_1.what_afoolish_quest.magical_watch": "quest_catalogue_chests_qchk7_what_a_foolish_use_replay_and_refusal",
+})
+
+QUALIFIED.update({
+    "oteryn:reward-claim.kv.sixrubies": "quest_catalogue_chests_qchk8_six_rubies_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.spikesword": "quest_catalogue_chests_qchk8_spike_sword_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.stealhring2": "quest_catalogue_chests_qchk8_stealth_ring_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.throwingstar": "quest_catalogue_chests_qchk8_throwing_star_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_24.family_brooch.brooch": "quest_catalogue_chests_qchk8_the_white_raven_monastery_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_8.the_shattered_isles.dragahs_spellbook": "quest_catalogue_chests_qchk8_the_shattered_isles_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_1.strong_potions.reward": "quest_catalogue_chests_qchk8_strong_potions_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_1.to_outfox_afox_quest.mining_helmet": "quest_catalogue_chests_qchk8_to_outfox_a_fox_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_2.vampire_hunter_quest.blood_skull": "quest_catalogue_chests_qchk8_vampire_hunter_use_replay_and_refusal",
+})
+
+
+QUALIFIED.update({
+    "oteryn:reward-claim.kv.honeyflower":
+        "quest_catalogue_chests_qchk9_studded_legs_quest_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.weddingring2":
+        "quest_catalogue_chests_qchk9_wedding_ring_quest_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u15_24.targuna.mana_potions_chest":
+        "quest_catalogue_chests_qchk9_targuna_quest_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.tyrsung":
+        "quest_catalogue_chests_qchk9_skeleton_decoration_quest_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_1.waterfall_quest":
+        "quest_catalogue_chests_qchk9_waterfall_quest_use_replay_and_refusal",
+})
+
 def falcon_supported(definition):
     key = definition["identity"]["key"]
     expected = FALCON_SOURCES.get(key.removeprefix(FALCON_PREFIX)) if key.startswith(FALCON_PREFIX) else None

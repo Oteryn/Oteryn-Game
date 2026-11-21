@@ -1468,7 +1468,7 @@ async fn observe_container_with_house_capacity_inner(
         browse_parent = Some(ItemKey::BrowseField {
             x: i32::from(cell.x),
             y: i32::from(cell.y),
-            floor: i16::from(cell.floor),
+            floor: -i16::from(cell.floor),
         });
         let reachable = in_reach(
             at,

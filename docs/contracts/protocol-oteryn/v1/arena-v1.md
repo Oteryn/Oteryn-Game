@@ -118,7 +118,7 @@ be shown during preparation and between warnings; it does not imply an active
 tile hazard. Nested IDs allocate no new command, capability or domain.
 Each entry has kind (field1:5 Lava,6 Beam,7 Tanked,8 Sorrow,9 Roots), absolute
 server expiry (field2) and repeated position messages (field3). Positions have
-mandatory uint32 x/y fields1/2 and native floor+15 in field3 (-15..15). Tile
+mandatory uint32 x/y fields1/2 and Global z in field 3 (0..15, ground 7). Tile
 warnings have exactly100 unique positions per kind; seeds have one. Cross-kind
 overlap is valid. Expiry must follow observation by at most6seconds. A snapshot with no entries and no selected pair omits13, preserving existing bytes; the complete Drome reply is bounded
 to8192bytes and saved before its immutable command receipt is committed.

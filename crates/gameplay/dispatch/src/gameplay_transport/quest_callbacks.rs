@@ -9,11 +9,13 @@ mod conditional_cells;
 use admission::{character_fence_required, stateless_observation_required};
 mod clear_area;
 mod committed_copy;
+mod court_warlock;
 #[path = "daily_world_gates.rs"]
 mod daily_world_gates;
 mod dreamer_carrot;
 mod effects;
 mod encounter;
+pub(super) use encounter::room_contains;
 mod execute;
 mod goblin_elevator;
 mod ground_stack;
@@ -100,6 +102,7 @@ pub(super) struct PendingCallbacks {
     pub(super) elemental: std::sync::Mutex<std::collections::HashMap<[u8; 16], ExactActorRef>>,
     personal: personal_encounter::Cohorts,
     timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
+    encounters: std::sync::Mutex<Vec<encounter::EncounterVisit>>,
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
     carrot_refusal:
         std::sync::Mutex<Option<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>>,

@@ -158,7 +158,7 @@ fn pin(digest: &str) -> Value {
         "world_schema_version": "reference-schema-v1",
         "content_revision": reviewed_revision(),
         "production": false,
-        "entry_start": {"x": 32369, "y": 32238, "floor": -7},
+        "entry_start": {"x": 32369, "y": 32238, "floor": 7},
     })
 }
 
@@ -314,6 +314,7 @@ fn inputs_digest_takes_the_cargo_inputs_of_the_world_crates_only() {
     let edit = |path: &str, from: &str, to: &str| {
         let text = fs::read_to_string(dir.path(path)).unwrap();
         assert_eq!(text.matches(from).count(), 1, "{path}: {from}");
+        assert_ne!(from, to, "{path}: {from}");
         fs::write(dir.path(path), text.replacen(from, to, 1)).unwrap();
         git(&dir.0, &["add", "-A"]);
     };
@@ -322,6 +323,27 @@ fn inputs_digest_takes_the_cargo_inputs_of_the_world_crates_only() {
             &dir.0,
             &["checkout", "-q", "HEAD", "--", "Cargo.toml", "Cargo.lock"],
         )
+    };
+    // Read the current versions and checksums from the copied workspace. Dependency updates
+    // must not invalidate the mutations before the digest comparison can run.
+    let lock = fs::read_to_string(dir.path("Cargo.lock")).unwrap();
+    let lock_field = |name: &str, field: &str| {
+        let package = format!("name = \"{name}\"\n");
+        lock.split("\n[[package]]\n")
+            .find(|entry| entry.starts_with(&package))
+            .expect("locked package")
+            .lines()
+            .find(|line| line.starts_with(field))
+            .expect("locked package field")
+    };
+    let manifest = fs::read_to_string(dir.path("Cargo.toml")).unwrap();
+    let workspace_version = |prefix: &str| {
+        let value = manifest
+            .lines()
+            .find(|line| line.starts_with(prefix))
+            .expect("workspace dependency");
+        let end = value[prefix.len()..].find('"').expect("version end");
+        &value[..prefix.len() + end + 1]
     };
 
     // An unrelated workspace member, its new lock package, an unrelated dependency bump in the
@@ -339,13 +361,13 @@ fn inputs_digest_takes_the_cargo_inputs_of_the_world_crates_only() {
     );
     edit(
         "Cargo.lock",
-        "8774e05a7d0de114588e6a28fe7e71694b82614ed569d86d8b389dfbc98b8ad8",
-        &"9".repeat(64),
+        lock_field("rcgen", "checksum = "),
+        &format!("checksum = \"{}\"", "9".repeat(64)),
     );
     edit(
         "Cargo.toml",
-        "rcgen = { version = \"=0.14.10\"",
-        "rcgen = { version = \"=0.14.11\"",
+        workspace_version("rcgen = { version = \"="),
+        "rcgen = { version = \"=999.0.0\"",
     );
     edit(
         "Cargo.toml",
@@ -358,21 +380,22 @@ fn inputs_digest_takes_the_cargo_inputs_of_the_world_crates_only() {
 
     // The checksum or version of a package in the closure, a World workspace dependency and a
     // profile each move it.
+    let zstd_lock_version = format!("name = \"zstd\"\n{}", lock_field("zstd", "version = "));
     for (path, from, to) in [
         (
             "Cargo.lock",
-            "db3ae9bf90af6e40197bef767eeefc46ad6397420fe873830bd85e5fbbfb3c70",
-            "0".repeat(64),
+            lock_field("zstd", "checksum = "),
+            format!("checksum = \"{}\"", "0".repeat(64)),
         ),
         (
             "Cargo.lock",
-            "name = \"zstd\"\nversion = \"0.14.3\"",
-            "name = \"zstd\"\nversion = \"0.14.4\"".to_owned(),
+            zstd_lock_version.as_str(),
+            "name = \"zstd\"\nversion = \"999.0.0\"".to_owned(),
         ),
         (
             "Cargo.toml",
-            "zstd = { version = \"=0.14.3\"",
-            "zstd = { version = \"=0.14.4\"".to_owned(),
+            workspace_version("zstd = { version = \"="),
+            "zstd = { version = \"=999.0.0\"".to_owned(),
         ),
         (
             "Cargo.toml",
@@ -421,10 +444,11 @@ fn pin_check_accepts_the_reviewed_pin_and_refuses_every_drift() {
     let good = pin(&digest);
     dir.write_json(&dir.pin_file(), &good);
 
-    // Refresh migrates v1 without changing bundle identity or the reviewed entry cell.
+    // Refresh migrates v1 and its signed floor while preserving the bundle identity and entry cell.
     let mut legacy = good.clone();
     legacy["schema"] = json!("OTERYN_WORLD_PIN/v1");
     legacy["inputs_digest"] = json!("0".repeat(64));
+    legacy["entry_start"]["floor"] = json!(-7);
     dir.write_json(&dir.pin_file(), &legacy);
     let refresh = Command::new(BIN)
         .arg("pin-refresh")
@@ -433,6 +457,14 @@ fn pin_check_accepts_the_reviewed_pin_and_refuses_every_drift() {
         .expect("compiler runs");
     assert!(refresh.status.success(), "{}", stderr(&refresh));
     assert_eq!(dir.json(&dir.pin_file()), good);
+    let topology = fs::read_to_string(dir.path("deploy/synology-game/preprod-topology.toml"))
+        .expect("refreshed topology");
+    assert_eq!(
+        topology
+            .lines()
+            .find(|line| line.starts_with("start_floor = ")),
+        Some("start_floor = 7")
+    );
     let report: Value = serde_json::from_slice(&refresh.stdout).unwrap();
     assert_eq!(report["pins"][0]["digest"], digest);
 
@@ -471,6 +503,7 @@ fn pin_check_accepts_the_reviewed_pin_and_refuses_every_drift() {
     // `blocks_movement` blocks.
     let mut cells = vec![
         (5, 5, 0),
+        (32369, 32238, -7),
         (10228, 10032, 99),
         (34000, 33000, 0),
         (10228, 10032, 0),
@@ -488,7 +521,7 @@ fn pin_check_accepts_the_reviewed_pin_and_refuses_every_drift() {
                 .iter()
                 .flatten()
                 .find(|t| t.kind == TerrainKind::Ground);
-            let cell = (tile.x, tile.y, sector.floor);
+            let cell = (tile.x, tile.y, -sector.floor);
             if blocked.is_none()
                 && (terrains
                     .iter()
@@ -532,7 +565,7 @@ fn pin_check_accepts_the_reviewed_pin_and_refuses_every_drift() {
         assert!(
             !out.status.success() && stderr(&out).contains("entry_start"),
             "{x} {y} {floor} (inside bounds: {}): {}",
-            extent.contains(x, y, floor),
+            extent.contains(x, y, -floor),
             stderr(&out)
         );
     }

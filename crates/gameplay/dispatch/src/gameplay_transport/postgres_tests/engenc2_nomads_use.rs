@@ -47,7 +47,7 @@ fn scenario(mode: Scenario) -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run("engenc2-nomads-use", move || {
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run("engenc2-nomads-use", move || {
         run(async |admin| {
             reset();
             let h = Harness::create_with_admission_seed(admin, "engenc2_nomads_use", true, false)
@@ -59,7 +59,7 @@ fn scenario(mode: Scenario) -> TestResult {
                 .ok_or("production window")?;
             let mut deps = Dependencies::new()?;
             let (controller, activated) =
-                super::death_ml_loss_composed::production_generation_with_pin(
+                super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                     deps.admitted.world_id,
                     "content-1",
                 )?;
@@ -70,9 +70,9 @@ fn scenario(mode: Scenario) -> TestResult {
             } else {
                 (33216, 32856)
             };
-            let world = super::l6_world_pickups::native_crop(
+            let world = super::l6_world_pickups_fixtures::native_crop(
                 native,
-                super::l6_world_pickups::NativeCrop {
+                super::l6_world_pickups_fixtures::NativeCrop {
                     bytes: include_bytes!(concat!(
                         env!("CARGO_MANIFEST_DIR"),
                         "/../../../content/world/placements/region-z09-x129-y128.b3"
@@ -80,7 +80,7 @@ fn scenario(mode: Scenario) -> TestResult {
                     region: (9, 129, 128),
                     bounds: (33213, 32852, 33220, 32859),
                     start,
-                    expected: vec![super::l6_world_pickups::ExpectedTile {
+                    expected: vec![super::l6_world_pickups_fixtures::ExpectedTile {
                         position: (33216, 32855),
                         ids: vec![7358, 1744],
                         counted_entry: None,
@@ -295,7 +295,7 @@ fn scenario(mode: Scenario) -> TestResult {
                     .find(|tile| {
                         tile.position.x == 33218
                             && tile.position.y == 32853
-                            && tile.position.floor == -9
+                            && tile.position.floor == 9
                     })
                     .ok_or("native amphora source tile")?;
                 assert!(source_tile.items.iter().any(|entry| {
@@ -314,7 +314,7 @@ fn scenario(mode: Scenario) -> TestResult {
                         destination: ItemMoveDestination::Ground(WorldTilePosition {
                             x: 33216,
                             y: 32854,
-                            floor: -9,
+                            floor: 9,
                         }),
                     },
                     selection,
@@ -505,7 +505,7 @@ fn scenario(mode: Scenario) -> TestResult {
                     .find(|tile| {
                         tile.position.x == 33218
                             && tile.position.y == 32853
-                            && tile.position.floor == -9
+                            && tile.position.floor == 9
                     })
                     .ok_or("retired amphora source delta")?;
                 assert!(
@@ -910,7 +910,7 @@ async fn exercise_selection(
     h: &Harness,
     interrupted: bool,
 ) -> TestResult {
-    use super::qengine_m02_use::{assert_nomads_catalogue, mint, use_window};
+    use super::qengine_m02_use_fixtures::{assert_nomads_catalogue, mint, use_window};
     const CALLBACK: &str = "oteryn:quest-callback/engenc2/nomads-land-window";
     const TRACK: &str = "oteryn:quest-progress/authored/nomads_land_quest/s4_window_obscured";
     assert_nomads_catalogue(owner);

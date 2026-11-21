@@ -79,8 +79,8 @@ fn scenario(race: bool, tag: &'static str, projection_only: bool) -> TestResult 
             sqlx::query("GRANT SELECT ON service_test_clock TO oteryn_game_runtime").execute(&h.pool).await?;
             sqlx::query("CREATE OR REPLACE FUNCTION game_character_service_now() RETURNS BIGINT LANGUAGE sql VOLATILE SET search_path=pg_catalog,public AS 'SELECT value FROM service_test_clock'").execute(&h.pool).await?;
             sqlx::query("CREATE OR REPLACE FUNCTION game_character_service_projection_now() RETURNS BIGINT LANGUAGE sql VOLATILE SET search_path=pg_catalog,public AS 'SELECT value FROM service_test_clock'").execute(&h.pool).await?;
-            let _clock = super::preadmission::FrozenAdmissionClock::install(&h, now).await?;
-            let source = super::house_transfer::RecoverySource::start_at(&h,Some(now as u64)).await?;
+            let _clock = super::preadmission_fixtures::FrozenAdmissionClock::install(&h, now).await?;
+            let source = super::house_transfer_fixtures::RecoverySource::start_at(&h,Some(now as u64)).await?;
             let account: String = sqlx::query_scalar("SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
             source.evidence.refresh_account(&h.root,&h.node,&account).await.map_err(debug)?;
             let seal = h.recovery.seal_current().map_err(debug)?;
@@ -488,12 +488,14 @@ fn create_intent(n: u8, now: i64, account: &str, world: &str, name: &str) -> Tes
         account_id: &'a str,
         target_world_id: &'a str,
         requested_name: &'a str,
+        requested_sex: &'a str,
+        requested_vocation: &'a str,
         issued_at_source: String,
         expires_at_source: String,
         audience: &'a str,
     }
     Ok(serde_json::to_vec(&Create {
-        contract_version: 1,
+        contract_version: 2,
         command: "CreateCharacter",
         variant: "PLATFORM_USER_CREATE",
         issuer_authority: "OTERYN_PLATFORM_CHARACTER_AUTHORITY",
@@ -503,6 +505,8 @@ fn create_intent(n: u8, now: i64, account: &str, world: &str, name: &str) -> Tes
         account_id: account,
         target_world_id: world,
         requested_name: name,
+        requested_sex: "Male",
+        requested_vocation: "Knight",
         issued_at_source: now.to_string(),
         expires_at_source: (now + 300).to_string(),
         audience: "OTERYN_GAME_CHARACTER_AUTHORITY",

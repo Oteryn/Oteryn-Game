@@ -1,5 +1,4 @@
-//! Qualified native-map cue coordinates. The current epoch snapshot declares
-//! the basis; legacy positive-floor codecs remain separate and unchanged.
+//! Qualified native-map cues. Both position-bearing payloads use Global z.
 use crate::charm_wire::WireResult;
 use crate::{chat, presentation};
 pub const CAPABILITY_NATIVE_MAP_CUES_V1: u32 = 385;
@@ -8,25 +7,24 @@ pub const SNAPSHOT_TYPE_NATIVE_MAP_CUE_BASIS_V1: u32 = 2;
 pub const DELTA_TYPE_NATIVE_MAP_PRESENTATION_V1: u32 = 2;
 pub const DELTA_TYPE_NATIVE_MAP_CHAT_LINE_V1: u32 = 6;
 
-// The negotiated epoch basis selects strict native floors; legacy codecs stay positive.
 pub fn encode_native_map_presentation_batch(
     events: &[presentation::PresentationEvent],
 ) -> WireResult<Vec<u8>> {
-    presentation::encode_presentation_batch_with_basis(events, true)
+    presentation::encode_presentation_batch(events)
 }
 pub fn decode_native_map_presentation_batch(
     payload: &[u8],
 ) -> WireResult<Vec<presentation::PresentationEvent>> {
-    presentation::decode_presentation_batch_with_basis(payload, true)
+    presentation::decode_presentation_batch(payload)
 }
 pub fn encode_native_map_chat_line(line: &chat::ChatLine) -> WireResult<Vec<u8>> {
     if !matches!(line, chat::ChatLine::Local { .. }) {
         return Err(crate::charm_wire::CyclopediaWireError::Malformed);
     }
-    chat::encode_chat_line_with_basis(line, true)
+    chat::encode_chat_line(line)
 }
 pub fn decode_native_map_chat_line(payload: &[u8]) -> WireResult<chat::ChatLine> {
-    let line = chat::decode_chat_line_with_basis(payload, true)?;
+    let line = chat::decode_chat_line(payload)?;
     if !matches!(line, chat::ChatLine::Local { .. }) {
         return Err(crate::charm_wire::CyclopediaWireError::Malformed);
     }
@@ -69,19 +67,16 @@ mod tests {
         }
     }
     #[test]
-    fn srx3_native_map_presentation_codec_accepts_negative_floor_without_loosening_legacy()
-    -> WireResult<()> {
-        for floor in [-15, -14, 0] {
+    fn srx3_native_map_presentation_codec_uses_global_floor() -> WireResult<()> {
+        for floor in [15, 14, 0] {
             let events = vec![event(floor)];
             let raw = encode_native_map_presentation_batch(&events)?;
             assert_eq!(decode_native_map_presentation_batch(&raw)?, events);
-            if floor < 0 {
-                assert!(presentation::encode_presentation_batch(&events).is_err());
-                assert!(presentation::decode_presentation_batch(&raw).is_err());
-            }
+            assert_eq!(presentation::encode_presentation_batch(&events)?, raw);
+            assert_eq!(presentation::decode_presentation_batch(&raw)?, events);
         }
-        assert!(encode_native_map_presentation_batch(&[event(1)]).is_err());
-        assert!(encode_native_map_presentation_batch(&[event(-16)]).is_err());
+        assert!(encode_native_map_presentation_batch(&[event(-1)]).is_err());
+        assert!(encode_native_map_presentation_batch(&[event(16)]).is_err());
         Ok(())
     }
     #[test]
@@ -92,13 +87,13 @@ mod tests {
             chat::ChatSpeechMode::Yell,
             chat::ChatSpeechMode::MonsterSay,
         ] {
-            let line = speech(-14, mode);
+            let line = speech(14, mode);
             let raw = encode_native_map_chat_line(&line)?;
             assert_eq!(decode_native_map_chat_line(&raw)?, line);
-            assert!(chat::encode_chat_line(&line).is_err());
-            assert!(chat::decode_chat_line(&raw).is_err());
+            assert_eq!(chat::encode_chat_line(&line)?, raw);
+            assert_eq!(chat::decode_chat_line(&raw)?, line);
         }
-        assert!(encode_native_map_chat_line(&speech(1, chat::ChatSpeechMode::Say)).is_err());
+        assert!(encode_native_map_chat_line(&speech(-1, chat::ChatSpeechMode::Say)).is_err());
         Ok(())
     }
     #[test]
@@ -112,20 +107,23 @@ mod tests {
         Ok(())
     }
     #[test]
-    fn native_codec_preserves_structural_and_basis_refusals() -> WireResult<()> {
+    fn native_codec_preserves_structural_and_range_refusals() -> WireResult<()> {
         let raw = presentation::encode_presentation_batch(&[event(14)])?;
-        assert!(decode_native_map_presentation_batch(&raw).is_err());
+        assert_eq!(decode_native_map_presentation_batch(&raw)?, [event(14)]);
         assert!(decode_native_map_presentation_batch(&[]).is_err());
         assert!(decode_native_map_presentation_batch(&[0]).is_err());
-        assert!(encode_native_map_presentation_batch(&[event(-14), event(-14)]).is_err());
-        let mut raw = encode_native_map_presentation_batch(&[event(-14)])?;
+        assert!(encode_native_map_presentation_batch(&[event(14), event(14)]).is_err());
+        let mut raw = encode_native_map_presentation_batch(&[event(14)])?;
         raw.extend_from_slice(&[0]);
         assert!(decode_native_map_presentation_batch(&raw).is_err());
         let raw = chat::encode_chat_line(&speech(14, chat::ChatSpeechMode::Say))?;
-        assert!(decode_native_map_chat_line(&raw).is_err());
+        assert_eq!(
+            decode_native_map_chat_line(&raw)?,
+            speech(14, chat::ChatSpeechMode::Say)
+        );
         assert!(decode_native_map_chat_line(&[0]).is_err());
         assert!(encode_native_map_chat_line(&speech(-16, chat::ChatSpeechMode::Say)).is_err());
-        // Floor zero has identical bytes in both explicitly selected coordinate bases.
+        // Both cue routes share the same floor encoding.
         assert_eq!(
             encode_native_map_presentation_batch(&[event(0)])?,
             presentation::encode_presentation_batch(&[event(0)])?
@@ -143,12 +141,12 @@ mod tests {
         let position = ActorPosition {
             x: 1,
             y: 2,
-            floor: -14,
+            floor: 14,
         };
         let other = ActorPosition {
             x: 3,
             y: 4,
-            floor: -13,
+            floor: 13,
         };
         let actor = crate::world_spatial_entities::EntityRef {
             identity: [1; 16],
@@ -209,6 +207,14 @@ mod tests {
                 secondary_cue_id: 2,
             },
         ];
+        let invalid_pos = ActorPosition {
+            floor: -14,
+            ..position
+        };
+        use crate::world_spatial::encode_position;
+        let valid_position = encode_position(&position);
+        let invalid_position = encode_position(&invalid_pos);
+        assert_eq!(valid_position.len(), invalid_position.len());
         for kind in kinds {
             let events = [presentation::PresentationEvent {
                 decision_ordinal: 1,
@@ -217,15 +223,46 @@ mod tests {
             }];
             let bytes = encode_native_map_presentation_batch(&events)?;
             assert_eq!(decode_native_map_presentation_batch(&bytes)?, events);
-            assert!(presentation::encode_presentation_batch(&events).is_err());
-            assert!(presentation::decode_presentation_batch(&bytes).is_err());
+            assert_eq!(presentation::encode_presentation_batch(&events)?, bytes);
+            assert_eq!(presentation::decode_presentation_batch(&bytes)?, events);
+
+            let mut invalid_kind = kind;
+            let at = match &mut invalid_kind {
+                K::MagicEffect { position, .. }
+                | K::Missile { from: position, .. }
+                | K::SpellWords { position, .. }
+                | K::ValueText { position, .. }
+                | K::Sound { position, .. } => position,
+                K::AmbientSound { .. } => {
+                    return Err(crate::charm_wire::CyclopediaWireError::Malformed);
+                }
+            };
+            *at = invalid_pos;
+            let invalid = [presentation::PresentationEvent {
+                kind: invalid_kind,
+                ..events[0]
+            }];
+            assert!(encode_native_map_presentation_batch(&invalid).is_err());
+            assert!(presentation::encode_presentation_batch(&invalid).is_err());
+
+            // Mutate the position in place so the surrounding message lengths stay valid.
+            let mut malformed = bytes;
+            let Some(offset) = malformed
+                .windows(valid_position.len())
+                .position(|part| part == valid_position)
+            else {
+                return Err(crate::charm_wire::CyclopediaWireError::Malformed);
+            };
+            malformed[offset..offset + valid_position.len()].copy_from_slice(&invalid_position);
+            assert!(decode_native_map_presentation_batch(&malformed).is_err());
+            assert!(presentation::decode_presentation_batch(&malformed).is_err());
         }
         let mixed = [presentation::PresentationEvent {
             decision_ordinal: 1,
             emission_ordinal: 1,
             kind: K::Missile {
                 from: position,
-                to: ActorPosition { floor: 1, ..other },
+                to: ActorPosition { floor: -1, ..other },
                 missile_id: 1,
                 source: S::Creatures,
             },

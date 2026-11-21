@@ -48,7 +48,7 @@ mod tests {
             Target::Position(oteryn_session::ActorPosition {
                 x: -1,
                 y: 200,
-                floor: -7,
+                floor: 7,
             }),
         ] {
             let payload = use_with_payload(source, &target)?;

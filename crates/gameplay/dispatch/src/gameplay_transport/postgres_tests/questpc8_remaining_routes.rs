@@ -1,5 +1,5 @@
 //! Full native routes for the remaining collection and travel programmes.
-use super::{TestResult, quest_world_callbacks};
+use super::{TestResult, quest_world_callbacks_fixtures as quest_world_callbacks};
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
 fn scenario(name: &'static str, position: Position) -> TestResult {
@@ -7,7 +7,7 @@ fn scenario(name: &'static str, position: Position) -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run("questpc8-remaining-route", move || {
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run("questpc8-remaining-route", move || {
         quest_world_callbacks::scenario(name, position, false)
     });
     eprintln!("POSTGRES_CASE_FINISHED questpc8_remaining_route {name} duration={:?} result={result:?}", started.elapsed());

@@ -1,8 +1,7 @@
 //! GUILD-BANK-1: admitted session -> real command/result bytes -> runtime-role PostgreSQL -> reload.
-#[path = "guild_bank/seed.rs"]
-pub(super) mod bank_seed;
-#[path = "guild_bank/transport.rs"]
-pub(super) mod transport;
+use sha2::Digest;
+use super::guild_bank_fixtures::{bank_seed, guild, query};
+
 use super::fixture::{self, Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::domain::{CharacterId, guild::GuildId};
@@ -18,8 +17,8 @@ use crate::gameplay_transport::guild_intent::GuildReply;
 use crate::gameplay_transport::{ComposedFreshAdmission, item_fence_of};
 use oteryn_protocol_oteryn::guild_bank::*;
 use oteryn_protocol_oteryn::{CommandStatus, guild as guild_wire};
-use sha2::Digest;
-use transport::exchange;
+
+use super::guild_bank_fixtures::transport::exchange;
 
 #[test]
 fn guild_bank_postgres_real_dispatch() -> TestResult {
@@ -98,28 +97,7 @@ async fn native(
     assert_eq!(reply.code, code);
     Ok(reply)
 }
-async fn query(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
-    s: &mut AdmittedSession,
-    guild: [u8; 16],
-) -> TestResult<GuildBankReply> {
-    let id = s.continuity.next_command_id;
-    let (status, bytes) = exchange(
-        owner,
-        s,
-        id,
-        COMMAND_TYPE_GUILD_BANK_QUERY,
-        &encode_guild_bank_query(&GuildBankQuery {
-            guild: Some(guild),
-            before: None,
-            after_claim: None,
-        })
-        .map_err(debug)?,
-    )
-    .await?;
-    assert_eq!(status, CommandStatus::Accepted);
-    decode_guild_bank_reply(&bytes).map_err(debug)
-}
+
 async fn open_claims(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     session: &mut AdmittedSession,
@@ -138,25 +116,7 @@ async fn open_claims(
     assert_eq!(result.code, 1);
     Ok(result.claims)
 }
-async fn guild(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
-    s: &mut AdmittedSession,
-    action: guild_wire::GuildIntent,
-) -> TestResult<guild_wire::GuildIntentResult> {
-    let id = s.continuity.next_command_id;
-    let (status, bytes) = exchange(
-        owner,
-        s,
-        id,
-        guild_wire::COMMAND_TYPE_GUILD_INTENT,
-        &guild_wire::encode_guild_intent(&action).map_err(debug)?,
-    )
-    .await?;
-    assert_eq!(status, CommandStatus::Accepted);
-    let r = guild_wire::decode_guild_intent_result(&bytes).map_err(debug)?;
-    assert_eq!(r.code, 1);
-    Ok(r)
-}
+
 fn scenario() -> TestResult {
     run(|admin| async move {
         reset();

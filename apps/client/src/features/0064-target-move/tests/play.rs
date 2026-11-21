@@ -131,7 +131,7 @@ fn ground_click_does_not_generate_client_side_steps() -> Result<(), BatchError> 
 
 #[test]
 fn ground_click_uses_session_floor_and_waits_for_the_previous_receipt() -> Result<(), BatchError> {
-    let mut view = PlayView::new(TileCoord::new(-10, 200), -3, &[])?;
+    let mut view = PlayView::new(TileCoord::new(-10, 200), 3, &[])?;
     let (link, mut commands, outbox) = play_channel();
     outbox.target_walk_initialize(true);
     view.click(TileCoord::new(-8, 201))?;
@@ -142,7 +142,7 @@ fn ground_click_uses_session_floor_and_waits_for_the_previous_receipt() -> Resul
             ActorPosition {
                 x: -8,
                 y: 201,
-                floor: -3
+                floor: 3
             }
         ))
     );
@@ -164,7 +164,7 @@ fn ground_click_uses_session_floor_and_waits_for_the_previous_receipt() -> Resul
             ActorPosition {
                 x: -9,
                 y: 202,
-                floor: -3
+                floor: 3
             }
         ))
     );

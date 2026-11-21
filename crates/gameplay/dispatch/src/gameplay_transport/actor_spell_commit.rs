@@ -921,7 +921,7 @@ pub fn commit_owner_batch(
     mut staged: StagedSpellBatch,
     preflight: Option<PlayerBatchPreflight>,
 ) -> Result<CombatBatchReceipt, Error> {
-    let checked = if staged.has_source_native_reaction() {
+    let checked = if staged.needs_source_reservation() {
         check_owner_batch_inner(runtime, states, &staged, preflight.as_ref(), false)?;
         runtime.reserve_spell_batch(&mut staged)?;
         check_owner_batch(runtime, states, &staged, preflight.as_ref())?

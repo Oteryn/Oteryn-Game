@@ -34,7 +34,7 @@ fn scenario() -> TestResult {
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
             let mut deps = Dependencies::new()?;
-            let (controller, pin) = fixtures::death_ml_loss_composed::production_generation_with_pin(deps.admitted.world_id, "content-1")?;
+            let (controller, pin) = fixtures::death_ml_loss_composed_fixtures::production_generation_with_pin(deps.admitted.world_id, "content-1")?;
             let generation = controller.active().ok_or("active generation")?;
             let native = generation.native_gameplay().ok_or("native")?;
             let content_pin = ChannelContentPin::from_activation(
@@ -64,7 +64,7 @@ fn scenario() -> TestResult {
                 .bind(generation.identity().client_artifact_digest().as_slice())
                 .bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
             let entries = [("oteryn:item.tibia.i3736", 5), ("oteryn:item.tibia.i10297", 37)];
-            fixtures::item_look::seed_main_backpack(&h, &entries).await?;
+            fixtures::item_look_fixtures::seed_main_backpack(&h, &entries).await?;
             let definition = |source| crate::durability::item_mint::TypedDefinitionRef {
                 family: "Item".into(), production_key: format!("oteryn:item.tibia.i{source}"), revision_ref: "definition-r1".into(),
             };

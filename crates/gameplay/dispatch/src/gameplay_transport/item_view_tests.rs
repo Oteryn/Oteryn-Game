@@ -142,7 +142,7 @@ fn browse_refresh_with_conflicting_tile_reads_preserves_every_previous_handle()
     let first = WorldTilePosition {
         x: 300,
         y: 300,
-        floor: -7,
+        floor: 7,
     };
     let second = WorldTilePosition { x: 301, ..first };
     let field = |position: WorldTilePosition| ItemKey::BrowseField {

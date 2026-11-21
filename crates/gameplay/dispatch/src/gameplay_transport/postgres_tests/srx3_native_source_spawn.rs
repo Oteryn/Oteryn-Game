@@ -1,5 +1,8 @@
 //! Actual native proposals must reach the source spawn owner and physical carrier.
 use super::fixture::{Harness, debug, id, run};
+use super::srx3_native_source_cast_fixtures::{
+    next_native_melee_deadline, settle_monster_melee_at_until,
+};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
@@ -52,7 +55,7 @@ fn source_spawn_case_with_gaz_heal(
     std::thread::Builder::new().stack_size(64 << 20).spawn(move || {
         run(async |admin| {
             let mut deps = Dependencies::new()?;
-            let (controller, pin) = super::death_ml_loss_composed::production_generation_with_pin(deps.admitted.world_id, "content-1")?;
+            let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(deps.admitted.world_id, "content-1")?;
             let active = controller.active().ok_or("native activation")?;
             let native = active.native_gameplay().ok_or("native gameplay")?;
             let kind = source_kind;
@@ -135,34 +138,50 @@ fn source_spawn_case_with_gaz_heal(
             } else {
             let mut selected = false;
             let mut created = false;
-            for _ in 0..128 {
-                owner.drain_monster_melee().await;
-                let runtime = owner.runtime.lock().await;
-                let states = owner.states.spell_states.lock().await;
-                if let Some(report) = states.monster_melee.creature_ai.last_report_for_test(caster) {
-                    if slug == "rat" && report.target == Some(deps.actor) {
-                        assert_eq!(states.monster_melee.creature_ai.state(caster).ok_or("actual native AI state")?.attack_facing(),
-                            crate::movement::CardinalStep::North, "actual stationary native target selection must look north");
-                        let pose = runtime.read_actor_position(caster).map_err(debug)?;
-                        assert_eq!(pose.position(), original_pose.position(), "a turn never moves the creature");
-                        assert_eq!(pose.last_translation_revision(), original_pose.last_translation_revision(),
-                            "publishing a native turn cannot fabricate a translation");
-                        assert_eq!(pose.facing(), Some(crate::foundation::MovementFacing::North),
-                            "actual native attack facing must reach the canonical pose read by delayed Lua callbacks");
-                        selected = true;
-                        created = true;
-                        break;
+            let child_key = format!("oteryn:creature.{child}");
+            let started_at = owner.owner_now().get();
+            let mut now = started_at;
+            // The content seed can delay Maxxen beyond the original 128 passes.
+            let passes = if slug == "professor_maxxen" { 256 } else { 128 };
+            let think_interval_us = crate::ai_think::CREATURE_THINK_INTERVAL_MILLIS * 1_000;
+            // Keep the former two-second budget per pass and drain every owner deadline
+            // within that budget on its native cadence.
+            let time_limit = started_at + passes * 2 * think_interval_us;
+            'passes: for pass in 1..=passes {
+                let interval_end = started_at + pass * 2 * think_interval_us;
+                while now < interval_end {
+                    // The Energy Pulse can spawn and retire in separate drains at the same instant.
+                    created = settle_monster_melee_at_until(&owner, now, async || {
+                        let runtime = owner.runtime.lock().await;
+                        runtime.visible_entities().creatures.iter().any(|entity|
+                            runtime.current_live_creature_identity(entity.actor).ok()
+                                == Some(child_key.as_bytes()))
+                    }).await?;
+                    let runtime = owner.runtime.lock().await;
+                    let states = owner.states.spell_states.lock().await;
+                    if let Some(report) = states.monster_melee.creature_ai.last_report_for_test(caster) {
+                        if slug == "rat" && report.target == Some(deps.actor) {
+                            assert_eq!(states.monster_melee.creature_ai.state(caster).ok_or("actual native AI state")?.attack_facing(),
+                                crate::movement::CardinalStep::North, "actual stationary native target selection must look north");
+                            let pose = runtime.read_actor_position(caster).map_err(debug)?;
+                            assert_eq!(pose.position(), original_pose.position(), "a turn never moves the creature");
+                            assert_eq!(pose.last_translation_revision(), original_pose.last_translation_revision(),
+                                "publishing a native turn cannot fabricate a translation");
+                            assert_eq!(pose.facing(), Some(crate::foundation::MovementFacing::North),
+                                "actual native attack facing must reach the canonical pose read by delayed Lua callbacks");
+                            selected = true;
+                            created = true;
+                            break 'passes;
+                        }
+                        selected |= report.proposals.iter().any(|proposal| proposal.ability.key == ability);
                     }
-                    selected |= report.proposals.iter().any(|proposal| proposal.ability.key == ability);
+                    drop(states);
+                    drop(runtime);
+                    if selected && created {break 'passes;}
+                    let next = next_native_melee_deadline(&owner).await?.max(now + 1);
+                    if next >= time_limit {break 'passes;}
+                    now = next;
                 }
-                let child_key = format!("oteryn:creature.{child}");
-                created = runtime.visible_entities().creatures.iter().any(|entity|
-                    runtime.current_live_creature_identity(entity.actor).ok()
-                        == Some(child_key.as_bytes()));
-                drop(states);
-                drop(runtime);
-                if selected && created {break;}
-                owner.clock_origin -= std::time::Duration::from_secs(2);
             }
             assert!(selected,"actual native scheduler must select {ability}");
             assert!(created,"selected {ability} must admit actual source child {child} through the production callback owner");

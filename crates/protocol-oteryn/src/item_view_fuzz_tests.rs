@@ -115,7 +115,7 @@ fn fuzz_selected_item_view_decoders() {
                             ItemMoveDestination::Ground(WorldTilePosition {
                                 x: rng.u64() as i32,
                                 y: rng.u64() as i32,
-                                floor: rng.u64() as i16,
+                                floor: rng.below(16) as i16,
                             })
                         } else {
                             ItemMoveDestination::MainBackpack

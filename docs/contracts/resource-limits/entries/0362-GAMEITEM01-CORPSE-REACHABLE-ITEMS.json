@@ -17,7 +17,7 @@
   ],
   "consumers": [
     "apps/game-server/migrations/0013_corpse_container_mint.sql (game_item_corpse_container_entries)",
-    "apps/game-server/migrations/2900_corpse_container_48_entries.sql (game_item_corpse_container_entry_proven)"
+    "apps/game-server/migrations/2970_corpse_container_48_entries.sql (game_item_corpse_container_entry_proven)"
   ],
   "notes": "SUMMER owner decision 20 supersedes D131 reachable-items maximum 17. No nesting or loot-plan limit changes."
 }

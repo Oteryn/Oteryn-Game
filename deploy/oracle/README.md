@@ -4,9 +4,10 @@ The owner-authorized Oracle migration is tracked in #2217 and Platform #1639.
 Use `Oracle Operations` on protected main: `status` proves the exact Oracle
 runner, ARM64, uid1001, absence of a Docker socket and host readiness; `deploy`
 takes a full current protected-main SHA. The host independently requires that SHA
-and its latest successful `game-gate`, builds native ARM64, backs up, runs the
-owner-role migrator and restarts through the separately installed durable Game
-incarnation controller. The workflow cannot replace host controllers or secrets.
+and its latest successful `game-gate`, loads the CI-built ARM64 image, backs up,
+runs the owner-role migrator and restarts through the separately installed
+durable Game incarnation controller. The workflow cannot replace host
+controllers or secrets.
 
 Host implementation and runner Compose are maintained in Oteryn-Platform's
 `deploy/oracle/`. The private component-bound SSH key is constrained by a root-owned
@@ -14,6 +15,19 @@ forced command; it grants no shell, PTY, forwarding or access to another compone
 The runner has no Docker socket or host runtime mount. Its existing game-runners
 group remains repository-restricted; labels include oteryn-game, oteryn-oracle and
 ARM64. Docker restart keeps the agent available after reboot.
+
+## ARM64 image handoff
+
+For `deploy`, a GitHub-hosted ARM64 runner builds from the exact source SHA
+and uploads a one-day artifact named `oteryn-game-image-<sha>`. Its only
+member is `image.tar` (up to 3 GiB), tagged `oteryn-game:<sha>-arm64`
+with the matching OCI revision label.
+
+The Oracle runner downloads the original artifact ZIP (up to 1 GiB) from
+GitHub and sends its bytes on standard input to the host's forced command
+`deploy-image <sha> <run_id> <run_attempt> <artifact_id>`. The GitHub token
+stays on the runner. The host checks the artifact digest before loading the
+image and uses its existing content mounts. `status` skips the image build.
 
 Disable the retired `synology-game-deploy.yml` and
 `synology-game-runner-acceptance.yml` in GitHub Actions before enabling the Oracle
@@ -24,3 +38,27 @@ World/content, canonical IDs, trust, independent floors and fencing are preserve
 No content activation, authority bootstrap, floor reset or schema rollback is part
 of this workflow. Uncertain outcomes stay closed for explicit reconciliation.
 Real native gameplay admission is a separate acceptance result from readiness.
+
+## Baked inputs
+
+The runtime image carries the node's pinned inputs under `/opt/oteryn-game`
+(stage `node-inputs` of `game.Dockerfile`), built from the same source tree:
+
+- `world.otbundle`: the bundle `pin-check` built and verified against
+  `content/world/pins/oteryn.json`; `[world_bundle] path` in `node.toml`.
+- `gameplay/`: `stage_gameplay.py` output for `content/spells.manifest.json`;
+  the image sets `OTERYN_NATIVE_GAMEPLAY_MANIFEST` to its manifest.
+- `npc-data/`: `stage_npc_data.py` output for `deploy/synology-game/npc-data.pin.json`;
+  `serve` takes `--npc-data-project /opt/oteryn-game/npc-data/content/world
+  --npc-data-sha256 <npc-data/PROJECT_SHA256>`.
+- `INPUTS.sha256`: `sha256sum` of every file above, sorted by path.
+
+The image build fails when any input differs from its pin.
+`GAME_SOURCE_SHA` has no default: the build refuses anything but the full
+40-character commit of the source archive.
+
+Mount nothing over `/opt/oteryn-game`: a host mount there replaces the baked,
+pinned inputs. With the baked `[world_bundle]`, `[readiness]` in `node.toml`
+sets `map_revision` to the bundle digest and
+`required_gameplay_capabilities = [11, 18, 30]`, the bundle world's mandatory
+floor; the node refuses to boot a bundle world with `[]`.

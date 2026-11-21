@@ -103,7 +103,7 @@ fn scenario(
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, pin) = if vampire_door.is_some() {
-            super::death_ml_loss_composed::production_generation_with_pin(
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?
@@ -360,7 +360,7 @@ fn scenario(
             return harness.cleanup().await;
         }
         let (next, result, _) =
-            super::item_craft::exchange(&owner, admitted, 1, &payload, None).await?;
+            super::item_craft_fixtures::exchange(&owner, admitted, 1, &payload, None).await?;
         assert_eq!(result, UseDisposition::Locked);
         assert!(!map.enterable(station_pos));
         assert_eq!(
@@ -381,7 +381,7 @@ fn scenario(
         // Advance the owner clock beyond the declared USE rate gate without sleeping.
         owner.clock_origin -= std::time::Duration::from_secs(1);
         let (next, result, _) =
-            super::item_craft::exchange(&owner, next, 2, &payload, None).await?;
+            super::item_craft_fixtures::exchange(&owner, next, 2, &payload, None).await?;
         assert_eq!(result, UseDisposition::Committed);
         assert!(map.enterable(station_pos));
         assert_eq!(
@@ -421,7 +421,7 @@ fn scenario(
                 }
             } else {
                 // Reuse the door and item-look fixture's ordinary backpack -> Ground path.
-                super::item_look::seed_main_backpack(&harness, &[("oteryn:item.tibia.i3031", 1)])
+                super::item_look_fixtures::seed_main_backpack(&harness, &[("oteryn:item.tibia.i3031", 1)])
                     .await?;
                 let backpack = owner
                     .root
@@ -633,7 +633,7 @@ fn scenario(
                     let payload = encode_item_move_intent_for(
                         &ItemMoveIntent {
                             source: items.table().handle(&item).ok_or("authored coin handle")?,
-                            destination: ItemMoveDestination::Ground(cell(6)),
+                            destination: ItemMoveDestination::Ground(WorldTilePosition { floor: 7, ..cell(6) }),
                         },
                         selection,
                     )
@@ -793,7 +793,7 @@ fn scenario(
             };
             use oteryn_protocol_oteryn::world_spatial::StepDirection;
             let item = if with_item {
-                super::item_look::seed_main_backpack(&harness, &[("oteryn:item.tibia.i3031", 1)])
+                super::item_look_fixtures::seed_main_backpack(&harness, &[("oteryn:item.tibia.i3031", 1)])
                     .await?;
                 let backpack = owner
                     .root
@@ -984,7 +984,7 @@ async fn step_exchange(
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let client_task = async {
         loop {
-            let raw = super::item_look::read_frame(&mut client).await?;
+            let raw = super::item_look_fixtures::read_frame(&mut client).await?;
             if crate::foundation::decode_wire_envelope(&raw)?.message_type()
                 == crate::foundation::MessageType::SnapshotCommit
             {
@@ -1003,7 +1003,7 @@ async fn step_exchange(
         client.write_u32(u32::try_from(frame.len())?).await?;
         client.write_all(&frame).await?;
         loop {
-            let raw = super::item_look::read_frame(&mut client).await?;
+            let raw = super::item_look_fixtures::read_frame(&mut client).await?;
             let envelope = crate::foundation::decode_wire_envelope(&raw)?;
             if envelope.message_type() == crate::foundation::MessageType::CommandResult {
                 let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
@@ -1232,7 +1232,7 @@ async fn vampire_gate(
 
         owner.clock_origin -= std::time::Duration::from_secs(1);
         let (next, result, _) =
-            super::item_craft::exchange(owner, admitted, command, payload, None).await?;
+            super::item_craft_fixtures::exchange(owner, admitted, command, payload, None).await?;
         assert_eq!(result, expected, "source level{level}");
         assert_eq!(
             map.facts().doors().revision(key),
@@ -1240,11 +1240,11 @@ async fn vampire_gate(
         );
         admitted = next;
     }
-    let (next, result, _) = super::item_craft::exchange(owner, admitted, 2, payload, None).await?;
+    let (next, result, _) = super::item_craft_fixtures::exchange(owner, admitted, 2, payload, None).await?;
     assert_eq!(result, UseDisposition::Committed);
     assert_eq!(map.facts().doors().revision(key), 1, "replay toggled twice");
     owner.clock_origin -= std::time::Duration::from_secs(1);
-    let (_, result, _) = super::item_craft::exchange(owner, next, 3, payload, None).await?;
+    let (_, result, _) = super::item_craft_fixtures::exchange(owner, next, 3, payload, None).await?;
     assert_eq!(result, UseDisposition::StaleState);
     assert_eq!(map.facts().doors().revision(key), 1);
     Ok(())

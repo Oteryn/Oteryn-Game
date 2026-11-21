@@ -1,5 +1,8 @@
 //! Crystal 201189f8 potions.lua:21-26,36-42,57,62,78-110,141-147.
 //! Real USE frames, actual player condition owner, fenced PostgreSQL burn and flask.
+use super::special_potions_fixtures::{exchange};
+use super::srx3_native_source_cast_fixtures::NativeOwnerClock;
+
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::domain::condition::{ConflictKey, DotElement};
@@ -13,144 +16,7 @@ use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::world_object::{
     UseDisposition, UseIntent, UseTarget, decode_use_result, encode_item_use_intent,
 };
-use std::num::{NonZeroU32, NonZeroU64};
-use std::time::Duration;
-use tokio::io::AsyncWriteExt;
-
-pub(super) async fn exchange(
-    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
-    admitted: super::AdmittedSession,
-    command_id: u64,
-    payload: &[u8],
-    current_source: Option<NonZeroU32>,
-    current_target: Option<NonZeroU32>,
-) -> TestResult<(super::AdmittedSession, CommandStatus, Vec<u8>, Vec<u8>)> {
-    use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
-    use oteryn_protocol_oteryn::world_object::MapUseTarget;
-    use std::future::Future;
-    use std::task::Poll;
-
-    let (mut server, mut client) = tokio::io::duplex(1 << 20);
-    let driving = async {
-        let mut source = None;
-        let mut target = None;
-        loop {
-            let raw = super::item_look::read_frame(&mut client).await?;
-            let envelope = crate::foundation::decode_wire_envelope(&raw)?;
-            if envelope.message_type() == crate::foundation::MessageType::SnapshotChunk {
-                let (_, domains) =
-                    oteryn_protocol_oteryn::decode_snapshot_chunk(envelope.payload())?;
-                for domain in domains {
-                    if domain.domain_id
-                        == oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY
-                    {
-                        let inventory =
-                            oteryn_protocol_oteryn::item_view::decode_character_inventory(
-                                domain.payload,
-                            )
-                            .map_err(debug)?;
-                        source = inventory
-                            .entries
-                            .iter()
-                            .find(|entry| Some(entry.item_definition_ref) == current_source)
-                            .map(|entry| entry.handle);
-                        target = inventory
-                            .entries
-                            .iter()
-                            .find(|entry| Some(entry.item_definition_ref) == current_target)
-                            .map(|entry| entry.handle);
-                    }
-                }
-            }
-            if envelope.message_type() == crate::foundation::MessageType::SnapshotCommit {
-                break;
-            }
-        }
-        let actual = if current_source.is_some() || current_target.is_some() {
-            let mut intent = oteryn_protocol_oteryn::world_object::decode_use_intent_target(
-                admitted.continuity.selected_capabilities.as_slice(),
-                payload,
-            )
-            .map_err(debug)?;
-            if current_source.is_some() {
-                intent.target = UseTarget::Item(source.ok_or("current source handle")?);
-            }
-            if current_target.is_some() {
-                intent.use_with_map_item =
-                    Some(MapUseTarget::Item(target.ok_or("current target handle")?));
-            }
-            encode_item_use_intent(&intent).map_err(debug)?
-        } else {
-            payload.to_vec()
-        };
-        let frame = oteryn_protocol_oteryn::encode_client_command(
-            admitted.continuity.connection_generation,
-            &oteryn_protocol_oteryn::ClientCommandValue {
-                command_id,
-                command_type: 2,
-                payload: &actual,
-            },
-        )?;
-        client.write_u32(u32::try_from(frame.len())?).await?;
-        client.write_all(&frame).await?;
-        client.shutdown().await?;
-        loop {
-            let raw = super::item_look::read_frame(&mut client).await?;
-            let envelope = crate::foundation::decode_wire_envelope(&raw)?;
-            if envelope.message_type() == crate::foundation::MessageType::CommandResult {
-                let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
-                if result.command_id == command_id {
-                    return Ok::<_, Box<dyn std::error::Error>>((
-                        result.status,
-                        result.payload.to_vec(),
-                        actual,
-                    ));
-                }
-            }
-        }
-    };
-    let serving = async {
-        let end = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
-        drop(server);
-        end
-    };
-    let mut serving = std::pin::pin!(serving);
-    let mut driving = std::pin::pin!(driving);
-    let mut end = None;
-    let mut result = None;
-    // This direct connection has no node task to replenish a retired DB holder.
-    let mut maintenance = std::pin::pin!(super::item_craft::maintain_ready(owner));
-    tokio::time::timeout(
-        Duration::from_secs(30),
-        std::future::poll_fn(|context| {
-            if let Poll::Ready(result) = maintenance.as_mut().poll(context) {
-                return Poll::Ready(result);
-            }
-            if end.is_none()
-                && let Poll::Ready(value) = serving.as_mut().poll(context)
-            {
-                end = Some(value);
-            }
-            if result.is_none()
-                && let Poll::Ready(value) = driving.as_mut().poll(context)
-            {
-                result = Some(value);
-            }
-            if end.is_some() && result.is_some() {
-                Poll::Ready(Ok(()))
-            } else {
-                Poll::Pending
-            }
-        }),
-    )
-    .await??;
-    let end = end.ok_or("server did not finish")?;
-    let ConnectionEnd::AdmittedThenDisconnected(admitted) = end else {
-        return Err(format!("{end:?}").into());
-    };
-    let (status, result, actual) = result.ok_or("client did not finish")??;
-    Ok((admitted, status, result, actual))
-}
+use std::num::NonZeroU64;
 
 #[test]
 fn antidote_potion_postgres_use_cures_poison_flask_cooldown_replay() -> TestResult {
@@ -260,7 +126,7 @@ fn scenario(item: u32, vocation: &'static str, level: u32) -> TestResult {
         let cells = map
             .movement_cells(activation.qualified_room().movement_cells())
             .map_err(debug)?;
-        let room = super::rust_lottery::bundle_action_room(
+        let room = super::rust_lottery_fixtures::bundle_action_room(
             activation.qualified_room(),
             &map,
             world,
@@ -309,14 +175,13 @@ fn scenario(item: u32, vocation: &'static str, level: u32) -> TestResult {
                 .map_err(debug)?;
         }
         let key = format!("oteryn:item.tibia.i{item}");
-        super::item_look::seed_main_backpack(&h, &[(&key, 5)]).await?;
+        super::item_look_fixtures::seed_main_backpack(&h, &[(&key, 5)]).await?;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
         owner.movement_cells = (&cells).into();
         owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&deps.room));
-        owner.clock_origin = std::time::Instant::now()
-            .checked_sub(Duration::from_secs(60))
-            .ok_or("clock")?;
+        let clock = NativeOwnerClock::new(&owner);
+        clock.set(60_000_000);
         {
             let runtime = deps.runtime.lock().await;
             let mut states = owner.states.spell_states.lock().await;
@@ -418,6 +283,7 @@ fn scenario(item: u32, vocation: &'static str, level: u32) -> TestResult {
             );
             assert_eq!(inventory_fingerprint(&h).await?, before);
             eprintln!("PG_MARKER i14-magic-shield-requirement-refusal {vocation} {level}");
+            drop(clock);
             drop(owner);
             drop(authority);
             drop(seal);
@@ -443,7 +309,7 @@ fn scenario(item: u32, vocation: &'static str, level: u32) -> TestResult {
         let applied: u64 = applied.parse()?;
         let expires: u64 = expires.parse()?;
         assert_eq!(expires - applied, if item == 7644 { 0 } else { 60_000_000 });
-        super::cl6_status::check_timer(
+        super::cl6_status_fixtures::check_timer(
             &owner,
             deps.actor,
             admitted.game_session_id,
@@ -452,6 +318,11 @@ fn scenario(item: u32, vocation: &'static str, level: u32) -> TestResult {
             60_000,
         )
         .await?;
+        // Settle the first condition pass at the pinned time before comparing replay.
+        owner.root.await_ready().await?;
+        let _ = owner
+            .tick_spell_periodic_at(deps.actor, admitted.game_session_id, owner.owner_now())
+            .await;
         let after_conditions = {
             let runtime = deps.runtime.lock().await;
             let states = owner.states.spell_states.lock().await;
@@ -512,9 +383,7 @@ fn scenario(item: u32, vocation: &'static str, level: u32) -> TestResult {
             );
         }
         // Place the next framed USE inside the source action delay on the fixture's owner clock.
-        owner.clock_origin = std::time::Instant::now()
-            .checked_sub(Duration::from_micros(applied + 100_000))
-            .ok_or("cooldown clock")?;
+        clock.set(applied + 100_000);
         let (next, _, exhausted, _) =
             exchange(&owner, admitted, 2, &payload, reference(&key), None).await?;
         admitted = next;
@@ -524,10 +393,7 @@ fn scenario(item: u32, vocation: &'static str, level: u32) -> TestResult {
         );
         assert_eq!(inventory_fingerprint(&h).await?, after);
         if item == 7644 {
-            owner.clock_origin = owner
-                .clock_origin
-                .checked_sub(Duration::from_secs(2))
-                .ok_or("next potion time")?;
+            clock.set(applied + 2_100_000);
             let (_, _, clean_use, _) =
                 exchange(&owner, admitted, 3, &payload, reference(&key), None).await?;
             assert_eq!(
@@ -541,10 +407,7 @@ fn scenario(item: u32, vocation: &'static str, level: u32) -> TestResult {
             assert_eq!(sqlx::query_scalar::<_,i64>("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i285' AND lifecycle=1")
                 .fetch_one(&h.pool).await?, 2);
         } else {
-            owner.clock_origin = owner
-                .clock_origin
-                .checked_sub(Duration::from_secs(61))
-                .ok_or("shield expiry time")?;
+            clock.set(applied + 61_100_000);
             let runtime = deps.runtime.lock().await;
             let mut states = owner.states.spell_states.lock().await;
             states
@@ -570,7 +433,7 @@ fn scenario(item: u32, vocation: &'static str, level: u32) -> TestResult {
                 "expiry cannot consume another potion"
             );
         }
-        super::cl6_status::check_timer(
+        super::cl6_status_fixtures::check_timer(
             &owner,
             deps.actor,
             admitted.game_session_id,
@@ -580,6 +443,7 @@ fn scenario(item: u32, vocation: &'static str, level: u32) -> TestResult {
         )
         .await?;
         eprintln!("PG_MARKER i14-special-potion-effect-burn-flask-replay-cooldown {item}");
+        drop(clock);
         drop(owner);
         drop(authority);
         drop(seal);

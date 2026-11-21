@@ -97,10 +97,10 @@ fn appearance_census_departure_race_keeps_live_connection_postgres() -> TestResu
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::item_look::large_stack(scenario)
+    super::item_look_fixtures::large_stack(scenario)
 }
 fn scenario() -> TestResult {
-    use super::appearance_change_postgres::observer_visibility_tests;
+    use super::appearance_change_postgres_fixtures::observer_visibility_tests;
     run(async |admin| {
         let harness = Harness::create_appearance(admin, "appearance_census_departure").await?;
         prepare_current_session(&harness).await?;

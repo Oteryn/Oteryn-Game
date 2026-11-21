@@ -19,7 +19,7 @@ pub const CAPABILITY_BROWSE_FIELD_V1: u32 = 230;
 pub const COMMAND_TYPE_BROWSE_FIELD_INTENT: u32 = 440;
 pub const BROWSE_FIELD_CAPACITY: u8 = 30;
 pub const MAX_BROWSE_FIELD_PAGE_ENTRIES: usize = BROWSE_FIELD_CAPACITY as usize;
-/// Two zigzag uint16 coordinates (four bytes each) and native floor -15..=0 (two bytes).
+/// Two zigzag uint16 coordinates (four bytes each) and Global floor 0..=15 (two bytes).
 const MAX_BROWSE_FIELD_POSITION_BYTES: usize = 10;
 /// One Open position message, or the smaller Seek view/index message.
 pub const MAX_BROWSE_FIELD_INTENT_BYTES: usize = 2 + MAX_BROWSE_FIELD_POSITION_BYTES;
@@ -60,10 +60,10 @@ fn encode_coordinates(position: WorldTilePosition, output: &mut Vec<u8>) {
 }
 
 pub(crate) fn validate_browse_position(position: WorldTilePosition) -> WireResult<()> {
-    // The bundle uses u16 x/y and native floor -z, matching the existing map capability.
+    // The map wire uses u16 x/y and Global z.
     if u16::try_from(position.x).is_err()
         || u16::try_from(position.y).is_err()
-        || !(BOTTOM_FLOOR..=TOP_FLOOR).contains(&position.floor)
+        || !(TOP_FLOOR..=BOTTOM_FLOOR).contains(&position.floor)
     {
         return Err(ItemViewWireError::Malformed);
     }

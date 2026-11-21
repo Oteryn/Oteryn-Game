@@ -40,7 +40,7 @@ pub fn encode(page: &Page) -> Result<Vec<u8>, MapWireError> {
         })
         || page.runs.iter().any(|r| {
             r.x >= r.end
-                || !(-15..=0).contains(&r.floor)
+                || !(0..=15).contains(&r.floor)
                 || !page.areas.iter().any(|a| a.id == r.area && a.parent != 0)
         })
     {

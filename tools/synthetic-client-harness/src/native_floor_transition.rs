@@ -13,7 +13,7 @@ use oteryn_session::{
     write_frame,
 };
 use std::time::Duration;
-use tokio::io::{AsyncReadExt, DuplexStream};
+use tokio::io::DuplexStream;
 type Error = Box<dyn std::error::Error + Send + Sync>;
 
 fn uuid(marker: u8) -> [u8; 16] {
@@ -29,10 +29,10 @@ fn map(floor: i16, epoch: u64) -> WorldMapViewSnapshot {
         y: 200,
         floor,
     };
-    let floors = if floor == 0 {
-        vec![0]
+    let floors: &[i16] = if floor == SURFACE_FLOOR {
+        &[SURFACE_FLOOR]
     } else {
-        vec![-10, -9, -8, -6]
+        &[10, 9, 8, 6]
     };
     WorldMapViewSnapshot {
         header: MapViewHeader {
@@ -40,12 +40,12 @@ fn map(floor: i16, epoch: u64) -> WorldMapViewSnapshot {
             bundle_digest: [2; 32],
             reset_epoch: epoch,
             origin,
-            first_visible_floor: if floor == 0 { 0 } else { -8 },
+            first_visible_floor: first_visible_floor_start(floor),
         },
         tiles: floors
-            .into_iter()
-            .map(|floor| {
-                let shift = i32::from(floor - origin.floor);
+            .iter()
+            .map(|&floor| {
+                let shift = i32::from(origin.floor - floor);
                 MapTile {
                     position: ActorPosition {
                         x: origin.x + shift,
@@ -98,7 +98,7 @@ async fn snapshot(
     Ok(())
 }
 
-async fn peer(mut server: DuplexStream) -> Result<(), Error> {
+async fn peer(mut server: DuplexStream) -> Result<DuplexStream, Error> {
     read_frame(&mut server).await?;
     write_frame(
         &mut server,
@@ -114,10 +114,10 @@ async fn peer(mut server: DuplexStream) -> Result<(), Error> {
         })?,
     )
     .await?;
-    snapshot(&mut server, 40, &map(0, 1), true).await?;
+    snapshot(&mut server, 40, &map(SURFACE_FLOOR, 1), true).await?;
     read_frame(&mut server).await?;
-    snapshot(&mut server, 41, &map(-8, 2), false).await?;
-    for (command, sequence, revision, floor) in [(7, 42, 1, -8), (8, 44, 2, 0)] {
+    snapshot(&mut server, 41, &map(8, 2), false).await?;
+    for (command, sequence, revision, floor) in [(7, 42, 1, 8), (8, 44, 2, SURFACE_FLOOR)] {
         if command == 8 {
             read_frame(&mut server).await?;
         }
@@ -142,10 +142,10 @@ async fn peer(mut server: DuplexStream) -> Result<(), Error> {
         )
         .await?;
     }
-    snapshot(&mut server, 46, &map(0, 3), false).await?;
-    let mut rest = vec![];
-    let _ = server.read_to_end(&mut rest).await;
-    Ok(())
+    snapshot(&mut server, 46, &map(SURFACE_FLOOR, 3), false).await?;
+    // The script is complete when the last window is sent. Keep the transport
+    // open for its presentation without waiting for the client to close it.
+    Ok(server)
 }
 
 #[test]
@@ -181,7 +181,7 @@ fn native_floor_transition_replaces_window_and_keeps_playing() -> Result<(), Err
                         .visible_panels
                         .retain(|panel| panel != "minimap");
                     view.set_preferences(preferences)?;
-                    for (floor, sprites) in [(-8, 4), (0, 2)] {
+                    for (floor, sprites) in [(8, 4), (SURFACE_FLOOR, 2)] {
                         link.request(StepDir::North);
                         tokio::time::timeout(Duration::from_secs(5), async {
                             loop {
@@ -195,12 +195,20 @@ fn native_floor_transition_replaces_window_and_keeps_playing() -> Result<(), Err
                             }
                             Ok::<(), Error>(())
                         })
-                        .await??;
+                        .await
+                        .map_err(|_| {
+                            format!("floor {floor} did not render with {sprites} sprites")
+                        })??;
                     }
+                    let peer_result =
+                        tokio::time::timeout(Duration::from_secs(5), peer)
+                            .await
+                            .map_err(|_| "floor peer did not finish sending the final window")??;
+                    let _server = peer_result?;
                     drop(link);
-                    task.abort();
-                    let _ = task.await;
-                    peer.await??;
+                    tokio::time::timeout(Duration::from_secs(5), task)
+                        .await
+                        .map_err(|_| "play task did not exit after the link was dropped")??;
                     Ok::<(), Error>(())
                 })
         })?

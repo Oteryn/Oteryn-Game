@@ -237,8 +237,8 @@ fn one_entry_of_each_kind_compiles_into_its_terrain_values() -> TestResult {
     let bytes = fixture_bytes()?;
     assert_eq!(bytes, fixture_bytes()?, "two builds are byte-identical");
     let read = bundle::read(&bytes)?;
-    assert_eq!(read.manifest.format, "OTERYN_WORLD_BUNDLE/v8");
-    assert_eq!(read.manifest.min_reader_version, 8);
+    assert_eq!(read.manifest.format, bundle::FORMAT);
+    assert_eq!(read.manifest.min_reader_version, bundle::VERSION);
     let terrain = |key: &str| {
         read.manifest
             .palette

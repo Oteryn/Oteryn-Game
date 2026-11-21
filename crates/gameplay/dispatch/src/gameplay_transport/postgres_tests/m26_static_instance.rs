@@ -14,21 +14,26 @@ use crate::gameplay_transport::{SeamRooms, item_fence_of};
 use oteryn_protocol_oteryn::boss_encounter as wire;
 use std::time::Instant;
 const SPITE_KEY: &str = "oteryn:creature.goshnar_s_spite";
+// Replay the passing 6219382d native wave draws under the current content pin.
+const WAVE_SEED: [u8; 32] = [
+    0x31, 0x69, 0x5e, 0x74, 0xa8, 0xda, 0x59, 0xdf, 0x8b, 0x6f, 0xad, 0xc4, 0x44, 0xf5, 0xd7, 0x7c,
+    0xdb, 0xe9, 0xd5, 0x25, 0xd8, 0xff, 0xdd, 0x60, 0x19, 0x2a, 0x35, 0xb9, 0xcd, 0x88, 0x47, 0xc5,
+];
 
 #[test]
 fn m26_spite_postgres_static_instance_map_needs_no_channel_item_custody() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| scenario(admin).await)
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| scenario(admin).await)
 }
 
 async fn scenario(admin: String) -> TestResult {
     let started = Instant::now();
     super::reset();
     let h = Harness::create_with_admission_seed(admin, "m26_static_instance", true, false).await?;
-    let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-    super::house_transfer::prepare_owned_session(&h).await?;
+    let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+    super::house_transfer_fixtures::prepare_owned_session(&h).await?;
     let world = super::fixture::fence(1)?.runtime_scope.world_id();
     let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../../content/spells.manifest.json");
@@ -255,7 +260,7 @@ async fn scenario(admin: String) -> TestResult {
         .await
         .map_err(debug)?;
     }
-    super::item_look::seed_main_backpack(&h, &[]).await?;
+    super::item_look_fixtures::seed_main_backpack(&h, &[]).await?;
     sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT DO NOTHING")
         .bind(id(41).as_slice()).execute(&h.pool).await?;
     owner
@@ -266,7 +271,7 @@ async fn scenario(admin: String) -> TestResult {
         .activity_runtimes
         .remember(admitted)
         .map_err(|_| "remember origin")?;
-    super::boss_activity::issue_content_and_reset(&h, &pin).await?;
+    super::boss_activity_fixtures::issue_content_and_reset(&h, &pin).await?;
     ActivityHandoffOwner::new(h.root.clone())
         .publish_qualified_boss_rooms(&h.node, std::slice::from_ref(&template))
         .await?;
@@ -274,9 +279,9 @@ async fn scenario(admin: String) -> TestResult {
         .activity_runtimes
         .register_template(&template)
         .map_err(|_| "register source template")?;
-    let instance = super::activity_runtime::allocate_ready_instance(&h, 88).await?;
+    let instance = super::activity_runtime_fixtures::allocate_ready_instance(&h, 88).await?;
     let origin_session = admitted.game_session_id;
-    let (_, reply, barrier) = super::boss_activity::exchange_command(
+    let (_, reply, barrier) = super::boss_activity_fixtures::exchange_command(
         &owner,
         &mut admitted,
         template.boss_key(),
@@ -561,7 +566,11 @@ async fn scenario(admin: String) -> TestResult {
     );
     assert!(started.elapsed().as_secs_f64() > 0.01);
     super::m26_rotten_room_taints::check(&destination, admitted, origin_session).await?;
-    super::m26_rotten_wave_production::check(&destination, admitted).await?;
+    crate::gameplay_transport::monster_profile_cycle::rotten_waves::with_wave_seed_for_test(
+        WAVE_SEED,
+        super::m26_rotten_wave_production::check(&destination, admitted),
+    )
+    .await?;
     eprintln!(
         "M26_STATIC_INSTANCE POSTGRES_CASE_COMPLETED duration={:?} success=true",
         started.elapsed()

@@ -24,15 +24,30 @@ pub struct DromeHazards {
 pub const MAX_DROME_RESULT_BYTES: usize = 8192;
 
 pub fn append_drome_hazards(
+    result: Vec<u8>,
+    hazards: &DromeHazards,
+) -> Result<Vec<u8>, ArenaWireError> {
+    append_with_basis(result, hazards, true)
+}
+
+pub fn append_wire_drome_hazards(
+    result: Vec<u8>,
+    hazards: &DromeHazards,
+) -> Result<Vec<u8>, ArenaWireError> {
+    append_with_basis(result, hazards, false)
+}
+
+fn append_with_basis(
     mut result: Vec<u8>,
     hazards: &DromeHazards,
+    retained: bool,
 ) -> Result<Vec<u8>, ArenaWireError> {
     let (_, existing) = split(&result)?;
     if existing.is_some() {
         return Err(ArenaWireError::Malformed);
     }
     DromeResult::decode(&result)?;
-    validate(hazards)?;
+    validate(hazards, retained)?;
     if hazards.entries.is_empty() && hazards.selected == [0, 0] {
         return Ok(result);
     }
@@ -46,8 +61,8 @@ pub fn append_drome_hazards(
             let mut at = Vec::new();
             push_varint_field(&mut at, 1, position.x as u64);
             push_varint_field(&mut at, 2, position.y as u64);
-            // Native floors -15..15 are represented by the explicit +15 bias.
-            push_varint_field(&mut at, 3, (i32::from(position.floor) + 15) as u64);
+            let floor = i32::from(position.floor) + if retained { 15 } else { 0 };
+            push_varint_field(&mut at, 3, floor as u64);
             push_message_field(&mut row, 3, &at);
         }
         push_message_field(&mut body, 2, &row);
@@ -65,7 +80,29 @@ pub fn append_drome_hazards(
 }
 pub fn decode_drome_hazards(payload: &[u8]) -> Result<DromeHazards, ArenaWireError> {
     let (scalar, body) = split(payload)?;
-    let fields = read_uint32_fields::<12>(&scalar)?;
+    decode_with_basis(&scalar, body, false)
+}
+
+/// Project an immutable receipt to the Global-floor client result.
+pub fn project_drome_result(payload: &[u8]) -> Result<Vec<u8>, ArenaWireError> {
+    let (scalar, body) = split(payload)?;
+    let mut hazards = decode_with_basis(&scalar, body, true)?;
+    for position in hazards
+        .entries
+        .iter_mut()
+        .flat_map(|hazard| &mut hazard.positions)
+    {
+        position.floor = position.floor.abs();
+    }
+    append_wire_drome_hazards(scalar, &hazards)
+}
+
+fn decode_with_basis(
+    scalar: &[u8],
+    body: Option<&[u8]>,
+    retained: bool,
+) -> Result<DromeHazards, ArenaWireError> {
+    let fields = read_uint32_fields::<12>(scalar)?;
     if fields[0] != 2 || !(1..=8).contains(&fields[1]) || fields[5] > 2 {
         return Err(ArenaWireError::Malformed);
     }
@@ -80,7 +117,7 @@ pub fn decode_drome_hazards(payload: &[u8]) -> Result<DromeHazards, ArenaWireErr
                 if entries.len() == 2 {
                     return Err(ArenaWireError::LimitExceeded);
                 }
-                entries.push(decode_entry(read_bytes(body, &mut cursor)?)?);
+                entries.push(decode_entry(read_bytes(body, &mut cursor)?, retained)?);
             }
             24 => {
                 if selected.len() == 2 {
@@ -107,7 +144,7 @@ pub fn decode_drome_hazards(payload: &[u8]) -> Result<DromeHazards, ArenaWireErr
     if snapshot.entries.is_empty() && snapshot.selected == [0, 0] {
         return Err(ArenaWireError::Malformed);
     }
-    validate(&snapshot)?;
+    validate(&snapshot, retained)?;
     Ok(snapshot)
 }
 pub(super) fn scalar_result(payload: &[u8]) -> Result<Vec<u8>, ArenaWireError> {
@@ -134,7 +171,7 @@ fn split(payload: &[u8]) -> Result<(Vec<u8>, Option<&[u8]>), ArenaWireError> {
     }
     Ok((scalar, hazards))
 }
-fn decode_entry(body: &[u8]) -> Result<DromeHazard, ArenaWireError> {
+fn decode_entry(body: &[u8], retained: bool) -> Result<DromeHazard, ArenaWireError> {
     let (mut cursor, mut kind, mut expires, mut positions) = (0, None, None, Vec::new());
     while cursor < body.len() {
         match read_varint(body, &mut cursor)? {
@@ -154,7 +191,7 @@ fn decode_entry(body: &[u8]) -> Result<DromeHazard, ArenaWireError> {
                 if positions.len() == 100 {
                     return Err(ArenaWireError::LimitExceeded);
                 }
-                positions.push(decode_position(read_bytes(body, &mut cursor)?)?);
+                positions.push(decode_position(read_bytes(body, &mut cursor)?, retained)?);
             }
             _ => return Err(ArenaWireError::Malformed),
         }
@@ -165,7 +202,10 @@ fn decode_entry(body: &[u8]) -> Result<DromeHazard, ArenaWireError> {
         positions,
     })
 }
-fn decode_position(body: &[u8]) -> Result<crate::world_spatial::ActorPosition, ArenaWireError> {
+fn decode_position(
+    body: &[u8],
+    retained: bool,
+) -> Result<crate::world_spatial::ActorPosition, ArenaWireError> {
     let (mut cursor, mut x, mut y, mut floor) = (0, None, None, None);
     while cursor < body.len() {
         match read_varint(body, &mut cursor)? {
@@ -180,16 +220,16 @@ fn decode_position(body: &[u8]) -> Result<crate::world_spatial::ActorPosition, A
         y.ok_or(ArenaWireError::Malformed)?,
         floor.ok_or(ArenaWireError::Malformed)?,
     );
-    if x > 65535 || y > 65535 || floor > 30 {
+    if x > 65535 || y > 65535 || floor > if retained { 30 } else { 15 } {
         return Err(ArenaWireError::Malformed);
     }
     Ok(crate::world_spatial::ActorPosition {
         x: x as i32,
         y: y as i32,
-        floor: floor as i16 - 15,
+        floor: floor as i16 - if retained { 15 } else { 0 },
     })
 }
-fn validate(snapshot: &DromeHazards) -> Result<(), ArenaWireError> {
+fn validate(snapshot: &DromeHazards, retained: bool) -> Result<(), ArenaWireError> {
     if snapshot.selected != [0, 0]
         && (snapshot.selected[0] == snapshot.selected[1]
             || snapshot.selected.iter().any(|id| !(1..=9).contains(id)))
@@ -220,7 +260,7 @@ fn validate(snapshot: &DromeHazards) -> Result<(), ArenaWireError> {
         for position in &entry.positions {
             if !(0..=65535).contains(&position.x)
                 || !(0..=65535).contains(&position.y)
-                || !(-15..=15).contains(&position.floor)
+                || !((if retained { -15 } else { 0 })..=15).contains(&position.floor)
                 || positions.contains(position)
             {
                 return Err(ArenaWireError::Malformed);

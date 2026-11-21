@@ -99,33 +99,39 @@ const INVENTORY: &[Entry] = &[
             ("gameplay_transport/attack/ranged.rs", 1),
             // CHARMS: real primary/secondary target regression uses the existing attack gate.
             (
-                "gameplay_transport/postgres_tests/all_charms_secondary.rs",
+                "gameplay_transport/postgres_tests/support/all_charms_secondary_fixtures.rs",
                 2,
             ),
             (
                 "gameplay_transport/postgres_tests/daily_reward/effects.rs",
                 1,
             ),
-            ("gameplay_transport/postgres_tests/equipped_offence.rs", 2),
-            ("gameplay_transport/postgres_tests/hunting_stamina.rs", 3),
+            (
+                "gameplay_transport/postgres_tests/support/equipped_offence_fixtures.rs",
+                2,
+            ),
+            (
+                "gameplay_transport/postgres_tests/support/hunting_stamina_fixtures.rs",
+                3,
+            ),
             // SRX-2/P01: charm regressions select live targets through the existing attack gate.
             (
-                "gameplay_transport/postgres_tests/srx2_charm_consumers.rs",
+                "gameplay_transport/postgres_tests/support/srx2_charm_consumers_fixtures.rs",
                 2,
             ),
             // TASKBOARD-P04: real party kill/capture replay fixture uses the existing attack gate.
             (
-                "gameplay_transport/postgres_tests/party_xp/bounty_talisman.rs",
+                "gameplay_transport/postgres_tests/support/party_xp/bounty_talisman.rs",
                 2,
             ),
             // The real equipment move must settle a prior death before changing slot 10.
             (
-                "gameplay_transport/postgres_tests/party_xp/bounty_talisman/equipment.rs",
+                "gameplay_transport/postgres_tests/support/party_xp/bounty_talisman/equipment.rs",
                 1,
             ),
             // TASKBOARD-P04: chronological queued deaths use real target/clear attack calls.
             (
-                "gameplay_transport/postgres_tests/party_xp/task_board_ordered.rs",
+                "gameplay_transport/postgres_tests/support/party_xp/task_board_ordered.rs",
                 2,
             ),
             // XMECH-E2E-1: the hunt, death and disconnect scenarios attack through the real gate.
@@ -191,7 +197,7 @@ const INVENTORY: &[Entry] = &[
             // S10: source NPC wandering uses the same live-world movement gate.
             ("gameplay_transport/npc_actor/current_map.rs", 1),
             (
-                "gameplay_transport/postgres_tests/m26_rotten_wave_production.rs",
+                "gameplay_transport/postgres_tests/support/m26_rotten_wave_production.rs",
                 1,
             ),
             ("gameplay_transport/postgres_tests/m26_spite_chain.rs", 2),
@@ -208,7 +214,7 @@ const INVENTORY: &[Entry] = &[
             ("gameplay_transport/postgres_tests/raid_live/cake.rs", 2),
             // W17: the physical Drome regression proves participant-only targeting.
             (
-                "gameplay_transport/postgres_tests/reaudit_arena_lifecycle.rs",
+                "gameplay_transport/postgres_tests/support/reaudit_arena_lifecycle_fixtures.rs",
                 1,
             ),
             // SRX-3 source/current-owner reads; gate semantics remain unchanged.
@@ -222,7 +228,7 @@ const INVENTORY: &[Entry] = &[
                 1,
             ),
             (
-                "gameplay_transport/postgres_tests/srx3_greed_retention.rs",
+                "gameplay_transport/postgres_tests/support/srx3_greed_retention_fixtures.rs",
                 1,
             ),
             (
@@ -231,13 +237,16 @@ const INVENTORY: &[Entry] = &[
             ),
             // The Outburst diagnostic requalifies its current source context before reading it.
             (
-                "gameplay_transport/postgres_tests/srx3_native_source_cast.rs",
+                "gameplay_transport/postgres_tests/support/srx3_native_source_cast_fixtures.rs",
                 1,
             ),
             ("gameplay_transport/postgres_tests/srx3_primal.rs", 1),
-            ("gameplay_transport/postgres_tests/srx3_rotten_portal.rs", 1),
             (
-                "gameplay_transport/postgres_tests/srx3_soul_war_attacks.rs",
+                "gameplay_transport/postgres_tests/support/srx3_rotten_portal.rs",
+                1,
+            ),
+            (
+                "gameplay_transport/postgres_tests/support/srx3_soul_war_attacks_fixtures.rs",
                 2,
             ),
             ("gameplay_transport/soul_war_callbacks/entry.rs", 1),
@@ -348,7 +357,7 @@ const INVENTORY: &[Entry] = &[
                 2,
             ),
             (
-                "gameplay_transport/postgres_tests/srx3_rotten_callbacks.rs",
+                "gameplay_transport/postgres_tests/support/srx3_rotten_callbacks_fixtures.rs",
                 1,
             ),
             ("gameplay_transport/primal_entry.rs", 1),
@@ -1013,7 +1022,11 @@ impl<'ast> Visit<'ast> for Constructions<'ast> {
 /// owners in `mod.rs`, its one production construction in `serve.rs`, the shared test
 /// constructor and explicit fixture room overrides.
 const CONSTRUCTIONS: &[(&str, usize)] = &[
-    ("gameplay_transport/postgres_tests/m25_ahau_exit.rs", 1),
+    ("gameplay_transport/postgres_tests/cwarlock.rs", 1),
+    (
+        "gameplay_transport/postgres_tests/support/m25_ahau_exit_fixtures.rs",
+        1,
+    ),
     ("gameplay_transport/postgres_tests/engenc2_nomads_use.rs", 1),
     ("gameplay_transport/postgres_tests/engenc2_cults.rs", 1),
     // Qualified activity content inherits the origin gate, checked below.
@@ -1032,7 +1045,10 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         "gameplay_transport/postgres_tests/planned_world_reset_source_map.rs",
         1,
     ),
-    ("gameplay_transport/kill_reward_postgres_e2e_tests.rs", 1),
+    (
+        "gameplay_transport/postgres_tests/support/kill_reward_e2e_fixtures.rs",
+        1,
+    ),
     ("gameplay_transport/mod.rs", 4),
     ("gameplay_transport/monk_save_postgres_tests.rs", 1),
     ("gameplay_transport/parameter_cast.rs", 3),
@@ -1066,7 +1082,10 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         2,
     ),
     ("gameplay_transport/postgres_tests/field_runes.rs", 2),
-    ("gameplay_transport/postgres_tests/item_cosmetics.rs", 1),
+    (
+        "gameplay_transport/postgres_tests/support/item_cosmetics_fixtures.rs",
+        1,
+    ),
     ("gameplay_transport/postgres_tests/newhaven_corruptor.rs", 1),
     // The carried-fluid fixture supplies an action room and no qualified room.
     (
@@ -1085,9 +1104,18 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         "gameplay_transport/postgres_tests/novelty_items/scenario.rs",
         1,
     ),
-    ("gameplay_transport/postgres_tests/party_buffs.rs", 1),
-    ("gameplay_transport/postgres_tests/party_xp.rs", 1),
-    ("gameplay_transport/postgres_tests/player_trade.rs", 2),
+    (
+        "gameplay_transport/postgres_tests/support/party_buffs_fixtures.rs",
+        1,
+    ),
+    (
+        "gameplay_transport/postgres_tests/support/party_xp_fixtures.rs",
+        1,
+    ),
+    (
+        "gameplay_transport/postgres_tests/support/player_trade_fixtures.rs",
+        2,
+    ),
     // PREY-DIFF (2026-11-01): the loot fixture supplies combat only;
     // its qualified room remains None.
     (
@@ -1101,13 +1129,23 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ),
     // The proficiency fixture binds its Bundle combat view and withholds qualification.
     (
-        "gameplay_transport/postgres_tests/proficiency_modification.rs",
+        "gameplay_transport/postgres_tests/support/proficiency_modification_fixtures.rs",
+        1,
+    ),
+    // The Ancient Tombs supplies the combat room for its Bundle fixture; qualified room stays None.
+    (
+        "gameplay_transport/postgres_tests/qcx_the_ancient_tombs.rs",
+        1,
+    ),
+    // Threatened Dreams supplies the combat room for its Bundle fixture.
+    (
+        "gameplay_transport/postgres_tests/qcx_threatened_dreams.rs",
         1,
     ),
     ("gameplay_transport/postgres_tests/ranged_attack.rs", 1),
     // QUESTPC4 source callback and reset fixtures bind their explicit source room.
     (
-        "gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs",
+        "gameplay_transport/postgres_tests/support/quest_world_callbacks/scenario.rs",
         2,
     ),
     // Rotten Blood progression supplies its source combat room; qualified room stays None.
@@ -1125,22 +1163,31 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     // Soulpit's production owner and PG fixture both withhold qualification.
     ("gameplay_transport/soulpit/content.rs", 2),
     (
-        "gameplay_transport/postgres_tests/soulpit_shared_entry/native.rs",
+        "gameplay_transport/postgres_tests/support/soulpit_shared_entry/native.rs",
         2,
     ),
     ("gameplay_transport/postgres_tests/task_board.rs", 1),
-    ("gameplay_transport/postgres_tests/vertical_move.rs", 2),
+    (
+        "gameplay_transport/postgres_tests/support/vertical_move_fixtures.rs",
+        2,
+    ),
     ("gameplay_transport/postgres_tests/utility_runes.rs", 3),
     // Wheel socket/unsocket fixtures add two explicit empty-room overrides;
     // the production qualified-room construction remains unchanged.
     ("gameplay_transport/postgres_tests/wheel_allocation.rs", 5),
-    ("gameplay_transport/rune_use_bridge_postgres_tests.rs", 2),
+    (
+        "gameplay_transport/postgres_tests/support/rune_use_bridge_fixtures.rs",
+        2,
+    ),
     ("node/serve.rs", 1),
     ("qualification.rs", 1),
     // SRX-3 fixture room bindings; production Bundle closure is asserted separately.
-    ("gameplay_transport/postgres_tests/hireling_lifecycle.rs", 1),
     (
-        "gameplay_transport/postgres_tests/srx3_activity_source_fixture.rs",
+        "gameplay_transport/postgres_tests/support/hireling_lifecycle_fixtures.rs",
+        1,
+    ),
+    (
+        "gameplay_transport/postgres_tests/support/srx3_activity_source_fixture.rs",
         2,
     ),
     (
@@ -1153,7 +1200,7 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         1,
     ),
     (
-        "gameplay_transport/postgres_tests/srx3_rotten_area_think.rs",
+        "gameplay_transport/postgres_tests/support/srx3_rotten_area_think_fixtures.rs",
         1,
     ),
     (

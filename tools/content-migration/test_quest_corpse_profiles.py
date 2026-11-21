@@ -61,15 +61,18 @@ class CorpseQualification(unittest.TestCase):
             expected = self.plan.records[key]['semantics']['container']['value']['capacity']['value']
             self.assertTrue(facts[key]['materializable'], key)
             self.assertEqual(facts[key]['container_capacity'], expected, key)
+        for number in (5967, 5999, 6031, 25814):
+            self.assertTrue(facts[f'oteryn:item.tibia.i{number}']['ordinary_corpse_only'])
 
     def test_exact_source_capacities_and_complete_decay_chains(self):
         self.assertEqual(self.plan.roots, {
-            5960, 5962, 5968, 5973, 5975, 5995, 6006, 6048, 6078, 17445, 17446,
+            5960, 5962, 5967, 5968, 5973, 5975, 5995, 5999, 6006, 6025, 6030, 6031, 6044,
+            6048, 6055, 6072, 6078, 8909, 11675, 17445, 17446,
             17449, 17454, 18099, 20972, 21910, 22010, 22066, 22067, 25085,
-            27714, 27718, 30272, 31453, 31599, 31611, 33821})
-        self.assertEqual(len(self.plan.records), 95)
+            25815, 27714, 27718, 30272, 31453, 31599, 31611, 33821})
+        self.assertEqual(len(self.plan.records), 137)
         for number, capacity, target in [(5960, 7, 3987), (5962, 30, 3989),
-                                         (5968, 5, 4007), (5975, 20, 4291)]:
+                                         (5967, 10, 4266), (5968, 5, 4007), (5975, 20, 4291)]:
             row = self.plan.records[f'oteryn:item.tibia.i{number}']
             self.assertEqual(row['admission']['legal_destinations'], ['Ground'])
             self.assertEqual(row['semantics']['container'], corpse.grizzly.source.K(
@@ -89,11 +92,11 @@ class CorpseQualification(unittest.TestCase):
         # CORPSE48 (owner 2026-11-17): corpses up to 48 keep their source capacity.
         key = 'oteryn:item.tibia.i30272'
         self.assertEqual(corpse.grizzly.source.attrs(self.xml[30272])['containersize'], '40')
-        self.assertEqual(self.plan.projected_source_capacities, {})
+        self.assertEqual(self.plan.projected_source_capacities, {'oteryn:item.tibia.i5999': 50})
         self.assertEqual(self.plan.records[key]['semantics']['container'],
                          corpse.grizzly.source.K({'capacity': corpse.grizzly.source.K(40)}))
         packet = json.loads((corpse.ROOT / corpse.REQUIREMENTS).read_bytes())
-        self.assertEqual(packet['capacity_projections'], [])
+        self.assertEqual([r['item'] for r in packet['capacity_projections']], ['oteryn:item.tibia.i5999'])
         record = {'item': key, 'source_capacity': 40, 'native_capacity': 48,
                   'sources': ['imports/canary/items-xml/items.xml#30272']}
         # A projection of a corpse that fits 48, or to any other native bound, is refused.

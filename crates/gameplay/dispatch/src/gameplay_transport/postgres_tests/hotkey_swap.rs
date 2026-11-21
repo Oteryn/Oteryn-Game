@@ -1,10 +1,10 @@
 //! I17c real dispatch, committed custody reload and replay for each durable transition.
 use super::TestResult;
-use super::hotkey_equip::{ScenarioMode, swap_scenario};
+use super::hotkey_equip_fixtures::{ScenarioMode, swap_scenario};
 
 #[test]
 fn hotkey_swap_postgres_two_hander_displaces_both_hands() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("hotkey-two-hands", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("hotkey-two-hands", || {
         swap_scenario(ScenarioMode::Hands {
             incoming: "oteryn:item.tibia.i50273",
             both: true,
@@ -14,7 +14,7 @@ fn hotkey_swap_postgres_two_hander_displaces_both_hands() -> TestResult {
 }
 #[test]
 fn hotkey_swap_postgres_shield_displaces_two_hander() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("hotkey-shield", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("hotkey-shield", || {
         swap_scenario(ScenarioMode::Hands {
             incoming: "oteryn:item.tibia.i3412",
             both: false,
@@ -24,7 +24,7 @@ fn hotkey_swap_postgres_shield_displaces_two_hander() -> TestResult {
 }
 #[test]
 fn hotkey_swap_postgres_one_hander_displaces_two_hander() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("hotkey-one-hand", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("hotkey-one-hand", || {
         swap_scenario(ScenarioMode::Hands {
             incoming: "oteryn:item.tibia.i3264",
             both: false,
@@ -34,7 +34,7 @@ fn hotkey_swap_postgres_one_hander_displaces_two_hander() -> TestResult {
 }
 #[test]
 fn hotkey_swap_postgres_full_backpack_refuses_both_hands_atomically() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("hotkey-hands-full", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("hotkey-hands-full", || {
         swap_scenario(ScenarioMode::Hands {
             incoming: "oteryn:item.tibia.i50273",
             both: true,
@@ -44,7 +44,7 @@ fn hotkey_swap_postgres_full_backpack_refuses_both_hands_atomically() -> TestRes
 }
 #[test]
 fn hotkey_swap_postgres_ammunition_goes_to_quiver() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("hotkey-ammo", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("hotkey-ammo", || {
         swap_scenario(ScenarioMode::Ammo {
             full: false,
             absent: false,
@@ -53,7 +53,7 @@ fn hotkey_swap_postgres_ammunition_goes_to_quiver() -> TestResult {
 }
 #[test]
 fn hotkey_swap_postgres_full_quiver_refuses_atomically() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("hotkey-ammo-full", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("hotkey-ammo-full", || {
         swap_scenario(ScenarioMode::Ammo {
             full: true,
             absent: false,
@@ -62,7 +62,7 @@ fn hotkey_swap_postgres_full_quiver_refuses_atomically() -> TestResult {
 }
 #[test]
 fn hotkey_swap_postgres_ammunition_requires_quiver() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("hotkey-ammo-absent", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("hotkey-ammo-absent", || {
         swap_scenario(ScenarioMode::Ammo {
             full: false,
             absent: true,

@@ -39,7 +39,7 @@ fn scenario() -> Result<(), String> {
     let spawn = MovementLocalPosition {
         x: 32376,
         y: 31144,
-        floor: -8,
+        floor: 8,
     };
     if !known(spawn) {
         return Err("actual source boss cell is not walkable".into());
@@ -56,7 +56,7 @@ fn scenario() -> Result<(), String> {
     let mut pool = Vec::new();
     for y in 31132..=31153 {
         for x in 32362..=32390 {
-            let at = MovementLocalPosition { x, y, floor: -8 };
+            let at = MovementLocalPosition { x, y, floor: 8 };
             if at != spawn && at != target_position && known(at) {
                 pool.push(at);
             }
@@ -154,10 +154,10 @@ fn scenario() -> Result<(), String> {
         let actors = {
             let (carrier, continuity, pin) = runtime.soulpit_kernel_parts().map_err(err)?;
             carrier
-                .spawn_soulpit_wave(
+                .spawn_native_soulpit_wave(
                     continuity,
                     pin,
-                    native.policies(),
+                    native,
                     SoulpitWaveRequest {
                         handoff_id: uuid(7),
                         wave,

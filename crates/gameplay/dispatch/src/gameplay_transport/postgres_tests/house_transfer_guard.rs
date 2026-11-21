@@ -7,6 +7,7 @@ use crate::gameplay_transport::world_spatial::StepDirection;
 use crate::gameplay_transport::{StepOutcome, WorldSpatialObservation};
 use oteryn_protocol_oteryn::{
     CommandStatus, MessageType, decode_command_result, decode_wire_envelope,
+    world_spatial::{StepDisposition, decode_step_result},
 };
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
@@ -89,7 +90,7 @@ async fn result(client: &mut tokio::io::DuplexStream) -> TestResult<(CommandStat
 
 #[test]
 fn house_transfer_guard_busy_budget_preserves_connection_postgres() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("house-guard-deferred", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("house-guard-deferred", || {
         run(async |admin| {
             let h = Harness::create_with_admission_seed(admin, "house_guard_deferred", true, false)
                 .await?;
@@ -153,17 +154,20 @@ fn house_transfer_guard_busy_budget_preserves_connection_postgres() -> TestResul
                         client.write_all(&first).await?;
                     }
                     let refusal = result(&mut client).await?;
-                    assert_eq!(refusal, (CommandStatus::Rejected, Vec::new()));
+                    assert_eq!(refusal.0, CommandStatus::Rejected);
+                    assert_eq!(decode_step_result(&refusal.1), Ok(StepDisposition::Rejected));
                     assert_eq!(
                         result(&mut client).await?,
-                        (CommandStatus::DuplicateReplay, Vec::new())
+                        (CommandStatus::DuplicateReplay, refusal.1)
                     );
                     assert_eq!(probe.steps.get(), 0);
                     held.run(|_, _| Box::pin(async { Ok(()) })).await?;
                     let next = command(2)?;
                     client.write_u32(next.len() as u32).await?;
                     client.write_all(&next).await?;
-                    assert_eq!(result(&mut client).await?.0, CommandStatus::Accepted);
+                    let next_result = result(&mut client).await?;
+                    assert_eq!(next_result.0, CommandStatus::Accepted);
+                    assert_eq!(decode_step_result(&next_result.1), Ok(StepDisposition::Blocked));
                     assert_eq!(probe.steps.get(), 1);
                     client.shutdown().await?;
                     Ok::<_, Box<dyn std::error::Error>>(())

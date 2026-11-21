@@ -25,7 +25,7 @@ use std::time::{Duration, Instant};
 
 #[test]
 fn srvgap2_primal_production_entry_cadence_death_settlement_and_return() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| scenario(admin).await)
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| scenario(admin).await)
 }
 
 async fn scenario(admin: String) -> TestResult {
@@ -51,8 +51,8 @@ async fn scenario(admin: String) -> TestResult {
         .qualify_primal_activity_template(&scene.room, "content-1")
         .map_err(debug)?;
     let h = Harness::create_with_admission_seed(admin, "srvgap2_primal_chain", true, false).await?;
-    let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-    super::house_transfer::prepare_owned_session(&h).await?;
+    let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+    super::house_transfer_fixtures::prepare_owned_session(&h).await?;
     assert_eq!(
         (
             template.minimum_level(),
@@ -166,7 +166,7 @@ async fn scenario(admin: String) -> TestResult {
             .is_some(),
         "production progression admission"
     );
-    super::item_look::seed_main_backpack(&h, &[]).await?;
+    super::item_look_fixtures::seed_main_backpack(&h, &[]).await?;
     sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT DO NOTHING")
         .bind(id(41).as_slice()).execute(&h.pool).await?;
     owner
@@ -186,16 +186,16 @@ async fn scenario(admin: String) -> TestResult {
             .overlay
             .base(),
     );
-    super::boss_activity::issue_content_and_reset_with_runtime_pin(
+    super::boss_activity_fixtures::issue_content_and_reset_with_runtime_pin(
         &h,
         &activation_pin,
         &scene.pin,
         &map_revision,
     )
     .await?;
-    let instance = super::activity_runtime::allocate_ready_instance(&h, 88).await?;
+    let instance = super::activity_runtime_fixtures::allocate_ready_instance(&h, 88).await?;
     let origin_session = admitted.game_session_id;
-    let (_, reply, barrier) = super::boss_activity::exchange_command(
+    let (_, reply, barrier) = super::boss_activity_fixtures::exchange_command(
         &owner,
         &mut admitted,
         template.boss_key(),
@@ -242,7 +242,7 @@ async fn scenario(admin: String) -> TestResult {
     // Crystal onThink uses whole-second os.time and a strict deadline. Use
     // explicit semantic fixture clocks; the three-second warmup is unchanged.
     let now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(1_000_000);
-    super::srx3_primal::drain_actual_native_through(&destination, now.get(), true).await?;
+    super::srx3_primal_fixtures::drain_actual_native_through(&destination, now.get(), true).await?;
     assert!(
         destination
             .states
@@ -405,7 +405,7 @@ async fn scenario(admin: String) -> TestResult {
                     .select(
                         |at| {
                             let cell = crate::content::LogicalCell {
-                                x: at.x, y: at.y, z: -i32::from(at.floor),
+                                x: at.x, y: at.y, z: i32::from(at.floor),
                             };
                             let tile = source_world.immutable_tile(source_world.scope(), cell).ok()?;
                             let flags = tile.flags();
@@ -492,10 +492,10 @@ async fn scenario(admin: String) -> TestResult {
         (wave_at, duplicate_cell, admitted_cells)
     };
     let expected_wave = expected_cells.len();
-    super::srx3_primal::drain_actual_native_through(&destination, wave_at.get(), true).await?;
+    super::srx3_primal_fixtures::drain_actual_native_through(&destination, wave_at.get(), true).await?;
     assert_eq!(beasts(&destination).await?, 0, "source three-second warmup");
     let warmed_at = wave_at.get() + rules::SPAWN_WARMUP_MS * 1000;
-    super::srx3_primal::drain_actual_native_through(&destination, warmed_at, true).await?;
+    super::srx3_primal_fixtures::drain_actual_native_through(&destination, warmed_at, true).await?;
     let spawned = beast_positions(&destination).await?;
     assert_eq!(
         spawned.len(),
@@ -515,7 +515,7 @@ async fn scenario(admin: String) -> TestResult {
         expected_cells,
         "native beast positions match successful source admissions"
     );
-    super::srx3_primal::drain_actual_native_through(&destination, warmed_at, true).await?;
+    super::srx3_primal_fixtures::drain_actual_native_through(&destination, warmed_at, true).await?;
     assert_eq!(
         beasts(&destination).await?,
         expected_wave,

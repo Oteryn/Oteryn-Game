@@ -45,6 +45,9 @@ pub struct NativeLoginConfig {
     pub account_services: crate::account_services::Presenter,
     pub coin_shop: crate::coin_shop::Presenter,
     pub premium: crate::premium::Presenter,
+    /// chsw (capability 512): after the server released the session for a Channel switch, the
+    /// next entry takes this character into this Channel of the same World without the picker.
+    pub channel_switch: Option<(String, String)>,
 }
 
 impl Debug for NativeLoginConfig {
@@ -61,7 +64,8 @@ impl Debug for NativeLoginConfig {
 
 impl NativeLoginConfig {
     /// Reads `OTERYN_PLATFORM_URL`, `OTERYN_GATEWAY_URL`, `OTERYN_OAUTH_CLIENT_ID`,
-    /// `OTERYN_WORLD`, `OTERYN_CHARACTER_ID` and `OTERYN_DEV_ROOT`. Native login is off
+    /// `OTERYN_WORLD`, `OTERYN_CHARACTER_ID` and `OTERYN_DEV_ROOT`. The root is required
+    /// for gameplay TLS after a grant. Native login is off
     /// (`Ok(None)`) while `OTERYN_PLATFORM_URL` is unset.
     pub fn from_env(
         lookup: impl Fn(&str) -> Option<String>,
@@ -88,7 +92,7 @@ impl NativeLoginConfig {
             oauth_client_id,
             world_ref: lookup("OTERYN_WORLD").unwrap_or_default(),
             character_id: lookup("OTERYN_CHARACTER_ID").unwrap_or_default(),
-            dev_root: PathBuf::from(setting("OTERYN_DEV_ROOT")?),
+            dev_root: PathBuf::from(lookup("OTERYN_DEV_ROOT").unwrap_or_default()),
             client_build: CLIENT_BUILD.to_owned(),
             preference_path: crate::play::PreferenceStore::path(),
             callback_timeout: DEFAULT_CALLBACK_TIMEOUT,
@@ -99,6 +103,7 @@ impl NativeLoginConfig {
             account_services: Arc::new(crate::account_services::present),
             coin_shop: Arc::new(crate::coin_shop::present),
             premium: Arc::new(crate::premium::present),
+            channel_switch: None,
         }))
     }
 }

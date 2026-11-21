@@ -1,4 +1,4 @@
-//! Verify creation receipts, including both historical tag 2 and sex-bearing tag 3.
+//! Verify creation receipts, retaining historical tags 2/3 and vocation-bearing tag 4.
 use super::*;
 
 pub(super) async fn verify(
@@ -12,7 +12,7 @@ pub(super) async fn verify(
           WHERE c.character_id IS NULL OR c.account_id <> coalesce((SELECT t.old_account FROM game_bazaar_character_transitions t WHERE t.character_id=r.character_id ORDER BY t.new_revision LIMIT 1),r.account_id) OR c.world_id <> r.world_id \
              OR r.account_id <> coalesce((SELECT t.new_account FROM game_bazaar_character_transitions t WHERE t.character_id=r.character_id ORDER BY t.new_revision DESC LIMIT 1),c.account_id) \
              OR o.character_revision <> 1 \
-             OR o.command_binding <> (CASE WHEN r.sex IS NULL THEN decode('02','hex') ELSE decode('03','hex') END) || uuid_send(o.issuer_decision_id) \
+             OR o.command_binding <> (CASE WHEN r.creation_vocation IS NOT NULL THEN decode('04','hex') WHEN r.sex IS NULL THEN decode('02','hex') ELSE decode('03','hex') END) || uuid_send(o.issuer_decision_id) \
                 || int8send(o.intent_source_revision) || uuid_send(o.operation_id) \
                 || uuid_send(o.account_id) || uuid_send(r.world_id) \
                 || int8send(o.issued_at_source) || int8send(o.expires_at_source) \
@@ -22,6 +22,7 @@ pub(super) async fn verify(
                 || int2send(octet_length(r.starter_template_revision)::int2) || convert_to(r.starter_template_revision, 'UTF8') \
                 || int2send(octet_length(coalesce((SELECT t.old_name FROM game_character_service_changes t WHERE t.character_id=r.character_id ORDER BY t.new_revision LIMIT 1),r.name))::int2) || convert_to(coalesce((SELECT t.old_name FROM game_character_service_changes t WHERE t.character_id=r.character_id ORDER BY t.new_revision LIMIT 1),r.name), 'UTF8') \
                 || (CASE WHEN r.sex IS NULL THEN ''::bytea ELSE substring(int2send(r.sex) from 2 for 1) END) \
+                || (CASE WHEN r.creation_vocation IS NULL THEN ''::bytea ELSE substring(int2send(octet_length(initcap(r.creation_vocation))::int2) from 2 for 1) || convert_to(initcap(r.creation_vocation), 'UTF8') END) \
              OR (a.event_id IS NOT NULL AND (a.character_id <> r.character_id \
                  OR a.transaction_id <> c.transaction_id OR a.server_build_id <> c.server_build_id \
                  OR a.occurred_at <> c.occurred_at \

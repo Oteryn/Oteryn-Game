@@ -118,7 +118,7 @@ mod tests {
     fn requests_use_the_codec_and_refusals_are_visible() {
         let mut panel = HirelingPanel {
             selected: true,
-            target: Some((7, 9, -1)),
+            target: Some((7, 9, 1)),
             ..Default::default()
         };
         let Some(command) = request(&mut panel, Intent::Summon) else {

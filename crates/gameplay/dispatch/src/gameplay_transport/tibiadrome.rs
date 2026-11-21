@@ -133,7 +133,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if !read.state.active && !self.drome_exit(actor, admitted.game_session_id).await {
                 return None;
             }
-            return Some(reply);
+            return wire::project_drome_result(&reply).ok();
         }
         let purchase = if let A::Buy(selector) = action {
             Some(selector)
@@ -412,7 +412,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !after.active && !self.drome_exit(actor, admitted.game_session_id).await {
             return None;
         }
-        Some(reply)
+        wire::project_drome_result(&reply).ok()
     }
 
     pub(super) async fn drome_exit(&self, actor: ExactActorRef, session: GameSessionId) -> bool {

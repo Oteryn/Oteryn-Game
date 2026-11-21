@@ -46,7 +46,7 @@ review requests merely because a response is delayed.
 This standing authorization does **not** cover optional/speculative extra reviews,
 implementation, code generation or repair, tracked-file mutation, commits, push,
 merge/enqueue, production/live-data actions, cross-repository writes, general
-Codex usage, repeated reviewer loops beyond the per-PR rule below or any other owner-funded AI/API operation.
+Codex usage, repeated reviewer loops beyond the per-PR rule and the owner review loop below or any other owner-funded AI/API operation.
 Optional review without separate task-specific authorization is skipped rather than
 turned into a new owner prompt.
 
@@ -84,6 +84,35 @@ reports a finding it cannot reproduce without changing code, changes no existing
 assertion, timeout or budget and nothing outside the list, and commits nothing;
 the coordinator reviews its diff before committing. This is ordinary code-writing
 Codex use under the 2026-11-11 effort decision, not a further review.
+
+Owner decision 2026-11-18 (lens runs): one review of one exact head may run as
+the parallel read-only lens tasks of `.claude/skills/oteryn-review/references/batch-review.md`,
+including its holistic whole-diff runs for a package or chunked diff
+(same model and effort, one dispatch by the single review-dispatch owner). Those
+tasks together are the one covered invocation for that head; they never add a
+review to the per-PR count.
+
+### Owner review loop (2026-11-18)
+
+The owner authorizes, when the owner asks for it by name for an area or product,
+a review loop over merged code on `main`, run as rounds of read-only Codex Cloud
+tasks (model `gpt-6.2-astra`, effort `high`) under
+`.claude/skills/oteryn-review/references/review-loop.md`. This is the one
+exception to "never a loop" above and is limited to it:
+
+- only the active coordinator starts a round, and only for a loop the owner
+  asked for; a round is never counted as, or used in place of, the review of an
+  open PR, and each fix PR the loop produces gets its own per-PR review;
+- the loop's charter (scope, rules, cuts, stop bar) is written before round 1;
+- the loop stops at its stop bar, or after 3 rounds in which the number of new
+  confirmed P0/P1 has not fallen, and the coordinator reports to the owner;
+- it covers the review runs alone, not repair (repair runs under the
+  2026-11-11 decision above);
+- it also covers verification runs of the loop's own findings (owner,
+  2026-11-18: "zgoda na dodatkowe review jest"): read-only Codex Cloud tasks,
+  same model and effort, that try to refute or confirm the round's P0/P1
+  findings, grouped by area (never one run per finding). Per-PR reviews keep
+  the Claude-subagent refute of `batch-review.md` §3.
 
 The owner may revoke or narrow this standing authorization at any time by a later
 explicit instruction. A later protected policy may narrow execution further but

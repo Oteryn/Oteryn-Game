@@ -16,6 +16,10 @@ message PartyEntryV1 {
   string name = 2; // 1..64 UTF-8 bytes
   bool leader = 3;
   uint64 expires_at = 4; // invitation Unix seconds; zero for members
+  // Field 5: capability 383; field 6: capability 461.
+  // Capability 513 SOCIAL_CHANNEL_V1 only: the member's current 16-byte ChannelId of the
+  // World. Absent for invitations, hidden or offline members and peers without 513.
+  optional bytes channel = 7;
 }
 message PartyResultV1 {
   // 1 OK, 2 NOT_LEADER, 3 ALREADY_IN_PARTY, 4 NOT_INVITED, 5 NOT_VISIBLE,

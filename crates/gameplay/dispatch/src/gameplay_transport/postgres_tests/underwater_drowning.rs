@@ -15,6 +15,8 @@ use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 use oteryn_world_bundle::writer::*;
 use std::time::Duration;
 
+const DROME_DRUNK_KEY: &str = "drome.drunk";
+
 #[test]
 fn fixm10_swimming_and_map_traps_postgres() -> TestResult {
     on_thread(|| {
@@ -554,11 +556,7 @@ fn scenario_in_world(
                 );
                 if final_x == 5 {
                     assert!(
-                        !state
-                            .owned_conditions()
-                            .instances()
-                            .iter()
-                            .any(|i| i.definition().key().starts_with("fixture.harm")),
+                        !has_swimming_fixture_conditions(state),
                         "quest swimming cleanse"
                     );
                 }
@@ -671,12 +669,7 @@ fn scenario_in_world(
             let runtime = owner.runtime.lock().await;
             let states = owner.states.spell_states.lock().await;
             let state = states.get(&runtime, actor, session).ok_or("spell state")?;
-            if state
-                .owned_conditions()
-                .instances()
-                .iter()
-                .any(|i| i.definition().key().starts_with("fixture.harm"))
-            {
+            if has_swimming_fixture_conditions(state) {
                 failures.push("swimming to swimming cleanse swimming.lua:32-36");
             }
         }
@@ -807,6 +800,13 @@ async fn health(
         .health)
 }
 
+fn has_swimming_fixture_conditions(state: &crate::spell::cast::PlayerSpellState) -> bool {
+    state.owned_conditions().instances().iter().any(|instance| {
+        let key = instance.definition().key();
+        key == DROME_DRUNK_KEY || key.starts_with("fixture.harm")
+    })
+}
+
 async fn seed_swimming_conditions(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -819,6 +819,8 @@ async fn seed_swimming_conditions(
     use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
     let runtime = owner.runtime.lock().await;
     let mut states = owner.states.spell_states.lock().await;
+    // Keep Drunk active for the cleanse while pinning its steering roll for this fixture.
+    states.drunk_seed_fixture = Some([0; 32]);
     let state = states
         .get_mut(&runtime, actor, session)
         .ok_or("spell state")?;
@@ -872,8 +874,16 @@ async fn seed_swimming_conditions(
         });
     }
     for (index, value) in values.into_iter().enumerate() {
-        let definition = ConditionDefinition::new(&format!("fixture.harm{index}"), 1, value)
-            .ok_or("condition definition")?;
+        // The retained Drome status is still Drunk for the swimming cleanse,
+        // but it only steers in the arena. Both scenarios need an exact STEP.
+        let key = match value {
+            ConditionValues::TimedStatus {
+                kind: StatusKind::Drunk,
+                ..
+            } => DROME_DRUNK_KEY.to_owned(),
+            _ => format!("fixture.harm{index}"),
+        };
+        let definition = ConditionDefinition::new(&key, 1, value).ok_or("condition definition")?;
         state
             .conditions
             .apply(

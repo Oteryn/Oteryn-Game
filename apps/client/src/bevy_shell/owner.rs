@@ -63,6 +63,8 @@ pub(super) struct HostOwner {
     pub(super) selection: super::selection::SelectionBridge,
     selector: crate::character_selection::CharacterSelector,
     pub(super) dialogs: super::gameplay_dialogs::Dialogs,
+    /// chsw: the target Channel's row, shown as the arrival line after the fresh admission.
+    arrival: Option<oteryn_client_ui::channel_switch::ChannelRow>,
 }
 impl HostOwner {
     pub fn new(path: Option<PathBuf>) -> Result<Self, Box<dyn std::error::Error>> {
@@ -85,6 +87,7 @@ impl HostOwner {
             selection,
             selector,
             dialogs: Default::default(),
+            arrival: None,
         })
     }
     pub fn accepted(&self) -> GraphicsDraft {
@@ -176,12 +179,16 @@ impl HostOwner {
         self.change_scope(Some(character));
         view.use_shared_frontend();
         link.use_shared_frontend();
+        if let Some(row) = self.arrival.take() {
+            view.announce_channel_arrival(&row);
+        }
         self.play = Some(ActivePlay { view, link });
         self.phase = Phase::Playing;
         self.status = "Connected to Oteryn.".into();
         true
     }
     fn leave(&mut self, message: &str) {
+        self.arrival = None;
         drop(self.play.take());
         self.change_scope(None);
         self.phase = Phase::Offline;
@@ -282,10 +289,23 @@ impl HostOwner {
             self.status.clone_from(&message);
             self.login.form.feedback(message);
         }
+        self.login
+            .form
+            .refresh_gate_message(std::time::Instant::now());
         if let Some(result) = self.entry.as_mut().and_then(Reentry::poll) {
+            if matches!(
+                &result,
+                Err(crate::GameplayEntryError::ClientUpdateRequired {
+                    updater_started: true,
+                    ..
+                })
+            ) {
+                self.close();
+                return;
+            }
             self.login
                 .form
-                .finish(result.as_ref().map(|_| ()).map_err(|error| *error));
+                .finish(result.as_ref().map(|_| ()).map_err(Clone::clone));
             if result.is_ok() {
                 self.login.visible = false;
             }
@@ -295,10 +315,23 @@ impl HostOwner {
                 Ok((view, link)) => {
                     self.install_play(view, link);
                 }
-                Err(error) => self.leave(error_text(error)),
+                Err(error) => {
+                    if matches!(
+                        error,
+                        crate::GameplayEntryError::ClientUpdateRequired { .. }
+                            | crate::GameplayEntryError::Maintenance { .. }
+                            | crate::GameplayEntryError::Rejected(
+                                oteryn_platform_client::native_login::PublicClass::ClientUpdateRequired,
+                            )
+                    ) {
+                        self.login.visible = true;
+                    }
+                    self.leave(&error_text(error));
+                }
             }
         }
         let mut end = None;
+        let mut switch = None;
         if let Some(play) = &mut self.play {
             // The same owner projects accepted graphics, zoom, bindings and chat context.
             self.settings.sync_skills_layout(&play.link);
@@ -316,13 +349,34 @@ impl HostOwner {
             }
             self.settings.sync_local_preferences(&play.link);
             end = play.view.tick(&play.link).err();
+            if end.is_some() {
+                switch = play.link.channel_switch_target();
+            }
+        }
+        if let Some(target) = switch.filter(|_| end.is_some()) {
+            // chsw: the server released the session for a switch; enter the target Channel.
+            self.leave(oteryn_client_ui::channel_switch::wait_text());
+            self.arrival = target.row;
+            if self
+                .entry
+                .as_mut()
+                .is_some_and(|entry| entry.request_switch(target.character_id, target.channel_id))
+            {
+                self.phase = Phase::Entering;
+                self.status = oteryn_client_ui::channel_switch::wait_text().into();
+            } else {
+                self.arrival = None;
+            }
+            return;
         }
         if let Some(end) = end {
             let message = match end {
-                PlayEnd::LoggedOut => "Logged out. Choose a character after signing in again.",
+                PlayEnd::LoggedOut => {
+                    "Logged out. Choose a character after signing in again.".to_owned()
+                }
                 PlayEnd::Ended(class) => error_text(crate::GameplayEntryError::Rejected(class)),
             };
-            self.leave(message);
+            self.leave(&message);
         }
     }
     fn reset_input(&mut self) {

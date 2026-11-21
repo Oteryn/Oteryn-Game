@@ -7,7 +7,7 @@ pub const TILE_PX: u32 = 4;
 
 pub const MIN_ZOOM: i32 = 1;
 pub const MAX_ZOOM: i32 = 8;
-pub const LOWEST_FLOOR: i16 = -15;
+pub const LOWEST_FLOOR: i16 = 15;
 pub const HIGHEST_FLOOR: i16 = 0;
 
 /// Zoom in halves the tiles per cell, never below one.
@@ -18,13 +18,13 @@ pub fn zoom_in(zoom: i32) -> i32 {
 pub fn zoom_out(zoom: i32) -> i32 {
     zoom.saturating_mul(2).min(MAX_ZOOM)
 }
-/// One floor towards the surface; the surface is floor zero.
+/// One floor up, bounded by Global z zero.
 pub fn floor_up(floor: i16) -> i16 {
-    floor.saturating_add(1).min(HIGHEST_FLOOR)
+    floor.saturating_sub(1).max(HIGHEST_FLOOR)
 }
 /// One floor deeper, never below the lowest map floor.
 pub fn floor_down(floor: i16) -> i16 {
-    floor.saturating_sub(1).max(LOWEST_FLOOR)
+    floor.saturating_add(1).min(LOWEST_FLOOR)
 }
 
 pub fn view() -> Result<TileView, BatchError> {
@@ -70,10 +70,10 @@ mod tests {
         assert_eq!(zoom_in(8), 4);
         assert_eq!(zoom_in(2), 1);
         assert_eq!(zoom_in(1), 1);
-        assert_eq!(floor_up(-7), -6);
+        assert_eq!(floor_up(7), 6);
         assert_eq!(floor_up(0), 0);
-        assert_eq!(floor_down(-7), -8);
-        assert_eq!(floor_down(-15), -15);
+        assert_eq!(floor_down(7), 8);
+        assert_eq!(floor_down(15), 15);
         let mut zoom = 1;
         for _ in 0..6 {
             zoom = zoom_out(zoom);

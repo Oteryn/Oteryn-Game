@@ -187,8 +187,9 @@ fn run(
                     SetForegroundWindow(hwnd);
                 }
                 Ok(Update::Finish(result)) => {
+                    let connected = result.is_ok();
                     form.finish(result);
-                    ShowWindow(hwnd, if result.is_ok() { SW_HIDE } else { SW_SHOW });
+                    ShowWindow(hwnd, if connected { SW_HIDE } else { SW_SHOW });
                 }
                 Err(TryRecvError::Disconnected) => break,
                 Err(TryRecvError::Empty) => {}
@@ -249,6 +250,7 @@ fn run(
                 EnableWindow(*edit, i32::from(form.can_submit()));
             }
             SetWindowTextW(button, wide(form.submit_caption()).as_ptr());
+            form.refresh_gate_message(std::time::Instant::now());
             SetWindowTextW(status, wide(form.message()).as_ptr());
             std::thread::sleep(Duration::from_millis(30));
         }

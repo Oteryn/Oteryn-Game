@@ -134,7 +134,9 @@ impl Database {
             version.starts_with("18"),
             "PostgreSQL 18 required: {version}"
         );
-        sqlx::migrate!("./migrations").run(&mut connection).await?;
+        oteryn_gameplay_durability::GAME_MIGRATOR
+            .run(&mut connection)
+            .await?;
         connection.close().await?;
         Ok(Self {
             admin_url,

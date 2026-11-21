@@ -55,7 +55,7 @@ fn review10_list_only_accepts_personal_map_marks() -> Result<(), String> {
         map_marks: vec![QuestMapMark {
             x: 100,
             y: 100,
-            floor: -7,
+            floor: 7,
             text: "Treasure".into(),
         }],
         view: Some(QuestLogView::List(vec![])),

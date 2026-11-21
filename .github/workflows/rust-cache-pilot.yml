@@ -7,6 +7,21 @@ on:
         description: Accepted main commit to benchmark (empty selects this run's main SHA)
         type: string
         default: ''
+      edit_sha:
+        description: Accepted main commit supplying one file's Rust edit (pair with edit_path)
+        type: string
+        default: ''
+      edit_path:
+        description: Literal repository-relative Rust path to benchmark independently of other commit changes
+        type: string
+        default: ''
+      build_scope:
+        description: Rust targets to compile
+        type: choice
+        options:
+          - workspace
+          - server-library
+        default: workspace
 
 permissions:
   contents: read
@@ -25,12 +40,17 @@ jobs:
           persist-credentials: false
 
       - name: Test benchmark isolation
-        run: python tools/repository/test_benchmark_rust_cache.py
+        run: |
+          python tools/repository/test_benchmark_rust_cache.py
+          python tools/repository/test_rust_cache_pilot_workflow.py
 
       - name: Bind benchmark to accepted main source
+        id: bind
         env:
           REQUESTED_SHA: ${{ inputs.source_sha }}
           CONTROLLER_SHA: ${{ github.sha }}
+          EDIT_SHA: ${{ inputs.edit_sha }}
+          EDIT_PATH: ${{ inputs.edit_path }}
         shell: bash
         run: |
           set -euo pipefail
@@ -38,12 +58,43 @@ jobs:
           SOURCE_SHA="${REQUESTED_SHA:-$CONTROLLER_SHA}"
           [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
           git merge-base --is-ancestor "$SOURCE_SHA" "$CONTROLLER_SHA"
-          mkdir "$RUNNER_TEMP/pilot-controller"
-          cp tools/repository/benchmark_rust_cache.py "$RUNNER_TEMP/pilot-controller/"
+          if [[ -n "$EDIT_SHA" || -n "$EDIT_PATH" ]]; then
+            if [[ ! "$EDIT_SHA" =~ ^[0-9a-f]{40}$ || "$EDIT_PATH" != *.rs ]]; then
+              echo 'Supply edit_sha as a full commit SHA and edit_path as a literal Rust file path.' >&2
+              exit 1
+            fi
+            test "$(git cat-file -t "$EDIT_SHA")" = commit
+            git merge-base --is-ancestor "$EDIT_SHA" "$CONTROLLER_SHA"
+            git merge-base --is-ancestor "$SOURCE_SHA" "$EDIT_SHA"
+            entry_format='%(objectmode) %(objectname)'
+            base_entry=$(git --literal-pathspecs ls-tree --full-tree --format="$entry_format" "$SOURCE_SHA" -- "$EDIT_PATH")
+            edit_entry=$(git --literal-pathspecs ls-tree --full-tree --format="$entry_format" "$EDIT_SHA" -- "$EDIT_PATH")
+            if [[ ! "$base_entry" =~ ^100(644|755)\ [0-9a-f]{40}$ ||
+                  ! "$edit_entry" =~ ^100(644|755)\ [0-9a-f]{40}$ ||
+                  "${base_entry%% *}" != "${edit_entry%% *}" || "$base_entry" == "$edit_entry" ]]; then
+              echo 'edit_path must name one regular Rust file with changed content and unchanged mode.' >&2
+              exit 1
+            fi
+          fi
+          controller_dir="$RUNNER_TEMP/pilot-controller"
+          mkdir "$controller_dir"
+          cp tools/repository/benchmark_rust_cache.py "$controller_dir/"
+          if [[ -n "$EDIT_SHA" ]]; then
+            git --literal-pathspecs diff --binary --full-index --no-renames --no-ext-diff --no-textconv \
+              "$SOURCE_SHA" "$EDIT_SHA" -- "$EDIT_PATH" > "$controller_dir/source-edit.patch"
+            test -s "$controller_dir/source-edit.patch"
+            python - "$SOURCE_SHA" "$EDIT_SHA" "$EDIT_PATH" > "$controller_dir/source-edit-provenance.json" <<'PY'
+          import json
+          import sys
+
+          source_sha, edit_sha, edit_path = sys.argv[1:]
+          print(json.dumps({"source_sha": source_sha, "edit_sha": edit_sha, "edit_path": edit_path}, indent=2))
+          PY
+          fi
           git checkout --detach "$SOURCE_SHA"
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
           # Use the accepted controller, with ROOT explicitly fixed to this checkout.
-          cp "$RUNNER_TEMP/pilot-controller/benchmark_rust_cache.py" tools/repository/benchmark_rust_cache.py
+          cp "$controller_dir/benchmark_rust_cache.py" tools/repository/benchmark_rust_cache.py
 
       - name: Install fixed Rust compiler
         run: rustup toolchain install 1.100.0 --profile minimal
@@ -56,15 +107,36 @@ jobs:
           echo "45f1447fbe231e3037bde351ef70677dd212216c8d62ae7ca409fecc4d6acc89  $RUNNER_TEMP/sccache.tar.gz" | sha256sum --check --strict
           tar -xzf "$RUNNER_TEMP/sccache.tar.gz" -C "$RUNNER_TEMP"
 
-      - name: Measure compilation with repeated isolated cold and warm targets
+      - name: Measure compilation with isolated cold and warm targets and optional edits
         env:
           RUSTUP_TOOLCHAIN: 1.100.0
           BENCHMARK_CONTROLLER_SHA: ${{ github.sha }}
-        run: >-
-          python tools/repository/benchmark_rust_cache.py
-          --sccache "$RUNNER_TEMP/sccache-v0.18.0-x86_64-unknown-linux-musl/sccache"
-          --repetitions 2 --temporary-root "$RUNNER_TEMP"
-          --output "$RUNNER_TEMP/rust-cache-results"
+          BUILD_SCOPE: ${{ inputs.build_scope }}
+          EDIT_SHA: ${{ inputs.edit_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=()
+          case "$BUILD_SCOPE" in
+            workspace) ;;
+            server-library) args+=(--package oteryn-game-server) ;;
+            *) echo 'Unknown benchmark build scope.' >&2; exit 1 ;;
+          esac
+          patch="$RUNNER_TEMP/pilot-controller/source-edit.patch"
+          if [[ -n "$EDIT_SHA" ]]; then
+            test -s "$patch"
+            args+=(--edit-patch "$patch")
+          fi
+          python tools/repository/benchmark_rust_cache.py \
+            --sccache "$RUNNER_TEMP/sccache-v0.18.0-x86_64-unknown-linux-musl/sccache" \
+            --repetitions 2 --temporary-root "$RUNNER_TEMP" \
+            --output "$RUNNER_TEMP/rust-cache-results" "${args[@]}"
+
+      - name: Attach source edit provenance
+        if: always() && steps.bind.outcome == 'success' && inputs.edit_sha != ''
+        run: |
+          mkdir -p "$RUNNER_TEMP/rust-cache-results"
+          cp "$RUNNER_TEMP/pilot-controller/source-edit-provenance.json" "$RUNNER_TEMP/rust-cache-results/"
 
       - name: Preserve results and failure logs
         if: always()

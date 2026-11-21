@@ -8,8 +8,8 @@ fn quests3_stateless_primal_step_reaches_source_destination_without_quest_mutati
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("quests3-primal-step", || {
-        super::quest_world_callbacks::stateless_scenario(
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quests3-primal-step", || {
+        super::quest_world_callbacks_fixtures::stateless_scenario(
             "oteryn:quest-callback/primal-ordeal-travel-33558-32754-14",
             Position {
                 x: 33558,

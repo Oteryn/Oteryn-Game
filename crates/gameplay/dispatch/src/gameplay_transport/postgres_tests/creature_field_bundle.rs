@@ -107,7 +107,7 @@ async fn exercise(harness: &Harness) -> TestResult {
             deps.room.entry_start(),
         )
         .ok_or("different pinned map view")?;
-    let (mut source_deps, _) = super::loop_monster::fixture::dependencies(active, &pin)?;
+    let (mut source_deps, _) = super::loop_monster_fixtures::fixture::dependencies(active, &pin)?;
     let mut source_context = (
         source_deps.runtime.get_mut(),
         &source_deps.room,

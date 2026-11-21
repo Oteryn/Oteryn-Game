@@ -666,6 +666,7 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
                 raise ValueError(f"Loot table given twice: {definition['identity']['key']}")
             tables[definition['identity']['key']] = definition
     facts = item_facts(item_definitions)
+    quest_yields = set()
     # Repository-authored Quest rules bind the complete canonical dataset.
     if (creature_definitions.resolve() == CREATURE_DEFINITIONS.resolve()
             and loot_definitions.resolve() == LOOT_DEFINITIONS.resolve()
@@ -675,6 +676,8 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
             sys.path.insert(0, migration_tools)
         import quest_corpse_profiles
         quest_corpse_profiles.apply_loot_facts(facts, ROOT, creatures)
+        import protected_loot_yields
+        quest_yields = protected_loot_yields.ITEMS
         import quest_loot_profiles
         quest_loot_profiles.apply_loot_facts(facts, ROOT, creatures, tables)
     bindings, named, used = {}, {}, {}
@@ -742,7 +745,19 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
         if capacity is not None:
             facts[key]['materializable'] = True
             facts[key]['container_capacity'] = capacity
-            qualified_corpses.add(key)
+            if not facts[key].get('ordinary_corpse_only'):
+                qualified_corpses.add(key)
+    # These exact quest yields already have admitted native pickup and carried
+    # profiles. Keep source tables and rates as authored.
+    quest_yields = quest_yields | {f'oteryn:item.tibia.i{i}' for i in (
+        3235, 3236, 3237, 3238, 3239, 3240, 3241, 3348, 3403, 5893, 5899, 5925,
+    )}
+    for key in sorted(quest_yields & yield_keys):
+        if not facts[key]['materializable']:
+            profiles = native_by_key.get(key, [])
+            native = native_loot_yield_facts(facts[key]['item'], profiles[0]) if len(profiles) == 1 else None
+            if native is not None:
+                facts[key].update(native)
     # Complete only these source-qualified corpse rows' existing loot closures.
     # Ordinary yields retain the stronger Inventory + Ground + pickup admission;
     # Ground-only corpse admission never authorizes a normal yield.

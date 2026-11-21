@@ -85,7 +85,7 @@ fn map_projects_only_visible_points_on_the_selected_floor() {
             pool: 10,
             epoch: 1,
             improved: false,
-            visible: vec![(65535, 65535, 0), (65534, 65535, 0), (1, 2, -1)],
+            visible: vec![(65535, 65535, 0), (65534, 65535, 0), (1, 2, 1)],
         }),
         ..Default::default()
     };
@@ -109,12 +109,12 @@ fn exploration_layers_cycle_confirmed_floors_and_filter_pois() {
             pool: 10,
             epoch: 1,
             improved: false,
-            visible: vec![(10, 20, 0), (11, 21, -1), (12, 22, -1)],
+            visible: vec![(10, 20, 0), (11, 21, 1), (12, 22, 1)],
         }),
         ..Default::default()
     };
     panel.select_floor(false);
-    assert_eq!(panel.floor, -1);
+    assert_eq!(panel.floor, 1);
     assert_eq!(map_points(&panel).len(), 2);
     assert!(!map_text(&panel).contains("10,20,0"));
     panel.hide_pois = true;

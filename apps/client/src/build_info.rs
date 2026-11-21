@@ -1,3 +1,71 @@
+use oteryn_platform_client::PlatformClientConfig;
+use oteryn_platform_client::native_login::ReleaseIdentity;
+use oteryn_platform_client::updates::{MAX_RELEASE_SEQUENCE, UpdateChannel};
+
+// Downloads release IDs have a different grammar from the installer's diagnostic build ID.
+const UPDATE_RELEASE_INPUTS: (Option<&str>, Option<&str>, Option<&str>) = (
+    option_env!("OTERYN_CLIENT_UPDATE_CHANNEL"),
+    option_env!("OTERYN_CLIENT_UPDATE_RELEASE_ID"),
+    option_env!("OTERYN_CLIENT_UPDATE_RELEASE_SEQUENCE"),
+);
+const UPDATE_RELEASE: Option<ReleaseIdentity> = match UPDATE_RELEASE_INPUTS {
+    (Some(channel), Some(id), Some(sequence)) => match channel.as_bytes() {
+        b"stable" => ReleaseIdentity::new(UpdateChannel::Stable, id, release_sequence(sequence)),
+        b"beta" => ReleaseIdentity::new(UpdateChannel::Beta, id, release_sequence(sequence)),
+        _ => None,
+    },
+    _ => None,
+};
+const _: () = assert!(
+    matches!(UPDATE_RELEASE_INPUTS, (None, None, None)) || UPDATE_RELEASE.is_some(),
+    "Set a valid OTERYN_CLIENT_UPDATE_CHANNEL, OTERYN_CLIENT_UPDATE_RELEASE_ID and OTERYN_CLIENT_UPDATE_RELEASE_SEQUENCE"
+);
+
+// Setting this URL acknowledges that this Gateway and its issuer accept offer.release.
+const BUILD_GATE_GATEWAY: Option<&str> = option_env!("OTERYN_CLIENT_BUILD_GATE_GATEWAY_URL");
+const _: () = assert!(
+    BUILD_GATE_GATEWAY.is_none() || UPDATE_RELEASE.is_some(),
+    "A build gate Gateway requires a Downloads release identity"
+);
+
+const fn release_sequence(value: &str) -> u64 {
+    let bytes = value.as_bytes();
+    let mut sequence = 0;
+    let mut i = 0;
+    while i < bytes.len() {
+        assert!(
+            bytes[i].is_ascii_digit(),
+            "Release sequence must be decimal"
+        );
+        sequence = sequence * 10 + (bytes[i] - b'0') as u64;
+        assert!(
+            sequence <= MAX_RELEASE_SEQUENCE,
+            "Release sequence exceeds 2^53-1"
+        );
+        i += 1;
+    }
+    sequence
+}
+
+pub(crate) fn login_release(gateway: &str) -> Option<ReleaseIdentity> {
+    release_for_gateway(gateway, BUILD_GATE_GATEWAY, UPDATE_RELEASE)
+}
+
+fn release_for_gateway(
+    gateway: &str,
+    confirmed: Option<&str>,
+    release: Option<ReleaseIdentity>,
+) -> Option<ReleaseIdentity> {
+    let actual = PlatformClientConfig::new(gateway).ok()?;
+    let confirmed = PlatformClientConfig::new(confirmed?).ok()?;
+    release.filter(|_| actual.matches_gateway_login_endpoint(&confirmed))
+}
+
+#[cfg(windows)]
+pub(crate) fn updater_release(channel: &str) -> Option<ReleaseIdentity> {
+    UPDATE_RELEASE.filter(|release| release.update_channel().as_str() == channel)
+}
+
 /// The release this executable belongs to (CLIENT-INSTALLER-0 §2):
 /// `<client_version>+<channel>.<route>.g<game_commit[0..12]>`, from `OTERYN_RELEASE_ID` at build
 /// time. A build without it is a local developer build, `<client_version>+dev.local.g000000000000`.
@@ -140,64 +208,4 @@ const fn matching_word(bytes: &[u8], at: usize, words: &[&[u8]]) -> Option<usize
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn release_id_and_client_build_are_compiled_in() {
-        assert!(is_valid_release_id(RELEASE_ID));
-        assert_eq!(CLIENT_BUILD, format!("oteryn-client/{RELEASE_ID}"));
-        assert!(CLIENT_BUILD.len() <= 64);
-    }
-
-    #[test]
-    fn release_id_format_is_enforced() {
-        let version = env!("CARGO_PKG_VERSION");
-        for valid in [
-            "+dev.ci.g1a2b3c4d5e6f",
-            "+preproduction.rel.g0123456789ab",
-            "+stable.ci.gabcdef012345",
-            "+dev.local.g000000000000",
-        ] {
-            assert!(is_valid_release_id(&format!("{version}{valid}")), "{valid}");
-        }
-        for invalid in [
-            "+dev.ci.g1a2b3c4d5e6",
-            "+dev.ci.g1a2b3c4d5e6f0",
-            "+dev.ci.g1A2B3C4D5E6F",
-            "+dev.ci.g1a2b3c4d5e6~",
-            "+beta.ci.g1a2b3c4d5e6f",
-            "+dev.nightly.g1a2b3c4d5e6f",
-            "+dev.local.g1a2b3c4d5e6f",
-            "+dev.ci.1a2b3c4d5e6f",
-            "dev.ci.g1a2b3c4d5e6f",
-            "+dev.cig1a2b3c4d5e6f",
-        ] {
-            assert!(
-                !is_valid_release_id(&format!("{version}{invalid}")),
-                "{invalid}"
-            );
-        }
-        assert!(!is_valid_release_id("9.9.9+dev.ci.g1a2b3c4d5e6f"));
-        assert!(!is_valid_release_id(""));
-        for other in [
-            "9.9.9+dev.ci.g1a2b3c4d5e6f",
-            "0.10.0+stable.rel.g0123456789ab",
-        ] {
-            assert!(is_contract_release_id(other), "{other}");
-        }
-        for invalid in [
-            "",
-            "01.0.0+dev.ci.g1a2b3c4d5e6f",
-            "1.0+dev.ci.g1a2b3c4d5e6f",
-            "1.0.0.0+dev.ci.g1a2b3c4d5e6f",
-            "1.0.x+dev.ci.g1a2b3c4d5e6f",
-            "1.0.0-rc1+dev.ci.g1a2b3c4d5e6f",
-            "9.9.9+dev.ci.g1A2B3C4D5E6F",
-            "9.9.9+dev.local.g1a2b3c4d5e6f",
-            "999999999999999999999999999999.0.0+dev.ci.g1a2b3c4d5e6f",
-        ] {
-            assert!(!is_contract_release_id(invalid), "{invalid}");
-        }
-    }
-}
+mod tests;

@@ -195,6 +195,7 @@ pub struct NpcServiceEntry {
 pub struct NpcBankDialogue {
     pub greet: Vec<String>,
     pub farewell: Vec<String>,
+    pub walkaway: Vec<String>,
     pub keywords: Vec<crate::content::ProjectV2DialogueKeyword>,
 }
 
@@ -518,6 +519,7 @@ pub fn build(
                         let ProjectV2Declaration::Dialogue {
                             greet,
                             farewell,
+                            walkaway,
                             keywords,
                             ..
                         } = declaration
@@ -527,6 +529,7 @@ pub fn build(
                         Some(NpcBankDialogue {
                             greet: greet.clone(),
                             farewell: farewell.clone(),
+                            walkaway: walkaway.clone(),
                             keywords: keywords.clone(),
                         })
                     })

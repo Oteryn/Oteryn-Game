@@ -41,6 +41,7 @@ Write it as one self-contained file. Include, in this order:
 7. **Review:** for a Claude lane or child session that owns its branch,
    "you run the Codex review of your head and fix confirmed findings
    (`oteryn-review` §5 and its `references/batch-review.md`: parallel lens runs,
+   plus the two holistic whole-diff runs for a package or chunked diff,
    every finding with no cap, pattern sweep, one batch fix)"; for a Codex lane, "no review, the coordinator
    reviews".
 8. **Report:** at most 15 lines: result, head SHA or diff name, commands run
@@ -108,8 +109,11 @@ The receiving agent cannot see this skill, so paste these lines verbatim:
 Before a returned diff goes onto a branch:
 
 1. Apply it to a worktree on the packet's base and check it against current
-   `main` with `git merge-tree --write-tree origin/main HEAD`; merge only on
-   a conflict.
+   `main`: `git fetch origin main`, then
+   `git merge-tree --write-tree origin/main HEAD`. Merge only on a conflict
+   (exit 1, or GitHub reports the PR conflicted; `oteryn-dev`
+   `references/ci-merge.md`, *Before every push*). Any other non-zero exit is
+   an error to fix.
 2. Read the full diff. Reject or trim: files outside the owned paths, stray
    notes/logs, weakened assertions, `#[ignore]`, hand-edited digests,
    renumbered migrations of other mechanics, unrelated refactors.

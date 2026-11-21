@@ -33,7 +33,7 @@ fn s17_viewer_map_uses_casters_committed_map_without_changing_actor() -> TestRes
                         .map_err(debug)?;
                     let world = door_world()?;
                     let (controller, activated) =
-                        super::death_ml_loss_composed::production_generation_with_pin(
+                        super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                             world_id,
                             "content-1",
                         )?;
@@ -89,7 +89,7 @@ fn s17_viewer_map_uses_casters_committed_map_without_changing_actor() -> TestRes
                     );
                     assert!(!media.is_empty());
                     let mut found = false;
-                    assert!(matches!(media.first(),Some(PublicMedia::Camera {floor:-7})));
+                    assert!(matches!(media.first(),Some(PublicMedia::Camera {floor:7})));
                     for (i, m) in media.iter().skip(1).enumerate() {
                         let PublicMedia::Map { reset, last, tiles } = m else {
                             return Err("unexpected map media".into());

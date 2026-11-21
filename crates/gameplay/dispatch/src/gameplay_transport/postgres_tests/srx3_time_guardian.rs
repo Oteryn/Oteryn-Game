@@ -2,6 +2,10 @@
 //! The spell swaps their positions; replacing one actor's profile is insufficient.
 use super::fixture::{Harness, debug, run};
 use super::srx3_activity_source_fixture::{SourceScene, install_scene, prepare_player};
+use super::srx3_native_source_cast_fixtures::{
+    NATIVE_TURN_TIMEOUT, drain_ready_monster_melee_at, next_native_melee_deadline,
+    settle_monster_melee_at_until,
+};
 use super::{Dependencies, TestResult, reset};
 use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
 use crate::foundation::MovementLocalPosition;
@@ -29,7 +33,7 @@ fn srx3_time_guardian_actual_native_callback_swaps_distinct_source_actors_postgr
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("srx3-time-guardian", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-time-guardian", || {
         run(async |admin| {
             reset();
             let kind = PinnedActivitySourceRoom::CallbackTimeGuardian;
@@ -54,8 +58,8 @@ fn srx3_time_guardian_actual_native_callback_swaps_distinct_source_actors_postgr
                 .ok_or("actual native generation")?;
             let h = Harness::create_with_admission_seed(admin, "srx3_time_guardian", false, false)
                 .await?;
-            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-            super::house_transfer::prepare_owned_session(&h).await?;
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::house_transfer_fixtures::prepare_owned_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -65,7 +69,7 @@ fn srx3_time_guardian_actual_native_callback_swaps_distinct_source_actors_postgr
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &evidence.evidence;
             install_scene(&mut owner, &scene, kind)?;
-            super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+            super::boss_activity_fixtures::issue_content_and_reset(&h, &scene.pin).await?;
             let mut admitted = deps.admitted;
             prepare_player(&h, &owner, &mut admitted, 1999).await?;
             let (base, fire, ice) = {
@@ -103,30 +107,36 @@ fn srx3_time_guardian_actual_native_callback_swaps_distinct_source_actors_postgr
                 (base, fire, ice)
             };
             let mut selected = false;
-            for _ in 0..128 {
-                owner.clock_origin = owner
-                    .clock_origin
-                    .checked_sub(std::time::Duration::from_secs(2))
-                    .ok_or("clock")?;
-                owner.drain_monster_melee().await;
-                let runtime = owner.runtime.lock().await;
-                assert!(
-                    runtime.contains_live_creature(base),
-                    "source base remains a live distinct actor"
-                );
-                let states = owner.states.spell_states.lock().await;
-                selected = states
-                    .monster_melee
-                    .creature_ai
-                    .last_report_for_test(base)
-                    .is_some_and(|report| {
-                        report.proposals.iter().any(|proposal| {
-                            proposal.ability.key == "oteryn:ability.spell.time_guardian"
+            let mut now = owner.owner_now().get();
+            // Keep the source scenario's two-second budget per pass while
+            // honoring every native deadline within it.
+            let time_limit =
+                now + 128 * 2 * crate::ai_think::CREATURE_THINK_INTERVAL_MILLIS * 1_000;
+            while now < time_limit {
+                selected = settle_monster_melee_at_until(&owner, now, async || {
+                    assert!(
+                        owner.runtime.lock().await.contains_live_creature(base),
+                        "source base remains a live distinct actor"
+                    );
+                    owner
+                        .states
+                        .spell_states
+                        .lock()
+                        .await
+                        .monster_melee
+                        .creature_ai
+                        .last_report_for_test(base)
+                        .is_some_and(|report| {
+                            report.proposals.iter().any(|proposal| {
+                                proposal.ability.key == "oteryn:ability.spell.time_guardian"
+                            })
                         })
-                    });
+                })
+                .await?;
                 if selected {
                     break;
                 }
+                now = next_native_melee_deadline(&owner).await?.max(now + 1);
             }
             assert!(
                 selected,
@@ -178,11 +188,34 @@ fn srx3_time_guardian_actual_native_callback_swaps_distinct_source_actors_postgr
                     Some(base)
                 );
             }
-            owner.clock_origin = owner
-                .clock_origin
-                .checked_sub(std::time::Duration::from_secs(30))
-                .ok_or("return clock")?;
-            owner.drain_monster_melee().await;
+            let return_due = owner
+                .states
+                .spell_states
+                .lock()
+                .await
+                .native_callbacks
+                .next_source_due_time()
+                .map_err(debug)?
+                .ok_or("retained time guardian return deadline")?;
+            tokio::time::timeout(NATIVE_TURN_TIMEOUT, async {
+                loop {
+                    drain_ready_monster_melee_at(&owner, return_due).await?;
+                    if owner
+                        .states
+                        .spell_states
+                        .lock()
+                        .await
+                        .native_callbacks
+                        .time_guardian_cast_position_for_test(base)
+                        .is_none()
+                    {
+                        return Ok::<_, Box<dyn std::error::Error>>(());
+                    }
+                    tokio::task::yield_now().await;
+                }
+            })
+            .await
+            .map_err(|_| "retained time guardian return did not complete at its deadline")??;
             {
                 let runtime = owner.runtime.lock().await;
                 assert!(

@@ -484,9 +484,9 @@ fn run_pin_check(root: &Path, out: &Path) -> Result<Value, Error> {
             ));
         }
         let at = pin.entry_start;
-        if !world_extent(root)?.contains(at.x, at.y, at.floor) {
+        if !(0..=15).contains(&at.floor) || !world_extent(root)?.contains(at.x, at.y, -at.floor) {
             return Err(Error::Format(
-                "entry_start: outside the World bounds".into(),
+                "entry_start: Global floor outside the World bounds".into(),
             ));
         }
         let (bytes, registry) = build_twice(root, &identity)?;

@@ -1,12 +1,14 @@
 //! Bounded asynchronous Platform directory client.
 
+pub mod channel_probe;
 pub mod gameplay_entry;
 pub mod native_login;
 
 use oteryn_foundation::{BoundedText, Cancellable, CancellationToken, cancellable};
 use oteryn_platform_contracts::{
     ClientDirectoryEpoch, DirectoryChannel, DirectoryChannelRef, DirectoryCharacter,
-    DirectoryCharacterRef, DirectorySnapshot, DirectoryWorld, DirectoryWorldRef,
+    DirectoryCharacterRef, DirectoryPvpType, DirectorySnapshot, DirectoryWorld, DirectoryWorldRef,
+    MAX_DIRECTORY_REGION_BYTES,
 };
 use reqwest::{Client, Url, redirect::Policy};
 use serde_json::{Map, Value};
@@ -57,6 +59,8 @@ pub enum PlatformClientError {
     ResponseTooLarge,
     InvalidPayload,
     ForbiddenGameplayField,
+    /// HTTP 401 `{"error":"unauthenticated"}`: the bearer token was refused.
+    Unauthenticated,
 }
 
 impl Display for PlatformClientError {
@@ -73,6 +77,7 @@ impl Display for PlatformClientError {
             Self::ForbiddenGameplayField => {
                 formatter.write_str("Platform directory exposed a forbidden gameplay field")
             }
+            Self::Unauthenticated => formatter.write_str("Platform refused the access token"),
         }
     }
 }
@@ -107,6 +112,19 @@ impl PlatformClientConfig {
         })
     }
 
+    /// Compares the resolved native login URL used by the Gateway client.
+    #[must_use]
+    pub fn matches_gateway_login_endpoint(&self, confirmed: &Self) -> bool {
+        self.base_url
+            .join(native_login::GATEWAY_LOGIN_PATH)
+            .is_ok_and(|endpoint| {
+                confirmed
+                    .base_url
+                    .join(native_login::GATEWAY_LOGIN_PATH)
+                    .is_ok_and(|other| endpoint == other)
+            })
+    }
+
     #[must_use]
     pub fn with_max_response_bytes(mut self, max_response_bytes: usize) -> Self {
         self.max_response_bytes = max_response_bytes.clamp(1, DEFAULT_MAX_RESPONSE_BYTES);
@@ -131,14 +149,44 @@ impl PlatformClient {
         Ok(Self { client, config })
     }
 
+    /// The anonymous directory: every World and Channel, `characters` always empty.
     pub async fn fetch_directory(
         &self,
         cancellation: CancellationToken,
     ) -> Result<DirectorySnapshot, PlatformClientError> {
+        self.fetch_directory_as(None, cancellation).await
+    }
+
+    /// The directory with the owner's characters when `token` (the native OAuth access token
+    /// of native-characters-v1) is given as `Authorization: Bearer`.
+    pub async fn fetch_directory_as(
+        &self,
+        token: Option<&native_login::AccessToken>,
+        cancellation: CancellationToken,
+    ) -> Result<DirectorySnapshot, PlatformClientError> {
+        self.fetch_json(
+            "v1/client/directory",
+            "directory",
+            token,
+            cancellation,
+            parse_directory,
+        )
+        .await
+    }
+
+    /// One bounded JSON `GET` under the shared span, metric and error mapping.
+    async fn fetch_json<T>(
+        &self,
+        path: &str,
+        label: &'static str,
+        token: Option<&native_login::AccessToken>,
+        cancellation: CancellationToken,
+        parse: fn(&[u8]) -> Result<T, PlatformClientError>,
+    ) -> Result<T, PlatformClientError> {
         let endpoint = self
             .config
             .base_url
-            .join("v1/client/directory")
+            .join(path)
             .map_err(|_error| PlatformClientError::InvalidBaseUrl)?;
         let mut span = oteryn_error_codes::Span::start(
             oteryn_error_codes::Level::Info,
@@ -147,16 +195,21 @@ impl PlatformClient {
             None,
         )
         .slow_after(PLATFORM_SLOW_OPERATION);
-        span.field("endpoint", "directory");
+        span.field("endpoint", label);
         span.field("attempts", 1_u64);
         let started = std::time::Instant::now();
         let request = async {
-            let mut response = self
-                .client
-                .get(endpoint)
+            let mut request = self.client.get(endpoint);
+            if let Some(token) = token {
+                request = request.bearer_auth(token.expose());
+            }
+            let mut response = request
                 .send()
                 .await
                 .map_err(|_error| PlatformClientError::Request)?;
+            if response.status() == reqwest::StatusCode::UNAUTHORIZED {
+                return Err(PlatformClientError::Unauthenticated);
+            }
             if !response.status().is_success() {
                 return Err(PlatformClientError::HttpStatus(response.status().as_u16()));
             }
@@ -181,20 +234,20 @@ impl PlatformClient {
                 }
                 body.extend_from_slice(&chunk);
             }
-            parse_directory(&body)
+            parse(&body)
         };
         let result = match cancellable(cancellation, request).await {
             Cancellable::Completed(result) => result,
             Cancellable::Cancelled => Err(PlatformClientError::Cancelled),
         };
         oteryn_error_codes::metrics::Registry::global()
-            .histogram("platform_call_ms", &[("endpoint", "directory")])
+            .histogram("platform_call_ms", &[("endpoint", label)])
             .observe(u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX));
         match result {
-            Ok(snapshot) => {
+            Ok(value) => {
                 span.set_outcome("ok");
                 span.field("status", 200_u64);
-                Ok(snapshot)
+                Ok(value)
             }
             Err(error) => {
                 span.set_outcome("failed");
@@ -269,6 +322,13 @@ fn parse_world(object: &Map<String, Value>) -> Result<DirectoryWorld, PlatformCl
                 .map_err(|_error| PlatformClientError::InvalidPayload)?,
             display_name: BoundedText::new(required_string(entry, "name")?, 96)
                 .map_err(|_error| PlatformClientError::InvalidPayload)?,
+            pvp_type: DirectoryPvpType::parse(required_string(entry, "pvp_type")?)
+                .ok_or(PlatformClientError::InvalidPayload)?,
+            region: BoundedText::new(
+                required_string(entry, "region")?,
+                MAX_DIRECTORY_REGION_BYTES,
+            )
+            .map_err(|_error| PlatformClientError::InvalidPayload)?,
         });
     }
     let mut characters = Vec::with_capacity(character_values.len());
@@ -331,7 +391,7 @@ fn contains_forbidden_gameplay_field(value: &Value) -> bool {
 mod tests {
     use super::*;
 
-    const SAFE: &[u8] = br#"{"epoch":7,"worlds":[{"id":"w-alpha","name":"Alpha","channels":[{"id":"c-1","name":"Default"}],"characters":[{"id":"char-1","name":"Ari"}]}]}"#;
+    const SAFE: &[u8] = br#"{"epoch":7,"worlds":[{"id":"w-alpha","name":"Alpha","channels":[{"id":"c-1","name":"Default","pvp_type":"OPTIONAL_PVP","region":"EU"}],"characters":[{"id":"char-1","name":"Ari"}]}]}"#;
 
     #[test]
     fn safe_directory_contains_no_route() -> Result<(), PlatformClientError> {

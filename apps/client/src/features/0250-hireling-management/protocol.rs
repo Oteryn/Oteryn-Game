@@ -11,7 +11,7 @@ impl Outbox {
             Some(oteryn_client_ui::hireling_management::wire::Request::List)
         );
         let state = matches!(
-            oteryn_client_ui::hireling_management::wire::Reply::decode(&result.payload),
+            oteryn_client_ui::hireling_management::wire::Reply::decode_wire(&result.payload),
             Some(oteryn_client_ui::hireling_management::wire::Reply::State(_))
         );
         if oteryn_client_ui::hireling_management::apply_result(&mut m.hireling_management, result)

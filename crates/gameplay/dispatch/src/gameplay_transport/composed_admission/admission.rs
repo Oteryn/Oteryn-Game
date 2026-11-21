@@ -1,5 +1,6 @@
 use super::*;
 use crate::gameplay_transport::spell_character_facts::{CastFactsLoad, load_character_cast_facts};
+use oteryn_protocol_oteryn::channel_switch::{SwitchLock, SwitchStatus};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn admit_fresh_session(
@@ -206,6 +207,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return Err(AdmissionRefusal::PremiumRequired);
             }
+            if budget
+                .retry_unavailable(async || {
+                    self.root
+                        .read_channel_full(
+                            *attempt.character_id.as_bytes(),
+                            *self.world_id.as_bytes(),
+                            *self.channel_id.as_bytes(),
+                        )
+                        .await
+                        .map_err(|_| Unavailable)
+                })
+                .await?
+            {
+                return Err(AdmissionRefusal::ChannelSwitch(SwitchStatus {
+                    lock: SwitchLock::ChannelFull,
+                    cooldown_left_ms: 0,
+                }));
+            }
             // Capacity is reserved only after every semantic/authentication check,
             // but before the durable GameSession mutation. M+1 therefore rejects
             // without creating a playable/committed session.
@@ -256,6 +275,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     FreshAdmissionDurableOutcomeV1::Committed(_)
                     | FreshAdmissionDurableOutcomeV1::ExistingCommitted(_),
                 ) => {}
+                Ok(FreshAdmissionDurableOutcomeV1::RejectedChannelSwitch(status)) => {
+                    self.rollback_runtime_player(reservation).await?;
+                    return Err(AdmissionRefusal::ChannelSwitch(status));
+                }
                 // The owner evidence moved after composition: proven noncommit.
                 Ok(FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority)
                     if budget.stale_rounds < FRESH_ADMISSION_ROUNDS =>
@@ -400,34 +423,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             item_fence,
         };
         self.states.command_ingress.admit(admitted.game_session_id);
-        // ARCH-PROGRESSION-SOURCE-0 §1.5: before the respawn settle and the quest session, so
-        // before the session is input-eligible or writes anything that advances the root.
-        let positioned = matches!(
+        // A retained position also identifies progression exhaustion after placement.
+        let positioned = decided.is_some();
+        // NODEBOOT-1: the fenced hazard step retains its existing admission budget.
+        if matches!(
             admitted.first_entry,
             FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
-        );
-        // NODEBOOT-1: each step below is a read or an idempotent fenced write through the
-        // shared holder, so a step refused on a busy holder is repeated whole within the window.
-        if positioned {
-            let entered = admitted.first_entry;
-            loop {
-                self.admit_progression_session(&mut admitted).await;
-                if admitted.first_entry != FirstEntryOutcome::RefusedUnavailable
-                    || !budget.retries_unavailable(Unavailable).await
-                {
-                    break;
-                }
-                admitted.first_entry = entered;
-            }
-            if matches!(
-                admitted.first_entry,
-                FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
-            ) && !budget
-                .retry_until(async || self.admit_hazard(admitted).await)
-                .await
-            {
-                admitted.first_entry = FirstEntryOutcome::RefusedUnavailable;
-            }
+        ) && !budget
+            .retry_until(async || self.admit_hazard(admitted).await)
+            .await
+        {
+            admitted.first_entry = FirstEntryOutcome::RefusedUnavailable;
         }
         // DEATH-2b: a pending respawn that is not placed and consumed leaves the actor
         // input-ineligible, its pending row intact for the next admission.
