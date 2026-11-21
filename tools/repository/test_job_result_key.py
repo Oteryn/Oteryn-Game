@@ -17,9 +17,8 @@ class KeyFixture(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.root = Path(self.tmp.name).resolve()
         run(self.root, "init", "-q")
-        self.write(".github/workflows/merge-gate.yml", "wf")
-        self.write("tools/repository/classify_pr_test_lanes.py", "cls")
-        self.write("tools/repository/job_result_key.py", "key")
+        for path in jrk.COMMON_FILES:
+            self.write(path, "control input " + path)
         self.write("Cargo.toml", "[workspace]")
         self.write("Cargo.lock", "lock")
         self.write("rust-toolchain.toml", "tc")
@@ -84,8 +83,7 @@ class RustFastKey(KeyFixture):
             self.assertNotEqual(before, self.key(), path)
 
     def test_every_common_and_cargo_input_changes_key(self):
-        for path in (".github/workflows/merge-gate.yml", "tools/repository/classify_pr_test_lanes.py",
-                     "tools/repository/job_result_key.py", "Cargo.lock", "Cargo.toml",
+        for path in (*jrk.COMMON_FILES, "Cargo.lock", "Cargo.toml",
                      "rust-toolchain.toml", "crates/c/Cargo.toml"):
             before = self.key()
             self.write(path, "changed " + path)

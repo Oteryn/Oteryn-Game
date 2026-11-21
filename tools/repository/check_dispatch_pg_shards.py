@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -22,6 +23,7 @@ TEST = re.compile(r"#\[(?:\w+::)?test(?:\([^\]]*\))?\]\s*(?:#\[[^\]]*\]\s*)*"
 SINGLE_CASE = re.compile(r"^\s*(?:quest_case|native_case)!\(\s*(\w+)\s*,", re.M)
 DAMAGE_CASES = re.compile(r"^\s*damage_cases!\((.*?)^\s*\);", re.M | re.S)
 DAMAGE_PAIR = re.compile(r'\(\s*(\w+)\s*,\s*(\w+)\s*,\s*"(?:[^"\\]|\\.)*"\s*,?\s*\)')
+TEST_PREFIX = ("gameplay_transport", "monk_save", "postgres_tests")
 
 
 
@@ -90,7 +92,25 @@ def mounts(dir, filename):
     return tuple(Path(path) for path, _ in MOUNT.findall((dir / filename).read_text()))
 
 
-def check(count):
+def resolve_test_shard(exact_test, shards):
+    """Resolve one fully qualified PostgreSQL test, never a substring filter."""
+    matches = []
+    for index, cases in enumerate(shards, 1):
+        for name, multiplicity in cases.items():
+            # The static owner is included into postgres_tests itself; generated
+            # mounts add their own module below that same Rust namespace.
+            relative = name[1:] if name[0] == OWNER.stem else name
+            if "::".join((*TEST_PREFIX, *relative)) == exact_test:
+                matches.extend([index] * multiplicity)
+    if not matches:
+        raise ValueError(f"missing exact PostgreSQL test: {exact_test}")
+    if len(matches) != 1:
+        raise ValueError(f"ambiguous exact PostgreSQL test: {exact_test}: shards {matches}")
+    return f"{matches[0]}/{len(shards)}"
+
+
+def check(count, *, exact_test=None):
+    diagnostics = sys.stderr if exact_test is not None else sys.stdout
     with tempfile.TemporaryDirectory() as tmp:
         output = Path(tmp)
         build = output / "build-script"
@@ -126,21 +146,31 @@ def check(count):
             test_bytes = sum(path.stat().st_size for path in files - support_files)
             support_bytes = sum(path.stat().st_size for path in support_files)
             print(f"{shard}/{count}: {test_bytes:,} test bytes ({test_bytes / 1e6:.3f} MB), "
-                  f"{support_bytes:,} shared bytes, {sum(tests.values()):,} named tests")
+                  f"{support_bytes:,} shared bytes, {sum(tests.values()):,} named tests",
+                  file=diagnostics)
             if count == 3 and test_bytes > 5_500_000:
                 raise ValueError(f"shard {shard} exceeds the 5.5 MB test source budget")
         verify_partition(Counter(all_mounts), mount_sets, "mounts")
         verify_partition(all_tests, case_sets, "tests")
-        print(f"Union matches all {sum(all_tests.values()):,} named tests, zero duplicates")
+        print(f"Union matches all {sum(all_tests.values()):,} named tests, zero duplicates",
+              file=diagnostics)
+        if exact_test is not None:
+            return resolve_test_shard(exact_test, case_sets)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("count", type=int)
+    parser.add_argument("--test", help="resolve this fully qualified PostgreSQL test; print only k/n")
     args = parser.parse_args()
     if args.count < 1:
         parser.error("count must be positive")
-    check(args.count)
+    try:
+        selected = check(args.count, exact_test=args.test)
+    except ValueError as error:
+        parser.error(str(error))
+    if selected is not None:
+        print(selected)
 
 
 if __name__ == "__main__":
