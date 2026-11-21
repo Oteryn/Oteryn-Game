@@ -10,14 +10,17 @@ This is **not** completion of Task E2EF4. Every row still has uncovered actions.
 No full row can currently PASS. The ledger emits an explicit check for every
 required action; uncompleted assertions are FAIL, including when an earlier
 command failed. Each row emits exactly one report-compatible `<row>.full`
-result if reached. Individual row waits are bounded to 90 seconds. An error
-before reaching the phase leaves the report's ordinary absent-evidence FAIL.
+result if reached. Individual row waits are bounded to 90 seconds. E01's walk
+from the entry tile to Sam and back is travel outside that budget (at level 1
+the outbound walk alone took about 88 s); every walked tile is progress, so a
+stalled walk still ends on the no-progress watchdog. An error before reaching
+the phase leaves the report's ordinary absent-evidence FAIL.
 
 All journeys below live in `full_e2ef4.rs`:
 
 | Row / function | Implemented native checks or attempts | Remaining assertions | Expected full result |
 | --- | --- | --- | --- |
-| E01 / `shop` | Route to authored Sam; greet/open conversation; trade window; offer LOOK text; cheapest quoted BUY attempt | Inventory/currency BUY delta, SELL, SELL_ALL, banker deposit/withdraw/transfer and inventory/bank relog | FAIL |
+| E01 / `shop` | Route next to authored Sam, find him within his wander radius, walk back afterwards; greet/open conversation; trade window; offer LOOK text; cheapest quoted BUY attempt | Inventory/currency BUY delta, SELL, SELL_ALL, banker deposit/withdraw/transfer and inventory/bank relog | FAIL |
 | E03 / `coins` | Resolve native definitions 3031/3035/3043/23722/25719/28525/28526; plain USE of carried matches; report missing items and actual dispositions | Four quantity-preserving conversion directions; targeted converter charge burn/retirement; magic toggle/tick; relog coins/charges | FAIL |
 | E04 / `trade` | Native cancel probe; if an ordinary carried leaf exists, real peer offer, offered-leaf LOOK, active cancellation | Both accepts/completion, concurrent logout race, exact custody after fresh admission | FAIL |
 | E05 / `market` | Route to real locker; browse/history queries; create buy offer; verify own offer ID/definition/amount/price; cancel and verify removal | Cross-player settlement; history contents; fresh-admission settlement and balances | FAIL |

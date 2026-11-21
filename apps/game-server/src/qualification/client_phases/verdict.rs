@@ -299,6 +299,18 @@ impl Watch {
         self.run(Some(budget), deadline, journey).await
     }
 
+    /// Walk between a row's journey and its NPC or entry tile outside the
+    /// row's wall-clock budget: its length is map distance times character
+    /// speed, not journey work. Every walked tile is progress, so a stalled
+    /// walk still ends on the no-progress watchdog.
+    pub(super) async fn travel<T>(
+        &self,
+        stalled: impl Into<String>,
+        journey: impl Future<Output = TestResult<T>>,
+    ) -> TestResult<T> {
+        self.run(None, stalled, journey).await
+    }
+
     async fn run<T>(
         &self,
         budget: Option<Duration>,
@@ -1060,6 +1072,39 @@ mod verdict_tests {
                 result.err().map(|error| error.to_string()).as_deref(),
                 Some("world-clock deadline")
             );
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn travel_outlasts_the_journey_budget_while_walking_but_not_a_stall() -> TestResult {
+        let harness = harness(true, Some(90));
+        paused()?.block_on(async {
+            // A town walk longer than the 90 s journey budget, one tile per 1.8 s.
+            let walking = Row::with_harness("E2EF4", "E01", &["greet"], harness);
+            let started = tokio::time::Instant::now();
+            let result: TestResult = walking
+                .watch()
+                .travel("travel stalled", async {
+                    for _ in 0..100 {
+                        tokio::time::sleep(Duration::from_millis(1_800)).await;
+                        harness.progress("walk");
+                    }
+                    Ok(())
+                })
+                .await;
+            assert!(result.is_ok());
+            assert_eq!(started.elapsed(), Duration::from_secs(180));
+
+            let stalled = Row::with_harness("E2EF4", "E01", &["greet"], harness);
+            let started = tokio::time::Instant::now();
+            let result: TestResult = stalled
+                .watch()
+                .travel("travel stalled", std::future::pending())
+                .await;
+            assert_eq!(started.elapsed(), Duration::from_secs(90));
+            let (cause, root) = stalled.cause(result.as_ref().err().map(|error| &**error));
+            assert_eq!((cause.kind(), root.as_str()), ("no-progress", "E01/greet"));
             Ok(())
         })
     }
