@@ -78,6 +78,7 @@ fn scenario(case: equipment::Case) -> TestResult {
         reset();
         let h =
             Harness::create_with_admission_seed(admin, "srvenc_source_sugar", true, false).await?;
+        let result: TestResult = async {
         let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
         super::house_transfer_fixtures::prepare_owned_session(&h).await?;
         let expected = fixture::fence(1)?;
@@ -454,6 +455,9 @@ fn scenario(case: equipment::Case) -> TestResult {
             "SRVENC_SOURCE_SUGAR_TEMPLATE_INSTANCE_CORPSE_REWARDS_RETURN POSTGRES_CASE_COMPLETED"
         );
         Ok(())
+        }.await;
+        let cleanup = h.cleanup().await;
+        result.and(cleanup)
     })
 }
 
