@@ -10,6 +10,7 @@ import hashlib
 import json
 from pathlib import Path
 import boss_corpse_profiles as corpses
+import item_detail_source_facts as item_details
 
 ROOT = corpses.ROOT
 PIN = corpses.PIN
@@ -211,6 +212,7 @@ def admit(root, generated, destination, manifest_path, order, canonical):
     bindings.update(additions)
     document = json.loads(generated[destination])
     existing = {row['production_definition']['production_key']:row for row in document['records']}
+    weights = item_details.load_weight_facts(root, generated)
     from build_full_spell_artifact import native_loot_yield_facts
     seen = set()
     for row in data['records']:
@@ -223,9 +225,13 @@ def admit(root, generated, destination, manifest_path, order, canonical):
             raise ValueError(f'BOSS_REWARD_YIELD_NATIVE_AUTHORITY:{key}')
         if native_loot_yield_facts(binding['target'], row) is None:
             raise ValueError(f'BOSS_REWARD_YIELD_EXACT_CUSTODY_FACTS:{key}')
+        if item in weights:
+            item_details.apply_weight(row, item, weights)
         seen.add(item)
         if key in existing:
             previous = existing[key]
+            if item in weights:
+                item_details.apply_weight(previous, item, weights)
             if item == 3583:
                 for part in ('consumption', 'trade_restrictions'):
                     known = previous['semantics'].get(part, {'state': 'UNKNOWN'})
