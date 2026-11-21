@@ -268,3 +268,20 @@ fn deferred_f12_keeps_each_press_and_its_directory() -> TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn deferred_backlog_capture_reports_a_stalled_writer() -> TestResult {
+    let folder = TestDir::new()?;
+    let mut app = backlog_app(folder.path())?;
+    app.world_mut().non_send_mut::<Writes>().automatic = true;
+    app.world_mut().resource_mut::<ButtonInput<KeyCode>>().press(KeyCode::F12);
+    app.update();
+    app.world_mut().resource_mut::<ButtonInput<KeyCode>>().reset_all();
+    let clock = app.world().resource::<Time<Real>>();
+    let later = clock.last_update().ok_or("capture clock")? + std::time::Duration::from_secs(2);
+    app.insert_resource(bevy::time::TimeUpdateStrategy::ManualInstant(later));
+    app.update();
+    let owner = app.world().non_send::<HostOwner>();
+    assert_eq!(owner.status, "Screenshot failed: timed out waiting for capture");
+    Ok(())
+}

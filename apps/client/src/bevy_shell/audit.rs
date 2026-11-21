@@ -7,15 +7,22 @@ use super::{
 };
 use bevy::{prelude::*, window::PrimaryWindow};
 use serde::Serialize;
-use std::{collections::VecDeque, path::PathBuf};
+use std::{collections::VecDeque, path::PathBuf, time::{Duration, Instant}};
 
 mod named;
 
 const MAX_PENDING_MANUAL_CAPTURES: usize = 4;
+const MANUAL_CAPTURE_WAIT: Duration = Duration::from_secs(2);
 
 pub(super) enum ManualCapture {
     Audit(PathBuf),
     Player(super::screenshots::PlayerCapture),
+}
+
+pub(super) struct QueuedCapture {
+    generation: u64,
+    deadline: Instant,
+    request: ManualCapture,
 }
 
 /// F12 captures the rendered window; explicit audit mode keeps its diagnostic PNG path.
@@ -30,7 +37,7 @@ pub(super) fn capture_on_key(
     mut owner: NonSendMut<HostOwner>,
     viewport: Res<super::game_ui::viewport::WorldViewport>,
     mut automatic: Local<super::screenshots::AutomaticState>,
-    mut manual_pending: Local<VecDeque<(u64, ManualCapture)>>,
+    mut manual_pending: Local<VecDeque<QueuedCapture>>,
     captures: Query<Entity, With<bevy::render::view::screenshot::Screenshot>>,
     clock: Res<Time<Real>>,
     mut writes: NonSendMut<super::screenshots::Writes>,
@@ -38,7 +45,13 @@ pub(super) fn capture_on_key(
     writes.poll(&mut owner);
     let occupied = !captures.is_empty();
     let generation = owner.generation();
-    manual_pending.retain(|(requested, _)| *requested == generation);
+    let now = clock.last_update().unwrap_or(clock.startup());
+    manual_pending.retain(|queued| queued.generation == generation);
+    let mut expired = false;
+    while manual_pending.front().is_some_and(|queued| now >= queued.deadline) {
+        manual_pending.pop_front();
+        expired = true;
+    }
     let pressed = keys.just_pressed(KeyCode::F12);
     let rejected =
         pressed && (manual_pending.len() >= MAX_PENDING_MANUAL_CAPTURES || writes.is_full());
@@ -53,10 +66,10 @@ pub(super) fn capture_on_key(
                 backlog: owner.play.is_some() && preferences.backlog_frames > 0,
             })
         };
-        manual_pending.push_back((generation, request));
+        manual_pending.push_back(QueuedCapture { generation, deadline: now + MANUAL_CAPTURE_WAIT, request });
     }
-    let manual_batch = match manual_pending.front() {
-        Some((_, ManualCapture::Player(request)))
+    let manual_batch = match manual_pending.front().map(|queued| &queued.request) {
+        Some(ManualCapture::Player(request))
             if request.backlog
                 && owner.play.is_some()
                 && request.game_only
@@ -78,7 +91,7 @@ pub(super) fn capture_on_key(
     );
     if !occupied && !writes.is_full() && (manual_batch.is_none() || readback.is_some()) {
         let batch_scheduled = manual_batch.is_some();
-        match manual_pending.pop_front() {
+        match manual_pending.pop_front().map(|queued| (queued.generation, queued.request)) {
             Some((generation, ManualCapture::Audit(path))) => {
                 super::screenshots::request_audit(&mut commands, readback, generation, path);
             }
@@ -97,6 +110,8 @@ pub(super) fn capture_on_key(
     }
     if rejected {
         owner.status = "Screenshot failed: capture queue is full".into();
+    } else if expired {
+        owner.status = "Screenshot failed: timed out waiting for capture".into();
     }
 }
 #[derive(Resource)]
