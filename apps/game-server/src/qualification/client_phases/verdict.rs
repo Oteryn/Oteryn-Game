@@ -299,6 +299,18 @@ impl Watch {
         self.run(Some(budget), deadline, journey).await
     }
 
+    /// Walk between a row's journey and its NPC or entry tile outside the
+    /// row's wall-clock budget: its length is map distance times character
+    /// speed, not journey work. Every walked tile is progress, so a stalled
+    /// walk still ends on the no-progress watchdog.
+    pub(super) async fn travel<T>(
+        &self,
+        stalled: impl Into<String>,
+        journey: impl Future<Output = TestResult<T>>,
+    ) -> TestResult<T> {
+        self.run(None, stalled, journey).await
+    }
+
     async fn run<T>(
         &self,
         budget: Option<Duration>,
@@ -795,6 +807,22 @@ impl Groups {
     }
 }
 
+/// S03's MOTD gap is reported only once the server accepted and answered the guild query;
+/// a timeout, lost transport or refusal stays an ordinary FAIL.
+pub(crate) fn guild_motd_missing(
+    reply: &oteryn_dev_client::client_runtime::guild::GuildReply,
+) -> Option<&'static str> {
+    use oteryn_dev_client::client_runtime::guild::{CommandStatus, GuildReply};
+    matches!(
+        reply,
+        GuildReply::Query {
+            status: CommandStatus::Accepted,
+            result: Some(_),
+        }
+    )
+    .then_some("source:crates/protocol-oteryn/src/guild.rs:17")
+}
+
 #[cfg(test)]
 mod verdict_tests {
     use super::*;
@@ -1065,6 +1093,39 @@ mod verdict_tests {
     }
 
     #[test]
+    fn travel_outlasts_the_journey_budget_while_walking_but_not_a_stall() -> TestResult {
+        let harness = harness(true, Some(90));
+        paused()?.block_on(async {
+            // A town walk longer than the 90 s journey budget, one tile per 1.8 s.
+            let walking = Row::with_harness("E2EF4", "E01", &["greet"], harness);
+            let started = tokio::time::Instant::now();
+            let result: TestResult = walking
+                .watch()
+                .travel("travel stalled", async {
+                    for _ in 0..100 {
+                        tokio::time::sleep(Duration::from_millis(1_800)).await;
+                        harness.progress("walk");
+                    }
+                    Ok(())
+                })
+                .await;
+            assert!(result.is_ok());
+            assert_eq!(started.elapsed(), Duration::from_secs(180));
+
+            let stalled = Row::with_harness("E2EF4", "E01", &["greet"], harness);
+            let started = tokio::time::Instant::now();
+            let result: TestResult = stalled
+                .watch()
+                .travel("travel stalled", std::future::pending())
+                .await;
+            assert_eq!(started.elapsed(), Duration::from_secs(90));
+            let (cause, root) = stalled.cause(result.as_ref().err().map(|error| &**error));
+            assert_eq!((cause.kind(), root.as_str()), ("no-progress", "E01/greet"));
+            Ok(())
+        })
+    }
+
+    #[test]
     fn stall_cause_survives_errors_rewritten_as_text() -> TestResult {
         let harness = harness(true, Some(5));
         paused()?.block_on(async {
@@ -1095,5 +1156,43 @@ mod verdict_tests {
         let chained = Groups::parse(Some("a"), CHAIN)?;
         assert!(chained.runs("a") && chained.runs("b") && chained.runs("c") && !chained.runs("d"));
         Ok(())
+    }
+
+    #[test]
+    fn failed_guild_query_is_not_reported_as_missing_server() {
+        use oteryn_dev_client::client_runtime::guild::{CommandStatus, GuildReply, guild};
+        for (status, result) in [
+            (CommandStatus::Rejected, None),
+            (CommandStatus::Accepted, None),
+            (
+                CommandStatus::Rejected,
+                Some(guild::GuildQueryResult::Own(None)),
+            ),
+        ] {
+            assert_eq!(
+                guild_motd_missing(&GuildReply::Query { status, result }),
+                None
+            );
+        }
+        assert_eq!(
+            guild_motd_missing(&GuildReply::Intent {
+                status: CommandStatus::Accepted,
+                result: None,
+            }),
+            None
+        );
+    }
+
+    #[test]
+    fn answered_guild_query_reports_the_missing_motd_route() {
+        use oteryn_dev_client::client_runtime::guild::{CommandStatus, GuildReply, guild};
+        let reply = GuildReply::Query {
+            status: CommandStatus::Accepted,
+            result: Some(guild::GuildQueryResult::Own(None)),
+        };
+        assert_eq!(
+            guild_motd_missing(&reply),
+            Some("source:crates/protocol-oteryn/src/guild.rs:17")
+        );
     }
 }
