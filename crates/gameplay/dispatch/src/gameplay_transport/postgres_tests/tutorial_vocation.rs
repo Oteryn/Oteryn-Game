@@ -17,6 +17,11 @@ fn tutorial_vocation_can_choose_again_after_a_missing_kit_revision() -> TestResu
 }
 
 #[test]
+fn tutorial_vocation_releases_the_spell_lane_during_readback() -> TestResult {
+    vocation_scenario(Case::Readback)
+}
+
+#[test]
 fn tutorial_vocation_waits_for_main_backpack() -> TestResult {
     vocation_scenario(Case::MissingBag)
 }
@@ -101,6 +106,7 @@ enum Case {
     Ordinary,
     MissingBag,
     MissingKitRevision,
+    Readback,
     Retained,
     Uninstalled,
     Capacity,
@@ -659,6 +665,30 @@ fn vocation_scenario(case: Case) -> TestResult {
                 blocker.rollback().await?;
                 assert!(choice.await.is_some());
                 }
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
+            }
+            if case == Case::Readback {
+                use crate::gameplay_transport::tutorial_vocation::VOCATION_READBACK_PAUSE;
+                let entered = std::sync::Arc::new(tokio::sync::Notify::new());
+                let proceed = std::sync::Arc::new(tokio::sync::Notify::new());
+                let choose = VOCATION_READBACK_PAUSE.scope(
+                    (entered.clone(), proceed.clone()), owner.tutorial_vocation_wire(admitted, &[4]),
+                );
+                let check = async {
+                    entered.notified().await;
+                    let permit = owner.spell_lane_permit().await.ok_or("spell lane")?;
+                    drop(permit);
+                    proceed.notify_one();
+                    Ok::<_, Box<dyn std::error::Error>>(())
+                };
+                let (selected, checked) = tokio::time::timeout(std::time::Duration::from_secs(5), async {
+                    tokio::join!(choose, check)
+                }).await?;
+                checked?;
+                assert_eq!(selected, Some(vec![0, 4]));
                 drop(owner);
                 drop(authority);
                 drop(seal);

@@ -14,6 +14,10 @@ use oteryn_protocol_oteryn::tutorial_vocation as wire;
 #[cfg(test)]
 tokio::task_local! {
     pub(super) static MISSING_KIT_REVISION: u32;
+    pub(super) static VOCATION_READBACK_PAUSE: (
+        std::sync::Arc<tokio::sync::Notify>,
+        std::sync::Arc<tokio::sync::Notify>,
+    );
 }
 
 struct InitialVitalsHold<'a> {
@@ -172,7 +176,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !same_authority(&initial, &fence) {
             return None;
         }
-        let _permit = self.spell_lane_permit().await?;
+        let permit = self.spell_lane_permit().await?;
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
         let native = self.active_generation?.native_gameplay()?;
         let vocation = match &retained {
@@ -296,6 +300,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         self.states.tutorial_sessions.inventory_changed(session);
+        drop(slot);
+        drop(permit);
+        #[cfg(test)]
+        if let Ok((entered, proceed)) = VOCATION_READBACK_PAUSE.try_with(Clone::clone) {
+            entered.notify_one();
+            proceed.notified().await;
+        }
         use super::spell_character_facts::{CastFactsLoad, load_character_cast_facts};
         let CastFactsLoad::Ready {
             facts,
@@ -314,6 +325,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .read_character_stance(self.character, fence.character_id)
             .await
             .ok()?;
+        let _permit = self.spell_lane_permit().await?;
+        let _slot = self.revision_sequencer.acquire(fence.character_id).await;
         let current = self.npc_vocation_fence(session).await?;
         if !same_authority(&retained.fence, &current)
             || current.expected_character_revision != character_revision
@@ -324,7 +337,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             let runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.try_lock().ok()?;
-            if runtime.owner_fence().is_err()
+            if self.states.tutorial_sessions.vocation(session).ok()??
+                .request.occurrence != retained.request.occurrence
+                || runtime.owner_fence().is_err()
                 || runtime.player_control_facts(actor, session).is_err()
                 || states.has_pending_spell_commit(actor, session)
             {
@@ -352,7 +367,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .tutorial_sessions
                 .clear_vocation(session, retained.request.occurrence);
         }
-        drop(slot);
         let chosen = wire::VOCATIONS
             .iter()
             .position(|key| *key == build.vocation())? as u8
