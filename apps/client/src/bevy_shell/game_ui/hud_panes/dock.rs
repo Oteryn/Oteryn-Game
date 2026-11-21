@@ -151,9 +151,83 @@ impl SidebarWidgets {
     /// Writes beside the target and renames, so a crash never leaves half a file.
     pub(in crate::bevy_shell) fn save(&mut self, path: &Path) -> io::Result<()> {
         let _lock = crate::atomic_file::try_lock(path)?;
-        if read_revision(path)? != self.saved_revision {
-            return Err(io::Error::other("Dock layout changed in another client"));
+        let mut active = Self::load(path)?;
+        let before = self
+            .saved_revision
+            .as_deref()
+            .map(serde_json::from_slice)
+            .transpose()
+            .map_err(io::Error::other)?
+            .map(Self::sanitize)
+            .unwrap_or_default();
+        active.apply_edits(&before, self);
+        active.publish(path)?;
+        *self = active;
+        Ok(())
+    }
+
+    fn apply_edits(&mut self, before: &Self, edited: &Self) {
+        if edited.left != before.left {
+            self.left = edited.left;
         }
+        if edited.extra != before.extra {
+            self.extra = edited.extra;
+        }
+        for region in super::float::REGIONS {
+            if edited.floating.contains(&region) != before.floating.contains(&region) {
+                self.floating.retain(|current| *current != region);
+                if edited.floating.contains(&region) {
+                    self.floating.push(region);
+                }
+            }
+        }
+        for (index, edit) in edited.entries.iter().enumerate() {
+            let Some(previous) = before.entry(edit.widget) else {
+                continue;
+            };
+            let Some(active_index) = self
+                .entries
+                .iter()
+                .position(|entry| entry.widget == edit.widget)
+            else {
+                continue;
+            };
+            let active = &mut self.entries[active_index];
+            if edit.dock != previous.dock {
+                active.dock = edit.dock;
+            }
+            if edit.open != previous.open {
+                active.open = edit.open;
+            }
+            if edit.minimised != previous.minimised {
+                active.minimised = edit.minimised;
+            }
+            if edit.height != previous.height {
+                active.height = edit.height;
+            }
+            if edit.floating != previous.floating {
+                active.floating = edit.floating;
+            }
+            let previous_predecessor = before
+                .entries
+                .iter()
+                .position(|entry| entry.widget == edit.widget)
+                .and_then(|index| index.checked_sub(1))
+                .map(|index| before.entries[index].widget);
+            let edited_predecessor = index
+                .checked_sub(1)
+                .map(|index| edited.entries[index].widget);
+            if previous_predecessor != edited_predecessor {
+                let entry = self.entries.remove(active_index);
+                let insertion = edited_predecessor
+                    .and_then(|widget| self.entries.iter().position(|entry| entry.widget == widget))
+                    .map_or(0, |index| index + 1);
+                self.entries.insert(insertion, entry);
+            }
+        }
+    }
+
+    fn publish(&mut self, path: &Path) -> io::Result<()> {
         let saved = Saved {
             left: self.left,
             extra: self.extra,
@@ -179,12 +253,11 @@ impl SidebarWidgets {
     }
     /// Reset window layout: the Global default dock, saved at once.
     pub(in crate::bevy_shell) fn reset(&mut self, path: Option<&Path>) -> io::Result<()> {
-        let mut reset = Self {
-            saved_revision: self.saved_revision.clone(),
-            ..Self::default()
-        };
+        let mut reset = Self::default();
         if let Some(path) = path {
-            reset.save(path)?;
+            let _lock = crate::atomic_file::try_lock(path)?;
+            let _active = Self::load(path)?;
+            reset.publish(path)?;
         }
         *self = reset;
         Ok(())
@@ -234,7 +307,15 @@ pub(super) fn persist(
             return true;
         }
         *attempted = now;
-        snapshot.save(previous).is_err()
+        match snapshot.save(previous) {
+            Ok(()) => false,
+            Err(error) => {
+                if closing {
+                    leprintln!("Could not save window layout: {error}", error = error);
+                }
+                true
+            }
+        }
     });
     if path != state.path {
         if let Some(previous) = state.path.as_deref()
@@ -272,10 +353,12 @@ pub(super) fn persist(
         *pending = Some(now);
     }
     if pending.is_some_and(|since| closing || now.saturating_sub(since) >= SAVE_DELAY) {
-        if let Err(error) = widgets.bypass_change_detection().save(path) {
+        let mut snapshot = widgets.clone();
+        if let Err(error) = snapshot.save(path) {
             *pending = Some(now);
             leprintln!("Could not save window layout: {error}", error = error);
         } else {
+            install_snapshot(&mut widgets, snapshot);
             *pending = None;
         }
     }
@@ -296,6 +379,23 @@ pub(super) fn reset(
 #[cfg(test)]
 mod staging_tests {
     use super::*;
+
+    #[test]
+    fn review_3376_stale_dock_saves_and_resets_rebase() -> io::Result<()> {
+        let root = tempfile::tempdir()?;
+        let path = root.path().join("dock.json");
+        let mut first = SidebarWidgets::load(&path)?;
+        let mut second = SidebarWidgets::load(&path)?;
+        first.left = true;
+        first.save(&path)?;
+        second.extra = true;
+        assert!(second.save(&path).is_ok(), "stale save should rebase");
+        let combined = SidebarWidgets::load(&path)?;
+        assert!(combined.left && combined.extra);
+        first.reset(Some(&path))?;
+        assert_eq!(SidebarWidgets::load(&path)?, SidebarWidgets::default());
+        Ok(())
+    }
 
     #[test]
     fn dock_save_uses_its_own_staging_path() -> io::Result<()> {
