@@ -18,12 +18,106 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  resolve:
+    name: Integration shards / resolve exact source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      revision: ${{ steps.source.outputs.revision }}
+      compiler_override: ${{ steps.source.outputs.compiler_override }}
+    steps:
+      - name: Validate requested ref
+        env:
+          REQUESTED_REF: ${{ inputs.ref }}
+        run: |
+          set -euo pipefail
+          [[ "$REQUESTED_REF" =~ ^[A-Za-z0-9._/-]{1,200}$ ]]
+          [[ "$REQUESTED_REF" != -* ]]
+
+      - name: Resolve requested ref once
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+
+      - name: Bind the exact source and compiler-consumer capability
+        id: source
+        run: |
+          set -euo pipefail
+          echo "revision=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          from pathlib import Path
+          available = Path('tools/content-migration/world_compiler_artifact.py').is_file()
+          if available:
+              source = Path('apps/game-server/tests/world_bundle_artifact_boot.rs').read_text()
+              assert 'std::env::var_os("OTERYN_WORLD_COMPILER_BIN")' in source
+              assert Path('tools/qualification/node_boot/prebuilt.py').is_file()
+              assert Path('tools/ci/shared_dispatch_archive.py').is_file()
+          print('compiler_override=' + str(available).lower())
+          PY
+
+  world_compiler:
+    name: Integration shards / World compiler
+    needs: resolve
+    if: needs.resolve.outputs.compiler_override == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      CARGO_BUILD_JOBS: '2'
+    outputs:
+      world_compiler_sha256: ${{ steps.compiler.outputs.sha256 }}
+      world_compiler_artifact_id: ${{ steps.compiler_upload.outputs.artifact-id }}
+      world_compiler_producer_attempt: ${{ steps.compiler.outputs.producer_attempt }}
+    steps:
+      - name: Check out the resolved candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.resolve.outputs.revision }}
+          persist-credentials: false
+
+      - name: Verify exact candidate
+        env:
+          EXPECTED_SHA: ${{ needs.resolve.outputs.revision }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install 1.100.0 --profile minimal
+
+      - name: Test current-run compiler artifact guards
+        run: python3 -m unittest discover -s tools/content-migration -p test_world_compiler_artifact.py
+
+      - name: Build the release compiler while integration targets compile
+        id: compiler
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_RUN_ATTEMPT" =~ ^[1-9][0-9]*$ ]]
+          printf 'producer_attempt=%s\n' "$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+          python3 tools/qualification/node_boot/prebuilt.py build world-compiler "$RUNNER_TEMP/world-compiler-build"
+          digest="$(sha256sum "$RUNNER_TEMP/world-compiler-build/bundle.tar.gz" | cut -d' ' -f1)"
+          printf 'sha256=%s\n' "$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Publish the current-attempt release compiler
+        id: compiler_upload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: world-compiler-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/world-compiler-build/bundle.tar.gz
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
   integration:
     name: Integration shards / ${{ matrix.shard }}
+    needs: resolve
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     permissions:
       contents: read
+      actions: read
     strategy:
       fail-fast: false
       matrix:
@@ -41,8 +135,13 @@ jobs:
       - name: Check out requested ref
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ needs.resolve.outputs.revision }}
           persist-credentials: false
+
+      - name: Verify exact candidate
+        env:
+          EXPECTED_SHA: ${{ needs.resolve.outputs.revision }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Install Rust toolchain
         run: rustup toolchain install 1.100.0 --profile minimal
@@ -83,10 +182,38 @@ jobs:
           fi
           echo "$RUNNER_TEMP/nextest-bin" >> "$GITHUB_PATH"
 
+      - name: Compile heavy integration targets while the release compiler builds
+        if: matrix.shard == 'integration-heavy' && needs.resolve.outputs.compiler_override == 'true'
+        env:
+          SHARD: ${{ matrix.shard }}
+          CARGO_BUILD_JOBS: '2'
+        run: |
+          set -euo pipefail
+          cargo +1.100.0 metadata --locked --no-deps --format-version 1 > "$RUNNER_TEMP/metadata.json"
+          python tools/repository/plan_rust_test_shards.py "$RUNNER_TEMP/metadata.json" "$SHARD" > "$RUNNER_TEMP/shard-args.txt"
+          mapfile -t shard_args < "$RUNNER_TEMP/shard-args.txt"
+          test "${#shard_args[@]}" -gt 0
+          cargo +1.100.0 nextest list --locked --workspace "${shard_args[@]}" --message-format json > "$RUNNER_TEMP/integration-heavy-inventory.json"
+          python3 -c 'import json,sys; assert json.load(open(sys.argv[1]))["test-count"] > 0' "$RUNNER_TEMP/integration-heavy-inventory.json"
+
+      - name: Reuse the same-run release compiler after test compilation
+        if: matrix.shard == 'integration-heavy' && needs.resolve.outputs.compiler_override == 'true'
+        env:
+          EXPECTED_SHA: ${{ needs.resolve.outputs.revision }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          compiler="$(python3 tools/content-migration/world_compiler_artifact.py \
+            --workflow integration-shards-dispatch.yml "$RUNNER_TEMP/integration-world-compiler")"
+          printf 'OTERYN_WORLD_COMPILER_BIN=%s\n' "$compiler" >> "$GITHUB_ENV"
+
+      # Heads predating the source-bound compiler helper retain this original
+      # full invocation, including the test's local compiler fallback.
       - name: Test workspace integration targets
         shell: bash
         env:
           SHARD: ${{ matrix.shard }}
+          CARGO_BUILD_JOBS: '2'
         run: |
           set -euo pipefail
           cargo +1.100.0 metadata --locked --no-deps --format-version 1 > "$RUNNER_TEMP/metadata.json"

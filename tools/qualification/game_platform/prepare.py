@@ -8,12 +8,19 @@ import sys
 from pathlib import Path
 
 
+def portal_binary(work):
+    metadata = json.loads((work / "portal-meta.json").read_text())
+    # The artifact branch writes this path only after exact-producer verification.
+    binary = Path(metadata["executable"]) if "executable" in metadata else Path(metadata["target_directory"]) / "debug/oteryn-portal"
+    if not binary.is_file() or not os.access(binary, os.X_OK):
+        raise ValueError("real_portal_binary_missing")
+    return binary
+
+
 def main():
     work = Path(sys.argv[1])
     account_a, account_b, world, channel, fresh, recovery, fresh_id, recovery_id = sys.argv[2:10]
-    binary = Path(json.loads((work / "portal-meta.json").read_text())["target_directory"]) / "debug/oteryn-portal"
-    if not binary.is_file() or not os.access(binary, os.X_OK):
-        raise ValueError("real_portal_binary_missing")
+    binary = portal_binary(work)
     callback_port = int(os.environ.get("GAME_PLATFORM_CALLBACK_PORT", "18099"))
     if not 1024 <= callback_port <= 65535:
         raise ValueError("invalid_callback_port")

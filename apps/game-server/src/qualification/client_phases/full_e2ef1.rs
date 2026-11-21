@@ -1053,7 +1053,16 @@ mod e2ef1 {
         Ok(items)
     }
     pub(super) async fn logout(client: &mut DevClientSession) -> TestResult {
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
+        logout_by(
+            client,
+            tokio::time::Instant::now() + Duration::from_secs(70),
+        )
+        .await
+    }
+    async fn logout_by(
+        client: &mut DevClientSession,
+        deadline: tokio::time::Instant,
+    ) -> TestResult {
         loop {
             let logout = client.session_mut().logout().await?;
             if logout.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
@@ -1064,6 +1073,56 @@ mod e2ef1 {
             }
             pump(client).await?;
         }
+    }
+    /// M05 cleanup after its door checks (#3373): the doors leave the actor outside the
+    /// town protection zone, where a live creature kept refreshing the 60 s PvE lock past
+    /// the logout deadline. Log every visible creature as the lock-holder evidence, then
+    /// walk into the nearest protection-zone tile, where the server admits the logout.
+    /// The walk counts against the same `deadline` as the logout that follows it.
+    async fn leave_fight(
+        client: &mut DevClientSession,
+        world: &BundleWorld,
+        deadline: tokio::time::Instant,
+    ) -> TestResult {
+        let at = client.world_spatial().actor_position;
+        let here = tile(at)?;
+        let creatures: Vec<_> = client
+            .world_entities()
+            .map(|entities| {
+                entities
+                    .iter()
+                    .filter(|e| e.kind == EntityKind::Creature)
+                    .copied()
+                    .collect()
+            })
+            .unwrap_or_default();
+        for creature in creatures {
+            evidence(&format!(
+                "E2EF1_FIGHT_HOLDER actor={at:?} entity={:?} position={:?} vitals={:?}",
+                creature.entity,
+                creature.position,
+                client.actor_vitals()
+            ));
+        }
+        let protection_zone = |cell: TilePos| {
+            world
+                .base()
+                .tile(cell.x, cell.y, cell.floor)
+                .is_some_and(|tile| tile.protection_zone())
+        };
+        if !protection_zone(here) {
+            let path = route(world, here, protection_zone)
+                .ok_or("no reachable protection zone to leave the fight")?;
+            evidence(&format!(
+                "E2EF1_LEAVE_FIGHT from={at:?} steps={}",
+                path.len()
+            ));
+            walk(client, world, &path).await?;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("M05 fight cleanup exceeded the logout deadline".into());
+        }
+        Ok(())
     }
     pub(super) async fn run(
         client: DevClientSession,
@@ -1131,6 +1190,13 @@ mod e2ef1 {
             }
             // Every position-changing row saves its actual landing via ordinary
             // logout, gets a fresh Platform admission and compares the saved cell.
+            // M05 alone first leaves its fight through the town PZ (`leave_fight`); its
+            // checks are door states, so its saved cell is that PZ tile.
+            let cleanup =
+                (*row == "M05").then(|| tokio::time::Instant::now() + Duration::from_secs(70));
+            if let Some(deadline) = cleanup {
+                leave_fight(&mut client, world, deadline).await?;
+            }
             let saved = client.world_spatial().actor_position;
             let inventory = inventory_signature(&client)?;
             let old_session = client.join_snapshot().game_session_id;
@@ -1150,7 +1216,10 @@ mod e2ef1 {
                 walk(&mut peer, world, &back).await?;
                 logout(&mut peer).await?;
             }
-            logout(&mut client).await?;
+            match cleanup {
+                Some(deadline) => logout_by(&mut client, deadline).await?,
+                None => logout(&mut client).await?,
+            }
             drop(client);
             client = connect_world(clients, 0xb0 + u8::try_from(ordinal)?).await?;
             let durable = client.world_spatial().actor_position == saved

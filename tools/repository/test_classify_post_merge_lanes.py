@@ -111,15 +111,15 @@ def shared_cache_completion_regressions() -> None:
     assert linux is not None
     steps = re.split(r"(?m)^      - name: ", linux)[1:]
     names = [step.splitlines()[0] for step in steps]
-    trim = names.index("Trim incremental cache and record its source snapshot")
+    trim = names.index("Bound the Cargo cache and record its source snapshot")
     save = names.index("Save trimmed cache from protected main after compilation")
     for name in (
         "Build workspace", "Strict Clippy", "Compile workspace tests without executing them",
         "Build synthetic harness and native game-server",
     ):
         assert names.index(name) < trim < save, name
-    # The package-scoped units that MQ build-smoke, node_boot and server_seam reuse stay cached;
-    # running the harness and the smoke is left to MQ build-smoke on the same SHA.
+    # The package-scoped dependency graphs for MQ build-smoke, node_boot and server_seam
+    # stay warm; running the harness and the smoke stays in MQ on the same SHA.
     package_build = steps[names.index("Build synthetic harness and native game-server")]
     assert "cargo +1.100.0 build --locked -p oteryn-synthetic-client-harness\n" in package_build
     assert "cargo +1.100.0 build --locked -p oteryn-game-server --bin oteryn-game-server\n" in package_build
@@ -128,11 +128,12 @@ def shared_cache_completion_regressions() -> None:
     assert "timeout-minutes: 60\n" in linux
     fence = "if: github.ref == 'refs/heads/main' && github.ref_protected\n"
     assert fence in steps[trim] and fence in steps[save]
-    assert "python tools/repository/normalize_cargo_mtimes.py --record" in steps[trim]
+    assert "python3 tools/repository/normalize_cargo_mtimes.py --record" in steps[trim]
     assert ".oteryn-cache-source-sha" not in linux
-    assert "-name incremental -prune" in steps[trim]
-    # Superseded main pushes cancel their cache build; nothing else shares the group.
-    assert "concurrency:\n  group: rust-protected-main-cache-${{ github.ref }}\n  cancel-in-progress: true\n" in source
+    assert "tools/repository/trim_cargo_cache.py --workspace . --target target" in steps[trim]
+    assert "--max-bytes 4294967296 --check-only" in steps[trim]
+    # Main pushes keep the active warmup and coalesce the pending run into the latest one.
+    assert "concurrency:\n  group: rust-protected-main-cache-${{ github.ref }}\n  cancel-in-progress: false\n" in source
     key = re.search(r"(?m)^          key: (.+)$", steps[save]).group(1)
     prefix = key.rsplit("-", 1)[0] + "-"
     # The producer must remain readable by every existing canonical consumer.
@@ -187,7 +188,7 @@ def shared_cache_completion_regressions() -> None:
     for mutation in (
         early_save,
         source.replace(" --no-run", ""),
-        source.replace("  cancel-in-progress: true\n", "  cancel-in-progress: false\n"),
+        source.replace("  cancel-in-progress: false\n", "  cancel-in-progress: true\n"),
         source.replace(fence.strip(), "if: always()"),
         source.replace("      - name: Strict Clippy\n", "      - name: Removed Clippy\n"),
         source.replace("    timeout-minutes: 60\n", "    timeout-minutes: 45\n"),

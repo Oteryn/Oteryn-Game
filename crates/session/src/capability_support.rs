@@ -196,6 +196,8 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::channel_switch::CAPABILITY_CHANNEL_SWITCH_V1,
     // chsw Channel on Party, VIP and Guild rows (513).
     oteryn_protocol_oteryn::channel_switch::CAPABILITY_SOCIAL_CHANNEL_V1,
+    // CORPSE48: domain 11 shows up to 48 corpse entries (requires 4).
+    oteryn_protocol_oteryn::item_view::CAPABILITY_CORPSE_CONTAINER_48_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in

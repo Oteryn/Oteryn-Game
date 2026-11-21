@@ -4,7 +4,9 @@ on:
   pull_request:
     paths:
       - .github/workflows/native-entry-room-qualification.yml
+      - .github/workflows/rust-fast-archive.yml
       - tools/qualification/native_entry_room/**
+      - tools/ci/shared_dispatch_archive.py
       - tools/qualification/wp5_s3a/platform-fpm.Dockerfile
       - crates/gameplay/content/**
       - apps/game-server/tests/content_native_entry_room.rs
@@ -12,6 +14,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: native-entry-room-qualification-${{ github.ref }}
@@ -22,6 +25,8 @@ jobs:
     name: Native entry room / Platform-issued WorldId
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    env:
+      CARGO_BUILD_JOBS: '2'
     steps:
       - name: Check out exact candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -33,6 +38,32 @@ jobs:
         env:
           EXPECTED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Test native executable provenance and reuse guards
+        if: ${{ hashFiles('tools/qualification/native_entry_room/prebuilt.py') != '' }}
+        run: python3 -m unittest discover -s tools/qualification/native_entry_room -p test_prebuilt.py
+
+      - name: Reuse the exact-head shared native executable when available
+        if: ${{ hashFiles('tools/qualification/native_entry_room/prebuilt.py') != '' }}
+        id: native-prebuilt
+        env:
+          EXPECTED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          status=0
+          python3 tools/qualification/native_entry_room/prebuilt.py restore "$RUNNER_TEMP/native-entry-prebuilt" --wait-seconds 600 || status=$?
+          case "$status" in
+            0)
+              printf 'OTERYN_NATIVE_ENTRY_PREBUILT=%s\n' "$RUNNER_TEMP/native-entry-prebuilt" >> "$GITHUB_ENV"
+              echo 'available=true' >> "$GITHUB_OUTPUT"
+              ;;
+            3)
+              echo 'No applicable shared producer; compile while the Platform issues the real WorldId.'
+              echo 'available=false' >> "$GITHUB_OUTPUT"
+              ;;
+            *) exit "$status" ;;
+          esac
 
       - name: Check out exact public Platform issuer
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -46,11 +77,13 @@ jobs:
         run: test "$(git -C _platform rev-parse HEAD)" = eb65ce453949a352fdc0e3ed0132d2cde0084fb7
 
       - name: Install pinned Rust toolchain
+        if: ${{ steps.native-prebuilt.outputs.available != 'true' }}
         run: rustup toolchain install 1.100.0 --profile minimal
 
       - name: Issue WorldId and qualify the committed room
         env:
           PLATFORM_SOURCE: ${{ github.workspace }}/_platform
+          OTERYN_NATIVE_ENTRY_PARALLEL_BUILD: "1"
         run: |
           set -euo pipefail
           evidence="$RUNNER_TEMP/native-entry-room-evidence.txt"
