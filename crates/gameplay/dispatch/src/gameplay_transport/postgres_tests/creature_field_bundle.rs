@@ -49,7 +49,7 @@ async fn exercise(harness: &Harness) -> TestResult {
     );
     let active = controller.active().ok_or("active generation")?;
     let native = active.native_gameplay().ok_or("native gameplay")?;
-    let (deps, actors) = dependencies(original, active, &pin)?;
+    let (deps, actors) = dependencies(original, active, &pin, true)?;
     let mut owner = deps.owner(harness, &authority);
     owner.active_generation = Some(active);
     owner.movement_cells = deps.room.movement_cells().into();
@@ -343,7 +343,8 @@ fn hooked_scenario() -> TestResult {
 }
 
 /// A Cults stop form is protected by the encounter damage gates, so the periodic
-/// owner refuses its turn. The field pass still completes for every other creature.
+/// owner refuses its turn. The field pass still completes for every other creature,
+/// including the one census-ordered after the hooked guardian.
 async fn exercise_hooked(harness: &Harness) -> TestResult {
     prepare_current_session(harness).await?;
     let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -359,7 +360,7 @@ async fn exercise_hooked(harness: &Harness) -> TestResult {
     );
     let active = controller.active().ok_or("active generation")?;
     let native = active.native_gameplay().ok_or("native gameplay")?;
-    let (deps, [rat, guardian]) = dependencies(original, active, &pin)?;
+    let (deps, [guardian, rat]) = dependencies(original, active, &pin, false)?;
     let mut owner = deps.owner(harness, &authority);
     owner.active_generation = Some(active);
     owner.movement_cells = deps.room.movement_cells().into();
@@ -461,6 +462,265 @@ async fn exercise_hooked(harness: &Harness) -> TestResult {
     Ok(())
 }
 
+#[test]
+fn creature_field_pass_defers_a_reserved_source_dot_until_release_postgres() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| reserved_source_scenario().map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "reserved source field scenario panicked")?
+        .map_err(Into::into)
+}
+
+fn reserved_source_scenario() -> TestResult {
+    run(async |admin| {
+        let harness = Harness::create_with_admission_seed(
+            admin,
+            "creature_field_reserved_source",
+            false,
+            false,
+        )
+        .await?;
+        let result = exercise_reserved_source(&harness).await;
+        let cleanup = harness.cleanup().await;
+        result?;
+        cleanup
+    })
+}
+
+/// A commandless owner event holding the live Player source, as a pending
+/// source callback does until its durable outcome is observed.
+struct HeldSource {
+    player: ExactActorRef,
+    session: crate::foundation::GameSessionId,
+}
+impl crate::foundation::source_reservation_seal::Sealed for HeldSource {}
+impl crate::foundation::SourceActorReservationProof for HeldSource {
+    fn owner(&self) -> (ExactActorRef, crate::foundation::GameSessionId) {
+        (self.player, self.session)
+    }
+    fn event_identity(&self) -> [u8; 16] {
+        id(9)
+    }
+    fn source_binding_digest(&self) -> [u8; 32] {
+        [9; 32]
+    }
+    fn affected_actors(&self) -> &[ExactActorRef] {
+        &[]
+    }
+    fn current_for(&self, runtime: &crate::foundation::ChannelRuntimeV1) -> bool {
+        runtime
+            .player_control_facts(self.player, self.session)
+            .is_ok()
+    }
+}
+
+/// The periodic owner refuses a DOT whose live Player source is reserved. That
+/// creature waits for a later pass, the pass still completes for the creature
+/// census-ordered after it, and the deferred DOT ticks once the source is released.
+async fn exercise_reserved_source(harness: &Harness) -> TestResult {
+    prepare_current_session(harness).await?;
+    let seal = harness.recovery.seal_current().map_err(debug)?;
+    let authority = harness
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let original = Dependencies::new()?;
+    let (controller, pin) = crate::content::native_gameplay::test_support::activated_loop_monster(
+        original.admitted.world_id,
+        false,
+    );
+    let active = controller.active().ok_or("active generation")?;
+    let native = active.native_gameplay().ok_or("native gameplay")?;
+    let (deps, [sourced, plain]) = dependencies(original, active, &pin, false)?;
+    let (player, session) = (deps.actor, deps.admitted.game_session_id);
+    let mut owner = deps.owner(harness, &authority);
+    owner.active_generation = Some(active);
+    owner.movement_cells = deps.room.movement_cells().into();
+    let permit = owner.spell_lane_permit().await.ok_or("field lane")?;
+    let health_names = owner.read_native_health_names(&permit).await.map_err(debug)?;
+    let mut runtime = deps.runtime.lock().await;
+    let native_health_names = owner.seal_native_health_names(&runtime, health_names).map_err(debug)?;
+    let objects = deps.door.lock().await;
+    let mut states = owner.states.spell_states.lock().await;
+    states
+        .initialize(
+            &runtime,
+            player,
+            session,
+            crate::gameplay_transport::actor_spell::tests::FACTS,
+            (0, 0),
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+        )
+        .ok_or("player spell state")?;
+    // A live Player source carries its bound attacker lease, as every admitted
+    // attacker does before its first hit.
+    runtime
+        .bind_attacker_lease(
+            player,
+            session,
+            crate::foundation::CharacterLease::new(
+                crate::foundation::CharacterId::decode(&id(41)).map_err(debug)?,
+                1,
+            )
+            .map_err(debug)?,
+        )
+        .map_err(debug)?;
+    let residual = || {
+        ConditionDefinition::new(
+            "test.bundle.creature.residual",
+            1,
+            ConditionValues::DamageOverTime {
+                element: DotElement::Drown,
+                total_min: 10,
+                total_max: 10,
+                per_tick: 5,
+                interval_ms: 1000,
+                delayed: true,
+            },
+        )
+        .ok_or("residual condition")
+    };
+    runtime
+        .commit_creature_field_entry(
+            plain,
+            0,
+            Some(&CreatureFieldEntry {
+                definition: residual()?,
+                source: None,
+                lineage: None,
+                occurrence: oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(id(1)),
+            }),
+        )
+        .map_err(debug)?;
+    // TEST_PARAMETERS: the same residual DOT, owned by the live Player source.
+    let before = runtime.companion_snapshot(sourced).map_err(debug)?;
+    let mut next = before.state.clone();
+    let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes([8; 32]);
+    next.conditions
+        .apply(
+            &residual()?,
+            Some(player),
+            oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind::Player,
+            &[],
+            &oteryn_gameplay_foundation::foundation::condition::ApplicationFacts {
+                now: 0,
+                base_speed: 100,
+                mana_shield_capacity: 0,
+                target_reentry_protected: false,
+                source_reentry_protected: false,
+                target_is_player: false,
+                decision_root: &root,
+                occurrence: oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(id(2)),
+            },
+        )
+        .map_err(debug)?;
+    runtime
+        .compare_companion_state(&before, next)
+        .map_err(debug)?;
+    let mut context = (
+        &owner,
+        &mut *runtime,
+        &*states,
+        &deps.room,
+        &*objects,
+        native,
+        &permit,
+        (sourced, plain, player, session),
+        &native_health_names,
+    );
+    let pass = owner.root.try_issue_semantic_pass().map_err(debug)?;
+    pass.run_with_context(&mut context, |holder, deadline, context| {
+        Box::pin(async move {
+            let (owner, runtime, states, room, objects, native, permit, actors, native_health_names) =
+                context;
+            let (sourced, plain, player, session) = *actors;
+            let mut tx = crate::durability::spell_item_transaction::begin_spell_owner_transaction(
+                holder, deadline,
+            )
+            .await?;
+            let binding = runtime.binding();
+            let authority =
+                crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction(
+                    &mut tx,
+                    permit,
+                    owner.root,
+                    owner.character,
+                    owner.holder,
+                    binding.runtime_scope(),
+                    binding.scope_generation().get(),
+                )
+                .await
+                .map_err(|_| DurabilityError::Unavailable)?;
+            let health = |runtime: &crate::foundation::ChannelRuntimeV1, actor| {
+                runtime
+                    .companion_snapshot(actor)
+                    .map(|snapshot| snapshot.health)
+                    .map_err(|_| DurabilityError::Unavailable)
+            };
+            let remaining = |runtime: &crate::foundation::ChannelRuntimeV1, actor| {
+                runtime
+                    .companion_snapshot(actor)
+                    .map(|snapshot| {
+                        snapshot
+                            .state
+                            .conditions
+                            .instances()
+                            .first()
+                            .map(|instance| instance.remaining_total())
+                    })
+                    .map_err(|_| DurabilityError::Unavailable)
+            };
+            let proof = HeldSource { player, session };
+            let mut held = runtime
+                .prepare_source_actor_reservation(&proof)
+                .map_err(|_| DurabilityError::Unavailable)?;
+            runtime
+                .reserve_source_actors(&mut held, &proof)
+                .map_err(|_| DurabilityError::Unavailable)?;
+            assert!(runtime.actor_spell_reserved(player));
+            let (sourced_before, plain_before) = (health(runtime, sourced)?, health(runtime, plain)?);
+            let mut map =
+                CurrentMonsterMap::new(&mut tx, &authority, runtime, room, objects, native);
+            let pass = owner
+                .tick_creature_fields(&mut map, runtime, states, native, 1_000_000, native_health_names)
+                .await;
+            assert!(pass.is_ok(), "a reserved DOT source aborted the field pass: {pass:?}");
+            assert!(map.validate_transaction(runtime).await);
+            drop(map);
+            assert!(
+                health(runtime, plain)? < plain_before,
+                "the creature after the deferred one still ticks"
+            );
+            assert_eq!(health(runtime, sourced)?, sourced_before, "the reserved source's DOT waits");
+            assert_eq!(remaining(runtime, sourced)?, Some(10), "no due tick is consumed while reserved");
+            runtime
+                .release_source_actors_after_observed_outcome(held, &proof)
+                .map_err(|_| DurabilityError::Unavailable)?;
+            assert!(!runtime.actor_spell_reserved(player));
+            let mut map =
+                CurrentMonsterMap::new(&mut tx, &authority, runtime, room, objects, native);
+            let pass = owner
+                .tick_creature_fields(&mut map, runtime, states, native, 2_000_000, native_health_names)
+                .await;
+            assert!(pass.is_ok(), "the released source's DOT pass failed: {pass:?}");
+            assert!(map.validate_transaction(runtime).await);
+            drop(map);
+            assert!(
+                health(runtime, sourced)? < sourced_before,
+                "the deferred DOT ticks once the source is released"
+            );
+            assert!(remaining(runtime, sourced)?.is_none_or(|left| left < 10));
+            tx.rollback().await?;
+            Ok(())
+        })
+    })
+    .await
+    .map_err(debug)?;
+    Ok(())
+}
+
 fn at(x: i32) -> MovementLocalPosition {
     MovementLocalPosition { x, y: 0, floor: 7 }
 }
@@ -469,6 +729,7 @@ fn dependencies(
     original: Dependencies,
     active: &crate::content::ActiveGeneration,
     pin: &crate::content::NativeEntryContentPin,
+    second_tile_pz: bool,
 ) -> TestResult<(Dependencies, [ExactActorRef; 2])> {
     let native = active.native_gameplay().ok_or("native gameplay")?;
     let coin_key = "oteryn:item.tibia.i3031";
@@ -485,7 +746,8 @@ fn dependencies(
     data.manifest.palette[4].key = coin_key.into();
     data.manifest.palette[4].id = coin_reference.get() - 1;
     // Existing bundle fixture, with one loose coin on each independently flagged tile.
-    for (index, flags) in [(1, 0), (2, 1)] {
+    // The second creature's tile is a protection zone only when the case asks for one.
+    for (index, flags) in [(1, 0), (2, u32::from(second_tile_pz))] {
         data.sectors[0].tiles[index].flags = flags;
         data.sectors[0].tiles[index]
             .items

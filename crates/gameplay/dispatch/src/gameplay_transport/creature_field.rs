@@ -134,6 +134,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             // Preview only a cloned condition store. Actual due work is consumed
             // once by the existing canonical owner after all source reads finish.
+            let due_sources = if snapshot.state.conditions.instances().is_empty() {
+                Vec::new()
+            } else {
+                let mut preview = snapshot.state.conditions.clone();
+                preview
+                    .take_due(now, facts)
+                    .into_iter()
+                    .filter_map(|tick| tick.provenance.source)
+                    .collect::<Vec<_>>()
+            };
+            // The periodic owner also refuses a live source whose own spell work is
+            // still pending or reserved. Defer this creature to a later pass, with no
+            // entry or tick written now, instead of failing every other creature.
+            if due_sources
+                .iter()
+                .copied()
+                .chain(entry.as_ref().and_then(|field| field.source))
+                .any(|source| {
+                    runtime.borrow_exact_actor_lookup().contains(source)
+                        && (runtime.actor_spell_reserved(source)
+                            || states.actors.iter().any(|(actor, session, _)| {
+                                *actor == source
+                                    && states.has_pending_spell_commit(*actor, *session)
+                            }))
+                })
+            {
+                continue;
+            }
             if native
                 .policies()
                 .soul_war_health_policy(
@@ -146,12 +174,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 | crate::content::native_soul_war_callbacks::SoulWarHealthCallbackKind::FourthTaint)
                 })
             {
-                let mut preview = snapshot.state.conditions.clone();
-                for tick in preview.take_due(now, facts) {
-                    if let Some(source) = tick.provenance.source {
-                        source_players.push(source);
-                    }
-                }
+                source_players.extend(due_sources);
                 if let Some(source) = entry.as_ref().and_then(|field| field.source) {
                     source_players.push(source);
                 }
