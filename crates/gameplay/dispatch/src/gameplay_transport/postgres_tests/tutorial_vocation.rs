@@ -621,14 +621,15 @@ fn vocation_scenario(case: Case) -> TestResult {
                 let mut blocker = h.pool.begin().await?;
                 sqlx::query("LOCK TABLE game_character_last_positions IN ACCESS EXCLUSIVE MODE")
                     .execute(&mut *blocker).await?;
+                let blocker_pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()").fetch_one(&mut *blocker).await?;
                 {
                 let choice = owner.tutorial_vocation_wire(admitted, &[4]);
                 tokio::pin!(choice);
                 let waiting = async {
                     loop {
                         let waiting: bool = sqlx::query_scalar(
-                            "SELECT EXISTS(SELECT 1 FROM pg_locks WHERE relation='game_character_last_positions'::regclass AND NOT granted)",
-                        ).fetch_one(&h.pool).await?;
+                            "SELECT EXISTS(SELECT 1 FROM pg_locks WHERE relation='game_character_last_positions'::regclass AND database=(SELECT oid FROM pg_database WHERE datname=current_database()) AND NOT granted AND $1=ANY(pg_blocking_pids(pid)))",
+                        ).bind(blocker_pid).fetch_one(&h.pool).await?;
                         if waiting {
                             return Ok::<_, sqlx::Error>(());
                         }
@@ -640,6 +641,10 @@ fn vocation_scenario(case: Case) -> TestResult {
                     result = &mut choice => return Err(format!("choice finished before the vitals write: {result:?}").into()),
                 }
                 assert!(owner.last_position_capture_is_held(session).await);
+                let failures = tokio::time::timeout(
+                    std::time::Duration::from_millis(500), owner.write_due_last_positions(true),
+                ).await?;
+                assert_eq!(failures, 1, "the busy revision slot must leave the position due");
                 blocker.rollback().await?;
                 assert!(choice.await.is_some());
                 }
