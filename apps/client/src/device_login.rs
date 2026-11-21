@@ -85,7 +85,7 @@ impl DeviceLogin {
         let pending = self.revocation_pending()?;
         let forget =
             pending || self.forget_requested.load(Ordering::Acquire) || state.vault_clear_failed;
-        if self.load_remembered(&mut state).is_err() {
+        if !forget && self.load_remembered(&mut state).is_err() {
             return Ok(None);
         }
         let remembered = !forget && options.remember_device && self.vault.available();
@@ -97,13 +97,14 @@ impl DeviceLogin {
             options,
             folder: self.folder.clone(),
         };
-        if forget || !options.stay_logged_in || attempt.state.remembered != remembered {
-            attempt.sign_out(client).await;
-            if forget && !attempt.state.vault_clear_failed {
-                self.complete_local_revocation()?;
-            } else if forget {
+        if forget {
+            // The marker refers to the intact vault entry until the server confirms revocation.
+            if attempt.revoke_before_vault_clear(client).await.is_err() {
                 return Ok(None);
             }
+            self.complete_local_revocation()?;
+        } else if !options.stay_logged_in || attempt.state.remembered != remembered {
+            attempt.sign_out(client).await;
         } else {
             let _ = attempt.revoke_pending(client).await;
         }
@@ -211,17 +212,10 @@ impl DeviceLogin {
             options: MiscellaneousPreferences::default(),
             folder: self.folder.clone(),
         };
-        let known_session = attempt.state.session.clone();
-        let loaded = self.load_remembered(&mut attempt.state);
-        if loaded.is_err() && attempt.state.session.is_none() {
-            attempt.state.session = known_session;
-        }
-        let revoked = attempt.revoke(client).await;
-        if loaded.is_ok() && !attempt.state.vault_clear_failed {
-            self.complete_local_revocation()?;
-        }
-        loaded.and(revoked)
+        attempt.revoke_before_vault_clear(client).await?;
+        self.complete_local_revocation()
     }
+
     pub fn vault_available(&self) -> bool {
         self.vault.available()
     }

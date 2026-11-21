@@ -117,6 +117,25 @@ impl DeviceAttempt {
         local.and(remote)
     }
 
+    pub(super) async fn revoke_before_vault_clear(
+        &mut self,
+        client: &NativeLoginClient,
+    ) -> Result<(), NativeLoginError> {
+        if let Some(session) = self.state.session.take() {
+            self.remember_revocation(session.device_credential);
+        }
+        self.state.key = None;
+        self.state.remembered = false;
+        if let Some(bytes) = self.vault.read().map_err(|_| storage_error())?
+            && bytes.len() <= 1024
+            && let Ok(session) = serde_json::from_slice::<DeviceSession>(&bytes)
+        {
+            self.remember_revocation(session.device_credential);
+        }
+        self.revoke_pending(client).await?;
+        self.clear_vault()
+    }
+
     fn clear_vault(&mut self) -> Result<(), NativeLoginError> {
         let failed = self.vault.available() && self.vault.clear().is_err();
         self.state.vault_clear_failed = failed;

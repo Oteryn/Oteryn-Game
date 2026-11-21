@@ -229,3 +229,52 @@ fn queued_revocation_survives_shutdown_before_the_worker_runs() -> TestResult {
             server.finish().await
         })
 }
+
+#[test]
+fn rejected_platform_revocation_is_retried_after_restart() -> TestResult {
+    let folder = tempfile::tempdir()?;
+    let vault = Arc::new(Vault::default());
+    let enrolled = enrollment_response()?;
+    vault::Vault::write(vault.as_ref(), &enrolled).map_err(std::io::Error::other)?;
+    let login = || DeviceLogin {
+        enabled: true,
+        forget_requested: Default::default(),
+        vault: vault.clone(),
+        state: Default::default(),
+        folder: Some(folder.path().into()),
+    };
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let failed = Server::start(vec![(500, Vec::new())]).await?;
+            assert!(login().sign_out(&failed.client).await.is_err());
+            failed.finish().await?;
+            assert!(folder.path().join("revoke.pending").is_file());
+
+            let restored = Server::start(vec![(200, fixture("revoke-response.json")?)]).await?;
+            let attempt = login()
+                .begin(
+                    &restored.client,
+                    MiscellaneousPreferences {
+                        stay_logged_in: true,
+                        remember_device: true,
+                        ..Default::default()
+                    },
+                    CancellationToken::new(),
+                )
+                .await?;
+            assert!(!attempt.is_some_and(|attempt| attempt.has_session()));
+            let credential = DeviceSession::from_vault(&enrolled, now()?)?.device_credential;
+            assert!(
+                restored
+                    .requests
+                    .lock()
+                    .map_err(|_| "requests")?
+                    .iter()
+                    .any(|request| request.contains(credential.expose()))
+            );
+            assert!(!folder.path().join("revoke.pending").exists());
+            restored.finish().await
+        })
+}
