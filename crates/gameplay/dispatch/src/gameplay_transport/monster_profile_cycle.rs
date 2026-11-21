@@ -104,7 +104,8 @@ pub(super) async fn with_main_native_ai_seed<T>(turn: impl std::future::Future<O
 
 /// Phase timings of one monster profile pass that holds the durability holder for at
 /// least `REPORT_AFTER`; one Warn line when the pass ends, by any path.
-struct ProfilePassClock {
+pub(super) struct ProfilePassClock {
+    event: &'static str,
     start: std::time::Instant,
     last: std::time::Instant,
     phases: Vec<(&'static str, u64)>,
@@ -113,16 +114,23 @@ struct ProfilePassClock {
 impl ProfilePassClock {
     const REPORT_AFTER: std::time::Duration = std::time::Duration::from_millis(1_000);
 
-    fn new() -> Self {
+    pub(super) fn new(event: &'static str) -> Self {
         let now = std::time::Instant::now();
         Self {
+            event,
             start: now,
             last: now,
             phases: Vec::new(),
         }
     }
 
-    fn mark(&mut self, phase: &'static str) {
+    /// Record a count (not a duration) under `key`.
+    pub(super) fn count(&mut self, key: &'static str, value: usize) {
+        self.phases
+            .push((key, u64::try_from(value).unwrap_or(u64::MAX)));
+    }
+
+    pub(super) fn mark(&mut self, phase: &'static str) {
         let now = std::time::Instant::now();
         let ms = u64::try_from(now.duration_since(self.last).as_millis()).unwrap_or(u64::MAX);
         self.phases.push((phase, ms));
@@ -141,7 +149,7 @@ impl Drop for ProfilePassClock {
         let mut line = oteryn_error_codes::Line::new(
             oteryn_error_codes::Level::Warn,
             "gameplay_transport",
-            "monster_profile_pass_phases",
+            self.event,
         )
         .field("total_ms", oteryn_error_codes::FieldValue::U64(total_ms));
         for &(phase, ms) in &self.phases {
@@ -339,7 +347,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Box::pin(async move {
                 let (owner, runtime, states, attack, room, native, permit, revisions, candidates, primal_pending, native_pending, native_health_names) =
                     context;
-                let mut clock = ProfilePassClock::new();
+                let mut clock = ProfilePassClock::new("monster_profile_pass_phases");
                 let mut tx = begin_spell_owner_transaction(holder, deadline).await.inspect_err(|_| {
                     #[cfg(test)]
                     native_owner_turn(room, "profile_transaction", "begin_refused");
@@ -789,12 +797,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     source_heals::execute(runtime, &mut states.native_self_heals, &mut states.native_self_heal_content, native, &proposals);
                     pending.finish_heals();
                 }
+                clock.mark("heals");
                 if !pending.fields_known() {
                 owner
                     .tick_creature_fields(&mut map, runtime, states, native, now, native_health_names)
                     .await?;
                 pending.finish_fields();
                 }
+                clock.mark("fields");
                 if !map.validate_transaction(runtime).await {
                     return Err(crate::durability::DurabilityError::Unavailable);
                 }
