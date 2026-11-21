@@ -41,10 +41,13 @@ impl PreferenceStore {
     pub(in super::super) fn replace_in_background(
         &mut self,
         previous: &ReferencePreferences,
+        order: BackupOrder,
         load: impl FnOnce(&Path) -> io::Result<ReferencePreferences> + Send + 'static,
     ) -> io::Result<()> {
         let previous = previous.clone();
-        self.enqueue(move |path| Self::publish_replacement(&path, &previous, load).map(Some))?;
+        self.enqueue(move |path| {
+            Self::publish_replacement(&path, &previous, order, load).map(Some)
+        })?;
         self.replacing = true;
         Ok(())
     }
@@ -54,7 +57,7 @@ impl PreferenceStore {
         &mut self,
         previous: &ReferencePreferences,
     ) -> io::Result<()> {
-        self.replace_in_background(previous, |path| {
+        self.replace_in_background(previous, BackupOrder::ActiveFirst, |path| {
             Self::read_transfer(&path.with_extension("backup.json"))
         })
     }

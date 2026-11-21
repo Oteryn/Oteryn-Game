@@ -15,6 +15,12 @@ mod publication;
 #[path = "store/rebase.rs"]
 mod rebase;
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum BackupOrder {
+    BackupFirst,
+    ActiveFirst,
+}
+
 pub struct PreferenceStore {
     path: PathBuf,
     preferences: ReferencePreferences,
