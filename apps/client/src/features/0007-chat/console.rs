@@ -224,6 +224,18 @@ pub(in crate::play) fn save_log(
 
 fn write_log(shared: &SharedMailbox, path: &Path, append: bool) -> std::io::Result<()> {
     let snapshot = lock(shared).chat.clone();
+    #[cfg(windows)]
+    let mut file = export_windows::open(path, append)?;
+    #[cfg(not(windows))]
+    let mut file = open_export(path, append)?;
+    if !append {
+        file.set_len(0)?;
+    }
+    oteryn_client_ui::chat::write_log(&snapshot, &mut file)
+}
+
+#[cfg(not(windows))]
+fn open_export(path: &Path, append: bool) -> std::io::Result<std::fs::File> {
     let mut options = std::fs::OpenOptions::new();
     options.create(true).write(true).append(append);
     #[cfg(unix)]
@@ -234,7 +246,7 @@ fn write_log(shared: &SharedMailbox, path: &Path, append: bool) -> std::io::Resu
             .mode(0o600)
             .custom_flags((OFlags::NOFOLLOW | OFlags::NONBLOCK).bits() as i32);
     }
-    let mut file = options.open(path)?;
+    let file = options.open(path)?;
     #[cfg(unix)]
     {
         use std::os::unix::fs::MetadataExt;
@@ -246,10 +258,7 @@ fn write_log(shared: &SharedMailbox, path: &Path, append: bool) -> std::io::Resu
             return Err(std::io::ErrorKind::PermissionDenied.into());
         }
     }
-    if !append {
-        file.set_len(0)?;
-    }
-    oteryn_client_ui::chat::write_log(&snapshot, &mut file)
+    Ok(file)
 }
 
 fn report_log_result(shared: &SharedMailbox, result: &std::io::Result<()>) {
@@ -512,3 +521,11 @@ pub(super) fn native_key(
     }
     (bound && routed.is_empty()) || !actions.is_empty()
 }
+
+#[cfg(any(test, windows))]
+#[path = "export_policy.rs"]
+mod export_policy;
+
+#[cfg(windows)]
+#[path = "export_windows.rs"]
+mod export_windows;
