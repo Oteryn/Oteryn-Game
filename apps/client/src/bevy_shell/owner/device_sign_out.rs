@@ -7,6 +7,7 @@ impl HostOwner {
         {
             return;
         }
+        self.login.cancel_save();
         self.selection.cancel();
         self.services.cancel();
         if let Some(entry) = &mut self.entry {

@@ -18,6 +18,7 @@ use bevy::{
 use oteryn_client_ui_bevy as source;
 use std::path::PathBuf;
 mod bulletin;
+mod persistence;
 mod submission;
 
 pub(super) struct LoginState {
@@ -30,6 +31,7 @@ pub(super) struct LoginState {
     path: Option<PathBuf>,
     baseline: LoginSettings,
     pending_submit: Option<submission::Pending>,
+    saving: Option<persistence::PendingSave>,
 }
 impl Default for LoginState {
     fn default() -> Self {
@@ -42,6 +44,7 @@ impl Default for LoginState {
             path: None,
             baseline: LoginSettings::default(),
             pending_submit: None,
+            saving: None,
         }
     }
 }
@@ -62,19 +65,6 @@ impl LoginState {
     pub fn show(&mut self) {
         self.visible = true;
         self.revision = self.revision.saturating_add(1);
-    }
-    pub fn submit(&mut self) -> Result<crate::NativeLoginConfig, String> {
-        if !self.form.can_submit() {
-            return Err("Sign-in is already running or connected.".into());
-        }
-        let saved = self
-            .path
-            .as_ref()
-            .ok_or_else(|| "Cannot locate the login configuration directory.".to_owned())
-            .and_then(|p| self.form.settings.save_edits(p, &self.baseline));
-        saved.inspect_err(|error| self.form.feedback(error.clone()))?;
-        self.baseline = self.form.settings.clone();
-        self.form.submit()
     }
 }
 #[derive(Component)]

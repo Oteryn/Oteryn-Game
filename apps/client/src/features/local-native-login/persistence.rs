@@ -15,12 +15,18 @@ impl LoginSettings {
     }
 
     pub fn save(&self, path: &Path) -> Result<(), String> {
-        self.save_with(path, || Ok(self.clone())).map(|_| ())
+        let lock = crate::atomic_file::lock(path).map_err(|_| Self::save_error())?;
+        self.save_with(path, lock, || Ok(self.clone())).map(|_| ())
     }
 
     #[cfg(bevy_shell)]
-    pub(crate) fn save_edits(&self, path: &Path, before: &Self) -> Result<Self, String> {
-        self.save_with(path, || {
+    pub(crate) fn save_edits(
+        &self,
+        path: &Path,
+        before: &Self,
+        lock: std::fs::File,
+    ) -> Result<Self, String> {
+        self.save_with(path, lock, || {
             // A malformed document can still be repaired from a fully valid form.
             let active = match std::fs::read(path) {
                 Ok(bytes) => serde_json::from_slice(&bytes).unwrap_or_default(),
@@ -38,16 +44,18 @@ impl LoginSettings {
         })
     }
 
+    pub(crate) fn save_error() -> String {
+        tr!("Cannot save login settings. Check the configuration directory permissions and try again.").to_owned()
+    }
+
     fn save_with(
         &self,
         path: &Path,
+        _lock: std::fs::File,
         read: impl FnOnce() -> Result<Self, Box<dyn std::error::Error>>,
     ) -> Result<Self, String> {
         self.validate()?;
-        let error = || {
-            tr!("Cannot save login settings. Check the configuration directory permissions and try again.").to_owned()
-        };
-        let _lock = crate::atomic_file::lock(path).map_err(|_| error())?;
+        let error = Self::save_error;
         let settings = read().map_err(|_| error())?;
         settings.validate()?;
         let bytes = serde_json::to_vec_pretty(&settings).map_err(|_| error())?;

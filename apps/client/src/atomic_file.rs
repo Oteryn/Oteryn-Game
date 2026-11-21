@@ -22,8 +22,23 @@ pub(crate) fn replace(path: &Path, bytes: &[u8], sync: bool) -> io::Result<()> {
 // Lock a separate inode, since publishing the data file replaces its inode.
 pub(crate) fn lock(path: &Path) -> io::Result<File> {
     let file = open_lock(path)?;
-    file.lock()?;
-    Ok(file)
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(1);
+    loop {
+        match file.try_lock() {
+            Ok(()) => return Ok(file),
+            Err(std::fs::TryLockError::WouldBlock) => {
+                let remaining = deadline.saturating_duration_since(std::time::Instant::now());
+                if remaining.is_zero() {
+                    return Err(io::Error::new(
+                        io::ErrorKind::WouldBlock,
+                        "Local profile is busy",
+                    ));
+                }
+                std::thread::sleep(remaining.min(std::time::Duration::from_millis(10)));
+            }
+            Err(error) => return Err(error.into()),
+        }
+    }
 }
 
 pub(crate) fn try_lock(path: &Path) -> io::Result<File> {
@@ -111,5 +126,22 @@ fn review_3376_malformed_backup_and_notice_are_created_once() -> io::Result<()> 
     preserve_malformed(&path)?;
     assert_eq!(std::fs::read(&backup)?, b"first damaged file");
     assert!(take_malformed_notices().is_empty());
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn review_3376_held_profile_lock_has_a_deadline() -> Result<(), Box<dyn std::error::Error>> {
+    let root = tempfile::tempdir()?;
+    let path = root.path().join("profile.json");
+    let held = lock(&path)?;
+    let (send, receive) = std::sync::mpsc::channel();
+    let worker = std::thread::spawn(move || {
+        let _ = send.send(lock(&path).err().map(|error| error.kind()));
+    });
+    let observed = receive.recv_timeout(std::time::Duration::from_secs(2));
+    drop(held);
+    worker.join().map_err(|_| "lock thread panicked")?;
+    assert!(matches!(observed, Ok(Some(io::ErrorKind::WouldBlock))));
     Ok(())
 }

@@ -18,24 +18,30 @@ impl SettingsState {
             return;
         };
         let path = base.with_extension("session-options.json");
-        let result = (|| -> std::io::Result<()> {
-            let _lock = crate::atomic_file::lock(&path)?;
-            let mut baseline = self
-                .session_baseline
-                .lock()
-                .map_err(|error| std::io::Error::other(error.to_string()))?;
-            let before = MiscellaneousPreferences {
-                remember_device: true,
-                ..*baseline
-            };
-            let after = MiscellaneousPreferences {
-                remember_device: false,
-                ..*baseline
-            };
-            after.publish_edits(before, &path)?;
-            *baseline = after;
-            Ok(())
-        })();
+        let baseline = self.session_baseline.clone();
+        let result = match crate::atomic_file::try_lock(&path) {
+            Ok(lock) => disable_remember_device_locked(&path, &baseline, lock),
+            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                let previous = self.session_save.take();
+                self.session_save = Some(
+                    bevy_tasks::IoTaskPool::get_or_init(|| {
+                        bevy_tasks::TaskPoolBuilder::new().num_threads(1).build()
+                    })
+                    .spawn(async move {
+                        let earlier = match previous {
+                            Some(previous) => previous.await,
+                            None => Ok(()),
+                        };
+                        let current = crate::atomic_file::lock(&path)
+                            .and_then(|lock| disable_remember_device_locked(&path, &baseline, lock))
+                            .map_err(|error| error.to_string());
+                        earlier.and(current)
+                    }),
+                );
+                return;
+            }
+            Err(error) => Err(error),
+        };
         if let Err(error) = result {
             self.feedback = lfmt!(
                 "Applied for this session; could not save: {error}",
@@ -95,6 +101,28 @@ impl SettingsState {
             .map_err(|error| error.to_string())?;
         save_options(&self.session_baseline, options, &path, || true)
     }
+}
+
+#[cfg(bevy_shell)]
+fn disable_remember_device_locked(
+    path: &Path,
+    baseline: &SessionBaseline,
+    _lock: std::fs::File,
+) -> std::io::Result<()> {
+    let mut baseline = baseline
+        .lock()
+        .map_err(|error| std::io::Error::other(error.to_string()))?;
+    let before = MiscellaneousPreferences {
+        remember_device: true,
+        ..*baseline
+    };
+    let after = MiscellaneousPreferences {
+        remember_device: false,
+        ..*baseline
+    };
+    after.publish_edits(before, path)?;
+    *baseline = after;
+    Ok(())
 }
 
 fn save_options(

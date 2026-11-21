@@ -215,11 +215,22 @@ impl HostOwner {
         if self.phase != Phase::Offline || !self.login.visible {
             return;
         }
-        let mut config = match self.login.submit() {
-            Ok(config) => config,
-            Err(_) => return,
-        };
-        if let Err(message) = super::live_assets::preflight(lookup()) {
+        if self.login.save_pending() {
+            return;
+        }
+        if let Some(config) = self.login.start_save() {
+            self.start_saved_login(config, lookup());
+        } else if self.login.save_pending() {
+            self.login.set_pending_assets(lookup());
+        }
+    }
+
+    fn start_saved_login(
+        &mut self,
+        mut config: crate::NativeLoginConfig,
+        assets: Option<std::ffi::OsString>,
+    ) {
+        if let Err(message) = super::live_assets::preflight(assets) {
             self.login
                 .form
                 .finish(Err(crate::GameplayEntryError::InvalidConfiguration));
@@ -272,6 +283,11 @@ impl HostOwner {
         if self.phase == Phase::Closed {
             return;
         }
+        if self.phase == Phase::Offline
+            && let Some((config, assets)) = self.login.poll_save()
+        {
+            self.start_saved_login(config, assets);
+        }
         self.poll_device_sign_out();
         self.poll_retired_minimaps();
         let completion = self.settings.poll_background_save();
@@ -288,11 +304,12 @@ impl HostOwner {
         if !notices.is_empty() {
             let message = notices.join("\n");
             self.settings.feedback.clone_from(&message);
+            self.status.clone_from(&message);
             if let Some(play) = &self.play {
                 play.link.local_persistence_notice(message);
             } else {
                 self.login.form.feedback(message);
-                if self.phase == Phase::Offline {
+                if self.phase == Phase::Offline && !self.login.visible {
                     self.login.show();
                 }
             }
