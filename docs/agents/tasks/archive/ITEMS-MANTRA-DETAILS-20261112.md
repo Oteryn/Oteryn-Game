@@ -4,18 +4,18 @@
 task_id: ITEMS-MANTRA-DETAILS-20261112
 title: Preserve literal Mantra and known zero weight in Item Details
 mode: REPAIR
-status: waiting
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: codex/items-mantra-details-20261112
+branch: claude/happy-davinci-ijz3wy-mantra
 pr: 3154
-base_sha: 5efd67da164ac9dc33c8c066434b228cebb86c2b
+base_sha: 4d36c23b2645f03e443a65d170dbc2a60c33d533
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: /root/mantra_resume
 created_at: 2026-11-12T22:57:37Z
-updated_at: 2026-11-13T02:58:54Z
+updated_at: 2026-11-21T17:58:47Z
 execution_policy: continuous_progress
 owned_paths:
   - crates/gameplay/dispatch/src/gameplay_transport/inspection.rs
@@ -30,10 +30,10 @@ external_repositories: []
 
 ## Outcome
 
-PARTIAL grouped candidate: Item Details projects literal Known SignedPoints
-Mantra and retains a Known zero Weight. Independent review, exact-head CI and
-normal unit execution remain unqualified/pending. This record remains active; the overall static Cyclopedia audit is
-not complete.
+Item Details projects literal Known SignedPoints Mantra and retains Known zero
+Weight. The takeover completed local qualification for both display changes.
+Independent review and exact-head CI remain pending for any future integration.
+The broader static Cyclopedia audit is outside this task.
 
 ## Architecture and source of truth
 
@@ -75,8 +75,9 @@ New regressions use the real selected curl-of-hair profile for Known0 versus
 Unknown/NotApplicable/Conflict and codec retention. Real wardrobe and sword
 profiles exercise a zero container template, zero aggregate, nonzero contents
 aggregate and positive stacked count, preserving Weight versus Total Weight.
-These newly authored tests have NOT executed. The known16GiB compiler OOM remains
-an execution blocker; no new RED/GREEN or full-unit pass is claimed. Fresh authoring checks: cargo fmt --all --check pass; strict dispatch Clippy
+The 2026-11-13 authoring run stopped before executing these tests because of the
+16 GiB compiler OOM. The takeover results below supersede that blocker.
+Historical authoring checks: cargo fmt --all --check pass; strict dispatch Clippy
 --all-targets --all-features --quiet -- -D warnings pass (exit0, source/head
 fence retained); governance validation and129 governance unit tests pass;
 git diff --check pass. The new inspection source SHA256 is
@@ -99,11 +100,12 @@ their existing owners. Independent review remains REVIEW_PENDING.
 - [x] Add only the literal Mantra attribute for Known SignedPoints.
 - [x] Preserve known zero and negative values; omit Unknown, NotApplicable and invalid parameter kinds.
 - [x] Cover shared instance projection, codec round trip and unrelated attributes/source preservation.
-- [ ] Complete normal unit qualification after the executor memory failure.
+- [x] Complete route-less inspection and full dispatch library qualification after the executor memory failure.
 - [x] Original Mantra-only PARTIAL draft3154 published and frozen.
 - [x] Format, type-check and verify the grouped Known-zero Weight delta with root.
-- [ ] Complete CI/independent qualification of the new grouped frozen candidate.
-- [ ] Obtain coordinator-routed independent review and exact-head CI.
+- [x] Prepare the requested takeover branch with a normal merge of the fetched main.
+
+Independent review and exact-head CI are future integration gates.
 
 ## Reference parity
 
@@ -130,6 +132,44 @@ Fresh main5efd67da was incorporated by ordinary fast-forward merge after the
 Cloud handoff base83be72ad. The exact checkpoint patch remains unchanged.
 
 ## Validation
+
+The takeover started from draft #3154 at
+`a45faafc52e68783f2e4a9de5add4c7504b03f4d` and merged `origin/main` at
+`4d36c23b2645f03e443a65d170dbc2a60c33d533` into `claude/happy-davinci-ijz3wy-mantra`.
+The normal merge commit is `56918500aacb03f4bbfd3571a9aaa9b346a3f8c9`. The tested Git blob
+for `inspection.rs` is `f301d9dea99110b44bd79df45e19e9e54de1d490`. The final authoring commit
+records the fixture update and local verification evidence.
+
+The decoration kit profile (`oteryn:item.tibia.i23398`) replaces the old curl
+of hair fixture, whose current weight is 1.30 oz. The decoration kit is
+materializable and has Known zero weight. The regression assertions are unchanged.
+
+- `cargo fmt --all --check` pass.
+- `cargo clippy --locked -p oteryn-gameplay-dispatch --all-targets -- -D warnings` pass.
+- `cargo test --locked -p oteryn-gameplay-dispatch --lib inspection` RED (exit 101) on shard `1/3` with both producer hunks temporarily reversed to the fetched main behavior and all test code intact. FAILED. 10 passed, 4 failed, 0 ignored, 0 measured, 3023 filtered out.
+- `cargo test --locked -p oteryn-gameplay-dispatch --lib inspection` GREEN (exit 0) on shard `1/3` with both producer hunks restored. ok. 14 passed, 0 failed, 0 ignored, 0 measured, 3023 filtered out.
+- `cargo test --locked -p oteryn-gameplay-dispatch --lib` pass on all three route-less shards (each exit 0, with zero tests filtered out). 4542 unique tests passed, 0 failed, 16 already marked ignored.
+- `python3 tools/agents/validate_governance.py` pass.
+- `python -m unittest discover -s tools/agents/tests` pass.
+- `git diff --check origin/main` pass.
+
+| Regression | RED | GREEN |
+| --- | --- | --- |
+| `inspection_current_profiles_project_literal_mantra_and_preserve_other_details` | FAILED | ok |
+| `inspection_mantra_keeps_zero_and_signed_points_distinct_from_unknown` | FAILED | ok |
+| `inspection_retains_real_known_zero_weight_and_omits_unknown_weight` | FAILED | ok |
+| `inspection_weight_labels_preserve_zero_totals_contents_and_positive_counts` | FAILED | ok |
+
+This run resolved the prior compiler OOM blocker for the requested route-less
+scope. The unsharded builds were killed at the 16 GiB limit before running tests,
+both with four jobs and after cleaning dispatch artifacts and retrying with two
+jobs. The successful runs used the repository's `OTERYN_DISPATCH_PG_SHARD`
+split, `CARGO_BUILD_JOBS=2`, `CARGO_INCREMENTAL=0`, and
+`CARGO_PROFILE_TEST_DEBUG=0`. The generated shard plans together cover all
+724 mounted PostgreSQL test modules. The full library count deduplicates common
+tests by name. The PostgreSQL route variable was unset for all Rust test runs.
+
+### Historical validation before takeover
 
 Retained Cloud evidence on the allocated83be72ad tree plus the exact patch:
 
@@ -187,10 +227,9 @@ The prior final task-record commit changed metadata only after the retry
 terminated; the later explicit AUTHORING continuation above now introduces
 additional production/test changes, whose execution remains unqualified.
 
-FAST_UNIT_UNQUALIFIED_OOM: normal unit qualification remains pending CI or an
-adequate executor. The completed PostgreSQL baseline checks above are separate
-counterevidence, not a candidate PG pass. Fast route-less unit evidence, if run, must be identified separately
-from actual PostgreSQL execution. No full PG, CI-green or mergeability claim.
+The prior FAST_UNIT_UNQUALIFIED_OOM result is superseded for the route-less
+scope by the takeover run. The historical PostgreSQL baseline results are
+separate evidence. Candidate PostgreSQL and CI qualification remain pending.
 
 ## Self-review
 
@@ -208,10 +247,8 @@ and owns the applicable review route. No ready or merge claim.
 
 ## PR and closeout
 
-Draft PR: https://github.com/Oteryn/Oteryn-Game/pull/3154. Active record status
-is waiting/PARTIAL; no completed/archive state is asserted. The original source-only
-repair was made reviewable. The grouped authoring delta has root TASK verification
-and explicit publication authorization on this same PR; the new frozen head is
-reported by remote readback. Normal unit execution remains unqualified after two
-compilation OOMs. Exact-head CI and independent review remain pending. No merge
-or deployment authority.
+Source draft: https://github.com/Oteryn/Oteryn-Game/pull/3154.
+The takeover completed on `claude/happy-davinci-ijz3wy-mantra` with this
+archived record in its final authoring commit. PR #3154 identifies the source
+draft. The takeover branch is delivered directly for the coordinator's use.
+Exact-head CI and independent review remain pending for future integration.

@@ -1314,8 +1314,8 @@ mod tests {
         let source = profiles
             .records
             .iter()
-            .find(|record| record.production_definition.production_key == "oteryn:item.tibia.i36809")
-            .ok_or("selected curl of hair profile")?;
+            .find(|record| record.production_definition.production_key == "oteryn:item.tibia.i23398")
+            .ok_or("selected decoration kit profile")?;
         assert!(source.admission.materializable);
         let Known(physical) = &source.semantics.physical else {
             return Err("known physical group".into());
