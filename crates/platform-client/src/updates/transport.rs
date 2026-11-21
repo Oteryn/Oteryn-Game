@@ -136,11 +136,10 @@ mod tests {
     fn accepted_origin_routes_policy_and_package_to_distinct_exact_urls()
     -> Result<(), Box<dyn std::error::Error>> {
         let hash = "a".repeat(64);
-        let (policy, _, is_policy) = route(Url::parse(&format!(
+        let policy = Url::parse(&format!(
             "https://api.oteryn.com/updates/stable/targets/{hash}.channels/stable/policy-v1.json"
-        ))?)?;
-        assert!(is_policy);
-        assert_eq!(policy.host_str(), Some("api.oteryn.com"));
+        ))?;
+        assert_eq!(route(policy.clone())?, (policy, false, true));
         let (package, _, _) = route(Url::parse(&format!(
             "https://api.oteryn.com/updates/stable/targets/{hash}.channels/stable/releases/rel-a/windows/x86_64/client.zip"
         ))?)?;
