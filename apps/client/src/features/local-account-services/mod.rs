@@ -50,6 +50,8 @@ pub struct View {
     pub feedback: String,
     pub selected_view: AuctionView,
     pending: Option<BazaarRequest>,
+    post_rejected: bool,
+    retry_authorized: bool,
     unresolved: std::collections::BTreeSet<String>,
     quote_until: Option<Instant>,
 }
@@ -63,6 +65,8 @@ impl Default for View {
                 .into(),
             selected_view: AuctionView::All,
             pending: None,
+            post_rejected: false,
+            retry_authorized: false,
             unresolved: Default::default(),
             quote_until: None,
         }
@@ -73,7 +77,7 @@ impl View {
         self.pending.is_some() || !self.unresolved.is_empty()
     }
     pub fn can_retry(&self) -> bool {
-        self.pending.is_some()
+        self.pending.is_some() && self.retry_authorized && !self.post_rejected
     }
     fn pending_id(&self) -> Option<&str> {
         self.pending
@@ -171,15 +175,27 @@ pub fn present(view: &View, cancel: CancellationToken) -> Action {
     }
 }
 
+#[derive(Default)]
+pub(crate) struct Session {
+    account: View,
+    coin: crate::coin_shop::View,
+}
+
 pub(crate) async fn run(
     client: &NativeLoginClient,
     token: &AccessToken,
     config: &crate::NativeLoginConfig,
+    session: &mut Session,
     cancel: CancellationToken,
 ) -> Result<(), crate::GameplayEntryError> {
-    let mut view = View::default();
+    session.account = View {
+        pending: session.account.pending.take(),
+        post_rejected: session.account.post_rejected,
+        ..View::default()
+    };
+    let view = &mut session.account;
     controller::execute(
-        &mut view,
+        view,
         Action::Refresh(AuctionView::All),
         client,
         token,
@@ -187,8 +203,7 @@ pub(crate) async fn run(
     )
     .await;
     loop {
-        let (returned, action) = ask(view, &config.account_services, cancel.clone()).await?;
-        view = returned;
+        let (_, action) = ask(view.clone(), &config.account_services, cancel.clone()).await?;
         if matches!(action, Action::Back) || cancel.is_cancelled() {
             return Ok(());
         }
@@ -202,12 +217,12 @@ pub(crate) async fn run(
                 token,
                 &config.coin_shop,
                 &config.open_browser,
-                None,
+                &mut session.coin,
                 cancel.clone(),
             )
             .await?;
             controller::execute(
-                &mut view,
+                view,
                 Action::Refresh(AuctionView::All),
                 client,
                 token,
@@ -216,7 +231,7 @@ pub(crate) async fn run(
             .await;
             continue;
         }
-        controller::execute(&mut view, action, client, token, cancel.clone()).await;
+        controller::execute(view, action, client, token, cancel.clone()).await;
     }
 }
 pub(crate) async fn ask(

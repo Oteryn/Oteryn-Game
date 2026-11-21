@@ -3,7 +3,7 @@ use super::*;
 #[cfg_attr(not(test), allow(dead_code))]
 pub(crate) async fn open(
     config: &NativeLoginConfig,
-    character_id: Option<String>,
+    view: &mut crate::coin_shop::View,
     cancel: CancellationToken,
 ) -> Result<(), GameplayEntryError> {
     let platform = PlatformClientConfig::new(&config.platform_url)
@@ -22,7 +22,7 @@ pub(crate) async fn open(
         &token,
         &config.coin_shop,
         &config.open_browser,
-        character_id,
+        view,
         cancel,
     )
     .await

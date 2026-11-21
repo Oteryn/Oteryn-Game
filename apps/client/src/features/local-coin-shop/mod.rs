@@ -29,6 +29,7 @@ pub struct View {
     pub unavailable: bool,
     character_id: Option<String>,
     pending: Option<CoinOrderRequest>,
+    post_rejected: bool,
     confirmed: Option<CoinPackage>,
     quote_until: BTreeMap<String, Instant>,
 }
@@ -45,6 +46,9 @@ impl View {
     }
     pub fn pending(&self) -> bool {
         self.pending.is_some()
+    }
+    pub fn can_retry(&self) -> bool {
+        self.pending() && !self.post_rejected
     }
     pub fn can_purchase(&self, id: &str) -> bool {
         !self.unavailable
@@ -133,12 +137,14 @@ pub(crate) async fn run(
     token: &AccessToken,
     presenter: &Presenter,
     browser: &Browser,
-    character_id: Option<String>,
+    view: &mut View,
     cancel: CancellationToken,
 ) -> Result<(), crate::GameplayEntryError> {
-    let mut view = View::new(character_id);
+    view.catalogue = None;
+    view.balance = None;
+    view.order = None;
     controller::execute(
-        &mut view,
+        view,
         Action::Refresh,
         client,
         token,
@@ -149,20 +155,17 @@ pub(crate) async fn run(
     loop {
         let present = presenter.clone();
         let cancellation = cancel.clone();
-        let (returned, action) = tokio::task::spawn_blocking(move || {
-            let action = present(&view, cancellation);
-            (view, action)
-        })
-        .await
-        .map_err(|_| {
-            crate::GameplayEntryError::Rejected(
-                oteryn_platform_client::native_login::PublicClass::TemporarilyUnavailable,
-            )
-        })?;
-        view = returned;
+        let snapshot = view.clone();
+        let action = tokio::task::spawn_blocking(move || present(&snapshot, cancellation))
+            .await
+            .map_err(|_| {
+                crate::GameplayEntryError::Rejected(
+                    oteryn_platform_client::native_login::PublicClass::TemporarilyUnavailable,
+                )
+            })?;
         if matches!(action, Action::Back) || cancel.is_cancelled() {
             return Ok(());
         }
-        controller::execute(&mut view, action, client, token, browser, cancel.clone()).await;
+        controller::execute(view, action, client, token, browser, cancel.clone()).await;
     }
 }

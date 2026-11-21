@@ -29,6 +29,7 @@ impl MockPlatform {
                 let authorized=head.lines().any(|line|line.eq_ignore_ascii_case("authorization: Bearer services-test-token"));
                 let signature=head.lines().find_map(|line| {let(key,value)=line.split_once(':')?;key.eq_ignore_ascii_case("x-sandbox-signature").then(||value.trim())});
                 let (status,reply)={let Ok(mut state)=state.lock() else {return;};state.requests.push(text.clone());state.route(method,target,body,authorized,signature)};
+                if status == 0 { continue; }
                 let _=stream.write_all(format!("HTTP/1.1 {status} X\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{reply}",reply.len()).as_bytes()).await;
             }
         });

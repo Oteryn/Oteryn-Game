@@ -76,6 +76,7 @@ pub(super) async fn authorize(
                 .await?,
         );
     }
+    let mut services_session = crate::account_services::Session::default();
     let mut quick = !config.require_character_picker;
     let platform = PlatformClientConfig::new(&config.platform_url)
         .map_err(|_| GameplayEntryError::InvalidConfiguration)?;
@@ -206,6 +207,7 @@ pub(super) async fn authorize(
                             client,
                             &services,
                             config,
+                            &mut services_session,
                             cancellation.clone(),
                         )
                         .await?

@@ -10,7 +10,20 @@ pub(super) async fn execute(
     browser: &Browser,
     cancel: CancellationToken,
 ) {
+    let new_order = matches!(
+        action,
+        Action::Purchase {
+            confirmed: true,
+            ..
+        }
+    ) && !view.pending();
     if let Err(error) = apply(view, action, client, token, browser, cancel).await {
+        if new_order && view.pending() {
+            view.post_rejected = matches!(
+                error,
+                NativeLoginError::Platform(PlatformClientError::HttpStatus(409))
+            );
+        }
         view.feedback = lfmt!(
             "Coin service unavailable ({:?}). Pending requests keep their identity; check status or retry. No browser result credits coins.",
             error.public_class()
@@ -61,7 +74,7 @@ async fn apply(
             submit(view, client, token, browser, cancel).await?;
         }
         Action::Retry => {
-            if view.pending.is_some() {
+            if view.can_retry() {
                 submit(view, client, token, browser, cancel).await?;
             }
         }
@@ -84,8 +97,20 @@ async fn apply(
                         .into();
                 return Ok(());
             }
-            let order = client.coin_order_status(token, &id, cancel.clone()).await?;
-            accept(view, order)?;
+            match client.coin_order_status(token, &id, cancel.clone()).await {
+                Ok(order) => accept(view, order)?,
+                Err(NativeLoginError::Platform(PlatformClientError::HttpStatus(404)))
+                    if view.post_rejected && view.pending() =>
+                {
+                    view.pending = None;
+                    view.confirmed = None;
+                    view.post_rejected = false;
+                    view.quote_until.clear();
+                    view.feedback = tr!("The server refused the request").into();
+                    return Ok(());
+                }
+                Err(error) => return Err(error),
+            }
             refresh(view, client, token, cancel).await?;
             view.feedback = tr!("Purchase status and wallet balance refreshed from Oteryn.").into();
         }
@@ -200,6 +225,7 @@ fn accept(view: &mut View, order: CoinOrder) -> Result<(), NativeLoginError> {
     {
         view.pending = None;
         view.confirmed = None;
+        view.post_rejected = false;
     }
     view.quote_until.remove(&order.quote_id);
     view.order = Some(order);

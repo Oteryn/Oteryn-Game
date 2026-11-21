@@ -190,7 +190,7 @@ fn coins(ui: &mut Builder<'_, '_, '_>, view: &crate::coin_shop::View) {
     if !view.unavailable {
         ui.coin("coin.refresh", "Refresh prices and balance", Coin::Refresh);
     }
-    if view.pending() {
+    if view.can_retry() {
         ui.coin("coin.retry", "Retry same request", Coin::Retry);
     }
     if view.pending() || view.order.is_some() {

@@ -1,5 +1,5 @@
 use super::*;
-use oteryn_platform_client::native_login::NativeLoginError;
+use oteryn_platform_client::{PlatformClientError::HttpStatus, native_login::NativeLoginError};
 use std::time::Duration;
 
 pub(super) async fn execute(
@@ -157,7 +157,9 @@ async fn apply(
             }
         }
         Action::Retry => {
-            if let Some(request) = &view.pending {
+            if view.can_retry()
+                && let Some(request) = &view.pending
+            {
                 let receipt = client.bazaar_command(token, request, cancel).await?;
                 accept(view, receipt);
             }
@@ -165,8 +167,16 @@ async fn apply(
         }
         Action::Status => {
             if let Some(id) = view.pending_id() {
-                let receipt = client.bazaar_status(token, id, cancel).await?;
-                accept(view, receipt);
+                match client.bazaar_status(token, id, cancel).await {
+                    Ok(receipt) => accept(view, receipt),
+                    Err(NativeLoginError::Platform(HttpStatus(404))) if view.post_rejected => {
+                        view.pending = None;
+                        view.post_rejected = false;
+                        view.quote = None;
+                        view.feedback = tr!("The server refused the request").into();
+                    }
+                    Err(error) => return Err(error),
+                }
             }
             return Ok(());
         }
@@ -190,12 +200,11 @@ async fn apply(
         request_id: AttemptRef::generate()?.as_str().to_owned(),
         command,
     };
-    view.pending = Some(request);
-    let Some(request) = &view.pending else {
-        return Ok(());
-    };
-    let receipt = client.bazaar_command(token, request, cancel).await?;
-    accept(view, receipt);
+    view.retry_authorized = true;
+    let request = view.pending.insert(request);
+    let result = client.bazaar_command(token, request, cancel).await;
+    view.post_rejected = matches!(result, Err(NativeLoginError::Platform(HttpStatus(409))));
+    accept(view, result?);
     Ok(())
 }
 pub(super) fn accept(view: &mut View, receipt: OperationReceipt) {
@@ -208,6 +217,14 @@ pub(super) fn accept(view: &mut View, receipt: OperationReceipt) {
             tr!("Conflicting terminal receipt; keep the original receipt and contact support.")
                 .into();
         return;
+    }
+    if view
+        .pending
+        .as_ref()
+        .is_some_and(|p| p.request_id == receipt.request_id)
+    {
+        view.retry_authorized = true;
+        view.post_rejected = false;
     }
     if receipt.state != OperationState::Pending
         && view
