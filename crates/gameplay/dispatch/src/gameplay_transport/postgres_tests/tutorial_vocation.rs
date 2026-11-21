@@ -584,7 +584,7 @@ fn vocation_scenario(case: Case) -> TestResult {
                 let mut blocker = h.pool.begin().await?;
                 sqlx::query("LOCK TABLE game_character_last_positions IN ACCESS EXCLUSIVE MODE")
                     .execute(&mut *blocker).await?;
-                {
+                tokio::time::timeout(std::time::Duration::from_secs(5), async {
                 let choice = owner.tutorial_vocation_wire(admitted, &[4]);
                 tokio::pin!(choice);
                 let waiting = async {
@@ -599,13 +599,14 @@ fn vocation_scenario(case: Case) -> TestResult {
                     }
                 };
                 tokio::select! {
-                    result = tokio::time::timeout(std::time::Duration::from_secs(5), waiting) => result??,
+                    result = waiting => result?,
                     result = &mut choice => return Err(format!("choice finished before the vitals write: {result:?}").into()),
                 }
                 assert!(owner.last_position_capture_is_held(session).await);
                 blocker.rollback().await?;
                 assert!(choice.await.is_some());
-                }
+                Ok::<_, Box<dyn std::error::Error>>(())
+                }).await??;
                 drop(owner);
                 drop(authority);
                 drop(seal);
