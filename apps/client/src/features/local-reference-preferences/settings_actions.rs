@@ -214,6 +214,8 @@ impl SettingsState {
             help_report_pending: false,
             control_input: super::super::controls::ControlInput::default(),
             control_epoch: std::time::Instant::now(),
+            #[cfg(bevy_shell)]
+            remember_epoch: Default::default(),
             session_baseline: std::sync::Arc::new(std::sync::Mutex::new(session_options)),
             base_path: base_path.clone(),
             character: None,

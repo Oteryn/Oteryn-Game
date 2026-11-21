@@ -8,6 +8,42 @@ use std::{path::Path, sync::Mutex};
 type SessionBaseline = Mutex<MiscellaneousPreferences>;
 
 impl SettingsState {
+    #[cfg(bevy_shell)]
+    pub(crate) fn disable_remember_device(&mut self) {
+        use std::sync::atomic::Ordering;
+
+        self.preferences.miscellaneous.remember_device = false;
+        self.remember_epoch.fetch_add(1, Ordering::AcqRel);
+        let Some(base) = &self.base_path else {
+            return;
+        };
+        let path = base.with_extension("session-options.json");
+        let result = (|| -> std::io::Result<()> {
+            let _lock = crate::atomic_file::lock(&path)?;
+            let mut baseline = self
+                .session_baseline
+                .lock()
+                .map_err(|error| std::io::Error::other(error.to_string()))?;
+            let before = MiscellaneousPreferences {
+                remember_device: true,
+                ..*baseline
+            };
+            let after = MiscellaneousPreferences {
+                remember_device: false,
+                ..*baseline
+            };
+            after.publish_edits(before, &path)?;
+            *baseline = after;
+            Ok(())
+        })();
+        if let Err(error) = result {
+            self.feedback = lfmt!(
+                "Applied for this session; could not save: {error}",
+                error = error
+            );
+        }
+    }
+
     pub(super) fn persist_preferences(
         &mut self,
         preferences: &ReferencePreferences,
@@ -36,13 +72,17 @@ impl SettingsState {
             self.session_queued += 1;
             let previous = self.session_save.take();
             let baseline = self.session_baseline.clone();
+            let epoch = self.remember_epoch.clone();
+            let submitted = epoch.load(std::sync::atomic::Ordering::Acquire);
             self.session_save = Some(bevy_tasks::IoTaskPool::get().spawn(async move {
                 let earlier = match previous {
                     Some(previous) => previous.await,
                     None => Ok(()),
                 };
                 let current = if saved.await == Ok(true) {
-                    save_options(&baseline, options, &path)
+                    save_options(&baseline, options, &path, || {
+                        submitted == epoch.load(std::sync::atomic::Ordering::Acquire)
+                    })
                 } else {
                     Ok(())
                 };
@@ -53,18 +93,26 @@ impl SettingsState {
         store
             .apply(preferences.clone())
             .map_err(|error| error.to_string())?;
-        save_options(&self.session_baseline, options, &path)
+        save_options(&self.session_baseline, options, &path, || true)
     }
 }
 
 fn save_options(
     baseline: &SessionBaseline,
-    options: MiscellaneousPreferences,
+    mut options: MiscellaneousPreferences,
     path: &Path,
+    keep_remember_device: impl FnOnce() -> bool,
 ) -> Result<(), String> {
+    let _lock = crate::atomic_file::lock(path).map_err(|error| error.to_string())?;
     let mut previous = baseline.lock().map_err(|error| error.to_string())?;
+    let mut before = *previous;
+    if !keep_remember_device() {
+        // A save queued before explicit sign-out must not opt the device back in.
+        before.remember_device = true;
+        options.remember_device = false;
+    }
     options
-        .save_edits(*previous, path)
+        .publish_edits(before, path)
         .map_err(|error| error.to_string())?;
     *previous = options;
     Ok(())

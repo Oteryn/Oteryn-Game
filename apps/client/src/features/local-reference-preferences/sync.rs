@@ -54,6 +54,8 @@ pub struct SettingsState {
     session_save: Option<bevy_tasks::Task<Result<(), String>>>,
     #[cfg(bevy_shell)]
     session_queued: usize,
+    #[cfg(bevy_shell)]
+    remember_epoch: std::sync::Arc<std::sync::atomic::AtomicU64>,
     session_baseline: std::sync::Arc<std::sync::Mutex<super::MiscellaneousPreferences>>,
     input: PreferenceInput,
     control_input: super::controls::ControlInput,

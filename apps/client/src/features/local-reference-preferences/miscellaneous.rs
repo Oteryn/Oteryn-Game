@@ -45,9 +45,12 @@ impl MiscellaneousPreferences {
         self.publish(path)
     }
 
-    pub(super) fn save_edits(&self, before: Self, path: &std::path::Path) -> std::io::Result<()> {
+    pub(super) fn publish_edits(
+        &self,
+        before: Self,
+        path: &std::path::Path,
+    ) -> std::io::Result<()> {
         use std::io::ErrorKind;
-        let _lock = crate::atomic_file::lock(path)?;
         let mut active = match Self::read(path) {
             Err(error) if error.kind() == ErrorKind::NotFound => Self::default(),
             result => result?,

@@ -355,9 +355,8 @@ impl DeviceLogin {
     }
 }
 
-#[cfg(bevy_shell)]
 impl DeviceLogin {
-    pub(crate) fn quick_login_fixture(folder: PathBuf) -> Self {
+    pub(crate) fn test_fixture(folder: PathBuf) -> Self {
         manager(Arc::new(MemoryVault::default()), folder)
     }
 }

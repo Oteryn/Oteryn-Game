@@ -152,3 +152,80 @@ fn credential_fifo_is_rejected_within_the_lock_deadline() -> TestResult {
     assert!(result?.is_err());
     Ok(())
 }
+
+#[test]
+fn queued_revocation_survives_shutdown_before_the_worker_runs() -> TestResult {
+    let folder = tempfile::tempdir()?;
+    let vault = Arc::new(Vault::default());
+    vault::Vault::write(vault.as_ref(), &enrollment_response()?).map_err(std::io::Error::other)?;
+    let login = || DeviceLogin {
+        enabled: true,
+        forget_requested: Default::default(),
+        vault: vault.clone(),
+        state: Default::default(),
+        folder: Some(folder.path().into()),
+    };
+    let first = Arc::new(login());
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    let held = runtime.block_on(first.state.clone().lock_owned());
+    let attempted = runtime.block_on(async {
+        let server = Server::start(Vec::new()).await?;
+        first.block_remembered()?;
+        let first = first.clone();
+        Ok::<_, Box<dyn std::error::Error>>(tokio::spawn(async move {
+            first.finish_sign_out(&server.client).await
+        }))
+    })?;
+    let marker = folder.path().join("revoke.pending");
+    assert!(marker.is_file());
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        assert_eq!(
+            std::fs::metadata(&marker)?.permissions().mode() & 0o777,
+            0o600
+        );
+    }
+    drop(runtime);
+    assert!(attempted.is_finished());
+    drop(held);
+    assert!(
+        vault::Vault::read(vault.as_ref())
+            .map_err(std::io::Error::other)?
+            .is_some()
+    );
+
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let server = Server::start(vec![(200, fixture("revoke-response.json")?)]).await?;
+            let restarted = login();
+            let attempt = restarted
+                .begin(
+                    &server.client,
+                    MiscellaneousPreferences {
+                        stay_logged_in: true,
+                        remember_device: true,
+                        ..Default::default()
+                    },
+                    CancellationToken::new(),
+                )
+                .await?
+                .ok_or("device attempt")?;
+            assert!(
+                !attempt.has_session(),
+                "an unprocessed sign-out must fence remembered admission"
+            );
+            assert!(
+                vault::Vault::read(vault.as_ref())
+                    .map_err(std::io::Error::other)?
+                    .is_none()
+            );
+            assert!(!marker.exists());
+            assert_eq!(server.requests.lock().map_err(|_| "requests")?.len(), 1);
+            server.finish().await
+        })
+}

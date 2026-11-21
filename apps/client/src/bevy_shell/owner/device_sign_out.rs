@@ -1,16 +1,22 @@
 use super::*;
 
 impl HostOwner {
-    /// The login window turns remember-device off, cancels entry and forgets the device.
-    /// remember-device off, cancels any entry and forgets the remembered device on the
-    /// Platform the connection settings name. A normal game logout keeps the device.
+    pub fn cancel_login(&mut self) {
+        self.selection.cancel();
+        self.services.cancel();
+        if let Some(entry) = &mut self.entry
+            && entry.cancel_entry()
+        {
+            self.device_sign_out = entry.forget_native_session();
+            self.settings.disable_remember_device();
+        }
+    }
+
+    /// The login window turns remember-device off and forgets the device for its Platform.
     pub fn sign_out_device(&mut self) {
         if self.play.is_some() {
             return;
         }
-        let mut preferences = self.settings.preferences.clone();
-        preferences.miscellaneous.remember_device = false;
-        self.settings.apply(preferences);
         self.selection.cancel();
         self.services.cancel();
         // Before the first sign-in of this process the entry has no Platform yet.
@@ -20,6 +26,7 @@ impl HostOwner {
                 .is_some_and(|entry| entry.configure(config))
         });
         self.device_sign_out = self.entry.as_mut().and_then(Reentry::native_sign_out);
+        self.settings.disable_remember_device();
         self.login.form.feedback(if configured && self.device_sign_out.is_some() {
             "Signing out this device…".into()
         } else {
@@ -37,9 +44,8 @@ impl HostOwner {
         {
             entry.configure(config);
         }
-        if let Some(entry) = &mut self.entry {
-            entry.native_sign_out();
-        }
+        self.device_sign_out = self.entry.as_mut().and_then(Reentry::native_sign_out);
+        self.settings.disable_remember_device();
         if let Some(play) = &mut self.play {
             play.view.logout();
         }
@@ -61,4 +67,44 @@ impl HostOwner {
             });
         }
     }
+}
+
+#[cfg(test)]
+#[test]
+fn cancel_login_schedules_remembered_device_revocation() -> Result<(), Box<dyn std::error::Error>> {
+    use std::sync::Arc;
+
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    let fixture = tempfile::tempdir()?;
+    let folder = fixture.path().join("device");
+    let path = fixture.path().join("preferences.json");
+    let config = Reentry::device_test_config(folder.clone(), "https://localhost:1")?;
+    let device = Arc::clone(&config.device_sessions);
+    let held_session = runtime.block_on(device.hold_session_for_reentry_test());
+    let mut owner = HostOwner::new(Some(path.clone()))?;
+    let options = crate::play::MiscellaneousPreferences {
+        remember_device: true,
+        ..Default::default()
+    };
+    options.save(&path.with_extension("session-options.json"))?;
+    let entry = owner.entry.as_mut().ok_or("reentry")?;
+    assert!(entry.configure(config));
+    entry.arm_cancel_fixture();
+    owner.phase = Phase::Entering;
+    let owners = Arc::strong_count(&device);
+    owner.settings.preferences.miscellaneous.remember_device = true;
+    owner.cancel_login();
+    assert_eq!(Arc::strong_count(&device), owners + 1);
+    assert!(!owner.settings.preferences.miscellaneous.remember_device);
+
+    assert!(
+        !crate::play::MiscellaneousPreferences::read(&path.with_extension("session-options.json"))?
+            .remember_device
+    );
+    owner.close();
+    assert!(folder.join("revoke.pending").is_file());
+    drop(held_session);
+    Ok(())
 }

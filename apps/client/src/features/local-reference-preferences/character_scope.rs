@@ -74,6 +74,10 @@ impl SettingsState {
         // Session choices remain under the original local base across actor namespaces.
         selected.base_path = Some(base.clone());
         selected.session_baseline = self.session_baseline.clone();
+        #[cfg(bevy_shell)]
+        {
+            selected.remember_epoch = self.remember_epoch.clone();
+        }
         selected.preferences.miscellaneous = self.preferences.miscellaneous;
         if character.is_some() && missing {
             match PreferenceStore::load(base.clone()) {
