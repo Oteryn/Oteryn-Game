@@ -30,14 +30,13 @@ fn gem_presentation_all_canonical_vocations_fit_and_use_executed_corrections()
                 .iter()
                 .find(|r| r.kind == 0 && r.id == 33)
                 .ok_or("mixed mana")?;
-            assert!(
+            assert_eq!(
                 mana.effects
                     .iter()
                     .find(|e| e.name == "Mana")
                     .ok_or("mana")?
-                    .values
-                    .iter()
-                    .all(|v| *v == 0)
+                    .values,
+                [100_000, 110_000, 120_000, 150_000]
             );
         }
         let dodge = rows
@@ -56,7 +55,7 @@ fn gem_presentation_all_canonical_vocations_fit_and_use_executed_corrections()
                     .effects
                     .iter()
                     .filter(|e| e.name == "revelation_mastery_points")
-                    .all(|e| e.values[0] >= 300000)
+                    .all(|e| e.values == [150_000, 165_000, 180_000, 225_000])
             );
         }
     }
