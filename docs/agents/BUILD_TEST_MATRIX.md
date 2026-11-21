@@ -83,7 +83,7 @@ Reduced lanes are derived from the exact candidate tree. Cargo metadata owns pac
 
 `docs/agents/evidence/**` is not blanket runtime material. Evidence that current Rust source/tests actually consume through paths such as `include_str!` / `include_bytes!` inherits the consuming package lane; unconsumed evidence remains auxiliary.
 
-Cross product/auxiliary renames, symlinks/submodules, special modes, malformed consumer evidence and incomplete file enumeration fail closed. The classifier itself and canonical routing controls always self-qualify through FULL.
+Cross product/auxiliary renames, symlinks/submodules, special modes, malformed consumer evidence and incomplete file enumeration fail closed. The classifier itself and canonical routing controls always self-qualify through FULL. Canonical routing controls are `merge-gate.yml`, `merge-group-gate.yml`, `rust.yml`, `.github/actions/**`, `tools/repository/**`, `docs/migration/**` and the gate workflows in `GATE_WORKFLOW_PATHS` (every reusable-workflow callee, the PostgreSQL harness and partitions, the node boot and the server seam); the merge authority audit is FULL unless it is a pin-only rotation. Any other workflow is routed by its exact-candidate consumers like any other auxiliary input, so a workflow that no gate selects runs only its own jobs and the always-required gates (owner decision 2026-11-21).
 
 ## Post-merge full gate
 
