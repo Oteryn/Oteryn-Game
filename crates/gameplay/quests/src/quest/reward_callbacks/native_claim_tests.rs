@@ -45,7 +45,7 @@ fn native_claim_production_allocations_are_complete_and_gated() -> Result<(), St
         .iter()
         .filter(|c| c.world_claim.is_some())
         .collect();
-    assert_eq!(native.len(), 9);
+    assert_eq!(native.len(), 20);
     let corpse = native
         .iter()
         .find(|c| c.key.ends_with("kormarak-corpse"))
