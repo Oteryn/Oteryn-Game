@@ -59,7 +59,7 @@ impl NativeLoginClient {
             return Err(NativeLoginError::TokenRefused);
         }
         let mut url = self
-            .platform
+            .platform_web
             .join("oauth/challenge")
             .map_err(|_| PlatformClientError::InvalidBaseUrl)?;
         url.query_pairs_mut()

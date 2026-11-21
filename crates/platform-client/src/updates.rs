@@ -1,7 +1,7 @@
 //! Accepted Platform update-origin contract; HTTPS transports bytes, TUF grants trust.
 mod policy;
 mod transport;
-use crate::native_login::ReleaseIdentity;
+use crate::{PRODUCTION_API_ORIGIN, native_login::ReleaseIdentity};
 pub use policy::UpdatePolicy;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -105,7 +105,7 @@ impl UpdateClient {
         } else {
             config.root.clone()
         };
-        let base = format!("https://account.oteryn.com/updates/{}/", config.channel);
+        let base = format!("{PRODUCTION_API_ORIGIN}updates/{}/", config.channel);
         let repository = RepositoryLoader::new(
             &trusted_root,
             Url::parse(&(base.clone() + "metadata/")).map_err(|_| UpdateError::Configuration)?,
