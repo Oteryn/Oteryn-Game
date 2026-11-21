@@ -16,7 +16,7 @@ const IDLE_SLICE: Duration = Duration::from_millis(20);
 pub use super::stepper::Stepper;
 
 mod scope_transition;
-use scope_transition::publish_scope_transition;
+use scope_transition::{publish_scope_transition, query_initial_returner};
 
 fn initialize<T: Stepper>(
     session: &T,
@@ -86,12 +86,9 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
             // An initial recovery receipt clears the admission mailbox. Wait for
             // the destination to be presented and initialized before querying.
             if std::mem::take(&mut query_returner)
-                && let Some(command) = outbox.returner_initial_request()
+                && query_initial_returner(&mut session, &outbox, &mut held, &mut modal).await
             {
-                match session.feature(&command).await {
-                    Ok(result) => outbox.daily_reward_returner_result(command.kind, &result),
-                    Err(_) => outbox.returner_unavailable(),
-                }
+                continue 'session;
             }
             for command in outbox.server_info_initial_commands() {
                 let Some(query) = oteryn_session::server_info::Query::decode(&command.payload)

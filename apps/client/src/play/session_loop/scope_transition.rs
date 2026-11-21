@@ -38,3 +38,25 @@ pub(super) fn publish_scope_transition<T: Stepper>(
     publish(session, outbox, held);
     true
 }
+
+/// Returns true when the Returner query crossed a scope barrier.
+pub(super) async fn query_initial_returner<T: Stepper>(
+    session: &mut T,
+    outbox: &Outbox,
+    held: &mut Vec<oteryn_session::WorldSpatialEntity>,
+    modal: &mut crate::play::feature_0450_server_modal::protocol::Driver,
+) -> bool {
+    let Some(command) = outbox.returner_initial_request() else {
+        return false;
+    };
+    match session.feature(&command).await {
+        Ok(result) => outbox.daily_reward_returner_result(command.kind, &result),
+        Err(error) => {
+            if publish_scope_transition(&error, session, outbox, held, modal) {
+                return true;
+            }
+            outbox.returner_unavailable();
+        }
+    }
+    false
+}

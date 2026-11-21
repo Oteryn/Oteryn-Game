@@ -15,9 +15,14 @@ struct AutomaticQueryHandoff {
     serves: Arc<AtomicUsize>,
 }
 impl Stepper for AutomaticQueryHandoff {
+    fn daily_reward_selected(&self) -> bool {
+        self.capability == 182
+    }
     fn feature_selected(&self, capability: u32) -> bool {
         match capability {
             31 | 75 => true,
+            287 | 500 if self.capability == 182 => !self.changed && !self.activity,
+            450 if self.capability == 182 => !self.changed,
             287 => self.capability == 500,
             451 if self.changed => self.scope.selection.contains(&451),
             _ => capability == self.capability,
@@ -55,7 +60,10 @@ impl Stepper for AutomaticQueryHandoff {
         if command.capability == 451 && !self.feature_selected(451) {
             return Err(SessionError::CapabilityNotSelected { capability: 451 });
         }
-        assert_eq!(command.capability, self.capability);
+        assert_eq!(
+            command.capability, self.capability,
+            "a later feature query or modal poll ran before the Returner scope barrier"
+        );
         assert!(
             !self.changed,
             "scope transition must not replay its source query"
@@ -158,7 +166,7 @@ impl Stepper for AutomaticQueryHandoff {
         })
     }
     fn feature_snapshot(&self, domain: u32) -> Option<Vec<u8>> {
-        if domain == 100 && self.capability == 500 {
+        if domain == 100 && matches!(self.capability, 182 | 500) {
             return oteryn_session::spell_catalog::encode_catalog(&[
                 oteryn_session::spell_catalog::SpellCatalogEntry {
                     cast_index: 1,
@@ -427,6 +435,16 @@ fn modal_refresh_activity_scope_changed_publishes_destination_and_continues() ->
 #[test]
 fn modal_refresh_scope_changed_publishes_destination_and_continues() -> Result<(), String> {
     automatic_query_handoff_continues(450, false)
+}
+
+#[test]
+fn initial_returner_scope_changed_publishes_before_other_queries() -> Result<(), String> {
+    automatic_query_handoff_continues(182, false)
+}
+
+#[test]
+fn initial_returner_activity_scope_changed_publishes_before_modal_poll() -> Result<(), String> {
+    automatic_query_handoff_continues(182, true)
 }
 
 fn support_delivery_handoff_continues(activity: bool) -> Result<(), String> {
