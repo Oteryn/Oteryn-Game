@@ -180,7 +180,9 @@ impl Database {
             "PostgreSQL 18 required: {version}"
         );
         eprintln!("MAP-ITEM-MINT-PG: database {name} on server_version_num={version}");
-        sqlx::migrate!("./migrations").run(&mut connection).await?;
+        oteryn_gameplay_durability::GAME_MIGRATOR
+            .run(&mut connection)
+            .await?;
         connection.close().await?;
         Ok(Self {
             admin_url,
