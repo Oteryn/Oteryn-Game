@@ -234,7 +234,10 @@ fn alt_arrows_on_visible_minimap_do_not_step_or_cancel_walking()
     outbox.bevy_target_walk_selected();
     view.primary_click(TileCoord::new(98, 100), &link)?;
     view.tick(&link).map_err(|e| format!("{e:?}"))?;
-    assert!(matches!(commands.try_recv()?, crate::combat_input::PlayCommand::TargetWalk(_)));
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::TargetWalk(_)
+    ));
     let goal = link.target_walk_state().goal.ok_or("active walk goal")?;
     install(&mut host, view, link);
     for code in [

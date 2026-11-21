@@ -135,6 +135,8 @@ fn oversized_seen_marker_is_rejected() -> TestResult {
     let directory = TempDir::new()?;
     std::fs::write(directory.path().join("crash-test.log"), "")?;
     std::fs::write(directory.path().join(SEEN_MARKER), vec![b' '; 1025])?;
-    assert!(matches!(take_unseen_crash(directory.path()), Err(error) if error.kind() == io::ErrorKind::InvalidData));
+    assert!(
+        matches!(take_unseen_crash(directory.path()), Err(error) if error.kind() == io::ErrorKind::InvalidData)
+    );
     Ok(())
 }

@@ -71,7 +71,10 @@ impl WindowLayouts {
         let mut bytes = Vec::new();
         file.take(MAX_LAYOUT_BYTES + 1).read_to_end(&mut bytes)?;
         if bytes.len() as u64 > MAX_LAYOUT_BYTES {
-            return Err(io::Error::new(io::ErrorKind::InvalidData, "window layout is too large"));
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "window layout is too large",
+            ));
         }
         serde_json::from_slice(&bytes)
             .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))

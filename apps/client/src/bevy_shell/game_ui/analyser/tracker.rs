@@ -50,7 +50,8 @@ fn finish(
         return;
     };
     while let Some((entity, control)) = pending.0.pop_front() {
-        if !guard.allows(entity) || owner.modal_active() || control.generation != owner.generation() {
+        if !guard.allows(entity) || owner.modal_active() || control.generation != owner.generation()
+        {
             continue;
         }
         let panel = play.link.analyser_panel();

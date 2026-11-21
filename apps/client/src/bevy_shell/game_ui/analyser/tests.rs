@@ -404,7 +404,9 @@ fn analyser_tracker_applies_track_and_filter_in_the_same_frame() -> TestResult {
     tracker_item(&mut app, "202")?;
     for caption in ["Track item", "Show tracked only"] {
         let world = app.world_mut();
-        let button = world.query::<(&Text, &ChildOf)>().iter(world)
+        let button = world
+            .query::<(&Text, &ChildOf)>()
+            .iter(world)
             .find_map(|(text, parent)| (text.0 == caption).then_some(parent.parent()))
             .ok_or("tracker button")?;
         world.trigger(Activate { entity: button });

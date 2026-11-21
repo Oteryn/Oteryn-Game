@@ -126,7 +126,9 @@ fn configure(
         return;
     };
     if control.generation == owner.generation() {
-        pending.0.push_back((event.entity, control.generation, control.tool, control.kind));
+        pending
+            .0
+            .push_back((event.entity, control.generation, control.tool, control.kind));
     }
 }
 fn finish_configuration(

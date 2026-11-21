@@ -8,7 +8,10 @@ pub use login::login_update_requested;
 pub(crate) use login::start_login_update;
 use oteryn_platform_client::native_login::ReleaseIdentity;
 use oteryn_platform_client::updates::{UpdateClient, UpdateConfig, UpdateError};
-use std::{io::{self, Read}, path::Path};
+use std::{
+    io::{self, Read},
+    path::Path,
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Action {
@@ -33,7 +36,10 @@ pub(crate) fn read_release_pointer(directory: &Path) -> io::Result<String> {
         .take(MAX_POINTER_BYTES + 1)
         .read_to_string(&mut current)?;
     if current.len() as u64 > MAX_POINTER_BYTES {
-        return Err(io::Error::new(io::ErrorKind::InvalidData, "release pointer is too large"));
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "release pointer is too large",
+        ));
     }
     Ok(current)
 }
@@ -214,6 +220,8 @@ mod install_tests;
 fn oversized_release_pointer_is_rejected() -> io::Result<()> {
     let root = tempfile::tempdir()?;
     std::fs::write(root.path().join("current.txt"), vec![b' '; 1025])?;
-    assert!(matches!(read_release_pointer(root.path()), Err(error) if error.kind() == io::ErrorKind::InvalidData));
+    assert!(
+        matches!(read_release_pointer(root.path()), Err(error) if error.kind() == io::ErrorKind::InvalidData)
+    );
     Ok(())
 }

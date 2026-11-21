@@ -224,7 +224,11 @@ fn cancel_confirmation(app: &mut App, request: u64) -> TestResult {
     click_named(app, "commerce.cancel")?;
     assert_no_confirmation(app);
     assert_eq!(
-        app.world().non_send::<HostOwner>().services.pending().map(|r| r.id),
+        app.world()
+            .non_send::<HostOwner>()
+            .services
+            .pending()
+            .map(|r| r.id),
         Some(request)
     );
     Ok(())
@@ -371,7 +375,10 @@ fn get_coins_reopens_and_inspects_an_awaiting_payment_order_by_request_id() -> T
             .ok_or("order")?;
         assert_ne!(order.order_id, order.request_id);
         let expected_url = order.checkout_url.as_ref().ok_or("checkout URL")?.as_str();
-        assert_eq!(opens.lock().map_err(|_| "browser")?.as_slice(), [expected_url]);
+        assert_eq!(
+            opens.lock().map_err(|_| "browser")?.as_slice(),
+            [expected_url]
+        );
         click(&mut app, Action::Back)?;
         let menu = wait(&mut app, Some(checkout))?;
         click_named(&mut app, "account.coins")?;
@@ -396,7 +403,10 @@ fn get_coins_reopens_and_inspects_an_awaiting_payment_order_by_request_id() -> T
                 )))
         );
         assert_eq!(state.coins.as_ref().ok_or("coin authority")?.creations, 1);
-        assert_eq!(opens.lock().map_err(|_| "browser")?.as_slice(), [expected_url, expected_url]);
+        assert_eq!(
+            opens.lock().map_err(|_| "browser")?.as_slice(),
+            [expected_url, expected_url]
+        );
         Ok(())
     })
 }
@@ -673,11 +683,17 @@ fn commerce_cancel_invalidates_queued_confirmation() -> TestResult {
 fn expired_transfer_quote_disables_review_and_prepared_confirmation() -> TestResult {
     let (mut app, config) = commerce_app()?;
     let worker = thread::spawn(move || {
-        (config.account_services)(&crate::account_services::View::default(), CancellationToken::new())
+        (config.account_services)(
+            &crate::account_services::View::default(),
+            CancellationToken::new(),
+        )
     });
     let request = wait(&mut app, None)?;
     super::commerce::assert_expired_transfer_controls(&mut app, request)?;
     click(&mut app, Action::Back)?;
-    assert!(matches!(finish_worker(worker, "close expired quote")?, crate::account_services::Action::Back));
+    assert!(matches!(
+        finish_worker(worker, "close expired quote")?,
+        crate::account_services::Action::Back
+    ));
     Ok(())
 }

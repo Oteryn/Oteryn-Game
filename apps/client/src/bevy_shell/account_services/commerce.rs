@@ -345,8 +345,13 @@ fn finish(
 ) {
     if let Some(request) = owner.services.pending() {
         for (entity, button, disabled) in &buttons {
-            if button.request == request.id && !disabled && !quote_available(request, &button.action) {
-                commands.entity(entity).insert(bevy::ui::InteractionDisabled);
+            if button.request == request.id
+                && !disabled
+                && !quote_available(request, &button.action)
+            {
+                commands
+                    .entity(entity)
+                    .insert(bevy::ui::InteractionDisabled);
             }
         }
     }
@@ -354,7 +359,8 @@ fn finish(
         let Ok((_, button, disabled)) = buttons.get(entity) else {
             continue;
         };
-        if disabled || !guard.allows(entity)
+        if disabled
+            || !guard.allows(entity)
             || !owner
                 .services
                 .pending()
@@ -524,22 +530,42 @@ pub(super) fn assert_expired_transfer_controls(
     let world = app.world_mut();
     let form = world.query_filtered::<Entity, With<Form>>().single(world)?;
     let reply = Reply::Account(Account::Transfer { confirmed: true });
-    let review = world.spawn(Button {
-        request,
-        form,
-        action: Action::Prepare("transfer".into(), reply.clone()),
-    }).observe(queue).id();
-    let confirm = world.spawn(Button {
-        request,
-        form,
-        action: Action::Confirm(reply),
-    }).observe(queue).id();
-    world.get_mut::<Form>(form).ok_or("transfer form")?.confirming = Some((confirm, review));
-    world.resource_mut::<Pending>().0.push_back(confirm);
+    let review = world
+        .spawn(Button {
+            request,
+            form,
+            action: Action::Prepare("transfer".into(), reply.clone()),
+        })
+        .observe(queue)
+        .id();
+    let confirm = world
+        .spawn(Button {
+            request,
+            form,
+            action: Action::Confirm(reply),
+        })
+        .observe(queue)
+        .id();
+    world
+        .get_mut::<Form>(form)
+        .ok_or("transfer form")?
+        .confirming = Some((confirm, review));
+    world.entity_mut(form).add_children(&[review, confirm]);
+    world.trigger(Activate { entity: confirm });
     app.update();
     for entity in [review, confirm] {
-        assert!(app.world().get::<bevy::ui::InteractionDisabled>(entity).is_some());
+        assert!(
+            app.world()
+                .get::<bevy::ui::InteractionDisabled>(entity)
+                .is_some()
+        );
     }
-    assert!(app.world().non_send::<HostOwner>().services.pending().is_some_and(|r| r.id == request));
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .services
+            .pending()
+            .is_some_and(|r| r.id == request)
+    );
     Ok(())
 }

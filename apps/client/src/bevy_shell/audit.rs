@@ -7,7 +7,11 @@ use super::{
 };
 use bevy::{prelude::*, window::PrimaryWindow};
 use serde::Serialize;
-use std::{collections::VecDeque, path::PathBuf, time::{Duration, Instant}};
+use std::{
+    collections::VecDeque,
+    path::PathBuf,
+    time::{Duration, Instant},
+};
 
 mod named;
 
@@ -48,7 +52,10 @@ pub(super) fn capture_on_key(
     let now = clock.last_update().unwrap_or(clock.startup());
     manual_pending.retain(|queued| queued.generation == generation);
     let mut expired = false;
-    while manual_pending.front().is_some_and(|queued| now >= queued.deadline) {
+    while manual_pending
+        .front()
+        .is_some_and(|queued| now >= queued.deadline)
+    {
         manual_pending.pop_front();
         expired = true;
     }
@@ -66,7 +73,11 @@ pub(super) fn capture_on_key(
                 backlog: owner.play.is_some() && preferences.backlog_frames > 0,
             })
         };
-        manual_pending.push_back(QueuedCapture { generation, deadline: now + MANUAL_CAPTURE_WAIT, request });
+        manual_pending.push_back(QueuedCapture {
+            generation,
+            deadline: now + MANUAL_CAPTURE_WAIT,
+            request,
+        });
     }
     let manual_batch = match manual_pending.front().map(|queued| &queued.request) {
         Some(ManualCapture::Player(request))
@@ -91,7 +102,10 @@ pub(super) fn capture_on_key(
     );
     if !occupied && !writes.is_full() && (manual_batch.is_none() || readback.is_some()) {
         let batch_scheduled = manual_batch.is_some();
-        match manual_pending.pop_front().map(|queued| (queued.generation, queued.request)) {
+        match manual_pending
+            .pop_front()
+            .map(|queued| (queued.generation, queued.request))
+        {
             Some((generation, ManualCapture::Audit(path))) => {
                 super::screenshots::request_audit(&mut commands, readback, generation, path);
             }

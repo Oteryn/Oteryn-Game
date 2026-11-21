@@ -25,7 +25,8 @@ fn rolling_log_applies_lexical_record_redaction() -> Result<(), Box<dyn std::err
     let parent = TempDir::new()?;
     let directory = log_fixture(parent.path())?;
     let sink = Sink {
-        file: Some(Arc::new(RollingFile::new(
+        file: None,
+        synchronous_file: Some(Arc::new(RollingFile::new(
             directory.path().join("logs"),
             KEEP_FILES,
             TOTAL_CAP,

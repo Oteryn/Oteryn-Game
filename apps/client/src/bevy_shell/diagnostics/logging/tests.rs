@@ -277,7 +277,12 @@ fn third_party_targets_stay_at_warn_unless_named() -> TestResult {
 #[test]
 fn a_full_log_writer_queue_does_not_block_the_formatter() -> TestResult {
     let (sender, receiver) = mpsc::sync_channel(1);
-    let sink = Sink { file: Some(sender), synchronous_file: None, stderr: false, ring: false };
+    let sink = Sink {
+        file: Some(sender),
+        synchronous_file: None,
+        stderr: false,
+        ring: false,
+    };
     let (done, finished) = mpsc::channel();
     let _worker = thread::spawn(move || {
         for text in [b"first".as_slice(), b"second"] {

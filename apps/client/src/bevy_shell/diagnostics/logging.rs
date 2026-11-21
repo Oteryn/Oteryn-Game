@@ -98,7 +98,9 @@ impl RollingFile {
             };
             if name != current && name.starts_with("client-") && name.ends_with(".log") {
                 others.insert(name, entry.metadata()?.len());
-                if others.len() >= self.keep && let Some((oldest, _)) = others.pop_first() {
+                if others.len() >= self.keep
+                    && let Some((oldest, _)) = others.pop_first()
+                {
                     fs::remove_file(self.directory.join(oldest))?;
                 }
             }
@@ -117,14 +119,16 @@ impl RollingFile {
 
 type LogWrite = (SystemTime, String);
 
-fn file_writer(file: RollingFile) -> io::Result<(mpsc::SyncSender<LogWrite>, thread::JoinHandle<()>)> {
+fn file_writer(file: RollingFile) -> io::Result<mpsc::SyncSender<LogWrite>> {
     let (sender, receiver) = mpsc::sync_channel::<LogWrite>(256);
-    let worker = thread::Builder::new().name("client-log".into()).spawn(move || {
-        for (at, text) in receiver {
-            let _ = file.write_text(at, &text);
-        }
-    })?;
-    Ok((sender, worker))
+    thread::Builder::new()
+        .name("client-log".into())
+        .spawn(move || {
+            for (at, text) in receiver {
+                let _ = file.write_text(at, &text);
+            }
+        })?;
+    Ok(sender)
 }
 
 /// One formatted event is redacted once, then written to every sink.
@@ -333,7 +337,7 @@ fn custom_layer(_: &mut App) -> Option<BoxedLayer> {
     let directory = file.as_ref().map(|file| file.directory().to_path_buf());
     let _ = CONTROL.set(Control { handle, directory });
     let sink = Sink {
-        file: file.and_then(|file| file_writer(file).ok().map(|(sender, _)| sender)),
+        file: file.and_then(|file| file_writer(file).ok()),
         #[cfg(test)]
         synchronous_file: None,
         stderr: false,

@@ -335,14 +335,20 @@ pub fn take_unseen_crash(directory: &Path) -> io::Result<Option<PathBuf>> {
             let mut seen = String::new();
             file.take(MAX_MARKER_BYTES + 1).read_to_string(&mut seen)?;
             if seen.len() as u64 > MAX_MARKER_BYTES {
-                return Err(io::Error::new(io::ErrorKind::InvalidData, "crash marker is too large"));
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "crash marker is too large",
+                ));
             }
             Some(seen)
         }
         Err(error) if error.kind() == io::ErrorKind::NotFound => None,
         Err(error) => return Err(error),
     };
-    if seen.as_deref().is_some_and(|seen| seen.trim() >= newest.as_str()) {
+    if seen
+        .as_deref()
+        .is_some_and(|seen| seen.trim() >= newest.as_str())
+    {
         return Ok(None);
     }
     fs::write(&marker, format!("{newest}\n"))?;

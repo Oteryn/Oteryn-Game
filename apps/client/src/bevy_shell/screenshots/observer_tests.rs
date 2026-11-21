@@ -180,23 +180,43 @@ fn f12_waits_for_a_fresh_readback_after_an_older_capture() -> TestResult {
         app.world_mut().despawn(fresh);
         wait_for_writes(&mut app)?;
         if audit {
-            let frame = super::tests::colored_frame([1, 2, 3, 255]);
-            let format = bevy::image::ImageFormat::Png.as_image_crate_format().ok_or("PNG format")?;
-            let mut expected = std::io::Cursor::new(Vec::new());
-            frame.try_into_dynamic()?.into_rgb8().write_to(&mut expected, format)?;
-            assert_eq!(std::fs::read(audit_path.with_extension("png"))?, expected.into_inner());
+            use bevy::image::{CompressedImageFormats, ImageFormat, ImageSampler, ImageType};
+            let actual = Image::from_buffer(
+                &std::fs::read(audit_path.with_extension("png"))?,
+                ImageType::Format(ImageFormat::Png),
+                CompressedImageFormats::NONE,
+                true,
+                ImageSampler::Default,
+                bevy::asset::RenderAssetUsages::MAIN_WORLD,
+            )?
+            .try_into_dynamic()?
+            .into_rgb8();
+            let expected = super::tests::colored_frame([1, 2, 3, 255])
+                .try_into_dynamic()?
+                .into_rgb8();
+            assert_eq!(actual, expected);
         } else {
             let mut files = std::fs::read_dir(fixture.path())?
                 .map(|file| file.map(|file| file.path()))
                 .collect::<Result<Vec<_>, _>>()?;
             files.sort_by_key(|file| {
-                let name = file.file_stem().and_then(|name| name.to_str()).unwrap_or_default();
-                name.rsplit('-').next().and_then(|sequence| sequence.parse::<u64>().ok())
+                let name = file
+                    .file_stem()
+                    .and_then(|name| name.to_str())
+                    .unwrap_or_default();
+                name.rsplit('-')
+                    .next()
+                    .and_then(|sequence| sequence.parse::<u64>().ok())
             });
-            let colors = files.iter()
+            let colors = files
+                .iter()
                 .map(|file| -> io::Result<Vec<u8>> { Ok(std::fs::read(file)?[54..57].to_vec()) })
                 .collect::<Result<Vec<_>, _>>()?;
-            let expected = if backlog { vec![vec![60, 40, 20], vec![3, 2, 1]] } else { vec![vec![3, 2, 1]] };
+            let expected = if backlog {
+                vec![vec![60, 40, 20], vec![3, 2, 1]]
+            } else {
+                vec![vec![3, 2, 1]]
+            };
             assert_eq!(colors, expected);
         }
     }
@@ -274,14 +294,23 @@ fn deferred_backlog_capture_reports_a_stalled_writer() -> TestResult {
     let folder = TestDir::new()?;
     let mut app = backlog_app(folder.path())?;
     app.world_mut().non_send_mut::<Writes>().automatic = true;
-    app.world_mut().resource_mut::<ButtonInput<KeyCode>>().press(KeyCode::F12);
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::F12);
     app.update();
-    app.world_mut().resource_mut::<ButtonInput<KeyCode>>().reset_all();
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .reset_all();
     let clock = app.world().resource::<Time<Real>>();
     let later = clock.last_update().ok_or("capture clock")? + std::time::Duration::from_secs(2);
-    app.insert_resource(bevy::time::TimeUpdateStrategy::ManualInstant(later));
+    app.world_mut()
+        .resource_mut::<Time<Real>>()
+        .update_with_instant(later);
     app.update();
     let owner = app.world().non_send::<HostOwner>();
-    assert_eq!(owner.status, "Screenshot failed: timed out waiting for capture");
+    assert_eq!(
+        owner.status,
+        "Screenshot failed: timed out waiting for capture"
+    );
     Ok(())
 }
