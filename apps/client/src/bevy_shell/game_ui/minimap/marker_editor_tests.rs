@@ -525,7 +525,14 @@ fn removing_a_remembered_mark_reports_storage_failure_after_activation() -> Test
     finish_marker_preferences(&mut app)?;
     let owner = app.world().non_send::<HostOwner>();
     assert!(owner.status.contains("could not save"), "{}", owner.status);
+    let feedback = owner.status.clone();
     assert_eq!(std::fs::read(&path)?, b"damaged");
+
+    app.world_mut().non_send_mut::<HostOwner>().open_graphics();
+    app.add_systems(Update, crate::bevy_shell::ui::project);
+    app.update();
+    let world = app.world_mut();
+    assert!(world.query::<&Text>().iter(world).any(|text| text.0 == feedback));
     Ok(())
 }
 
