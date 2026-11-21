@@ -299,6 +299,20 @@ impl Builder<'_, '_, '_> {
     }
 }
 
+fn quote_available(request: &Request, action: &Action) -> bool {
+    let reply = match action {
+        Action::Prepare(_, reply) | Action::Confirm(reply) => reply,
+        _ => return true,
+    };
+    match (&request.screen, reply) {
+        (Screen::Account(view), Reply::Account(Account::Transfer { .. })) => view.can_transfer(),
+        (Screen::Coin(view), Reply::Coin(Coin::Purchase { package_id, .. })) => {
+            view.can_purchase(package_id)
+        }
+        _ => true,
+    }
+}
+
 fn column() -> Node {
     Node {
         flex_direction: FlexDirection::Column,
@@ -324,20 +338,27 @@ fn finish(
     skin: Res<Skins>,
     guard: ModalGuard,
     mut pending: ResMut<Pending>,
-    buttons: Query<&Button>,
+    buttons: Query<(Entity, &Button, Has<bevy::ui::InteractionDisabled>)>,
     mut forms: Query<(&mut Form, &ChildOf)>,
     fields: Query<(&Field, &EditableText)>,
     mut statuses: Query<&mut Text>,
 ) {
+    if let Some(request) = owner.services.pending() {
+        for (entity, button, disabled) in &buttons {
+            if button.request == request.id && !disabled && !quote_available(request, &button.action) {
+                commands.entity(entity).insert(bevy::ui::InteractionDisabled);
+            }
+        }
+    }
     while let Some(entity) = pending.0.pop_front() {
-        let Ok(button) = buttons.get(entity) else {
+        let Ok((_, button, disabled)) = buttons.get(entity) else {
             continue;
         };
-        if !guard.allows(entity)
+        if disabled || !guard.allows(entity)
             || !owner
                 .services
                 .pending()
-                .is_some_and(|r| r.id == button.request)
+                .is_some_and(|r| r.id == button.request && quote_available(r, &button.action))
         {
             continue;
         }
@@ -492,4 +513,33 @@ fn finish(
         let cancel = ui.button("commerce.cancel", "Cancel", Action::Cancel);
         form.confirming = Some((confirm, cancel));
     }
+}
+
+#[cfg(test)]
+pub(super) fn assert_expired_transfer_controls(
+    app: &mut App,
+    request: u64,
+) -> crate::account_services::test_server::TestResult {
+    // Simulate controls rendered while the quote was valid, now paired with an expired view.
+    let world = app.world_mut();
+    let form = world.query_filtered::<Entity, With<Form>>().single(world)?;
+    let reply = Reply::Account(Account::Transfer { confirmed: true });
+    let review = world.spawn(Button {
+        request,
+        form,
+        action: Action::Prepare("transfer".into(), reply.clone()),
+    }).observe(queue).id();
+    let confirm = world.spawn(Button {
+        request,
+        form,
+        action: Action::Confirm(reply),
+    }).observe(queue).id();
+    world.get_mut::<Form>(form).ok_or("transfer form")?.confirming = Some((confirm, review));
+    world.resource_mut::<Pending>().0.push_back(confirm);
+    app.update();
+    for entity in [review, confirm] {
+        assert!(app.world().get::<bevy::ui::InteractionDisabled>(entity).is_some());
+    }
+    assert!(app.world().non_send::<HostOwner>().services.pending().is_some_and(|r| r.id == request));
+    Ok(())
 }

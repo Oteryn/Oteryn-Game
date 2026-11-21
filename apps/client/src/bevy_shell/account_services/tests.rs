@@ -668,3 +668,16 @@ fn commerce_cancel_invalidates_queued_confirmation() -> TestResult {
         result
     })
 }
+
+#[test]
+fn expired_transfer_quote_disables_review_and_prepared_confirmation() -> TestResult {
+    let (mut app, config) = commerce_app()?;
+    let worker = thread::spawn(move || {
+        (config.account_services)(&crate::account_services::View::default(), CancellationToken::new())
+    });
+    let request = wait(&mut app, None)?;
+    super::commerce::assert_expired_transfer_controls(&mut app, request)?;
+    click(&mut app, Action::Back)?;
+    assert!(matches!(finish_worker(worker, "close expired quote")?, crate::account_services::Action::Back));
+    Ok(())
+}
