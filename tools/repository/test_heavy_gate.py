@@ -17,16 +17,28 @@ from validate_repository_policy_core import indented_yaml_mapping_block
 
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW = ROOT / ".github/workflows/pr-postgres-harness.yml"
+PARTITIONS = ROOT / ".github/workflows/postgres-test-partitions.yml"
+
+
+def step_script(workflow, name):
+    step = workflow.read_text().split(f"      - name: {name}\n", 1)[1]
+    lines = step.split("        run: |\n", 1)[1].splitlines(keepends=True)
+    script = itertools.takewhile(lambda line: not line.strip() or line.startswith("          "), lines)
+    return textwrap.dedent("".join(script))
+
+
+def inventory(suites):
+    return {"rust-suites": {
+        binary: {"binary-id": binary, "testcases": {
+            name: {"filter-match": {"status": "matches"}} for name in names
+        }} for binary, names in suites.items()
+    }}
 
 
 class PostgresLibraryArchiveTests(unittest.TestCase):
-    def script(self, name):
-        step = WORKFLOW.read_text().split(f"      - name: {name}\n", 1)[1]
-        return textwrap.dedent(step.split("\n      - name:", 1)[0].split("        run: |\n", 1)[1])
-
     def test_library_builds_archive_every_selected_package_in_both_modes(self):
-        select = self.script("Select PostgreSQL archive builds")
-        build = self.script("Archive PostgreSQL-backed library tests")
+        select = step_script(WORKFLOW, "Select PostgreSQL archive builds")
+        build = step_script(PARTITIONS, "Archive PostgreSQL-backed library tests")
         cargo = (
             'cargo() { printf "%s\\n" "${OTERYN_DISPATCH_PG_SHARD-unset}" "$CARGO_BUILD_JOBS" "$@"; }\n'
         )
@@ -75,7 +87,7 @@ class PostgresLibraryArchiveTests(unittest.TestCase):
                             "--archive-file", f"{directory}/pg-archives/pg-{archive}.tar.zst",
                         ])
 
-    def worker_matrix(self, archives, calibrated=True):
+    def worker_outputs(self, archives, calibrated=True):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             planner_dir = root / "pg-planner"
@@ -85,12 +97,31 @@ class PostgresLibraryArchiveTests(unittest.TestCase):
             )
             output = root / "outputs"
             subprocess.run(
-                ["bash", "-c", self.script("Size PostgreSQL partitions for the selected archives")],
+                ["bash", "-c", step_script(WORKFLOW, "Size PostgreSQL partitions for the selected archives")],
                 cwd=root, check=True, env=dict(os.environ, RUNNER_TEMP=directory,
                     GITHUB_OUTPUT=str(output), ARCHIVES=json.dumps(archives),
+                    BUILDS=json.dumps(["e2e", *(name for name in archives if name != "e2e")]),
                     CALIBRATED=str(calibrated).lower()),
             )
-            return json.loads(output.read_text().removeprefix("matrix="))["include"]
+            return {name: json.loads(value) for name, value in
+                    (line.split("=", 1) for line in output.read_text().splitlines())}
+
+    def worker_matrix(self, archives, calibrated=True):
+        return self.worker_outputs(archives, calibrated)["matrix"]["include"]
+
+    def test_archive_lanes_keep_global_labels_and_e2e_custody(self):
+        complete = ["e2e", "lib", "lib-1", "lib-2", "lib-3"]
+        for archives in (complete, complete[1:], ["lib-1", "lib-2", "lib-3"]):
+            with self.subTest(archives=archives):
+                matrices = self.worker_outputs(archives)
+                lanes = matrices["archive_lanes"]["include"]
+                self.assertEqual([lane["archive"] for lane in lanes],
+                                 ["e2e", *(name for name in archives if name != "e2e")])
+                for lane in lanes:
+                    archive = lane["archive"]
+                    self.assertEqual(lane["selected"], archive in archives)
+                    self.assertEqual(lane["partitions"]["include"],
+                                     [row for row in matrices["matrix"]["include"] if row["archive"] == archive])
 
     def test_each_selected_archive_keeps_every_calibrated_partition_once(self):
         counts = {"lib-1": 15, "lib-2": 7, "lib-3": 7, "e2e": 5, "lib": 2}
@@ -105,12 +136,12 @@ class PostgresLibraryArchiveTests(unittest.TestCase):
                     )
 
     def test_every_library_test_is_planned_once_in_both_archive_modes(self):
-        partition = indented_yaml_mapping_block(WORKFLOW.read_text(), "durability_postgres", 2)
-        self.assertIn("matrix: ${{ fromJSON(needs.prepare.outputs.partitions) }}", partition)
+        partition = indented_yaml_mapping_block(PARTITIONS.read_text(), "durability_postgres", 2)
+        self.assertIn("matrix: ${{ fromJSON(inputs.partitions) }}", partition)
         legacy = self.worker_matrix(["lib"], calibrated=False)
         self.assertEqual(legacy, [{"partition": i} for i in range(1, 37)])
         total = len(legacy)
-        script = self.script("Plan partition")
+        script = step_script(PARTITIONS, "Plan partition")
         dispatch = "oteryn-gameplay-dispatch"
         mounted_path = "gameplay_transport::monk_save::postgres_tests::"
         ordinary = "unit::smoke"
@@ -138,12 +169,7 @@ class PostgresLibraryArchiveTests(unittest.TestCase):
                             dispatch_names.append(explicit)
                         inventories[f"pg-lib-{shard + 1}"] = {dispatch: dispatch_names}
                 for archive, suites in inventories.items():
-                    listing = {"rust-suites": {
-                        binary: {"binary-id": binary, "testcases": {
-                            name: {"filter-match": {"status": "matches"}} for name in names
-                        }} for binary, names in suites.items()
-                    }}
-                    (plan / f"{archive}.json").write_text(json.dumps(listing))
+                    (plan / f"{archive}.json").write_text(json.dumps(inventory(suites)))
                 actual = Counter()
                 for index in range(total):
                     env = dict(os.environ, RUNNER_TEMP=directory, LABEL=str(index + 1),
@@ -154,17 +180,208 @@ class PostgresLibraryArchiveTests(unittest.TestCase):
                         actual.update(filters.read_text().splitlines())
                 self.assertEqual(actual, expected)
 
+    def test_affine_workers_plan_disjoint_local_shares_with_global_labels(self):
+        dispatch = "oteryn-gameplay-dispatch"
+        mount = "gameplay_transport::monk_save::postgres_tests::"
+        common = "unit::shared"
+        lanes = self.worker_outputs(["lib-1", "lib-2", "lib-3"])["archive_lanes"]["include"]
+        script = step_script(PARTITIONS, "Plan partition")
+        actual = Counter()
+        expected = Counter()
+        for lane in lanes:
+            if not lane["selected"]:
+                continue
+            archive = lane["archive"]
+            tests = [f"{mount}{archive.replace('-', '_')}::{index}" for index in range(20)]
+            expected.update(f"--filterset=binary_id(={dispatch}) & test(={test})"
+                            for test in tests + ([common] if archive == "lib-1" else []))
+            with tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                plan = root / "pg-plan"
+                plan.mkdir()
+                planner = root / "pg-planner/plan_pg_partitions.py"
+                planner.parent.mkdir()
+                planner.write_bytes((ROOT / "tools/ci/plan_pg_partitions.py").read_bytes())
+                (plan / f"pg-{archive}.json").write_text(json.dumps(inventory({dispatch: [common, *tests]})))
+                rows = lane["partitions"]["include"]
+                for index, row in enumerate(rows):
+                    env = dict(os.environ, RUNNER_TEMP=directory, LABEL=str(row["partition"]),
+                               JOB_INDEX=str(index), JOB_TOTAL=str(len(rows)), PG_AFFINITY="true",
+                               ARCHIVE_INDEX=str(row["archive_index"]), ARCHIVE_TOTAL=str(row["archive_total"]))
+                    subprocess.run(["bash", "-c", script], cwd=ROOT, env=env, check=True,
+                                   capture_output=True, text=True)
+                    for filters in plan.glob("*.filters"):
+                        actual.update(filters.read_text().splitlines())
+                for key, invalid in (("ARCHIVE_INDEX", "0"), ("ARCHIVE_TOTAL", "99")):
+                    result = subprocess.run(["bash", "-c", script], cwd=ROOT, env=env | {key: invalid},
+                                            capture_output=True, text=True)
+                    self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(actual, expected)
+
+    def test_archive_call_has_only_its_own_build_dependency_and_artifacts(self):
+        caller = indented_yaml_mapping_block(WORKFLOW.read_text(), "archive_lanes", 2)
+        for fragment in ('needs: prepare', 'uses: ./.github/workflows/postgres-test-partitions.yml',
+                         'matrix: ${{ fromJSON(needs.prepare.outputs.archive_lanes) }}',
+                         '''builds: ${{ format('["{0}"]', matrix.archive) }}''',
+                         'partitions: ${{ toJSON(matrix.partitions) }}',
+                         'run_partitions: ${{ matrix.selected }}'):
+            self.assertIn(fragment, caller)
+        text = PARTITIONS.read_text()
+        build = indented_yaml_mapping_block(text, "build", 2)
+        self.assertIn("if: inputs.affinity || matrix.archive == 'e2e'", build)
+        partition = indented_yaml_mapping_block(text, "durability_postgres", 2)
+        self.assertIn("    needs: build\n", partition)
+        self.assertIn("    if: inputs.run_partitions\n", partition)
+        self.assertIn("name: pr-postgres-test-inventory-${{ matrix.archive }}", partition)
+        self.assertIn("name: pr-postgres-test-archives-${{ matrix.archive }}", partition)
+        coverage = indented_yaml_mapping_block(WORKFLOW.read_text(), "heavy_gate", 2)
+        for archive in ("e2e", "lib", "lib_1", "lib_2", "lib_3"):
+            self.assertIn(f"value: ${{{{ jobs.durability_postgres.outputs.{archive}_sha256 }}}}", text)
+            self.assertIn(f"{archive}_sha256: ${{{{ steps.receipt.outputs.{archive}_sha256 }}}}", partition)
+            self.assertIn(f"needs.archive_lanes.outputs.{archive}_sha256", coverage)
+        self.assertEqual(coverage.count("if: steps.harness.outputs.coverage == 'true'"), 3)
+
+    def test_worker_receipt_is_success_only_and_routes_one_archive(self):
+        text = PARTITIONS.read_text()
+        cleanup = "      - name: Stop ephemeral PostgreSQL 18\n        if: always() && runner.environment == 'self-hosted'\n"
+        marker = "      - name: Record verified PostgreSQL archive receipt\n"
+        self.assertLess(text.index(cleanup), text.index(marker))
+        receipt = text.split(marker, 1)[1]
+        condition = re.search(r"^        if: (.+)$", receipt, re.MULTILINE)[1]
+        validator = ("const [affinity,status]=JSON.parse(process.argv[1]);const inputs={affinity};"
+                     "const success=()=>status==='success';process.stdout.write(JSON.stringify(" + condition + "));")
+        for affinity, status in itertools.product((False, True), ("success", "failure", "cancelled", "skipped")):
+            with self.subTest(affinity=affinity, status=status):
+                result = subprocess.check_output(["node", "-e", validator, json.dumps((affinity, status))], text=True)
+                self.assertEqual(json.loads(result), affinity and status == "success")
+        self.assertIn("ARCHIVE_DIGEST: ${{ steps.verify_archive.outputs.digest }}", receipt)
+        script = step_script(PARTITIONS, "Record verified PostgreSQL archive receipt")
+        digest = "0123456789abcdef" * 4
+        for archive in ("e2e", "lib", "lib-1", "lib-2", "lib-3"):
+            with self.subTest(archive=archive), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory) / "output"
+                env = dict(os.environ, SELECTED_ARCHIVE=archive, ARCHIVE_DIGEST=digest, GITHUB_OUTPUT=str(output))
+                subprocess.run(["bash", "-c", script], env=env, check=True, capture_output=True, text=True)
+                self.assertEqual(output.read_text(), f"{archive.replace('-', '_')}_sha256={digest}\n")
+        for archive, value in (("lib-4", digest), ("../lib-2", digest), ("lib-2", ""),
+                               ("lib-2", "z" * 64), ("lib-2", digest + "0")):
+            with self.subTest(archive=archive, value=value), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory) / "output"
+                env = dict(os.environ, SELECTED_ARCHIVE=archive, ARCHIVE_DIGEST=value, GITHUB_OUTPUT=str(output))
+                result = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse(output.exists())
+
+    def test_worker_verifier_exports_only_a_successfully_verified_manifest_digest(self):
+        verify = step_script(PARTITIONS, "Verify the selected PostgreSQL test archive and inventory")
+        head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+        workspace = str(ROOT)
+        with tempfile.TemporaryDirectory() as directory:
+            temp = Path(directory)
+            planner = temp / "pg-planner"
+            planner.mkdir()
+            for helper in ("plan_pg_partitions.py", "pg_archive_affinity.py"):
+                (planner / helper).write_bytes((ROOT / "tools/ci" / helper).read_bytes())
+            selected = temp / "pg-selected"
+            selected.mkdir()
+            inv = temp / "pg-inventories"
+            inv.mkdir()
+            payload, listing = "pg-lib-2.tar.zst", "pg-lib-2.json"
+            (selected / "head-sha").write_text(head + "\n")
+            (selected / "workspace").write_text(workspace + "\n")
+            (selected / payload).write_bytes(b"one library archive")
+            cases = inventory({"dispatch": ["gameplay_transport::monk_save::postgres_tests::case"]})
+            (selected / listing).write_text(json.dumps(cases))
+            names = ("head-sha", "workspace", payload, listing)
+            sums = subprocess.check_output(["sha256sum", *names], cwd=selected)
+            (selected / "SHA256SUMS").write_bytes(sums)
+            for name in ("head-sha", "workspace", listing, "SHA256SUMS"):
+                (inv / name).write_bytes((selected / name).read_bytes())
+            digest = hashlib.sha256(sums).hexdigest()
+            output = temp / "verify-output"
+            env = dict(os.environ, RUNNER_TEMP=directory, BUILD_WORKSPACE=workspace, EXPECTED_SHA=head,
+                       EXPECTED_ARCHIVES='["lib-2"]', SELECTED_ARCHIVE="lib-2", GITHUB_WORKSPACE=workspace,
+                       PG_WORKSPACE=workspace, PG_SOURCE=workspace, PG_RUN="env", GITHUB_OUTPUT=str(output))
+            rejected = subprocess.run(["bash", "-c", verify], env=env | {"LIB_2_SHA256": "0" * 64},
+                                      capture_output=True, text=True)
+            self.assertNotEqual(rejected.returncode, 0)
+            self.assertIn("archive digest mismatch", rejected.stderr)
+            self.assertFalse(output.exists())
+            subprocess.run(["bash", "-c", verify], env=env | {"LIB_2_SHA256": digest},
+                           check=True, capture_output=True, text=True)
+            self.assertEqual(output.read_text(), f"digest={digest}\n")
+
+    def test_final_coverage_rejects_incomplete_workers_and_inconsistent_inventories(self):
+        archives = ["lib-1", "lib-2", "lib-3"]
+        coverage = step_script(WORKFLOW, "Require the selected archive inventories and every partition")
+        lanes = self.worker_outputs(archives)["archive_lanes"]
+        head, workspace = "1" * 40, "/home/runner/work/Oteryn-Game/Oteryn-Game"
+        failures = {"missing lane": "expected partition matrix", "missing worker": "expected partition matrix",
+                    "duplicate worker": "expected partition matrix", "wrong label": "expected partition matrix",
+                    "missing inventory": "missing or unexpected", "extra inventory": "missing or unexpected",
+                    "duplicate test": "duplicate test cases", "wrong head": "head mismatch",
+                    "wrong workspace": "workspace mismatch", "missing digest": "archive digest mismatch",
+                    "modified listing": "bad checksum"}
+        for mutation, error in {"valid": None, **failures}.items():
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                planner = root / "pg-planner"
+                planner.mkdir()
+                for helper in ("plan_pg_partitions.py", "pg_archive_affinity.py"):
+                    (planner / helper).write_bytes((ROOT / "tools/ci" / helper).read_bytes())
+                matrix = json.loads(json.dumps(lanes))
+                rows = matrix["include"][1]["partitions"]["include"]
+                if mutation == "missing lane":
+                    matrix["include"].pop()
+                elif mutation == "missing worker":
+                    rows.pop()
+                elif mutation == "duplicate worker":
+                    rows.append(rows[0])
+                elif mutation == "wrong label":
+                    rows[0]["partition"] = 99
+                env = dict(os.environ, RUNNER_TEMP=directory, GITHUB_WORKSPACE=workspace, EXPECTED_SHA=head,
+                           ARCHIVES=json.dumps(archives), ARCHIVE_LANES=json.dumps(matrix))
+                downloads = root / "pg-inventories"
+                for name in archives:
+                    if mutation == "missing inventory" and name == "lib-1":
+                        continue
+                    bundle = downloads / f"pr-postgres-test-inventory-{name}"
+                    bundle.mkdir(parents=True)
+                    payload, listing = f"pg-{name}.tar.zst", f"pg-{name}.json"
+                    (bundle / "head-sha").write_text(("2" * 40 if mutation == "wrong head" else head) + "\n")
+                    (bundle / "workspace").write_text(("/wrong" if mutation == "wrong workspace" else workspace) + "\n")
+                    (bundle / payload).touch()
+                    case = "common" if mutation == "duplicate test" else name.replace("-", "_")
+                    mounted = f"gameplay_transport::monk_save::postgres_tests::{case}"
+                    (bundle / listing).write_text(json.dumps(inventory({"dispatch": ["unit::shared", mounted]})))
+                    sums = subprocess.check_output(["sha256sum", "head-sha", "workspace", payload, listing], cwd=bundle)
+                    (bundle / "SHA256SUMS").write_bytes(sums)
+                    (bundle / payload).unlink()
+                    if mutation == "modified listing":
+                        (bundle / listing).write_text("{}")
+                    env[f"{name.upper().replace('-', '_')}_SHA256"] = (
+                        "" if mutation == "missing digest" else hashlib.sha256(sums).hexdigest())
+                if mutation == "extra inventory":
+                    (downloads / "pr-postgres-test-inventory-e2e").mkdir()
+                result = subprocess.run(["bash", "-c", coverage], env=env, capture_output=True, text=True)
+                if error:
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn(error, result.stderr)
+                else:
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertIn("4 PostgreSQL tests across 29 partitions", result.stdout)
+
 
 class HeavyGateTests(unittest.TestCase):
     def setUp(self):
         self.text = WORKFLOW.read_text()
         self.job = indented_yaml_mapping_block(self.text, "heavy_gate", 2)
 
-    def run_gate(self, *, heavy="true", real="true", build="success", pg="success",
-                 prepare="success", empty="false", pages=None, api_exit=0,
+    def run_gate(self, *, heavy="true", real="true", archive="success", legacy="skipped",
+                 prepare="success", empty="false", affinity="true", pages=None, api_exit=0,
                  eligible="true", labels=(), labels_exit=0, forbid_api=False):
         self.assertIsNotNone(self.job)
-        script = textwrap.dedent(self.job.split("        run: |\n", 1)[1])
+        script = step_script(WORKFLOW, "Require the heavy PostgreSQL harness")
         self.assertNotIn("${{", script)
         with tempfile.TemporaryDirectory(dir=ROOT) as directory:
             gh = Path(directory) / "gh"
@@ -180,30 +397,37 @@ class HeavyGateTests(unittest.TestCase):
             )
             gh.chmod(0o755)
             api_calls = Path(directory) / "api_calls"
+            output = Path(directory) / "output"
             result = subprocess.run(["bash", "-e", "-o", "pipefail", "-c", script], env={
                 **os.environ, "PATH": directory + os.pathsep + os.environ["PATH"],
                 "IS_ELIGIBLE": eligible, "IS_HEAVY": heavy, "IS_REAL_RUN": real,
                 "PREPARE_RESULT": prepare, "EMPTY_SCOPE": empty,
-                "BUILD_RESULT": build, "POSTGRES_RESULT": pg,
+                "ARCHIVE_RESULT": archive, "LEGACY_RESULT": legacy, "PG_AFFINITY": affinity,
                 "REPOSITORY": "Oteryn/Oteryn-Game", "HEAD_SHA": "head",
                 "CHECK_PAGES": json.dumps(pages or [{"check_runs": []}]),
                 "API_EXIT": str(api_exit), "PR_NUMBER": "123",
                 "LIVE_LABELS": "\n".join(labels), "LABELS_EXIT": str(labels_exit),
-                "API_CALLS": str(api_calls),
+                "API_CALLS": str(api_calls), "GITHUB_OUTPUT": str(output),
             }, text=True, capture_output=True)
             if forbid_api:
                 self.assertFalse(api_calls.exists(), "Non-eligible PR called the API")
+            should_verify = (result.returncode == 0 and eligible == heavy == real == affinity == "true"
+                             and empty == "false")
+            self.assertEqual(output.exists(), should_verify)
+            if should_verify:
+                self.assertEqual(output.read_text(), "coverage=true\n")
             return result
 
-    def test_real_run_requires_build_and_postgres_and_does_not_wait_for_node_boot(self):
-        for build in ("success", "failure", "cancelled", "skipped"):
-            for pg in ("success", "failure", "cancelled", "skipped"):
-                with self.subTest(build=build, pg=pg):
-                    result = self.run_gate(build=build, pg=pg)
-                    self.assertEqual(result.returncode == 0, build == pg == "success", result.stderr)
-                    if result.returncode:
-                        self.assertIn(build, result.stdout)
-                        self.assertIn(pg, result.stdout)
+    def test_real_run_requires_active_path_and_does_not_wait_for_node_boot(self):
+        statuses = ("success", "failure", "cancelled", "skipped")
+        for affinity, archive, legacy in itertools.product(("true", "false", ""), statuses, statuses):
+            with self.subTest(affinity=affinity, archive=archive, legacy=legacy):
+                result = self.run_gate(affinity=affinity, archive=archive, legacy=legacy)
+                self.assertEqual(result.returncode == 0, (affinity, archive, legacy) in
+                                 (("true", "success", "skipped"), ("false", "skipped", "success")), result.stderr)
+                if result.returncode:
+                    self.assertIn(archive, result.stdout)
+                    self.assertIn(legacy, result.stdout)
         # Node boot is opt-in on PRs (owner 2026-11-18): heavy-gate neither needs nor reads it.
         self.assertNotIn("node_boot", self.job)
         self.assertNotIn("NODE_BOOT", self.job)
@@ -214,15 +438,15 @@ class HeavyGateTests(unittest.TestCase):
                 self.assertNotEqual(self.run_gate(prepare=prepare).returncode, 0)
         for empty in ("", "invalid"):
             self.assertNotEqual(self.run_gate(empty=empty).returncode, 0)
-        self.assertEqual(self.run_gate(empty="true", build="skipped", pg="skipped").returncode, 0)
-        self.assertNotEqual(self.run_gate(empty="true", build="skipped", pg="failure").returncode, 0)
-        self.assertNotEqual(self.run_gate(empty="true", build="success", pg="skipped").returncode, 0)
+        self.assertEqual(self.run_gate(empty="true", affinity="false", archive="skipped").returncode, 0)
+        self.assertNotEqual(self.run_gate(empty="true", affinity="false", archive="failure").returncode, 0)
+        self.assertNotEqual(self.run_gate(empty="true", affinity="false", archive="success").returncode, 0)
 
     def test_non_eligible_succeeds_without_api_or_harness(self):
         for reason in ("draft", "dependabot"):
             with self.subTest(reason=reason):
                 result = self.run_gate(eligible="false", heavy="false", real="false",
-                                       build="skipped", pg="skipped", api_exit=1,
+                                       archive="skipped", legacy="skipped", api_exit=1,
                                        labels_exit=1, forbid_api=True)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(len(result.stdout.splitlines()), 1)
@@ -253,7 +477,7 @@ class HeavyGateTests(unittest.TestCase):
                 ]}, {"check_runs": [
                     {"id": 3, "status": "completed", "completed_at": "2026-11-04T02:00:00Z", "conclusion": conclusion},
                 ]}]
-                result = self.run_gate(real="false", build="skipped", pg="skipped", pages=pages)
+                result = self.run_gate(real="false", archive="skipped", legacy="skipped", pages=pages)
                 self.assertEqual(result.returncode == 0, conclusion == "success", result.stderr)
 
     def test_mirror_fails_closed_without_completed_check_or_on_api_error(self):
@@ -265,7 +489,7 @@ class HeavyGateTests(unittest.TestCase):
 
     def test_job_contract_and_event_classification(self):
         self.assertIsNotNone(self.job)
-        for fragment in ("    name: heavy-gate\n", "    needs: [prepare, build, durability_postgres]\n",
+        for fragment in ("    name: heavy-gate\n", "    needs: [prepare, archive_lanes, legacy_harness]\n",
                          "    if: always()\n", "    runs-on: ubuntu-24.04\n", "    timeout-minutes: 10\n",
                          "      checks: read\n", "      pull-requests: read\n",
                          "          PR_NUMBER: ${{ github.event.pull_request.number }}\n", "          GH_TOKEN: ${{ github.token }}\n"):
@@ -575,9 +799,7 @@ class HeavyGateTests(unittest.TestCase):
                             self.assertFalse(archived_helper.exists())
 
     def test_single_archive_downloads_verify_in_either_supported_layout(self):
-        job = indented_yaml_mapping_block(self.text, "durability_postgres", 2)
-        verification = job.split("      - name: Verify archives were built for this head\n", 1)[1]
-        run = verification.split("        run: |\n", 1)[1].split("\n      #", 1)[0]
+        run = step_script(PARTITIONS, "Verify archives were built for this head")
         head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
         workspace = str(ROOT)
         for nested in (False, True):
@@ -616,11 +838,11 @@ class HeavyGateTests(unittest.TestCase):
                 self.assertEqual((Path(temporary) / "pg-plan/pg-lib.json").read_text(), "{}")
 
     def test_runner_and_service_have_identical_routing(self):
-        job = indented_yaml_mapping_block(self.text, "durability_postgres", 2)
+        job = indented_yaml_mapping_block(PARTITIONS.read_text(), "durability_postgres", 2)
         runner = re.search(r"^    runs-on: \$\{\{ (.*?) \}\}$", job, re.MULTILINE)[1]
         image = re.search(r"^        image: \$\{\{ (.*?) \}\}$", job, re.MULTILINE)[1]
         script = (
-            "const [needs,github,matrix]=JSON.parse(process.argv[1]);const fromJSON=JSON.parse;"
+            "const [inputs,github,matrix]=JSON.parse(process.argv[1]);const fromJSON=JSON.parse;"
             "process.stdout.write(JSON.stringify([" + runner + "," + image + "]));"
         )
         for mode in ("on", "split", "off", ""):
@@ -628,7 +850,7 @@ class HeavyGateTests(unittest.TestCase):
                 for fork, bot in ((False, False), (True, False), (False, True)):
                     github = {"repository": "repo", "actor": "dependabot[bot]" if bot else "owner",
                               "event": {"pull_request": {"head": {"repo": {"full_name": "fork" if fork else "repo"}}}}}
-                    context = [{"prepare": {"outputs": {"pg_runner_mode": mode}}}, github, {"partition": partition}]
+                    context = [{"pg_runner_mode": mode}, github, {"partition": partition}]
                     output = subprocess.check_output(["node", "-e", script, json.dumps(context)], text=True)
                     actual_runner, actual_image = json.loads(output)
                     native = not fork and not bot and (mode == "on" or mode == "split" and partition <= 4)

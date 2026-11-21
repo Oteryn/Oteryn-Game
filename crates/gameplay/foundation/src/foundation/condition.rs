@@ -1980,7 +1980,7 @@ impl<S: Clone> ConditionStore<S> {
                 return true;
             }
             match instance.ends_at {
-                None => instance.remaining_total > 0,
+                None => instance.definition.permanent_outfit || instance.remaining_total > 0,
                 Some(end) => end > now || instance.next_tick_at.is_some_and(|due| due <= end),
             }
         });
