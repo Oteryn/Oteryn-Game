@@ -207,6 +207,102 @@ pub(super) fn declarations(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn alesar_catalogue_matches_crystal_after_efreet_mission03()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use ProjectV2ServiceOfferDirection::{BuyFromPlayer, SellToPlayer};
+
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            &std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content"),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )?;
+        let model = catalogue.service_model_for_project()?;
+        let npc_key = "oteryn:npc.alesar";
+        let (_, npc) = model
+            .npcs()
+            .iter()
+            .find(|(r, _)| r.key == npc_key)
+            .ok_or("Alesar")?;
+        let offers: Vec<_> = npc
+            .services
+            .iter()
+            .flat_map(|r| &model.services()[r].offers)
+            .collect();
+        // Crystal data-global/npc/alesar.lua:24-48, in player buy/sell order.
+        let items = [
+            (3432, Some(5000), Some(900)),
+            (3429, None, Some(800)),
+            (7428, None, Some(10000)),
+            (3383, Some(1500), Some(400)),
+            (3384, Some(1000), Some(250)),
+            (3322, None, Some(2000)),
+            (7419, None, Some(15000)),
+            (3281, None, Some(17000)),
+            (7407, None, Some(8000)),
+            (3284, Some(5000), None),
+            (3370, None, Some(5000)),
+            (3318, None, Some(2000)),
+            (3371, None, Some(5000)),
+            (3574, None, Some(150)),
+            (7421, None, Some(22000)),
+            (7411, None, Some(20000)),
+            (3299, None, Some(50)),
+            (3307, None, Some(150)),
+            (3297, Some(6000), Some(900)),
+            (3324, None, Some(6000)),
+            (3373, None, Some(500)),
+            (7413, None, Some(4000)),
+            (3428, None, Some(8000)),
+            (3434, None, Some(15000)),
+            (3369, None, Some(5000)),
+        ];
+        for (id, buy, sell) in items {
+            let key = format!("oteryn:item.tibia.i{id}");
+            for (direction, price) in [(SellToPlayer, buy), (BuyFromPlayer, sell)] {
+                let offer = offers
+                    .iter()
+                    .find(|o| o.item.key == key && o.direction == direction);
+                // Crystal data/items/items.xml:8551 gives the ice rapier one charge.
+                let expected = price.map(|price| (price, (id == 3284).then_some(1)));
+                assert_eq!(
+                    offer.map(|o| (o.unit_price, o.sub_type)),
+                    expected,
+                    "Alesar {id} {direction:?}"
+                );
+            }
+        }
+        assert_eq!(offers.len(), 29);
+
+        for offer in offers {
+            let gate = required(
+                shops()?,
+                npc_key,
+                &offer.item,
+                offer.direction,
+                offer.unit_price,
+                offer.count.unwrap_or(1),
+            )?
+            .ok_or("Alesar trade gate")?;
+            assert_eq!(gate.requirements.len(), 1);
+            let requirement = &gate.requirements[0];
+            assert_eq!(
+                requirement.quest,
+                "oteryn:quest.the_djinn_war_efreet_faction"
+            );
+            assert_eq!(
+                requirement.track,
+                "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03"
+            );
+            assert!(!eligible(gate, |_| None));
+            for stage in 0..=4 {
+                assert_eq!(eligible(gate, |_| Some(stage)), stage == 3);
+            }
+        }
+        Ok(())
+    }
+
     #[test]
     fn protected_offer_identity_and_fresh_requirements_fail_closed() -> Result<(), &'static str> {
         let source = r#"{"schema":1,"shops":[{"npc":"oteryn:npc.cael","service":"oteryn:service.quest_shop.cael","sources":["fixture:source"],"offers":[{"item":{"family":"Item","key":"oteryn:item.tibia.i2965","revision":"definition-r1"},"direction":"SellToPlayer","unit_price":5000,"requirements":[{"quest":"oteryn:quest.the_new_frontier_quest","track":"oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge","initial":0,"minimum":6,"maximum":12}]}]}]}"#;
