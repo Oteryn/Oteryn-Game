@@ -16,6 +16,7 @@ mod live_assets;
 mod login;
 pub(crate) mod maintenance;
 mod owner;
+mod render_settings;
 mod scene;
 mod screenshots;
 mod selection;
@@ -111,7 +112,8 @@ pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<(), Box<dyn std::
     owner.configure_login(options.login_settings.clone(), |name| {
         std::env::var(name).ok()
     });
-    let mut app = build_app(options, owner, DefaultPlugins.build());
+    let plugins = render_settings::plugins(options.smoke);
+    let mut app = build_app(options, owner, plugins);
     // App::run transfers the app into its runner. HostOwner::drop owns shutdown there.
     match app.run() {
         AppExit::Success => Ok(()),
