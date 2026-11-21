@@ -5,12 +5,8 @@ use super::character_progression::uuid_text;
 use crate::domain::character_name::{CharacterName, NAMING_POLICY_REVISION};
 use crate::domain::{CharacterId, WorldId};
 use crate::durability::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
-use crate::durability::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
-};
-use crate::durability::item_transfer::{
-    CurrentCharacterItemFence, character_item_fence_is_current,
-};
+use crate::durability::db::{begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations};
+use crate::durability::item_transfer::{CurrentCharacterItemFence, character_item_fence_is_current, character_item_fence_without_root};
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::foundation::{CommandId, CommandRef, RuntimeScopeRefV1};
 use sha2::{Digest, Sha256};
@@ -60,14 +56,17 @@ impl crate::durability::DurabilityRoot {
             let command = CommandRef::new(fence.game_session_id, CommandId::new(command_id).map_err(|_| DurabilityError::InvalidStoredState)?);
             let RuntimeScopeRefV1::Channel { world_id, channel_id } = fence.runtime_scope else { return Ok(MailPostOutcome::Refused(MailPostRefusal::NotMailable)); };
             let world = WorldId::from_bytes(*world_id.as_bytes()).map_err(|_| DurabilityError::InvalidStoredState)?;
-            if mailbox_placement_key == 0 || !character_item_fence_is_current(&mut tx, &node, &fence, command, fence.character_id, *world_id.as_bytes(), *channel_id.as_bytes()).await? {
+            if mailbox_placement_key == 0 || !character_item_fence_without_root(&mut tx, &node, &fence, command, fence.character_id, *world_id.as_bytes(), *channel_id.as_bytes()).await? {
                 return Ok(MailPostOutcome::Refused(MailPostRefusal::NotMailable));
             }
             // A posted root is stamped and in the recipient's Inbox, so its address and stamp
             // cannot be derived again: the immutable receipt answers the replay first.
-            if let Some(root) = sqlx::query_scalar::<_, Vec<u8>>("SELECT uuid_send(root_item_instance_id) FROM game_mail_operations WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric AND sender_character_id=encode($3,'hex')::uuid")
+            if let Some((root, mailbox)) = sqlx::query_as::<_, (Vec<u8>, Vec<u8>)>("SELECT uuid_send(root_item_instance_id), mailbox_placement_key FROM game_mail_operations WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric AND sender_character_id=encode($3,'hex')::uuid")
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(command_id.to_string()).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await? {
-                return Ok(if root.as_slice() == item.as_slice() { MailPostOutcome::AlreadyPosted } else { MailPostOutcome::Refused(MailPostRefusal::ReplayConflict) });
+                if !character_item_fence_is_current(&mut tx, &node, &fence, command, fence.character_id, *world_id.as_bytes(), *channel_id.as_bytes()).await? {
+                    return Ok(MailPostOutcome::Refused(MailPostRefusal::NotMailable));
+                }
+                return Ok(if replay_intent_matches(&root, &mailbox, &item, mailbox_placement_key) { MailPostOutcome::AlreadyPosted } else { MailPostOutcome::Refused(MailPostRefusal::ReplayConflict) });
             }
             let row = sqlx::query("SELECT i.definition_production_key,t.text FROM game_item_instances i LEFT JOIN game_item_texts t USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1")
                 .bind(item.as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
@@ -85,6 +84,20 @@ impl crate::durability::DurabilityRoot {
             let Some(first) = address_text.as_deref().and_then(|s| s.lines().next()).map(str::trim).filter(|s| !s.is_empty()) else { return Ok(MailPostOutcome::Refused(MailPostRefusal::UnknownRecipient)); };
             let Ok(address) = CharacterName::parse(first) else { return Ok(MailPostOutcome::Refused(MailPostRefusal::UnknownRecipient)); };
             let Some(recipient) = mail_recipient_hint(&mut tx, world, &address).await? else { return Ok(MailPostOutcome::Refused(MailPostRefusal::UnknownRecipient)); };
+            for character in mail_root_lock_order(fence.character_id, recipient) {
+                sqlx::query("SELECT 1 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
+                    .bind(character.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
+            }
+            if !character_item_fence_is_current(&mut tx, &node, &fence, command, fence.character_id, *world_id.as_bytes(), *channel_id.as_bytes()).await? {
+                return Ok(MailPostOutcome::Refused(MailPostRefusal::NotMailable));
+            }
+            // The address was a hint read before the ordered root locks. Recheck it
+            // under the sender lock before using the derived recipient and stamp.
+            let current: Option<(String, Option<String>)> = sqlx::query_as("SELECT i.definition_production_key, CASE WHEN i.definition_production_key='oteryn:item.tibia.i3503' THEN (SELECT t.text FROM game_item_nested_entries e JOIN game_item_instances label USING(item_instance_id) JOIN game_item_texts t USING(item_instance_id) WHERE e.parent_item_instance_id=i.item_instance_id AND label.definition_production_key='oteryn:item.tibia.i3507' AND t.text<>'' ORDER BY e.placement_ordinal LIMIT 1) ELSE t.text END FROM game_item_instances i LEFT JOIN game_item_texts t USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1")
+                .bind(item.as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
+            if current != Some((key.clone(), address_text)) {
+                return Ok(MailPostOutcome::Refused(MailPostRefusal::NotMailable));
+            }
             if !lock_mail_recipient_root(&mut tx, world, recipient, &address).await? { return Ok(MailPostOutcome::Refused(MailPostRefusal::UnknownRecipient)); }
             let ids: (Vec<u8>, Vec<u8>) = sqlx::query_as("SELECT uuid_send(game_character_uuid_v7()),uuid_send(game_character_uuid_v7())").fetch_one(&mut *tx).await?;
             let mut mail_id=[0;16]; mail_id.copy_from_slice(&ids.0);
@@ -315,3 +328,15 @@ pub async fn lock_mail_recipient_root(
     reason = "PostgreSQL exercises are registered in the canonical PG target; the library unit target has no database"
 )]
 pub mod tests;
+
+fn replay_intent_matches(root: &[u8], mailbox: &[u8], item: &[u8; 16], requested_mailbox: u64) -> bool {
+    root == item && mailbox == requested_mailbox.to_be_bytes()
+}
+
+fn mail_root_lock_order(sender: CharacterId, recipient: CharacterId) -> [CharacterId; 2] {
+    if sender.as_bytes() <= recipient.as_bytes() {
+        [sender, recipient]
+    } else {
+        [recipient, sender]
+    }
+}

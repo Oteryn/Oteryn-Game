@@ -1502,13 +1502,16 @@ fn chat_delta(
 /// The domain 7 and 8 delta frames of `update`, in that order, from the sequence after
 /// `sequence` (advanced to the last one); `npc_shown` follows the conversation. `None` on an
 /// encoding fault.
-fn npc_update_frames(
+fn npc_update_frames<A: FreshAdmissionAuthority>(
+    authority: &A,
+    viewer: (GameSessionId, SelectedCapabilities),
     generation: u64,
     sequence: &mut u64,
     continuity: &mut NpcContinuity,
     update: &NpcUpdate,
     npc_shown: &mut Option<WireEntityRef>,
 ) -> Option<Vec<Vec<u8>>> {
+    let (game_session_id, selected) = viewer;
     let mut frames = Vec::new();
     let mut next = *sequence;
     let mut conversation_revision = continuity.conversation_revision;
@@ -1522,6 +1525,15 @@ fn npc_update_frames(
         frames.push(frame);
     }
     if let Some(window) = &update.window {
+        let details =
+            selected.contains(oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1);
+        let window = if details {
+            authority
+                .npc_quote_window(game_session_id, window)
+                .unwrap_or_else(|| window.clone())
+        } else {
+            window.clone()
+        };
         let delta_sequence = next.checked_add(1)?;
         let to = window_revision.checked_add(1)?;
         let frame = encode_state_delta(
@@ -1531,7 +1543,8 @@ fn npc_update_frames(
             window_revision,
             to,
             DELTA_TYPE_NPC_TRADE_WINDOW_V1,
-            &encode_npc_trade_window(window).ok()?,
+            &oteryn_protocol_oteryn::npc_service::encode_npc_trade_window_for(&window, details)
+                .ok()?,
         )
         .ok()?;
         (next, window_revision) = (delta_sequence, to);

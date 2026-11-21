@@ -77,7 +77,7 @@ fn t038_move_all_contents_snapshots_every_direct_entry_into_the_destination_in_o
         assert_eq!(request.source, handle(source));
         assert_eq!(
             request.destination,
-            ItemMoveDestination::Container(handle(200))
+            ItemMoveDestination::Container(handle(200), None)
         );
         assert_eq!(request.count, None);
     }

@@ -343,7 +343,91 @@ fn pending_search_is_cancelled_when_its_original_editor_is_removed() -> TestResu
     Ok(())
 }
 
+mod coins;
 mod lifecycle;
 
 mod offers;
 mod purchase;
+
+mod statistics;
+
+#[test]
+fn market_window_has_global_geometry_bottom_row_and_category_icon_slots() -> TestResult {
+    let (mut app, _, _, _) = app()?;
+    app.init_resource::<InputFocus>()
+        .insert_resource(Skins {
+            buttons: source::ButtonImages {
+                up: Handle::default(),
+                down: Handle::default(),
+            },
+            checked: Handle::default(),
+            unchecked: Handle::default(),
+            frame: Handle::default(),
+            inset: Handle::default(),
+            font: Handle::default(),
+        })
+        .add_systems(Update, project);
+    app.world_mut().resource_mut::<State>().seen = None;
+    app.update();
+    let named = |app: &mut App, name: &str| {
+        app.world_mut()
+            .query::<(Entity, &Name, &Node)>()
+            .iter(app.world())
+            .find_map(|(entity, candidate, node)| {
+                (candidate.as_str() == name).then(|| (entity, node.clone()))
+            })
+            .ok_or(format!("{name} absent"))
+    };
+    let (_, window) = named(&mut app, "market.window")?;
+    assert_eq!((window.width, window.height), (px(1000.), px(634.)));
+    let (footer, _) = named(&mut app, "market.footer")?;
+    let world = app.world();
+    let buttons: Vec<(String, Val)> = world
+        .get::<Children>(footer)
+        .ok_or("footer buttons")?
+        .iter()
+        .filter_map(|button| {
+            let caption = world
+                .get::<Children>(button)?
+                .iter()
+                .find_map(|child| world.get::<Text>(child))?;
+            Some((caption.0.clone(), world.get::<Node>(button)?.width))
+        })
+        .collect();
+    assert_eq!(
+        buttons,
+        [
+            "Offers",
+            "Details",
+            "My Offers",
+            "Current Offers",
+            "Offer History",
+            "Coin Market",
+            "Close"
+        ]
+        .map(|caption| (caption.to_owned(), px(75.)))
+    );
+    let (categories, list) = named(&mut app, "market.categories")?;
+    assert_eq!(list.height, px(137.));
+    let world = app.world();
+    let slot = world
+        .get::<Children>(categories)
+        .ok_or("categories")?
+        .iter()
+        .flat_map(|button| world.get::<Children>(button).into_iter().flatten())
+        .find_map(|child| world.get::<crate::bevy_shell::ui::ArtSlot>(*child))
+        .ok_or("category icon slot")?;
+    assert_eq!(
+        slot.path(),
+        "images/market/category-swords.png",
+        "the Swords category loads its own icon"
+    );
+    assert!(
+        app.world_mut()
+            .query_filtered::<&Text, With<crate::bevy_shell::ui::ArtFallback>>()
+            .iter(app.world())
+            .any(|text| text.0 == "Swords"),
+        "the name shows until the icon file exists"
+    );
+    Ok(())
+}

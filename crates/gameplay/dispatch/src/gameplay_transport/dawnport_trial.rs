@@ -16,6 +16,8 @@ use super::vocation_choice::{RetainedNpcVocation, commit_retained_npc_vocation, 
 use crate::durability::character_build::{
     BuildCause, BuildChangeRequest, BuildFormula, BuildOccurrence, convert_vocation,
 };
+use crate::durability::character_progression::CharacterProgressionError;
+use crate::durability::character_revision_sequencer::RevisionSlot;
 use crate::foundation::{ExactActorRef, GameSessionId, MovementPositionSnapshot};
 use crate::map::overlay::TilePos;
 use crate::map::view::{MapFacts, placement_key};
@@ -158,16 +160,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return false;
         }
-        if commit_retained_npc_vocation(
-            &mut slot,
-            self.root,
-            self.character,
-            self.holder,
-            &retained,
-            formula,
-        )
-        .await
-        .is_err()
+        if !self
+            .commit_dawnport_trial(actor, &mut slot, &retained, formula, progress.level)
+            .await
         {
             return false;
         }
@@ -218,11 +213,47 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         *state = next;
         // A refused install leaves the committed build for the next admission to load.
-        states.load_owned_build(&runtime, actor, session, &build)
+        let installed = states.load_owned_build(&runtime, actor, session, &build)
             && states.load_owned_stance(&runtime, actor, session, &stance, self.spells)
             && states
                 .get_mut(&runtime, actor, session)
-                .is_some_and(|state| state.enable_owned_training(&build, formula).is_ok())
+                .is_some_and(|state| state.enable_owned_training(&build, formula).is_ok());
+        if installed {
+            self.set_trial_refill(session, actor, None);
+        }
+        installed
+    }
+
+    pub(super) async fn commit_dawnport_trial(
+        &self,
+        actor: ExactActorRef,
+        slot: &mut RevisionSlot,
+        retained: &RetainedNpcVocation,
+        formula: &dyn BuildFormula,
+        level: u32,
+    ) -> bool {
+        let session = retained.fence.game_session_id;
+        if level > 8 {
+            self.set_trial_refill(session, actor, Some(retained.request.occurrence));
+        }
+        match commit_retained_npc_vocation(
+            slot,
+            self.root,
+            self.character,
+            self.holder,
+            retained,
+            formula,
+        )
+        .await
+        {
+            Ok(_) => true,
+            Err(error) => {
+                if !matches!(error, CharacterProgressionError::Unavailable(_)) {
+                    self.set_trial_refill(session, actor, None);
+                }
+                false
+            }
+        }
     }
 
     /// The one trial action id among the entered tile's visible ground placements.

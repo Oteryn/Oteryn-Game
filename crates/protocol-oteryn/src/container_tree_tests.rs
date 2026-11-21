@@ -3,8 +3,7 @@
 use super::*;
 use crate::item_view::{
     COMMAND_TYPE_ITEM_MOVE_INTENT, ItemMoveDestination, ItemMoveIntent, ItemMoveSelection,
-    MAX_ITEM_MOVE_INTENT_BYTES, MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES,
-    MAX_ITEM_MOVE_INTENT_STACK_COUNT_BYTES, decode_item_move_intent_for,
+    MAX_ITEM_MOVE_INTENT_BYTES, MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES, decode_item_move_intent_for,
     decode_item_move_intent_with_equip_drop, encode_entry, encode_item_move_intent_for,
 };
 use serde_json::Value;
@@ -427,10 +426,11 @@ fn command_9_takes_the_container_destination_only_under_capability_14() {
         equip_drop: true,
         container_tree: true,
         world_interaction: false,
+        manual_sort: false,
     };
     let worst = ItemMoveIntent {
         source: handle(u64::MAX),
-        destination: ItemMoveDestination::Container(handle(u64::MAX - 1)),
+        destination: ItemMoveDestination::Container(handle(u64::MAX - 1), None),
     };
     let bytes = encode_item_move_intent_for(&worst, tree).expect("container destination");
     // 11 for the source, 1 + 1 + 11 for the destination: within the capability 12 bound.
@@ -442,6 +442,7 @@ fn command_9_takes_the_container_destination_only_under_capability_14() {
         equip_drop: false,
         container_tree: true,
         world_interaction: false,
+        manual_sort: false,
     };
     assert_eq!(decode_item_move_intent_for(&bytes, only_tree), Ok(worst));
     assert!(bytes.len() > MAX_ITEM_MOVE_INTENT_BYTES);
@@ -452,6 +453,7 @@ fn command_9_takes_the_container_destination_only_under_capability_14() {
             equip_drop,
             container_tree: false,
             world_interaction: false,
+            manual_sort: false,
         };
         assert_eq!(
             encode_item_move_intent_for(&worst, selection),
@@ -535,12 +537,12 @@ fn registries_bind_capability_14_and_its_limits() {
         command["max_result_payload_bytes"].as_u64(),
         Some(MAX_CONTAINER_VIEW_RESULT_BYTES as u64)
     );
-    // Command 9 keeps its owner; its aggregate bound now includes capability 61 count.
+    // The command 9 ceiling includes both a stack count and a manual sort slot.
     let move_command = find("command_types", COMMAND_TYPE_ITEM_MOVE_INTENT);
     assert_eq!(move_command["capability"], 4);
     assert_eq!(
         move_command["max_payload_bytes"].as_u64(),
-        Some(MAX_ITEM_MOVE_INTENT_STACK_COUNT_BYTES as u64)
+        Some(crate::item_view::MAX_ITEM_MOVE_INTENT_MANUAL_SORT_BYTES as u64)
     );
 
     let domain = find("state_domains", STATE_DOMAIN_CONTAINER_VIEWS);

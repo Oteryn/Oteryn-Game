@@ -9,6 +9,16 @@ pub fn apply_at(panel: &mut Panel, facts: &[AnalyserFact], seconds: u64) {
     if !panel.selected {
         return;
     }
+    let mut reports = std::mem::take(&mut panel.reports);
+    for report in reports.values_mut() {
+        report.swap(panel);
+        apply_facts(panel, facts, seconds);
+        report.swap(panel);
+    }
+    panel.reports = reports;
+    apply_facts(panel, facts, seconds);
+}
+fn apply_facts(panel: &mut Panel, facts: &[AnalyserFact], seconds: u64) {
     for fact in facts {
         match fact {
             AnalyserFact::Kill { race } => {
@@ -67,6 +77,7 @@ pub fn apply_at(panel: &mut Panel, facts: &[AnalyserFact], seconds: u64) {
                 let value = u64::from(value.get());
                 panel.damage = panel.damage.saturating_add(value);
                 panel.damage_chart.add(seconds, value);
+                panel.recent[0].add(seconds, value);
                 let total = panel.impact_types.entry(element.wire()).or_default();
                 *total = total.saturating_add(value);
             }
@@ -74,6 +85,7 @@ pub fn apply_at(panel: &mut Panel, facts: &[AnalyserFact], seconds: u64) {
                 let value = u64::from(value.get());
                 panel.healing = panel.healing.saturating_add(value);
                 panel.healing_chart.add(seconds, value);
+                panel.recent[1].add(seconds, value);
             }
             AnalyserFact::DamageInput {
                 value,
@@ -84,6 +96,7 @@ pub fn apply_at(panel: &mut Panel, facts: &[AnalyserFact], seconds: u64) {
                 let value = u64::from(value.get());
                 panel.received = panel.received.saturating_add(value);
                 panel.received_chart.add(seconds, value);
+                panel.recent[2].add(seconds, value);
                 let total = panel.input_types.entry(element.wire()).or_default();
                 *total = total.saturating_add(value);
                 let key = match source {
@@ -106,6 +119,7 @@ pub fn reset(panel: &mut Panel) {
         .map(|goal| goal.saturating_sub(panel.gained_xp));
     *panel = Panel {
         tool: panel.tool,
+        open_tools: panel.open_tools.clone(),
         // Party counters use server connection intervals, independent of this local reset.
         party: std::mem::take(&mut panel.party),
         party_adjustments: std::mem::take(&mut panel.party_adjustments),
@@ -136,6 +150,7 @@ pub fn reset(panel: &mut Panel) {
 pub fn recover(panel: &mut Panel) {
     *panel = Panel {
         tool: panel.tool,
+        open_tools: panel.open_tools.clone(),
         selected: panel.selected,
         open: panel.open,
         feedback: Some(tr!(
@@ -168,6 +183,12 @@ pub fn catalogue_request(
         .keys()
         .chain(panel.supply.keys())
         .chain(panel.loot_tracked.iter())
+        .chain(
+            panel
+                .reports
+                .values()
+                .flat_map(|report| report.loot.keys().chain(report.supply.keys())),
+        )
     {
         if !panel.item_info.contains_key(id) && !ids.contains(id) {
             ids.push(*id);
@@ -222,4 +243,61 @@ pub fn party_request(
     panel: &mut Panel,
 ) -> Option<oteryn_client_runtime::raw_feature::FeatureCommand> {
     super::party::request(panel)
+}
+
+/// Reset the selected report while retaining measurements belonging to other tools.
+pub fn reset_tool(panel: &mut Panel) {
+    use super::Tool;
+    let now = panel.clock.seconds();
+    let index = Tool::ALL
+        .iter()
+        .position(|tool| *tool == panel.tool)
+        .unwrap_or(0);
+    panel.reset_at[index] = now;
+    match panel.tool {
+        Tool::Overview | Tool::Hunting | Tool::Session => {
+            // These three views share the session, while every analyser owns its interval.
+            for tool in Tool::ALL {
+                if matches!(
+                    tool,
+                    Tool::Overview | Tool::Hunting | Tool::Session | Tool::Party | Tool::Bosses
+                ) || panel.reports.contains_key(tool.key())
+                {
+                    continue;
+                }
+                let mut report = super::state::Report::default();
+                report.swap(panel);
+                let snapshot = report.clone();
+                report.swap(panel);
+                panel.reports.insert(tool.key(), snapshot);
+            }
+            super::state::Report::default().swap(panel);
+            for tool in [Tool::Overview, Tool::Hunting, Tool::Session] {
+                if let Some(index) = Tool::ALL.iter().position(|t| *t == tool) {
+                    panel.reset_at[index] = now;
+                }
+            }
+        }
+        Tool::Bosses => {
+            panel.boss_drops.clear();
+            panel.boss_drops_truncated = false;
+        }
+        Tool::Party => {
+            panel.party_import = None;
+            panel.party_feedback =
+                Some("Party measurements are server-owned; refresh to read the current interval");
+        }
+        tool => {
+            if tool == Tool::Experience {
+                let gained = panel
+                    .reports
+                    .get(tool.key())
+                    .map_or(panel.gained_xp, |r| r.gained_xp);
+                panel.goal_xp = panel.goal_xp.map(|goal| goal.saturating_sub(gained));
+            }
+            panel
+                .reports
+                .insert(tool.key(), super::state::Report::default());
+        }
+    }
 }

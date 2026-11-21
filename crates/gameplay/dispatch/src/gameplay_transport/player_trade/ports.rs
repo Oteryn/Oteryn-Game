@@ -12,10 +12,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         crate::durability::item_mint::TypedDefinitionRef,
         u32,
     )> {
-        // The current trade owner only admits leaves; there are no container children.
-        if index != 0 {
-            return None;
-        }
         let record = self
             .states
             .player_trades
@@ -55,11 +51,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if counter && record.projections[side].is_none() {
             return None;
         }
-        let (definition, count) = record.offers[selected]
-            .as_ref()?
-            .definition_and_quantity()
-            .ok()?;
-        Some((record.items[selected]?, definition, count))
+        record.offers[selected].as_ref()?.indexed_item(index).ok()?
     }
 }
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -84,13 +76,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 || state.generation != fence.scope_ownership_generation
                 || state.lease.character_id().as_bytes() != fence.character_id.as_bytes()
                 || state.lease.generation() != fence.character_lease_generation
-                || runtime.house_player_writes_fenced(actor, command.game_session_id).ok()?
+                || runtime
+                    .house_player_writes_fenced(actor, command.game_session_id)
+                    .ok()?
             {
                 return Some(false);
             }
-            runtime.house_player_control_facts(actor, command.game_session_id).ok()?
+            runtime
+                .house_player_control_facts(actor, command.game_session_id)
+                .ok()?
         } else {
-            runtime.player_control_facts(actor, command.game_session_id).ok()?
+            runtime
+                .player_control_facts(actor, command.game_session_id)
+                .ok()?
         };
         if facts.control_loss.is_some() {
             return Some(false);
@@ -103,16 +101,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Some(false);
         }
-        let Some(record) = book.record(command.game_session_id) else {
+        let Some(record) = book.record_ref(command.game_session_id) else {
             return Some(true);
         };
         let reserved = match item {
-            Some(ItemKey::Instance(item)) => record.items.contains(&Some(item)),
+            Some(ItemKey::Instance(item)) => record.offers.iter().flatten().any(|leaf| {
+                (0..=leaf.contents().len()).any(|index| {
+                    u8::try_from(index)
+                        .ok()
+                        .and_then(|index| leaf.instance_at(index).ok().flatten())
+                        .is_some_and(|id| id == item)
+                })
+            }),
             None => true,
             _ => false,
         };
         if reserved {
             if record.request.is_none() {
+                let record = record.clone();
                 book.close(&record, ResultCode::Stale)?;
             }
             return Some(false);

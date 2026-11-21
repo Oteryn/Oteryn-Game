@@ -44,6 +44,19 @@ impl Outbox {
             _ => (None, None),
         };
         let mut mailbox = lock(&self.0);
+        if let PrivateChannelIntent::Say { channel_id, text } = command
+            && matches!(
+                outcome.status,
+                oteryn_session::CommandStatus::Accepted
+                    | oteryn_session::CommandStatus::DuplicateReplay
+            )
+            && outcome.disposition == oteryn_session::ChatDisposition::Ok
+            && mailbox.chat_private.pending_intent == Some(Intent::Send)
+            && mailbox.chat_private.channel == Some(*channel_id)
+            && mailbox.chat_private.text == *text
+        {
+            mailbox.chat_private.text.clear();
+        }
         oteryn_client_ui::chat_private_channel::apply_result(&mut mailbox.chat_private, outcome);
         oteryn_client_ui::chat::private_result(&mut mailbox.chat, pending, channel, outcome);
         // A line sent from a private-channel tab of the console ends its pending state too.

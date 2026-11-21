@@ -95,7 +95,9 @@ ed25519-dalek = { version = "=2.2.0", default-features = false }
 pollster = { version = "=1.0.1", default-features = false }
 crossterm = "=0.29.0"
 ratatui = { version = "=0.30.2", default-features = false, features = ["crossterm"] }
+flate2 = "=1.1.11"
 lzma-rs = "=0.3.0"
+png = "=0.18.1"
 prost = "=0.14.6"
 reqwest = { version = "=0.13.5", default-features = false, features = ["form", "json", "rustls", "stream"] }
 rustix = { version = "=1.1.6", default-features = false, features = ["fs"] }

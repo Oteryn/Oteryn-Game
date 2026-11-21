@@ -3,6 +3,7 @@ use super::*;
 fn gem_presentation_all_canonical_vocations_fit_and_use_executed_corrections()
 -> Result<(), &'static str> {
     let data = WheelGemData::embedded().map_err(|_| "catalogue")?;
+    let mut mastery_ids = std::collections::BTreeSet::new();
     for vocation in ["druid", "knight", "monk", "paladin", "sorcerer"] {
         let rows = project(&data, vocation).ok_or("project")?;
         assert_eq!(rows.len(), 69);
@@ -26,40 +27,62 @@ fn gem_presentation_all_canonical_vocations_fit_and_use_executed_corrections()
                 .find(|r| r.kind == 0 && r.id == 48)
                 .ok_or("capacity")?;
             assert_eq!(capacity.effects[0].values[3], 750000);
-            let mana = rows
-                .iter()
-                .find(|r| r.kind == 0 && r.id == 33)
-                .ok_or("mixed mana")?;
-            assert!(
-                mana.effects
+            for id in 33..=36 {
+                let mana = rows
                     .iter()
-                    .find(|e| e.name == "Mana")
-                    .ok_or("mana")?
-                    .values
-                    .iter()
-                    .all(|v| *v == 0)
-            );
+                    .find(|r| r.kind == 0 && r.id == id)
+                    .ok_or("mixed mana")?;
+                assert_eq!(
+                    mana.effects
+                        .iter()
+                        .find(|e| e.name == "Mana")
+                        .ok_or("mana")?
+                        .values,
+                    [100_000, 110_000, 120_000, 150_000],
+                    "Monk mixed Mana mod {id}"
+                );
+            }
         }
         let dodge = rows
             .iter()
             .find(|r| r.kind == 1 && r.id == 0)
             .ok_or("dodge")?;
         assert_eq!(dodge.effects[0].values, [280, 300, 330, 420]);
-        if let Some(mastery) = rows.iter().find(|r| {
-            r.kind == 1
-                && r.effects
-                    .iter()
-                    .any(|e| e.name == "revelation_mastery_points")
-        }) {
-            assert!(
-                mastery
-                    .effects
-                    .iter()
-                    .filter(|e| e.name == "revelation_mastery_points")
-                    .all(|e| e.values[0] >= 300000)
-            );
+        let mastery = rows
+            .iter()
+            .filter(|r| {
+                r.kind == 1
+                    && r.effects
+                        .iter()
+                        .any(|e| e.name == "revelation_mastery_points")
+            })
+            .collect::<Vec<_>>();
+        assert!(!mastery.is_empty(), "{vocation} has Mastery rows");
+        for row in &mastery {
+            for effect in row
+                .effects
+                .iter()
+                .filter(|e| e.name == "revelation_mastery_points")
+            {
+                assert_eq!(
+                    effect.values,
+                    [150_000, 165_000, 180_000, 225_000],
+                    "{vocation} Mastery mod {}",
+                    row.id
+                );
+            }
+            mastery_ids.insert(row.id);
+        }
+        if vocation == "monk" {
+            assert!(mastery.iter().any(|r| r.id == 92), "Monk Mastery mod 92");
         }
     }
+    assert_eq!(
+        mastery_ids,
+        [5, 21, 22, 23, 39, 40, 41, 56, 57, 58, 73, 74, 75, 91, 92, 93]
+            .into_iter()
+            .collect::<std::collections::BTreeSet<_>>()
+    );
     assert!(project(&data, "none").is_none());
     Ok(())
 }

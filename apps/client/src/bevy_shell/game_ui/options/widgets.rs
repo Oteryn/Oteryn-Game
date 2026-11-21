@@ -1,6 +1,7 @@
 use super::*;
 use bevy::input_focus::tab_navigation::TabIndex;
 use bevy::ui_widgets::ScrollArea;
+mod help;
 #[cfg(test)]
 mod layout_tests;
 mod rows;
@@ -283,7 +284,11 @@ fn checkbox(
 pub(super) fn page(
     commands: &mut Commands,
     parent: Entity,
-    page: Page,
+    (page, binding, help): (
+        Page,
+        Option<&'static str>,
+        Option<&(crate::play::help::Topic, String)>,
+    ),
     skins: &Skins,
     checks: &CheckSkins,
     draft: &crate::play::ReferencePreferences,
@@ -305,6 +310,33 @@ pub(super) fn page(
             .id();
         commands.entity(parent).add_child(status);
     }
+    if page == Page::Misc {
+        super::minimap_transfer::build(commands, parent, skins);
+    }
+    if page == Page::Sound {
+        super::audio_device::build(commands, parent, skins, draft);
+    }
+    if page == Page::Interface {
+        super::language::build(commands, parent, skins, draft);
+    }
+    if page == Page::Hud {
+        super::conditions::build(commands, parent, skins, draft);
+        super::order::build(commands, parent, skins, draft);
+    }
+    if page == Page::Misc {
+        super::transfer::build(commands, parent, skins);
+        super::guide::build(commands, parent, skins, help);
+    }
+    if page == Page::Screenshots {
+        super::screenshots::build(commands, parent, skins, draft);
+    }
+    if page == Page::Diagnostics {
+        crate::bevy_shell::diagnostics::options_section(commands, parent, skins);
+    }
+    if page == Page::GeneralHotkeys {
+        super::profiles::build(commands, parent, skins, draft);
+        super::keys::build(commands, parent, skins, draft, binding);
+    }
     if page == Page::Controls {
         super::super::hotkeys::build(commands, parent, skins);
     }
@@ -314,7 +346,7 @@ pub(super) fn page(
                 commands,
                 skins,
                 checks,
-                (row.label, row.id),
+                (oteryn_client_ui::localization::tr(row.label), row.id),
                 Control::Check(row.id),
                 true,
                 read(draft),
@@ -326,6 +358,10 @@ pub(super) fn page(
                 rows::choice(commands, skins, *row, values, read(draft))
             }
         };
+        let entity = help::wrap(commands, skins, *row, entity);
         commands.entity(parent).add_child(entity);
+    }
+    if page == Page::ActionBars {
+        super::bar_clear::build(commands, parent, skins);
     }
 }

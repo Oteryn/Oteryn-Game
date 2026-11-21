@@ -35,8 +35,14 @@ pub(super) fn project(
     mut thumbs: Query<(&Thumb, &mut Node), ThumbRole>,
     mut indicators: Query<(&Indicator, &mut ImageNode)>,
     mut captions: Captions<'_, '_>,
-    mut held: Local<Option<(u64, Page, bool)>>,
+    mut held: Local<Option<(u64, Page, bool, u64)>>,
+    mut hotkey_options: Local<u64>,
 ) {
+    if *hotkey_options != owner.hotkey_options {
+        *hotkey_options = owner.hotkey_options;
+        state.advanced = true;
+        state.page = Page::Controls;
+    }
     let draft = owner.preferences_draft();
     let visible = draft.is_some();
     for mut dialog in &mut dialogs {
@@ -59,7 +65,7 @@ pub(super) fn project(
         return;
     };
     let generation = owner.generation();
-    let target = (generation, state.page, state.advanced);
+    let target = (generation, state.page, state.advanced, state.revision);
     let rebuild = held.as_ref() != Some(&target);
     if rebuild {
         if focus
@@ -97,9 +103,19 @@ pub(super) fn project(
                 commands.entity(parent).add_child(button);
             }
         }
+        let help = state
+            .help_topic
+            .map(|topic| (topic, owner.settings.help_text(topic)));
         for parent in &bodies {
             commands.entity(parent).despawn_children();
-            widgets::page(&mut commands, parent, state.page, &skins, &checks, draft);
+            widgets::page(
+                &mut commands,
+                parent,
+                (state.page, state.binding, help.as_ref()),
+                &skins,
+                &checks,
+                draft,
+            );
         }
         *held = Some(target);
     }

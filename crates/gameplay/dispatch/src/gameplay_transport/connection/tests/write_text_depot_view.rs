@@ -8,6 +8,8 @@ use oteryn_protocol_oteryn::depot::{
 struct DepotAuthority {
     reply: RefCell<Option<DepotObservation>>,
     calls: Cell<usize>,
+    selected_item: Cell<Option<ItemKey>>,
+    slots: RefCell<Vec<Option<u32>>>,
 }
 
 impl FreshAdmissionAuthority for DepotAuthority {
@@ -43,6 +45,19 @@ impl FreshAdmissionAuthority for DepotAuthority {
     ) -> Option<DepotObservation> {
         self.calls.set(self.calls.get() + 1);
         self.reply.borrow().clone()
+    }
+
+    async fn depot_at(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: DepotIntent,
+        slot: Option<u32>,
+        item: Option<ItemKey>,
+    ) -> Option<DepotObservation> {
+        self.selected_item.set(item);
+        self.slots.borrow_mut().push(slot);
+        self.depot(actor, command, intent, item).await
     }
 }
 
@@ -81,6 +96,8 @@ fn write_text_depot_view_records_only_current_opened_box_and_closes_on_resume()
         let authority = DepotAuthority {
             reply: RefCell::new(None),
             calls: Cell::new(0),
+            selected_item: Cell::new(None),
+            slots: RefCell::default(),
         };
         let mut views = Some(SessionItemView::resume(Default::default()));
         let mut replies = vec![(None, None)];
@@ -150,6 +167,8 @@ fn write_text_depot_view_real_dispatch_requires_selected_capability() -> Result<
             let authority = DepotAuthority {
                 reply: RefCell::new(Some(observed.clone())),
                 calls: Cell::new(0),
+                selected_item: Cell::new(None),
+                slots: RefCell::default(),
             };
             let mut admitted = positioned()?;
             admitted.continuity.selected_capabilities = SelectedCapabilities::select(
@@ -235,6 +254,8 @@ fn write_text_depot_view_preserves_only_exact_native_page_selection() -> Result<
         let authority = DepotAuthority {
             reply: RefCell::new(None),
             calls: Cell::new(0),
+            selected_item: Cell::new(None),
+            slots: RefCell::default(),
         };
         let mut views = Some(SessionItemView::resume(Default::default()));
         for mutation in 0..7 {
@@ -278,6 +299,111 @@ fn write_text_depot_view_preserves_only_exact_native_page_selection() -> Result<
                 assert!(view.open_depot.is_none());
                 assert!(view.depot_items.is_empty());
             }
+        }
+        // A deposit replaces the item at 91 before a previously queued withdrawal arrives.
+        for (action, ordinal_item, expected) in [
+            (DepotAction::Browse, [7; 16], None),
+            (
+                DepotAction::Deposit(std::num::NonZeroU64::MIN),
+                [9; 16],
+                None,
+            ),
+            (DepotAction::Withdraw(91), [9; 16], None),
+            (DepotAction::Browse, [9; 16], None),
+            (
+                DepotAction::Withdraw(91),
+                [9; 16],
+                Some(ItemKey::Instance([9; 16])),
+            ),
+        ] {
+            let payload = encode_depot_intent(DepotIntent {
+                town: Some(7),
+                box_number: 17,
+                page: 0,
+                action,
+            })
+            .map_err(|e| format!("{e:?}"))?;
+            let mut next = observed.clone();
+            next.items[0].1 = ordinal_item;
+            next.reply.outcome = if action == DepotAction::Browse {
+                DepotOutcome::Opened
+            } else {
+                DepotOutcome::Moved
+            };
+            *authority.reply.borrow_mut() = Some(next);
+            let command = oteryn_protocol_oteryn::ClientCommandView {
+                payload: &payload,
+                ..command
+            };
+            assert!(
+                routing::depot::route(&authority, actor, &admitted, command, &mut views)
+                    .await
+                    .is_some()
+            );
+            assert_eq!(authority.selected_item.get(), expected);
+        }
+        Ok(())
+    })
+}
+
+/// CONTAINER-MANUAL-SORT-1 (capability 510): a deposit's box slot reaches the depot owner only
+/// when the session selected 510; without it the slotted payload is malformed and nothing
+/// reaches the owner.
+#[test]
+fn a_slotted_deposit_reaches_the_depot_owner_only_with_capability_510() -> Result<(), Box<dyn Error>>
+{
+    run(async {
+        let deposit = DepotIntent {
+            town: Some(7),
+            box_number: 17,
+            page: 1,
+            action: DepotAction::Deposit(
+                oteryn_protocol_oteryn::item_view::ItemHandle::new(5).ok_or("handle")?,
+            ),
+        };
+        let payload = oteryn_protocol_oteryn::depot::encode_depot_intent_at(deposit, Some(33))
+            .map_err(|e| format!("{e:?}"))?;
+        let command = oteryn_protocol_oteryn::ClientCommandView {
+            command_id: 1,
+            command_type: COMMAND_TYPE_DEPOT_INTENT,
+            payload: &payload,
+        };
+        for manual_sort in [false, true] {
+            let authority = DepotAuthority {
+                reply: RefCell::new(Some(reply(DepotOutcome::Moved))),
+                calls: Cell::new(0),
+                selected_item: Cell::new(None),
+                slots: RefCell::default(),
+            };
+            let mut admitted = positioned()?;
+            let actor = admitted.runtime_actor.ok_or("actor")?;
+            let requested: &[u32] = if manual_sort {
+                &[4, 6, 12, 14, 37, 510]
+            } else {
+                &[4, 6, 12, 14, 37]
+            };
+            admitted.continuity.selected_capabilities =
+                SelectedCapabilities::select(authority.offered_capabilities(), requested)
+                    .ok_or("capabilities")?;
+            assert_eq!(
+                admitted.continuity.selected_capabilities.contains(510),
+                manual_sort
+            );
+            let mut views = Some(SessionItemView::resume(Default::default()));
+            let dispatched =
+                routing::depot::route(&authority, actor, &admitted, command, &mut views).await;
+            assert_eq!(matches!(dispatched, Some(Dispatch::Depot(_))), manual_sort);
+            assert_eq!(
+                matches!(dispatched, Some(Dispatch::Unregistered)),
+                !manual_sort
+            );
+            assert_eq!(authority.calls.get(), usize::from(manual_sort));
+            let expected: Vec<Option<u32>> = if manual_sort {
+                vec![Some(33)]
+            } else {
+                Vec::new()
+            };
+            assert_eq!(*authority.slots.borrow(), expected);
         }
         Ok(())
     })

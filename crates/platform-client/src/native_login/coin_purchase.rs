@@ -202,7 +202,7 @@ impl NativeLoginClient {
             return false;
         };
         valid_id(order_id)
-            && url.origin() == self.platform.origin()
+            && url.origin() == self.platform_web.origin()
             && url.username().is_empty()
             && url.password().is_none()
             && url.fragment().is_none()

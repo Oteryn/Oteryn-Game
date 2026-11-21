@@ -183,7 +183,8 @@ fn bundle_for(trap: Option<u16>, wave: bool, blocked_spawn: bool) -> TestResult<
     ))
 }
 
-/// Sends one push and returns its disposition, reading past spatial updates.
+/// Sends one push and returns its disposition, reading past spatial updates. Like a real
+/// client it names the floor in the wire frame the visibility projection exported.
 pub(super) async fn push(
     client: &mut DuplexStream,
     id: u64,

@@ -79,14 +79,22 @@ pub(super) fn click(
     }
     if event.button == PointerButton::Secondary {
         select_slot(*slot, &owner, &mut ui);
-        let mut position = event.pointer.position / scale.0;
+        let mut position = event.pointer.position;
+        // The same capability flags decide which rows the menu shows (view::project).
+        let extra = owner.play.as_ref().map_or((false, false), |play| {
+            (
+                play.link.mail_panel().selected,
+                play.link.timed_item_panel().selected,
+            )
+        });
         if let Ok(window) = windows.single() {
             position.x = position
                 .x
-                .clamp(0., (window.width() / scale.0 - 145.).max(0.));
-            position.y = position
-                .y
-                .clamp(0., (window.height() / scale.0 - 150.).max(0.));
+                .clamp(0., (window.width() - 145. * scale.0).max(0.));
+            position.y = position.y.clamp(
+                0.,
+                (window.height() - super::dialogs::menu_height(extra) * scale.0).max(0.),
+            );
         }
         ui.menu = Some((*slot, position));
     } else if event.button == PointerButton::Primary && event.count >= 2 {
@@ -181,6 +189,18 @@ pub(super) fn choose(control: Control, owner: &HostOwner, ui: &mut InventoryUi) 
                 ui.menu = None;
             }
         }
+        Control::Write(slot) | Control::Timed(slot) => {
+            if let Some(item) = slot.current_item(owner)
+                && let Some(play) = &owner.play
+            {
+                if matches!(control, Control::Write(_)) {
+                    play.link.mail_write_item(item.handle);
+                } else {
+                    play.link.timed_item_inspect(item.handle);
+                }
+                ui.menu = None;
+            }
+        }
         Control::Up {
             generation,
             view,
@@ -197,6 +217,15 @@ pub(super) fn choose(control: Control, owner: &HostOwner, ui: &mut InventoryUi) 
                 } else {
                     play.link.container_close_bound(view, handle);
                 }
+            }
+        }
+        Control::GroundUp {
+            generation,
+            view,
+            handle,
+        } if generation == owner.generation() && !owner.modal_active() => {
+            if let Some(play) = &owner.play {
+                play.link.browse_field_up_bound(view, handle);
             }
         }
         Control::Count(prompt, delta) if prompt_current(prompt, owner, ui) => {
@@ -279,4 +308,71 @@ fn drop_slot(source: Slot, target: Slot, owner: &HostOwner, ui: &mut InventoryUi
     } else {
         play.link.item_drag_abort();
     }
+}
+
+#[cfg(test)]
+#[test]
+fn inventory_right_click_places_popup_at_scaled_cursor() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::bevy_shell::gameplay_dialogs::popup;
+    use bevy::picking::{backend::HitData, pointer::PointerButton};
+    let (link, _, outbox) = crate::play::play_channel();
+    let item = super::tests::entry(7, 3)?;
+    outbox.push(vec![oteryn_session::SessionEvent::Inventory(
+        oteryn_session::AppliedDelta {
+            server_sequence: 1,
+            base_revision: 0,
+            new_revision: 1,
+            value: oteryn_session::CharacterInventory {
+                main_backpack: None,
+                entries: vec![item],
+                equipment: vec![],
+            },
+        },
+    )]);
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .insert_resource(UiScale(2.))
+        .init_resource::<InventoryUi>()
+        .insert_non_send(super::tests::host(link)?)
+        .add_systems(
+            Startup,
+            (crate::bevy_shell::ui::setup, super::super::setup).chain(),
+        )
+        .add_systems(
+            Update,
+            (super::super::project, super::view::project, popup::layout).chain(),
+        );
+    app.world_mut().spawn((
+        Window {
+            resolution: (1024, 768).into(),
+            ..default()
+        },
+        bevy::window::PrimaryWindow,
+    ));
+    app.update();
+    let entity = app
+        .world_mut()
+        .query::<(Entity, &Slot)>()
+        .iter(app.world())
+        .find_map(|(entity, slot)| (slot.item == Some(item)).then_some(entity))
+        .ok_or("occupied slot")?;
+    let mut pointer = super::tests::pointer();
+    pointer.position = Vec2::new(400., 200.);
+    app.world_mut().trigger(PointerClick {
+        entity,
+        pointer,
+        button: PointerButton::Secondary,
+        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        duration: std::time::Duration::ZERO,
+        count: 1,
+    });
+    app.update();
+    let node = app
+        .world_mut()
+        .query_filtered::<&Node, With<popup::PopupMenu>>()
+        .single(app.world())?;
+    assert_eq!((node.left, node.top), (px(200.), px(100.)));
+    Ok(())
 }

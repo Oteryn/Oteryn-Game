@@ -82,6 +82,24 @@ fn t080_bestiary_catalogue_caller_keeps_confirmed_art_combat_and_loot()
     link.bestiary_catalogue_request(6);
     assert_eq!(link.charm_progression_panel().fields[1], "7");
     assert!(receiver.try_recv().is_err());
+    // Full creature details require a server-confirmed completed entry.
+    crate::play::mailbox::lock(&link.mailbox)
+        .properties
+        .charm_progression
+        .reply = Some(
+        oteryn_client_runtime::charm_progression::CharmProgressionReply {
+            outcome: oteryn_client_runtime::charm_progression::CharmProgressionOutcome::Query,
+            fee_gold: 0,
+            bestiary: vec![
+                oteryn_client_runtime::charm_progression::bestiary::BestiaryRaceProgress {
+                    race: std::num::NonZeroU32::new(7).ok_or("race")?,
+                    kill_count: 3,
+                    kill_thresholds: [1, 2, 3],
+                },
+            ],
+            charms: Default::default(),
+        },
+    );
     link.charm_progression_edit(1, "7".into());
     link.bestiary_catalogue_request(2);
     let PlayCommand::Feature(command) = receiver.try_recv()? else {
@@ -194,5 +212,55 @@ fn t185_echo_warden_progress_survives_real_play_queue() -> Result<(), Box<dyn st
             .echo_warden_progress("7"),
         None
     );
+    Ok(())
+}
+
+#[test]
+fn creature_details_follow_confirmed_discovery_stages() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::charm_progression as w;
+    for stage in 0..=3 {
+        let (link, mut receiver, outbox) = play_channel();
+        {
+            let mut m = crate::play::mailbox::lock(&link.mailbox);
+            let p = &mut m.properties.charm_progression;
+            p.selected = true;
+            p.fields[1] = "7".into();
+            p.reply = Some(w::CharmProgressionReply {
+                outcome: w::CharmProgressionOutcome::Query,
+                fee_gold: 0,
+                bestiary: vec![w::bestiary::BestiaryRaceProgress {
+                    race: std::num::NonZeroU32::new(7).ok_or("race")?,
+                    kill_count: stage,
+                    kill_thresholds: [1, 2, 3],
+                }],
+                charms: Default::default(),
+            });
+        }
+        link.bestiary_catalogue_request(2);
+        let PlayCommand::Feature(command) = receiver.try_recv()? else {
+            return Err("details query".into());
+        };
+        outbox.properties_result(&command, &GatedCommandResult {
+            command_id: 1, server_sequence: 1, status: CommandStatus::Accepted,
+            payload: wire::encode_page(&wire::Page { next: Some(1), categories: vec!["Forest".into()], cards: vec![wire::Card {
+                race: 7, name: "Creature".into(), category: "Forest".into(),
+                detail: "Health: 90\r\nExperience: 25\r\nResistance fire: 20/1%\r\nLoot:\r\nTwig: 1-2, 250000 ppm".into(),
+                ..Default::default()
+            }] }).map_err(|e| format!("{e:?}"))?,
+        });
+        let panel = link.charm_progression_panel();
+        let card = panel
+            .catalogue
+            .detail_card
+            .as_ref()
+            .ok_or("confirmed card")?;
+        for detail in [&panel.catalogue.detail, &card.detail] {
+            assert_eq!(detail.contains("Health: 90"), stage >= 1);
+            assert_eq!(detail.contains("Experience: 25"), stage >= 1);
+            assert_eq!(detail.contains("Resistance fire: 20/1%"), stage >= 2);
+            assert_eq!(detail.contains("Twig:"), stage == 3);
+        }
+        assert_eq!(panel.catalogue.next_loot.is_some(), stage == 3);
+    }
     Ok(())
 }

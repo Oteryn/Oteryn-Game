@@ -72,17 +72,6 @@ pub(super) async fn exercise(
         )
         .ok_or("NPC capability")?;
     let [norman, scott, frank] = install_npcs(owner, admitted).await?;
-    let chamber = (33005..=33035)
-        .flat_map(|x| (32130..=32160).map(move |y| (x, y)))
-        .filter(|(x, y)| {
-            owner.movement_cells().index().lookup(
-                owner.movement_cells().scope(),
-                crate::content::LogicalCell { x: *x, y: *y, z: 8 },
-            ) == Ok(crate::content::CollisionClass::Walkable)
-        })
-        .take(8)
-        .collect::<Vec<_>>();
-    eprintln!("VENORE_NATIVE_CHAMBER_WALKABLE {chamber:?}");
     let mut command = 1;
     say_refused(owner, admitted, norman, &mut command, "construction jobs").await?;
     assert_eq!(
@@ -513,8 +502,7 @@ async fn arrive_in_rings(
             .then_some((x, y))
         })
         .collect::<Vec<_>>();
-    eprintln!("VENORE_NATIVE_LANDING_NEAR {at:?} walkable={nearby:?}");
-    Err(format!("no native adjacent landing at {at:?}").into())
+    Err(format!("no native landing at {at:?} in the requested range, nearby walkable cells: {nearby:?}").into())
 }
 
 async fn carry(

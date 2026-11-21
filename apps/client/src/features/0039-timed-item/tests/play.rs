@@ -192,7 +192,7 @@ fn pc06_timed_item_scenario() -> Result<(), Error> {
                                 wire::TimedAction::Repair
                             },
                             target: oteryn_session::ItemHandle::new(7).ok_or("handle")?,
-                            expected_revision: 0,
+                            expected_revision: 2,
                             npc: (action == Intent::Repair).then_some(oteryn_session::EntityRef {
                                 identity: [0x11; 16],
                                 generation: 3,
@@ -212,6 +212,13 @@ fn pc06_timed_item_scenario() -> Result<(), Error> {
                         .checked()?;
                     }
                     let confirmed = link.timed_item_panel().summary;
+                    let reconnect_payload = payload.clone();
+                    let payload = wire::encode_timed_item_intent(wire::TimedItemIntent {
+                        action: wire::TimedAction::Inspect,
+                        target: oteryn_session::ItemHandle::new(7).ok_or("handle")?,
+                        expected_revision: 2,
+                        npc: None,
+                    }).checked()?;
                     for disposition in [
                         wire::TimedDisposition::Rejected,
                         wire::TimedDisposition::Stale,
@@ -239,7 +246,6 @@ fn pc06_timed_item_scenario() -> Result<(), Error> {
                     link.timed_item_request(intent);
                     assert!(!link.timed_item_panel().pending);
                     link.timed_item_edit(0, "7".into());
-                    let reconnect_payload = payload.clone();
                     let reconnect_reply = reply.clone();
                     let summary = link.timed_item_panel().summary;
                     assert!(!summary.is_empty());

@@ -891,6 +891,83 @@ mod atelier_tests {
         assert_eq!(dormant.revelation_stages.get("gift_of_life"), Some(&2));
     }
 
+    #[test]
+    fn official_test_planner_monk_preset_has_single_mastery_and_mixed_mana()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let data = WheelGemData::embedded()?;
+        // Native saved preset, independently imported into the official test planner:
+        // M1Y2CAAm8waQQnUkACJ6aBmOr_QUBRJuY_KgAA. The planner defaults every mod to
+        // Grade IV; this fixture uses those explicit grades. The native panel separately
+        // showed +100 Health and +1% Energy Resistance, consistent with mod 39 at Grade I.
+        let allocation = WheelAllocation {
+            wheel_ruleset_revision: Some(data.revision().into()),
+            wheel_revision: 1,
+            slots: WheelSlots::new([
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 75, 0, 0, 0, 0, 0, 50, 0, 0, 0, 0, 50, 0, 0, 0, 0, 100,
+                75, 0, 0, 0, 200, 150, 0, 0, 0, 0,
+            ])
+            .map_err(|error| format!("preset slots: {error:?}"))?,
+            current: true,
+        };
+        assert_eq!(allocation.slots.total(), 700);
+        let mut state = AtelierState {
+            vocation: "monk".into(),
+            grade_ruleset_revision: Some(data.revision().into()),
+            ..Default::default()
+        };
+        for (id, quality, slot, mods) in [
+            (1, GemQuality::Lesser, 0, vec![39]),
+            (2, GemQuality::Greater, 2, vec![33, 28, 92]),
+        ] {
+            state.gems.insert(
+                id,
+                Gem {
+                    id,
+                    quality,
+                    mods,
+                    locked: false,
+                    vessel: true,
+                    slot: Some(slot),
+                    ruleset_revision: data.revision().into(),
+                },
+            );
+        }
+        for (kind, id) in [
+            (FragmentKind::Basic, 39),
+            (FragmentKind::Basic, 33),
+            (FragmentKind::Basic, 28),
+            (FragmentKind::Supreme, 92),
+        ] {
+            state.grades.insert((kind, id), 3);
+        }
+        let mut effects =
+            derive_runtime_effects(data.wheel(), &allocation, "monk", 757, true, true)
+                .ok_or("preset Wheel effects")?;
+        effects
+            .contribute_gems(&state, &data, &allocation)
+            .ok_or("preset gem contribution")?;
+        assert_eq!(effects.sockets.gem_vessel_nodes, 3);
+        assert_eq!(
+            effects.revelation_stages,
+            BTreeMap::from([("ascetic".into(), 2), ("spiritual_outburst".into(), 1)])
+        );
+        assert_eq!(
+            effects.sockets.gem_values_milli,
+            [
+                ("Energy Resistance", "", 1_500),
+                ("Fire Resistance", "", 1_500),
+                ("Hit Points", "", 150_000),
+                ("Life Drain Resistance", "", 4_500),
+                ("Mana", "", 150_000),
+                ("revelation_mastery_points", "Spiritual Outburst", 225_000),
+            ]
+            .into_iter()
+            .map(|(kind, target, value)| ((kind.into(), target.into()), value))
+            .collect()
+        );
+        Ok(())
+    }
+
     fn allocation_with_domain_points(data: &WheelGemData, total: u16) -> WheelAllocation {
         let topology = data.wheel()["topology"].as_array().expect("topology");
         let mut points = [0; 36];

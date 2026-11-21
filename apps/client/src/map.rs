@@ -33,9 +33,13 @@ pub struct World {
     effects: oteryn_client_assets::EffectCatalog,
     #[cfg(test)]
     native_resolved_items: Vec<(oteryn_session::ActorPosition, u32)>,
+    pub(crate) item_lights: Vec<(oteryn_session::ActorPosition, u8, u8)>,
+    pub(crate) minimap_colors: BTreeMap<(i16, i32, i32), u8>,
     center: (i32, i32, i16),
     pub(crate) first_visible_floor: i16,
-    atlas: AtlasImage,
+    // Phase updates share immutable pixels while replacing projected tile draws.
+    atlas: std::sync::Arc<AtlasImage>,
+    animations: std::sync::Arc<[live_map::TileAnimation]>,
     tiles: HashMap<(i32, i32), MapTile>,
     /// Other floors keep independent stacks at coordinates projected onto the own-floor plane.
     layers: BTreeMap<i16, HashMap<(i32, i32), MapTile>>,
@@ -61,9 +65,12 @@ impl World {
             effects: Default::default(),
             #[cfg(test)]
             native_resolved_items: Vec::new(),
+            item_lights: Vec::new(),
+            minimap_colors: BTreeMap::new(),
             center: (START.0, START.1, i16::from(START_FLOOR)),
             first_visible_floor: i16::from(START_FLOOR),
-            atlas,
+            atlas: std::sync::Arc::new(atlas),
+            animations: Default::default(),
             layers: BTreeMap::new(),
             tiles: HashMap::new(),
             player: FACINGS.map(|_| {
@@ -134,9 +141,12 @@ impl World {
             effects: Default::default(),
             #[cfg(test)]
             native_resolved_items: Vec::new(),
+            item_lights: Vec::new(),
+            minimap_colors: BTreeMap::new(),
             center,
             first_visible_floor: center.2,
-            atlas,
+            atlas: std::sync::Arc::new(atlas),
+            animations: Default::default(),
             tiles,
             layers: BTreeMap::new(),
             player,
@@ -145,7 +155,7 @@ impl World {
     }
 
     #[must_use]
-    pub const fn atlas(&self) -> &AtlasImage {
+    pub fn atlas(&self) -> &AtlasImage {
         &self.atlas
     }
 

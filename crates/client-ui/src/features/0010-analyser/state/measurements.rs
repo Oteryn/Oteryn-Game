@@ -3,6 +3,11 @@ use std::{collections::VecDeque, time::Instant};
 
 #[derive(Debug, Clone)]
 pub struct Clock(Instant);
+impl From<Instant> for Clock {
+    fn from(start: Instant) -> Self {
+        Self(start)
+    }
+}
 impl Default for Clock {
     fn default() -> Self {
         Self(Instant::now())
@@ -78,4 +83,43 @@ pub fn eta_seconds(remaining: u64, gained: u64, seconds: u64) -> Option<u64> {
         return None;
     }
     u64::try_from((u128::from(remaining) * u128::from(seconds)).div_ceil(u128::from(gained))).ok()
+}
+
+/// One bucket per second bounds memory even when the combat feed is busy.
+#[derive(Debug, Clone, Default)]
+pub struct Recent(VecDeque<(u64, u64)>);
+impl Recent {
+    pub(crate) fn add(&mut self, seconds: u64, value: u64) {
+        while self
+            .0
+            .front()
+            .is_some_and(|(at, _)| seconds.saturating_sub(*at) > 10)
+        {
+            self.0.pop_front();
+        }
+        if let Some((at, total)) = self.0.back_mut()
+            && *at == seconds
+        {
+            *total = total.saturating_add(value);
+            return;
+        }
+        if self.0.back().is_some_and(|(at, _)| *at > seconds) {
+            return;
+        }
+        self.0.push_back((seconds, value));
+    }
+    pub(crate) fn rate(&self, seconds: u64, window: u64) -> String {
+        let mut first = seconds;
+        let mut total = 0u128;
+        for (at, value) in &self.0 {
+            if *at <= seconds && seconds - at < window {
+                first = first.min(*at);
+                total += u128::from(*value);
+            }
+        }
+        // Count each second from the oldest in-window bucket through now.
+        let duration = seconds - first + 1;
+        let hundredths = total * 100 / u128::from(duration);
+        format!("{}.{:02}", hundredths / 100, hundredths % 100)
+    }
 }

@@ -3,20 +3,21 @@
   "owner_contract": "../architecture/reviews/OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md",
   "resource": "Items reachable through one creature's corpse (the corpse ItemInstance and its direct Container entries)",
   "unit": "ItemInstances per corpse",
-  "hard_maximum": 31,
+  "hard_maximum": 49,
   "configurable_range": {
-    "minimum": 31,
-    "maximum": 31
+    "minimum": 49,
+    "maximum": 49
   },
   "failure_category": "CAPACITY_EXCEEDED",
-  "allocation_impact": "One corpse ItemInstance plus at most 30 direct entries at depth 1 (SUMMER owner decision 20).",
+  "allocation_impact": "One corpse ItemInstance plus at most 48 direct entries at depth 1 (CORPSE48, owner 2026-11-17; was 30 under SUMMER owner decision 20).",
   "client_visible": false,
   "boundary_tests": [
-    "max=31: the corpse and all 30 direct entries are read in full",
-    "max+1=32: a 31st direct entry is refused"
+    "max=49: the corpse and all 48 direct entries are read in full",
+    "max+1=50: a 49th direct entry is refused"
   ],
   "consumers": [
-    "apps/game-server/migrations/0013_corpse_container_mint.sql (game_item_corpse_container_entries)"
+    "apps/game-server/migrations/0013_corpse_container_mint.sql (game_item_corpse_container_entries)",
+    "apps/game-server/migrations/2970_corpse_container_48_entries.sql (game_item_corpse_container_entry_proven)"
   ],
   "notes": "SUMMER owner decision 20 supersedes D131 reachable-items maximum 17. No nesting or loot-plan limit changes."
 }

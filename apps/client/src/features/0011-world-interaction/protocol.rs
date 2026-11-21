@@ -15,13 +15,33 @@ impl Outbox {
         session: &mut impl Stepper,
         command: &Command,
     ) -> Result<(), oteryn_session::SessionError> {
-        let result = session.world_context(command).await;
+        lock(&self.0).use_with_pending = matches!(
+            command.action,
+            oteryn_client_runtime::world_interaction::Action::UseOn(_)
+        );
+        if !matches!(
+            command.action,
+            oteryn_client_runtime::world_interaction::Action::Look
+        ) {
+            self.target_walk_replaced();
+        }
+        // Selections stay native (map tiles); only creature checks and the position target
+        // are taken to the wire frame, inside the runtime send.
+        let raw_wire = lock(&self.0).wire_frame() == crate::play::wire_frame::WireFrame::Raw;
+        let result = session.world_context(command, raw_wire).await;
         let mut mailbox = lock(&self.0);
         mailbox.world_context.pending = false;
+        mailbox.use_with_pending = false;
         // The ordinary use owns the result; refresh advisory multiaction data afterwards.
         mailbox.bar_actions.item_cooldowns.clear();
         match result {
             Ok(text) => {
+                #[cfg(bevy_shell)]
+                crate::play::feature_local_text_messages::view::record_look(
+                    &mut mailbox,
+                    command.action,
+                    &text,
+                );
                 mailbox
                     .world_context
                     .set_feedback(text, std::time::Instant::now());
@@ -50,6 +70,7 @@ macro_rules! session_trait {
             fn world_context(
                 &mut self,
                 _command: &oteryn_client_runtime::world_interaction::Command,
+                _raw_wire: bool,
             ) -> impl std::future::Future<
                 Output = Result<String, oteryn_session::SessionError>,
             > + Send {
@@ -80,3 +101,10 @@ macro_rules! dispatch {
     };
 }
 pub(in crate::play) use dispatch;
+
+#[cfg(all(test, bevy_shell))]
+impl Outbox {
+    pub(crate) fn bevy_world_look_selected(&self) {
+        self.world_context_initialize(true, false);
+    }
+}

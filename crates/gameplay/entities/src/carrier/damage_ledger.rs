@@ -548,6 +548,7 @@ impl ChannelActorCarrier {
             false,
             now_ms,
             source,
+            false,
         )?;
         if let Some(staged) = staged {
             let notice =
@@ -575,6 +576,7 @@ impl ChannelActorCarrier {
             Some(ABILITY01_EFFECT_PLAN_ENTRIES_MAX),
             false,
             None,
+            false,
         )
     }
     /// ATTACK-1b: refuses a swing ordinal at or below the attacker's mark for the same lineage
@@ -698,6 +700,7 @@ impl ChannelActorCarrier {
             deferred,
             now_ms,
             source,
+            false,
         )?;
         if let Some(staged) = staged {
             let notice =
@@ -719,6 +722,7 @@ impl ChannelActorCarrier {
         max_sub_ordinal: Option<u16>,
         deferred: bool,
         now_ms: Option<u64>,
+        health_change_resolved: bool,
     ) -> Result<(usize, Option<Slot>, OwnerDamageResult), CarrierError> {
         self.prepare_creature_damage_inner_bounded_source(
             continuity,
@@ -730,6 +734,7 @@ impl ChannelActorCarrier {
             deferred,
             now_ms,
             None,
+            health_change_resolved,
         )
     }
     #[allow(clippy::too_many_arguments)]
@@ -744,6 +749,7 @@ impl ChannelActorCarrier {
         deferred: bool,
         now_ms: Option<u64>,
         source: Option<&super::soul_war_health::HealthSourceContext>,
+        health_change_resolved: bool,
     ) -> Result<(usize, Option<Slot>, OwnerDamageResult), CarrierError> {
         let OwnerDamageCommand {
             target,
@@ -853,11 +859,18 @@ impl ChannelActorCarrier {
         // change the already committed hit or its damage attribution.
         let (effective_damage, arbaziloth_shields) = match &self.slots[index] {
             Slot::CreatureOccupied { spell_combat, .. } => {
-                let damage = match spell_combat.soulpit {
-                    Some(tag) => {
-                        tag.incoming_health_change(damage, *health, spell_combat.maximum_health)?
+                let damage = if health_change_resolved {
+                    // Periodic owner turns have already resolved each tick against its current HP.
+                    damage
+                } else {
+                    match spell_combat.soulpit {
+                        Some(tag) => tag.incoming_health_change(
+                            damage,
+                            *health,
+                            spell_combat.maximum_health,
+                        )?,
+                        None => damage,
                     }
-                    None => damage,
                 };
                 let mut shields = spell_combat.arbaziloth_shields;
                 let damage = shields.as_mut().map_or(damage, |shield| {
@@ -874,7 +887,8 @@ impl ChannelActorCarrier {
         // Source prepareDeath can cancel the complete hit while healing or
         // transforming HP. This fact is independent of before/after HP deltas.
         let mut source_damage_canceled = false;
-        if let Slot::CreatureOccupied {
+        if !health_change_resolved
+            && let Slot::CreatureOccupied {
             spell_combat,
             companion: Some(companion),
             ..

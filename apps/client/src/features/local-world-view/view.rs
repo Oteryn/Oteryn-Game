@@ -7,6 +7,17 @@ use oteryn_session::{EntityKind, JoinSnapshot};
 use std::sync::Arc;
 
 impl PlayView {
+    pub(in crate::play) fn advance_world_animation(
+        &mut self,
+        now: std::time::Instant,
+    ) -> Result<(), BatchError> {
+        if let Some(world) = self.local.world().animated_at(now) {
+            self.local.set_world(Arc::new(world));
+            self.rebuild()?;
+        }
+        Ok(())
+    }
+
     pub fn from_join(snapshot: &JoinSnapshot) -> Result<Self, BatchError> {
         let position = snapshot.world_spatial.actor_position;
         Self::new(
@@ -16,12 +27,58 @@ impl PlayView {
         )
     }
 
+    pub(crate) fn with_join_scene<S: oteryn_session::SessionStream>(
+        mut self,
+        session: &oteryn_session::Session<S>,
+    ) -> Result<Self, BatchError> {
+        use crate::play::wire_frame::WireFrame;
+        let map = session.world_map_snapshot();
+        let frame = map.as_ref().map_or(WireFrame::Native, |map| {
+            WireFrame::derive(
+                WireFrame::Native,
+                session.world_spatial().actor_position,
+                map.header.origin,
+            )
+        });
+        if let Some(entities) = session.world_entities() {
+            self.set_own_identity(*entities.own_identity());
+        }
+        if let Some(map) = &map {
+            self.set_live_map(map)?;
+        }
+        let mut appearances = session.visible_appearances();
+        for entry in &mut appearances {
+            entry.entity.position = frame.to_native(entry.entity.position);
+        }
+        self.set_presentations(appearances)?;
+        self.with_entities(
+            session
+                .world_entities()
+                .map(|entities| {
+                    entities
+                        .others()
+                        .map(|entity| oteryn_session::WorldSpatialEntity {
+                            position: frame.to_native(entity.position),
+                            ..*entity
+                        })
+                        .collect()
+                })
+                .unwrap_or_default(),
+        )
+    }
+
     #[must_use]
     pub const fn scene(&self) -> &Scene {
         &self.scene
     }
 
-    #[cfg(feature = "bevy-shell")]
+    /// The floor the camera shows.
+    #[must_use]
+    pub const fn floor(&self) -> i16 {
+        self.floor
+    }
+
+    #[cfg(bevy_shell)]
     pub(crate) fn prepare_item_icons<'a>(
         &mut self,
         items: impl Iterator<Item = &'a oteryn_session::ItemEntry>,
@@ -34,7 +91,7 @@ impl PlayView {
         Ok(())
     }
 
-    #[cfg(all(test, feature = "bevy-shell"))]
+    #[cfg(all(test, bevy_shell))]
     pub(crate) fn prime_icon_assets(&mut self, root: std::path::PathBuf) {
         self.scene.prime_visual_assets(root);
     }
@@ -67,7 +124,8 @@ impl PlayView {
         next.anchor = TileCoord::new(0, 0);
         next.local.set_world(Arc::new(world));
         next.live_map = true;
-        super::super::feature_local_minimap::state::lock(&next.minimap).observe(map);
+        super::super::feature_local_minimap::state::lock(&next.minimap)
+            .observe_colours(map, &next.local.world().minimap_colors);
         next.remember_minimap(map);
         next.rebuild()?;
         *self = next;
@@ -109,6 +167,9 @@ impl PlayView {
             &entities,
         )?;
         self.apply_preference_scale()?;
+        self.scene.scroll = self
+            .camera_offset(std::time::Instant::now())
+            .unwrap_or([0.; 2]);
         self.scene.target_frame = self.preferences().game_window.target_frame;
         self.scene.set_name_visibility(self.preferences().hud_names);
         self.scene.set_name_options(
@@ -128,18 +189,30 @@ impl PlayView {
             self.minimap.clone(),
             self.floor,
         )?;
-        self.project_presentation(std::time::Instant::now())
+        self.project_presentation_at(std::time::Instant::now())
     }
 
     /// Applies the latest live map window, own position, visible entities and overlay entries.
     pub fn apply_pushed(&mut self, pushed: &Pushed) -> Result<(), BatchError> {
+        let before = (self.own, self.floor);
+        let was_prewalk = self.prewalk.is_some();
+        if pushed.motion_reset || pushed.scope_changed {
+            self.walk = None;
+            self.prewalk = None;
+            self.scene.reset_actor_animation();
+        }
         if pushed.scope_changed {
+            self.server_messages.clear();
+            self.message_namespace = self.message_namespace.wrapping_add(1);
+            self.walk = None;
+            self.prewalk = None;
             self.party_icons.clear();
             self.party_icons_refresh = None;
             self.minimap
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .quest_marks = Default::default();
+            self.guild_emblems.clear();
             self.inputs.clear();
             self.cursor_spell = None;
             self.in_flight = false;
@@ -171,6 +244,9 @@ impl PlayView {
         {
             return Err(BatchError::InvalidView);
         }
+        if let Some(emblems) = &pushed.guild_emblems {
+            self.guild_emblems.clone_from(emblems);
+        }
         self.world_clock = pushed.world_clock.or(self.world_clock);
         self.world_weather = pushed.world_weather.or(self.world_weather);
         self.apply_server_messages(&pushed.server_messages);
@@ -178,9 +254,49 @@ impl PlayView {
             self.set_live_map(map)?;
         }
         if let Some(position) = pushed.own {
-            self.place(position);
+            if let Some((origin, predicted)) = self.prewalk {
+                if position != origin
+                    && (position.x != predicted.x
+                        || position.y != predicted.y
+                        || position.floor != origin.floor)
+                {
+                    self.prewalk = None;
+                    self.place(position);
+                }
+            } else {
+                self.place(position);
+            }
         }
         if let Some(entries) = &pushed.appearances {
+            if let Some(own) = entries
+                .iter()
+                .find(|entry| Some(entry.entity.entity.identity) == self.scene.own_identity())
+                && let Some(motion) = own.entity.motion
+                && self
+                    .appearances
+                    .iter()
+                    .find(|entry| entry.entity.entity == own.entity.entity)
+                    .and_then(|entry| entry.entity.motion)
+                    .is_some_and(|old| old.translation_revision != motion.translation_revision)
+            {
+                if motion.step_duration_ms == 0 {
+                    self.prewalk = None;
+                    self.walk = None;
+                    self.place(own.entity.position);
+                } else if !was_prewalk
+                    && before.1 == self.floor
+                    && !pushed.motion_reset
+                    && !pushed.scope_changed
+                {
+                    self.walk = oteryn_client_simulation::walk::Glide::new(
+                        before.0,
+                        self.own,
+                        std::time::Duration::from_millis(u64::from(motion.step_duration_ms)),
+                    )
+                    .map(|glide| (glide, std::time::Instant::now()))
+                    .or(self.walk);
+                }
+            }
             self.appearances.clone_from(entries);
         }
         if let Some(entities) = &pushed.entities {
@@ -197,5 +313,15 @@ impl PlayView {
             self.hit_flash = Some(std::time::Instant::now());
         }
         self.rebuild()
+    }
+}
+
+#[cfg(test)]
+impl PlayView {
+    pub(crate) fn replace_test_minimap(
+        &mut self,
+        map: crate::play::feature_local_minimap::state::SharedMinimap,
+    ) {
+        self.minimap = map;
     }
 }

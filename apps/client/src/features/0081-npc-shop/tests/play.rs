@@ -128,6 +128,7 @@ fn closed_server_shop_retains_inline_refusal_and_removes_tradeable_quotes() {
         })
     };
     outbox.push(vec![update(npc_service::NpcTradeWindow {
+        details: Vec::new(),
         open: Some((offer().npc_actor, 7)),
         offers: vec![npc_service::NpcOffer {
             item_definition_ref: 42,

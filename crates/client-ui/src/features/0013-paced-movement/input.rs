@@ -15,14 +15,17 @@ pub fn arrow_step(events: &[NormalizedInputEvent], diagonal_selected: bool) -> O
             KeyCode::ARROW_RIGHT => Some(StepDir::East),
             KeyCode::ARROW_DOWN => Some(StepDir::South),
             KeyCode::ARROW_LEFT => Some(StepDir::West),
-            code if diagonal_selected => match code.get() {
-                95 => Some(StepDir::NorthWest),
-                97 => Some(StepDir::NorthEast),
-                89 => Some(StepDir::SouthWest),
-                91 => Some(StepDir::SouthEast),
+            code => match code.get() {
+                96 => Some(StepDir::North),
+                94 => Some(StepDir::East),
+                90 => Some(StepDir::South),
+                92 => Some(StepDir::West),
+                95 if diagonal_selected => Some(StepDir::NorthWest),
+                97 if diagonal_selected => Some(StepDir::NorthEast),
+                89 if diagonal_selected => Some(StepDir::SouthWest),
+                91 if diagonal_selected => Some(StepDir::SouthEast),
                 _ => None,
             },
-            _ => None,
         },
         _ => None,
     })

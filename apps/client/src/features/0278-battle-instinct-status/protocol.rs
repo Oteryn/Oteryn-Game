@@ -26,15 +26,7 @@ impl PlayLink {
             return false;
         }
         self.battle_instinct_status_request();
-        #[cfg(windows)]
-        crate::play::status_window::open_window(
-            self,
-            tr!("Battle Instinct — Ctrl+Alt+Shift+B"),
-            |mailbox| &mut mailbox.battle_instinct_status,
-        );
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).battle_instinct_status.open = true;
-        }
+        lock(&self.mailbox).battle_instinct_status.open = true;
         true
     }
     pub fn battle_instinct_status_panel(

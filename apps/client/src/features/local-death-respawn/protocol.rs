@@ -1,4 +1,4 @@
-//! The existing own-vitals lifecycle: zero health dies; restored health resumes play.
+//! Own-vitals death lifecycle with explicit acknowledgement after server respawn.
 use crate::combat_input::PlayCommand;
 use crate::play::{
     Outbox, PlayLink, PlayView,
@@ -12,10 +12,32 @@ use tokio::sync::mpsc::{UnboundedReceiver, error::TryRecvError};
 pub(crate) struct DeathState {
     pub(crate) dead: bool,
     deaths: u64,
+    acknowledged: u64,
+    respawned: bool,
+    receipt_before: Option<[u8; 16]>,
+    query_death: u64,
+    details_death: Option<u64>,
     selected: bool,
     pending: bool,
     refresh: bool,
     pub(in crate::play) protection: Option<oteryn_client_ui::death_protection::DeathProtection>,
+}
+
+impl DeathState {
+    pub(in crate::play) fn awaiting_acknowledgement(&self) -> bool {
+        self.deaths > self.acknowledged
+    }
+    pub(in crate::play) fn respawned(&self) -> bool {
+        self.respawned
+    }
+    pub(in crate::play) fn current_protection(
+        &self,
+    ) -> Option<&oteryn_client_ui::death_protection::DeathProtection> {
+        self.protection.as_ref().filter(|receipt| {
+            self.details_death == Some(self.deaths)
+                && Some(receipt.occurrence) != self.receipt_before
+        })
+    }
 }
 
 impl Mailbox {
@@ -31,7 +53,21 @@ impl Mailbox {
         }
     }
     pub(in crate::play) fn world_input_blocked(&self) -> bool {
-        self.death.dead || self.death_reset_commands || self.scope_pending
+        self.death.dead
+            || self.death.awaiting_acknowledgement()
+            || self.death_reset_commands
+            || self.scope_pending
+    }
+
+    fn cancel_death_gameplay_requests(&mut self) {
+        self.battle.pending = false;
+        self.battle.pending_command = None;
+        self.item_movement.pending = false;
+        self.containers.bulk = Default::default();
+        self.browse_field.pending = false;
+        self.world_context.pending = false;
+        self.world_context.targeting = None;
+        self.world_context.rune_targeting = false;
     }
 
     pub(in crate::play) fn apply_death_vitals(&mut self, vitals: ActorVitals) {
@@ -40,22 +76,43 @@ impl Mailbox {
             let dead = vitals.health == 0;
             if dead && !self.death.dead {
                 self.death.deaths = self.death.deaths.saturating_add(1);
+                self.death.receipt_before =
+                    self.death.protection.as_ref().map(|value| value.occurrence);
+                self.death.details_death = None;
                 self.death_reset_commands = true;
+                self.cancel_death_gameplay_requests();
                 self.daily_reward.pending = false;
                 self.target_walk.pending = false;
                 self.target_walk.response = None;
                 self.target_walk.feedback = None;
+                oteryn_client_ui::target_move::cancel(&mut self.target_walk);
             }
             if self.death.dead && !dead {
                 self.death.refresh = true;
             }
             self.death.dead = dead;
+            self.death.respawned = !dead;
         }
         self.vitals = Some(vitals);
     }
 }
 
 impl PlayView {
+    /// Acknowledge only the displayed death, after the server restored health.
+    /// This is local presentation state, never a synthetic respawn request.
+    pub fn acknowledge_death(&mut self, link: &PlayLink) -> bool {
+        let mut mailbox = lock(&link.mailbox);
+        if mailbox.death.dead
+            || !self.death.awaiting_acknowledgement()
+            || self.death.deaths != mailbox.death.deaths
+        {
+            return false;
+        }
+        mailbox.death.acknowledged = mailbox.death.deaths;
+        self.death = mailbox.death.clone();
+        true
+    }
+
     pub(in crate::play) fn project_death(&mut self, link: &PlayLink) -> Result<(), BatchError> {
         let (state, blocked) = {
             let mailbox = lock(&link.mailbox);
@@ -98,6 +155,9 @@ impl Outbox {
                 | oteryn_session::CommandStatus::DuplicateReplay
         ) && let Some(reply) = oteryn_client_ui::death_protection::decode(&result.payload)
         {
+            if mailbox.death.query_death == mailbox.death.deaths && !mailbox.death.dead {
+                mailbox.death.details_death = Some(mailbox.death.deaths);
+            }
             mailbox.death.protection = reply.0;
         }
     }
@@ -131,6 +191,7 @@ pub(in crate::play) fn receive_command(
     {
         mailbox.death.refresh = false;
         mailbox.death.pending = true;
+        mailbox.death.query_death = mailbox.death.deaths;
         return Ok(PlayCommand::Feature(
             oteryn_client_runtime::raw_feature::FeatureCommand {
                 capability: 382,
@@ -152,12 +213,24 @@ pub(in crate::play) fn receive_command(
             PlayCommand::Step(_)
                 | PlayCommand::TargetWalk(_)
                 | PlayCommand::Combat(_)
+                | PlayCommand::StopAttacking(_)
                 | PlayCommand::DailyReward(_)
+                | PlayCommand::Battle(_)
+                | PlayCommand::MoveItem(_)
+                | PlayCommand::MoveContents(_)
+                | PlayCommand::MoveContainerContents(_)
+                | PlayCommand::BrowseFieldMove(_)
+                | PlayCommand::WorldContext(_)
+                | PlayCommand::MovementSpeech(_)
         );
         let movement_control = matches!(&command, PlayCommand::ServerMechanic(request) if matches!(request.capability, 64 | 82));
         if !blocked || !(world_input || movement_control) {
             return Ok(command);
         }
+        if matches!(command, PlayCommand::MovementSpeech(_)) {
+            mailbox.chat_public.pending = false;
+        }
+        mailbox.cancel_death_gameplay_requests();
     }
 }
 

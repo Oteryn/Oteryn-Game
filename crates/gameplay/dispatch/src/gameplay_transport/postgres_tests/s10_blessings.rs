@@ -288,6 +288,88 @@ fn scenario(world_type: i16, amulet: bool) -> TestResult {
                 "fresh Kawill preparation is legal while Spark is held; active preparation cannot duplicate"
             );
         }
+        if world_type == 2 {
+            use crate::gameplay_transport::capabilities::{
+                OfferedCapability, SelectedCapabilities,
+            };
+            let offers = [
+                OfferedCapability {
+                    id: 199,
+                    requires: &[],
+                },
+                OfferedCapability {
+                    id: 503,
+                    requires: &[199],
+                },
+            ];
+            let mut admitted = deps.admitted;
+            admitted.continuity.selected_capabilities =
+                SelectedCapabilities::select(&offers, &[199, 503]).ok_or("blessings selection")?;
+            admitted.first_entry =
+                crate::gameplay_transport::connection::FirstEntryOutcome::Positioned;
+            let current =
+                crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
+                    .current_session_at(session)
+                    .await?
+                    .0;
+            admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
+            let (status, bytes) =
+                super::cyclopedia_fixtures::support::exchange(&owner, &mut admitted, 1, 388, &[134]).await?;
+            assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
+            let snapshot =
+                oteryn_protocol_oteryn::cyclopedia_character::blessings_dialog::Snapshot::decode(
+                    &bytes,
+                )
+                .ok_or("blessing history codec")?;
+            assert_eq!(snapshot.history.len(), 3);
+            assert_eq!(snapshot.forecast.regular_blessings, 2);
+            assert!(snapshot.forecast.twist);
+            assert_eq!(snapshot.experience_protection_percent, 16);
+            assert!(
+                snapshot
+                    .history
+                    .iter()
+                    .all(|row| row.acquired && row.at_unix_ms > 0 && row.blessings.len() == 1)
+            );
+            assert_eq!(snapshot.blessings.len(), 3);
+            if let Some(path) = std::env::var_os("OTERYN_BLESSINGS_DIALOG_CAPTURE") {
+                std::fs::write(path, &bytes)?;
+            }
+            let mut death = crate::gameplay_transport::death_ml_loss_postgres::death(92)?;
+            death.held_blessings = snapshot.blessings;
+            let fence = owner
+                .current_quest_fence(session)
+                .await
+                .map_err(|()| "death fence")?
+                .ok_or("death fence")?;
+            let receipt = owner
+                .settle_source_player_death(fence, death, None, None)
+                .await
+                .map_err(debug)?;
+            let (status, bytes) =
+                super::cyclopedia_fixtures::support::exchange(&owner, &mut admitted, 2, 388, &[134]).await?;
+            assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
+            let after =
+                oteryn_protocol_oteryn::cyclopedia_character::blessings_dialog::Snapshot::decode(
+                    &bytes,
+                )
+                .ok_or("consumed history codec")?;
+            assert_eq!(after.history.len(), 4);
+            let consumed = after.history.first().ok_or("consumption event")?;
+            assert!(!consumed.acquired);
+            let committed_at: i64 = sqlx::query_scalar("SELECT committed_at FROM game_character_death_receipts WHERE character_id=encode($1,'hex')::uuid AND committed_character_revision=$2::text::numeric")
+                .bind(fence.character_id.as_bytes().as_slice()).bind(receipt.committed_character_revision.get().to_string()).fetch_one(&h.pool).await?;
+            assert_eq!(consumed.at_unix_ms, u64::try_from(committed_at)?);
+            let expected: Vec<_> = receipt
+                .blessings_before
+                .iter()
+                .filter(|key| !receipt.blessings_after.contains(key))
+                .cloned()
+                .collect();
+            assert!(!expected.is_empty());
+            assert_eq!(consumed.blessings, expected);
+            assert_eq!(after.blessings, receipt.blessings_after);
+        }
         drop(owner);
         drop(authority);
         drop(seal);

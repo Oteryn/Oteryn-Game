@@ -87,6 +87,11 @@ pub fn apply_result(panel: &mut Panel, result: &GatedCommandResult) -> bool {
     };
     match (pending, reply) {
         (Pending::Query, Ok(reply @ (Reply::Dialog(_) | Reply::None))) => {
+            if matches!(&reply, Reply::Dialog(dialog) if dialog.default_button.is_some() && !panel.defaults)
+            {
+                panel.feedback = Some("Invalid server dialog reply");
+                return false;
+            }
             panel.active_input = input;
             panel.active = if let Reply::Dialog(dialog) = reply {
                 Some(dialog)
@@ -125,5 +130,15 @@ pub fn apply_result(panel: &mut Panel, result: &GatedCommandResult) -> bool {
             panel.feedback = Some("Invalid server dialog reply");
             false
         }
+    }
+}
+
+/// The server chooses both keyboard actions; absent defaults disable confirmation.
+pub fn keyboard_button(panel: &Panel, escape: bool) -> Option<u8> {
+    let dialog = panel.active.as_ref()?;
+    if escape {
+        dialog.cancel_button
+    } else {
+        dialog.default_button
     }
 }

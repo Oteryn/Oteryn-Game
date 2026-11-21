@@ -42,7 +42,7 @@ pub(super) fn perform(
     owner: &HostOwner,
     state: &mut State,
     action: Action,
-    values: [String; 3],
+    values: [String; 4],
 ) -> bool {
     if owner.modal_active()
         || state.key != Some(action.key)
@@ -76,6 +76,7 @@ pub(super) fn perform(
     }
     state.fields = values;
     let success = match action.kind {
+        Kind::CoinCheckout => link.open_coin_checkout(),
         Kind::Buy => {
             if !buy_enabled(panel) {
                 return false;
@@ -96,7 +97,7 @@ pub(super) fn perform(
             if !buy_enabled(panel) || panel.catalogue.as_ref() != Some(&confirmation.quote) {
                 return false;
             }
-            let [name, sex, identity] = &confirmation.fields;
+            let [name, sex, identity, _] = &confirmation.fields;
             link.store_confirm_purchase(&confirmation.quote, name, sex, identity)
         }
         Kind::Category(index) => {
@@ -108,19 +109,33 @@ pub(super) fn perform(
             else {
                 return false;
             };
-            link.store_browse(&category.key, "", 0, 0);
+            state.fields[3] = panel.browser.search.clone();
+            link.store_browse(&category.key, &panel.browser.search, panel.browser.sort, 0);
             true
         }
         Kind::Product(index) => link.store_select_product(index),
         Kind::Products => {
             state.page = Page::Products;
             state.fields = Default::default();
+            state.fields[3] = panel.browser.search.clone();
             link.store_browse(
                 &panel.browser.category,
                 &panel.browser.search,
                 panel.browser.sort,
                 0,
             );
+            true
+        }
+        Kind::RetryPurchase => link.store_retry_purchase_bound(panel),
+        Kind::Search | Kind::ClearSearch | Kind::Sort(_) => {
+            if action.kind == Kind::ClearSearch {
+                state.fields[3].clear();
+            }
+            let sort = match action.kind {
+                Kind::Sort(sort) => sort,
+                _ => panel.browser.sort,
+            };
+            link.store_browse(&panel.browser.category, &state.fields[3], sort, 0);
             true
         }
         Kind::Page(step) => {
@@ -142,6 +157,7 @@ pub(super) fn perform(
                 panel.gift_fields[0].clone(),
                 panel.gift_fields[1].clone(),
                 String::new(),
+                panel.browser.search.clone(),
             ];
             link.store_gift_open();
             true

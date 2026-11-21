@@ -52,6 +52,7 @@ pub enum TradeAction {
     Select(ItemHandle),
     Offer,
     Open(ItemHandle),
+    Inspect { counter: bool, index: u8 },
     Close,
 }
 #[must_use]
@@ -103,6 +104,14 @@ pub fn trade_action_enabled(panel: &PlayerTradePanel, action: TradeAction) -> bo
                         }
                 })
         }
+        TradeAction::Inspect { counter, index } => {
+            matches!(phase, TradePhase::Offered | TradePhase::Ready)
+                && panel.state.as_ref().is_some_and(|state| {
+                    state.contents[usize::from(counter)]
+                        .get(usize::from(index))
+                        .is_some()
+                })
+        }
         TradeAction::Request(Intent::Offer { .. }) => false,
         TradeAction::Select(handle) => {
             picker
@@ -134,7 +143,20 @@ impl PlayLink {
         if !same_presentation(panel, expected) || !trade_action_enabled(panel, action) {
             return false;
         }
+        if let TradeAction::Inspect { counter, index } = action {
+            let command = oteryn_client_ui::inspection::request(
+                &mut mailbox.discovery.inspection,
+                oteryn_client_ui::inspection::Request::Trade { counter, index },
+            );
+            drop(mailbox);
+            if !command.is_some_and(|command| self.discovery_send(command)) {
+                return false;
+            }
+            self.inspection_set_open(true);
+            return true;
+        }
         let command = match action {
+            TradeAction::Inspect { .. } => return false,
             TradeAction::Close => {
                 panel.open = false;
                 panel.show_requested = false;

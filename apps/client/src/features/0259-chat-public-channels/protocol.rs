@@ -15,6 +15,8 @@ impl Outbox {
                 .console
                 .metadata
                 .observe(&lines, receipt_time());
+            mailbox.chat.received = mailbox.chat.received.wrapping_add(mailbox.chat.pending_lines);
+            mailbox.chat.pending_lines = 0;
             mailbox.chat.lines = lines.clone();
             mailbox.chat.console.sync_rooms(rooms);
             oteryn_client_ui::chat_public_channels::replace_state(
@@ -32,6 +34,8 @@ impl Outbox {
             .console
             .metadata
             .observe(&lines, receipt_time());
+        mailbox.chat.received = mailbox.chat.received.wrapping_add(mailbox.chat.pending_lines);
+        mailbox.chat.pending_lines = 0;
         mailbox.chat.lines = lines.clone();
         mailbox.chat.console.sync_rooms(rooms);
         oteryn_client_ui::chat_public_channels::replace_state(

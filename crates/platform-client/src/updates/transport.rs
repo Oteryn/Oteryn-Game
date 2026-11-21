@@ -1,4 +1,5 @@
 use super::UpdateError;
+use crate::PRODUCTION_API_ORIGIN;
 use async_trait::async_trait;
 use futures::StreamExt;
 use reqwest::Client;
@@ -85,8 +86,9 @@ impl Transport for OriginTransport {
 // spelling; package storage requires the hash immediately before the basename.
 fn route(mut url: Url) -> Result<(Url, bool, bool), TransportError> {
     let fail = || TransportError::new(TransportErrorKind::UnsupportedUrlScheme, &url);
+    let api_origin = Url::parse(PRODUCTION_API_ORIGIN).map_err(|_| fail())?;
     if url.scheme() != "https"
-        || url.host_str() != Some("account.oteryn.com")
+        || url.host() != api_origin.host()
         || url.port().is_some()
         || url.query().is_some()
         || url.fragment().is_some()
@@ -135,12 +137,12 @@ mod tests {
     -> Result<(), Box<dyn std::error::Error>> {
         let hash = "a".repeat(64);
         let (policy, _, is_policy) = route(Url::parse(&format!(
-            "https://account.oteryn.com/updates/stable/targets/{hash}.channels/stable/policy-v1.json"
+            "https://api.oteryn.com/updates/stable/targets/{hash}.channels/stable/policy-v1.json"
         ))?)?;
         assert!(is_policy);
-        assert_eq!(policy.host_str(), Some("account.oteryn.com"));
+        assert_eq!(policy.host_str(), Some("api.oteryn.com"));
         let (package, _, _) = route(Url::parse(&format!(
-            "https://account.oteryn.com/updates/stable/targets/{hash}.channels/stable/releases/rel-a/windows/x86_64/client.zip"
+            "https://api.oteryn.com/updates/stable/targets/{hash}.channels/stable/releases/rel-a/windows/x86_64/client.zip"
         ))?)?;
         assert_eq!(
             package.as_str(),
@@ -148,13 +150,22 @@ mod tests {
                 "https://downloads.oteryn.com/updates/stable/targets/channels/stable/releases/rel-a/windows/x86_64/{hash}.client.zip"
             )
         );
+        let metadata = Url::parse("https://api.oteryn.com/updates/stable/metadata/timestamp.json")?;
+        assert_eq!(route(metadata.clone())?, (metadata, true, false));
+        for host in ["account.oteryn.com", "evil.invalid"] {
+            assert!(
+                route(Url::parse(&format!(
+                    "https://{host}/updates/stable/metadata/timestamp.json"
+                ))?)
+                .is_err()
+            );
+        }
         assert!(
-            route(Url::parse(
-                "https://evil.invalid/updates/stable/metadata/timestamp.json"
-            )?)
+            route(Url::parse(&format!(
+                "https://api.oteryn.com/updates/stable/targets/{hash}.channels/beta/policy-v1.json"
+            ))?)
             .is_err()
         );
-        assert!(route(Url::parse(&format!("https://account.oteryn.com/updates/stable/targets/{hash}.channels/beta/policy-v1.json"))?).is_err());
         Ok(())
     }
 }

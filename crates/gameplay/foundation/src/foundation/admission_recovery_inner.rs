@@ -530,7 +530,10 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> AdmissionAuthority<T, J> {
         snapshot: GameSessionAuthoritySnapshot<T>,
     ) -> Result<&GameSession, AdmissionError> {
         let committed = snapshot.commit();
-        validate_current_authority(committed.game_session_id(), snapshot)?;
+        if let Err(error) = validate_current_authority(committed.game_session_id(), snapshot) {
+            self.clear_process_projection();
+            return Err(error);
+        }
         if committed.initial_transport() != authenticated_transport
             || snapshot.session_state() != GameSessionState::Active
             || snapshot.current_connection_generation() != committed.connection_generation()

@@ -6,7 +6,7 @@ This contract does not claim deployment or client conformance.
 
 ## Origins and paths
 
-Public metadata origin: `https://account.oteryn.com`.
+Public metadata origin: `https://api.oteryn.com`.
 Each C below is exactly `stable` or `beta`, with independent trust and no fallback.
 N is the positive decimal role version; H is the lowercase SHA-256 of target bytes.
 

@@ -37,9 +37,41 @@ pub(super) fn control(
 }
 pub(super) fn click(app: &mut App, predicate: impl Fn(Action) -> bool) -> TestResult {
     let entity = control(app, predicate)?;
+    // List actions sit in the list's right-click menu: open it the way a player does.
+    let in_menu = app
+        .world()
+        .get::<ChildOf>(entity)
+        .is_some_and(|parent| app.world().get::<view::ListMenu>(parent.parent()).is_some());
+    if in_menu {
+        let list = app
+            .world_mut()
+            .query_filtered::<Entity, With<List>>()
+            .single(app.world())?;
+        app.world_mut().trigger(secondary_click(list));
+        app.update();
+    }
     app.world_mut().trigger(Activate { entity });
     app.update();
     Ok(())
+}
+pub(super) fn secondary_click(entity: Entity) -> bevy::picking::events::PointerClick {
+    bevy::picking::events::PointerClick {
+        entity,
+        pointer: bevy::picking::events::Pointer::new(
+            bevy::picking::pointer::PointerId::Mouse,
+            bevy::picking::pointer::Location {
+                target: bevy::camera::NormalizedRenderTarget::None {
+                    width: 100,
+                    height: 100,
+                },
+                position: Vec2::ZERO,
+            },
+        ),
+        button: bevy::picking::pointer::PointerButton::Secondary,
+        hit: bevy::picking::backend::HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        duration: std::time::Duration::ZERO,
+        count: 1,
+    }
 }
 pub(super) fn field(app: &mut App) -> Result<Entity, Box<dyn std::error::Error>> {
     app.world_mut()
@@ -343,125 +375,4 @@ fn vip_native_checkbox_uses_typed_value_change_and_missing_edit_metadata_is_not_
     Ok(())
 }
 
-#[test]
-fn vip_default_hidden_sidebar_is_reachable_through_real_host_ctrl_v_and_region_projection()
--> TestResult {
-    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
-    let (mut app, mut commands, outbox) = super::super::tests::app()?;
-    app.add_systems(
-        Update,
-        crate::bevy_shell::game_ui::projection::project_regions,
-    );
-    app.world()
-        .non_send::<HostOwner>()
-        .play
-        .as_ref()
-        .ok_or("play")?
-        .link
-        .use_shared_frontend();
-    publish(&outbox, CONTACTS, 4, VipPresenceStatus::Online);
-    app.update();
-    let vip = app
-        .world()
-        .resource::<crate::bevy_shell::game_ui::GameRegions>()
-        .vip;
-    assert_eq!(
-        app.world().get::<Node>(vip).ok_or("VIP region")?.display,
-        Display::None
-    );
-    assert!(
-        !app.world()
-            .non_send::<HostOwner>()
-            .play
-            .as_ref()
-            .ok_or("play")?
-            .link
-            .vip_is_open()
-    );
-    app.world_mut().non_send_mut::<HostOwner>().route_input(
-        &[NormalizedInputEvent::Key {
-            code: KeyCode::new(25)?,
-            state: ButtonState::Pressed,
-            modifiers: Modifiers::one(Modifier::Control),
-            repeat: false,
-        }],
-        false,
-    );
-    assert_eq!(request(&mut commands)?.operation, wire::Operation::Query);
-    assert!(
-        app.world()
-            .non_send::<HostOwner>()
-            .play
-            .as_ref()
-            .ok_or("play")?
-            .link
-            .vip_is_open()
-    );
-    publish(&outbox, CONTACTS, 5, VipPresenceStatus::Online);
-    app.update();
-    assert_eq!(
-        app.world().get::<Node>(vip).ok_or("VIP region")?.display,
-        Display::Flex
-    );
-    assert_eq!(app.world_mut().query::<&Row>().iter(app.world()).count(), 2);
-    click(&mut app, |action| matches!(action, Action::Add))?;
-    assert!(app.world().resource::<State>().draft.is_some());
-    Ok(())
-}
-
-#[test]
-fn vip_close_hides_a_saved_visible_sidebar_and_preserves_a_pending_canonical_query() -> TestResult {
-    let (mut app, mut commands, outbox) = super::super::tests::app()?;
-    app.add_systems(
-        Update,
-        crate::bevy_shell::game_ui::projection::project_regions,
-    );
-    app.world_mut()
-        .non_send_mut::<HostOwner>()
-        .settings
-        .preferences
-        .visible_panels
-        .push("vip".into());
-    publish(&outbox, CONTACTS, 4, VipPresenceStatus::Online);
-    app.update();
-    let region = app
-        .world()
-        .resource::<crate::bevy_shell::game_ui::GameRegions>()
-        .vip;
-    assert_eq!(
-        app.world().get::<Node>(region).ok_or("VIP region")?.display,
-        Display::Flex
-    );
-    app.world()
-        .non_send::<HostOwner>()
-        .play
-        .as_ref()
-        .ok_or("play")?
-        .link
-        .vip_request(Intent::Query(0));
-    assert_eq!(request(&mut commands)?.operation, wire::Operation::Query);
-    click(&mut app, |action| matches!(action, Action::Close))?;
-    assert!(
-        !app.world()
-            .non_send::<HostOwner>()
-            .settings
-            .preferences
-            .panel_visible("vip")
-    );
-    assert_eq!(
-        app.world().get::<Node>(region).ok_or("VIP region")?.display,
-        Display::None
-    );
-    let owner = app.world().non_send::<HostOwner>();
-    let link = &owner.play.as_ref().ok_or("play")?.link;
-    assert!(!link.vip_is_open());
-    assert!(link.vip_panel().pending);
-    assert!(
-        link.vip_panel()
-            .view
-            .as_ref()
-            .is_some_and(|raw| raw == CONTACTS)
-    );
-    assert!(commands.try_recv().is_err());
-    Ok(())
-}
+include!("presentation_cases.rs");

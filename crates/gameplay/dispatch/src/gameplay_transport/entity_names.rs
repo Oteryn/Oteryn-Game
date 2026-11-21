@@ -1,23 +1,27 @@
 //! S-ENTNAME: enrich only the observer's bounded interest set with authoritative actor names.
 use super::ComposedFreshAdmission;
 use super::capabilities::SelectedCapabilities;
-use super::connection::FreshAdmissionAuthority;
+use super::connection::{AdmissionRefusal, FreshAdmissionAuthority};
 use super::world_spatial::{ChannelEntities, EntityKind, EntityRef, SessionVisibility};
 use crate::foundation::{ExactActorRef, GameSessionId};
-use oteryn_protocol_oteryn::entity_names::{
-    CAPABILITY_WORLD_SPATIAL_ENTITIES_V2, EntityDisplayName,
-};
+use oteryn_protocol_oteryn::entity_names::EntityDisplayName;
 
 pub(super) async fn observe<A: FreshAdmissionAuthority>(
     authority: &A,
     actor: ExactActorRef,
     selected: SelectedCapabilities,
 ) -> Option<ChannelEntities> {
-    if selected.contains(CAPABILITY_WORLD_SPATIAL_ENTITIES_V2) {
-        authority.observe_named_visible_entities(actor).await
-    } else {
-        authority.observe_visible_entities(actor).await
-    }
+    Box::pin(observe_result(authority, actor, selected))
+        .await
+        .ok()
+}
+
+pub(super) async fn observe_result<A: FreshAdmissionAuthority>(
+    authority: &A,
+    actor: ExactActorRef,
+    selected: SelectedCapabilities,
+) -> Result<ChannelEntities, AdmissionRefusal> {
+    authority.observe_projected_entities(actor, selected).await
 }
 
 enum Source {
@@ -29,8 +33,53 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn named_channel_entities(
         &self,
         observer: ExactActorRef,
-    ) -> Option<ChannelEntities> {
-        let mut channel = self.observe_channel_entities(observer).await?;
+        forecasts: bool,
+    ) -> Result<ChannelEntities, AdmissionRefusal> {
+        let (mut channel, sources) = Box::pin(self.named_entity_sources(observer, forecasts))
+            .await
+            .ok_or(AdmissionRefusal::Rejected)?;
+        // Durable reads run after dropping the runtime guard. Exhausting this shared budget is
+        // contention during periodic observation, even when the cached name is still absent.
+        let retry = super::AdmissionRetryBudget::for_foreground_command(self.root)
+            .map_err(|_| AdmissionRefusal::Rejected)?;
+        for (entity, source) in sources {
+            let name = match source {
+                Source::Name(name) => name,
+                Source::Player(session) => {
+                    let name = match self.states.chat.speaker_name(session) {
+                        Some(name) => name,
+                        None => {
+                            Box::pin(self.chat_speaker_name_with_budget(session, &retry))
+                                .await?
+                                .0
+                        }
+                    };
+                    EntityDisplayName::new(&name).map_err(|_| AdmissionRefusal::Rejected)?
+                }
+            };
+            let entry = channel
+                .entities
+                .iter_mut()
+                .find(|entry| {
+                    EntityRef {
+                        identity: entry.identity,
+                        generation: entry.generation,
+                    } == entity
+                })
+                .ok_or(AdmissionRefusal::Rejected)?;
+            entry.display_name = Some(name);
+        }
+        Ok(channel)
+    }
+
+    async fn named_entity_sources(
+        &self,
+        observer: ExactActorRef,
+        forecasts: bool,
+    ) -> Option<(ChannelEntities, Vec<(EntityRef, Source)>)> {
+        let channel = self
+            .observe_channel_entities_projected(observer, forecasts)
+            .await?;
         // Use the same interest owner as the session: at most 256 name reads, and none for
         // actors outside this view. Objects have no display name.
         let selected = SessionVisibility::default()
@@ -96,29 +145,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             sources
         };
-        // Durable reads run after dropping the runtime guard. The existing chat name is
-        // already an admitted Character name; clients need not select chat to receive names.
-        let retry = super::AdmissionRetryBudget::for_foreground_command(self.root).ok()?;
-        for (entity, source) in sources {
-            let name = match source {
-                Source::Name(name) => name,
-                Source::Player(session) => {
-                    let name = match self.states.chat.speaker_name(session) {
-                        Some(name) => name,
-                        None => self.chat_speaker_name_with_budget(session, &retry).await?.0,
-                    };
-                    EntityDisplayName::new(&name).ok()?
-                }
-            };
-            let entry = channel.entities.iter_mut().find(|entry| {
-                EntityRef {
-                    identity: entry.identity,
-                    generation: entry.generation,
-                } == entity
-            })?;
-            entry.display_name = Some(name);
-        }
-        Some(channel)
+        Some((channel, sources))
     }
 }
 
@@ -139,6 +166,7 @@ mod tests {
             entities: vec![ChannelEntity {
                 source_icons:
                     oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(),
+                motion: None,
                 display_name: Some(EntityDisplayName::new("Before")?),
                 health_percent: 100,
                 direction: StepDirection::South,

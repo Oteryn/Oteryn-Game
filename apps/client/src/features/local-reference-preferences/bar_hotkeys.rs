@@ -26,6 +26,10 @@ pub(super) fn extra_bindings() -> Vec<PreferenceBinding> {
     .collect()
 }
 impl PreferenceBinding {
+    /// Action-bar slots 5 and above keep one key in the action-bar storage, with no secondary.
+    pub fn is_extra_action_bar_slot(&self) -> bool {
+        extra_slot(self.id).is_some()
+    }
     pub fn label(&self) -> String {
         if let Some(slot) = self
             .id
@@ -44,6 +48,13 @@ impl PreferenceBinding {
     }
 }
 impl ReferencePreferences {
+    #[cfg(bevy_shell)]
+    pub(crate) fn legacy_action_chord(&self, slot: usize, chat_on: bool) -> Option<&str> {
+        let chord = self.action_keys.0.get(&slot)?;
+        let (code, modifiers) = super::bindings::parse_action_chord(chord)?;
+        (!chat_on || !chat_typing_chord(code, modifiers)).then_some(chord.as_str())
+    }
+
     pub(super) fn bar_slot_chord(&self, slot: u32) -> &str {
         let key = usize::try_from(slot)
             .ok()
@@ -83,19 +94,24 @@ impl ReferencePreferences {
     }
 }
 
+fn chat_typing_chord(
+    code: oteryn_input_actions::KeyCode,
+    modifiers: oteryn_input_actions::Modifiers,
+) -> bool {
+    use oteryn_input_actions::Modifier;
+    ((4..=39).contains(&code.get()) || code.get() == 44)
+        && ![Modifier::Control, Modifier::Alt, Modifier::Super]
+            .iter()
+            .any(|modifier| modifiers.contains(*modifier))
+}
+
 pub(super) fn routed_action(
     preferences: &ReferencePreferences,
     code: oteryn_input_actions::KeyCode,
     modifiers: oteryn_input_actions::Modifiers,
     chat_on: bool,
 ) -> Option<CustomAction> {
-    use oteryn_input_actions::Modifier;
-    if chat_on
-        && ((4..=39).contains(&code.get()) || code.get() == 44)
-        && ![Modifier::Control, Modifier::Alt, Modifier::Super]
-            .iter()
-            .any(|modifier| modifiers.contains(*modifier))
-    {
+    if chat_on && chat_typing_chord(code, modifiers) {
         return None;
     }
     let matches = |key: &str| super::bindings::parse_action_chord(key) == Some((code, modifiers));

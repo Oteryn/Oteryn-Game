@@ -42,13 +42,13 @@ fn the_temple_area_resolves_to_real_cells_inside_the_atlas() -> Result<(), Strin
 
 #[test]
 fn a_manifest_off_the_pin_is_refused() -> Result<(), String> {
-    let dir = std::env::temp_dir().join(format!("oteryn-manifest-pin-{}", std::process::id()));
+    let fixture = tempfile::tempdir().map_err(|e| e.to_string())?;
+    let dir = fixture.path().join("oteryn-manifest-pin");
     let manifest = dir.join(MANIFEST_PATH);
     let parent = manifest.parent().ok_or("manifest has no parent")?;
     std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
     std::fs::write(&manifest, br#"{"files":[]}"#).map_err(|e| e.to_string())?;
     let result = World::load(&dir);
-    std::fs::remove_dir_all(&dir).map_err(|e| e.to_string())?;
     let error = result.err().ok_or("a substituted manifest loaded")?;
     assert!(
         error.contains("does not match its manifest sha256"),

@@ -51,23 +51,25 @@ impl ScreenshotPreferences {
         }
     }
     pub fn valid(&self) -> bool {
-        self.backlog_seconds <= 10
-            && self.backlog_frames <= 10
-            && self.directory.len() <= 1024
-            && !self.directory.chars().any(char::is_control)
-            && self.folder.len() <= 1024
-            && !self.folder.chars().any(char::is_control)
-            && (self.directory.is_empty() || Path::new(&self.directory).is_absolute())
+        let effective = self.effective();
+        effective.backlog_seconds <= 10
+            && effective.backlog_frames <= 10
+            && effective.directory.len() <= 1024
+            && !effective.directory.chars().any(char::is_control)
+            && effective.folder.len() <= 1024
+            && !effective.folder.chars().any(char::is_control)
+            && (effective.directory.is_empty() || Path::new(&effective.directory).is_absolute())
     }
     pub fn apply_policy(&self, capture: &mut CaptureController) {
         capture.policy.level = self.on_level;
         capture.policy.death = self.on_death;
         capture.policy.achievement = self.on_achievement;
     }
+    /// Uses the same configured or platform screenshot destination as F12.
     pub fn save_frame(
         &self,
         capture: &mut CaptureController,
-        fallback: &Path,
+        _fallback: &Path,
         frame: Frame<'_>,
     ) -> io::Result<PathBuf> {
         if !self.valid() {
@@ -77,21 +79,12 @@ impl ScreenshotPreferences {
             ));
         }
         let effective = self.effective();
-        let directory = if effective.directory.is_empty() {
-            fallback
-        } else {
-            Path::new(&effective.directory)
-        };
-        std::fs::create_dir_all(directory)?;
+        let directory = super::screenshot::screenshot_directory(Path::new(&effective.directory))?;
         static NEXT: AtomicU64 = AtomicU64::new(0);
         let stamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map_err(io::Error::other)?
             .as_nanos();
-        let path = directory.join(format!(
-            "oteryn-{stamp}-{}.bmp",
-            NEXT.fetch_add(1, Ordering::Relaxed)
-        ));
         let crop = if self.game_only {
             frame.game
         } else {
@@ -102,7 +95,57 @@ impl ScreenshotPreferences {
                 height: frame.height,
             }
         };
-        capture.save(&path, frame.width, frame.height, frame.bgra, crop)?;
-        Ok(path)
+        super::screenshot::retry_capture_name(|| {
+            let path = directory.join(format!(
+                "oteryn-{stamp}-{}.bmp",
+                NEXT.fetch_add(1, Ordering::Relaxed)
+            ));
+            capture.save(&path, frame.width, frame.height, frame.bgra, crop)?;
+            Ok(path)
+        })
+    }
+}
+
+#[cfg(test)]
+mod audit_tests {
+    use super::*;
+    #[test]
+    fn screenshot_alias_validation_rejects_relative_effective_folders() {
+        let preferences = ScreenshotPreferences {
+            folder: "relative-captures".into(),
+            ..Default::default()
+        };
+        assert!(!preferences.valid());
+        let absolute = ScreenshotPreferences {
+            directory: std::env::temp_dir().to_string_lossy().into_owned(),
+            ..preferences
+        };
+        assert!(absolute.valid());
+    }
+    #[test]
+    fn screenshot_alias_frame_writer_rejects_relative_folders()
+    -> Result<(), Box<dyn std::error::Error>> {
+        crate::play::screenshot::with_relative_capture_path(|folder, fixture| {
+            let preferences = ScreenshotPreferences {
+                folder: folder.to_owned(),
+                ..Default::default()
+            };
+            let frame = Frame {
+                width: 1,
+                height: 1,
+                bgra: &[0, 0, 0, 255],
+                game: Rect {
+                    x: 0,
+                    y: 0,
+                    width: 1,
+                    height: 1,
+                },
+            };
+            let result =
+                preferences.save_frame(&mut CaptureController::default(), fixture, frame);
+            assert!(result.is_err_and(|error| error.kind() == io::ErrorKind::InvalidInput));
+            assert!(!Path::new(folder).exists());
+            Ok(())
+        })
     }
 }

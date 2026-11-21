@@ -163,8 +163,8 @@ mod tests {
             .map_err(|_| "cooldown encode")?,
         ));
         assert_eq!(link.performance_latency(), Some(42));
-        let path =
-            std::env::temp_dir().join(format!("frame-preferences-{}.json", std::process::id()));
+        let fixture = crate::play::screenshot::TestDir::new()?;
+        let path = fixture.join("frame-preferences.json");
         let mut settings = SettingsState::new(Some(path.clone()));
         let mut updated = settings.preferences.clone();
         updated.frames = prefs;

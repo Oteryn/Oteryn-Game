@@ -89,13 +89,7 @@ impl PlayLink {
         if !crate::input::store_key(events) {
             return false;
         }
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).store.open = true;
-        }
+        lock(&self.mailbox).store.open = true;
         true
     }
 }
@@ -115,7 +109,7 @@ impl crate::play::PlayLink {
     }
 }
 
-#[cfg(any(windows, test, feature = "bevy-shell"))]
+#[cfg(any(test, bevy_shell))]
 impl PlayLink {
     /// Called only after confirmation, with the exact displayed quote.
     pub fn store_confirm_purchase(
@@ -147,10 +141,49 @@ impl PlayLink {
     }
 }
 
+#[cfg(bevy_shell)]
+impl PlayLink {
+    pub(crate) fn store_retry_purchase_bound(
+        &self,
+        expected: &oteryn_client_ui::store::StorePanel,
+    ) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        if mailbox.activity_reset_commands
+            || mailbox.world_input_blocked()
+            || mailbox.server_modal.is_active()
+            || self.commands.is_closed()
+            || mailbox.store != *expected
+            || !expected.open
+            || !expected.selected
+            || expected.pending
+            || expected.gift.pending.is_some()
+            || expected.gift.confirmed.is_some()
+            || expected.hireling_modal_id.is_some()
+            || expected.confirmed_purchase.is_none()
+        {
+            return false;
+        }
+        let mut prepared = expected.clone();
+        prepared.purchase_confirmed = true;
+        let Some(command) = oteryn_client_ui::store::purchase(&mut prepared) else {
+            return false;
+        };
+        if self
+            .commands
+            .send(PlayCommand::ServerMechanic(command))
+            .is_err()
+        {
+            return false;
+        }
+        mailbox.store = prepared;
+        true
+    }
+}
+
 #[path = "input/gift.rs"]
 pub(in crate::play) mod gift;
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl crate::play::Outbox {
     pub(crate) fn bevy_store_initialize(&self) {
         self.store_initialize(true, false);

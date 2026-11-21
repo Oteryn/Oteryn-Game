@@ -6,6 +6,14 @@ impl PlayLink {
     /// True when a command was sent; false when the builder refused (for example, while pending).
     pub fn cyclopedia_character_request(&self, intent: Intent) -> bool {
         let mut mailbox = lock(&self.mailbox);
+        self.cyclopedia_character_request_locked(&mut mailbox, intent)
+    }
+
+    fn cyclopedia_character_request_locked(
+        &self,
+        mailbox: &mut crate::play::mailbox::Mailbox,
+        intent: Intent,
+    ) -> bool {
         let panel = &mut mailbox.cyclopedia_character;
         let command = if intent == Intent::Next
             && panel.tab == oteryn_client_runtime::cyclopedia_character::CharacterTab::Achievements
@@ -26,25 +34,64 @@ impl PlayLink {
     }
     pub fn cyclopedia_character_input(&self, events: &[NormalizedInputEvent]) -> bool {
         if oteryn_client_ui::cyclopedia_character::blessings_key(events) {
-            #[cfg(windows)]
-            if !self.uses_shared_frontend() {
-                super::view::blessings::open_window(self);
-            }
-            if cfg!(not(windows)) || self.uses_shared_frontend() {
-                lock(&self.mailbox).cyclopedia_character.blessings.open = true;
-                self.blessings_request();
-            }
+            lock(&self.mailbox).cyclopedia_character.blessings.open = true;
+            self.blessings_request();
             return true;
         }
         if !oteryn_client_ui::cyclopedia_character::open_key(events) {
             return false;
         }
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
+        lock(&self.mailbox).cyclopedia_character.open = true;
+        true
+    }
+    /// The accepted custody summary is remote, read-only, and combines Store and mail deliveries.
+    pub fn store_inbox_set_open(&self, open: bool) {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.cyclopedia_character;
+        panel.items.open = open;
+        if !open {
+            mailbox.store_inbox_refresh_pending = false;
+            return;
         }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).cyclopedia_character.open = true;
+        panel.items.page = None;
+        panel.items.location = None;
+        panel.items.search.clear();
+        if panel.pending || panel.blessings.pending {
+            mailbox.store_inbox_refresh_pending = true;
+        } else {
+            mailbox.store_inbox_refresh_pending = false;
+            self.cyclopedia_character_request_locked(&mut mailbox, Intent::Items);
+        }
+    }
+
+    pub(in crate::play) fn pump_store_inbox_refresh(&self) {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mailbox.cyclopedia_character;
+        if mailbox.store_inbox_refresh_pending && !panel.pending && !panel.blessings.pending {
+            mailbox.store_inbox_refresh_pending = false;
+            self.cyclopedia_character_request_locked(&mut mailbox, Intent::Items);
+        }
+    }
+}
+
+impl PlayLink {
+    pub fn cyclopedia_holdings_filter(
+        &self,
+        search: &str,
+        location: Option<oteryn_client_runtime::cyclopedia_character::items::Location>,
+    ) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        let Some(command) = oteryn_client_ui::cyclopedia_character::holdings_filter(
+            &mut mailbox.cyclopedia_character,
+            search,
+            location,
+        ) else {
+            return false;
+        };
+        if self.commands.send(PlayCommand::Feature(command)).is_err() {
+            mailbox.cyclopedia_character.pending = false;
+            mailbox.cyclopedia_character.feedback = Some(tr!("The session has ended"));
+            return false;
         }
         true
     }

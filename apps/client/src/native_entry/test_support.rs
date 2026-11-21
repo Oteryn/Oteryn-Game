@@ -31,8 +31,9 @@ pub(crate) struct Stack {
     http_url: String,
     requests: Arc<Mutex<Vec<String>>>,
     login_refusal: Arc<Mutex<LoginRefusal>>,
-    pub(super) admissions: Arc<AtomicUsize>,
+    pub(crate) admissions: Arc<AtomicUsize>,
     pub(super) root_path: PathBuf,
+    _fixture: tempfile::TempDir,
     pub(super) game_port: u16,
     pub(crate) node: Arc<channel_node::Node>,
 }
@@ -42,7 +43,7 @@ impl Stack {
         Self::start_with_frames(refusals, Vec::new())
     }
 
-    pub(super) fn start_with_frames(
+    pub(crate) fn start_with_frames(
         refusals: Vec<u32>,
         admitted_frames: Vec<Vec<u8>>,
     ) -> Result<Self, Box<dyn std::error::Error>> {
@@ -81,12 +82,8 @@ impl Stack {
         let servers = ClientRuntime::new()?;
         let generated = rcgen::generate_simple_self_signed(vec!["localhost".into()])?;
         let root = generated.cert.der().clone();
-        static STACKS: AtomicUsize = AtomicUsize::new(0);
-        let root_path = std::env::temp_dir().join(format!(
-            "oteryn-n4-root-{}-{}.der",
-            std::process::id(),
-            STACKS.fetch_add(1, Ordering::SeqCst)
-        ));
+        let fixture = tempfile::tempdir()?;
+        let root_path = fixture.path().join("root.der");
         std::fs::write(&root_path, root.as_ref())?;
         let key = PrivatePkcs8KeyDer::from(generated.signing_key.serialize_der());
         let mut tls = rustls::ServerConfig::builder_with_provider(Arc::new(
@@ -168,6 +165,7 @@ impl Stack {
             login_refusal,
             admissions,
             root_path,
+            _fixture: fixture,
             game_port,
             node,
         })
@@ -175,6 +173,7 @@ impl Stack {
 
     pub(crate) fn config(&self) -> NativeLoginConfig {
         NativeLoginConfig {
+            session_options: None,
             device_sessions: Default::default(),
             platform_url: self.http_url.clone(),
             gateway_url: self.http_url.clone(),
@@ -191,6 +190,7 @@ impl Stack {
             coin_shop: Arc::new(crate::coin_shop::present),
             premium: Arc::new(crate::premium::present),
             channel_switch: None,
+            require_character_picker: false,
             training_queue: Default::default(),
             select_character: Arc::new(|rows, _, _| {
                 crate::character_selection::SelectionAction::Play {
@@ -234,7 +234,6 @@ impl Stack {
     }
 
     pub(crate) fn finish(self) {
-        let _ = std::fs::remove_file(&self.root_path);
         self.servers.shutdown(Duration::from_millis(100));
     }
 }

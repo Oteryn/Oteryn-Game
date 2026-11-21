@@ -5,7 +5,7 @@ use super::{
     modal::ModalGuard,
 };
 use bevy::{input_focus::InputFocus, prelude::*, text::EditableText, ui_widgets::Activate};
-use oteryn_client_ui::npc_shop::{NpcTradeSide, Quote};
+use oteryn_client_ui::npc_shop::{LiveShop, NpcTradeSide, Quote};
 use oteryn_client_ui_bevy as source;
 mod conversation;
 mod submission;
@@ -33,10 +33,17 @@ enum Kind {
     SellAll,
     Close,
     IgnoreCapacity,
-    IgnoreEquipped,
     OnlyOwned,
     OpenBackpack,
 }
+struct RenderedOffers {
+    shop: LiveShop,
+    side: Option<NpcTradeSide>,
+    query: String,
+    selection: Option<Quote>,
+    rows: Vec<Quote>,
+}
+
 #[derive(Resource, Default)]
 struct State {
     generation: Option<u64>,
@@ -45,7 +52,7 @@ struct State {
     query: String,
     feedback: String,
     widgets: Option<widgets::Widgets>,
-    rendered: Option<(Vec<Quote>, Option<Quote>)>,
+    rendered: Option<RenderedOffers>,
     pending: Option<submission::Pending>,
     conversation: conversation::Ui,
 }
@@ -101,11 +108,10 @@ fn perform(owner: &mut HostOwner, state: &mut State, action: Action, amount: &st
             state.feedback.clear();
             true
         }
-        Kind::IgnoreCapacity | Kind::IgnoreEquipped | Kind::OnlyOwned => {
+        Kind::IgnoreCapacity | Kind::OnlyOwned => {
             let mut options = panel.live.options;
             match action.kind {
                 Kind::IgnoreCapacity => options.ignore_capacity = !options.ignore_capacity,
-                Kind::IgnoreEquipped => options.ignore_equipped = !options.ignore_equipped,
                 Kind::OnlyOwned => options.only_owned = !options.only_owned,
                 _ => {}
             }
@@ -122,12 +128,13 @@ fn perform(owner: &mut HostOwner, state: &mut State, action: Action, amount: &st
             match action.kind {
                 Kind::Trade => {
                     let Some(amount) = oteryn_client_ui::npc_shop::parse_amount(amount) else {
-                        state.feedback = "Amount must be an integer from 1 to 100.".into();
+                        state.feedback =
+                            "Amount must be a positive integer within this offer's limit.".into();
                         return false;
                     };
                     if !panel.live.selected || !panel.live.can_trade(quote, amount) {
                         state.feedback =
-                            "This amount cannot be traded with the current shop and backpack state."
+                            "This amount exceeds the offer limit or current backpack capacity."
                                 .into();
                         return false;
                     }
@@ -176,6 +183,53 @@ fn activate(
         }
     }
 }
+#[cfg(test)]
+std::thread_local! {
+    static CATALOGUE_PASSES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+fn catalogue_rows(shop: &LiveShop, side: Option<NpcTradeSide>, query: &str) -> Vec<Quote> {
+    #[cfg(test)]
+    CATALOGUE_PASSES.with(|passes| passes.set(passes.get() + 1));
+    shop.filtered_quotes(side, query)
+}
+
+// Carried counts affect captions, search results and the only-owned filter.
+fn inventory_changed_rows(previous: &mut RenderedOffers, current: &LiveShop) -> Option<Vec<Quote>> {
+    let before = previous
+        .shop
+        .inventory
+        .as_ref()
+        .map(|inventory| &inventory.entries);
+    let after = current
+        .inventory
+        .as_ref()
+        .map(|inventory| &inventory.entries);
+    if before == after {
+        return None;
+    }
+    let same_count = |item| {
+        before.is_some() == after.is_some() && previous.shop.owned(item) == current.owned(item)
+    };
+    if !current
+        .window
+        .offers
+        .iter()
+        .filter(|offer| previous.side.is_none_or(|side| offer.side == side))
+        .all(|offer| same_count(offer.item_definition_ref))
+    {
+        let rows = catalogue_rows(current, previous.side, &previous.query);
+        if previous.query.trim().is_empty()
+            || rows != previous.rows
+            || !rows.iter().all(|row| same_count(row.item))
+        {
+            return Some(rows);
+        }
+    }
+    previous.shop.inventory.clone_from(&current.inventory);
+    None
+}
+
 // One retained model, its fields and source widget entities compose this floating panel.
 #[allow(clippy::too_many_arguments)]
 fn project(
@@ -226,6 +280,20 @@ fn project(
         };
         state.widgets = Some(widgets::build(&mut commands, &skins, generation));
     }
+    let quotes = &panel.live.window.offers;
+    if panel.live.window.open.is_some()
+        && !quotes.is_empty()
+        && !quotes.iter().any(|quote| Some(quote.side) == state.side)
+    {
+        state.side = Some(
+            if quotes.iter().any(|quote| quote.side == NpcTradeSide::Buy) {
+                NpcTradeSide::Buy
+            } else {
+                NpcTradeSide::Sell
+            },
+        );
+        state.selection = None;
+    }
     let mut amount = "1".to_owned();
     if !fresh {
         for (field, value) in &editors {
@@ -238,14 +306,37 @@ fn project(
             }
         }
     }
-    let rows = panel.live.filtered_quotes(state.side, &state.query);
-    if state.selection.is_some_and(|quote| !rows.contains(&quote)) {
+    let Some(widgets) = state.widgets else {
+        return;
+    };
+    let State {
+        rendered,
+        side,
+        query,
+        selection,
+        ..
+    } = &mut *state;
+    let changed_rows = match rendered.as_mut() {
+        Some(shown)
+            if shown.shop.window == panel.live.window
+                && (*side == Some(NpcTradeSide::Buy)
+                    || shown.shop.options.only_owned == panel.live.options.only_owned)
+                && shown.side == *side
+                && shown.query == *query
+                && shown.selection == *selection =>
+        {
+            inventory_changed_rows(shown, &panel.live)
+        }
+        _ => Some(catalogue_rows(&panel.live, *side, query)),
+    };
+    if let Some(rows) = &changed_rows
+        && state.selection.is_some_and(|quote| !rows.contains(&quote))
+    {
         state.selection = None;
     }
     for (caption, mut text) in &mut options {
         let checked = match caption.0 {
             Kind::IgnoreCapacity => panel.live.options.ignore_capacity,
-            Kind::IgnoreEquipped => panel.live.options.ignore_equipped,
             Kind::OnlyOwned => panel.live.options.only_owned,
             _ => false,
         };
@@ -288,11 +379,7 @@ fn project(
             }
         }
     }
-    let Some(widgets) = state.widgets else {
-        return;
-    };
-    let snapshot = (rows.clone(), state.selection);
-    if state.rendered.as_ref() != Some(&snapshot) {
+    if let Some(rows) = changed_rows {
         commands.entity(widgets.rows).despawn_children();
         widgets::rows(
             &mut commands,
@@ -300,9 +387,16 @@ fn project(
             widgets.rows,
             generation,
             &rows,
+            &panel.live,
             state.selection,
         );
-        state.rendered = Some(snapshot);
+        state.rendered = Some(RenderedOffers {
+            shop: panel.live.clone(),
+            side: state.side,
+            query: state.query.clone(),
+            selection: state.selection,
+            rows,
+        });
     }
     let status = if !play.link.npc_shop_is_open() {
         String::new()
@@ -330,7 +424,7 @@ fn project(
         })
         .unwrap_or_else(|| {
             if state.selection.is_some() {
-                "Enter 1–100"
+                "Enter an amount within the offer limit"
             } else {
                 "Select goods"
             }

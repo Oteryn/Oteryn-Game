@@ -10,40 +10,19 @@ pub(super) fn open(
     remember: bool,
     (sender, entry): (Sender<Submission>, Arc<Mutex<Entry>>),
 ) {
-    #[cfg(all(windows, not(test)))]
-    {
-        let _ = std::thread::Builder::new()
-            .name("server-modal".into())
-            .spawn(move || {
-                ACTIVE.store(true, std::sync::atomic::Ordering::Release);
-                native::run(dialog, input, remember, sender, entry);
-                ACTIVE.store(false, std::sync::atomic::Ordering::Release);
-            });
-    }
-    #[cfg(any(not(windows), test))]
     {
         let _ = (dialog, input, remember, sender, entry);
     }
 }
-#[cfg(all(windows, not(test)))]
-#[path = "view/native.rs"]
-mod native;
 
-#[cfg(all(windows, not(test)))]
-static ACTIVE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 pub(in crate::play) fn active() -> bool {
-    #[cfg(all(windows, not(test)))]
-    {
-        ACTIVE.load(std::sync::atomic::Ordering::Acquire)
-    }
-    #[cfg(any(not(windows), test))]
     {
         false
     }
 }
 
 // Use the same control construction on native windows and in the headless layout test.
-#[cfg(any(windows, test))]
+#[cfg(test)]
 fn input_control<T>(input: &DialogInput, create: impl FnOnce(&str, [i32; 4], u32) -> T) -> T {
     use oteryn_client_runtime::server_modal::input::InputKind;
     // Win32 window/edit style values; keep construction testable without a desktop.
@@ -68,7 +47,7 @@ fn input_control<T>(input: &DialogInput, create: impl FnOnce(&str, [i32; 4], u32
     )
 }
 
-#[cfg(any(windows, test))]
+#[cfg(test)]
 fn footer_controls<T>(
     remember: bool,
     checkbox: impl FnOnce([i32; 4]) -> T,

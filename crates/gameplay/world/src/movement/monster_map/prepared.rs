@@ -71,6 +71,7 @@ impl ReadPreparedMonsterMap {
         }
         let binding = runtime.binding();
         let mut view = MonsterMap {
+            cells: room.movement_cells().clone(),
             valid: true,
             scope: binding.runtime_scope(),
             generation: binding.scope_generation(),

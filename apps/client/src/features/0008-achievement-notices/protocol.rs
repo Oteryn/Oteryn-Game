@@ -20,7 +20,20 @@ impl Outbox {
                     .and_then(|payload| decode_achievement_notices_snapshot(&payload).ok());
             }
         }
-        self.push(session.drain());
+        let mut preceding = Vec::new();
+        for event in session.drain() {
+            if let oteryn_session::SessionEvent::GatedSnapshotReplaced(delta) = &event
+                && delta.value.domain_id == 13
+                && delta.value.snapshot_type == 1
+                && let Ok(watermark) = decode_achievement_notices_snapshot(&delta.value.payload)
+            {
+                // Preserve event order: earlier notices cannot overwrite the recovery totals.
+                self.push(std::mem::take(&mut preceding));
+                lock(&self.0).achievement_notices.watermark = Some(watermark);
+            }
+            preceding.push(event);
+        }
+        self.push(preceding);
     }
 }
 
@@ -34,7 +47,7 @@ pub(in crate::play) fn achievement_earned(
 impl Mailbox {
     pub(in crate::play) fn reduce_achievement_notices(&mut self, notices: Vec<AchievementEarned>) {
         for notice in notices {
-            #[cfg(feature = "bevy-shell")]
+            #[cfg(bevy_shell)]
             if self.achievement_notices.selected {
                 self.achievement_banners.push_back(
                     oteryn_client_ui::achievement_notices::advancement_text(&notice.name),
@@ -45,7 +58,7 @@ impl Mailbox {
     }
 }
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl Outbox {
     pub(crate) fn achievement_notices_select_for_test(&self) {
         lock(&self.0).achievement_notices.selected = true;

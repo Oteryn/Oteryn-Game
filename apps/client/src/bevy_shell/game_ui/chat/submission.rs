@@ -65,7 +65,15 @@ fn perform(owner: &HostOwner, pending: &Pending, text: &mut EditableText) -> boo
                 pending.mode,
                 &text.value().to_string(),
             ) {
-                set_text(text, "");
+                let retained = play.link.chat_panel().text;
+                set_text(
+                    text,
+                    if retained.starts_with('*') {
+                        &retained
+                    } else {
+                        ""
+                    },
+                );
                 true
             } else {
                 false

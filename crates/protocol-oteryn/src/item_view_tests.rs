@@ -375,10 +375,10 @@ fn registries_bind_the_item_view_ids_and_limits() {
     let command = find("command_types", COMMAND_TYPE_ITEM_MOVE_INTENT);
     assert_eq!(command["name"], "ITEM_MOVE_INTENT");
     assert_eq!(command["capability"], CAPABILITY_ITEM_VIEW_MOVE_V1);
-    // The registered bound includes the capability 61 count; legacy bounds stay unchanged.
+    // The largest negotiated move carries both a stack count and a manual sort slot.
     assert_eq!(
         command["max_payload_bytes"].as_u64(),
-        Some(MAX_ITEM_MOVE_INTENT_STACK_COUNT_BYTES as u64)
+        Some(crate::item_view::MAX_ITEM_MOVE_INTENT_MANUAL_SORT_BYTES as u64)
     );
     assert_eq!(
         command["max_result_payload_bytes"].as_u64(),
@@ -398,7 +398,7 @@ fn registries_bind_the_item_view_ids_and_limits() {
             STATE_DOMAIN_OPEN_CONTAINER,
             "OPEN_CONTAINER",
             "OpenContainerV1",
-            MAX_OPEN_CONTAINER_APPEARANCE_BYTES,
+            MAX_OPEN_CONTAINER_CORPSE_48_APPEARANCE_BYTES,
             DELTA_TYPE_OPEN_CONTAINER_V1,
             SNAPSHOT_TYPE_OPEN_CONTAINER_V1,
         ),
@@ -435,9 +435,13 @@ fn registries_bind_the_item_view_ids_and_limits() {
         limit("ITEMV0-RL-02"),
         Some(MAX_OPEN_CONTAINER_ENTRIES as u64)
     );
-    // SUMMER decision 20 raised durable corpse capacity to 30. The capability-4
-    // item view still has its separate ITEMV0-RL-02 limit of 16 entries.
-    assert_eq!(limit("GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX"), Some(30));
+    // CORPSE48 (owner 2026-11-17) raised durable corpse capacity to 48; capability 514
+    // shows all of it, while the legacy domain-11 bound ITEMV0-RL-02 stays 30.
+    assert_eq!(limit("GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX"), Some(48));
+    assert_eq!(
+        limit("ITEMV0-RL-02-CORPSE48"),
+        Some(MAX_CORPSE_CONTAINER_48_ENTRIES as u64)
+    );
     assert_eq!(limit("ITEMV0-RL-03"), Some(MAX_LIVE_ITEM_HANDLES as u64));
     assert_eq!(MAX_LIVE_ITEM_HANDLES_MAP_VIEW, 1_339);
     assert_eq!(
@@ -883,7 +887,7 @@ fn stack_quantity_count_is_explicit_bounded_and_negotiated()
     };
     for destination in [
         ItemMoveDestination::MainBackpack,
-        ItemMoveDestination::Container(std::num::NonZeroU64::MAX),
+        ItemMoveDestination::Container(std::num::NonZeroU64::MAX, None),
         ItemMoveDestination::Ground(WorldTilePosition {
             x: i32::MAX,
             y: i32::MIN,
@@ -1063,5 +1067,133 @@ fn appearance_selection_uses_extended_inventory_bounds_only_when_negotiated() {
     assert_eq!(
         decode_open_container_with_appearances(&bytes, true),
         Ok(view)
+    );
+}
+
+/// CONTAINER-MANUAL-SORT-1: the container destination's `slot` (field 2) exists only under
+/// capability 510; without it today's bytes are unchanged and a slot fails closed both ways.
+#[test]
+fn container_manual_sort_slot_is_negotiated_bounded_and_round_trips()
+-> Result<(), Box<dyn std::error::Error>> {
+    let tree = ItemMoveSelection {
+        equip_drop: true,
+        container_tree: true,
+        ..ItemMoveSelection::default()
+    };
+    let sort = ItemMoveSelection {
+        manual_sort: true,
+        ..tree
+    };
+    let unslotted = ItemMoveIntent {
+        source: handle(7),
+        destination: ItemMoveDestination::Container(handle(9), None),
+    };
+    let legacy = encode_item_move_intent_for(&unslotted, tree).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        encode_item_move_intent_for(&unslotted, sort),
+        Ok(legacy.clone())
+    );
+    assert_eq!(decode_item_move_intent_for(&legacy, sort), Ok(unslotted));
+
+    let slotted = ItemMoveIntent {
+        source: handle(7),
+        destination: ItemMoveDestination::Container(handle(9), Some(3)),
+    };
+    assert_eq!(
+        encode_item_move_intent_for(&slotted, tree),
+        Err(ItemViewWireError::Malformed)
+    );
+    let payload = encode_item_move_intent_for(&slotted, sort).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(payload, [0x08, 7, 0x2a, 4, 0x08, 9, 0x10, 3]);
+    assert_eq!(decode_item_move_intent_for(&payload, sort), Ok(slotted));
+    assert_eq!(
+        decode_item_move_intent_for(&payload, tree),
+        Err(ItemViewWireError::Malformed)
+    );
+    // A slot is never repeated, and the handle stays required.
+    assert_eq!(
+        decode_item_move_intent_for(&[0x08, 7, 0x2a, 6, 0x08, 9, 0x10, 3, 0x10, 4], sort),
+        Err(ItemViewWireError::Malformed)
+    );
+    assert_eq!(
+        decode_item_move_intent_for(&[0x08, 7, 0x2a, 2, 0x10, 3], sort),
+        Err(ItemViewWireError::Malformed)
+    );
+
+    // The largest slotted move with a count fits the 510 bound.
+    let worst = ItemMoveIntent {
+        source: handle(u64::MAX),
+        destination: ItemMoveDestination::Container(handle(u64::MAX), Some(u32::MAX)),
+    };
+    let mut payload = encode_item_move_intent_for(&worst, sort).map_err(|e| format!("{e:?}"))?;
+    payload.extend([0x30, 100]);
+    assert_eq!(payload.len(), MAX_ITEM_MOVE_INTENT_MANUAL_SORT_BYTES);
+    assert_eq!(
+        decode_item_move_intent_with_count_for(&payload, sort),
+        Ok((worst, Some(100)))
+    );
+    assert!(decode_item_move_intent_with_count_for(&payload, tree).is_err());
+    Ok(())
+}
+
+// CORPSE48: capability 514 CORPSE_CONTAINER_48_V1.
+
+#[test]
+fn corpse_48_views_round_trip_forty_eight_entries_and_refuse_forty_nine() {
+    let mut view = container(48, worst);
+    view.container_handle = Some(handle(u64::MAX));
+    let bytes = encode_open_container_for(&view, false, true).expect("514 maximum");
+    assert_eq!(bytes.len(), MAX_OPEN_CONTAINER_CORPSE_48_BYTES);
+    assert_eq!(MAX_OPEN_CONTAINER_CORPSE_48_BYTES, 1_499);
+    assert_eq!(
+        decode_open_container_for(&bytes, false, true),
+        Ok(view.clone())
+    );
+    // Without 514 the legacy bounds stay: 31..=48 entries are refused both ways.
+    assert_eq!(
+        encode_open_container(&view),
+        Err(ItemViewWireError::LimitExceeded)
+    );
+    assert_eq!(
+        decode_open_container(&bytes),
+        Err(ItemViewWireError::LimitExceeded)
+    );
+    let legacy = encode_open_container_for(&container(30, worst), false, true).expect("30");
+    assert_eq!(decode_open_container(&legacy), Ok(container(30, worst)));
+    let mut over = Vec::new();
+    for entry in container(31, worst).entries {
+        encode_entry(&mut over, 2, &entry);
+    }
+    assert_eq!(
+        decode_open_container(&over),
+        Err(ItemViewWireError::LimitExceeded)
+    );
+
+    let mut forty_nine = container(49, worst);
+    forty_nine.container_handle = Some(handle(1));
+    assert_eq!(
+        encode_open_container_for(&forty_nine, true, true),
+        Err(ItemViewWireError::LimitExceeded)
+    );
+    let mut over = Vec::new();
+    for entry in container(49, small).entries {
+        encode_entry(&mut over, 2, &entry);
+    }
+    assert!(over.len() <= MAX_OPEN_CONTAINER_CORPSE_48_BYTES);
+    assert_eq!(
+        decode_open_container_for(&over, false, true),
+        Err(ItemViewWireError::LimitExceeded)
+    );
+
+    for item in &mut view.entries {
+        item.appearance_id = u16::MAX;
+    }
+    let bytes = encode_open_container_for(&view, true, true).expect("499 and 514 maximum");
+    assert_eq!(bytes.len(), MAX_OPEN_CONTAINER_CORPSE_48_APPEARANCE_BYTES);
+    assert_eq!(MAX_OPEN_CONTAINER_CORPSE_48_APPEARANCE_BYTES, 1_691);
+    assert_eq!(decode_open_container_for(&bytes, true, true), Ok(view));
+    assert_eq!(
+        MAX_LIVE_ITEM_HANDLES + MAX_CORPSE_CONTAINER_48_EXTRA_HANDLES,
+        MAX_LIVE_ITEM_HANDLES - MAX_OPEN_CONTAINER_ENTRIES + MAX_CORPSE_CONTAINER_48_ENTRIES
     );
 }

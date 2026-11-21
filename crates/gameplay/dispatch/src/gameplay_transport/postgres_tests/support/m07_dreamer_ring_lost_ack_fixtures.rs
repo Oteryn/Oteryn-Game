@@ -71,6 +71,7 @@ pub(super) async fn exercise(
                 actor,
                 command,
                 LoopMove {
+                    slot: None,
                     item: ItemKey::Instance(ring),
                     count: None,
                     target: LoopTarget::Ground(WorldTilePosition {

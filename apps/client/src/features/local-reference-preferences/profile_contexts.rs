@@ -93,7 +93,7 @@ impl ReferencePreferences {
         Ok(())
     }
 
-    pub(super) fn binding_maps(
+    pub(crate) fn binding_maps(
         &self,
         chat_on: bool,
     ) -> Result<(&KeyMap, &KeyMap), PreferenceError> {

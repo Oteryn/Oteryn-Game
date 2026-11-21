@@ -133,6 +133,26 @@ fn launch() -> Result<(), LaunchError> {
         arguments.remove(0);
         wait_for_setup_exit()?;
     }
+    if arguments
+        .iter()
+        .any(|argument| argument == "--after-client")
+    {
+        // The client requests maintenance before exiting; never race its install mutex.
+        use std::time::{Duration, Instant};
+        let sid = oteryn_client::win_mutex::current_user_sid().map_err(LaunchError::Os)?;
+        let name = oteryn_client::win_mutex::client_mutex_name(&sid);
+        let deadline = Instant::now() + Duration::from_secs(120);
+        while oteryn_client::win_mutex::exists(&name).map_err(LaunchError::Os)? {
+            if Instant::now() >= deadline {
+                return Err(LaunchError::Os(io::Error::new(
+                    io::ErrorKind::TimedOut,
+                    "client did not exit in time; close the client and retry maintenance",
+                )));
+            }
+            std::thread::sleep(Duration::from_millis(250));
+        }
+        arguments.retain(|argument| argument != "--after-client");
+    }
     let launcher = std::env::current_exe().map_err(LaunchError::Os)?;
     let install_dir = launcher
         .parent()
@@ -224,12 +244,10 @@ mod tests {
 
     const RELEASE: &str = oteryn_client::RELEASE_ID;
 
-    fn install_dir(name: &str) -> PathBuf {
-        let directory =
-            std::env::temp_dir().join(format!("oteryn-launcher-{name}-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&directory);
-        assert!(std::fs::create_dir_all(directory.join("releases")).is_ok());
-        directory
+    fn install_dir() -> std::io::Result<tempfile::TempDir> {
+        let fixture = tempfile::tempdir()?;
+        std::fs::create_dir(fixture.path().join("releases"))?;
+        Ok(fixture)
     }
 
     fn install_release(directory: &Path, release: &str) {
@@ -239,31 +257,36 @@ mod tests {
     }
 
     #[test]
-    fn installation_check_explains_repair_and_active_release() {
-        let directory = install_dir("check-report");
-        assert!(installation_report(&directory).contains("Repair: run the Oteryn installer"));
-        install_release(&directory, RELEASE);
+    fn installation_check_explains_repair_and_active_release() -> std::io::Result<()> {
+        let fixture = install_dir()?;
+        let directory = fixture.path();
+        assert!(installation_report(directory).contains("Repair: run the Oteryn installer"));
+        install_release(directory, RELEASE);
         assert!(std::fs::write(directory.join("current.txt"), RELEASE).is_ok());
-        let report = installation_report(&directory);
+        let report = installation_report(directory);
         assert!(report.contains(RELEASE));
         assert!(report.contains("Active client"));
+        Ok(())
     }
 
     #[test]
-    fn missing_pointer_is_refused() {
-        let directory = install_dir("missing");
-        install_release(&directory, RELEASE);
+    fn missing_pointer_is_refused() -> std::io::Result<()> {
+        let fixture = install_dir()?;
+        let directory = fixture.path();
+        install_release(directory, RELEASE);
         assert!(matches!(
-            active_client(&directory),
+            active_client(directory),
             Err(LaunchError::MissingPointer)
         ));
+        Ok(())
     }
 
     #[test]
-    fn malformed_pointers_are_refused() {
-        let directory = install_dir("malformed");
-        install_release(&directory, RELEASE);
-        install_release(&directory, "..");
+    fn malformed_pointers_are_refused() -> std::io::Result<()> {
+        let fixture = install_dir()?;
+        let directory = fixture.path();
+        install_release(directory, RELEASE);
+        install_release(directory, "..");
         for contents in [
             String::new(),
             "..".to_owned(),
@@ -281,71 +304,74 @@ mod tests {
         ] {
             assert!(std::fs::write(directory.join("current.txt"), &contents).is_ok());
             assert!(
-                matches!(
-                    active_client(&directory),
-                    Err(LaunchError::MalformedPointer)
-                ),
+                matches!(active_client(directory), Err(LaunchError::MalformedPointer)),
                 "{contents:?}"
             );
         }
         assert!(std::fs::write(directory.join("current.txt"), [0xff, 0xfe]).is_ok());
         assert!(matches!(
-            active_client(&directory),
+            active_client(directory),
             Err(LaunchError::MalformedPointer)
         ));
+        Ok(())
     }
 
     #[test]
-    fn dangling_pointers_are_refused() {
-        let directory = install_dir("dangling");
-        install_release(&directory, RELEASE);
+    fn dangling_pointers_are_refused() -> std::io::Result<()> {
+        let fixture = install_dir()?;
+        let directory = fixture.path();
+        install_release(directory, RELEASE);
         let repaired = format!("{RELEASE}~1");
         assert!(std::fs::write(directory.join("current.txt"), &repaired).is_ok());
         assert!(matches!(
-            active_client(&directory),
+            active_client(directory),
             Err(LaunchError::DanglingPointer(release)) if release == repaired
         ));
         // A release directory without its executable is dangling too.
         assert!(std::fs::create_dir_all(directory.join("releases").join(&repaired)).is_ok());
         assert!(matches!(
-            active_client(&directory),
+            active_client(directory),
             Err(LaunchError::DanglingPointer(_))
         ));
+        Ok(())
     }
 
     #[test]
-    fn pointers_to_another_client_version_start_that_release() {
+    fn pointers_to_another_client_version_start_that_release() -> std::io::Result<()> {
         // Release A is active; installing B of another client version failed to activate, so
         // B's launcher runs with current.txt still naming A.
-        let directory = install_dir("other-version");
+        let fixture = install_dir()?;
+        let directory = fixture.path();
         let previous = "9.9.9+dev.ci.g1a2b3c4d5e6f";
         assert!(!previous.starts_with(env!("CARGO_PKG_VERSION")));
-        install_release(&directory, previous);
-        install_release(&directory, RELEASE);
+        install_release(directory, previous);
+        install_release(directory, RELEASE);
         for (contents, release) in [
             (format!("{previous}\r\n"), previous.to_owned()),
             (format!("{previous}~1"), format!("{previous}~1")),
         ] {
-            install_release(&directory, &release);
+            install_release(directory, &release);
             assert!(std::fs::write(directory.join("current.txt"), &contents).is_ok());
             let expected = directory
                 .join("releases")
                 .join(&release)
                 .join("oteryn-client.exe");
             assert!(
-                matches!(active_client(&directory), Ok(client) if client == expected),
+                matches!(active_client(directory), Ok(client) if client == expected),
                 "{contents:?}"
             );
         }
+        Ok(())
     }
 
     #[test]
-    fn valid_pointers_start_exactly_the_named_release() {
-        let directory = install_dir("valid");
-        install_release(&directory, RELEASE);
+    fn valid_pointers_start_exactly_the_named_release() -> std::io::Result<()> {
+        let fixture = install_dir()?;
+        let directory = fixture.path();
+        install_release(directory, RELEASE);
         let repaired = format!("{RELEASE}~2");
-        install_release(&directory, &repaired);
-        install_release(&directory, "rel-a");
+        install_release(directory, &repaired);
+        install_release(directory, "rel-a");
         for (contents, release) in [
             ("rel-a".to_owned(), "rel-a"),
             (RELEASE.to_owned(), RELEASE),
@@ -358,9 +384,10 @@ mod tests {
                 .join(release)
                 .join("oteryn-client.exe");
             assert!(
-                matches!(active_client(&directory), Ok(client) if client == expected),
+                matches!(active_client(directory), Ok(client) if client == expected),
                 "{contents:?}"
             );
         }
+        Ok(())
     }
 }

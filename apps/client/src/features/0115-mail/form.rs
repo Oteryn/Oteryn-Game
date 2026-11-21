@@ -1,0 +1,375 @@
+//! Platform-neutral property and service form: title, labelled fields, buttons and a summary.
+//! The session owns the values; the desktop shell only presents and submits them.
+use crate::combat_input::PlayCommand;
+use crate::play::{
+    PlayLink,
+    mailbox::{Mailbox, lock},
+};
+use tokio::sync::mpsc::UnboundedSender;
+
+/// Open, pending, the field values and the summary text.
+pub(in crate::play) type Snapshot = (bool, bool, Vec<String>, String);
+
+#[derive(Clone, Copy)]
+pub(in crate::play) struct Form {
+    pub title: &'static str,
+    pub labels: &'static [&'static str],
+    pub buttons: &'static [&'static str],
+    pub snapshot: fn(&Mailbox) -> Snapshot,
+    pub set_open: fn(&mut Mailbox, bool),
+    pub submit: fn(&mut Mailbox, &UnboundedSender<PlayCommand>, usize, Vec<String>),
+}
+
+/// A feature's per-frame upkeep while its form is open, such as paging a catalogue.
+type Tick = fn(&mut Mailbox, &UnboundedSender<PlayCommand>);
+
+/// One registered form window: how it is built and its optional per-frame upkeep.
+/// Each feature's own key or opener opens it; the window only presents what is open.
+#[derive(Clone, Copy)]
+pub struct FeatureForm {
+    build: fn(&PlayLink) -> Form,
+    tick: Option<Tick>,
+}
+
+/// What a form window shows on this frame.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FormView {
+    pub title: &'static str,
+    pub labels: &'static [&'static str],
+    pub buttons: &'static [&'static str],
+    pub open: bool,
+    pub pending: bool,
+    pub fields: Vec<String>,
+    pub text: String,
+}
+
+/// One trimmed field value; a missing field reads as empty.
+pub(in crate::play) fn field(values: &[String], index: usize) -> &str {
+    values.get(index).map_or("", |value| value.trim())
+}
+
+const fn entry(build: fn(&PlayLink) -> Form, tick: Option<Tick>) -> FeatureForm {
+    FeatureForm { build, tick }
+}
+
+/// The forms the shared frontend presents with its generic form window, in feature order.
+/// Every feature with its own Bevy presenter stays out of this list.
+const FORMS: &[FeatureForm] = &[
+    entry(crate::play::feature_0007_chat::view::lists::form, None),
+    entry(
+        crate::play::feature_0008_achievement_notices::view::form,
+        None,
+    ),
+    entry(crate::play::feature_0017_attack::view::editor::form, None),
+    entry(
+        crate::play::feature_0025_appearance::view::memorial::form,
+        None,
+    ),
+    entry(
+        crate::play::feature_0039_timed_item::view::form,
+        Some(crate::play::feature_0039_timed_item::input::tick),
+    ),
+    entry(crate::play::feature_0040_guild::view::form, None),
+    entry(crate::play::feature_0043_vip::input::account::form, None),
+    entry(crate::play::feature_0051_staff::view::form, None),
+    entry(crate::play::feature_0053_world_event::view::form, None),
+    entry(crate::play::feature_0054_training::view::form, None),
+    entry(crate::play::feature_0055_guild_bank::view::form, None),
+    entry(crate::play::feature_0059_house_move_out::view::form, None),
+    entry(
+        crate::play::feature_0080_chat_private_channel::view::form,
+        None,
+    ),
+    entry(crate::play::feature_0086_house_transfer::view::form, None),
+    entry(crate::play::feature_0097_character_info::view::form, None),
+    entry(
+        crate::play::feature_0097_character_info::view::titles_form,
+        None,
+    ),
+    entry(crate::play::feature_0099_guildhall::view::form, None),
+    entry(crate::play::feature_0103_guild_war::view::form, None),
+    entry(
+        crate::play::feature_0115_mail::view::form_window,
+        Some(crate::play::feature_0115_mail::input::tick),
+    ),
+    entry(
+        crate::play::feature_0117_boss_encounter::view::cooldown_form,
+        None,
+    ),
+    entry(crate::play::feature_0147_exiva_settings::view::form, None),
+    entry(crate::play::feature_0149_raid_schedule::view::form, None),
+    entry(crate::play::feature_0150_house_podium::view::form, None),
+    entry(crate::play::feature_0151_daily_boost::view::form, None),
+    entry(
+        crate::play::feature_0154_store::view::premium_game::premium_form,
+        None,
+    ),
+    entry(crate::play::feature_0165_hireling::view::form, None),
+    entry(crate::play::feature_0168_animus_mastery::view::form, None),
+    entry(crate::play::feature_0170_arena::view::form, None),
+    entry(crate::play::feature_0179_hotkey_equip::view::form, None),
+    entry(
+        crate::play::feature_0182_daily_reward::view::returner_form,
+        None,
+    ),
+    entry(
+        crate::play::feature_0197_cyclopedia_tracker::view::form,
+        None,
+    ),
+    entry(
+        crate::play::feature_0199_cyclopedia_character::view::sanctions::form,
+        None,
+    ),
+    entry(
+        crate::play::feature_0207_house_furniture_wrap::view::form,
+        None,
+    ),
+    entry(crate::play::feature_0224_boss_rewards::view::form, None),
+    entry(crate::play::feature_0225_boss_difficulty::view::form, None),
+    entry(crate::play::feature_0240_chat_party_room::view::form, None),
+    entry(
+        crate::play::feature_0250_hireling_management::view::form,
+        None,
+    ),
+    entry(
+        crate::play::feature_0259_chat_public_channels::view::form,
+        None,
+    ),
+    entry(
+        crate::play::feature_0280_party_effects::protocol::form,
+        None,
+    ),
+    entry(crate::play::feature_0290_cast_control::view::form, None),
+    entry(crate::play::feature_0291_cast_chat::view::form, None),
+    entry(
+        crate::play::feature_0381_potion_durations::protocol::form,
+        None,
+    ),
+    entry(
+        crate::play::feature_0445_house_furniture_rotation::view::form,
+        None,
+    ),
+    entry(
+        crate::play::feature_local_account_achievements::view::form,
+        Some(crate::play::feature_local_account_achievements::view::tick),
+    ),
+];
+
+impl FeatureForm {
+    /// Every form the generic window presents.
+    #[must_use]
+    pub fn all() -> &'static [FeatureForm] {
+        FORMS
+    }
+    /// The window title the form was registered with.
+    #[must_use]
+    pub fn title(&self, link: &PlayLink) -> &'static str {
+        (self.build)(link).title
+    }
+}
+
+impl PlayLink {
+    /// The form's current presentation, read under the mailbox lock and released at once.
+    #[must_use]
+    pub fn feature_form_view(&self, form: FeatureForm) -> FormView {
+        let built = (form.build)(self);
+        let (open, pending, fields, text) = (built.snapshot)(&lock(&self.mailbox));
+        FormView {
+            title: built.title,
+            labels: built.labels,
+            buttons: built.buttons,
+            open,
+            pending,
+            fields,
+            text,
+        }
+    }
+
+    /// Runs the feature's per-frame upkeep while its form is open.
+    pub fn feature_form_tick(&self, form: FeatureForm) {
+        let Some(tick) = form.tick else {
+            return;
+        };
+        let built = (form.build)(self);
+        let mut mailbox = lock(&self.mailbox);
+        if (built.snapshot)(&mailbox).0 {
+            tick(&mut mailbox, &self.commands);
+        }
+    }
+
+    /// Submits one button with the field values; refused while the form waits for the server.
+    pub fn feature_form_submit(&self, form: FeatureForm, action: usize, values: Vec<String>) {
+        let built = (form.build)(self);
+        if action >= built.buttons.len() {
+            return;
+        }
+        let mut mailbox = lock(&self.mailbox);
+        let (open, pending, _, _) = (built.snapshot)(&mailbox);
+        if !open || pending {
+            return;
+        }
+        (built.submit)(&mut mailbox, &self.commands, action, values);
+    }
+
+    /// Closes the form window; the feature's session state stays.
+    pub fn feature_form_close(&self, form: FeatureForm) {
+        let built = (form.build)(self);
+        (built.set_open)(&mut lock(&self.mailbox), false);
+    }
+}
+
+#[cfg(all(test, bevy_shell))]
+impl crate::play::Outbox {
+    /// Admits the capabilities the generic form window tests drive; no server reply is made up.
+    pub(crate) fn bevy_feature_forms_selected(&self) {
+        let mut mailbox = lock(&self.0);
+        mailbox.boss_rewards.selected = true;
+        mailbox.chat_party_room.selected = true;
+        mailbox.party_effects.selected = true;
+    }
+
+    /// Selects the capabilities of the forms the intent-mapping tests drive.
+    pub(crate) fn bevy_feature_form_capabilities(&self) {
+        self.achievements_initialize();
+        self.arena_initialize(true);
+        self.boss_difficulty_initialize(true, false);
+        self.chat_public_initialize(true, None);
+        self.exiva_initialize(true);
+        self.guild_initialize(true);
+        self.hireling_initialize(true);
+        self.hireling_management_initialize(true);
+        self.hotkey_equip_initialize(true);
+        self.hotkey_equip_items(vec![3031, 3035]);
+        let mut mailbox = lock(&self.0);
+        mailbox.properties.house_podium.selected = true;
+        mailbox.chat_private.selected = true;
+        mailbox.chat.selected = true;
+    }
+
+    /// Answers the public-channel, boss-difficulty and store requests in flight.
+    pub(crate) fn bevy_feature_forms_answered(&self) {
+        let mut mailbox = lock(&self.0);
+        mailbox.chat_public.pending = false;
+        mailbox.boss_difficulty.pending = false;
+        mailbox.store.pending = false;
+        mailbox.store.confirmed_purchase = None;
+    }
+
+    /// The private-channel list the server reports: own channel `own`, an invitation to `invited`.
+    pub(crate) fn bevy_private_channels_listed(&self, own: u16, invited: u16) {
+        let mut mailbox = lock(&self.0);
+        let panel = &mut mailbox.chat_private;
+        panel.list = Some(oteryn_session::ChatChannelList {
+            own_channel: Some(own),
+            invited: vec![oteryn_session::InvitedChannel {
+                channel_id: invited,
+                owner_name: "Friend".into(),
+            }],
+            ..Default::default()
+        });
+        panel.pending = false;
+        panel.pending_intent = None;
+    }
+
+    /// The private-channel request in flight is answered.
+    pub(crate) fn bevy_private_channels_answered(&self) {
+        let mut mailbox = lock(&self.0);
+        mailbox.chat_private.pending = false;
+        mailbox.chat_private.pending_intent = None;
+    }
+
+    /// The guild the server reports: own guild `[1; 16]`, members A and B, an invitation to C.
+    pub(crate) fn bevy_guild_listed(&self) {
+        use oteryn_client_ui::guild::guild;
+        let mut mailbox = lock(&self.0);
+        let panel = &mut mailbox.guild;
+        panel.pending = false;
+        panel.own = Some(guild::GuildSummary {
+            guild: [1; 16],
+            name: "Own".into(),
+            state: 1,
+            revision: 3,
+            own_rank: 1,
+            title: String::new(),
+            message: String::new(),
+            ranks: vec!["Leader".into(), "Member".into()],
+        });
+        for (character, name) in [([2; 16], "A"), ([3; 16], "B")] {
+            panel.roster.push(guild::GuildMember {
+                character,
+                name: name.into(),
+                level: 2,
+                title: String::new(),
+                channel: None,
+            });
+        }
+        panel.invitations.push(guild::GuildInvitation {
+            guild: [4; 16],
+            name: "C".into(),
+            expires_at_unix_ms: 10,
+        });
+    }
+
+    /// Answers the guild request in flight.
+    pub(crate) fn bevy_guild_answered(&self) {
+        lock(&self.0).guild.pending = false;
+    }
+
+    /// Answers the arena request in flight.
+    pub(crate) fn bevy_arena_answered(&self) {
+        lock(&self.0).arena.pending = None;
+    }
+
+    /// Delivers an Exiva reply through the session's result route.
+    pub(crate) fn bevy_exiva_result(&self, result: &oteryn_session::GatedCommandResult) {
+        self.exiva_result(result);
+    }
+
+    /// Delivers an account-achievements page through the session's result route.
+    pub(crate) fn bevy_achievements_result(
+        &self,
+        response: &oteryn_client_runtime::account_achievements::Response,
+    ) {
+        self.achievements_result(response);
+    }
+
+    /// The owned hireling's identity the configuration tests seed: a UUIDv7 of ones.
+    pub(crate) const BEVY_HIRELING: [u8; 16] = [1, 1, 1, 1, 1, 1, 0x70, 1, 0x80, 1, 1, 1, 1, 1, 1, 1];
+
+    /// One owned hireling named Alice and the six configuration offers priced.
+    pub(crate) fn bevy_hireling_configuration_priced(&self) {
+        use oteryn_client_runtime::cui3::store;
+        let mut mailbox = lock(&self.0);
+        mailbox.hireling_management.pending = None;
+        mailbox
+            .hireling_management
+            .entries
+            .push(oteryn_client_ui::hireling_management::wire::Entry {
+                hireling: Self::BEVY_HIRELING,
+                name: "Alice".into(),
+                sex: 2,
+                look_type: 1107,
+                colors: [1, 2, 3, 4],
+                skills: 0,
+                outfits: 0,
+                position: None,
+            });
+        mailbox.store.selected = true;
+        mailbox.store.catalogue_category = "houses.hirelings".into();
+        let offers = ["25438", "25437", "1001", "1002", "1003", "1004"]
+            .map(|key| store::StoreOffer {
+                offer_key: format!("store:hireling:{key}"),
+                title: key.into(),
+                price: 5,
+                currency: "coins".into(),
+            })
+            .to_vec();
+        mailbox.store.catalogue = Some(store::StoreCataloguePage {
+            catalog_revision: "r1".into(),
+            total_coins: 100,
+            transferable_coins: 100,
+            next_page_cursor: String::new(),
+            offers,
+        });
+    }
+}

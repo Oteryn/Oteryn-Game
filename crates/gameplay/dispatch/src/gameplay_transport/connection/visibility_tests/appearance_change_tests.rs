@@ -1,7 +1,12 @@
 //! Scripted owner outcomes through the real connection dispatch and VIS-2 interest query.
 use super::*;
 use crate::gameplay_transport::appearance_change::observation::Observation;
+use crate::gameplay_transport::item_view::InventoryItems;
 use oteryn_protocol_oteryn::appearance;
+use oteryn_protocol_oteryn::guild_emblem::{CAPABILITY_GUILD_EMBLEM_V1, Emblem, GuildEmblem};
+use oteryn_protocol_oteryn::inventory_capacity::{
+    CAPABILITY_INVENTORY_CAPACITY_V1, InventoryCapacity,
+};
 use oteryn_protocol_oteryn::{decode_command_result, decode_state_delta};
 
 struct AppearanceChannel {
@@ -9,6 +14,7 @@ struct AppearanceChannel {
     outcome: Option<appearance::ChangeResult>,
     revision: Cell<u64>,
     calls: Cell<usize>,
+    defer_input: bool,
 }
 impl FreshAdmissionAuthority for AppearanceChannel {
     async fn admit(
@@ -17,6 +23,16 @@ impl FreshAdmissionAuthority for AppearanceChannel {
     ) -> Result<AdmittedSession, AdmissionRefusal> {
         Err(AdmissionRefusal::Unavailable)
     }
+    async fn house_transfer_input(
+        &self,
+        _: AdmittedSession,
+    ) -> Result<(), crate::durability::DurabilityError> {
+        if self.defer_input {
+            return Err(crate::durability::DurabilityError::RootUnavailable);
+        }
+        Ok(())
+    }
+
     async fn observe(&self, actor: ExactActorRef) -> Option<WorldSpatialObservation> {
         self.channel.observe(actor).await
     }
@@ -29,6 +45,31 @@ impl FreshAdmissionAuthority for AppearanceChannel {
         }
         Some(entities)
     }
+    async fn observe_character_inventory(
+        &self,
+        _: ExactActorRef,
+        _: GameSessionId,
+    ) -> Option<InventoryItems> {
+        Some(InventoryItems::default())
+    }
+
+    async fn observe_inventory_capacity(&self, _: AdmittedSession) -> Option<InventoryCapacity> {
+        Some(InventoryCapacity {
+            capacity: 40_000,
+            free: 39_000,
+        })
+    }
+
+    async fn observe_guild_emblems(&self, admitted: AdmittedSession) -> Option<Vec<GuildEmblem>> {
+        Some(vec![GuildEmblem {
+            entity: EntityRef {
+                identity: admitted.runtime_actor?.placement_identity(),
+                generation: 1,
+            },
+            emblem: Emblem::Member,
+        }])
+    }
+
     async fn appearance_change(
         &self,
         _: ExactActorRef,
@@ -123,6 +164,7 @@ async fn scenario_actor(
         outcome,
         revision: Cell::new(1),
         calls: Cell::new(0),
+        defer_input: false,
     };
     let mut admitted = session(&[6], SessionContinuity::FRESH);
     let offered = crate::gameplay_transport::appearance_change::offer::offered(
@@ -173,6 +215,10 @@ async fn scenario_actor(
             assert_eq!(domains[0].domain_id, 21);
             let snapshot =
                 appearance::Snapshot::decode(domains[0].payload).map_err(|e| format!("{e:?}"))?;
+            assert_eq!(snapshot.catalogue.root_revision, 1);
+            assert!(snapshot.catalogue.selected.is_none());
+            assert_eq!(snapshot.catalogue.outfits.len(), 1);
+            assert_eq!(snapshot.catalogue.outfits[0].look_type, 128);
             assert_eq!(snapshot.bindings.len(), binding_count);
             let shown = snapshot
                 .bindings
@@ -235,7 +281,15 @@ async fn scenario_actor(
             {
                 let catalogue = read_one(&mut client).await?;
                 let envelope = decode_wire_envelope(&catalogue)?;
-                assert_eq!(decode_state_delta(envelope.payload())?.domain_id, 21);
+                let delta = decode_state_delta(envelope.payload())?;
+                assert_eq!(
+                    (delta.domain_id, delta.delta_type),
+                    (21, appearance::DELTA_TYPE_APPEARANCE_CATALOGUE)
+                );
+                let catalogue =
+                    appearance::Catalogue::decode(delta.payload).map_err(|e| format!("{e:?}"))?;
+                assert_eq!(catalogue.root_revision, 2);
+                assert_eq!(catalogue.context, change.context);
                 let mappings = read_one(&mut client).await?;
                 let envelope = decode_wire_envelope(&mappings)?;
                 let delta = decode_state_delta(envelope.payload())?;
@@ -311,4 +365,162 @@ fn forge_creature_real_dispatch_downgrade_omits_creature_bindings() -> TestResul
     run(async {
         scenario_actor(&[6, 25], Some(appearance::ChangeResult::Committed(2)), true).await
     })
+}
+
+#[test]
+fn qualification_session_decodes_served_visibility_and_guarded_step() -> TestResult {
+    use crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES;
+    use oteryn_protocol_oteryn::actor_motion::{ActorMotion, CAPABILITY_ACTOR_MOTION_V1};
+    use oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_VIEW_MOVE_V1;
+    use oteryn_protocol_oteryn::world_spatial::CAPABILITY_PACED_MOVEMENT_V1;
+    use oteryn_protocol_oteryn::world_spatial_entities::{
+        CAPABILITY_NATIVE_CREATURE_ICONS_V1, NativeCreatureIcon, NativeCreatureIcons,
+    };
+    use oteryn_protocol_oteryn::{ServerAcceptedValue, encode_server_accepted};
+    use oteryn_session::{Admission, CLIENT_SUPPORTED_CAPABILITIES, Session, SessionEvent};
+
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            run(async {
+                tokio::time::pause();
+                let motion = ActorMotion {
+                    step_duration_ms: 200,
+                    ..ActorMotion::default()
+                };
+                let icons = NativeCreatureIcons::new(&[NativeCreatureIcon {
+                    category: 1,
+                    id: 6,
+                    count: 15,
+                }])
+                .map_err(|error| format!("{error:?}"))?;
+                let mut shown = creature([9; 16], at(102, 100), 1);
+                shown.motion = Some(motion);
+                shown.source_icons = icons;
+                let authority = AppearanceChannel {
+                    channel: Channel::new(vec![shown]),
+                    outcome: None,
+                    revision: Cell::new(1),
+                    calls: Cell::new(0),
+                    defer_input: true,
+                };
+                let bundle_appearance =
+                    crate::gameplay_transport::appearance_change::offer::offered(
+                        BUNDLE_WORLD_OFFERED_CAPABILITIES,
+                        true,
+                    );
+                let spatial = [
+                    CAPABILITY_ITEM_VIEW_MOVE_V1,
+                    CAPABILITY_WORLD_SPATIAL_ENTITIES,
+                    CAPABILITY_PACED_MOVEMENT_V1,
+                    appearance::CAPABILITY_APPEARANCE_V1,
+                    CAPABILITY_NATIVE_CREATURE_ICONS_V1,
+                    CAPABILITY_ACTOR_MOTION_V1,
+                    CAPABILITY_INVENTORY_CAPACITY_V1,
+                    CAPABILITY_GUILD_EMBLEM_V1,
+                ];
+                let spatial_offers: Vec<_> = bundle_appearance
+                    .into_iter()
+                    .filter(|offer| spatial.contains(&offer.id))
+                    .collect();
+                let selected =
+                    SelectedCapabilities::select(&spatial_offers, CLIENT_SUPPORTED_CAPABILITIES)
+                        .ok_or("qualification capability selection")?;
+                assert_eq!(selected.as_slice(), spatial);
+                let mut admitted = session(&[6], SessionContinuity::FRESH);
+                admitted.continuity.selected_capabilities = selected;
+                let (mut server, client) = tokio::io::duplex(256 * 1024);
+                let serving = async {
+                    // Bootstrap only the already-authorized identity. The join snapshot
+                    // itself comes from the Channel connection's production writer.
+                    read_one(&mut server).await?;
+                    let accepted = encode_server_accepted(&ServerAcceptedValue {
+                        game_session_id: admitted.game_session_id,
+                        world_id: admitted.world_id,
+                        channel_id: admitted.channel_id,
+                        connection_generation: 1,
+                        current_server_sequence: 0,
+                        next_command_id: 1,
+                        schema_revision: 1,
+                        selected_capabilities: selected.as_slice(),
+                    })?;
+                    crate::gameplay_transport::tcp_tls::write_frame(&mut server, &accepted).await?;
+                    serve_admitted(&mut server, admitted, &authority, IDLE_LIVENESS).await;
+                    Ok::<_, Box<dyn Error>>(())
+                };
+                let joining = async {
+                    let mut session = Session::admit(
+                        client,
+                        Admission {
+                            appearance_items: None,
+                            schema_revision: 1,
+                            character_id: oteryn_protocol_oteryn::CharacterId::decode(&uuid_v7(
+                                0x55,
+                            ))?,
+                            admission_material: b"qualification join",
+                            client_build_id: "node-boot",
+                            supported_capabilities: CLIENT_SUPPORTED_CAPABILITIES,
+                            deadline: std::time::Duration::from_secs(5),
+                        },
+                    )
+                    .await
+                    .map_err(|error| format!("qualification join snapshot: {error:?}"))?;
+                    let entity = session
+                        .world_entities()
+                        .ok_or("type-2 visibility snapshot")?
+                        .get(&EntityRef {
+                            identity: shown.identity,
+                            generation: shown.generation,
+                        })
+                        .ok_or("visible creature")?;
+                    assert_eq!(entity.motion, Some(motion));
+                    assert!(matches!(
+                        entity.detail,
+                        EntityDetail::ActorWithIcons { icons: actual, .. } if actual == icons
+                    ));
+                    let mut capacity = None;
+                    let mut emblems = None;
+                    let deadline = tokio::time::Duration::from_secs(2);
+                    tokio::time::timeout(deadline, async {
+                        while capacity.is_none() || emblems.is_none() {
+                            for event in session.wait_for_events(deadline).await? {
+                                match event {
+                                    SessionEvent::InventoryCapacity(delta) => {
+                                        capacity = Some(delta.value)
+                                    }
+                                    SessionEvent::GuildEmblems(delta) => {
+                                        emblems = Some(delta.value)
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+                        Ok::<_, oteryn_session::SessionError>(())
+                    })
+                    .await?
+                    .map_err(|error| format!("qualification visibility delta: {error:?}"))?;
+                    assert_eq!(
+                        capacity,
+                        authority.observe_inventory_capacity(admitted).await
+                    );
+                    assert_eq!(emblems, authority.observe_guild_emblems(admitted).await);
+
+                    // M04 walks to the spawn with Session::step; it can report the same
+                    // spatial error from a STEP receipt even after visibility decoded.
+                    let step = session
+                        .step(StepDirection::East)
+                        .await
+                        .map_err(|error| format!("qualification STEP result: {error:?}"))?;
+                    assert_eq!(step.status, CommandStatus::Rejected);
+                    assert_eq!(step.disposition, StepDisposition::Rejected);
+                    Ok::<_, Box<dyn Error>>(())
+                };
+                tokio::try_join!(serving, joining)?;
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "qualification join test thread panicked")?
+        .map_err(Into::into)
 }

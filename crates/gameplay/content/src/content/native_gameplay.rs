@@ -4367,13 +4367,14 @@ mod tests {
     }
 
     #[test]
-    fn summer_corpse_capacity_reward_admission_accepts_thirty_and_refuses_thirty_one() {
+    fn summer_corpse_capacity_reward_admission_accepts_forty_eight_and_refuses_forty_nine() {
         use super::super::creature_reward::NoSettlementReason;
         let world = test_source(1).unwrap().world_id;
         let baseline = qualify_native_entry_room(world).unwrap();
         let keys: &[u8] =
             include_bytes!("../../../../../tools/content-schema/native-gameplay/item-keys.json");
-        for (capacity, materializable) in [(30, true), (31, true), (30, false)] {
+        // CORPSE48 (owner 2026-11-17): the admitted corpse bound is 48.
+        for (capacity, materializable) in [(48, true), (49, true), (48, false)] {
             let mut section: serde_json::Value =
                 serde_json::from_slice(SAMPLE_LOOT_TABLES).unwrap();
             section["items"][0]["container_capacity"] = capacity.into();
@@ -4384,7 +4385,7 @@ mod tests {
             let compiled = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
             let state = decode(&compiled.server_artifact).unwrap().state;
             let reward = state.reward_table().row("canary:creature/rat");
-            if capacity == 30 && materializable {
+            if capacity == 48 && materializable {
                 assert_eq!(
                     reward.unwrap().xp_amount,
                     oteryn_simulation_determinism::ExactI64::new(5)

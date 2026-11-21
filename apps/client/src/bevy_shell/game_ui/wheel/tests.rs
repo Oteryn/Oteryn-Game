@@ -84,6 +84,12 @@ fn publish(outbox: &Outbox, mut p: WheelPanel) {
     outbox.bevy_wheel_state(p);
 }
 fn fixture(panel: WheelPanel) -> Result<Fixture, Box<dyn std::error::Error>> {
+    fixture_with_modal(panel, None)
+}
+fn fixture_with_modal(
+    panel: WheelPanel,
+    display: Option<Display>,
+) -> Result<Fixture, Box<dyn std::error::Error>> {
     let (link, commands, outbox) = play_channel();
     link.use_shared_frontend();
     publish(&outbox, panel);
@@ -101,6 +107,16 @@ fn fixture(panel: WheelPanel) -> Result<Fixture, Box<dyn std::error::Error>> {
         .add_systems(Startup, crate::bevy_shell::ui::setup);
     super::super::modal::install(&mut app);
     install(&mut app);
+    if let Some(display) = display {
+        app.world_mut().spawn((
+            GameModal,
+            GlobalZIndex(999),
+            Node {
+                display,
+                ..default()
+            },
+        ));
+    }
     app.update();
     Ok((app, commands, outbox))
 }
@@ -146,6 +162,26 @@ fn click(app: &mut App, index: usize, remove: bool) -> TestResult {
     });
     Ok(())
 }
+#[test]
+fn wheel_ignores_hidden_modals() -> TestResult {
+    for display in [Display::None, Display::Flex] {
+        let mut pending_preview = model();
+        pending_preview.diagram.reply = None;
+        pending_preview.diagram.last = None;
+        let (_app, mut commands, _outbox) = fixture_with_modal(pending_preview, Some(display))?;
+        if display == Display::None {
+            assert!(matches!(commands.try_recv()?, PlayCommand::Feature(_)));
+        }
+        assert!(commands.try_recv().is_err());
+        let (mut app, mut commands, _outbox) = fixture_with_modal(model(), Some(display))?;
+        let close = control(&mut app, Kind::Close)?;
+        app.world_mut().trigger(Activate { entity: close });
+        assert_eq!(panel(&app)?.open, display == Display::Flex);
+        assert!(commands.try_recv().is_err());
+    }
+    Ok(())
+}
+
 #[test]
 fn wheel_nodes_from_model() -> TestResult {
     let mut p = model();
@@ -296,10 +332,63 @@ fn wheel_preset_intents() -> TestResult {
     assert_eq!(request.points[14], 9);
     assert_eq!(request.expected_revision, 2);
     assert!(commands.try_recv().is_err());
-    publish(&outbox, model());
+    let mut allocated = model();
+    allocated.points[14] = 9;
+    allocated
+        .confirmed_wheel
+        .as_mut()
+        .ok_or("allocation")?
+        .points = allocated.points;
+    publish(&outbox, allocated);
     app.update();
     let reset = control(&mut app, Kind::Reset)?;
     app.world_mut().trigger(Activate { entity: reset });
+    assert!(
+        commands.try_recv().is_err(),
+        "Reset must only edit the draft"
+    );
+    let reset_draft = panel(&app)?;
+    assert_eq!(reset_draft.points, [0; 36]);
+    assert!(reset_draft.diagram.reset_requested);
+    assert_eq!(
+        reset_draft.confirmed_wheel.ok_or("allocation")?.points[14],
+        9
+    );
+
+    app.update();
+    let PlayCommand::Feature(preview) = commands.try_recv()? else {
+        return Err("preview command".into());
+    };
+    let request = wire::Request::decode(&preview.payload).ok_or("preview request")?;
+    assert_eq!(request.points, [0; 36]);
+    let mut pending = panel(&app)?;
+    let mut reply = pending.diagram.reply.clone().ok_or("preview metadata")?;
+    reply.request = request;
+    reply.revelations = (0..4)
+        .map(|domain| wire::Revelation {
+            domain,
+            name: "Revelation".into(),
+            stages: [25, 50, 100]
+                .into_iter()
+                .map(|minimum_points| wire::Stage {
+                    minimum_points,
+                    effects: vec![],
+                })
+                .collect(),
+        })
+        .collect();
+    let result = oteryn_client_runtime::raw_feature::GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: oteryn_client_runtime::raw_feature::CommandStatus::Accepted,
+        payload: reply.encode().ok_or("preview reply")?,
+    };
+    diagram::apply(&mut pending, &preview, &result);
+    publish(&outbox, pending);
+    app.update();
+    assert!(commands.try_recv().is_err());
+    let save = control(&mut app, Kind::Save)?;
+    app.world_mut().trigger(Activate { entity: save });
     let PlayCommand::Wheel(c) = commands.try_recv()? else {
         return Err("reset command".into());
     };
@@ -381,5 +470,80 @@ fn wheel_preset_shortcut_opens_closed_panel() -> TestResult {
     };
     let request = wheel::decode_wheel_request(&c.payload).map_err(|e| format!("{e:?}"))?;
     assert_eq!(request.action, 0);
+    Ok(())
+}
+#[path = "presets_tests.rs"]
+mod presets_tests;
+
+#[test]
+fn wheel_has_a_reachable_gem_atelier_entry() -> TestResult {
+    let (mut app, _, _) = fixture(model())?;
+    let label = app
+        .world_mut()
+        .query::<(Entity, &Text)>()
+        .iter(app.world())
+        .find_map(|(e, t)| (t.0 == "Gem Atelier / Workshop").then_some(e))
+        .ok_or("atelier entry missing")?;
+    let button = app.world().get::<ChildOf>(label).ok_or("button")?.parent();
+    app.world_mut().trigger(Activate { entity: button });
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|t| t.0.contains("Gem Atelier and fragment workshop"))
+    );
+    Ok(())
+}
+
+#[test]
+fn atelier_reveal_uses_review_cancel_and_one_shot_confirm_through_bevy() -> TestResult {
+    let mut p = model();
+    p.confirmed_atelier
+        .as_mut()
+        .ok_or("atelier")?
+        .quality_quotes = vec![atelier::QualityQuote {
+        quality: 0,
+        reveal_gold: 25000,
+        switch_gold: 5000,
+        fragment_kind: 0,
+        fragment_min: 10,
+        fragment_max: 20,
+    }];
+    let (mut app, mut commands, _) = fixture(p)?;
+    let activate_label = |app: &mut App, label: &str| -> TestResult {
+        let entity = app
+            .world_mut()
+            .query::<(Entity, &Text)>()
+            .iter(app.world())
+            .find_map(|(e, t)| (t.0 == label).then_some(e))
+            .ok_or("atelier action missing")?;
+        let entity = app.world().get::<ChildOf>(entity).ok_or("button")?.parent();
+        app.world_mut().trigger(Activate { entity });
+        app.update();
+        Ok(())
+    };
+    activate_label(&mut app, "Gem Atelier / Workshop")?;
+    assert!(super::atelier::shared_button_catalogue(&mut app));
+    activate_label(&mut app, "Reveal gem")?;
+    assert!(commands.try_recv().is_err());
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|t| t.0.contains("25000 gold"))
+    );
+    activate_label(&mut app, "Cancel review")?;
+    assert!(commands.try_recv().is_err());
+    activate_label(&mut app, "Reveal gem")?;
+    activate_label(&mut app, "Confirm reviewed operation")?;
+    let PlayCommand::Wheel(command) = commands.try_recv()? else {
+        return Err("reviewed atelier command".into());
+    };
+    assert_eq!(command.kind, atelier::COMMAND_TYPE_ATELIER_MUTATE);
+    let mutation = atelier::decode_mutate(&command.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(mutation.expected_revision, 3);
+    assert_eq!(mutation.mutation, atelier::Mutation::Reveal { quality: 0 });
+    assert!(commands.try_recv().is_err());
     Ok(())
 }

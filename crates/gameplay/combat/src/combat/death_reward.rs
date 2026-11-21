@@ -957,7 +957,9 @@ pub fn animus_mastery_experience(base: u64, completed: usize, species_mastered: 
             .unwrap_or(u64::MAX)
             .saturating_mul(10)
             .min(200);
-    base.saturating_add(base.saturating_mul(bonus_basis_points) / 10_000)
+    let base = u128::from(base);
+    let experience = base + base * u128::from(bonus_basis_points) / 10_000;
+    u64::try_from(experience).unwrap_or(u64::MAX)
 }
 
 /// A kill the Bestiary descendant settled without an error.
@@ -1199,11 +1201,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn worldchg_actual_corpse_plan_still_refuses_thirty_one_entries() {
+    fn worldchg_actual_corpse_plan_still_refuses_one_entry_over_the_corpse_capacity() {
         // An admitted source corpse may declare36slots, while this independent
-        // execution budget continues to cap actual planned loot at30entries.
+        // execution budget caps actual planned loot at the corpse capacity
+        // (48 since CORPSE48, owner 2026-11-17; it was 30).
         assert!(check_corpse_container_capacity(20).is_ok());
-        assert!(check_corpse_container_capacity(31).is_err());
+        assert!(check_corpse_container_capacity(49).is_err());
     }
 
     #[test]
@@ -1331,8 +1334,31 @@ mod tests {
             .find(|facts| facts.item.key == "oteryn:item.tibia.i21893")
             .expect("source corpse facts");
         assert_eq!(seacrest.container_capacity, Some(36));
-        assert!(check_corpse_container_capacity(31).is_err());
+        assert!(check_corpse_container_capacity(36).is_ok());
+        assert!(check_corpse_container_capacity(49).is_err());
         Ok(())
+    }
+
+    #[test]
+    fn animus_large_valid_experience_keeps_full_bonus_before_division() {
+        let base = 1_000_000_000_000_000_000;
+        assert_eq!(
+            animus_mastery_experience(base, 0, true),
+            1_020_000_000_000_000_000
+        );
+        assert_eq!(
+            animus_mastery_experience(base, 10, true),
+            1_021_000_000_000_000_000
+        );
+        assert_eq!(
+            animus_mastery_experience(base, 200, true),
+            1_040_000_000_000_000_000
+        );
+        assert_eq!(animus_mastery_experience(base, 200, false), base);
+        assert_eq!(
+            animus_mastery_experience(u64::MAX, usize::MAX, true),
+            u64::MAX
+        );
     }
 
     #[test]
@@ -1377,6 +1403,23 @@ mod tests {
     }
 
     #[test]
+    fn corpse_plans_of_thirty_one_to_forty_eight_entries_fit_the_corpse() {
+        // CORPSE48 (owner 2026-11-17): Tibia Global corpses hold 48 entries
+        // (Canary items.xml containersize=48); hellgorak's base table reaches 48.
+        for entries in 31..=48 {
+            assert_eq!(
+                check_corpse_container_capacity(entries),
+                Ok(()),
+                "{entries}"
+            );
+        }
+        assert_eq!(
+            check_corpse_container_capacity(49),
+            Err(CombatResourceLimitError::CorpseContainerEntriesExceeded)
+        );
+    }
+
+    #[test]
     fn corpse_container_capacity_limits_direct_entries() {
         // W22a's total plan includes descendants. Direct corpse entries still
         // obey SUMMER decision 20's capacity, independently of that plan ceiling.
@@ -1386,7 +1429,8 @@ mod tests {
             ),
             Err(CombatResourceLimitError::CorpseContainerEntriesExceeded)
         );
-        assert_eq!(GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX, 30);
+        // CORPSE48 (owner 2026-11-17): the accepted bound is 48 (it was 30).
+        assert_eq!(GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX, 48);
         assert!(check_corpse_container_capacity(0).is_ok());
         assert!(check_corpse_container_capacity(GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX).is_ok());
         assert_eq!(

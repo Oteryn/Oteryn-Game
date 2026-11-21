@@ -111,11 +111,15 @@ pub(super) fn perform(owner: &HostOwner, state: &mut State, action: Action, sear
             let Some(ware) = panel.details.items.get(index) else {
                 return false;
             };
-            state.selected = Some(ware.clone());
-            MarketQuery::Book {
+            if !play.link.market_query(MarketQuery::Book {
                 definition: ware.definition,
                 page: 0,
+            }) {
+                return false;
             }
+            state.selected = Some(ware.clone());
+            state.dirty = true;
+            return true;
         }
         Kind::Catalogue(delta) => {
             if delta > 0 && !panel.details.has_next {
@@ -156,6 +160,11 @@ pub(super) fn perform(owner: &HostOwner, state: &mut State, action: Action, sear
             }
         }
         Kind::Close => return false,
+        Kind::Coins => {
+            return owner.phase == crate::bevy_shell::owner::Phase::Playing
+                && !play.view.gameplay_input_blocked(&play.link)
+                && play.link.coin_market_open_bound();
+        }
     };
     play.link.market_query(query)
 }

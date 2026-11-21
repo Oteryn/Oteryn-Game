@@ -25,8 +25,40 @@ impl SettingsState {
             || base.clone(),
             |id| PreferenceStore::character_path(base, id),
         );
+        #[cfg(bevy_shell)]
+        if self.background_preferences {
+            let selected = self.outgoing_stores.iter().position(|store| store.at_path(&path))
+                .map(|index| self.outgoing_stores.swap_remove(index))
+                .unwrap_or_else(|| PreferenceStore::load_in_background(path.clone(), character.map(|_| base.clone())));
+            let mut preferences = selected.preferences().clone();
+            preferences.miscellaneous = self.preferences.miscellaneous;
+            if let Some(store) = self.store.replace(selected).filter(PreferenceStore::saving) {
+                self.outgoing_stores.push(store);
+            }
+            self.help_report_pending = false;
+            self.character = character;
+            self.chat_mode_seen = None;
+            self.feedback.clear();
+            self.accept_replaced(preferences);
+            return;
+        }
         let missing = !path.exists();
-        let mut selected = Self::new(Some(path));
+        let mut selected = Self::new(Some(path.clone()));
+        #[cfg(bevy_shell)]
+        let missing = match self.outgoing_stores.iter().position(|store| store.at_path(&path)) {
+            Some(index) => {
+                let store = self.outgoing_stores.swap_remove(index);
+                selected.preferences = store.preferences().clone();
+                selected.store = Some(store);
+                selected.feedback.clear();
+                false
+            }
+            None => missing,
+        };
+        #[cfg(bevy_shell)]
+        if let Some(store) = self.store.take().filter(PreferenceStore::saving) {
+            self.outgoing_stores.push(store);
+        }
         // Session choices remain under the original local base across actor namespaces.
         selected.base_path = Some(base.clone());
         selected.preferences.miscellaneous = self.preferences.miscellaneous;
@@ -48,6 +80,8 @@ impl SettingsState {
         self.preferences = selected.preferences;
         self.feedback = selected.feedback;
         self.character = character;
+        // The next play frame restores this character's saved chat mode.
+        self.chat_mode_seen = None;
         self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
         self.skills_edit = self.battle_edit;
         self.item_hotkeys_edit = self.battle_edit;
@@ -58,4 +92,29 @@ impl SettingsState {
         self.stash_sort_edit = self.battle_edit;
         self.archive_edit = self.battle_edit;
     }
+}
+
+#[cfg(all(test, bevy_shell))]
+#[test]
+fn leaving_character_reports_its_failed_mark_save() -> Result<(), Box<dyn std::error::Error>> {
+    use std::time::{Duration, Instant};
+
+    bevy_tasks::IoTaskPool::get_or_init(|| bevy_tasks::TaskPoolBuilder::new().num_threads(1).build());
+    let folder = tempfile::tempdir()?;
+    let base = folder.path().join("preferences.json");
+    let identity = [1; 16];
+    let mut settings = SettingsState::new(Some(base.clone()));
+    settings.select_character(Some(identity));
+    std::fs::write(PreferenceStore::character_path(&base, identity), "damaged")?;
+    settings.apply_minimap_marks_in_background(settings.preferences.clone());
+    settings.select_character(None);
+    let deadline = Instant::now() + Duration::from_secs(2);
+    while Instant::now() < deadline {
+        let _ = settings.poll_background_save();
+        if settings.feedback.contains("could not save") {
+            return Ok(());
+        }
+        std::thread::yield_now();
+    }
+    Err("the outgoing preference save error was lost".into())
 }

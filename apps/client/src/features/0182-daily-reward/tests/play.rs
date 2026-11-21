@@ -15,8 +15,14 @@ struct Peer {
     commands: Arc<Mutex<Vec<DailyRewardCommand>>>,
     claimed: bool,
     returner_offer: Option<[u8; 16]>,
+    activity_scope: Option<Vec<u8>>,
 }
 impl Stepper for Peer {
+    fn feature_snapshot(&self, domain: u32) -> Option<Vec<u8>> {
+        (domain == 99)
+            .then(|| self.activity_scope.clone())
+            .flatten()
+    }
     fn daily_reward_selected(&self) -> bool {
         true
     }
@@ -113,14 +119,15 @@ fn daily_reward_query_and_claim_drive_the_panel() -> Result<(), Error> {
                         commands,
                         claimed: false,
                         returner_offer: None,
+                        activity_scope: None,
                     },
                 );
                 let (link, incoming, outbox) = play_channel();
                 let task = tokio::spawn(run_session(peer, incoming, outbox));
                 ready(&link, false).await?;
                 assert!(
-                    include_str!("../../../windows_shell/input.rs")
-                        .contains("play.link.daily_reward_input(events)")
+                    include_str!("../../../bevy_shell/controls.rs")
+                        .contains("play.link.daily_reward_input(&routed)")
                 );
                 assert!(link.daily_reward_input(&[NormalizedInputEvent::Key {
                     code: KeyCode::new(7)?,

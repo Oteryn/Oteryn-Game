@@ -12,7 +12,10 @@ pub fn mirror_text(panel: &ChatPanel) -> Option<String> {
     if !panel.open {
         return None;
     }
-    panel.console.mirror.map(|tab| tab_text(panel, tab, None))
+    panel
+        .console
+        .mirror
+        .map(|tab| tab_text(panel, tab, panel.console.mirror_channel.as_ref()))
 }
 
 fn tab_text(
@@ -40,7 +43,9 @@ fn tab_text(
             crate::chat_channel_participants::participants_text(names)
         );
     }
-    if channel.is_none() && panel.console.presentation.visible[2] {
+    if (channel.is_none() || channel == Some(&super::ChannelTab::Guild))
+        && panel.console.presentation.visible[2]
+    {
         text.push_str(&crate::chat_guild_room::panel_text(panel));
     }
     let presentation = &panel.console.presentation;
@@ -276,6 +281,7 @@ fn channel_line(channel: &super::ChannelTab, line: &ChatLine, recipient: Option<
     match (channel, line) {
         (ChannelTab::Room(room), ChatLine::Room { room: line, .. }) => room == line,
         (ChannelTab::Private(id), ChatLine::PrivateChannel(line)) => *id == line.channel_id,
+        (ChannelTab::Guild, ChatLine::Guild(_)) => true,
         (ChannelTab::Conversation(name), ChatLine::Private { .. }) => {
             crate::chat_private_echo::in_conversation(name, line, recipient)
         }
@@ -330,9 +336,13 @@ pub fn channel_entries(
 pub fn dialog_entries(
     list: Option<&oteryn_client_runtime::chat_private_channel::ChatChannelList>,
     open_rooms: oteryn_client_runtime::chat_public_channels::ChatRoomSet,
+    guild: bool,
 ) -> Vec<ChannelEntry> {
     use super::ChannelTab;
     let mut entries = channel_entries(list, open_rooms);
+    if guild {
+        entries.push(ChannelEntry::Local(ChannelTab::Guild));
+    }
     entries.extend(
         [ChannelTab::Loot, ChannelTab::ServerLog, ChannelTab::Npc]
             .into_iter()

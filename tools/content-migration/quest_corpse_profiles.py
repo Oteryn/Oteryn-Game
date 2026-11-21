@@ -24,6 +24,9 @@ OBJECTIVES = 'content/quests/authored-death-objectives.json'
 RULES = 'content/quests/authored-death-loot.json'
 REQUIREMENTS = 'tools/content-schema/native-gameplay/quest-corpse-objectives.json'
 CREATURES = 'content/creatures/definitions/spell-native-profiles.json'
+# CORPSE48 (owner 2026-11-17): every corpse holds up to 48 entries, as in Tibia Global;
+# crates/gameplay/domain/src/domain/loot_data.rs CORPSE_CONTAINER_ENTRIES_MAX.
+CORPSE_CAPACITY_MAX = 48
 GROUPS = ('physical', 'stack', 'container', 'temporal', 'classification')
 MAX_RULES, MAX_ROOTS, MAX_CHAIN, MAX_ITEMS = 32, 40, 8, 144
 
@@ -238,7 +241,7 @@ def qualify(number, definition, world, node, appearance, physical, bindings, fre
         raise ValueError('QUEST_CORPSE_FRESH_CONTAINER_CAPACITY')
     if capacity_limit is not None:
         capacity = result['semantics']['container']['value']['capacity']['value']
-        if not fresh or capacity_limit != 30 or not 30 < capacity <= 65535:
+        if not fresh or capacity_limit != CORPSE_CAPACITY_MAX or not CORPSE_CAPACITY_MAX < capacity <= 65535:
             raise ValueError('QUEST_CORPSE_NATIVE_CAPACITY_PROJECTION')
         result['semantics']['container']['value']['capacity'] = grizzly.source.K(capacity_limit)
     return result
@@ -253,7 +256,7 @@ class Qualification:
 
 
 def projection_limits(root, roots, xml):
-    """Explicit source-to-native projections retain the accepted30-entry corpse bound."""
+    """Explicit source-to-native projections apply only above the accepted48-entry corpse bound."""
     records = json.loads((root / REQUIREMENTS).read_bytes()).get('capacity_projections', [])
     if not isinstance(records, list) or len(records) > MAX_RULES:
         raise ValueError('QUEST_CORPSE_CAPACITY_PROJECTION_BOUNDS')
@@ -263,12 +266,13 @@ def projection_limits(root, roots, xml):
             raise ValueError('QUEST_CORPSE_CAPACITY_PROJECTION_SHAPE')
         number = item_id({'family': 'Item', 'key': record['item'], 'revision': 'definition-r1'})
         capacity = grizzly.source.attrs(xml[number]).get('containersize') if number in xml else None
-        if (number not in roots or number in limits or record['native_capacity'] != 30
-                or type(record['source_capacity']) is not int or not 30 < record['source_capacity'] <= 65535
+        if (number not in roots or number in limits or record['native_capacity'] != CORPSE_CAPACITY_MAX
+                or type(record['source_capacity']) is not int
+                or not CORPSE_CAPACITY_MAX < record['source_capacity'] <= 65535
                 or capacity != str(record['source_capacity']) or not record['sources']
                 or any(not isinstance(s, str) or not s for s in record['sources'])):
             raise ValueError('QUEST_CORPSE_CAPACITY_PROJECTION_BINDING')
-        limits[number] = 30
+        limits[number] = CORPSE_CAPACITY_MAX
         source_capacities[record['item']] = record['source_capacity']
     return limits, source_capacities
 

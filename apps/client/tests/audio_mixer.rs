@@ -30,7 +30,8 @@ fn confirmed_sound_cues_use_pinned_mixer_routes() -> Result<(), Box<dyn std::err
     use oteryn_session::{
         ActorPosition, AppliedDelta, PresentationEvent, PresentationEventKind, SessionEvent,
     };
-    let root = std::env::temp_dir().join(format!("oteryn-mixer-{}", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let root = fixture.path().join("oteryn-mixer");
     std::fs::create_dir_all(&root)?;
     let metadata = b"test metadata";
     let audio = b"test audio bytes";
@@ -90,6 +91,5 @@ fn confirmed_sound_cues_use_pinned_mixer_routes() -> Result<(), Box<dyn std::err
     let mut invalid = manifest;
     invalid["sound_channels"]["999"] = "music".into();
     assert!(oteryn_client::play::decode_mapping(&serde_json::to_vec(&invalid)?).is_err());
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }

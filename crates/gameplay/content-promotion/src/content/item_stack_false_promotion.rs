@@ -36,6 +36,7 @@ pub struct StackFalsePromotion {
 pub fn apply_item_stack_false_promotion_v1(
     draft: &mut ProjectV2Draft,
 ) -> Result<StackFalsePromotion, String> {
+    super::item_identity::validate_unique_item_keys(draft)?;
     if world_project_sha256(ITEM_STACK_FALSE_PACKET) != ITEM_STACK_FALSE_PACKET_SHA256 {
         return Err("stack-false packet digest drift".into());
     }

@@ -586,6 +586,15 @@ fn scenario_inner(inspection: Option<bool>, goblets: bool) -> TestResult {
 
 /// The existing LOOK backpack fixture, optionally populated with direct entries.
 pub(super) async fn seed_main_backpack(harness: &Harness, entries: &[(&str, i64)]) -> TestResult {
+    seed_character_backpack(harness, 41, 70, entries).await
+}
+
+pub(super) async fn seed_character_backpack(
+    harness: &Harness,
+    character: u8,
+    backpack: u8,
+    entries: &[(&str, i64)],
+) -> TestResult {
     // Seed the migration-owned fixture as the existing item PostgreSQL harnesses do.
     // All observations below use the real durable owner under its recovery fence.
     let mut tx = harness.pool.begin().await?;
@@ -596,28 +605,28 @@ pub(super) async fn seed_main_backpack(harness: &Harness, entries: &[(&str, i64)
         definition_production_key, definition_revision_ref, quantity, lifecycle, minted_transaction_id) \
         VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, 'Item', 'oteryn:item.tibia.i2854', \
         'definition-r1', 1, 1, encode($3,'hex')::uuid)")
-        .bind(id(70).as_slice()).bind(id(42).as_slice()).bind(id(71).as_slice())
+        .bind(id(backpack).as_slice()).bind(id(42).as_slice()).bind(id(backpack+1).as_slice())
         .execute(&mut *tx).await?;
     sqlx::query(
         "INSERT INTO game_item_container_slots(character_id, item_instance_id, world_id, \
         placed_transaction_id) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, \
         encode($3,'hex')::uuid, encode($4,'hex')::uuid)",
     )
-    .bind(id(41).as_slice())
-    .bind(id(70).as_slice())
+    .bind(id(character).as_slice())
+    .bind(id(backpack).as_slice())
     .bind(id(42).as_slice())
-    .bind(id(72).as_slice())
+    .bind(id(backpack + 2).as_slice())
     .execute(&mut *tx)
     .await?;
     for (offset, (key, quantity)) in entries.iter().enumerate() {
-        let seed = 71_u8
+        let seed = (backpack + 1)
             .checked_add(u8::try_from(offset)?)
             .ok_or("fixture item id")?;
         let ordinal = i64::try_from(offset)? + 1;
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',$4,1,encode($5,'hex')::uuid)")
-            .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(key).bind(quantity).bind(id(72).as_slice()).execute(&mut *tx).await?;
+            .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(key).bind(quantity).bind(id(backpack+2).as_slice()).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_item_container_entries(character_id,world_id,parent_item_instance_id,item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,encode($6,'hex')::uuid)")
-            .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(id(70).as_slice()).bind(id(seed).as_slice()).bind(ordinal).bind(id(72).as_slice()).execute(&mut *tx).await?;
+            .bind(id(character).as_slice()).bind(id(42).as_slice()).bind(id(backpack).as_slice()).bind(id(seed).as_slice()).bind(ordinal).bind(id(backpack+2).as_slice()).execute(&mut *tx).await?;
     }
     tx.commit().await?;
     Ok(())

@@ -6,6 +6,8 @@
 //! is written and the entry proceeds without a starter item (`NotAdmitted`).
 
 mod newhaven;
+pub use newhaven::NewhavenKit;
+pub(super) use newhaven::grant_newhaven_in_transaction;
 
 pub use oteryn_gameplay_items::starter_grant::NewhavenStarterOutcome;
 

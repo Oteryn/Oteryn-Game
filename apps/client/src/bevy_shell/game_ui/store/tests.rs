@@ -61,6 +61,12 @@ fn reply(outbox: &Outbox, payload: Vec<u8>, status: CommandStatus) {
     });
 }
 fn fixture(total: u64) -> Result<(App, Receiver, Outbox), Box<dyn std::error::Error>> {
+    fixture_in(App::new(), total)
+}
+fn fixture_in(
+    mut app: App,
+    total: u64,
+) -> Result<(App, Receiver, Outbox), Box<dyn std::error::Error>> {
     let (link, mut rx, outbox) = play_channel();
     outbox.bevy_store_initialize();
     link.store_set_open(true);
@@ -75,7 +81,6 @@ fn fixture(total: u64) -> Result<(App, Receiver, Outbox), Box<dyn std::error::Er
         link,
         view: PlayView::new(TileCoord::new(100, 100), 7, &[])?,
     });
-    let mut app = App::new();
     app.insert_non_send(owner)
         .init_resource::<InputFocus>()
         .insert_resource(Skins {
@@ -172,6 +177,67 @@ fn store_purchase_confirm_sends_intent() -> ResultTest {
     Ok(())
 }
 #[test]
+fn store_unresolved_purchase_retries_with_original_bytes() -> ResultTest {
+    for status in [CommandStatus::Rejected, CommandStatus::Accepted] {
+        let (mut app, mut rx, outbox) = fixture(250)?;
+        click(&mut app, Kind::Buy)?;
+        click(&mut app, Kind::Confirm)?;
+        let original = command(&mut rx)?;
+        reply(&outbox, Vec::new(), status);
+        app.update();
+        let store_panel = |app: &App| -> Result<StorePanel, Box<dyn std::error::Error>> {
+            Ok(app
+                .world()
+                .non_send::<HostOwner>()
+                .play
+                .as_ref()
+                .ok_or("play")?
+                .link
+                .store_panel())
+        };
+        let unresolved = store_panel(&app)?;
+        assert!(!unresolved.pending);
+        assert_eq!(
+            unresolved.confirmed_purchase.as_ref(),
+            Some(&original.payload)
+        );
+        assert!(text(&mut app).contains("Retry purchase"));
+        let retry = app
+            .world_mut()
+            .query::<(Entity, &Action)>()
+            .iter(app.world())
+            .find_map(|(entity, action)| (action.kind == Kind::RetryPurchase).then_some(entity))
+            .ok_or("retry action missing")?;
+        app.world_mut().trigger(Activate { entity: retry });
+        assert_eq!(command(&mut rx)?, original);
+        app.world_mut().trigger(Activate { entity: retry });
+        assert!(rx.try_recv().is_err());
+        let request = wire::decode_purchase_request(&original.payload)
+            .map_err(|error| format!("{error:?}"))?;
+        reply(
+            &outbox,
+            wire::encode_purchase_result(&wire::StorePurchaseResult {
+                code: wire::StorePurchaseCode::Accepted,
+                order_id: Some([7, 7, 7, 7, 7, 7, 0x70, 7, 0x80, 7, 7, 7, 7, 7, 7, 7]),
+                operation_id: Some(request.purchase_request_id),
+            })
+            .map_err(|error| format!("{error:?}"))?,
+            CommandStatus::Accepted,
+        );
+        app.update();
+        assert!(store_panel(&app)?.confirmed_purchase.is_none());
+        assert!(!text(&mut app).contains("Retry purchase"));
+        app.world_mut().trigger(Activate { entity: retry });
+        let owner = app.world().non_send::<HostOwner>();
+        let link = &owner.play.as_ref().ok_or("play")?.link;
+        assert!(!link.store_retry_purchase_bound(&unresolved));
+        assert!(!link.store_retry_purchase_bound(&link.store_panel()));
+        assert!(rx.try_recv().is_err());
+    }
+    Ok(())
+}
+
+#[test]
 fn store_gift_panel() -> ResultTest {
     let (mut app, mut rx, outbox) = fixture(250)?;
     click(&mut app, Kind::Gift)?;
@@ -230,112 +296,5 @@ fn store_gift_panel() -> ResultTest {
     assert_eq!(command(&mut rx)?.payload, confirmation.payload);
     Ok(())
 }
-#[test]
-fn store_history_page() -> ResultTest {
-    let (mut app, mut rx, outbox) = fixture(250)?;
-    click(&mut app, Kind::History(false))?;
-    let c = command(&mut rx)?;
-    assert_eq!((c.capability, c.command_type), (285, 501));
-    outbox.bevy_purchase_history_reply(&ServerMechanicResponse {
-        command_id: 2,
-        server_sequence: 2,
-        status: CommandStatus::Accepted,
-        payload: oteryn_client_runtime::discovery::store::encode_history_page(
-            &oteryn_client_runtime::discovery::store::StoreHistoryPage {
-                entries: vec![oteryn_client_runtime::discovery::store::StoreHistoryEntry {
-                    order_id: [1, 1, 1, 1, 1, 1, 0x70, 1, 0x80, 1, 1, 1, 1, 1, 1, 1],
-                    offer_key: "store:test".into(),
-                    catalog_revision: "server-revision".into(),
-                    price: 100,
-                    currency: "TIBIA_COIN".into(),
-                    purchased_at_unix_ms: 1234,
-                }],
-                next_page_cursor: String::new(),
-            },
-        )
-        .map_err(|e| format!("{e:?}"))?,
-    });
-    app.update();
-    assert!(text(&mut app).contains("store:test"));
-    assert!(text(&mut app).contains("1234 ms"));
-    assert!(text(&mut app).contains("End of purchase history"));
-    click(&mut app, Kind::Ledger(false))?;
-    assert_eq!(command(&mut rx)?.command_type, 184);
-    Ok(())
-}
-#[test]
-fn store_stale_confirmation_and_closed_window_cannot_purchase() -> ResultTest {
-    let (mut app, mut rx, outbox) = fixture(250)?;
-    click(&mut app, Kind::Buy)?;
-    let confirm = app
-        .world_mut()
-        .query::<(Entity, &Action)>()
-        .iter(app.world())
-        .find_map(|(e, a)| (a.kind == Kind::Confirm).then_some(e))
-        .ok_or("confirm")?;
-    // An unsolicited catalogue/balance change invalidates the exact displayed consent.
-    reply(
-        &outbox,
-        page(200).encode().map_err(|e| format!("{e:?}"))?,
-        CommandStatus::Accepted,
-    );
-    app.world_mut().trigger(Activate { entity: confirm });
-    app.update();
-    assert!(rx.try_recv().is_err());
-    assert!(app.world().resource::<State>().confirmation.is_none());
-    click(&mut app, Kind::Close)?;
-    assert!(app.world().resource::<State>().root.is_none());
-    Ok(())
-}
-#[test]
-fn store_shortcut_requests_catalogue() -> ResultTest {
-    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
-    let (link, mut rx, outbox) = play_channel();
-    outbox.bevy_store_initialize();
-    let mut owner = HostOwner::new(None)?;
-    owner.play = Some(crate::bevy_shell::owner::ActivePlay {
-        link,
-        view: PlayView::new(TileCoord::new(100, 100), 7, &[])?,
-    });
-    let modifiers = Modifiers::one(Modifier::Control).with(Modifier::Shift);
-    owner.route_input(
-        &[NormalizedInputEvent::Key {
-            code: KeyCode::new(22)?,
-            state: ButtonState::Pressed,
-            modifiers,
-            repeat: false,
-        }],
-        false,
-    );
-    assert!(owner.play.as_ref().ok_or("play")?.link.store_panel().open);
-    assert_eq!(command(&mut rx)?.command_type, browse::COMMAND_TYPE);
-    Ok(())
-}
 
-#[test]
-fn store_shortcut_rejects_extra_modifiers() -> ResultTest {
-    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
-    let (link, mut rx, outbox) = play_channel();
-    outbox.bevy_store_initialize();
-    let mut owner = HostOwner::new(None)?;
-    owner.play = Some(crate::bevy_shell::owner::ActivePlay {
-        link,
-        view: PlayView::new(TileCoord::new(100, 100), 7, &[])?,
-    });
-    for extra in [Modifier::Alt, Modifier::Super] {
-        owner.route_input(
-            &[NormalizedInputEvent::Key {
-                code: KeyCode::new(22)?,
-                state: ButtonState::Pressed,
-                modifiers: Modifiers::one(Modifier::Control)
-                    .with(Modifier::Shift)
-                    .with(extra),
-                repeat: false,
-            }],
-            false,
-        );
-        assert!(!owner.play.as_ref().ok_or("play")?.link.store_panel().open);
-        assert!(rx.try_recv().is_err());
-    }
-    Ok(())
-}
+include!("store_session_cases.rs");

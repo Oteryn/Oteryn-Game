@@ -97,6 +97,7 @@ impl FreshAdmissionAuthority for ProjectionOwner<'_, '_, '_, '_> {
             position.x += offset;
             channel.entities.push(ChannelEntity {
                 source_icons: Default::default(),
+                motion: None,
                 display_name: None,
                 health_percent: 100,
                 direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,

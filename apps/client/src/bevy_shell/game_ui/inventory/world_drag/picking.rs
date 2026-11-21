@@ -140,6 +140,13 @@ impl Ledger {
         Some(self.drops.remove(index).2)
     }
 }
+fn pointer_button(owner: &HostOwner, world: bool) -> PointerButton {
+    if super::drag_button(owner, world) == MouseButton::SECONDARY {
+        PointerButton::Secondary
+    } else {
+        PointerButton::Primary
+    }
+}
 // Upstream pointer ownership, node geometry and retained state are separate Bevy parameters.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn press(
@@ -156,16 +163,16 @@ pub(super) fn press(
     frame: Res<FrameCount>,
     hits: WorldPointerHits,
 ) {
-    if event.entity != event.original_event_target()
-        || event.pointer.id != PointerId::Mouse
-        || event.button != PointerButton::Primary
-    {
+    if event.entity != event.original_event_target() || event.pointer.id != PointerId::Mouse {
         return;
     }
     let Some((source, node)) = source(event.original_event_target(), &tree) else {
         gesture.picking.reject_press();
         return;
     };
+    if event.button != pointer_button(&owner, matches!(source, Source::World)) {
+        return;
+    }
     let Ok((entity, window)) = windows.single() else {
         gesture.picking.reject_press();
         return;
@@ -202,6 +209,23 @@ pub(super) fn world_drop(
         capture.world(&event, &owner);
     }
 }
+// Inventory's ordinary primary-button observer handles carried drags; world drags
+// may arrive on the configured secondary button and still need their bound slot target.
+pub(super) fn slot_drop(
+    event: On<PointerDragDrop>,
+    guard: ModalGuard,
+    owner: NonSend<HostOwner>,
+    slots: Query<&Slot>,
+    mut capture: DropCapture,
+) {
+    if event.entity == event.original_event_target()
+        && event.button == PointerButton::Secondary
+        && guard.allows(event.entity)
+        && let Ok(slot) = slots.get(event.entity)
+    {
+        capture.slot(&event, &owner, *slot);
+    }
+}
 #[derive(SystemParam)]
 pub(in crate::bevy_shell::game_ui::inventory) struct DropCapture<'w, 's> {
     gesture: Option<ResMut<'w, Gesture>>,
@@ -231,8 +255,14 @@ impl DropCapture<'_, '_> {
     ) -> bool {
         self.gesture.is_none() || pointer == PointerId::Mouse
     }
-    fn release_point(&self, event: &PointerDragDrop) -> Option<Vec2> {
-        if event.pointer.id != PointerId::Mouse || event.button != PointerButton::Primary {
+    fn release_point(&self, event: &PointerDragDrop, owner: &HostOwner) -> Option<Vec2> {
+        let world = self
+            .gesture
+            .as_ref()?
+            .picking
+            .current
+            .is_some_and(|press| matches!(press.source, Source::World));
+        if event.pointer.id != PointerId::Mouse || event.button != pointer_button(owner, world) {
             return None;
         }
         let (entity, window) = self.windows.single().ok()?;
@@ -258,7 +288,7 @@ impl DropCapture<'_, '_> {
         let Some((Source::World, world)) = source(event.original_event_target(), &self.tree) else {
             return;
         };
-        let Some(point) = self.release_point(event) else {
+        let Some(point) = self.release_point(event, owner) else {
             return;
         };
         if !self
@@ -288,7 +318,7 @@ impl DropCapture<'_, '_> {
             return true;
         }
         if !matches!(source(event.original_event_target(),&self.tree),Some((Source::Carried(current),_))if current==target)
-            || self.release_point(event).is_none()
+            || self.release_point(event, owner).is_none()
         {
             return false;
         }

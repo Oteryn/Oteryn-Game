@@ -17,7 +17,8 @@ impl crate::play::Outbox {
         let mut mailbox = crate::play::mailbox::lock(&self.0);
         if mailbox.appearance_state != entries {
             mailbox.appearance_state.clone_from(&entries);
-            mailbox.pushed.appearances = Some(entries);
+            let native = mailbox.native_appearances(&entries);
+            mailbox.pushed.appearances = Some(native);
         }
     }
 }

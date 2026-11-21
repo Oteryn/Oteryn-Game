@@ -37,6 +37,7 @@ pub(super) fn drop_slot(
                     *to,
                     crate::play::BarAction::Use {
                         definition: item.item_definition_ref,
+                        sub_type: Some(item.sub_type),
                         mode: crate::play::ItemUseMode::Cursor,
                     },
                 );

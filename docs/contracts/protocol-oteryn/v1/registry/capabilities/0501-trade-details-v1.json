@@ -1,0 +1,13 @@
+{
+  "id": 501,
+  "name": "TRADE_DETAILS_V1",
+  "owner_decision": "Native trade quantities and authoritative quote names",
+  "owner": "Existing NPC trade and player trade owners",
+  "requires": [
+    4
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Offered with pinned item views and BUNDLE_WORLD_OFFERED_CAPABILITIES. Selected 501 extends only already-selected NPC trade (3) and player trade (60) domains; it grants no command or domain authority."
+}

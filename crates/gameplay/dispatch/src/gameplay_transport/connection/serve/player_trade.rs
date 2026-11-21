@@ -23,7 +23,13 @@ pub(super) async fn refresh<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmission
         return Err(ServeEnd::Disconnected);
     }
     if revision > base {
-        let payload = wire::encode_state(&state).map_err(|_| ServeEnd::Disconnected)?;
+        let payload = wire::encode_state_for(
+            &state,
+            session
+                .selected_capabilities
+                .contains(oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1),
+        )
+        .map_err(|_| ServeEnd::Disconnected)?;
         let sequence = session
             .sequence
             .checked_add(1)
@@ -46,6 +52,7 @@ pub(super) async fn refresh<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmission
         session.admitted.continuity.player_trade_revision = revision;
     }
     if inventory {
+        session.inventory_capacity_refresh_at = None;
         let view = session.item_view.as_mut().ok_or(ServeEnd::Disconnected)?;
         let Some(deltas) = authority
             .player_trade_inventory(session.admitted, view, session.container_views.as_mut())

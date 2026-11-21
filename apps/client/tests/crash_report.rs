@@ -1,8 +1,8 @@
 use oteryn_client::crash_report::CrashReport;
 #[test]
 fn crash_export_requires_consent_and_never_overwrites() -> Result<(), Box<dyn std::error::Error>> {
-    let path = std::env::temp_dir().join(format!("cg-login-crash-{}.txt", std::process::id()));
-    let _ = std::fs::remove_file(&path);
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("cg-login-crash.txt");
     let report = CrashReport::capture(Some("/private/profile/source.rs"), 42);
     assert!(!report.preview().contains("/private/profile"));
     assert!(!report.save(&path, false)?);
@@ -18,7 +18,8 @@ fn crash_export_requires_consent_and_never_overwrites() -> Result<(), Box<dyn st
 fn pending_crash_review_declines_discards_and_retains_on_failed_export()
 -> Result<(), Box<dyn std::error::Error>> {
     use oteryn_client::crash_report::review_pending_at;
-    let directory = std::env::temp_dir().join(format!("crash-review-{}", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let directory = fixture.path().join("crash-review");
     std::fs::create_dir_all(&directory)?;
     let pending = directory.join("pending.txt");
     let destination = directory.join("export.txt");
@@ -42,6 +43,5 @@ fn pending_crash_review_declines_discards_and_retains_on_failed_export()
     report.save(&pending, true)?;
     assert!(review_pending_at(&pending, &destination, |_| true).is_err());
     assert!(pending.exists());
-    std::fs::remove_dir_all(directory)?;
     Ok(())
 }

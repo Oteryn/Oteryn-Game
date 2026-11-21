@@ -22,8 +22,6 @@ use std::time::Duration;
 use tokio::io::DuplexStream;
 
 fn cell(x: u8, y: u8) -> Vec<u8> {
-    // A generic bundle_view is not a pinned activity source room, so its wire
-    // floor stays the legacy +7 (zigzag 14), as wire_position projects it.
     vec![10, 6, 8, x * 2, 16, y * 2, 24, 14]
 }
 
@@ -374,13 +372,28 @@ pub(super) async fn client_scenario(
     Ok(())
 }
 
-pub(super) async fn without_capability(client: &mut DuplexStream) -> TestResult {
+pub(super) async fn without_capability(client: &mut DuplexStream, corpse: [u8; 16]) -> TestResult {
+    let mut saw_corpse = false;
     loop {
         let frame = read(client).await?;
-        if decode_wire_envelope(&frame)?.message_type() == MessageType::SnapshotCommit {
+        let envelope = decode_wire_envelope(&frame)?;
+        if envelope.message_type() == MessageType::SnapshotChunk {
+            for domain in oteryn_protocol_oteryn::decode_snapshot_chunk(envelope.payload())?.1 {
+                assert_ne!(domain.domain_id, 17, "map view was not selected");
+                if domain.domain_id == 1 {
+                    let snapshot = oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_entities_snapshot_with_item_handles(domain.payload).map_err(debug)?;
+                    assert_eq!(snapshot.actor_position.floor, 7);
+                    let entry = snapshot.entities.iter().find(|entry| entry.entity.identity == corpse).ok_or("corpse without map view")?;
+                    assert_eq!(entry.position.floor, snapshot.actor_position.floor);
+                    saw_corpse = true;
+                }
+            }
+        }
+        if envelope.message_type() == MessageType::SnapshotCommit {
             break;
         }
     }
+    assert!(saw_corpse);
     send(client, 14, 81, &[26, 2, 8, 2]).await?;
     loop {
         let frame = read(client).await?;

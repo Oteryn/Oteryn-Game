@@ -6,7 +6,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
-        self.load_wheel_gift(actor, game_session_id).await;
         if self
             .runtime
             .lock()
@@ -14,8 +13,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .house_actor_state(actor, game_session_id)
             .is_ok()
         {
-            return self.house_actor_vitals(actor, game_session_id, false).await;
+            let fence = self
+                .root
+                .observe_current_gameplay_fence(self.character, game_session_id, true)
+                .await
+                .ok()??
+                .item_fence();
+            let runtime = self.runtime.lock().await;
+            return self.states.spell_states.lock().await.house_vitals(
+                &runtime,
+                actor,
+                game_session_id,
+                fence,
+            );
         }
+        self.load_wheel_gift(actor, game_session_id).await;
         self.refresh_wheel_vitals(actor, game_session_id).await;
         let restored = pvp_live::tracked(
             &*self.states.spell_states.lock().await,
@@ -30,38 +42,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor_spell::observe_vitals(&runtime, &states, actor, game_session_id)
     }
 
-    async fn house_actor_vitals(
-        &self,
-        actor: ExactActorRef,
-        session: GameSessionId,
-        tick_cake: bool,
-    ) -> Option<(u64, actor_spell::ActorVitals)> {
-        let (current, _) = FreshAdmissionStore::from_root(self.root.clone())
-            .current_session_at(session)
+    async fn tick_house_cake(&self, actor: ExactActorRef, session: GameSessionId) {
+        if self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .is_none()
+        {
+            return;
+        }
+        let Ok(Some(current)) = self
+            .root
+            .observe_current_gameplay_fence(self.character, session, false)
             .await
-            .ok()?;
-        let fence = item_fence_of(current)?;
-        let tick_cake = tick_cake
-            && current.session_state() == GameSessionState::Active
-            && self
-                .active_generation
-                .and_then(|active| active.native_gameplay())
-                .is_some();
-        let deadline = if tick_cake {
-            self.cake_regeneration_deadline().await
-        } else {
-            None
+        else {
+            return;
         };
+        let fence = current.item_fence();
+        let deadline = self.cake_regeneration_deadline().await;
         // Take the spell lane before runtime guards, as the Channel cadence does.
-        let permit = if tick_cake {
-            self.spell_lane.acquire().await.ok()
-        } else {
-            None
+        let Ok(_permit) = self.spell_lane.acquire().await else {
+            return;
         };
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
-        if permit.is_some()
-            && !states.has_pending_spell_commit(actor, session)
+        if !states.has_pending_spell_commit(actor, session)
             && runtime
                 .assert_house_actor_spell_unreserved(actor, session)
                 .is_ok()
@@ -76,7 +80,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 session,
             );
         }
-        states.house_vitals(&runtime, actor, session, fence)
     }
 
     pub(in crate::gameplay_transport) async fn tick_actor_vitals(
@@ -105,7 +108,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .is_ok()
         {
             self.load_wheel_gift(actor, game_session_id).await;
-            return self.house_actor_vitals(actor, game_session_id, true).await;
+            self.tick_house_cake(actor, game_session_id).await;
+            // The House service projects vitals from its admitted item fence.
+            // Here the cadence only needs to advance the condition owners.
+            return None;
         }
         if !self.ensure_source_map_initialized().await {
             return None;

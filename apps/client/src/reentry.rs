@@ -47,6 +47,7 @@ pub struct Reentry {
     waiting: Option<(AdmissionWait, QueueWait)>,
     last_wait_text: Option<String>,
     pending: Option<Receiver<Result<AdmittedSession, GameplayEntryError>>>,
+    revocations: Vec<device::Revocation>,
     training_completion: Option<Box<dyn Fn() -> bool + Send>>,
 }
 
@@ -70,6 +71,7 @@ impl Reentry {
             last_wait_text: None,
             pending: None,
             training_completion: None,
+            revocations: Vec::new(),
         }
     }
 
@@ -83,20 +85,48 @@ impl Reentry {
             && previous.oauth_client_id == config.oauth_client_id
         {
             config.device_sessions = previous.device_sessions.clone();
+        } else if let Some(previous) = self
+            .revocations
+            .iter()
+            .find(|previous| previous.matches(&config))
+        {
+            previous.reuse_device(&mut config);
         }
         self.client.native_login = Some(config);
         true
     }
 
+    #[cfg(bevy_shell)]
+    pub(crate) fn set_session_options(&mut self, options: crate::play::MiscellaneousPreferences) {
+        if let Some(config) = &mut self.client.native_login {
+            config.session_options = Some(options);
+        }
+    }
+
     /// Starts a user-requested attempt without blocking the window. Existing native entry
     /// owns bounded admission retries; there is no automatic outer retry loop.
     pub fn request(&mut self) -> bool {
+        self.request_entry(false)
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn request_picker(&mut self) -> bool {
+        self.request_entry(true)
+    }
+
+    fn request_entry(&mut self, require_character_picker: bool) -> bool {
         if !self.state.begin() {
             return false;
         }
         let (sender, receiver) = mpsc::channel();
         self.pending = Some(receiver);
-        let config = self.client.native_login.clone();
+        let mut config = self.client.native_login.clone();
+        if let Some(config) = &mut config {
+            config.require_character_picker = require_character_picker;
+            if require_character_picker {
+                config.training_queue.clear();
+            }
+        }
         let cancellation = self.client.runtime.cancellation();
         let attempt_cancellation = CancellationToken::new();
         self.attempt_cancellation = Some(attempt_cancellation.clone());
@@ -105,8 +135,12 @@ impl Reentry {
         self.waiting = None;
         self.last_wait_text = None;
         // Dropping the sender on a stopped runtime is handled as a public refusal by poll.
+        let revocation = self.revocation_for_entry();
         let _task = self.client.runtime.spawn(async move {
             let work = async {
+                if let Some(mut revocation) = revocation {
+                    let _ = revocation.wait_for(Option::is_some).await;
+                }
                 match config {
                     Some(config) => {
                         crate::native_entry::enter_observed(

@@ -12,7 +12,17 @@ use tokio::sync::mpsc::UnboundedSender;
 fn path() -> Result<std::path::PathBuf, String> {
     Ok(crate::native_login::settings_path()?.with_file_name("wheel-presets.json"))
 }
+#[cfg(bevy_shell)]
+pub(in crate::play) fn submit_named(mailbox: &mut Mailbox, action: usize, selected: &str) {
+    match path() {
+        Ok(path) => submit_at(mailbox, action, selected, &path),
+        Err(message) => mailbox.wheel.preset_feedback = message,
+    }
+}
 pub(in crate::play) fn submit(mailbox: &mut Mailbox, action: usize, path: &Path) {
+    submit_at(mailbox, action, "", path);
+}
+fn submit_at(mailbox: &mut Mailbox, action: usize, selected: &str, path: &Path) {
     let panel = &mut mailbox.wheel;
     let result: Result<(), &str> = (|| {
         match action {
@@ -20,6 +30,7 @@ pub(in crate::play) fn submit(mailbox: &mut Mailbox, action: usize, path: &Path)
                 let mut book = panel.preset_book.clone();
                 book.insert(&panel.preset_fields[0], &panel.build_code())?;
                 book.save(path)?;
+                panel.preset_fields[0] = panel.preset_fields[0].trim().into();
                 panel.preset_book = book;
             }
             1 => {
@@ -30,6 +41,7 @@ pub(in crate::play) fn submit(mailbox: &mut Mailbox, action: usize, path: &Path)
                     .ok_or(tr!("Select a saved preset name"))?
                     .clone();
                 panel.import_build(&code)?;
+                panel.diagram.reset_requested = false;
             }
             2 => {
                 let mut book = panel.preset_book.clone();
@@ -38,17 +50,39 @@ pub(in crate::play) fn submit(mailbox: &mut Mailbox, action: usize, path: &Path)
                 }
                 book.save(path)?;
                 panel.preset_book = book;
+                panel.preset_fields[0].clear();
             }
             3 => panel.preset_fields[1] = panel.build_code(),
             4 => {
                 panel.preset_fields[1] =
                     panel.build_code().replacen("OW1:", "oteryn://wheel/v1/", 1)
             }
-            5 => panel.import_build(&panel.preset_fields[1].clone())?,
+            5 => {
+                panel.import_build(&panel.preset_fields[1].clone())?;
+                panel.diagram.reset_requested = false;
+            }
+            6 => {
+                let mut book = panel.preset_book.clone();
+                let name = panel.preset_fields[0].trim();
+                if name != selected && book.0.contains_key(name) {
+                    return Err("A preset with that name already exists");
+                }
+                let code = book
+                    .0
+                    .remove(selected)
+                    .ok_or("Select a saved preset name")?;
+                book.insert(name, &code)?;
+                book.save(path)?;
+                panel.preset_fields[0] = name.into();
+                panel.preset_book = book;
+            }
             _ => return Err(tr!("Unknown preset action")),
         }
         Ok(())
     })();
+    if action == 6 && result.is_err() {
+        panel.preset_fields[0] = selected.into();
+    }
     panel.preset_feedback = result.map_or_else(str::to_owned, |()| {
         tr!("Preset updated. Loaded points are proposals; Save Wheel submits them.").into()
     });
@@ -87,79 +121,59 @@ pub(in crate::play) fn open_shared(
             Err(message) => mailbox.wheel.preset_feedback = message,
         }
     }
-    #[cfg(windows)]
-    if !lock(shared).shared_frontend {
-        open_window(shared, commands);
-    }
-    if cfg!(not(windows)) || lock(shared).shared_frontend {
-        let _ = commands;
-        lock(shared).wheel.presets_open = true;
-    }
+    let _ = commands;
+    lock(shared).wheel.presets_open = true;
 }
 
-#[cfg(windows)]
-fn open_window(shared: &Arc<Mutex<Mailbox>>, commands: &UnboundedSender<PlayCommand>) {
-    use crate::play::feature_0115_mail::view::native::{self, Form};
-    {
-        let mut mailbox = lock(shared);
-        if mailbox.wheel.presets_open || mailbox.wheel_shutdown {
-            return;
-        }
-        mailbox.wheel.presets_open = true;
-    }
-    let form = Form {
-        title: "Wheel builds (points only)",
-        labels: &["Preset name", "Build code or URL (select and copy / paste)"],
-        buttons: &[
-            "Save named build",
-            "Load named build",
-            "Delete named build",
-            "Export code",
-            "Export URL",
-            "Import code / URL",
-        ],
-        snapshot: |mailbox| {
-            let p = &mailbox.wheel;
-            (
-                window_open(mailbox),
-                !p.ready(),
-                p.preset_fields.to_vec(),
-                lfmt!(
-                    "{}\r\nSaved builds:\r\n{}",
-                    p.preset_feedback,
-                    p.preset_book
-                        .0
-                        .keys()
-                        .cloned()
-                        .collect::<Vec<_>>()
-                        .join("\r\n")
-                ),
-            )
-        },
-        set_open: |mailbox, value| mailbox.wheel.presets_open = value,
-        submit: |mailbox, _, action, values| {
-            for (slot, value) in mailbox.wheel.preset_fields.iter_mut().zip(values) {
-                *slot = value;
-            }
-            match path() {
-                Ok(path) => submit(mailbox, action, &path),
-                Err(message) => mailbox.wheel.preset_feedback = message,
-            }
-        },
-    };
-    let weak = Arc::downgrade(shared);
-    let rollback = weak.clone();
-    let commands = commands.clone();
-    if std::thread::Builder::new()
-        .name("wheel-builds-panel".into())
-        .spawn(move || native::run(weak, commands, form))
-        .is_err()
-        && let Some(shared) = rollback.upgrade()
-    {
-        lock(&shared).wheel.presets_open = false;
-    }
-}
 
 #[cfg(test)]
 #[path = "tests/e2e_n02.rs"]
 mod e2e_n02;
+
+#[cfg(test)]
+mod management_tests {
+    use super::*;
+    #[test]
+    fn wheel_presets_create_rename_delete_are_durable_and_collision_safe()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (link, _commands, _outbox) = crate::play::play_channel();
+        let mut m = lock(&link.mailbox);
+        let fixture = tempfile::tempdir()?;
+        let path = fixture.path().join("oteryn-gap38.json");
+        m.wheel.points[14] = 7;
+        m.wheel.preset_fields[0] = "Hunting".into();
+        submit_at(&mut m, 0, "", &path);
+        let code = m.wheel.build_code();
+        assert_eq!(PresetBook::load(&path)?.0.get("Hunting"), Some(&code));
+        m.wheel.points[14] = 9;
+        m.wheel.preset_fields[0] = "Other".into();
+        submit_at(&mut m, 0, "", &path);
+        let before = m.wheel.preset_book.clone();
+        submit_at(&mut m, 6, "Hunting", &path);
+        assert_eq!(
+            m.wheel.preset_feedback,
+            "A preset with that name already exists"
+        );
+        assert_eq!(m.wheel.preset_book, before);
+        assert_eq!(PresetBook::load(&path)?, before);
+        m.wheel.preset_fields[0] = "  Bosses  ".into();
+        submit_at(&mut m, 6, "Hunting", &path);
+        assert_eq!(m.wheel.preset_fields[0], "Bosses");
+        let loaded = PresetBook::load(&path)?;
+        assert!(!loaded.0.contains_key("Hunting"));
+        assert_eq!(loaded.0.get("Bosses"), Some(&code));
+        assert_eq!(m.wheel.points[14], 9, "rename keeps the saved allocation");
+        m.wheel.preset_fields[0] = " ".into();
+        submit_at(&mut m, 6, "Bosses", &path);
+        assert_eq!(m.wheel.preset_book, loaded);
+        m.wheel.preset_fields[0] = "Failed write".into();
+        submit_at(&mut m, 6, "Bosses", &path.join("not-a-directory"));
+        assert_eq!(m.wheel.preset_book, loaded);
+        assert_eq!(PresetBook::load(&path)?, loaded);
+        m.wheel.preset_fields[0] = "Bosses".into();
+        submit_at(&mut m, 2, "", &path);
+        assert!(!PresetBook::load(&path)?.0.contains_key("Bosses"));
+        std::fs::remove_file(path)?;
+        Ok(())
+    }
+}

@@ -1079,20 +1079,38 @@ pub(super) async fn move_loop_item_with_house_capacity(
                 )
                 .await
         }
-        Ok(None) => {
-            admission
-                .root
-                .commit_item_loop_move(
-                    &permit,
-                    admission.character,
-                    admission.holder,
-                    &fence,
-                    CommandRef::new(command.game_session_id, command_id),
-                    &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
-                    loop_request,
-                )
-                .await
-        }
+        // Capability 510: the placed entry takes the requested slot in the same transaction.
+        Ok(None) => match request.slot {
+            Some(slot) => {
+                admission
+                    .root
+                    .commit_item_loop_move_to_slot(
+                        &permit,
+                        admission.character,
+                        admission.holder,
+                        &fence,
+                        CommandRef::new(command.game_session_id, command_id),
+                        &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
+                        loop_request,
+                        slot,
+                    )
+                    .await
+            }
+            None => {
+                admission
+                    .root
+                    .commit_item_loop_move(
+                        &permit,
+                        admission.character,
+                        admission.holder,
+                        &fence,
+                        CommandRef::new(command.game_session_id, command_id),
+                        &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
+                        loop_request,
+                    )
+                    .await
+            }
+        },
         Err(error) => Err(error),
     };
     #[cfg(test)]
@@ -1243,6 +1261,7 @@ pub(super) async fn relocate_source_item(
                 item,
                 count: None,
                 target: LoopTarget::Ground(destination),
+                slot: None,
             },
             permit,
             Some(from),

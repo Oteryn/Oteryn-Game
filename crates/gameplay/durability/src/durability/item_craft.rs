@@ -252,7 +252,7 @@ async fn write_with_skinning<C: ItemLoopContent>(
     };
     if nested_source.is_some()
         && skinning.is_none()
-        && oteryn_gameplay_items::reward_bag::event_containers::event_container_rule(
+        && oteryn_gameplay_items::reward_bag::event_containers::legacy_conversion_rule(
             &definition.production_key,
         )
         .is_none()

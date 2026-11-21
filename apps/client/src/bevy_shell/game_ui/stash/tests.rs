@@ -308,3 +308,99 @@ fn stash_amount_keys_in_one_frame_confirm_accumulated_amount() -> TestResult {
     );
     Ok(())
 }
+
+#[test]
+fn stash_numeric_correction_preserves_editor_configuration() -> TestResult {
+    let (mut app, _commands, _) = fixture()?;
+    click(&mut app, Kind::Row(0))?;
+    for mut text in app
+        .world_mut()
+        .query_filtered::<&mut EditableText, With<Quantity>>()
+        .iter_mut(app.world_mut())
+    {
+        text.cursor_width = 0.7;
+        text.max_characters = Some(7);
+        text.visible_lines = Some(3.);
+    }
+    press(&mut app, KeyCode::ArrowUp);
+    let text = app
+        .world_mut()
+        .query_filtered::<&EditableText, With<Quantity>>()
+        .single(app.world())?;
+    assert_eq!(text.value().to_string(), "11");
+    assert_eq!(text.cursor_width, 0.7);
+    assert_eq!(text.max_characters, Some(7));
+    assert_eq!(text.visible_lines, Some(3.));
+    Ok(())
+}
+
+#[test]
+fn stash_stow_controls_are_disabled_while_request_pending() -> TestResult {
+    let (mut app, _, _) = fixture()?;
+    let mut panel = app
+        .world()
+        .resource::<State>()
+        .panel
+        .clone()
+        .ok_or("panel")?;
+    panel.carried.push(oteryn_client_runtime::depot::ItemEntry {
+        appearance_id: 0,
+        handle: std::num::NonZeroU64::MIN,
+        item_definition_ref: std::num::NonZeroU32::MIN,
+        count: std::num::NonZeroU32::MIN,
+        sub_type: 0,
+    });
+    panel.pending = true;
+
+    let mut queue = bevy::ecs::world::CommandQueue::default();
+    let mut commands = Commands::new(&mut queue, app.world());
+    widgets::build(
+        &mut commands,
+        app.world().resource::<Skins>(),
+        &State::default(),
+        &panel,
+        &mut InputFocus::default(),
+    );
+    queue.apply(app.world_mut());
+    assert!(
+        app.world_mut()
+            .query::<(&Control, &bevy::ui::InteractionDisabled)>()
+            .iter(app.world())
+            .any(|(c, _)| c.kind == Kind::Stow(0))
+    );
+    Ok(())
+}
+
+#[test]
+fn stash_left_right_adjust_and_confirm_through_keyboard() -> TestResult {
+    let (mut app, mut commands, _) = fixture()?;
+    while commands.try_recv().is_ok() {}
+    click(&mut app, Kind::Row(0))?;
+    for (key, expected) in [
+        (KeyCode::ArrowLeft, 1),
+        (KeyCode::ArrowRight, 2),
+        (KeyCode::ArrowRight, 3),
+        (KeyCode::ArrowLeft, 2),
+        (KeyCode::PageUp, 32),
+        (KeyCode::ArrowRight, 32),
+    ] {
+        press(&mut app, key);
+        let text = app
+            .world_mut()
+            .query_filtered::<&EditableText, With<Quantity>>()
+            .single(app.world())?;
+        assert_eq!(text.value().to_string(), expected.to_string());
+    }
+    press(&mut app, KeyCode::Enter);
+    let PlayCommand::Stash(command) = commands.try_recv()? else {
+        return Err("withdraw missing".into());
+    };
+    assert_eq!(
+        command.intent.action,
+        stash::StashAction::Withdraw {
+            row: [7; 16],
+            amount: 32
+        }
+    );
+    Ok(())
+}

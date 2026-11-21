@@ -190,3 +190,55 @@ fn fresh_admission_lost_commit_response_can_reconstruct_the_same_session()
     assert_eq!(authority.current_transport(), Some(100));
     Ok(())
 }
+
+#[test]
+fn fresh_projection_validation_failure_clears_controller() -> Result<(), AdmissionError> {
+    for invalid in 0..4 {
+        let mut authority = test_authority();
+        let admission = facts(700)?;
+        let session_id = game_session_id(700)?;
+        let committed = FreshAdmissionCommit::from_facts(session_id, admission, 100_u64)?;
+        authority.commit_fresh(admission, 100, || Ok(session_id))?;
+        let mut snapshot = GameSessionAuthoritySnapshot::new(
+            committed,
+            GameSessionState::Active,
+            committed.connection_generation(),
+            Some(100),
+            CharacterLease {
+                character_id: committed.character_id(),
+                generation: committed.character_lease_generation(),
+            },
+            ScopeOwnershipGeneration::new(committed.scope_ownership_generation())
+                .map_err(|_| AdmissionError::InvalidFacts)?,
+        );
+        authority.refresh_fresh_projection(100, snapshot)?;
+        let expected = match invalid {
+            0 => {
+                snapshot.current_character_world_eligibility = None;
+                AdmissionError::ReconciliationUnavailable
+            }
+            1 => {
+                snapshot.current_character_lease.generation += 1;
+                AdmissionError::StaleLease
+            }
+            2 => {
+                snapshot.current_scope_generation =
+                    ScopeOwnershipGeneration::new(1).map_err(|_| AdmissionError::InvalidFacts)?;
+                AdmissionError::StaleRuntime
+            }
+            _ => {
+                snapshot.current_transport = None;
+                AdmissionError::ReconciliationUnavailable
+            }
+        };
+        assert_eq!(
+            authority
+                .refresh_fresh_projection(100, snapshot)
+                .map(|_| ()),
+            Err(expected)
+        );
+        assert!(authority.current().is_none(), "invalid authority {invalid}");
+        assert_eq!(authority.current_transport(), None);
+    }
+    Ok(())
+}

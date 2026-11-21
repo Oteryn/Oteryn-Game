@@ -170,8 +170,91 @@ async fn look(
     }
 }
 
+/// Enrich only references from this authority's pinned native Item catalogue.
+pub(super) fn quote_window(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    session: crate::foundation::GameSessionId,
+    window: &oteryn_protocol_oteryn::npc_service::NpcTradeWindow,
+) -> Option<oteryn_protocol_oteryn::npc_service::NpcTradeWindow> {
+    use crate::content::ReferenceItemField::Known;
+    use oteryn_protocol_oteryn::trade_details::NpcQuoteDetails;
+    let mut enriched = window.clone();
+    enriched.details.clear();
+    if window.offers.is_empty() {
+        return Some(enriched);
+    }
+    let native = admission.active_generation?.native_gameplay()?;
+    let index = native.item_index()?;
+    let hireling = window.open.is_some_and(|(npc, _)| {
+        admission
+            .states
+            .npc_conversations
+            .hireling_quote(session, npc)
+    });
+    for offer in &window.offers {
+        let identity = std::num::NonZeroU32::new(offer.item_definition_ref)
+            .and_then(|reference| index.definition_at(reference));
+        let Some(((key, revision), name)) = identity.and_then(|(key, revision)| {
+            let policy = native.item_policy(key, revision)?;
+            let Known(presentation) = &policy.record().semantics.presentation else {
+                return None;
+            };
+            let Known(name) = &presentation.name else {
+                return None;
+            };
+            Some(((key, revision), name.clone()))
+        }) else {
+            // Quote details are positional on the wire and must cover every offer.
+            enriched.details.clear();
+            return Some(enriched);
+        };
+        let definition = crate::durability::item_mint::TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: key.into(),
+            revision_ref: revision.into(),
+        };
+        let (stack_maximum, stackable) =
+            super::item_ref_admission::generation_item_facts(native, &definition)
+                .ok()
+                .and_then(|facts| crate::durability::item_transfer::stack_maximum(facts.stack).ok())
+                .unwrap_or((0, false));
+        let total_maximum = match offer.side {
+            NpcTradeSide::Buy => oteryn_gameplay_economy::npc_trade::NPC_TRADE_BUY_GOLD_UNITS_MAX,
+            NpcTradeSide::Sell if hireling => 5_400_000, // Native hireling physical payout ceiling.
+            NpcTradeSide::Sell => oteryn_gameplay_economy::npc_trade::NPC_TRADE_SELL_GOLD_UNITS_MAX,
+        };
+        let price_maximum = if offer.unit_price == 0 {
+            u32::MAX
+        } else {
+            u32::try_from(total_maximum / u64::from(offer.unit_price)).unwrap_or(u32::MAX)
+        };
+        enriched.details.push(NpcQuoteDetails {
+            name,
+            maximum_quantity: ((if stack_maximum == 0 {
+                0
+            } else if stackable {
+                stack_maximum.saturating_mul(if hireling { 1 } else { 20 })
+            } else {
+                1
+            }) / offer.count)
+                .min(price_maximum)
+                .min(oteryn_gameplay_economy::npc_trade::NPC_TRADE_BULK_QUANTITY_MAX),
+        });
+    }
+    Some(enriched)
+}
+
 macro_rules! authority_methods {
     () => {
+        fn npc_quote_window(
+            &self,
+            session: crate::foundation::GameSessionId,
+            window: &oteryn_protocol_oteryn::npc_service::NpcTradeWindow,
+        ) -> Option<oteryn_protocol_oteryn::npc_service::NpcTradeWindow> {
+            let _ = session;
+            Some(window.clone())
+        }
+
         /// NPC-TRADE-SELLALL-1: one `NPC_SHOP` (command 97) of the admitted actor.
         fn npc_shop(
             &self,
@@ -186,6 +269,14 @@ macro_rules! authority_methods {
 pub(super) use authority_methods;
 macro_rules! composed_methods {
     () => {
+        fn npc_quote_window(
+            &self,
+            session: crate::foundation::GameSessionId,
+            window: &oteryn_protocol_oteryn::npc_service::NpcTradeWindow,
+        ) -> Option<oteryn_protocol_oteryn::npc_service::NpcTradeWindow> {
+            npc_shop::quote_window(self, session, window)
+        }
+
         async fn npc_shop(
             &self,
             actor: crate::foundation::ExactActorRef,

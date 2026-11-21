@@ -1,6 +1,6 @@
 //! Container sorting through the actual connection router and PostgreSQL item owner.
 use super::fixture::{Harness, debug, id, run};
-use super::{Dependencies, TestResult, item_look_fixtures as item_look, prepare_current_session};
+use super::{Dependencies, TestResult, item_look_fixtures, prepare_current_session};
 use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
@@ -62,7 +62,7 @@ fn scenario() -> TestResult {
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(generation.identity().server_artifact_digest().as_slice()).bind(generation.identity().client_artifact_digest().as_slice()).bind(frame_digest.as_slice()).execute(&harness.pool).await?;
 
-        item_look::seed_main_backpack(
+        item_look_fixtures::seed_main_backpack(
             &harness,
             &[
                 ("oteryn:item.tibia.i3031", 3),
@@ -117,7 +117,7 @@ fn scenario() -> TestResult {
         let exercise = async {
             let mut bag = None;
             loop {
-                let frame = item_look::read_frame(&mut client).await?;
+                let frame = item_look_fixtures::read_frame(&mut client).await?;
                 let e = protocol::decode_wire_envelope(&frame).map_err(debug)?;
                 if e.message_type() == protocol::MessageType::SnapshotChunk {
                     let (_, domains) =
@@ -162,7 +162,7 @@ fn scenario() -> TestResult {
                 (protocol::CommandStatus::Accepted, vec![1])
             );
             loop {
-                let frame = item_look::read_frame(&mut client).await?;
+                let frame = item_look_fixtures::read_frame(&mut client).await?;
                 let envelope = protocol::decode_wire_envelope(&frame).map_err(debug)?;
                 if envelope.message_type() == protocol::MessageType::StateDelta {
                     let delta = protocol::decode_state_delta(envelope.payload()).map_err(debug)?;
@@ -379,7 +379,7 @@ async fn send(
     client.write_u32(u32::try_from(frame.len())?).await?;
     client.write_all(&frame).await?;
     loop {
-        let frame = item_look::read_frame(client).await?;
+        let frame = item_look_fixtures::read_frame(client).await?;
         let e = protocol::decode_wire_envelope(&frame).map_err(debug)?;
         if e.message_type() == protocol::MessageType::CommandResult {
             let r = protocol::decode_command_result(e.payload()).map_err(debug)?;

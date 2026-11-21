@@ -1,5 +1,5 @@
 //! Session-bound launcher for the Store's Get coins entry; no bearer is retained here.
-#![cfg_attr(not(any(windows, test)), allow(dead_code))]
+#![cfg_attr(not(test), allow(dead_code))]
 use crate::NativeLoginConfig;
 use oteryn_foundation::CancellationToken;
 use std::sync::{

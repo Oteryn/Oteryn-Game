@@ -328,7 +328,10 @@ impl<T: Send + 'static> SpellCommitWindow<'_, T> {
     /// A definite `COMMIT` rejection proves the transaction rolled back, so the attempt is
     /// reclaimable again. Every other error after the call keeps the ambiguity and parks.
     fn observe_commit_error(&mut self, error: DurabilityError) -> DurabilityError {
-        if matches!(error, DurabilityError::CommitRejected) {
+        if matches!(
+            error,
+            DurabilityError::CommitRejected | DurabilityError::CommitTransactionTimeout
+        ) {
             self.commit_called = false;
         }
         error
@@ -743,11 +746,15 @@ mod lane_tests {
         block_on(async {
             let lane = lane(41);
             let mut permit = permit(&lane).await;
-            let mut window = permit.open_commit_window(4_u32, park);
-            window.commit_called = true;
-            let error = window.observe_commit_error(DurabilityError::CommitRejected);
-            assert!(matches!(error, DurabilityError::CommitRejected));
-            assert!(matches!(window.reclaim_uncommitted(), Ok(4)));
+            for rejected in [
+                DurabilityError::CommitRejected,
+                DurabilityError::CommitTransactionTimeout,
+            ] {
+                let mut window = permit.open_commit_window(4_u32, park);
+                window.commit_called = true;
+                let _ = window.observe_commit_error(rejected);
+                assert!(matches!(window.reclaim_uncommitted(), Ok(4)));
+            }
             for unknown in [
                 DurabilityError::CommitOutcomeUnknown,
                 DurabilityError::RootPassDeadlineExceeded,

@@ -23,7 +23,16 @@ impl AppearanceIndex {
             }
             Ok(converted)
         };
+        let moving_outfits = message
+            .outfit
+            .iter()
+            .filter_map(|entry| {
+                let id = entry.id?;
+                convert_movement(id, entry).map(|outfit| (id, outfit))
+            })
+            .collect();
         Ok(Self {
+            moving_outfits,
             objects: convert_all(message.object)?,
             outfits: convert_all(message.outfit)?,
             effects: convert_all(message.effect)?,
@@ -61,6 +70,18 @@ impl AppearanceIndex {
         self.outfits.get(&look_type)
     }
 
+    /// Walking frame group when present; single-group outfits retain their existing frames.
+    #[must_use]
+    pub fn outfit_preview(&self, look_type: u32, moving: bool) -> Option<&Appearance> {
+        if moving {
+            self.moving_outfits
+                .get(&look_type)
+                .or_else(|| self.outfit(look_type))
+        } else {
+            self.outfit(look_type)
+        }
+    }
+
     /// The cells of an outfit's base layer, standing, facing `direction` (0 north, 1 east,
     /// 2 south, 3 west), without addons or mount. The colour-mask layer is not drawn.
     pub fn resolve_outfit(
@@ -85,6 +106,30 @@ impl AppearanceIndex {
         appearance_id: u32,
         placement: Placement,
     ) -> Result<ResolvedEntry, AssetError> {
+        self.resolve_phase(sheets, appearance_id, placement, 0)
+    }
+
+    /// All phases of the same placement, preserving its count, fluid, hook and floor patterns.
+    pub fn resolve_frames(
+        &self,
+        sheets: &SpriteSheets,
+        appearance_id: u32,
+        placement: Placement,
+    ) -> Result<Vec<ResolvedEntry>, AssetError> {
+        let phases = self.objects.get(&appearance_id).map_or(1, |a| a.phases);
+        (0..phases)
+            .map(|phase| self.resolve_phase(sheets, appearance_id, placement, phase))
+            .collect()
+    }
+
+    /// Resolve one map animation phase with the same placement patterns as `resolve`.
+    pub fn resolve_phase(
+        &self,
+        sheets: &SpriteSheets,
+        appearance_id: u32,
+        placement: Placement,
+        phase: u32,
+    ) -> Result<ResolvedEntry, AssetError> {
         if !(1..=MAX_APPEARANCE_ID).contains(&appearance_id) {
             return Err(AssetError::InvalidAppearanceId { id: appearance_id });
         }
@@ -97,13 +142,16 @@ impl AppearanceIndex {
             .objects
             .get(&appearance_id)
             .ok_or(AssetError::UnknownAppearance { id: appearance_id })?;
+        if phase >= appearance.phases {
+            return Err(AssetError::UnknownSprite { sprite_id: 0 });
+        }
         let (pattern_x, pattern_y, pattern_z) = pattern(appearance, placement);
         entry(
             appearance,
             sheets,
             (pattern_x, pattern_y, pattern_z),
             0..appearance.layers,
-            0,
+            phase,
         )
     }
 }
