@@ -89,7 +89,7 @@ async fn modal_and_marks_wait_for_presentation_then_keep_fetched_marks() -> Resu
         scope_generation: 2,
         connection_generation: 1,
         lease_generation: 2,
-        selection: vec![450, 451],
+        selection: vec![117, 450, 451],
         requires_ack: false,
     };
     let (link, commands, outbox) = play_channel();

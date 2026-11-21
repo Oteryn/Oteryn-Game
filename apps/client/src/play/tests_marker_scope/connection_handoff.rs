@@ -1,4 +1,4 @@
-use super::{publish_activity_handoff, play_channel};
+use super::{play_channel, publish_activity_handoff};
 use crate::play::mailbox::lock;
 use oteryn_foundation::CancellationToken;
 use std::sync::{Arc, mpsc};
@@ -94,7 +94,10 @@ fn committed_handoff_cancels_checkout_and_preserves_directory()
         checkout.is_cancelled(),
         "source checkout survived the committed handoff"
     );
-    assert!(launcher.can_start(), "destination checkout can start independently");
+    assert!(
+        launcher.can_start(),
+        "destination checkout can start independently"
+    );
     outbox.end(oteryn_platform_client::native_login::PublicClass::SessionUnavailable);
     assert!(!launcher.can_start());
     release_tx.send(())?;

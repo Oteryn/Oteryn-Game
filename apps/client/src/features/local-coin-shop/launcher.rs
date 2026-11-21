@@ -7,10 +7,14 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
 };
 
+pub(crate) type BrowserGate =
+    Arc<dyn Fn(&super::Browser, &str, &CancellationToken) -> bool + Send + Sync>;
+
 pub(crate) struct Launcher {
     config: NativeLoginConfig,
     character_id: String,
-    after: Arc<dyn Fn() + Send + Sync>,
+    after: Arc<dyn Fn(&CancellationToken) + Send + Sync>,
+    browser_gate: Option<BrowserGate>,
     ended: AtomicBool,
     cancellation: Mutex<Option<Arc<CancellationToken>>>,
 }
@@ -31,12 +35,14 @@ impl Launcher {
     pub(crate) fn new(
         config: NativeLoginConfig,
         character_id: String,
-        after: Arc<dyn Fn() + Send + Sync>,
+        after: Arc<dyn Fn(&CancellationToken) + Send + Sync>,
+        browser_gate: Option<BrowserGate>,
     ) -> Arc<Self> {
         Arc::new(Self {
             config,
             character_id,
             after,
+            browser_gate,
             ended: AtomicBool::new(false),
             cancellation: Mutex::new(None),
         })
@@ -82,12 +88,18 @@ impl Launcher {
             .spawn(move || {
                 let _active = Active(launcher.clone(), worker_cancel.clone());
                 let cancel = (*worker_cancel).clone();
+                let mut config = launcher.config.clone();
+                if let Some(gate) = launcher.browser_gate.clone() {
+                    let browser = config.open_browser;
+                    let browser_cancel = cancel.clone();
+                    config.open_browser = Arc::new(move |url| gate(&browser, url, &browser_cancel));
+                }
                 let result = match tokio::runtime::Builder::new_current_thread()
                     .enable_all()
                     .build()
                 {
                     Ok(runtime) => runtime.block_on(crate::native_entry::open_coin_shop(
-                        &launcher.config,
+                        &config,
                         Some(launcher.character_id.clone()),
                         cancel.clone(),
                     )),
@@ -109,7 +121,7 @@ impl Launcher {
                     let _ = (launcher.config.coin_shop)(&view, cancel.clone());
                 }
                 if !cancel.is_cancelled() {
-                    (launcher.after)();
+                    (launcher.after)(&cancel);
                 }
             })
             .is_err()
