@@ -15,6 +15,7 @@ pub(crate) struct CoinAuthority {
     quotes: BTreeMap<String, (CoinPackage, Option<String>, Instant, bool)>,
     pub drop_after_create: bool,
     pub fail_after_create: bool,
+    pub fail_balance: bool,
     pub hide_recent_orders: bool,
     pub creations: u32,
     pub credits: u32,
@@ -48,6 +49,7 @@ impl CoinAuthority {
             quotes: BTreeMap::new(),
             drop_after_create: false,
             fail_after_create: false,
+            fail_balance: false,
             hide_recent_orders: false,
             creations: 0,
             credits: 0,
@@ -99,6 +101,9 @@ impl CoinAuthority {
             return Some((200, serde_json::to_string(&catalogue).unwrap_or_default()));
         }
         if method == "GET" && target == "/api/v1/native-account/coin-purchases/balance" {
+            if self.fail_balance {
+                return Some((503, String::new()));
+            }
             return Some((
                 200,
                 serde_json::to_string(&self.balance).unwrap_or_default(),

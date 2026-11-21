@@ -108,31 +108,33 @@ fn coin_shop_money_format_is_integer_and_wallet_snapshot_cannot_regress() -> Tes
         let client = mock.client()?;
         let token = mock.token(&client)?;
         let browser: Browser = Arc::new(|_| true);
+        let update = |view: &mut View| {
+            mock.runtime.block_on(controller::execute(
+                view,
+                Action::Refresh,
+                &client,
+                &token,
+                &browser,
+                CancellationToken::new(),
+            ));
+        };
         let mut view = View::new(None);
-        mock.runtime.block_on(controller::execute(
-            &mut view,
-            Action::Refresh,
-            &client,
-            &token,
-            &browser,
-            CancellationToken::new(),
-        ));
+        update(&mut view);
+        assert!(view.can_purchase(PACKAGE));
+        mock.with_coins(|coins| coins.fail_balance = true)?;
+        update(&mut view);
+        assert!(
+            !view.can_purchase(PACKAGE),
+            "quotes require a fresh validated wallet"
+        );
         let original = view.balance.clone();
-        {
-            let mut authority = mock.authority.lock().map_err(|_| "lock")?;
-            let coins = authority.coins.as_mut().ok_or("provider")?;
+        mock.with_coins(|coins| {
+            coins.fail_balance = false;
             coins.balance.total_coins = 999;
             coins.balance.available_coins = 999;
             coins.balance.transferable_coins = 999;
-        }
-        mock.runtime.block_on(controller::execute(
-            &mut view,
-            Action::Refresh,
-            &client,
-            &token,
-            &browser,
-            CancellationToken::new(),
-        ));
+        })?;
+        update(&mut view);
         assert_eq!(view.balance, original);
         assert!(view.feedback.contains("unavailable"));
         Ok(())

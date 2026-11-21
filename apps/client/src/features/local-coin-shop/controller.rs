@@ -144,11 +144,12 @@ async fn refresh(
     token: &AccessToken,
     cancel: CancellationToken,
 ) -> Result<(), NativeLoginError> {
+    view.quote_until.clear();
     let requested_at = Instant::now();
     let catalogue = client
         .coin_catalogue(token, view.character_id.as_deref(), cancel.clone())
         .await?;
-    view.quote_until = catalogue
+    let mut quote_until: std::collections::BTreeMap<_, _> = catalogue
         .packages
         .iter()
         .map(|p| {
@@ -179,13 +180,17 @@ async fn refresh(
     {
         accept(view, order.clone())?;
     }
-    view.catalogue = Some(catalogue);
     let balance = client.coin_balance(token, cancel).await?;
     if view.balance.as_ref().is_some_and(|old| {
         balance.revision < old.revision || (balance.revision == old.revision && &balance != old)
     }) {
         return Err(PlatformClientError::InvalidPayload.into());
     }
+    if let Some(order) = &view.order {
+        quote_until.remove(&order.quote_id);
+    }
+    view.quote_until = quote_until;
+    view.catalogue = Some(catalogue);
     view.balance = Some(balance);
     Ok(())
 }
