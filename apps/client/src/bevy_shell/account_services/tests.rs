@@ -24,6 +24,17 @@ fn wait(app: &mut App, after: Option<u64>) -> Result<u64, &'static str> {
     }
     Err("account presenter did not reach Bevy")
 }
+fn finish_worker<T>(worker: thread::JoinHandle<T>, action: &str) -> Result<T, String> {
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while !worker.is_finished() {
+        if Instant::now() >= deadline {
+            return Err(format!("{action}: worker did not finish within five seconds"));
+        }
+        thread::yield_now();
+    }
+    worker.join().map_err(|_| format!("{action}: worker panicked"))
+}
+
 fn click(app: &mut App, action: Action) -> TestResult {
     let id = app
         .world()
@@ -125,7 +136,7 @@ fn premium_bevy_buttons_fetch_refresh_report_errors_and_return_to_account_menu()
                 window: Entity::PLACEHOLDER,
             });
         app.update();
-        worker.join().map_err(|_| "worker")??;
+        finish_worker(worker, "return from Premium")??;
         app.update();
         assert!(
             app.world()
@@ -195,7 +206,7 @@ fn account_services_routes_bazaar_and_transfer_controls_to_the_presenter() -> Te
     let menu = wait(&mut app, None)?;
     click_named(&mut app, "account.bazaar.own")?;
     assert!(matches!(
-        worker.join().map_err(|_| "Bazaar presenter")?,
+        finish_worker(worker, "open Bazaar")?,
         Action::Refresh(AuctionView::Own)
     ));
 
@@ -230,7 +241,7 @@ fn account_services_routes_bazaar_and_transfer_controls_to_the_presenter() -> Te
     let worker = thread::spawn(move || presenter(&receipt_view, CancellationToken::new()));
     let receipt = wait(&mut app, Some(menu))?;
     click_named(&mut app, "account.receipt.prior")?;
-    assert!(matches!(worker.join().map_err(|_| "receipt presenter")?,
+    assert!(matches!(finish_worker(worker, "check receipt")?,
         Action::Receipt(id) if id == "prior"));
 
     let worker = thread::spawn(move || (config.account_services)(&view, CancellationToken::new()));
@@ -238,7 +249,7 @@ fn account_services_routes_bazaar_and_transfer_controls_to_the_presenter() -> Te
     click_named(&mut app, "account.character.hero")?;
     click_named(&mut app, "account.transfer.other")?;
     assert!(
-        matches!(worker.join().map_err(|_| "transfer presenter")?, Action::Quote { character_id, world_id } if character_id == "hero" && world_id == "other")
+        matches!(finish_worker(worker, "request transfer quote")?, Action::Quote { character_id, world_id } if character_id == "hero" && world_id == "other")
     );
     Ok(())
 }
@@ -261,7 +272,7 @@ fn coin_shop_checkout_control_routes_to_the_authenticated_presenter() -> TestRes
     wait(&mut app, None)?;
     click_named(&mut app, "coin.checkout")?;
     assert!(matches!(
-        worker.join().map_err(|_| "coin presenter")??,
+        finish_worker(worker, "open checkout")??,
         Action::OpenCheckout
     ));
     Ok(())
@@ -332,7 +343,7 @@ fn get_coins_reopens_and_inspects_an_awaiting_payment_order_by_request_id() -> T
         click(&mut app, Action::Back)?;
         wait(&mut app, Some(reopened))?;
         click(&mut app, Action::Back)?;
-        worker.join().map_err(|_| "account services worker")??;
+        finish_worker(worker, "return from checkout")??;
 
         let state = authority.lock().map_err(|_| "authority")?;
         assert!(
@@ -450,7 +461,7 @@ fn bazaar_page_keeps_auction_details_during_bid_retry_and_status_recovery() -> T
         click_named(&mut app, "commerce.confirm")?;
         wait(&mut app, Some(quote))?;
         click(&mut app, Action::Back)?;
-        worker.join().map_err(|_| "account services worker")??;
+        finish_worker(worker, "return from Bazaar")??;
 
         let state = authority.lock().map_err(|_| "authority")?;
         assert_eq!(state.effects, 3);
@@ -521,7 +532,7 @@ fn commerce_uses_a_character_selected_in_the_same_frame_as_the_action() -> TestR
         if listing {
             click_named(&mut app, "commerce.confirm")?;
         }
-        let action = worker.join().map_err(|_| "commerce presenter")?;
+        let action = finish_worker(worker, if listing { "confirm listing" } else { "request transfer quote" })?;
         if listing {
             assert!(matches!(action, Action::Sell { character_id, .. } if character_id == "Bob"));
         } else {
@@ -585,7 +596,7 @@ fn commerce_cancel_invalidates_queued_confirmation() -> TestResult {
             Ok(())
         })();
         cancellation.cancel();
-        let _ = worker.join().map_err(|_| "account presenter")?;
+        let _ = finish_worker(worker, "cancel confirmation")?;
         result
     })
 }
