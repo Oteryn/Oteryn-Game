@@ -105,7 +105,7 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (controller, pin) = activated_with_loot_tables(world, None);
         let active = controller.active().ok_or("active content")?;
-        let bundle = travel_world(world)?;
+        let bundle = travel_world(world, &[])?;
         let base_room = pin.qualified_room().clone();
         let cells = bundle
             .movement_cells(base_room.movement_cells())
@@ -1081,7 +1081,10 @@ async fn seed_bank(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>) -> TestResult
     Ok(())
 }
 
-fn travel_world(world: crate::foundation::WorldId) -> TestResult<crate::map::boot::BundleWorld> {
+pub(super) fn travel_world(
+    world: crate::foundation::WorldId,
+    extra_points: &[(u16, u16, i8)],
+) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::sector::{Attrs, Item, Tile};
     use oteryn_world_bundle::writer::{
         self as writer, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector,
@@ -1136,6 +1139,7 @@ fn travel_world(world: crate::foundation::WorldId) -> TestResult<crate::map::boo
     ];
     let mut grouped = std::collections::BTreeMap::<_, Vec<Tile>>::new();
     let mut points = points.to_vec();
+    points.extend_from_slice(extra_points);
     for (_, _, _, (x, y, floor)) in S10T_PASSAGES {
         let point = (
             u16::try_from(*x)?,
