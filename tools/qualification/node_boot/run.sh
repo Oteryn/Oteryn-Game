@@ -198,9 +198,10 @@ if [[ "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
     0|1) ;;
     *) echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_real_clock_mode'; exit 2 ;;
   esac
-  variant=default
+  variant=qualification-spawn
   if [[ "$NODE_BOOT_LIFECYCLE" == game_platform ]]; then
     NODE_SPAWN_FEATURES=()
+    variant=default
   fi
   if [[ "$NODE_BOOT_WORLD" == 1 && "$OTERYN_NODE_BOOT_REAL_CLOCK" == 0 ]]; then
     NODE_CLOCK_FEATURES=(--features qualification-clock)
@@ -216,10 +217,7 @@ if [[ "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
     NODE_BOOT_LIBTEST="$TARGET/node-boot-libtest"
     if [[ "$NODE_BOOT_LIFECYCLE" == native_reference ]] &&
       ! "$NODE_BOOT_LIBTEST" --list --exact "$SPAWN_PROOF" | grep -Fx "$SPAWN_PROOF: test" >/dev/null; then
-      # Existing prebuilt artifacts may carry the clock but omit qualification-spawn.
-      echo 'NODE_BOOT_PREBUILT_GAME fallback=qualification_spawn_missing'
-      NODE_BOOT_LIBTEST=""
-      TARGET="$GAME_SOURCE/target/debug"
+      echo 'NODE_BOOT_RESULT=BLOCKED reason=prebuilt_qualification_spawn_missing'; exit 2
     fi
     if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
       if ! python3 "$prebuilt" verify world-compiler "$NODE_BOOT_PREBUILT_DIR"; then

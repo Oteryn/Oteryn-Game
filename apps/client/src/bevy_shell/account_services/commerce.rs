@@ -187,7 +187,9 @@ fn account(ui: &mut Builder<'_, '_, '_>, view: &crate::account_services::View) {
 }
 
 fn coins(ui: &mut Builder<'_, '_, '_>, view: &crate::coin_shop::View) {
-    ui.coin("coin.refresh", "Refresh prices and balance", Coin::Refresh);
+    if !view.unavailable {
+        ui.coin("coin.refresh", "Refresh prices and balance", Coin::Refresh);
+    }
     if view.pending() {
         ui.coin("coin.retry", "Retry same request", Coin::Retry);
     }

@@ -26,9 +26,9 @@ jobs:
       contents: read
       pull-requests: read
     env:
-      EXPECTED_MERGE_GROUP_GATE_BLOB: "fc84a163207949f3e207c7114c8d818ee7bc2d3c"
+      EXPECTED_MERGE_GROUP_GATE_BLOB: "5e2c741146222fee5877e902c0053705afbcc562"
       EXPECTED_AGENT_GOVERNANCE_BLOB: "42d84c9089cdef928c6cb17268269156c87c0abb"
-      EXPECTED_MERGE_GATE_BLOB: "4fd8315638dc0e4b243896303df3e56e38ef78b2"
+      EXPECTED_MERGE_GATE_BLOB: "fc63fdaeb1f4d4d80356b4004cd26580d2f5cc55"
     steps:
       - name: Validate control-plane candidate as inert data
         shell: bash
@@ -320,7 +320,7 @@ jobs:
               '    name: Merge Queue / Dispatch library tests without a database\n',
               '          unset OTERYN_TEST_POSTGRES_ADMIN_URL\n',
               '    uses: ./.github/workflows/node-boot-build.yml\n',
-              '    needs: [candidate, node_boot_plan, node_boot_build, node_boot_shard]\n',
+              '    needs: [candidate, node_boot_plan, node_boot_build, node_boot_default_build, node_boot_platform_build, node_boot_shard, world_bundle]\n',
               '          test "$BUILD_RESULT" = success\n',
               '          cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst" \\\n'
               '            --workspace-remap "$GITHUB_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \\\n'
@@ -331,7 +331,12 @@ jobs:
               '          run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs\n',
               '          run_registered_target native_admission_source_postgres apps/game-server/tests/native_admission_source_postgres.rs\n',
               '    name: Merge Queue / World bundle\n',
-              '        run: cargo +1.100.0 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$RUNNER_TEMP/world-bundle"\n',
+              'python3 tools/qualification/node_boot/prebuilt.py build world-compiler "$RUNNER_TEMP/world-compiler-build"',
+              'python3 tools/qualification/node_boot/prebuilt.py unpack world-compiler',
+              '"$RUNNER_TEMP/world-compiler-prebuilt/world-compiler/oteryn-world-bundle-compiler"',
+              'pin-check . "$RUNNER_TEMP/world-bundle"',
+              '          test "$PLATFORM_RESULT" = success\n',
+              '          test "$WORLD_RESULT" = success\n',
               f'          WORLD_BUNDLE_REQUIRED: {world_bundle_required_expression}\n',
               f'          WORLD_BUNDLE: {world_bundle_result_expression}\n',
               '          if [[ "${WORLD_BUNDLE_REQUIRED:-}" == "false" ]]; then\n',
