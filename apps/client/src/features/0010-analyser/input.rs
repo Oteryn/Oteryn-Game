@@ -18,6 +18,16 @@ mod bosses;
 #[path = "input/party_import.rs"]
 mod party_import;
 impl PlayLink {
+    pub fn analyser_close(&self) {
+        lock(&self.mailbox).analyser.open = false;
+    }
+    pub fn analyser_reset(&self) {
+        let panel = &mut lock(&self.mailbox).analyser;
+        if panel.selected && panel.open {
+            oteryn_client_ui::analyser::protocol::reset(panel);
+        }
+    }
+
     pub fn analyser_xp_goal(&self, value: &str) -> bool {
         oteryn_client_ui::analyser::set_xp_goal(
             &mut crate::play::mailbox::lock(&self.mailbox).analyser,
@@ -50,9 +60,10 @@ impl PlayLink {
     pub fn analyser_open(&self) {
         self.analyser_resolve_items();
         #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            super::view::open_window(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             crate::play::mailbox::lock(&self.mailbox).analyser.open = true;
         }
     }

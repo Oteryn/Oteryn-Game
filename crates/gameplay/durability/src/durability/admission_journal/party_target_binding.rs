@@ -213,6 +213,19 @@ async fn canonical_current_party_session(
     row: &sqlx::postgres::PgRow,
     scope: RuntimeScopeRefV1,
 ) -> Result<bool, DurabilityError> {
+    canonical_current_source_session(tx, root, session, row, scope, false).await
+}
+
+// Read-only source callbacks also observe living avatars whose transport is in
+// genuine canonical grace. This does not make them eligible to issue commands.
+async fn canonical_current_source_session(
+    tx: &mut Transaction<'_, Postgres>,
+    root: &DurabilityRoot,
+    session: GameSessionId,
+    row: &sqlx::postgres::PgRow,
+    scope: RuntimeScopeRefV1,
+    allow_grace: bool,
+) -> Result<bool, DurabilityError> {
     let mut key = crate::durability::runtime_scope_assignment::assignment_scope_key(scope);
     if matches!(scope, RuntimeScopeRefV1::Instance { .. }) {
         key[0] = 2;
@@ -226,14 +239,22 @@ async fn canonical_current_party_session(
         return Ok(false);
     }
     if !fresh_origin {
-        return active_committed_binding_is_valid(tx, session.as_bytes(), row).await;
+        // The legacy validator proves Active bindings only; never infer a
+        // reconnectable journal origin from physical presence alone.
+        return if row.try_get::<i16, _>("session_state")? == ACTIVE {
+            active_committed_binding_is_valid(tx, session.as_bytes(), row).await
+        } else {
+            Ok(false)
+        };
     }
     let store = FreshAdmissionStore::from_root(root.clone());
     let current = store.current_session_in_transaction(tx, session).await?;
     let activity_origin = store
         .committed_activity_origin_in_transaction(tx, current.commit().character_id(), session)
         .await?;
-    if current.current_control_loss_epoch().is_some() {
+    if current.current_control_loss_epoch().is_some()
+        && current.session_state() == GameSessionState::Active
+    {
         // Same-session complete resume retains its full typed loss/budget/protection proof.
         // A genuine replaced current session uses the existing complete legacy validator.
         let resumed = current.current_game_session_id() == current.commit().game_session_id()
@@ -250,7 +271,8 @@ async fn canonical_current_party_session(
         } else if !active_committed_binding_is_valid(tx, session.as_bytes(), row).await? {
             return Ok(false);
         }
-    } else if !activity_origin
+    } else if current.current_control_loss_epoch().is_none()
+        && !activity_origin
         && (current.current_game_session_id() != current.commit().game_session_id()
             || current.current_connection_generation().get() != 1
             || current.current_transport() != Some(current.commit().initial_transport())
@@ -262,7 +284,13 @@ async fn canonical_current_party_session(
     if current.current_runtime_scope() != scope {
         return Ok(false);
     }
-    Ok(current.session_state() == GameSessionState::Active
+    let visible = current.session_state() == GameSessionState::Active
+        || (allow_grace
+            && current.session_state() == GameSessionState::Reconnectable
+            && current.current_control_loss_epoch().is_some()
+            && current.current_original_grace_deadline().is_some()
+            && current.current_transport().is_none());
+    Ok(visible
         && current.current_game_session_id() == session
         && row.try_get::<Vec<u8>, _>("character_id")? == current.commit().character_id().as_bytes()
         && row.try_get::<Vec<u8>, _>("world_id")? == current.commit().world_id().as_bytes()
@@ -314,3 +342,15 @@ pub async fn read_connection_generation_for_share_in_transaction(
         .fetch_one(&mut **tx)
         .await
 }
+
+mod source_observation;
+pub use source_observation::{
+    CurrentPartyActorObservation, current_colocated_party_character_for_observation_in_transaction,
+    observe_current_party_actor_for_source_read,
+};
+
+mod visible_observation;
+pub use visible_observation::{
+    CurrentVisibleActorObservation, current_visible_character_for_source_read_in_transaction,
+    observe_current_visible_actor_for_source_read,
+};

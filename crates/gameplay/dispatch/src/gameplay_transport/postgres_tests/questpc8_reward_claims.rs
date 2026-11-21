@@ -6,7 +6,7 @@ use serde_json::Value;
 
 #[test]
 fn questpc8_lone_medusa_claim_use_replay_and_refusal() -> TestResult {
-    super::quest_catalogue_chests::standalone_claim_cohort(
+    super::quest_catalogue_chests_fixtures::standalone_claim_cohort(
         &["lone_medusa_quest"],
         "questpc8_lone_medusa_claim_use_replay_and_refusal",
     )
@@ -34,7 +34,7 @@ fn questpc8_authored_selector_cannot_impersonate_a_crystal_reward_source() -> Te
         .find(|id| id["server"] == "crystalserver")
         .and_then(|id| id["unique_id"].as_u64())
         .ok_or("Crystal selector")?;
-    let world = super::quest_callbacks::source_world(
+    let world = super::quest_callbacks_fixtures::source_world(
         (
             u16::try_from(position["x"].as_u64().ok_or("source x")?)?,
             u16::try_from(position["y"].as_u64().ok_or("source y")?)?,

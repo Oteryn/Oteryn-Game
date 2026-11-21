@@ -2,6 +2,7 @@
 use std::collections::BTreeMap;
 mod activity_time;
 pub mod composed;
+pub mod native_event;
 use crate::content::{
     EffectFamilyDocument, ProjectReferenceRecord, ProjectV2AbilityArea, ProjectV2AbilityEffect,
     ProjectV2AbilityKind, ProjectV2AuthoringProfile, ProjectV2AuthoringProfileData as Data,
@@ -28,6 +29,115 @@ use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
 use sha2::{Digest, Sha256};
+/// Captured source VARIANT_POSITION. This token supplies geometry only; every
+/// application still validates the actual current issuer, owner and map facts.
+#[derive(Debug, Clone)]
+pub struct SourcePositionAnchor {
+    captured_target: Option<ExactActorRef>,
+    parent_occurrence: String,
+    issuer: ExactActorRef,
+    context: crate::foundation::MovementPositionContext,
+    position: crate::foundation::MovementLocalPosition,
+    content: [u8; 32],
+    fingerprint: [u8; 32],
+}
+impl SourcePositionAnchor {
+    pub fn capture(
+        runtime: &ChannelRuntimeV1,
+        source: &SpellSource,
+        proposal: &ProfileAbilityProposal,
+    ) -> Result<Self, AttackError> {
+        runtime.owner_fence().map_err(|_| AttackError::StaleOwner)?;
+        if runtime.content_pin().server_artifact_digest() != source.content_digest {
+            return Err(AttackError::ContentChanged);
+        }
+        if !runtime.matches_live_creature_identity(proposal.issuer, source.creature_key.as_bytes())
+        {
+            return Err(AttackError::StaleIssuer);
+        }
+        let snapshot = runtime
+            .read_actor_position(proposal.issuer)
+            .map_err(|_| AttackError::StaleIssuer)?;
+        Ok(Self {
+            captured_target: None,
+            parent_occurrence: proposal.occurrence.id().as_str().to_owned(),
+            issuer: proposal.issuer,
+            context: snapshot.context(),
+            position: snapshot.position(),
+            content: source.content_digest,
+            fingerprint: source.fingerprint,
+        })
+    }
+    /// Source VARIANT_NUMBER retains the exact target ID, resolving its current
+    /// position when the delayed Combat executes.
+    pub fn capture_target_variant(
+        runtime: &ChannelRuntimeV1,
+        source: &SpellSource,
+        proposal: &ProfileAbilityProposal,
+    ) -> Result<Self, AttackError> {
+        let mut anchor = Self::capture(runtime, source, proposal)?;
+        let target = runtime
+            .read_actor_position(proposal.target)
+            .map_err(|_| AttackError::StaleTarget)?;
+        if target.context() != anchor.context {
+            return Err(AttackError::OutOfRange);
+        }
+        anchor.captured_target = Some(proposal.target);
+        Ok(anchor)
+    }
+    /// Read the saved geometry only while its exact source cast remains current.
+    pub fn current_position(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        source: &SpellSource,
+        proposal: &ProfileAbilityProposal,
+    ) -> Result<crate::foundation::MovementLocalPosition, AttackError> {
+        let current = runtime
+            .read_actor_position(proposal.issuer)
+            .map_err(|_| AttackError::StaleIssuer)?;
+        let occurrence = proposal.occurrence.id().as_str();
+        let child_prefix = format!("callback:{}:stage:", self.parent_occurrence);
+        let same_cast = occurrence == self.parent_occurrence
+            || occurrence
+                .strip_prefix(&child_prefix)
+                .is_some_and(|stage| stage.parse::<u8>().is_ok_and(|stage| stage < 3));
+        if !same_cast
+            || self.issuer != proposal.issuer
+            || self.context != current.context()
+            || self.content != source.content_digest
+            || self.fingerprint != source.fingerprint
+            || runtime.content_pin().server_artifact_digest() != self.content
+        {
+            return Err(AttackError::ContentChanged);
+        }
+        if let Some(target) = self.captured_target {
+            if proposal.target != target {
+                return Err(AttackError::StaleTarget);
+            }
+            let target = runtime
+                .read_actor_position(target)
+                .map_err(|_| AttackError::StaleTarget)?;
+            if target.context() != self.context {
+                return Err(AttackError::OutOfRange);
+            }
+            let position = target.position();
+            // Crystal plagirath_bog.lua:39: the saved target must remain strictly
+            // within twenty tiles of the CURRENT caster when the event executes.
+            if source.creature_key == "oteryn:creature.plagirath"
+                && (i64::from(position.x) - i64::from(current.position().x))
+                    .abs()
+                    .max((i64::from(position.y) - i64::from(current.position().y)).abs())
+                    .max((i64::from(position.floor) - i64::from(current.position().floor)).abs())
+                    >= 20
+            {
+                return Err(AttackError::OutOfRange);
+            }
+            Ok(position)
+        } else {
+            Ok(self.position)
+        }
+    }
+}
 #[derive(Debug, Clone)]
 pub struct SpellSource {
     pub list: ScheduleList,
@@ -1054,6 +1164,61 @@ impl crate::creature_chain_attack::ChainDamage<SpellSource> for DamageSpellOwner
 
 /// Independent current Combat owner snapshot, never inferred from the source artifact.
 pub use oteryn_gameplay_combat::creature_spell_facts::{SpellCombatFacts, SpellWorldReader};
+
+/// Arithmetic result only; it grants no source, target, HP or occurrence authority.
+/// Native Creature events use the same post-source-component preparation as spells.
+#[derive(Debug, Clone, Copy)]
+pub struct PreparedNativeCreaturePlayerHit {
+    pub blocked: bool,
+    pub hazard: oteryn_gameplay_combat::hazard::IncomingHazardDamage,
+}
+
+/// Apply canonical armor, immunity, equipment/element protection and Hazard once.
+/// The caller first qualifies current source/target facts, source components and RNG;
+/// the existing PlayerLethalVitals owner still performs reflection and the HP commit.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "shared canonical preparation retains the actual source, target facts, clock and draw inputs"
+)]
+pub fn prepare_native_creature_player_hit(
+    runtime: &ChannelRuntimeV1,
+    facts: &SpellCombatFacts,
+    requested: u32,
+    armor: u32,
+    armor_applies: bool,
+    element: Option<&str>,
+    hazard_draw: u32,
+    source_critical: bool,
+    now: SemanticTimeMicros,
+) -> Result<PreparedNativeCreaturePlayerHit, AttackError> {
+    let remaining = requested.saturating_sub(armor);
+    let blocked = element.is_some() && facts.immune || armor_applies && remaining == 0;
+    let amount = if blocked {
+        0
+    } else {
+        facts
+            .mitigate_damage(remaining)
+            .ok_or(AttackError::NumericOverflow)?
+    };
+    let hazard = if element == Some("mana_drain") {
+        oteryn_gameplay_combat::hazard::IncomingHazardDamage {
+            amount,
+            critical: false,
+        }
+    } else {
+        oteryn_gameplay_combat::hazard::incoming_damage(
+            runtime,
+            &facts.attack,
+            amount,
+            hazard_draw,
+            now.get(),
+            source_critical,
+        )
+        .map_err(|_| AttackError::NumericOverflow)?
+    };
+    Ok(PreparedNativeCreaturePlayerHit { blocked, hazard })
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SpellTargetOutcome {
     pub damage: Option<PlayerDamageReceipt>,
@@ -1125,6 +1290,8 @@ pub struct PreparedPlayerTarget {
     session: GameSessionId,
     facts: SpellCombatFacts,
     amount: u32,
+    base_damage: u32,
+    dodge: Option<bool>,
     blocked: bool,
     hazard_critical: bool,
     child_id: DecisionOccurrenceId,
@@ -1158,6 +1325,28 @@ struct NativeAppearanceReader<'a> {
     native: Option<&'a crate::content::native_gameplay::NativeGameplayState>,
 }
 impl SpellWorldReader for NativeAppearanceReader<'_> {
+    fn source_damage_draw(
+        &mut self,
+        minimum: u32,
+        maximum: u32,
+        draw: u64,
+        target: Option<ExactActorRef>,
+    ) -> Result<Option<u32>, AttackError> {
+        self.inner
+            .source_damage_draw(minimum, maximum, draw, target)
+    }
+    fn source_combat_component_damage(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        issuer: ExactActorRef,
+        target: ExactActorRef,
+        magnitude: u32,
+        now: u64,
+        stamp: RuntimeWorkStamp,
+    ) -> Option<u32> {
+        self.inner
+            .source_combat_component_damage(runtime, issuer, target, magnitude, now, stamp)
+    }
     fn native_gameplay<'a>(
         &'a self,
         r: &ChannelRuntimeV1,
@@ -1414,6 +1603,9 @@ impl DamageSpellOwner {
             return Err(AttackError::ContentChanged);
         }
         if !runtime.matches_live_creature_identity(proposal.issuer, source.creature_key.as_bytes())
+            && !runtime
+                .companion_snapshot_including_dead(proposal.issuer)
+                .is_ok_and(|snapshot| snapshot.state.policy.definition_key == source.creature_key)
         {
             return Err(AttackError::StaleIssuer);
         }
@@ -1474,8 +1666,10 @@ impl DamageSpellOwner {
                 .map_err(|_| AttackError::InvalidPlan)?,
         )
         .into();
-        self.casts
-            .retain(|m| runtime.contains_live_creature(m.issuer));
+        self.casts.retain(|m| {
+            runtime.contains_live_creature(m.issuer)
+                || runtime.companion_snapshot_including_dead(m.issuer).is_ok()
+        });
         let index = self.casts.iter().position(|m| {
             m.issuer == proposal.issuer && m.list == source.list && m.entry == source.entry_index
         });
@@ -1494,6 +1688,10 @@ impl DamageSpellOwner {
             if now <= m.at {
                 return Err(AttackError::NotDue);
             }
+        }
+        // A retained exact incarnation may replay after Parry killed it; it cannot cast anew.
+        if !runtime.contains_live_creature(proposal.issuer) {
+            return Err(AttackError::StaleIssuer);
         }
         if index.is_none() {
             if self.casts.len() >= 64 * 16 {
@@ -1668,6 +1866,17 @@ impl DamageSpellOwner {
             .as_ref()
             .and_then(delayed::DelayedOwner::next_due_time)
     }
+    /// Original deadline metadata, refusing a retired runtime owner.
+    pub fn next_windup_due_time_current(
+        &self,
+        runtime: &ChannelRuntimeV1,
+    ) -> Result<Option<SemanticTimeMicros>, AttackError> {
+        self.delayed
+            .as_ref()
+            .map(|owner| owner.next_due_time_current(runtime))
+            .transpose()
+            .map(Option::flatten)
+    }
     /// Source/session snapshots for independently resolving facts at the next owner turn.
     pub fn pending_windups(
         &self,
@@ -1694,6 +1903,7 @@ impl DamageSpellOwner {
             Some(fence),
             None,
             clock,
+            clock.now(),
             |owner, runtime, fence, pulse, now| {
                 owner.commit_windup_pulse(runtime, fence, vitals, reader, pulse, now)
             },
@@ -1714,6 +1924,7 @@ impl DamageSpellOwner {
             None,
             Some(stamp),
             clock,
+            clock.now(),
             |owner, runtime, fence, pulse, now| {
                 owner.commit_windup_pulse(runtime, fence, vitals, reader, pulse, now)
             },
@@ -1726,6 +1937,34 @@ impl DamageSpellOwner {
         stamp: RuntimeWorkStamp,
         vitals: &mut dyn PlayerLethalVitals,
         clock: &impl crate::foundation::owner_timer::OwnerClock,
+        reader_for: F,
+    ) -> WindupCastResults
+    where
+        F: FnMut(
+            &SpellSource,
+            &ProfileAbilityProposal,
+            GameSessionId,
+            RuntimeWorkStamp,
+        ) -> Option<Box<dyn SpellWorldReader + 'a>>,
+    {
+        self.run_windup_due_current_through_with(
+            runtime,
+            stamp,
+            vitals,
+            clock,
+            clock.now(),
+            reader_for,
+        )
+    }
+    /// Select only original deadlines through the cutoff, while current facts
+    /// and committed effects observe the actual execution clock.
+    pub fn run_windup_due_current_through_with<'a, F>(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        vitals: &mut dyn PlayerLethalVitals,
+        clock: &impl crate::foundation::owner_timer::OwnerClock,
+        through: SemanticTimeMicros,
         mut reader_for: F,
     ) -> WindupCastResults
     where
@@ -1741,6 +1980,7 @@ impl DamageSpellOwner {
             None,
             Some(stamp),
             clock,
+            through,
             |owner, runtime, fence, pulse, now| {
                 let (source, proposal, session, stamp) = pulse.context();
                 let mut reader = reader_for(source, proposal, session, stamp)
@@ -1755,6 +1995,7 @@ impl DamageSpellOwner {
         mut fence: Option<&mut ScopeRuntimeFence>,
         supplied_stamp: Option<RuntimeWorkStamp>,
         clock: &impl crate::foundation::owner_timer::OwnerClock,
+        through: SemanticTimeMicros,
         mut apply: F,
     ) -> WindupCastResults
     where
@@ -1772,11 +2013,12 @@ impl DamageSpellOwner {
             return Ok(out);
         };
         let (pulses, cancellations) = match fence.as_deref_mut() {
-            Some(fence) => owner.drain(runtime, fence, clock)?,
+            Some(fence) => owner.drain(runtime, fence, clock, through)?,
             None => owner.drain_current(
                 runtime,
                 supplied_stamp.ok_or(AttackError::StaleOwner)?,
                 clock,
+                through,
             )?,
         };
         for (ability, error) in cancellations {
@@ -1977,6 +2219,10 @@ impl DamageSpellOwner {
             .positioned_actor_census()
             .map_err(|_| AttackError::StaleTarget)?;
         let root = GameplayDecisionRoot::from_bytes(source.content_digest);
+        let mut cancelled = Vec::new();
+        cancelled
+            .try_reserve(64)
+            .map_err(|_| AttackError::LedgerFull)?;
         let mut targets = Vec::new();
         targets
             .try_reserve(census.len().min(64))
@@ -2078,8 +2324,28 @@ impl DamageSpellOwner {
                 id.copy_from_slice(&bytes[..16]);
                 // Keep the existing recipient bound after current geometry and
                 // protection selection, independent of distant Channel actors.
-                if targets.len() >= 64 {
+                if targets.len() + cancelled.len() >= 64 {
                     return Err(AttackError::LedgerFull);
+                }
+                if let Some(session) = session {
+                    let occurrence = format!(
+                        "{}:target:{}",
+                        proposal.occurrence.id().as_str(),
+                        hex(&actor.placement_identity())
+                    );
+                    if vitals.dodge_source_attack(
+                        runtime,
+                        proposal.issuer,
+                        *actor,
+                        *session,
+                        &occurrence,
+                    ) {
+                        if cancelled.len() >= 64 {
+                            return Err(AttackError::LedgerFull);
+                        }
+                        cancelled.push(*actor);
+                        continue;
+                    }
                 }
                 targets.push(crate::player_lethal::SourceAppearanceTarget {
                     actor: *actor,
@@ -2098,6 +2364,8 @@ impl DamageSpellOwner {
                 });
             }
         }
+        cancelled.sort_by_key(|actor| actor.placement_identity());
+        cancelled.dedup();
         targets.sort_by_key(|t| t.actor.placement_identity());
         targets.dedup_by_key(|t| t.actor.placement_identity());
         let receipts = if targets.is_empty() {
@@ -2136,6 +2404,16 @@ impl DamageSpellOwner {
                     }),
                 )
             })
+            .chain(cancelled.into_iter().map(|actor| {
+                (
+                    actor,
+                    Ok(SpellTargetOutcome {
+                        damage: None,
+                        mana: None,
+                        condition_only_applied: false,
+                    }),
+                )
+            }))
             .collect();
         Ok(SpellOutcome {
             delayed_cast: None,
@@ -2174,8 +2452,27 @@ impl DamageSpellOwner {
         forced: Option<(ExactActorRef, GameSessionId)>,
         fence: &ScopeRuntimeFence,
     ) -> Result<SpellOutcome, AttackError> {
-        let prepared =
-            self.prepare_target(runtime, source, proposal, reader, stamp, forced, now)?;
+        self.apply_target_anchored(
+            runtime, vitals, source, proposal, reader, stamp, now, forced, fence, None,
+        )
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub fn apply_target_anchored(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        vitals: &mut dyn PlayerLethalVitals,
+        source: &SpellSource,
+        proposal: &ProfileAbilityProposal,
+        reader: &mut dyn SpellWorldReader,
+        stamp: RuntimeWorkStamp,
+        now: SemanticTimeMicros,
+        forced: Option<(ExactActorRef, GameSessionId)>,
+        fence: &ScopeRuntimeFence,
+        anchor: Option<&SourcePositionAnchor>,
+    ) -> Result<SpellOutcome, AttackError> {
+        let prepared = self.prepare_target_anchored(
+            runtime, source, proposal, reader, stamp, forced, now, anchor,
+        )?;
         self.commit_prepared(
             runtime,
             vitals,
@@ -2185,6 +2482,37 @@ impl DamageSpellOwner {
             now,
             Some(fence),
             stamp,
+        )
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub fn apply_target_current(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        vitals: &mut dyn PlayerLethalVitals,
+        source: &SpellSource,
+        proposal: &ProfileAbilityProposal,
+        reader: &mut dyn SpellWorldReader,
+        stamp: RuntimeWorkStamp,
+        now: SemanticTimeMicros,
+        forced: Option<(ExactActorRef, GameSessionId)>,
+        anchor: Option<&SourcePositionAnchor>,
+    ) -> Result<SpellOutcome, AttackError> {
+        let fence = runtime.owner_fence().map_err(|_| AttackError::StaleOwner)?;
+        if !fence.accepts_stamp(stamp) {
+            return Err(AttackError::StaleOwner);
+        }
+        if runtime.content_pin().server_artifact_digest() != source.content_digest {
+            return Err(AttackError::ContentChanged);
+        }
+        if !runtime.matches_live_creature_identity(proposal.issuer, source.creature_key.as_bytes())
+        {
+            return Err(AttackError::StaleIssuer);
+        }
+        let prepared = self.prepare_target_anchored(
+            runtime, source, proposal, reader, stamp, forced, now, anchor,
+        )?;
+        self.commit_prepared(
+            runtime, vitals, source, proposal, prepared, now, None, stamp,
         )
     }
     // Current time is part of Hazard critical preflight alongside source, actor and policy facts.
@@ -2199,14 +2527,31 @@ impl DamageSpellOwner {
         forced: Option<(ExactActorRef, GameSessionId)>,
         now: SemanticTimeMicros,
     ) -> Result<PreparedPlayerCast, AttackError> {
+        self.prepare_target_anchored(runtime, source, proposal, reader, stamp, forced, now, None)
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub fn prepare_target_anchored(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        source: &SpellSource,
+        proposal: &ProfileAbilityProposal,
+        reader: &mut dyn SpellWorldReader,
+        stamp: RuntimeWorkStamp,
+        forced: Option<(ExactActorRef, GameSessionId)>,
+        now: SemanticTimeMicros,
+        anchor: Option<&SourcePositionAnchor>,
+    ) -> Result<PreparedPlayerCast, AttackError> {
         let from = runtime
             .read_actor_position(proposal.issuer)
             .map_err(|_| AttackError::StaleIssuer)?;
         let to = runtime
             .read_actor_position(proposal.target)
             .map_err(|_| AttackError::StaleTarget)?;
-        let fp = from.position();
-        let tp = to.position();
+        let fp = match anchor {
+            Some(anchor) => anchor.current_position(runtime, source, proposal)?,
+            None => from.position(),
+        };
+        let tp = if anchor.is_some() { fp } else { to.position() };
         if from.context() != to.context() || fp.floor != tp.floor {
             return Err(AttackError::OutOfRange);
         }
@@ -2323,17 +2668,17 @@ impl DamageSpellOwner {
         let id = DecisionOccurrenceId::from_bytes(id);
         let draw = deterministic_decision_u64(&root, id, "damage_draw", source.entry_index as u64)
             .map_err(|_| AttackError::InvalidPlan)?;
-        let requested = u32::try_from(oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(
-            draw,
-            i64::from(source.minimum),
-            i64::from(source.maximum),
-        ))
-        .map_err(|_| AttackError::InvalidPlan)?;
-        let critical_draw =
-            deterministic_decision_u64(&root, id, "soulpit_overpower", source.entry_index as u64)
-                .map_err(|_| AttackError::InvalidPlan)?;
-        let critical_roll =
-            oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(critical_draw, 1, 100) as u8;
+        let requested =
+            match reader.source_damage_draw(source.minimum, source.maximum, draw, None)? {
+                Some(amount) => amount,
+                None => u32::try_from(oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(
+                    draw,
+                    i64::from(source.minimum),
+                    i64::from(source.maximum),
+                ))
+                .map_err(|_| AttackError::InvalidPlan)?,
+            };
+        let critical_roll = source_overpower_roll(source, proposal)?;
         let (requested, soulpit_critical) = runtime
             .encounter_source_damage(proposal.issuer, u64::from(requested), critical_roll)
             .map_err(|_| AttackError::NumericOverflow)?;
@@ -2398,6 +2743,28 @@ impl DamageSpellOwner {
             } else {
                 0
             };
+            let target_draw = deterministic_decision_u64(
+                &root,
+                child_id,
+                "source_target_damage",
+                source.entry_index as u64,
+            )
+            .map_err(|_| AttackError::InvalidPlan)?;
+            let requested = match reader.source_damage_draw(
+                source.minimum,
+                source.maximum,
+                target_draw,
+                Some(target),
+            )? {
+                Some(amount) => u32::try_from(
+                    runtime
+                        .encounter_source_damage(proposal.issuer, u64::from(amount), critical_roll)
+                        .map_err(|_| AttackError::NumericOverflow)?
+                        .0,
+                )
+                .map_err(|_| AttackError::NumericOverflow)?,
+                None => requested,
+            };
             let reference_multiplier = monster_reference_level_damage_multiplier(
                 source.reference_level,
                 &source.reference_level_overrides,
@@ -2412,40 +2779,41 @@ impl DamageSpellOwner {
                     / u64::from(DAMAGE_MULTIPLIER_SCALE),
             )
             .map_err(|_| AttackError::NumericOverflow)?;
-            let remaining = requested_for_player.saturating_sub(armor);
-            let blocked =
-                source.element.is_some() && facts.immune || source.armor && remaining == 0;
-            let amount = if blocked {
+            let requested_for_player = reader
+                .source_combat_component_damage(
+                    runtime,
+                    proposal.issuer,
+                    target,
+                    requested_for_player,
+                    now.get(),
+                    stamp,
+                )
+                .ok_or(AttackError::MissingCombatFacts)?;
+            let hazard_draw = if source.element.as_deref() == Some("mana_drain") {
                 0
             } else {
-                facts
-                    .mitigate_damage(remaining)
-                    .ok_or(AttackError::NumericOverflow)?
-            };
-            let hazard = if source.element.as_deref() == Some("mana_drain") {
-                oteryn_gameplay_combat::hazard::IncomingHazardDamage {
-                    amount,
-                    critical: false,
-                }
-            } else {
-                let draw = deterministic_decision_u64(
+                (deterministic_decision_u64(
                     &root,
                     child_id,
                     "hazard_critical",
                     source.entry_index as u64,
                 )
                 .map_err(|_| AttackError::InvalidPlan)?
-                    % 1_000_000;
-                oteryn_gameplay_combat::hazard::incoming_damage(
-                    runtime,
-                    &facts.attack,
-                    amount,
-                    draw as u32,
-                    now.get(),
-                    source_critical.is_some_and(|event| event.critical),
-                )
-                .map_err(|_| AttackError::NumericOverflow)?
+                    % 1_000_000) as u32
             };
+            let prepared_hit = prepare_native_creature_player_hit(
+                runtime,
+                &facts,
+                requested_for_player,
+                armor,
+                source.armor,
+                source.element.as_deref(),
+                hazard_draw,
+                source_critical.is_some_and(|event| event.critical),
+                now,
+            )?;
+            let blocked = prepared_hit.blocked;
+            let hazard = prepared_hit.hazard;
             prepared
                 .try_reserve(1)
                 .map_err(|_| AttackError::LedgerFull)?;
@@ -2454,6 +2822,8 @@ impl DamageSpellOwner {
                 session,
                 facts,
                 amount: hazard.amount,
+                base_damage: requested_for_player,
+                dodge: None,
                 blocked,
                 hazard_critical: hazard.critical,
                 child_id,
@@ -2499,13 +2869,32 @@ impl DamageSpellOwner {
             session,
             facts,
             amount,
+            base_damage,
+            dodge,
             blocked,
             hazard_critical,
             child_id,
             occurrence,
         } in prepared.targets
         {
-            if source.element.as_deref() != Some("mana_drain")
+            // CHARM4-INCOMING-EFFECT-ORDER-V1: cancellation precedes every
+            // mutation, reflection and attached effect. The source owner retains
+            // this actual no-effect outcome, so retry cannot select a new result.
+            if dodge.unwrap_or_else(|| {
+                vitals.dodge_source_attack(runtime, proposal.issuer, target, session, &occurrence)
+            }) {
+                result.targets.push((
+                    target,
+                    Ok(SpellTargetOutcome {
+                        damage: None,
+                        mana: None,
+                        condition_only_applied: false,
+                    }),
+                ));
+                continue;
+            }
+            if (blocked || amount == 0)
+                && source.element.as_deref() != Some("mana_drain")
                 && !vitals.reflect_equipment_damage(
                     runtime,
                     proposal.issuer,
@@ -2641,15 +3030,25 @@ impl DamageSpellOwner {
                 continue;
             }
             let receipt = if source.conditions.is_empty() {
-                vitals.apply_source_typed_attack_damage(
+                vitals.apply_source_incoming_hit(
                     runtime,
                     proposal.issuer,
                     target,
                     session,
                     amount,
+                    base_damage,
+                    None,
                     crate::player_lethal::PlayerHitKind::from_element(source.element.as_deref()),
                     &occurrence,
                     now,
+                    None,
+                    Some(crate::player_lethal::SourceHitEquipment {
+                        native_bite: false,
+                        magnitude: amount,
+                        element: source.element.as_deref(),
+                        stream: format!("spell:{:?}:{}", source.list, source.entry_index)
+                            .as_bytes(),
+                    }),
                 )
             } else {
                 let policy = facts
@@ -2666,39 +3065,32 @@ impl DamageSpellOwner {
                     decision_root: &root,
                     occurrence: child_id,
                 };
-                match fence {
-                    Some(fence) => vitals.apply_typed_composite_attack_damage(
-                        runtime,
-                        target,
-                        session,
-                        amount,
-                        crate::player_lethal::PlayerHitKind::from_element(
-                            source.element.as_deref(),
-                        ),
-                        &occurrence,
-                        proposal.issuer,
-                        &source.conditions,
-                        &af,
-                        &policy.immunities,
+                vitals.apply_source_incoming_hit(
+                    runtime,
+                    proposal.issuer,
+                    target,
+                    session,
+                    amount,
+                    base_damage,
+                    None,
+                    crate::player_lethal::PlayerHitKind::from_element(source.element.as_deref()),
+                    &occurrence,
+                    now,
+                    Some(crate::player_lethal::SourceHitConditions {
+                        definitions: &source.conditions,
+                        facts: &af,
+                        immunities: &policy.immunities,
                         fence,
                         stamp,
-                    ),
-                    None => vitals.apply_typed_composite_attack_damage_current(
-                        runtime,
-                        target,
-                        session,
-                        amount,
-                        crate::player_lethal::PlayerHitKind::from_element(
-                            source.element.as_deref(),
-                        ),
-                        &occurrence,
-                        proposal.issuer,
-                        &source.conditions,
-                        &af,
-                        &policy.immunities,
-                        stamp,
-                    ),
-                }
+                    }),
+                    Some(crate::player_lethal::SourceHitEquipment {
+                        native_bite: false,
+                        magnitude: amount,
+                        element: source.element.as_deref(),
+                        stream: format!("spell:{:?}:{}", source.list, source.entry_index)
+                            .as_bytes(),
+                    }),
+                )
             };
             if hazard_critical && receipt.is_some() {
                 runtime
@@ -2727,3 +3119,24 @@ pub fn hex(b: &[u8]) -> String {
 const DEFENSE_VARIANT_SOURCE_BODY: &str = r##"[{"data":{"kind":"Ability","profile":{"details":{"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0,"variants":[{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-1","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-2","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-3","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-4","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-5","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-6","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-7","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-8","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-9","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-10","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-11","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-12","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-13","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-14","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-15","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-16","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-17","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-18","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-19","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-20","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-21","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-22","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-23","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-24","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-25","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-26","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-27","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-28","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-29","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-30","revision":"definition-r1"},{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-31","revision":"definition-r1"}]}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-1.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":20}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-1","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-10.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":29}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-10","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-11.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":30}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-11","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-12.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":31}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-12","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-13.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":32}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-13","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-14.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":33}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-14","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-15.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":34}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-15","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-16.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":35}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-16","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-17.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":36}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-17","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-18.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":37}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-18","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-19.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":38}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-19","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-2.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":21}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-2","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-20.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":39}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-20","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-21.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":40}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-21","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-22.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":41}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-22","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-23.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":42}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-23","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-24.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":43}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-24","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-25.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":44}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-25","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-26.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":45}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-26","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-27.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":46}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-27","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-28.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":47}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-28","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-29.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":48}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-29","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-3.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":22}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-3","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-30.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":49}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-30","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-31.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":50}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-31","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-4.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":23}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-4","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-5.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":24}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-5","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-6.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":25}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-6","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-7.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":26}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-7","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-8.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":27}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-8","revision":"definition-r1"}},{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["...xxx...","..xxxxx..",".xxxxxxx.","xxxxxxxxx","xxxxCxxxx","xxxxxxxxx",".xxxxxxx.","..xxxxx..","...xxx..."],"shape":"Matrix"},"effects":[{"effect":{"key":"oteryn:effect.spell.shock_head_skill_reducer_2.variant-9.effect-condition-1","operation":{"condition":{"attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"PercentOfBase","value":28}],"condition_type":"attributes","lifetime":"FixedDuration"},"duration_ms":6000,"operation":"Condition"},"presentation":{"impact_asset_binding":"canary.appearance:effect/magic_red"}},"kind":"Inline"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.shock_head_skill_reducer_2.variant-9","revision":"definition-r1"}}]"##;
 
 pub type WindupCastResults = Result<Vec<(Ref, Result<SpellOutcome, AttackError>)>, AttackError>;
+
+fn source_overpower_roll(
+    source: &SpellSource,
+    proposal: &ProfileAbilityProposal,
+) -> Result<u8, AttackError> {
+    let root = GameplayDecisionRoot::from_bytes(source.content_digest);
+    let digest = Sha256::new()
+        .chain_update(b"oteryn:creature-damage-spell:v1")
+        .chain_update(proposal.occurrence.id().as_str().as_bytes())
+        .finalize();
+    let mut id = [0; 16];
+    id.copy_from_slice(&digest[..16]);
+    let draw = deterministic_decision_u64(
+        &root,
+        DecisionOccurrenceId::from_bytes(id),
+        "soulpit_overpower",
+        source.entry_index as u64,
+    )
+    .map_err(|_| AttackError::InvalidPlan)?;
+    Ok(oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(draw, 1, 100) as u8)
+}

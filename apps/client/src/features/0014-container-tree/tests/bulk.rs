@@ -5,6 +5,7 @@ fn managed_container_moves_all_through_live_handles_and_stops_on_refusal()
     use oteryn_session::{ItemEntry, ItemMoveDestination, ItemMoveOutcome};
     let item = |handle: u64| -> Result<ItemEntry, Box<dyn std::error::Error>> {
         Ok(ItemEntry {
+            appearance_id: 0,
             handle: handle.try_into()?,
             item_definition_ref: 42.try_into()?,
             count: 7.try_into()?,
@@ -77,6 +78,7 @@ fn managed_container_menu_opens_the_selected_live_inventory_container()
     let (link, mut commands, outbox) = play_channel();
     outbox.container_initialize(Some(Default::default()));
     let backpack = oteryn_session::ItemEntry {
+        appearance_id: 0,
         handle: 10.try_into()?,
         item_definition_ref: 42.try_into()?,
         count: 1.try_into()?,
@@ -134,6 +136,7 @@ fn views() -> Result<ContainerViews, Error> {
                 entries: (10_u64..13)
                     .map(|id| {
                         Ok(oteryn_session::ItemEntry {
+                            appearance_id: 0,
                             handle: id.try_into()?,
                             item_definition_ref: 42_u32.try_into()?,
                             count: 7_u32.try_into()?,

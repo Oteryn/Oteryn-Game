@@ -156,7 +156,7 @@ impl Application {
     /// A session end returns to the pre-admission state: the offline scene, with the public
     /// class in the title and on the console. The session task is gone with its link.
     fn return_to_login(&mut self, class: PublicClass) {
-        self.leave_play(error_text(GameplayEntryError::Rejected(class)));
+        self.leave_play(&error_text(GameplayEntryError::Rejected(class)));
     }
 
     fn fail(&mut self, event_loop: &ActiveEventLoop, error: ShellError) {

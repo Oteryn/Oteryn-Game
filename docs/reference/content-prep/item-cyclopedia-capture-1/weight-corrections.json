@@ -1,0 +1,32 @@
+[
+  {
+    "id": 3031,
+    "captured_weight": "0.01 oz",
+    "global_weight": "0.10 oz",
+    "basis": "Gold coin: donor-confirmed 10 centi-oz in the pre-ITEMGLOB native coin profile generated from Canary data/items/items.xml (build_source_item_profiles.py). Global gold, platinum and crystal coins each weigh 0.10 oz. Crystal's raw 1-centi-oz observation is retained as donor evidence."
+  },
+  {
+    "id": 9147,
+    "captured_weight": "0.10 oz",
+    "global_weight": "1.00 oz",
+    "basis": "Glob of grease: known Global weight 1.00 oz; capture decimal-place error. Corroborated by retained TibiaWiki revision 1115191 (imports/tibiawiki/facts/items-stats.json: 1.00 oz)."
+  },
+  {
+    "id": 19371,
+    "captured_weight": "1.70 oz",
+    "global_weight": "17.00 oz",
+    "basis": "Glass of goo: known Global weight 17.00 oz; capture decimal-place error. Corroborated by retained TibiaWiki revision 1147813 (imports/tibiawiki/facts/items-stats.json: 17.00 oz)."
+  },
+  {
+    "id": 25729,
+    "captured_weight": "20.00 oz",
+    "global_weight": "2.00 oz",
+    "basis": "Dark moon mirror: known Global weight 2.00 oz; capture decimal-place error. Corroborated by retained TibiaWiki revision 1115719 (imports/tibiawiki/facts/items-stats.json: 2.00 oz)."
+  },
+  {
+    "id": 25730,
+    "captured_weight": "20.00 oz",
+    "global_weight": "2.00 oz",
+    "basis": "Lit moon mirror: known Global weight 2.00 oz; capture decimal-place error. Corroborated by retained TibiaWiki revision 1115742 (imports/tibiawiki/facts/items-stats.json: 2.00 oz)."
+  }
+]

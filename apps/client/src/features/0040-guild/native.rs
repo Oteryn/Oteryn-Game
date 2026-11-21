@@ -27,6 +27,9 @@ fn wide(s: &str) -> Vec<u16> {
 }
 type WeakMailbox = Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>;
 pub(in crate::play) fn open_window(link: &PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     {
         let mut m = lock(&link.mailbox);
         if m.guild.open {
@@ -184,7 +187,15 @@ fn run(weak: WeakMailbox, commands: tokio::sync::mpsc::UnboundedSender<PlayComma
             if held.as_ref() != Some(&mailbox.guild) {
                 SendMessageW(list, LB_RESETCONTENT, 0, 0);
                 for m in &mailbox.guild.roster {
-                    SendMessageW(list, LB_ADDSTRING, 0, wide(&m.name).as_ptr() as isize);
+                    let row = if m.channel.is_some() {
+                        oteryn_client_ui::social_channel::guild_member_text(
+                            &mailbox.guild.channel_names,
+                            m,
+                        )
+                    } else {
+                        m.name.clone()
+                    };
+                    SendMessageW(list, LB_ADDSTRING, 0, wide(&row).as_ptr() as isize);
                 }
                 for i in &mailbox.guild.invitations {
                     SendMessageW(list, LB_ADDSTRING, 0, wide(&i.name).as_ptr() as isize);

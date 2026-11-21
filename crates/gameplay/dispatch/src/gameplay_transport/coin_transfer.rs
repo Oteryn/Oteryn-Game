@@ -98,7 +98,12 @@ pub(super) async fn execute(
     let value = if r.action == 1 {
         match coins.execute(&PlatformRequest::Balance(account)).await {
             Ok(Reply::Balance(b)) => {
-                if r.amount > b.transferable.parse::<u64>().ok()? {
+                let available = b
+                    .transferable
+                    .parse::<u64>()
+                    .ok()?
+                    .saturating_add(b.non_transferable.parse::<u64>().ok()?);
+                if r.amount > available {
                     json!({"result":"insufficient_transferable"})
                 } else {
                     let mut v = coin.gift_review(r).await.ok()?;

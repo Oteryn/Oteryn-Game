@@ -382,3 +382,144 @@ fn hazard_panel_shows_unlocked_levels_and_blocks_locked_selection() {
     p.fields[2] = "5".into();
     assert!(request(&mut p, Intent::HazardSelect).is_some());
 }
+
+#[test]
+fn endgame_chain_selection_preserves_confirmed_progress_boundary()
+-> Result<(), Box<dyn std::error::Error>> {
+    for (chain, expected) in [
+        (
+            EndgameChain::SoulWar,
+            vec![
+                "goshnar_s_cruelty",
+                "goshnar_s_greed",
+                "goshnar_s_hatred",
+                "goshnar_s_malice",
+                "goshnar_s_spite",
+                "goshnar_s_megalomania_purple",
+            ],
+        ),
+        (
+            EndgameChain::RottenBlood,
+            vec!["ichgahal", "murcion", "vemiath", "chagorz", "bakragore"],
+        ),
+    ] {
+        let mut panel = BossEncounterPanel::default();
+        assert!(!select_next_boss(&mut panel, chain));
+        panel.selected = true;
+        for boss in &expected {
+            assert!(select_next_boss(&mut panel, chain));
+            let key = format!("oteryn:creature.{boss}");
+            assert_eq!(panel.fields[0], key);
+            let command = request(&mut panel, Intent::Enter).ok_or("entry command")?;
+            assert_eq!(command.kind, 178);
+            assert_eq!(
+                command.payload,
+                oteryn_client_runtime::boss_encounter::encode_boss_key(&key)
+                    .map_err(|error| format!("{error:?}"))?
+            );
+            let before = panel.clone();
+            assert!(!select_next_boss(&mut panel, chain));
+            assert_eq!(panel, before);
+            panel.pending = false;
+            assert!(
+                panel.snapshot.is_none(),
+                "selecting a boss cannot fabricate quest progress"
+            );
+        }
+        assert!(select_next_boss(&mut panel, chain));
+        assert_eq!(panel.fields[0], format!("oteryn:creature.{}", expected[0]));
+    }
+    Ok(())
+}
+
+#[test]
+fn primal_party_level_refusal_has_native_participant_feedback() {
+    let mut panel = BossEncounterPanel {
+        selected: true,
+        ..Default::default()
+    };
+    panel.fields[0] = "oteryn:boss.the_primal_menace".into();
+    assert!(request(&mut panel, Intent::Enter).is_some());
+    assert!(apply_result(
+        &mut panel,
+        &GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: CommandStatus::Rejected,
+            payload: vec![8, 2, 32, 12],
+        }
+    ));
+    assert!(!panel.pending);
+    assert!(panel_text(&panel).contains("A party member does not meet the level requirement"));
+    assert!(
+        panel.snapshot.is_none(),
+        "a refusal cannot manufacture accepted boss state"
+    );
+}
+
+#[test]
+fn primal_party_size_and_position_refusals_are_actionable_and_retryable() {
+    for (reason, message) in [
+        (
+            10,
+            "The party does not meet this encounter's size requirement",
+        ),
+        (11, "A party member is not on a required entry tile"),
+    ] {
+        let mut panel = BossEncounterPanel {
+            selected: true,
+            snapshot: Some(oteryn_client_runtime::boss_encounter::Snapshot::default()),
+            ..Default::default()
+        };
+        panel.fields[0] = "oteryn:boss.the_primal_menace".into();
+        let confirmed = panel.snapshot.clone();
+        assert!(request(&mut panel, Intent::Enter).is_some());
+        assert!(apply_result(
+            &mut panel,
+            &GatedCommandResult {
+                command_id: 1,
+                server_sequence: 1,
+                status: CommandStatus::Rejected,
+                payload: vec![8, 2, 32, reason],
+            }
+        ));
+        assert!(panel_text(&panel).contains(message));
+        assert_eq!(panel.snapshot, confirmed);
+        assert!(
+            request(&mut panel, Intent::Enter).is_some(),
+            "entry can be retried after fixing the party requirement"
+        );
+    }
+}
+
+#[test]
+fn primal_party_refusal_rejects_success_envelopes_without_replacing_confirmed_state() {
+    for status in [CommandStatus::Accepted, CommandStatus::DuplicateReplay] {
+        for reason in [10, 11, 12] {
+            let mut panel = BossEncounterPanel {
+                selected: true,
+                snapshot: Some(oteryn_client_runtime::boss_encounter::Snapshot::default()),
+                summary: "Previously confirmed boss status".into(),
+                ..Default::default()
+            };
+            panel.fields[0] = "oteryn:boss.the_primal_menace".into();
+            let confirmed = (panel.snapshot.clone(), panel.summary.clone());
+            assert!(request(&mut panel, Intent::Enter).is_some());
+            assert!(!apply_result(
+                &mut panel,
+                &GatedCommandResult {
+                    command_id: 1,
+                    server_sequence: 1,
+                    status,
+                    payload: vec![8, 2, 32, reason],
+                }
+            ));
+            assert_eq!((panel.snapshot.clone(), panel.summary.clone()), confirmed);
+            assert_eq!(
+                panel.feedback,
+                Some("The server returned invalid boss activity data")
+            );
+            assert!(!panel.pending);
+        }
+    }
+}

@@ -104,6 +104,12 @@ fn candidates(
                 key: raid.production_key()?,
                 definition: selected.definition,
                 eligible: raid.requires_world_change.as_ref().is_none_or(|required| {
+                    // Grimvale is a SpawnPolicy, not a composed map Layer. The
+                    // durable scheduler resolves its current occurrence through
+                    // raid_requirements before accepting a firing proposal.
+                    if required.key == "grimvale" && raid.key == "raid:edron.feroxa" {
+                        return true;
+                    }
                     scheduler.active_layers_epoch == Some(scheduler.reset_epoch)
                         && required.satisfied_by(&scheduler.active_layers)
                 }),

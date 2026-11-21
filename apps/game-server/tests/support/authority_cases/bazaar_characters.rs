@@ -27,7 +27,7 @@ fn bazaar_characters_postgres_lock_bind_transfer_unlock_replay_and_fences() -> T
             tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async move{
                 let started=std::time::Instant::now();
                 let database=Database::create(admin,"bazaar_characters").await?;
-                let result=characters_flow(&database).await;
+                let result=characters_flow(&database,false).await;
                 database.cleanup().await?;
                 eprintln!("GPROD_BAZAAR_PG_EXECUTED character_lock_bind_transfer_unlock elapsed_ms={} outcome={}",started.elapsed().as_millis(),if result.is_ok(){"PASS"}else{"FAIL"});
                 result
@@ -106,7 +106,7 @@ fn receipt(decision: &Decision, code: &str) -> TestResult<Value> {
     Ok(serde_json::from_slice(receipt)?)
 }
 
-async fn characters_flow(database: &Database) -> TestResult {
+async fn characters_flow(database: &Database, projection_checks:bool) -> TestResult {
     let root = DurabilityRoot::connect_test_runtime(&database.url)?;
     assert!(root.maintain_ready_once().await?);
     let pool = sqlx::PgPool::connect(&database.url).await?;
@@ -143,6 +143,18 @@ async fn characters_flow(database: &Database) -> TestResult {
     // Existing typed revision-one initialization; no guard or proof is disabled.
     sqlx::query("INSERT INTO game_character_progression_state(character_id,character_revision,level,total_experience,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision) VALUES($1::uuid,1,1,0,'profile-1','ruleset-1','content-1','simulation-1','evidence-1','declaration-1','policy-1','reward-1')")
         .bind(&character).execute(&pool).await?;
+    if projection_checks {
+        root.sync_public_achievement_catalogue(&authority).await.map_err(|e|format!("{e:?}"))?;
+        // Historical earned facts only; all ownership writes below use the real Bazaar owner.
+        let mut tx=pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_account_achievement_grant_requests SELECT 'fixture',decode('01','hex'),k.key,k.value->>'revision',r.account_id,r.character_id,1790000000000 FROM game_character_roots r CROSS JOIN game_public_v2_achievement_catalogue c CROSS JOIN LATERAL (SELECT key,value FROM jsonb_each(c.entries) ORDER BY key LIMIT 1) k WHERE r.character_id=$1::uuid").bind(&character).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_account_achievements SELECT account_id,achievement_key,source_kind,source_event_id FROM game_account_achievement_grant_requests WHERE character_id=$1::uuid").bind(&character).execute(&mut *tx).await?;
+        tx.commit().await?;
+        sqlx::query("SELECT game_public_projection_resync('character_achievements',false)").execute(&pool).await?;
+        let old=root.next_public_v2(&authority,native_admission_source::public_projections::v2::Family::CharacterAchievements,&[]).await.map_err(|e|format!("{e:?}"))?.ok_or("old owner snapshot")?;
+        assert!(matches!(old.body,native_admission_source::public_projections::v2::Body::Achievements(rows) if rows.len()==1 && rows[0].earned.len()==1 && rows[0].character_revision=="1"));
+    }
     let (artifact, _) = super::bazaar_items::artifact()?;
     let artifact_path = directory.join("server-artifact.bin");
     std::fs::write(&artifact_path, &artifact)?;
@@ -498,6 +510,16 @@ async fn characters_flow(database: &Database) -> TestResult {
         root.open_character_authority(&fence).await.is_ok(),
         "ownership lineage and revision chain must reload"
     );
+    if projection_checks {
+        let current=root.next_public_v2(&authority,native_admission_source::public_projections::v2::Family::CharacterAchievements,&[]).await.map_err(|e|format!("{e:?}"))?.ok_or("new owner snapshot")?;
+        let native_admission_source::public_projections::v2::Body::Achievements(rows)=current.body else {return Err("achievement family".into());};
+        assert_eq!(rows.len(),1);assert!(rows[0].earned.is_empty());
+        assert_eq!(rows[0].character_revision,state.try_get::<String,_>("character_revision")?);
+        assert!(rows[0].character_revision.parse::<u64>()?>1);
+        assert_eq!(current.subject,character);
+        pool.close().await; std::fs::remove_dir_all(&directory)?;
+        return Ok(());
+    }
     // Retained terminal listings are history, not a permanent prohibition on a
     // later authorized sale. Explicit cooldown zero is this fixture's policy.
     allow(&root, &node, 32).await?;
@@ -719,4 +741,17 @@ async fn characters_flow(database: &Database) -> TestResult {
     drop(recovery);
     std::fs::remove_dir_all(directory)?;
     Ok(())
+}
+
+#[test]
+fn public_v2_achievements_real_bazaar_transfer_same_cut() -> TestResult {
+ let Ok(admin)=std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {return Ok(());};
+ std::thread::Builder::new().stack_size(64<<20).spawn(move||->Result<(),String>{
+ tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(|e|e.to_string())?.block_on(async {
+ let database=Database::create(admin,"p3_bazaar").await?;
+ let result=characters_flow(&database,true).await;
+ database.cleanup().await?;
+ result
+ }).map_err(|e|e.to_string())
+ })?.join().map_err(|_|"Bazaar projection worker failed")?.map_err(Into::into)
 }

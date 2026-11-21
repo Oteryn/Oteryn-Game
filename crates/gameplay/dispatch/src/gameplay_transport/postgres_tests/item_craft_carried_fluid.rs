@@ -167,8 +167,10 @@ fn scenario(case: Case, name: &str) -> TestResult {
         let cells = map
             .movement_cells(pin.qualified_room().movement_cells())
             .map_err(debug)?;
-        let bundle_room=if case.ground() || case.moves() {Some(super::rust_lottery::bundle_action_room(pin.qualified_room(),&map,deps.admitted.world_id,&cells)?)} else {None};
-        let action_room=bundle_room.as_ref().unwrap_or(pin.qualified_room());
+        let bundle_room = super::rust_lottery_fixtures::bundle_action_room(
+            pin.qualified_room(), &map, deps.admitted.world_id, &cells,
+        )?;
+        let action_room = &bundle_room;
         let content_pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             pin.activation_sequence(),
@@ -240,11 +242,23 @@ fn scenario(case: Case, name: &str) -> TestResult {
                 return Err("backpack capacity".into());
             };
             assert_eq!(*capacity, 20);
-            for _ in 0..usize::from(*capacity - 3) {
+            while entries.len() < usize::from(*capacity) {
                 entries.push(("oteryn:item.tibia.i3031", 1));
             }
         }
-        super::item_look::seed_main_backpack(&harness, &entries).await?;
+        super::item_look_fixtures::seed_main_backpack(&harness, &entries).await?;
+        if matches!(case, Case::Full) {
+            assert_eq!(entries.len(), 20);
+            let occupied: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_item_container_entries WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND parent_item_instance_id=encode($3,'hex')::uuid",
+            )
+            .bind(id(41).as_slice())
+            .bind(id(42).as_slice())
+            .bind(id(70).as_slice())
+            .fetch_one(&harness.pool)
+            .await?;
+            assert_eq!(occupied, i64::try_from(entries.len())?);
+        }
         if case.moves() {
             let mut tx=harness.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
@@ -623,7 +637,7 @@ async fn exchange_carried(
         let mut source = None;
         let mut vessel = None;
         loop {
-            let raw = super::item_look::read_frame(&mut client).await?;
+            let raw = super::item_look_fixtures::read_frame(&mut client).await?;
             let envelope = crate::foundation::decode_wire_envelope(&raw)?;
             if envelope.message_type() == crate::foundation::MessageType::SnapshotChunk {
                 let (_, domains) =
@@ -685,7 +699,7 @@ async fn exchange_carried(
         client.write_all(&frame).await?;
         client.shutdown().await?;
         loop {
-            let raw = super::item_look::read_frame(&mut client).await?;
+            let raw = super::item_look_fixtures::read_frame(&mut client).await?;
             let envelope = crate::foundation::decode_wire_envelope(&raw)?;
             if envelope.message_type() == crate::foundation::MessageType::CommandResult {
                 let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
@@ -709,9 +723,14 @@ async fn exchange_carried(
     let mut client_task = std::pin::pin!(client_task);
     let mut end = None;
     let mut result = None;
+    // This direct connection has no node task to replenish a retired DB holder.
+    let mut maintenance = std::pin::pin!(super::item_craft_fixtures::maintain_ready(owner));
     tokio::time::timeout(
         std::time::Duration::from_secs(30),
         std::future::poll_fn(|context| {
+            if let Poll::Ready(result) = maintenance.as_mut().poll(context) {
+                return Poll::Ready(result);
+            }
             if end.is_none()
                 && let Poll::Ready(value) = serving.as_mut().poll(context)
             {
@@ -723,13 +742,13 @@ async fn exchange_carried(
                 result = Some(value);
             }
             if end.is_some() && result.is_some() {
-                Poll::Ready(())
+                Poll::Ready(Ok(()))
             } else {
                 Poll::Pending
             }
         }),
     )
-    .await?;
+    .await??;
     let end = end.ok_or("server did not finish")?;
     let ConnectionEnd::AdmittedThenDisconnected(admitted) = end else {
         return Err(format!("{end:?}").into());

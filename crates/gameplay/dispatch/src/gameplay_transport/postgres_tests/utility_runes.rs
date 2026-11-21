@@ -6,11 +6,11 @@
 // Creation fees are separate: docs/reference/spells/r22-audit/tibiopedia/tibiopedia-spell-facts-2026-10-02.json:928
 // (Convince) and :1988 (Animate). Source-qualified profiles retain the two-summon
 // cap (both spell.json:75) and movable real-corpse rules (Animate spell.json:89).
-use super::death_ml_loss_composed::{
+use super::death_ml_loss_composed_fixtures::{
     current_fence, production_generation_with_pin, production_generation_with_source,
 };
 use super::fixture::{Harness, debug, id, join_two, run};
-use super::item_look::{large_stack, read_frame, seed_main_backpack};
+use super::item_look_fixtures::{large_stack, read_frame, seed_main_backpack};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::character_build::{
     BuildCause, BuildChangeRequest, BuildCommitOutcome, BuildOccurrence, DurableBuildState,
@@ -270,6 +270,12 @@ async fn run_case(admin: String, case: Case) -> TestResult {
         1, "policy-1", BUNDLE_WORLD_OFFERED_CAPABILITIES).map_err(debug)?;
     owner.rooms = SeamRooms::new(None, Some(&room));
     owner.movement_cells = (&cells).into();
+    let wire_victim = {
+        let runtime = owner.runtime.lock().await;
+        owner.wire_position_frame(&runtime).and_then(|frame| frame.project(VICTIM))
+            .ok_or("project utility-rune victim")?
+    };
+
     let mut admitted = dependencies.admitted;
     admitted.first_entry = FirstEntryOutcome::Positioned;
     let (current, _) = FreshAdmissionStore::from_root(harness.root.clone())
@@ -458,9 +464,9 @@ async fn run_case(admin: String, case: Case) -> TestResult {
             use_with_map_item: None,
             use_with_position: if animate {
                 Some(SpellTargetPosition {
-                    x: VICTIM.x,
-                    y: VICTIM.y,
-                    floor: VICTIM.floor,
+                    x: wire_victim.x,
+                    y: wire_victim.y,
+                    floor: wire_victim.floor,
                 })
             } else {
                 None
@@ -823,6 +829,13 @@ async fn utility_inner(admin: String, case: WorldItemCase) -> TestResult {
     owner.active_generation = Some(active);
     owner.rooms = SeamRooms::new(Some(&room), Some(&room));
     owner.movement_cells = (&cells).into();
+    let wire_target = {
+        let runtime = owner.runtime.lock().await;
+        owner.wire_position_frame(&runtime).and_then(|frame| frame.project(MovementLocalPosition {
+            x: target.x, y: target.y, floor: target.floor,
+        })).ok_or("project utility-rune item target")?
+    };
+
     if case == WorldItemCase::House {
         owner.required_capabilities = BoundRequiredCapabilities::for_channel_boot(
             &[11, 30],
@@ -997,7 +1010,7 @@ async fn utility_inner(admin: String, case: WorldItemCase) -> TestResult {
             use_with_position: if creature_target.is_some() {
                 None
             } else {
-                Some(target)
+                Some(SpellTargetPosition { x: wire_target.x, y: wire_target.y, floor: wire_target.floor })
             },
         })
         .map_err(debug)?;

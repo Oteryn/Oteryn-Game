@@ -14,8 +14,10 @@ impl PlayView {
             self.server_messages.push_back(message.clone());
         }
         #[cfg(all(windows, not(test)))]
-        for notice in messages.interactive_notices() {
-            notices::enqueue(notice);
+        if !self.shared_frontend {
+            for notice in messages.interactive_notices() {
+                notices::enqueue(notice);
+            }
         }
     }
 

@@ -24,6 +24,9 @@ impl State {
                     .contains(oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1))
         {
             let mut view = SessionItemView::resume(admitted.continuity.item_view);
+            if selected.contains(oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_APPEARANCE_V1) {
+                view = view.with_appearances();
+            }
             if selected.contains(
                 oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2,
             ) {
@@ -184,6 +187,8 @@ impl State {
             &mut payloads,
         )
         .await?;
+        super::super::native_cues::snapshot_observations(authority, actor, admitted, &mut payloads)
+            .await?;
         Ok((
             Self {
                 spell_catalog,
@@ -195,6 +200,11 @@ impl State {
                 visibility,
                 appearances,
                 spatial_revision,
+                movement_effect_revision: authority
+                    .observe_current_actor_movement_effects(actor, admitted.game_session_id, 0)
+                    .await
+                    .last()
+                    .map_or(0, |entry| entry.0),
                 npc_shown: None,
                 npc_active,
                 stash_rows: None,

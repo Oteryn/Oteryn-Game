@@ -92,7 +92,7 @@ fn door_editor_uses_catalogue_revision_without_manual_revision()
         ..Row::default()
     });
     panel.fields[2] = "1".into();
-    panel.fields[5] = "100 200 -7".into();
+    panel.fields[5] = "100 200 7".into();
     panel.fields[6] = "CONFIRM".into();
     let command = prepare(&mut panel, 5)?;
     assert_eq!(
@@ -104,7 +104,7 @@ fn door_editor_uses_catalogue_revision_without_manual_revision()
             &Action::Door {
                 x: 100,
                 y: 200,
-                floor: -7,
+                floor: 7,
                 revision: 37,
                 members: vec![]
             }
@@ -131,7 +131,7 @@ fn house_acl_editor_loads_each_server_list_and_saves_its_revision()
         p.fields[0] = world_text.into();
         p.fields[1] = "oteryn:content.area.city.thais".into();
         p.fields[2] = "1".into();
-        p.fields[5] = "6 0 -7".into();
+        p.fields[5] = "6 0 7".into();
         p.model.world = world;
         p.model.town = p.fields[1].clone();
         p.model.page.rows.push(Row {
@@ -149,7 +149,7 @@ fn house_acl_editor_loads_each_server_list_and_saves_its_revision()
             wire::HouseAclSelector::Door {
                 x: 6,
                 y: 0,
-                floor: -7,
+                floor: 7,
             },
         ),
     ] {
@@ -286,7 +286,7 @@ fn house_catalogue_details_reach_production_panel() -> Result<(), Box<dyn std::e
     let mut row = vec![10, 1, b'h', 16, 3, 24, 50, 32, 1, 40, 0, 56, 100, 80, 1];
     row.extend([64, 200, 1, 72, 150, 1]);
     // Detail metadata: name, area, beds and entrance x/y/floor from the server.
-    row.extend([98, 4, b'H', b'o', b'm', b'e', 104, 25, 112, 2, 120, 100, 128, 1, 110, 136, 1, 13]);
+    row.extend([98, 4, b'H', b'o', b'm', b'e', 104, 25, 112, 2, 120, 100, 128, 1, 110, 136, 1, 14]);
     let mut payload = vec![8, 1, 26, u8::try_from(row.len())?];
     payload.extend(row);
     outbox.properties_result(&command, &GatedCommandResult {
@@ -298,10 +298,10 @@ fn house_catalogue_details_reach_production_panel() -> Result<(), Box<dyn std::e
     assert!(text.contains("Auction ends (Unix ms): 200; your maximum bid: 150"));
     assert!(text.contains("Home"));
     assert!(text.contains("25 m²"));
-    assert!(text.contains("100,110,-7"));
+    assert!(text.contains("100,110,7"));
     let map = oteryn_client_ui::house::map_houses(&panel.model);
     assert_eq!(map.len(), 1);
-    assert_eq!(map[0].position, (100, 110, -7));
+    assert_eq!(map[0].position, (100, 110, 7));
     assert!(map[0].selected);
     assert_eq!(map[0].label, "1: Home");
     Ok(())

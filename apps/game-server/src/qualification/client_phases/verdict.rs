@@ -208,11 +208,22 @@ fn session_cause(text: &str, context: Option<(&'static str, String)>) -> Cause {
     transport(None, None, context)
 }
 
+#[cfg(test)]
+pub(super) fn test_fixture(index: u8) -> Need {
+    Need::Fixture {
+        world: [0; 16],
+        character: [index; 16],
+    }
+}
+
 /// A precondition a row declares before it runs.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) enum Need {
     /// Fixture character `i` is terminally released and can be admitted.
-    Fixture(usize),
+    Fixture {
+        world: [u8; 16],
+        character: [u8; 16],
+    },
     /// An earlier row produced the state this row starts from.
     Row(&'static str),
 }
@@ -297,6 +308,18 @@ impl Watch {
         journey: impl Future<Output = TestResult<T>>,
     ) -> TestResult<T> {
         self.run(Some(budget), deadline, journey).await
+    }
+
+    /// Walk between a row's journey and its NPC or entry tile outside the
+    /// row's wall-clock budget: its length is map distance times character
+    /// speed, not journey work. Every walked tile is progress, so a stalled
+    /// walk still ends on the no-progress watchdog.
+    pub(super) async fn travel<T>(
+        &self,
+        stalled: impl Into<String>,
+        journey: impl Future<Output = TestResult<T>>,
+    ) -> TestResult<T> {
+        self.run(None, stalled, journey).await
     }
 
     async fn run<T>(
@@ -482,8 +505,8 @@ impl Harness {
     }
 
     /// Fail at once when an earlier wait for this fixture already timed out.
-    pub(super) fn fixture_gate(&self, index: usize) -> TestResult {
-        match self.blocked(&[Need::Fixture(index)]) {
+    pub(super) fn fixture_gate(&self, need: Need, index: usize) -> TestResult {
+        match self.blocked(&[need]) {
             Some(root) => Err(HarnessError::boxed(
                 Cause::BlockedBy { root: root.clone() },
                 format!("fixture {index} release blocked by {root}"),
@@ -493,12 +516,14 @@ impl Harness {
     }
 
     /// The running row becomes the root of every later row needing this fixture.
-    pub(super) fn fixture_failed(&self, index: usize, error: &dyn Error) -> Box<dyn Error> {
+    pub(super) fn fixture_failed(
+        &self,
+        need: Need,
+        index: usize,
+        error: &dyn Error,
+    ) -> Box<dyn Error> {
         let name = format!("fixture{index}-released");
-        self.fail(
-            Need::Fixture(index),
-            format!("{}/{name}", self.running_row()),
-        );
+        self.fail(need, format!("{}/{name}", self.running_row()));
         HarnessError::boxed(Cause::Precondition { name }, error.to_string())
     }
 }
@@ -739,6 +764,7 @@ impl Row {
 /// each row owns its admissions and cleanup.
 const GROUPS: &[(&str, &[&str])] = &[
     ("core", &[]),
+    ("creature_sweep", &[]),
     ("f4", &[]),
     ("f5", &[]),
     ("f6", &[]),
@@ -747,6 +773,7 @@ const GROUPS: &[(&str, &[&str])] = &[
     ("f7cont", &[]),
     ("f7forge", &[]),
     ("f7run", &[]),
+    ("mp", &[]),
     ("rows", &[]),
 ];
 
@@ -793,6 +820,22 @@ impl Groups {
             .as_ref()
             .is_none_or(|selected| selected.contains(group))
     }
+}
+
+/// S03's MOTD gap is reported only once the server accepted and answered the guild query;
+/// a timeout, lost transport or refusal stays an ordinary FAIL.
+pub(crate) fn guild_motd_missing(
+    reply: &oteryn_dev_client::client_runtime::guild::GuildReply,
+) -> Option<&'static str> {
+    use oteryn_dev_client::client_runtime::guild::{CommandStatus, GuildReply};
+    matches!(
+        reply,
+        GuildReply::Query {
+            status: CommandStatus::Accepted,
+            result: Some(_),
+        }
+    )
+    .then_some("source:crates/protocol-oteryn/src/guild.rs:17")
 }
 
 #[cfg(test)]
@@ -922,16 +965,44 @@ mod verdict_tests {
     }
 
     #[test]
+    fn qualification_release_failure_is_scoped_to_fixture_identity() {
+        let harness = harness(true, None);
+        let first = Need::Fixture {
+            world: [1; 16],
+            character: [2; 16],
+        };
+        harness.fail(first, "first fixture release".to_owned());
+        assert!(harness.blocked(&[first]).is_some());
+        assert!(
+            harness
+                .blocked(&[Need::Fixture {
+                    world: [1; 16],
+                    character: [3; 16]
+                }])
+                .is_none()
+        );
+        assert!(
+            harness
+                .blocked(&[Need::Fixture {
+                    world: [4; 16],
+                    character: [2; 16]
+                }])
+                .is_none()
+        );
+        assert!(harness.fixture_gate(first, 1).is_err());
+    }
+
+    #[test]
     fn a_failed_fixture_blocks_later_rows_without_running_them() -> TestResult {
         let harness = harness(true, None);
         paused()?.block_on(async {
             let root_row =
-                Row::with_harness("E2EF6", "S16a", &["a"], harness).needs(&[Need::Fixture(1)]);
+                Row::with_harness("E2EF6", "S16a", &["a"], harness).needs(&[test_fixture(1)]);
             let watch = root_row.watch();
             let result: TestResult = watch
                 .bound(Duration::from_secs(160), "deadline", async {
                     let timeout: Box<dyn Error> = "not terminally released".into();
-                    Err(harness.fixture_failed(1, timeout.as_ref()))
+                    Err(harness.fixture_failed(test_fixture(1), 1, timeout.as_ref()))
                 })
                 .await;
             assert_eq!(
@@ -943,11 +1014,11 @@ mod verdict_tests {
                     "S16a/fixture1-released".into()
                 )
             );
-            assert!(harness.fixture_gate(1).is_err());
-            assert!(harness.fixture_gate(0).is_ok());
+            assert!(harness.fixture_gate(test_fixture(1), 1).is_err());
+            assert!(harness.fixture_gate(test_fixture(0), 0).is_ok());
 
             let blocked =
-                Row::with_harness("E2EF6", "C20a", &["a", "b"], harness).needs(&[Need::Fixture(1)]);
+                Row::with_harness("E2EF6", "C20a", &["a", "b"], harness).needs(&[test_fixture(1)]);
             let mut ran = false;
             let result: TestResult = blocked
                 .watch()
@@ -971,7 +1042,7 @@ mod verdict_tests {
         harness.fail(Need::Row("S16a"), "S16a/fixture1-released".into());
         assert_eq!(
             harness
-                .blocked(&[Need::Fixture(0), Need::Row("S16a")])
+                .blocked(&[test_fixture(0), Need::Row("S16a")])
                 .as_deref(),
             Some("S16a/fixture1-released")
         );
@@ -986,9 +1057,9 @@ mod verdict_tests {
     fn no_failfast_runs_every_row_and_disables_the_watchdog() -> TestResult {
         let off = Harness::from_env(Some("1"), Some("5"))?;
         assert!(!off.failfast && off.no_progress.is_none());
-        off.fail(Need::Fixture(1), "S16a/fixture1-released".into());
-        assert!(off.fixture_gate(1).is_ok());
-        assert_eq!(off.blocked(&[Need::Fixture(1)]), None);
+        off.fail(test_fixture(1), "S16a/fixture1-released".into());
+        assert!(off.fixture_gate(test_fixture(1), 1).is_ok());
+        assert_eq!(off.blocked(&[test_fixture(1)]), None);
         let on = Harness::from_env(None, None)?;
         assert_eq!(
             (on.failfast, on.no_progress),
@@ -1065,6 +1136,39 @@ mod verdict_tests {
     }
 
     #[test]
+    fn travel_outlasts_the_journey_budget_while_walking_but_not_a_stall() -> TestResult {
+        let harness = harness(true, Some(90));
+        paused()?.block_on(async {
+            // A town walk longer than the 90 s journey budget, one tile per 1.8 s.
+            let walking = Row::with_harness("E2EF4", "E01", &["greet"], harness);
+            let started = tokio::time::Instant::now();
+            let result: TestResult = walking
+                .watch()
+                .travel("travel stalled", async {
+                    for _ in 0..100 {
+                        tokio::time::sleep(Duration::from_millis(1_800)).await;
+                        harness.progress("walk");
+                    }
+                    Ok(())
+                })
+                .await;
+            assert!(result.is_ok());
+            assert_eq!(started.elapsed(), Duration::from_secs(180));
+
+            let stalled = Row::with_harness("E2EF4", "E01", &["greet"], harness);
+            let started = tokio::time::Instant::now();
+            let result: TestResult = stalled
+                .watch()
+                .travel("travel stalled", std::future::pending())
+                .await;
+            assert_eq!(started.elapsed(), Duration::from_secs(90));
+            let (cause, root) = stalled.cause(result.as_ref().err().map(|error| &**error));
+            assert_eq!((cause.kind(), root.as_str()), ("no-progress", "E01/greet"));
+            Ok(())
+        })
+    }
+
+    #[test]
     fn stall_cause_survives_errors_rewritten_as_text() -> TestResult {
         let harness = harness(true, Some(5));
         paused()?.block_on(async {
@@ -1095,5 +1199,43 @@ mod verdict_tests {
         let chained = Groups::parse(Some("a"), CHAIN)?;
         assert!(chained.runs("a") && chained.runs("b") && chained.runs("c") && !chained.runs("d"));
         Ok(())
+    }
+
+    #[test]
+    fn failed_guild_query_is_not_reported_as_missing_server() {
+        use oteryn_dev_client::client_runtime::guild::{CommandStatus, GuildReply, guild};
+        for (status, result) in [
+            (CommandStatus::Rejected, None),
+            (CommandStatus::Accepted, None),
+            (
+                CommandStatus::Rejected,
+                Some(guild::GuildQueryResult::Own(None)),
+            ),
+        ] {
+            assert_eq!(
+                guild_motd_missing(&GuildReply::Query { status, result }),
+                None
+            );
+        }
+        assert_eq!(
+            guild_motd_missing(&GuildReply::Intent {
+                status: CommandStatus::Accepted,
+                result: None,
+            }),
+            None
+        );
+    }
+
+    #[test]
+    fn answered_guild_query_reports_the_missing_motd_route() {
+        use oteryn_dev_client::client_runtime::guild::{CommandStatus, GuildReply, guild};
+        let reply = GuildReply::Query {
+            status: CommandStatus::Accepted,
+            result: Some(guild::GuildQueryResult::Own(None)),
+        };
+        assert_eq!(
+            guild_motd_missing(&reply),
+            Some("source:crates/protocol-oteryn/src/guild.rs:17")
+        );
     }
 }

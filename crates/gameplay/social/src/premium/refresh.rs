@@ -119,6 +119,7 @@ impl PremiumRefresher {
     /// Fresh admission or reconnect of `account_id`: pull before any Premium read. Returns at
     /// once; must run inside the Tokio runtime.
     pub fn admit(&self, account_id: [u8; 16]) {
+        self.inner.consumer.profile_b_admit(account_id);
         if self.inner.client.is_none() {
             return;
         }
@@ -131,6 +132,9 @@ impl PremiumRefresher {
             return;
         }
         let wake = Arc::new(Notify::new());
+        self.inner
+            .consumer
+            .profile_b_register_wake(account_id, &wake);
         let task_wake = wake.clone();
         let inner = self.inner.clone();
         let task = oteryn_task_supervisor::spawn_supervised_with_heartbeat(
@@ -143,6 +147,7 @@ impl PremiumRefresher {
 
     /// The account has no session left on this node: cancel its schedule and drop its view.
     pub fn release(&self, account_id: [u8; 16]) {
+        self.inner.consumer.profile_b_release(account_id);
         if let Some(schedule) = self.schedules().remove(&account_id) {
             schedule.task.abort();
         }

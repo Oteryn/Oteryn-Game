@@ -1,0 +1,22 @@
+VIRTUE utura tio
+@1220,892 | 14:11:15 You gained 287 mana.
+@1220,892 | 14:11:16 Using one of 478 superior mana potions...
+@1220,892 | 14:11:16 You gained 309 mana.
+@1220,892 | 14:11 20 Jee Bunny Shop healed herself for 1728 hitpoints.
+@1220,892 | 14:11:20 Jee Bunny Shop healed herself for 1728 hitpoints.
+@1220,892 | 14:11:25 Jee Bunny Shop healed herself for 1828 hitpoints.
+@1220,892 | 14:1131 Jee Bunny Shop healed herself for 1516 hitpoints.
+@1220,892 | 14:11:37 Jee Bunny Shop healed herself for 1748 hitpoints.
+@1220,892 | 14:11:44 Jee Bunny Shop healed herself for 1753 hitpoints.
+@1220,892 | 14:11:50 Jee Bunny Shop healed herself for 1544 hitpoints.
+@1220,892 | 14:11:54 Jee Bunny Shop healed herself for 1850 hitpoints.
+@1220,892 | 14:11:44 Jee Bunny Shop healed herself for 17535 hitpoints.
+@1220,892 | 14:11:54 Jee Bunny Shop healed herself for 1830 hitpoints.
+@1220,892 | 14:11:59 Jee Bunny Shop healed herself for 419 hitpoints.
+@1220,892 | 14:12:14 Jee Bunny Shop healed herself for 1429 hitpoints.
+@1220,892 | 14:12 25 Jee Bunny Shop healed herself for 1818 hitpoints.
+@1220,892 | 14:12:25 Jee Bunny Shop healed herself for 1818 hitpoints.
+@1220,892 | 14:12 28 Jee Bunny Shop healed herself for 1536 hitpoints.
+@1220,892 | 14:12:34 Jee Bunny Shop healed herself for 1481 hitpoints.
+@1220,892 | 14:12:38 Jee Bunny Shop healed herself for 1541 hitpoints.
+DONE

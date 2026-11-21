@@ -282,12 +282,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await;
         slot.observe_loop_training();
-        #[cfg(test)]
-        if let Err(error) = &result {
-            eprintln!("LOOP-TRAIN-1 exercise checkpoint: {error:?}");
-        }
+        let committed = match result {
+            Ok(committed) => committed,
+            Err(error) => {
+                let deferred = defer_exercise_commit(&error);
+                let kind = match error {
+                    crate::durability::DurabilityError::RootUnavailable => "holder_busy",
+                    crate::durability::DurabilityError::RootPassDeadlineExceeded => "deadline",
+                    crate::durability::DurabilityError::CommitOutcomeUnknown => "commit_unknown",
+                    crate::durability::DurabilityError::RootTaskFailed => "root_task_failed",
+                    _ => "durability",
+                };
+                let outcome = if deferred { "deferred" } else { "disconnect" };
+                crate::gameplay_transport::operator_event(&format!(
+                    "event=exercise_commit_failed kind={kind} outcome={outcome}"
+                ));
+                // Retain the original pending occurrence and charges for the next pass.
+                // Only a successful commit can replace it with a committed receipt.
+                return deferred.then_some(true);
+            }
+        };
         run.pending = Some(Checkpoint::Committed {
-            result: result.ok()?,
+            result: committed,
             checkpoint_due,
         });
         #[cfg(test)]
@@ -552,5 +568,36 @@ mod tests {
         assert_eq!(super::remaining_charges(500, 0), 500);
         assert_eq!(super::remaining_charges(500, 1), 499);
         assert_eq!(super::remaining_charges(1, 2), 0);
+    }
+}
+
+fn defer_exercise_commit(error: &crate::durability::DurabilityError) -> bool {
+    matches!(
+        error,
+        crate::durability::DurabilityError::RootUnavailable
+            | crate::durability::DurabilityError::RootPassDeadlineExceeded
+    )
+}
+
+#[cfg(test)]
+mod nbrel2_tests {
+    use super::defer_exercise_commit;
+    use crate::durability::DurabilityError;
+
+    #[test]
+    fn nbrel2_exercise_contention_defers() {
+        assert!(defer_exercise_commit(&DurabilityError::RootUnavailable));
+        assert!(defer_exercise_commit(
+            &DurabilityError::RootPassDeadlineExceeded
+        ));
+    }
+
+    #[test]
+    fn nbrel2_exercise_unknown_disconnects() {
+        assert!(!defer_exercise_commit(
+            &DurabilityError::CommitOutcomeUnknown
+        ));
+        assert!(!defer_exercise_commit(&DurabilityError::RootTaskFailed));
+        assert!(!defer_exercise_commit(&DurabilityError::Unavailable));
     }
 }

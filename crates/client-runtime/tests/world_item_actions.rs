@@ -28,7 +28,14 @@ fn use_on_self(source: u64) -> Command {
 }
 
 async fn accepted(command: Command) -> Result<(), BoxError> {
-    let (mut session, mut peer) = joined().await?;
+    accepted_with_equipment(command, None).await
+}
+
+async fn accepted_with_equipment(command: Command, equipped: Option<u64>) -> Result<(), BoxError> {
+    let (mut session, mut peer) = support::joined_with_equipment(equipped).await?;
+    if let Some(source) = equipped {
+        assert!(world_interaction::item_current(&session, handle(source)));
+    }
     let payload = match command.action {
         Action::UseOn(source) => world_interaction::use_with_payload(source, &command.target)?,
         _ => {
@@ -167,6 +174,45 @@ fn nested_source_does_not_bypass_target_position_generation_or_map_binding() -> 
             let mut sent = Vec::new();
             peer.read_to_end(&mut sent).await?;
             assert!(sent.is_empty());
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn equipped_use_with_source_is_current_and_reaches_the_session_command() -> Result<(), BoxError> {
+    run(|| accepted_with_equipment(use_on_self(20), Some(20)))
+}
+
+#[test]
+fn queued_equipment_changes_reject_removed_and_replaced_use_with_sources() -> Result<(), BoxError> {
+    run(|| async {
+        for replacement in [None, Some(21)] {
+            let (mut session, mut peer) = support::joined_with_equipment(Some(20)).await?;
+            assert!(world_interaction::item_current(&session, handle(20)));
+            let payload = support::inventory(replacement)?;
+            let delta = message(&[
+                scalar(1, 9),
+                scalar(2, 1),
+                scalar(3, 2),
+                scalar(4, 1),
+                field(5, &payload),
+            ]);
+            write_frame(&mut peer, &envelope(9, 1, 41, &delta)).await?;
+            assert_eq!(
+                world_interaction::send(&mut session, &use_on_self(20)).await?,
+                "Target changed"
+            );
+            assert!(!world_interaction::item_current(&session, handle(20)));
+            assert_eq!(
+                world_interaction::item_current(&session, handle(21)),
+                replacement.is_some()
+            );
+            assert!(world_interaction::item_current(&session, handle(10)));
+            drop(session);
+            let mut sent = Vec::new();
+            peer.read_to_end(&mut sent).await?;
+            assert!(sent.is_empty(), "stale equipped command was written");
         }
         Ok(())
     })

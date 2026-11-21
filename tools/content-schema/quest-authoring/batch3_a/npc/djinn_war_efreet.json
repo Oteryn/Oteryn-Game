@@ -1,0 +1,145 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission02",
+      "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+      "initial": -1,
+      "min": -1,
+      "max": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/malor.lua:97-154"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+      "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+      "initial": -1,
+      "min": -1,
+      "max": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/malor.lua:97-154"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/door_to_marid_territory",
+      "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/malor.lua:97-154"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+      "npc": "oteryn:npc.malor",
+      "trigger": "say",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission02",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/malor.lua:97-154"
+      ],
+      "key": "oteryn:quest-npc/the_djinn_war_efreet_faction/malor/report-offer",
+      "keywords": [
+        "mission"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Have you found Fa'hradin's lamp and placed it in Malor's personal chambers?"
+      ]
+    },
+    {
+      "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+      "npc": "oteryn:npc.malor",
+      "trigger": "say",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission02",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/malor.lua:97-154"
+      ],
+      "key": "oteryn:quest-npc/the_djinn_war_efreet_faction/malor/report-complete",
+      "keywords": [
+        "yes"
+      ],
+      "exclude_keywords": [
+        "mission"
+      ],
+      "topics": [
+        2
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+          "value": 3
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/door_to_marid_territory",
+          "value": 1
+        },
+        {
+          "kind": "achievement",
+          "name": "Efreet Ally"
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        },
+        {
+          "kind": "end_conversation",
+          "delay_ms": 1000
+        }
+      ],
+      "reply": [
+        "Well well, human. So you really have made it - you have smuggled the modified lamp into Gabel's bedroom! ...",
+        "I never thought I would say this to a human, but I must confess I am impressed. ...",
+        "Perhaps I have underestimated you and your kind after all. ...",
+        "I guess I will take this as a lesson to keep in mind when I meet you on the battlefield. ...",
+        "But that's in the future. For now, I will confine myself to give you the permission to trade with my people whenever you want to. ...",
+        "Farewell, human!"
+      ],
+      "completes": true
+    }
+  ],
+  "source_files": [
+    {
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/npc/malor.lua",
+      "sha256": "abcae4a2c7ba46ea369355a0c31e905189a3489c18bba843d06f9a0310cc09ec"
+    }
+  ]
+}

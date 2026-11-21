@@ -1,6 +1,6 @@
 //! Starter-backpack, temple-respawn and first-vocation journeys on the ordinary Character.
 //! No provisioning: all assertions consume native admission, command or delta frames.
-use super::starter_inventory::check_starter;
+use super::starter_inventory::{check_starter, newhaven_loadout};
 use super::*;
 use oteryn_dev_client::client_runtime::inventory;
 use oteryn_dev_client::{CharacterInventory, DevClientSession, SessionEvent};
@@ -63,8 +63,7 @@ impl Row {
 }
 
 pub(super) async fn run_starter(clients: &SeamClients<'_>) {
-    use verdict::Need::Fixture;
-    let mut starter = Row::new("C19a", STARTER).needs(&[Fixture(1)]);
+    let mut starter = Row::new("C19a", STARTER).needs(&[character_release_need(clients, 1)]);
     let watch = starter.0.watch();
     let result = watch
         .bound(
@@ -82,9 +81,9 @@ pub(super) async fn run(
     spawns: &oteryn_world_bundle::spawn::Table,
     npcs: &oteryn_world_bundle::npc::Table,
 ) {
-    use verdict::Need::{Fixture, Row as After};
+    use verdict::Need::Row as After;
     // Own a connection per row: an error/timeout cannot prevent the next row's verdict.
-    let mut temple = Row::new("C20d", TEMPLE).needs(&[Fixture(1)]);
+    let mut temple = Row::new("C20d", TEMPLE).needs(&[character_release_need(clients, 1)]);
     let watch = temple.0.watch();
     let result = watch
         .bound(
@@ -95,7 +94,7 @@ pub(super) async fn run(
         .await;
     temple.finish(result);
 
-    let mut vocation = Row::new("S16a", VOCATION).needs(&[Fixture(1)]);
+    let mut vocation = Row::new("S16a", VOCATION).needs(&[character_release_need(clients, 1)]);
     let watch = vocation.0.watch();
     let result = watch
         .bound(
@@ -107,7 +106,7 @@ pub(super) async fn run(
     vocation.finish(result);
 
     // Promotion starts from the knight the first-vocation row produces.
-    let mut loss = Row::new("C20a", EXPERIENCE_LOSS).needs(&[Fixture(1), After("S16a")]);
+    let mut loss = Row::new("C20a", EXPERIENCE_LOSS).needs(&[character_release_need(clients, 1), After("S16a")]);
     let watch = loss.0.watch();
     let result = watch
         .bound(
@@ -121,7 +120,7 @@ pub(super) async fn run(
         other => loss.finish(other.map(|_| ())),
     }
 
-    let mut custody = Row::new("C20b", ITEM_LOSS).needs(&[Fixture(1)]);
+    let mut custody = Row::new("C20b", ITEM_LOSS).needs(&[character_release_need(clients, 1)]);
     let watch = custody.0.watch();
     let result = watch
         .bound(
@@ -134,7 +133,7 @@ pub(super) async fn run(
 
     // Purchase qualification precedes consumption: Character 0 must retain its
     // never-aggressed low-level Adventurer eligibility for both protected deaths.
-    let mut services = Row::new("P16", BLESSING_SERVICES).needs(&[Fixture(1), Fixture(0)]);
+    let mut services = Row::new("P16", BLESSING_SERVICES).needs(&[character_release_need(clients, 1), character_release_need(clients, 0)]);
     let watch = services.0.watch();
     let result = watch
         .bound(
@@ -145,7 +144,7 @@ pub(super) async fn run(
         .await;
     finish_blessing_row(services, result);
 
-    let mut consumption = Row::new("C20c", BLESSING_DEATH).needs(&[Fixture(0), Fixture(1)]);
+    let mut consumption = Row::new("C20c", BLESSING_DEATH).needs(&[character_release_need(clients, 0), character_release_need(clients, 1)]);
     let watch = consumption.0.watch();
     let result = watch
         .bound(
@@ -156,7 +155,7 @@ pub(super) async fn run(
         .await;
     finish_blessing_row(consumption, result);
 
-    let mut resting = Row::new("P10", RESTING_BONUSES).needs(&[Fixture(1)]);
+    let mut resting = Row::new("P10", RESTING_BONUSES).needs(&[character_release_need(clients, 1)]);
     let watch = resting.0.watch();
     let result = watch
         .bound(
@@ -788,22 +787,26 @@ async fn starter_backpack(row: &mut Row, clients: &SeamClients<'_>) -> TestResul
     let mut client = connect_world(clients, 0xe0).await?;
     let result: TestResult = async {
         let index = provisioning::item_index()?;
-        let definition = provisioning::item_reference(&index, 2854)?;
-        let entries = [
-            provisioning::item_reference(&index, 3003)?,
-            provisioning::item_reference(&index, 3457)?,
-        ];
+        // run.sh bootstraps the ordinary Character with the profile's vocation under
+        // `newhaven-starter-r1`; the explorer profile is a Knight.
+        let profile = std::env::var("NODE_BOOT_PROFILE").unwrap_or_else(|_| "sorcerer".into());
+        let vocation = if profile == "explorer" {
+            "knight"
+        } else {
+            profile.as_str()
+        };
+        let expected = newhaven_loadout(vocation, |id| provisioning::item_reference(&index, id))?;
         check_starter(
             client
                 .inventory()
                 .ok_or("starter inventory snapshot missing")?,
-            definition,
-            entries,
+            &expected,
         )?;
         row.pass("first-entry-backpack", client.inventory());
 
-        // A container cannot become a weapon. Require the native refusal, then re-admit
-        // to check both rollback and the first-entry grant's occupied-slot replay path.
+        // A container cannot be worn as an amulet (the kit occupies both hands). Require the
+        // native refusal, then re-admit to check both rollback and the first-entry grant's
+        // occupied-slot replay path.
         let source = client
             .inventory()
             .and_then(|inventory| inventory.main_backpack)
@@ -813,7 +816,7 @@ async fn starter_backpack(row: &mut Row, clients: &SeamClients<'_>) -> TestResul
             client.session_mut(),
             inventory::MoveRequest {
                 source,
-                destination: items::ItemMoveDestination::Equipment(items::EquipmentSlot::RightHand),
+                destination: items::ItemMoveDestination::Equipment(items::EquipmentSlot::Necklace),
                 count: None,
             },
         )
@@ -832,8 +835,7 @@ async fn starter_backpack(row: &mut Row, clients: &SeamClients<'_>) -> TestResul
             client
                 .inventory()
                 .ok_or("starter relog inventory missing")?,
-            definition,
-            entries,
+            &expected,
         )?;
         row.pass("relog-custody-no-second-grant", client.inventory());
         relog(&mut client, clients, 0xe2).await?;
@@ -841,8 +843,7 @@ async fn starter_backpack(row: &mut Row, clients: &SeamClients<'_>) -> TestResul
             client
                 .inventory()
                 .ok_or("second starter relog inventory missing")?,
-            definition,
-            entries,
+            &expected,
         )?;
         row.pass("second-relog-no-second-grant", client.inventory());
         Ok(())
@@ -876,10 +877,11 @@ async fn temple_respawn(
             .and_then(|id| towns.town(id))
             .and_then(|town| town.temple)
             .ok_or("compiled world has no default home temple")?;
+        let basis = spatial_basis::current(&mut client)?;
         let temple = ActorPosition {
             x: i32::from(home.x),
             y: i32::from(home.y),
-            floor: -i16::from(home.floor),
+            floor: basis.floor(home.floor),
         };
         travel_to_spawn(&mut client, world, spawns, "oteryn:creature.poison_spider").await?;
         let encounter = client.world_spatial().actor_position;
@@ -977,7 +979,10 @@ async fn temple_respawn(
 /// GeneralStats has a fixed native layout. Do not substitute a ranking snapshot:
 /// its scheduled cut can predate the kill or the vocation confirmation.
 fn progress_frame(payload: &[u8], vocation_selected: bool) -> TestResult<(u64, u32)> {
-    if general_stats::validate(payload, vocation_selected).is_err() || payload[0] != 1 || payload[33] > 1 {
+    if general_stats::validate(payload, vocation_selected).is_err()
+        || payload[0] != 1
+        || payload[33] > 1
+    {
         return Err("malformed native GeneralStats frame".into());
     }
     let xp = u64::from_le_bytes(payload[1..9].try_into()?);
@@ -1064,6 +1069,7 @@ async fn approach_oressa(
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
 ) -> TestResult<oteryn_dev_client::EntityRef> {
+    let basis = spatial_basis::current(client)?;
     let npc = npcs
         .npcs
         .iter()
@@ -1078,7 +1084,7 @@ async fn approach_oressa(
         entry.kind == oteryn_dev_client::EntityKind::Npc && npc.placements.iter().any(|placement| {
             entry.position.x == i32::from(placement.x)
                 && entry.position.y == i32::from(placement.y)
-                && entry.position.floor == -i16::from(placement.floor)
+                && entry.position.floor == basis.floor(placement.floor)
         })
     })).map(|entry| entry.entity)
         .ok_or_else(|| "Oressa prerequisite blocked: no native NPC actor at the compiled Oressa placement after walking there".into())
@@ -1523,6 +1529,7 @@ async fn approach_service(
     npcs: &oteryn_world_bundle::npc::Table,
     key: &str,
 ) -> TestResult<oteryn_dev_client::EntityRef> {
+    let basis = spatial_basis::current(client)?;
     let npc = npcs.npcs.iter().find(|npc| npc.key == key).ok_or_else(|| {
         format!("player prerequisite blocked: compiled world has no {key} placement")
     })?;
@@ -1545,7 +1552,7 @@ async fn approach_service(
                             == ActorPosition {
                                 x: i32::from(place.x),
                                 y: i32::from(place.y),
-                                floor: -i16::from(place.floor),
+                                floor: basis.floor(place.floor),
                             }
                     })
             })
@@ -1657,10 +1664,11 @@ async fn observed_death(
         .and_then(|id| world.base().subareas.town(id))
         .and_then(|town| town.temple)
         .ok_or("compiled default temple unavailable")?;
+    let basis = spatial_basis::current(client)?;
     let temple = ActorPosition {
         x: i32::from(home.x),
         y: i32::from(home.y),
-        floor: -i16::from(home.floor),
+        floor: basis.floor(home.floor),
     };
     travel_to_spawn(client, world, spawns, "oteryn:creature.poison_spider").await?;
     let encounter = client.world_spatial().actor_position;
@@ -1871,7 +1879,7 @@ async fn ground_entries(
         if delta.server_sequence <= reply.server_sequence {
             continue;
         }
-        let views = tree::decode_container_views_for(&delta.payload, true)
+        let views = selected_container_views(client.selected_capabilities(), &delta.payload)
             .map_err(|error| format!("death ground view: {error:?}"))?;
         let view = views
             .views
@@ -2029,7 +2037,7 @@ async fn item_loss(
         loop {
             let delta = client.session_mut().read_gated_delta(tree::STATE_DOMAIN_CONTAINER_VIEWS, tree::DELTA_TYPE_CONTAINER_VIEWS_V1).await?;
             if delta.server_sequence <= reply.server_sequence { continue; }
-            let views = tree::decode_container_views_for(&delta.payload, true).map_err(|error| format!("lost bag view: {error:?}"))?;
+            let views = selected_container_views(client.selected_capabilities(), &delta.payload).map_err(|error| format!("lost bag view: {error:?}"))?;
             let view = views.views.iter().find(|view| view.container_handle == bag.handle).ok_or("lost bag container delta absent")?;
             let observed = CharacterInventory { entries: view.entries.clone(), ..Default::default() };
             let expected = CharacterInventory { entries: inventory.entries.clone(), ..Default::default() };
@@ -2377,10 +2385,11 @@ async fn observed_pvp_death(
         .and_then(|id| world.base().subareas.town(id))
         .and_then(|town| town.temple)
         .ok_or("PvP default temple missing")?;
+    let basis = spatial_basis::current(victim)?;
     let temple = ActorPosition {
         x: i32::from(home.x),
         y: i32::from(home.y),
-        floor: -i16::from(home.floor),
+        floor: basis.floor(home.floor),
     };
     if victim.world_spatial().actor_position == temple {
         return Err("PvP encounter is at temple".into());
@@ -2809,6 +2818,7 @@ mod tests {
     )]
     fn custody_ignores_only_admission_handles_and_entry_order() -> TestResult {
         let first = items::ItemEntry {
+            appearance_id: 0,
             handle: std::num::NonZeroU64::new(1).ok_or("handle")?,
             item_definition_ref: NonZeroU32::new(1).ok_or("definition")?,
             count: NonZeroU32::new(3).ok_or("count")?,

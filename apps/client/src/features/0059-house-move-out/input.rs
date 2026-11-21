@@ -46,9 +46,10 @@ impl PlayLink {
     pub fn house_move_out_open(&self) {
         if self.house_panel().ownership.model.available() {self.house_ownership_open();return;}
         #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            super::view::open_window(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).properties.house_move_out.open = true;
         }
     }

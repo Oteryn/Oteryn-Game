@@ -16,7 +16,7 @@ async fn require_mail_migration(pool: &sqlx::PgPool) -> TestResult {
             .fetch_one(pool)
             .await?;
     eprintln!("MAIL-NATIVE-PG database={database} server_version_num={version}");
-    let expected_checksum = sqlx::migrate!("./migrations")
+    let expected_checksum = oteryn_gameplay_durability::GAME_MIGRATOR
         .iter()
         .find(|migration| migration.version == 101)
         .map(|migration| migration.checksum.to_vec())

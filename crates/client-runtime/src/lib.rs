@@ -247,7 +247,7 @@ pub mod player_trade;
 pub mod player_typing;
 pub use oteryn_session::{CommandStatus, WorldSpatialEntity, player_typing::TypingUpdate};
 pub use oteryn_session::{
-    arena, boss_difficulty, character_info, creature_push, cyclopedia_character,
+    arena, boss_difficulty, channel_switch, character_info, creature_push, cyclopedia_character,
     cyclopedia_tracker, sanction_record, weapon_proficiency,
 };
 /// Prey command execution through the admitted session.
@@ -341,7 +341,7 @@ pub mod cui3 {
     pub use oteryn_session::property_services::house_podium;
     pub use oteryn_session::{
         battle_metadata, browse_field, container_tree, daily_boost, depot_search, hotkey_equip,
-        item_forge, item_view, store,
+        item_forge, item_view, refusal_detail, store,
     };
 }
 
@@ -355,3 +355,5 @@ pub mod server_modal;
 
 pub use oteryn_session::coin_market;
 pub use oteryn_session::coin_transfer;
+
+pub use oteryn_session::personal_map_marks;

@@ -20,9 +20,10 @@ impl PlayLink {
     pub fn open_party(&self) {
         self.party_request(Intent::Refresh);
         #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            super::view::open_window(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).party.open = true;
         }
     }
@@ -72,7 +73,9 @@ impl PlayLink {
                     };
                     consumed = true;
                     #[cfg(windows)]
-                    super::view::context_menu(self, target);
+                    if !self.uses_shared_frontend() {
+                        super::view::context_menu(self, target);
+                    }
                     #[cfg(not(windows))]
                     let _ = target;
                 }

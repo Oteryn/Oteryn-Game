@@ -6,6 +6,9 @@ impl PlayLink {
 }
 #[cfg(windows)]
 pub(in crate::play) fn open_window(link: &PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     use self::native::{Form, open};
     open(
         link,
@@ -97,6 +100,13 @@ pub(in crate::play) mod memorial;
 #[cfg(windows)]
 #[path = "native.rs"]
 mod native;
-#[cfg(any(windows, test))]
+#[cfg(any(windows, all(test, not(feature = "bevy-shell"))))]
 #[path = "preview.rs"]
 pub(in crate::play) mod preview;
+
+#[cfg(all(test, feature = "bevy-shell"))]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_outfit_test_panel(&self, panel: oteryn_client_ui::appearance::Panel) {
+        lock(&self.0).properties.appearance = panel;
+    }
+}

@@ -345,13 +345,12 @@ an ops `diagnose` command; 4a per-module log levels with ERR-NODE-1. Then 1b: th
      - the first 12 hex digits of `OTERYN_BUILD_SHA` when that variable is set. It must be 40
        hex digits, or the build fails. A workflow that publishes binaries sets it from
        `GITHUB_SHA` on an exact checkout;
-     - else `git rev-parse --short=12 HEAD` followed by `.local`;
-     - else `unknown`.
+     - else the stable development marker `dev.local` (ECSHA).
    - Only a bare SHA claims the exact source. `.local` says the build may include uncommitted
      changes. Cargo cannot re-run a build script on every work-tree edit, so a `.dirty` check
      would go stale; `.local` makes no claim it cannot keep.
-   - The script re-runs when `OTERYN_BUILD_SHA`, `HEAD` or the current branch ref changes, so
-     the SHA part is never stale.
+   - The script re-runs when `OTERYN_BUILD_SHA` or its Rust inputs change. It does not read or
+     watch Git metadata, so commits alone do not invalidate development libraries (ECSHA).
    - The first diagnostic line of every process is `event=process_start build=<OTERYN_BUILD>`,
      and the panic line and the bug report carry `build`. `--version` prints it.
 3. **Bug report.**
@@ -485,7 +484,7 @@ The CP checks path ownership against open PRs before allocation.
   - a forced panic in a test binary writes exactly one E4001 line;
   - a `&'static str` payload appears in `detail`, and a formatted payload is withheld;
   - the first line of a process is `process_start` with `build`;
-  - `OTERYN_BUILD_SHA` set gives a bare SHA, unset gives `.local`, and a value that is not 40
+  - `OTERYN_BUILD_SHA` set gives a bare SHA, unset gives `dev.local`, and a value that is not 40
     hex digits fails the build;
   - every line parses in the §1.5 field order, with `level` and `module`;
   - `OTERYN_LOG=warn` drops `info` lines but keeps every coded line;

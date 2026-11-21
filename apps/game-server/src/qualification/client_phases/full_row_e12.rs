@@ -80,7 +80,7 @@ async fn management_command(
                 source: Some(error.into()),
             }
         })?;
-    let reply = management::Reply::decode(&response.payload);
+    let reply = management::Reply::decode_wire(&response.payload);
     Ok((response.status, reply))
 }
 

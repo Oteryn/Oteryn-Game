@@ -8,10 +8,9 @@ pub(in crate::gameplay_transport) struct Viewport {
     pub(super) first_visible_floor: i16,
 }
 fn native_position(
-    mut position: world_spatial::ActorPosition,
+    position: world_spatial::ActorPosition,
 ) -> Option<world_spatial::ActorPosition> {
-    position.floor = position.floor.checked_abs()?.checked_neg()?;
-    (-15..=0).contains(&position.floor).then_some(position)
+    (0..=15).contains(&position.floor).then_some(position)
 }
 impl Viewport {
     pub(in crate::gameplay_transport) fn matches_runtime(
@@ -22,7 +21,7 @@ impl Viewport {
     }
     pub(super) fn visible(self, position: world_spatial::ActorPosition) -> bool {
         native_position(position).is_some_and(|p| {
-            p.floor <= self.first_visible_floor
+            p.floor >= self.first_visible_floor
                 && oteryn_protocol_oteryn::world_map::in_window(self.origin, p)
         })
     }
@@ -33,7 +32,7 @@ pub(super) fn display_map(
     let tiles: Vec<_> = snapshot
         .tiles
         .into_iter()
-        .filter(|t| t.position.floor <= snapshot.header.first_visible_floor)
+        .filter(|t| t.position.floor >= snapshot.header.first_visible_floor)
         .map(|t| DisplayTile {
             x: u16::try_from(t.position.x - snapshot.header.origin.x + 16).unwrap_or(0),
             y: u16::try_from(t.position.y - snapshot.header.origin.y + 16).unwrap_or(0),
@@ -100,7 +99,7 @@ pub(super) fn project_actor(
             .y
             .checked_sub(origin.y)?
             .checked_add(16)?
-            .checked_add(i32::from(native_position(entity.position)?.floor + 15) * 32)?,
+            .checked_add(i32::from(15 - native_position(entity.position)?.floor) * 32)?,
     )
     .ok()?;
     let appearance = if entity.kind == world_spatial::EntityKind::Player {
@@ -309,7 +308,7 @@ mod tests {
         assert!(same_camera(
             runtime,
             world_spatial::ActorPosition {
-                floor: -7,
+                floor: 7,
                 ..runtime
             }
         ));
@@ -357,17 +356,17 @@ mod tests {
                 media,
                 Viewport {
                     origin: world_spatial::ActorPosition {
-                        floor: -7,
+                        floor: 7,
                         ..runtime
                     },
-                    first_visible_floor: -7
+                    first_visible_floor: 7
                 }
             ),
             Some(PublicMedia::Speech {
                 position: world_spatial::ActorPosition {
                     x: 16,
                     y: 16,
-                    floor: -7
+                    floor: 7
                 },
                 mode: oteryn_protocol_oteryn::chat::ChatSpeechMode::Say,
                 text: "heard".into()
@@ -380,7 +379,7 @@ mod tests {
         let origin = world_spatial::ActorPosition {
             x: 30000,
             y: 31000,
-            floor: -7,
+            floor: 7,
         };
         let item = MapItem {
             definition: MapDefinition::Terrain(std::num::NonZeroU32::new(1).ok_or("definition")?),
@@ -392,7 +391,7 @@ mod tests {
             },
             appearance_id: 100,
         };
-        let tiles = [-7, -6]
+        let tiles = [7, 6]
             .into_iter()
             .map(|floor| MapTile {
                 position: world_spatial::ActorPosition { floor, ..origin },
@@ -407,7 +406,7 @@ mod tests {
                 bundle_digest: [2; 32],
                 reset_epoch: 1,
                 origin,
-                first_visible_floor: -7,
+                first_visible_floor: 7,
             },
             tiles,
         };
@@ -438,11 +437,11 @@ mod tests {
         let origin = world_spatial::ActorPosition {
             x: 30000,
             y: 31000,
-            floor: -7,
+            floor: 7,
         };
         let viewport = Viewport {
             origin,
-            first_visible_floor: -7,
+            first_visible_floor: 7,
         };
         let position = world_spatial::ActorPosition { floor: 6, ..origin };
         assert!(!viewport.visible(position));
@@ -486,7 +485,7 @@ mod tests {
         let origin = world_spatial::ActorPosition {
             x: 30000,
             y: 31000,
-            floor: -7,
+            floor: 7,
         };
         let entity = |id: u8| world_spatial::WorldSpatialEntity {
             display_name: None,
@@ -530,13 +529,13 @@ mod tests {
         let origin = world_spatial::ActorPosition {
             x: 30000,
             y: 31000,
-            floor: -7,
+            floor: 7,
         };
         let media = PublicMedia::Speech {
             position: world_spatial::ActorPosition {
                 x: 30001,
                 y: 31002,
-                floor: -7,
+                floor: 7,
             },
             mode: oteryn_protocol_oteryn::chat::ChatSpeechMode::Say,
             text: "heard".into(),
@@ -553,7 +552,7 @@ mod tests {
                 position: world_spatial::ActorPosition {
                     x: 17,
                     y: 18,
-                    floor: -7
+                    floor: 7
                 },
                 mode: oteryn_protocol_oteryn::chat::ChatSpeechMode::Say,
                 text: "heard".into()

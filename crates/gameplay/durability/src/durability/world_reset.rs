@@ -38,11 +38,11 @@ impl PlannedWorldReset {
     }
 }
 
-pub(super) mod census;
 mod activation;
+mod active_epoch;
+pub(super) mod census;
 mod content_preflight;
 mod ground_retirement;
-mod active_epoch;
 pub(super) mod ground_step;
 #[cfg(test)]
 mod migration_tests;

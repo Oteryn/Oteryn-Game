@@ -395,43 +395,67 @@ pub(super) async fn resume(
         command.game_session_id,
         CommandId::new(command.command_id).ok()?,
     );
-    match admission
-        .root
-        .read_hireling_food_receipt(
-            admission.character,
-            fence.character_id,
-            reference,
-            intent_binding(intent),
-        )
+    let binding = intent_binding(intent);
+    // Periodic gameplay reads share the holder with durable replay. A busy
+    // holder is transient, while an intent-binding conflict is final.
+    let Ok(budget) =
+        crate::gameplay_transport::AdmissionRetryBudget::for_foreground_command(admission.root)
+    else {
+        return Some(unknown());
+    };
+    match budget
+        .retry_command_guard(async || {
+            match admission
+                .root
+                .read_hireling_food_receipt(
+                    admission.character,
+                    fence.character_id,
+                    reference,
+                    binding,
+                )
+                .await
+            {
+                Err(HirelingFoodError::Unavailable(error)) => Err(error),
+                result => Ok(result),
+            }
+        })
         .await
     {
-        Ok(true) => {
+        Ok(Ok(true)) => {
             return Some(completed(
                 intent,
                 "Your meal has been delivered to your Inbox.",
             ));
         }
-        Ok(false) => {}
-        Err(HirelingFoodError::Unavailable(_)) => return Some(unknown()),
-        Err(_) => return Some(rejected()),
+        Ok(Ok(false)) => {}
+        Err(_) => return Some(unknown()),
+        Ok(Err(_)) => return Some(rejected()),
     }
-    match admission
-        .root
-        .read_hireling_package_receipt(
-            admission.character,
-            fence.character_id,
-            reference,
-            intent_binding(intent),
-        )
+    match budget
+        .retry_command_guard(async || {
+            match admission
+                .root
+                .read_hireling_package_receipt(
+                    admission.character,
+                    fence.character_id,
+                    reference,
+                    binding,
+                )
+                .await
+            {
+                Err(NpcTradeError::Unavailable(error)) => Err(error),
+                result => Ok(result),
+            }
+        })
         .await
     {
-        Ok(true) => Some(completed(
+        Ok(Ok(true)) => Some(completed(
             intent,
             "Your imbuement package is in your backpack.",
         )),
-        Ok(false) => None,
-        Err(NpcTradeError::Unavailable(_)) => Some(unknown()),
-        Err(_) => Some(rejected()),
+        Ok(Ok(false)) => None,
+        Err(_) => Some(unknown()),
+        Ok(Err(_)) => Some(rejected()),
     }
 }
 

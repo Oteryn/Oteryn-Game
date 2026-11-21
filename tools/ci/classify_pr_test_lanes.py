@@ -54,6 +54,27 @@ def select(files, changed_count, metadata, complete=True):
         return workspace
 
 
+def consumed_doc_selection(files, count, metadata, complete, trusted_json, head):
+    roots, _ = lanes.graph(metadata)
+    workspace = {"mode": "workspace", "packages": sorted(roots)}
+    if not complete or not trusted_json or not head:
+        return workspace
+    trusted = json.loads(trusted_json)
+    if (not isinstance(trusted, list) or not trusted
+            or any(not isinstance(name, str) or name not in roots for name in trusted)
+            or trusted != sorted(set(trusted)) or set(trusted) == set(roots)):
+        return workspace
+    # Protected-base metadata may differ from the candidate graph. Narrow only
+    # when both independently derive the same positive reverse closure.
+    result = lanes.classify(
+        files, count, metadata, candidate_modes_verified=lanes.candidate_modes_safe(head),
+        candidate_sha=head, report_doc_packages=True,
+    )
+    if result.get("doc_packages") == trusted:
+        return {"mode": "packages", "packages": trusted}
+    return workspace
+
+
 def main():
     try:
         metadata = json.loads(Path(sys.argv[1]).read_text())
@@ -65,12 +86,13 @@ def main():
         else:
             raise ValueError("invalid enumeration state")
         selection = select(files, count, metadata, complete)
+        if selection["mode"] == "none" and os.environ.get("RUST_REQUIRED") == "true":
+            selection = consumed_doc_selection(
+                files, count, metadata, os.environ.get("ENUMERATION_COMPLETE") == "true",
+                os.environ.get("TRUSTED_DOC_PACKAGES"), os.environ.get("EXPECTED_HEAD"),
+            )
     except (OSError, ValueError, KeyError, TypeError, lanes.subprocess.SubprocessError):
         selection = {"mode": "workspace", "packages": []}
-    # A prose file can still be a build input (include_str!, build.rs, etc.).
-    # The trusted lane classifier already scans those consumers: preserve its decision.
-    if selection["mode"] == "none" and os.environ.get("RUST_REQUIRED") == "true":
-        selection = {"mode": "workspace", "packages": sorted(lanes.graph(metadata)[0])}
     print(json.dumps(selection, sort_keys=True))
 
 

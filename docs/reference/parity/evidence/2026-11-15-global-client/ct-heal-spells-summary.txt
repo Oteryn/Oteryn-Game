@@ -1,0 +1,11 @@
+Healing spells: Invalid Monk L757, ML54 (armor+legs on), wheel +16 D&H, serene, harmony 0-1, Server Log values, 2026-11-15
+| spell | words | no virtue: n min-max mean | Sustain: n min-max mean |
+| Spirit Mend | exura gran tio | 31 676-856 777 (and ML54 Justice 31: 749) | 30 1093-1278 1190 |
+| Light Healing | exura | 30 242-266 255 | 30 309-333 320 |
+| Intense Healing | exura gran | 30 374-507 449 | 16 577-717 652 (212/229/253 excluded: capped at max HP) |
+| Magic Patch | exura infir | 60 35-46 40 | 30 50-60 54 |
+| Mass Spirit Mend (self) | exura mas nia | 37 647-726 683 | 31 1020-1097 1056 |
+| Restore Balance | exura tio sio "name" | heals another player only; no self-heal |
+Sustain factor on (heal - 158 flat): Spirit Mend 1.70, Light 1.66 (small numbers), Intense ~1.68, Mass Spirit Mend 1.71, Magic Patch: heal < flat, so it does not fit the flat model (x1.35 on the total).
+Harmony has no effect on Spirit Mend (8 trips, harmony 0-5, means 734-789).
+Passive heal from attack spells: see /tmp/ct-passive-summary.txt.

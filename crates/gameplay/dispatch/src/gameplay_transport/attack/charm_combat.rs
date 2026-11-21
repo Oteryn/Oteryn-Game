@@ -202,27 +202,109 @@ pub(super) fn bonuses(
     outcomes: &[CharmOutcome],
 ) {
     for outcome in outcomes {
-        let (slot, percent) = match effect(outcome) {
+        let (slot, percent, requires_existing_skill) = match effect(outcome) {
             Some(CharmEffectOutcome::CriticalHitChanceBonus { percent }) => {
-                (&mut offence.critical_chance, percent)
+                (&mut offence.critical_chance, percent, false)
             }
             Some(CharmEffectOutcome::CriticalExtraDamageBonus { percent }) => {
-                (&mut offence.critical_damage, percent)
+                (&mut offence.critical_damage, percent, false)
             }
             Some(CharmEffectOutcome::LifeLeechBonus { percent }) => {
-                (&mut offence.life_leech, percent)
+                (&mut offence.life_leech, percent, true)
             }
             Some(CharmEffectOutcome::ManaLeechBonus { percent }) => {
-                (&mut offence.mana_leech, percent)
+                (&mut offence.mana_leech, percent, true)
             }
             _ => continue,
         };
-        // Charms augment the corresponding equipment skill; they do not grant it.
-        if *slot == 0 {
+        // CipSoft news 8421: critical chance and extra damage exist intrinsically
+        // (5% / 10%) even when their additional equipment fields are zero.
+        // Leech has no intrinsic amount, so its existing-skill rule is unchanged.
+        if requires_existing_skill && *slot == 0 {
             continue;
         }
         *slot = slot.saturating_add(u16::try_from(percent.hundredths()).unwrap_or(u16::MAX));
     }
+}
+
+/// The committed hit's passive contributions. Secondary auto targets receive
+/// no ordinary equipment Leech, but retain the accepted D186 charm exceptions.
+pub(in crate::gameplay_transport) fn committed_hit_bonuses(
+    offence: &mut oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
+    outcomes: &[CharmOutcome],
+    off_target: bool,
+) {
+    let ordinary = (offence.life_leech, offence.mana_leech);
+    // Eligibility uses the original installed skill. Zeroing it first would
+    // also suppress the two D186 secondary-target charm exceptions.
+    bonuses(offence, outcomes);
+    if off_target {
+        offence.life_leech = offence.life_leech.saturating_sub(ordinary.0);
+        offence.mana_leech = offence.mana_leech.saturating_sub(ordinary.1);
+    }
+}
+
+/// Feed passive Low Blow / Savage Blow into the real numerical spell owner.
+/// No chance is rolled here: the qualified AoE owner retains its common roll.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "current actor, source catalogue and spell provenance stay explicit"
+)]
+pub(in crate::gameplay_transport) fn select_spell_critical(
+    states: &ChannelSpellStates,
+    runtime: &ChannelRuntimeV1,
+    catalogue: &dyn CharmCatalogueRead,
+    actor: ExactActorRef,
+    command: CommandRef,
+    magnitude: &mut crate::spell::magnitude_owner::PreparedMagnitudeOwner,
+) -> Result<(), crate::spell::combat_batch::Error> {
+    use crate::spell::combat_batch::Error;
+    let offence = super::equipped_offence::attacker_offence(
+        states,
+        runtime,
+        actor,
+        command.game_session_id(),
+    );
+    let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+    let hash = Sha256::new()
+        .chain_update(b"oteryn:spell-passive-charm:v1")
+        .chain_update(actor.placement_identity())
+        .chain_update(command.command_id().get().to_le_bytes())
+        .finalize();
+    let mut bytes = [0; 16];
+    bytes.copy_from_slice(&hash[..16]);
+    let occurrence = DecisionOccurrenceId::from_bytes(bytes);
+    let mut selected = Vec::new();
+    for (target, race) in magnitude.charm_targets() {
+        let outcomes = evaluate(
+            states,
+            runtime,
+            catalogue,
+            actor,
+            command.game_session_id(),
+            race,
+            &root,
+            occurrence,
+            CharmHookEvent::AttackDamageCalculation {
+                source: oteryn_gameplay_progression::charm_effects::CharmHitSource::CharacterAttack,
+            },
+        );
+        let mut augmented = offence.clone();
+        bonuses(&mut augmented, &outcomes);
+        let chance = augmented
+            .critical_chance
+            .saturating_sub(offence.critical_chance);
+        let extra = augmented
+            .critical_damage
+            .saturating_sub(offence.critical_damage);
+        if chance != 0 || extra != 0 {
+            selected
+                .try_reserve(1)
+                .map_err(|_| Error::AllocationFailed)?;
+            selected.push((target, chance, extra));
+        }
+    }
+    magnitude.select_charm_critical(selected)
 }
 
 pub(super) fn damage_amount(
@@ -341,109 +423,168 @@ pub(super) fn paralyse_creature(
     matches!(runtime.commit_actor_condition(&plan, time), Ok(true))
 }
 
-/// Committed native source damage; caller suppresses receipt replay before entering.
 #[allow(clippy::too_many_arguments)]
-pub(in crate::gameplay_transport) fn incoming_conditions(
-    states: &mut ChannelSpellStates,
-    runtime: &mut ChannelRuntimeV1,
+pub(in crate::gameplay_transport) fn evaluate_incoming_category(
+    states: &ChannelSpellStates,
+    runtime: &ChannelRuntimeV1,
+    catalogue: &dyn CharmCatalogueRead,
+    root: &GameplayDecisionRoot,
+    target: ExactActorRef,
+    session: GameSessionId,
+    race: &str,
+    occurrence: DecisionOccurrenceId,
+    base_damage: u32,
+    category: oteryn_gameplay_progression::charm_effects::CharmCategory,
+    source_alive: bool,
+) -> Vec<CharmOutcome> {
+    evaluate_event_category(
+        states,
+        runtime,
+        catalogue,
+        root,
+        target,
+        session,
+        race,
+        occurrence,
+        CharmHookEvent::IncomingCreatureHit {
+            base_damage: u64::from(base_damage),
+        },
+        category,
+        source_alive,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::gameplay_transport) fn evaluate_event_category(
+    states: &ChannelSpellStates,
+    runtime: &ChannelRuntimeV1,
+    catalogue: &dyn CharmCatalogueRead,
+    root: &GameplayDecisionRoot,
+    target: ExactActorRef,
+    session: GameSessionId,
+    race: &str,
+    occurrence: DecisionOccurrenceId,
+    event: CharmHookEvent,
+    category: oteryn_gameplay_progression::charm_effects::CharmCategory,
+    source_alive: bool,
+) -> Vec<CharmOutcome> {
+    use oteryn_gameplay_progression::charm_effects::{
+        CharmEvaluationInput, evaluate_charm_hook_category,
+    };
+    let Ok(lease) = runtime.bound_attacker_lease(target, session) else {
+        return Vec::new();
+    };
+    let Some(state) = states.charm_state(runtime, target, session) else {
+        return Vec::new();
+    };
+    // Void Inversion owns the minor slot. Another minor has no mana-drain hook;
+    // do not let the evaluator's legacy mana event draw its health-hit effect.
+    if matches!(event, CharmHookEvent::IncomingManaDrain { .. }) {
+        let Ok(assignments) =
+            oteryn_gameplay_progression::charm_effects::CharmStateRead::assignments_for_race(
+                state, race,
+            )
+        else {
+            return Vec::new();
+        };
+        if !assignments.iter().any(|assignment| {
+            catalogue
+                .charm(&assignment.charm_key)
+                .is_some_and(|definition| {
+                    definition.effect().hook()
+                        == oteryn_gameplay_progression::charm_effects::CharmHook::IncomingManaDrain
+                })
+        }) {
+            return Vec::new();
+        }
+    }
+    evaluate_charm_hook_category(
+        &CharmEvaluationInput {
+            character: *lease.character_id().as_bytes(),
+            race_key: race,
+            decision_root: root,
+            occurrence,
+            event,
+        },
+        state,
+        catalogue,
+        Some(category),
+        source_alive,
+    )
+    .unwrap_or_default()
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::gameplay_transport) fn prepare_incoming(
+    states: &ChannelSpellStates,
+    runtime: &ChannelRuntimeV1,
     catalogue: &dyn CharmCatalogueRead,
     root: &GameplayDecisionRoot,
     source: ExactActorRef,
     target: ExactActorRef,
     session: GameSessionId,
-    magnitude: u32,
-    source_revision: u64,
-    occurrence_text: &str,
-    now: u64,
-    mana: bool,
-) {
-    let Ok(creature) = runtime.companion_snapshot(source) else {
-        return;
-    };
-    if magnitude == 0 || creature.state.master.is_some() || creature.state.policy.is_familiar {
-        return;
+    base_damage: u32,
+    text: &str,
+    identity: Option<DecisionOccurrenceId>,
+) -> Option<(DecisionOccurrenceId, String, u32)> {
+    let creature = runtime.companion_snapshot(source).ok()?;
+    if base_damage == 0 || creature.state.master.is_some() || creature.state.policy.is_familiar {
+        return None;
     }
+    let race = creature.state.policy.definition_key.clone();
     let digest = Sha256::new()
         .chain_update(b"oteryn.charm.source.v1")
-        .chain_update(occurrence_text.as_bytes())
+        .chain_update(text.as_bytes())
         .finalize();
     let mut bytes = [0; 16];
     bytes.copy_from_slice(&digest[..16]);
-    let occurrence = DecisionOccurrenceId::from_bytes(bytes);
-    let event = if mana {
-        CharmHookEvent::IncomingManaDrain {
-            mana_drained: u64::from(magnitude),
-        }
-    } else {
-        CharmHookEvent::IncomingCreatureHit {
-            base_damage: u64::from(magnitude),
-        }
-    };
-    let outcomes = evaluate(
+    let occurrence = identity.unwrap_or_else(|| DecisionOccurrenceId::from_bytes(bytes));
+    let major = evaluate_incoming_category(
         states,
         runtime,
         catalogue,
+        root,
         target,
         session,
-        &creature.state.policy.definition_key,
-        root,
+        &race,
         occurrence,
-        event,
+        base_damage,
+        oteryn_gameplay_progression::charm_effects::CharmCategory::Major,
+        true,
     );
-    for outcome in &outcomes {
-        match effect(outcome) {
-            Some(CharmEffectOutcome::ReflectDamage { damage, amount }) if !mana => {
-                let Ok(draw) = oteryn_simulation_determinism::deterministic_decision_u64(
+    let amount = major
+        .iter()
+        .find_map(|outcome| match effect(outcome) {
+            Some(CharmEffectOutcome::ReflectDamage { damage, amount }) => {
+                let draw = oteryn_simulation_determinism::deterministic_decision_u64(
                     root,
                     occurrence,
                     "charm.parry-armor",
                     0,
-                ) else {
-                    continue;
-                };
-                let Some(amount) = damage_amount(runtime, source, damage, amount, draw)
-                    .filter(|amount| *amount > 0)
-                else {
-                    continue;
-                };
-                let Ok(lease) = runtime.bound_attacker_lease(target, session) else {
-                    continue;
-                };
-                // One bounded stream per source/reflector/session. The native HP successor
-                // revision is strictly increasing, independently fencing this exact receipt.
-                let mut stream = b"charm-parry-source:".to_vec();
-                stream.extend_from_slice(session.as_bytes());
-                if let Ok(result) = runtime.commit_source_damage(
-                    source,
-                    target,
-                    session,
-                    &stream,
-                    source_revision,
-                    amount,
-                    now / 1000,
-                ) && result.applied
-                {
-                    states.analyser.impact_amount(
-                        target,
-                        session,
-                        u64::try_from(result.health_before.saturating_sub(result.health_after))
-                            .unwrap_or(0),
-                        Some(super::super::analyser::charm_element(damage.element)),
-                    );
-                    if result.health_after == 0 {
-                        states.equipment_reflection_kills.push((
-                            source,
-                            crate::combat::CapturedRewardPrincipal {
-                                character: lease.character_id(),
-                                lease_generation: lease.generation(),
-                                actor: target,
-                                session,
-                            },
-                            now,
-                        ));
-                    }
-                }
+                )
+                .ok()?;
+                damage_amount(runtime, source, damage, amount, draw)
             }
+            _ => None,
+        })
+        .unwrap_or(0);
+    Some((occurrence, race, amount))
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::gameplay_transport) fn apply_incoming_minor(
+    states: &mut ChannelSpellStates,
+    runtime: &mut ChannelRuntimeV1,
+    root: &GameplayDecisionRoot,
+    source: ExactActorRef,
+    target: ExactActorRef,
+    session: GameSessionId,
+    occurrence: DecisionOccurrenceId,
+    now: u64,
+    outcomes: &[CharmOutcome],
+) {
+    for outcome in outcomes {
+        match effect(outcome) {
             Some(CharmEffectOutcome::ParalyseCreature { duration_ms }) => {
                 paralyse_creature(
                     runtime,
@@ -477,7 +618,7 @@ mod tests {
     use crate::gameplay_transport::actor_spell::tests::runtime_with_player;
 
     #[test]
-    fn charm_bonuses_augment_only_existing_equipment_skills() {
+    fn charm_bonuses_augment_intrinsic_critical_but_require_existing_leech() {
         use oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence;
         use oteryn_gameplay_progression::charm_effects::{
             CharmHook, CharmMissingSystem, CharmPercent,
@@ -502,7 +643,17 @@ mod tests {
         .collect();
         let mut empty = EquippedOffence::default();
         bonuses(&mut empty, &outcomes);
-        assert_eq!(empty, EquippedOffence::default());
+        assert_eq!(
+            (
+                empty.critical_chance,
+                empty.critical_damage,
+                empty.life_leech,
+                empty.mana_leech
+            ),
+            (400, 400, 0, 0),
+            "CipSoft 8421: both critical bonuses augment innate skills without Strike; no free leech"
+        );
+        assert_eq!(empty.player_critical(), (900, 1400));
         let mut equipped = EquippedOffence::from_sums(100, 5000, 100, 200);
         bonuses(&mut equipped, &outcomes);
         assert_eq!(

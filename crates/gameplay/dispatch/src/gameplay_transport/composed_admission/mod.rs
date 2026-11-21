@@ -8,6 +8,23 @@ tokio::task_local! {
         std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
 }
 
+#[cfg(test)]
+#[derive(Default)]
+pub(super) struct FamiliarLoginCheckoutProbe {
+    pub(super) seed_barrier: std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>,
+    pub(super) seed_started: std::cell::Cell<bool>,
+    pub(super) backpack: std::cell::Cell<u32>,
+    pub(super) kit: std::cell::Cell<u32>,
+    pub(super) placement: std::cell::Cell<u32>,
+    pub(super) writes: std::cell::Cell<u32>,
+    pub(super) checkout_misses: std::cell::Cell<u32>,
+}
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static FAMILIAR_LOGIN_CHECKOUT: FamiliarLoginCheckoutProbe;
+}
+
 mod achievements;
 mod admission;
 mod combat;

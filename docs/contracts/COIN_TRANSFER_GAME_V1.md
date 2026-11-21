@@ -1,14 +1,18 @@
 # Game coin gifts v1 (T132)
 
-Owner decision B, 2026-11-09. Platform alone owns coins, coin classes,
+Owner decision B, 2026-11-09. Platform alone owns the single coin class,
 transfer policy, idempotency and receipts under [PLATFORM_COIN_WIRE_V1.md](PLATFORM_COIN_WIRE_V1.md).
 The copied coin-wire-v1 fixtures and their provenance also govern transfers.
 Game sends exactly POST `/internal/v1/coins/transfers`; no Game wallet exists.
 
 Reference: `docs/reference/tibia-manual/store.md:15–19` and `store.md:38–43`: use the recipient's
 full character name, in any World, never the sender's own account. Gifts use
-positive multiples of 25 transferable coins, complete immediately at Platform,
-and cannot be recalled. Non-transferable coins cannot fund gifts.
+positive multiples of 25 coins, complete immediately at Platform,
+and cannot be recalled. Every available coin can fund gifts, including legacy
+non-transferable amounts. The unchanged wire reports the whole available balance
+in `transferable` / `transferable_after`, with `non_transferable` /
+`non_transferable_after` always `"0"`; history `coin_class` is always `transferable`.
+Game accepts legacy non-zero fields and uses the sum for gift availability.
 
 Game resolves the exact normalized full name against current live character
 roots, without World restriction or prefix matching. Owner decision B 2026-11-09,

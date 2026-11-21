@@ -1,0 +1,207 @@
+{
+  "records": [
+    {
+      "creature_key": "oteryn:creature.bakragore",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "974df9389e734ca947111cd41af9adec44f531adf0cc53233d5a7a94ab190178",
+      "on_death": [
+        {
+          "line": 18,
+          "name": "BakragoreMechanicsDeath",
+          "registration_index": 1,
+          "source_path": "data-global/scripts/quests/rotten_blood_quest/bakragore_mechanics_death.lua",
+          "source_sha256": "21ba33eb58d1b5a4a88ca0c950d49a8369b34f3a11fe39a7e549a8b3ab154b46"
+        }
+      ],
+      "parent_git_blob": "5aa267092b90f054138e2043fc6db1802a424356",
+      "parent_path": "data-global/monster/quests/rotten_blood_quest/bakragore.lua",
+      "registered_events": [
+        {
+          "line": 17,
+          "name": "RottenBloodBossDeath",
+          "registration_index": 0
+        },
+        {
+          "line": 18,
+          "name": "BakragoreMechanicsDeath",
+          "registration_index": 1
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.chagorz",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "297fc5a9fc5e58ade139dd3c3e60e10fdd2f0d6745c05dc9137c0f44d6a60732",
+      "on_death": [
+        {
+          "line": 18,
+          "name": "ChagorzMechanicsDeath",
+          "registration_index": 1,
+          "source_path": "data-global/scripts/quests/rotten_blood_quest/chagorz_mechanics_death.lua",
+          "source_sha256": "fbbe03619599a377c08f2def12c382f72211a98a362186114d38d4fa529c1e37"
+        }
+      ],
+      "parent_git_blob": "7c7dd5beef1bf511c7223f28d4ba54e96601e3b0",
+      "parent_path": "data-global/monster/quests/rotten_blood_quest/chagorz.lua",
+      "registered_events": [
+        {
+          "line": 17,
+          "name": "RottenBloodBossDeath",
+          "registration_index": 0
+        },
+        {
+          "line": 18,
+          "name": "ChagorzMechanicsDeath",
+          "registration_index": 1
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.ichgahal",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "237c4b4a8743fc2f2868f0a0ce183fa9c1a0d66cc2037345419fe70cd3eb852d",
+      "on_death": [],
+      "parent_git_blob": "6d3244cf24574ece4d13eb353177e3d058db0c43",
+      "parent_path": "data-global/monster/quests/rotten_blood_quest/ichgahal.lua",
+      "registered_events": [
+        {
+          "line": 17,
+          "name": "RottenBloodBossDeath",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.murcion",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "cdd4e39e5119d6c1952f3850ba4bfd19877f608716f8b166fe39a6f25ca1801a",
+      "on_death": [],
+      "parent_git_blob": "817a6db5150f27b52ad6d747e59985c2bb09ebc0",
+      "parent_path": "data-global/monster/quests/rotten_blood_quest/murcion.lua",
+      "registered_events": [
+        {
+          "line": 17,
+          "name": "RottenBloodBossDeath",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.mushroom",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "450850113ccaef42caf0e86d517b25769fd1e81271e6924901e459042843e9a4",
+      "on_death": [],
+      "parent_git_blob": "1a9f48aea1eac46a1bae41dec7dc5d518c092b1e",
+      "parent_path": "data-global/monster/quests/rotten_blood_quest/mushroom.lua",
+      "registered_events": []
+    },
+    {
+      "creature_key": "oteryn:creature.vemiath",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "d0b477325e4d3e058490023870075dd6e1b159cd614f82610d122510f7c7a8e7",
+      "on_death": [
+        {
+          "line": 18,
+          "name": "VemiathMechanicsDeath",
+          "registration_index": 1,
+          "source_path": "data-global/scripts/quests/rotten_blood_quest/vemiath_mechanics_death.lua",
+          "source_sha256": "6c777759c51058c12a5725d770c81bcf2475f8bc1308f4f830bd8f311ef915e1"
+        }
+      ],
+      "parent_git_blob": "a582d15b54463ec6d2d50d255f2847da268ef842",
+      "parent_path": "data-global/monster/quests/rotten_blood_quest/vemiath.lua",
+      "registered_events": [
+        {
+          "line": 17,
+          "name": "RottenBloodBossDeath",
+          "registration_index": 0
+        },
+        {
+          "line": 18,
+          "name": "VemiathMechanicsDeath",
+          "registration_index": 1
+        }
+      ]
+    }
+  ],
+  "registry_proof": {
+    "absent_loaded_names": [
+      "RottenBloodBossDeath"
+    ],
+    "complete_tree": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "constructors": 335,
+    "constructors_sha256": "3d24ce30e08ba31be393fa79641c618c9b7923730ae72bea0d20da3def9f34f4",
+    "loaded_lookup_git_blob": "7589856539986493e7d5be2358bbd18e84d74463",
+    "loaded_lookup_source": "src/lua/creature/creatureevent.cpp",
+    "lookup_git_blob": "d1e52e5881ea75cdc5835e0563dc842b38372f85",
+    "lookup_source": "src/creatures/creature.cpp",
+    "lua_files": 8185,
+    "noncall_references": [
+      {
+        "line": 121,
+        "path": "data/libs/functions/revscriptsys.lua"
+      },
+      {
+        "line": 175,
+        "path": "data/libs/functions/revscriptsys.lua"
+      },
+      {
+        "line": 2,
+        "path": "data/scripts/lib/helper_constructors.lua"
+      }
+    ],
+    "source_set_sha256": "8dd0153f066442f21587c146a7792125627d8b9c65b7b6b7678b8da954d1bdb8",
+    "text_files": 8839
+  },
+  "schema": "SRX3_ROTTEN_ENTRY_ORDERED_DEATH_EVENTS/v1",
+  "source_definitions_sha256": "7b909dbc8ae106563942887957f692d44a6da3865b664db8257977454bf533ad",
+  "source_repository": "zimbadev/crystalserver",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "sources": [
+    {
+      "git_blob": "5aa267092b90f054138e2043fc6db1802a424356",
+      "path": "data-global/monster/quests/rotten_blood_quest/bakragore.lua",
+      "sha256": "974df9389e734ca947111cd41af9adec44f531adf0cc53233d5a7a94ab190178"
+    },
+    {
+      "git_blob": "7c7dd5beef1bf511c7223f28d4ba54e96601e3b0",
+      "path": "data-global/monster/quests/rotten_blood_quest/chagorz.lua",
+      "sha256": "297fc5a9fc5e58ade139dd3c3e60e10fdd2f0d6745c05dc9137c0f44d6a60732"
+    },
+    {
+      "git_blob": "6d3244cf24574ece4d13eb353177e3d058db0c43",
+      "path": "data-global/monster/quests/rotten_blood_quest/ichgahal.lua",
+      "sha256": "237c4b4a8743fc2f2868f0a0ce183fa9c1a0d66cc2037345419fe70cd3eb852d"
+    },
+    {
+      "git_blob": "817a6db5150f27b52ad6d747e59985c2bb09ebc0",
+      "path": "data-global/monster/quests/rotten_blood_quest/murcion.lua",
+      "sha256": "cdd4e39e5119d6c1952f3850ba4bfd19877f608716f8b166fe39a6f25ca1801a"
+    },
+    {
+      "git_blob": "1a9f48aea1eac46a1bae41dec7dc5d518c092b1e",
+      "path": "data-global/monster/quests/rotten_blood_quest/mushroom.lua",
+      "sha256": "450850113ccaef42caf0e86d517b25769fd1e81271e6924901e459042843e9a4"
+    },
+    {
+      "git_blob": "a582d15b54463ec6d2d50d255f2847da268ef842",
+      "path": "data-global/monster/quests/rotten_blood_quest/vemiath.lua",
+      "sha256": "d0b477325e4d3e058490023870075dd6e1b159cd614f82610d122510f7c7a8e7"
+    },
+    {
+      "git_blob": "0dc01ed19e5859e5580134b61254d120940a479b",
+      "path": "data-global/scripts/quests/rotten_blood_quest/bakragore_mechanics_death.lua",
+      "sha256": "21ba33eb58d1b5a4a88ca0c950d49a8369b34f3a11fe39a7e549a8b3ab154b46"
+    },
+    {
+      "git_blob": "0b6af1257295f8917ce86780ed0e56a3625c4ad8",
+      "path": "data-global/scripts/quests/rotten_blood_quest/chagorz_mechanics_death.lua",
+      "sha256": "fbbe03619599a377c08f2def12c382f72211a98a362186114d38d4fa529c1e37"
+    },
+    {
+      "git_blob": "fa8a76503471396b0be871dee9e704780b529969",
+      "path": "data-global/scripts/quests/rotten_blood_quest/vemiath_mechanics_death.lua",
+      "sha256": "6c777759c51058c12a5725d770c81bcf2475f8bc1308f4f830bd8f311ef915e1"
+    }
+  ]
+}

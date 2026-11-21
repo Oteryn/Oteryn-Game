@@ -5,6 +5,7 @@ fn npc_shop_options_filter_owned_quotes_and_open_the_live_backpack()
     use oteryn_session::{CharacterInventory, ItemEntry};
     let item = |handle: u64, definition: u32| -> Result<ItemEntry, Box<dyn std::error::Error>> {
         Ok(ItemEntry {
+            appearance_id: 0,
             handle: handle.try_into()?,
             item_definition_ref: definition.try_into()?,
             count: 1.try_into()?,

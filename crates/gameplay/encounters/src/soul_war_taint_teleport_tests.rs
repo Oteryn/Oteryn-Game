@@ -9,6 +9,56 @@ const fn at(x: i32, y: i32, floor: i16) -> RoomPosition {
     RoomPosition { x, y, floor }
 }
 
+#[test]
+fn srx3_taint_teleport_cutoff_retains_future_callback_and_uses_actual_cooldown_clock()
+-> Result<(), TaintTeleportRefusal> {
+    let mut owner = TaintTeleportOwner::default();
+    let origin = at(33_990, 31_000, 10);
+    for (player, now) in [(7, 0), (8, 1_000)] {
+        assert!(
+            !owner
+                .think(
+                    MONSTER,
+                    BRACHIODEMON,
+                    origin,
+                    now,
+                    &[candidate(player, at(33_991, 31_000, 10))],
+                    || 1
+                )?
+                .is_empty()
+        );
+    }
+    assert_eq!(owner.next_pending_due_ms(), Some(2_000));
+    let facts = |_, _| {
+        Some(DueFacts {
+            monster_position: origin,
+            player_position: at(33_991, 31_000, 10),
+            destination_allows_teleport: true,
+        })
+    };
+    let effects = owner.advance_through(2_000, 5_000, facts, |_| true);
+    assert_eq!(
+        effects
+            .iter()
+            .filter(|effect| matches!(effect, TaintTeleportEffect::Teleport { .. }))
+            .count(),
+        1
+    );
+    assert_eq!(owner.next_pending_due_ms(), Some(3_000));
+    assert_eq!(owner.cooldowns.get(&7), Some(&(5_000 + COOLDOWN_MS)));
+    assert!(
+        owner
+            .advance_through(2_000, 5_000, facts, |_| true)
+            .is_empty()
+    );
+    assert_eq!(
+        owner.advance_through(3_000, 5_000, facts, |_| true).len(),
+        4
+    );
+    assert_eq!(owner.next_pending_due_ms(), None);
+    Ok(())
+}
+
 fn candidate(actor: u64, position: RoomPosition) -> TeleportCandidate {
     TeleportCandidate {
         actor,
@@ -112,7 +162,7 @@ fn only_rolls_of_ten_or_less_attempt_a_teleport() {
 }
 
 #[test]
-fn farthest_qualifying_player_on_the_floor_is_chosen_ties_to_the_first() {
+fn farthest_qualifying_player_on_the_floor_is_chosen_ties_to_lowest_id() {
     let monster_position = at(33_933, 31_010, 9);
     let mut candidates = [
         candidate(1, at(33_936, 31_010, 9)),
@@ -226,7 +276,7 @@ fn the_teleport_lands_after_two_seconds_on_the_players_current_tile() {
 }
 
 #[test]
-fn the_cooldown_blocks_a_second_monster_until_ten_seconds_and_survives_offline_players() {
+fn a_pending_move_blocks_a_second_monster_and_dropped_offline_move_does_not_start_cooldown() {
     let monster_position = at(33_933, 31_010, 9);
     let player = candidate(PLAYER, at(33_938, 31_010, 9));
     let mut owner = TaintTeleportOwner::default();
@@ -262,5 +312,96 @@ fn the_cooldown_blocks_a_second_monster_until_ten_seconds_and_survives_offline_p
         || 1,
     );
     let _ = offline.advance(20_000, |_, _| None, |_| false);
-    assert!(offline.cooldown_active(PLAYER));
+    assert!(!offline.cooldown_active(PLAYER));
+}
+
+#[test]
+fn srx3_soul_war_taint_teleport_includes_owner_accepted_harvester() {
+    // Accepted SW-3 §13.1 Q1a, normative format:1019-1023.
+    assert_eq!(
+        teleport_line("oteryn:creature.dreadful_harvester"),
+        Some("You have been chosen for a harvest!")
+    );
+}
+
+#[test]
+fn srx3_soul_war_taint_teleport_dropped_move_never_starts_a_cooldown()
+-> Result<(), TaintTeleportRefusal> {
+    let mut owner = TaintTeleportOwner::default();
+    owner.think(
+        MONSTER,
+        BRACHIODEMON,
+        at(33933, 31010, 9),
+        1000,
+        &[candidate(PLAYER, at(33938, 31010, 9))],
+        || 1,
+    )?;
+    let _ = owner.advance(3000, |_, _| None, |_| false);
+    assert!(
+        !owner.cooldown_active(PLAYER),
+        "accepted Q1a: disappearance or a blocked tile drops the move without cooldown"
+    );
+    Ok(())
+}
+
+#[test]
+fn srx3_soul_war_taint_teleport_cooldown_starts_on_move_and_expires_offline()
+-> Result<(), TaintTeleportRefusal> {
+    let mut owner = TaintTeleportOwner::default();
+    let monster = at(33933, 31010, 9);
+    let player = at(33938, 31010, 9);
+    owner.think(
+        MONSTER,
+        BRACHIODEMON,
+        monster,
+        1000,
+        &[candidate(PLAYER, player)],
+        || 1,
+    )?;
+    let _ = owner.advance(
+        3000,
+        |_, _| {
+            Some(DueFacts {
+                monster_position: monster,
+                player_position: player,
+                destination_allows_teleport: true,
+            })
+        },
+        |_| true,
+    );
+    let _ = owner.advance(11000, |_, _| None, |_| true);
+    assert!(
+        owner.cooldown_active(PLAYER),
+        "ten seconds starts at the successful move, not its warning"
+    );
+    let _ = owner.advance(13000, |_, _| None, |_| false);
+    assert!(
+        !owner.cooldown_active(PLAYER),
+        "accepted Q1a always expires even while offline"
+    );
+    Ok(())
+}
+
+#[test]
+fn srx3_soul_war_taint_teleport_equal_distance_uses_lowest_id() -> Result<(), TaintTeleportRefusal>
+{
+    let mut owner = TaintTeleportOwner::default();
+    let lower = at(33928, 31010, 9);
+    let higher = at(33938, 31010, 9);
+    let effects = owner.think(
+        MONSTER,
+        BRACHIODEMON,
+        at(33933, 31010, 9),
+        1000,
+        &[candidate(9, higher), candidate(7, lower)],
+        || 1,
+    )?;
+    assert_eq!(
+        effects.last(),
+        Some(&TaintTeleportEffect::Magic {
+            position: lower,
+            effect: TaintTeleportMagic::MortArea
+        })
+    );
+    Ok(())
 }

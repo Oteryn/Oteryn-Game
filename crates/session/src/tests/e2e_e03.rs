@@ -43,6 +43,7 @@ fn parse(line: &str) -> Result<Vec<(u32, u32)>, BoxError> {
 
 fn entry(handle: u64, reference: u32, count: u32) -> Result<ItemEntry, BoxError> {
     Ok(ItemEntry {
+        appearance_id: 0,
         handle: ItemHandle::new(handle).ok_or("handle")?,
         item_definition_ref: std::num::NonZeroU32::new(reference).ok_or("reference")?,
         count: std::num::NonZeroU32::new(count).ok_or("count")?,

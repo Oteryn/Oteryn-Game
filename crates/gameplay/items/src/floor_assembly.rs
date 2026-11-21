@@ -1,5 +1,5 @@
 //! Source-bound AddItem assemblies of complete physical floor operands.
-/// An authored native counterpart for an otherwise absent source action selector.
+/// A native counterpart for an otherwise absent source action selector.
 #[derive(Clone, Copy, Debug)]
 pub struct NativeFloorBinding {
     pub action: u16,
@@ -10,15 +10,15 @@ pub struct NativeFloorBinding {
     pub appearance: u16,
 }
 
-// Authored counterpart, not a recovered donor registration. Retain the bare B3
-// ground beside the source Morguthis endpoint; provenance is in the lane contract.
+// The north table in Ashmunrah's reward room (Global spoiler curid 5073 oldid 1174796).
+// Crystal startup item.lua:2667-2671 binds AID40040 to the retained B3 counter.
 pub const NATIVE_BINDINGS: &[NativeFloorBinding] = &[NativeFloorBinding {
     action: 40040,
-    x: 33162,
-    y: 32694,
-    floor: -14,
-    ordinal: 0,
-    appearance: 417,
+    x: 33198,
+    y: 32876,
+    floor: -11,
+    ordinal: 1,
+    appearance: 2344,
 }];
 
 #[derive(Debug)]

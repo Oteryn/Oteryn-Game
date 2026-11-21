@@ -972,7 +972,14 @@ def validate(
     if summary.get("map", {}).get("floors") != [0, codec.MAX_FLOOR]:
         errors.append(f"{SUMMARY}: map floors must be [0, {codec.MAX_FLOOR}]")
     fill = summary.get("fill", {})
-    base = world_otbm_totals(index["totals"], summary)
+    try:
+        from qready1_clock_landmarks import validate_installed
+
+        validate_installed(root, index, summary)
+        base = world_otbm_totals(index["totals"], summary)
+    except (ValueError, OSError, KeyError) as error:
+        errors.append(f"{SUMMARY}: authored landmark: {error}")
+        base = index["totals"]
     if pinned is not None and {k: base[k] for k in pinned} != pinned:
         errors.append(
             f"{INDEX}: world.otbm totals differ from the pinned source {pinned}"

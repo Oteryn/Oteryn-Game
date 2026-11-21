@@ -1,0 +1,33 @@
+[
+  {
+    "mechanic": "0499-item-appearance",
+    "kind": "handlers",
+    "id": "0499-item-appearance-atlas-binding",
+    "status": "supported",
+    "commands": [],
+    "direction": "server_to_client",
+    "capability": 499,
+    "entry": "protocol.rs::atlas_key",
+    "reducer": "protocol.rs::atlas_key",
+    "push_messages": [
+      "CharacterInventoryV1",
+      "OpenContainerV1",
+      "ContainerViewsV1"
+    ],
+    "test": "protocol.rs::decoded_appearance_count_and_subtype_identify_the_sprite",
+    "not_applicable": {
+      "state": "The session retains decoded appearance_id on the existing ItemEntry values.",
+      "protocol": "The session selects the capability-499 codecs for snapshots and deltas; legacy entries decode to zero.",
+      "view": "The Bevy item-image projection uses atlas_key with the already-loaded scene atlas.",
+      "input": "The appearance binding is server-owned and takes no client input.",
+      "settings": "Item appearance has no setting."
+    }
+  },
+  {
+    "mechanic": "0499-item-appearance",
+    "kind": "panels",
+    "id": "0499-item-appearance-icon",
+    "status": "supported",
+    "entry": "protocol.rs::atlas_key"
+  }
+]

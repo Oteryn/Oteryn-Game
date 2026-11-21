@@ -23,10 +23,18 @@ def read(path):
     return json.loads(gzip.decompress(raw) if path.suffix == '.gz' else raw)
 
 
+def deterministic_gzip(raw):
+    # Pin the gzip header OS byte: Python releases write 3 or 255 for mtime=0
+    # output, which changes the digest pinned in the Quest index.
+    data = bytearray(gzip.compress(raw, mtime=0))
+    data[9] = 3
+    return bytes(data)
+
+
 def write(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
     raw = (json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + '\n').encode()
-    path.write_bytes(gzip.compress(raw, mtime=0) if path.suffix == '.gz' else raw)
+    path.write_bytes(deterministic_gzip(raw) if path.suffix == '.gz' else raw)
 
 
 def partition(records):

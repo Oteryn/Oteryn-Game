@@ -36,6 +36,7 @@ members = [
     "crates/ntp-clock",
     "crates/client-runtime",
     "crates/client-ui",
+    "crates/client-ui-bevy",
     "crates/platform-contracts",
     "crates/platform-client",
     "crates/protocol-oteryn",
@@ -78,7 +79,7 @@ resolver = "3"
 [workspace.package]
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.99"
+rust-version = "1.100"
 license = "MPL-2.0"
 repository = "https://github.com/Oteryn/Oteryn-Game"
 publish = false
@@ -93,9 +94,9 @@ cap-std = "=4.0.3"
 ed25519-dalek = { version = "=2.2.0", default-features = false }
 pollster = { version = "=1.0.1", default-features = false }
 crossterm = "=0.29.0"
-ratatui = { version = "=0.30.0", default-features = false, features = ["crossterm"] }
+ratatui = { version = "=0.30.2", default-features = false, features = ["crossterm"] }
 lzma-rs = "=0.3.0"
-prost = "=0.14.4"
+prost = "=0.14.6"
 reqwest = { version = "=0.13.5", default-features = false, features = ["form", "json", "rustls", "stream"] }
 rustix = { version = "=1.1.6", default-features = false, features = ["fs"] }
 rustls = { version = "=0.23.46", default-features = false, features = ["aws_lc_rs", "std"] }
@@ -114,16 +115,16 @@ sqlx = {
     ],
 }
 sha2 = { version = "=0.11.1", default-features = false }
-syn = { version = "=3.0.9", default-features = false, features = ["full", "parsing", "visit"] }
+syn = { version = "=3.0.10", default-features = false, features = ["full", "parsing", "visit"] }
 tokio = { version = "=1.53.1", default-features = false, features = ["io-util", "net", "rt-multi-thread", "sync", "time"] }
 toml = { version = "=1.1.6", default-features = false, features = ["parse", "serde", "std"] }
 # With `console-subscriber`: a registry carrying only the console layer.
 tracing-subscriber = { version = "=0.3.23", default-features = false, features = ["registry", "std"] }
 tokio-rustls = { version = "=0.26.6", default-features = false, features = ["aws_lc_rs"] }
 rcgen = { version = "=0.14.10", default-features = false, features = ["crypto", "aws_lc_rs"] }
-wgpu = { version = "=30.0.1", default-features = false, features = ["std", "dx12", "wgsl"] }
+wgpu = { version = "=30.0.2", default-features = false, features = ["std", "dx12", "wgsl"] }
 winit = { version = "=0.30.13", default-features = false, features = ["rwh_06"] }
-zstd = { version = "=0.14.3", default-features = false }
+zstd = { version = "=0.14.4", default-features = false }
 
 [patch.crates-io]
 sqlx-core = { path = "vendor/sqlx-core-0.9.0" }
@@ -155,5 +156,55 @@ debug = "line-tables-only"
 # debug assertions or overflow checks for any package.
 [profile.dev.package.sha2]
 opt-level = 3
+debug-assertions = true
+overflow-checks = true
+
+# Every test qualifies the native content fixture in its own nextest process; unoptimized
+# parsing and decompression made that take 30-50 s per test. Optimize the dependencies of
+# the content qualification crates and those crates only (not every dependency: that
+# rebuilt the whole client stack cold in the unit-test shards). Workspace test code stays
+# at opt-level 0, and debug assertions and overflow checks stay on for every package.
+[profile.dev.package.serde]
+opt-level = 2
+debug-assertions = true
+overflow-checks = true
+
+[profile.dev.package.serde_json]
+opt-level = 2
+debug-assertions = true
+overflow-checks = true
+
+[profile.dev.package.zstd]
+opt-level = 2
+debug-assertions = true
+overflow-checks = true
+
+[profile.dev.package.zstd-safe]
+opt-level = 2
+debug-assertions = true
+overflow-checks = true
+
+[profile.dev.package.zstd-sys]
+opt-level = 2
+debug-assertions = true
+overflow-checks = true
+
+[profile.dev.package.lzma-rs]
+opt-level = 2
+debug-assertions = true
+overflow-checks = true
+
+[profile.dev.package.oteryn-gameplay-content]
+opt-level = 2
+debug-assertions = true
+overflow-checks = true
+
+[profile.dev.package.oteryn-world-bundle]
+opt-level = 2
+debug-assertions = true
+overflow-checks = true
+
+[profile.dev.package.oteryn-world-bundle-compiler]
+opt-level = 2
 debug-assertions = true
 overflow-checks = true

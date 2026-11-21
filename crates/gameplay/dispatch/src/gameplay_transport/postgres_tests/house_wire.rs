@@ -388,7 +388,7 @@ fn scenario() -> TestResult {
         let mut position = Vec::new();
         scalar(&mut position, 1, 6);
         scalar(&mut position, 2, 0);
-        scalar(&mut position, 3, 13);
+        scalar(&mut position, 3, 14);
         let mut door = Vec::new();
         bytes(&mut door, 1, &position);
         scalar(&mut door, 2, 4);
@@ -408,7 +408,7 @@ fn scenario() -> TestResult {
                 wire::HouseAclSelector::Door {
                     x: 6,
                     y: 0,
-                    floor: -7,
+                    floor: 7,
                 },
                 vec![id(41)],
             ),

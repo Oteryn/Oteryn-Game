@@ -190,6 +190,8 @@ fn apply_due_under_current_owners(
     book: &SpellBook,
     casters: &[QualifiedCaster],
     now: oteryn_simulation_determinism::SemanticTimeMicros,
+    content: &crate::content::native_gameplay::NativeGameplayState,
+    catalogue: &crate::content::charm_source::CanonicalCharmCatalogue,
 ) -> Result<FireReport, Error> {
     // Both physical/state locks stayed held across every fenced SQL owner read.
     // Each due callback independently compares the exact active source again.
@@ -227,10 +229,28 @@ fn apply_due_under_current_owners(
             outbox.release_definitely_uncommitted(&resolved.presentation);
         }
     }
-    let report = states.drain_spell_timers(
+    let stamp = runtime.issue_owner_work().map_err(|_| Error::StaleOwner)?;
+    let Some(mut timer) = states.spell_timers.take() else {
+        return Ok(FireReport::default());
+    };
+    struct Clock(crate::foundation::owner_timer::SemanticTimeMicros);
+    impl crate::foundation::owner_timer::OwnerClock for Clock {
+        fn now(&self) -> crate::foundation::owner_timer::SemanticTimeMicros {
+            self.0
+        }
+    }
+    let mut context = super::owner_commit::DueCharmCommit {
+        states,
+        content,
+        catalogue,
+    };
+    let report = timer.fire_one_due_current_with_context(
         runtime,
-        now,
-        |runtime, states, payload, occurrence, due, _| {
+        &Clock(crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get())),
+        stamp,
+        &mut context,
+        |runtime, context, payload, occurrence, due, _| {
+            let states = &*context.states;
             let binding = payload.binding();
             let current = casters
                 .iter()
@@ -301,20 +321,15 @@ fn apply_due_under_current_owners(
                 deferred: None,
             })
         },
-    )?;
+    );
+    states.spell_timers = Some(timer);
+    let report = report?;
     for receipt in &report.receipts {
         if let Some(resolved) = strikes
             .iter()
             .find(|s| s.binding.command == receipt.occurrence.command)
             .and_then(|s| s.resolved.as_ref())
         {
-            crate::gameplay_transport::task_board::bounty_talisman::apply_timer_leech(
-                runtime,
-                states,
-                &resolved.batch,
-                &receipt.batch,
-                &resolved.bounty_leech,
-            );
             states
                 .presentations
                 .as_mut()
@@ -329,13 +344,6 @@ fn apply_due_under_current_owners(
             })
             .and_then(|saved| saved.resolved.as_ref())
         {
-            crate::gameplay_transport::task_board::bounty_talisman::apply_timer_leech(
-                runtime,
-                states,
-                &resolved.batch,
-                &receipt.batch,
-                &resolved.bounty_leech,
-            );
             states
                 .presentations
                 .as_mut()
@@ -436,7 +444,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(FireReport::default());
         };
         let permit = &permit;
+        let health_names = self
+            .read_native_health_names(permit)
+            .await
+            .map_err(|_| Error::StaleOwner)?;
         let mut runtime = self.runtime.lock().await;
+        let native_health_observations = self
+            .seal_native_health_observations(&runtime, health_names)
+            .map_err(|_| Error::StaleOwner)?;
         let mut states = self.states.spell_states.lock().await;
         let Some(timer) = states.spell_timers.as_ref() else {
             return Ok(FireReport::default());
@@ -615,6 +630,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &current.fence,
                     &casters,
                     access.as_ref(),
+                    &native_health_observations,
                 )
                 .await?;
             self.record_spell_kills(
@@ -678,6 +694,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &casters,
                 room.ok_or(Error::StaleOwner)?,
                 &mut accepted,
+                &native_health_observations,
             );
             pass.run_with_context(&mut context, move |holder, deadline, ctx| {
                 Box::pin(async move {
@@ -694,6 +711,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         casters,
                         room,
                         accepted,
+                        native_health_observations,
                     ) = ctx;
                     let active = owner
                         .active_generation
@@ -754,7 +772,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             saved.binding.command.game_session_id(),
                         )
                         .ok_or(DurabilityError::Unavailable)?;
-                    let owned =
+                    let mut owned =
                         super::super::spell_access_facts::load_owned_cast_facts_in_transaction(
                             &mut tx,
                             owner.root,
@@ -771,8 +789,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         )
                         .await
                         .map_err(|_| DurabilityError::Unavailable)?;
+                    owned.set_native_health_observations(native_health_observations.to_vec());
                     if saved.resolved.is_none() {
                         let phase_now = owner.owner_now();
+                        let leech_rates = super::super::item_spell_augments::leech(
+                            &owned, &saved.binding.source, state, phase_now,
+                        );
                         let requests = super::prepare_ordinary_due_presentations(
                             &mut tx,
                             authority,
@@ -880,6 +902,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             room,
                             objects,
                             content,
+                            owner.imported_charms,
                             &owned,
                             &saved.binding.source,
                             saved.target,
@@ -896,10 +919,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         }
                         effect.sub_ordinal = saved.sub_ordinal;
                         batch.effects = vec![effect];
+                        let mut leech = super::super::item_spell_augments::leech_projection::capture(
+                            runtime, states, owner.imported_charms, &batch,
+                            leech_rates,
+                            Some(&magnitude), &stream, decision,
+                        ).map_err(|_| DurabilityError::Unavailable)?;
+                        let candidates = super::native_combat_cast::due_candidates(
+                            &mut tx, authority, runtime, room, objects, &batch,
+                        ).await.map_err(|_| DurabilityError::Unavailable)?;
                         states.apply_prey_spell_damage(runtime, &mut batch);
                         let talisman = crate::durability::task_board::read_talisman_in_item_transaction(&mut tx, **fence).await?;
-                        let bounty_leech = crate::gameplay_transport::task_board::bounty_talisman::apply_spell_bonuses(
-                            runtime, &mut batch, &talisman, &stream, decision,
+                        let bounty_leech = crate::gameplay_transport::task_board::bounty_talisman::apply_spell_bonuses_with_leech(
+                            runtime, &mut batch, &talisman, &stream, decision, &mut leech,
                         ).ok_or(DurabilityError::Unavailable)?;
                         let presentation = states
                             .presentations
@@ -921,6 +952,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .hold_prepared_before_sql(runtime, &presentation, &batch)
                             .map_err(|_| DurabilityError::Unavailable)?;
                         let resolved = crate::spell::ordinary_timer::ResolvedOrdinaryCombat {
+                            augments: crate::spell::delayed_execution::DueSpellAugments {
+                                leech, candidates, talisman:talisman.clone(), children:Default::default(),
+                            },
                             batch,
                             bounty_leech,
                             presentation: std::sync::Arc::new(presentation),
@@ -979,6 +1013,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             owner.spells,
                             casters,
                             owner.owner_now(),
+                            content,
+                            owner.imported_charms,
                         )
                         .map_err(|_| DurabilityError::Unavailable)?,
                     );
@@ -1006,6 +1042,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.spells,
             &casters,
             self.owner_now(),
+            self.active_generation
+                .and_then(|active| active.native_gameplay())
+                .ok_or(Error::StaleOwner)?,
+            self.imported_charms,
         )?;
         self.record_spell_kills(
             &mut runtime,

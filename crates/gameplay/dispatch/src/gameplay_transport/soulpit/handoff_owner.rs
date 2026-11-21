@@ -153,9 +153,32 @@ impl NativeSoulpitHandoff {
                 }
             }
             if bindings.len() < 15 {
+                // A completed traversal must revisit its rooms at their next
+                // deadline, rather than spend that turn on an empty tail page.
+                *admission
+                    .activity_runtimes
+                    .soulpit_after
+                    .lock()
+                    .map_err(|_| ())? = None;
                 break;
             }
             after = bindings.last().map(|binding| binding.handoff_id);
+        }
+        for registered in admission.activity_runtimes.activity_owners()? {
+            if registered.template.as_ref().is_none_or(|template| {
+                template.key != crate::content::soulpit_activity::SOULPIT_TEMPLATE_KEY
+                    || template.revision
+                        != crate::content::soulpit_activity::SOULPIT_TEMPLATE_REVISION
+            }) {
+                continue;
+            }
+            match super::owner_runtime::cleanup_terminal(admission, &registered).await {
+                Ok(()) => {}
+                Err(super::runtime::SoulpitRuntimeError::AdapterUnavailable) => {
+                    next = read_retry_deadline(now_micros, next);
+                }
+                Err(_) => return Err(()),
+            }
         }
         Ok(next)
     }
@@ -524,6 +547,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         let handoff_id = *SecureIdentifiers.game_session_id().ok_or(())?.as_bytes();
+        #[cfg(test)]
+        let handoff_id = super::SOULPIT_TEST_HANDOFF_ID
+            .try_with(|id| *id)
+            .unwrap_or(handoff_id);
         let entry = SoulpitEntryRequest {
             handoff_id,
             command: CommandRef::new(

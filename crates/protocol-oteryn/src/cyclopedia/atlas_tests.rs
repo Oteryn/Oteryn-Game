@@ -21,7 +21,7 @@ fn atlas_pages_bound_geometry_and_reject_truncation_and_duplicate_areas() {
             x: 20,
             end: 24,
             y: 10,
-            floor: -7,
+            floor: 7,
         }],
     };
     let bytes = encode(&page).expect("valid atlas");

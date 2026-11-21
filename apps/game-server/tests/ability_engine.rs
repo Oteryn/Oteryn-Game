@@ -87,11 +87,27 @@ mod foundation {
     }
     pub(crate) struct ChannelRuntimeV1;
     impl ChannelRuntimeV1 {
+        pub(crate) fn encounter_source_damage(
+            &self,
+            _: ExactActorRef,
+            _: u64,
+            _: u8,
+        ) -> Result<(u64, bool), CarrierError> {
+            Err(CarrierError::Invalid)
+        }
         pub(crate) const fn content_pin(&self) -> ContentPin {
             ContentPin
         }
         pub(crate) fn contains_live_creature(&self, _: ExactActorRef) -> bool {
             false
+        }
+        // This standalone shim has neither live nor retained creature slots.
+        // Keep Parry-death replay lookup fail-closed, like every other owner read.
+        pub(crate) fn companion_snapshot_including_dead(
+            &self,
+            _: ExactActorRef,
+        ) -> Result<(), CarrierError> {
+            Err(CarrierError::Invalid)
         }
         pub(crate) fn read_actor_position(
             &self,

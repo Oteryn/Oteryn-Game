@@ -17,7 +17,7 @@ pub(super) async fn exercise(
     let position = protocol::item_view::WorldTilePosition {
         x: 7,
         y: 0,
-        floor: -7,
+        floor: 7,
     };
     // PlayLink::browse_field_request -> browse_field::command forwards command 440;
     // container events use the session's decode_container_views_for(..., true).

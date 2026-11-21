@@ -12,6 +12,7 @@ use tokio::sync::Mutex;
 #[derive(Default)]
 pub struct ChannelSessionStates {
     pub(super) admission_queue: std::sync::Mutex<super::admission_queue::AdmissionWaitQueue>,
+    /// Independent mutable Map facts for one source-qualified Instance.
     pub(super) analyser: std::sync::Arc<super::analyser::AnalyserStreams>,
     /// APP-3: the appearance-change command state of each session, forgotten with the session.
     pub appearance_commands: appearance_change::AppearanceCommands,
@@ -81,6 +82,8 @@ pub struct ChannelSessionStates {
             super::weapon_proficiency::WeaponProficiencyDispatch,
         >,
     >,
+    /// Frozen at listener startup; activity scopes inherit the same enforcement policy.
+    pub(super) platform_enforcement_enabled: bool,
     /// PREM-1b (D476): the sessions holding each account's Premium registration, so a late
     /// release of one session never cancels another's pulls.
     pub premium_sessions: std::sync::Mutex<PremiumSessions>,
@@ -192,9 +195,11 @@ impl ChannelSessionStates {
     /// connection recipients, and its existing node shutdown/input gate.
     pub(super) fn for_activity(&self) -> Self {
         Self {
+            platform_enforcement_enabled: self.platform_enforcement_enabled,
             security_revocation_stream_enabled: self.security_revocation_stream_enabled,
             casts: self.casts.clone(),
             analyser: std::sync::Arc::clone(&self.analyser),
+            boss_activity_handoff: self.boss_activity_handoff.clone(),
             gameplay_idle_policy: self.gameplay_idle_policy,
             input_gate: std::sync::Arc::clone(&self.input_gate),
             server_messages: std::sync::Arc::clone(&self.server_messages),
@@ -311,5 +316,23 @@ mod revocation_policy_tests {
             ..Default::default()
         };
         assert!(states.for_activity().security_revocation_stream_enabled);
+    }
+}
+
+#[cfg(test)]
+mod enforcement_policy_tests {
+    use super::ChannelSessionStates;
+    #[test]
+    fn enforcement_flag_defaults_off_and_survives_activity_scope() {
+        assert!(
+            !ChannelSessionStates::default()
+                .for_activity()
+                .platform_enforcement_enabled
+        );
+        let states = ChannelSessionStates {
+            platform_enforcement_enabled: true,
+            ..Default::default()
+        };
+        assert!(states.for_activity().platform_enforcement_enabled);
     }
 }

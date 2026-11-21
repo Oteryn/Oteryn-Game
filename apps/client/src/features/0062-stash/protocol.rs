@@ -29,3 +29,13 @@ impl Mailbox {
         };
     }
 }
+
+#[cfg(all(test, feature = "bevy-shell"))]
+impl Outbox {
+    pub(crate) fn bevy_stash_initialize(&self, selected: bool) {
+        self.stash_initialize(selected);
+    }
+    pub(crate) fn bevy_stash_result(&self, response: &StashResponse) {
+        self.stash_result(response);
+    }
+}

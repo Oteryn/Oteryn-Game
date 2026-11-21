@@ -19,6 +19,9 @@ pub(super) fn canonical_boss_key(key: &str) -> Option<String> {
         .strip_prefix("oteryn:boss.")
         .map(|suffix| format!("oteryn:creature.{suffix}"));
     if let Some(encounter) = Encounter::from_boss_key(creature.as_deref().unwrap_or(key)) {
+        if let Some(canonical) = super::soul_war_entry::is_soul_war(encounter.boss_key()) {
+            return Some(canonical.into());
+        }
         return encounter
             .boss_key()
             .strip_prefix("oteryn:creature.")
@@ -140,6 +143,9 @@ mod tests {
             "oteryn:creature.bakragore",
         ] {
             let canonical = super::canonical_boss_key(key).ok_or("canonical boss")?;
+            if key.contains("megalomania") {
+                assert_eq!(canonical, "oteryn:boss.goshnar_s_megalomania");
+            }
             assert_eq!(
                 super::encounter_for_boss_key(&canonical),
                 super::Encounter::from_boss_key(key),

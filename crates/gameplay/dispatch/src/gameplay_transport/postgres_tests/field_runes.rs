@@ -1,7 +1,7 @@
 //! FIELD-RUNES-1: real USE -> authored geometry -> atomic charge/field writer.
-use super::death_ml_loss_composed::{current_fence, production_generation_with_pin};
+use super::death_ml_loss_composed_fixtures::{current_fence, production_generation_with_pin};
 use super::fixture::{Harness, debug, id, join_two, run};
-use super::item_look::{large_stack, read_frame, seed_main_backpack};
+use super::item_look_fixtures::{large_stack, read_frame, seed_main_backpack};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::character_build::{
     BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState, convert_vocation,
@@ -793,7 +793,7 @@ async fn field_scenario_inner(
     prepare_current_session(&harness).await?;
     if player_field || owner_loss {
         harness.seed_pvp_target().await?;
-        super::appearance_change_postgres::observer_visibility_tests::admit(&harness).await?;
+        super::appearance_change_postgres_fixtures::observer_visibility_tests::admit(&harness).await?;
     }
     let seal = harness.recovery.seal_current().map_err(debug)?;
     let authority = harness
@@ -883,6 +883,13 @@ async fn field_scenario_inner(
     owner.active_generation = Some(active);
     owner.rooms = SeamRooms::new(None, Some(&room));
     owner.movement_cells = (&cells).into();
+    // Client intents use the same sealed wire frame as the published map;
+    // runtime positions above remain physical +z, while Bundle wire uses -z.
+    let wire_frame = {
+        let runtime = owner.runtime.lock().await;
+        owner.wire_position_frame(&runtime).ok_or("field wire frame")?
+    };
+    let wire_start = wire_frame.project(start).ok_or("project field caster")?;
     owner.required_capabilities = BoundRequiredCapabilities::for_channel_boot(
         &[11, 30],
         crate::foundation::RuntimeScopeRefV1::channel(world, dependencies.admitted.channel_id),
@@ -959,7 +966,7 @@ async fn field_scenario_inner(
     sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)")
         .bind(id(41).as_slice()).execute(&harness.pool).await?;
     let target = if player_field || owner_loss {
-        let target = super::appearance_change_postgres::observer_visibility_tests::initialize(
+        let target = super::appearance_change_postgres_fixtures::observer_visibility_tests::initialize(
             &dependencies,
             &owner,
         )
@@ -1194,7 +1201,7 @@ async fn field_scenario_inner(
             use_with_position: Some(SpellTargetPosition {
                 x: start.x + 1,
                 y: start.y,
-                floor: start.floor,
+                floor: wire_start.floor,
             }),
         };
         let payload = encode_item_use_intent(&intent).map_err(debug)?;
@@ -1267,7 +1274,7 @@ async fn field_scenario_inner(
             assert!(
                 delta.tiles.iter().any(|tile| tile.position.x == start.x + 1
                     && tile.position.y == start.y
-                    && tile.position.floor == -7
+                    && tile.position.floor == start.floor
                     && tile.items.len() > 1),
                 "appearance reaches the persistent real map consumer"
             );
@@ -1357,14 +1364,19 @@ async fn field_scenario_inner(
             let removed = probes.iter().any(|(_, _, accepted)| *accepted);
             for (offset, (dx, floor, accepted)) in probes.into_iter().enumerate() {
                 let command_id = first_command + u64::try_from(offset)?;
+                let wire_target = wire_frame.project(MovementLocalPosition {
+                    x: start.x + dx,
+                    y: start.y,
+                    floor,
+                }).ok_or("project Destroy Field target")?;
                 let destroy_intent = UseIntent {
                     target: UseTarget::Item(destroy.ok_or("Destroy Field handle")?),
                     use_with: None,
                     use_with_map_item: None,
                     use_with_position: Some(SpellTargetPosition {
-                        x: start.x + dx,
-                        y: start.y,
-                        floor,
+                        x: wire_target.x,
+                        y: wire_target.y,
+                        floor: wire_target.floor,
                     }),
                 };
                 let command = test_command(
@@ -1428,7 +1440,7 @@ async fn field_scenario_inner(
                     use_with_position: Some(SpellTargetPosition {
                         x: start.x + 2,
                         y: start.y,
-                        floor: start.floor,
+                        floor: wire_start.floor,
                     }),
                     ..intent.clone()
                 };
@@ -2579,8 +2591,8 @@ async fn projected_field_count(
             if item.definition == oteryn_protocol_oteryn::world_map::MapDefinition::Item(reference)
             {
                 assert_eq!(
-                    tile.position.floor, -7,
-                    "runtime floor converts to the bundle floor once"
+                    tile.position.floor, 7,
+                    "the map snapshot publishes the Global floor"
                 );
                 count += 1;
             }
@@ -2887,7 +2899,11 @@ async fn drive_player_field(
                 .spell_lane_permit()
                 .await
                 .ok_or("contended field lane")?;
-            let pass = owner.root.try_issue_semantic_pass().map_err(debug)?;
+            let pass = owner
+                .root
+                .issue_ready_semantic_pass()
+                .await
+                .map_err(debug)?;
             {
                 let step =
                     owner.ordinary_paced_step(target, session, StepDirection::West, None, None);

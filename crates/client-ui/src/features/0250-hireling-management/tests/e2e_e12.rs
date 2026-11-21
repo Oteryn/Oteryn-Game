@@ -48,7 +48,7 @@ fn capture() -> Result<(Vec<u8>, Vec<u8>, String), Error> {
     };
     Ok((
         wire::Reply::State(vec![entry])
-            .encode()
+            .encode_wire()
             .ok_or("encode list")?,
         wire::Reply::Refused(wire::Refusal::OutfitNotOwned)
             .encode()

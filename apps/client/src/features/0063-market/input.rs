@@ -2,6 +2,61 @@ use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::market::{Intent, request};
 impl PlayLink {
+    /// Confirms one currently displayed sell offer under the mailbox's single owner lock.
+    #[cfg(feature = "bevy-shell")]
+    pub(crate) fn market_buy_bound(
+        &self,
+        expected: &oteryn_client_ui::market::MarketPanel,
+        offer: &oteryn_client_runtime::market::market::MarketRow,
+        amount: u32,
+    ) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        if mailbox.market_shutdown
+            || mailbox.depot_shutdown
+            || mailbox.server_modal.is_active()
+            || mailbox.world_input_blocked()
+            || self.commands.is_closed()
+            || mailbox.market != *expected
+            || !expected.open
+            || !expected.selected
+            || expected.view != oteryn_client_ui::market::MarketView::Browse
+            || expected.pending.is_some()
+            || expected.details.pending.is_some()
+            || offer.definition != expected.definition
+            || offer.side != 2
+            || offer.state != 1
+            || offer.price == 0
+            || !expected.rows.contains(offer)
+            || !(1..=64_000).contains(&amount)
+            || amount > offer.amount
+            || offer
+                .price
+                .checked_mul(u64::from(amount))
+                .is_none_or(|total| total > 999_999_999_999)
+        {
+            return false;
+        }
+        let mut prepared = mailbox.market.clone();
+        prepared.amount = amount;
+        prepared.selected_offer = Some(offer.offer);
+        let Some(command) = request(&mut prepared, Intent::AcceptOffer) else {
+            return false;
+        };
+        if self.commands.send(PlayCommand::Market(command)).is_err() {
+            mailbox.market.feedback = Some(tr!("The session has ended"));
+            return false;
+        }
+        mailbox.market = prepared;
+        true
+    }
+
+    pub fn market_set_open(&self, open: bool) {
+        let mut mailbox = lock(&self.mailbox);
+        if !mailbox.market_shutdown {
+            mailbox.market.open = open;
+        }
+    }
+
     pub fn market_filter_side(&self, side: u8) -> bool {
         if side > 2 {
             return false;
@@ -93,9 +148,10 @@ pub(in crate::play) fn open_from_depot(
         enqueue(&mut m, commands, Intent::Refresh);
     }
     #[cfg(windows)]
-    super::view::open_window(mailbox, commands);
-    #[cfg(not(windows))]
-    {
+    if !lock(mailbox).shared_frontend {
+        super::view::open_window(mailbox, commands);
+    }
+    if cfg!(not(windows)) || lock(mailbox).shared_frontend {
         lock(mailbox).market.open = true;
     }
 }

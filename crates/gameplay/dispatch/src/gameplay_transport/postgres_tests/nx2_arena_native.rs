@@ -40,7 +40,7 @@ fn nx2_arena_status_postgres_wire_receipt_and_generation_fence() -> TestResult {
             ).ok_or("arena capability")?;
             let payload = wire::encode_match_request(ArenaAction::Status).map_err(debug)?;
             let command_id = admitted.continuity.next_command_id;
-            let (status, bytes) = super::guild_wire::exchange(&owner, &mut admitted,
+            let (status, bytes) = super::guild_wire_fixtures::exchange(&owner, &mut admitted,
                 command_id, wire::COMMAND_TYPE_ARENA_MATCH, &payload).await?;
             assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
             let decoded = wire::decode_match_result(&bytes).map_err(debug)?;
@@ -59,7 +59,7 @@ fn nx2_arena_status_postgres_wire_receipt_and_generation_fence() -> TestResult {
                 let intent = oteryn_dev_client::client_ui::arena::Intent::Action(ArenaAction::Drome(action));
                 let request = oteryn_dev_client::client_ui::arena::request(&mut panel, intent).ok_or("native Drome request")?;
                 let id = admitted.continuity.next_command_id;
-                let (status, payload) = super::guild_wire::exchange(&owner, &mut admitted,
+                let (status, payload) = super::guild_wire_fixtures::exchange(&owner, &mut admitted,
                     id, request.kind, &request.payload).await?;
                 assert!(oteryn_dev_client::client_ui::arena::apply_result(&mut panel,
                     &oteryn_dev_client::client_runtime::raw_feature::GatedCommandResult {

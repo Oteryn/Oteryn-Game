@@ -91,15 +91,15 @@ pub(in crate::gameplay_transport) fn damage(amount: i64, bonus: u16) -> i64 {
     i64::try_from(result).unwrap_or(i64::MAX)
 }
 
-/// Read the current monster race from the same staged batch's actor generation.
-/// The returned leech rates are retained with the cast and applied to real damage
-/// by the existing vitals owner, including its AoE reduction and replay guard.
-pub(in crate::gameplay_transport) fn apply_spell_bonuses(
+/// Scale retained leech damage beside its hit, excluding only the separate Prey
+/// stage. Existing Talisman/elite policy and deterministic draws stay unchanged.
+pub(in crate::gameplay_transport) fn apply_spell_bonuses_with_leech(
     runtime: &ChannelRuntimeV1,
     batch: &mut OwnerCombatBatch,
     snapshot: &BountyTalismanSnapshot,
     root: &GameplayDecisionRoot,
     occurrence: DecisionOccurrenceId,
+    leech_inputs: &mut [crate::gameplay_transport::item_spell_augments::leech_projection::Target],
 ) -> Option<Vec<SpellLeech>> {
     let mut leech = Vec::new();
     for effect in &mut batch.effects {
@@ -118,76 +118,24 @@ pub(in crate::gameplay_transport) fn apply_spell_bonuses(
             occurrence,
             effect.sub_ordinal,
         )?;
+        let elite = snapshot.elite(&creature.state.policy.definition_key);
         *magnitude = damage(*magnitude, extra_damage);
-        if snapshot.elite(&creature.state.policy.definition_key) {
+        if elite {
             *magnitude /= 2;
+        }
+        if let Some(input) = leech_inputs
+            .iter_mut()
+            .find(|input| input.target == effect.target && input.ordinal == effect.sub_ordinal)
+            && let Some(basis) = input.damage.as_mut()
+        {
+            let scaled = damage(i64::from(*basis), extra_damage);
+            *basis = u32::try_from(if elite { scaled / 2 } else { scaled }).unwrap_or(u32::MAX);
         }
         if extra_life > 0 {
             leech.push((effect.target, effect.sub_ordinal, extra_life));
         }
     }
     Some(leech)
-}
-
-/// Canary game.cpp:9058-9060: round the combined life skill, with the same AoE
-/// factor as the ordinary owner, bounded by the health the target actually lost.
-fn life_amount(real: u32, skill: u16, affected: usize) -> u32 {
-    if affected == 0 {
-        return 0;
-    }
-    let targets = affected as u128;
-    let denominator = 100_000 * targets;
-    let numerator = u128::from(real) * u128::from(skill) * (targets + 9);
-    u32::try_from(((numerator + denominator / 2) / denominator).min(u128::from(real)))
-        .unwrap_or(real)
-}
-
-/// The timer owner has committed physical HP while retaining all Channel guards.
-/// Its actual applied receipt is the replay fence for this one vitals successor.
-pub(in crate::gameplay_transport) fn apply_timer_leech(
-    runtime: &ChannelRuntimeV1,
-    states: &mut crate::gameplay_transport::actor_spell::ChannelSpellStates,
-    batch: &OwnerCombatBatch,
-    receipt: &crate::foundation::runtime_actor_spell_types::CombatBatchReceipt,
-    bounty: &[SpellLeech],
-) {
-    if !receipt.applied || bounty.is_empty() {
-        return;
-    }
-    let session = batch.command.game_session_id();
-    let Some(before) = states.get(runtime, batch.caster, session) else {
-        return;
-    };
-    let ordinary = before.equipped_offence().life_leech;
-    let affected = batch
-        .effects
-        .iter()
-        .filter(|effect| damage_effect(&effect.change))
-        .count();
-    let gain = bounty
-        .iter()
-        .filter_map(|(target, ordinal, bonus)| {
-            let health = receipt
-                .effects
-                .iter()
-                .find(|effect| effect.target == *target && effect.sub_ordinal == *ordinal)?
-                .health?;
-            if !health.applied {
-                return None;
-            }
-            let real = u32::try_from(
-                health
-                    .health_before
-                    .saturating_sub(health.health_after.max(0))
-                    .max(0),
-            )
-            .ok()?;
-            Some(life_amount(real, ordinary.saturating_add(*bonus), affected))
-        })
-        .fold(0_u32, u32::saturating_add);
-    if let Some(next) = before.after_leech(gain, 0) {
-        states.commit(runtime, batch.caster, session, next);
-    }
 }
 
 impl crate::gameplay_transport::actor_spell::ChannelSpellStates {
@@ -310,11 +258,12 @@ mod tests {
     }
 
     #[test]
-    fn talisman_life_uses_real_damage_combined_skill_rounding_and_aoe_factor() {
+    fn talisman_life_uses_selected_ceiling_rule_combined_skill_and_aoe_factor() {
+        use oteryn_gameplay_combat_rules::resolution::equipped_offence::leech_amount_for_targets as life_amount;
         assert_eq!(life_amount(100, 300, 1), 3);
         assert_eq!(life_amount(100, 300, 2), 2);
-        assert_eq!(life_amount(1, 300, 1), 0);
-        assert_eq!(life_amount(100, 5300, 2), 29);
+        assert_eq!(life_amount(1, 300, 1), 1);
+        assert_eq!(life_amount(100, 5300, 2), 30);
         assert_eq!(life_amount(17, u16::MAX, 1), 17);
         assert_eq!(life_amount(0, 5000, 1), 0);
         assert_eq!(life_amount(100, 5000, 0), 0);
@@ -369,7 +318,7 @@ mod tests {
     }
 
     #[test]
-    fn talisman_timer_batch_uses_actual_overkill_aoe_and_replay_receipts() {
+    fn talisman_joined_batch_uses_pre_overkill_aoe_and_replay_receipts() {
         timer_batch_case(false);
     }
 
@@ -389,6 +338,8 @@ mod tests {
             ChannelSpellStates,
             tests::{FACTS, runtime_with_capacity, wound},
         };
+        use crate::gameplay_transport::actor_spell::{commit_owner_batch, stage_player_batch};
+        use crate::gameplay_transport::item_spell_augments::leech_projection;
         use oteryn_gameplay_content::content::creature_policy::{
             CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureFlags,
         };
@@ -565,11 +516,39 @@ mod tests {
                         healing: 3,
                     },
                 },
+                // A neutral player effect stages a genuine player-vitals successor;
+                // the retained Leech then joins that same physical/player commit.
+                OwnerCombatEffect {
+                    target: caster,
+                    sub_ordinal: 2,
+                    change: OwnerCombatChange::Heal {
+                        target_atom: crate::spell::combat_execution::actor_atom(caster),
+                        magnitude: 0,
+                    },
+                },
             ],
             deferred: None,
         };
-        let leech = apply_spell_bonuses(&runtime, &mut batch, &snapshot, &root, decision)
-            .expect("qualified effects");
+        let mut inputs = leech_projection::capture(
+            &runtime,
+            &states,
+            &crate::content::charm_source::CanonicalCharmCatalogue::embedded().expect("catalogue"),
+            &batch,
+            (300, 0),
+            None,
+            &root,
+            decision,
+        )
+        .expect("source Leech before Prey and HP clipping");
+        let leech = apply_spell_bonuses_with_leech(
+            &runtime,
+            &mut batch,
+            &snapshot,
+            &root,
+            decision,
+            &mut inputs,
+        )
+        .expect("qualified effects");
         assert!(matches!(
             batch.effects[0].change,
             OwnerCombatChange::Damage { magnitude, .. } if magnitude == if elite { 18 } else { 37 }
@@ -590,7 +569,22 @@ mod tests {
             [0; 4]
         );
         let staged = runtime.stage_spell_batch(&batch).expect("stage");
-        let receipt = runtime.commit_spell_batch(staged).expect("commit");
+        let mut player =
+            stage_player_batch(&runtime, &states, &batch, None).expect("matching player successor");
+        player
+            .stage_item_spell_leech(&runtime, &staged, &inputs, &leech)
+            .expect("retained Leech joined before commit");
+        assert_eq!(
+            states
+                .get(&runtime, caster, session)
+                .expect("player")
+                .health,
+            10
+        );
+        assert_eq!(runtime.live_creature_health(first), Some(20));
+        assert_eq!(runtime.live_creature_health(second), Some(10));
+        let receipt = commit_owner_batch(&mut runtime, &mut states, staged, Some(player))
+            .expect("atomic physical and player commit");
         assert!(receipt.applied);
         let first_health = receipt.effects[0].health.expect("first HP receipt");
         assert_eq!(
@@ -601,26 +595,33 @@ mod tests {
             runtime.live_creature_health(second),
             Some(if elite { 11 } else { 8 })
         );
-        apply_timer_leech(&runtime, &mut states, &batch, &receipt, &leech);
-        // round(20 actual HP * 53% * (0.1*2+0.9)/2) = 6. Planned damage or
-        // omission of the AoE factor would each incorrectly restore 11 HP.
+        // The selected Global profile uses pre-overkill source damage and ceilings:
+        // non-elite: ceil(37 * 53% * 0.55) + ceil(5 * 3% * 0.55) = 12;
+        // elite: ceil(18 * 53% * 0.55) + ceil(2 * 3% * 0.55) = 7.
+        // Ordinary Leech remains on the non-proccing target, and DamageWithHealing
+        // changes its physical HP without changing the retained damage basis.
         assert_eq!(
             states
                 .get(&runtime, caster, session)
                 .expect("player")
                 .health,
-            if elite { 15 } else { 16 }
+            if elite { 17 } else { 22 }
         );
         let staged = runtime.stage_spell_batch(&batch).expect("stage replay");
-        let replay = runtime.commit_spell_batch(staged).expect("commit replay");
+        let before_replay = states
+            .get(&runtime, caster, session)
+            .expect("player")
+            .clone();
+        let replay = commit_owner_batch(&mut runtime, &mut states, staged, None)
+            .expect("joined receipt replay");
         assert!(!replay.applied);
-        apply_timer_leech(&runtime, &mut states, &batch, &replay, &leech);
+        assert_eq!(states.get(&runtime, caster, session), Some(&before_replay));
         assert_eq!(
             states
                 .get(&runtime, caster, session)
                 .expect("player")
                 .health,
-            if elite { 15 } else { 16 }
+            if elite { 17 } else { 22 }
         );
         assert_eq!(
             runtime.live_creature_health(second),

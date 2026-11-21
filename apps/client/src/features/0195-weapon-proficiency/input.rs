@@ -43,9 +43,10 @@ impl PlayLink {
             p.advancements.retain(|definition| *definition != weapon);
         }
         #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            super::view::open_window(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).weapon_proficiency.open = true;
         }
         self.weapon_proficiency_request(Intent::State);
@@ -74,12 +75,88 @@ impl PlayLink {
             return false;
         }
         #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
-            lock(&self.mailbox).weapon_proficiency.open = true;
+        if !self.uses_shared_frontend() {
+            super::view::open_window(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
+            let mut mailbox = lock(&self.mailbox);
+            let panel = &mut mailbox.weapon_proficiency;
+            panel.open = true;
+            // Restart the catalogue walk without invalidating an in-flight page reply.
+            if !panel.pending {
+                panel.catalogue_offset = 0;
+            }
         }
         self.weapon_proficiency_request(Intent::Catalogue);
+        true
+    }
+}
+
+impl PlayLink {
+    /// Recheck the displayed model under its owner lock before selecting a perk.
+    pub fn weapon_proficiency_action_bound(
+        &self,
+        expected: &oteryn_client_ui::weapon_proficiency::WeaponProficiencyPanel,
+        action: super::view::ProficiencyAction,
+    ) -> bool {
+        use super::view::ProficiencyAction;
+        let mut mailbox = lock(&self.mailbox);
+        let p = &mut mailbox.weapon_proficiency;
+        if !p.open || p != expected {
+            return false;
+        }
+        if matches!(action, ProficiencyAction::Close) {
+            p.open = false;
+            return true;
+        }
+        if !p.selected || p.pending {
+            return false;
+        }
+        let intent = match action {
+            ProficiencyAction::Close => return false,
+            ProficiencyAction::Refresh => {
+                p.catalogue_offset = 0;
+                Intent::Catalogue
+            }
+            ProficiencyAction::Weapon(row) => {
+                if !p.select_weapon(row) {
+                    return false;
+                }
+                if !p.state_selected {
+                    return true;
+                }
+                Intent::State
+            }
+            ProficiencyAction::Perk(level, perk) => {
+                let Some(entry) = p.weapon_entry() else {
+                    return false;
+                };
+                let Some(data) = entry.levels.get(level) else {
+                    return false;
+                };
+                let (Ok(level_index), Ok(perk_index)) = (u8::try_from(level), u8::try_from(perk)) else {
+                    return false;
+                };
+                if entry.thresholds.get(level).is_none_or(|xp| entry.experience < *xp)
+                    || perk >= data.perks.len()
+                    || data.selected == Some(perk_index)
+                {
+                    return false;
+                }
+                p.level = level_index;
+                p.perk = perk_index;
+                p.clear_perk = false;
+                Intent::SelectPerk
+            }
+        };
+        let Some(command) = request(p, intent) else {
+            return false;
+        };
+        if self.commands.send(PlayCommand::Feature(command)).is_err() {
+            p.pending = false;
+            p.feedback = Some(tr!("The session has ended"));
+            return false;
+        }
         true
     }
 }

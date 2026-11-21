@@ -5,7 +5,7 @@ use crate::foundation::{RuntimeScopeRefV1, ScopeOwnershipGeneration};
 use crate::map::view::EntryFacts;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
-const MAX_TIMED_ENCOUNTERS: usize = 64;
+pub(super) const MAX_TIMED_ENCOUNTERS: usize = 64;
 
 pub(super) struct TimedEncounter {
     callback: Callback,
@@ -14,11 +14,42 @@ pub(super) struct TimedEncounter {
     content: [u8; 32],
     map: [u8; 32],
     scope: (RuntimeScopeRefV1, ScopeOwnershipGeneration),
+    participant: Option<(ExactActorRef, GameSessionId)>,
     spawn_at: u64,
     reset_at: u64,
     attempted_spawn: bool,
+    spawned: Vec<ExactActorRef>,
 }
 impl TimedEncounter {
+    pub(super) fn source_key(&self) -> u64 {
+        self.key
+    }
+
+    pub(super) fn contains_participant(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        map: &BundleMap,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        position: MovementLocalPosition,
+        now: u64,
+    ) -> bool {
+        now < self.reset_at
+            && self.scope == runtime.encounter_owner_scope()
+            && self.content == runtime.content_pin().server_artifact_digest()
+            && self.map == map.overlay.base().digest()
+            && self.revision == map.facts.object_revision(self.key)
+            && self
+                .participant
+                .is_none_or(|participant| participant == (actor, session))
+            && self
+                .callback
+                .effects
+                .encounter
+                .as_ref()
+                .is_some_and(|room| super::encounter::room_contains(room, position))
+    }
+
     pub(super) fn next_due_us(&self) -> u64 {
         if self.attempted_spawn {
             self.reset_at
@@ -48,9 +79,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
         };
-        let (Some(timing), Some(pair)) = (encounter.timing, callback.lever) else {
+        let Some(timing) = encounter.timing else {
             return UseDisposition::Rejected;
         };
+        let personal =
+            oteryn_gameplay_quests::quest::world_callbacks::personal_trial::admitted(callback);
+        if callback.lever.is_none() && !personal {
+            return UseDisposition::Rejected;
+        }
         let Some(native) = self
             .active_generation
             .and_then(|active| active.native_gameplay())
@@ -67,8 +103,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .get(runtime, actor, session)
                 .is_none_or(|state| state.character_facts().level < encounter.minimum_level)
             || runtime.owner_fence().is_err()
-            || map.facts.quest_callback_replacement(key, pair[0]).is_none()
-            || map.facts.quest_callback_replacement(key, pair[1]).is_none()
+            || callback.lever.is_some_and(|pair| {
+                map.facts.quest_callback_replacement(key, pair[0]).is_none()
+                    || map.facts.quest_callback_replacement(key, pair[1]).is_none()
+            })
             || encounter
                 .monsters
                 .iter()
@@ -106,9 +144,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             content: runtime.content_pin().server_artifact_digest(),
             map: map.overlay.base().digest(),
             scope: runtime.encounter_owner_scope(),
+            participant: personal.then_some((actor, session)),
             spawn_at,
             reset_at,
             attempted_spawn: false,
+            spawned: Vec::new(),
         });
         states.owner_wake.notify_one();
         UseDisposition::Committed
@@ -153,11 +193,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 pending.remove(index);
                 continue;
             };
-            let Ok(census) = runtime.current_live_creature_candidates(4096) else {
+            let Ok(census) = runtime.current_live_creature_census() else {
                 index += 1;
                 continue;
             };
             if now >= memo.reset_at {
+                if oteryn_gameplay_quests::quest::world_callbacks::personal_trial::admitted(
+                    &memo.callback,
+                ) {
+                    // Personal trials own only their exact spawns, never unrelated room actors.
+                    super::personal_trial::cleanup(&mut runtime, &mut memo.spawned);
+                    pending.remove(index);
+                    continue;
+                }
                 let Some(pair) = memo.callback.lever else {
                     pending.remove(index);
                     continue;
@@ -231,8 +279,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 monsters.push((monster.creature.as_str(), policy.maximum_health, at));
             }
-            if admissible {
-                let _ = runtime.commit_quest_creature_spawn(&monsters);
+            if admissible && let Ok(spawned) = runtime.commit_quest_creature_spawn(&monsters) {
+                memo.spawned = spawned;
             }
             memo.attempted_spawn = true;
             index += 1;

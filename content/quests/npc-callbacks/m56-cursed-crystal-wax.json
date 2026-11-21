@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u10_70/the_cursed_crystal/oneeyedjoe",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": -1,
+      "min": -1,
+      "max": 4,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2249"
+      ],
+      "writable": true
+    }
+  ],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/cursed-crystal/protect-ears",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.one_eyed_joe",
+      "carried_item": "oteryn:item.tibia.i9106",
+      "self_target": {
+        "minimum": {
+          "x": 31938,
+          "y": 32932,
+          "floor": -10
+        },
+        "maximum": {
+          "x": 31946,
+          "y": 32940,
+          "floor": -10
+        }
+      },
+      "keywords": [
+        "protect ears"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/the_cursed_crystal/oneeyedjoe",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i9106",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You use the molten wax to plug your ears."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_MedusaOil.lua:29-43",
+        "M56: exact self-target consumes one selected wax near the crystal; ear protection is the source Oneeyedjoe=2 quest condition, not a timed combat status."
+      ]
+    }
+  ]
+}

@@ -82,7 +82,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await;
         self.load_wheel_gift(actor, game_session_id).await;
-        self.drain_monster_melee().await;
+        // Creature work belongs to the shared source-owner cycle. A connection's
+        // vitals refresh must not census or qualify the world's monster population.
         let _ = self.save_wheel_gift(actor, game_session_id, false).await;
         self.refresh_attack_weapon(actor, game_session_id).await;
         self.drain_auto_attacks().await;
@@ -181,6 +182,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 now,
             )
         };
+        let fifth_taint = self.tick_soul_war_fifth_taint(actor, game_session_id).await;
         let resting = {
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
@@ -230,6 +232,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await;
         let _ = self.tick_familiar_defenses(actor, game_session_id).await;
         let _ = self.drain_native_ai_timers().await;
-        resting.or(result).or(party_vitals)
+        resting.or(fifth_taint).or(result).or(party_vitals)
     }
 }

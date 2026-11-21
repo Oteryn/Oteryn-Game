@@ -16,7 +16,7 @@ fn fuzz_decode() {
             frame: [3; 32],
             x: rng.u64() as i32,
             y: rng.u64() as i32,
-            floor: rng.u64() as i16,
+            floor: rng.below(16) as i16,
             owner_time_us: rng.u64(),
             player_revision: rng.u64().max(1),
             invisible: rng.bool(),

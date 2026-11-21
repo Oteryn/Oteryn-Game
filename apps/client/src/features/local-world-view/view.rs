@@ -21,6 +21,24 @@ impl PlayView {
         &self.scene
     }
 
+    #[cfg(feature = "bevy-shell")]
+    pub(crate) fn prepare_item_icons<'a>(
+        &mut self,
+        items: impl Iterator<Item = &'a oteryn_session::ItemEntry>,
+    ) -> Result<(), BatchError> {
+        if self.scene.prepare_item_icons(items)? {
+            self.weather_scene();
+            self.light_scene()?;
+            self.project_presentation(std::time::Instant::now())?;
+        }
+        Ok(())
+    }
+
+    #[cfg(all(test, feature = "bevy-shell"))]
+    pub(crate) fn prime_icon_assets(&mut self, root: std::path::PathBuf) {
+        self.scene.prime_visual_assets(root);
+    }
+
     /// Draws `world` with the current own position on the start tile and the current floor on
     /// the decoded map floor.
     pub fn set_world(&mut self, world: Arc<World>) -> Result<(), BatchError> {
@@ -118,6 +136,10 @@ impl PlayView {
         if pushed.scope_changed {
             self.party_icons.clear();
             self.party_icons_refresh = None;
+            self.minimap
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .quest_marks = Default::default();
             self.inputs.clear();
             self.cursor_spell = None;
             self.in_flight = false;
@@ -131,8 +153,23 @@ impl PlayView {
             self.combat_line = None;
             self.target_walk_feedback = None;
         }
+        if let Some(scope) = &pushed.activity_scope {
+            self.apply_activity_scope(scope)?;
+        }
+        if let Some(identity) = pushed.own_identity {
+            self.set_own_identity(identity);
+        }
         if let Some(channel) = pushed.served_channel {
             oteryn_client_ui::channel_list::protocol::apply(&mut self.served_channel, channel);
+        }
+        if let Some(marks) = &pushed.personal_map_marks
+            && !self
+                .minimap
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .replace_quest_marks(marks.clone())
+        {
+            return Err(BatchError::InvalidView);
         }
         self.world_clock = pushed.world_clock.or(self.world_clock);
         self.world_weather = pushed.world_weather.or(self.world_weather);

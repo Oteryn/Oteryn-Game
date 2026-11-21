@@ -17,7 +17,7 @@ fn atlas_codec_bounds_geometry_labels_pages_and_truncated_frames() -> Result<(),
     use atlas::*;
     let mut a = Atlas {
         query: Query {
-            floor: -7,
+            floor: 7,
             x: 10,
             y: 20,
             zoom: 0,
@@ -70,7 +70,7 @@ fn atlas_codec_bounds_geometry_labels_pages_and_truncated_frames() -> Result<(),
     a.progress = saved;
     a.query.floor = -128;
     assert!(a.encode().is_err());
-    a.query.floor = -7;
+    a.query.floor = 7;
     a.markers[0].kind = 0;
     assert!(a.encode().is_err());
     a.markers[0].kind = 1;

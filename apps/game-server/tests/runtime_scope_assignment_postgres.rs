@@ -99,7 +99,9 @@ impl Database {
             oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
             "canonical target requires PostgreSQL 18.6"
         );
-        sqlx::migrate!("./migrations").run(&mut connection).await?;
+        oteryn_gameplay_durability::GAME_MIGRATOR
+            .run(&mut connection)
+            .await?;
         // Deployment administration (OPS-NODE-BOOT-01 D2): the owner grants
         // the test control login every operation on the fixture scopes.
         grant_fixture_scopes(&mut connection, "oteryn_test_admin").await?;
@@ -590,6 +592,9 @@ fn channel_assignment_uses_exact_cas_replay_and_writer_owned_revisions() -> Test
                 },
             )?;
             let first = committed(writer.submit(&assign).await)?;
+            let assigned_type: Option<i16> = sqlx::query_scalar("SELECT pvp_type FROM game_channel_pvp_types WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid")
+                .bind(channel.world_id().as_bytes().as_slice()).bind(channel.channel_id().ok_or("Channel")?.as_bytes().as_slice()).fetch_optional(&pool).await?;
+            assert_eq!(assigned_type, Some(1));
             assert_eq!(first.assignment.ownership_generation, 1);
             assert_eq!(first.assignment.source_revision, 1);
             assert_eq!(
@@ -663,7 +668,22 @@ fn channel_assignment_uses_exact_cas_replay_and_writer_owned_revisions() -> Test
                     target: node2,
                 },
             )?;
-            let second = committed(writer.submit(&replace).await)?;
+            let open = durability::runtime_scope_assignment::ChannelPolicy {
+                pvp_type: Some(durability::runtime_scope_assignment::ChannelPvpType::Open),
+                player_capacity: std::num::NonZeroU16::new(42),
+            };
+            let second = committed(writer.submit_with_channel_policy(&replace, open).await)?;
+            assert_eq!(
+                committed(writer.submit_with_channel_policy(&replace, open).await)?,
+                second
+            );
+            assert_eq!(
+                rejected(writer.submit(&replace).await)?,
+                AssignmentRejection::OperationConflict
+            );
+            let policy: (i16, i32) = sqlx::query_as("SELECT pvp_type,player_capacity FROM game_channel_pvp_types WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid")
+                .bind(channel.world_id().as_bytes().as_slice()).bind(channel.channel_id().ok_or("Channel")?.as_bytes().as_slice()).fetch_one(&pool).await?;
+            assert_eq!(policy, (2, 42));
             assert_eq!(
                 (
                     second.assignment.ownership_generation,
@@ -3217,6 +3237,34 @@ fn runtime_credential_cannot_perform_control_plane_actions() -> TestResult {
                 )?;
                 assign.actor = ControlActor::new(&control_role).map_err(|e| format!("{e:?}"))?;
                 committed(writer.submit(&assign).await)?;
+                // The login can assign Channel A, while Channel B is outside its grants.
+                let mut direct = sqlx::PgConnection::connect(&control_url).await?;
+                let world = v7(200);
+                let other_channel = v7(254);
+                sqlx::query("DELETE FROM game_control_scope_grants WHERE control_role=$1 AND (world_id,channel_id)<>(encode($2,'hex')::uuid,encode($3,'hex')::uuid)")
+                    .bind(&control_role).bind(world.as_slice()).bind(v7(1).as_slice()).execute(&pool).await?;
+                sqlx::query("INSERT INTO game_channel_pvp_types(world_id,channel_id,pvp_type) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1)")
+                    .bind(world.as_slice()).bind(other_channel.as_slice()).execute(&pool).await?;
+                for statement in [
+                    "UPDATE game_channel_pvp_types SET player_capacity=1 WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid",
+                    "UPDATE game_channel_pvp_types SET pvp_type=2 WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid",
+                ] {
+                    expect_sql_state(
+                        sqlx::query(sqlx::AssertSqlSafe(statement))
+                            .bind(world.as_slice()).bind(other_channel.as_slice()).execute(&mut direct).await,
+                        "42501",
+                    ).await?;
+                }
+                expect_sql_state(
+                    sqlx::query("SELECT game_channel_publish_policy(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,2::smallint,1)")
+                        .bind(world.as_slice()).bind(other_channel.as_slice()).bind(key(1).as_bytes().as_slice())
+                        .execute(&mut direct).await,
+                    "42501",
+                ).await?;
+                direct.close().await?;
+                let unchanged: (i16, i32) = sqlx::query_as("SELECT pvp_type,player_capacity FROM game_channel_pvp_types WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid")
+                    .bind(world.as_slice()).bind(other_channel.as_slice()).fetch_one(&pool).await?;
+                assert_eq!(unchanged, (1, 100));
                 // An ungranted scope (another world) is refused.
                 let ungranted = RuntimeScopeRefV1::channel(
                     WorldId::decode(&v7(201)).map_err(|e| format!("{e:?}"))?,

@@ -74,10 +74,15 @@ def claim_catalogue(root):
             # claims retain their SOURCE holds beside native_contents.
             if claim['readiness'] == 'ready':
                 claim['readiness'] = 'waiting_item_semantics'
-        if key in {'oteryn:reward-claim.kv.desert2', 'oteryn:reward-claim.kv.triangletower'} and not claim['data_holds']:
+        if key in {'oteryn:reward-claim.kv.desert2', 'oteryn:reward-claim.kv.triangletower',
+                   'oteryn:reward-claim.kv.draconia1'} and not claim['data_holds']:
             # The new native bag projection does not rewrite the frozen SOURCE
             # witness that its necklace originally lacked Item qualification.
-            item = 3084 if key.endswith('.desert2') else 3083
+            item = {
+                'oteryn:reward-claim.kv.desert2': 3084,
+                'oteryn:reward-claim.kv.triangletower': 3083,
+                'oteryn:reward-claim.kv.draconia1': 3284,
+            }[key]
             claim['data_holds'] = [{'category': 'item', 'code': 'ITEM_SEMANTICS_MISSING',
                 'item': f'oteryn:item.tibia.i{item}', 'placement_index': 0, 'reason': 'waiting',
                 'reward_field': 'items', 'reward_index': 0}]
@@ -85,11 +90,13 @@ def claim_catalogue(root):
         # ITEMHOLD-Q's live Item/charge admissions. Keep canonical holds and native
         # contents intact; only the SOURCE compiler consumes this private view.
         historical = {
-            # Shared encounter Item admissions do not erase Draconia's frozen SOURCE hold.
             'oteryn:reward-claim.kv.draconia1': ['item'],
+            'oteryn:reward-claim.kv.fireaxe1': ['item'],
+            'oteryn:reward-claim.kv.goblintemple2': ['item'],
             'oteryn:reward-claim.kv.ornamentedshield': ['item', 'source'],
             'oteryn:reward-claim.kv.present_box': ['item'],
             'oteryn:reward-claim.kv.triangletower': ['item'],
+            'oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine': ['item'],
         }.get(claim['identity']['key'])
         if historical is not None:
             claim['_source_hold_categories'] = historical

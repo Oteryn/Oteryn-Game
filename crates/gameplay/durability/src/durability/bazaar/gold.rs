@@ -272,11 +272,10 @@ pub(super) async fn fence_funding(
     if s(funding, "currency")? == "COINS" {
         return Ok(Effect::Committed(String::new()));
     }
-    let configuration = sqlx::query(
-        "SELECT enabled,policy::text FROM game_bazaar_configuration WHERE singleton FOR SHARE",
-    )
-    .fetch_one(&mut **tx)
-    .await?;
+    let configuration =
+        sqlx::query("SELECT enabled,policy FROM game_character_service_bazaar_policy()")
+            .fetch_one(&mut **tx)
+            .await?;
     let policy: Policy = serde_json::from_str(configuration.try_get("policy")?)
         .map_err(|_| DurabilityError::InvalidStoredState)?;
     if !configuration.try_get::<bool, _>("enabled")?

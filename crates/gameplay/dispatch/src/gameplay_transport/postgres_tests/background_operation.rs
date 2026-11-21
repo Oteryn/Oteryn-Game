@@ -6,7 +6,7 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 #[test]
 fn background_position_batch_completes_both_passes_with_foreground_demand_postgres() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("background-position-operation", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("background-position-operation", || {
         run(async |admin| {
             let h = Harness::create_with_admission_seed(
                 admin,
@@ -69,7 +69,7 @@ fn background_position_batch_completes_both_passes_with_foreground_demand_postgr
 
 #[test]
 fn background_quest_sweep_yields_between_sessions_postgres() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("background-quest-sweep", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("background-quest-sweep", || {
         run(async |admin| {
             let h =
                 Harness::create_with_admission_seed(admin, "background_quest_sweep", false, false)
@@ -121,6 +121,8 @@ fn background_quest_sweep_yields_between_sessions_postgres() -> TestResult {
                 owner.states.quest_sessions.lock().map_err(debug)?.insert(
                     session,
                     crate::gameplay_transport::quest_admission::QuestSession {
+                        map_marks_world: None,
+                        map_marks: Vec::new(),
                         copy: None,
                         experience_deferred: false,
                         version: 0,
@@ -161,8 +163,8 @@ fn background_quest_sweep_yields_between_sessions_postgres() -> TestResult {
 
 #[test]
 fn background_expired_quest_timer_executes_postgres() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("background-expired-quest-timer", || {
-        super::quest_world_callbacks::scenario(
+    super::kill_reward_e2e_fixtures::scenario_thread::run("background-expired-quest-timer", || {
+        super::quest_world_callbacks_fixtures::scenario(
             "l6-tomb-switch-treasure-background-expired-12121",
             oteryn_gameplay_quests::quest::world_callbacks::Position { x: 7, y: 1, floor: -7 },
             false,
@@ -172,7 +174,7 @@ fn background_expired_quest_timer_executes_postgres() -> TestResult {
 
 #[test]
 fn background_empty_grizzly_ordinary_boss_respawns_postgres() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("background-ordinary-boss", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("background-ordinary-boss", || {
         run(async |admin| {
             let h = Harness::create_with_admission_seed(admin, "background_ordinary_boss", false, false).await?;
             prepare_current_session(&h).await?;
@@ -224,7 +226,7 @@ fn background_empty_grizzly_ordinary_boss_respawns_postgres() -> TestResult {
 
 #[test]
 fn background_timed_sessions_rotate_within_bounded_grants_postgres() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("background-timed-rotation", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("background-timed-rotation", || {
         run(async |admin| {
             let h = Harness::create_with_admission_seed(admin, "background_timed_rotation", true, false).await?;
             prepare_current_session(&h).await?;

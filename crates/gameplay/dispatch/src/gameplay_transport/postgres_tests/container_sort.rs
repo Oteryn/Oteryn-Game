@@ -1,6 +1,6 @@
 //! Container sorting through the actual connection router and PostgreSQL item owner.
 use super::fixture::{Harness, debug, id, run};
-use super::{Dependencies, TestResult, item_look, prepare_current_session};
+use super::{Dependencies, TestResult, item_look_fixtures as item_look, prepare_current_session};
 use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
@@ -12,7 +12,7 @@ use tokio::io::AsyncWriteExt;
 
 #[test]
 fn container_sort_postgres_dispatch_replay_stale_generation_and_conservation() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("container-sort", scenario)
+    super::kill_reward_e2e_fixtures::scenario_thread::run("container-sort", scenario)
 }
 fn scenario() -> TestResult {
     run(async |admin| {
@@ -27,7 +27,7 @@ fn scenario() -> TestResult {
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (controller, pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
         let generation = controller.active().ok_or("active")?;
         let room = pin.qualified_room().clone();
         let frame_digest = pin.frame_binding().digest();

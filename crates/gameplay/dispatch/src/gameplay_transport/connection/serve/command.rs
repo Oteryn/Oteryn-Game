@@ -1,6 +1,7 @@
 //! Decode, reserve and execute one command before producing its ordered output.
 
 use super::*;
+use oteryn_protocol_oteryn::chat::{COMMAND_TYPE_CHAT_INTENT, ChatDisposition};
 
 pub(super) struct CommandOutcome {
     pub(super) second_logout: bool,
@@ -25,6 +26,13 @@ where
         buffered_original,
         received_at,
     } = input;
+    // Also fence direct/previously buffered dispatch; this is before integrity,
+    // command reservation, replay acknowledgement or any owner invocation.
+    match command_session_matches(&frame, session.admitted, session.require_session_binding) {
+        Ok(false) => return Ok(()),
+        Ok(true) => {}
+        Err(error) => return Err(close(stream, session.admitted, error).await),
+    }
     let command = match decode_wire_envelope(&frame) {
         Err(error) => return Err(close(stream, session.admitted, error).await),
         Ok(envelope) if envelope.connection_generation() != session.generation => {
@@ -133,21 +141,10 @@ where
     let mut input_permit = authority
         .enter_input(session.admitted.game_session_id)
         .await;
-    if input_permit.is_some() {
-        let failed_guard = if !authority.house_transfer_input(session.admitted).await {
-            Some("house_transfer_input")
-        } else if !authority.activity_transfer_input(session.admitted).await {
-            Some("activity_transfer_input")
-        } else {
-            None
-        };
-        if let Some(guard) = failed_guard {
-            operator_event(&format!(
-                "event=command_guard_failed guard={guard} command_type={} command_id={}",
-                command.command_type, command.command_id,
-            ));
-            return Err(ServeEnd::Disconnected);
-        }
+    let guard_deferred =
+        input_permit.is_some() && !guards(authority, session.admitted, command).await?;
+    if guard_deferred && !session.reconcile_original_bank {
+        drop(input_permit.take());
     }
 
     // Count a newly received action once, never its retained replay or delayed step.
@@ -176,6 +173,7 @@ where
     // OPS-SAVE-2: the permit is held while the command runs, not while its result is
     // written, so the shutdown snapshot waits for the effect only.
     if input_permit.is_some()
+        && !guard_deferred
         && command.command_type
             == oteryn_protocol_oteryn::house_transfer::COMMAND_TYPE_HOUSE_TRANSFER
         && session
@@ -209,8 +207,15 @@ where
     } else {
         None
     };
+    // A resumed original Bank operation must retain its historical outcome even
+    // when this replacement input is deferred. Only a proven new command gets
+    // the ordinary unavailable-input refusal below.
+    if guard_deferred && retained_bank.is_none() {
+        drop(input_permit.take());
+    }
     let npc_relocation = None;
     if input_permit.is_some()
+        && !guard_deferred
         && !authority
             .training_activity(session.admitted, command.command_type)
             .await
@@ -275,6 +280,10 @@ where
     } else if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
         match route::step(authority, session, command, arrived_while_buffered).await {
             route::StepAction::Wait(due) => {
+                session
+                    .commands
+                    .buffer_step(command)
+                    .ok_or(ServeEnd::Disconnected)?;
                 // Pacing throttled this input; the buffered original is charged only once.
                 session
                     .integrity
@@ -387,7 +396,28 @@ where
     session.admitted.continuity.server_sequence = session.sequence;
     outcome.training_logged_out =
         matches!(&dispatch, Dispatch::Training(result) if result.disposition == 3);
-    let result = result::encode(session, command, &mut dispatch)?;
+    // Encode a typed refusal without running STEP or CHAT post-dispatch effects.
+    let result = if guard_deferred
+        && matches!(dispatch, Dispatch::Unregistered)
+        && session
+            .selected_capabilities
+            .command_selected(command.command_type)
+    {
+        let mut refusal = match command.command_type {
+            COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT => Dispatch::Step(StepOutcome::rejected(), 0),
+            COMMAND_TYPE_CHAT_INTENT => Dispatch::Chat(
+                ChatIntentResult {
+                    disposition: ChatDisposition::Rejected,
+                    wait_seconds: 0,
+                },
+                None,
+            ),
+            _ => Dispatch::Unregistered,
+        };
+        result::encode(session, command, &mut refusal)?
+    } else {
+        result::encode(session, command, &mut dispatch)?
+    };
     outbound::finish(
         stream, authority, session, command, dispatch, result, outcome,
     )
@@ -442,4 +472,39 @@ where
             other => other,
         },
     )
+}
+
+/// Keep holder contention distinct from lost authority in both command loops.
+pub(super) async fn guards<A: FreshAdmissionAuthority>(
+    authority: &A,
+    admitted: AdmittedSession,
+    command: oteryn_protocol_oteryn::ClientCommandView<'_>,
+) -> Result<bool, ServeEnd> {
+    let failure = match authority.house_transfer_input(admitted).await {
+        Err(error) => Some(("house_transfer_input", error)),
+        Ok(()) => authority
+            .activity_transfer_input(admitted)
+            .await
+            .err()
+            .map(|error| ("activity_transfer_input", error)),
+    };
+    let Some((guard, error)) = failure else {
+        return Ok(true);
+    };
+    let kind = match error {
+        crate::durability::DurabilityError::RootUnavailable => "holder_busy",
+        crate::durability::DurabilityError::RootPassDeadlineExceeded => "deadline",
+        _ => {
+            operator_event(&format!(
+                "event=command_guard_failed guard={guard} command_type={} command_id={}",
+                command.command_type, command.command_id,
+            ));
+            return Err(ServeEnd::Disconnected);
+        }
+    };
+    operator_event(&format!(
+        "event=command_guard_deferred guard={guard} kind={kind} command_type={} command_id={}",
+        command.command_type, command.command_id,
+    ));
+    Ok(false)
 }

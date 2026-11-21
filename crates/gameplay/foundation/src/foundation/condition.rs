@@ -190,9 +190,12 @@ impl ConditionDefinition {
                     mana_interval_ms,
                     sub_id,
                 } => {
+                    // The source callbacks use the same canonical regeneration
+                    // condition with sub-ID 88888 and integral gain zero. It is
+                    // a shared lifetime marker; the scripted heal is separate.
+                    let source_marker = sub_id == 88_888 && health_gain == 0 && mana_gain == 0;
                     duration_ms > 0
-                        && sub_id <= 1
-                        && (health_gain > 0 || mana_gain > 0)
+                        && (source_marker || (sub_id <= 1 && (health_gain > 0 || mana_gain > 0)))
                         && interval_ok(health_interval_ms)
                         && interval_ok(mana_interval_ms)
                 }
@@ -564,6 +567,33 @@ impl<S> ConditionInstance<S> {
             mana_blocked: false,
         })
     }
+    fn non_ticking_ends_at(&self) -> Option<u64> {
+        matches!(
+            self.definition.values,
+            ConditionValues::TimedStatus { .. }
+                | ConditionValues::Gate { .. }
+                | ConditionValues::SourceAttributes { .. }
+                | ConditionValues::SpellLight { .. }
+                | ConditionValues::SpellSkills { .. }
+                | ConditionValues::Invisible { .. }
+                | ConditionValues::Outfit { .. }
+                | ConditionValues::ItemOutfit { .. }
+                | ConditionValues::Attributes { .. }
+                | ConditionValues::IntenseHex { .. }
+                | ConditionValues::RationalSpeed { .. }
+                | ConditionValues::Speed { .. }
+                | ConditionValues::Light { .. }
+                | ConditionValues::ManaShield { .. }
+                | ConditionValues::SpellRegeneration {
+                    health_gain: 0,
+                    mana_gain: 0,
+                    ..
+                }
+        )
+        .then_some(self.ends_at)
+        .flatten()
+    }
+
     fn age_at(&self, now: u64) -> u64 {
         self.elapsed_before_start
             .saturating_add(now.saturating_sub(self.started_at))
@@ -902,29 +932,26 @@ impl<S: Clone> ConditionStore<S> {
             .map_or(0, |instance| instance.speed_delta)
     }
 
+    /// Exact housekeeping deadline. Periodic damage/recovery debt remains owned
+    /// exclusively by `take_due`; reading this value never advances either lane.
+    pub fn next_non_ticking_expiry(&self) -> Option<u64> {
+        self.instances
+            .iter()
+            .filter_map(ConditionInstance::non_ticking_ends_at)
+            .chain(
+                self.cleanse_immunities
+                    .iter()
+                    .map(|immunity| immunity.until),
+            )
+            .min()
+    }
+
     /// Owner-local expiry without executing or discarding any scheduled occurrence.
     /// DOT, food and recovery remain exclusively under `take_due`, including overdue ticks.
     pub fn expire_non_ticking(&mut self, now: u64) -> bool {
         let before = (self.instances.len(), self.cleanse_immunities.len());
-        self.instances.retain(|instance| {
-            !matches!(
-                instance.definition.values,
-                ConditionValues::TimedStatus { .. }
-                    | ConditionValues::Gate { .. }
-                    | ConditionValues::SourceAttributes { .. }
-                    | ConditionValues::SpellLight { .. }
-                    | ConditionValues::SpellSkills { .. }
-                    | ConditionValues::Invisible { .. }
-                    | ConditionValues::Outfit { .. }
-                    | ConditionValues::ItemOutfit { .. }
-                    | ConditionValues::Attributes { .. }
-                    | ConditionValues::IntenseHex { .. }
-                    | ConditionValues::RationalSpeed { .. }
-                    | ConditionValues::Speed { .. }
-                    | ConditionValues::Light { .. }
-                    | ConditionValues::ManaShield { .. }
-            ) || instance.ends_at.is_none_or(|end| now < end)
-        });
+        self.instances
+            .retain(|instance| instance.non_ticking_ends_at().is_none_or(|end| now < end));
         self.cleanse_immunities
             .retain(|immunity| now < immunity.until);
         before != (self.instances.len(), self.cleanse_immunities.len())
@@ -1282,6 +1309,8 @@ impl<S: Clone> ConditionStore<S> {
                 duration_ms,
                 health_interval_ms,
                 mana_interval_ms,
+                health_gain,
+                mana_gain,
                 ..
             } => {
                 // Crystal condition.cpp:436-447,1287-1298: same COMBAT/subid
@@ -1308,10 +1337,15 @@ impl<S: Clone> ConditionStore<S> {
                     now.checked_add(ms(duration_ms))
                         .ok_or(ConditionRefusal::TimeOverflow)?,
                 );
-                instance.next_tick_at = Some(
-                    now.checked_add(h.min(m))
-                        .ok_or(ConditionRefusal::TimeOverflow)?,
-                );
+                // Zero-gain source markers retain lifetime/conflict state but no tick debt.
+                instance.next_tick_at = if health_gain != 0 || mana_gain != 0 {
+                    Some(
+                        now.checked_add(h.min(m))
+                            .ok_or(ConditionRefusal::TimeOverflow)?,
+                    )
+                } else {
+                    None
+                };
             }
             ConditionValues::Attributes {
                 duration_ms,
@@ -1361,8 +1395,12 @@ impl<S: Clone> ConditionStore<S> {
             }
             ConditionValues::ItemOutfit { duration_ms }
             | ConditionValues::Outfit { duration_ms, .. } => {
-                if existing
-                    .is_some_and(|v| v.ends_at.is_none() || ms(duration_ms) < v.remaining_at(now))
+                // Crystal Condition::updateCondition: incoming ticks=-1 always
+                // refreshes Outfit; only finite applications compare remaining time.
+                if !definition.permanent_outfit
+                    && existing.is_some_and(|v| {
+                        v.ends_at.is_none() || ms(duration_ms) < v.remaining_at(now)
+                    })
                 {
                     return Err(ConditionRefusal::KeptCurrent);
                 }
@@ -1412,26 +1450,59 @@ impl<S: Clone> ConditionStore<S> {
             .map_or(0, |immunity| immunity.until.saturating_sub(now))
     }
 
-    /// Chooses one eligible negative instance without changing the store. Drowning and
+    fn cleanse_candidate(instance: &ConditionInstance<S>, now: u64) -> bool {
+        let kind = instance.definition.condition_type();
+        // Tibia news #8935/#8960 (2026): Cleanse removes Hex and grants immunity.
+        // Keep this exception local to Cleanse; other negative dispels do not gain Hex.
+        (instance.definition.is_negative() || kind == ConditionType::IntenseHex)
+            && kind != ConditionType::DamageOverTime(DotElement::Drown)
+            && instance.ends_at.is_none_or(|end| end > now)
+            && (!matches!(kind, ConditionType::DamageOverTime(_)) || instance.remaining_total > 0)
+    }
+
+    /// Eligible live instances for an owner's single draw across its condition stores.
+    pub fn cleanse_candidate_count(&self, now: u64) -> usize {
+        self.instances
+            .iter()
+            .filter(|instance| Self::cleanse_candidate(instance, now))
+            .count()
+    }
+
+    /// Prepares a selection already drawn by the composed owner, without another draw.
+    /// The index follows live instance sequence order. The owner must retain its preimage
+    /// fence when publishing this plan, just as for `prepare_cleanse`.
+    pub fn prepare_cleanse_at_index(
+        &self,
+        facts: &ApplicationFacts<'_>,
+        index: usize,
+    ) -> Result<Option<CleansePlan>, ConditionRefusal> {
+        let mut candidates: Vec<_> = self
+            .instances
+            .iter()
+            .filter(|instance| Self::cleanse_candidate(instance, facts.now))
+            .collect();
+        candidates.sort_by_key(|instance| instance.sequence);
+        let Some(instance) = candidates.get(index) else {
+            return Ok(None);
+        };
+        let immune_until = facts
+            .now
+            .checked_add(u64::from(CLEANSE_IMMUNITY_MS) * MICROS_PER_MS)
+            .ok_or(ConditionRefusal::TimeOverflow)?;
+        Ok(Some(CleansePlan {
+            sequence: instance.sequence,
+            key: shared_mutation_slot(instance.definition.condition_type().conflict_key()),
+            immune_until,
+        }))
+    }
+
+    /// Chooses one eligible negative or Hex instance without changing the store. Drowning and
     /// already expired conditions are excluded; selection is stable in instance sequence order.
     pub fn prepare_cleanse(
         &self,
         facts: &ApplicationFacts<'_>,
     ) -> Result<Option<CleansePlan>, ConditionRefusal> {
-        let mut candidates: Vec<_> = self
-            .instances
-            .iter()
-            .filter(|instance| {
-                let kind = instance.definition.condition_type();
-                instance.definition.is_negative()
-                    && kind != ConditionType::DamageOverTime(DotElement::Drown)
-                    && instance.ends_at.is_none_or(|end| end > facts.now)
-                    && (!matches!(kind, ConditionType::DamageOverTime(_))
-                        || instance.remaining_total > 0)
-            })
-            .collect();
-        candidates.sort_by_key(|instance| instance.sequence);
-        let index = match candidates.len() {
+        let index = match self.cleanse_candidate_count(facts.now) {
             0 => return Ok(None),
             1 => 0,
             count => {
@@ -1446,16 +1517,7 @@ impl<S: Clone> ConditionStore<S> {
                 usize::try_from(draw % count).map_err(|_| ConditionRefusal::DrawFailed)?
             }
         };
-        let instance = candidates[index];
-        let immune_until = facts
-            .now
-            .checked_add(u64::from(CLEANSE_IMMUNITY_MS) * MICROS_PER_MS)
-            .ok_or(ConditionRefusal::TimeOverflow)?;
-        Ok(Some(CleansePlan {
-            sequence: instance.sequence,
-            key: shared_mutation_slot(instance.definition.condition_type().conflict_key()),
-            immune_until,
-        }))
+        self.prepare_cleanse_at_index(facts, index)
     }
 
     /// Applies the retained plan once. A removed or replaced instance is never substituted
@@ -1483,7 +1545,20 @@ impl<S: Clone> ConditionStore<S> {
     /// due, in order, for the next simulation tick (`RUN_EACH_BOUNDED`), and none is dropped.
     /// Instances whose time is over and whose ticks are all dealt end here.
     pub fn take_due(&mut self, now: u64, facts: TickFacts) -> Vec<ConditionTick<S>> {
-        self.take_due_matching(now, facts, true, None, RegenerationPzRewards::default())
+        self.take_due_matching(
+            now,
+            facts,
+            true,
+            None,
+            RegenerationPzRewards::default(),
+            usize::MAX,
+        )
+    }
+    /// Consume one due tick under the same ordering and per-time budget as `take_due`.
+    /// The caller can settle its effects before selecting the next occurrence.
+    pub fn take_next_due(&mut self, now: u64, facts: TickFacts) -> Option<ConditionTick<S>> {
+        self.take_due_matching(now, facts, true, None, RegenerationPzRewards::default(), 1)
+            .pop()
     }
     /// Only a just-applied field's immediate tick; retained overdue conditions are untouched.
     pub fn take_due_source_application(
@@ -1503,11 +1578,19 @@ impl<S: Clone> ConditionStore<S> {
             true,
             Some(&matches),
             RegenerationPzRewards::default(),
+            usize::MAX,
         )
     }
     /// Independent qualified regeneration must not drain unknown combat ticks.
     pub fn take_due_non_damage(&mut self, now: u64, facts: TickFacts) -> Vec<ConditionTick<S>> {
-        self.take_due_matching(now, facts, false, None, RegenerationPzRewards::default())
+        self.take_due_matching(
+            now,
+            facts,
+            false,
+            None,
+            RegenerationPzRewards::default(),
+            usize::MAX,
+        )
     }
     pub fn take_due_with_regeneration(
         &mut self,
@@ -1515,7 +1598,7 @@ impl<S: Clone> ConditionStore<S> {
         facts: TickFacts,
         rewards: RegenerationPzRewards,
     ) -> Vec<ConditionTick<S>> {
-        self.take_due_matching(now, facts, true, None, rewards)
+        self.take_due_matching(now, facts, true, None, rewards, usize::MAX)
     }
     pub fn take_due_non_damage_with_regeneration(
         &mut self,
@@ -1523,7 +1606,7 @@ impl<S: Clone> ConditionStore<S> {
         facts: TickFacts,
         rewards: RegenerationPzRewards,
     ) -> Vec<ConditionTick<S>> {
-        self.take_due_matching(now, facts, false, None, rewards)
+        self.take_due_matching(now, facts, false, None, rewards, usize::MAX)
     }
     fn take_due_matching(
         &mut self,
@@ -1532,6 +1615,7 @@ impl<S: Clone> ConditionStore<S> {
         damage: bool,
         application_source: Option<&ConditionApplicationSource<'_, S>>,
         regeneration_rewards: RegenerationPzRewards,
+        limit: usize,
     ) -> Vec<ConditionTick<S>> {
         self.cleanse_immunities
             .retain(|immunity| immunity.until > now);
@@ -1540,7 +1624,7 @@ impl<S: Clone> ConditionStore<S> {
             self.pass_ticks = 0;
         }
         let mut ticks = Vec::new();
-        while self.pass_ticks < COND0_RL_03_DAMAGE_TICKS_PER_SIM_TICK {
+        while self.pass_ticks < COND0_RL_03_DAMAGE_TICKS_PER_SIM_TICK && ticks.len() < limit {
             let next = self
                 .instances
                 .iter()
@@ -1850,7 +1934,7 @@ impl<S: Clone> ConditionStore<S> {
             });
         }
         self.instances.retain(|instance| match instance.ends_at {
-            None => instance.remaining_total > 0,
+            None => instance.definition.permanent_outfit || instance.remaining_total > 0,
             Some(end) => end > now || instance.next_tick_at.is_some_and(|due| due <= end),
         });
         ticks

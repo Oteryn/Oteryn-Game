@@ -1,0 +1,350 @@
+{
+  "schema": 1,
+  "quests": [
+    {
+      "quest": "oteryn:quest.shadows_of_yalahar_quest",
+      "recipe_sha256": "48c84ea1c2b913d5eea7b7a063e5174590d45e62a9926600b4386021426d2e1e",
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission01",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 2
+        },
+        {
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_boveas",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_cerdras",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_dreadeye",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_milos",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_scutty",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        }
+      ],
+      "stages": [
+        {
+          "key": "s1",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/shadows-of-yalahar/errand-start",
+              "quest": "oteryn:quest.shadows_of_yalahar_quest",
+              "npc": "oteryn:npc.telas",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission01",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Ask Boveas, Cerdras, Dreadeye, Milos and Scutty for research notes."
+              ],
+              "sources": [
+                "https://tibia.fandom.com/?curid=37118&oldid=1106237",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:129-144",
+                "https://tibia.fandom.com/?curid=37117&oldid=843939"
+              ],
+              "minimum_level": 75,
+              "requires_premium": true,
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/mission03",
+                  "minimum": 1,
+                  "maximum": 6
+                }
+              ]
+            },
+            "alternatives": [
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/errand-report",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.telas",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission01",
+                    "minimum": 1,
+                    "maximum": 1,
+                    "set": 2
+                  }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "Mission 01: Errand boy complete."
+                ],
+                "sources": [
+                  "https://tibia.fandom.com/?curid=37118&oldid=1106237",
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:145-155"
+                ],
+                "requires": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_boveas",
+                    "minimum": 1,
+                    "maximum": 1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_cerdras",
+                    "minimum": 1,
+                    "maximum": 1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_dreadeye",
+                    "minimum": 1,
+                    "maximum": 1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_milos",
+                    "minimum": 1,
+                    "maximum": 1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_scutty",
+                    "minimum": 1,
+                    "maximum": 1
+                  }
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/notes-boveas",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.boveas",
+                "keywords": [
+                  "research notes"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_boveas",
+                    "minimum": 0,
+                    "maximum": 0,
+                    "set": 1
+                  }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "Research notes recorded."
+                ],
+                "sources": [
+                  "https://tibia.fandom.com/?curid=37118&oldid=1106237",
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/boveas.lua:52-58"
+                ],
+                "requires": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission01",
+                    "minimum": 1,
+                    "maximum": 1
+                  }
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/notes-cerdras",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.cerdras",
+                "keywords": [
+                  "research notes"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_cerdras",
+                    "minimum": 0,
+                    "maximum": 0,
+                    "set": 1
+                  }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "Research notes recorded."
+                ],
+                "sources": [
+                  "https://tibia.fandom.com/?curid=37118&oldid=1106237",
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cerdras.lua:93-102"
+                ],
+                "requires": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission01",
+                    "minimum": 1,
+                    "maximum": 1
+                  }
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/notes-dreadeye",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.dreadeye",
+                "keywords": [
+                  "research notes"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_dreadeye",
+                    "minimum": 0,
+                    "maximum": 0,
+                    "set": 1
+                  }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "Research notes recorded."
+                ],
+                "sources": [
+                  "https://tibia.fandom.com/?curid=37118&oldid=1106237",
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dreadeye.lua:56-66"
+                ],
+                "requires": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission01",
+                    "minimum": 1,
+                    "maximum": 1
+                  }
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/notes-milos",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.milos",
+                "keywords": [
+                  "research notes"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_milos",
+                    "minimum": 0,
+                    "maximum": 0,
+                    "set": 1
+                  }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "Research notes recorded."
+                ],
+                "sources": [
+                  "https://tibia.fandom.com/?curid=37118&oldid=1106237",
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/milos.lua:67-73"
+                ],
+                "requires": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission01",
+                    "minimum": 1,
+                    "maximum": 1
+                  }
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/notes-scutty",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.scutty",
+                "keywords": [
+                  "research notes"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_scutty",
+                    "minimum": 0,
+                    "maximum": 0,
+                    "set": 1
+                  }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "Research notes recorded."
+                ],
+                "sources": [
+                  "https://tibia.fandom.com/?curid=37118&oldid=1106237",
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/scutty.lua:60-69"
+                ],
+                "requires": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission01",
+                    "minimum": 1,
+                    "maximum": 1
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sources": [
+        "https://tibia.fandom.com/?curid=37118&oldid=1106237",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:129-144",
+        "https://tibia.fandom.com/?curid=37117&oldid=843939"
+      ]
+    }
+  ]
+}

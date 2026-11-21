@@ -23,6 +23,9 @@ impl PlayLink {
 }
 #[cfg(windows)]
 pub(in crate::play) fn open_window(link: &PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     atlas_native::open(link);
     use crate::play::feature_0115_mail::view::native::{Form, open};
     atlas_native::open(link);

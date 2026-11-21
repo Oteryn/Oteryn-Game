@@ -373,6 +373,29 @@ fn retained_config_is_reserved_against_same_root_i_for_its_full_lifetime()
 
     let root = DurabilityRoot::new(config)?;
     let other_owner = root.clone();
+    let publisher = root.retained_receipt_publisher_pool()?;
+    assert!(std::ptr::eq(
+        publisher,
+        other_owner.retained_receipt_publisher_pool()?
+    ));
+    assert!(!std::ptr::eq(publisher, &root.pool));
+    assert_eq!(publisher.options().get_max_connections(), 1);
+    assert_eq!(publisher.options().get_min_connections(), 0);
+    assert_eq!(publisher.options().get_acquire_timeout(), DB_PASS_DEADLINE);
+    assert_eq!(root.pool.options().get_max_connections(), 1);
+    {
+        let options = publisher.connect_options();
+        assert_eq!(options.get_host(), "db.example");
+        assert_eq!(options.get_host_addr(), Some("203.0.113.7"));
+        assert!(matches!(options.get_ssl_mode(), PgSslMode::VerifyFull));
+        assert!(matches!(
+            options.get_authentication_policy(),
+            PgAuthenticationPolicy::ScramSha256
+        ));
+        assert!(options.get_ssl_tls13_only());
+        assert!(!options.get_ssl_use_default_roots());
+        assert!(!options.get_ssl_session_resumption());
+    }
     let foreground = root.foreground_demand()?;
     assert_eq!(ledger.used(), required);
     drop(root);

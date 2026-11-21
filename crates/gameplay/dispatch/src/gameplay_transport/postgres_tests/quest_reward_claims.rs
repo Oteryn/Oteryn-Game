@@ -2,7 +2,7 @@
 //! These cases qualify reward execution from committed map selectors; they do not
 //! certify the entire source quest journey.
 use super::fixture::{Harness, debug, id, run};
-use super::quest_callbacks::{source_world, wire_use_targets};
+use super::quest_callbacks_fixtures::{source_world, wire_use_targets, wire_use_targets_retained};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::durability::item_mint::TypedDefinitionRef;
@@ -336,6 +336,27 @@ fn quest_reward_claims_batch_two_parchment_room_key_bag() -> TestResult {
 }
 
 #[test]
+fn quest_reward_claims_numbered_key_opens_only_matching_door_and_survives_relogin() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    assert!(!admin.is_empty());
+    let started = std::time::Instant::now();
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            scenario(&PANPIPE_ACCESS_KEY, None, false, false, true).map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "numbered key dispatch scenario panicked")??;
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED numbered_key_claim_door_relogin elapsed_ms={}",
+        started.elapsed().as_millis()
+    );
+    Ok(())
+}
+
+#[test]
 fn quest_reward_claims_panpipe_key_4055_once_and_replay() -> TestResult {
     execute(&PANPIPE_ACCESS_KEY)
 }
@@ -348,7 +369,9 @@ fn quest_reward_claims_panpipe_locked_door_to_reward_and_replay() -> TestResult 
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(&PHASE_A_CONTAINERS[1], None, false, true).map_err(|e| e.to_string()))?
+        .spawn(|| {
+            scenario(&PHASE_A_CONTAINERS[1], None, false, true, false).map_err(|e| e.to_string())
+        })?
         .join()
         .map_err(|_| "Panpipe access scenario panicked")??;
     eprintln!(
@@ -503,7 +526,7 @@ fn quest_reward_claims_naginata_pick_six_shared_hits_and_replay() -> TestResult 
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(&NAGINATA, None, true, false).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(&NAGINATA, None, true, false, false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "quest reward claims pick scenario panicked")??;
     eprintln!(
@@ -535,7 +558,9 @@ fn execute(chest: &'static Chest) -> TestResult {
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(chest, None, false, false).map_err(|error| error.to_string()))?
+        .spawn(move || {
+            scenario(chest, None, false, false, false).map_err(|error| error.to_string())
+        })?
         .join()
         .map_err(|_| "quest reward claims reward scenario panicked")??;
     eprintln!(
@@ -560,6 +585,7 @@ fn committed_world(
     position: (u16, u16, i8),
     appearance: u16,
     native: &crate::content::native_gameplay::NativeGameplayState,
+    numbered_key: bool,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let attrs = committed_attrs(position, appearance)?;
@@ -610,6 +636,49 @@ fn committed_world(
                 zones: Vec::new(),
                 items,
             });
+    }
+    if numbered_key {
+        let door = "oteryn:item.tibia.i1631";
+        data.manifest.palette.push(bundle::PaletteEntry {
+            key: door.into(),
+            family: bundle::Family::Item,
+            id: index
+                .definition_ref("Item", door, "definition-r1")
+                .ok_or("Panpipe locked door definition")?
+                .get()
+                - 1,
+            terrain: None,
+        });
+        let attrs = committed_attrs(PANPIPE_DOOR, 1631)?;
+        assert_eq!(attrs.action, Some(4055));
+        data.manifest.world.max_y = y + 2;
+        for (tile_x, action) in [(x - 1, 4055), (x, 4056)] {
+            sectors
+                .entry((floor, tile_x / 32, (y + 1) / 32))
+                .or_default()
+                .push(sector::Tile {
+                    x: tile_x,
+                    y: y + 1,
+                    flags: 0,
+                    house: 0,
+                    zones: Vec::new(),
+                    items: vec![
+                        sector::Item {
+                            palette: 0,
+                            depth: 0,
+                            attrs: Default::default(),
+                        },
+                        sector::Item {
+                            palette: 2,
+                            depth: 0,
+                            attrs: sector::Attrs {
+                                action: Some(action),
+                                ..attrs.clone()
+                            },
+                        },
+                    ],
+                });
+        }
     }
     if position == NAGINATA_ROCK {
         // Source positions and complete selectors for the first special access
@@ -835,7 +904,7 @@ fn execute_gate(gate: &'static Gate) -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(move || {
-            scenario(&NAGINATA, Some(gate), false, false).map_err(|error| error.to_string())
+            scenario(&NAGINATA, Some(gate), false, false, false).map_err(|error| error.to_string())
         })?
         .join()
         .map_err(|_| "quest reward claims gate scenario panicked")??;
@@ -870,7 +939,7 @@ async fn journey_step(
     direction: oteryn_protocol_oteryn::world_spatial::StepDirection,
 ) -> TestResult {
     let command = admitted.continuity.next_command_id;
-    let reply = super::quest_world_callbacks::wire(
+    let reply = super::quest_world_callbacks_fixtures::wire(
         owner,
         admitted,
         command,
@@ -896,7 +965,7 @@ async fn duplicate_pick(
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let peer = async {
         loop {
-            let bytes = super::item_look::read_frame(&mut client).await?;
+            let bytes = super::item_look_fixtures::read_frame(&mut client).await?;
             if decode_wire_envelope(&bytes)?.message_type() == MessageType::SnapshotCommit {
                 break;
             }
@@ -913,7 +982,7 @@ async fn duplicate_pick(
             client.write_u32(u32::try_from(frame.len())?).await?;
             client.write_all(&frame).await?;
             loop {
-                let bytes = super::item_look::read_frame(&mut client).await?;
+                let bytes = super::item_look_fixtures::read_frame(&mut client).await?;
                 let envelope = decode_wire_envelope(&bytes)?;
                 if envelope.message_type() == MessageType::CommandResult {
                     let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
@@ -956,7 +1025,7 @@ async fn journey_use(
     target: &WorldObjectTarget,
 ) -> TestResult<UseDisposition> {
     let command = admitted.continuity.next_command_id;
-    let reply = super::quest_world_callbacks::wire(
+    let reply = super::quest_world_callbacks_fixtures::wire(
         owner,
         admitted,
         command,
@@ -965,6 +1034,111 @@ async fn journey_use(
     )
     .await?;
     oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)
+}
+
+async fn numbered_key_journey(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    harness: &Harness,
+    mut admitted: crate::gameplay_transport::connection::AdmittedSession,
+    chest: &WorldObjectTarget,
+    (x, y, floor): (u16, u16, i8),
+) -> TestResult {
+    use crate::durability::fresh_admission::FreshAdmissionStore;
+    use crate::gameplay_transport::connection::LogoutReply;
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+    use oteryn_protocol_oteryn::world_object::{
+        MapUseTarget, UseIntent, UseTarget, encode_item_use_intent,
+    };
+
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            owner.offered_capabilities(),
+            &[4, 6, 11, 15, 18],
+        )
+        .ok_or("numbered key capabilities")?;
+    let fence = admitted.item_fence.ok_or("initial item fence")?;
+    let before = harness
+        .root
+        .read_item_use_inventory(owner.character, &harness.node, fence)
+        .await
+        .map_err(debug)?;
+    assert!(before.keys.is_empty());
+    let command = admitted.continuity.next_command_id;
+    assert_eq!(
+        wire_use_targets_retained(owner, &mut admitted, &[(command, chest)]).await?,
+        [(CommandStatus::Accepted, UseDisposition::Committed)]
+    );
+    let claimed = harness
+        .root
+        .read_item_use_inventory(owner.character, &harness.node, fence)
+        .await
+        .map_err(debug)?;
+    let [(item, 4055)] = claimed.keys.as_slice() else {
+        return Err(format!("expected the claimed key 4055, got {:?}", claimed.keys).into());
+    };
+    let item = *item;
+    let reference = owner
+        .active_generation
+        .and_then(|generation| generation.native_gameplay())
+        .and_then(|native| native.item_index())
+        .and_then(|index| index.definition_ref("Item", PANPIPE_ACCESS_KEY.reward, "definition-r1"))
+        .ok_or("numbered key item definition")?;
+    let map = owner.bundle_map().ok_or("numbered key map")?;
+    for (door_x, expected, open) in [
+        (x - 1, UseDisposition::Committed, true),
+        (x, UseDisposition::KeyMismatch, false),
+    ] {
+        let target = journey_target(owner, (door_x, y + 1, floor), 1)?;
+        let placement = oteryn_world_bundle::bundle::placement_key(floor, door_x, y + 1, 1)
+            .ok_or("numbered door placement")?;
+        assert_eq!(target.expected_revision, 0);
+        let tile = crate::map::overlay::TilePos {
+            x: door_x,
+            y: y + 1,
+            floor,
+        };
+        assert!(map.facts.doors().blocks(tile));
+        let payload = encode_item_use_intent(&UseIntent {
+            target: UseTarget::Item(std::num::NonZeroU64::MIN),
+            use_with: None,
+            use_with_map_item: Some(MapUseTarget::Object(target)),
+            use_with_position: None,
+        })
+        .map_err(debug)?;
+        tokio::time::sleep(std::time::Duration::from_millis(210)).await;
+        let (next, result, _) = super::item_craft_fixtures::exchange(
+            owner,
+            admitted,
+            admitted.continuity.next_command_id,
+            &payload,
+            Some(reference),
+        )
+        .await?;
+        assert_eq!(result, expected);
+        assert_eq!(map.facts.doors().revision(placement), u64::from(open));
+        assert_eq!(map.facts.doors().blocks(tile), !open);
+        admitted = next;
+    }
+
+    assert_eq!(
+        owner.logout_session(admitted).await,
+        LogoutReply::Result(LogoutResult::Accepted)
+    );
+    let successor = super::full_world_support::relogin(harness).await?;
+    assert_ne!(successor, admitted.game_session_id);
+    let session = FreshAdmissionStore::from_root(harness.root.clone())
+        .current_session(successor)
+        .await?;
+    let successor_fence =
+        crate::gameplay_transport::item_fence_of(session).ok_or("successor item fence")?;
+    assert!(successor_fence.character_lease_generation > fence.character_lease_generation);
+    let reloaded = harness
+        .root
+        .read_item_use_inventory(owner.character, &harness.node, successor_fence)
+        .await
+        .map_err(debug)?;
+    assert_eq!(reloaded.keys, vec![(item, 4055)]);
+    Ok(())
 }
 
 // The separately qualified hollow-stone case proves the real Key4055 mint.
@@ -1007,7 +1181,7 @@ async fn panpipe_access(
     ] {
         tokio::time::sleep(std::time::Duration::from_millis(210)).await;
         let command = admitted.continuity.next_command_id;
-        let (next, result, actual) = super::item_craft::exchange(
+        let (next, result, actual) = super::item_craft_fixtures::exchange(
             owner,
             *admitted,
             command,
@@ -1019,7 +1193,7 @@ async fn panpipe_access(
         *admitted = next;
         if expected == UseDisposition::Committed {
             let (next, replay, _) =
-                super::item_craft::exchange(owner, *admitted, command, &actual, None).await?;
+                super::item_craft_fixtures::exchange(owner, *admitted, command, &actual, None).await?;
             *admitted = next;
             assert_eq!(replay, UseDisposition::Committed);
             assert_eq!(
@@ -1088,7 +1262,7 @@ async fn naginata_journey(
     };
     let payload =
         oteryn_protocol_oteryn::world_object::encode_item_use_intent(&intent).map_err(debug)?;
-    let (next, result, _) = super::item_craft::exchange(
+    let (next, result, _) = super::item_craft_fixtures::exchange(
         owner,
         *admitted,
         admitted.continuity.next_command_id,
@@ -1155,7 +1329,13 @@ async fn naginata_journey(
     Ok(())
 }
 
-fn scenario(chest: &Chest, gate: Option<&Gate>, pick: bool, panpipe: bool) -> TestResult {
+fn scenario(
+    chest: &Chest,
+    gate: Option<&Gate>,
+    pick: bool,
+    panpipe: bool,
+    numbered_key: bool,
+) -> TestResult {
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "questpc2_reward", false, false).await?;
@@ -1168,7 +1348,7 @@ fn scenario(chest: &Chest, gate: Option<&Gate>, pick: bool, panpipe: bool) -> Te
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activated) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;
@@ -1185,7 +1365,7 @@ fn scenario(chest: &Chest, gate: Option<&Gate>, pick: bool, panpipe: bool) -> Te
                 (gate.position, gate.appearance)
             })
         };
-        let world = committed_world(position, appearance, native)?;
+        let world = committed_world(position, appearance, native, numbered_key)?;
         let cells = world
             .movement_cells(deps.room.movement_cells())
             .map_err(debug)?;
@@ -1262,7 +1442,7 @@ fn scenario(chest: &Chest, gate: Option<&Gate>, pick: bool, panpipe: bool) -> Te
             ..crate::durability::starter_grant::StarterTemplate::main()
         };
         if panpipe {
-            super::item_look::seed_main_backpack(
+            super::item_look_fixtures::seed_main_backpack(
                 &harness,
                 &[
                     ("oteryn:item.tibia.i2969", 1),
@@ -1280,7 +1460,7 @@ fn scenario(chest: &Chest, gate: Option<&Gate>, pick: bool, panpipe: bool) -> Te
             }
             tx.commit().await?;
         } else if pick {
-            super::item_look::seed_main_backpack(
+            super::item_look_fixtures::seed_main_backpack(
                 &harness,
                 &[
                     ("oteryn:item.tibia.i3456", 1),
@@ -1470,7 +1650,7 @@ fn scenario(chest: &Chest, gate: Option<&Gate>, pick: bool, panpipe: bool) -> Te
                     first_payload = Some(payload);
                 } else {
                     let (next, result, _) =
-                        super::item_craft::exchange(&owner, admitted, hit + 1, &payload, None)
+                        super::item_craft_fixtures::exchange(&owner, admitted, hit + 1, &payload, None)
                             .await?;
                     assert_eq!(result, UseDisposition::Committed, "pick hit {hit}");
                     admitted = next;
@@ -1524,7 +1704,7 @@ fn scenario(chest: &Chest, gate: Option<&Gate>, pick: bool, panpipe: bool) -> Te
             restarted.movement_cells = (&cells).into();
             deps.initialize(&restarted).await;
             let (_, replay, _) =
-                super::item_craft::exchange(&restarted, original, 1, &payload, None).await?;
+                super::item_craft_fixtures::exchange(&restarted, original, 1, &payload, None).await?;
             assert_eq!(replay, UseDisposition::Committed);
             assert_eq!(world.facts().object_revision(key), 6);
             let quantity: i64 = sqlx::query_scalar("SELECT sum(quantity)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3456' AND lifecycle=1")
@@ -1549,7 +1729,7 @@ fn scenario(chest: &Chest, gate: Option<&Gate>, pick: bool, panpipe: bool) -> Te
             changed_owner.movement_cells = (&cells).into();
             deps.initialize(&changed_owner).await;
             let (_, refusal, _) =
-                super::item_craft::exchange(&changed_owner, original, 1, &changed, None).await?;
+                super::item_craft_fixtures::exchange(&changed_owner, original, 1, &changed, None).await?;
             assert_eq!(
                 refusal,
                 UseDisposition::Rejected,
@@ -1687,7 +1867,7 @@ fn scenario(chest: &Chest, gate: Option<&Gate>, pick: bool, panpipe: bool) -> Te
                     );
                 }
                 assert_eq!(
-                    super::quest_callbacks::wire_uses(&owner, admitted, &[1], &target).await?,
+                    super::quest_callbacks_fixtures::wire_uses(&owner, admitted, &[1], &target).await?,
                     [expected],
                     "{} at level {level}",
                     gate.quest
@@ -1702,6 +1882,34 @@ fn scenario(chest: &Chest, gate: Option<&Gate>, pick: bool, panpipe: bool) -> Te
                     .fetch_one(&harness.pool)
                     .await?;
             assert_eq!(receipts, 0, "door use cannot mint a chest reward");
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
+        if numbered_key {
+            let mut owner = deps.owner(&harness, &authority);
+            owner.active_generation = Some(generation);
+            owner.movement_cells = (&cells).into();
+            deps.runtime
+                .lock()
+                .await
+                .bind_attacker_lease(
+                    deps.actor,
+                    admitted.game_session_id,
+                    crate::foundation::CharacterLease::new(
+                        crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                            .map_err(debug)?,
+                        fence.character_lease_generation,
+                    )
+                    .map_err(debug)?,
+                )
+                .map_err(debug)?;
+            super::track(&owner, &deps)?;
+            owner.admit_progression_session(&mut admitted).await;
+            owner.admit_loop_training(&mut admitted).await;
+            deps.initialize(&owner).await;
+            numbered_key_journey(&owner, &harness, admitted, &target, (x, y, floor)).await?;
+            drop(owner);
             drop(authority);
             drop(seal);
             return harness.cleanup().await;

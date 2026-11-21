@@ -10,7 +10,11 @@ impl PlayView {
             entity.position.floor == self.floor
                 && entity.position.x == tile.x
                 && entity.position.y == tile.y
-                && matches!(entity.detail, oteryn_session::EntityDetail::Actor { .. })
+                && matches!(
+                    entity.detail,
+                    oteryn_session::EntityDetail::Actor { .. }
+                        | oteryn_session::EntityDetail::ActorWithIcons { .. }
+                )
         }) {
             return Some(Target::Creature(entity.entity));
         }
@@ -28,7 +32,7 @@ impl PlayView {
                 } => {
                     let x = u16::try_from(position.x).ok()?;
                     let y = u16::try_from(position.y).ok()?;
-                    let z = u8::try_from(position.floor.checked_neg()?).ok()?;
+                    let z = u8::try_from(position.floor).ok()?;
                     let key = (u64::from(x) << 32)
                         | (u64::from(y) << 16)
                         | (u64::from(z) << 8)

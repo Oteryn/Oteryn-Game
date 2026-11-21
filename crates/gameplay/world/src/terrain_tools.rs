@@ -9,6 +9,7 @@ use std::time::Duration;
 /// A tool identity from the pinned item catalogue.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TerrainTool {
+    ElementalSoil(u16),
     Shovel,
     Pick,
     Machete,
@@ -36,6 +37,10 @@ impl TerrainTool {
             return Some(Self::Crowbar);
         }
         Some(match key {
+            "oteryn:item.tibia.i940" => Self::ElementalSoil(940),
+            "oteryn:item.tibia.i941" => Self::ElementalSoil(941),
+            "oteryn:item.tibia.i944" => Self::ElementalSoil(944),
+            "oteryn:item.tibia.i945" => Self::ElementalSoil(945),
             "oteryn:item.tibia.i3457" | "oteryn:item.tibia.i5710" => Self::Shovel,
             "oteryn:item.tibia.i3456" => Self::Pick,
             // Crystal register_actions.lua:864-885 routes each Secret Agent multi-tool
@@ -304,6 +309,30 @@ pub fn crystal_core_bindings() -> Vec<TerrainToolBinding> {
         yield_item: None,
         decay: Vec::new(),
     }));
+    bindings.extend(
+        oteryn_gameplay_items::elemental_soil::CHARGES.map(|(soil, before, after)| {
+            TerrainToolBinding {
+                tool: TerrainTool::ElementalSoil(soil),
+                target: u32::from(before),
+                required_action: None,
+                transformed: u32::from(after),
+                yield_item: None,
+                decay: vec![DecayStep {
+                    state: u32::from(before),
+                    after: Duration::from_secs(120),
+                }],
+            }
+        }),
+    );
+    // Crystal soils1.lua: energy adds a field; it neither replaces nor decays the altar.
+    bindings.push(TerrainToolBinding {
+        tool: TerrainTool::ElementalSoil(945),
+        target: 7737,
+        required_action: None,
+        transformed: 7737,
+        yield_item: None,
+        decay: Vec::new(),
+    });
     bindings
 }
 

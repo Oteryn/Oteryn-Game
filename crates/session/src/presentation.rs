@@ -15,6 +15,25 @@ pub(super) fn validate_join(
             return Err(SessionError::SessionUnusable);
         }
     }
+    use oteryn_protocol_oteryn::native_map_cues::{
+        CAPABILITY_NATIVE_MAP_CUES_V1, SNAPSHOT_TYPE_NATIVE_MAP_CUE_BASIS_V1,
+    };
+    for row in snapshots.iter().filter(|row| {
+        row.domain_id == STATE_DOMAIN_WORLD_PRESENTATION
+            && row.snapshot_type == SNAPSHOT_TYPE_NATIVE_MAP_CUE_BASIS_V1
+    }) {
+        if ![
+            CAPABILITY_PRESENTATION_V1,
+            30,
+            CAPABILITY_NATIVE_MAP_CUES_V1,
+        ]
+        .iter()
+        .all(|capability| selected.contains(capability))
+            || !row.payload.is_empty()
+        {
+            return Err(SessionError::SessionUnusable);
+        }
+    }
     if selected.contains(&CAPABILITY_AMBIENT_SOUND_V1) {
         let row = snapshots
             .iter()
@@ -35,7 +54,10 @@ pub(super) fn validate_join(
             .iter()
             .find(|row| row.domain_id == domain)
             .ok_or(SessionError::MissingDomain(domain))?;
-        if row.snapshot_type != 1 {
+        let native_basis = domain == STATE_DOMAIN_WORLD_PRESENTATION
+            && row.snapshot_type == SNAPSHOT_TYPE_NATIVE_MAP_CUE_BASIS_V1
+            && selected.contains(&CAPABILITY_NATIVE_MAP_CUES_V1);
+        if row.snapshot_type != 1 && !native_basis {
             return Err(SessionError::SessionUnusable);
         }
         if domain == STATE_DOMAIN_WORLD_PRESENTATION {
@@ -70,12 +92,20 @@ pub(super) fn apply<S: SessionStream>(
             domain_id: delta.domain_id,
         });
     }
+    let native_basis = native_basis(session);
+    let native_delta = !ambient
+        && delta.domain_id == STATE_DOMAIN_WORLD_PRESENTATION
+        && delta.delta_type
+            == oteryn_protocol_oteryn::native_map_cues::DELTA_TYPE_NATIVE_MAP_PRESENTATION_V1;
+    if native_delta && !native_basis {
+        return Err(SessionError::SessionUnusable);
+    }
     let row = session
         .gated_revisions
         .iter_mut()
         .find(|(id, _)| *id == delta.domain_id)
         .ok_or(SessionError::MissingDomain(delta.domain_id))?;
-    check_delta(&delta, 1, row.1)?;
+    check_delta(&delta, if native_delta { 2 } else { 1 }, row.1)?;
     let event = if item {
         SessionEvent::ItemEffects(AppliedDelta {
             server_sequence: sequence,
@@ -85,8 +115,7 @@ pub(super) fn apply<S: SessionStream>(
                 .map_err(|_| SessionError::SessionUnusable)?,
         })
     } else if ambient || delta.domain_id == STATE_DOMAIN_WORLD_PRESENTATION {
-        let value =
-            decode_presentation_batch(delta.payload).map_err(|_| SessionError::SessionUnusable)?;
+        let value = decode_events(delta.payload, native_delta, native_basis && !ambient)?;
         if ambient
             && (value.len() != 1
                 || !matches!(value[0].kind, PresentationEventKind::AmbientSound { .. }))
@@ -117,4 +146,109 @@ pub(super) fn apply<S: SessionStream>(
     };
     row.1 = delta.new_revision;
     Ok(event)
+}
+
+pub(super) fn native_basis<S: SessionStream>(session: &Session<S>) -> bool {
+    session.is_selected(oteryn_protocol_oteryn::native_map_cues::CAPABILITY_NATIVE_MAP_CUES_V1)
+        && session.gated_snapshots.iter().any(|row| row.domain_id == STATE_DOMAIN_WORLD_PRESENTATION
+            && row.snapshot_type == oteryn_protocol_oteryn::native_map_cues::SNAPSHOT_TYPE_NATIVE_MAP_CUE_BASIS_V1)
+}
+fn decode_events(
+    payload: &[u8],
+    native_delta: bool,
+    native_basis: bool,
+) -> Result<Vec<PresentationEvent>, SessionError> {
+    if native_delta && !native_basis {
+        return Err(SessionError::SessionUnusable);
+    }
+    if native_delta {
+        oteryn_protocol_oteryn::native_map_cues::decode_native_map_presentation_batch(payload)
+    } else {
+        decode_presentation_batch(payload)
+    }
+    .map_err(|_| SessionError::SessionUnusable)
+}
+
+#[cfg(test)]
+mod native_basis_tests {
+    use super::*;
+    use oteryn_protocol_oteryn::world_spatial::ActorPosition;
+    fn missile(from: i16, to: i16) -> PresentationEvent {
+        PresentationEvent {
+            decision_ordinal: 1,
+            emission_ordinal: 1,
+            kind: PresentationEventKind::Missile {
+                from: ActorPosition {
+                    x: 1,
+                    y: 2,
+                    floor: from,
+                },
+                to: ActorPosition {
+                    x: 3,
+                    y: 4,
+                    floor: to,
+                },
+                missile_id: 31,
+                source: PresentationSource::Creatures,
+            },
+        }
+    }
+    #[test]
+    fn srx3_native_epoch_preserves_global_positions_and_requires_native_marker()
+    -> Result<(), String> {
+        let legacy =
+            encode_presentation_batch(&[missile(14, 0)]).map_err(|error| format!("{error:?}"))?;
+        assert_eq!(
+            decode_events(&legacy, false, false).map_err(|error| format!("{error:?}"))?,
+            [missile(14, 0)]
+        );
+        assert_eq!(
+            decode_events(&legacy, false, true).map_err(|error| format!("{error:?}"))?,
+            [missile(14, 0)]
+        );
+        let native =
+            oteryn_protocol_oteryn::native_map_cues::encode_native_map_presentation_batch(&[
+                missile(14, 13),
+            ])
+            .map_err(|error| format!("{error:?}"))?;
+        assert_eq!(
+            decode_events(&native, true, true).map_err(|error| format!("{error:?}"))?,
+            [missile(14, 13)]
+        );
+        assert!(decode_events(&native, true, false).is_err());
+        assert_eq!(
+            decode_events(&native, false, true).map_err(|error| format!("{error:?}"))?,
+            [missile(14, 13)]
+        );
+        assert_eq!(
+            decode_events(&legacy, true, true).map_err(|error| format!("{error:?}"))?,
+            [missile(14, 0)]
+        );
+        let mut line = oteryn_protocol_oteryn::chat::ChatLine::Local {
+            speaker: oteryn_protocol_oteryn::chat::ChatSpeaker {
+                identity: [1; 16],
+                generation: std::num::NonZeroU64::MIN,
+            },
+            speaker_name: "Human Speaker".into(),
+            mode: oteryn_protocol_oteryn::chat::ChatSpeechMode::Say,
+            text: "Source speech".into(),
+            position: ActorPosition {
+                x: 1,
+                y: 2,
+                floor: 14,
+            },
+        };
+        let bytes = oteryn_protocol_oteryn::chat::encode_chat_line(&line)
+            .map_err(|error| format!("{error:?}"))?;
+        line = oteryn_protocol_oteryn::chat::decode_chat_line(&bytes)
+            .map_err(|error| format!("{error:?}"))?;
+        assert!(matches!(
+            line,
+            oteryn_protocol_oteryn::chat::ChatLine::Local {
+                position: ActorPosition { floor: 14, .. },
+                ..
+            }
+        ));
+        Ok(())
+    }
 }

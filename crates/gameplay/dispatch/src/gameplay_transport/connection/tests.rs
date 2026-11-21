@@ -5,6 +5,9 @@ mod buffered_step_recovery;
 #[path = "tests/capability_tests.rs"]
 mod capability_tests;
 
+#[path = "tests/guard_deferral.rs"]
+mod guard_deferral;
+
 #[path = "tests/hotkey_coalescing.rs"]
 mod hotkey_coalescing;
 
@@ -35,6 +38,8 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};
 #[path = "tests/support.rs"]
 mod support;
 
+#[path = "tests/source_positions.rs"]
+mod source_positions;
 #[path = "tests/spell_catalog.rs"]
 mod spell_catalog;
 use support::*;

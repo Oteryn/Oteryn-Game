@@ -5,7 +5,9 @@ import json
 QUEST = 'oteryn:quest.giant_smithhammer_quest'
 TRACK = 'oteryn:quest-progress/chosen/smith-cache/'
 MAP = 'content/world/placements/region-z08-x128-y125.b3'
-MAP_SHA = '76c361de85ac9c6306f4e7eb5d52a52117f695a15bed7629b1ed735c789a593f'
+# The QMECH overlay changes only (32769, 32026, 8); the complete 31x31
+# Smith area and its three source anchors retain their reviewed map semantics.
+MAP_SHA = 'c5d2aefe37c52ffa0648e346bbd928e3291cc9541d1fc6d4fdae3583719318ef'
 PEER = '3b315d18dbb0a3a00149a2a14b9a19fcb42053a1'
 
 

@@ -76,7 +76,16 @@ impl<S: SessionStream> Session<S> {
             && refusal.expected_command_id == 0
             && refusal.expected_server_sequence == 0
         {
-            if let Some(queue) = admission_queue::decode_queue(accepted_envelope.payload())? {
+            let capacity = admission_queue::decode_capacity(accepted_envelope.payload())?;
+            if matches!(
+                capacity,
+                Some(admission_queue::CapacityRefusal::ChannelFull)
+            ) {
+                return Err(SessionError::ChannelFull {
+                    code: refusal.error_code,
+                });
+            }
+            if let Some(admission_queue::CapacityRefusal::Queued(queue)) = capacity {
                 return Err(SessionError::AdmissionQueued {
                     code: refusal.error_code,
                     queue,
@@ -110,6 +119,8 @@ impl<S: SessionStream> Session<S> {
             admission.appearance_items,
             JoinAcceptance {
                 game_session_id: accepted_fields.game_session_id,
+                world_id: *accepted_fields.world_id.as_bytes(),
+                activity_scope: None,
                 connection_generation: session_generation,
                 next_command_id: accepted_fields.next_command_id,
                 selected_capabilities: accepted_fields.selected_capabilities,

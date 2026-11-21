@@ -1,5 +1,5 @@
 //! C17c: parameter commands install the donor outfit on the real actor owner.
-use super::death_ml_loss_composed::current_fence;
+use super::death_ml_loss_composed_fixtures::current_fence;
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::native_gameplay::test_support::cosmetics_fixture::cosmetics_test_packet;

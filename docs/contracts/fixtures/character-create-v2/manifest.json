@@ -1,0 +1,152 @@
+{
+  "contract_id": "character-create-v2",
+  "contract": "docs/contracts/OTERYN_V2_CHARACTER_AUTHORITY_COMMAND_CONTRACT.md",
+  "base_commit": "1bb15ad3af64a975dd01da79f5d210f5806d6077",
+  "game_consumer": {
+    "repository": "Oteryn/Oteryn-Game",
+    "commit": "e2152d050038cecdb3728c222af2ac184e1cac5a",
+    "path": "crates/gameplay/durability/src/durability/character_command.rs",
+    "note": "CreateWire (deny_unknown_fields, lines 60-78) accepts contract_version 1 at this commit (line 124); Game moves to 2 in its own change"
+  },
+  "members": [
+    "contract_version",
+    "command",
+    "variant",
+    "issuer_authority",
+    "issuer_decision_id",
+    "source_revision",
+    "operation_id",
+    "account_id",
+    "target_world_id",
+    "requested_name",
+    "requested_sex",
+    "requested_vocation",
+    "issued_at_source",
+    "expires_at_source",
+    "audience"
+  ],
+  "requested_sex": [
+    "Female",
+    "Male"
+  ],
+  "requested_vocation": [
+    "Knight",
+    "Paladin",
+    "Sorcerer",
+    "Druid",
+    "Monk"
+  ],
+  "files": [
+    {
+      "file": "create-intent-knight.json",
+      "bytes": 575,
+      "sha256": "49bb4b2e9109972e8afa4b6cf1f76ead3f0aca2cb9159da73e32298caab373aa"
+    },
+    {
+      "file": "create-intent-paladin.json",
+      "bytes": 578,
+      "sha256": "87345d2005857d30237436677e26d88d4ddbae5242bc1e8684056abed2fd5523"
+    },
+    {
+      "file": "create-intent-sorcerer.json",
+      "bytes": 577,
+      "sha256": "ca95a8c80f5964ed944469668f8fa2f6baa41f2bb5634c284ffafabdaa30a058"
+    },
+    {
+      "file": "create-intent-druid.json",
+      "bytes": 576,
+      "sha256": "8d10344973e3b9ec569f04bd0bf195f35ddb32f5cc9ba659d00601746568b928"
+    },
+    {
+      "file": "create-intent-monk.json",
+      "bytes": 575,
+      "sha256": "00d94258c7697390196ff05ee0f6b90add825f575b6f608b6caf4a8455c0d2f1"
+    },
+    {
+      "file": "rejected-vocation-lowercase.json",
+      "bytes": 575,
+      "sha256": "94f5ce35bdc404bff1e9c993b81a297ed3fe8314d5fb24ca227a6fd3c0ec3b3f"
+    },
+    {
+      "file": "rejected-vocation-missing.json",
+      "bytes": 545,
+      "sha256": "680314acd9beba1a4657850a31441b3080c9ab7c641bb257c78b290924152eba"
+    },
+    {
+      "file": "rejected-sex-missing.json",
+      "bytes": 552,
+      "sha256": "fee9df4f73102b52cffb74fc490aafa1674aa2bf391b2b50e2cb92b64c017435"
+    },
+    {
+      "file": "rejected-sex-lowercase.json",
+      "bytes": 578,
+      "sha256": "bc7b4b590fcaac058a079e8dd9dd7089dc33877efd62e0fb0954e2ae11d1412d"
+    }
+  ],
+  "cases": [
+    {
+      "case": "create-knight",
+      "file": "create-intent-knight.json",
+      "outcome": "accept",
+      "requested_sex": "Male",
+      "requested_vocation": "Knight",
+      "note": "produced by the Platform create intent v2 serializer"
+    },
+    {
+      "case": "create-paladin",
+      "file": "create-intent-paladin.json",
+      "outcome": "accept",
+      "requested_sex": "Female",
+      "requested_vocation": "Paladin",
+      "note": "produced by the Platform create intent v2 serializer"
+    },
+    {
+      "case": "create-sorcerer",
+      "file": "create-intent-sorcerer.json",
+      "outcome": "accept",
+      "requested_sex": "Male",
+      "requested_vocation": "Sorcerer",
+      "note": "produced by the Platform create intent v2 serializer"
+    },
+    {
+      "case": "create-druid",
+      "file": "create-intent-druid.json",
+      "outcome": "accept",
+      "requested_sex": "Female",
+      "requested_vocation": "Druid",
+      "note": "produced by the Platform create intent v2 serializer"
+    },
+    {
+      "case": "create-monk",
+      "file": "create-intent-monk.json",
+      "outcome": "accept",
+      "requested_sex": "Female",
+      "requested_vocation": "Monk",
+      "note": "produced by the Platform create intent v2 serializer"
+    },
+    {
+      "case": "rejected-vocation-lowercase",
+      "file": "rejected-vocation-lowercase.json",
+      "outcome": "reject",
+      "note": "requested_vocation is case-sensitive"
+    },
+    {
+      "case": "rejected-vocation-missing",
+      "file": "rejected-vocation-missing.json",
+      "outcome": "reject",
+      "note": "requested_vocation is required; there is no default"
+    },
+    {
+      "case": "rejected-sex-missing",
+      "file": "rejected-sex-missing.json",
+      "outcome": "reject",
+      "note": "requested_sex is required; there is no default"
+    },
+    {
+      "case": "rejected-sex-lowercase",
+      "file": "rejected-sex-lowercase.json",
+      "outcome": "reject",
+      "note": "requested_sex is case-sensitive"
+    }
+  ]
+}

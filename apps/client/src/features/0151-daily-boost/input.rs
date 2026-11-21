@@ -30,7 +30,9 @@ impl PlayLink {
         // The XP boost lines come from the potion durations snapshot.
         self.potion_durations_request();
         #[cfg(all(windows, not(test)))]
-        super::view::open_window(self);
+        if !self.uses_shared_frontend() {
+            super::view::open_window(self);
+        }
         true
     }
 }

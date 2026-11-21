@@ -326,7 +326,7 @@ impl SoulpitEncounter {
     }
 
     /// Same acknowledged attempts are a no-op; a conflicting retry never replaces creatures.
-    /// None records a failed Game.createSoulPitMonster attempt (soulpit_fight.lua:130-134).
+    /// None records a failed creation attempt after any adjacent placement search.
     /// Seven failed attempts still start the wave, which clears at the ordinary 4.5s check.
     pub fn spawned(
         &mut self,

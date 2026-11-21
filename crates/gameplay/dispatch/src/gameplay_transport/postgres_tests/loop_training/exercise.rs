@@ -75,7 +75,7 @@ fn statue_scenario(flags: [u32; 2], expected: u8) -> TestResult {
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, pin) =
-            super::super::death_ml_loss_composed::production_generation_with_pin(
+            super::super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;
@@ -357,7 +357,7 @@ fn scenario(node_boot: bool, terminal_readback: bool) -> TestResult {
             )
             .map_err(debug)?
         } else {
-            super::super::death_ml_loss_composed::production_generation_with_pin(
+            super::super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?
@@ -941,7 +941,7 @@ fn scenario(node_boot: bool, terminal_readback: bool) -> TestResult {
         let mut framed = u32::try_from(bytes.len())?.to_be_bytes().to_vec();
         framed.extend(bytes);
         let (_, output) =
-            super::super::weather_wire::fixture_access::serve_input(&owner, admitted, &framed)
+            super::super::weather_wire_fixtures::fixture_access::serve_input(&owner, admitted, &framed)
                 .await?;
         let mut reader = output.as_slice();
         let mut results = 0;

@@ -20,37 +20,30 @@ pub(super) fn projection_refusal(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    pub(super) async fn note_activity_input(&self, admitted: AdmittedSession) -> bool {
+    pub(super) async fn note_activity_input(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<(), crate::durability::DurabilityError> {
         if !admitted
             .continuity
             .selected_capabilities
             .contains(oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1)
         {
-            return true;
+            return Ok(());
         }
         let (Some(fence), Some(controller)) = (admitted.item_fence, admitted.controller) else {
-            return false;
+            return Err(crate::durability::DurabilityError::Unavailable);
         };
-        // This idempotent input receipt shares the root with background enrichment.
-        // Wait briefly for its holder, re-proving the same transport/fences on every
-        // attempt. Exhaustion and every non-busy error still refuse before dispatch.
-        let Ok(budget) = super::AdmissionRetryBudget::for_foreground_command(self.root) else {
-            return false;
-        };
+        // Re-prove the same transport/fences on every idempotent attempt, retaining
+        // the distinction between a transient holder failure and a lost fence.
+        let budget = super::AdmissionRetryBudget::for_foreground_command(self.root)?;
         budget
-            .retry_unavailable(async || {
+            .retry_command_guard(async || {
                 ActivityHandoffOwner::new(self.root.clone())
                     .note_transfer_input(self.holder, fence, controller.transport)
                     .await
-                    .map_err(|error| match error {
-                        crate::durability::DurabilityError::RootUnavailable => {
-                            super::connection::AdmissionRefusal::Unavailable
-                        }
-                        _ => super::connection::AdmissionRefusal::Rejected,
-                    })
             })
             .await
-            .is_ok()
     }
 
     /// After a real ClientResume this is the committed binding projected in the

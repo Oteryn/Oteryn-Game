@@ -1,4 +1,5 @@
-//! C19b: the Newhaven profession kit is granted by production first entry, once.
+//! C19b: the Newhaven first-login backpack (rope, shovel) and profession kit are granted by
+//! production first entry, once.
 use super::fixture::{Harness, debug, id, run};
 use super::tutorial_vitals_fixture::{admit, native_asset_revisions, publish_native_activation};
 use super::{Dependencies, TestResult, prepare_current_session};
@@ -51,7 +52,7 @@ fn scenario(case: KitCase) -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("newhaven-starter", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("newhaven-starter", move || {
         run(async move |admin| {
             let h = if legacy {
                 Harness::create_with_admission_seed(admin, "starter_history", false, false).await?
@@ -67,7 +68,7 @@ fn scenario(case: KitCase) -> TestResult {
                 .map_err(debug)?;
             let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
             let (controller, pin) =
-                super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+                super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
             publish_native_activation(&h, &pin).await?;
             let active = controller.active().ok_or("active")?;
             native_asset_revisions(&h, active).await?;
@@ -343,7 +344,8 @@ fn scenario(case: KitCase) -> TestResult {
                 }
                 let published = published.ok_or("live inventory delta must be transmitted")?;
                 assert_eq!(published.equipment.len(), 7);
-                assert_eq!(published.entries.len(), 4);
+                // Paladin supplies plus the first-login rope and shovel.
+                assert_eq!(published.entries.len(), 6);
                 assert!(view.continuity().inventory_revision > before);
                 assert!(!owner.take_newhaven_inventory_changed(deps.admitted.game_session_id));
             } else {
@@ -381,6 +383,17 @@ fn scenario(case: KitCase) -> TestResult {
                     ("oteryn:item.tibia.i3447".into(), 100),
                     ("oteryn:item.tibia.i35562".into(), 1),
                     ("oteryn:item.tibia.i3578".into(), 1),
+                ]
+            );
+            // Crystal 9f5a72c6 send_first_items.lua:2-7: the first-login backpack of a
+            // Character without vocation holds one rope and one shovel, ahead of the kit.
+            let tools: Vec<(String, i64, String)> = sqlx::query_as("SELECT i.definition_production_key,i.quantity,e.placement_ordinal::text FROM game_item_container_entries e JOIN game_item_container_slots s ON s.item_instance_id=e.parent_item_instance_id JOIN game_item_instances i ON i.item_instance_id=e.item_instance_id WHERE i.definition_production_key IN ('oteryn:item.tibia.i3003','oteryn:item.tibia.i3457') ORDER BY e.placement_ordinal")
+                .fetch_all(&h.pool).await?;
+            assert_eq!(
+                tools,
+                vec![
+                    ("oteryn:item.tibia.i3003".into(), 1, "1".into()),
+                    ("oteryn:item.tibia.i3457".into(), 1, "2".into()),
                 ]
             );
             let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances")

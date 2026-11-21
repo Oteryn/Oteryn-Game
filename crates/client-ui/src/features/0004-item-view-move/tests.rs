@@ -4,6 +4,7 @@ use oteryn_input_actions::{KeyCode, Modifiers};
 #[test]
 fn inventory_selection_tracks_handles_instead_of_rows() -> Result<(), Box<dyn std::error::Error>> {
     let entry = ItemEntry {
+        appearance_id: 0,
         handle: 7.try_into()?,
         item_definition_ref: 100.try_into()?,
         count: 2.try_into()?,

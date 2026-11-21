@@ -428,7 +428,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // A durable death leaves its pending respawn for the next admission (DEATH-0 §3.4); a
             // session without a durable death releases the actor with nothing written.
             Some(death) if *settled != Some(death) => {
-                let (outcome, lowered) = self.settle_death(actor, session, death, true).await;
+                // A subsequent release call keeps the fence but not `settled`. Resolve
+                // its receipt before death-flush prechecks that may now be fenced out.
+                let (outcome, lowered) = match self
+                    .root
+                    .reconcile_character_death(self.character, death.occurrence)
+                    .await
+                {
+                    Ok(Some(committed)) => (
+                        SessionDeath::Durable,
+                        committed.build_loss.map(|loss| loss.after),
+                    ),
+                    Ok(None) => self.settle_death(actor, session, death, true).await,
+                    Err(error) => {
+                        operator_event(&format!("player_death_reconcile_failed reason={error}"));
+                        return false;
+                    }
+                };
                 match outcome {
                     SessionDeath::Durable | SessionDeath::NoDurableDeath => {
                         // DEATH-ML-LOSS-1 (A13 §4.6, CP D1439): the released actor continues

@@ -59,7 +59,7 @@ fn the_pinned_artifact_passes_the_node_boot_checks() {
         start: TilePos {
             x: start["x"].as_u64().unwrap() as u16,
             y: start["y"].as_u64().unwrap() as u16,
-            floor: start["floor"].as_i64().unwrap() as i8,
+            floor: -(start["floor"].as_i64().unwrap() as i8).abs(),
         },
     };
     // `check` compares `map_revision` with the bundle's own `sha256:<digest>` and the start tile.

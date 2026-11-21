@@ -10,9 +10,10 @@ impl PlayLink {
             page: 0,
         });
         #[cfg(windows)]
-        native::open_window(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            native::open_window(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).depot.open = true;
         }
     }

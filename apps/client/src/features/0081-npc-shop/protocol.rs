@@ -12,10 +12,11 @@ impl Outbox {
         shop.resources_selected = session.feature_selected(272);
         if let Some(payload) = session.feature_snapshot(14)
             && let Ok(views) =
-                oteryn_client_runtime::npc_shop::container_tree::decode_container_views_with_house_capacity(
+                oteryn_client_runtime::npc_shop::container_tree::decode_container_views_with_appearances(
                     &payload,
                     session.feature_selected(230),
                     session.feature_selected(446),
+                    session.feature_selected(499),
                 )
         {
             shop.containers = views;
@@ -152,5 +153,14 @@ impl Mailbox {
                 _ => {}
             }
         }
+    }
+}
+
+#[cfg(all(test, feature = "bevy-shell"))]
+impl Outbox {
+    pub(crate) fn bevy_npc_shop_supported(&self) {
+        let mut mailbox = lock(&self.0);
+        mailbox.npc_shop.selected = true;
+        mailbox.npc_shop.live.selected = true;
     }
 }

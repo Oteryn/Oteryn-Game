@@ -29,12 +29,28 @@ def validate_inventory(root, rows, native, schedules):
     key = 'oteryn:creature.thaian'
     canonical = [row for row in rows if row['definition']['identity']['key'] == key]
     active = [row for row in native if row['profile']['target']['key'] == key]
+    # The typed World writer omits empty immunities and a null reference level.
+    # world_project_v2_to_tree restores reference_level=None in Creature shards.
+    # Derive that complete tree form from source; native rows remain raw-exact.
+    canonical_authoring = cake.source_profile(profiles['Creature'])['data']
+    canonical_authoring['profile']['details'].setdefault('reference_level', None)
     if (len(canonical) != 1 or len(active) != 1
             or canonical[0]['definition'] != records['Creature']
             or canonical[0]['authoring'] not in (authoring, canonical_authoring)
             or active[0]['profile'] != profiles['Creature']
             or active[0]['behavior'] != profiles['Behavior']):
-        raise ValueError('Thaian source authoring closure')
+        raise ValueError('Thaian source authoring closure: ' + json.dumps({
+            'source': packet['source'],
+            'counts': {'canonical': len(canonical), 'native': len(active)},
+            'expected': {
+                'definition': records['Creature'],
+                'canonical_authoring_forms': [
+                    profiles['Creature']['data'], canonical_authoring],
+                'native_profile': profiles['Creature'],
+                'native_behavior': profiles['Behavior'],
+            },
+            'observed': {'canonical': canonical, 'native': active},
+        }, sort_keys=True, separators=(',', ':')))
     behavior = active[0]['behavior']['data']['profile']
     attacks = behavior.get('attacks', [])
     if len(attacks) != 1 or behavior.get('defenses', []):
@@ -43,9 +59,16 @@ def validate_inventory(root, rows, native, schedules):
                if row['target'] == attacks[0]['ability']]
     if len(ability) != 1 or ability[0]['data']['profile']['details']['kind'] != 'Melee':
         raise ValueError('Thaian exact melee ability')
-    # Only the independently qualified Thaian is outside main's Cake cohort.
-    # Any other Creature or schedule addition still fails this closed guard.
-    if len(rows) - 1 != 1863 + 1 or len(native) != len(rows) or schedules - 1 != 7201 + 4:
+    # Thaian extends the canonical Cake cohort; independently qualified
+    # native-only Fugue and Elemental bodies retain their exact schedule proofs.
+    from engenc2_fugue_profile import inventory_extension
+    extra_native, extra_schedules = inventory_extension(root, native)
+    from engenc_elemental_profiles import inventory_extension as elemental_inventory
+    elemental_native, elemental_schedules = elemental_inventory(native)
+    extra_native += elemental_native
+    extra_schedules += elemental_schedules
+    if (len(rows) - 1 != 1863 + 1 or len(native) != len(rows) + extra_native
+            or schedules - 1 != 7201 + 4 + extra_schedules):
         raise ValueError('Non-seasonal canonical inventory changed; review its source first')
     return 1
 
@@ -75,6 +98,8 @@ def generated(root):
     schedules = sum(len(row['behavior']['data']['profile'].get(key, []))
                     for row in native for key in ('attacks', 'defenses'))
     thaian_melee = validate_inventory(root, rows, native, schedules)
+    from engenc_elemental_profiles import inventory_extension as elemental_inventory
+    elemental_native, _ = elemental_inventory(native)
     result = {}
 
     def replace(path, pattern, replacement):
@@ -89,6 +114,12 @@ def generated(root):
             f'assert_eq!(creatures.len(), {len(rows)}, "complete canonical Creature corpus");')
     replace('crates/gameplay/monster-ai/src/ai_think/native_profile_tests.rs',
             r'\([0-9_]+, [0-9_]+, 15, 8\)', f'({len(native)}, {schedules}, 15, 8)')
+    # Greater Fire adds two CreateItem occurrences; Greater Energy adds none.
+    # Their exact, source-qualified two-profile cohort adds two occurrences.
+    # Keep the source-census assertion exact for that complete cohort.
+    replace('crates/gameplay/content/src/content/native_gameplay.rs',
+            r'assert_eq!\(\(create, remove\), \([0-9_]+, [0-9_]+\)\);',
+            f'assert_eq!((create, remove), ({62 + elemental_native}, 20));')
     # Crystal cake_golem.lua:77-81 adds one melee and two native spell slots.
     # Keep the pre-existing unsupported set at116: no new source gap is admitted.
     path = 'crates/gameplay/encounters/src/bosses/native_combat/monster_combat_lane.rs'
