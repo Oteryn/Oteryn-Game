@@ -31,49 +31,45 @@ impl Survey {
         crate::crash_report::save(&self.preview(), path, consent)
     }
 }
-/// The survey's invitation; No ends it.
-pub fn survey_invitation() -> &'static str {
-    tr!(
-        "Would you like to answer an optional one-question Oteryn client survey? You can decline delivery after reviewing your answer."
-    )
-}
-/// The survey's one question; Yes answers Easy, No answers Difficult.
-pub fn survey_question() -> &'static str {
-    tr!("Was browser sign-in easy? Yes = Easy; No = Difficult.")
-}
-/// The exact response text that consent queues, with its delivery reference.
-pub fn survey_response(easy_sign_in: bool) -> String {
-    crate::support_delivery::preview(&Survey::new(easy_sign_in).preview())
-}
-/// The consent question under the response it would queue.
-pub fn survey_consent(response: &str) -> String {
-    lfmt!(
-        "{}\nSend exactly this response to the Oteryn game server on your next signed-in play session?",
-        response
-    )
-}
-/// Queues a consented response for delivery on the next signed-in play session.
-pub fn queue_survey_response(path: &Path, response: &str) -> io::Result<bool> {
-    use std::io::Write;
-    queue_survey_with(path, |file| file.write_all(response.as_bytes()))
-}
-fn queue_survey_with(
-    path: &Path,
-    write: impl FnOnce(&mut std::fs::File) -> io::Result<()>,
-) -> io::Result<bool> {
-    crate::atomic_file::replace_with(path, true, write)?;
-    Ok(true)
-}
 /// The sign-in survey's invitation, answer, preview and consent flow.
 pub fn review_survey_at(path: &Path, mut ask: impl FnMut(&str) -> bool) -> io::Result<bool> {
-    if !ask(survey_invitation()) {
+    if !ask(tr!(
+        "Would you like to answer an optional one-question Oteryn client survey? You can decline delivery after reviewing your answer."
+    )) {
         return Ok(false);
     }
-    let response = survey_response(ask(survey_question()));
-    if !ask(&survey_consent(&response)) {
+    let survey = Survey::new(ask(tr!(
+        "Was browser sign-in easy? Yes = Easy; No = Difficult."
+    )));
+    let preview = crate::support_delivery::preview(&survey.preview());
+    if !ask(&lfmt!(
+        "{}\nSend exactly this response to the Oteryn game server on your next signed-in play session?",
+        preview
+    )) {
         return Ok(false);
     }
-    queue_survey_response(path, &response)
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    crate::crash_report::save(&preview, path, true)
+}
+#[cfg(windows)]
+pub(crate) fn run_survey() {
+    let result = (|| -> io::Result<Option<std::path::PathBuf>> {
+        let settings = crate::native_login::settings_path().map_err(io::Error::other)?;
+        let directory = settings
+            .parent()
+            .ok_or_else(|| io::Error::other(tr!("No configuration directory")))?;
+        let path = directory.join("approved-survey.txt");
+        Ok(review_survey_at(&path, crate::crash_report::consent_dialog)?.then_some(path))
+    })();
+    match result {
+        Ok(None) => {}
+        Ok(Some(_)) => show_information(tr!(
+            "Survey response queued for delivery on your next play session."
+        )),
+        Err(_) => show_information(tr!("Cannot save the response. No response was sent.")),
+    }
 }
 #[cfg(windows)]
 // Native informational dialog; both UTF-16 buffers outlive the synchronous call.
@@ -93,43 +89,5 @@ pub(crate) fn show_information(message: &str) {
             wide(tr!("About Oteryn")).as_ptr(),
             MB_OK | MB_ICONINFORMATION,
         );
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::io::Write;
-
-    #[test]
-    fn about_survey_replaces_only_after_complete_write() -> io::Result<()> {
-        let directory = tempfile::tempdir()?;
-        let path = directory.path().join("approved-survey.txt");
-        let result = queue_survey_with(&path, |file| {
-            file.write_all(b"partial")?;
-            Err(io::Error::other("injected write failure"))
-        });
-        assert!(result.is_err());
-        assert!(
-            !path.exists(),
-            "failed write exposed a partial survey target"
-        );
-        assert_eq!(std::fs::read_dir(directory.path())?.count(), 0);
-
-        std::fs::write(&path, b"earlier response")?;
-        let result = queue_survey_with(&path, |file| {
-            file.write_all(b"partial")?;
-            Err(io::Error::other("injected write failure"))
-        });
-        assert!(result.is_err());
-        assert_eq!(std::fs::read(&path)?, b"earlier response");
-        assert!(queue_survey_with(&path, |file| {
-            file.write_all(b"new ")?;
-            assert_eq!(std::fs::read(&path)?, b"earlier response");
-            file.write_all(b"response")
-        })?);
-        assert_eq!(std::fs::read(&path)?, b"new response");
-        assert_eq!(std::fs::read_dir(directory.path())?.count(), 1);
-        Ok(())
     }
 }

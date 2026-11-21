@@ -190,7 +190,6 @@ impl HostOwner {
         self.draft.is_some()
             || self.login.visible
             || self.login.bulletin.visible
-            || self.login.survey.visible()
             || self.selection.pending().is_some()
             || self.services.pending().is_some()
             || self.dialogs.active()

@@ -42,7 +42,14 @@ pub(super) fn activate(
                 .login
                 .form
                 .inform("About", crate::about::about_text().replace("\r\n", "\n")),
-            LoginControl::Survey => owner.login.survey.open(),
+            // The optional questionnaire reviews its answer and asks for consent in OS dialogs.
+            #[cfg(windows)]
+            LoginControl::Survey => crate::about::run_survey(),
+            #[cfg(not(windows))]
+            LoginControl::Survey => owner.login.form.inform(
+                "Survey",
+                "The optional survey is offered by the Windows client.".into(),
+            ),
             LoginControl::Support | LoginControl::Cookies => {
                 read_fields(&mut owner, &fields);
                 owner.open_web_link(if matches!(control, LoginControl::Support) {

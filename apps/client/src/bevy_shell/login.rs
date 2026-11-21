@@ -19,12 +19,10 @@ use oteryn_client_ui_bevy as source;
 use std::path::PathBuf;
 mod bulletin;
 mod submission;
-mod survey;
 
 pub(super) struct LoginState {
     pub form: LoginForm,
     pub bulletin: bulletin::State,
-    pub survey: survey::State,
     pub visible: bool,
     /// Shows the developer connection fields; off by default.
     pub advanced: bool,
@@ -37,7 +35,6 @@ impl Default for LoginState {
         Self {
             form: LoginForm::new(LoginSettings::default()),
             bulletin: Default::default(),
-            survey: Default::default(),
             visible: false,
             advanced: false,
             revision: 0,
@@ -142,7 +139,6 @@ impl LoginControl {
 
 pub(super) fn install(app: &mut App) {
     bulletin::install(app);
-    survey::install(app);
     super::ui::window_layout::install(app);
     app.add_systems(Update, super::ui::project_art).add_systems(
         PostUpdate,
@@ -172,7 +168,6 @@ fn control_button(
 
 pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     bulletin::setup(&mut commands, &skins);
-    survey::setup(&mut commands, &skins);
     let modal = commands
         .spawn((
             LoginDialog,
