@@ -1,8 +1,11 @@
 from collections import Counter
 from pathlib import Path
+import subprocess
+import sys
 from tempfile import TemporaryDirectory
 import unittest
 
+import check_dispatch_pg_shards as checker
 from check_dispatch_pg_shards import DISPATCH, check, inventory, verify_partition
 
 
@@ -45,6 +48,53 @@ class CheckDispatchPgShardsTests(unittest.TestCase):
 
     def test_repository_shards_cover_the_unsharded_inventory(self):
         check(3)
+
+    def test_exact_test_resolver_follows_current_assignment(self):
+        name = ("boss_activity", "retained_retry")
+        exact = "gameplay_transport::monk_save::postgres_tests::boss_activity::retained_retry"
+        for index in range(3):
+            shards = [Counter() for _ in range(3)]
+            shards[index][name] = 1
+            self.assertEqual(checker.resolve_test_shard(exact, shards), f"{index + 1}/3")
+
+    def test_exact_test_resolver_preserves_static_owner_module_paths(self):
+        exact = "gameplay_transport::monk_save::postgres_tests::first_vocation_vitals::case"
+        shards = [Counter({("monk_save_postgres_tests", "first_vocation_vitals", "case"): 1}),
+                  Counter()]
+        self.assertEqual(checker.resolve_test_shard(exact, shards), "1/2")
+
+    def test_exact_test_resolver_rejects_missing_or_ambiguous_targets(self):
+        name = ("boss_activity", "retained_retry")
+        exact = "gameplay_transport::monk_save::postgres_tests::boss_activity::retained_retry"
+        for shards in ([Counter()], [Counter({name: 2})],
+                       [Counter({name: 1}), Counter({name: 1})]):
+            message = "missing" if not any(shards) else "ambiguous"
+            with self.subTest(shards=shards), self.assertRaisesRegex(ValueError, message):
+                checker.resolve_test_shard(exact, shards)
+        for invalid in ("retained_retry", exact + "_missing", exact.replace("monk_save", "other")):
+            with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                checker.resolve_test_shard(invalid, [Counter({name: 1})])
+
+    def test_resolver_cli_emits_only_one_shard_for_the_retained_retry(self):
+        exact = ("gameplay_transport::monk_save::postgres_tests::boss_activity::"
+                 "boss_activity_postgres_offline_native_death_deadline_retry_keeps_retained_trigger")
+        result = subprocess.run(
+            [sys.executable, str(Path(checker.__file__)), "3", "--test", exact],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertRegex(result.stdout, r"^[1-3]/3\n$")
+        self.assertIn("zero duplicates", result.stderr)
+
+    def test_resolver_cli_rejects_unknown_test_without_a_selection(self):
+        result = subprocess.run(
+            [sys.executable, str(Path(checker.__file__)), "3", "--test",
+             "gameplay_transport::monk_save::postgres_tests::missing::case"],
+            capture_output=True, text=True,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "")
+        self.assertIn("missing exact PostgreSQL test", result.stderr)
 
 
 if __name__ == "__main__":

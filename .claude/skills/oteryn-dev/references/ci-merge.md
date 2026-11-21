@@ -39,6 +39,45 @@ authorised; this file only says how the flow behaves.
   minutes old; otherwise the run goes hosted. The `Molehill fallback` workflow
   cancels and re-runs, every 15 minutes, runs still waiting on an offline PC.
 
+## Shared build artifacts and partial reruns
+
+The PR fast Rust gate builds each archive in `rust-fast-archive.yml` and starts
+that archive's five test workers as soon as its producer finishes. The parent
+collects the complete planned archive union before recording a package result.
+The collector resolves each role's latest actual job attempt: an unchanged
+producer may be reused after a partial rerun, but an older success cannot hide
+a newer failed, skipped or incomplete attempt. Preserve the exact run, source
+SHA, artifact ID, digest, runner identity and test inventory checks.
+
+The three dedicated Dispatch archives use one canonical workspace feature
+recipe for both fast tests and PostgreSQL. The PG producer checks for a verified
+same-head archive before installing build tools or restoring a Cargo target.
+If no compatible producer is available, it builds locally; an invalid selected
+artifact fails. Route-less fast results never count as PostgreSQL qualification.
+Use `check_dispatch_pg_shards.py 3 --test <full-test-name>` for the focused
+offline-death compiler shard; its workflow measures build and test separately.
+
+Node boot and Server Seam share the pinned Platform executable. The release
+World compiler is shared within its workflow run; its consumers use the actual
+producer artifact ID and verify source, features, profile and SHA256. Every
+consumer still creates its own database and keys. Keep production, spawn, clock,
+test and development feature variants separate whenever their closures differ;
+the final production smoke build still qualifies its original feature graph.
+
+WorldProject builds its compatible native tools together but still performs two
+independent materializations and the completion/idempotence checks. Content
+migration uses one bounded pool of 40 checks before the global validator. Native
+entry's common producer runs only when its qualification is requested; an
+unavailable compatible artifact permits a fallback build alongside real Platform
+issuance, while an invalid supplied artifact fails.
+
+After changing pinned workflow/helper bytes, run
+`python tools/repository/refresh_ci_workflow_pins.py`, inspect the complete
+generated rotation, then run it with `--check` and the repository policy and
+gate contract tests. The generator proposes hashes, not authority: the
+protected-base audit still rejects changes to its own file and requires the
+accepted owner authorization and independent review for a rotation.
+
 ## Blind spot
 
 `Node boot against the real Platform`, `Server Seam` and the

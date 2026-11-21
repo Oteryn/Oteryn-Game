@@ -155,16 +155,25 @@ jobs:
           python -m py_compile \
             tools/content-migration/test_world_project_v2_to_tree.py \
             tools/content-migration/validate_world_project_v2_to_tree.py
-          python tools/content-migration/test_source_relocations.py
-          python tools/content-migration/test_regenerate_content.py
-          python tools/merge-driver/test_oteryn_additive_driver.py
-          python tools/content-migration/test_world_project_v2_to_tree.py
-          python tools/content-migration/test_npc_presence_stage.py
-          python tools/content-migration/test_item_taxonomy.py
-          python tools/content-migration/test_item_navigation_source_supplement.py
-          python tools/content-migration/test_item_engine_navigation.py
-          python tools/content-migration/test_item_external_family_refinement.py
-          python tools/content-migration/test_item_bounded7_navigation.py
+          if [[ -f tools/content-migration/parallel_checks.py ]]; then
+            python -m py_compile tools/content-migration/parallel_checks.py
+            python -m unittest discover -s tools/content-migration -p test_parallel_checks.py
+            # One two-process pool contains both the inner contracts and independent
+            # outer scripts. No nested pools; the shared full validator runs last.
+            python tools/content-migration/test_world_project_v2_to_tree.py --jobs 2 --workflow-checks
+          else
+            # Exact older PR heads retain every original check and invocation.
+            python tools/content-migration/test_source_relocations.py
+            python tools/content-migration/test_regenerate_content.py
+            python tools/merge-driver/test_oteryn_additive_driver.py
+            python tools/content-migration/test_world_project_v2_to_tree.py
+            python tools/content-migration/test_npc_presence_stage.py
+            python tools/content-migration/test_item_taxonomy.py
+            python tools/content-migration/test_item_navigation_source_supplement.py
+            python tools/content-migration/test_item_engine_navigation.py
+            python tools/content-migration/test_item_external_family_refinement.py
+            python tools/content-migration/test_item_bounded7_navigation.py
+          fi
           python tools/content-migration/validate_world_project_v2_to_tree.py
 
       - name: Check StarterKit seals against the base revision

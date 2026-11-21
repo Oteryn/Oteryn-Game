@@ -26,6 +26,24 @@ class PartitionPlanTests(unittest.TestCase):
         listing = {"rust-suites": {"suite": {"binary-id": binary, "testcases": tests}}}
         (self.plan / f"{archive}.json").write_text(json.dumps(listing))
 
+    def test_dedicated_dispatch_reuses_library_estimates_without_changing_filters(self):
+        binary = "oteryn-gameplay-dispatch::oteryn-gameplay-dispatch"
+        name = planner.DISPATCH_MOUNT + "srx3::long_postgres"
+        legacy_key = f"oteryn-gameplay-dispatch {name}"
+        self.listing("pg-lib-2", binary, name)
+        self.assertEqual(planner.estimate((binary, name), {legacy_key: 243}), 243)
+        with contextlib.redirect_stdout(io.StringIO()):
+            planner.write_partition(self.plan, 0, 1, {legacy_key: 243}, optional=True)
+        self.assertEqual((self.plan / "pg-lib-2.filters").read_text(),
+                         f"--filterset=binary_id(={binary}) & test(={name})\n")
+
+    def test_dedicated_dispatch_measurement_overrides_the_legacy_estimate(self):
+        binary = "oteryn-gameplay-dispatch::oteryn-gameplay-dispatch"
+        name = planner.DISPATCH_MOUNT + "srx3::long_postgres"
+        measured = {f"oteryn-gameplay-dispatch {name}": 243, f"{binary} {name}": 229}
+        self.assertEqual(planner.estimate((binary, name), measured), 229)
+        self.assertEqual(planner.estimate(("unrelated::oteryn-gameplay-dispatch", name), measured), 5)
+
     def test_matches_between_archives_are_balanced_without_repeating_primary_tests(self):
         dispatch = "oteryn-gameplay-dispatch"
         first, second, third = (planner.DISPATCH_MOUNT + name for name in ("a", "b", "c"))

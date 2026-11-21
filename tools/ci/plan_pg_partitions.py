@@ -18,6 +18,13 @@ def estimate(case, durations):
     key = " ".join(case)
     if key in durations:
         return durations[key]
+    # The canonical dedicated target has the same named cases as the library
+    # harness. Reuse its measurements until this target has its own observations;
+    # filters and inventory identity always retain the real binary ID.
+    if case[0] == "oteryn-gameplay-dispatch::oteryn-gameplay-dispatch":
+        key = f"oteryn-gameplay-dispatch {case[1]}"
+        if key in durations:
+            return durations[key]
     if key.startswith(RUNE_CASE_PREFIX) and OLD_RUNE_CASE in durations:
         # Ten isolated cases replaced the previous serial test. Use an equal
         # share of its observed runtime until each case has its own measurement.

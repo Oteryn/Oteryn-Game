@@ -142,7 +142,18 @@ jobs:
             git show "$BASE_SHA:tools/ci/plan_pg_partitions.py" > "$output/plan_pg_partitions.py"
             echo 'current_ci=false' >> "$GITHUB_OUTPUT"
           fi
-          printf '%s  %s\n' '1d26d89fd1faff1752d47a7f2ae59dde980f8683fa791b85da35f92b79607321' "$output/plan_pg_partitions.py" | sha256sum -c -
+          # A newer workflow may qualify a head with the known previous planner.
+          # Only that exact legacy digest may use the newly reviewed base planner.
+          readonly LEGACY_PLANNER_SHA=1d26d89fd1faff1752d47a7f2ae59dde980f8683fa791b85da35f92b79607321
+          if [[ "$(sha256sum "$output/plan_pg_partitions.py" | cut -d' ' -f1)" == "$LEGACY_PLANNER_SHA" ]]; then
+            [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+            if ! git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
+              git fetch --depth=1 --filter=blob:none --no-tags origin "$BASE_SHA"
+              test "$(git rev-parse FETCH_HEAD)" = "$BASE_SHA"
+            fi
+            git show "$BASE_SHA:tools/ci/plan_pg_partitions.py" > "$output/plan_pg_partitions.py"
+          fi
+          printf '%s  %s\n' '474632dcd52e86fc411ca24381012c1203341f4547e66f86889f0101720bcb1a' "$output/plan_pg_partitions.py" | sha256sum -c -
           if git cat-file -e "HEAD:tools/ci/pg_archive_affinity.py" 2>/dev/null; then
             git show "HEAD:tools/ci/pg_archive_affinity.py" > "$output/pg_archive_affinity.py"
             printf '%s  %s\n' 'db285d452e0cb5814a95f0c8b25ab969af5ee9637fd051a1a0fdbcb8221cb64a' "$output/pg_archive_affinity.py" | sha256sum -c -
@@ -248,6 +259,7 @@ jobs:
     if: needs.prepare.outputs.empty == 'false' && needs.prepare.outputs.pg_affinity == 'true'
     permissions:
       contents: read
+      actions: read
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.prepare.outputs.archive_lanes) }}
@@ -268,6 +280,7 @@ jobs:
     if: needs.prepare.outputs.empty == 'false' && needs.prepare.outputs.pg_affinity == 'false'
     permissions:
       contents: read
+      actions: read
     uses: ./.github/workflows/postgres-test-partitions.yml
     with:
       builds: ${{ needs.prepare.outputs.matrix }}
@@ -324,9 +337,19 @@ jobs:
           if grep -Fq NODE_BOOT_PREBUILT_DIR "$harness"; then
             [[ -f "$helper" && ! -L "$helper" ]]
             [[ -f "$build_workflow" && ! -L "$build_workflow" ]]
-            echo "7135b31f6acc0ebc2626b80823f0a67c7afed41ef509900ad3b14437dce1c373  $build_workflow" | sha256sum -c -
-            echo "56029b4b5706f4983c262d65982abcbe029eaff9c30c408bd583561639722ed7  $helper" | sha256sum -c -
-            echo 'mode=shared' >> "$GITHUB_OUTPUT"
+            # The exact reviewed predecessor lacks Platform/spawn artifact
+            # variants. Keep its complete local-Cargo qualification path.
+            readonly LEGACY_HELPER_SHA=56029b4b5706f4983c262d65982abcbe029eaff9c30c408bd583561639722ed7
+            readonly LEGACY_BUILD_SHA=7135b31f6acc0ebc2626b80823f0a67c7afed41ef509900ad3b14437dce1c373
+            helper_sha="$(sha256sum "$helper" | cut -d' ' -f1)"
+            build_sha="$(sha256sum "$build_workflow" | cut -d' ' -f1)"
+            if [[ "$helper_sha" == "$LEGACY_HELPER_SHA" && "$build_sha" == "$LEGACY_BUILD_SHA" ]]; then
+              echo 'mode=legacy' >> "$GITHUB_OUTPUT"
+            else
+              echo "fe1f1df027a012e269fba8e8088b433ffdaff2a939be4a1a05d7827537455cb0  $build_workflow" | sha256sum -c -
+              echo "288a79b279ca36544338daf3834bdaec8be9f00e39072f6e8d1770e814e4daa0  $helper" | sha256sum -c -
+              echo 'mode=shared' >> "$GITHUB_OUTPUT"
+            fi
           else
             test "$?" -eq 1
             # Exact PR heads predating shared builds still run the whole shard matrix.
@@ -340,7 +363,9 @@ jobs:
 
       - name: Test shared qualification artifacts
         if: steps.artifact_support.outputs.mode == 'shared'
-        run: python3 tools/qualification/node_boot/test_prebuilt.py
+        run: |
+          python3 tools/qualification/node_boot/test_prebuilt.py
+          python3 tools/qualification/node_boot/test_shared_prebuilt.py
 
       - name: Plan shards
         id: plan
@@ -368,15 +393,26 @@ jobs:
       revision: ${{ github.event.pull_request.head.sha }}
       variants: ${{ needs.node_boot_plan.outputs.build_variants }}
 
+  node_boot_platform_build:
+    name: Node boot / shared Platform build
+    needs: node_boot_plan
+    if: needs.node_boot_plan.result == 'success' && needs.node_boot_plan.outputs.artifact_mode == 'shared'
+    uses: ./.github/workflows/node-boot-build.yml
+    permissions:
+      contents: read
+    with:
+      revision: ${{ github.event.pull_request.head.sha }}
+      variants: '["platform"]'
+
   node_boot_shard:
     name: PR heavy / Node boot / ${{ matrix.shard.name }}
-    needs: [node_boot_plan, node_boot_build]
+    needs: [node_boot_plan, node_boot_build, node_boot_platform_build]
     if: >-
       always()
       && !cancelled()
       && needs.node_boot_plan.result == 'success'
-      && ((needs.node_boot_plan.outputs.artifact_mode == 'shared' && needs.node_boot_build.result == 'success')
-      || (needs.node_boot_plan.outputs.artifact_mode == 'legacy' && needs.node_boot_build.result == 'skipped'))
+      && ((needs.node_boot_plan.outputs.artifact_mode == 'shared' && needs.node_boot_build.result == 'success' && needs.node_boot_platform_build.result == 'success')
+      || (needs.node_boot_plan.outputs.artifact_mode == 'legacy' && needs.node_boot_build.result == 'skipped' && needs.node_boot_platform_build.result == 'skipped'))
       && github.event.pull_request.draft == false
       && github.event.pull_request.user.login != 'dependabot[bot]'
       && contains(github.event.pull_request.labels.*.name, 'node-boot')
@@ -473,8 +509,8 @@ jobs:
         if: needs.node_boot_plan.outputs.artifact_mode == 'shared' && steps.build_inputs.outputs.needs_default == 'true'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: node-boot-build-default
-          path: ${{ runner.temp }}/node-boot-download/default
+          name: node-boot-build-${{ steps.build_inputs.outputs.default_variant }}
+          path: ${{ runner.temp }}/node-boot-download/${{ steps.build_inputs.outputs.default_variant }}
 
       - name: Download the shared World compiler
         if: needs.node_boot_plan.outputs.artifact_mode == 'shared' && steps.build_inputs.outputs.needs_world == 'true'
@@ -483,6 +519,13 @@ jobs:
           name: node-boot-build-world-compiler
           path: ${{ runner.temp }}/node-boot-download/world-compiler
 
+      - name: Download the shared Platform binary
+        if: needs.node_boot_plan.outputs.artifact_mode == 'shared'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: node-boot-build-platform
+          path: ${{ runner.temp }}/node-boot-download/platform
+
       - name: Verify and unpack exact-candidate inputs
         if: needs.node_boot_plan.outputs.artifact_mode == 'shared'
         env:
@@ -490,7 +533,9 @@ jobs:
           NEEDS_DEFAULT: ${{ steps.build_inputs.outputs.needs_default }}
           NEEDS_WORLD: ${{ steps.build_inputs.outputs.needs_world }}
           MAIN_SHA256: ${{ needs.node_boot_build.outputs[steps.build_inputs.outputs.main_variant] }}
-          DEFAULT_SHA256: ${{ needs.node_boot_build.outputs.default }}
+          DEFAULT_VARIANT: ${{ steps.build_inputs.outputs.default_variant }}
+          DEFAULT_SHA256: ${{ needs.node_boot_build.outputs[steps.build_inputs.outputs.default_variant] }}
+          PLATFORM_SHA256: ${{ needs.node_boot_platform_build.outputs.platform }}
           WORLD_SHA256: ${{ needs.node_boot_build.outputs.world-compiler }}
         run: |
           set -euo pipefail
@@ -502,13 +547,15 @@ jobs:
             python3 tools/qualification/node_boot/prebuilt.py unpack "$variant" "$archive" "$RUNNER_TEMP/node-boot-prebuilt"
           }
           unpack "$MAIN_VARIANT" "$MAIN_SHA256"
-          if [[ "$NEEDS_DEFAULT" == true ]]; then unpack default "$DEFAULT_SHA256"; fi
+          if [[ "$NEEDS_DEFAULT" == true ]]; then unpack "$DEFAULT_VARIANT" "$DEFAULT_SHA256"; fi
+          unpack platform "$PLATFORM_SHA256"
           if [[ "$NEEDS_WORLD" == true ]]; then unpack world-compiler "$WORLD_SHA256"; fi
 
       - name: Run node boot shard
         env:
           PLATFORM_SOURCE: ${{ github.workspace }}/_platform
           NODE_BOOT_PREBUILT_DIR: ${{ needs.node_boot_plan.outputs.artifact_mode == 'shared' && format('{0}/node-boot-prebuilt', runner.temp) || '' }}
+          GAME_PLATFORM_PREBUILT_DIR: ${{ needs.node_boot_plan.outputs.artifact_mode == 'shared' && format('{0}/node-boot-prebuilt', runner.temp) || '' }}
         run: |
           # A failing shard still writes result.json, so no errexit here.
           set +e
@@ -558,7 +605,7 @@ jobs:
   # reported, as the single-machine run never failed on them.
   node_boot:
     name: PR heavy / Node boot against the real Platform
-    needs: [node_boot_plan, node_boot_build, node_boot_shard]
+    needs: [node_boot_plan, node_boot_build, node_boot_platform_build, node_boot_shard]
     if: >-
       always()
       && github.event.pull_request.draft == false
@@ -584,8 +631,8 @@ jobs:
       - name: Download shard evidence
         if: >-
           needs.node_boot_plan.result == 'success'
-          && ((needs.node_boot_plan.outputs.artifact_mode == 'shared' && needs.node_boot_build.result == 'success')
-          || (needs.node_boot_plan.outputs.artifact_mode == 'legacy' && needs.node_boot_build.result == 'skipped'))
+          && ((needs.node_boot_plan.outputs.artifact_mode == 'shared' && needs.node_boot_build.result == 'success' && needs.node_boot_platform_build.result == 'success')
+          || (needs.node_boot_plan.outputs.artifact_mode == 'legacy' && needs.node_boot_build.result == 'skipped' && needs.node_boot_platform_build.result == 'skipped'))
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: node-boot-${{ github.run_id }}-*
@@ -595,6 +642,7 @@ jobs:
         env:
           PLAN_RESULT: ${{ needs.node_boot_plan.result }}
           BUILD_RESULT: ${{ needs.node_boot_build.result }}
+          PLATFORM_RESULT: ${{ needs.node_boot_platform_build.result }}
           ARTIFACT_MODE: ${{ needs.node_boot_plan.outputs.artifact_mode }}
           SHARD_RESULT: ${{ needs.node_boot_shard.result }}
           SHARDS: ${{ needs.node_boot_plan.outputs.shards }}
@@ -603,8 +651,8 @@ jobs:
           set -euo pipefail
           echo "Node boot results: plan=$PLAN_RESULT mode=$ARTIFACT_MODE build=$BUILD_RESULT shards=$SHARD_RESULT"
           test "$PLAN_RESULT" = success
-          case "$ARTIFACT_MODE:$BUILD_RESULT" in
-            shared:success|legacy:skipped) ;;
+          case "$ARTIFACT_MODE:$BUILD_RESULT:$PLATFORM_RESULT" in
+            shared:success:success|legacy:skipped:skipped) ;;
             *) exit 1 ;;
           esac
           printf '%s' "$SHARDS" > "$RUNNER_TEMP/shards.json"
@@ -717,7 +765,7 @@ jobs:
           set -euo pipefail
           planner="$RUNNER_TEMP/pg-planner/plan_pg_partitions.py"
           affinity="$RUNNER_TEMP/pg-planner/pg_archive_affinity.py"
-          printf '%s  %s\n' '1d26d89fd1faff1752d47a7f2ae59dde980f8683fa791b85da35f92b79607321' "$planner" | sha256sum -c -
+          printf '%s  %s\n' '474632dcd52e86fc411ca24381012c1203341f4547e66f86889f0101720bcb1a' "$planner" | sha256sum -c -
           printf '%s  %s\n' 'db285d452e0cb5814a95f0c8b25ab969af5ee9637fd051a1a0fdbcb8221cb64a' "$affinity" | sha256sum -c -
           python3 -I - "$planner" "$affinity" <<'PY'
           import json

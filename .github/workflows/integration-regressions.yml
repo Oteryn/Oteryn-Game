@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/integration-regressions.yml'
+      - 'tools/repository/check_dispatch_pg_shards.py'
+      - 'crates/gameplay/dispatch/build_pg_shards.rs'
       - 'crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity/offline_death.rs'
       - 'apps/game-server/tests/integration_rest/main.rs'
       - 'apps/game-server/tests/integration_rest/content_item_fx_audio_raw.rs'
@@ -89,14 +91,13 @@ jobs:
   offline_death_postgres:
     name: PostgreSQL / retained offline-death retry
     runs-on: ubuntu-24.04
-    # The dispatch library test build peaks near the hosted runner's 16 GB; extra swap and
-    # time keep it from dying (owner decision for #3056). Two build jobs, as in the
-    # PostgreSQL partitions: with the default parallelism a cold-cache build still starved
-    # the runner until it lost contact (owner decision 2026-11-21).
+    # Keep the two-job resource limit landed in #3362 and the existing swap allowance.
+    # Compile only the current shard that owns the exact regression, as in the PG harness.
     timeout-minutes: 90
     env:
       CARGO_BUILD_JOBS: "2"
       CARGO_TERM_COLOR: never
+      DISPATCH_TEST_NAME: gameplay_transport::monk_save::postgres_tests::boss_activity::boss_activity_postgres_offline_native_death_deadline_retry_keeps_retained_trigger
       OTERYN_TEST_POSTGRES_ADMIN_URL: postgresql://oteryn_test_admin:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/postgres
     defaults:
       run:
@@ -156,6 +157,33 @@ jobs:
       - name: Normalize source mtimes for the restored Cargo cache
         run: python tools/repository/normalize_cargo_mtimes.py
 
+      - name: Select the exact regression compile shard
+        run: |
+          set -euo pipefail
+          if [[ -f tools/repository/check_dispatch_pg_shards.py ]] && \
+              python3 tools/repository/check_dispatch_pg_shards.py --help 2>/dev/null | grep -q -- '--test'; then
+            shard="$(python3 tools/repository/check_dispatch_pg_shards.py 3 --test "$DISPATCH_TEST_NAME")"
+            [[ "$shard" =~ ^[123]/3$ ]]
+            echo "OTERYN_DISPATCH_PG_SHARD=$shard" >> "$GITHUB_ENV"
+          else
+            # Older PR heads lack the exact-test resolver. Keep their complete
+            # qualification and leave the full harness compiler the runner RAM.
+            echo 'CARGO_BUILD_JOBS=1' >> "$GITHUB_ENV"
+          fi
+
+      - name: Install pinned mold linker
+        env:
+          MOLD_VERSION: 2.42.1
+          MOLD_SHA256: 6ff270c9bf07d2bec5c98aa324eb7c4daf6a1a4d815c05ff1708049616047855
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/mold.tar.gz"
+          curl --proto '=https' --tlsv1.2 -fsSL --retry 8 --retry-delay 15 --retry-all-errors --retry-max-time 150 --connect-timeout 30 -o "$archive" \
+            "https://github.com/rui314/mold/releases/download/v${MOLD_VERSION}/mold-${MOLD_VERSION}-x86_64-linux.tar.gz"
+          echo "${MOLD_SHA256}  ${archive}" | sha256sum -c -
+          tar -xzf "$archive" -C "$RUNNER_TEMP"
+          echo "MOLD_PRELOAD=$RUNNER_TEMP/mold-${MOLD_VERSION}-x86_64-linux/lib/mold/mold-wrapper.so" >> "$GITHUB_ENV"
+
       - name: Add swap for the dispatch library test build
         run: |
           set -euo pipefail
@@ -166,12 +194,56 @@ jobs:
           swapon --show
           free -h
 
+      - name: Compile the regression shard and identify its executable
+        env:
+          LD_PRELOAD: ${{ env.MOLD_PRELOAD }}
+        run: |
+          set -euo pipefail
+          /usr/bin/time -v -o "$RUNNER_TEMP/offline-death-build.resources" \
+            cargo +1.100.0 test --locked --config 'profile.dev.package.oteryn-gameplay-dispatch.debug=0' \
+            -p oteryn-gameplay-dispatch --lib --no-run --message-format=json-render-diagnostics \
+            > "$RUNNER_TEMP/offline-death-build.jsonl"
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          messages = [json.loads(line) for line in Path(os.environ['RUNNER_TEMP'], 'offline-death-build.jsonl').read_text().splitlines()]
+          matches = [row['executable'] for row in messages if row.get('reason') == 'compiler-artifact'
+                     and row.get('target', {}).get('name') == 'oteryn_gameplay_dispatch'
+                     and row.get('target', {}).get('kind') == ['lib']
+                     and row.get('profile', {}).get('test') is True and row.get('executable')]
+          if len(matches) != 1:
+              raise SystemExit('expected exactly one Dispatch test executable')
+          binary = Path(matches[0])
+          if not binary.is_file() or binary.is_symlink() or not os.access(binary, os.X_OK):
+              raise SystemExit('invalid Dispatch test executable')
+          with open(os.environ['GITHUB_ENV'], 'a') as output:
+              print(f'OFFLINE_DEATH_TEST_BIN={binary}', file=output)
+          PY
+          cat "$RUNNER_TEMP/offline-death-build.resources" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Qualify the exact retained offline-death retry on PostgreSQL
         run: |
           set -euo pipefail
           test -n "$OTERYN_TEST_POSTGRES_ADMIN_URL"
-          cargo +1.100.0 test --locked -p oteryn-gameplay-dispatch --lib \
-            'gameplay_transport::monk_save::postgres_tests::boss_activity::boss_activity_postgres_offline_native_death_deadline_retry_keeps_retained_trigger' \
-            -- --exact --nocapture 2>&1 | tee "$RUNNER_TEMP/offline-death-retry-postgres.log"
+          # Match Cargo's test working directory and dynamic dependency search path.
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/target/debug/deps${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          cd "$GITHUB_WORKSPACE/crates/gameplay/dispatch"
+          "$OFFLINE_DEATH_TEST_BIN" --list --exact "$DISPATCH_TEST_NAME" \
+            | grep -Fx "$DISPATCH_TEST_NAME: test"
+          /usr/bin/time -v -o "$RUNNER_TEMP/offline-death-test.resources" \
+            "$OFFLINE_DEATH_TEST_BIN" "$DISPATCH_TEST_NAME" --exact --nocapture \
+            2>&1 | tee "$RUNNER_TEMP/offline-death-retry-postgres.log"
           grep -Fq 'BOSS_ACTIVITY_STATE_AND_REPLAY POSTGRES_CASE_COMPLETED' "$RUNNER_TEMP/offline-death-retry-postgres.log"
           grep -Eq '^test result: ok\. 1 passed; 0 failed; 0 ignored; 0 measured;' "$RUNNER_TEMP/offline-death-retry-postgres.log"
+          cat "$RUNNER_TEMP/offline-death-test.resources" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Retain separate build and test diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: offline-death-diagnostics-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/offline-death-*
+          if-no-files-found: ignore
+          retention-days: 7
