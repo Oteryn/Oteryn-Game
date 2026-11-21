@@ -3152,12 +3152,11 @@ impl ChannelSpellStates {
                     oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict,
                 );
             }
-            if self.has_pending_spell_commit(source, *session) {
+            if super::creature_field::periodic_source_busy(r, self, source) {
                 return Err(
                     oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict,
                 );
             }
-            r.assert_actor_spell_unreserved(source)?;
             use oteryn_gameplay_domain::domain::condition::ConditionValues;
             let percent = match state.owned_conditions().attributes_at(at) {
                 Some(ConditionValues::Attributes {

@@ -1,12 +1,26 @@
 //! Field entry and residual ticks use the actual native creature store/HP owner.
 use super::{ComposedFreshAdmission, actor_spell::ChannelSpellStates};
 use crate::durability::DurabilityError;
-use crate::foundation::ChannelRuntimeV1;
+use crate::foundation::{ChannelRuntimeV1, ExactActorRef};
+use oteryn_gameplay_domain::domain::carrier_values::CarrierError;
 use oteryn_gameplay_entities::carrier::runtime_actor_periodic::CreatureFieldEntry;
 use oteryn_gameplay_foundation::foundation::condition::{
     ConditionDefinition, ConditionLineage, TickFacts,
 };
 use sha2::{Digest, Sha256};
+
+pub(super) fn periodic_source_busy(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    source: ExactActorRef,
+) -> bool {
+    matches!(
+        runtime.assert_actor_spell_unreserved(source),
+        Err(CarrierError::PlanConflict)
+    ) || states.actors.iter().any(|(actor, session, _)| {
+        *actor == source && states.has_pending_spell_commit(source, *session)
+    })
+}
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn tick_creature_fields(
@@ -122,31 +136,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 in_protection_zone: protection_zone,
                 standing_on_field: standing,
             };
-            // Preview only a cloned condition store. Actual due work is consumed
-            // once by the existing canonical owner after all source reads finish.
-            if native
+            let needs_source_facts = native
                 .policies()
                 .soul_war_health_policy(
                     &snapshot.state.policy.definition_key,
                     &snapshot.state.policy.definition_revision,
                 )
                 .is_some_and(|policy| {
-                    matches!(policy.kind(),
-                crate::content::native_soul_war_callbacks::SoulWarHealthCallbackKind::MirrorImage
-                | crate::content::native_soul_war_callbacks::SoulWarHealthCallbackKind::FourthTaint)
-                })
-            {
-                let mut preview = snapshot.state.conditions.clone();
-                for tick in preview.take_due(now, facts) {
-                    if let Some(source) = tick.provenance.source {
-                        source_players.push(source);
-                    }
-                }
-                if let Some(source) = entry.as_ref().and_then(|field| field.source) {
-                    source_players.push(source);
-                }
+                    matches!(
+                        policy.kind(),
+                        crate::content::native_soul_war_callbacks::SoulWarHealthCallbackKind::MirrorImage
+                            | crate::content::native_soul_war_callbacks::SoulWarHealthCallbackKind::FourthTaint
+                    )
+                });
+            let due = runtime
+                .preview_creature_field_due(snapshot, now, entry.as_ref(), facts)
+                .map_err(|_| DurabilityError::Unavailable)?;
+            let sources = due.iter().filter_map(|tick| tick.provenance.source);
+            let hooked = runtime
+                .encounter_hooks()
+                .is_some_and(|hooks| hooks.contains(visible.actor));
+            let skip_hp = hooked
+                || sources
+                    .clone()
+                    .any(|source| periodic_source_busy(runtime, states, source));
+            if !skip_hp && needs_source_facts {
+                source_players.extend(sources);
             }
-            plans.push((visible.actor, entry, facts));
+            plans.push((visible.actor, entry, facts, skip_hp));
         }
         if let Some(active) = self.active_generation {
             let room = map.room();
@@ -167,10 +184,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !map.validate_transaction(runtime).await {
             return Err(DurabilityError::Unavailable);
         }
-        for (actor, entry, facts) in plans {
+        for (actor, entry, facts, skip_hp) in plans {
             runtime
                 .commit_creature_field_entry(actor, now, entry.as_ref())
                 .map_err(|_| DurabilityError::Unavailable)?;
+            if skip_hp {
+                continue;
+            }
             let observations = match native_health_names.observe(runtime, actor) {
                 Ok(observation) => observation.into_iter().collect::<Vec<_>>(),
                 // Only this required health callback lacks facts. The original

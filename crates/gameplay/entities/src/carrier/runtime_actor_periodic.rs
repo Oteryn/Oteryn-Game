@@ -55,6 +55,75 @@ pub struct CreaturePeriodicImpact {
     pub damage: u64,
     pub healing: u64,
 }
+fn field_entry_is_current(
+    committed: &super::runtime_actor_conditions::CreatureCommitState,
+    position_revision: u64,
+    field: Option<&CreatureFieldEntry>,
+) -> bool {
+    committed.field_entry_revision == Some(position_revision)
+        && match (committed.field_entry.as_ref(), field) {
+            (Some(previous), Some(current)) => {
+                previous.occurrence == current.occurrence
+                    && previous.definition == current.definition
+            }
+            (None, None) => true,
+            _ => false,
+        }
+}
+
+fn preview_entry_and_due(
+    state: &mut CompanionState,
+    entry: Option<&CreatureFieldEntry>,
+    now_us: u64,
+    facts: Option<TickFacts>,
+    content_digest: [u8; 32],
+) -> Result<Vec<ConditionTick<ExactActorRef>>, CarrierError> {
+    if let Some(field) = entry {
+        let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(content_digest);
+        let facts = oteryn_gameplay_foundation::foundation::condition::ApplicationFacts {
+            now: now_us,
+            base_speed: u16::try_from(state.policy.base_speed)
+                .map_err(|_| CarrierError::PlanConflict)?,
+            mana_shield_capacity: 0,
+            target_reentry_protected: false,
+            source_reentry_protected: false,
+            target_is_player: false,
+            decision_root: &root,
+            occurrence: field.occurrence,
+        };
+        use oteryn_gameplay_domain::domain::condition::ConditionRefusal;
+        use oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind;
+        let result = if let Some(lineage) = &field.lineage {
+            state.conditions.apply_with_lineage(
+                &field.definition,
+                field.source,
+                ConditionSourceKind::Field,
+                &state.policy.condition_immunities,
+                &facts,
+                lineage,
+            )
+        } else {
+            state.conditions.apply(
+                &field.definition,
+                None,
+                ConditionSourceKind::Field,
+                &state.policy.condition_immunities,
+                &facts,
+            )
+        };
+        match result {
+            Ok(_)
+            | Err(
+                ConditionRefusal::Immune
+                | ConditionRefusal::KeptCurrent
+                | ConditionRefusal::ReentryProtected,
+            ) => {}
+            Err(_) => return Err(CarrierError::PlanConflict),
+        }
+    }
+    Ok(facts.map_or_else(Vec::new, |facts| state.conditions.take_due(now_us, facts)))
+}
+
 impl ChannelRuntimeV1 {
     /// Install entry once per actual position successor, before its due HP
     /// turn. Cancellation between these synchronous owner turns leaves the
@@ -65,26 +134,38 @@ impl ChannelRuntimeV1 {
         now_us: u64,
         field: Option<&CreatureFieldEntry>,
     ) -> Result<(), CarrierError> {
+        self.commit_creature_field_entry_inner(actor, now_us, None, field)
+    }
+
+    pub fn commit_creature_field_entry_at(
+        &mut self,
+        actor: ExactActorRef,
+        now_us: u64,
+        position_revision: u64,
+        field: Option<&CreatureFieldEntry>,
+    ) -> Result<(), CarrierError> {
+        self.commit_creature_field_entry_inner(actor, now_us, Some(position_revision), field)
+    }
+
+    fn commit_creature_field_entry_inner(
+        &mut self,
+        actor: ExactActorRef,
+        now_us: u64,
+        position_revision: Option<u64>,
+        field: Option<&CreatureFieldEntry>,
+    ) -> Result<(), CarrierError> {
         self.assert_actor_spell_unreserved(actor)?;
         let before = self.companion_snapshot(actor)?;
+        let position_revision = position_revision.unwrap_or(before.position_revision);
         self.owner_fence()?;
         let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
         let Slot::CreatureOccupied { committed, .. } = &self.carrier.slots[index] else {
             return Err(CarrierError::NotCreature);
         };
-        if committed.field_entry_revision == Some(before.position_revision)
-            && match (committed.field_entry.as_ref(), field) {
-                (Some(previous), Some(current)) => {
-                    previous.occurrence == current.occurrence
-                        && previous.definition == current.definition
-                }
-                (None, None) => true,
-                _ => false,
-            }
-        {
+        if field_entry_is_current(committed, position_revision, field) {
             return Ok(());
         }
-        let mut next = before.state.clone();
+        let mut next = before.state;
         if let Some(field) = field {
             if field.source.is_some() != field.lineage.is_some() {
                 return Err(CarrierError::PlanConflict);
@@ -99,50 +180,14 @@ impl ChannelRuntimeV1 {
             {
                 return Err(CarrierError::PlanConflict);
             }
-            let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(
-                self.content_pin().server_artifact_digest(),
-            );
-            let facts = oteryn_gameplay_foundation::foundation::condition::ApplicationFacts {
-                now: now_us,
-                base_speed: u16::try_from(before.state.policy.base_speed)
-                    .map_err(|_| CarrierError::PlanConflict)?,
-                mana_shield_capacity: 0,
-                target_reentry_protected: false,
-                source_reentry_protected: false,
-                target_is_player: false,
-                decision_root: &root,
-                occurrence: field.occurrence,
-            };
-            use oteryn_gameplay_domain::domain::condition::ConditionRefusal;
-            use oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind;
-            let result = if let Some(lineage) = &field.lineage {
-                next.conditions.apply_with_lineage(
-                    &field.definition,
-                    field.source,
-                    ConditionSourceKind::Field,
-                    &before.state.policy.condition_immunities,
-                    &facts,
-                    lineage,
-                )
-            } else {
-                next.conditions.apply(
-                    &field.definition,
-                    None,
-                    ConditionSourceKind::Field,
-                    &before.state.policy.condition_immunities,
-                    &facts,
-                )
-            };
-            match result {
-                Ok(_)
-                | Err(
-                    ConditionRefusal::Immune
-                    | ConditionRefusal::KeptCurrent
-                    | ConditionRefusal::ReentryProtected,
-                ) => {}
-                Err(_) => return Err(CarrierError::PlanConflict),
-            }
         }
+        preview_entry_and_due(
+            &mut next,
+            field,
+            now_us,
+            None,
+            self.content_pin().server_artifact_digest(),
+        )?;
         let Slot::CreatureOccupied {
             committed,
             companion,
@@ -152,9 +197,38 @@ impl ChannelRuntimeV1 {
             return Err(CarrierError::NotCreature);
         };
         *companion = Some(Box::new(next));
-        committed.field_entry_revision = Some(before.position_revision);
+        committed.field_entry_revision = Some(position_revision);
         committed.field_entry = field.cloned();
         Ok(())
+    }
+
+    /// The supplied snapshot owns a clone of the condition store. Only the
+    /// real entry and periodic turns can write back to the creature slot.
+    pub fn preview_creature_field_due(
+        &self,
+        mut snapshot: CompanionSnapshot,
+        now_us: u64,
+        field: Option<&CreatureFieldEntry>,
+        facts: TickFacts,
+    ) -> Result<Vec<ConditionTick<ExactActorRef>>, CarrierError> {
+        let index = self
+            .carrier
+            .validate_ref(&self.continuity, snapshot.actor.0)?;
+        let Slot::CreatureOccupied { committed, .. } = &self.carrier.slots[index] else {
+            return Err(CarrierError::NotCreature);
+        };
+        let entry = if field_entry_is_current(committed, snapshot.position_revision, field) {
+            None
+        } else {
+            field
+        };
+        preview_entry_and_due(
+            &mut snapshot.state,
+            entry,
+            now_us,
+            Some(facts),
+            self.content_pin().server_artifact_digest(),
+        )
     }
 
     /// Stages only a source-qualified physical actor's existing condition store.
