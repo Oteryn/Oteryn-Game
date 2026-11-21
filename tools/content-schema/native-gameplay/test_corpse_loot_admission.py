@@ -89,7 +89,9 @@ class CorpseLootAdmissionTests(unittest.TestCase):
             row = copy.deepcopy(self.profile)
             row['semantics'][field] = {'state': 'UNKNOWN'}
             variants.append((field, row))
-        for capacity in (0, 31, True):
+        # CORPSE48 (owner 2026-11-17): 48 is the ordinary corpse bound, so 49 is the
+        # first refused capacity (loot_data CORPSE_CONTAINER_ENTRIES_MAX).
+        for capacity in (0, 49, True):
             row = copy.deepcopy(self.profile)
             row['semantics']['container']['value']['capacity'] = {'state': 'KNOWN', 'value': capacity}
             variants.append((f'capacity-{capacity}', row))

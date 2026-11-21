@@ -88,16 +88,21 @@ class CorpseQualification(unittest.TestCase):
         self.assertEqual(self.plan.records['oteryn:item.tibia.i4292']['semantics']['container'],
                          corpse.grizzly.source.K({'capacity': corpse.grizzly.source.K(20)}))
 
-    def test_queen_projection_retains_source40_and_native30_without_changing_other_corpses(self):
+    def test_queen_corpse_keeps_source40_within_the_corpse48_bound(self):
+        # CORPSE48 (owner 2026-11-17): corpses up to 48 keep their source capacity.
         key = 'oteryn:item.tibia.i30272'
         self.assertEqual(corpse.grizzly.source.attrs(self.xml[30272])['containersize'], '40')
-        self.assertEqual(self.plan.projected_source_capacities, {key: 40, 'oteryn:item.tibia.i5999': 50, 'oteryn:item.tibia.i8909': 36})
+        self.assertEqual(self.plan.projected_source_capacities, {'oteryn:item.tibia.i5999': 50})
         self.assertEqual(self.plan.records[key]['semantics']['container'],
-                         corpse.grizzly.source.K({'capacity': corpse.grizzly.source.K(30)}))
+                         corpse.grizzly.source.K({'capacity': corpse.grizzly.source.K(40)}))
         packet = json.loads((corpse.ROOT / corpse.REQUIREMENTS).read_bytes())
-        for field, value in [('source_capacity', 41), ('native_capacity', 31)]:
+        self.assertEqual([r['item'] for r in packet['capacity_projections']], ['oteryn:item.tibia.i5999'])
+        record = {'item': key, 'source_capacity': 40, 'native_capacity': 48,
+                  'sources': ['imports/canary/items-xml/items.xml#30272']}
+        # A projection of a corpse that fits 48, or to any other native bound, is refused.
+        for field, value in [(None, None), ('native_capacity', 30), ('source_capacity', 49)]:
             bad = copy.deepcopy(packet)
-            bad['capacity_projections'][0][field] = value
+            bad['capacity_projections'] = [dict(record, **({field: value} if field else {}))]
             with patch.object(Path, 'read_bytes', return_value=json.dumps(bad).encode()):
                 with self.assertRaisesRegex(ValueError, 'PROJECTION_BINDING'):
                     corpse.projection_limits(corpse.ROOT, self.plan.roots, self.xml)

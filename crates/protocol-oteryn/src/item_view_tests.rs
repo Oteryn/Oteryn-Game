@@ -398,7 +398,7 @@ fn registries_bind_the_item_view_ids_and_limits() {
             STATE_DOMAIN_OPEN_CONTAINER,
             "OPEN_CONTAINER",
             "OpenContainerV1",
-            MAX_OPEN_CONTAINER_APPEARANCE_BYTES,
+            MAX_OPEN_CONTAINER_CORPSE_48_APPEARANCE_BYTES,
             DELTA_TYPE_OPEN_CONTAINER_V1,
             SNAPSHOT_TYPE_OPEN_CONTAINER_V1,
         ),
@@ -435,9 +435,13 @@ fn registries_bind_the_item_view_ids_and_limits() {
         limit("ITEMV0-RL-02"),
         Some(MAX_OPEN_CONTAINER_ENTRIES as u64)
     );
-    // SUMMER decision 20 raised durable corpse capacity to 30. The capability-4
-    // item view still has its separate ITEMV0-RL-02 limit of 16 entries.
-    assert_eq!(limit("GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX"), Some(30));
+    // CORPSE48 (owner 2026-11-17) raised durable corpse capacity to 48; capability 514
+    // shows all of it, while the legacy domain-11 bound ITEMV0-RL-02 stays 30.
+    assert_eq!(limit("GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX"), Some(48));
+    assert_eq!(
+        limit("ITEMV0-RL-02-CORPSE48"),
+        Some(MAX_CORPSE_CONTAINER_48_ENTRIES as u64)
+    );
     assert_eq!(limit("ITEMV0-RL-03"), Some(MAX_LIVE_ITEM_HANDLES as u64));
     assert_eq!(MAX_LIVE_ITEM_HANDLES_MAP_VIEW, 1_339);
     assert_eq!(
@@ -1130,4 +1134,66 @@ fn container_manual_sort_slot_is_negotiated_bounded_and_round_trips()
     );
     assert!(decode_item_move_intent_with_count_for(&payload, tree).is_err());
     Ok(())
+}
+
+// CORPSE48: capability 514 CORPSE_CONTAINER_48_V1.
+
+#[test]
+fn corpse_48_views_round_trip_forty_eight_entries_and_refuse_forty_nine() {
+    let mut view = container(48, worst);
+    view.container_handle = Some(handle(u64::MAX));
+    let bytes = encode_open_container_for(&view, false, true).expect("514 maximum");
+    assert_eq!(bytes.len(), MAX_OPEN_CONTAINER_CORPSE_48_BYTES);
+    assert_eq!(MAX_OPEN_CONTAINER_CORPSE_48_BYTES, 1_499);
+    assert_eq!(
+        decode_open_container_for(&bytes, false, true),
+        Ok(view.clone())
+    );
+    // Without 514 the legacy bounds stay: 31..=48 entries are refused both ways.
+    assert_eq!(
+        encode_open_container(&view),
+        Err(ItemViewWireError::LimitExceeded)
+    );
+    assert_eq!(
+        decode_open_container(&bytes),
+        Err(ItemViewWireError::LimitExceeded)
+    );
+    let legacy = encode_open_container_for(&container(30, worst), false, true).expect("30");
+    assert_eq!(decode_open_container(&legacy), Ok(container(30, worst)));
+    let mut over = Vec::new();
+    for entry in container(31, worst).entries {
+        encode_entry(&mut over, 2, &entry);
+    }
+    assert_eq!(
+        decode_open_container(&over),
+        Err(ItemViewWireError::LimitExceeded)
+    );
+
+    let mut forty_nine = container(49, worst);
+    forty_nine.container_handle = Some(handle(1));
+    assert_eq!(
+        encode_open_container_for(&forty_nine, true, true),
+        Err(ItemViewWireError::LimitExceeded)
+    );
+    let mut over = Vec::new();
+    for entry in container(49, small).entries {
+        encode_entry(&mut over, 2, &entry);
+    }
+    assert!(over.len() <= MAX_OPEN_CONTAINER_CORPSE_48_BYTES);
+    assert_eq!(
+        decode_open_container_for(&over, false, true),
+        Err(ItemViewWireError::LimitExceeded)
+    );
+
+    for item in &mut view.entries {
+        item.appearance_id = u16::MAX;
+    }
+    let bytes = encode_open_container_for(&view, true, true).expect("499 and 514 maximum");
+    assert_eq!(bytes.len(), MAX_OPEN_CONTAINER_CORPSE_48_APPEARANCE_BYTES);
+    assert_eq!(MAX_OPEN_CONTAINER_CORPSE_48_APPEARANCE_BYTES, 1_691);
+    assert_eq!(decode_open_container_for(&bytes, true, true), Ok(view));
+    assert_eq!(
+        MAX_LIVE_ITEM_HANDLES + MAX_CORPSE_CONTAINER_48_EXTRA_HANDLES,
+        MAX_LIVE_ITEM_HANDLES - MAX_OPEN_CONTAINER_ENTRIES + MAX_CORPSE_CONTAINER_48_ENTRIES
+    );
 }

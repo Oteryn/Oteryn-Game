@@ -3,20 +3,21 @@
   "owner_contract": "../architecture/reviews/OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md",
   "resource": "Direct Container(parent = corpse) entries of one creature's corpse ItemInstance",
   "unit": "entries per corpse",
-  "hard_maximum": 30,
+  "hard_maximum": 48,
   "configurable_range": {
     "minimum": 1,
-    "maximum": 30
+    "maximum": 48
   },
   "failure_category": "CAPACITY_EXCEEDED",
-  "allocation_impact": "The composing caller checks the full accepted loot plan before freezing any mint. At commit, the database locks the corpse receipt before counting and admits at most 30 direct entries, including concurrent writers. Generated loot-plan limits remain separate.",
+  "allocation_impact": "The composing caller checks the full accepted loot plan before freezing any mint. At commit, the database locks the corpse receipt before counting and admits at most 48 direct entries, including concurrent writers. Generated loot-plan limits remain separate.",
   "client_visible": false,
   "boundary_tests": [
-    "max=30: the 30th loot entry is placed in the corpse container",
-    "max+1=31: the 31st loot entry is refused by the database, leaving exactly 30 live entries"
+    "max=48: the 48th loot entry is placed in the corpse container",
+    "max+1=49: the 49th loot entry is refused by the database, leaving exactly 48 live entries"
   ],
   "consumers": [
-    "apps/game-server/migrations/0242_summer_corpse_capacity.sql (game_item_corpse_container_entry_proven)"
+    "apps/game-server/migrations/0242_summer_corpse_capacity.sql (game_item_corpse_container_entry_proven)",
+    "apps/game-server/migrations/2970_corpse_container_48_entries.sql (raises the trigger ceiling and the CORPSE_DECAY retirement ordinal to 48)"
   ],
-  "notes": "SUMMER owner decision 20 (2026-10-26) supersedes D131 capacity 16. Container capacity is 30; the independent COMBAT01-LOOT-PLAN-ITEMS and COMBAT01-ITEMS-PER-CORPSE limits remain 16 for generated plans. Actual Item capacity and lifecycle still require content admission."
+  "notes": "CORPSE48 owner decision (2026-11-17) raises the capacity to 48 for every corpse, matching Tibia Global (Canary items.xml gives 119 corpses containersize=48); it supersedes SUMMER owner decision 20 (2026-10-26, capacity 30), which superseded D131 capacity 16. A plan above 48 (bosstiary slot-loot bonus included) is still refused whole. The independent COMBAT01-LOOT-PLAN-ITEMS and COMBAT01-ITEMS-PER-CORPSE limits remain separate for generated plans. Actual Item capacity and lifecycle still require content admission."
 }
