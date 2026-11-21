@@ -118,6 +118,10 @@ pub(super) async fn activity_equipment_clocks_charge_worn_items(
     drop(permit);
     owner.clock_origin -= std::time::Duration::from_secs(61);
     if case == Case::Contended {
+        owner.quest_catalogue = Some(std::sync::Arc::new(
+            oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                .map_err(debug)?.catalogue().clone(),
+        ));
         let mut lock = h.pool.begin().await?;
         sqlx::query("LOCK TABLE game_durability_admission_account_guards IN EXCLUSIVE MODE")
             .execute(&mut *lock).await?;
