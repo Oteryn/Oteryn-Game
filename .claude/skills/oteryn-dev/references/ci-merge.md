@@ -54,6 +54,17 @@ recipe for both fast tests and PostgreSQL. The PG producer checks for a verified
 same-head archive before installing build tools or restoring a Cargo target.
 If no compatible producer is available, it builds locally; an invalid selected
 artifact fails. Route-less fast results never count as PostgreSQL qualification.
+For a deliberate reuse qualification, apply `heavy-tests` to the frozen head
+once all three dedicated producers are active or their artifacts are available.
+Queued or undiscovered producers can exhaust the bounded discovery window and
+cause local fallback; report those builds separately from successful reuse.
+Waiting for producer admission can delay other PG archives, so measure the
+complete critical path as well as summed runner time.
+The exact MAX501 retirement test reserves all nextest slots on its worker via
+the generated planner config. Its production two-second transaction budget and
+501-item assertions remain intact; other cases retain ordinary parallelism.
+This isolates a hard-budget case from competing fixture processes. Qualify the
+actual PG result separately from the scheduler's own protocol tests.
 Use `check_dispatch_pg_shards.py 3 --test <full-test-name>` for the focused
 offline-death compiler shard; its workflow measures build and test separately.
 
@@ -66,8 +77,11 @@ the final production smoke build still qualifies its original feature graph.
 
 WorldProject builds its compatible native tools together but still performs two
 independent materializations and the completion/idempotence checks. Content
-migration uses one bounded pool of 40 checks before the global validator. Native
-entry's common producer runs only when its qualification is requested; an
+migration runs pinned-source contracts, the bounded pool of 40 checks, and the
+full validator plus StarterKit seals in three independent exact-head workspaces.
+The original named aggregate requires success from all three; child failure,
+cancellation or skipping cannot pass it. Native entry's common producer runs
+only when its qualification is requested; an
 unavailable compatible artifact permits a fallback build alongside real Platform
 issuance, while an invalid supplied artifact fails.
 

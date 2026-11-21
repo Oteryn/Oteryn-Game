@@ -9,14 +9,14 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: chatgpt/ci-bottlenecks-single-pr-20261121
 issue: 3352
-pr: null
+pr: 3367
 base_sha: 984aefe4b93e1849fe92764e62ae26a66984fcd6
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT standalone CI programme coordinator, issue 3352
 created_at: 2026-11-21T09:29:01Z
-updated_at: 2026-11-21T17:42:21Z
+updated_at: 2026-11-21T18:36:25Z
 execution_policy: continuous_progress
 owned_paths:
   - .github/workflows/
@@ -52,10 +52,12 @@ checks and protected-main integration. No achieved latency target is claimed.
   force-merge authorization remains in the session. This is standalone CI work,
   not quest automation or a change to that programme's control plane.
 - Integrated base: `984aefe4b93e1849fe92764e62ae26a66984fcd6`; sole writer:
-  `chatgpt/ci-bottlenecks-single-pr-20261121`. State: **AUTHORING**, no frozen head yet.
-  The earlier f067-based placeholder branch has no material commit or PR. This
-  fresh candidate incorporates #3361 and preserves #3362's two-job build limit;
-  all candidate-specific local checks are rerun on the integrated tree.
+  `chatgpt/ci-bottlenecks-single-pr-20261121`, PR #3367. State: **AUTHORING**
+  for a repair successor of `7533aaef77924f71a1402267824e538362bade3b`.
+  Root ended the first freeze at 18:04 UTC. Repair set: mold environment,
+  ignored-case inventory, independent content jobs, Platform route metadata,
+  and MAX501 runner-slot isolation. All five findings form one repair push.
+  #3361 and #3362's two-job build limit remain included.
 - Publication: native Git dry-run returned `fatal: unable to get password from
   user`. Use the already selected META 3.1.0 API-native new-candidate route with
   a complete bounded delta, sole-parent commit, fresh expected-head lease,
@@ -85,27 +87,31 @@ may be fabricated. Any rejection remains visible. No latency or monetary saving
 is claimed until the integrated head has run; compare both critical-path time
 and summed runner time, including artifact transfer and fallback builds.
 
-Acceptance still pending: exact-head workflow validation, full integrated review,
-real PostgreSQL/Node boot qualification and post-merge observation. Locally
-unavailable live services are CI obligations, never recorded as passing tests.
+Acceptance pending: repaired-head CI/review and post-merge observation. First-head
+review was clean; CI found the five failures above. Its manual integration
+44932248950 passed 38 tests using the shared compiler; native entry passed three
+tests using fallback. WorldProject passed 55 Rust tests in 26m57s, not a speedup.
 
-Known baseline failures are separate from build optimizations: main run
-`44920758625` at `f067b43cfde9c2559454f4b78e1763ac6bfc11c0` failed Node
-`g-core-mp` with admission-journal holder contention and PostgreSQL partition 4
-with a transaction timeout. No runtime repair or measured improvement is claimed
-by the artifact changes. Independent review must include the full protected
-workflow/pin delta and the older-head/partial-rerun compatibility paths.
+Prior main `44920758625` failed Node admission contention and MAX501. PR run
+44931703117 repeated MAX501 while three unrelated tests overlapped its timed
+transaction. Exact-test slot reservation preserves the 2000ms contract and
+501-item atomicity; real PG qualification remains pending. No production SQL
+or Node runtime repair is claimed. Review includes protected pins and compatibility.
 
 ### Second-wave local validation on the integrated tree
 
-- Complete repository-tool suite: 278/278 tests, zero failures/errors/skips.
-  The final run observed no source changes. The old heavy-gate fixtures were
+- Repair repository-tool suite: 282/282 tests, zero failures/errors/skips.
+  The earlier integrated run had 278 tests. The old heavy-gate fixtures were
   updated for the actual canonical producer and new dependencies; all prior
   failure/skip cases remain and the focused 26-test suite passes.
 - Governance: 135 tests and validation pass; repository policy passes for
   23 files and 78 workflows.
-- World/native helpers: 51 tests pass. Node prebuilt: 15; Platform: 13;
+- World/native helpers: 51 tests pass. Node prebuilt: 15; repaired Platform: 16;
   Node diagnostics: 38; Node matrix: 16. Shell syntax checks pass.
+- Content aggregate: five tests pass, including actual shell failure propagation;
+  the 40 checks and every original qualification command remain preserved.
+- Real nextest/mold protocol, MAX501 scheduling and linker installer reproduce the
+  first-head errors and pass with the repairs; artifact custody remains strict.
 - Workspace `cargo +1.100.0 fmt --all --check` and actionlint 1.7.12 on all
   13 changed workflows pass.
 - Full merge-group contract passes, including 54 workflow mutations, four
@@ -118,8 +124,8 @@ workflow/pin delta and the older-head/partial-rerun compatibility paths.
 - Not run locally: full project Rust compilation, live PostgreSQL/Platform and
   the World artifact boot integration target. No Cargo target/registry cache
   or local PostgreSQL route was available. These remain CI obligations.
-  Manual integration dispatch also requires an authenticated execution route;
-  the available cloud browser showed GitHub signed out.
+  Manual integration dispatch uses the owner-authorized Molehill GitHub CLI
+  after exact-head verification; no Git publication uses that route.
 
 These results qualify the authoring tree for publication and independent review;
 they do not establish hosted CI success, deployment or performance savings.
@@ -182,21 +188,15 @@ Branches: `chatgpt/ci-pg-flow-20261121`,
 `chatgpt/ci-migrator-reuse-20261121`, `chatgpt/ci-build-deltas-20261121`.
 This card remains active across those PRs and later measured programme work.
 
-Native local Git publication was attempted with a non-mutating dry run and failed
-because no GitHub credentials were available. The coordinator selects the bound
-META API-native new-candidate route: complete bounded tree, one sole-parent
-successor, fresh expected-head lease, one non-force ref movement, live readback,
-then fresh freeze/CI/review. This does not preserve any earlier candidate identity.
+First-wave publication receipts remain in issue #3352. The current route and
+candidate lifecycle are recorded above.
 
 ## First-wave validation history
 
-The first wave is merged: #3353 (PG reruns), #3354 (real-edit benchmark),
-#3355 (per-archive PG scheduling and M23), #3356 (shared embedded migrations).
-The exact heads, merge commits, focused checks, actual PG jobs and review
-receipts are retained in issue #3352. Those historical results are not reused
-as qualification of this second-wave candidate. The programme remains open:
-real-edit measurements, persistent-builder qualification, the 10–15-minute
-latency goal and measured RAM/cost savings have not been established.
+Merged first wave: #3353 (PG reruns), #3354 (benchmark), #3355 (PG scheduling/M23),
+#3356 (shared migrator). Exact evidence remains in #3352, not qualification of
+this candidate. The programme stays open for real-edit/persistent-builder
+measurements, the 10–15-minute goal and measured RAM/cost savings.
 
 ## Self-review
 
@@ -205,8 +205,9 @@ before publication. Worker summaries do not replace source inspection.
 
 ## Independent review
 
-Required on each separately merging PR under OWNER_FUNDED_AI_POLICY.md. Root is
-the unique review dispatcher after a live same-head de-duplication check. Pending.
+Root is the sole dispatcher under OWNER_FUNDED_AI_POLICY.md. First-head review
+completed clean (PR #3367 comment 7066802278). A material repair needs the second
+and final independent delta review after local validation and successor freeze.
 
 ## PR and closeout
 

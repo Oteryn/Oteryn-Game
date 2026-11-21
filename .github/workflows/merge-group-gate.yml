@@ -1134,7 +1134,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_SHA"
-          echo "474632dcd52e86fc411ca24381012c1203341f4547e66f86889f0101720bcb1a  tools/ci/plan_pg_partitions.py" | sha256sum -c -
+          echo "ae799f44591c0b5f73fa16c177e71c523da9a53923c4791ebb88c99521537ee9  tools/ci/plan_pg_partitions.py" | sha256sum -c -
           python3 tools/ci/pg_archive_affinity.py verify "$RUNNER_TEMP" mq \
             "$PG_ARCHIVES" "$SELECTED_ARCHIVE" "$EXPECTED_SHA" "$GITHUB_WORKSPACE" tools/ci/plan_pg_partitions.py
 
@@ -1155,7 +1155,7 @@ jobs:
           JOB_INDEX="${ARCHIVE_INDEX:?missing archive worker index}"
           JOB_TOTAL="${ARCHIVE_TOTAL:?missing archive worker count}"
           # Verify the reviewed planner before it chooses which tests to run.
-          echo "474632dcd52e86fc411ca24381012c1203341f4547e66f86889f0101720bcb1a  tools/ci/plan_pg_partitions.py" | sha256sum -c -
+          echo "ae799f44591c0b5f73fa16c177e71c523da9a53923c4791ebb88c99521537ee9  tools/ci/plan_pg_partitions.py" | sha256sum -c -
           python3 tools/ci/plan_pg_partitions.py "$plan" "$JOB_INDEX" "$JOB_TOTAL" \
             tools/ci/pg_test_durations.json --optional-archives
 

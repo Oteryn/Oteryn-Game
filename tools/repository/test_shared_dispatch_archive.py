@@ -114,6 +114,45 @@ class SharedDispatchArchiveTests(unittest.TestCase):
         self.assertEqual({path.name for path in output.iterdir()}, set(shared.FILES) | {shared.MANIFEST})
         self.assertEqual((output / "unit-tests.tar.zst").read_bytes(), b"the nextest archive")
 
+    def test_complete_inventory_keeps_nextest_ignored_cases_and_their_identity(self):
+        # This is the default nextest-list wire format, including existing
+        # #[ignore] tests. Listing preserves them without selecting execution.
+        path = self.directory / "inventory.json"
+        listing = json.loads(path.read_text())
+        cases = listing["rust-suites"]["dispatch"]["testcases"]
+        ignored = "canonical_monster_successor_tests::canonical_monster_successor_reseal_and_preservation"
+        cases[ignored] = {"kind": "test", "ignored": True,
+                          "filter-match": {"status": "mismatch", "reason": "ignored"}}
+        listing["test-count"] = len(cases)
+        path.write_text(json.dumps(listing))
+        observed = shared.inventory(path)
+        expected_names = sorted((name, case["ignored"]) for name, case in cases.items())
+        self.assertEqual(observed["tests"], 3)
+        self.assertEqual(observed["identity"], hashlib.sha256(
+            json.dumps(expected_names, separators=(",", ":")).encode()).hexdigest())
+        self.manifest = shared.manifest(self.directory, self.identity, 71, 2)
+        self.write_manifest()
+        output = self.restore(self.api())
+        self.assertEqual(json.loads((output / "inventory.json").read_text()), listing)
+
+    def test_inventory_rejects_filter_exclusions_other_than_existing_ignored_cases(self):
+        path = self.directory / "inventory.json"
+        original = json.loads(path.read_text())
+        mutations = (
+            {"ignored": False, "filter-match": {"status": "mismatch", "reason": "ignored"}},
+            {"ignored": False, "filter-match": {"status": "mismatch", "reason": "expression"}},
+            {"ignored": True, "filter-match": {"status": "mismatch", "reason": "expression"}},
+            {"ignored": True, "filter-match": {"status": "mismatch", "reason": "partition"}},
+            {"ignored": True, "filter-match": {"status": "mismatch"}},
+            {"ignored": "true", "filter-match": {"status": "mismatch", "reason": "ignored"}},
+        )
+        for case in mutations:
+            listing = copy.deepcopy(original)
+            listing["rust-suites"]["dispatch"]["testcases"]["ordinary::case"] = case
+            path.write_text(json.dumps(listing))
+            with self.subTest(case=case), self.assertRaisesRegex(ValueError, "inventory"):
+                shared.inventory(path)
+
     def test_record_requires_a_matching_build_receipt(self):
         with self.assertRaisesRegex(ValueError, "receipt"):
             shared.record(self.directory, self.role, root=self.root, env=self.env)

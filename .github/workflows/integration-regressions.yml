@@ -182,7 +182,9 @@ jobs:
             "https://github.com/rui314/mold/releases/download/v${MOLD_VERSION}/mold-${MOLD_VERSION}-x86_64-linux.tar.gz"
           echo "${MOLD_SHA256}  ${archive}" | sha256sum -c -
           tar -xzf "$archive" -C "$RUNNER_TEMP"
-          echo "MOLD_PRELOAD=$RUNNER_TEMP/mold-${MOLD_VERSION}-x86_64-linux/lib/mold/mold-wrapper.so" >> "$GITHUB_ENV"
+          mold_dir="$RUNNER_TEMP/mold-${MOLD_VERSION}-x86_64-linux"
+          echo "MOLD_PATH=$mold_dir/bin/mold" >> "$GITHUB_ENV"
+          echo "MOLD_PRELOAD=$mold_dir/lib/mold/mold-wrapper.so" >> "$GITHUB_ENV"
 
       - name: Add swap for the dispatch library test build
         run: |

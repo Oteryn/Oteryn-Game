@@ -47,8 +47,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  validate:
-    name: Content tree / Item+Mount equivalence
+  source_contracts:
+    name: Content tree / Pinned source contracts
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -149,6 +149,37 @@ jobs:
           # Later steps read the candidate tree only.
           rm -rf "$SRC"
 
+  # The checks use isolated fixtures. Their result does not produce input for
+  # the full validator, so each group can qualify the same head independently.
+  migration_checks:
+    name: Content tree / Migration equivalence checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify exact head
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+
+      - name: Install pinned authoring dependencies
+        run: python -m pip install -r tools/content-schema/item-authoring/requirements.txt
+
+      - name: Install imbuement authoring validator
+        run: python -m pip install -r tools/content-schema/imbuement-authoring/requirements.txt
+
       - name: Validate successor Item/Mount tree against legacy WorldProject
         run: |
           set -euo pipefail
@@ -159,7 +190,7 @@ jobs:
             python -m py_compile tools/content-migration/parallel_checks.py
             python -m unittest discover -s tools/content-migration -p test_parallel_checks.py
             # One two-process pool contains both the inner contracts and independent
-            # outer scripts. No nested pools; the shared full validator runs last.
+            # outer scripts. The full validator has its own exact-head workspace.
             python tools/content-migration/test_world_project_v2_to_tree.py --jobs 2 --workflow-checks
           else
             # Exact older PR heads retain every original check and invocation.
@@ -174,9 +205,59 @@ jobs:
             python tools/content-migration/test_item_external_family_refinement.py
             python tools/content-migration/test_item_bounded7_navigation.py
           fi
-          python tools/content-migration/validate_world_project_v2_to_tree.py
+
+  content_integrity:
+    name: Content tree / Full validator and seals
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify exact head
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+
+      - name: Install pinned authoring dependencies
+        run: python -m pip install -r tools/content-schema/item-authoring/requirements.txt
+
+      - name: Install imbuement authoring validator
+        run: python -m pip install -r tools/content-schema/imbuement-authoring/requirements.txt
+
+      - name: Validate the complete candidate content tree
+        run: python tools/content-migration/validate_world_project_v2_to_tree.py
 
       - name: Check StarterKit seals against the base revision
         env:
           SEAL_BASE: ${{ github.event.pull_request.base.sha || 'origin/main' }}
         run: python tools/content-schema/starter-kit-authoring/starter_kit_authoring.py content --check --seal-base "$SEAL_BASE"
+
+  validate:
+    name: Content tree / Item+Mount equivalence
+    needs: [source_contracts, migration_checks, content_integrity]
+    if: ${{ always() && !cancelled() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Require every content qualification
+        env:
+          SOURCE_CONTRACTS: ${{ needs.source_contracts.result }}
+          MIGRATION_CHECKS: ${{ needs.migration_checks.result }}
+          CONTENT_INTEGRITY: ${{ needs.content_integrity.result }}
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_CONTRACTS" == success ]]
+          [[ "$MIGRATION_CHECKS" == success ]]
+          [[ "$CONTENT_INTEGRITY" == success ]]

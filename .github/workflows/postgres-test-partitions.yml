@@ -682,7 +682,7 @@ jobs:
           set -euo pipefail
           test "$PG_WORKSPACE" = "$BUILD_WORKSPACE"
           planner="$RUNNER_TEMP/pg-planner/plan_pg_partitions.py"
-          printf '%s  %s\n' '474632dcd52e86fc411ca24381012c1203341f4547e66f86889f0101720bcb1a' "$planner" | sha256sum -c -
+          printf '%s  %s\n' 'ae799f44591c0b5f73fa16c177e71c523da9a53923c4791ebb88c99521537ee9' "$planner" | sha256sum -c -
           printf '%s  %s\n' 'db285d452e0cb5814a95f0c8b25ab969af5ee9637fd051a1a0fdbcb8221cb64a' "$RUNNER_TEMP/pg-planner/pg_archive_affinity.py" | sha256sum -c -
           python3 "$RUNNER_TEMP/pg-planner/pg_archive_affinity.py" verify "$RUNNER_TEMP" pr \
             "$EXPECTED_ARCHIVES" "$SELECTED_ARCHIVE" "$EXPECTED_SHA" "$BUILD_WORKSPACE" "$planner"
@@ -772,7 +772,7 @@ jobs:
             test "$LABEL" = "$((JOB_INDEX + 1))"
           fi
           # Verify the reviewed planner before it chooses which tests to run.
-          printf '%s  %s\n' '474632dcd52e86fc411ca24381012c1203341f4547e66f86889f0101720bcb1a' "$RUNNER_TEMP/pg-planner/plan_pg_partitions.py" | sha256sum -c -
+          printf '%s  %s\n' 'ae799f44591c0b5f73fa16c177e71c523da9a53923c4791ebb88c99521537ee9' "$RUNNER_TEMP/pg-planner/plan_pg_partitions.py" | sha256sum -c -
           python3 "$RUNNER_TEMP/pg-planner/plan_pg_partitions.py" "$plan" "$JOB_INDEX" "$JOB_TOTAL" \
             tools/ci/pg_test_durations.json --optional-archives
 

@@ -7,6 +7,7 @@ import io
 import json
 from pathlib import Path
 import tempfile
+import tomllib
 import unittest
 
 MODULE = Path(__file__).resolve().parents[1] / "ci" / "plan_pg_partitions.py"
@@ -75,6 +76,50 @@ class PartitionPlanTests(unittest.TestCase):
         self.listing("pg-e2e", "durability", "postgres_case")
         with self.assertRaisesRegex(ValueError, "duplicate"):
             planner.read_cases(self.plan, optional=True)
+
+    def test_max501_reserves_all_slots_even_without_a_duration_measurement(self):
+        binary = "oteryn-game-server::character_authority_postgres"
+        name = "player_death_item_primitives::player_death_nested_maximum_501_item_reset_makes_bounded_atomic_progress"
+        self.listing("pg-e2e", binary, name, "ordinary_case")
+        with contextlib.redirect_stdout(io.StringIO()):
+            planner.write_partition(self.plan, 0, 1, {}, optional=True)
+        config = tomllib.loads((self.plan / "priority.toml").read_text())
+        self.assertEqual(config["profile"]["default"]["overrides"], [{
+            "filter": f"binary_id(={binary}) & test(={name})",
+            "threads-required": "num-test-threads",
+        }])
+        self.assertEqual(set((self.plan / "pg-e2e.filters").read_text().splitlines()), {
+            f"--filterset=binary_id(={binary}) & test(={case})" for case in (name, "ordinary_case")
+        })
+
+    def test_max501_reservation_is_exact_and_preserves_all_existing_priorities(self):
+        binary = "oteryn-game-server::character_authority_postgres"
+        name = "player_death_item_primitives::player_death_nested_maximum_501_item_reset_makes_bounded_atomic_progress"
+        cases = (name, name + "_other", "wrapper::" + name, "ordinary_case")
+        self.listing("pg-e2e", binary, *cases)
+        # A same-named case in another binary is not this resource contract.
+        self.listing("pg-lib", "other-server::character_authority_postgres", name)
+        durations = {f"{binary} {case}": 120 for case in cases}
+        all_filters, reservations = [], []
+        for index in range(2):
+            with contextlib.redirect_stdout(io.StringIO()):
+                planner.write_partition(self.plan, index, 2, durations, optional=True)
+            filters = {line for file in self.plan.glob("*.filters")
+                       for line in file.read_text().splitlines()}
+            all_filters.append(filters)
+            config = tomllib.loads((self.plan / "priority.toml").read_text())
+            overrides = config.get("profile", {}).get("default", {}).get("overrides", [])
+            for override in overrides:
+                self.assertEqual(override["priority"], 24)
+                if "threads-required" in override:
+                    self.assertEqual(override["filter"], f"binary_id(={binary}) & test(={name})")
+                    self.assertEqual(override["threads-required"], "num-test-threads")
+                    reservations.append(index)
+            selected = f"--filterset=binary_id(={binary}) & test(={name})" in filters
+            self.assertEqual(any("threads-required" in item for item in overrides), selected)
+        self.assertFalse(all_filters[0] & all_filters[1])
+        self.assertEqual(len(all_filters[0] | all_filters[1]), 5)
+        self.assertEqual(len(reservations), 1)
 
     def test_new_rune_cases_use_historical_budget_until_measured(self):
         binary, old = planner.OLD_RUNE_CASE.split(" ", 1)

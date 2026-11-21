@@ -5,6 +5,7 @@ from pathlib import Path
 import re
 import shlex
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -96,6 +97,72 @@ python3() {{ [[ "$2 $3" == 'verify server-seam' ]]; return "$VERIFY_RESULT"; }}
                     else:
                         self.assertEqual(executed.returncode, 2)
                         self.assertNotIn(str(package), executed.stdout)
+
+
+class RouteCheckConsumers(unittest.TestCase):
+    def run_route_check(self, metadata_kind, *, conflict=(2, {"error": "conflict"}),
+                        replay_code=0, replay_body=None):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            binary = root / ("prebuilt portal" if metadata_kind == "prebuilt" else "target/debug/oteryn-portal")
+            binary.parent.mkdir(parents=True, exist_ok=True)
+            calls_path = root / "route-calls.jsonl"
+            original = {"port": 65535, "routeId": "test-route"}
+            expected = {"routeRevision": "1", "routeId": "test-route"}
+            responses = [conflict, (replay_code, expected if replay_body is None else replay_body)]
+            binary.write_text(f'''#!{sys.executable}
+import json
+from pathlib import Path
+import sys
+calls_path = Path({str(calls_path)!r})
+previous = calls_path.read_text().splitlines() if calls_path.exists() else []
+with calls_path.open("a") as output:
+    output.write(json.dumps(sys.argv[1:]) + "\\n")
+code, body = {responses!r}[len(previous)]
+print(json.dumps(body))
+sys.exit(code)
+''')
+            binary.chmod(0o700)
+            metadata = {"executable": str(binary)} if metadata_kind == "prebuilt" else {"target_directory": str(root / "target")}
+            (root / "portal-meta.json").write_text(json.dumps(metadata))
+            (root / "route-input.json").write_text(json.dumps(original))
+            (root / "portal-report.json").write_text(json.dumps({"seed": {"route": expected}}))
+            (root / "portal/secrets").mkdir(parents=True)
+            (root / "portal/secrets/env.json").write_text("{}")
+            result = subprocess.run([sys.executable, str(HERE / "route_check.py"), str(root)],
+                                    env={}, capture_output=True, text=True, timeout=10, check=False)
+            calls = [json.loads(line) for line in calls_path.read_text().splitlines()] if calls_path.exists() else []
+            return result, calls, original
+
+    def test_route_conflict_and_replay_execute_for_both_metadata_forms(self):
+        for metadata in ("prebuilt", "cargo"):
+            with self.subTest(metadata=metadata):
+                result, calls, original = self.run_route_check(metadata)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(len(calls), 2)
+                self.assertEqual(calls[0][:2], ["seed", "route"])
+                self.assertEqual(calls[1][:2], ["seed", "route"])
+                self.assertEqual(json.loads(calls[0][2]), {**original, "port": 1})
+                self.assertEqual(json.loads(calls[1][2]), original)
+
+    def test_route_conflict_wrong_exit_or_error_still_fails(self):
+        for metadata in ("prebuilt", "cargo"):
+            for response in ((0, {"error": "conflict"}), (2, {"error": "unavailable"})):
+                with self.subTest(metadata=metadata, response=response):
+                    result, calls, _ = self.run_route_check(metadata, conflict=response)
+                    self.assertEqual(result.returncode, 1)
+                    self.assertEqual(result.stderr, "route_seed_check_failed\n")
+                    self.assertEqual(len(calls), 1)
+
+    def test_route_replay_wrong_exit_or_changed_record_still_fails(self):
+        for metadata in ("prebuilt", "cargo"):
+            for code, body in ((2, None), (0, {"routeRevision": "2", "routeId": "test-route"})):
+                with self.subTest(metadata=metadata, code=code, body=body):
+                    result, calls, original = self.run_route_check(metadata, replay_code=code, replay_body=body)
+                    self.assertEqual(result.returncode, 1)
+                    self.assertEqual(result.stderr, "route_seed_check_failed\n")
+                    self.assertEqual(len(calls), 2)
+                    self.assertEqual(json.loads(calls[1][2]), original)
 
 
 if __name__ == "__main__":

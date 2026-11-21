@@ -47,7 +47,7 @@ EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "3f488a4e42d3c3c61186ec6a7d38ea5528b43b85
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "1a1f98f8f2df7b981fa6a85f0f4bf3ac218247121ab330bf5348a703ce0b1e0d"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "b3423b858c7cad5c2814cef0708819f41c4b5bb328bae5450d202c2e18a92631"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "9ce8c8f90f9b45b16e54296db491a7871ae5360e"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "5e2c741146222fee5877e902c0053705afbcc562"
 EXPECTED_POST_MERGE_RUST_SHA256 = "0393a1f9243c6134a5c3814983b099b4eb0ca04acf1cb6eb068d86b5b8df2ac6"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
@@ -641,7 +641,7 @@ def main() -> int:
                 'test "$LABEL" = "$((JOB_INDEX + 1))"',
                 'JOB_INDEX="${ARCHIVE_INDEX:?missing archive worker index}"',
                 'JOB_TOTAL="${ARCHIVE_TOTAL:?missing archive worker count}"',
-                'echo "474632dcd52e86fc411ca24381012c1203341f4547e66f86889f0101720bcb1a  tools/ci/plan_pg_partitions.py" | sha256sum -c -',
+                'echo "ae799f44591c0b5f73fa16c177e71c523da9a53923c4791ebb88c99521537ee9  tools/ci/plan_pg_partitions.py" | sha256sum -c -',
                 'python3 tools/ci/plan_pg_partitions.py "$plan" "$JOB_INDEX" "$JOB_TOTAL"',
                 'mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-e2e.filters"',
                 'cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst" ',

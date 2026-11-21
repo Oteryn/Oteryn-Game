@@ -151,9 +151,14 @@ def inventory(path):
         raise ValueError("expected exactly one Dispatch test binary")
     suite = next(iter(suites.values()))
     cases = suite.get("testcases", {})
+    # Default nextest list retains #[ignore] cases as ignored-only mismatches.
+    # Keep them in the complete inventory and its identity; any other filter
+    # exclusion still means this is not the unfiltered canonical archive.
     if (suite.get("binary-id") != BINARY_ID or not cases or listing.get("test-count") != len(cases)
             or any(not re.fullmatch(r"\w+(?:::\w+)*", name)
-                   or case.get("filter-match", {}).get("status") != "matches"
+                   or case.get("filter-match") != (
+                       {"status": "mismatch", "reason": "ignored"} if case.get("ignored") is True
+                       else {"status": "matches"})
                    or not isinstance(case.get("ignored"), bool) for name, case in cases.items())):
         raise ValueError("invalid complete Dispatch test inventory")
     names = sorted((name, case["ignored"]) for name, case in cases.items())
