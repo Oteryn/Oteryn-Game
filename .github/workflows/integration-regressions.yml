@@ -90,9 +90,12 @@ jobs:
     name: PostgreSQL / retained offline-death retry
     runs-on: ubuntu-24.04
     # The dispatch library test build peaks near the hosted runner's 16 GB; extra swap and
-    # time keep it from dying (owner decision for #3056).
+    # time keep it from dying (owner decision for #3056). Two build jobs, as in the
+    # PostgreSQL partitions: with the default parallelism a cold-cache build still starved
+    # the runner until it lost contact (owner decision 2026-11-21).
     timeout-minutes: 90
     env:
+      CARGO_BUILD_JOBS: "2"
       CARGO_TERM_COLOR: never
       OTERYN_TEST_POSTGRES_ADMIN_URL: postgresql://oteryn_test_admin:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/postgres
     defaults:
