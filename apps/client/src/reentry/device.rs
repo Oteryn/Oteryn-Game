@@ -13,11 +13,6 @@ impl Revocation {
         runtime: &oteryn_client_runtime::ClientRuntime,
     ) -> Self {
         let (sender, result) = watch::channel(None);
-        if let Err(error) = config.device_sessions.block_remembered() {
-            eprintln!("Could not record remembered-device revocation: {error}");
-            sender.send_replace(Some(false));
-            return Self { config, result };
-        }
         let held = Arc::clone(&config);
         let _task = runtime.spawn(async move {
             sender.send_replace(Some(held.forget_devices().await));
@@ -50,15 +45,22 @@ impl Revocation {
 }
 
 impl Reentry {
+    pub(crate) fn can_cancel_entry(&self) -> bool {
+        self.state == EntryState::Entering
+            && self
+                .attempt_cancellation
+                .as_ref()
+                .is_some_and(|token| !token.is_cancelled())
+    }
+
     /// Cancel just this attempt, preserving the process runtime for a fresh sign-in.
     pub fn cancel_entry(&mut self) -> bool {
-        let Some(token) = &self.attempt_cancellation else {
-            return false;
-        };
-        if self.state != EntryState::Entering || token.is_cancelled() {
+        if !self.can_cancel_entry() {
             return false;
         }
-        token.cancel();
+        if let Some(token) = &self.attempt_cancellation {
+            token.cancel();
+        }
         if let Some(config) = &self.client.native_login {
             config.training_queue.clear();
         }
@@ -102,16 +104,30 @@ impl Reentry {
             .is_some_and(|config| crate::web_links::open(config, link))
     }
 
-    pub fn native_sign_out(&mut self) -> Option<watch::Receiver<Option<bool>>> {
+    pub fn native_sign_out(
+        &mut self,
+    ) -> Result<
+        Option<watch::Receiver<Option<bool>>>,
+        oteryn_platform_client::native_login::NativeLoginError,
+    > {
+        let result = self.forget_native_session()?;
         if let Some(config) = &self.client.native_login {
             config.training_queue.clear();
         }
         self.cancel_entry();
-        self.forget_native_session()
+        Ok(result)
     }
     /// Explicit native sign-out; normal game logout keeps a remembered login available.
-    pub fn forget_native_session(&mut self) -> Option<watch::Receiver<Option<bool>>> {
-        let config = self.client.native_login.as_mut()?;
+    pub fn forget_native_session(
+        &mut self,
+    ) -> Result<
+        Option<watch::Receiver<Option<bool>>>,
+        oteryn_platform_client::native_login::NativeLoginError,
+    > {
+        let Some(config) = self.client.native_login.as_mut() else {
+            return Ok(None);
+        };
+        config.device_sessions.block_remembered()?;
         let options = config.session_options.get_or_insert_with(|| {
             config
                 .preference_path
@@ -134,12 +150,12 @@ impl Reentry {
             if previous.finished().is_some() {
                 *previous = Revocation::start(Arc::new(config.clone()), runtime);
             }
-            return Some(previous.result.clone());
+            return Ok(Some(previous.result.clone()));
         }
         let revocation = Revocation::start(Arc::new(config.clone()), runtime);
         let result = revocation.result.clone();
         self.revocations.push(revocation);
-        Some(result)
+        Ok(Some(result))
     }
 
     pub(super) fn revocation_for_entry(&mut self) -> Option<watch::Receiver<Option<bool>>> {
@@ -209,7 +225,7 @@ mod tests {
             "attempt cancellation must not launch device revocation"
         );
         entry.attempt_cancellation = Some(CancellationToken::new());
-        let revocation = entry.native_sign_out().ok_or("queued revocation")?;
+        let revocation = entry.native_sign_out()?.ok_or("queued revocation")?;
         assert_eq!(
             Arc::strong_count(&device),
             owners + 1,
@@ -246,7 +262,7 @@ fn cancelled_admission_cannot_be_retried_until_device_revocation_finishes()
     entry.state = EntryState::Entering;
     entry.attempt_cancellation = Some(CancellationToken::new());
     assert!(entry.cancel_entry());
-    let revocation = entry.forget_native_session().ok_or("queued revocation")?;
+    let revocation = entry.forget_native_session()?.ok_or("queued revocation")?;
     assert!(entry.poll().is_none());
     assert!(!entry.request());
     sender.send(Err(GameplayEntryError::Rejected(
@@ -283,7 +299,7 @@ fn poll_consumes_cancelled_attempt_while_revocation_is_pending()
     let device = config.device_sessions.clone();
     let held = runtime.block_on(device.hold_session_for_reentry_test());
     entry.client.native_login = Some(config);
-    let revocation = entry.forget_native_session().ok_or("queued revocation")?;
+    let revocation = entry.forget_native_session()?.ok_or("queued revocation")?;
     assert!(entry.cancel_entry());
     sender.send(Err(GameplayEntryError::Rejected(
         PublicClass::SessionUnavailable,

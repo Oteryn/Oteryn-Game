@@ -212,6 +212,14 @@ impl DeviceLogin {
             options: MiscellaneousPreferences::default(),
             folder: self.folder.clone(),
         };
+        self.finish_attempt_sign_out(&mut attempt, client).await
+    }
+
+    pub(crate) async fn finish_attempt_sign_out(
+        &self,
+        attempt: &mut DeviceAttempt,
+        client: &NativeLoginClient,
+    ) -> Result<(), NativeLoginError> {
         attempt.revoke_before_vault_clear(client).await?;
         self.complete_local_revocation()
     }
