@@ -122,6 +122,8 @@ fn saved_spell_target_options_refuse_unproven_or_ambiguous_identity()
             vec![entry(71, "Cure Poison Rune", "", Some(3153))],
         ),
         ("", vec![entry(71, "Cure Poison Rune", "", Some(3197))]),
+        ("", vec![entry(71, "Antidote Rune", "", Some(3197))]),
+        ("", vec![entry(71, "antidote rune", "", Some(3197))]),
         (
             "",
             vec![entry(71, "Cure Poison Rune", "instant words", None)],
