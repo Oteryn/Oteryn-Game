@@ -12,6 +12,7 @@ mod general_stats;
 mod creature_sweep;
 #[path = "mp/mount.rs"]
 mod mp;
+pub(in crate::qualification) use mp::legacy_d150;
 
 include!("character_core.rs");
 include!("character_release.rs");

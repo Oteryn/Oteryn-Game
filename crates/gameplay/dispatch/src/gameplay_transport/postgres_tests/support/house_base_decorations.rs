@@ -187,7 +187,7 @@ pub(super) async fn window_scenario(
         .tiles
         .iter()
         .find(|tile| {
-            tile.position.x == 32310 && tile.position.y == 32804 && tile.position.floor == -7
+            tile.position.x == 32310 && tile.position.y == 32804 && tile.position.floor == 7
         })
         .and_then(|tile| {
             tile.items.iter().find(|item| {

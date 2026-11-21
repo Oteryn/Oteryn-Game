@@ -29,7 +29,7 @@ fn replay() -> Result<(), BoxError> {
             let after = ActorPosition {
                 x: 11,
                 y: 19,
-                floor: 9,
+                floor: 7,
             };
             let delta = WorldSpatialEntitiesDelta {
                 content_generation: CONTENT_GENERATION,
@@ -41,7 +41,7 @@ fn replay() -> Result<(), BoxError> {
             (
                 encode_world_spatial_entities_delta_with_item_handles(&delta)
                     .map_err(|error| format!("{error:?}"))?,
-                "11 19 8\n11 19 9\n42 5 6 41\n".into(),
+                "11 19 8\n11 19 7\n42 5 6 41\n".into(),
             )
         };
         let values = metadata

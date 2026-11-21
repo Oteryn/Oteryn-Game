@@ -23,7 +23,7 @@ distinct Accounts, Characters and sessions:
 | A | core/0 | knight | party leader, refused attacker |
 | B | packet/0 | druid | invited party member |
 | C | packet/1 | paladin | invited party member |
-| D | core/1 | **never provisioned** | solo refused target, D150 no-vocation path |
+| D | core/1 | **never provisioned** | v4 starter at level 1 and 0 XP, solo refused target |
 
 On the Open PvP World (`world_type=2`) two more Accounts own one Character each:
 
@@ -38,9 +38,11 @@ Both PvP Characters are provisioned at level 100, above `PVP_MIN_LEVEL` (8,
 no-PvP World. Only the existing root-only `provision.py --profile` command sets up
 A/B/C and both PvP bots, each through its own node's control socket (`bots.rs`,
 `control_socket`).
-Profiles are explicit, so `NODE_BOOT_PROFILE` cannot change these roles. D's
-vocation is checked through its own General Stats command and PostgreSQL;
-the relog checks its no-vocation observation again. Equipment, party, movement,
+Provisioned profiles are explicit. D keeps the birth vocation requested by
+`NODE_BOOT_PROFILE` (`explorer` requests Knight). Its own General Stats command
+and PostgreSQL must match the selected vocation, level 1 and zero XP before
+and after relog. PostgreSQL also verifies its immutable `newhaven-starter-r1`
+interpretation and birth vocation. Equipment, party, movement,
 fight modes, attacks, history queries and logout all use each bot's own
 `protocol-oteryn` session. Combat tiles come from the pinned world's PZ flags;
 the victim's temple comes from its durable hometown and the pinned catalogue.
@@ -53,6 +55,25 @@ Its read-only observers follow the existing qualification `death.rs`
 write authority, update SQL, inject a combat event or synthesize a receipt.
 Production fenced party reads require the serving process's current runtime
 authority, which this remote protocol harness does not own.
+
+### Historical D150
+
+Run this separately on the PC from the Game worktree with the same pinned
+Platform checkout used for MP:
+
+```sh
+PLATFORM_SOURCE=/path/to/pinned/platform NODE_BOOT_WORLD=1 NODE_BOOT_D150_LEGACY=1 \
+  bash tools/qualification/node_boot/run.sh
+```
+
+This starts a fresh disposable node-boot database and admits its empty recovery
+store. A test fixture installs a retained pre-v4 tag-3 root before Game starts.
+The dev client opens two separate TLS sessions using the shipping admission
+path, with an accepted logout and durable release between them. Both sessions
+must report `none`, level 1 and zero XP, with `creation_vocation IS NULL` in
+PostgreSQL. The second session must restore the saved position and release at
+the end. Look for `D150 legacy_login=PASS`, `D150 legacy_relogin=PASS` and
+`NODE_BOOT_RESULT=NODE_BOOT_D150_PASS`.
 
 ### Two Worlds, two nodes
 

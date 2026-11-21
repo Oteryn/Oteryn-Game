@@ -292,7 +292,7 @@ fn login_form_drives_existing_browser_gateway_and_admission() -> TestResult {
                 let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
                 loop {
                     if let Some(result) = entry.poll() {
-                        form.finish(result.as_ref().map(|_| ()).map_err(|error| *error));
+                        form.finish(result.as_ref().map(|_| ()).map_err(Clone::clone));
                         assert!(result.is_ok());
                         break;
                     }
@@ -394,5 +394,24 @@ fn selection_cannot_enter_an_unowned_character_or_channel() -> TestResult {
         );
         stack.finish();
     }
+    Ok(())
+}
+
+#[test]
+fn missing_gameplay_root_does_not_preempt_gateway_refusal() -> TestResult {
+    let stack = Stack::start(vec![])?;
+    let config = stack.config();
+    std::fs::remove_file(&config.dev_root)?;
+    // An old build gets the existing refusal code when the gate is enforcing.
+    stack.refuse_login(409, r#"{"protocol_version":2,"attempt_ref":null,"error":{"code":"NATIVE_LOGIN_OFFER_UNSUPPORTED","public_class":"CLIENT_UPDATE_REQUIRED"}}"#)?;
+    let result = stack.entry(config)?;
+    let requests = stack.requests();
+    assert_eq!(test_support::count(&requests, "POST /v1/login"), 1);
+    assert_eq!(stack.admissions.load(Ordering::SeqCst), 0);
+    assert_eq!(
+        result,
+        GameplayEntryError::Rejected(PublicClass::ClientUpdateRequired)
+    );
+    stack.finish();
     Ok(())
 }

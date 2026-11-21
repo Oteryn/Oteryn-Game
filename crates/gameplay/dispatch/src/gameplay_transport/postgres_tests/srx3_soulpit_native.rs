@@ -17,9 +17,31 @@ use oteryn_protocol_oteryn::world_object::{
     decode_use_intent_target, encode_item_use_intent,
 };
 
+const BOSS_CELL: MovementLocalPosition = MovementLocalPosition {
+    x: 32376,
+    y: 31144,
+    floor: 8,
+};
+
+#[derive(Clone, Copy)]
+enum BossTileOccupant {
+    Player,
+    OrdinaryMonster,
+}
+
 #[test]
 fn srx3_soulpit_native_use_scope_barrier_and_spawn_postgres() -> TestResult {
     native_soulpit_scenario(false, false, false)
+}
+
+#[test]
+fn srx3_soulpit_occupied_boss_cell_still_spawns_and_awards_xp_postgres() -> TestResult {
+    run_native_soulpit_scenario(false, false, false, false, Some(BossTileOccupant::Player))
+}
+
+#[test]
+fn srx3_soulpit_ordinary_monster_boss_collision_awards_xp_postgres() -> TestResult {
+    run_native_soulpit_scenario(false, false, false, false, Some(BossTileOccupant::OrdinaryMonster))
 }
 
 #[test]
@@ -40,7 +62,7 @@ fn srx3_soulpit_native_early_exit_retires_private_encounter_postgres() -> TestRe
 
 #[test]
 fn srx3_soulpit_native_entry_delivers_source_teleport_effect_postgres() -> TestResult {
-    native_soulpit_scenario_with_entry_cue(false, false, false, true)
+    run_native_soulpit_scenario(false, false, false, true, None)
 }
 
 fn native_soulpit_scenario(
@@ -48,14 +70,15 @@ fn native_soulpit_scenario(
     retained_grace: bool,
     early_exit: bool,
 ) -> TestResult {
-    native_soulpit_scenario_with_entry_cue(fault_after_commit, retained_grace, early_exit, false)
+    run_native_soulpit_scenario(fault_after_commit, retained_grace, early_exit, false, None)
 }
 
-fn native_soulpit_scenario_with_entry_cue(
+fn run_native_soulpit_scenario(
     fault_after_commit: bool,
     retained_grace: bool,
     early_exit: bool,
     entry_cue_only: bool,
+    occupy_before_final_wave: Option<BossTileOccupant>,
 ) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -546,7 +569,7 @@ fn native_soulpit_scenario_with_entry_cue(
                     destination_cue |= oteryn_protocol_oteryn::native_map_cues::decode_native_map_presentation_batch(delta.payload)
                         .map_err(debug)?.iter().any(|event| matches!(event.kind,
                             oteryn_protocol_oteryn::presentation::PresentationEventKind::MagicEffect { position, effect_id:11, .. }
-                            if position == oteryn_protocol_oteryn::world_spatial::ActorPosition{x:32373,y:31151,floor:-8}));
+                            if position == oteryn_protocol_oteryn::world_spatial::ActorPosition{x:32373,y:31151,floor:8}));
                 }
                 assert!(destination_cue, "the real entry teleport cue uses the destination Instance's native frame");
                 eprintln!("SRX3_SOULPIT NATIVE_ENTRY_CUE_COMPLETED duration={:?}", started.elapsed());
@@ -564,7 +587,7 @@ fn native_soulpit_scenario_with_entry_cue(
                 oteryn_protocol_oteryn::world_spatial::ActorPosition {
                     x: 32373,
                     y: 31151,
-                    floor: -8
+                    floor: 8
                 }
             );
             let mut map_view = crate::gameplay_transport::world_map::SessionMapView::default();
@@ -600,7 +623,7 @@ fn native_soulpit_scenario_with_entry_cue(
                 .tiles
                 .iter()
                 .find(|tile| {
-                    (tile.position.x, tile.position.y, tile.position.floor) == (32375, 31157, -8)
+                    (tile.position.x, tile.position.y, tile.position.floor) == (32375, 31157, 8)
                 })
                 .ok_or("native Instance obelisk tile")?;
             assert!(
@@ -658,7 +681,7 @@ fn native_soulpit_scenario_with_entry_cue(
             );
             assert!(
                 creatures <= 7,
-                "seven source attempts never redraw a blocked cell"
+                "each of the seven source attempts can place at most one monster"
             );
             drop(runtime);
             let entities = destination_view
@@ -673,8 +696,8 @@ fn native_soulpit_scenario_with_entry_cue(
                 entities
                     .entities
                     .iter()
-                    .all(|entity| entity.position.floor == -8),
-                "players, creatures and corpses share the native map wire frame"
+                    .all(|entity| entity.position.floor == 8),
+                "players, creatures and corpses share Global floor 8"
             );
             let bound = h
                 .root
@@ -721,6 +744,39 @@ fn native_soulpit_scenario_with_entry_cue(
                 let saved = serde_json::to_value(checkpoint.encounter.checkpoint())?;
                 let receipt: [Option<u64>;oteryn_gameplay_domain::domain::soulpit::MONSTERS_PER_WAVE] =
                     serde_json::from_value(saved["spawned_waves"][wave.to_string()].clone())?;
+                if let Some(occupant) = occupy_before_final_wave.filter(|_| wave == 4) {
+                    let mut runtime = registered.runtime.lock().await;
+                    let player_tile = runtime.read_actor_position(actor).map_err(debug)?.position();
+                    let census = runtime.positioned_actor_census().map_err(debug)?;
+                    let monster_tile = |id| census.iter().find(|(target, _, _)| {
+                        runtime.soulpit_variant(*target)
+                            .is_some_and(|tag| tag.monster_id == id && !tag.is_summon)
+                    }).map(|(_, position, _)| position.position());
+                    let ordinary_tile = monster_tile(22);
+                    let boss = monster_tile(28).ok_or("durable wave-4 boss has a physical actor")?;
+                    match occupant {
+                        BossTileOccupant::Player => assert_eq!(player_tile, BOSS_CELL),
+                        BossTileOccupant::OrdinaryMonster => {
+                            assert_ne!(player_tile, BOSS_CELL);
+                            assert_eq!(receipt[0], Some(22));
+                            assert_eq!(ordinary_tile, Some(BOSS_CELL));
+                            let (carrier, continuity, _) = runtime.soulpit_kernel_parts().map_err(debug)?;
+                            let plan = carrier.soulpit_wave_plan(continuity, bound.handoff_id, wave)
+                                .map_err(debug)?.ok_or("retained wave 4 plan")?;
+                            assert_eq!((plan.positions[0], plan.positions[6]), (Some(BOSS_CELL), Some(BOSS_CELL)));
+                        }
+                    }
+                    assert_eq!(
+                        receipt[6], Some(28),
+                        "wave 4 must retain the boss when its source cell is occupied"
+                    );
+                    assert_eq!(boss.floor, BOSS_CELL.floor);
+                    assert_eq!(
+                        boss.x.abs_diff(BOSS_CELL.x).max(boss.y.abs_diff(BOSS_CELL.y)),
+                        1,
+                        "the boss must land on a neighbour of its occupied source cell"
+                    );
+                }
                 let stacks = oteryn_gameplay_domain::domain::soulpit::wave_stacks(wave).map_err(debug)?;
                 let mut expected_counts = std::collections::BTreeMap::from([(1_u8,0_usize),(5,0),(15,0),(40,0)]);
                 for (id,stack) in receipt.into_iter().zip(stacks) {
@@ -795,6 +851,10 @@ fn native_soulpit_scenario_with_entry_cue(
                     Some(if wave == 4 { 1500 } else { 0 }),
                     "only non-summon stack40 awards1500 points through the original equipped weapon owner"
                 );
+                if wave == 4 && occupy_before_final_wave.is_some() {
+                    eprintln!("SRX3_SOULPIT_OCCUPIED_BOSS wave=4 boss_id=28 base_xp={xp}");
+                    return Ok(());
+                }
                 owner.clock_origin = instance.clock_origin;
                 if wave == 4 {
                     use oteryn_gameplay_domain::domain::soulpit::{
@@ -837,8 +897,12 @@ fn native_soulpit_scenario_with_entry_cue(
                                     if global { global_due = now.saturating_add(1_000_000); }
                                     let deadline = owner.drive_shared_soulpits(now,global).await
                                         .map_err(|_| "actual Source completion return")?;
-                                    if owner.activity_runtimes.current_connection(returning_player).game_session_id
-                                        != returning_player.game_session_id { break; }
+                                    let current = owner.activity_runtimes.current_connection(source_admission);
+                                    if current.game_session_id != source_admission.game_session_id
+                                        && current.game_session_id != returning_player.game_session_id
+                                    {
+                                        break;
+                                    }
                                     now = deadline.map_or(global_due, |due| due.min(global_due)).max(now);
                                     tokio::task::yield_now().await;
                                 }
@@ -848,13 +912,21 @@ fn native_soulpit_scenario_with_entry_cue(
                         },
                     ).await?);
                     native_capture.returned = Some(player);
-                } else {owner
-                    .drive_shared_soulpits(owner.owner_now().get(), true)
-                    .await
-                    .map_err(|_| "source wave clearance/terminal composition")?;}
+                } else {
+                    let advance = owner.drive_shared_soulpits(owner.owner_now().get(), true);
+                    if wave == 3 && matches!(occupy_before_final_wave, Some(BossTileOccupant::OrdinaryMonster)) {
+                        crate::gameplay_transport::soulpit::runtime::SOULPIT_TEST_COLLIDE_WAVE_SPAWNS.scope((), advance).await
+                    } else {
+                        advance.await
+                    }.map_err(|_| "source wave clearance/terminal composition")?;
+                }
                 if wave < 4 {
                     let mut preparation = owner.runtime_view(&registered);
-                    leave_blocked_creation_cell(&mut preparation, player, wave + 1).await?;
+                    if wave == 3 && matches!(occupy_before_final_wave, Some(BossTileOccupant::Player)) {
+                        walk_source(&mut preparation, player, SourceWalkTarget::Cell(BOSS_CELL)).await?;
+                    } else {
+                        leave_blocked_creation_cell(&mut preparation, player, wave + 1).await?;
+                    }
                     owner.clock_origin = preparation.clock_origin;
                     owner.clock_origin = owner
                         .clock_origin
@@ -1028,6 +1100,20 @@ async fn walk_source_adjacent(
     player: crate::gameplay_transport::connection::AdmittedSession,
     target: crate::foundation::ExactActorRef,
 ) -> TestResult {
+    walk_source(owner, player, SourceWalkTarget::AdjacentTo(target)).await
+}
+
+#[derive(Clone, Copy)]
+enum SourceWalkTarget {
+    AdjacentTo(crate::foundation::ExactActorRef),
+    Cell(MovementLocalPosition),
+}
+
+async fn walk_source(
+    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    player: crate::gameplay_transport::connection::AdmittedSession,
+    target: SourceWalkTarget,
+) -> TestResult {
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
     use std::collections::{BTreeSet, VecDeque};
     let actor = player
@@ -1041,14 +1127,20 @@ async fn walk_source_adjacent(
                 .map_err(debug)?
                 .position();
             let census = runtime.positioned_actor_census().map_err(debug)?;
-            let destination = census
-                .iter()
-                .find(|(a, _, _)| *a == target)
-                .ok_or("actual live navigation target")?
-                .1
-                .position();
+            let (destination, distance) = match target {
+                SourceWalkTarget::AdjacentTo(target) => {
+                    let destination = census
+                        .iter()
+                        .find(|(a, _, _)| *a == target)
+                        .ok_or("actual live navigation target")?
+                        .1
+                        .position();
+                    (destination, 1)
+                }
+                SourceWalkTarget::Cell(destination) => (destination, 0),
+            };
             assert_eq!(current.floor, destination.floor);
-            if (current.x - destination.x).abs() + (current.y - destination.y).abs() == 1 {
+            if current.x.abs_diff(destination.x) + current.y.abs_diff(destination.y) == distance {
                 return Ok(());
             }
             let occupied = census
@@ -1087,7 +1179,7 @@ async fn walk_source_adjacent(
                     }
                     seen.insert(next);
                     let first = first.unwrap_or(step);
-                    if (next.0 - destination.x).abs() + (next.1 - destination.y).abs() == 1 {
+                    if next.0.abs_diff(destination.x) + next.1.abs_diff(destination.y) == distance {
                         selected = Some(first);
                         break;
                     }

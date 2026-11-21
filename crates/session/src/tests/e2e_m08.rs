@@ -96,7 +96,7 @@ async fn replay() -> Result<(), BoxError> {
     let position = ActorPosition {
         x: i32::try_from(*x)?,
         y: i32::try_from(*y)?,
-        floor: -i16::try_from(*floor)?,
+        floor: i16::try_from(*floor)?,
     };
     assert!(applied.value.tiles.iter().any(|tile| {
         tile.position == position
@@ -121,7 +121,7 @@ fn fixture() -> Result<(Vec<u8>, Vec<u8>, String, String), BoxError> {
     let position = ActorPosition {
         x: 100,
         y: 200,
-        floor: -7,
+        floor: 7,
     };
     let header = MapViewHeader {
         content_generation: CONTENT_GENERATION,

@@ -29,6 +29,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             wire::HouseAclSelector::Guest => HouseManagementList::Guest,
             wire::HouseAclSelector::Subowner => HouseManagementList::Subowner,
             wire::HouseAclSelector::Door { x, y, floor } => {
+                let floor = floor.checked_neg()?;
                 let cell = crate::content::LogicalCell {
                     x: i32::from(x),
                     y: i32::from(y),

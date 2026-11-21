@@ -1,6 +1,7 @@
 //! Decode, reserve and execute one command before producing its ordered output.
 
 use super::*;
+use oteryn_protocol_oteryn::chat::{COMMAND_TYPE_CHAT_INTENT, ChatDisposition};
 
 pub(super) struct CommandOutcome {
     pub(super) second_logout: bool,
@@ -395,7 +396,28 @@ where
     session.admitted.continuity.server_sequence = session.sequence;
     outcome.training_logged_out =
         matches!(&dispatch, Dispatch::Training(result) if result.disposition == 3);
-    let result = result::encode(session, command, &mut dispatch)?;
+    // Encode a typed refusal without running STEP or CHAT post-dispatch effects.
+    let result = if guard_deferred
+        && matches!(dispatch, Dispatch::Unregistered)
+        && session
+            .selected_capabilities
+            .command_selected(command.command_type)
+    {
+        let mut refusal = match command.command_type {
+            COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT => Dispatch::Step(StepOutcome::rejected(), 0),
+            COMMAND_TYPE_CHAT_INTENT => Dispatch::Chat(
+                ChatIntentResult {
+                    disposition: ChatDisposition::Rejected,
+                    wait_seconds: 0,
+                },
+                None,
+            ),
+            _ => Dispatch::Unregistered,
+        };
+        result::encode(session, command, &mut refusal)?
+    } else {
+        result::encode(session, command, &mut dispatch)?
+    };
     outbound::finish(
         stream, authority, session, command, dispatch, result, outcome,
     )

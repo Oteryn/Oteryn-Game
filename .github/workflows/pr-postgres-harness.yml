@@ -13,12 +13,13 @@ name: PR PostgreSQL harness
 # Queue (merge-group-gate.yml) keeps the exact-candidate qualification and
 # runs the full workspace suite and every PostgreSQL lane once (D1471). The
 # build job keeps the Merge Queue custody checks and compiles the test set
-# into nextest archives. The E2E and library build legs run concurrently.
+# into nextest archives. The E2E, other library tests and each of the three
+# dispatch library shards build concurrently on separate runners.
 # The partitions download the archives and run every test exactly once
-# against PostgreSQL across all twenty-four partitions.
+# against PostgreSQL across the selected partitions.
 #
-# OTERYN_SELF_HOSTED_PG=on runs all twenty-four partitions on Molehill; split runs
-# partitions 1-4 on Molehill and 5-24 on ubuntu-24.04. Off or unset runs all
+# OTERYN_SELF_HOSTED_PG=on runs all selected partitions on Molehill; split runs
+# partitions 1-4 on Molehill and the rest on ubuntu-24.04. Off or unset runs all
 # partitions hosted. auto and auto-split act as on and split only while the
 # Molehill heartbeat (OTERYN_MOLEHILL_SEEN) is fresh, so an offline PC falls
 # back to hosted. Molehill uses a throwaway native PostgreSQL 18 cluster
@@ -44,8 +45,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: PR early signal / Durability PostgreSQL harness build (${{ matrix.archive }})
+  prepare:
+    name: PR early signal / PostgreSQL scope and routing
     # Early signal for authors only: drafts and Dependabot bumps wait for the
     # Merge Queue, which runs the same targets on the exact candidate. Only
     # pull requests labelled `heavy-tests` run it, and a `labeled` event only
@@ -56,32 +57,25 @@ jobs:
       && contains(github.event.pull_request.labels.*.name, 'heavy-tests')
       && (github.event.action != 'labeled' || github.event.label.name == 'heavy-tests')
     runs-on: ubuntu-24.04
-    # The dispatch library test build peaks near the hosted runner's 16 GB and takes longer
-    # than the other archives; the lib leg gets extra swap and time (owner decision for #3056).
-    timeout-minutes: 90
+    timeout-minutes: 20
     permissions:
       contents: read
-    # The E2E leg also runs the target custody checks. The lib leg builds the library archives.
-    strategy:
-      fail-fast: true
-      matrix:
-        archive: [e2e, lib]
-    # Each leg sets only its own digest output; the legs agree on the workspace path and scope.
     outputs:
-      e2e_sha256: ${{ steps.digest.outputs.e2e_sha256 }}
-      lib_sha256: ${{ steps.digest.outputs.lib_sha256 }}
-      workspace: ${{ steps.digest.outputs.workspace }}
       empty: ${{ steps.scope.outputs.empty }}
+      lib_packages: ${{ steps.archives.outputs.library }}
+      archives: ${{ steps.archives.outputs.archives }}
+      matrix: ${{ steps.archives.outputs.matrix }}
+      partitions: ${{ steps.workers.outputs.matrix }}
+      current_ci: ${{ steps.planner.outputs.current_ci }}
+      pg_affinity: ${{ steps.planner.outputs.affinity == 'true' && steps.archives.outputs.split_dispatch == 'true' && steps.archives.outputs.multiple == 'true' && 'true' || 'false' }}
       pg_runner_mode: ${{ steps.route.outputs.mode }}
-    # No database here: this job verifies target custody and compiles once; the partition jobs run the tests.
     steps:
-      # Resolved once (e2e leg only) so every partition sees the same routing. auto and auto-split
+      # Resolve once so every partition sees the same routing. auto and auto-split
       # behave as on and split while the Molehill heartbeat (OTERYN_MOLEHILL_SEEN, Unix seconds,
       # written every 5 minutes by the PC while a runner listener is alive) is at most 10 minutes
       # old, and as off otherwise.
       - name: Resolve Molehill routing
         id: route
-        if: matrix.archive == 'e2e'
         env:
           MODE: ${{ vars.OTERYN_SELF_HOSTED_PG }}
           SEEN: ${{ vars.OTERYN_MOLEHILL_SEEN }}
@@ -115,15 +109,6 @@ jobs:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
-      - name: Fetch exact pull request base for PostgreSQL custody
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: |
-          set -euo pipefail
-          [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
-          git fetch --no-tags origin "$BASE_SHA"
-          test "$(git rev-parse FETCH_HEAD)" = "$BASE_SHA"
-
       - name: Install Rust toolchain
         run: rustup toolchain install 1.100.0 --profile minimal
 
@@ -134,12 +119,199 @@ jobs:
         run: |
           python3 tools/ci/select_postgres_packages.py --base "$BASE_REF"
 
+      - name: Stage the reviewed PostgreSQL planner
+        id: planner
+        if: steps.scope.outputs.empty == 'false'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          output="$RUNNER_TEMP/pg-planner"
+          mkdir -p "$output"
+          if git cat-file -e "HEAD:tools/ci/plan_pg_partitions.py" 2>/dev/null; then
+            git show "HEAD:tools/ci/plan_pg_partitions.py" > "$output/plan_pg_partitions.py"
+            echo 'current_ci=true' >> "$GITHUB_OUTPUT"
+          else
+            # A newer workflow can qualify an older PR head without altering that head.
+            [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+            if ! git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
+              git fetch --depth=1 --filter=blob:none --no-tags origin "$BASE_SHA"
+              test "$(git rev-parse FETCH_HEAD)" = "$BASE_SHA"
+            fi
+            git show "$BASE_SHA:tools/ci/plan_pg_partitions.py" > "$output/plan_pg_partitions.py"
+            echo 'current_ci=false' >> "$GITHUB_OUTPUT"
+          fi
+          printf '%s  %s\n' '1d26d89fd1faff1752d47a7f2ae59dde980f8683fa791b85da35f92b79607321' "$output/plan_pg_partitions.py" | sha256sum -c -
+          if git cat-file -e "HEAD:tools/ci/pg_archive_affinity.py" 2>/dev/null; then
+            git show "HEAD:tools/ci/pg_archive_affinity.py" > "$output/pg_archive_affinity.py"
+            printf '%s  %s\n' 'db285d452e0cb5814a95f0c8b25ab969af5ee9637fd051a1a0fdbcb8221cb64a' "$output/pg_archive_affinity.py" | sha256sum -c -
+            echo 'affinity=true' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload the reviewed PostgreSQL planner
+        if: steps.scope.outputs.empty == 'false'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pr-postgres-test-planner
+          path: ${{ runner.temp }}/pg-planner/
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 3
+
+      - name: Select PostgreSQL archive builds
+        id: archives
+        env:
+          LIB_PACKAGES: ${{ steps.scope.outputs.lib_packages }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          packages = set(json.loads(os.environ['LIB_PACKAGES']))
+          dispatch = 'oteryn-gameplay-dispatch'
+          server = 'oteryn-game-server'
+          if packages - {dispatch, server, 'oteryn-gameplay-durability'}:
+              raise SystemExit('unexpected PostgreSQL package scope')
+          archives = []
+          if server in packages:
+              archives.append('e2e')
+          split_dispatch = Path('tools/repository/check_dispatch_pg_shards.py').is_file()
+          library = packages - {dispatch} if split_dispatch else packages
+          if library:
+              archives.append('lib')
+          if split_dispatch and dispatch in packages:
+              archives.extend(f'lib-{shard}' for shard in range(1, 4))
+          # Run E2E custody for any nonempty scope, including library-only changes.
+          builds = ['e2e', *(archive for archive in archives if archive != 'e2e')]
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              print(f'archives={json.dumps(archives)}', file=output)
+              print(f'matrix={json.dumps(builds)}', file=output)
+              print(f'library={json.dumps(sorted(library))}', file=output)
+              print(f'split_dispatch={str(split_dispatch).lower()}', file=output)
+              print(f'multiple={str(len(archives) > 1).lower()}', file=output)
+          PY
+
+      - name: Size PostgreSQL partitions for the selected archives
+        id: workers
+        if: steps.scope.outputs.empty == 'false'
+        env:
+          ARCHIVES: ${{ steps.archives.outputs.archives }}
+          CALIBRATED: ${{ steps.planner.outputs.affinity == 'true' && steps.archives.outputs.split_dispatch == 'true' }}
+        run: |
+          set -euo pipefail
+          if [[ "$CALIBRATED" == true ]]; then
+            printf '%s  %s\n' 'db285d452e0cb5814a95f0c8b25ab969af5ee9637fd051a1a0fdbcb8221cb64a' "$RUNNER_TEMP/pg-planner/pg_archive_affinity.py" | sha256sum -c -
+          fi
+          python3 -I - <<'PYTHON'
+          import json
+          import os
+          from pathlib import Path
+          import runpy
+
+          if os.environ['CALIBRATED'] == 'true':
+              # Use the same reviewed allocation as the full matrix. Dropping an
+              # archive removes its workers without renumbering its local shares.
+              path = Path(os.environ['RUNNER_TEMP']) / 'pg-planner/pg_archive_affinity.py'
+              affinity = runpy.run_path(str(path))
+              selected = affinity['archives'](os.environ['ARCHIVES'])
+              names = tuple(affinity['SLOTS'])
+              total = affinity['TOTAL']
+              rows = []
+              for slot in range(total):
+                  archive, index, count = affinity['route'](names, slot, total)
+                  if archive in selected:
+                      rows.append(dict(partition=len(rows) + 1, archive=archive,
+                                       archive_index=index, archive_total=count))
+          else:
+              # Legacy combined libraries have no calibrated per-archive weights.
+              rows = [dict(partition=i) for i in range(1, 37)]
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              print(f'matrix={json.dumps({"include": rows})}', file=output)
+          PYTHON
+
       - name: Verify the dispatch PostgreSQL shard inventory
-        if: steps.scope.outputs.empty != 'true' && matrix.archive == 'lib' && contains(fromJSON(steps.scope.outputs.lib_packages), 'oteryn-gameplay-dispatch')
+        if: steps.archives.outputs.split_dispatch == 'true' && contains(fromJSON(steps.scope.outputs.lib_packages), 'oteryn-gameplay-dispatch')
         run: python3 tools/repository/check_dispatch_pg_shards.py 3
 
+  build:
+    name: PR early signal / Durability PostgreSQL harness build (${{ matrix.archive }})
+    needs: prepare
+    if: needs.prepare.outputs.empty == 'false'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      CARGO_BUILD_JOBS: "2"
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: true
+      matrix:
+        archive: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    outputs:
+      # Only one leg sets each digest. E2E also records the shared hosted checkout path.
+      e2e_sha256: ${{ steps.digest.outputs.e2e_sha256 }}
+      lib_sha256: ${{ steps.digest.outputs.lib_sha256 }}
+      lib_1_sha256: ${{ steps.digest.outputs.lib_1_sha256 }}
+      lib_2_sha256: ${{ steps.digest.outputs.lib_2_sha256 }}
+      lib_3_sha256: ${{ steps.digest.outputs.lib_3_sha256 }}
+      workspace: ${{ steps.workspace.outputs.path }}
+    steps:
+      - name: Check out exact pull request head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Verify exact pull request head SHA
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Record hosted checkout path
+        id: workspace
+        if: matrix.archive == 'e2e'
+        run: echo "path=$GITHUB_WORKSPACE" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch exact pull request base for PostgreSQL custody
+        if: matrix.archive == 'e2e'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          git fetch --no-tags --depth=1 origin "$BASE_SHA"
+          test "$(git rev-parse FETCH_HEAD)" = "$BASE_SHA"
+
+      - name: Install Rust toolchain
+        run: rustup toolchain install 1.100.0 --profile minimal
+
+      - name: Free hosted disk for the Cargo cache and library build
+        if: contains(fromJSON(needs.prepare.outputs.archives), matrix.archive)
+        run: |
+          # Budget for the ~26 GiB restored target, 16 GiB swap, and build/archive output.
+          available_kib=$(df -Pk / | awk 'END {print $4}')
+          if [[ "$available_kib" =~ ^[0-9]+$ ]] && (( available_kib >= 80 * 1024 * 1024 )); then
+            echo "Skipping SDK cleanup with $(( available_kib / 1024 / 1024 )) GiB free on /"
+            exit 0
+          fi
+          df -h / /mnt
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h / /mnt
+
+      # The protected-main target costs more to unpack than it saves compiling this shard.
+      - name: Restore Cargo dependencies for dispatch lib-3
+        if: matrix.archive == 'lib-3' && contains(fromJSON(needs.prepare.outputs.archives), matrix.archive) && needs.prepare.outputs.current_ci == 'true'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: pg-cargo-deps-linux-v1-${{ hashFiles('Cargo.lock') }}
+
       - name: Restore trimmed Cargo cache from protected main
-        if: steps.scope.outputs.empty != 'true'
+        if: matrix.archive != 'lib-3' && contains(fromJSON(needs.prepare.outputs.archives), matrix.archive) && needs.prepare.outputs.current_ci == 'true'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: |
@@ -150,18 +322,19 @@ jobs:
           key: rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
           restore-keys: |
             rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-
+            rust-linux-v2-1.100.0-
 
       - name: Normalize source mtimes for the restored Cargo cache
-        if: steps.scope.outputs.empty != 'true'
+        if: matrix.archive != 'lib-3' && contains(fromJSON(needs.prepare.outputs.archives), matrix.archive) && needs.prepare.outputs.current_ci == 'true'
         run: python tools/repository/normalize_cargo_mtimes.py
 
       - name: Verify locked metadata
-        if: steps.scope.outputs.empty != 'true'
+        if: contains(fromJSON(needs.prepare.outputs.archives), matrix.archive)
         run: cargo +1.100.0 metadata --locked --format-version 1 >/dev/null
 
       # cargo-nextest 0.9.146, pinned by SHA-256 as in the Rust Linux legs.
       - name: Install pinned cargo-nextest
-        if: steps.scope.outputs.empty != 'true'
+        if: contains(fromJSON(needs.prepare.outputs.archives), matrix.archive)
         env:
           NEXTEST_VERSION: 0.9.146
           NEXTEST_SHA256: 682c21b777c333e96fd532e114d3a5a894e0729ab88d94c0a9f20f8419695428
@@ -187,7 +360,7 @@ jobs:
       # LD_PRELOAD wrapper, so RUSTFLAGS and the linker setting stay as in the protected-main
       # cache producer and the restored target/ keeps matching; only the link step gets faster.
       - name: Install pinned mold linker
-        if: steps.scope.outputs.empty != 'true'
+        if: contains(fromJSON(needs.prepare.outputs.archives), matrix.archive)
         env:
           MOLD_VERSION: 2.42.1
           MOLD_SHA256: 6ff270c9bf07d2bec5c98aa324eb7c4daf6a1a4d815c05ff1708049616047855
@@ -206,12 +379,12 @@ jobs:
       # Verify every registered target before compiling the selected game-server targets.
       # Any target removed or renamed against the protected base still fails custody.
       - name: Archive registered PostgreSQL E2E targets
-        if: steps.scope.outputs.empty != 'true' && matrix.archive == 'e2e'
+        if: matrix.archive == 'e2e'
         shell: bash
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          PACKAGES: ${{ steps.scope.outputs.packages }}
+          BUILD_ARCHIVE: ${{ contains(fromJSON(needs.prepare.outputs.archives), 'e2e') }}
           LD_PRELOAD: ${{ env.MOLD_PRELOAD }}
         run: |
           set -euo pipefail
@@ -310,7 +483,7 @@ jobs:
             exit 1
           }
           mkdir -p "$RUNNER_TEMP/pg-archives"
-          if python3 -c 'import json, os, sys; p = json.loads(os.environ["PACKAGES"]); sys.exit(0 if p is None or "oteryn-game-server" in p else 1)'; then
+          if [[ "$BUILD_ARCHIVE" == true ]]; then
             cargo +1.100.0 nextest archive --locked -p oteryn-game-server "${archived_targets[@]}" \
               --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"
           fi
@@ -318,7 +491,7 @@ jobs:
       # Keep swap and disable dispatch debug info for the library build (owner decision
       # 2026-11-18). Other crates keep line tables so the cache restored from main stays valid.
       - name: Add swap for the library test build
-        if: steps.scope.outputs.empty != 'true' && matrix.archive == 'lib'
+        if: matrix.archive != 'e2e'
         run: |
           set -euo pipefail
           mkdir -p "$HOME/.cargo"
@@ -331,31 +504,39 @@ jobs:
           free -h
 
       # Library tests that need PostgreSQL skip in the Rust Linux lib shards, which have no database;
-      # this archive holds the library tests the partition jobs run against the service.
+      # these archives hold the library tests the partition jobs run against the service.
       - name: Archive PostgreSQL-backed library tests
-        if: steps.scope.outputs.empty != 'true' && matrix.archive == 'lib'
+        if: matrix.archive != 'e2e'
         env:
-          LIB_PACKAGES: ${{ steps.scope.outputs.lib_packages }}
+          ARCHIVE: ${{ matrix.archive }}
+          LIB_PACKAGES: ${{ needs.prepare.outputs.lib_packages }}
           LD_PRELOAD: ${{ env.MOLD_PRELOAD }}
-          # Dispatch rustc alone reached 15.87 GiB RSS (#3287). Serialize Cargo work on 16 GB runners.
-          CARGO_BUILD_JOBS: "1"
         run: |
           set -euo pipefail
-          mapfile -t packages < <(python3 -c 'import json, os; print("\n".join(json.loads(os.environ["LIB_PACKAGES"])))')
-          test -n "${packages[0]:-}"
-          args=()
-          for package in "${packages[@]}"; do
-            args+=(-p "$package")
-          done
           mkdir -p "$RUNNER_TEMP/pg-archives"
-          # Build all dispatch tests together. The partition planner splits their nextest listing.
-          unset OTERYN_DISPATCH_PG_SHARD
-          cargo +1.100.0 nextest archive --locked "${args[@]}" --lib \
-            --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
+          if [[ "$ARCHIVE" == lib ]]; then
+            packages=$(jq -er '.[]' <<< "$LIB_PACKAGES")
+            mapfile -t packages <<< "$packages"
+            args=()
+            for package in "${packages[@]}"; do
+              args+=(-p "$package")
+              if [[ "$package" == oteryn-gameplay-dispatch ]]; then
+                # Older heads need one full dispatch harness, so leave its rustc the runner's memory.
+                export CARGO_BUILD_JOBS=1
+              fi
+            done
+            unset OTERYN_DISPATCH_PG_SHARD
+            cargo +1.100.0 nextest archive --locked "${args[@]}" --lib \
+              --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
+          else
+            [[ "$ARCHIVE" =~ ^lib-[123]$ ]]
+            OTERYN_DISPATCH_PG_SHARD="${ARCHIVE#lib-}/3" cargo +1.100.0 nextest archive --locked \
+              -p oteryn-gameplay-dispatch --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-$ARCHIVE.tar.zst"
+          fi
 
       # Fail closed if mold did not link: every test binary relinked in this job must carry its tag.
       - name: Confirm mold linked the test binaries
-        if: steps.scope.outputs.empty != 'true'
+        if: contains(fromJSON(needs.prepare.outputs.archives), matrix.archive)
         run: |
           set -euo pipefail
           mapfile -t linked < <(find target/debug/deps -maxdepth 1 -type f -executable -newer "$RUNNER_TEMP/mold.tar.gz")
@@ -365,34 +546,46 @@ jobs:
           done
 
       - name: Record archive digests and head
-        if: steps.scope.outputs.empty != 'true'
+        if: contains(fromJSON(needs.prepare.outputs.archives), matrix.archive)
         id: digest
         env:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           ARCHIVE: ${{ matrix.archive }}
         run: |
           set -euo pipefail
-          # The E2E leg has no archive when the scope leaves out oteryn-game-server; it then
-          # still records the head, so the partitions can verify what each leg produced.
-          mkdir -p "$RUNNER_TEMP/pg-archives"
+          # Use archive metadata to list the already-built executables once.
+          # GNU tar stops after the metadata entries, without materializing the binaries.
+          meta="$RUNNER_TEMP/pg-metadata"
+          mkdir -p "$meta"
+          tar --zstd --occurrence -xf "$RUNNER_TEMP/pg-archives/pg-$ARCHIVE.tar.zst" -C "$meta" \
+            target/nextest/cargo-metadata.json target/nextest/binaries-metadata.json
+          cargo-nextest nextest list --cargo-metadata "$meta/target/nextest/cargo-metadata.json" \
+            --binaries-metadata "$meta/target/nextest/binaries-metadata.json" --message-format json \
+            > "$RUNNER_TEMP/pg-archives/pg-$ARCHIVE.json"
           cd "$RUNNER_TEMP/pg-archives"
-          shopt -s nullglob
-          archives=(./*.tar.zst)
-          if [[ "$ARCHIVE" == lib ]]; then
-            test "${#archives[@]}" = 1
-            test -f ./pg-lib.tar.zst
-          else
-            for archive in "${archives[@]}"; do test "$archive" = "./pg-e2e.tar.zst"; done
-          fi
           printf '%s\n' "$HEAD_SHA" > head-sha
-          sha256sum head-sha "${archives[@]}" > SHA256SUMS
+          printf '%s\n' "$GITHUB_WORKSPACE" > workspace
+          sha256sum head-sha workspace "pg-$ARCHIVE.tar.zst" "pg-$ARCHIVE.json" > SHA256SUMS
           ls -l
-          echo "${ARCHIVE}_sha256=$(sha256sum SHA256SUMS | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
-          echo "workspace=$GITHUB_WORKSPACE" >> "$GITHUB_OUTPUT"
+          echo "${ARCHIVE//-/_}_sha256=$(sha256sum SHA256SUMS | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
 
       # The archives are already zstd-compressed and only live for this run's partition jobs.
+      - name: Upload PostgreSQL test inventory
+        if: needs.prepare.outputs.pg_affinity == 'true' && contains(fromJSON(needs.prepare.outputs.archives), matrix.archive)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pr-postgres-test-inventory-${{ matrix.archive }}
+          path: |
+            ${{ runner.temp }}/pg-archives/head-sha
+            ${{ runner.temp }}/pg-archives/workspace
+            ${{ runner.temp }}/pg-archives/SHA256SUMS
+            ${{ runner.temp }}/pg-archives/pg-${{ matrix.archive }}.json
+          if-no-files-found: error
+          retention-days: 1
+          overwrite: true
+
       - name: Upload PostgreSQL test archives
-        if: steps.scope.outputs.empty != 'true'
+        if: contains(fromJSON(needs.prepare.outputs.archives), matrix.archive)
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pr-postgres-test-archives-${{ matrix.archive }}
@@ -403,23 +596,22 @@ jobs:
           overwrite: true
 
   durability_postgres:
-    name: PR early signal / Durability PostgreSQL harness
-    needs: build
-    if: github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]'
-    runs-on: ${{ ((needs.build.outputs.pg_runner_mode == 'on' || (needs.build.outputs.pg_runner_mode == 'split' && matrix.partition <= 4)) && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') && fromJSON('["self-hosted","linux","x64","oteryn-molehill"]') || 'ubuntu-24.04' }}
+    name: PR early signal / Durability PostgreSQL harness (${{ matrix.partition }})
+    needs: [prepare, build]
+    if: needs.prepare.outputs.empty == 'false'
+    runs-on: ${{ ((needs.prepare.outputs.pg_runner_mode == 'on' || (needs.prepare.outputs.pg_runner_mode == 'split' && matrix.partition <= 4)) && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') && fromJSON('["self-hosted","linux","x64","oteryn-molehill"]') || 'ubuntu-24.04' }}
     timeout-minutes: 45
     permissions:
       contents: read
-    # Each partition runs a disjoint planned share of all archives; together the twenty-four run every test once.
+    # Each partition runs a disjoint share; together they run every test once.
     # These jobs install no toolchain and restore no cache: they cannot compile.
     strategy:
       fail-fast: false
-      matrix:
-        partition: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
+      matrix: ${{ fromJSON(needs.prepare.outputs.partitions) }}
     # An empty image skips the service container on Molehill, which starts its own cluster below.
     services:
       postgres:
-        image: ${{ !((needs.build.outputs.pg_runner_mode == 'on' || (needs.build.outputs.pg_runner_mode == 'split' && matrix.partition <= 4)) && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') && 'postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc' || '' }}
+        image: ${{ !((needs.prepare.outputs.pg_runner_mode == 'on' || (needs.prepare.outputs.pg_runner_mode == 'split' && matrix.partition <= 4)) && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') && 'postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc' || '' }}
         env:
           POSTGRES_USER: oteryn_test_admin
           POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
@@ -435,20 +627,18 @@ jobs:
       # The test binaries read repository files through their compile-time CARGO_MANIFEST_DIR, so the
       # partition checks out the same head at the same workspace path as the build job.
       - name: Check out exact pull request head
-        if: needs.build.outputs.empty != 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
       - name: Verify exact pull request head SHA
-        if: needs.build.outputs.empty != 'true'
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Use the PostgreSQL service container
-        if: needs.build.outputs.empty != 'true' && runner.environment != 'self-hosted'
+        if: runner.environment != 'self-hosted'
         env:
           RUN_ID: ${{ github.run_id }}
           RUN_ATTEMPT: ${{ github.run_attempt }}
@@ -467,7 +657,7 @@ jobs:
       # different heads therefore run side by side; a shared lock per checkout keeps it from being
       # pruned while a partition uses it.
       - name: Expose this head at the build workspace path
-        if: needs.build.outputs.empty != 'true' && runner.environment == 'self-hosted'
+        if: runner.environment == 'self-hosted'
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
           BUILD_WORKSPACE: ${{ needs.build.outputs.workspace }}
@@ -542,7 +732,7 @@ jobs:
       # A throwaway cluster per job: fresh data directory, random password, loopback only, durability
       # off (the tests never survive a crash of their own database).
       - name: Start ephemeral PostgreSQL 18
-        if: needs.build.outputs.empty != 'true' && runner.environment == 'self-hosted'
+        if: runner.environment == 'self-hosted'
         run: |
           set -euo pipefail
           bin=/usr/lib/postgresql/18/bin
@@ -584,7 +774,6 @@ jobs:
           echo "NEXTEST_TEST_THREADS=4" >> "$GITHUB_ENV"
 
       - name: Install pinned cargo-nextest
-        if: needs.build.outputs.empty != 'true'
         env:
           NEXTEST_VERSION: 0.9.146
           NEXTEST_SHA256: 682c21b777c333e96fd532e114d3a5a894e0729ab88d94c0a9f20f8419695428
@@ -598,8 +787,53 @@ jobs:
           tar -xzf "$archive" -C "$RUNNER_TEMP/nextest-bin"
           echo "$RUNNER_TEMP/nextest-bin" >> "$GITHUB_PATH"
 
+      - name: Download the reviewed PostgreSQL planner
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: pr-postgres-test-planner
+          path: ${{ runner.temp }}/pg-planner
+
+      - name: Download PostgreSQL test inventories
+        if: needs.prepare.outputs.pg_affinity == 'true'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: pr-postgres-test-inventory-*
+          merge-multiple: false
+          path: ${{ runner.temp }}/pg-inventories
+
+      - name: Download the selected PostgreSQL test archive
+        if: needs.prepare.outputs.pg_affinity == 'true'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: pr-postgres-test-archives-${{ matrix.archive }}
+          path: ${{ runner.temp }}/pg-selected
+
+      - name: Verify the selected PostgreSQL test archive and inventories
+        if: needs.prepare.outputs.pg_affinity == 'true'
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+          EXPECTED_ARCHIVES: ${{ needs.prepare.outputs.archives }}
+          SELECTED_ARCHIVE: ${{ matrix.archive }}
+          BUILD_WORKSPACE: ${{ needs.build.outputs.workspace }}
+          E2E_SHA256: ${{ needs.build.outputs.e2e_sha256 }}
+          LIB_SHA256: ${{ needs.build.outputs.lib_sha256 }}
+          LIB_1_SHA256: ${{ needs.build.outputs.lib_1_sha256 }}
+          LIB_2_SHA256: ${{ needs.build.outputs.lib_2_sha256 }}
+          LIB_3_SHA256: ${{ needs.build.outputs.lib_3_sha256 }}
+        run: |
+          set -euo pipefail
+          test "$PG_WORKSPACE" = "$BUILD_WORKSPACE"
+          planner="$RUNNER_TEMP/pg-planner/plan_pg_partitions.py"
+          printf '%s  %s\n' '1d26d89fd1faff1752d47a7f2ae59dde980f8683fa791b85da35f92b79607321' "$planner" | sha256sum -c -
+          printf '%s  %s\n' 'db285d452e0cb5814a95f0c8b25ab969af5ee9637fd051a1a0fdbcb8221cb64a' "$RUNNER_TEMP/pg-planner/pg_archive_affinity.py" | sha256sum -c -
+          python3 "$RUNNER_TEMP/pg-planner/pg_archive_affinity.py" verify "$RUNNER_TEMP" pr \
+            "$EXPECTED_ARCHIVES" "$SELECTED_ARCHIVE" "$EXPECTED_SHA" "$BUILD_WORKSPACE" "$planner"
+          test "$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_SHA"
+          test "$(git -C "$PG_SOURCE" rev-parse HEAD)" = "$EXPECTED_SHA"
+          test "$("$PG_RUN" git -C "$PG_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_SHA"
+
       - name: Download PostgreSQL test archives
-        if: needs.build.outputs.empty != 'true'
+        if: needs.prepare.outputs.pg_affinity != 'true'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: pr-postgres-test-archives-*
@@ -609,117 +843,79 @@ jobs:
       # Each build leg's SHA256SUMS is checked against that leg's digest output; only the archive the
       # leg was meant to build is taken from its artifact.
       - name: Verify archives were built for this head
-        if: needs.build.outputs.empty != 'true'
+        if: needs.prepare.outputs.pg_affinity != 'true'
         id: verify
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+          EXPECTED_ARCHIVES: ${{ needs.prepare.outputs.archives }}
+          BUILD_WORKSPACE: ${{ needs.build.outputs.workspace }}
           E2E_SHA256: ${{ needs.build.outputs.e2e_sha256 }}
           LIB_SHA256: ${{ needs.build.outputs.lib_sha256 }}
+          LIB_1_SHA256: ${{ needs.build.outputs.lib_1_sha256 }}
+          LIB_2_SHA256: ${{ needs.build.outputs.lib_2_sha256 }}
+          LIB_3_SHA256: ${{ needs.build.outputs.lib_3_sha256 }}
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/pg-archives"
-          for archive in e2e lib; do
-            if [[ "$archive" == e2e ]]; then digest="$E2E_SHA256"; else digest="$LIB_SHA256"; fi
+          test "$PG_WORKSPACE" = "$BUILD_WORKSPACE"
+          expected=$(jq -er '.[]' <<< "$EXPECTED_ARCHIVES")
+          mapfile -t archives <<< "$expected"
+          mkdir -p "$RUNNER_TEMP/pg-archives" "$RUNNER_TEMP/pg-plan"
+          for archive in "${archives[@]}"; do
+            case "$archive" in
+              e2e) digest="$E2E_SHA256" ;;
+              lib) digest="$LIB_SHA256" ;;
+              lib-1) digest="$LIB_1_SHA256" ;;
+              lib-2) digest="$LIB_2_SHA256" ;;
+              lib-3) digest="$LIB_3_SHA256" ;;
+              *) echo "Unexpected PostgreSQL archive: $archive" >&2; exit 1 ;;
+            esac
             [[ "$digest" =~ ^[0-9a-f]{64}$ ]]
             dir="$RUNNER_TEMP/pg-download/pr-postgres-test-archives-$archive"
+            # download-artifact extracts a single result directly into the destination.
+            if (( ${#archives[@]} == 1 )) && [[ ! -d "$dir" ]]; then
+              dir="$RUNNER_TEMP/pg-download"
+            fi
+            file="pg-$archive.tar.zst"
             (
               cd "$dir"
               echo "${digest}  SHA256SUMS" | sha256sum -c -
-              sha256sum -c SHA256SUMS
+              sha256sum head-sha workspace "$file" "pg-$archive.json" | cmp - SHA256SUMS
               test "$(cat head-sha)" = "$EXPECTED_SHA"
+              test "$(cat workspace)" = "$BUILD_WORKSPACE"
             )
-            if grep -qx "[0-9a-f]\{64\}  \./pg-$archive\.tar\.zst" "$dir/SHA256SUMS"; then
-              mv -- "$dir/pg-$archive.tar.zst" "$RUNNER_TEMP/pg-archives/pg-$archive.tar.zst"
-            fi
+            mv -- "$dir/$file" "$RUNNER_TEMP/pg-archives/$file"
+            mv -- "$dir/pg-$archive.json" "$RUNNER_TEMP/pg-plan/"
           done
-          test -f "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
           test "$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_SHA"
           test "$(git -C "$PG_SOURCE" rev-parse HEAD)" = "$EXPECTED_SHA"
           test "$("$PG_RUN" git -C "$PG_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_SHA"
 
-      # Count slices leave a few multi-minute tests wherever their names fall, so one partition ran
-      # twice as long as another. Every partition lists all archives and computes the same plan:
-      # tests by estimated duration, longest first, each to the least-loaded partition. Each listed
-      # test lands in exactly one partition whatever the estimates say; a stale estimate only costs
-      # balance. The partition is the matrix position and size, so the plan covers the whole
-      # archive whatever the matrix length; the label must agree with the position.
+      # Each archive independently checks that its partitions cover every runnable case.
+      # Older heads still plan over their complete digest-bound inventory.
       - name: Plan partition
-        if: needs.build.outputs.empty != 'true'
         id: partition
         env:
           LABEL: ${{ matrix.partition }}
           JOB_INDEX: ${{ strategy.job-index }}
           JOB_TOTAL: ${{ strategy.job-total }}
+          ARCHIVE_INDEX: ${{ matrix.archive_index }}
+          ARCHIVE_TOTAL: ${{ matrix.archive_total }}
+          PG_AFFINITY: ${{ needs.prepare.outputs.pg_affinity }}
         run: |
           set -euo pipefail
           [[ "$JOB_INDEX" =~ ^[0-9]+$ && "$JOB_TOTAL" =~ ^[1-9][0-9]*$ ]]
           test "$LABEL" = "$((JOB_INDEX + 1))"
           plan="$RUNNER_TEMP/pg-plan"
-          mkdir -p "$plan"
-          for archive in pg-e2e pg-lib; do
-            [[ -f "$RUNNER_TEMP/pg-archives/$archive.tar.zst" ]] || continue
-            "$PG_RUN" cargo-nextest nextest list --archive-file "$RUNNER_TEMP/pg-archives/$archive.tar.zst" \
-              --workspace-remap "$PG_WORKSPACE" --message-format json > "$plan/$archive.json"
-          done
-          python3 - "$plan" "$JOB_INDEX" "$JOB_TOTAL" "$GITHUB_WORKSPACE/tools/ci/pg_test_durations.json" <<'PY'
-          import json
-          import pathlib
-          import sys
-
-          plan = pathlib.Path(sys.argv[1])
-          index, total = int(sys.argv[2]), int(sys.argv[3])
-          # Longest observed seconds on the hosted runners for every test at or above 30 s, from
-          # tools/ci/pg_test_durations.py over recent partition logs; other tests are estimated from
-          # their name (means of the shorter tests in the same logs).
-          slow = json.loads(pathlib.Path(sys.argv[4]).read_text())
-
-
-          def estimate(case):
-              return slow.get(' '.join(case), 5 if 'postgres' in case[1] else 1)
-
-
-          # Each partition runs the E2E share and then the library share, so the load carries over
-          # from one archive to the next.
-          priorities, load = [], [0] * total
-          seen = set()
-          for archive in ('pg-e2e', 'pg-lib'):
-              listing_path = plan / f'{archive}.json'
-              if not listing_path.exists():
-                  (plan / f'{archive}.filters').write_text('')
-                  continue
-              listing = json.loads(listing_path.read_text())
-              cases = sorted(
-                  (suite['binary-id'], name)
-                  for suite in listing['rust-suites'].values()
-                  for name, case in suite['testcases'].items()
-                  if case['filter-match']['status'] == 'matches'
-              )
-              if duplicates := seen.intersection(cases):
-                  raise SystemExit(f'{archive}: tests occur in multiple archives: {sorted(duplicates)}')
-              seen.update(cases)
-              shares = [[] for _ in range(total)]
-              for case in sorted(cases, key=lambda case: (-estimate(case), case)):
-                  share = min(range(total), key=lambda i: (load[i], i))
-                  shares[share].append(case)
-                  load[share] += estimate(case)
-              assigned = sorted(case for share in shares for case in share)
-              if not cases or assigned != cases or len(set(cases)) != len(cases):
-                  raise SystemExit(f'{archive}: the plan does not run every listed test exactly once')
-              (plan / f'{archive}.filters').write_text(
-                  ''.join(f'--filterset=binary_id(={b}) & test(={n})\n' for b, n in sorted(shares[index]))
-              )
-              priorities += [case for case in shares[index] if ' '.join(case) in slow]
-              print(f'{archive}: {len(shares[index])} of {len(cases)} tests, estimate {load[index]}s')
-          # The long tests start first, so none of them begins near the end of the partition.
-          (plan / 'priority.toml').write_text(''.join(
-              f"[[profile.default.overrides]]\nfilter = 'binary_id(={b}) & test(={n})'\n"
-              f"priority = {min(100, slow[' '.join((b, n))] // 5)}\n"
-              for b, n in priorities
-          ))
-          PY
+          if [[ "$PG_AFFINITY" == true ]]; then
+            JOB_INDEX="${ARCHIVE_INDEX:?missing archive worker index}"
+            JOB_TOTAL="${ARCHIVE_TOTAL:?missing archive worker count}"
+          fi
+          # Verify the reviewed planner before it chooses which tests to run.
+          printf '%s  %s\n' '1d26d89fd1faff1752d47a7f2ae59dde980f8683fa791b85da35f92b79607321' "$RUNNER_TEMP/pg-planner/plan_pg_partitions.py" | sha256sum -c -
+          python3 "$RUNNER_TEMP/pg-planner/plan_pg_partitions.py" "$plan" "$JOB_INDEX" "$JOB_TOTAL" \
+            tools/ci/pg_test_durations.json --optional-archives
 
       - name: Run registered PostgreSQL E2E targets
-        if: needs.build.outputs.empty != 'true'
         run: |
           set -euo pipefail
           # Copy the run output to a log so a failure step can list every failed test of this partition.
@@ -736,11 +932,15 @@ jobs:
           set -euo pipefail
           # Copy the run output to a log so a failure step can list every failed test of this partition.
           exec > >(tee -a "$RUNNER_TEMP/pg-nextest.log") 2>&1
-          mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-lib.filters"
-          if (( ${#filters[@]} == 0 )); then exit 0; fi
-          "$PG_RUN" cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst" \
-            --workspace-remap "$PG_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \
-            --no-fail-fast "${filters[@]}"
+          status=0
+          for archive in pg-lib pg-lib-1 pg-lib-2 pg-lib-3; do
+            mapfile -t filters < "$RUNNER_TEMP/pg-plan/$archive.filters"
+            if (( ${#filters[@]} == 0 )); then continue; fi
+            "$PG_RUN" cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/$archive.tar.zst" \
+              --workspace-remap "$PG_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \
+              --no-fail-fast "${filters[@]}" || status=1
+          done
+          exit "$status"
 
       # --no-fail-fast runs every planned test; this lists each failed one with a filter that
       # reruns exactly it, so a fix can be checked without the whole partition.
@@ -798,6 +998,8 @@ jobs:
       contents: read
     outputs:
       shards: ${{ steps.plan.outputs.shards }}
+      build_variants: ${{ steps.plan.outputs.build_variants }}
+      artifact_mode: ${{ steps.artifact_support.outputs.mode }}
     steps:
       - name: Check out exact candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -810,23 +1012,72 @@ jobs:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
+      - name: Verify qualification artifact support
+        id: artifact_support
+        shell: bash
+        run: |
+          set -euo pipefail
+          harness=tools/qualification/node_boot/run.sh
+          helper=tools/qualification/node_boot/prebuilt.py
+          build_workflow=.github/workflows/node-boot-build.yml
+          [[ -f "$harness" && ! -L "$harness" ]]
+          if grep -Fq NODE_BOOT_PREBUILT_DIR "$harness"; then
+            [[ -f "$helper" && ! -L "$helper" ]]
+            [[ -f "$build_workflow" && ! -L "$build_workflow" ]]
+            echo "7135b31f6acc0ebc2626b80823f0a67c7afed41ef509900ad3b14437dce1c373  $build_workflow" | sha256sum -c -
+            echo "56029b4b5706f4983c262d65982abcbe029eaff9c30c408bd583561639722ed7  $helper" | sha256sum -c -
+            echo 'mode=shared' >> "$GITHUB_OUTPUT"
+          else
+            test "$?" -eq 1
+            # Exact PR heads predating shared builds still run the whole shard matrix.
+            [[ ! -e "$helper" && ! -L "$helper" ]]
+            [[ ! -e "$build_workflow" && ! -L "$build_workflow" ]]
+            echo 'mode=legacy' >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Test the shard planner
         run: python3 tools/qualification/node_boot/test_matrix.py
 
+      - name: Test shared qualification artifacts
+        if: steps.artifact_support.outputs.mode == 'shared'
+        run: python3 tools/qualification/node_boot/test_prebuilt.py
+
       - name: Plan shards
         id: plan
+        env:
+          ARTIFACT_MODE: ${{ steps.artifact_support.outputs.mode }}
         run: |
           set -euo pipefail
           python3 tools/qualification/node_boot/matrix.py plan --set pr > "$RUNNER_TEMP/shards.json"
           # Every shard boots against the reviewed Platform producer.
-          test "$(python3 -c 'import json,sys; print(" ".join(sorted({s["platform_ref"] for s in json.load(open(sys.argv[1]))})))' "$RUNNER_TEMP/shards.json")" = 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
+          test "$(python3 -c 'import json,sys; print(" ".join(sorted({s["platform_ref"] for s in json.load(open(sys.argv[1]))})))' "$RUNNER_TEMP/shards.json")" = 6d04b52a16145723eedb0c56640ad052dbd26e94
           printf 'shards=%s\n' "$(cat "$RUNNER_TEMP/shards.json")" >> "$GITHUB_OUTPUT"
+          if [[ "$ARTIFACT_MODE" == shared ]]; then
+            variants="$(python3 tools/qualification/node_boot/prebuilt.py plan "$RUNNER_TEMP/shards.json")"
+            printf 'build_variants=%s\n' "$variants" >> "$GITHUB_OUTPUT"
+          fi
+
+  node_boot_build:
+    name: Node boot / shared qualification build
+    needs: node_boot_plan
+    if: needs.node_boot_plan.result == 'success' && needs.node_boot_plan.outputs.artifact_mode == 'shared'
+    uses: ./.github/workflows/node-boot-build.yml
+    permissions:
+      contents: read
+    with:
+      revision: ${{ github.event.pull_request.head.sha }}
+      variants: ${{ needs.node_boot_plan.outputs.build_variants }}
 
   node_boot_shard:
     name: PR heavy / Node boot / ${{ matrix.shard.name }}
-    needs: node_boot_plan
+    needs: [node_boot_plan, node_boot_build]
     if: >-
-      github.event.pull_request.draft == false
+      always()
+      && !cancelled()
+      && needs.node_boot_plan.result == 'success'
+      && ((needs.node_boot_plan.outputs.artifact_mode == 'shared' && needs.node_boot_build.result == 'success')
+      || (needs.node_boot_plan.outputs.artifact_mode == 'legacy' && needs.node_boot_build.result == 'skipped'))
+      && github.event.pull_request.draft == false
       && github.event.pull_request.user.login != 'dependabot[bot]'
       && contains(github.event.pull_request.labels.*.name, 'node-boot')
       && (github.event.action != 'labeled' || github.event.label.name == 'node-boot')
@@ -866,11 +1117,12 @@ jobs:
         run: test "$(git -C _platform rev-parse HEAD)" = "$EXPECTED_PLATFORM"
 
       - name: Install pinned Rust toolchain
+        if: needs.node_boot_plan.outputs.artifact_mode == 'legacy' || matrix.shard.entry == 'game_platform' || matrix.shard.env.NODE_BOOT_SPELLS == '1'
         run: rustup toolchain install 1.100.0 --profile minimal
 
-      # Protected-main artifacts make the game-server build incremental. A cache hit
-      # never substitutes for running the qualification.
+      # Only spell preflight and portal-specific builds still invoke Cargo here.
       - name: Restore trimmed Cargo cache from protected main
+        if: needs.node_boot_plan.outputs.artifact_mode == 'shared' && (matrix.shard.entry == 'game_platform' || matrix.shard.env.NODE_BOOT_SPELLS == '1')
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
@@ -881,8 +1133,10 @@ jobs:
           key: rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-${{ github.event.pull_request.head.sha }}
           restore-keys: |
             rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-
+            rust-linux-v2-1.100.0-
 
       - name: Normalize source mtimes for the restored Cargo cache
+        if: needs.node_boot_plan.outputs.artifact_mode == 'shared' && (matrix.shard.entry == 'game_platform' || matrix.shard.env.NODE_BOOT_SPELLS == '1')
         run: python3 tools/repository/normalize_cargo_mtimes.py
 
       - name: Validate harness
@@ -901,9 +1155,60 @@ jobs:
           python3 tools/qualification/node_boot/matrix.py export-env "$SHARD_JSON" > "$RUNNER_TEMP/shard.env"
           cat "$RUNNER_TEMP/shard.env" | tee -a "$GITHUB_ENV"
 
+      - name: Select qualification build inputs
+        id: build_inputs
+        if: needs.node_boot_plan.outputs.artifact_mode == 'shared'
+        env:
+          SHARD_JSON: ${{ toJSON(matrix.shard) }}
+        run: python3 tools/qualification/node_boot/prebuilt.py select "$SHARD_JSON" >> "$GITHUB_OUTPUT"
+
+      - name: Download Game qualification binaries
+        if: needs.node_boot_plan.outputs.artifact_mode == 'shared'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: node-boot-build-${{ steps.build_inputs.outputs.main_variant }}
+          path: ${{ runner.temp }}/node-boot-download/${{ steps.build_inputs.outputs.main_variant }}
+
+      - name: Download Game binaries for the basic pass
+        if: needs.node_boot_plan.outputs.artifact_mode == 'shared' && steps.build_inputs.outputs.needs_default == 'true'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: node-boot-build-default
+          path: ${{ runner.temp }}/node-boot-download/default
+
+      - name: Download the shared World compiler
+        if: needs.node_boot_plan.outputs.artifact_mode == 'shared' && steps.build_inputs.outputs.needs_world == 'true'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: node-boot-build-world-compiler
+          path: ${{ runner.temp }}/node-boot-download/world-compiler
+
+      - name: Verify and unpack exact-candidate inputs
+        if: needs.node_boot_plan.outputs.artifact_mode == 'shared'
+        env:
+          MAIN_VARIANT: ${{ steps.build_inputs.outputs.main_variant }}
+          NEEDS_DEFAULT: ${{ steps.build_inputs.outputs.needs_default }}
+          NEEDS_WORLD: ${{ steps.build_inputs.outputs.needs_world }}
+          MAIN_SHA256: ${{ needs.node_boot_build.outputs[steps.build_inputs.outputs.main_variant] }}
+          DEFAULT_SHA256: ${{ needs.node_boot_build.outputs.default }}
+          WORLD_SHA256: ${{ needs.node_boot_build.outputs.world-compiler }}
+        run: |
+          set -euo pipefail
+          unpack() {
+            local variant="$1" digest="$2"
+            local archive="$RUNNER_TEMP/node-boot-download/$variant/bundle.tar.gz"
+            [[ "$digest" =~ ^[0-9a-f]{64}$ ]]
+            printf '%s  %s\n' "$digest" "$archive" | sha256sum -c -
+            python3 tools/qualification/node_boot/prebuilt.py unpack "$variant" "$archive" "$RUNNER_TEMP/node-boot-prebuilt"
+          }
+          unpack "$MAIN_VARIANT" "$MAIN_SHA256"
+          if [[ "$NEEDS_DEFAULT" == true ]]; then unpack default "$DEFAULT_SHA256"; fi
+          if [[ "$NEEDS_WORLD" == true ]]; then unpack world-compiler "$WORLD_SHA256"; fi
+
       - name: Run node boot shard
         env:
           PLATFORM_SOURCE: ${{ github.workspace }}/_platform
+          NODE_BOOT_PREBUILT_DIR: ${{ needs.node_boot_plan.outputs.artifact_mode == 'shared' && format('{0}/node-boot-prebuilt', runner.temp) || '' }}
         run: |
           # A failing shard still writes result.json, so no errexit here.
           set +e
@@ -941,9 +1246,11 @@ jobs:
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: node-boot-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.shard.name }}
+          # A partial rerun keeps other shards' evidence for the same candidate.
+          name: node-boot-${{ github.run_id }}-${{ matrix.shard.name }}
           path: ${{ runner.temp }}/node-boot-shard
           if-no-files-found: error
+          overwrite: true
           retention-days: 7
 
   # Fails closed: the plan and every shard must succeed, and the summary fails on a
@@ -951,7 +1258,7 @@ jobs:
   # reported, as the single-machine run never failed on them.
   node_boot:
     name: PR heavy / Node boot against the real Platform
-    needs: [node_boot_plan, node_boot_shard]
+    needs: [node_boot_plan, node_boot_build, node_boot_shard]
     if: >-
       always()
       && github.event.pull_request.draft == false
@@ -975,22 +1282,31 @@ jobs:
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Download shard evidence
-        if: needs.node_boot_plan.result == 'success'
+        if: >-
+          needs.node_boot_plan.result == 'success'
+          && ((needs.node_boot_plan.outputs.artifact_mode == 'shared' && needs.node_boot_build.result == 'success')
+          || (needs.node_boot_plan.outputs.artifact_mode == 'legacy' && needs.node_boot_build.result == 'skipped'))
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          pattern: node-boot-${{ github.run_id }}-${{ github.run_attempt }}-*
+          pattern: node-boot-${{ github.run_id }}-*
           path: ${{ runner.temp }}/shards
 
       - name: Require every node boot shard
         env:
           PLAN_RESULT: ${{ needs.node_boot_plan.result }}
+          BUILD_RESULT: ${{ needs.node_boot_build.result }}
+          ARTIFACT_MODE: ${{ needs.node_boot_plan.outputs.artifact_mode }}
           SHARD_RESULT: ${{ needs.node_boot_shard.result }}
           SHARDS: ${{ needs.node_boot_plan.outputs.shards }}
-          PREFIX: node-boot-${{ github.run_id }}-${{ github.run_attempt }}-
+          PREFIX: node-boot-${{ github.run_id }}-
         run: |
           set -euo pipefail
-          echo "Node boot results: plan=$PLAN_RESULT shards=$SHARD_RESULT"
+          echo "Node boot results: plan=$PLAN_RESULT mode=$ARTIFACT_MODE build=$BUILD_RESULT shards=$SHARD_RESULT"
           test "$PLAN_RESULT" = success
+          case "$ARTIFACT_MODE:$BUILD_RESULT" in
+            shared:success|legacy:skipped) ;;
+            *) exit 1 ;;
+          esac
           printf '%s' "$SHARDS" > "$RUNNER_TEMP/shards.json"
           status=0
           python3 tools/qualification/node_boot/matrix.py summarize "$RUNNER_TEMP/shards.json" "$RUNNER_TEMP/shards" \
@@ -1005,7 +1321,7 @@ jobs:
   # window; wait for the real run or push after labelling.
   heavy_gate:
     name: heavy-gate
-    needs: [build, durability_postgres]
+    needs: [prepare, build, durability_postgres]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -1018,6 +1334,8 @@ jobs:
           IS_ELIGIBLE: ${{ github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]' }}
           IS_HEAVY: ${{ github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]' && contains(github.event.pull_request.labels.*.name, 'heavy-tests') }}
           IS_REAL_RUN: ${{ github.event.action != 'labeled' || github.event.label.name == 'heavy-tests' }}
+          PREPARE_RESULT: ${{ needs.prepare.result }}
+          EMPTY_SCOPE: ${{ needs.prepare.outputs.empty }}
           BUILD_RESULT: ${{ needs.build.result }}
           POSTGRES_RESULT: ${{ needs.durability_postgres.result }}
           REPOSITORY: ${{ github.repository }}
@@ -1040,10 +1358,15 @@ jobs:
             exit 0
           fi
           if [[ "$IS_REAL_RUN" == 'true' ]]; then
-            echo "Heavy harness results: build=$BUILD_RESULT durability_postgres=$POSTGRES_RESULT"
+            echo "Heavy harness results: prepare=$PREPARE_RESULT build=$BUILD_RESULT durability_postgres=$POSTGRES_RESULT"
             # Node boot is informational (owner 2026-11-09) and opt-in on PRs through the
             # `node-boot` label (owner 2026-11-18); heavy-gate does not wait for it.
-            [[ "$BUILD_RESULT" == 'success' && "$POSTGRES_RESULT" == 'success' ]]
+            test "$PREPARE_RESULT" = 'success'
+            case "$EMPTY_SCOPE" in
+              true) [[ "$BUILD_RESULT" == 'skipped' && "$POSTGRES_RESULT" == 'skipped' ]] ;;
+              false) [[ "$BUILD_RESULT" == 'success' && "$POSTGRES_RESULT" == 'success' ]] ;;
+              *) exit 1 ;;
+            esac
             exit
           fi
           # Other label events have skipped dependencies: mirror the latest

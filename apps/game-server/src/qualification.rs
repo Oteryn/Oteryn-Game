@@ -68,8 +68,7 @@ use crate::qualification_wild_spawn as wild_spawn;
 #[path = "spell_book_sweep_tests.rs"]
 mod spell_book_sweep_tests;
 
-const SOURCE_AUTHORITY: &str = "platform";
-const PLATFORM_SOURCE: &str = "3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05";
+const PLATFORM_SOURCE: &str = "6d04b52a16145723eedb0c56640ad052dbd26e94";
 /// Interpretation requested by the Platform intents that `run.sh` issues.
 /// Its content revision is also the served `readiness.content_revision`: the quest and Task Board
 /// owners refuse a Character whose stored progression content differs from the served one.
@@ -84,6 +83,16 @@ const SERVED_CONTENT_REVISION: &str = INTERPRETATION[2];
 const RUNTIME_AUTHORITY: &str = "game:wp5-seam-runtime";
 /// First readiness publication of the served Channel.
 const RUNTIME_OBSERVATION: &str = "runtime-1";
+
+/// The Platform harness answers under its own authority; the legacy WP5 server under `platform`.
+fn source_authority() -> String {
+    env::var("WP5_S3A_SOURCE_AUTHORITY").unwrap_or_else(|_| "platform".into())
+}
+
+/// The Platform harness routes the Channel under its seeded revision; the legacy WP5 node under `route-s3b-1`.
+fn route_revision() -> String {
+    env::var("WP5_S3A_ROUTE_REVISION").unwrap_or_else(|_| "route-s3b-1".into())
+}
 
 fn required(name: &str) -> Result<String, io::Error> {
     env::var(name).map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, name))
@@ -309,11 +318,12 @@ fn producer_descriptor(authority: &str, cert: &str, key: &str) -> TestResult<Pro
     let ca = pem_der(&required("WP5_S3A_CA_CERT")?, "CERTIFICATE")?;
     let client = pem_der(&required(cert)?, "CERTIFICATE")?;
     let key = pem_der(&required(key)?, "PRIVATE KEY")?;
+    let server_name = env::var("WP5_S3A_SERVER_NAME").unwrap_or_else(|_| "source.test".into());
     Ok(ProducerDescriptor::new(
         authority.into(),
         ("127.0.0.1".into(), port),
-        "source.test".into(),
-        "source.test".into(),
+        server_name.clone(),
+        server_name,
         vec![CertificateDer::from(ca)],
         vec![CertificateDer::from(client)],
         PrivateKeyDer::try_from(key)?,
@@ -367,7 +377,7 @@ async fn fetch_real(
         native_admission_source::http1_mtls::exchange(descriptor, operation, &encoded, &mut permit)
             .await
             .map_err(|error| format!("S1 exchange: {error:?}"))?;
-    let Ok(Response::Observed(observation)) = decode_response(&request, SOURCE_AUTHORITY, &raw)
+    let Ok(Response::Observed(observation)) = decode_response(&request, &source_authority(), &raw)
     else {
         return Err("Platform did not return an authoritative observation".into());
     };
@@ -430,7 +440,7 @@ async fn ingest(
         root.accept_native_source_observation(
             custody,
             SourceObservation {
-                source_authority: SOURCE_AUTHORITY.into(),
+                source_authority: source_authority(),
                 operation,
                 subject,
                 source_revision: observation.source_revision,
@@ -505,7 +515,7 @@ async fn publish_readiness(
         state: AdmissionAuthorityGuardStateV1::Runtime {
             ownership_generation: generation,
             ready: true,
-            route_revision: "route-s3b-1".into(),
+            route_revision: route_revision(),
             runtime_observation_revision: RUNTIME_OBSERVATION.into(),
             protocol_major: 1,
             transport_profile: 1,
@@ -566,7 +576,7 @@ fn sign_grant(grant: &Grant<'_>, issued_at: i64) -> String {
         "world_id": uuid_text(&grant.world_id),
         "channel_id": uuid_text(&grant.channel_id),
         "account_security_generation": grant.security_generation.to_string(),
-        "route_revision": "route-s3b-1",
+        "route_revision": route_revision(),
         "runtime_observation_revision": RUNTIME_OBSERVATION,
         "scope_ownership_generation": grant.scope_generation.to_string(),
         "protocol_major": 1,
@@ -1340,7 +1350,7 @@ fn node_boot_spells_against_running_node() -> TestResult {
             .await?;
             database.close().await?;
             let descriptor = producer_descriptor(
-                SOURCE_AUTHORITY,
+                &source_authority(),
                 "WP5_S3A_CLIENT_CERT",
                 "WP5_S3A_CLIENT_KEY",
             )?;
@@ -1454,8 +1464,13 @@ fn node_boot_seam_against_running_node() -> TestResult {
         .build()?
         .block_on(async {
             let url = required("NODE_BOOT_DATABASE_URL")?;
+            let legacy_d150 = env::var("NODE_BOOT_D150_LEGACY").as_deref() == Ok("1");
             let world_path = std::env::var_os("NODE_BOOT_WORLD_BUNDLE");
-            let packet_accounts = if world_path.is_some() {
+            if legacy_d150 && world_path.is_none() {
+                return Err("D150 requires the disposable World topology".into());
+            }
+            let core_count = if legacy_d150 { 1 } else { accounts.len() };
+            let packet_accounts = if world_path.is_some() && !legacy_d150 {
                 Some([
                     required("NODE_BOOT_PACKET_ACCOUNT_ID")?,
                     required("NODE_BOOT_PACKET_SECOND_ACCOUNT_ID")?,
@@ -1475,7 +1490,7 @@ fn node_boot_seam_against_running_node() -> TestResult {
             let mut characters = Vec::new();
             let mut account_ids = std::collections::BTreeSet::new();
             let mut character_ids = std::collections::BTreeSet::new();
-            for account in accounts.iter().chain(packet_accounts.iter().flatten()) {
+            for account in accounts[..core_count].iter().chain(packet_accounts.iter().flatten()) {
                 let account_id = crate::node::uuid_bytes(account)
                     .ok_or("invalid node-boot fixture AccountId")?;
                 if !account_ids.insert(account_id) {
@@ -1509,22 +1524,24 @@ fn node_boot_seam_against_running_node() -> TestResult {
             .fetch_one(&mut database)
             .await?;
             database.close().await?;
-            evidence(&format!(
-                "node_boot characters={} source=control_socket assignment=operator",
-                characters.len()
-            ));
+            if !legacy_d150 {
+                evidence(&format!(
+                    "node_boot characters={} source=control_socket assignment=operator",
+                    characters.len()
+                ));
+            }
             let clients = SeamClients {
                 address: required("NODE_BOOT_ADDRESS")?.parse()?,
                 certificate: &certificate,
                 signing: &signing,
                 key_id: &key_id,
                 accounts: &accounts,
-                characters: &characters[..accounts.len()],
+                characters: &characters[..core_count],
                 world,
                 channel,
                 scope_generation: scope_generation.parse()?,
                 descriptor: &producer_descriptor(
-                    SOURCE_AUTHORITY,
+                    &source_authority(),
                     "WP5_S3A_CLIENT_CERT",
                     "WP5_S3A_CLIENT_KEY",
                 )?,
@@ -1532,6 +1549,9 @@ fn node_boot_seam_against_running_node() -> TestResult {
                 runtime: None,
                 recovery: &recovery_key()?,
             };
+            if legacy_d150 {
+                return Box::pin(client_world::legacy_d150(&clients)).await;
+            }
             if let Some(path) = world_path {
                 let packet_accounts = packet_accounts
                     .as_ref()
@@ -1605,7 +1625,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         })
         .transpose()?;
     let descriptor = producer_descriptor(
-        SOURCE_AUTHORITY,
+        &source_authority(),
         "WP5_S3A_CLIENT_CERT",
         "WP5_S3A_CLIENT_KEY",
     )?;
@@ -1631,17 +1651,21 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     let provenance = FreshStoreProvenance {
         namespace: "wp5-seam".into(),
         authorization: "seam-disposable-topology".into(),
-        source_authority: SOURCE_AUTHORITY.into(),
+        source_authority: source_authority(),
         initialized_at: now,
     };
     let descriptor_registration = DescriptorRegistration {
         revision: 1,
-        facts: format!("platform@{PLATFORM_SOURCE};source.test;tls1.3-mtls").into_bytes(),
+        facts: format!(
+            "platform@{PLATFORM_SOURCE};{};tls1.3-mtls",
+            env::var("WP5_S3A_SERVER_NAME").unwrap_or_else(|_| "source.test".into()),
+        )
+        .into_bytes(),
         installed_at: now,
     };
     if !control
         .record_native_source_descriptor_issuance(
-            SOURCE_AUTHORITY,
+            &source_authority(),
             descriptor_registration.clone(),
             Some(provenance.clone()),
         )
@@ -1908,6 +1932,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             .await
             .map_err(|e| format!("intent read {tag}: {e:?}"))?;
         drop(permit);
+        assert_eq!(intent.requested_vocation(), "Sorcerer");
         let record = root
             .bootstrap_character(&authority, &holder, &intent)
             .await
@@ -1919,7 +1944,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     // D4: let every pre-seeded observation age past the five-second bound, so
     // an admission can only succeed on evidence fetched for that attempt.
     let fresh_evidence = crate::FreshEvidenceSource::new(producer_descriptor(
-        SOURCE_AUTHORITY,
+        &source_authority(),
         "WP5_S3A_CLIENT_CERT",
         "WP5_S3A_CLIENT_KEY",
     )?);
@@ -3091,6 +3116,21 @@ impl<'a> OwnedGrant<'a> {
             attempt: self.inner.attempt,
         }
     }
+}
+
+#[test]
+fn seam_qualification_uses_the_node_boot_platform_pin() {
+    let expected = format!("readonly PLATFORM_SHA={PLATFORM_SOURCE}");
+    assert!(
+        include_str!("../../../tools/qualification/node_boot/run.sh")
+            .lines()
+            .any(|line| line == expected)
+    );
+    assert!(
+        include_str!("../../../tools/qualification/wp5_s3b/run.sh")
+            .lines()
+            .any(|line| line == expected)
+    );
 }
 
 #[test]

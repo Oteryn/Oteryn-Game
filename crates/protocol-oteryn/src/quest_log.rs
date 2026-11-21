@@ -132,7 +132,7 @@ fn validate_map_marks(marks: &[QuestMapMark]) -> WireResult<()> {
         return Err(QuestLogWireError::LimitExceeded);
     }
     if marks.iter().any(|m| {
-        !(-15..=0).contains(&m.floor)
+        !(0..=15).contains(&m.floor)
             || m.text.trim().is_empty()
             || m.text.len() > 256
             || m.text.chars().count() > 128
@@ -147,7 +147,7 @@ fn encode_map_mark(mark: &QuestMapMark) -> Vec<u8> {
     let mut body = Vec::new();
     push_varint_field(&mut body, 1, u64::from(mark.x));
     push_varint_field(&mut body, 2, u64::from(mark.y));
-    push_varint_field(&mut body, 3, u64::from(mark.floor.unsigned_abs()));
+    push_varint_field(&mut body, 3, u64::from(mark.floor as u8));
     push_message_field(&mut body, 4, mark.text.as_bytes());
     body
 }
@@ -176,7 +176,7 @@ fn decode_map_mark(body: &[u8]) -> WireResult<QuestMapMark> {
             .map_err(|_| QuestLogWireError::Malformed)?,
         y: u16::try_from(y.ok_or(QuestLogWireError::Malformed)?)
             .map_err(|_| QuestLogWireError::Malformed)?,
-        floor: -i8::try_from(depth.ok_or(QuestLogWireError::Malformed)?)
+        floor: i8::try_from(depth.ok_or(QuestLogWireError::Malformed)?)
             .map_err(|_| QuestLogWireError::Malformed)?,
         text: text.ok_or(QuestLogWireError::Malformed)?,
     })

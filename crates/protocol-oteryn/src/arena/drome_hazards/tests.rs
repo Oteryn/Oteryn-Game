@@ -6,7 +6,7 @@ fn srx3_drome_selected_modifier_codec_survives_without_active_marks() -> Result<
         selected: [1, 4],
         ..Default::default()
     };
-    let payload = append_drome_hazards(
+    let payload = append_wire_drome_hazards(
         DromeResult {
             disposition: 1,
             phase: 1,
@@ -22,7 +22,7 @@ fn srx3_drome_selected_modifier_codec_survives_without_active_marks() -> Result<
 fn srx3_drome_selected_modifier_codec_refuses_partial_duplicate_and_unknown_pairs() {
     for pair in [[1, 1], [0, 4], [1, 10], [1, 0]] {
         assert!(
-            append_drome_hazards(
+            append_wire_drome_hazards(
                 DromeResult {
                     disposition: 1,
                     phase: 1,
@@ -51,7 +51,7 @@ fn snapshot() -> DromeHazards {
                     .map(|index| crate::world_spatial::ActorPosition {
                         x: 32300 + index % 10,
                         y: 31100 + index / 10,
-                        floor: -8,
+                        floor: 8,
                     })
                     .collect(),
             },
@@ -61,7 +61,7 @@ fn snapshot() -> DromeHazards {
                 positions: vec![crate::world_spatial::ActorPosition {
                     x: 32303,
                     y: 31103,
-                    floor: -8,
+                    floor: 8,
                 }],
             },
         ],
@@ -78,11 +78,11 @@ fn srx3_drome_hazard_codec_preserves_legacy_and_roundtrips_exact_source_deadline
     };
     let legacy = result.encode();
     assert_eq!(
-        append_drome_hazards(legacy.clone(), &DromeHazards::default())?,
+        append_wire_drome_hazards(legacy.clone(), &DromeHazards::default())?,
         legacy
     );
     let snapshot = snapshot();
-    let bytes = append_drome_hazards(legacy, &snapshot)?;
+    let bytes = append_wire_drome_hazards(legacy, &snapshot)?;
     assert_eq!(DromeResult::decode(&bytes)?, result);
     assert_eq!(decode_drome_hazards(&bytes)?, snapshot);
     Ok(())
@@ -96,7 +96,7 @@ fn srx3_drome_hazard_codec_allows_200_across_two_distinct_mark_kinds() -> Result
         expires_at_micros: 18_000_000,
         positions: snapshot.entries[0].positions.clone(),
     };
-    let bytes = append_drome_hazards(
+    let bytes = append_wire_drome_hazards(
         DromeResult {
             disposition: 1,
             ..Default::default()
@@ -112,7 +112,7 @@ fn srx3_drome_hazard_codec_refuses_duplicate_tiles_expired_and_unbounded_marks()
     let mut snapshot = snapshot();
     snapshot.entries[0].positions[1] = snapshot.entries[0].positions[0];
     assert!(
-        append_drome_hazards(
+        append_wire_drome_hazards(
             DromeResult {
                 disposition: 1,
                 ..Default::default()
@@ -125,7 +125,7 @@ fn srx3_drome_hazard_codec_refuses_duplicate_tiles_expired_and_unbounded_marks()
     let mut snapshot = self::snapshot();
     snapshot.entries[0].expires_at_micros = 15_000_000;
     assert!(
-        append_drome_hazards(
+        append_wire_drome_hazards(
             DromeResult {
                 disposition: 1,
                 ..Default::default()
@@ -144,7 +144,7 @@ fn srx3_drome_hazard_codec_refuses_duplicate_tiles_expired_and_unbounded_marks()
             floor: 0,
         });
     assert!(
-        append_drome_hazards(
+        append_wire_drome_hazards(
             DromeResult {
                 disposition: 1,
                 ..Default::default()

@@ -28,6 +28,8 @@ pub const REQUIRED_LEVEL: u32 = 8;
 pub const MAX_PARTICIPANTS: usize = 5;
 pub const WAVE_COUNT: u8 = 4;
 pub const MONSTERS_PER_WAVE: usize = 7;
+pub const ARENA_X: std::ops::RangeInclusive<i32> = 32362..=32390;
+pub const ARENA_Y: std::ops::RangeInclusive<i32> = 31132..=31153;
 pub const TIME_LIMIT_MICROS: u64 = 600_000_000;
 pub const SPAWN_DELAY_MICROS: u64 = 4_000_000;
 pub const WAVE_CHECK_DELAY_MICROS: u64 = 4_500_000;
@@ -112,8 +114,8 @@ pub fn entry_destination(slot: u8) -> Result<TilePos, SoulpitError> {
 
 pub fn is_arena_position(position: TilePos) -> bool {
     position.floor == -8
-        && (32362..=32390).contains(&position.x)
-        && (31132..=31153).contains(&position.y)
+        && ARENA_X.contains(&i32::from(position.x))
+        && ARENA_Y.contains(&i32::from(position.y))
 }
 
 /// soulpit_fight.lua:37-77 checks all occupants before consuming one core. Generic use-with

@@ -121,7 +121,7 @@ impl super::native_gameplay::NativeGameplayState {
         };
         for [x, y, floor] in proof.positions() {
             if let Some(map) = room.source_world() {
-                map.immutable_tile(map.scope(), super::LogicalCell { x, y, z: -floor })
+                map.immutable_tile(map.scope(), super::LogicalCell { x, y, z: floor })
                     .ok()?;
             } else {
                 room.movement_cells()

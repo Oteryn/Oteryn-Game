@@ -68,11 +68,11 @@ impl Default for Minimap {
             quest_markers: Vec::new(),
             x: 0,
             y: 0,
-            floor: -7,
+            floor: 7,
             zoom: 1,
             tracking: true,
             editor_open: false,
-            own: (0, 0, -7),
+            own: (0, 0, 7),
             feedback: String::new(),
             root: std::env::var_os("LOCALAPPDATA").map(|p| PathBuf::from(p).join("Oteryn/minimap")),
             world: None,
@@ -198,14 +198,14 @@ impl Minimap {
             .iter()
             .filter(|tile| {
                 tile.ground_speed > 0
-                    && tile.position.floor <= map.header.first_visible_floor
+                    && tile.position.floor >= map.header.first_visible_floor
                     && in_window(origin, tile.position)
             })
             .map(|tile| (tile.position.floor, tile.position.x, tile.position.y))
             .collect();
         if let Some(floors) = floors_in_view(origin.floor) {
-            for floor in floors.filter(|f| *f <= map.header.first_visible_floor) {
-                let shift = i64::from(floor) - i64::from(origin.floor);
+            for floor in floors.filter(|f| *f >= map.header.first_visible_floor) {
+                let shift = i64::from(origin.floor) - i64::from(floor);
                 for y in 0..VIEW_HEIGHT {
                     for x in 0..VIEW_WIDTH {
                         let (Ok(x), Ok(y)) = (
@@ -295,14 +295,14 @@ impl Minimap {
 
         if !(0..=65_535).contains(&x)
             || !(0..=65_535).contains(&y)
-            || !(-15..=0).contains(&floor)
+            || !(0..=15).contains(&floor)
             || color > 3
             || label.trim().is_empty()
             || label.len() > 128
             || label.chars().any(char::is_control)
         {
             return Err(io::Error::other(tr!(
-                "Use map coordinates 0-65535, floor -15 to 0 and a label of 1-128 bytes"
+                "Use map coordinates 0-65535, floor 0 to 15 and a label of 1-128 bytes"
             )));
         }
         if let Some(marker) = self
@@ -399,7 +399,8 @@ impl Minimap {
         if bytes.len() as u64 > MAX_BYTES {
             return Err(io::Error::other(tr!("Minimap file is too large")));
         }
-        let saved: Saved = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
+        let mut saved: Saved = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
+        saved.normalize_floor_sign();
         saved.validate()?;
         // Older caches recorded gray item-only cells. They are not persistent terrain.
         self.dirty |= saved.cells.iter().any(|cell| cell[3] == 86);
@@ -442,7 +443,7 @@ mod quest_mark_tests {
             key: "sterling".into(),
             x: 31948,
             y: 31924,
-            floor: -7,
+            floor: 7,
             text: "Treasure".into(),
         }])
     }
@@ -462,7 +463,7 @@ mod quest_mark_tests {
             map.replace_quest_markers(&[oteryn_session::quest_log::QuestMapMark {
                 x: 31948,
                 y: 31924,
-                floor: -7,
+                floor: 7,
                 text: "Treasure".into(),
             }])
         );
@@ -476,11 +477,11 @@ mod quest_mark_tests {
             "a new admission to the same World clears Character facts"
         );
         assert!(map.replace_quest_marks(treasure()));
-        map.edit_marker(31948, 31924, -7, "Local label".into(), 0)?;
+        map.edit_marker(31948, 31924, 7, "Local label".into(), 0)?;
         assert_eq!(map.quest_marks, treasure());
-        map.remove_marker(31948, 31924, -7)?;
+        map.remove_marker(31948, 31924, 7)?;
         assert_eq!(map.quest_marks, treasure());
-        map.edit_marker(10, 20, -7, "Home".into(), 1)?;
+        map.edit_marker(10, 20, 7, "Home".into(), 1)?;
         let path = map.path().ok_or("path")?;
         let encoded = std::fs::read_to_string(path)?;
         assert!(!encoded.contains("Treasure"));

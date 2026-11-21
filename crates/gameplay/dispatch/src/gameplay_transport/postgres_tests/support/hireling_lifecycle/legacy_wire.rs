@@ -51,7 +51,7 @@ pub(super) async fn scenario(h: &Harness, authority: &ReconciledCharacterAuthori
     super::seed_identity(h, hireling, lamp).await?;
     let state = owner.runtime.lock().await.house_actor_state(actor, admitted.game_session_id).map_err(debug)?;
     let summon = wire::Request::Summon { x: u16::try_from(state.position.x)?,
-        y: u16::try_from(state.position.y)?, floor: -i8::try_from(state.position.floor)? };
+        y: u16::try_from(state.position.y)?, floor: i8::try_from(state.position.floor)? };
     let initial = admitted;
     let mut records = Vec::new();
     for (request, expected) in original_requests(summon) {

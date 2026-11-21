@@ -127,7 +127,7 @@ impl Scene {
             #[cfg(feature = "bevy-shell")]
             floor_quads: Vec::new(),
             minimap_state: None,
-            minimap_floor: -7,
+            minimap_floor: 7,
             minimap_memory: Default::default(),
             minimap_origin: None,
             world,

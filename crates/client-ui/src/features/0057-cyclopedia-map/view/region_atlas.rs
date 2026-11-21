@@ -102,7 +102,7 @@ mod tests {
     fn atlas_projection_preserves_gaps_and_selected_floor_at_coordinate_limits() {
         use oteryn_client_runtime::cyclopedia_map::region_atlas::{Page, Run};
         let mut panel = Panel {
-            floor: -7,
+            floor: 7,
             region_atlas: Some(Page {
                 next: None,
                 areas: vec![],
@@ -112,21 +112,21 @@ mod tests {
                         x: 65520,
                         end: 65525,
                         y: 65534,
-                        floor: -7,
+                        floor: 7,
                     },
                     Run {
                         area: 2,
                         x: 65530,
                         end: 65535,
                         y: 65534,
-                        floor: -7,
+                        floor: 7,
                     },
                     Run {
                         area: 3,
                         x: 0,
                         end: 10,
                         y: 1,
-                        floor: -8,
+                        floor: 8,
                     },
                 ],
             }),
@@ -147,7 +147,7 @@ mod tests {
             pool: 0,
             epoch: 0,
             improved: false,
-            visible: vec![(65530, 65534, -7), (65530, 65534, -8), (0, 0, -7)],
+            visible: vec![(65530, 65534, 7), (65530, 65534, 8), (0, 0, 7)],
         });
         let points = atlas_pois(&panel, 900, 600);
         assert_eq!(points.len(), 1);

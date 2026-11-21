@@ -289,10 +289,23 @@ impl HostOwner {
             self.status.clone_from(&message);
             self.login.form.feedback(message);
         }
+        self.login
+            .form
+            .refresh_gate_message(std::time::Instant::now());
         if let Some(result) = self.entry.as_mut().and_then(Reentry::poll) {
+            if matches!(
+                &result,
+                Err(crate::GameplayEntryError::ClientUpdateRequired {
+                    updater_started: true,
+                    ..
+                })
+            ) {
+                self.close();
+                return;
+            }
             self.login
                 .form
-                .finish(result.as_ref().map(|_| ()).map_err(|error| *error));
+                .finish(result.as_ref().map(|_| ()).map_err(Clone::clone));
             if result.is_ok() {
                 self.login.visible = false;
             }
@@ -302,7 +315,19 @@ impl HostOwner {
                 Ok((view, link)) => {
                     self.install_play(view, link);
                 }
-                Err(error) => self.leave(error_text(error)),
+                Err(error) => {
+                    if matches!(
+                        error,
+                        crate::GameplayEntryError::ClientUpdateRequired { .. }
+                            | crate::GameplayEntryError::Maintenance { .. }
+                            | crate::GameplayEntryError::Rejected(
+                                oteryn_platform_client::native_login::PublicClass::ClientUpdateRequired,
+                            )
+                    ) {
+                        self.login.visible = true;
+                    }
+                    self.leave(&error_text(error));
+                }
             }
         }
         let mut end = None;
@@ -346,10 +371,12 @@ impl HostOwner {
         }
         if let Some(end) = end {
             let message = match end {
-                PlayEnd::LoggedOut => "Logged out. Choose a character after signing in again.",
+                PlayEnd::LoggedOut => {
+                    "Logged out. Choose a character after signing in again.".to_owned()
+                }
                 PlayEnd::Ended(class) => error_text(crate::GameplayEntryError::Rejected(class)),
             };
-            self.leave(message);
+            self.leave(&message);
         }
     }
     fn reset_input(&mut self) {

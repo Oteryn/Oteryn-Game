@@ -1,6 +1,7 @@
 //! MP01: on the no-PvP World, three party members and a separately admitted, unprovisioned
 //! victim; on the Open PvP World (its own node), a provisioned attacker kills a provisioned victim.
 use super::observations::is_temple_arrival;
+use super::starter;
 use super::*;
 use bots::{Bot, attack_target, party};
 use oteryn_dev_client::{SessionEvent, client_ui::cyclopedia_character as panel};
@@ -36,6 +37,8 @@ pub(super) async fn run(
 ) -> TestResult {
     let started = std::time::Instant::now();
     let mut failures = Vec::new();
+    let profile = std::env::var("NODE_BOOT_PROFILE").unwrap_or_else(|_| "sorcerer".into());
+    let birth = if profile == "explorer" { "knight" } else { &profile };
     let (mut bots, setup) = tokio::time::timeout(
         Duration::from_secs(180),
         bots::connect_bots(&[
@@ -52,7 +55,12 @@ pub(super) async fn run(
     let profiled = ready
         && check(
             "profiles",
-            bounded("profiles", 30, profiles(&mut bots, &NOPVP_VOCATIONS)).await,
+            bounded("profiles", 30, async {
+                let (victim, party_members) = bots.split_last_mut().ok_or("MP01 victim missing")?;
+                profiles(party_members, &["knight", "druid", "paladin"]).await?;
+                starter::check_profile(victim, Some(birth)).await
+            })
+            .await,
             &mut failures,
         );
     let joined = if ready {
@@ -89,7 +97,7 @@ pub(super) async fn run(
             bounded("stop-combat", 20, attack_target(&mut bots[0], None)).await,
             &mut failures,
         );
-        let result = bounded("relog", 1100, relog(&mut bots, joined)).await;
+        let result = bounded("relog", 1100, relog(&mut bots, joined, birth)).await;
         check("relog", result, &mut failures);
     } else {
         check(
@@ -128,7 +136,7 @@ pub(super) async fn run(
     }
 }
 
-async fn relog(bots: &mut [Bot<'_, '_>], joined: bool) -> TestResult {
+async fn relog(bots: &mut [Bot<'_, '_>], joined: bool, birth: &str) -> TestResult {
     let mut failures = Vec::new();
     let before = snapshots(bots).await;
     let sessions = bots
@@ -166,9 +174,10 @@ async fn relog(bots: &mut [Bot<'_, '_>], joined: bool) -> TestResult {
                 return Err("terminal logout retained membership;source:crates/gameplay/durability/src/durability/world_party.rs:792".into());
             }
             verify_pvp_state(bot).await?;
-            let view = tab(bot, character::CharacterTab::GeneralStats).await?;
-            if index == 3 && view.vocation_id != character::vocation_id("none") {
-                return Err("D lost the no-vocation path after relog".into());
+            if index == 3 {
+                starter::check_profile(bot, Some(birth)).await?;
+            } else {
+                tab(bot, character::CharacterTab::GeneralStats).await?;
             }
             Ok(())
         }.await;
@@ -198,8 +207,6 @@ async fn bounded<T>(
         .map_err(|_| format!("MP01 {phase} deadline;source:{}:{}", file!(), line!()))?
 }
 
-const NOPVP_VOCATIONS: [&str; 4] = ["knight", "druid", "paladin", "none"];
-
 async fn profiles(bots: &mut [Bot<'_, '_>], vocations: &[&str]) -> TestResult {
     for (bot, &vocation) in bots.iter_mut().zip(vocations) {
         let view = tab(bot, character::CharacterTab::GeneralStats).await?;
@@ -209,7 +216,7 @@ async fn profiles(bots: &mut [Bot<'_, '_>], vocations: &[&str]) -> TestResult {
             || view
                 .general
                 .as_ref()
-                .is_none_or(|stats| vocation != "none" && stats.level != 100)
+                .is_none_or(|stats| stats.level != 100)
         {
             return Err(format!(
                 "MP01 role={} expected={vocation} vocation_id={:?} stats={:?}",
@@ -307,7 +314,7 @@ async fn durable_party(bot: &Bot<'_, '_>) -> TestResult<Vec<(String, String, Str
     Ok(rows)
 }
 
-async fn tab(
+pub(super) async fn tab(
     bot: &mut Bot<'_, '_>,
     tab: character::CharacterTab,
 ) -> TestResult<panel::CyclopediaCharacterPanel> {
@@ -698,7 +705,7 @@ async fn pvp_world_rows(
         );
         check(
             "pvp-relog",
-            bounded("pvp-relog", 1100, relog(&mut bots, false)).await,
+            bounded("pvp-relog", 1100, relog(&mut bots, false, PVP_VOCATIONS[1])).await,
             failures,
         );
     } else {

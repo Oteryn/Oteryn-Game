@@ -513,8 +513,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     original,
                     owned.binding(),
                     &source,
+                    None,
                 )
-                .await;
+                .await
+                .map_err(|_| ());
         }
         let config = content.familiar_config().ok_or(())?;
         let (spell, true) = self.spells.source_indexed(original.spell_index).ok_or(())? else {
@@ -545,7 +547,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             config,
             premium: access,
             administrative: &administrative,
-            allow_missing_premium: false,
         };
         let mut runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
@@ -566,8 +567,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             original,
             owned.binding(),
             &source,
+            None,
         )
         .await
+        .map_err(|_| ())
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -718,7 +721,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             config,
             premium: access,
             administrative: &administrative,
-            allow_missing_premium: false,
         };
         self.cast_durable_familiar(
             permit, actor, session, command_id, intent, content, &owned, &source,
@@ -766,7 +768,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 digest: content.source_digest(),
             };
             return self
-                .apply_familiar_owner_event(actor, session, index, event, content, &owned, &source)
+                .apply_familiar_owner_event(
+                    actor, session, index, event, content, &owned, &source, None,
+                )
                 .await
                 .map(Some);
         }
@@ -798,11 +802,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             config,
             premium: access,
             administrative: &administrative,
-            allow_missing_premium: false,
         };
-        self.apply_familiar_owner_event(actor, session, index, event, content, &owned, &source)
-            .await
-            .map(Some)
+        self.apply_familiar_owner_event(
+            actor, session, index, event, content, &owned, &source, None,
+        )
+        .await
+        .map(Some)
     }
 
     /// #2199 Codex P2 4302041461: the owner-cadence return of a familiar this session's Login

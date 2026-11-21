@@ -136,7 +136,7 @@ fn s17_public_media_is_strict_bounded_and_never_observer_input() -> Result<(), S
         tiles: vec![DisplayTile {
             x: 100,
             y: 200,
-            floor: -7,
+            floor: 7,
             appearances: vec![100, 200],
         }],
     };
@@ -166,7 +166,7 @@ fn s17_media_speech_effects_and_output_names_roundtrip() -> Result<(), String> {
     let position = ActorPosition {
         x: 100,
         y: 200,
-        floor: -7,
+        floor: 7,
     };
     let effect = PresentationEvent {
         decision_ordinal: 1,

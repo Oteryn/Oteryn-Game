@@ -26,9 +26,9 @@ jobs:
       contents: read
       pull-requests: read
     env:
-      EXPECTED_MERGE_GROUP_GATE_BLOB: "1de3f58c155660d9bf1dec97119231f9f991a3a4"
+      EXPECTED_MERGE_GROUP_GATE_BLOB: "fc84a163207949f3e207c7114c8d818ee7bc2d3c"
       EXPECTED_AGENT_GOVERNANCE_BLOB: "42d84c9089cdef928c6cb17268269156c87c0abb"
-      EXPECTED_MERGE_GATE_BLOB: "69420747c3de35c1071adc160dafa53b7bc80308"
+      EXPECTED_MERGE_GATE_BLOB: "4fd8315638dc0e4b243896303df3e56e38ef78b2"
     steps:
       - name: Validate control-plane candidate as inert data
         shell: bash
@@ -264,6 +264,8 @@ jobs:
           durability_result_expression = '$' + '{{ needs.durability_postgres.result }}'
           world_bundle_result_expression = '$' + '{{ needs.world_bundle.result }}'
           world_bundle_required_expression = '$' + '{{ needs.candidate.outputs.world_bundle }}'
+          archive_matrix_expression = '$' + '{{ matrix.archive }}'
+          affinity_archive_expression = '$' + '{{ steps.affinity.outputs.archive }}'
           required = (
               '  merge_group:\n    types: [checks_requested]\n  push:\n    branches: [main]\n',
               '    name: game-gate\n',
@@ -295,19 +297,25 @@ jobs:
               '              verify_registered_target_binding "$name" "$path"\n',
               '              archived_targets+=(--test "$name")\n',
               '          cargo +1.100.0 nextest archive --locked --workspace "${archived_targets[@]}" --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"\n',
-              '        archive: [e2e, lib, lib-1, lib-2, lib-3]\n',
+              '        archive: $' + '{{ fromJSON(needs.candidate.outputs.postgres == \'false\' && \'["e2e","lib-1","lib-2","lib-3"]\' || \'["e2e","lib","lib-1","lib-2","lib-3"]\') }}\n',
+              "    if: needs.candidate.outputs.rust == 'true' && needs.candidate.outputs.postgres != 'false'\n",
+              '          PG_REQUIRED: $' + '{{ needs.candidate.outputs.postgres }}\n',
+              '            test "$DURABILITY_POSTGRES" = success\n',
               '          cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-game-server \\\n',
               '            --features oteryn-gameplay-quests/test-support --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"\n',
               "            --config 'profile.dev.package.oteryn-gameplay-dispatch.debug=0' -p oteryn-gameplay-dispatch --features test-support --lib \\\n",
               '          sha256sum head-sha workspace "pg-$ARCHIVE.tar.zst" "pg-$ARCHIVE.json" > SHA256SUMS\n',
               '          cargo-nextest nextest list --cargo-metadata "$meta/target/nextest/cargo-metadata.json" \\\n',
-              '              sha256sum head-sha workspace "pg-$archive.tar.zst" "pg-$archive.json" | cmp - SHA256SUMS\n',
               '          test "$SHARD_RESULT" = success\n',
-              '          verify_archive e2e "$E2E_SHA256"\n',
-              '          verify_archive lib "$LIB_SHA256"\n',
-              '          verify_archive lib-1 "$DISPATCH_1_SHA256"\n',
-              '          verify_archive lib-2 "$DISPATCH_2_SHA256"\n',
-              '          verify_archive lib-3 "$DISPATCH_3_SHA256"\n',
+              f'          name: mq-postgres-test-inventory-{archive_matrix_expression}\n',
+              '          pattern: mq-postgres-test-inventory-*\n',
+              f'          name: mq-postgres-test-archives-{affinity_archive_expression}\n',
+              "          echo 'db285d452e0cb5814a95f0c8b25ab969af5ee9637fd051a1a0fdbcb8221cb64a  tools/ci/pg_archive_affinity.py' | sha256sum -c -\n",
+              '          python3 tools/ci/pg_archive_affinity.py route "$PG_ARCHIVES" "$JOB_INDEX" "$JOB_TOTAL"\n',
+              '          python3 tools/ci/pg_archive_affinity.py verify "$RUNNER_TEMP" mq \\\n',
+              '            "$PG_ARCHIVES" "$SELECTED_ARCHIVE" "$EXPECTED_SHA" "$GITHUB_WORKSPACE" tools/ci/plan_pg_partitions.py\n',
+              '          JOB_INDEX="${ARCHIVE_INDEX:?missing archive worker index}"\n',
+              '          JOB_TOTAL="${ARCHIVE_TOTAL:?missing archive worker count}"\n',
               '          python3 tools/ci/plan_pg_partitions.py "$plan" "$JOB_INDEX" "$JOB_TOTAL" \\\n',
               '    name: Merge Queue / Dispatch library tests without a database\n',
               '          unset OTERYN_TEST_POSTGRES_ADMIN_URL\n',

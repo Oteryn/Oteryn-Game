@@ -10,9 +10,12 @@ use crate::durability::character_progression::{
     ExperienceAwardRequest, ExperienceRewardOccurrence,
 };
 use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
+use crate::durability::loop_training::TrainingContext;
 use crate::qualification_spell_character::{QualificationBuildSpec, prepare_character_with_policy};
 use oteryn_gameplay_dispatch::gameplay_transport::composed_test_owner as binding;
+use oteryn_gameplay_progression::loop_training::TrainingRates;
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
+use std::sync::Arc;
 
 #[derive(Clone, Copy)]
 enum Case {
@@ -27,6 +30,7 @@ enum Case {
     MismatchedPolicy,
     MismatchedReward,
     BootstrapOnly,
+    BootstrapVocation,
 }
 
 fn policy() -> FiniteProgressionPolicy<String, 2> {
@@ -63,7 +67,11 @@ fn run(case: Case, tag: &'static str) -> TestResult {
             runtime()
                 .map_err(debug)?
                 .block_on(async {
-                    let h = Harness::create(admin, tag, false).await?;
+                    let h = if matches!(case, Case::BootstrapVocation) {
+                        Harness::create_with_bootstrap_vocation(admin, tag, "Druid").await?
+                    } else {
+                        Harness::create(admin, tag, false).await?
+                    };
                     let result = exercise(&h, case).await;
                     h.cleanup().await?;
                     result
@@ -146,6 +154,13 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
         assert_eq!(stored.level, 1);
         assert_eq!(stored.total_experience, ExactI64::new(0));
     }
+    let training_formula = || {
+        crate::spell::mana_training::CompiledTrainingFormula::from_profile(
+            include_bytes!("../../../../../tools/content-schema/native-gameplay/build-training.json"),
+            &context().content,
+        )
+        .map_err(debug)
+    };
     let sequencer = CharacterRevisionSequencer::new();
     let mut slot = sequencer.acquire(initial.character_id).await;
     if matches!(case, Case::Advanced | Case::EarnedThenDied | Case::FixtureXpCommitted) {
@@ -168,13 +183,7 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
         .await
         .map_err(debug)?;
     } else if matches!(case, Case::Vocation | Case::Skill) {
-        let formula = crate::spell::mana_training::CompiledTrainingFormula::from_profile(
-            include_bytes!(
-                "../../../../../tools/content-schema/native-gameplay/build-training.json"
-            ),
-            &context().content,
-        )
-        .map_err(debug)?;
+        let formula = training_formula()?;
         let before = h
             .root
             .read_character_build_state(&authority, initial.character_id)
@@ -217,6 +226,41 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
         .map_err(debug)?;
     }
     drop(slot);
+    if matches!(case, Case::BootstrapVocation) {
+        let before = h
+            .root
+            .read_character_build_state(&authority, initial.character_id)
+            .await
+            .map_err(debug)?;
+        assert_eq!(before.vocation(), "druid");
+        let rates = TrainingRates::from_json(include_bytes!(
+            "../../../../../rulesets/training/crystal-201189f-v1.json"
+        ))
+        .map_err(debug)?;
+        // First admission has no predecessor. The native writer still commits its marker and build.
+        let checkpoint = h
+            .root
+            .settle_offline_training(
+                &authority,
+                &h.node,
+                initial,
+                TrainingContext {
+                    rates: Arc::new(rates),
+                    formula: training_formula()?,
+                    progression: None,
+                },
+            )
+            .await
+            .map_err(|error| format!("v4 no-gain admission checkpoint: {error:?}"))?;
+        assert_eq!(checkpoint.revision.get(), 2);
+        assert_eq!(
+            h.root
+                .read_character_build_state(&authority, initial.character_id)
+                .await
+                .map_err(debug)?,
+            before
+        );
+    }
     if matches!(case, Case::Died | Case::EarnedThenDied) {
         use crate::durability::character_death::{
             CharacterDeathRequest, DeathCell, PlayerDeathOccurrence,
@@ -312,12 +356,20 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
     .await
     };
     let result = prepare().await;
-    if matches!(case, Case::FixtureXpCommitted) && result.is_ok() {
+    if matches!(case, Case::FixtureXpCommitted | Case::BootstrapVocation) && result.is_ok() {
         // The build commit itself can also succeed before its caller loses the reply.
         prepare().await?;
     }
-    if matches!(case, Case::Admitted | Case::BootstrapOnly | Case::FixtureXpCommitted) {
+    if matches!(
+        case,
+        Case::Admitted | Case::BootstrapOnly | Case::FixtureXpCommitted | Case::BootstrapVocation
+    ) {
         result?;
+        let expected_revision = if matches!(case, Case::BootstrapVocation) {
+            4
+        } else {
+            3
+        };
         let after = h
             .root
             .read_character_progression(&authority, initial.character_id)
@@ -326,7 +378,7 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
             .ok_or("provisioned progression absent")?;
         assert_eq!(after.level, 2);
         assert_eq!(after.total_experience, ExactI64::new(100));
-        assert_eq!(after.character_revision.get(), 3);
+        assert_eq!(after.character_revision.get(), expected_revision);
         assert_eq!(
             h.root
                 .read_character_build_state(&authority, initial.character_id)
@@ -342,7 +394,7 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
                 .map_err(debug)?
                 .revision
                 .get(),
-            3
+            expected_revision
         );
     } else {
         let error = result
@@ -358,7 +410,10 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
             Case::MismatchedContext => "spell fixture progression context mismatch",
             Case::MismatchedPolicy => "spell fixture progression policy revision mismatch",
             Case::MismatchedReward => "spell fixture progression reward revision mismatch",
-            Case::Admitted | Case::BootstrapOnly | Case::FixtureXpCommitted => {
+            Case::Admitted
+            | Case::BootstrapOnly
+            | Case::FixtureXpCommitted
+            | Case::BootstrapVocation => {
                 return Err("positive fixture case reached refusal assertion".into());
             }
         };
@@ -399,6 +454,11 @@ fn qualification_fixture_refuses_existing_vocation() -> TestResult {
 #[test]
 fn qualification_fixture_refuses_different_policy() -> TestResult {
     run(Case::MismatchedPolicy, "qfixture_policy")
+}
+
+#[test]
+fn qualification_fixture_accepts_v4_bootstrap_vocation_after_no_gain_checkpoint() -> TestResult {
+    run(Case::BootstrapVocation, "qfixture_birth_vocation")
 }
 
 #[test]

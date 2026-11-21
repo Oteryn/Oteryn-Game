@@ -1064,7 +1064,7 @@ fn check_world_bundle(bundle: &WorldBundleConfig) -> Result<(), ConfigError> {
     if bundle.production {
         return reject("world_bundle.production");
     }
-    if !(-15..=0).contains(&bundle.start_floor) {
+    if !(-15..=15).contains(&bundle.start_floor) {
         return reject("world_bundle.start_floor");
     }
     Ok(())
@@ -2169,7 +2169,7 @@ source_authority = "oteryn:game:primary"
             ),
             (
                 "start_floor = -7",
-                "start_floor = 1",
+                "start_floor = 16",
                 "world_bundle.start_floor",
             ),
         ] {

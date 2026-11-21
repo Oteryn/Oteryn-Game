@@ -91,8 +91,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) {
         let phase = EntryPhase::default();
         enter_with_retry(budget, &phase, async || {
-            self.initialize_first_entry_traced(request, game_session_id, transport, actor, &phase)
-                .await
+            self.initialize_first_entry_traced(
+                request,
+                game_session_id,
+                transport,
+                actor,
+                &phase,
+                budget,
+            )
+            .await
         })
         .await
     }
@@ -105,12 +112,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         transport: AuthenticatedTransportRefV1,
         actor: ExactActorRef,
     ) -> EntryResult {
+        let budget = AdmissionRetryBudget::for_root(&game_session_id, self.root);
         self.initialize_first_entry_traced(
             request,
             game_session_id,
             transport,
             actor,
             &EntryPhase::default(),
+            &budget,
         )
         .await
     }
@@ -128,6 +137,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         transport: AuthenticatedTransportRefV1,
         actor: ExactActorRef,
         phase: &EntryPhase,
+        budget: &AdmissionRetryBudget<'_>,
     ) -> (
         FirstEntryOutcome,
         Option<CurrentCharacterItemFence>,
@@ -305,6 +315,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 else {
                     return (FirstEntryOutcome::RefusedUnavailable, None, None);
                 };
+                #[cfg(test)]
+                let _ = FAMILIAR_LOGIN_CHECKOUT.try_with(|probe| {
+                    probe.backpack.set(probe.backpack.get() + 1);
+                });
                 let backpack_result = self
                     .root
                     .grant_newhaven_backpack(
@@ -328,6 +342,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return (FirstEntryOutcome::RefusedUnavailable, None, None);
                 }
                 phase.set("starter_kit");
+                #[cfg(test)]
+                let _ = FAMILIAR_LOGIN_CHECKOUT.try_with(|probe| {
+                    probe.kit.set(probe.kit.get() + 1);
+                });
                 let kit_result = if facts.vocation != crate::spell::Vocation::None {
                     Some(self.grant_newhaven_starter(fence).await)
                 } else {
@@ -539,6 +557,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // CHAR-POSITION-0 §3.3: initialized and placed at the durable position in this one
         // owner step, before the lock is released and any owner reads the actor's position.
+        #[cfg(test)]
+        let _ = FAMILIAR_LOGIN_CHECKOUT.try_with(|probe| {
+            probe.placement.set(probe.placement.get() + 1);
+        });
         let outcome = match self
             .initialize_admitted_position(&mut runtime, actor, game_session_id, placement)
             .await
@@ -706,6 +728,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .refresh_source_party_presence(actor, game_session_id)
                 .await;
         }
+        // ARCH-PROGRESSION-SOURCE-0 §1.5: the committed, positioned session now has its
+        // gameplay fence. Familiar Login reads the durable progression this step owns.
+        phase.set("progression");
+        if budget
+            .retry_unavailable(async || self.bind_positioned_progression(game_session_id).await)
+            .await
+            .is_err()
+        {
+            return (
+                FirstEntryOutcome::RefusedUnavailable,
+                item_fence,
+                Some(decided),
+            );
+        }
         // A Character without a vocation has no familiar; its absent build row is valid.
         if facts.vocation != crate::spell::Vocation::None
             && let Some(native) = self
@@ -714,12 +750,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             && let Some(config) = native.familiar_config()
         {
             phase.set("familiar_login");
+            // The test seeds its durable Familiar checkpoint with the positioned fence.
+            #[cfg(test)]
+            if let Ok(Some(barrier)) = FAMILIAR_LOGIN_CHECKOUT.try_with(|probe| {
+                (!probe.seed_started.replace(true)).then(|| probe.seed_barrier.clone())
+            }) {
+                barrier.0.notify_one();
+                barrier.1.notified().await;
+            }
             let access = self
                 .refresh_and_apply_spell_access(actor, game_session_id)
                 .await;
             // #2199: a familiar Login that did not complete restored neither the stored familiar
             // nor its cooldowns, so the entry fails closed like the other post-position owners.
             let initialized = Box::pin(self.initialize_familiar_login(
+                budget,
                 actor,
                 game_session_id,
                 request,
@@ -771,10 +816,13 @@ async fn enter_with_retry(
         attempts = attempts.saturating_add(1);
         let result = initialize().await;
         match result.0 {
+            // The positioned progression step used the same budget already. Do not replay
+            // placement or the starter grants when that step has exhausted it.
             FirstEntryOutcome::RefusedUnavailable
-                if budget
-                    .retries_unavailable(AdmissionRefusal::Unavailable)
-                    .await => {}
+                if result.2.is_none()
+                    && budget
+                        .retries_unavailable(AdmissionRefusal::Unavailable)
+                        .await => {}
             FirstEntryOutcome::RefusedStaleAuthority if stale_rounds < RECONCILE_ATTEMPTS => {
                 stale_rounds += 1;
                 tokio::time::sleep(RECONCILE_BACKOFF).await;

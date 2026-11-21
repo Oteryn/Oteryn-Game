@@ -238,7 +238,8 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         .ok_or("qualification level absent from the served progression policy")?
         .minimum_experience;
     let classed = before.vocation() != NO_VOCATION;
-    let checkpoint = if level > 1
+    let requested_vocation_present = classed && before.vocation() == vocation;
+    let xp_checkpoint = if level > 1
         && progression
             .as_ref()
             .is_some_and(|state| classed || state.level >= level)
@@ -249,7 +250,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         })
         .await
         .map_err(debug)?
-        .is_some_and(|receipt| {
+        .filter(|receipt| {
             receipt.character_id == character
                 && receipt.level_before == 1
                 && receipt.level_after == level
@@ -257,13 +258,49 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
                 && receipt.experience_awarded == experience
         })
     } else {
+        None
+    };
+    let checkpoint = xp_checkpoint.is_some();
+    let fixture_build = if let Some(xp) = xp_checkpoint
+        .as_ref()
+        .filter(|_| requested_vocation_present)
+    {
+        retry_holder(Some(root), deadline, progression_busy, async || {
+            root.reconcile_character_build(authority, build_occurrence)
+                .await
+        })
+        .await
+        .map_err(debug)?
+        .is_some_and(|receipt| {
+            receipt.character_id == character
+                && receipt.after.vocation() == vocation
+                && matches!(
+                    receipt.cause,
+                    BuildCause::VocationChoice | BuildCause::VocationTrial
+                )
+                && receipt.original_character_revision >= xp.committed_character_revision
+        })
+    } else {
         false
     };
-    if classed && !(checkpoint && before.vocation() == vocation) {
+    if classed
+        && !fixture_build
+        && !retry_holder(Some(root), deadline, progression_busy, async || {
+            root.has_unchanged_bootstrap_vocation(authority, character, before.vocation())
+                .await
+        })
+        .await
+        .map_err(debug)?
+    {
         return Err("spell fixture vocation is set".into());
     }
-    if !classed && before != DurableBuildState::default() {
-        return Err("spell fixture build is not initial".into());
+    let resume_items = checkpoint && requested_vocation_present;
+    if !resume_items {
+        let birth_seed =
+            DurableBuildState::new(before.vocation(), (0, 0), [(10, 0); 7]).map_err(debug)?;
+        if before != birth_seed || (classed && !PLAYABLE_VOCATIONS.contains(&before.vocation())) {
+            return Err("spell fixture build is not initial".into());
+        }
     }
     if let Some(state) = &progression {
         if !checkpoint
@@ -274,7 +311,9 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         {
             return Err("spell fixture progression level or XP is not initial".into());
         }
-        if !classed && checkpoint && (state.level != level || state.total_experience != experience)
+        if checkpoint
+            && !resume_items
+            && (state.level != level || state.total_experience != experience)
         {
             return Err("qualification fixture XP checkpoint has changed".into());
         }
@@ -304,9 +343,9 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     if policy.context != context {
         return Err("qualification policy context mismatch".into());
     }
-    if classed {
-        // A matching retained fixture receipt authorizes resuming the item stage.
-        // Do not replay the build on a classed Character or discard later play.
+    if resume_items {
+        // The exact XP checkpoint and proven vocation permit resuming the item stage.
+        // Preserve the current build and later play.
         return Ok(());
     }
     let mut fence = CurrentCharacterGameplayFence {
@@ -385,26 +424,32 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     )
     .map_err(debug)?;
     let after = convert_vocation(&formula, &before, vocation).map_err(debug)?;
-    retry_holder(Some(root), deadline, progression_busy, async || {
-        slot.commit_build(
-            root,
-            authority,
-            node,
-            fence,
-            BuildChangeRequest {
-                occurrence: build_occurrence,
-                cause: BuildCause::VocationChoice,
-                before: before.clone(),
-                after: after.clone(),
-                pruned_stance: None,
-            },
-            &formula,
-            None,
-        )
+    if before != after {
+        retry_holder(Some(root), deadline, progression_busy, async || {
+            slot.commit_build(
+                root,
+                authority,
+                node,
+                fence,
+                BuildChangeRequest {
+                    occurrence: build_occurrence,
+                    cause: if classed {
+                        BuildCause::VocationTrial
+                    } else {
+                        BuildCause::VocationChoice
+                    },
+                    before: before.clone(),
+                    after: after.clone(),
+                    pruned_stance: None,
+                },
+                &formula,
+                None,
+            )
+            .await
+        })
         .await
-    })
-    .await
-    .map_err(debug)?;
+        .map_err(debug)?;
+    }
     // Verify the requested owned state with typed errors; the cast-facts loader
     // erases holder-busy into Unavailable, which cannot safely be retried.
     let verification_revision = retry_holder(Some(root), deadline, authority_busy, async || {

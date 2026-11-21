@@ -29,5 +29,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "postgres_tests_mounts.rs",
         "",
     )?;
-    build_pg_shards::configure(&root, &out)
+    build_pg_shards::configure(&root, &out)?;
+
+    const ARCHIVE_ENV: &str = "OTERYN_DISPATCH_TEST_ARCHIVE";
+    build_mechanics::emit_cargo_directive("rerun-if-env-changed", ARCHIVE_ENV);
+    build_mechanics::emit_cargo_directive(
+        "rustc-check-cfg",
+        "cfg(oteryn_dispatch_test_archive, values(\"common\", \"dedicated\"))",
+    );
+    match std::env::var(ARCHIVE_ENV) {
+        Err(std::env::VarError::NotPresent) => {}
+        value => match value?.as_str() {
+            mode @ ("common" | "dedicated") => build_mechanics::emit_cargo_directive(
+                "rustc-cfg",
+                format_args!("oteryn_dispatch_test_archive=\"{mode}\""),
+            ),
+            mode => {
+                return Err(format!("{ARCHIVE_ENV}={mode:?} must be common or dedicated").into());
+            }
+        },
+    }
+    Ok(())
 }

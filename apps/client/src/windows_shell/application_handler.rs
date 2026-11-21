@@ -238,7 +238,10 @@ impl ApplicationHandler for Application {
             }
             self.leave_play("Native sign-out requested. Clearing the saved device credential.");
         }
-        self.poll_entry();
+        self.poll_entry(event_loop);
+        if event_loop.exiting() {
+            return;
+        }
         if let Some(play) = &mut self.play {
             self.settings.restore(&mut play.view, &play.link);
             play.view.enable_resource_hud(true);

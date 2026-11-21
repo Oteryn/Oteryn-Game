@@ -26,15 +26,15 @@ fn soulpit_native_core_obelisk_scope_and_exit_walkthrough() -> Result<(), Box<dy
             origin: ActorPosition {
                 x: 32375,
                 y: 31158,
-                floor: -8,
+                floor: 8,
             },
-            first_visible_floor: -8,
+            first_visible_floor: 8,
         },
         tiles: vec![MapTile {
             position: ActorPosition {
                 x: 32375,
                 y: 31157,
-                floor: -8,
+                floor: 8,
             },
             items: vec![MapItem {
                 definition: MapDefinition::Item(NonZeroU32::MIN),
@@ -90,13 +90,13 @@ fn soulpit_native_core_obelisk_scope_and_exit_walkthrough() -> Result<(), Box<dy
     let exit_position = ActorPosition {
         x: 32375,
         y: 31153,
-        floor: -8,
+        floor: 8,
     };
     let mut destination = source_map.clone();
     destination.header.origin = ActorPosition {
         x: 32375,
         y: 31151,
-        floor: -8,
+        floor: 8,
     };
     destination.header.reset_epoch = 8;
     destination.tiles[0].position = exit_position;
@@ -104,7 +104,7 @@ fn soulpit_native_core_obelisk_scope_and_exit_walkthrough() -> Result<(), Box<dy
     view.inputs.push_back(Input::TargetWalk(ActorPosition {
         x: 32374,
         y: 31158,
-        floor: -8,
+        floor: 8,
     }));
     outbox.push(vec![
         oteryn_session::SessionEvent::GatedSnapshotReplaced(oteryn_session::AppliedDelta {

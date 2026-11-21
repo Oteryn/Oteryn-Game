@@ -13,8 +13,8 @@ fn character_sex_is_required_and_bound_by_authenticated_creation() {
     assert_eq!(male.requested_sex(), Sex::Male);
     assert_eq!(female.requested_sex(), Sex::Female);
     assert_ne!(male.binding(), female.binding());
-    assert_eq!(male.binding().last(), Some(&2));
-    assert_eq!(female.binding().last(), Some(&1));
+    assert_eq!(male.binding()[male.binding().len() - 8], 2);
+    assert_eq!(female.binding()[female.binding().len() - 8], 1);
     for invalid in [
         wire(|v| {
             v.as_object_mut()

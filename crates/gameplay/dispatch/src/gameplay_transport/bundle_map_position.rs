@@ -79,7 +79,6 @@ pub(super) fn bundle_map_position<'a>(
         return None;
     }
     let position = snapshot.position();
-    // The runtime floor is legacy `z`; the native floor is `-z`.
     Some(BundleMapPosition {
         map: index.map(),
         at: ActorPosition {

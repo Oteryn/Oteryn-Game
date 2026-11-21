@@ -36,7 +36,7 @@ pub(super) async fn exercise(
     let before: String = sqlx::query_scalar("SELECT item_instance_id::text FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1")
         .bind(KEY).fetch_one(&harness.pool).await?;
     let reference = native.item_index().and_then(|i| i.definition_ref("Item",KEY,"definition-r1")).ok_or("sword reference")?;
-    let destination = oteryn_protocol_oteryn::item_view::WorldTilePosition {x:i32::from(TILE.x),y:i32::from(TILE.y),floor:i16::from(TILE.floor)};
+    let destination = oteryn_protocol_oteryn::item_view::WorldTilePosition {x:i32::from(TILE.x),y:i32::from(TILE.y),floor:-i16::from(TILE.floor)};
     let (next,outcome,payload) = super::map_seed_planting_fixtures::drop_exchange_at(owner,*admitted,1,None,reference,1,false,destination).await?;
     *admitted=next;
     assert_eq!(outcome,Some(oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved));

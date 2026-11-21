@@ -17,7 +17,7 @@ use super::{
 use rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::{BTreeMap, BTreeSet, VecDeque},
     future::Future,
     time::Duration,
 };
@@ -469,8 +469,57 @@ pub enum Decision {
     Transient,
 }
 
+/// Result of checking the current immutable create receipt immediately before an offer.
+pub enum CreateSendability {
+    Ready(String),
+    StoppedOrMissing,
+    Invalid,
+}
+
+pub struct RetainedCreateKey {
+    pub scan_key: i64,
+    pub operation_id: String,
+}
+
+pub struct RetainedCreatePage {
+    pub through: i64,
+    pub keys: Vec<RetainedCreateKey>,
+}
+
+pub trait RetainedCreateScan: Send {
+    fn sendable_create(
+        &mut self,
+        operation_id: &str,
+    ) -> impl Future<Output = Result<CreateSendability, SourceError>> + Send;
+
+    fn stop_retained_create_receipt(
+        &mut self,
+        operation_id: &str,
+    ) -> impl Future<Output = Result<(), SourceError>> + Send;
+
+    fn scan_retained_creates(
+        &mut self,
+        after: i64,
+        through: Option<i64>,
+    ) -> impl Future<Output = Result<RetainedCreatePage, SourceError>> + Send;
+}
+
 /// The Character Authority side of the consumer.
 pub trait Decider: Send {
+    fn sendable_create(
+        &mut self,
+        _operation_id: &str,
+    ) -> impl Future<Output = Result<CreateSendability, SourceError>> + Send {
+        async { Err(SourceError::Unavailable) }
+    }
+
+    fn stop_retained_create_receipt(
+        &mut self,
+        _operation_id: &str,
+    ) -> impl Future<Output = Result<(), SourceError>> + Send {
+        async { Err(SourceError::Unavailable) }
+    }
+
     /// Legacy implementations have no v2 receipt to stop.
     fn stop_services_receipt(
         &mut self,
@@ -956,7 +1005,25 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
                 return Step::Settled(Settle::Retry);
             }
         };
-        let Ok(body) = std::str::from_utf8(&receipt) else {
+        let committed_create =
+            !self.services_wire && command == CREATE_COMMAND && result_code == "CHAR_CMD_OK";
+        let checked;
+        let body = if committed_create {
+            match self.decider.sendable_create(operation_id).await {
+                Ok(CreateSendability::Ready(body)) => {
+                    checked = body;
+                    checked.as_str()
+                }
+                Ok(CreateSendability::StoppedOrMissing) => return Step::Settled(Settle::Stopped),
+                Ok(CreateSendability::Invalid) => {
+                    (self.event)(INVALID_RETAINED_CREATE);
+                    return Step::Settled(Settle::Done);
+                }
+                Err(_) => return Step::Settled(Settle::Retry),
+            }
+        } else if let Ok(body) = std::str::from_utf8(&receipt) {
+            body
+        } else {
             return Step::Settled(Settle::Done);
         };
         let publication_operation = if self.services_wire {
@@ -980,6 +1047,22 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
                 }
                 .map_err(|_| Failure::InvalidResponse)
             });
+        if committed_create
+            && matches!(published, Err(Failure::NotFound | Failure::Conflict))
+            && self
+                .decider
+                .stop_retained_create_receipt(operation_id)
+                .await
+                .is_err()
+        {
+            self.log(
+                "PublishCharacterCommandReceiptV1",
+                Some(command),
+                "alarm=receipt_stop_write_failed",
+                started,
+            );
+            return Step::Settled(Settle::Retry);
+        }
         if self.services_wire && matches!(published, Err(Failure::NotFound | Failure::Conflict)) {
             self.decider
                 .stop_services_receipt(operation_id, &receipt)
@@ -1012,6 +1095,85 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
             Err(f) if f.backs_off() => Step::Throttled,
             Err(_) => Step::Settled(Settle::Retry),
         }
+    }
+}
+
+const RETAINED_CREATE_RETRY_LIMIT: usize = 1024;
+const RETAINED_CREATE_RETRIES_PER_POLL: usize = 8;
+const RETAINED_CREATE_RETRY_TIME_PER_POLL: Duration = Duration::from_secs(6);
+const RETAINED_CREATE_READ_TIME: Duration = Duration::from_secs(3);
+const RETAINED_CREATE_OFFER_TIME: Duration = Duration::from_millis(super::EXCHANGE_DEADLINE_MS);
+const RETAINED_CREATE_INVALID_LIMIT: usize = 1024;
+const INVALID_RETAINED_CREATE: &str = "event=character_commands operation=PublishCharacterCommandReceiptV1 command=CreateCharacter receipt=invalid_stored_state alarm=invalid_retained_receipt";
+
+#[derive(PartialEq, Eq)]
+enum RetainedOffer {
+    Skipped,
+    Settled,
+    Retry,
+}
+
+async fn offer_retained_create(
+    store: &mut impl RetainedCreateScan,
+    source: &mut impl CommandSource,
+    operation_id: &str,
+    invalid_creates: &mut BTreeSet<String>,
+    event: fn(&str),
+) -> RetainedOffer {
+    let body = match tokio::time::timeout(
+        RETAINED_CREATE_READ_TIME,
+        store.sendable_create(operation_id),
+    )
+    .await
+    {
+        Ok(Ok(CreateSendability::Ready(body))) => body,
+        Ok(Ok(CreateSendability::StoppedOrMissing)) => return RetainedOffer::Skipped,
+        Ok(Ok(CreateSendability::Invalid)) => {
+            if !invalid_creates.contains(operation_id) {
+                (event)(INVALID_RETAINED_CREATE);
+                if invalid_creates.len() == RETAINED_CREATE_INVALID_LIMIT {
+                    (event)(
+                        "event=character_commands command=CreateCharacter alarm=retained_create_invalid_limit",
+                    );
+                    let _ = invalid_creates.pop_first();
+                }
+                invalid_creates.insert(operation_id.to_owned());
+            }
+            return RetainedOffer::Skipped;
+        }
+        _ => return RetainedOffer::Retry,
+    };
+    invalid_creates.remove(operation_id);
+    let published = tokio::time::timeout(
+        RETAINED_CREATE_OFFER_TIME,
+        source.exchange(Operation::PublishCharacterCommandReceiptV1, &body),
+    )
+    .await
+    .unwrap_or(Err(Failure::Unavailable))
+    .and_then(|raw| decode_receipt_response(&raw).map_err(|_| Failure::InvalidResponse));
+    match published {
+        Ok(()) => RetainedOffer::Settled,
+        Err(failure @ (Failure::NotFound | Failure::Conflict)) => {
+            let stop_failed = store
+                .stop_retained_create_receipt(operation_id)
+                .await
+                .is_err();
+            let alarm = if stop_failed {
+                "receipt_stop_write_failed"
+            } else {
+                "receipt_refused"
+            };
+            (event)(&format!(
+                "event=character_commands operation=PublishCharacterCommandReceiptV1 command=CreateCharacter receipt={} alarm={alarm}",
+                failure.label()
+            ));
+            if stop_failed {
+                RetainedOffer::Retry
+            } else {
+                RetainedOffer::Settled
+            }
+        }
+        Err(_) => RetainedOffer::Retry,
     }
 }
 
@@ -1062,6 +1224,117 @@ pub async fn run_account_closure_publications<C: ReportClock, S: CommandSource, 
             }
         }
         clock.sleep(delay).await;
+    }
+}
+
+/// Replay committed v1 creates independently of the pending list and closure feed.
+/// The durable table is the retry source of truth. The queue only expedites offers.
+/// For a visible key K, a fault-free sweep reaches it within K polls. An earlier
+/// sweep through H takes at most H + 1 polls to wrap. Each failed sweep adds at
+/// most its captured watermark plus one poll, since every poll advances or wraps.
+/// Queued IDs get a FIFO retry turn within 1,024 polls even if the scan skips
+/// them. These bounds require store and sendability reads to recover.
+pub async fn run_retained_create_publications<
+    C: ReportClock,
+    S: CommandSource,
+    D: RetainedCreateScan,
+>(
+    clock: C,
+    mut source: S,
+    mut decider: D,
+    event: fn(&str),
+) {
+    let mut cursor = 0;
+    let mut scan_end = None;
+    let mut invalid_creates = BTreeSet::new();
+    let mut retries: VecDeque<String> = VecDeque::new();
+    loop {
+        let retry_started = clock.elapsed();
+        let mut attempted = Vec::with_capacity(RETAINED_CREATE_RETRIES_PER_POLL);
+        for attempt in 0..retries.len().min(RETAINED_CREATE_RETRIES_PER_POLL) {
+            // Each attempt gets its full read and exchange budgets. Apply the
+            // poll budget only between attempts, so a deadline cannot pin an ID
+            // at the head or systematically truncate one queue position.
+            if attempt > 0
+                && clock.elapsed().saturating_sub(retry_started)
+                    >= RETAINED_CREATE_RETRY_TIME_PER_POLL
+            {
+                break;
+            }
+            let Some(operation_id) = retries.pop_front() else {
+                break;
+            };
+            let offer = offer_retained_create(
+                &mut decider,
+                &mut source,
+                &operation_id,
+                &mut invalid_creates,
+                event,
+            )
+            .await;
+            attempted.push(operation_id.clone());
+            if offer == RetainedOffer::Retry {
+                retries.push_back(operation_id);
+            }
+        }
+
+        // Candidate discovery holds no receipt bytes. Take a fresh exact check
+        // for each offer, including candidates already read in this page.
+        match tokio::time::timeout(
+            RETAINED_CREATE_READ_TIME,
+            decider.scan_retained_creates(cursor, scan_end),
+        )
+        .await
+        {
+            Ok(Ok(page)) if !page.keys.is_empty() => {
+                scan_end = Some(page.through);
+                for key in page.keys {
+                    cursor = key.scan_key;
+                    let operation_id = key.operation_id;
+                    if attempted.contains(&operation_id) || retries.contains(&operation_id) {
+                        continue;
+                    }
+                    let offer = offer_retained_create(
+                        &mut decider,
+                        &mut source,
+                        &operation_id,
+                        &mut invalid_creates,
+                        event,
+                    )
+                    .await;
+                    if offer != RetainedOffer::Retry {
+                        if offer == RetainedOffer::Settled {
+                            break;
+                        }
+                        continue;
+                    }
+                    if retries.len() == RETAINED_CREATE_RETRY_LIMIT {
+                        (event)(
+                            "event=character_commands operation=PublishCharacterCommandReceiptV1 command=CreateCharacter alarm=retained_create_retry_limit",
+                        );
+                    } else {
+                        retries.push_back(operation_id);
+                    }
+                }
+            }
+            Ok(Ok(_)) => {
+                cursor = 0;
+                scan_end = None;
+            }
+            _ => {
+                (event)(
+                    "event=character_commands command=CreateCharacter alarm=retained_create_scan_unavailable",
+                );
+                // Skip one possible key, not an unread page. Only a successful
+                // subsequent sweep can settle skipped candidates.
+                cursor = cursor.saturating_add(1);
+                if scan_end.is_some_and(|end| cursor >= end) {
+                    cursor = 0;
+                    scan_end = None;
+                }
+            }
+        }
+        clock.sleep(POLL).await;
     }
 }
 

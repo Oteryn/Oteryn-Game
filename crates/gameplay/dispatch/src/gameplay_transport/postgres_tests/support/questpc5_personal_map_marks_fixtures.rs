@@ -184,7 +184,7 @@ pub(super) async fn exercise(
             marks.0[0].floor,
             marks.0[0].text.as_str()
         ),
-        (KEY, 31948, 31924, -7, "Treasure")
+        (KEY, 31948, 31924, 7, "Treasure")
     );
     assert_eq!(
         owner.personal_map_marks_query(*admitted).await,

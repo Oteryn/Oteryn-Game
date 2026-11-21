@@ -1,6 +1,8 @@
 //! Opt-in public atlas pages: command 72, request ff 01 + area:u32 + floor:i8 + after:u16.
 use crate::charm_wire::CyclopediaWireError as Error;
 type Result<T> = std::result::Result<T, Error>;
+/// Sentinel for an area list rather than tile geometry.
+pub const AREA_LIST: i8 = 127;
 pub const AREA_PAGE: usize = 16;
 pub const RUN_PAGE: usize = 1024;
 pub const MAX_AREAS: usize = 1024;
@@ -49,12 +51,12 @@ pub enum Reply {
     Geometry(GeometryPage),
 }
 pub fn encode_request(request: Request) -> Result<Vec<u8>> {
-    if request.floor == 1 {
+    if request.floor == AREA_LIST {
         if usize::from(request.after) > MAX_AREAS {
             return Err(Error::LimitExceeded);
         }
     } else if request.area == 0
-        || !(-15..=0).contains(&request.floor)
+        || !(0..=15).contains(&request.floor)
         || usize::from(request.after) >= MAX_RUNS / RUN_PAGE
     {
         return Err(Error::Malformed);
@@ -108,7 +110,7 @@ fn validate(reply: &Reply) -> Result<()> {
             let offset = usize::from(page.page) * RUN_PAGE;
             let total = usize::try_from(page.total).map_err(|_| Error::LimitExceeded)?;
             if page.area == 0
-                || !(-15..=0).contains(&page.floor)
+                || !(0..=15).contains(&page.floor)
                 || total > MAX_RUNS
                 || (offset >= total && total > 0)
                 || (total == 0 && page.page != 0)
@@ -302,13 +304,13 @@ mod tests {
     fn atlas_wire_bounds_roundtrip_and_truncation() -> Result<()> {
         let request = Request {
             area: 7,
-            floor: -7,
+            floor: 7,
             after: 0,
         };
         assert_eq!(decode_request(&encode_request(request)?)?, request);
         let reply = Reply::Geometry(GeometryPage {
             area: 7,
-            floor: -7,
+            floor: 7,
             page: 0,
             next: None,
             total: RUN_PAGE as u32,
@@ -365,7 +367,7 @@ mod tests {
         assert!(
             encode_request(Request {
                 area: 0,
-                floor: 1,
+                floor: AREA_LIST,
                 after: 1025
             })
             .is_err()

@@ -144,13 +144,17 @@ pub fn validate(table: &Table, world: &Extent) -> Result<(), Error> {
 
 /// Encodes a table. The caller has validated it.
 pub fn encode(table: &Table) -> Vec<u8> {
+    encode_with_floors(table, crate::bundle::FloorEncoding::Signed)
+}
+
+pub(crate) fn encode_with_floors(table: &Table, floors: crate::bundle::FloorEncoding) -> Vec<u8> {
     let mut out = Vec::new();
     put(&mut out, table.npcs.len() as u64);
     for npc in &table.npcs {
         put_text(&mut out, &npc.key);
         put(&mut out, npc.placements.len() as u64);
         for placement in &npc.placements {
-            out.push(placement.floor as u8);
+            out.push(floors.encode(placement.floor));
             put(&mut out, placement.y.into());
             put(&mut out, placement.x.into());
             out.push(placement.direction as u8);
@@ -172,6 +176,14 @@ fn direction(byte: u8) -> Result<Direction, Error> {
 /// Decodes and validates a payload. Every count is checked against its limit and against the
 /// bytes left before anything is reserved for it, since each element needs at least one byte.
 pub fn decode(raw: &[u8], world: &Extent) -> Result<Table, Error> {
+    decode_with_floors(raw, world, crate::bundle::FloorEncoding::Signed)
+}
+
+pub(crate) fn decode_with_floors(
+    raw: &[u8],
+    world: &Extent,
+    floors: crate::bundle::FloorEncoding,
+) -> Result<Table, Error> {
     let mut r = Reader { buf: raw, pos: 0 };
     let count = |r: &mut Reader<'_>, max: usize, what: &str| -> Result<usize, Error> {
         let n = r.varint()?;
@@ -199,7 +211,7 @@ pub fn decode(raw: &[u8], world: &Extent) -> Result<Table, Error> {
         )?;
         let mut list = Vec::with_capacity(n);
         for _ in 0..n {
-            let floor = r.byte()? as i8;
+            let floor = floors.decode(r.byte()?)?;
             let y = r.u16("NPC placement y")?;
             let x = r.u16("NPC placement x")?;
             list.push(Placement {

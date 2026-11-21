@@ -60,12 +60,12 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Oteryn/Oteryn-Platform
-          ref: 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
+          ref: 6d04b52a16145723eedb0c56640ad052dbd26e94
           path: _platform
           persist-credentials: false
 
       - name: Verify exact Platform revision
-        run: test "$(git -C _platform rev-parse HEAD)" = 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
+        run: test "$(git -C _platform rev-parse HEAD)" = 6d04b52a16145723eedb0c56640ad052dbd26e94
 
       - name: Install pinned Rust toolchain
         run: rustup toolchain install 1.100.0 --profile minimal --component rustfmt

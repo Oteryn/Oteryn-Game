@@ -85,7 +85,7 @@ pub fn apply_result(p: &mut Panel, r: &GatedCommandResult) -> bool {
         p.feedback = Some(tr!("The server refused hireling management"));
         return false;
     }
-    match (action, wire::Reply::decode(&r.payload)) {
+    match (action, wire::Reply::decode_wire(&r.payload)) {
         (wire::Request::List, Some(wire::Reply::State(entries))) => {
             p.identity = p
                 .identity
