@@ -14,12 +14,23 @@ impl PreferenceStore {
         complete: impl FnOnce(bool) + Send + 'static,
     ) -> io::Result<()> {
         preferences.validate().map_err(io::Error::other)?;
-        let previous = self.preferences.clone();
+        let baseline = self
+            .io_baseline
+            .get_or_insert_with(|| {
+                std::sync::Arc::new(std::sync::Mutex::new(self.preferences.clone()))
+            })
+            .clone();
         let edited = preferences.clone();
         let replacing = self.replacing;
         self.enqueue(move |path| {
-            let result = Self::write_edits(&path, &previous, &edited)
-                .map(|active| replacing.then_some(active));
+            let result = (|| {
+                let mut previous = baseline
+                    .lock()
+                    .map_err(|error| io::Error::other(error.to_string()))?;
+                let active = Self::write_edits(&path, &previous, &edited)?;
+                *previous = edited;
+                Ok(replacing.then_some(active))
+            })();
             complete(result.is_ok());
             result
         })?;
@@ -116,6 +127,11 @@ impl PreferenceStore {
         self.save_task = None;
         self.queued = 0;
         self.replacing = false;
+        if let Some(baseline) = self.io_baseline.take()
+            && let Ok(saved) = baseline.lock()
+        {
+            self.preferences = saved.clone();
+        }
         if let Some(restored) = results
             .iter()
             .rev()

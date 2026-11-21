@@ -24,6 +24,8 @@ pub struct PreferenceStore {
     replacing: bool,
     #[cfg(bevy_shell)]
     queued: usize,
+    #[cfg(bevy_shell)]
+    io_baseline: Option<std::sync::Arc<std::sync::Mutex<ReferencePreferences>>>,
 }
 
 impl PreferenceStore {
@@ -127,6 +129,8 @@ impl PreferenceStore {
             replacing: false,
             #[cfg(bevy_shell)]
             queued: 0,
+            #[cfg(bevy_shell)]
+            io_baseline: None,
         }
     }
 
@@ -147,6 +151,8 @@ impl PreferenceStore {
             replacing: false,
             #[cfg(bevy_shell)]
             queued: 0,
+            #[cfg(bevy_shell)]
+            io_baseline: None,
         })
     }
 
