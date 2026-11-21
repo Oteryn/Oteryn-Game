@@ -77,7 +77,11 @@ impl<'a, 'f, 's> ComposedTestOwner<'a, 'f, 's> {
 }
 
 // The dedicated PG target uses the same caller and constructor as in-crate tests.
-pub use super::connection::{FreshAdmissionAuthority, UseCommand};
+pub use super::capabilities::SelectedCapabilities;
+pub use super::connection::{
+    AdmittedSession, ConnectionEnd, ControllerBinding, FirstEntryOutcome, FreshAdmissionAuthority,
+    IDLE_LIVENESS, SessionContinuity, UseCommand, serve_admitted,
+};
 pub use super::item_view::ItemKey;
 
 pub fn empty_capabilities(

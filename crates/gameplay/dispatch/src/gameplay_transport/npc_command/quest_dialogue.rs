@@ -265,6 +265,11 @@ fn finish(admission: &ComposedFreshAdmission<'_, '_, '_>, session: GameSessionId
     }
 }
 
+fn reports_reward_inventory_change(transition: &str) -> bool {
+    transition.starts_with("oteryn:quest-reward/")
+        && transition != oteryn_gameplay_quests::quest::reward_callbacks::SINATUKI_LEGACY_COMPLETION
+}
+
 pub(super) async fn apply(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -288,8 +293,8 @@ pub(super) async fn apply(
     );
     if step
         .transition
-        .as_ref()
-        .is_some_and(|k| k.starts_with("oteryn:quest-reward/"))
+        .as_deref()
+        .is_some_and(reports_reward_inventory_change)
     {
         rendered.inventory_changed = true;
     }
@@ -576,10 +581,7 @@ pub(in crate::gameplay_transport) async fn resume(
     if pending.request.cause != QuestCause::Command(CommandRef::new(command.game_session_id, id)) {
         return None;
     }
-    let value_callback = pending
-        .request
-        .transition_key
-        .starts_with("oteryn:quest-reward/");
+    let inventory_changed = reports_reward_inventory_change(&pending.request.transition_key);
     match admission
         .root
         .reconcile_character_quest_transition(
@@ -605,7 +607,7 @@ pub(in crate::gameplay_transport) async fn resume(
                     &pending.intent,
                     pending.reply,
                 );
-                rendered.inventory_changed = value_callback;
+                rendered.inventory_changed = inventory_changed;
                 let runtime = admission.runtime.lock().await;
                 Some(publish_committed_reply(
                     admission.states.npc_conversations.current_npc(

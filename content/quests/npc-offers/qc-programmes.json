@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.sinatuki",
+      "keywords": [
+        "chuqua"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Chuqua jamjam!! Tiyopa Sinatuki?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "uth'lokr"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 1,
+          "maximum": 15,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I can make draconian steel from a Dragon Shield. Do you want to trade?"
+      ]
+    }
+  ]
+}

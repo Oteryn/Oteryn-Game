@@ -40,6 +40,7 @@ class NativeContainerFluidTests(unittest.TestCase):
         import container_native
         import reward_claim_authoring as plain
         items = plain.load_items()
+        items['oteryn:item.tibia.i2874']['materializable'] = False
         import reward_claim_variant_authoring as variant
         # The base now qualifies this claim. Rebuild the historical held source
         # without that qualification so the refusal assertions remain exercised.
@@ -66,6 +67,6 @@ class NativeContainerFluidTests(unittest.TestCase):
         for placement in recipe['placements']:
             self.assertEqual(len(placement['contents']), 3)
             self.assertEqual(placement['contents'][1]['count'], 1)
-            self.assertEqual(placement['contents'][1]['fluid_subtype'], 1)
+            self.assertEqual(placement['contents'][1]['fluid_subtype'], 2)
         qualified['provenance']['pilot_key'] = 'canary:reward-claim/other-lane-owned'
         self.assertIsNone(container_native.derive(qualified, items, plain.stack_problem))

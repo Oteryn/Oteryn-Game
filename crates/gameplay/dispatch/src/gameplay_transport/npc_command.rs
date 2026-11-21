@@ -869,8 +869,12 @@ pub(super) async fn npc_bank_talk(
             session,
             &intent,
         );
+        let sinatuki_exchange = context.as_ref().is_some_and(|(_, _, npc)| {
+            npc == crate::durability::npc_trade::sinatuki_exchange::NPC
+                && intent.text.trim().eq_ignore_ascii_case("nupi")
+        });
         drop(runtime);
-        let Some(facts) = reward_facts::read(admission, command).await else {
+        let Some(facts) = reward_facts::read(admission, command, sinatuki_exchange).await else {
             return rejected();
         };
         runtime = admission.runtime.lock().await;

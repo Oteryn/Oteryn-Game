@@ -16,7 +16,7 @@ pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-cal
 // Each source document retains its closed admission bound.
 pub const MAX_CALLBACKS: usize = 512;
 // The merged source cohorts and native callbacks share a separate boot bound.
-pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1024;
+pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 2048;
 pub const MAX_EFFECTS: usize = 8;
 pub const MAX_SELECTOR_POSITIONS: usize = 8;
 
@@ -106,6 +106,9 @@ pub struct NativeSelector {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Selector {
+    /// Native use-with target, matched against its served Item definition.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target_definition: Option<String>,
     pub position: Option<Position>,
     /// Alternate step tiles share one canonical callback/activation identity.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -752,6 +755,12 @@ pub fn load() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/oramond-native-roots.json"
     ))?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/qc-chests.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/qc-lizard-sanctuary.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/qm48-mammoth.json"
     ))?);
     callbacks.push(super::barbarian_mead::callback()?);
@@ -789,6 +798,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     native_callbacks.push(super::dreamer_carrot::callback());
     native_callbacks.push(super::dreamer_death_ring::reset_callback());
     native_callbacks.extend(super::dreamer_fire_bug::callbacks());
+    native_callbacks.push(super::koshei_amulet::callback()?);
     native_callbacks.push(super::targuna_ram::callback()?);
     native_callbacks.push(nomads_land::callback()?);
     native_callbacks.extend(super::ice_seal_paint::callbacks()?);
@@ -829,7 +839,8 @@ pub fn load() -> Result<Vec<Callback>, String> {
 
 mod selector_gates;
 
-pub(crate) fn validate_callbacks(callbacks: &[Callback]) -> Result<(), String> {
+/// Validate callback data with the same closed rules used by the World registry.
+pub fn validate_callbacks(callbacks: &[Callback]) -> Result<(), String> {
     parse(&serde_json::json!({"schema":1,"callbacks":callbacks}).to_string()).map(|_| ())
 }
 
@@ -947,7 +958,30 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || (selector.position.is_none()
                 && selector.unique.is_none()
                 && selector.action.is_none()
-                && selector.native.is_none())
+                && selector.native.is_none()
+                && selector.target_definition.is_none())
+            || selector.target_definition.as_ref().is_some_and(|definition| {
+                !definition.strip_prefix("oteryn:item.tibia.i").is_some_and(|id| !id.is_empty() && id.bytes().all(|c| c.is_ascii_digit()) && id.parse::<u32>().is_ok_and(|id| id > 0))
+                    || callback.trigger != Trigger::Use
+                    || !callback.requires_world_admission
+                    || !callback.item_on_target.as_ref().is_some_and(|item| item.selected_instance)
+                    || callback.reversible
+                    || callback.opening_only
+                    || callback.activation.is_some()
+                    || callback.item_on_target.as_ref().is_some_and(|tool| tool.target_remove || tool.target_replacement.is_some())
+                    || !callback.passages.is_empty()
+                    || callback.teleport.is_some()
+                    || !callback.offerings.is_empty()
+                    || { let mut effects = callback.effects.clone(); effects.target_magic = None; !effects.is_empty() }
+                    || callback.native_rule.is_some()
+                    || selector.position.is_some()
+                    || !selector.position_aliases.is_empty()
+                    || selector.ordinal.is_some()
+                    || selector.unique.is_some()
+                    || selector.action.is_some()
+                    || selector.appearance.is_some()
+                    || selector.native.is_some()
+            })
             || selector.position.is_some_and(|p| !valid_pos(p))
             || selector
                 .native
@@ -1667,6 +1701,8 @@ mod batch4_tests;
 mod bounded_tests;
 #[cfg(test)]
 mod outfit_tests;
+#[cfg(test)]
+mod qc_lizard_sanctuary_tests;
 
 #[cfg(test)]
 mod scene_tests;

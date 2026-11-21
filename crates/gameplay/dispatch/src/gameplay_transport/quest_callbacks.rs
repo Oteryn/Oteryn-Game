@@ -12,6 +12,7 @@ mod committed_copy;
 mod court_warlock;
 #[path = "daily_world_gates.rs"]
 mod daily_world_gates;
+mod definition_target;
 mod dreamer_carrot;
 mod effects;
 mod encounter;
@@ -253,6 +254,23 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     let Some((pos, ordinal)) = crate::map::view::placement_of(key) else {
         return false;
     };
+    if let Some(definition) = &callback.selector.target_definition {
+        return map
+            .overlay
+            .base()
+            .tile(pos.x, pos.y, pos.floor)
+            .and_then(|base| {
+                base.ids()
+                    .iter()
+                    .zip(base.depths())
+                    .filter(|(_, depth)| **depth == 0)
+                    .nth(usize::from(ordinal))
+            })
+            .is_some_and(|(id, _)| {
+                map.facts
+                    .quest_callback_target_definition(key, *id, definition)
+            });
+    }
     // These source-bound World ingresses retain no startup UID/AID in B3.
     // An appearance elsewhere in the stack cannot impersonate their source.
     let source_ordinal = match callback.key.as_str() {
@@ -974,6 +992,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 c.actor_kind == world_callbacks::ActorKind::Player
                     && c.trigger == Trigger::Use
                     && !oteryn_gameplay_quests::quest::ice_seal_paint::historical_only(&c.key)
+                    && (c.selector.target_definition.is_none() || selected_tool.is_some())
                     && matches(map, c, resolved.placement_key)
                     && c.activation.as_ref().is_none_or(|activation| {
                         self.states

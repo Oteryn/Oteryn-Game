@@ -8,6 +8,70 @@ pub const REWARD: u32 = 5;
 // The fixed NPC exchange contract allows three input burn lines.
 const MAX_INPUT_STACKS: usize = 3;
 
+pub(crate) async fn legacy_payout(
+    tx: &mut sqlx::PgConnection,
+    character: CharacterId,
+) -> std::result::Result<bool, sqlx::Error> {
+    // 2896 admitted a single species across up to three burn lines. Read the
+    // immutable quantities, since the items may have moved or been spent.
+    sqlx::query_scalar(
+        "SELECT EXISTS (
+            SELECT 1 FROM game_npc_trades t
+            WHERE t.character_id = encode($1,'hex')::uuid
+              AND t.side = 3 AND t.npc_key = 'oteryn:npc.sinatuki'
+              AND t.item_definition_family = 'Item'
+              AND t.item_definition_production_key = 'oteryn:item.tibia.i7290'
+              AND t.item_definition_revision_ref = 'definition-r1' AND t.item_units = 5
+              AND t.created_xact_id IS DISTINCT FROM pg_current_xact_id_if_assigned()
+              AND EXISTS (
+                  SELECT 1 FROM game_npc_trade_lines l
+                  JOIN game_item_instances i USING (item_instance_id)
+                  WHERE l.transaction_id = t.transaction_id AND l.created_xact_id = t.created_xact_id
+                    AND l.line_kind = 3 AND i.definition_family = 'Item'
+                    AND i.definition_revision_ref = 'definition-r1'
+                    AND i.definition_production_key IN ('oteryn:item.tibia.i7158', 'oteryn:item.tibia.i7159')
+                  GROUP BY i.definition_production_key
+                  HAVING count(*) = t.line_count - 1
+                     AND sum(l.quantity_before - l.quantity_after) IN (99, 100)
+              )
+              AND EXISTS (
+                  SELECT 1 FROM game_npc_trade_lines l
+                  WHERE l.transaction_id = t.transaction_id AND l.created_xact_id = t.created_xact_id
+                    AND l.line_kind = 4 AND l.item_instance_id = t.item_instance_id
+                    AND l.quantity_before = 0 AND l.quantity_after = t.item_units
+              )
+        )",
+    )
+    .bind(character.as_bytes().as_slice())
+    .fetch_one(tx)
+    .await
+}
+
+impl DurabilityRoot {
+    /// Select the historical dialogue. The quest writer rechecks under Root.
+    pub async fn has_sinatuki_legacy_payout(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        character: CharacterId,
+    ) -> Result<bool> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| NpcTradeError::AuthorityRejected)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    let paid = legacy_payout(&mut tx, character).await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(paid)
+                })
+            })
+            .await
+            .map_err(Into::into)
+    }
+}
+
 fn definition(key: &str) -> TypedDefinitionRef {
     TypedDefinitionRef {
         family: "Item".into(),

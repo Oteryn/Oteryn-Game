@@ -961,14 +961,29 @@
       ]
     },
     {
+      "achievement": "oteryn:achievement/blessed",
+      "give": {
+        "item": "oteryn:item.tibia.i5942",
+        "count": 1,
+        "contents": []
+      },
       "key": "oteryn:quest-reward/questpc7-friends-blessing",
-      "quest": "oteryn:quest.friends_and_traders",
-      "npc": "oteryn:npc.quentin",
       "keywords": [
         "finish prayer"
       ],
-      "topic": 0,
       "next_topic": 0,
+      "npc": "oteryn:npc.quentin",
+      "outfit": null,
+      "present": [],
+      "quest": "oteryn:quest.friends_and_traders",
+      "reply": [
+        "The ten-part prayer has blessed your wooden stake."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/quentin.lua:1-186:sha256:ec847fd5847361ac4ac7e278426fa284712ffd50f77b1b00cc38cc5c4ff480e9",
+        "https://tibia.fandom.com/index.php?title=Blessed!&oldid=844049"
+      ],
       "storage": [
         {
           "track": "oteryn:quest-progress/questpc7/friends/program",
@@ -983,21 +998,7 @@
           "count": 1
         }
       ],
-      "present": [],
-      "give": {
-        "item": "oteryn:item.tibia.i5942",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "The ten-part prayer has blessed your wooden stake."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/quentin.lua:1-186:sha256:ec847fd5847361ac4ac7e278426fa284712ffd50f77b1b00cc38cc5c4ff480e9"
-      ]
+      "topic": 0
     },
     {
       "key": "oteryn:quest-reward/questpc7-friends-complete",

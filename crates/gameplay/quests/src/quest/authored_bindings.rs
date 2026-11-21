@@ -32,7 +32,7 @@ use std::collections::BTreeSet;
 
 pub const MAX_BINDING_BYTES: usize = 8 * 1024 * 1024;
 pub const MAX_BOUND_QUESTS: usize = 128;
-pub const MAX_BOUND_STAGES: usize = 1024;
+pub const MAX_BOUND_STAGES: usize = 2048;
 // The base loader caps its registry separately, and each authored world callback uses one stage.
 const MAX_COMPOSED_WORLD_CALLBACKS: usize =
     super::world_callbacks::MAX_RUNTIME_CALLBACKS + MAX_BOUND_STAGES;

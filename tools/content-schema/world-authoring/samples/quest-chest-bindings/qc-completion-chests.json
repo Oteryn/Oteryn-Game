@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "repository": "zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "table": "data-global/startup/tables/chest.lua",
+  "table_sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4",
+  "startup": "data-global/startup/others/functions.lua:97-115",
+  "bindings": [
+    {
+      "claim": "oteryn:reward-claim.kv.legiondawnport",
+      "position": [
+        32143,
+        31910,
+        8
+      ],
+      "appearance": 4240,
+      "unique": 6006,
+      "source_line": 623
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.witch_house_quest",
+      "position": [
+        32867,
+        31909,
+        8
+      ],
+      "appearance": 2472,
+      "unique": 6188,
+      "source_line": 2057
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag1",
+      "position": [
+        32845,
+        31917,
+        6
+      ],
+      "appearance": 2469,
+      "unique": 6083,
+      "source_line": 1216
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag2",
+      "position": [
+        32847,
+        31917,
+        6
+      ],
+      "appearance": 2469,
+      "unique": 6084,
+      "source_line": 1225
+    }
+  ],
+  "level_source_sha256": "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc",
+  "level_access": []
+}
