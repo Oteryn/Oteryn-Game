@@ -411,6 +411,19 @@ fn removing_a_mark_clears_the_cache_and_reopens_an_empty_sidebar_editor() -> Tes
     Ok(())
 }
 
+fn finish_marker_preferences(app: &mut App) -> TestResult {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+    let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+    while owner.settings.preference_save_pending() {
+        if std::time::Instant::now() >= deadline {
+            return Err("marker preferences write did not complete".into());
+        }
+        owner.poll([320, 240]);
+        std::thread::yield_now();
+    }
+    Ok(())
+}
+
 #[test]
 fn removing_a_remembered_mark_updates_scoped_preferences_and_sidebar_quads() -> TestResult {
     use oteryn_session::{
@@ -473,6 +486,19 @@ fn removing_a_remembered_mark_updates_scoped_preferences_and_sidebar_quads() -> 
     Ok(())
 }
 
+fn finish_marker_preferences(app: &mut App) -> TestResult {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+    let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+    while owner.settings.preference_save_pending() {
+        if std::time::Instant::now() >= deadline {
+            return Err("marker preferences write did not complete".into());
+        }
+        owner.poll([320, 240]);
+        std::thread::yield_now();
+    }
+    Ok(())
+}
+
 #[test]
 fn removing_a_remembered_mark_reports_storage_failure_after_activation() -> TestResult {
     let root = tempfile::tempdir()?;
@@ -504,20 +530,26 @@ fn removing_a_remembered_mark_reports_storage_failure_after_activation() -> Test
         play.view.set_preferences(preferences.clone())?;
         owner.settings.apply(preferences);
     }
-    std::fs::write(path, "damaged")?;
+    std::fs::write(&path, "damaged")?;
     open_marker_editor(&mut app)?;
     activate(&mut app, "Remove mark")?;
     let owner = app.world().non_send::<HostOwner>();
     assert!(owner.settings.preferences.minimap.marks.is_empty());
-    assert!(!owner.settings.feedback.contains("could not save"));
+    finish_marker_preferences(&mut app)?;
+    let owner = app.world().non_send::<HostOwner>();
+    assert!(owner.status.contains("could not save"), "{}", owner.status);
+    assert_eq!(std::fs::read(&path)?, b"damaged");
     Ok(())
 }
 
 #[test]
 fn renaming_then_removing_an_imported_mark_does_not_reveal_the_original() -> TestResult {
+    let root = tempfile::tempdir()?;
+    let path = root.path().join("preferences.json");
     let mut app = fixture()?;
     let at = {
         let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner.settings = crate::play::SettingsState::new(Some(path.clone()));
         let play = owner.play.as_mut().ok_or("play")?;
         let (x, y, floor) = play.view.satellite_player();
         play.view
@@ -569,6 +601,8 @@ fn renaming_then_removing_an_imported_mark_does_not_reveal_the_original() -> Tes
         .query::<&bevy::text::EditableText>()
         .single(app.world())?;
     assert_eq!(field.value(), "Mark");
+    finish_marker_preferences(&mut app)?;
+    assert!(crate::play::PreferenceStore::load(path)?.preferences().minimap.marks.is_empty());
     Ok(())
 }
 
