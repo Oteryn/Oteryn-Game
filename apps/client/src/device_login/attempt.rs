@@ -14,6 +14,7 @@ pub struct DeviceAttempt {
     pub(super) remembered: bool,
     pub(super) options: MiscellaneousPreferences,
     pub(super) folder: Option<PathBuf>,
+    pub(super) journal: Arc<revocation_journal::Journal>,
 }
 impl DeviceAttempt {
     pub fn has_session(&self) -> bool {
@@ -54,6 +55,8 @@ impl DeviceAttempt {
             self.sign_out(client).await;
             return Err(storage_error());
         }
+        self.journal
+            .observe_process_credential((!self.remembered).then_some(&session.device_credential))?;
         self.state.remembered = self.remembered;
         self.state.session = Some(session);
         self.state.vault_clear_failed = false;
@@ -112,6 +115,7 @@ impl DeviceAttempt {
         }
         self.state.key = None;
         self.state.remembered = false;
+        self.journal.observe_process_credential(None)?;
         let local = self.clear_vault();
         let remote = self.revoke_pending(client).await;
         local.and(remote)
@@ -132,8 +136,17 @@ impl DeviceAttempt {
         {
             self.remember_revocation(session.device_credential);
         }
-        self.revoke_pending(client).await?;
-        self.clear_vault()
+        if self.journal.has_folder() {
+            for credential in &self.state.pending {
+                self.journal.stage(credential)?;
+            }
+            self.clear_vault()?;
+            self.state.pending.clear();
+            self.journal.replay(client).await
+        } else {
+            self.revoke_pending(client).await?;
+            self.clear_vault()
+        }
     }
 
     fn clear_vault(&mut self) -> Result<(), NativeLoginError> {

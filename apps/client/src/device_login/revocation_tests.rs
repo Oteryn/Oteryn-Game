@@ -52,6 +52,7 @@ fn failed_vault_delete_still_revokes_and_never_reuses_the_session() -> TestResul
             let login = DeviceLogin {
                 enabled: true,
                 forget_requested: Default::default(),
+                journal: super::test_server::journal(None),
                 vault,
                 state: Default::default(),
                 folder: None,
@@ -94,6 +95,7 @@ fn sign_out_retries_every_pending_family() -> TestResult {
             let login = DeviceLogin {
                 enabled: true,
                 forget_requested: Default::default(),
+                journal: super::test_server::journal(None),
                 vault: vault.clone(),
                 state: Default::default(),
                 folder: None,
@@ -133,6 +135,7 @@ fn credential_fifo_is_rejected_within_the_lock_deadline() -> TestResult {
     let login = DeviceLogin {
         enabled: true,
         forget_requested: Default::default(),
+        journal: super::test_server::journal(Some(folder.path().into())),
         vault: Arc::new(Vault::default()),
         state: Default::default(),
         folder: Some(folder.path().into()),
@@ -161,6 +164,7 @@ fn queued_revocation_survives_shutdown_before_the_worker_runs() -> TestResult {
     let login = || DeviceLogin {
         enabled: true,
         forget_requested: Default::default(),
+        journal: super::test_server::journal(Some(folder.path().into())),
         vault: vault.clone(),
         state: Default::default(),
         folder: Some(folder.path().into()),
@@ -239,6 +243,7 @@ fn rejected_platform_revocation_is_retried_after_restart() -> TestResult {
     let login = || DeviceLogin {
         enabled: true,
         forget_requested: Default::default(),
+        journal: super::test_server::journal(Some(folder.path().into())),
         vault: vault.clone(),
         state: Default::default(),
         folder: Some(folder.path().into()),
@@ -276,5 +281,82 @@ fn rejected_platform_revocation_is_retried_after_restart() -> TestResult {
             );
             assert!(!folder.path().join("revoke.pending").exists());
             restored.finish().await
+        })
+}
+
+#[test]
+fn review_3376_exit_after_active_vault_clear_replays_without_token_in_marker() -> TestResult {
+    let folder = tempfile::tempdir()?;
+    let vault = Arc::new(Vault::default());
+    let enrolled = enrollment_response()?;
+    vault::Vault::write(vault.as_ref(), &enrolled).map_err(std::io::Error::other)?;
+    let login = || DeviceLogin {
+        enabled: true,
+        forget_requested: Default::default(),
+        journal: super::test_server::journal(Some(folder.path().into())),
+        vault: vault.clone(),
+        state: Default::default(),
+        folder: Some(folder.path().into()),
+    };
+    let credential = DeviceSession::from_vault(&enrolled, now()?)?.device_credential;
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    let (_release, blocked) = tokio::sync::oneshot::channel();
+    let attempt = runtime.block_on(async {
+        let server =
+            Server::start_with_blocked_ack(fixture("revoke-response.json")?, blocked).await?;
+        let requests = server.requests.clone();
+        let first = login();
+        let attempt = tokio::spawn(async move { first.sign_out(&server.client).await });
+        tokio::time::timeout(Duration::from_secs(2), async {
+            while requests.lock().map_err(|_| "requests")?.is_empty() {
+                tokio::task::yield_now().await;
+            }
+            Ok::<_, &str>(())
+        })
+        .await??;
+        assert!(
+            vault::Vault::read(vault.as_ref())
+                .map_err(std::io::Error::other)?
+                .is_none()
+        );
+        assert!(folder.path().join("revoke.pending").exists());
+        for file in std::fs::read_dir(folder.path())? {
+            let bytes = std::fs::read(file?.path())?;
+            assert!(
+                !bytes
+                    .windows(credential.expose().len())
+                    .any(|window| window == credential.expose().as_bytes())
+            );
+        }
+        Ok::<_, Box<dyn std::error::Error>>(attempt)
+    })?;
+    drop(runtime);
+    assert!(attempt.is_finished());
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let server = Server::start(vec![(200, fixture("revoke-response.json")?)]).await?;
+            drop(
+                login()
+                    .begin(
+                        &server.client,
+                        MiscellaneousPreferences::default(),
+                        CancellationToken::new(),
+                    )
+                    .await?,
+            );
+            assert!(
+                server
+                    .requests
+                    .lock()
+                    .map_err(|_| "requests")?
+                    .iter()
+                    .any(|request| request.contains(credential.expose()))
+            );
+            assert!(!folder.path().join("revoke.pending").exists());
+            server.finish().await
         })
 }

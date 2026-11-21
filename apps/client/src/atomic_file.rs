@@ -26,7 +26,6 @@ pub(crate) fn lock(path: &Path) -> io::Result<File> {
     Ok(file)
 }
 
-#[cfg(bevy_shell)]
 pub(crate) fn try_lock(path: &Path) -> io::Result<File> {
     let file = open_lock(path)?;
     file.try_lock().map_err(io::Error::from)?;

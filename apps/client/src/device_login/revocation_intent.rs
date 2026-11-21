@@ -9,8 +9,8 @@ impl DeviceLogin {
 
     /// Fence this process immediately and publish the intent before spawning a worker.
     pub(crate) fn block_remembered(&self) -> Result<(), NativeLoginError> {
-        self.forget_requested.store(true, Ordering::Release);
-        if let Some(path) = self.intent_path() {
+        let process = self.journal.record_process_intent()?;
+        if !process && let Some(path) = self.intent_path() {
             crate::atomic_file::replace(
                 &path, b"revoke
 ", true,
@@ -18,6 +18,7 @@ impl DeviceLogin {
             .map_err(|_| storage_error())?;
             self.sync_intent_directory()?;
         }
+        self.forget_requested.store(true, Ordering::Release);
         Ok(())
     }
 
