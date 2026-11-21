@@ -2,19 +2,6 @@
   "schema": 1,
   "offers": [
     {
-      "npc": "oteryn:npc.sinatuki",
-      "keywords": [
-        "chuqua"
-      ],
-      "topic": 0,
-      "any_topic": true,
-      "next_topic": 0,
-      "storage": [],
-      "reply": [
-        "Chuqua jamjam!! Tiyopa Sinatuki?"
-      ]
-    },
-    {
       "npc": "oteryn:npc.a_sweaty_cyclops",
       "keywords": [
         "uth'lokr"

@@ -1032,7 +1032,8 @@ fn scenario_case(
             .await
             .map_err(|e| format!("callback session: {e}"))?;
         let seal = h.recovery.seal_current().map_err(debug)?;
-        let runtime_login = if koshei_spawn {
+        // The Cyclops steel service mints through the production runtime role too.
+        let runtime_login = if koshei_spawn || name == "qc-obsidian-knife" {
             Some(super::super::koshei_amulet_fixtures::runtime_login(&h).await?)
         } else {
             None
@@ -1424,8 +1425,6 @@ fn scenario_case(
             "questpc7-grave" => Some(250),
             "questpc7-outfits-formal" => Some(20),
             "questpc7-outfits-fiend" | "questpc7-outfits-inquisition" => Some(250),
-            // Ninety-nine fish exceed a fresh character's capacity.
-            "qc-sinatuki" => Some(150),
             _ => None,
         };
         if let Some(initial_level) = initial_level {
@@ -2745,7 +2744,7 @@ fn scenario_case(
             ))
             .await?;
         } else if super::super::qc_npc_programmes_fixtures::matches(name) {
-            super::super::qc_npc_programmes_fixtures::exercise(&mut owner, &mut admitted, &h, name).await?;
+            super::super::qc_npc_programmes_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-golden" {
             super::super::questpc7_golden_fixtures::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
