@@ -206,7 +206,7 @@ fn edit_commerce_field(app: &mut App, previous: &str, next: &str) -> TestResult 
         .iter_mut(world)
         .find(|field| field.value() == previous)
         .ok_or("commerce input field")?;
-    *field = EditableText::new(next);
+    field.editor_mut().set_text(next);
     Ok(())
 }
 
@@ -218,6 +218,16 @@ fn assert_no_confirmation(app: &mut App) {
             .iter(world)
             .any(|name| name.as_str() == "commerce.confirm")
     );
+}
+
+fn cancel_confirmation(app: &mut App, request: u64) -> TestResult {
+    click_named(app, "commerce.cancel")?;
+    assert_no_confirmation(app);
+    assert_eq!(
+        app.world().non_send::<HostOwner>().services.pending().map(|r| r.id),
+        Some(request)
+    );
+    Ok(())
 }
 
 #[test]
@@ -345,6 +355,8 @@ fn get_coins_reopens_and_inspects_an_awaiting_payment_order_by_request_id() -> T
         click_named(&mut app, "account.coins")?;
         let packages = wait(&mut app, Some(menu))?;
         click_named(&mut app, &format!("coin.package.{PACKAGE}"))?;
+        cancel_confirmation(&mut app, packages)?;
+        click_named(&mut app, &format!("coin.package.{PACKAGE}"))?;
         click_named(&mut app, "commerce.confirm")?;
         let pending = wait(&mut app, Some(packages))?;
         click_named(&mut app, "coin.retry")?;
@@ -424,7 +436,12 @@ fn bazaar_page_keeps_auction_details_during_bid_retry_and_status_recovery() -> T
         edit_commerce_field(&mut app, "", "1000000000000")?;
         click_named(&mut app, &format!("account.auction.{AUCTION}"))?;
         assert_no_confirmation(&mut app);
-        edit_commerce_field(&mut app, "1000000000000", "")?;
+        edit_commerce_field(&mut app, "1000000000000", "invalid")?;
+        click_named(&mut app, &format!("account.auction.{AUCTION}"))?;
+        assert_no_confirmation(&mut app);
+        edit_commerce_field(&mut app, "invalid", "17")?;
+        click_named(&mut app, &format!("account.auction.{AUCTION}"))?;
+        cancel_confirmation(&mut app, page)?;
         click_named(&mut app, &format!("account.auction.{AUCTION}"))?;
         click_named(&mut app, "commerce.confirm")?;
         let pending = wait(&mut app, Some(page))?;
@@ -462,7 +479,7 @@ fn bazaar_page_keeps_auction_details_during_bid_retry_and_status_recovery() -> T
             let mut state = authority.lock().map_err(|_| "authority")?;
             let (bid, _) = state.commands.get(&id).ok_or("same bid")?;
             assert!(
-                matches!(&bid.command, BazaarCommand::Bid { auction_id, coins: 10, .. } if auction_id == AUCTION)
+                matches!(&bid.command, BazaarCommand::Bid { auction_id, coins: 17, .. } if auction_id == AUCTION)
             );
             assert_eq!(state.commands.len(), 1);
             assert_eq!(state.effects, 1);
@@ -486,13 +503,21 @@ fn bazaar_page_keeps_auction_details_during_bid_retry_and_status_recovery() -> T
         edit_commerce_field(&mut app, "1", "1000000000000")?;
         click_named(&mut app, "account.sell")?;
         assert_no_confirmation(&mut app);
-        edit_commerce_field(&mut app, "1000000000000", "1")?;
+        edit_commerce_field(&mut app, "1000000000000", "invalid")?;
+        click_named(&mut app, "account.sell")?;
+        assert_no_confirmation(&mut app);
+        edit_commerce_field(&mut app, "invalid", "19")?;
+        edit_commerce_field(&mut app, "24", "48")?;
+        click_named(&mut app, "account.sell")?;
+        cancel_confirmation(&mut app, receipt)?;
         click_named(&mut app, "account.sell")?;
         click_named(&mut app, "commerce.confirm")?;
         let listed = wait(&mut app, Some(receipt))?;
         click_named(&mut app, &format!("account.character.{CHARACTER}"))?;
         click_named(&mut app, &format!("account.transfer.{DESTINATION}"))?;
         let quote = wait(&mut app, Some(listed))?;
+        click_named(&mut app, "account.transfer.confirm")?;
+        cancel_confirmation(&mut app, quote)?;
         click_named(&mut app, "account.transfer.confirm")?;
         click_named(&mut app, "commerce.confirm")?;
         wait(&mut app, Some(quote))?;
@@ -503,7 +528,7 @@ fn bazaar_page_keeps_auction_details_during_bid_retry_and_status_recovery() -> T
         assert_eq!(state.effects, 3);
         assert!(state.commands.values().any(|(request, _)| matches!(
             &request.command,
-            BazaarCommand::Sell { character_id, minimum_bid: 1, duration_hours: 24 } if character_id == CHARACTER
+            BazaarCommand::Sell { character_id, minimum_bid: 19, duration_hours: 48 } if character_id == CHARACTER
         )));
         assert!(
             state
