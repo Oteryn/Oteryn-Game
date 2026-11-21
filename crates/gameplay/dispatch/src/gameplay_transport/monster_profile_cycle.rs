@@ -102,63 +102,6 @@ pub(super) async fn with_main_native_ai_seed<T>(turn: impl std::future::Future<O
     NATIVE_PROFILE_TEST_SEED.scope(SEED, turn).await
 }
 
-/// Phase timings of one monster profile pass that holds the durability holder for at
-/// least `REPORT_AFTER`; one Warn line when the pass ends, by any path.
-pub(super) struct ProfilePassClock {
-    event: &'static str,
-    start: std::time::Instant,
-    last: std::time::Instant,
-    phases: Vec<(&'static str, u64)>,
-}
-
-impl ProfilePassClock {
-    const REPORT_AFTER: std::time::Duration = std::time::Duration::from_millis(1_000);
-
-    pub(super) fn new(event: &'static str) -> Self {
-        let now = std::time::Instant::now();
-        Self {
-            event,
-            start: now,
-            last: now,
-            phases: Vec::new(),
-        }
-    }
-
-    /// Record a count (not a duration) under `key`.
-    pub(super) fn count(&mut self, key: &'static str, value: usize) {
-        self.phases
-            .push((key, u64::try_from(value).unwrap_or(u64::MAX)));
-    }
-
-    pub(super) fn mark(&mut self, phase: &'static str) {
-        let now = std::time::Instant::now();
-        let ms = u64::try_from(now.duration_since(self.last).as_millis()).unwrap_or(u64::MAX);
-        self.phases.push((phase, ms));
-        self.last = now;
-    }
-}
-
-impl Drop for ProfilePassClock {
-    fn drop(&mut self) {
-        let total = self.start.elapsed();
-        if total < Self::REPORT_AFTER {
-            return;
-        }
-        self.mark("tail");
-        let total_ms = u64::try_from(total.as_millis()).unwrap_or(u64::MAX);
-        let mut line = oteryn_error_codes::Line::new(
-            oteryn_error_codes::Level::Warn,
-            "gameplay_transport",
-            self.event,
-        )
-        .field("total_ms", oteryn_error_codes::FieldValue::U64(total_ms));
-        for &(phase, ms) in &self.phases {
-            line = line.field(phase, oteryn_error_codes::FieldValue::U64(ms));
-        }
-        oteryn_error_codes::emit("oteryn-game-server", &line);
-    }
-}
-
 #[cfg(test)]
 pub(super) fn native_owner_turn(
     room: &QualifiedNativeEntryRoom,
@@ -347,12 +290,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Box::pin(async move {
                 let (owner, runtime, states, attack, room, native, permit, revisions, candidates, primal_pending, native_pending, native_health_names) =
                     context;
-                let mut clock = ProfilePassClock::new("monster_profile_pass_phases");
                 let mut tx = begin_spell_owner_transaction(holder, deadline).await.inspect_err(|_| {
                     #[cfg(test)]
                     native_owner_turn(room, "profile_transaction", "begin_refused");
                 })?;
-                clock.mark("begin");
                 let binding = runtime.binding();
                 let scope = binding.runtime_scope();
                 let authority = assert_spell_item_scope_in_transaction(
@@ -382,7 +323,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     });
                     physical_spell::read_reference_parties(&mut tx, &authority, owner.root, runtime, states, required).await
                 } else { Default::default() };
-                clock.mark("source_parties");
                 let source_instance = matches!(scope, crate::foundation::RuntimeScopeRefV1::Instance { .. })
                     && room.source_world().is_some();
                 let wave_boss_present = source_instance && rotten_waves::has_boss(runtime);
@@ -403,9 +343,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         native_owner_turn(room, "profile_transaction", "taints_refused");
                     }).map_err(|_| crate::durability::DurabilityError::Unavailable)?
                 } else { Vec::new() };
-                clock.mark("taints");
                 let objects = owner.door.lock().await;
-                clock.mark("door_lock");
                 let mut map =
                     CurrentMonsterMap::new(&mut tx, &authority, runtime, room, &objects, native);
                 map.bind_source_ground_steps(Arc::clone(&states.spite_steps.creatures), owner.reset_epoch)
@@ -414,7 +352,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         native_owner_turn(room, "profile_transaction", "ground_bind_refused");
                     })
                     .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-                clock.mark("map_bind");
                 // An older real timer also precedes the first movement of a
                 // fresh turn. No invented Think reservation is needed to drain it.
                 if !resume_profile && (has_due_source || runtime.has_pending_source_creature_deaths()
@@ -535,7 +472,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 }
                 let player_waiting_now = attack.players_waiting(now);
-                clock.mark("movement");
                 // Crystal game.cpp:7051-7053 runs source onThink before onAttacking.
                 // Reserve the existing bounded occurrences, release the table borrow,
                 // then re-read physical type/HP before their native schedules run.
@@ -753,7 +689,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         },
                     )
                     .await; }
-                clock.mark("thinks");
                 if !batch.current_for(runtime) {
                     return Err(crate::durability::DurabilityError::Unavailable);
                 }
@@ -789,7 +724,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if !reader.map.validate_transaction(runtime).await {
                     return Err(crate::durability::DurabilityError::Unavailable);
                 }
-                clock.mark("think_movement");
                 // Transaction is read-only. Keep its scope lock until every synchronous consumer ends.
                 let mut map = reader.map;
                 let next_due = table.earliest_due().into_iter().chain(next_step).min();
@@ -797,19 +731,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     source_heals::execute(runtime, &mut states.native_self_heals, &mut states.native_self_heal_content, native, &proposals);
                     pending.finish_heals();
                 }
-                clock.mark("heals");
                 if !pending.fields_known() {
                 owner
                     .tick_creature_fields(&mut map, runtime, states, native, now, native_health_names)
                     .await?;
                 pending.finish_fields();
                 }
-                clock.mark("fields");
                 if !map.validate_transaction(runtime).await {
                     return Err(crate::durability::DurabilityError::Unavailable);
                 }
                 drop(map);
-                clock.mark("heals_fields");
                 let needs_reference_parties = native.creature_profiles().records.iter().any(|record| {
                     matches!(&record.profile.data, crate::content::ProjectV2AuthoringProfileData::Creature(creature)
                         if creature.details.as_ref().is_some_and(|details| details.reference_level_overrides.iter()
@@ -832,7 +763,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 super::soul_war_callbacks::refresh_taints(owner.root, runtime, states, room, native,
                     &mut map, execution_now, published_soul_war_world.as_ref()).await
                     .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-                clock.mark("reparties_taints");
                 // Preserve the native scheduler's proposal order across ordinary
                 // attacks and source callbacks. Delayed work also runs on idle turns.
                 let callback_result: Result<(), ()> = async {
@@ -846,7 +776,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }.await;
                 callback_result.map_err(|()| crate::durability::DurabilityError::Unavailable)?;
 
-                clock.mark("callbacks");
                 drop(map);
                 let next_due = next_due.into_iter()
                     .chain(pending.source_due())
@@ -861,7 +790,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 tx.rollback()
                     .await
                     .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-                clock.mark("rollback");
                 Ok((next_due, proposals, native_actors, true))
             })
         })

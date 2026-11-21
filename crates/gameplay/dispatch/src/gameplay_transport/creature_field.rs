@@ -18,8 +18,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         now: u64,
         native_health_names: &super::source_names::NativeHealthNamesData,
     ) -> Result<(), DurabilityError> {
-        let mut clock =
-            super::monster_profile_cycle::ProfilePassClock::new("creature_field_tick_phases");
         native_health_names
             .validate_frame(runtime)
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -32,13 +30,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .map(|visible| visible.position)
             .collect::<Vec<_>>();
-        clock.count("creatures", creatures.len());
-        clock.mark("census");
         map.prefetch_empty_tiles(runtime, &positions)
             .await
             .map_err(|_| DurabilityError::Unavailable)?;
-        clock.mark("prefetch");
-        let mut occupied = 0;
         for visible in creatures {
             let Ok(snapshot) = runtime.companion_snapshot(visible.actor) else {
                 continue;
@@ -47,7 +41,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .read_items(runtime, visible.position)
                 .await
                 .map_err(|_| DurabilityError::Unavailable)?;
-            occupied += usize::from(!read.items.is_empty());
             let protection_zone = map
                 .protection_zone(runtime, visible.position)
                 .ok_or(DurabilityError::Unavailable)?;
@@ -155,8 +148,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             plans.push((visible.actor, entry, facts));
         }
-        clock.count("occupied", occupied);
-        clock.mark("tile_reads");
         if let Some(active) = self.active_generation {
             let room = map.room();
             let (tx, authority) = map.scope_transaction();
@@ -173,11 +164,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await?;
         }
-        clock.mark("publish");
         if !map.validate_transaction(runtime).await {
             return Err(DurabilityError::Unavailable);
         }
-        clock.mark("validate");
         for (actor, entry, facts) in plans {
             runtime
                 .commit_creature_field_entry(actor, now, entry.as_ref())
