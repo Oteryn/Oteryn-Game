@@ -17,8 +17,15 @@ fn foreground_preferences_apply_does_not_join_the_writer() -> Result<(), Box<dyn
         let _ = finished.send(result);
         store
     });
-    let returned = observed.recv_timeout(Duration::from_secs(2));
+    let deadline = std::time::Instant::now() + Duration::from_secs(2);
+    let returned = observed.recv_timeout(deadline.saturating_duration_since(std::time::Instant::now()));
     let _ = release.send(());
+    while !worker.is_finished() {
+        if std::time::Instant::now() >= deadline {
+            return Err("foreground preference apply worker stalled".into());
+        }
+        std::thread::yield_now();
+    }
     let _store = worker.join().map_err(|_| "foreground apply")?;
     returned??;
     Ok(())

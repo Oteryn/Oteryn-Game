@@ -484,8 +484,15 @@ fn map_binding_change_does_not_join_the_background_save() -> Result<(), Box<dyn 
         map.observe(&next);
         let _ = finished.send(());
     });
-    let returned = observed.recv_timeout(Duration::from_secs(2));
+    let deadline = std::time::Instant::now() + Duration::from_secs(2);
+    let returned = observed.recv_timeout(deadline.saturating_duration_since(std::time::Instant::now()));
     let _ = release.send(());
+    while !worker.is_finished() {
+        if std::time::Instant::now() >= deadline {
+            return Err("minimap observation worker stalled".into());
+        }
+        std::thread::yield_now();
+    }
     worker.join().map_err(|_| "minimap observation")?;
     returned?;
     Ok(())

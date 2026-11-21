@@ -105,6 +105,12 @@ fn picker_arrow_navigation_and_double_click_use_current_request()
             .pending()
             .is_none()
     );
+    while !worker.is_finished() {
+        if Instant::now() >= deadline {
+            return Err("selection action did not reach the picker callback".into());
+        }
+        std::thread::yield_now();
+    }
     assert_eq!(
         worker.join().map_err(|_| "selector worker")?,
         SelectionAction::Play {
@@ -266,6 +272,12 @@ fn picker_is_the_global_character_list_with_columns_scroll_and_outfits()
         .non_send_mut::<HostOwner>()
         .selection
         .respond(id, SelectionAction::Cancel);
+    while !worker.is_finished() {
+        if Instant::now() >= deadline {
+            return Err("selection action did not reach the picker callback".into());
+        }
+        std::thread::yield_now();
+    }
     assert_eq!(
         worker.join().map_err(|_| "selector worker")?,
         SelectionAction::Cancel
