@@ -411,19 +411,6 @@ fn removing_a_mark_clears_the_cache_and_reopens_an_empty_sidebar_editor() -> Tes
     Ok(())
 }
 
-fn finish_marker_preferences(app: &mut App) -> TestResult {
-    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
-    let mut owner = app.world_mut().non_send_mut::<HostOwner>();
-    while owner.settings.preference_save_pending() {
-        if std::time::Instant::now() >= deadline {
-            return Err("marker preferences write did not complete".into());
-        }
-        owner.poll([320, 240]);
-        std::thread::yield_now();
-    }
-    Ok(())
-}
-
 #[test]
 fn removing_a_remembered_mark_updates_scoped_preferences_and_sidebar_quads() -> TestResult {
     use oteryn_session::{
