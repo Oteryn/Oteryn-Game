@@ -60,7 +60,7 @@ url = "=2.5.8"
 zip = { version = "=9.5.1", default-features = false, features = ["deflate"] }
 
 [target.'cfg(unix)'.dependencies]
-rustix.workspace = true
+rustix = { workspace = true, features = ["process"] }
 
 [target.'cfg(windows)'.dependencies]
 # The Windows client is the Bevy host: the same pins as the optional `bevy-shell` set above.
