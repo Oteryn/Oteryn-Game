@@ -21,13 +21,7 @@ impl PlayLink {
         if !oteryn_client_ui::chat_party_room::open_key(events) {
             return false;
         }
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).chat_party_room.open = true;
-        }
+        lock(&self.mailbox).chat_party_room.open = true;
         true
     }
 }

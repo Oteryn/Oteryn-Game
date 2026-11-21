@@ -1,0 +1,19 @@
+{
+  "id": 504,
+  "name": "TUTORIAL_VOCATION_V1",
+  "constant": "tutorial_vocation::CAPABILITY_TUTORIAL_VOCATION_V1",
+  "requires": [
+    31
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    6243
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

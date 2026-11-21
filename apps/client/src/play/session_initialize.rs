@@ -10,6 +10,7 @@ pub(super) fn initialize<T: Stepper>(
     if session.feature_selected(451) {
         outbox.personal_map_marks_initialize();
     }
+    outbox.map_initialize(session.feature_snapshot(17), session.world_position());
     outbox.discovery_initialize(session);
     outbox.hud_stamina_initialize(session.feature_selected(199));
     outbox.properties_initialize(session);
@@ -20,12 +21,14 @@ pub(super) fn initialize<T: Stepper>(
     outbox.spell_bar_initialize(session.feature_snapshot(20));
     outbox.bar_item_cooldowns_initialize(session.feature_selected(463));
     outbox.appearance_initialize(session);
+    outbox.actor_motion_initialize(session.feature_selected(502));
     outbox.equipment_initialize(session.equipment_selected());
     outbox.world_context_initialize(session.feature_selected(28), session.feature_selected(11));
     outbox.targeting_initialize(session.feature_selected(15));
     outbox.diagonal_movement_initialize(session.feature_selected(371));
     // Publish sources only after their equipment, movement and targeting routes are ready.
     outbox.inventory_initialize(session.inventory(), session.item_count_selected());
+    outbox.container_manual_sort_initialize(session.feature_selected(510));
     outbox.container_initialize_with_house_capacity(
         session.container_views(),
         session.feature_selected(446),
@@ -35,7 +38,6 @@ pub(super) fn initialize<T: Stepper>(
     outbox.channel_list_initialize(session.feature_snapshot(48));
     outbox.world_light_initialize(session.feature_snapshot(18));
     outbox.world_weather_initialize(session.feature_snapshot(22));
-    outbox.map_initialize(session.feature_snapshot(17));
     outbox.animus_initialize(session.animus_selected());
     outbox.wheel_initialize(
         session.wheel_selected(),
@@ -56,6 +58,7 @@ pub(super) fn initialize<T: Stepper>(
     outbox.potion_durations_initialize(session.feature_selected(381));
     outbox.death_protection_initialize(session.feature_selected(382));
     outbox.quest_initialize(session.quest_state());
+    outbox.server_info_initialize(session.feature_selected(500));
     outbox.task_board_initialize(session.task_board_selected());
     outbox.task_board_weekly_results_initialize(session.feature_selected(474));
     outbox.stash_initialize(session.stash_selected());
@@ -102,6 +105,7 @@ pub(super) fn initialize<T: Stepper>(
     outbox.chat_initialize(session.feature_selected(oteryn_session::CAPABILITY_CHAT_V1));
     outbox.chat_party_room_initialize(session.feature_selected(240));
     outbox.cyclopedia_character_initialize(session.feature_selected(199));
+    outbox.blessings_details_initialize(session.feature_selected(503));
     outbox.cyclopedia_character_extensions(
         session.feature_selected(
             oteryn_session::cyclopedia_character::CAPABILITY_CYCLOPEDIA_CHARACTER_VOCATION_V1,
@@ -110,6 +114,7 @@ pub(super) fn initialize<T: Stepper>(
             oteryn_session::cyclopedia_character::CAPABILITY_CYCLOPEDIA_DEATH_DETAILS_V1,
         ),
     );
+    outbox.holdings_initialize(session.feature_selected(506));
     outbox.cyclopedia_tracker_initialize(session.feature_selected(197));
     outbox.world_event_initialize(session.feature_selected(53));
     outbox.daily_boost_initialize(session.feature_selected(151));
@@ -117,6 +122,8 @@ pub(super) fn initialize<T: Stepper>(
         session.server_mechanic_selected(9),
         session.feature_selected(498),
     );
+    outbox.highscores_catalogue_initialize(session.feature_selected(507));
+    outbox.tutorial_vocation_initialize(session.feature_selected(504));
     outbox.sanction_initialize(session.feature_selected(497));
     outbox.depot_search_initialize(session.server_mechanic_selected(153));
     outbox.target_move_initialize(session.feature_selected(64));

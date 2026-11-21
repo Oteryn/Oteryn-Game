@@ -1,4 +1,4 @@
-//! Read normal-death facts under the same session fence as settlement, without a death write.
+//! Read normal-death facts and observe the session fence in one advisory snapshot.
 use super::{adventurer, promotion};
 use crate::domain::death::{
     AMULET_OF_LOSS_BLESSINGS_EXCLUSIVE, CONTAINER_LOSS_PER_MILLE, EQUIPMENT_LOSS_PER_MILLE,
@@ -6,11 +6,11 @@ use crate::domain::death::{
 };
 use crate::durability::{
     DurabilityError, DurabilityRoot,
-    character_authority::{ReconciledCharacterAuthority, assert_recovery_fence},
+    character_authority::{ReconciledCharacterAuthority, observe_recovery_fence},
     character_progression::{
-        CharacterProgressionError, CurrentCharacterGameplayFence, assert_item_only_fence,
+        CharacterProgressionError, CurrentCharacterGameplayFence, observe_item_only_fence,
     },
-    db::{begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations},
+    db::begin_observation_transaction,
     runtime_scope_assignment::NodeIncarnationProof,
     spell_field_policy::{FieldWorldType, read_world_field_policy_in_transaction},
 };
@@ -93,15 +93,44 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         premium: bool,
     ) -> Result<Forecast, CharacterProgressionError> {
+        self.read_protection_snapshot(authority, node, fence, premium, false)
+            .await
+            .map(|snapshot| snapshot.forecast)
+    }
+
+    pub async fn read_blessings_dialog(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        premium: bool,
+    ) -> Result<
+        oteryn_protocol_oteryn::cyclopedia_character::blessings_dialog::Snapshot,
+        CharacterProgressionError,
+    > {
+        self.read_protection_snapshot(authority, node, fence, premium, true)
+            .await
+    }
+
+    async fn read_protection_snapshot(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        premium: bool,
+        history_requested: bool,
+    ) -> Result<
+        oteryn_protocol_oteryn::cyclopedia_character::blessings_dialog::Snapshot,
+        CharacterProgressionError,
+    > {
         let recovery = authority
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
         let root = self.clone();
         self.try_issue_semantic_pass()?.run(move|holder,deadline|Box::pin(async move {
-            let mut tx=begin_semantic_transaction(holder,deadline).await?;assert_recovery_fence(&mut tx,&recovery).await?;lock_admission_relations(&mut tx).await?;
-            if assert_item_only_fence(&mut tx,&fence.item_fence(),&node).await?.is_err(){return Ok(Err(CharacterProgressionError::AuthorityRejected));}
-            // The item fence already locks the Character root and serializes its writers.
+            let mut tx=begin_observation_transaction(holder,deadline).await?;observe_recovery_fence(&mut tx,&recovery).await?;
+            if observe_item_only_fence(&mut tx,&fence.item_fence(),&node).await?.is_err(){return Ok(Err(CharacterProgressionError::AuthorityRejected));}
             let row=sqlx::query("SELECT p.level,p.total_experience,b.vocation, \
                 ARRAY(SELECT blessing_key FROM game_character_blessings WHERE character_id=p.character_id ORDER BY blessing_key LIMIT 9) AS held, \
                 EXISTS(SELECT 1 FROM game_character_pvp_state WHERE character_id=p.character_id AND skull>0 AND skull_until>clock_timestamp()) AS skulled, \
@@ -126,7 +155,49 @@ impl DurabilityRoot {
             let protected=if pvp_available {adventurer::applies(&mut tx,&root,fence,level,true).await?}else{false};
             let vocation:Option<String>=row.try_get("vocation")?;
             let value=project(Facts {observed:u64::try_from(row.try_get::<i64,_>("observed")?).map_err(|_|narrow())?,level,experience:u64::try_from(row.try_get::<i64,_>("total_experience")?).map_err(|_|narrow())?,regular,twist,promoted,skulled:row.try_get("skulled")?,has_vocation:vocation.as_deref().is_some_and(|v|v!=crate::durability::character_build::NO_VOCATION),amulet:row.try_get("amulet")?,adventurer:protected,pvp_available})?;
-            commit_semantic_transaction(tx,deadline).await?;Ok(Ok(value))
+            use oteryn_protocol_oteryn::cyclopedia_character::blessings_dialog::{HistoryEntry, Snapshot};
+            let mut history = Vec::new();
+            if history_requested {
+                // Both receipt tables have a (character_id, committed_character_revision)
+                // unique index. Bound each source before combining the newest revisions.
+                let rows = sqlx::query("SELECT committed_at, acquired, blessings FROM ( \
+                    (SELECT committed_character_revision, committed_at, true AS acquired, \
+                     COALESCE(blessing_keys, ARRAY[blessing_key]) AS blessings \
+                     FROM game_character_npc_purchase_receipts \
+                     WHERE character_id=encode($1,'hex')::uuid AND cause_kind=3 \
+                     ORDER BY committed_character_revision DESC LIMIT 20) UNION ALL \
+                    (SELECT committed_character_revision, committed_at, false AS acquired, \
+                     ARRAY(SELECT k FROM unnest(blessings_before) k WHERE NOT k=ANY(blessings_after) ORDER BY k COLLATE \"C\") AS blessings \
+                     FROM game_character_death_receipts \
+                     WHERE character_id=encode($1,'hex')::uuid AND blessings_before<>blessings_after \
+                     ORDER BY committed_character_revision DESC LIMIT 20)) events \
+                     ORDER BY committed_character_revision DESC LIMIT 20")
+                    .bind(fence.character_id.as_bytes().as_slice()).fetch_all(&mut *tx).await?;
+                for row in rows {
+                    let mut blessings: Vec<String> = row.try_get("blessings")?;
+                    blessings.sort();
+                    history.push(HistoryEntry {
+                        at_unix_ms: u64::try_from(row.try_get::<i64,_>("committed_at")?).map_err(|_| narrow())?,
+                        acquired: row.try_get("acquired")?,
+                        blessings,
+                    });
+                }
+            }
+            // Use the settlement calculator before XP capping, rather than maintaining
+            // a separate blessing/promotion percentage rule in this read projection.
+            let baseline = death_experience_loss(level, 0, false).map_err(|_| narrow())?;
+            let reduced_loss = death_experience_loss(level, regular, promoted).map_err(|_| narrow())?;
+            let protection = baseline.checked_sub(reduced_loss).and_then(|saved| saved.checked_mul(100))
+                .and_then(|saved| saved.checked_div(baseline)).ok_or_else(narrow)?;
+            let snapshot = Snapshot {
+                forecast: value,
+                blessings: held,
+                experience_protection_percent: u8::try_from(protection).map_err(|_| narrow())?,
+                skill_protection_percent: 100,
+                history,
+            };
+            if snapshot.encode().is_none() { return Err(DurabilityError::InvalidStoredState); }
+            tx.rollback().await.map_err(DurabilityError::from)?;Ok(Ok(snapshot))
         })).await?
     }
 }

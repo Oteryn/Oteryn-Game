@@ -148,13 +148,8 @@ fn merged_analyser_controls_keep_selectors_prices_resolve_and_reset_distinct()
 fn analyser_session_export_writes_confirmed_report_through_native_action()
 -> Result<(), Box<dyn std::error::Error>> {
     let (link, _, outbox) = play_channel();
-    let path = std::env::temp_dir().join(format!(
-        "oteryn-hunt-{}-{}.txt",
-        std::process::id(),
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)?
-            .as_nanos()
-    ));
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("oteryn-hunt.txt");
     assert!(link.analyser_save_session(&path).is_err());
     assert!(!path.exists());
     outbox.analyser_initialize(true);
@@ -177,9 +172,8 @@ fn analyser_session_export_writes_confirmed_report_through_native_action()
     })]);
     std::fs::write(&path, "old report")?;
     {
-        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
-        crate::play::feature_0010_analyser::input::submit(
-            &mut mailbox,
+        crate::play::feature_0010_analyser::input::submit_shared(
+            &link.mailbox,
             &link.commands,
             oteryn_client_ui::analyser::Tool::ALL.len() + 4,
             vec![
@@ -189,7 +183,10 @@ fn analyser_session_export_writes_confirmed_report_through_native_action()
                 path.to_string_lossy().into_owned(),
             ],
         );
-        assert_eq!(mailbox.analyser.feedback, Some("Session report exported"));
+        assert_eq!(
+            crate::play::mailbox::lock(&link.mailbox).analyser.feedback,
+            Some("Session report exported")
+        );
     }
     let report = std::fs::read_to_string(&path)?;
     std::fs::remove_file(path)?;
@@ -356,3 +353,198 @@ fn auxiliary_analyser_launch_preserves_session_owner_and_existing_measurements()
 
 #[path = "activity.rs"]
 mod activity;
+
+#[cfg(bevy_shell)]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_analyser_catalogue_result(
+        &self,
+        result: &oteryn_session::GatedCommandResult,
+    ) {
+        self.analyser_catalogue_result(result);
+    }
+}
+
+#[test]
+fn analyser_reset_isolates_every_report_through_playlink_and_fact_feed()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::analyser::AnalyserImpact;
+    use oteryn_client_ui::analyser::Tool;
+    use std::num::{NonZeroU16, NonZeroU32};
+    let mut facts = vec![
+        AnalyserFact::Kill {
+            race: Some(NonZeroU32::MIN),
+        },
+        AnalyserFact::Experience { raw: 7, gained: 9 },
+        AnalyserFact::KillLoot {
+            race: None,
+            corpse_items: vec![oteryn_session::analyser_transport::AnalyserItemCount {
+                item_type: NonZeroU32::MIN,
+                count: NonZeroU16::MIN,
+            }],
+            gold: 11,
+        },
+        AnalyserFact::SupplyUsed(oteryn_session::analyser_transport::AnalyserItemCount {
+            item_type: NonZeroU32::MIN,
+            count: NonZeroU16::MIN,
+        }),
+        AnalyserFact::Impact(AnalyserImpact::Healing(NonZeroU32::MIN)),
+    ];
+    facts.extend(
+        oteryn_client_runtime::analyser::decode_analyser_facts(&[
+            10, 8, 34, 6, 8, 1, 16, 120, 24, 2, 10, 6, 34, 4, 8, 2, 16, 60, 10, 10, 42, 8, 8, 60,
+            16, 2, 24, 1, 32, 7,
+        ])
+        .map_err(|_| "impact wire")?,
+    );
+    for reset in Tool::ALL
+        .into_iter()
+        .filter(|t| !matches!(t, Tool::Party | Tool::Bosses))
+    {
+        let (link, _, outbox) = play_channel();
+        outbox.analyser_initialize(true);
+        crate::play::mailbox::lock(&link.mailbox).analyser.open = true;
+        let push = |seq| {
+            outbox.push(vec![SessionEvent::AnalyserFacts(AppliedDelta {
+                server_sequence: seq,
+                base_revision: seq,
+                new_revision: seq + 1,
+                value: facts.clone(),
+            })])
+        };
+        push(1);
+        let mut before = Vec::new();
+        for tool in Tool::ALL {
+            assert!(link.analyser_select(tool.key()));
+            before.push(link.analyser_text());
+        }
+        assert!(link.analyser_select(reset.key()));
+        link.analyser_reset();
+        for (tool, expected) in Tool::ALL.into_iter().zip(&before) {
+            assert!(link.analyser_select(tool.key()));
+            let session = |t| matches!(t, Tool::Overview | Tool::Hunting | Tool::Session);
+            if tool != reset && !(session(reset) && session(tool)) {
+                assert_eq!(
+                    &link.analyser_text(),
+                    expected,
+                    "reset {reset:?} changed {tool:?}"
+                );
+            }
+        }
+        if matches!(reset, Tool::Overview | Tool::Hunting | Tool::Session) {
+            assert!(link.analyser_select("loot-tracker"));
+            link.analyser_track_item("1", true);
+            assert!(link.analyser_panel().loot_tracked.contains(&1));
+            crate::play::feature_0010_analyser::input::submit(
+                &mut crate::play::mailbox::lock(&link.mailbox),
+                &link.commands,
+                Tool::ALL.len() + 10,
+                vec![String::new(), "1".into(), "10".into()],
+            );
+            assert_eq!(link.analyser_panel().kill_goals.get(&1), Some(&10));
+        }
+        push(2);
+        assert!(link.analyser_select(reset.key()));
+        // A reset starts a new interval which keeps consuming the real feed.
+        assert_eq!(
+            link.analyser_text(),
+            before[Tool::ALL.iter().position(|t| *t == reset).ok_or("tool")?]
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn reset_minute_charts_hunting() {
+    check_reset_chart(oteryn_client_ui::analyser::Tool::Hunting);
+}
+
+#[test]
+fn reset_minute_charts_loot_tracker() {
+    check_reset_chart(oteryn_client_ui::analyser::Tool::LootTracker);
+}
+
+#[test]
+fn reset_minute_charts_xp() {
+    check_reset_chart(oteryn_client_ui::analyser::Tool::Xp);
+}
+
+fn check_reset_chart(tool: oteryn_client_ui::analyser::Tool) {
+    use oteryn_client_ui::analyser::Tool;
+    use oteryn_session::analyser_transport::AnalyserItemCount;
+    let (link, _, outbox) = play_channel();
+    outbox.analyser_initialize(true);
+    let clock = |second| {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        mailbox.analyser.clock =
+            (std::time::Instant::now() - std::time::Duration::from_secs(second)).into();
+        mailbox.analyser.open = true;
+    };
+    let start = if tool == Tool::Xp { 58 } else { 59 * 60 };
+    clock(start - 1);
+    outbox.push(vec![SessionEvent::AnalyserFacts(AppliedDelta {
+        server_sequence: 1,
+        base_revision: 1,
+        new_revision: 2,
+        value: vec![AnalyserFact::Experience {
+            raw: 90,
+            gained: 100,
+        }],
+    })]);
+    clock(start);
+    assert!(link.analyser_select(tool.key()));
+    link.analyser_reset();
+    clock(start + 1);
+    outbox.push(vec![SessionEvent::AnalyserFacts(AppliedDelta {
+        server_sequence: 2,
+        base_revision: 2,
+        new_revision: 3,
+        value: vec![
+            AnalyserFact::Kill { race: None },
+            AnalyserFact::Experience {
+                raw: 11,
+                gained: 15,
+            },
+            AnalyserFact::KillLoot {
+                race: None,
+                corpse_items: vec![AnalyserItemCount {
+                    item_type: std::num::NonZeroU32::MIN,
+                    count: std::num::NonZeroU16::MIN,
+                }],
+                gold: 0,
+            },
+        ],
+    })]);
+    clock(start + 2);
+    let mut text = link.analyser_text();
+    if tool == Tool::Hunting {
+        text.push_str(&oteryn_client_ui::analyser::session_text(
+            &link.analyser_panel(),
+        ));
+    }
+    if tool == Tool::Xp {
+        assert!(
+            text.lines()
+                .any(|line| line == "Experience: 11 raw / 15 gained"),
+            "{text}"
+        );
+        assert!(
+            text.lines().any(|line| line == "Elapsed: 2 seconds"),
+            "{text}"
+        );
+    }
+    let expected = if tool == Tool::Xp { "█▁" } else { "█" };
+    let bars: Vec<_> = text
+        .lines()
+        .filter(|line| line.contains('█') && line.chars().all(|c| ('▁'..='█').contains(&c)))
+        .collect();
+    assert!(
+        bars.len()
+            >= match tool {
+                Tool::Hunting => 3,
+                Tool::Xp => 2,
+                _ => 1,
+            },
+        "{text}"
+    );
+    assert!(bars.iter().all(|line| *line == expected), "{text}");
+}

@@ -7,7 +7,8 @@ fn chat_hotkey_presets_follow_the_live_composer_context() -> Result<(), Box<dyn 
     use oteryn_client_ui::chat::ComposerMode;
     use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
     let (link, _, _) = play_channel();
-    let path = std::env::temp_dir().join(format!("cgopt-chat-context-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("cgopt-chat-context.json");
     let mut settings = SettingsState::new(Some(path.clone()));
     settings.apply_chat_preset(false)?;
     settings.sync_chat_context(&link);
@@ -73,8 +74,8 @@ fn loaded_hotkey_profile_preserves_manual_routes_in_live_chat_context()
     use oteryn_client_ui::chat::ComposerMode;
     use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
     let (link, _, _) = play_channel();
-    let path =
-        std::env::temp_dir().join(format!("cgopt-profile-context-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("cgopt-profile-context.json");
     let mut settings = SettingsState::new(Some(path.clone()));
     let mut manual = settings.preferences.clone();
     manual.general_hotkey_preset(false)?;
@@ -189,14 +190,25 @@ fn docked_chat_mode_controls_the_real_wasd_route() -> Result<(), Box<dyn std::er
         "chat On preserves typed W"
     );
     link.chat_console_mode();
+    assert_eq!(link.chat_panel().console.mode, ComposerMode::Auto);
+    assert!(
+        !link.preference_chat_open(),
+        "chat Auto leaves the keys with the game until the input is clicked"
+    );
+    assert_eq!(first(&mut settings), Some(KeyCode::ARROW_UP));
+    link.chat_auto_focus(true);
+    assert!(link.preference_chat_open());
+    assert_eq!(first(&mut settings), Some(code), "a clicked Auto input types W");
+    link.chat_auto_focus(false);
+    assert_eq!(first(&mut settings), Some(KeyCode::ARROW_UP));
+    link.chat_console_mode();
     assert_eq!(link.chat_panel().console.mode, ComposerMode::Off);
     assert!(
         !link.preference_chat_open(),
         "an open docked pane with chat Off is not a text-input context"
     );
     assert_eq!(first(&mut settings), Some(KeyCode::ARROW_UP));
-    link.chat_console_mode();
-    assert_eq!(link.chat_panel().console.mode, ComposerMode::Temporary);
+    link.chat_set_mode(ComposerMode::Temporary);
     assert_eq!(first(&mut settings), Some(code));
     link.chat_text("one temporary message".into());
     link.chat_request(Mode::Say, "");
@@ -210,5 +222,47 @@ fn docked_chat_mode_controls_the_real_wasd_route() -> Result<(), Box<dyn std::er
         Some(KeyCode::ARROW_UP),
         "sending ends temporary chat and restores movement"
     );
+    Ok(())
+}
+
+#[test]
+fn chosen_chat_mode_persists_per_character_and_restores_next_session()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::SettingsState;
+    use oteryn_client_ui::chat::ComposerMode;
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("cgopt-chat-mode.json");
+    let _ = std::fs::remove_file(&path);
+    let (link, _, _) = play_channel();
+    let mut settings = SettingsState::new(Some(path.clone()));
+    settings.sync_chat_context(&link);
+    assert_eq!(link.chat_panel().console.mode, ComposerMode::On);
+    assert!(!path.exists(), "an untouched mode writes nothing");
+    link.chat_console_mode();
+    settings.sync_chat_context(&link);
+    assert_eq!(
+        settings.preferences.chat_mode,
+        Some(crate::play::feature_local_reference_preferences::settings::ChatMode::Auto)
+    );
+    // A one-message composer from Chat Off is not a new choice.
+    link.chat_console_mode();
+    settings.sync_chat_context(&link);
+    link.chat_set_mode(ComposerMode::Temporary);
+    settings.sync_chat_context(&link);
+    let saved = std::fs::read(&path)?;
+    link.chat_set_mode(ComposerMode::Off);
+    settings.sync_chat_context(&link);
+    assert_eq!(std::fs::read(&path)?, saved);
+    link.chat_console_mode();
+    link.chat_console_mode();
+    settings.sync_chat_context(&link);
+    assert_eq!(link.chat_panel().console.mode, ComposerMode::Auto);
+    // The next session of the character starts in the saved mode.
+    let (next, _, _) = play_channel();
+    let mut restarted = SettingsState::new(Some(path.clone()));
+    restarted.sync_chat_context(&next);
+    assert_eq!(next.chat_panel().console.mode, ComposerMode::Auto);
+    assert!(!next.chat_panel().console.can_send());
+    let _ = std::fs::remove_file(&path);
     Ok(())
 }

@@ -1,6 +1,6 @@
 //! F32: cached presentation positions must never redirect a durable nested-bag move.
 use super::fixture::{Harness, debug, id, run};
-use super::{Dependencies, TestResult, item_look_fixtures as item_look, prepare_current_session};
+use super::{Dependencies, TestResult, item_look_fixtures, prepare_current_session};
 use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::FirstEntryOutcome;
@@ -106,7 +106,7 @@ fn exercise(mutation: Mutation) -> TestResult {
                 ("oteryn:item.tibia.i2854", 1),
             );
         }
-        item_look::seed_main_backpack(&harness, &entries).await?;
+        item_look_fixtures::seed_main_backpack(&harness, &entries).await?;
         {
             let mut tx = harness.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role=replica")
@@ -147,7 +147,7 @@ fn exercise(mutation: Mutation) -> TestResult {
         let exercise = async {
             let mut inventory = None;
             loop {
-                let frame = item_look::read_frame(&mut client).await?;
+                let frame = item_look_fixtures::read_frame(&mut client).await?;
                 let envelope = protocol::decode_wire_envelope(&frame).map_err(debug)?;
                 if envelope.message_type() == protocol::MessageType::SnapshotChunk {
                     let (_, domains) =
@@ -199,7 +199,7 @@ fn exercise(mutation: Mutation) -> TestResult {
                 let destination = if matches!(mutation, Mutation::Merge) {
                     ItemMoveDestination::MainBackpack
                 } else {
-                    ItemMoveDestination::Container(shadow)
+                    ItemMoveDestination::Container(shadow, None)
                 };
                 move_item(
                     &mut client,
@@ -232,7 +232,7 @@ fn exercise(mutation: Mutation) -> TestResult {
                     &mut client,
                     4,
                     sibling,
-                    ItemMoveDestination::Container(bag),
+                    ItemMoveDestination::Container(bag, None),
                     protocol::item_view::ItemMoveOutcome::Stale,
                 )
                 .await?;
@@ -285,7 +285,7 @@ fn exercise(mutation: Mutation) -> TestResult {
                 &mut client,
                 command,
                 source,
-                ItemMoveDestination::Container(bag),
+                ItemMoveDestination::Container(bag, None),
                 protocol::item_view::ItemMoveOutcome::Moved,
             )
             .await?;
@@ -368,6 +368,7 @@ async fn move_item(
         equip_drop: true,
         container_tree: true,
         world_interaction: false,
+        manual_sort: false,
     };
     let payload = protocol::item_view::encode_item_move_intent_for(
         &ItemMoveIntent {
@@ -389,7 +390,7 @@ async fn views(
     client: &mut tokio::io::DuplexStream,
 ) -> TestResult<protocol::container_tree::ContainerViews> {
     loop {
-        let frame = item_look::read_frame(client).await?;
+        let frame = item_look_fixtures::read_frame(client).await?;
         let envelope = protocol::decode_wire_envelope(&frame).map_err(debug)?;
         if envelope.message_type() == protocol::MessageType::StateDelta {
             let delta = protocol::decode_state_delta(envelope.payload()).map_err(debug)?;
@@ -418,7 +419,7 @@ async fn send(
     client.write_u32(u32::try_from(frame.len())?).await?;
     client.write_all(&frame).await?;
     loop {
-        let frame = item_look::read_frame(client).await?;
+        let frame = item_look_fixtures::read_frame(client).await?;
         let e = protocol::decode_wire_envelope(&frame).map_err(debug)?;
         if e.message_type() == protocol::MessageType::CommandResult {
             let r = protocol::decode_command_result(e.payload()).map_err(debug)?;

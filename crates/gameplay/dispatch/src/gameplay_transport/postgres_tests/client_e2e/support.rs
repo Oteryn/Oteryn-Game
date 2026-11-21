@@ -55,7 +55,7 @@ fn body(case: Case) -> TestResult {
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activation) =
-            super::super::death_ml_loss_composed_fixtures::production_generation_with_pin(
+            super::super::death_ml_loss_composed::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;

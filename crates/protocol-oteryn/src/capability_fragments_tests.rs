@@ -164,6 +164,47 @@ fn capability_generator_is_deterministic_and_rejects_invalid_registration()
 }
 
 #[test]
+fn presentation_offers_require_verified_server_transport() -> Result<(), Box<dyn Error>> {
+    let entries = facts()?;
+    let registry: Value = serde_json::from_str(crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON)?;
+    for set in ["production", "item_view", "bundle_world"] {
+        let mut offered = entries.clone();
+        offered
+            .iter_mut()
+            .find(|entry| entry["id"] == 23)
+            .ok_or("23")?["offers"][set] = json!(true);
+        // Keep contract agreement and dependency closure valid so only the transport gate
+        // can reject the offer, including the independently selectable bundle World set.
+        let mut contract = registry.clone();
+        if set != "bundle_world" {
+            let presentation = offered
+                .iter_mut()
+                .find(|entry| entry["id"] == 23)
+                .ok_or("23")?;
+            presentation["offers"] =
+                json!({"production": true, "item_view": true, "bundle_world": true});
+            contract["capabilities"]
+                .as_array_mut()
+                .ok_or("capabilities")?
+                .iter_mut()
+                .find(|entry| entry["id"] == 23)
+                .ok_or("23")?["offered"] = json!(true);
+        }
+        assert_eq!(
+            build_capabilities::render(&offered, &contract)
+                .err()
+                .as_deref(),
+            Some(
+                "capability 23 requires verified WORLD_PRESENTATION and ACTOR_COOLDOWNS server transport"
+            ),
+            "{set}"
+        );
+    }
+    assert!(build_capabilities::render(&entries, &registry).is_ok());
+    Ok(())
+}
+
+#[test]
 fn adding_a_capability_command_and_domain_needs_only_new_fragments() -> Result<(), Box<dyn Error>> {
     let mut entries = facts()?;
     let mut registry: Value = serde_json::from_str(crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON)?;
@@ -209,4 +250,21 @@ fn adding_a_capability_command_and_domain_needs_only_new_fragments() -> Result<(
         .ok_or("1000")?["requires"] = json!([3]);
     assert!(build_capabilities::render(&missing, &registry).is_err());
     Ok(())
+}
+
+#[test]
+fn accepted_extensions_require_their_prerequisites() {
+    for id in 502..=511 {
+        assert!(crate::validate_capability_closure(&[id]).is_err(), "{id}");
+    }
+}
+
+#[test]
+fn inventory_capacity_declares_the_redundant_acceptance_prerequisite() {
+    // The handshake cannot isolate 508 -> 6 because 508 -> 4 -> 6 also rejects it.
+    assert!(
+        crate::CAPABILITY_REQUIREMENTS_V1
+            .iter()
+            .any(|(id, requires)| *id == 508 && requires.contains(&6))
+    );
 }

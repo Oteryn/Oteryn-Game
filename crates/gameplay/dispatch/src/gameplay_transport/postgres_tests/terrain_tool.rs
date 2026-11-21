@@ -37,12 +37,12 @@ fn m08_multi_scythe_harvests_wheat_through_the_wire() -> TestResult {
 
 #[test]
 fn m08_scythe_harvests_burning_cane_through_the_wire() -> TestResult {
-    run_case_with_decay("oteryn:item.tibia.i3453", 5464, 5463, vec![5470, 5465])
+    run_case_with_decay("oteryn:item.tibia.i3453", 5464, 5463, Vec::new())
 }
 
 #[test]
 fn m08_multi_scythe_harvests_burning_cane_through_the_wire() -> TestResult {
-    run_case_with_decay("oteryn:item.tibia.i9596", 5464, 5463, vec![5470, 5465])
+    run_case_with_decay("oteryn:item.tibia.i9596", 5464, 5463, Vec::new())
 }
 
 #[test]

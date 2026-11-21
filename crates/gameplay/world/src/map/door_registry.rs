@@ -277,6 +277,10 @@ pub(super) fn key_door_of(appearance: u32) -> Option<(u32, bool)> {
 
 /// The open appearance of a Global level door. Its placed action id is `1000 + level`.
 pub(super) fn level_door_of(appearance: u32) -> Option<u32> {
+    level_door_pair(appearance, false)
+}
+
+fn level_door_pair(appearance: u32, reverse: bool) -> Option<u32> {
     const LEVEL_DOORS: &[(u32, u32)] = &[
         (1646, 1647),
         (1648, 1649),
@@ -330,14 +334,22 @@ pub(super) fn level_door_of(appearance: u32) -> Option<u32> {
         (30037, 30039),
         (30038, 30040),
     ];
-    LEVEL_DOORS
-        .iter()
-        .find_map(|&(closed, open)| (closed == appearance).then_some(open))
+    LEVEL_DOORS.iter().find_map(|&(closed, open)| {
+        if reverse {
+            (open == appearance).then_some(closed)
+        } else {
+            (closed == appearance).then_some(open)
+        }
+    })
 }
 
 /// The open appearance of a Global quest door. The placed action id names the
 /// Character storage value which must differ from `-1`.
 pub(super) fn quest_door_of(appearance: u32) -> Option<u32> {
+    quest_door_pair(appearance, false)
+}
+
+fn quest_door_pair(appearance: u32, reverse: bool) -> Option<u32> {
     const QUEST_DOORS: &[(u32, u32)] = &[
         (1642, 1643),
         (1644, 1645),
@@ -405,9 +417,13 @@ pub(super) fn quest_door_of(appearance: u32) -> Option<u32> {
         (51285, 51286),
         (51287, 51288),
     ];
-    QUEST_DOORS
-        .iter()
-        .find_map(|&(closed, open)| (closed == appearance).then_some(open))
+    QUEST_DOORS.iter().find_map(|&(closed, open)| {
+        if reverse {
+            (open == appearance).then_some(closed)
+        } else {
+            (closed == appearance).then_some(open)
+        }
+    })
 }
 
 /// The open id of closed door item `closed`, if it is a plain door.
@@ -416,6 +432,22 @@ pub fn open_of(closed: u32) -> Option<u32> {
         .binary_search_by_key(&closed, |(closed, _)| *closed)
         .ok()?;
     Some(DOOR_PAIRS[found].1)
+}
+
+/// Canonical closed pose of any registered open counterpart.
+pub(super) fn closed_of(open_id: u32) -> Option<u32> {
+    level_door_pair(open_id, true)
+        .or_else(|| quest_door_pair(open_id, true))
+        .or_else(|| {
+            DOOR_PAIRS
+                .iter()
+                .find_map(|&(closed, open)| (open == open_id).then_some(closed))
+        })
+        .or_else(|| {
+            KEY_DOORS
+                .iter()
+                .find_map(|&(_, closed, open)| (open == open_id).then_some(closed))
+        })
 }
 
 #[cfg(test)]

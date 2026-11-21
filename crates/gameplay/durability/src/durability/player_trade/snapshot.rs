@@ -135,6 +135,30 @@ pub(super) async fn read_leaves<const N: usize>(
     if N == 2 && items[0] == items[1] {
         return Ok(Err(Refusal::NotTradeable));
     }
+    let roots: Vec<Vec<u8>> = items.iter().map(|id| id.to_vec()).collect();
+    let candidates = sqlx::query("SELECT r.ordinal,t.item_instance_id::text AS item FROM unnest($1::bytea[]) WITH ORDINALITY AS r(root,ordinal) CROSS JOIN LATERAL (SELECT item_instance_id FROM game_item_loop_subtree_edges(encode(r.root,'hex')::uuid) LIMIT 101) t")
+        .bind(roots).fetch_all(&mut **tx).await?;
+    let mut counts = [0usize; N];
+    let mut identities = Vec::with_capacity(candidates.len());
+    for row in candidates {
+        let ordinal = usize::try_from(row.try_get::<i64, _>("ordinal")?)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        let count = counts
+            .get_mut(ordinal.saturating_sub(1))
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        *count += 1;
+        if *count > 100 {
+            return Ok(Err(Refusal::NotTradeable));
+        }
+        identities.push(row.try_get::<String, _>("item")?);
+    }
+    // Both Character roots are already locked. Acquire every offered ItemInstance
+    // in one UUID order before reading either tree's immutable snapshots.
+    let locked: Vec<bool> = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_bindings b WHERE b.item_instance_id=i.item_instance_id) AS bound FROM game_item_instances i WHERE item_instance_id IN (SELECT value::uuid FROM unnest($1::text[]) AS value) ORDER BY item_instance_id FOR UPDATE OF i")
+        .bind(identities).fetch_all(&mut **tx).await?;
+    if locked.into_iter().any(|bound| bound) {
+        return Ok(Err(Refusal::NotTradeable));
+    }
     let mut leaves: [Option<TradeLeaf>; N] = std::array::from_fn(|_| None);
     let mut order: Vec<_> = (0..N).collect();
     order.sort_by_key(|index| items[*index]);
@@ -144,12 +168,12 @@ pub(super) async fn read_leaves<const N: usize>(
                 (SELECT to_jsonb(k) FROM game_item_keys k WHERE k.item_instance_id=i.item_instance_id) AS key, \
                 (SELECT to_jsonb(t) FROM game_item_timed_states t WHERE t.item_instance_id=i.item_instance_id) AS timed, \
                 (SELECT jsonb_build_object('sha256',encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')) FROM game_item_texts t WHERE t.item_instance_id=i.item_instance_id) AS text, \
-                (SELECT to_jsonb(t) FROM game_item_text_revisions t WHERE t.item_instance_id=i.item_instance_id) AS text_revision \
+                (SELECT to_jsonb(t) FROM game_item_text_revisions t WHERE t.item_instance_id=i.item_instance_id) AS text_revision, \
+                game_player_trade_attributes(i.item_instance_id) AS attributes \
              FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id,world_id) \
              JOIN game_item_container_slots s ON s.character_id=e.character_id AND s.item_instance_id=e.parent_item_instance_id \
              WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.lifecycle=1 \
                AND NOT EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=i.item_instance_id) \
-               AND NOT EXISTS(SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=i.item_instance_id) \
                AND NOT EXISTS(SELECT 1 FROM game_item_corpse_container_entries WHERE parent_item_instance_id=i.item_instance_id) \
              FOR UPDATE OF i",
         ).bind(items[index].as_slice()).bind(fences[index].character_id.as_bytes().as_slice())
@@ -158,12 +182,14 @@ pub(super) async fn read_leaves<const N: usize>(
             return Ok(Err(Refusal::NotTradeable));
         };
         leaves[index] = Some(TradeLeaf {
+            contents: read_contents(tx, items[index]).await?,
             item: row.try_get("item")?,
             entry: row.try_get("entry")?,
             key: row.try_get("key")?,
             timed: row.try_get("timed")?,
             text: row.try_get("text")?,
             text_revision: row.try_get("text_revision")?,
+            attributes: row.try_get("attributes")?,
         });
     }
     let leaves = leaves
@@ -173,6 +199,59 @@ pub(super) async fn read_leaves<const N: usize>(
     Ok(Ok(leaves
         .try_into()
         .map_err(|_| DurabilityError::InvalidStoredState)?))
+}
+
+// The shared subtree walk stops at a sentinel beyond the carried-tree bound. Reject
+// oversized, cyclic and non-nested descendants rather than exposing a truncated offer.
+async fn read_contents(
+    tx: &mut Transaction<'_, Postgres>,
+    root: [u8; 16],
+) -> Result<Vec<TradeLeaf>, DurabilityError> {
+    let rows = sqlx::query(
+        "SELECT t.depth,t.cyclic,t.source_kind,(i.world_id=r.world_id AND n.world_id=r.world_id) AS same_world,to_jsonb(i) AS item,to_jsonb(n) AS entry, \
+         (SELECT to_jsonb(k) FROM game_item_keys k WHERE k.item_instance_id=i.item_instance_id) AS key, \
+         (SELECT to_jsonb(t) FROM game_item_timed_states t WHERE t.item_instance_id=i.item_instance_id) AS timed, \
+         (SELECT jsonb_build_object('sha256',encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')) FROM game_item_texts t WHERE t.item_instance_id=i.item_instance_id) AS text, \
+         (SELECT to_jsonb(t) FROM game_item_text_revisions t WHERE t.item_instance_id=i.item_instance_id) AS text_revision, \
+         game_player_trade_attributes(i.item_instance_id) AS attributes \
+         FROM game_item_loop_subtree_edges(encode($1,'hex')::uuid) t \
+         JOIN game_item_instances i USING(item_instance_id) \
+         JOIN game_item_instances r ON r.item_instance_id=encode($1,'hex')::uuid \
+         LEFT JOIN game_item_nested_entries n ON n.item_instance_id=i.item_instance_id \
+         WHERE t.depth>0 ORDER BY t.depth,t.parent_item_instance_id,t.placement_ordinal DESC \
+         LIMIT 100 FOR UPDATE OF i"
+    ).bind(root.as_slice()).fetch_all(&mut **tx).await?;
+    if rows.len() >= 100 {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let mut contents = Vec::with_capacity(rows.len());
+    for row in rows {
+        let depth: i32 = row.try_get("depth")?;
+        let item: Value = row.try_get("item")?;
+        let entry: Option<Value> = row.try_get("entry")?;
+        if row.try_get::<Option<bool>, _>("same_world")? != Some(true)
+            || !(1..=7).contains(&depth)
+            || row.try_get::<bool, _>("cyclic")?
+            || row.try_get::<i16, _>("source_kind")? != 2
+            || item["lifecycle"] != 1
+            || contents
+                .iter()
+                .any(|leaf: &TradeLeaf| leaf.item["item_instance_id"] == item["item_instance_id"])
+        {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        contents.push(TradeLeaf {
+            contents: Vec::new(),
+            item,
+            entry: entry.ok_or(DurabilityError::InvalidStoredState)?,
+            key: row.try_get("key")?,
+            timed: row.try_get("timed")?,
+            text: row.try_get("text")?,
+            text_revision: row.try_get("text_revision")?,
+            attributes: row.try_get("attributes")?,
+        });
+    }
+    Ok(contents)
 }
 
 pub(super) async fn read_pair(
@@ -237,6 +316,20 @@ pub(super) async fn destinations<C: PlayerTradeContent>(
             return Ok(Err(Refusal::Rejected));
         }
         let entries = load_entries(tx, backpack.item_instance_id).await?;
+        let destination_size: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_item_loop_subtree_edges(encode($1,'hex')::uuid)",
+        )
+        .bind(backpack.item_instance_id.as_slice())
+        .fetch_one(&mut **tx)
+        .await?;
+        let incoming = i64::try_from(1 + leaf.contents.len())
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        let outgoing = i64::try_from(1 + leaves[1 - index].contents.len())
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        if destination_size > 501 || destination_size - outgoing + incoming > 501 {
+            return Ok(Err(Refusal::NoRoom));
+        }
+
         let (world, _) = scope_of(target).map_err(|_| DurabilityError::InvalidStoredState)?;
         let weight = match carried_weight(tx, target.character_id, *world.as_bytes(), content).await
         {
@@ -252,14 +345,48 @@ pub(super) async fn destinations<C: PlayerTradeContent>(
         if facts.weight != unit {
             return Ok(Err(Refusal::UnknownWeight));
         }
+        let mut child_weight = 0u64;
+        for child in &leaf.contents {
+            let (definition, count) = child.definition_and_quantity()?;
+            let Some((tradeable, pickupable)) = content.player_trade_flags(&definition) else {
+                return Ok(Err(Refusal::NotTradeable));
+            };
+            if !pickupable
+                || !matches!(
+                    tradeable,
+                    oteryn_gameplay_economy::player_trade::TradeFlag::Unknown
+                        | oteryn_gameplay_economy::player_trade::TradeFlag::Known(true)
+                )
+            {
+                return Ok(Err(Refusal::NotTradeable));
+            }
+            let Some(facts) = content.loop_facts(&definition) else {
+                return Ok(Err(Refusal::NotTradeable));
+            };
+            if !super::super::item_transfer::stack_maximum(facts.stack)
+                .is_ok_and(|(maximum, _)| (1..=maximum).contains(&count))
+            {
+                return Ok(Err(Refusal::NotTradeable));
+            }
+            let Ok(unit) = content.weight_of(&definition) else {
+                return Ok(Err(Refusal::UnknownWeight));
+            };
+            child_weight = child_weight
+                .checked_add(u64::from(unit) * u64::from(count))
+                .ok_or(DurabilityError::InvalidStoredState)?;
+        }
+        let capacity =
+            read_derived_transfer_capacity_centi_oz(tx, target.character_id, content).await?;
+        let Some(capacity) = capacity.checked_sub(child_weight) else {
+            return Ok(Err(Refusal::Overweight));
+        };
         let plan = Destination {
             entries: u32::try_from(entries.len())
                 .map_err(|_| DurabilityError::InvalidStoredState)?,
             entry_limit: limit,
             highest_ordinal: entries.first().map_or(0, |e| e.placement_ordinal),
             carried_weight: weight,
-            capacity: read_derived_transfer_capacity_centi_oz(tx, target.character_id, content)
-                .await?,
+            capacity,
             incoming_unit_weight: unit,
             incoming_quantity: quantity,
         };

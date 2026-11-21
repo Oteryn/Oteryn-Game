@@ -98,6 +98,7 @@ fn mission(
 /// The rats quest: listed once `START >= 1`; two missions on `STAGE` and one counter mission.
 fn rats(stage_text: &str) -> QuestLogQuest {
     QuestLogQuest {
+        title: "Rat Investigation".into(),
         key: QUEST.into(),
         kind: QuestLogKind::Storyline,
         shown_in_quest_log: true,
@@ -139,6 +140,7 @@ fn rats(stage_text: &str) -> QuestLogQuest {
 /// An addon quest: hidden once completed.
 fn addon() -> QuestLogQuest {
     QuestLogQuest {
+        title: "Rat Investigation".into(),
         key: OTHER.into(),
         kind: QuestLogKind::Storyline,
         shown_in_quest_log: true,
@@ -503,6 +505,7 @@ fn at_most_1024_quests_are_listable() {
             let start = format!("oteryn:quest-progress/test.q{n:05}");
             tracks.push(track(&start, &key, 0));
             quests.push(QuestLogQuest {
+                title: "Rat Investigation".into(),
                 key,
                 kind: QuestLogKind::Storyline,
                 shown_in_quest_log: true,

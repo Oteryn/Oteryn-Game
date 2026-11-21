@@ -1,0 +1,7 @@
+{
+  "mechanic": "0510-container-manual-sort",
+  "kind": "panels",
+  "id": "0510-container-manual-sort-title",
+  "status": "supported",
+  "entry": "input.rs::drop_destination"
+}

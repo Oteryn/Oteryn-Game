@@ -113,8 +113,8 @@ pub(super) fn quests(panel: &QuestPanel, page: usize, hide_completed: bool) -> P
         .map(|entry| Row {
             id: RowId::Quest(entry.quest_index),
             label: format!(
-                "Quest {}{}",
-                entry.quest_index,
+                "{}{}",
+                panel.title(entry.quest_index),
                 if entry.completed { " (completed)" } else { "" }
             ),
             selected: line.is_some_and(|line| line.quest_index == entry.quest_index),
@@ -145,8 +145,8 @@ pub(super) fn quests(panel: &QuestPanel, page: usize, hide_completed: bool) -> P
             .map_or_else(
                 || {
                     format!(
-                        "Quest {}{}\nSelect a mission to read its journal entry.",
-                        line.quest_index,
+                        "{}{}\nSelect a mission to read its journal entry.",
+                        panel.title(line.quest_index),
                         if line.completed { " (completed)" } else { "" }
                     )
                 },
@@ -199,7 +199,7 @@ fn catalogue_rows(panel: &oteryn_client_ui::spell_catalog::Panel) -> Projection 
     let detail = selected.map_or_else(
         || oteryn_client_ui::spell_catalog::panel_text(panel),
         |entry| {
-            format!(
+            let mut text = format!(
                 "{}\n{}\n\nLevel: {}\nMana: {}{}\nSoul: {}\nLearned: {}\nAvailable now: {}",
                 entry.name,
                 entry.words,
@@ -209,7 +209,11 @@ fn catalogue_rows(panel: &oteryn_client_ui::spell_catalog::Panel) -> Projection 
                 entry.soul,
                 entry.learned,
                 entry.available
-            )
+            );
+            if let Some(info) = panel.info.get(&entry.cast_index) {
+                text.push_str(&oteryn_client_ui::server_info::spell_text(info));
+            }
+            text
         },
     );
     let status = if !panel.selected {

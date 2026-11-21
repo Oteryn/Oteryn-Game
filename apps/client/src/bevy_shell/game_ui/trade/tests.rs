@@ -249,6 +249,19 @@ fn picker_binds_exact_live_item_and_never_uses_a_reused_row() -> TestResult {
     };
     outbox.push(vec![inventory(item)]);
     app.update();
+    let roles: Vec<_> = app
+        .world_mut()
+        .query::<&crate::bevy_shell::game_ui::install::RememberScroll>()
+        .iter(app.world())
+        .map(|key| (key.0, key.1))
+        .collect();
+    assert_eq!(
+        roles
+            .iter()
+            .collect::<std::collections::BTreeSet<_>>()
+            .len(),
+        roles.len()
+    );
     let stale = control(&mut app, Kind::Select(handle))?;
     let replacement = oteryn_session::ItemEntry {
         handle: std::num::NonZeroU64::new(42).ok_or("replacement")?,
@@ -439,5 +452,146 @@ fn an_existing_outgoing_offer_cannot_be_replaced_through_the_picker() -> TestRes
         return Err("cancel absent".into());
     };
     assert_eq!(command.intent, player_trade::Intent::Cancel);
+    Ok(())
+}
+
+#[test]
+fn labelled_offer_inspection_routes_each_side_and_displays_server_description() -> TestResult {
+    for (caption, counter) in [("Inspect yours", false), ("Inspect theirs", true)] {
+        let (mut app, mut commands, outbox) = app()?;
+        let inspect = app
+            .world_mut()
+            .query::<(&Text, &ChildOf)>()
+            .iter(app.world())
+            .find(|(text, _)| text.0 == caption)
+            .map(|(_, parent)| parent.parent())
+            .ok_or("labelled inspection button absent")?;
+        app.world_mut().trigger(Activate { entity: inspect });
+        app.world_mut().trigger(Activate { entity: inspect });
+        let PlayCommand::PlayerTrade(command) = commands.try_recv()? else {
+            return Err("inspection command absent".into());
+        };
+        assert_eq!(
+            command.intent,
+            player_trade::Intent::Look {
+                trade_id: [3; 16],
+                counter_offer: counter,
+            }
+        );
+        assert!(commands.try_recv().is_err());
+        let mut reply = panel().state.ok_or("state")?;
+        reply.look = "You see a sword. It weighs 35.00 oz.".into();
+        outbox.bevy_trade_response(&PlayerTradeResponse {
+            status: CommandStatus::Accepted,
+            result: player_trade::ResultCode::Offered,
+            state: reply,
+        });
+        app.update();
+        assert!(
+            app.world_mut()
+                .query::<&Text>()
+                .iter(app.world())
+                .any(|text| text.0.contains("You see a sword. It weighs 35.00 oz."))
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn trade_contents_decode_render_and_indexed_inspection_use_the_retained_snapshot() -> TestResult {
+    let (mut app, mut commands, outbox) = app()?;
+    super::super::item_details::install(&mut app);
+    let mut state = panel().state.ok_or("state")?;
+    let root = state.own.ok_or("own")?;
+    state.contents[0] = vec![
+        player_trade::ContentsItem {
+            item: root,
+            parent: None,
+            name: "backpack".into(),
+        },
+        player_trade::ContentsItem {
+            item: player_trade::Offer {
+                definition: 42,
+                count: 7,
+                sub_type: 0,
+            },
+            parent: Some(0),
+            name: "fish".into(),
+        },
+    ];
+    let payload =
+        player_trade::encode_state_for(&state, true).map_err(|error| format!("{error:?}"))?;
+    let state =
+        player_trade::decode_state_for(&payload, true).map_err(|error| format!("{error:?}"))?;
+    outbox.push(vec![oteryn_session::SessionEvent::PlayerTrade(
+        oteryn_session::AppliedDelta {
+            server_sequence: 2,
+            base_revision: 1,
+            new_revision: 2,
+            value: state,
+        },
+    )]);
+    let link = app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .bevy_item_details_link();
+    link.bevy_item_details_selected(true);
+    assert!(!link.inspection_panel().open);
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0.contains("fish ×7"))
+    );
+    let child = control(&mut app, Kind::Inspect(false, 1))?;
+    app.world_mut().trigger(Activate { entity: child });
+    let PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+        return Err("inspection command absent".into());
+    };
+    assert_eq!(command.capability, 132);
+    assert_eq!(
+        oteryn_client_ui::inspection::decode_request(&command.payload)
+            .map_err(|error| format!("{error:?}"))?,
+        oteryn_client_ui::inspection::Request::Trade {
+            counter: false,
+            index: 1
+        }
+    );
+    use oteryn_client_ui::inspection::{InspectedItem, Reply, encode_reply};
+    let payload = encode_reply(&Reply {
+        status: 1,
+        requests: vec![],
+        catalogue: None,
+        items: vec![InspectedItem {
+            slot: 0,
+            definition_ref: 42,
+            count: 7,
+            tier: 0,
+            name: "fish".into(),
+            attributes: vec![("Description".into(), "Freshly caught fish".into())],
+        }],
+    })
+    .map_err(|error| format!("{error:?}"))?;
+    link.bevy_item_details_response(
+        &oteryn_client_runtime::server_mechanic::ServerMechanicResponse {
+            command_id: 1,
+            server_sequence: 3,
+            status: CommandStatus::Accepted,
+            payload,
+        },
+    );
+    app.update();
+    assert!(link.inspection_panel().open);
+    assert!(
+        app.world_mut()
+            .query::<&bevy::text::EditableText>()
+            .iter(app.world())
+            .any(|text| text.value().to_string().contains("Freshly caught fish"))
+    );
     Ok(())
 }

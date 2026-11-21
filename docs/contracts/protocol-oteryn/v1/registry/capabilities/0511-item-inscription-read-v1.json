@@ -1,0 +1,16 @@
+{
+  "id": 511,
+  "name": "ITEM_INSCRIPTION_READ_V1",
+  "owner_decision": "bvsl Tibia Global writing window opens with the item's text",
+  "owner": "Game item text durable owner",
+  "requires": [
+    4,
+    115
+  ],
+  "command_types": [
+    6246
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only; read-only fenced custody read of one carried item's stored text. See item-inscription-read-v1.md."
+}

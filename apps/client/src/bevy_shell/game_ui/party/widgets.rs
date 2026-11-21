@@ -4,6 +4,10 @@ use bevy::{
     ui::InteractionDisabled,
     ui_widgets::{Button, ScrollArea},
 };
+use oteryn_client_ui::social_channel::{
+    channel_text, party_member_on_other_channel, party_member_text,
+};
+use std::borrow::Cow;
 pub(super) fn build(
     commands: &mut Commands,
     skin: &Skins,
@@ -11,6 +15,7 @@ pub(super) fn build(
     generation: u64,
     serial: u64,
     panel: &PartyPanel,
+    portraits: &std::collections::BTreeMap<EntityRef, Handle<Image>>,
 ) -> Entity {
     // TibiaStyle.sidebarWidth176; Party is an ordinary battle-list sidebar, not a modal.
     let root = commands
@@ -78,67 +83,100 @@ pub(super) fn build(
                 "Shared experience: disabled"
             },
         );
+        combat::controls(commands, skin, root, generation, serial, panel);
         label(commands, skin, root, "Members");
-        let members = list(commands, root);
-        for member in &state.members {
-            let selected = panel.selected_member == Some(member.handle);
-            let button = commands
-                .spawn((
+        let members = list(commands, root, 0);
+        let rows = panel.list_rows();
+        let entries = rows
+            .iter()
+            .map(|(handle, row)| {
+                (
+                    *handle,
+                    row.name.as_str(),
+                    state.members.iter().find(|m| m.handle == *handle),
+                    Some(*row),
+                )
+            })
+            .chain(
+                state
+                    .members
+                    .iter()
+                    .filter(|m| m.list.is_empty())
+                    .map(|m| (m.handle, m.name.as_str(), Some(m), None)),
+            );
+        for (handle, member_name, member, combat_row) in entries {
+            let summon = combat_row.is_some_and(|row| row.summon);
+            let selected = !summon && panel.selected_member == Some(handle);
+            let mut row = commands.spawn((
+                Name::new("party.member"),
+                Node {
+                    width: percent(100.),
+                    min_height: px(20.),
+                    flex_shrink: 0.,
+                    padding: px(2.).all(),
+                    overflow: Overflow::clip_x(),
+                    ..default()
+                },
+                BackgroundColor(if selected {
+                    Color::srgb_u8(88, 88, 88)
+                } else {
+                    Color::NONE
+                }),
+            ));
+            if !summon {
+                row.insert((
                     Button,
                     Control {
                         generation,
                         serial,
-                        kind: Kind::Member(member.handle),
+                        kind: Kind::Member(handle),
                     },
-                    Name::new("party.member"),
                     bevy::input_focus::tab_navigation::TabIndex(0),
-                    Node {
-                        width: percent(100.),
-                        min_height: px(20.),
-                        flex_shrink: 0.,
-                        padding: px(2.).all(),
-                        overflow: Overflow::clip_x(),
-                        ..default()
-                    },
-                    BackgroundColor(if selected {
-                        Color::srgb_u8(88, 88, 88)
-                    } else {
-                        Color::NONE
-                    }),
                 ))
-                .observe(activate)
-                .id();
-            if pending {
-                commands.entity(button).insert(InteractionDisabled);
+                .observe(activate);
+                if pending {
+                    row.insert(InteractionDisabled);
+                }
             }
-            // chsw (capability 513): the row names the member's Channel; a member on another
-            // Channel of the World is greyed out (no shared experience, loot or Party spells).
-            let text = if panel.own_channel.is_some() {
-                oteryn_client_ui::social_channel::party_member_text(&panel.channel_names, member)
-            } else {
-                member.name.clone()
+            let button = row.id();
+            let caption = match (member.filter(|_| panel.own_channel.is_some()), combat_row) {
+                (Some(member), Some(row)) if !row.summon => Cow::Owned(format!(
+                    "{member_name} — {}",
+                    channel_text(&panel.channel_names, member.channel)
+                )),
+                (Some(member), None) => Cow::Owned(party_member_text(&panel.channel_names, member)),
+                _ => Cow::Borrowed(member_name),
             };
-            let name = label(commands, skin, button, &text);
-            if oteryn_client_ui::social_channel::party_member_on_other_channel(
-                panel.own_channel,
-                member,
-            ) {
+            let name = if let Some(row) = combat_row {
+                combat::row(
+                    commands,
+                    skin,
+                    button,
+                    row,
+                    portraits.get(&row.entity),
+                    &caption,
+                )
+            } else {
+                label(commands, skin, button, &caption)
+            };
+            if member.is_some_and(|member| party_member_on_other_channel(panel.own_channel, member))
+            {
                 commands
                     .entity(name)
                     .insert(TextColor(Color::srgb_u8(128, 128, 128)));
-            } else if member.leader {
+            } else if member.is_some_and(|member| member.leader) {
                 commands
                     .entity(name)
                     .insert(TextColor(Color::srgb_u8(248, 219, 56)));
             }
             commands.entity(members).add_child(button);
         }
-        if state.members.is_empty() {
-            label(commands, skin, members, "No members");
+        if rows.is_empty() && state.members.iter().all(|m| !m.list.is_empty()) {
+            label(commands, skin, members, "No visible members");
         }
         if !state.invitations.is_empty() {
             label(commands, skin, root, "Invitations");
-            let invitations = list(commands, root);
+            let invitations = list(commands, root, 1);
             for invitation in &state.invitations {
                 let entry = button(
                     commands,
@@ -239,7 +277,7 @@ pub(super) fn build(
     }
     root
 }
-fn row(commands: &mut Commands, parent: Entity) -> Entity {
+pub(super) fn row(commands: &mut Commands, parent: Entity) -> Entity {
     let entity = commands
         .spawn(Node {
             width: percent(100.),
@@ -250,10 +288,11 @@ fn row(commands: &mut Commands, parent: Entity) -> Entity {
     commands.entity(parent).add_child(entity);
     entity
 }
-fn list(commands: &mut Commands, parent: Entity) -> Entity {
+fn list(commands: &mut Commands, parent: Entity, role: u32) -> Entity {
     let entity = commands
         .spawn((
             ScrollArea,
+            crate::bevy_shell::game_ui::install::RememberScroll("party", role),
             Node {
                 width: percent(100.),
                 max_height: px(180.),
@@ -268,7 +307,7 @@ fn list(commands: &mut Commands, parent: Entity) -> Entity {
     commands.entity(parent).add_child(entity);
     entity
 }
-fn label(commands: &mut Commands, skin: &Skins, parent: Entity, text: &str) -> Entity {
+pub(super) fn label(commands: &mut Commands, skin: &Skins, parent: Entity, text: &str) -> Entity {
     let entity = commands
         .spawn(source::text(text, source::font(skin.font.clone(), false)))
         .insert((
@@ -283,7 +322,7 @@ fn label(commands: &mut Commands, skin: &Skins, parent: Entity, text: &str) -> E
     commands.entity(parent).add_child(entity);
     entity
 }
-fn button(
+pub(super) fn button(
     commands: &mut Commands,
     skin: &Skins,
     parent: Entity,

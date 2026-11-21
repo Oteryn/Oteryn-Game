@@ -6,7 +6,9 @@ use std::time::Duration;
 
 pub(super) struct PendingWalk {
     target: AutoWalkTarget,
-    route: AutoWalkRoute,
+    // None queues the terminal notice after the command receipt.
+    route: Option<AutoWalkRoute>,
+    retried: bool,
     pub(super) due: tokio::time::Instant,
 }
 
@@ -71,22 +73,30 @@ pub(super) async fn route<A: FreshAdmissionAuthority>(
                     TargetMoveIntent::Follow(target) => AutoWalkTarget::Follow(target),
                     TargetMoveIntent::Stop | TargetMoveIntent::Turn(_) => unreachable!(),
                 };
-                match authority.item_walk_route(actor, id, target.clone()).await {
-                    Ok(Some(route)) => {
-                        // Canary FOLLOW clears the attack target; walking uses one Movement clock.
-                        let _ = authority
-                            .attack_target(actor, id, command.command_id, None)
-                            .await;
-                        session.target_walk = Some(PendingWalk {
-                            target,
-                            route,
-                            due: tokio::time::Instant::now(),
-                        });
-                        reply(1)
-                    }
-                    Ok(None) => reply(3),
-                    Err(()) => reply(2),
+                let result = authority.item_walk_route(actor, id, target.clone()).await;
+                let disposition = match &result {
+                    Ok(Some(_)) => 1,
+                    Ok(None) => 3,
+                    Err(()) => 2,
+                };
+                let route = result.ok().flatten();
+                if route.is_some() {
+                    // Canary FOLLOW clears the attack target; walking uses one Movement clock.
+                    let _ = authority
+                        .attack_target(actor, id, command.command_id, None)
+                        .await;
                 }
+                if route.is_some()
+                    || (disposition == 2 && matches!(target, AutoWalkTarget::Cell(_)))
+                {
+                    session.target_walk = Some(PendingWalk {
+                        target,
+                        route,
+                        retried: false,
+                        due: tokio::time::Instant::now(),
+                    });
+                }
+                reply(disposition)
             }
         }
     })
@@ -104,6 +114,9 @@ pub(super) async fn tick<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
     let Some(mut walk) = session.target_walk.take() else {
         return Ok(());
     };
+    if walk.route.is_none() {
+        return no_way(stream, session).await;
+    }
     let Some(input) = authority
         .enter_input(session.admitted.game_session_id)
         .await
@@ -112,22 +125,27 @@ pub(super) async fn tick<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
     };
     let actor = session.actor;
     let id = session.admitted.game_session_id;
+    let mut stopped = false;
     let result = tokio::time::timeout(Duration::from_secs(10), async {
-        if !authority
-            .item_walk_valid(actor, id, walk.route.expected)
-            .await
-        {
+        let route = walk.route.as_mut()?;
+        if !authority.item_walk_valid(actor, id, route.expected).await {
             return None;
         }
-        if matches!(walk.target, AutoWalkTarget::Follow(_)) || walk.route.deferred {
-            walk.route = authority
+        if matches!(walk.target, AutoWalkTarget::Follow(_)) || route.deferred {
+            match authority
                 .item_walk_route(actor, id, walk.target.clone())
                 .await
-                .ok()??;
+            {
+                Ok(Some(current)) => *route = current,
+                result => {
+                    stopped = result.is_err() && matches!(walk.target, AutoWalkTarget::Cell(_));
+                    return None;
+                }
+            }
         }
         let now = tokio::time::Instant::now();
-        if walk.route.deferred || walk.route.steps.is_empty() {
-            if matches!(walk.target, AutoWalkTarget::Follow(_)) || walk.route.deferred {
+        if route.deferred || route.steps.is_empty() {
+            if matches!(walk.target, AutoWalkTarget::Follow(_)) || route.deferred {
                 walk.due = now + Duration::from_millis(100);
                 session.target_walk = Some(walk);
             }
@@ -145,9 +163,9 @@ pub(super) async fn tick<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
             session.target_walk = Some(walk);
             return None;
         }
-        let direction = walk.route.steps.pop_front()?;
+        let direction = route.steps.pop_front()?;
         let (outcome, duration, current) = authority
-            .item_walk_step(actor, id, walk.route.expected, direction, walk.route.follow)
+            .item_walk_step(actor, id, route.expected, direction, route.follow)
             .await;
         record_actor_step(
             &mut session.pacer,
@@ -158,7 +176,7 @@ pub(super) async fn tick<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
         )
         .await;
         if let Some(current) = current.filter(|_| outcome.disposition == StepDisposition::Moved) {
-            walk.route.expected = current;
+            route.expected = current;
             let now = tokio::time::Instant::now();
             walk.schedule(session.pacer.wait_until(now).unwrap_or(now));
             session.target_walk = Some(walk);
@@ -167,6 +185,28 @@ pub(super) async fn tick<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
             // the owner snapshot gate prevented this obsolete step from committing.
             walk.due = tokio::time::Instant::now() + Duration::from_millis(100);
             session.target_walk = Some(walk);
+        } else if outcome.disposition != StepDisposition::Moved
+            && matches!(walk.target, AutoWalkTarget::Cell(_))
+        {
+            if walk.retried {
+                stopped = true;
+            } else {
+                walk.retried = true;
+                // The route owner reads the actor's current fenced position, rather than
+                // continuing with the refused step's expected snapshot.
+                match authority
+                    .item_walk_route(actor, id, walk.target.clone())
+                    .await
+                {
+                    Ok(Some(current)) => {
+                        walk.route = Some(current);
+                        let now = tokio::time::Instant::now();
+                        walk.schedule(session.pacer.wait_until(now).unwrap_or(now));
+                        session.target_walk = Some(walk);
+                    }
+                    result => stopped = result.is_err(),
+                }
+            }
         }
         Some(outcome)
     })
@@ -176,5 +216,27 @@ pub(super) async fn tick<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
     if let Some(outcome) = result {
         effects::step(stream, authority, session, outcome).await?;
     }
+    if stopped {
+        no_way(stream, session).await?;
+    }
     Ok(())
 }
+
+async fn no_way<S: AsyncWrite + Unpin>(
+    stream: &mut S,
+    session: &mut ServeState,
+) -> Result<(), ServeEnd> {
+    tutorial_notices_transport::emit_notice(
+        stream,
+        &mut session.admitted,
+        &mut session.sequence,
+        &oteryn_protocol_oteryn::tutorial_notices::TutorialNotice::StatusText(
+            "There is no way.".into(),
+        ),
+    )
+    .await
+    .ok_or(ServeEnd::Disconnected)
+}
+
+#[cfg(test)]
+mod tests;

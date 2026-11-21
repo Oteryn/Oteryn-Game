@@ -1,0 +1,9 @@
+{
+  "mechanic": "0013-paced-movement",
+  "kind": "keybindings",
+  "id": "0013-paced-movement-keypad-north",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "NUMPAD8",
+  "entry": "input.rs::default_arrow_binding"
+}

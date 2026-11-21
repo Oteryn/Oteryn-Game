@@ -477,6 +477,47 @@ mod tests {
         (runtime, room, actor, session)
     }
     #[test]
+    fn diagonal_steps_do_not_climb_or_drop_height_three() {
+        let (_, room, _, _) = owner();
+        let clear = tile(
+            room.movement_cells(),
+            MovementLocalPosition {
+                x: 0,
+                y: 4,
+                floor: -5,
+            },
+        )
+        .unwrap()
+        .unwrap();
+        let p = |x, y, floor| MovementLocalPosition { x, y, floor };
+        for direction in [
+            CardinalStep::NorthEast,
+            CardinalStep::SouthEast,
+            CardinalStep::SouthWest,
+            CardinalStep::NorthWest,
+        ] {
+            let (dx, dy) = direction.delta();
+            for climbing in [true, false] {
+                let origin = p(0, 0, -5);
+                let result = destination_with_lookup(origin, direction, |at| {
+                    let height = if climbing {
+                        at == origin
+                    } else {
+                        at == p(dx, dy, -6)
+                    };
+                    let present = at == origin || at == p(dx, dy, if climbing { -4 } else { -6 });
+                    Ok(present.then_some(TileView {
+                        tile: clear,
+                        solid: false,
+                        height_count: if height { 3 } else { 0 },
+                    }))
+                });
+                assert_eq!(result, Err(MovementError::Blocked));
+            }
+        }
+    }
+
+    #[test]
     fn genuine_temple_steps_reach_source_stairs_without_relocation() {
         let (mut runtime, room, actor, session) = owner();
         let cells = room.movement_cells();

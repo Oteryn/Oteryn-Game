@@ -1,6 +1,8 @@
 //! Production delegation to the existing mechanic owners.
 
-use crate::gameplay_transport::connection::{AchievementNoticeObservation, UseCommand};
+use crate::gameplay_transport::connection::{
+    AchievementNoticeObservation, SelectedCapabilities, UseCommand,
+};
 use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::*;
 
@@ -290,6 +292,20 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         admitted: connection::AdmittedSession,
     ) -> Option<Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>> {
         self.observe_party_skull(admitted).await
+    }
+
+    async fn observe_guild_emblems(
+        &self,
+        admitted: connection::AdmittedSession,
+    ) -> Option<Vec<oteryn_protocol_oteryn::guild_emblem::GuildEmblem>> {
+        self.observe_own_guild_emblems(admitted).await
+    }
+
+    async fn observe_inventory_capacity(
+        &self,
+        admitted: connection::AdmittedSession,
+    ) -> Option<oteryn_protocol_oteryn::inventory_capacity::InventoryCapacity> {
+        self.observe_own_capacity(admitted).await
     }
 
     async fn observe_pvp_status(
@@ -797,7 +813,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         intent: oteryn_protocol_oteryn::depot::DepotIntent,
         item: Option<item_view::ItemKey>,
     ) -> Option<connection::DepotObservation> {
-        depot::execute(self, actor, command, intent, item).await
+        depot::execute(self, actor, command, intent, None, item).await
+    }
+
+    async fn depot_at(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::depot::DepotIntent,
+        slot: Option<u32>,
+        item: Option<item_view::ItemKey>,
+    ) -> Option<connection::DepotObservation> {
+        depot::execute(self, actor, command, intent, slot, item).await
     }
 
     async fn committed_loop_move(
@@ -872,18 +899,38 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     /// VIS-3: the Channel's players, live creatures and (NPC-LOAD-1) NPC actors, read in one
     /// owner work item, and (MAP-ITEM-REF-1 Part B) its bound corpses as objects in the same
     /// read.
+    async fn observe_projected_entities(
+        &self,
+        actor: ExactActorRef,
+        selected: SelectedCapabilities,
+    ) -> Result<world_spatial::ChannelEntities, AdmissionRefusal> {
+        let forecasts =
+            selected.contains(oteryn_protocol_oteryn::actor_motion::CAPABILITY_ACTOR_MOTION_V1);
+        if selected
+            .contains(oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2)
+        {
+            Box::pin(self.named_channel_entities(actor, forecasts)).await
+        } else {
+            self.observe_channel_entities_projected(actor, forecasts)
+                .await
+                .ok_or(AdmissionRefusal::Rejected)
+        }
+    }
+
     async fn observe_named_visible_entities(
         &self,
         actor: ExactActorRef,
     ) -> Option<world_spatial::ChannelEntities> {
-        Box::pin(self.named_channel_entities(actor)).await.ok()
+        Box::pin(self.named_channel_entities(actor, false))
+            .await
+            .ok()
     }
 
     async fn observe_named_visible_entities_result(
         &self,
         actor: ExactActorRef,
     ) -> Result<world_spatial::ChannelEntities, AdmissionRefusal> {
-        Box::pin(self.named_channel_entities(actor)).await
+        Box::pin(self.named_channel_entities(actor, false)).await
     }
 
     async fn observe_visible_entities(
@@ -1505,6 +1552,24 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.observe_actor_vitals(actor, game_session_id).await
     }
 
+    async fn observe_house_vitals(
+        &self,
+        actor: ExactActorRef,
+        admitted: AdmittedSession,
+    ) -> Option<(u64, actor_spell::ActorVitals)> {
+        let fence = admitted.item_fence?;
+        if fence.connection_generation.get() != admitted.continuity.connection_generation {
+            return None;
+        }
+        let runtime = self.runtime.lock().await;
+        self.states.spell_states.lock().await.house_vitals(
+            &runtime,
+            actor,
+            admitted.game_session_id,
+            fence,
+        )
+    }
+
     /// One cast as one Channel-owner work item (`SPELL-RL-01` = 1), under the same runtime lock
     /// `step` and `use_object` take.
     async fn physical_native_cast_position(
@@ -1594,6 +1659,25 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         query: oteryn_protocol_oteryn::highscores::HighscoresQuery,
     ) -> highscores::HighscoresReply {
         highscores::answer_session_highscores(self.root, self.world_id, world, session, query).await
+    }
+
+    async fn highscores_catalogue(
+        &self,
+        world: WorldId,
+        session: GameSessionId,
+        query: Option<(
+            oteryn_protocol_oteryn::highscores::HighscoresQuery,
+            Option<oteryn_protocol_oteryn::highscores_catalogue::WorldType>,
+        )>,
+    ) -> highscores::HighscoresReply {
+        crate::durability::highscores_catalogue::answer_session(
+            self.root,
+            self.world_id,
+            world,
+            session,
+            query,
+        )
+        .await
     }
 
     /// The periodic 1000 ms Serene evaluation of the admitted actor (SPELL-D8 §8.2), under the

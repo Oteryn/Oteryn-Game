@@ -76,6 +76,7 @@ pub(super) async fn execute(
     actor: ExactActorRef,
     command: UseCommand,
     intent: DepotIntent,
+    slot: Option<u32>,
     selected_item: Option<ItemKey>,
 ) -> Option<DepotObservation> {
     let Some(fence) = command.item_fence else {
@@ -100,8 +101,9 @@ pub(super) async fn execute(
         premium: crate::domain::premium::PremiumGate::CLOSED,
         box_number: intent.box_number,
         deposit: matches!(intent.action, DepotAction::Deposit(_)),
+        // The slot is part of the digest, so a replay with another slot conflicts.
         request_digest: Sha256::digest(
-            oteryn_protocol_oteryn::depot::encode_depot_intent(intent).ok()?,
+            oteryn_protocol_oteryn::depot::encode_depot_intent_at(intent, slot).ok()?,
         )
         .into(),
     };
@@ -185,8 +187,22 @@ pub(super) async fn execute(
             DepotAction::Withdraw(ordinal) => page
                 .entries
                 .iter()
-                .find(|entry| entry.ordinal == ordinal)
+                .find(|entry| {
+                    entry.ordinal == ordinal
+                        && selected_item == Some(ItemKey::Instance(entry.item.item_instance_id))
+                })
                 .map(|entry| entry.item.item_instance_id),
+            DepotAction::WithdrawDisplayed(_) => match selected_item {
+                Some(ItemKey::Instance(item))
+                    if page
+                        .entries
+                        .iter()
+                        .any(|entry| entry.item.item_instance_id == item) =>
+                {
+                    Some(item)
+                }
+                _ => None,
+            },
             DepotAction::Browse => None,
         };
         outcome = if let Some(item) = item {
@@ -199,7 +215,7 @@ pub(super) async fn execute(
             };
             let committed = admission
                 .root
-                .commit_depot_move(
+                .commit_depot_move_at(
                     &permit,
                     admission.character,
                     admission.holder,
@@ -208,6 +224,7 @@ pub(super) async fn execute(
                     &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
                     access,
                     item,
+                    slot,
                 )
                 .await
                 .ok()?;

@@ -2,8 +2,8 @@
 fn t010_hud_sidebars_drag_dock_resize_hide_reorder_and_survive_restart()
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::{HudAction, HudDock, HudPanel, SettingsState};
-    let path =
-        std::env::temp_dir().join(format!("cg-gamewin-hud-layout-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("cg-gamewin-hud-layout.json");
     let mut settings = SettingsState::new(Some(path.clone()));
     let mut play = view()?;
     settings.restore(&mut play, [960, 540])?;

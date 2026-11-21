@@ -85,7 +85,7 @@ fn texts(app: &mut App) -> Vec<String> {
 fn cyclopedia_tab_requests_data() -> TestResult {
     let (mut app, mut commands, outbox) = fixture()?;
     assert_eq!(command(&mut commands)?.payload, [1, 0, 0, 20]);
-    let expected_tabs: [(Tab, &[u8]); 12] = [
+    let expected_tabs: [(Tab, &[u8]); 13] = [
         (Tab::General, &[1, 0, 0, 20]),
         (Tab::Character(CharacterTab::Offence), &[8, 0, 0, 20]),
         (Tab::Character(CharacterTab::Defence), &[9, 0, 0, 20]),
@@ -95,16 +95,17 @@ fn cyclopedia_tab_requests_data() -> TestResult {
         (Tab::Character(CharacterTab::Achievements), &[128, 0]),
         (Tab::Items, &[130, 0, 0]),
         (Tab::Character(CharacterTab::Appearances), &[129, 0, 0]),
+        (Tab::Familiars, &[129, 0, 0]),
         (Tab::Character(CharacterTab::StoreSummary), &[6, 0, 0, 20]),
         (Tab::Character(CharacterTab::Inspection), &[132]),
-        (Tab::Badges, &[132]),
+        (Tab::Badges, &[0xf0, 0]),
     ];
     for (tab, expected) in expected_tabs {
         response(&outbox, vec![]); // Refusal/invalid response releases the existing pending owner.
         app.update();
         click(&mut app, Kind::Tab(tab))?;
         let actual = command(&mut commands)?;
-        assert_eq!(actual.kind, 388);
+        assert_eq!(actual.kind, if tab == Tab::Badges { 387 } else { 388 });
         assert_eq!(actual.payload, expected);
         assert!(commands.try_recv().is_err());
     }
@@ -400,3 +401,60 @@ fn cyclopedia_reopened_while_pending_sends_its_tab_once_the_builder_accepts() ->
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn cyclopedia_familiar_page_is_reachable_and_distinguishes_catalogue_from_unlocks() -> TestResult {
+    use oteryn_client_runtime::cyclopedia_character::gallery;
+    let (mut app, mut commands, outbox) = fixture()?;
+    command(&mut commands)?;
+    response(&outbox, vec![]);
+    app.update();
+    let caption = app
+        .world_mut()
+        .query::<(Entity, &Text)>()
+        .iter(app.world())
+        .find_map(|(entity, text)| (text.0 == "Familiars").then_some(entity))
+        .ok_or("Familiars tab absent")?;
+    let button = app
+        .world()
+        .get::<ChildOf>(caption)
+        .ok_or("tab parent")?
+        .parent();
+    app.world_mut().trigger(Activate { entity: button });
+    app.update();
+    assert_eq!(command(&mut commands)?.payload, gallery::request(0));
+    response(
+        &outbox,
+        gallery::Page {
+            offset: 0,
+            total: 2,
+            entries: vec![
+                gallery::Entry {
+                    kind: gallery::Kind::Mount,
+                    key: "oteryn:mount/bear".into(),
+                    look_type: 12,
+                },
+                gallery::Entry {
+                    kind: gallery::Kind::Familiar,
+                    key: "oteryn:familiar/sorcerer".into(),
+                    look_type: 13,
+                },
+            ],
+        }
+        .encode()
+        .map_err(|_| "gallery encode")?,
+    );
+    app.update();
+    let rows = texts(&mut app);
+    assert!(
+        rows.iter()
+            .any(|row| row.contains("oteryn:familiar/sorcerer"))
+    );
+    assert!(!rows.iter().any(|row| row.contains("oteryn:mount/bear")));
+    assert!(rows.iter().any(|row| row.contains("not account unlocks")));
+    click(&mut app, Kind::Refresh)?;
+    assert_eq!(command(&mut commands)?.payload, gallery::request(0));
+    Ok(())
+}
+
+include!("holdings_cases.rs");

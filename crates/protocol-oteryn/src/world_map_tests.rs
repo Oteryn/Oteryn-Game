@@ -1046,3 +1046,49 @@ fn the_registries_bind_the_world_map_constants() {
 #[cfg(test)]
 #[path = "world_map_fuzz_tests.rs"]
 mod fuzz_tests;
+
+#[test]
+fn handle_budget_rejects_snapshot_and_delta() {
+    let origin = position(0, 0, 0);
+    let tiles: Vec<_> = window(origin)
+        .into_iter()
+        .take(MAX_MAP_VIEW_HANDLES / MAX_TILE_ITEMS + 1)
+        .map(|at| {
+            let mut tile = largest_tile(at);
+            for item in &mut tile.items {
+                item.origin = MapOrigin::Handle(NonZeroU64::MIN);
+            }
+            tile
+        })
+        .collect();
+    let mut raw = Vec::new();
+    push_header(&mut raw, &header(origin));
+    for tile in &tiles {
+        push_tile(&mut raw, 2, tile).expect("tile");
+    }
+    assert_eq!(
+        decode_world_map_snapshot(&raw),
+        Err(WorldMapWireError::LimitExceeded)
+    );
+    assert_eq!(
+        decode_world_map_delta(&header(origin), &raw),
+        Err(WorldMapWireError::LimitExceeded)
+    );
+    let snapshot = WorldMapViewSnapshot {
+        header: header(origin),
+        tiles: tiles.clone(),
+    };
+    assert_eq!(
+        encode_world_map_snapshot(&snapshot),
+        Err(WorldMapWireError::LimitExceeded)
+    );
+    let delta = WorldMapViewDelta {
+        header: header(origin),
+        tiles,
+        cleared: vec![],
+    };
+    assert_eq!(
+        encode_world_map_delta(&header(origin), &delta),
+        Err(WorldMapWireError::LimitExceeded)
+    );
+}

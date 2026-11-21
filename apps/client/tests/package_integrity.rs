@@ -1,5 +1,4 @@
 use std::{
-    path::PathBuf,
     process::{Command, Output, Stdio},
     time::{Duration, Instant},
 };
@@ -16,20 +15,13 @@ fn publish_executable(
     std::fs::hard_link(source, destination)
         .or_else(|_| std::fs::copy(source, destination).map(|_| ()))
 }
-struct Fixture(PathBuf);
+struct Fixture(tempfile::TempDir);
 impl Fixture {
     fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
-        let root = std::env::temp_dir().join(format!(
-            "oteryn-package-check-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
-        ));
-        std::fs::create_dir_all(&root)?;
-        Ok(Self(root))
+        Ok(Self(tempfile::tempdir()?))
     }
     fn run_client(&self) -> Result<Output, Box<dyn std::error::Error>> {
-        let path = self.0.join(if cfg!(windows) {
+        let path = self.0.path().join(if cfg!(windows) {
             "oteryn-client.exe"
         } else {
             "oteryn-client"
@@ -63,15 +55,10 @@ impl Fixture {
         Ok(child.wait_with_output()?)
     }
 }
-impl Drop for Fixture {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
-    }
-}
 #[test]
 fn package_check_rejects_malformed_manifest_before_any_login() -> TestResult {
     let fixture = Fixture::new()?;
-    std::fs::write(fixture.0.join("packages.json"), b"invalid JSON")?;
+    std::fs::write(fixture.0.path().join("packages.json"), b"invalid JSON")?;
     let output = fixture.run_client()?;
     assert!(
         !output.status.success(),
@@ -89,15 +76,15 @@ fn manifest() -> serde_json::Value {
 }
 fn write_manifest(fixture: &Fixture, document: &serde_json::Value) -> TestResult {
     std::fs::write(
-        fixture.0.join("packages.json"),
+        fixture.0.path().join("packages.json"),
         serde_json::to_vec(document)?,
     )?;
     Ok(())
 }
 fn seeded() -> Result<Fixture, Box<dyn std::error::Error>> {
     let fixture = Fixture::new()?;
-    std::fs::create_dir_all(fixture.0.join("packages"))?;
-    std::fs::write(fixture.0.join("packages/scene.bin"), b"abc")?;
+    std::fs::create_dir_all(fixture.0.path().join("packages"))?;
+    std::fs::write(fixture.0.path().join("packages/scene.bin"), b"abc")?;
     write_manifest(&fixture, &manifest())?;
     Ok(fixture)
 }
@@ -111,7 +98,7 @@ fn executable_verifies_packages_then_rejects_same_size_corruption() -> TestResul
         String::from_utf8_lossy(&valid.stderr)
     );
     assert!(String::from_utf8_lossy(&valid.stdout).contains("Verified 1 presentation package"));
-    std::fs::write(fixture.0.join("packages/scene.bin"), b"abd")?;
+    std::fs::write(fixture.0.path().join("packages/scene.bin"), b"abd")?;
     let corrupt = fixture.run_client()?;
     assert!(!corrupt.status.success());
     assert!(String::from_utf8_lossy(&corrupt.stderr).contains("integrity mismatch"));
@@ -125,7 +112,7 @@ fn every_release_identity_field_is_checked_even_with_an_empty_package_list() -> 
     document["packages"] = serde_json::json!([]);
     write_manifest(&fixture, &document)?;
     assert_eq!(
-        verify(&fixture.0, Identity::compiled())?,
+        verify(fixture.0.path(), Identity::compiled())?,
         Report::Verified {
             packages: 0,
             bytes: 0
@@ -141,7 +128,7 @@ fn every_release_identity_field_is_checked_even_with_an_empty_package_list() -> 
         let mut wrong = document.clone();
         wrong["release"][key] = "different-build".into();
         write_manifest(&fixture, &wrong)?;
-        let error = verify(&fixture.0, Identity::compiled())
+        let error = verify(fixture.0.path(), Identity::compiled())
             .err()
             .ok_or("mismatched identity accepted")?;
         assert!(error.contains(key), "{error}");
@@ -162,7 +149,7 @@ fn invalid_schema_paths_size_provenance_and_missing_packages_fail_closed() -> Te
         let mut document = manifest();
         document["packages"][0]["path"] = path.into();
         write_manifest(&fixture, &document)?;
-        assert!(verify(&fixture.0, Identity::compiled()).is_err());
+        assert!(verify(fixture.0.path(), Identity::compiled()).is_err());
     }
     for (key, value) in [
         ("size", serde_json::json!(4)),
@@ -177,22 +164,22 @@ fn invalid_schema_paths_size_provenance_and_missing_packages_fail_closed() -> Te
         let mut document = manifest();
         document["packages"][0][key] = value;
         write_manifest(&fixture, &document)?;
-        assert!(verify(&fixture.0, Identity::compiled()).is_err());
+        assert!(verify(fixture.0.path(), Identity::compiled()).is_err());
     }
     let mut document = manifest();
     document["schema"] = "unknown".into();
     write_manifest(&fixture, &document)?;
-    assert!(verify(&fixture.0, Identity::compiled()).is_err());
+    assert!(verify(fixture.0.path(), Identity::compiled()).is_err());
     let mut document = manifest();
     document["packages"] = serde_json::json!([
         document["packages"][0].clone(),
         document["packages"][0].clone()
     ]);
     write_manifest(&fixture, &document)?;
-    assert!(verify(&fixture.0, Identity::compiled()).is_err());
+    assert!(verify(fixture.0.path(), Identity::compiled()).is_err());
     write_manifest(&fixture, &manifest())?;
-    std::fs::remove_file(fixture.0.join("packages/scene.bin"))?;
-    assert!(verify(&fixture.0, Identity::compiled()).is_err());
+    std::fs::remove_file(fixture.0.path().join("packages/scene.bin"))?;
+    assert!(verify(fixture.0.path(), Identity::compiled()).is_err());
     Ok(())
 }
 #[cfg(unix)]
@@ -201,13 +188,13 @@ fn package_symlinks_cannot_escape_the_release_packages_directory() -> TestResult
     use oteryn_client::package_integrity::{Identity, verify};
     let fixture = seeded()?;
     let outside = Fixture::new()?;
-    std::fs::write(outside.0.join("scene.bin"), b"abc")?;
-    std::fs::remove_file(fixture.0.join("packages/scene.bin"))?;
+    std::fs::write(outside.0.path().join("scene.bin"), b"abc")?;
+    std::fs::remove_file(fixture.0.path().join("packages/scene.bin"))?;
     std::os::unix::fs::symlink(
-        outside.0.join("scene.bin"),
-        fixture.0.join("packages/scene.bin"),
+        outside.0.path().join("scene.bin"),
+        fixture.0.path().join("packages/scene.bin"),
     )?;
-    assert!(verify(&fixture.0, Identity::compiled()).is_err());
+    assert!(verify(fixture.0.path(), Identity::compiled()).is_err());
     Ok(())
 }
 
@@ -215,19 +202,26 @@ fn package_symlinks_cannot_escape_the_release_packages_directory() -> TestResult
 #[test]
 fn launcher_diagnosis_runs_the_active_release_verifier() -> TestResult {
     let fixture = Fixture::new()?;
-    let release = fixture.0.join("releases").join(oteryn_client::RELEASE_ID);
+    let release = fixture
+        .0
+        .path()
+        .join("releases")
+        .join(oteryn_client::RELEASE_ID);
     std::fs::create_dir_all(release.join("packages"))?;
     std::fs::write(release.join("packages/scene.bin"), b"abc")?;
     std::fs::write(
         release.join("packages.json"),
         serde_json::to_vec(&manifest())?,
     )?;
-    std::fs::write(fixture.0.join("current.txt"), oteryn_client::RELEASE_ID)?;
+    std::fs::write(
+        fixture.0.path().join("current.txt"),
+        oteryn_client::RELEASE_ID,
+    )?;
     publish_executable(
         std::path::Path::new(env!("CARGO_BIN_EXE_oteryn-client")),
         &release.join("oteryn-client.exe"),
     )?;
-    let launcher = fixture.0.join("oteryn-launcher");
+    let launcher = fixture.0.path().join("oteryn-launcher");
     publish_executable(
         std::path::Path::new(env!("CARGO_BIN_EXE_oteryn-launcher")),
         &launcher,
@@ -238,7 +232,7 @@ fn launcher_diagnosis_runs_the_active_release_verifier() -> TestResult {
     ] {
         std::fs::write(release.join("packages/scene.bin"), bytes)?;
         let output = Command::new(&launcher)
-            .current_dir(&fixture.0)
+            .current_dir(fixture.0.path())
             .arg("--check-install")
             .output()?;
         assert!(output.status.success());

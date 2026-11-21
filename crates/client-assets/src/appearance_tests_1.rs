@@ -10,6 +10,7 @@ mod tests {
                     sprite_id: vec![1],
                     ..SpriteInfoMsg::default()
                 }),
+                ..FrameGroupMsg::default()
             }],
             flags: Some(FlagsMsg {
                 shift: Some(ShiftMsg {
@@ -19,6 +20,55 @@ mod tests {
                 ..FlagsMsg::default()
             }),
         }
+    }
+
+    #[test]
+    fn outfit_movement_uses_the_typed_walking_group() -> Result<(), Box<dyn std::error::Error>> {
+        let mut message = shifted(0, 0);
+        let mut walking = message.frame_group[0].clone();
+        walking.sprite_info.as_mut().ok_or("sprite info")?.sprite_id = vec![2];
+        // Native fixed_frame_group = 1 (outfit-moving), protobuf tag 1.
+        let mut encoded = vec![8, 1];
+        encoded.extend(walking.encode_to_vec());
+        message
+            .frame_group
+            .push(FrameGroupMsg::decode(encoded.as_slice())?);
+        assert_eq!(
+            convert(1, message.clone()).map(|a| a.sprite_ids),
+            Some(vec![1])
+        );
+        assert_eq!(
+            convert_movement(1, &message).map(|a| a.sprite_ids),
+            Some(vec![2])
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn odd_fixed_and_mean_phase_durations_keep_their_remainders() -> Result<(), &'static str> {
+        for (low, high, expected) in [(75, 75, 75), (75, 77, 76), (u32::MAX, u32::MAX, 10_000)] {
+            let mut message = shifted(0, 0);
+            let info = message
+                .frame_group
+                .first_mut()
+                .and_then(|group| group.sprite_info.as_mut())
+                .ok_or("sprite info")?;
+            info.sprite_id = vec![1, 2];
+            info.animation = Some(AnimationMsg {
+                sprite_phase: vec![
+                    PhaseMsg {
+                        duration_min: Some(low),
+                        duration_max: Some(high)
+                    };
+                    2
+                ],
+            });
+            let appearance = convert(9, message).ok_or("converted effect")?;
+            assert_eq!(appearance.phase_ms, [expected, expected]);
+            assert_eq!(appearance.phase_at(u64::from(expected - 1)), Some(0));
+            assert_eq!(appearance.phase_at(u64::from(expected)), Some(1));
+        }
+        Ok(())
     }
 
     #[test]
@@ -41,6 +91,7 @@ mod tests {
                     sprite_id: vec![1; width as usize],
                     ..SpriteInfoMsg::default()
                 }),
+                ..FrameGroupMsg::default()
             }],
             flags: Some(flags),
         };

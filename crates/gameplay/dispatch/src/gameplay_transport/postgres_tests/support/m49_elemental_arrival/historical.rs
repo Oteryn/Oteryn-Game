@@ -171,6 +171,7 @@ pub(super) async fn preserve_pending(
         })
         .map_err(debug)?;
     let selection = ItemMoveSelection {
+        manual_sort: false,
         equip_drop: true,
         container_tree: false,
         world_interaction: true,

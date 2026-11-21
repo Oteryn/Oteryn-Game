@@ -97,7 +97,17 @@ impl Outbox {
                 response,
             ),
             232 => {
-                oteryn_client_ui::team_finder::apply_result(&mut mailbox.discovery.teams, response)
+                // A fresh applicants page is the server's current listing for this leader.
+                if oteryn_client_ui::team_finder::apply_result(
+                    &mut mailbox.discovery.teams,
+                    response,
+                ) && let Some(oteryn_client_ui::team_finder::TeamFinderResult::Applicants {
+                    listing,
+                    ..
+                }) = mailbox.discovery.teams.result
+                {
+                    mailbox.discovery.leader.confirmed = listing;
+                }
             }
             285 => oteryn_client_ui::purchase_history::protocol::apply_result(
                 &mut mailbox.discovery.history,

@@ -4,7 +4,8 @@ use super::*;
 fn mouse_presets_validate_route_and_survive_restart() -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::{PreferenceStore, SettingsState};
     use oteryn_input_actions::{ButtonState, Modifiers, MouseButton, NormalizedInputEvent};
-    let path = std::env::temp_dir().join(format!("cgopt-mouse-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("cgopt-mouse.json");
     let mut settings = SettingsState::new(Some(path.clone()));
     let mut preferences = settings.preferences.clone();
     preferences.set_mouse_preset(1)?;
@@ -159,6 +160,7 @@ fn hud_name_controls_separate_owner_players_and_creatures() -> Result<(), Box<dy
     .map(|(id, kind)| {
         Ok(VisibleAppearance {
             entity: WorldSpatialEntity {
+                motion: None,
                 entity: EntityRef {
                     identity: [id; 16],
                     generation: 1,
@@ -209,7 +211,8 @@ fn interface_scale_changes_hud_geometry_and_rejects_invalid_values()
 #[test]
 fn hotkey_profiles_preserve_routes_across_restart() -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::{PreferenceStore, ReferencePreferences};
-    let path = std::env::temp_dir().join(format!("cgopt-profiles-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("cgopt-profiles.json");
     let mut preferences = ReferencePreferences::default();
     preferences.save_hotkey_profile("arrows")?;
     preferences.general_hotkey_preset(false)?;
@@ -385,3 +388,82 @@ fn mouse_preset_changes_actual_click_routing() -> Result<(), Box<dyn std::error:
 
 #[path = "navigation.rs"]
 mod navigation;
+
+#[test]
+fn duplicate_control_editors_share_mouse_and_rotation_through_real_dispatch()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{MousePreset, RotationModifier, SettingsState};
+    use oteryn_input_actions::{
+        ButtonState, KeyCode, Modifier, Modifiers, MouseButton, NormalizedInputEvent,
+    };
+    let mut state = SettingsState::new(None);
+    let mut general = state.preferences.clone();
+    general.controls.mouse = MousePreset::LeftHanded;
+    general.controls.rotation = RotationModifier::Alt;
+    state.apply(general);
+    let mut gameplay = state.preferences.clone();
+    gameplay.set_mouse_preset(1)?;
+    state.apply(gameplay);
+    let click = [ButtonState::Pressed, ButtonState::Released].map(|state| {
+        NormalizedInputEvent::MouseButton {
+            button: MouseButton::PRIMARY,
+            state,
+            modifiers: Modifiers::NONE,
+        }
+    });
+    let controls = state.control_events_at(&click, false, std::time::Duration::ZERO);
+    let routed = state.input_in_context(&controls, false).0;
+    assert!(routed.iter().all(|event| matches!(
+        event,
+        NormalizedInputEvent::MouseButton {
+            button: MouseButton::SECONDARY,
+            ..
+        }
+    )));
+    assert_eq!(routed.len(), 2);
+    let (link, mut commands, outbox) = play_channel();
+    outbox.target_move_initialize(true);
+    let mut play = view()?;
+    for (legacy, rotation, modifier) in [
+        ("ALT", RotationModifier::Alt, Modifier::Alt),
+        ("SHIFT", RotationModifier::Shift, Modifier::Shift),
+    ] {
+        let mut preferences = state.preferences.clone();
+        preferences.rotation_modifier = legacy.into();
+        state.apply(preferences);
+        assert_eq!(state.preferences.controls.rotation, rotation);
+        play.set_preferences(state.preferences.clone())?;
+        let events = [
+            NormalizedInputEvent::DeviceLost,
+            NormalizedInputEvent::Key {
+                code: KeyCode::ARROW_UP,
+                state: ButtonState::Pressed,
+                repeat: false,
+                modifiers: Modifiers::one(modifier),
+            },
+        ];
+        let controls = state.control_events_at(&events, false, std::time::Duration::ZERO);
+        let routed = state.input_in_context(&controls, false).0;
+        assert!(play.target_move_input(&link, &routed));
+        let crate::combat_input::PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+            return Err("turn command missing".into());
+        };
+        assert_eq!(command.payload, [26, 2, 8, 1]);
+    }
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("legacy-control-aliases.json");
+    let legacy = crate::play::ReferencePreferences {
+        swap_mouse_buttons: true,
+        rotation_modifier: "ALT".into(),
+        ..Default::default()
+    };
+    crate::play::PreferenceStore::export_to(&legacy, &path)?;
+    let restored = SettingsState::new(Some(path.clone()));
+    assert_eq!(restored.preferences.controls.mouse, MousePreset::LeftHanded);
+    assert_eq!(
+        restored.preferences.controls.rotation,
+        RotationModifier::Alt
+    );
+    std::fs::remove_file(path)?;
+    Ok(())
+}

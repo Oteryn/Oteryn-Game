@@ -42,3 +42,6 @@ build/
 tmp/
 temp/
 *.log
+
+# The official client's graphics bundle is read at runtime from the asset directory, never committed.
+content/assets/files/graphics_resources.rcc

@@ -1,3 +1,11 @@
+/// Quantize a missile path into the eight 45-degree artwork sectors.
+#[must_use]
+pub fn missile_direction([x, y]: [i32; 2]) -> [i32; 2] {
+    if x == 0 && y == 0 { return [0, 0]; }
+    let sector = ((f64::from(y).atan2(f64::from(x)) / std::f64::consts::FRAC_PI_4 + 0.5).floor() as i32).rem_euclid(8);
+    [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]][sector as usize]
+}
+
 impl Appearance {
     /// Effects play once. Missing timing uses the reference client's 100 ms default.
     #[must_use]
@@ -38,6 +46,7 @@ impl AppearanceIndex {
             return Err(AssetError::UnknownSprite { sprite_id: 0 });
         }
         let pattern = if missile {
+            let direction = missile_direction(direction);
             (
                 (direction[0].signum() + 1) as u32 % appearance.pattern_width,
                 (direction[1].signum() + 1) as u32 % appearance.pattern_height,

@@ -1,0 +1,20 @@
+{
+  "id": 507,
+  "name": "HIGHSCORES_CATALOGUE_V1",
+  "constant": "highscores_catalogue::CAPABILITY",
+  "requires": [
+    9
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    6244,
+    6245
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

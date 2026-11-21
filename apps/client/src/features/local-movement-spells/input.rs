@@ -1,5 +1,4 @@
 //! Native movement spell controls submit the existing CHAT_V1 SAY command.
-#![cfg(any(windows, test))]
 use crate::combat_input::PlayCommand;
 use crate::play::mailbox::Mailbox;
 use oteryn_client_ui::spell_action_bar::movement::{MovementSpell, request};

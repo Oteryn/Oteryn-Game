@@ -870,3 +870,113 @@ fn the_first_trade_with_yasir_grants_si_ariki_once_and_other_npcs_grant_nothing(
         Ok(())
     })
 }
+
+#[test]
+fn hireling_package_counts_all_nested_stacks_in_the_carried_tree() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || {
+            runtime().map_err(debug)?.block_on(async {
+                let h = Harness::create(admin, "hireling_package_capacity").await?;
+                let result = hireling_package_tree_case(&h).await;
+                h.cleanup().await?;
+                result
+            }).map_err(debug)
+        })?
+        .join()
+        .map_err(|_| "hireling package capacity thread failed")?
+        .map_err(Into::into)
+}
+
+async fn hireling_package_tree_case(h: &Harness) -> TestResult {
+    use crate::domain::hireling::catalogue::{PACKAGES, PRESENT_ITEM_ID};
+    use crate::durability::item_transfer::{ItemWeightLookup, ItemWeightRefused};
+    use crate::durability::npc_trade::HirelingPackageSelection;
+    use crate::foundation::{ChannelId, CommandId, CommandRef};
+    use crate::item_transfer_postgres_cases::{CHANNEL, WORLD};
+
+    struct Weights;
+    impl ItemWeightLookup for Weights {
+        fn generation_digest(&self) -> [u8; 32] { [1; 32] }
+
+        fn weight_of(&self, _: &TypedDefinitionRef) -> Result<u32, ItemWeightRefused> { Ok(1) }
+    }
+
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+    let backpack = equip(h, &authority).await?;
+    give(h, &authority, Coin::Platinum.production_key(), 62, 201).await?;
+    give(h, &authority, Coin::Gold.production_key(), 50, 202).await?;
+    let f = super::player_death_item_primitives::enter_carried_test_house(h, &authority, &fence()?).await?;
+    let hireling = id(225);
+    let mut seed = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *seed).await?;
+    sqlx::query("INSERT INTO game_house_hirelings(hireling_id,world_id,owner_character_id,name,active,house_key,x,y,floor) SELECT encode($1,'hex')::uuid,world_id,character_id,'Bash Seller',true,runtime_scope_house_key,100,100,-7 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($2,'hex')::uuid")
+        .bind(hireling.as_slice()).bind(f.game_session_id.as_bytes().as_slice()).execute(&mut *seed).await?;
+
+    let tree_transaction = id(226);
+    // One direct bag, with fan-out 10 and at most four levels below the backpack.
+    sqlx::query("WITH nodes AS MATERIALIZED (SELECT n,uuidv7() AS item FROM generate_series(0,497) n),
+        items AS (INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id)
+            SELECT item,encode($1,'hex')::uuid,'Item',$4,'definition-r1',1,1,encode($5,'hex')::uuid FROM nodes),
+        bag AS (INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id)
+            SELECT item,encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,3,encode($5,'hex')::uuid FROM nodes WHERE n=0)
+        INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id)
+            SELECT child.item,encode($1,'hex')::uuid,parent.item,(child.n-1)%10+1,encode($5,'hex')::uuid FROM nodes child JOIN nodes parent ON parent.n=(child.n-1)/10 WHERE child.n>0")
+        .bind(id(WORLD).as_slice()).bind(f.character_id.as_bytes().as_slice()).bind(backpack.as_slice())
+        .bind(BACKPACK).bind(tree_transaction.as_slice()).execute(&mut *seed).await?;
+    seed.commit().await?;
+
+    let tree_size = || sqlx::query_scalar::<_, i64>("SELECT game_item_loop_tree_size(encode($1,'hex')::uuid)")
+        .bind(f.character_id.as_bytes().as_slice()).fetch_one(&h.pool);
+    assert_eq!(tree_size().await?, 500);
+    let package = &PACKAGES[0];
+    assert_eq!(package.name, "bash");
+    let mut request = trade(230, NpcTradeSide::Buy, 1, package.gold)?;
+    request.cause.npc_key = crate::durability::house_hireling::npc_key(hireling);
+    request.command = CommandRef::new(f.game_session_id, CommandId::new(230).map_err(debug)?);
+    request.item = backpack_facts();
+    request.item.definition = typed(&format!("oteryn:item.tibia.i{PRESENT_ITEM_ID}"));
+    request.item.container_slot_equip_pattern = false;
+    request.item.weight = Some(1);
+    let selection = HirelingPackageSelection {
+        hireling_id: hireling,
+        package: 0,
+        origin_channel: ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
+        children: package.items.map(|(item, _)| {
+            let mut facts = stackable(&format!("oteryn:item.tibia.i{item}"));
+            facts.weight = Some(1);
+            facts
+        }),
+        intent_binding: [1; 32],
+        child_ids: [id(236), id(237), id(238)],
+    };
+    let result = h.root.commit_hireling_package(
+        &authority, &h.node, f, request.clone(), selection.clone(), &Weights,
+    ).await;
+    assert!(matches!(result, Err(NpcTradeError::DoesNotFit)), "{result:?}");
+    assert_eq!(tree_size().await?, 500);
+    assert_eq!(h.count("game_hireling_package_receipts").await?, 0);
+
+    let mut seed = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *seed).await?;
+    sqlx::query("WITH removed AS (
+        DELETE FROM game_item_nested_entries WHERE item_instance_id IN (
+          SELECT n.item_instance_id FROM game_item_nested_entries n
+          WHERE placed_transaction_id=encode($1,'hex')::uuid AND NOT EXISTS(
+            SELECT 1 FROM game_item_nested_entries child WHERE child.parent_item_instance_id=n.item_instance_id)
+          ORDER BY n.item_instance_id LIMIT 2
+        ) RETURNING item_instance_id
+      ) DELETE FROM game_item_instances USING removed WHERE game_item_instances.item_instance_id=removed.item_instance_id")
+        .bind(tree_transaction.as_slice()).execute(&mut *seed).await?;
+    seed.commit().await?;
+    assert_eq!(tree_size().await?, 498);
+    assert!(matches!(h.root.commit_hireling_package(
+        &authority, &h.node, f, request, selection, &Weights,
+    ).await.map_err(debug)?, NpcTradeOutcome::Committed(_)));
+    assert_eq!(tree_size().await?, 500);
+    Ok(())
+}

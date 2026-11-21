@@ -1,15 +1,16 @@
 //! One frame per second, bounded by age, count and 64 MiB, scoped to the current session.
-use super::{CaptureSource, Pixels, SettingsState};
+use super::{CaptureSource, Pixels, SettingsState, screenshot_directory};
 use crate::play::PlayLink;
 use std::{
     collections::VecDeque,
     io,
-    path::PathBuf,
+    path::{Path, PathBuf},
+    sync::Arc,
     time::{Duration, Instant},
 };
 #[derive(Default)]
 pub(in super::super) struct ScreenshotRuntime {
-    frames: VecDeque<(Instant, Pixels)>,
+    frames: VecDeque<(Instant, Arc<Pixels>)>,
     last_frame: Option<Instant>,
     last_query: Option<Instant>,
     previous: Option<Signals>,
@@ -33,6 +34,25 @@ impl Signals {
         }
     }
 }
+pub(crate) enum CaptureAction {
+    Idle,
+    Buffer,
+    Save,
+}
+
+pub(crate) struct ScreenshotBatch {
+    directory: String,
+    frames: VecDeque<(Instant, Arc<Pixels>)>,
+}
+
+impl ScreenshotBatch {
+    pub(crate) fn save(&self, current: &Pixels) -> io::Result<Vec<PathBuf>> {
+        let folder = screenshot_directory(Path::new(&self.directory))?;
+        self.frames.iter().map(|(_, frame)| frame.as_ref()).chain([current])
+            .map(|frame| frame.save_to(&folder)).collect()
+    }
+}
+
 impl SettingsState {
     pub fn cancel_screenshot(&mut self) {
         self.screenshot_requested = false;
@@ -47,6 +67,33 @@ impl SettingsState {
         link: Option<&PlayLink>,
         source: &mut impl CaptureSource,
     ) -> io::Result<Vec<PathBuf>> {
+        let action = self.prepare_screenshots(now, link);
+        let game_only = self.preferences.screenshots.effective().game_only;
+        match action {
+            CaptureAction::Idle => Ok(Vec::new()),
+            CaptureAction::Buffer => {
+                self.buffer_screenshot(now, source.capture(game_only)?);
+                Ok(Vec::new())
+            }
+            CaptureAction::Save => {
+                let current = source.capture(game_only)?;
+                let batch = self.take_screenshot_batch();
+                match batch.save(&current) {
+                    Ok(paths) => {
+                        self.screenshot_runtime.last_frame = Some(now);
+                        self.cancel_screenshot();
+                        Ok(paths)
+                    }
+                    Err(error) => {
+                        self.restore_screenshot_batch(batch);
+                        Err(error)
+                    }
+                }
+            }
+        }
+    }
+
+    pub(crate) fn prepare_screenshots(&mut self, now: Instant, link: Option<&PlayLink>) -> CaptureAction {
         let preferences = self.preferences.screenshots.effective();
         let runtime = &mut self.screenshot_runtime;
         if link.is_none() || runtime.game_only != Some(preferences.game_only) {
@@ -94,39 +141,61 @@ impl SettingsState {
         {
             runtime.frames.pop_front();
         }
-        let mut paths = Vec::new();
         if self.screenshot_requested {
-            for (_, frame) in &runtime.frames {
-                paths.push(frame.save(&preferences.folder)?);
-            }
-            paths.push(
-                source
-                    .capture(preferences.game_only)?
-                    .save(&preferences.folder)?,
-            );
-            runtime.frames.clear();
-            runtime.last_frame = Some(now);
-            self.screenshot_requested = false;
+            CaptureAction::Save
         } else if link.is_some()
             && limit > 0
-            && runtime
-                .last_frame
-                .is_none_or(|last| now.saturating_duration_since(last) >= Duration::from_secs(1))
+            && runtime.last_frame.is_none_or(|last| now.saturating_duration_since(last) >= Duration::from_secs(1))
         {
-            runtime.last_frame = Some(now);
-            let pixels = source.capture(preferences.game_only)?;
-            runtime.frames.push_back((now, pixels));
-            while runtime.frames.len() > limit
-                || runtime
-                    .frames
-                    .iter()
-                    .map(|(_, frame)| frame.rgba.len())
-                    .sum::<usize>()
-                    > 64 << 20
-            {
-                runtime.frames.pop_front();
-            }
+            CaptureAction::Buffer
+        } else {
+            CaptureAction::Idle
         }
-        Ok(paths)
+    }
+
+    pub(crate) fn take_screenshot_batch(&mut self) -> ScreenshotBatch {
+        ScreenshotBatch {
+            directory: self.preferences.screenshots.effective().directory,
+            frames: std::mem::take(&mut self.screenshot_runtime.frames),
+        }
+    }
+
+    pub(crate) fn restore_screenshot_batch(&mut self, batch: ScreenshotBatch) {
+        self.screenshot_runtime.frames = batch.frames;
+    }
+
+    pub(crate) fn buffer_screenshot(&mut self, now: Instant, pixels: Pixels) {
+        self.screenshot_runtime.last_frame = Some(now);
+        let frames = &mut self.screenshot_runtime.frames;
+        frames.push_back((now, Arc::new(pixels)));
+        let limit = usize::from(self.preferences.screenshots.effective().backlog_frames);
+        while frames.len() > limit
+            || frames.iter().map(|(_, frame)| frame.rgba.len()).sum::<usize>() > 64 << 20
+        {
+            frames.pop_front();
+        }
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn submit_screenshot(&mut self, now: Instant) -> ScreenshotBatch {
+        self.screenshot_runtime.last_frame = Some(now);
+        self.cancel_screenshot();
+        self.take_screenshot_batch()
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn manual_screenshot_batch(
+        &mut self,
+        now: Instant,
+        directory: String,
+    ) -> (ScreenshotBatch, bool) {
+        self.screenshot_runtime.last_frame = Some(now);
+        let consumed = !self.screenshot_requested;
+        let frames = if consumed {
+            std::mem::take(&mut self.screenshot_runtime.frames)
+        } else {
+            self.screenshot_runtime.frames.clone()
+        };
+        (ScreenshotBatch { directory, frames }, consumed)
     }
 }

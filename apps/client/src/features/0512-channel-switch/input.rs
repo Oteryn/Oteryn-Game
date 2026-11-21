@@ -171,7 +171,7 @@ fn refresh_probes(
         });
 }
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl PlayLink {
     pub(crate) fn set_channel_switch_fixture(&self, panel: channel_switch::ChannelSwitchPanel) {
         lock(&self.mailbox).channel_switch = panel;

@@ -373,3 +373,288 @@ fn server_message_utility_preserves_player_lines_across_console_tabs() {
         }
     }
 }
+
+/// Tibia Global binds Ctrl+M to ToggleShowServermessagesInCurrentChannel
+/// (docs/reference/tibia-manual/controls.md:93, and the Global client options file) and opens the
+/// Market only from the depot locker (docs/reference/tibia-manual/controls_trading.md:29).
+#[test]
+fn global_ctrl_m_toggles_server_messages_and_the_market_has_no_default_chord()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::UtilityAction::ToggleServerMessages;
+    assert_eq!(
+        crate::play::default_custom_hotkeys().get("CTRL+M"),
+        Some(&CustomAction::Utility {
+            action: ToggleServerMessages
+        })
+    );
+    let bindings = crate::play::preference_bindings()?;
+    let market = bindings
+        .iter()
+        .find(|b| b.id == "0063-market-open")
+        .ok_or("market binding")?;
+    assert_eq!(market.default_chord, "");
+    // The player can still give the Market a free chord.
+    ReferencePreferences::default().rebind("0063-market-open", "CTRL+SHIFT+F9")?;
+
+    let (link, _commands, _outbox) = play_channel();
+    let play = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), 7, &[])?;
+    let mut settings = bare();
+    let (routed, _) = settings.input(&[press(16, false, true)]);
+    let actions = settings.take_custom_actions();
+    assert_eq!(
+        actions,
+        vec![CustomAction::Utility {
+            action: ToggleServerMessages
+        }]
+    );
+    assert!(!link.market_input(&routed));
+    let shown = lock(&link.mailbox).chat.console.show_server_messages;
+    assert!(link.custom_hotkey_action(&play, &actions[0]));
+    assert_eq!(lock(&link.mailbox).chat.console.show_server_messages, !shown);
+    assert!(!link.market_panel().open);
+    Ok(())
+}
+
+/// Global's hotkey manager offers ShowPrey, ToggleVipWidget and ToggleSkillsWidget as actions.
+#[test]
+fn n021_prey_vip_and_skills_are_assignable_hotkey_actions() -> Result<(), Box<dyn std::error::Error>>
+{
+    use crate::play::UtilityAction::{ShowPrey, ToggleSkillsWidget, ToggleVipWidget};
+    let (link, mut commands, _outbox) = play_channel();
+    let play = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), 7, &[])?;
+    let mut settings = bare();
+    let mut preferences = settings.preferences.clone();
+    for (chord, action) in [
+        ("CTRL+SHIFT+F5", ShowPrey),
+        ("CTRL+SHIFT+F6", ToggleVipWidget),
+        ("CTRL+SHIFT+F7", ToggleSkillsWidget),
+    ] {
+        preferences.assign_custom_hotkey(chord, CustomAction::Utility { action })?;
+    }
+    settings.apply(preferences);
+    lock(&link.mailbox).prey.selected = true;
+    lock(&link.mailbox).vip.selected = true;
+    let mut fire = |code: u16| {
+        let mut event = press(code, true, true);
+        let _ = settings.input(std::slice::from_ref(&event));
+        let actions = settings.take_custom_actions();
+        if let oteryn_input_actions::NormalizedInputEvent::Key { state, .. } = &mut event {
+            *state = oteryn_input_actions::ButtonState::Released;
+        }
+        let _ = settings.input(&[event]);
+        actions.len() == 1 && link.custom_hotkey_action(&play, &actions[0])
+    };
+    // F5..F7 are key codes 62..64.
+    assert!(fire(62));
+    assert!(lock(&link.mailbox).prey.open);
+    assert!(matches!(commands.try_recv()?, PlayCommand::Prey(_)));
+    assert!(fire(63));
+    assert!(lock(&link.mailbox).vip.open);
+    assert!(matches!(commands.try_recv()?, PlayCommand::Vip(_)));
+    assert!(fire(63));
+    assert!(!lock(&link.mailbox).vip.open);
+    assert!(fire(64));
+    assert!(lock(&link.mailbox).loyalty_skills.open);
+    assert!(fire(64));
+    assert!(!lock(&link.mailbox).loyalty_skills.open);
+    Ok(())
+}
+
+/// The installed Tibia Global client options (%LOCALAPPDATA%/Tibia/packages/Tibia/conf/
+/// clientoptions.json, every hotkey set, chat on and chat off) bind Ctrl+Y to ShowPrey, Ctrl+P to
+/// ToggleVipWidget, Alt+S to ToggleSkillsWidget and Ctrl+K to ShowOptionsHotkeys; they bind
+/// nothing to Ctrl+V and give the boss slots no chord.
+#[test]
+fn global_default_chords_for_prey_vip_skills_and_hotkey_options()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::UtilityAction::{
+        ShowOptionsHotkeys, ShowPrey, ToggleSkillsWidget, ToggleVipWidget,
+    };
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let defaults = crate::play::default_custom_hotkeys();
+    for (chord, action) in [
+        ("CTRL+Y", ShowPrey),
+        ("CTRL+P", ToggleVipWidget),
+        ("ALT+S", ToggleSkillsWidget),
+        ("CTRL+K", ShowOptionsHotkeys),
+    ] {
+        assert_eq!(
+            defaults.get(chord),
+            Some(&CustomAction::Utility { action }),
+            "{chord}"
+        );
+    }
+    assert!(!defaults.contains_key("CTRL+V"));
+    let bindings = crate::play::preference_bindings()?;
+    for id in [
+        "0043-vip-open",
+        "0140-prey-open",
+        "0225-boss-difficulty-open",
+        "0274-loyalty-skills-open",
+    ] {
+        let binding = bindings.iter().find(|b| b.id == id).ok_or("binding")?;
+        assert_eq!(binding.default_chord, "", "{id}");
+    }
+
+    let (link, mut commands, _outbox) = play_channel();
+    lock(&link.mailbox).prey.selected = true;
+    lock(&link.mailbox).vip.selected = true;
+    let mut settings = bare();
+    let mut fire = |code: u16, modifier: Modifier| {
+        let mut event = NormalizedInputEvent::Key {
+            code: KeyCode::new(code).unwrap_or_else(|_| unreachable!("a fixed key code")),
+            state: ButtonState::Pressed,
+            modifiers: Modifiers::one(modifier),
+            repeat: false,
+        };
+        let (routed, _) = settings.input(std::slice::from_ref(&event));
+        let actions = settings.take_custom_actions();
+        if let NormalizedInputEvent::Key { state, .. } = &mut event {
+            *state = ButtonState::Released;
+        }
+        let _ = settings.input(&[event]);
+        let ran = actions.iter().all(|action| match action {
+            CustomAction::Utility { action } => settings.run_utility(&link, *action),
+            _ => false,
+        });
+        (routed, actions, ran)
+    };
+    // Y, P, S, K and V are key codes 28, 19, 22, 14 and 25.
+    let (routed, actions, ran) = fire(28, Modifier::Control);
+    assert_eq!(actions, vec![CustomAction::Utility { action: ShowPrey }]);
+    assert!(ran && lock(&link.mailbox).prey.open);
+    assert!(matches!(commands.try_recv()?, PlayCommand::Prey(_)));
+    assert!(!link.boss_difficulty_input(&routed));
+    assert!(!lock(&link.mailbox).boss_difficulty.open);
+    let (_, actions, ran) = fire(19, Modifier::Control);
+    assert_eq!(
+        actions,
+        vec![CustomAction::Utility {
+            action: ToggleVipWidget
+        }]
+    );
+    assert!(ran && lock(&link.mailbox).vip.open);
+    let (_, actions, ran) = fire(22, Modifier::Alt);
+    assert_eq!(
+        actions,
+        vec![CustomAction::Utility {
+            action: ToggleSkillsWidget
+        }]
+    );
+    assert!(ran && lock(&link.mailbox).loyalty_skills.open);
+    // The native shell runs Ctrl+K through the settings owner: it opens the options window
+    // on its hotkey page (`Settings::run_utility`).
+    let (_, actions, ran) = fire(14, Modifier::Control);
+    assert_eq!(
+        actions,
+        vec![CustomAction::Utility {
+            action: ShowOptionsHotkeys
+        }]
+    );
+    assert!(ran, "Ctrl+K is consumed by opening the hotkey options");
+    lock(&link.mailbox).vip.open = false;
+    let (routed, actions, _) = fire(25, Modifier::Control);
+    assert!(actions.is_empty());
+    assert!(!link.vip_input(&routed));
+    assert!(!lock(&link.mailbox).vip.open);
+    assert_eq!(settings.page, crate::play::SettingsPage::Hotkeys);
+    assert_eq!(
+        settings.take_page_request(),
+        Some(crate::play::SettingsPage::Hotkeys)
+    );
+    assert_eq!(settings.take_page_request(), None);
+    Ok(())
+}
+
+/// Tibia Global's ToggleManualSortMode (docs/reference/tibia-manual/controls.md:79; Shift+S in
+/// every hotkey set of the installed Global client options): the hotkey toggles the session's
+/// mode, and while it is on a drop on a container slot sends that slot (capability 510).
+#[test]
+fn shift_s_toggles_manual_sort_mode_and_a_container_drop_sends_its_slot()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::UtilityAction::ToggleManualSortMode;
+    use oteryn_client_ui::inventory::movement::DragItem;
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    use oteryn_session::ItemMoveDestination;
+    assert_eq!(
+        crate::play::default_custom_hotkeys().get("SHIFT+S"),
+        Some(&CustomAction::Utility {
+            action: ToggleManualSortMode
+        })
+    );
+    for selected in [false, true] {
+        let (link, mut commands, outbox) = play_channel();
+        outbox.inventory_initialize(None, false);
+        outbox.container_manual_sort_initialize(selected);
+        let mut settings = bare();
+        let mut shift_s = || {
+            let mut event = NormalizedInputEvent::Key {
+                code: KeyCode::new(22).unwrap_or_else(|_| unreachable!("a fixed key code")),
+                state: ButtonState::Pressed,
+                modifiers: Modifiers::one(Modifier::Shift),
+                repeat: false,
+            };
+            let _ = settings.input(std::slice::from_ref(&event));
+            let actions = settings.take_custom_actions();
+            if let NormalizedInputEvent::Key { state, .. } = &mut event {
+                *state = ButtonState::Released;
+            }
+            let _ = settings.input(&[event]);
+            assert_eq!(
+                actions,
+                vec![CustomAction::Utility {
+                    action: ToggleManualSortMode
+                }]
+            );
+            settings.run_utility(&link, ToggleManualSortMode)
+        };
+        let drop = |commands: &mut tokio::sync::mpsc::UnboundedReceiver<PlayCommand>| {
+            assert!(link.item_drag_begin(DragItem {
+                equipped: false,
+                handle: 5.try_into().unwrap_or_else(|_| unreachable!("non-zero")),
+                count: 1,
+            }));
+            link.item_drag_drop(Some(ItemMoveDestination::Container(
+                9.try_into().unwrap_or_else(|_| unreachable!("non-zero")),
+                Some(2),
+            )));
+            match commands.try_recv() {
+                Ok(PlayCommand::MoveItem(request)) => Some(request.destination),
+                _ => None,
+            }
+        };
+        let container = 9.try_into()?;
+        assert!(!link.container_manual_sort_active());
+        assert_eq!(
+            drop(&mut commands),
+            Some(ItemMoveDestination::Container(container, None))
+        );
+        lock(&link.mailbox).item_movement.pending = false;
+        assert_eq!(shift_s(), selected, "510 negotiated: {selected}");
+        assert_eq!(link.container_manual_sort_active(), selected);
+        let slot = selected.then_some(2);
+        assert_eq!(
+            drop(&mut commands),
+            Some(ItemMoveDestination::Container(container, slot))
+        );
+        lock(&link.mailbox).item_movement.pending = false;
+        assert_eq!(shift_s(), selected);
+        assert!(!link.container_manual_sort_active());
+        assert_eq!(
+            drop(&mut commands),
+            Some(ItemMoveDestination::Container(container, None))
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn vip_hotkey_closes_toolbar_visible_sidebar() {
+    use crate::play::UtilityAction::ToggleVipWidget;
+    let (link, _, _) = play_channel();
+    let mut settings = bare();
+    settings.preferences.visible_panels = vec!["vip".into()];
+    assert!(settings.run_utility(&link, ToggleVipWidget));
+    assert!(!settings.preferences.panel_visible("vip"));
+    assert!(!link.vip_is_open());
+}

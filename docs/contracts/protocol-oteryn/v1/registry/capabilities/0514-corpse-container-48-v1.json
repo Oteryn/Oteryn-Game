@@ -1,0 +1,13 @@
+{
+  "id": 514,
+  "name": "CORPSE_CONTAINER_48_V1",
+  "owner_decision": "CORPSE48 owner decision 2026-11-17: every corpse holds 48 entries, matching Tibia Global",
+  "owner": "Existing item-view owners",
+  "requires": [
+    4
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Offered exactly where ITEM_VIEW_MOVE_V1 (4) is offered. Selected 514 raises the domain-11 entry bound to 48 (ITEMV0-RL-02-CORPSE48) with its larger byte and live-handle bounds; without 514, legacy bytes and bounds are retained and the server never sends more than 30 corpse entries."
+}

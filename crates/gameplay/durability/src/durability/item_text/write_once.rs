@@ -121,6 +121,7 @@ impl DurabilityRoot {
 pub(super) async fn apply(
     tx: &mut Type2Transaction<'_>,
     fence: &CurrentCharacterItemFence,
+    channel: crate::foundation::ChannelId,
     request: &ItemTextWriteRequest,
     target: &TypedDefinitionRef,
 ) -> Result<()> {
@@ -136,7 +137,7 @@ pub(super) async fn apply(
     if recent >= 2 {
         return Err(ItemTextWriteError::Exhausted);
     }
-    let (world, channel) = scope_of(fence).map_err(|_| ItemTextWriteError::AuthorityRejected)?;
+    let world = fence.runtime_scope.world_id();
     // Custody and exact definition were locked/rechecked by the ordinary text writer.
     let (before, revision, transaction, event, occurred): (serde_json::Value, String, Vec<u8>, Vec<u8>, i64) =
         sqlx::query_as("SELECT to_jsonb(i),state_revision::text,uuid_send(game_character_uuid_v7()),uuid_send(game_character_uuid_v7()),floor(extract(epoch FROM clock_timestamp())*1000)::bigint FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid FOR UPDATE")

@@ -78,7 +78,9 @@ pub(super) async fn qualify(
         ruleset_revision: "ruleset-1".into(),
         sim_revision: "sim-1".into(),
     };
-    for ordinal in u32::try_from(start)? + 1..=30 {
+    let capacity = crate::foundation::loot_data::CORPSE_CONTAINER_ENTRIES_MAX;
+    assert_eq!(capacity, 48);
+    for ordinal in u32::try_from(start)? + 1..=capacity {
         let mut candidate = h
             .root
             .freeze_corpse_loot_mint(owner.character, &h.node, request(ordinal))
@@ -111,11 +113,11 @@ pub(super) async fn qualify(
     assert!(
         matches!(
             h.root
-                .freeze_corpse_loot_mint(owner.character, &h.node, request(31))
+                .freeze_corpse_loot_mint(owner.character, &h.node, request(capacity + 1))
                 .await,
             Err(ItemMintError::InvalidInput)
         ),
-        "the 31st entry is refused before reserving a candidate"
+        "the 49th entry is refused before reserving a candidate"
     );
     let children: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_item_corpse_container_entries \
@@ -124,6 +126,10 @@ pub(super) async fn qualify(
     .bind(parent.as_slice())
     .fetch_one(&h.pool)
     .await?;
-    assert_eq!(children, 30, "replay creates no duplicate entries");
+    assert_eq!(
+        children,
+        i64::from(capacity),
+        "replay creates no duplicate entries"
+    );
     Ok(children)
 }

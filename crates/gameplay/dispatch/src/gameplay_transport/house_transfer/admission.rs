@@ -29,7 +29,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         admitted: AdmittedSession,
     ) -> Result<(), crate::durability::DurabilityError> {
-        use crate::durability::DurabilityError;
+        use crate::durability::{DurabilityError, SqlxFailureClass};
         if let (Some(actor), Some(fence), Some(controller)) = (
             admitted.runtime_actor,
             admitted.item_fence,
@@ -65,8 +65,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let (Some(fence), Some(controller)) = (admitted.item_fence, admitted.controller) else {
             return Err(DurabilityError::Unavailable);
         };
-        // Re-prove the same fences/transport on every idempotent attempt. A busy
-        // holder exhausts only this command's budget; all other failures are fatal.
+        // Every attempt re-proves the fences and transport. The unique ingress
+        // marker can be inserted again after an ambiguous commit acknowledgement.
         let budget =
             crate::gameplay_transport::AdmissionRetryBudget::for_foreground_command(self.root)?;
         budget
@@ -74,6 +74,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.root
                     .note_house_transfer_input(self.holder, fence, controller.transport)
                     .await
+                    .map_err(|error| match error {
+                        DurabilityError::Database(SqlxFailureClass::RetryableStatement)
+                        | DurabilityError::CommitOutcomeUnknown => DurabilityError::RootUnavailable,
+                        _ => error,
+                    })
             })
             .await
     }

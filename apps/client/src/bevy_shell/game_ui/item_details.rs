@@ -51,6 +51,8 @@ enum Kind {
     Inspect,
     Refresh,
     Copy,
+    Cyclopedia,
+    Proficiency,
     Close,
     Select(usize),
 }
@@ -217,6 +219,15 @@ fn perform(owner: &HostOwner, state: &mut State, clipboard: &mut Clipboard, cont
                 && let Some(request) = panel.last_request.filter(|request| read_request(*request))
             {
                 play.link.inspect(request);
+            }
+        }
+        Kind::Cyclopedia | Kind::Proficiency => {
+            if play.link.inspected_item_related(
+                &panel,
+                state.selected_index,
+                control.kind == Kind::Proficiency,
+            ) {
+                state.snapshot = None;
             }
         }
         Kind::Copy => {

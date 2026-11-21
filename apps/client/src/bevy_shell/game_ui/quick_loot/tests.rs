@@ -397,3 +397,148 @@ fn source_return_does_nothing_and_escape_closes_only_the_top_manage_dialog() -> 
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn quick_loot_can_add_carried_item_and_remove_confirmed_filter_entry() -> TestResult {
+    let (mut app, mut commands, outbox) = fixture(true)?;
+    outbox.push(vec![oteryn_session::SessionEvent::Inventory(
+        oteryn_session::AppliedDelta {
+            server_sequence: 1,
+            base_revision: 0,
+            new_revision: 1,
+            value: oteryn_session::CharacterInventory {
+                main_backpack: None,
+                equipment: vec![],
+                entries: vec![oteryn_session::ItemEntry {
+                    appearance_id: 0,
+                    handle: 7.try_into()?,
+                    item_definition_ref: 42.try_into()?,
+                    count: 1.try_into()?,
+                    sub_type: 0,
+                }],
+            },
+        },
+    )]);
+    super::super::install::install_scroll_memory(&mut app);
+    open(&mut app)?;
+    fn named(app: &mut App, name: &str) -> Result<Entity, Box<dyn std::error::Error>> {
+        app.world_mut()
+            .query::<(Entity, &Name)>()
+            .iter(app.world())
+            .find_map(|(e, n)| (n.as_str() == name).then_some(e))
+            .ok_or_else(|| format!("missing {name}").into())
+    }
+    let add = named(&mut app, "quick_loot.add.accept")?;
+    app.world_mut().trigger(Activate { entity: add });
+    app.update();
+    app.world_mut().trigger(Activate { entity: add });
+    app.update();
+    assert_eq!(
+        app.world_mut()
+            .query::<&Name>()
+            .iter(app.world())
+            .filter(|name| name.as_str() == "quick_loot.pick.7")
+            .count(),
+        1
+    );
+    let pick = named(&mut app, "quick_loot.pick.7")?;
+    let column = app
+        .world()
+        .get::<ChildOf>(pick)
+        .ok_or("choices column")?
+        .parent();
+    assert_eq!(
+        app.world().get::<ChildOf>(column),
+        app.world().get::<ChildOf>(add)
+    );
+    app.world_mut().trigger(Activate { entity: pick });
+    let wire = request(&mut commands)?;
+    assert_eq!(wire.action, QuickLootAction::FilterAdd);
+    assert_eq!(wire.filter_definition_ref, Some(42));
+    assert_eq!(wire.filter_mode, Some(Mode::Accept));
+    response(&outbox, CommandStatus::Accepted, true)?;
+    app.update();
+    assert!(panel(&app)?.accepted.contains(&42));
+    let remove = named(&mut app, "quick_loot.remove.accept.42")?;
+    let filters = |app: &mut App| -> Result<Entity, Box<dyn std::error::Error>> {
+        let title = app
+            .world_mut()
+            .query::<(Entity, &Text)>()
+            .iter(app.world())
+            .find_map(|(e, t)| (t.0 == "QuickLoot filter").then_some(e))
+            .ok_or("filter title")?;
+        Ok(app
+            .world()
+            .get::<ChildOf>(title)
+            .ok_or("filter pane")?
+            .parent())
+    };
+    let viewport = filters(&mut app)?;
+    app.world_mut()
+        .entity_mut(viewport)
+        .insert(ScrollPosition(Vec2::new(0., 120.)));
+    app.world_mut().trigger(Activate { entity: remove });
+    assert_eq!(
+        request(&mut commands)?.action,
+        QuickLootAction::FilterRemove
+    );
+    app.update();
+    let pending = filters(&mut app)?;
+    assert_eq!(
+        app.world().get::<ScrollPosition>(pending).map(|p| p.0.y),
+        Some(120.)
+    );
+    config_response(&outbox, CommandStatus::Accepted)?;
+    app.update();
+    assert!(!panel(&app)?.accepted.contains(&42));
+    let confirmed = filters(&mut app)?;
+    assert_eq!(
+        app.world().get::<ScrollPosition>(confirmed).map(|p| p.0.y),
+        Some(120.)
+    );
+    Ok(())
+}
+
+#[test]
+fn confirmed_filter_mutations_update_the_displayed_mode() -> TestResult {
+    let (mut app, mut commands, outbox) = fixture(true)?;
+    open(&mut app)?;
+    let has_label = |app: &mut App, label: &str| {
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == label)
+    };
+    for (action, label) in [
+        (Action::Select(Mode::Skip), "Confirmed: skip listed items"),
+        (
+            Action::Add {
+                mode: Mode::Accept,
+                definition: 42,
+            },
+            "Confirmed: only listed items",
+        ),
+        (
+            Action::Remove {
+                mode: Mode::Skip,
+                definition: 42,
+            },
+            "Confirmed: skip listed items",
+        ),
+        (Action::Clear(Mode::Accept), "Confirmed: only listed items"),
+    ] {
+        let link = &app
+            .world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link;
+        assert!(link.quick_loot_action(action));
+        let _ = request(&mut commands)?;
+        config_response(&outbox, CommandStatus::Accepted)?;
+        app.update();
+        assert!(has_label(&mut app, label));
+    }
+    Ok(())
+}

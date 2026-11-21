@@ -65,7 +65,8 @@ fn imbuing_apply_guard() {
     assert_eq!(selection.intent(&p, Kind::Apply), None);
     selection.slot = Some(1);
     selection.offer = Some(0);
-    assert_eq!(selection.intent(&p, Kind::Apply), Some(Intent::Apply));
+    assert_eq!(selection.intent(&p, Kind::Apply), None);
+    assert_eq!(selection.intent(&p, Kind::Confirm), Some(Intent::Apply));
     p.pending = true;
     assert_eq!(selection.intent(&p, Kind::Apply), None);
 }
@@ -99,6 +100,19 @@ fn imbuing_widgets_render_model_and_disable_apply_until_selected()
             .any(|text| text.contains("500 gold") && text.contains("75%"))
     );
     assert!(text.iter().any(|text| text == "Insufficient funds"));
+    assert!(
+        text.iter()
+            .any(|text| text.contains("Apply total: 500 gold")
+                && text.contains("Success: 75% — failure: 25%"))
+    );
+    assert!(
+        text.iter()
+            .any(|text| text.contains("Protection: unavailable"))
+    );
+    assert!(
+        text.iter()
+            .any(|text| text.contains("Balance: not supplied"))
+    );
     let mut controls = world.query::<(&Control, Option<&bevy::ui::InteractionDisabled>)>();
     assert!(
         controls
@@ -117,7 +131,10 @@ fn render_fixture(mut commands: Commands, skins: Res<Skins>, panel: Res<TestPane
         1,
         &panel.0,
         &[],
-        &Selection::default(),
+        &Selection {
+            offer: Some(panel.0.offer),
+            ..Default::default()
+        },
     );
 }
 
@@ -225,6 +242,8 @@ fn imbuing_commands_require_confirmation_and_show_result() -> TestResult {
     assert!(commands.try_recv().is_err());
     click(&owner, &mut state, Kind::Offer(0));
     click(&owner, &mut state, Kind::Apply);
+    assert!(commands.try_recv().is_err());
+    click(&owner, &mut state, Kind::Confirm);
     let crate::combat_input::PlayCommand::Imbue(command) = commands.try_recv()? else {
         return Err("apply missing".into());
     };
@@ -279,5 +298,133 @@ fn imbuing_stale_controls_cannot_send_or_confirm() -> TestResult {
         },
     );
     assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn imbuing_blocking_dialog_escape_respects_top_modal() -> Result<(), Box<dyn std::error::Error>> {
+    let (owner, _commands, _outbox) = host()?;
+    owner.play.as_ref().ok_or("play")?.link.open_imbue();
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Font>()
+        .init_asset::<Image>()
+        .init_resource::<ButtonInput<KeyCode>>()
+        .insert_non_send(owner)
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+    install(&mut app);
+    app.update();
+    let higher = app
+        .world_mut()
+        .spawn((super::super::GameModal, GlobalZIndex(300), Node::default()))
+        .id();
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::Escape);
+    app.update();
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .imbue_panel()
+            .open
+    );
+    app.world_mut().despawn(higher);
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .reset_all();
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::Escape);
+    app.update();
+    assert!(
+        !app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .imbue_panel()
+            .open
+    );
+    Ok(())
+}
+
+#[test]
+fn imbuement_tracker_shortcut_opens_independently_in_bevy() -> TestResult {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let (mut owner, _, _) = host()?;
+    let key = NormalizedInputEvent::Key {
+        code: KeyCode::new(12)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::one(Modifier::Control)
+            .with(Modifier::Alt)
+            .with(Modifier::Shift),
+        repeat: false,
+    };
+    owner.route_input(std::slice::from_ref(&key), true);
+    assert!(
+        !owner
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .imbue_panel()
+            .tracker_open
+    );
+    owner.route_input(&[key], false);
+    let panel = owner.play.as_ref().ok_or("play")?.link.imbue_panel();
+    assert!(panel.tracker_open);
+    assert!(!panel.open);
+    Ok(())
+}
+
+#[test]
+fn parity_a_apply_waits_for_exact_cost_confirmation() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| parity_a_apply_case().map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "apply case panicked")?
+        .map_err(Into::into)
+}
+fn parity_a_apply_case() -> TestResult {
+    let (owner, mut commands, outbox) = host()?;
+    let link = &owner.play.as_ref().ok_or("play")?.link;
+    link.imbue_item(NonZeroU64::MIN);
+    link.open_imbue();
+    let _query = commands.try_recv()?;
+    publish(&outbox, &panel());
+    let mut state = current(&owner);
+    click(&owner, &mut state, Kind::Slot(1));
+    click(&owner, &mut state, Kind::Offer(0));
+    click(&owner, &mut state, Kind::Apply);
+    assert!(
+        commands.try_recv().is_err(),
+        "Apply must only open confirmation"
+    );
+    click(&owner, &mut state, Kind::Cancel);
+    click(&owner, &mut state, Kind::Confirm);
+    assert!(commands.try_recv().is_err());
+    click(&owner, &mut state, Kind::Apply);
+    let mut changed = panel();
+    changed.window.as_mut().ok_or("window")?.offers[0].gold += 1;
+    publish(&outbox, &changed);
+    click(&owner, &mut state, Kind::Confirm);
+    assert!(
+        commands.try_recv().is_err(),
+        "changed quote invalidates confirmation"
+    );
+    state = current(&owner);
+    click(&owner, &mut state, Kind::Slot(1));
+    click(&owner, &mut state, Kind::Offer(0));
+    click(&owner, &mut state, Kind::Apply);
+    click(&owner, &mut state, Kind::Confirm);
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Imbue(command) if matches!(command.0.action, imbuement::ImbuementAction::Apply { slot: 1, imbuement: 0 }))
+    );
     Ok(())
 }

@@ -45,6 +45,17 @@ pub(super) fn build(
         });
     }
     let grids = row(commands, root);
+    commands.entity(grids).insert((
+        ScrollArea,
+        crate::bevy_shell::game_ui::install::RememberScroll("trade", 2),
+        Node {
+            max_height: px(240.),
+            overflow: Overflow::scroll_y(),
+            align_items: AlignItems::Start,
+            flex_shrink: 0.,
+            ..default()
+        },
+    ));
     let state = panel.state.as_ref();
     for (counter, offer) in [
         (false, state.and_then(|s| s.own)),
@@ -66,14 +77,17 @@ pub(super) fn build(
         }
         let side = row(commands, grids);
         commands.entity(side).insert(Node {
+            flex_direction: FlexDirection::Column,
+            width: px(80.),
             column_gap: px(0.),
             ..default()
         });
+        let slots = row(commands, side);
         for index in 0..2 {
             slot(
                 commands,
                 skins,
-                side,
+                slots,
                 Action {
                     generation,
                     revision,
@@ -83,12 +97,43 @@ pub(super) fn build(
                 panel,
             );
         }
+        if let Some(state) = state {
+            contents(
+                commands,
+                skins,
+                side,
+                generation,
+                revision,
+                panel,
+                counter,
+                &state.contents[usize::from(counter)],
+                None,
+            );
+        }
+    }
+    // Keep inspection discoverable and keyboard reachable even without artwork.
+    let inspections = row(commands, root);
+    for (counter, caption) in [(false, "Inspect yours"), (true, "Inspect theirs")] {
+        button(
+            commands,
+            skins,
+            inspections,
+            Action {
+                generation,
+                revision,
+                kind: Kind::Look(counter),
+            },
+            caption,
+            80.,
+            panel,
+        );
     }
     // Server Look text is bounded by the protocol, but may still be longer than
     // the sidebar. Keep the canonical action row reachable below its scroll area.
     let details = commands
         .spawn((
             ScrollArea,
+            crate::bevy_shell::game_ui::install::RememberScroll("trade", 0),
             Node {
                 width: percent(100.),
                 max_height: px(80.),
@@ -150,6 +195,7 @@ pub(super) fn build(
         let list = commands
             .spawn((
                 ScrollArea,
+                crate::bevy_shell::game_ui::install::RememberScroll("trade", 1),
                 Node {
                     width: percent(100.),
                     max_height: px(120.),
@@ -241,6 +287,16 @@ fn button(
     panel: &PlayerTradePanel,
 ) {
     let mut button = commands.spawn((source::button(skins.buttons.clone(), width), action));
+    if matches!(action.kind, Kind::Inspect(..)) {
+        button.insert(Node {
+            width: percent(100.),
+            min_height: px(20.),
+            padding: UiRect::all(px(2.)),
+            flex_shrink: 0.,
+            align_items: AlignItems::Center,
+            ..default()
+        });
+    }
     if !trade_action_enabled(panel, action.kind.action()) {
         button.insert(InteractionDisabled);
     }
@@ -248,6 +304,12 @@ fn button(
     let label = commands
         .spawn(source::button_caption(caption, skins.font.clone()))
         .id();
+    if matches!(action.kind, Kind::Inspect(..)) {
+        commands.entity(label).insert(Node {
+            width: percent(100.),
+            ..default()
+        });
+    }
     commands.entity(button).add_child(label);
     commands.entity(parent).add_child(button);
 }
@@ -323,4 +385,64 @@ fn status(panel: &PlayerTradePanel) -> String {
         lines.push(feedback.to_owned());
     }
     lines.join("\n")
+}
+
+// Parent links, rather than item handles, define both display nesting and look indices.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the retained sidebar's existing widget context"
+)]
+fn contents(
+    commands: &mut Commands,
+    skins: &Skins,
+    parent: Entity,
+    generation: u64,
+    revision: u64,
+    panel: &PlayerTradePanel,
+    counter: bool,
+    tree: &[oteryn_client_ui::player_trade::player_trade::ContentsItem],
+    parent_index: Option<u8>,
+) {
+    for (index, node) in tree
+        .iter()
+        .enumerate()
+        .filter(|(_, node)| node.parent == parent_index)
+    {
+        let Ok(index) = u8::try_from(index) else {
+            return;
+        };
+        button(
+            commands,
+            skins,
+            parent,
+            Action {
+                generation,
+                revision,
+                kind: Kind::Inspect(counter, index),
+            },
+            &format!("{} ×{}", node.name, node.item.count),
+            76.,
+            panel,
+        );
+        let nested = commands
+            .spawn(Node {
+                flex_direction: FlexDirection::Column,
+                width: percent(100.),
+                padding: UiRect::left(px(4.)),
+                ..default()
+            })
+            .id();
+        commands.entity(parent).add_child(nested);
+        contents(
+            commands,
+            skins,
+            nested,
+            generation,
+            revision,
+            panel,
+            counter,
+            tree,
+            Some(index),
+        );
+    }
 }

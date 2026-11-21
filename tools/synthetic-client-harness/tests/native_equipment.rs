@@ -72,7 +72,8 @@ impl Stepper for Items {
                     assert_eq!(
                         request.destination,
                         ItemMoveDestination::Container(
-                            8.try_into().map_err(|_| SessionError::SessionUnusable)?
+                            8.try_into().map_err(|_| SessionError::SessionUnusable)?,
+                            None
                         )
                     );
                 } else {
@@ -167,7 +168,7 @@ fn scenario() -> Result<(), String> {
             false,
         ),
         (
-            ItemMoveDestination::Container(8.try_into().map_err(|_| "container")?),
+            ItemMoveDestination::Container(8.try_into().map_err(|_| "container")?, None),
             true,
             true,
         ),

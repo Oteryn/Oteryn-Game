@@ -10,13 +10,7 @@ use tokio::sync::mpsc::UnboundedSender;
 impl PlayLink {
     pub fn account_friends_open(&self) {
         submit(&mut lock(&self.mailbox), &self.commands, 0);
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            open(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).vip.account_open = true;
-        }
+        lock(&self.mailbox).vip.account_open = true;
     }
     pub fn account_friends_control(&self, action: usize, fields: [String; 2]) {
         let mut mailbox = lock(&self.mailbox);
@@ -58,7 +52,6 @@ fn submit(mailbox: &mut Mailbox, commands: &UnboundedSender<PlayCommand>, action
         mailbox.vip.feedback = Some("Select a valid friend handle or page".into());
     }
 }
-#[cfg(any(windows, test))]
 fn text(mailbox: &Mailbox) -> String {
     let mut text = String::from(
         "Account Friends — current World\r\nAccepting shares your chosen main character with this account.\r\n",
@@ -88,43 +81,40 @@ fn text(mailbox: &Mailbox) -> String {
     }
     text
 }
-#[cfg(windows)]
-fn open(link: &PlayLink) {
-    use crate::play::feature_0115_mail::view::native::{Form, open};
-    open(
-        link,
-        Form {
-            title: "Account Friends — Ctrl+Alt+F",
-            labels: &["Character name to invite", "Session friend handle"],
-            buttons: &[
-                "Refresh",
-                "Use this character as main",
-                "Invite account",
-                "Accept account friendship",
-                "Withdraw / revoke",
-                "Reject account invitation",
-                "Next page",
-            ],
-            snapshot: |mailbox| {
-                (
-                    mailbox.vip.account_open,
-                    mailbox.vip.pending,
-                    mailbox.vip.account_fields.to_vec(),
-                    text(mailbox),
-                )
-            },
-            set_open: |mailbox, value| mailbox.vip.account_open = value,
-            submit: |mailbox, commands, action, values| {
-                if mailbox.vip.pending {
-                    return;
-                }
-                for (slot, value) in mailbox.vip.account_fields.iter_mut().zip(values) {
-                    *slot = value;
-                }
-                submit(mailbox, commands, action);
-            },
+
+pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {
+    use crate::play::feature_0115_mail::view::form::Form;
+    Form {
+        title: "Account Friends — Ctrl+Alt+F",
+        labels: &["Character name to invite", "Session friend handle"],
+        buttons: &[
+            "Refresh",
+            "Use this character as main",
+            "Invite account",
+            "Accept account friendship",
+            "Withdraw / revoke",
+            "Reject account invitation",
+            "Next page",
+        ],
+        snapshot: |mailbox| {
+            (
+                mailbox.vip.account_open,
+                mailbox.vip.pending,
+                mailbox.vip.account_fields.to_vec(),
+                text(mailbox),
+            )
         },
-    );
+        set_open: |mailbox, value| mailbox.vip.account_open = value,
+        submit: |mailbox, commands, action, values| {
+            if mailbox.vip.pending {
+                return;
+            }
+            for (slot, value) in mailbox.vip.account_fields.iter_mut().zip(values) {
+                *slot = value;
+            }
+            submit(mailbox, commands, action);
+        },
+    }
 }
 #[cfg(test)]
 mod tests {

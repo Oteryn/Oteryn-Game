@@ -54,14 +54,13 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
-            let streak: Option<i32> = sqlx::query_scalar(
-                "SELECT streak FROM public.game_character_daily_rewards WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid",
-            )
-            .bind(character_id.as_bytes().as_slice())
-            .bind(world_id.as_bytes().as_slice())
-            .fetch_optional(&mut *tx)
-            .await?;
-            Ok(Ok(u32::try_from(streak.unwrap_or(0)).map_err(|_| DurabilityError::InvalidStoredState)?))
+            let epoch: Option<String> = sqlx::query_scalar("SELECT h.reset_epoch::text FROM public.game_world_reset_history h WHERE h.world_id=encode($1,'hex')::uuid ORDER BY h.reset_epoch DESC LIMIT 1")
+                .bind(world_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
+            let Some(epoch) = epoch else { return Ok(Ok(0)); };
+            let epoch = epoch.parse().map_err(|_| DurabilityError::InvalidStoredState)?;
+            let state = load_state(&mut tx, character_id.as_bytes(), world_id.as_bytes()).await?;
+            let jokers = available_jokers(&mut tx, character_id.as_bytes(), epoch).await?;
+            Ok(Ok(effective_streak(state, epoch, jokers)?))
         })).await?
     }
 
@@ -90,19 +89,18 @@ impl DurabilityRoot {
             let epoch = epoch.parse().map_err(|_| DurabilityError::InvalidStoredState)?;
             let state = load_state(&mut tx, fence.character_id.as_bytes(), fence.runtime_scope.world_id().as_bytes()).await?;
             let receipt = load_receipt(&mut tx, fence.character_id.as_bytes(), fence.runtime_scope.world_id().as_bytes(), epoch).await?;
-            let jokers: Option<i16> = sqlx::query_scalar("SELECT least(3,coalesce(j.jokers,0)+(SELECT count(*) FROM (SELECT DISTINCT to_char(to_timestamp(h.reset_at_unix_ms/1000.0) AT TIME ZONE 'UTC','YYYY-MM') AS month FROM public.game_world_reset_history h WHERE h.world_id=r.world_id AND h.reset_epoch<=$2::text::numeric AND to_char(to_timestamp(h.reset_at_unix_ms/1000.0) AT TIME ZONE 'UTC','YYYY-MM')>coalesce(j.last_grant_month,'') ORDER BY month DESC LIMIT 3) pending))::smallint FROM public.game_character_roots r LEFT JOIN public.game_account_daily_reward_jokers j ON r.account_id=j.account_id AND r.world_id=j.world_id WHERE r.character_id=encode($1,'hex')::uuid")
-                .bind(fence.character_id.as_bytes().as_slice()).bind(epoch.to_string()).fetch_optional(&mut *tx).await?;
+            let jokers = available_jokers(&mut tx, fence.character_id.as_bytes(), epoch).await?;
             let saved: Option<String> = sqlx::query_scalar("SELECT c.reset_epoch::text FROM public.game_daily_reward_commands d JOIN public.game_character_daily_reward_claims c ON c.transaction_id=d.claim_id WHERE d.game_session_id=encode($1,'hex')::uuid AND d.command_id=$2::text::numeric AND c.character_id=encode($3,'hex')::uuid AND c.world_id=encode($4,'hex')::uuid")
                 .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string())
                 .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             let settled = match saved { Some(epoch) => load_receipt(&mut tx, fence.character_id.as_bytes(), fence.runtime_scope.world_id().as_bytes(), epoch.parse().map_err(|_| DurabilityError::InvalidStoredState)?).await?, None => None };
-            let jokers = u8::try_from(jokers.unwrap_or(0)).map_err(|_| DurabilityError::InvalidStoredState)?;
             let lane_day = if receipt.is_none() {
                 oteryn_gameplay_progression::daily_reward::advance_daily_reward(state, epoch, jokers)
                     .map_err(|_| DurabilityError::InvalidStoredState)?.claimed_lane_day
             } else { oteryn_gameplay_progression::daily_reward::cycle_day(state.lane_day) };
             let history=super::daily_reward::history::load(&mut tx,fence.character_id.as_bytes(),fence.runtime_scope.world_id().as_bytes(),epoch).await?;
-            Ok(Ok(DailyRewardView { epoch, lane_day, streak: state.streak, jokers, receipt, settled, history }))
+            let streak = effective_streak(state, epoch, jokers)?;
+            Ok(Ok(DailyRewardView { epoch, lane_day, streak, jokers, receipt, settled, history }))
         })).await?
     }
 
@@ -241,3 +239,31 @@ async fn apply<G: DailyRewardPremiumGate>(
 #[path = "daily_reward_delivery/returner.rs"]
 mod returner;
 pub use returner::ReturnerOutcome;
+
+// Read the same pending monthly grants that the claim owner will commit, without spending them.
+async fn available_jokers(
+    tx: &mut Transaction<'_, Postgres>,
+    character: &[u8; 16],
+    epoch: u64,
+) -> Result<u8, DurabilityError> {
+    let jokers: Option<i16> = sqlx::query_scalar("SELECT least(3,coalesce(j.jokers,0)+(SELECT count(*) FROM (SELECT DISTINCT to_char(to_timestamp(h.reset_at_unix_ms/1000.0) AT TIME ZONE 'UTC','YYYY-MM') AS month FROM public.game_world_reset_history h WHERE h.world_id=r.world_id AND h.reset_epoch<=$2::text::numeric AND to_char(to_timestamp(h.reset_at_unix_ms/1000.0) AT TIME ZONE 'UTC','YYYY-MM')>coalesce(j.last_grant_month,'') ORDER BY month DESC LIMIT 3) pending))::smallint FROM public.game_character_roots r LEFT JOIN public.game_account_daily_reward_jokers j ON r.account_id=j.account_id AND r.world_id=j.world_id WHERE r.character_id=encode($1,'hex')::uuid")
+                .bind(character.as_slice()).bind(epoch.to_string()).fetch_optional(&mut **tx).await?;
+    u8::try_from(jokers.unwrap_or(0)).map_err(|_| DurabilityError::InvalidStoredState)
+}
+
+fn effective_streak(
+    state: oteryn_gameplay_progression::daily_reward::DailyRewardState,
+    epoch: u64,
+    jokers: u8,
+) -> Result<u32, DurabilityError> {
+    use oteryn_gameplay_progression::daily_reward::{DailyRewardRuleError, advance_daily_reward};
+    match advance_daily_reward(state, epoch, jokers) {
+        Ok(advance) => Ok(if advance.next.streak == 1 {
+            0
+        } else {
+            state.streak
+        }),
+        Err(DailyRewardRuleError::AlreadyClaimed) => Ok(state.streak),
+        Err(_) => Err(DurabilityError::InvalidStoredState),
+    }
+}

@@ -113,13 +113,16 @@ pub(super) fn install(app: &mut App) {
         .add_systems(Update, (keyboard, project, refresh_labels).chain())
         .add_systems(
             PostUpdate,
-            submission::finish.after(bevy::text::EditableTextSystems),
+            (submission::finish, sync_levels)
+                .chain()
+                .after(bevy::text::EditableTextSystems),
         );
 }
 fn setup(mut commands: Commands) {
     commands.spawn((
         Overlay,
         GameModal,
+        crate::bevy_shell::ui::window_layout::WindowLayer("journal"),
         GlobalZIndex(155),
         Node {
             position_type: PositionType::Absolute,
@@ -130,7 +133,6 @@ fn setup(mut commands: Commands) {
             align_items: AlignItems::Center,
             ..default()
         },
-        BackgroundColor(Color::srgba(0., 0., 0., 0.45)),
     ));
 }
 // Bevy injects independent projection, hierarchy and focus owners.
@@ -218,6 +220,9 @@ fn project(
             &book,
             &catalogue,
         );
+        if key.tab == Tab::Spells && !book.selected {
+            fallback_controls(&mut commands, &skin, built.root, key);
+        }
         if !owner.modal_active() {
             focus.set(built.search, FocusCause::Navigated);
         }
@@ -367,6 +372,7 @@ fn refresh_labels(
     };
     let quest = play.link.quest_panel();
     let book = play.link.spellbook_state();
+    let catalogue = play.link.spell_catalog_panel();
     for (label, mut text) in &mut labels {
         let value: String = match label.0 {
             Kind::Completed => if state.hide_completed {
@@ -379,6 +385,25 @@ fn refresh_labels(
                 oteryn_client_ui::quest_log::QUEST_SORT_LABELS[quest.list_sort.selection()].into()
             }
             Kind::Castable => "Only castable level".into(),
+            Kind::Vocation if !book.selected => catalogue
+                .vocation
+                .clone()
+                .unwrap_or_else(|| "Any vocation".into()),
+            Kind::Premium if !book.selected => format!(
+                "Learned only: {}",
+                if catalogue.learned_only { "on" } else { "off" }
+            ),
+            Kind::Group if !book.selected => catalogue.group.map_or_else(
+                || "Any recovery category".into(),
+                |group| {
+                    crate::play::feature_0287_actor_spell_catalog::view::SPELLBOOK_GROUPS
+                        .get(group as usize)
+                        .map_or_else(
+                            || format!("Recovery category {group}"),
+                            |label| (*label).to_owned(),
+                        )
+                },
+            ),
             Kind::Vocation => {
                 crate::play::feature_0287_actor_spell_catalog::view::SPELLBOOK_VOCATIONS
                     .get(usize::from(book.filter.vocation))
@@ -408,3 +433,74 @@ mod tests;
 
 #[cfg(test)]
 mod input_tests;
+
+// Retained programmatic changes must be reflected before another editor submission.
+fn sync_levels(
+    owner: NonSend<HostOwner>,
+    mut previous: Local<Option<(u64, u32, u32)>>,
+    mut fields: Query<(&Field, &mut EditableText)>,
+) {
+    let current = owner.play.as_ref().and_then(|play| {
+        let book = play.link.spellbook_state();
+        (book.selected && book.open).then_some((
+            owner.generation(),
+            book.filter.min_level,
+            book.filter.max_level,
+        ))
+    });
+    if *previous == current {
+        return;
+    }
+    *previous = current;
+    let Some((_, minimum, maximum)) = current else {
+        return;
+    };
+    for (field, mut text) in &mut fields {
+        let value = match field {
+            Field::Minimum => minimum,
+            Field::Maximum => maximum,
+            Field::Search => continue,
+        }
+        .to_string();
+        if text.value() != value.as_str() {
+            text.pending_edits.clear();
+            text.pending_paste = None;
+            text.editor_mut().set_text(&value);
+        }
+    }
+}
+
+fn fallback_controls(commands: &mut Commands, skin: &Skins, parent: Entity, key: Key) {
+    let row = commands
+        .spawn(Node {
+            width: percent(100.),
+            column_gap: px(5.),
+            row_gap: px(5.),
+            flex_wrap: FlexWrap::Wrap,
+            flex_shrink: 0.,
+            ..default()
+        })
+        .id();
+    commands.entity(parent).add_child(row);
+    for kind in [Kind::Vocation, Kind::Group, Kind::Premium] {
+        let button = commands
+            .spawn((
+                source::button(skin.buttons.clone(), 220.),
+                Action { key, kind },
+            ))
+            .observe(activate)
+            .id();
+        let caption = commands
+            .spawn((
+                source::button_caption("", skin.font.clone()),
+                FilterCaption(kind),
+            ))
+            .id();
+        commands.entity(button).add_child(caption);
+        commands.entity(row).add_child(button);
+    }
+}
+
+#[cfg(test)]
+#[path = "journal/server_info_tests.rs"]
+mod server_info_tests;

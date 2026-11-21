@@ -176,9 +176,49 @@ pub(in crate::play) fn apply(
             panel.feedback = "Mismatched creature detail".into();
             return true;
         }
+        let stage = panel
+            .reply
+            .as_ref()
+            .and_then(|reply| {
+                reply
+                    .bestiary
+                    .iter()
+                    .find(|race| race.race.get() == u32::from(card.race))
+            })
+            .map_or(0, |race| race.unlocked_stage());
+        let mut card = card.clone();
+        if stage < 3 {
+            // The legacy detail text has no per-drop discovery tags. Keep loot locked
+            // until completion, and retain only fields unlocked by confirmed progress.
+            card.detail = card
+                .detail
+                .lines()
+                .take_while(|line| !line.starts_with("Loot"))
+                .filter(|line| {
+                    line.starts_with("Discovery thresholds:")
+                        || (stage >= 1
+                            && ["Health:", "Experience:", "Speed:", "Armor:", "Defense:"]
+                                .iter()
+                                .any(|prefix| line.starts_with(prefix)))
+                        || (stage >= 2
+                            && [
+                                "Resistance ",
+                                "Healed by ",
+                                "Condition immunity:",
+                                "Immune to ",
+                            ]
+                            .iter()
+                            .any(|prefix| line.starts_with(prefix)))
+                })
+                .collect::<Vec<_>>()
+                .join("\r\n");
+            card.detail.push_str(
+                "\r\nFurther creature details and loot are locked by discovery progress.",
+            );
+        }
         panel.catalogue.detail = format!("{} [{}]\r\n{}", card.name, card.category, card.detail);
-        panel.catalogue.detail_card = Some(card.clone());
-        panel.catalogue.next_loot = page.next;
+        panel.catalogue.detail_card = Some(card);
+        panel.catalogue.next_loot = if stage == 3 { page.next } else { None };
     }
     panel.catalogue.names.extend(confirmed_names);
     panel.feedback = "Creature catalogue updated".into();

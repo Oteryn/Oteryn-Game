@@ -245,3 +245,134 @@ fn real_font_checkbox_labels_still_wrap_when_the_available_row_is_genuinely_narr
     );
     Ok(())
 }
+
+#[test]
+fn graphics_control_help_opens_and_closes_without_editing_preferences() -> TestResult {
+    let mut app = app()?;
+    let before = app
+        .world()
+        .non_send::<HostOwner>()
+        .preferences_draft()
+        .ok_or("draft")?
+        .clone();
+    for id in [
+        "graphics.fullscreen",
+        "graphics.vsync",
+        "graphics.integer_scaling",
+        "graphics.world_zoom",
+        "graphics.ambient",
+        "graphics.indoor",
+        "graphics.separator",
+    ] {
+        let button = row(&mut app, &format!("{id}.help"))?;
+        assert!(
+            app.world().get::<TabIndex>(button).is_some(),
+            "help must be keyboard reachable"
+        );
+        let detail = row(&mut app, &format!("{id}.help.text"))?;
+        assert_eq!(
+            app.world().get::<Node>(detail).ok_or("help node")?.display,
+            Display::None
+        );
+        app.world_mut()
+            .trigger(bevy::ui_widgets::Activate { entity: button });
+        app.update();
+        assert_eq!(
+            app.world().get::<Node>(detail).ok_or("help node")?.display,
+            Display::Flex
+        );
+        let text = app.world().get::<Text>(detail).ok_or("help text")?;
+        assert!(
+            text.0.len() > 60,
+            "help must explain the control, not repeat its label"
+        );
+        let layout = app
+            .world()
+            .get::<TextLayoutInfo>(detail)
+            .ok_or("help layout")?;
+        let size = app
+            .world()
+            .get::<ComputedNode>(detail)
+            .ok_or("help geometry")?
+            .size();
+        assert!(!layout.glyphs.is_empty());
+        assert!(
+            visible_glyph_right(layout) <= size.x + 1.,
+            "help must wrap inside the page"
+        );
+        app.world_mut()
+            .trigger(bevy::ui_widgets::Activate { entity: button });
+        app.update();
+        assert_eq!(
+            app.world().get::<Node>(detail).ok_or("help node")?.display,
+            Display::None
+        );
+    }
+    assert_eq!(
+        app.world().non_send::<HostOwner>().preferences_draft(),
+        Some(&before)
+    );
+    Ok(())
+}
+
+#[test]
+fn graphics_help_is_scoped_to_the_page_and_available_in_basic_options() -> TestResult {
+    let mut app = app()?;
+    let help = row(&mut app, "graphics.fullscreen.help")?;
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(help, bevy::input_focus::FocusCause::Navigated);
+    app.world_mut()
+        .trigger(bevy::ui_widgets::Activate { entity: help });
+    let sound = row(&mut app, "options.page.Sound")?;
+    app.world_mut()
+        .trigger(bevy::ui_widgets::Activate { entity: sound });
+    app.update();
+    assert!(
+        app.world().get_entity(help).is_err(),
+        "old page help must be removed"
+    );
+    assert!(app.world().resource::<InputFocus>().get().is_none());
+    let advanced = row(&mut app, "options.advanced")?;
+    app.world_mut().trigger(bevy::ui_widgets::ValueChange {
+        source: advanced,
+        value: false,
+        is_final: true,
+    });
+    app.update();
+    for id in [
+        "graphics.fullscreen",
+        "graphics.vsync",
+        "graphics.integer_scaling",
+    ] {
+        let help = row(&mut app, &format!("{id}.help"))?;
+        let detail = row(&mut app, &format!("{id}.help.text"))?;
+        assert_eq!(
+            app.world().get::<Node>(detail).ok_or("help node")?.display,
+            Display::None
+        );
+        app.world_mut()
+            .trigger(bevy::ui_widgets::Activate { entity: help });
+        app.update();
+        assert_eq!(
+            app.world().get::<Node>(detail).ok_or("help node")?.display,
+            Display::Flex
+        );
+    }
+    let cancel = row(&mut app, "options.cancel")?;
+    app.world_mut()
+        .trigger(bevy::ui_widgets::Activate { entity: cancel });
+    app.update();
+    let help = row(&mut app, "graphics.fullscreen.help")?;
+    let detail = row(&mut app, "graphics.fullscreen.help.text")?;
+    let display = app.world().get::<Node>(detail).ok_or("help node")?.display;
+    app.world_mut()
+        .trigger(bevy::ui_widgets::Activate { entity: help });
+    app.update();
+    assert_eq!(
+        app.world().get::<Node>(detail).ok_or("help node")?.display,
+        display,
+        "closed options must reject stale help activation"
+    );
+    Ok(())
+}

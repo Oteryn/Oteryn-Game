@@ -173,6 +173,15 @@ fn validate(entries: &[Value], registry: &Value) -> Result<(), String> {
         for (set, _) in OFFER_SETS {
             flag(&entry["offers"][set])?;
         }
+        // Capability 23 also promises domain 20 and reconnect snapshots. Movement effects
+        // and sounds alone do not satisfy it; remove this gate only with verified transport.
+        if id == 23
+            && OFFER_SETS
+                .iter()
+                .any(|(set, _)| entry["offers"][set] == true)
+        {
+            return Err("capability 23 requires verified WORLD_PRESENTATION and ACTOR_COOLDOWNS server transport".into());
+        }
         if flag(&entry["offers"]["item_view"])? != flag(&contract["offered"])? {
             return Err(format!("Item view offer differs from registry for {id}"));
         }

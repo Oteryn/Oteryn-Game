@@ -24,6 +24,7 @@ fn fixture() -> Result<Fixture, Box<dyn std::error::Error>> {
         lines: vec!["Welcome to my humble store.".into()],
     };
     let window = npc_service::NpcTradeWindow {
+        details: Vec::new(),
         open: Some((npc, 5)),
         offers: vec![
             npc_service::NpcOffer {

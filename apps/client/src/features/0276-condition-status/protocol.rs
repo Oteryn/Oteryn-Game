@@ -26,15 +26,7 @@ impl PlayLink {
             return false;
         }
         self.condition_status_request();
-        #[cfg(windows)]
-        crate::play::status_window::open_window(
-            self,
-            tr!("Conditions — Ctrl+Alt+Shift+C"),
-            |mailbox| &mut mailbox.condition_status,
-        );
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).condition_status.open = true;
-        }
+        lock(&self.mailbox).condition_status.open = true;
         true
     }
     pub fn condition_status_panel(

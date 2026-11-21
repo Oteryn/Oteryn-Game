@@ -438,7 +438,7 @@ impl<S: ChainSource> ChainOwner<S> {
         let players = world
             .current_players(runtime, stamp)
             .ok_or(AttackError::MissingCombatFacts)?;
-        if players.len() > 64 {
+        if players.len() > runtime.actor_slot_capacity() {
             return Err(AttackError::LedgerFull);
         }
         let mut lookup = std::collections::BTreeMap::new();
@@ -928,7 +928,11 @@ fn admit_cast_capacity(
     existing_memo: bool,
 ) -> Result<(), AttackError> {
     let projected = casts.saturating_sub(usize::from(replaces_completed));
-    if projected >= 64 * 16 || (!existing_memo && memos >= 64 * 16) {
+    if projected >= crate::foundation::carrier::CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX * 16
+        || (!existing_memo
+            && memos
+                >= crate::foundation::carrier::CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX * 16)
+    {
         Err(AttackError::LedgerFull)
     } else {
         Ok(())
@@ -942,16 +946,28 @@ pub type ChainPulseResults<O> = Result<Vec<(u64, usize, Result<O, AttackError>)>
 mod capacity_tests {
     use super::*;
     #[test]
+    fn chain_ledger_accepts_more_than_old_small_world_limit() {
+        assert_eq!(admit_cast_capacity(1024, false, 1024, false), Ok(()));
+    }
+    #[test]
     fn full_retained_chain_ledger_accepts_existing_completed_replacement_only() {
-        // Private quota-boundary state fixture, NOT1024 source-qualified gameplay executions.
+        // Private quota-boundary state fixture, not source-qualified gameplay executions.
         // The production schedule calls the same gate after replay and active-cast checks.
-        let full = (0..64)
+        let full = (0..crate::foundation::carrier::CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX)
             .flat_map(|actor| (0..16).map(move |entry| (actor, entry)))
             .collect::<Vec<_>>();
-        assert_eq!(full.len(), 1024);
+        assert_eq!(
+            full.len(),
+            crate::foundation::carrier::CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX * 16
+        );
         let replacement = full
             .iter()
-            .position(|key| *key == (63, 15))
+            .position(|key| {
+                *key == (
+                    crate::foundation::carrier::CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX - 1,
+                    15,
+                )
+            })
             .expect("qualified fixture");
         assert_eq!(
             admit_cast_capacity(full.len(), replacement < full.len(), full.len(), true),

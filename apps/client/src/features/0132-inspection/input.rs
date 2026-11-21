@@ -1,5 +1,7 @@
 #[path = "input/catalogue.rs"]
 pub(in crate::play) mod catalogue;
+#[path = "input/related.rs"]
+mod related;
 use crate::play::{PlayLink, mailbox::lock};
 impl PlayLink {
     pub fn inspect(&self, request: oteryn_client_ui::inspection::Request) -> bool {

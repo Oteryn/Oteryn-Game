@@ -1044,6 +1044,7 @@ dependencies = [
  "bevy_image",
  "bevy_input",
  "bevy_input_focus",
+ "bevy_log",
  "bevy_material",
  "bevy_math",
  "bevy_mesh",
@@ -1497,10 +1498,12 @@ version = "0.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "84c634a7f09e9ccd26137a2f541ab670c84854a1af4107fecca1541cfcd1b466"
 dependencies = [
+ "async-channel",
  "async-executor",
  "async-task",
  "atomic-waker",
  "bevy_platform",
+ "concurrent-queue",
  "crossbeam-queue",
  "derive_more",
  "futures-lite",
@@ -4895,6 +4898,7 @@ name = "oteryn-client"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bevy_tasks",
  "fs2",
  "oteryn-client-assets",
  "oteryn-client-domain",
@@ -4915,13 +4919,16 @@ dependencies = [
  "oteryn-session-tcp",
  "rcgen",
  "rodio",
+ "rustix 1.1.6",
  "rustls",
  "semver",
  "serde",
  "serde_json",
  "sha2 0.11.1",
+ "tempfile",
  "tokio",
  "tokio-rustls",
+ "url",
  "windows-sys 0.61.2",
  "winit",
  "zip",
@@ -4931,9 +4938,11 @@ dependencies = [
 name = "oteryn-client-assets"
 version = "0.1.0"
 dependencies = [
+ "flate2",
  "lzma-rs",
  "oteryn-client-domain",
  "oteryn-world-bundle",
+ "png",
  "prost",
  "serde",
  "serde_json",
@@ -5190,6 +5199,7 @@ version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
  "ed25519-dalek",
+ "oteryn-client-ui",
  "oteryn-dev-client",
  "oteryn-error-codes",
  "oteryn-foundation",
@@ -5222,6 +5232,7 @@ dependencies = [
  "oteryn-gameplay-world",
  "oteryn-gameplay-world-change",
  "oteryn-protocol-oteryn",
+ "oteryn-session",
  "oteryn-simulation-determinism",
  "oteryn-task-supervisor",
  "oteryn-world-bundle",
@@ -5516,6 +5527,7 @@ dependencies = [
 name = "oteryn-gameplay-spell"
 version = "0.1.0"
 dependencies = [
+ "num-bigint",
  "oteryn-gameplay-combat",
  "oteryn-gameplay-combat-rules",
  "oteryn-gameplay-content",

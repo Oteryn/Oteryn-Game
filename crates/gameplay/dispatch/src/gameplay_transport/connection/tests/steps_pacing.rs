@@ -959,6 +959,24 @@ fn drome_drunk_actual_movement_refusal_replay_and_exact_expiry() -> Result<(), B
         .spawn(|| -> Result<(), String> {
             run(async {
                 let authority = DromeDrunkMovementAuthority::new()?;
+                {
+                    let owned = authority.owner.borrow();
+                    let forecast =
+                        crate::gameplay_transport::actor_spell::actor_movement::prewalk_forecast(
+                            &owned.0,
+                            &owned.1,
+                            authority.room.movement_cells(),
+                            authority.actor,
+                            authority.session,
+                            authority.now_us.get(),
+                            None,
+                            &std::collections::BTreeSet::new(),
+                        );
+                    assert_eq!(
+                        forecast, [0; 8],
+                        "drunk steering is decided at execution time"
+                    );
+                }
                 let mut admitted = positioned()?;
                 admitted.runtime_actor = Some(authority.actor);
                 let before = authority

@@ -19,4 +19,4 @@ mod tests;
 
 #[path = "view/region_atlas.rs"]
 mod region_atlas_view;
-pub use region_atlas_view::{AtlasRun, atlas_pois, atlas_runs};
+pub use region_atlas_view::{AtlasRun, atlas_pois, atlas_runs, text as region_atlas_text};

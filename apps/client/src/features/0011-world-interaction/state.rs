@@ -5,21 +5,30 @@ use oteryn_renderer::TileCoord;
 use oteryn_session::world_map::MapOrigin;
 impl PlayView {
     pub(in crate::play) fn world_context_target(&self, tile: TileCoord) -> Option<Target> {
-        // NPCs and players carry look identities even though primary clicks cannot attack them.
-        if let Some(entity) = self.entities.iter().rev().find(|entity| {
-            entity.position.floor == self.floor
-                && entity.position.x == tile.x
-                && entity.position.y == tile.y
-                && matches!(
-                    entity.detail,
-                    oteryn_session::EntityDetail::Actor { .. }
-                        | oteryn_session::EntityDetail::ActorWithIcons { .. }
-                )
-        }) {
-            return Some(Target::Creature(entity.entity));
+        self.world_context_target_for(tile, false)
+    }
+    pub(in crate::play) fn world_context_target_for(
+        &self,
+        tile: TileCoord,
+        prefer_item: bool,
+    ) -> Option<Target> {
+        let item = self.scene.item_target_at(tile);
+        if !prefer_item || item.is_none() {
+            // NPCs and players carry look identities even though primary clicks cannot attack them.
+            if let Some(entity) = self.entities.iter().rev().find(|entity| {
+                entity.position.floor == self.floor
+                    && entity.position.x == tile.x
+                    && entity.position.y == tile.y
+                    && matches!(
+                        entity.detail,
+                        oteryn_session::EntityDetail::Actor { .. }
+                            | oteryn_session::EntityDetail::ActorWithIcons { .. }
+                    )
+            }) {
+                return Some(Target::Creature(entity.entity));
+            }
         }
-        let target = self.scene.target_at(tile)?;
-        match target.item {
+        match item {
             Some(GroundItem::Map {
                 header,
                 position,
@@ -47,7 +56,7 @@ impl PlayView {
                 MapOrigin::DisplayOnly => None,
             },
             Some(GroundItem::Entity { handle, .. }) => handle.map(Target::Item),
-            None => target.entity.map(Target::Creature),
+            None => None,
         }
     }
 }

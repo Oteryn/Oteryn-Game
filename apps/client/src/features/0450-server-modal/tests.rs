@@ -52,6 +52,7 @@ impl Stepper for Peer {
                 message: "Server-defined options".into(),
                 choices: vec![(9, "Nine".into())],
                 buttons: vec![(4, "Accept".into()), (8, "Cancel".into())],
+                default_button: None,
                 cancel_button: Some(8),
                 image: Some(Image {
                     width: 1,
@@ -358,6 +359,7 @@ impl Stepper for AmountPeer {
                 message: "How many?".into(),
                 choices: Vec::new(),
                 buttons: vec![(1, "Ok".into()), (2, "Cancel".into())],
+                default_button: None,
                 cancel_button: Some(2),
                 image: None,
             };
@@ -371,8 +373,8 @@ impl Stepper for AmountPeer {
                 .map_err(|_| SessionError::SessionUnusable)?
         } else {
             self.answer = Some(command.payload.clone());
-            let sent = InputAnswer::decode(&command.payload)
-                .map_err(|_| SessionError::SessionUnusable)?;
+            let sent =
+                InputAnswer::decode(&command.payload).map_err(|_| SessionError::SessionUnusable)?;
             Reply::Answered(sent.answer)
                 .encode()
                 .map_err(|_| SessionError::SessionUnusable)?
@@ -430,10 +432,13 @@ fn c0490_driver_sends_the_entered_value_and_the_remember_choice()
                 Some(Completion::Answered(answer))
             );
             assert!(rx.await?);
-            let sent = InputAnswer::decode(&peer.answer.ok_or("no answer")?)
-                .map_err(|_| "answer wire")?;
+            let sent =
+                InputAnswer::decode(&peer.answer.ok_or("no answer")?).map_err(|_| "answer wire")?;
             assert_eq!(sent.value, Some(InputValue::Amount(12)));
             assert!(sent.dont_show_again);
             Ok::<(), Box<dyn std::error::Error>>(())
         })
 }
+
+#[path = "view/native.rs"]
+mod native_controls;

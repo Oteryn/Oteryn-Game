@@ -47,7 +47,7 @@ fn equip_unequip_and_drop_keep_the_handle_and_wait_for_server()
     for destination in [
         ItemMoveDestination::Equipment(EquipmentSlot::RightHand),
         ItemMoveDestination::MainBackpack,
-        ItemMoveDestination::Container(8.try_into()?),
+        ItemMoveDestination::Container(8.try_into()?, None),
         ItemMoveDestination::Ground(WorldTilePosition {
             x: 2,
             y: 3,

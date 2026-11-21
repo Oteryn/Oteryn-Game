@@ -58,19 +58,18 @@ fn dispatch_panel(
         return;
     }
     let parsed = (|| {
-        let item_id = inputs.0.first()?.trim().parse().ok()?;
-        let tier = inputs.0.get(3)?.trim().parse().ok()?;
         if detail {
+            let tier = inputs.0.get(3)?.trim().parse().ok()?;
             let row: usize = inputs.0.get(2)?.trim().parse().ok()?;
             let result = panel.reply.as_ref()?.results.get(row)?;
             if !result.tiers.iter().any(|entry| entry.tier == tier) {
                 return None;
             }
             panel.item_id = result.client_id;
+            panel.tier = tier;
         } else {
-            panel.item_id = item_id;
+            panel.item_id = inputs.0.first()?.trim().parse().ok()?;
         }
-        panel.tier = tier;
         Some(())
     })();
     if parsed.is_none() {
@@ -174,11 +173,6 @@ fn activate_panel(
     }
 }
 
-#[cfg(windows)]
-pub(in crate::play) use windows::open_window;
-#[cfg(windows)]
-#[path = "native_windows.rs"]
-mod windows;
 
 #[cfg(test)]
 #[path = "tests/e2e_n03.rs"]

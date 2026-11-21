@@ -53,7 +53,12 @@ impl<S: SessionStream> Session<S> {
             client_build_id: admission.client_build_id,
             supported_capabilities: admission.supported_capabilities,
         })?;
-        write_frame(&mut stream, &bootstrap).await?;
+        bounded(
+            admission.deadline,
+            "client bootstrap",
+            write_frame(&mut stream, &bootstrap),
+        )
+        .await?;
 
         let accepted = bounded(
             admission.deadline,

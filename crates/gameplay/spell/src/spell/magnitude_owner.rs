@@ -1389,17 +1389,54 @@ impl PreparedMagnitudeOwner {
                 .find(|(actor, _)| *actor == target.actor)
                 .ok_or(Error::InvalidBatch)?
                 .1;
+            let kind =
+                crate::player_lethal::PlayerHitKind::from_element(Some(element_key(element)));
+            let now_us = self
+                .now_ms
+                .checked_mul(1_000)
+                .ok_or(Error::InvalidMagnitude)?;
             value = i64::from(
                 target_state
-                    .after_player_block(
-                        pvp,
-                        crate::player_lethal::PlayerHitKind::from_element(Some(element_key(
-                            element,
-                        ))),
-                        shielding,
-                        self.now_ms
-                            .checked_mul(1_000)
-                            .ok_or(Error::InvalidMagnitude)?,
+                    .after_player_baseline(pvp, kind, shielding, now_us)
+                    .ok_or(Error::InvalidMagnitude)?,
+            );
+            use oteryn_gameplay_content::content::ReferenceResistanceKind as Resistance;
+            let resistance = match element {
+                Element::Physical => Resistance::Physical,
+                Element::Energy => Resistance::Energy,
+                Element::Fire => Resistance::Fire,
+                Element::Death => Resistance::Death,
+                Element::Ice => Resistance::Ice,
+                Element::Earth => Resistance::Earth,
+                Element::Holy => Resistance::Holy,
+                Element::Healing => return invalid(),
+            };
+            if let Some(protection) = target_state.equipped_element_protection(resistance) {
+                protection.validate().map_err(|_| Error::InvalidMagnitude)?;
+                // EQUIP-0: clamp the signed sum to +/-100%, then truncate the
+                // removed portion once, before Wheel resistance and Avatar.
+                let (numerator, denominator) =
+                    if protection.numerator.unsigned_abs() / protection.denominator >= 100 {
+                        (protection.numerator.signum() * 100, 1)
+                    } else {
+                        (protection.numerator, protection.denominator)
+                    };
+                let divisor = i64::try_from(denominator)
+                    .ok()
+                    .and_then(|denominator| denominator.checked_mul(100))
+                    .ok_or(Error::InvalidMagnitude)?;
+                let removed = value
+                    .checked_mul(numerator)
+                    .and_then(|value| value.checked_div(divisor))
+                    .ok_or(Error::InvalidMagnitude)?;
+                value = value.checked_sub(removed).ok_or(Error::InvalidMagnitude)?;
+            }
+            value = i64::from(
+                target_state
+                    .after_wheel_block(
+                        u32::try_from(value).map_err(|_| Error::InvalidMagnitude)?,
+                        kind,
+                        now_us,
                     )
                     .ok_or(Error::InvalidMagnitude)?,
             );
@@ -1804,4 +1841,157 @@ fn checked_draw(draw: &mut dyn FnMut(i64, i64) -> i64, min: i64, max: i64) -> Re
         return Err(Error::InvalidMagnitude);
     }
     Ok(value)
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::expect_used)]
+
+    use super::*;
+    use crate::content::{ReferenceRationalPercent, ReferenceResistanceKind};
+    use crate::foundation::{ChannelId, WorldId};
+    use crate::spell::Vocation;
+    use crate::spell::cast::CharacterCastFacts;
+    use crate::spell::native_combat::CombatPlan;
+
+    fn id(n: u8) -> [u8; 16] {
+        let mut id = [n; 16];
+        id[6] = 0x70;
+        id[8] = 0x80;
+        id
+    }
+
+    fn player() -> PlayerSpellState {
+        PlayerSpellState::new(
+            CharacterCastFacts {
+                vocation: Vocation::Knight,
+                level: 100,
+                magic_level: 1,
+                max_health: 1000,
+                max_mana: 100,
+                max_soul: 100,
+            },
+            0,
+            0,
+        )
+        .expect("player")
+    }
+
+    #[test]
+    fn pvp_spell_damage_applies_current_equipment_for_every_element() {
+        for (element, kind) in [
+            (Element::Physical, ReferenceResistanceKind::Physical),
+            (Element::Fire, ReferenceResistanceKind::Fire),
+            (Element::Ice, ReferenceResistanceKind::Ice),
+            (Element::Energy, ReferenceResistanceKind::Energy),
+            (Element::Earth, ReferenceResistanceKind::Earth),
+            (Element::Death, ReferenceResistanceKind::Death),
+            (Element::Holy, ReferenceResistanceKind::Holy),
+        ] {
+            for (protection, expected) in [(25, 75), (-25, 125), (100, 0)] {
+                let actor = ExactActorRef::transport_fixture(
+                    WorldId::decode(&id(1)).expect("world"),
+                    ChannelId::decode(&id(2)).expect("channel"),
+                );
+                let binding = LiveActorBinding {
+                    source_id: 1,
+                    actor,
+                    target_atom: "target".into(),
+                };
+                let hit = MagnitudePlan {
+                    target: 1,
+                    magnitude: 200,
+                    bonus_percent: 0,
+                    side_percent: None,
+                    delay_ms: 0,
+                };
+                let plan = NativeCombatPlan::Combat(CombatPlan {
+                    element,
+                    area: None,
+                    hits: vec![hit.clone()],
+                    cooldown_ms: None,
+                    shared_cooldown: None,
+                    reduce_all_spell_cooldowns_ms: 0,
+                    block_armor: false,
+                    use_weapon_charges: false,
+                    weapon_missile: false,
+                    dispel_paralysis_targets: vec![],
+                    resolve_critical_and_fatal_once: false,
+                });
+                let attributes = MagnitudeOwnedAttributes {
+                    policy: MagnitudePolicy::BaselineTest,
+                    item_augments: vec![],
+                    owner_revisions: None,
+                    binding: MagnitudeOwnerBinding {
+                        actor,
+                        session: GameSessionId::decode(&id(3)).expect("session"),
+                        character: CharacterId::decode(&id(4)).expect("character"),
+                        lease_generation: 1,
+                        player_revision: 1,
+                        content_digest: [0; 32],
+                    },
+                    base_critical_chance_permyriad: None,
+                    base_critical_extra_permyriad: None,
+                    equipment_critical_chance_permyriad: None,
+                    equipment_critical_extra_permyriad: None,
+                    fatal_chance_permyriad: None,
+                    armor_penetration_permyriad: None,
+                    elemental_pierce_permyriad: None,
+                    wheel_effects: None,
+                    wheel_flat_damage: None,
+                    wheel_flat_healing: None,
+                    source_damage_multiplier_percent: None,
+                    source_healing_multiplier_percent: None,
+                    healing_dealt_percent: None,
+                    monster_armor_disabled: None,
+                    inactive_extra_stages: None,
+                };
+                let mut target = player();
+                target.install_equipped_element_protection(
+                    kind,
+                    Some(ReferenceRationalPercent {
+                        numerator: protection,
+                        denominator: 1,
+                    }),
+                );
+                let mut owner = PreparedMagnitudeOwner {
+                    resolved_attributes: attributes.resolved_for_policy(),
+                    attributes,
+                    selected_item_augments: vec![],
+                    caster: player(),
+                    selected_spell: None,
+                    selected_focus_group: false,
+                    now_ms: 1,
+                    canonical_hex: vec![],
+                    plan: plan.clone(),
+                    targets: vec![Target {
+                        native_health_required: false,
+                        native_health: None,
+                        cruelty_drain: None,
+                        source_id: 1,
+                        actor,
+                        atom: "target".into(),
+                        owner: TargetOwner::Player(Box::new(target)),
+                    }],
+                    shared_extensions: None,
+                    charm_critical: Vec::new(),
+                    pvp_targets: vec![(actor, false)],
+                    delayed_damage_percent: None,
+                    wheel_positions: vec![],
+                    wheel_link_echo: 0,
+                    wheel_census: None,
+                    wheel_masterless: vec![],
+                    player_block_shielding: vec![(actor, 0)],
+                    finished_player_damage: vec![],
+                };
+                assert_eq!(
+                    owner
+                        .finish(&plan, &hit, &binding, &mut |min, _| min)
+                        .expect("finished PvP damage"),
+                    expected,
+                    "{element:?}, protection {protection}"
+                );
+            }
+        }
+    }
 }

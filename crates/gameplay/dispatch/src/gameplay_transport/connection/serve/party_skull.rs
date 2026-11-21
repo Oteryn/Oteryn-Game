@@ -27,15 +27,13 @@ where
     if icons == session.party_icons {
         return Ok(());
     }
-    let position = authority
-        .observe(session.actor)
-        .await
-        .ok_or(ServeEnd::Disconnected)?;
+    // The header of the last view sent, where the client holds the actor (see `sidecar`).
+    let (content_generation, actor_position) = view.published().ok_or(ServeEnd::Disconnected)?;
     let mut payload =
         oteryn_protocol_oteryn::world_spatial_entities::encode_world_spatial_entities_delta(
             &oteryn_protocol_oteryn::world_spatial_entities::WorldSpatialEntitiesDelta {
-                content_generation: position.content_generation,
-                actor_position: position.actor_position,
+                content_generation,
+                actor_position,
                 enter: Vec::new(),
                 update: Vec::new(),
                 leave: Vec::new(),

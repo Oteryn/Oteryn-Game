@@ -101,7 +101,8 @@ pub(super) async fn scenario(
                 LoopMove {
                     item: bag,
                     count: None,
-                    target: LoopTarget::Container(foreign_box)
+                    target: LoopTarget::Container(foreign_box),
+                    slot: None,
                 }
             )
             .await,
@@ -133,6 +134,7 @@ pub(super) async fn scenario(
                 item,
                 count: None,
                 target,
+                slot: None,
             },
         )
     };
@@ -269,6 +271,48 @@ pub(super) async fn scenario(
     };
     assert_eq!(entries.len(), 1);
     assert_eq!(entries[0].key, gold);
+    // CONTAINER-MANUAL-SORT-1 (capability 510): a slotted move into the House cupboard places
+    // the bag at slot 2 under a container sort receipt that migration 2856 admits for the current
+    // House; the same command replays without a second rotation.
+    let cupboard_order = || {
+        sqlx::query_scalar::<_, Vec<u8>>("SELECT uuid_send(item_instance_id) FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid ORDER BY placement_ordinal DESC")
+            .bind(id(71).to_vec())
+            .fetch_all(&h.pool)
+    };
+    let branches: Vec<Vec<u8>> = (80_u8..85).rev().map(|n| id(n).to_vec()).collect();
+    assert_eq!(cupboard_order().await?, branches);
+    let slotted = |command_id| {
+        owner.move_loop_item(
+            actor,
+            UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id,
+                item_fence: Some(fence),
+            },
+            LoopMove {
+                item: bag,
+                count: None,
+                target: LoopTarget::Container(cupboard),
+                slot: Some(2),
+            },
+        )
+    };
+    assert_eq!(slotted(130).await, LoopMoveResult::Committed);
+    let mut placed = branches.clone();
+    placed.insert(2, id(72).to_vec());
+    assert_eq!(cupboard_order().await?, placed);
+    assert_eq!(slotted(130).await, LoopMoveResult::Committed);
+    assert_eq!(cupboard_order().await?, placed);
+    let sort_receipts: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM game_item_container_sort_receipts")
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!(sort_receipts, 1, "one House ordinal receipt for the slotted move");
+    assert_eq!(
+        move_item(131, bag, LoopTarget::MainBackpack).await,
+        LoopMoveResult::Committed
+    );
+    assert_eq!(cupboard_order().await?, branches);
     let mut stale = fence;
     stale.scope_ownership_generation = crate::foundation::ScopeOwnershipGeneration::new(
         fence.scope_ownership_generation.get() + 1,
@@ -293,7 +337,8 @@ pub(super) async fn scenario(
                 LoopMove {
                     item: gold,
                     count: None,
-                    target: LoopTarget::Container(cupboard)
+                    target: LoopTarget::Container(cupboard),
+                    slot: None,
                 }
             )
             .await,
@@ -439,6 +484,7 @@ pub(super) async fn capacity_scenario(
         item,
         count: None,
         target,
+        slot: None,
     };
     assert_ne!(
         owner
@@ -516,5 +562,132 @@ pub(super) async fn capacity_scenario(
         "W18_PG House rack native25 legacy20 nested_insert_read_pickup_replay elapsed={:?}",
         started.elapsed()
     );
+    Ok(())
+}
+
+pub(super) async fn wire_move(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    admitted: AdmittedSession,
+    cupboard: std::num::NonZeroU32,
+    bag: std::num::NonZeroU32,
+) -> TestResult {
+    use crate::gameplay_transport::{connection::{serve_admitted, IDLE_LIVENESS}, tcp_tls::{read_frame, write_frame}};
+    use oteryn_protocol_oteryn::{ClientCommandValue, CommandStatus, MessageType, decode_wire_envelope, decode_snapshot_chunk, encode_client_command, decode_command_result};
+    use oteryn_protocol_oteryn::{container_tree as tree, item_view as item, world_map as map};
+    use tokio::io::AsyncWriteExt;
+    let actor = admitted.runtime_actor.ok_or("House container actor")?;
+    let fence = admitted.item_fence.ok_or("House container fence")?;
+    assert_eq!(
+        owner.move_loop_item(
+            actor,
+            UseCommand { game_session_id: admitted.game_session_id, command_id: 90, item_fence: Some(fence) },
+            LoopMove { item: ItemKey::Instance(id(73)), count: None, target: LoopTarget::Container(ItemKey::Instance(id(71))), slot: None },
+        ).await,
+        LoopMoveResult::Committed,
+    );
+    let move_sent = std::cell::Cell::new(None);
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let server = async {
+        serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await
+    };
+    let send = |id, command_type, payload: &[u8]| {
+        encode_client_command(admitted.continuity.connection_generation, &ClientCommandValue {
+            command_id: id, command_type, payload,
+        }).map_err(debug)
+    };
+    let client = async {
+        let (mut destination, mut source) = (None, None);
+        loop {
+            let raw = read_frame(&mut client).await?;
+            let envelope = decode_wire_envelope(&raw).map_err(debug)?;
+            if envelope.message_type() == MessageType::SnapshotCommit {
+                break;
+            }
+            if envelope.message_type() != MessageType::SnapshotChunk {
+                continue;
+            }
+            for domain in decode_snapshot_chunk(envelope.payload()).map_err(debug)?.1 {
+                if domain.domain_id == item::STATE_DOMAIN_CHARACTER_INVENTORY {
+                    source = item::decode_character_inventory_with_equip_drop(domain.payload, true)
+                        .map_err(debug)?.entries.into_iter().find(|entry| entry.item_definition_ref == bag).map(|entry| entry.handle);
+                } else if domain.domain_id == map::STATE_DOMAIN_WORLD_MAP_VIEW {
+                    destination = map::decode_world_map_snapshot(domain.payload).map_err(debug)?.tiles.into_iter()
+                        .flat_map(|tile| tile.items)
+                        .find_map(|entry| match entry {
+                            map::MapItem { definition: map::MapDefinition::Item(definition), origin: map::MapOrigin::Handle(handle), .. }
+                                if definition == cupboard => Some(handle),
+                            _ => None,
+                        });
+                }
+            }
+        }
+        let destination = destination.ok_or("House cupboard handle")?;
+        let open = tree::encode_container_view_intent(&tree::ContainerViewIntent::Open { handle: destination, replace_view: None }).map_err(debug)?;
+        write_frame(&mut client, &send(1, tree::COMMAND_TYPE_CONTAINER_VIEW_INTENT, &open)?).await?;
+        let selection = item::ItemMoveSelection { equip_drop: true, container_tree: true, world_interaction: true, manual_sort: true };
+        loop {
+            let raw = read_frame(&mut client).await?;
+            let envelope = decode_wire_envelope(&raw).map_err(debug)?;
+            if envelope.message_type() != MessageType::CommandResult {
+                continue;
+            }
+            let reply = decode_command_result(envelope.payload()).map_err(debug)?;
+            assert_eq!(reply.status, CommandStatus::Accepted);
+            if reply.command_id == 1 {
+                assert_eq!(
+                    tree::decode_container_view_result(reply.payload).map_err(debug)?,
+                    tree::ContainerViewOutcome::Opened
+                );
+                let payload = item::encode_item_move_intent_for(
+                    &item::ItemMoveIntent {
+                        source: source.ok_or("carried bag handle")?,
+                        destination: item::ItemMoveDestination::Container(destination, Some(1)),
+                    },
+                    selection,
+                )
+                .map_err(debug)?;
+                move_sent.set(Some(tokio::time::Instant::now()));
+                write_frame(
+                    &mut client,
+                    &send(2, item::COMMAND_TYPE_ITEM_MOVE_INTENT, &payload)?,
+                )
+                .await?;
+            } else {
+                assert_eq!(reply.command_id, 2);
+                assert_eq!(item::decode_item_move_result_for(reply.payload, selection).map_err(debug)?, item::ItemMoveOutcome::Moved);
+                break;
+            }
+        }
+        client.shutdown().await?;
+        Ok::<_, Box<dyn std::error::Error>>(())
+    };
+    let (end, result) = tokio::time::timeout(std::time::Duration::from_secs(12), async {
+        tokio::join!(server, client)
+    })
+    .await?;
+    result?;
+    let crate::gameplay_transport::connection::ConnectionEnd::AdmittedThenDisconnected(current) =
+        end
+    else {
+        return Err(format!("House move connection ended with {end:?}").into());
+    };
+    let sent = move_sent.get().ok_or("move was sent")?;
+    assert!(
+        current
+            .continuity
+            .gameplay_idle
+            .last_activity()
+            .is_some_and(|activity| activity >= sent)
+    );
+    let order: Vec<Vec<u8>> = sqlx::query_scalar(
+        "SELECT uuid_send(item_instance_id) FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid ORDER BY placement_ordinal DESC",
+    )
+    .bind(id(71).as_slice())
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(order, vec![id(73).to_vec(), id(72).to_vec()]);
+    let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_container_sort_receipts").fetch_one(&h.pool).await?;
+    assert_eq!(receipts, 1);
     Ok(())
 }

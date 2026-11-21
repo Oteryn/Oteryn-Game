@@ -56,6 +56,8 @@ pub use oteryn_session::cast;
 pub use oteryn_session::cast_chat::decode_line as decode_cast_caster_line;
 pub use oteryn_session::cast_chat::{CasterLine as CastCasterLine, Roster as CastRoster};
 pub use oteryn_session::cast_viewer::CastViewerSession;
+/// Observer-relative guild emblems (capability 509).
+pub use oteryn_session::guild_emblem;
 
 #[path = "features/0289-cast-view/protocol.rs"]
 pub mod cast_view;
@@ -293,6 +295,7 @@ pub mod server_mechanic;
 
 #[path = "features/0031-tutorial-notices/protocol.rs"]
 pub mod tutorial_notices;
+pub use oteryn_session::tutorial_vocation;
 
 /// Stash command execution through the admitted session.
 #[path = "features/0062-stash/protocol.rs"]
@@ -357,3 +360,6 @@ pub use oteryn_session::coin_market;
 pub use oteryn_session::coin_transfer;
 
 pub use oteryn_session::personal_map_marks;
+
+pub use oteryn_session::item_inscription;
+pub use oteryn_session::server_info;

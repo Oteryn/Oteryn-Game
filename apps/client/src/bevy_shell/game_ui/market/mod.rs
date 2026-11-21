@@ -2,6 +2,8 @@
 mod actions;
 mod offers;
 mod purchase;
+mod refresh;
+mod statistics;
 #[cfg(test)]
 mod tests;
 mod widgets;
@@ -29,6 +31,7 @@ struct Action {
 #[derive(Clone, Copy)]
 enum Kind {
     Close,
+    Coins,
     Search,
     Category(usize),
     Item(usize),
@@ -42,7 +45,54 @@ enum Kind {
 struct Overlay;
 #[derive(Component)]
 struct Search;
-type Editors = Or<(With<Search>, With<offers::Field>)>;
+type Editors = Or<(
+    With<Search>,
+    With<offers::Field>,
+    With<widgets::FilterEditor>,
+)>;
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum DraftRole {
+    Search,
+    Filter(widgets::FilterKind),
+    Depot,
+    Offer(Option<u32>, offers::Field),
+}
+
+#[derive(Component)]
+struct Draft {
+    role: DraftRole,
+    initial: String,
+}
+
+// Keep the editor entity (including selection, focus and pending edits) when
+// the same field still represents the same retained value after a projection.
+#[derive(Default)]
+struct Drafts<'a>(Vec<(Entity, &'a Draft)>);
+
+impl Drafts<'_> {
+    fn field(
+        &mut self,
+        commands: &mut Commands,
+        role: DraftRole,
+        initial: &str,
+        spawn: impl FnOnce(&mut Commands) -> Entity,
+    ) -> Entity {
+        if let Some(index) = self
+            .0
+            .iter()
+            .position(|(_, d)| d.role == role && d.initial == initial)
+        {
+            return self.0.swap_remove(index).0;
+        }
+        let field = spawn(commands);
+        commands.entity(field).insert(Draft {
+            role,
+            initial: initial.into(),
+        });
+        field
+    }
+}
 #[derive(Resource, Default)]
 struct State {
     key: Option<Key>,
@@ -59,8 +109,9 @@ pub(super) fn install(app: &mut App) {
     offers::install(app);
     purchase::install(app);
     app.init_resource::<State>()
+        .init_resource::<refresh::Refresh>()
         .add_systems(Startup, setup.after(super::setup))
-        .add_systems(Update, (keyboard, project).chain())
+        .add_systems(Update, (keyboard, refresh::own, project).chain())
         .add_systems(
             PostUpdate,
             actions::finish.after(bevy::text::EditableTextSystems),
@@ -78,6 +129,7 @@ fn setup(mut commands: Commands) {
     commands.spawn((
         Overlay,
         GameModal,
+        crate::bevy_shell::ui::window_layout::WindowLayer("market"),
         GlobalZIndex(157),
         Node {
             display: Display::None,
@@ -88,7 +140,6 @@ fn setup(mut commands: Commands) {
             justify_content: JustifyContent::Center,
             ..default()
         },
-        BackgroundColor(Color::srgba(0., 0., 0., 0.45)),
     ));
 }
 // The projection reads the retained owner, hierarchy and text-focus owner together.
@@ -101,6 +152,7 @@ fn project(
     mut overlay: Query<(Entity, &mut Node), With<Overlay>>,
     mut focus: ResMut<InputFocus>,
     fields: Query<(), Editors>,
+    previous: Query<(Entity, &Draft)>,
 ) {
     let Ok((overlay, mut node)) = overlay.single_mut() else {
         return;
@@ -126,9 +178,8 @@ fn project(
     {
         return;
     }
-    if focus.get().is_some_and(|entity| fields.contains(entity)) {
-        focus.clear();
-    }
+    let same_session = state.key.is_some_and(|key| key.generation == generation);
+    let mut drafts = Drafts(previous.iter().filter(|_| same_session).collect());
     if state.seen.as_ref() != Some(&panel) {
         state.offer = None;
     }
@@ -167,6 +218,10 @@ fn project(
         .root
         .get_or_insert_with(|| widgets::build(&mut commands, &skin, overlay));
     if let Some(body) = state.body.take() {
+        // Retain live editors while the old scroll areas publish their final offsets.
+        for (field, _) in &drafts.0 {
+            commands.entity(*field).remove::<ChildOf>();
+        }
         commands.entity(body).despawn();
     }
     state.body = Some(widgets::render(
@@ -178,7 +233,20 @@ fn project(
         state.selected.as_ref(),
         state.offer,
         state.sell.unwrap_or(panel.sell),
+        &mut drafts,
     ));
+    for (obsolete, _) in drafts.0 {
+        commands.entity(obsolete).despawn();
+    }
+    if let Some(entity) = focus.get().filter(|id| fields.contains(*id)) {
+        commands.queue(move |world: &mut World| {
+            if world.get_entity(entity).is_err()
+                && world.resource::<InputFocus>().get() == Some(entity)
+            {
+                world.resource_mut::<InputFocus>().clear();
+            }
+        });
+    }
     state.seen = Some(panel);
 }
 fn activate(

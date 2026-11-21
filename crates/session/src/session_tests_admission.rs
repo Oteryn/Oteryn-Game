@@ -255,3 +255,70 @@ fn proficiency_state_is_advertised_and_uses_the_real_gated_command_route()
     assert!(route.2.is_empty());
     Ok(())
 }
+
+#[test]
+fn admission_rejects_each_missing_extension_prerequisite() -> Result<(), BoxError> {
+    block_on(async {
+        for (extension, complete, required) in [
+            (502, &[6, 13, 25][..], &[6, 13, 25][..]),
+            (503, &[199][..], &[199][..]),
+            (504, &[31][..], &[31][..]),
+            (505, &[92, 450][..], &[450][..]),
+            (506, &[199][..], &[199][..]),
+            (507, &[9][..], &[9][..]),
+            (508, &[4, 6][..], &[4, 6][..]),
+            (509, &[6][..], &[6][..]),
+            (510, &[4, 6, 12, 14][..], &[14][..]),
+            (511, &[4, 6, 115][..], &[4, 115][..]),
+        ] {
+            let mut advertised = complete.to_vec();
+            advertised.push(extension);
+            for missing in required {
+                let (client, mut server) = tokio::io::duplex(1024);
+                let selected = advertised.iter().copied().filter(|id| id != missing).collect::<Vec<_>>();
+                let peer = tokio::spawn(async move {
+                    read_frame(&mut server).await?;
+                    // Encode the common header and construct field 10 independently.
+                    // The regular encoder itself refuses a non-closed selection.
+                    let mut accepted = encode_server_accepted(&ServerAcceptedValue {
+                        game_session_id: GameSessionId::decode(&uuid_v7(1))?,
+                        world_id: WorldId::decode(&uuid_v7(2))?,
+                        channel_id: ChannelId::decode(&uuid_v7(3))?,
+                        connection_generation: 1,
+                        current_server_sequence: 0,
+                        next_command_id: 7,
+                        schema_revision: 1,
+                        selected_capabilities: &[],
+                    })?;
+                    for id in selected {
+                        accepted.push(80);
+                        if id < 128 {
+                            accepted.push(id as u8);
+                        } else {
+                            accepted.extend([(id & 127) as u8 | 128, (id >> 7) as u8]);
+                        }
+                    }
+                    accepted[3] = u8::try_from(accepted.len() - 4)?;
+                    write_frame(&mut server, &accepted).await?;
+                    Ok::<_, BoxError>(())
+                });
+                let admission = Admission {
+                    supported_capabilities: &advertised,
+                    ..admission()?
+                };
+                let result = Session::admit(client, admission).await;
+                peer.await??;
+                assert!(
+                    matches!(
+                        result,
+                        Err(SessionError::Protocol(
+                            FoundationProtocolError::InvalidCapabilitySet
+                        ))
+                    ),
+                    "capability {extension}, missing {missing}"
+                );
+            }
+        }
+        Ok(())
+    })?
+}

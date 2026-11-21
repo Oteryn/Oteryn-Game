@@ -1,0 +1,7 @@
+{
+  "mechanic": "0507-highscores-catalogue",
+  "kind": "panels",
+  "id": "0507-highscores-catalogue-panel",
+  "status": "supported",
+  "entry": "protocol.rs::world_choices"
+}

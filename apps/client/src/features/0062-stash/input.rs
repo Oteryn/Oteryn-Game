@@ -154,12 +154,6 @@ impl PlayLink {
                 mailbox.stash.feedback = Some(tr!("The session has ended").into());
             }
         }
-        #[cfg(windows)]
-        if !lock(shared).shared_frontend {
-            super::view::open_window(shared, commands);
-        }
-        if cfg!(not(windows)) || lock(shared).shared_frontend {
-            lock(shared).stash.open = true;
-        }
+        lock(shared).stash.open = true;
     }
 }

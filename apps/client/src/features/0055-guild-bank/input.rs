@@ -49,13 +49,7 @@ impl PlayLink {
                 mailbox.properties.guild_bank.fields[0] = id;
             }
         }
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).properties.guild_bank.open = true;
-        }
+        lock(&self.mailbox).properties.guild_bank.open = true;
     }
     pub fn guild_bank_input(&self, events: &[NormalizedInputEvent]) -> bool {
         if !oteryn_client_ui::guild_bank::open_key(events) {

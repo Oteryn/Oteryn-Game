@@ -157,7 +157,8 @@ where
     Ok(())
 }
 
-pub(super) async fn npc_trade<S>(
+pub(super) async fn npc_trade<S, A: FreshAdmissionAuthority>(
+    authority: &A,
     stream: &mut S,
     session: &mut ServeState,
     update: NpcUpdate,
@@ -179,6 +180,11 @@ where
         }
     }
     let Some(update_frames) = npc_update_frames(
+        authority,
+        (
+            session.admitted.game_session_id,
+            session.selected_capabilities,
+        ),
         session.generation,
         &mut session.sequence,
         &mut session.admitted.continuity.npc,
@@ -196,7 +202,8 @@ where
     Ok(())
 }
 
-pub(super) async fn npc<S>(
+pub(super) async fn npc<S, A: FreshAdmissionAuthority>(
+    authority: &A,
     stream: &mut S,
     session: &mut ServeState,
     update: NpcUpdate,
@@ -205,6 +212,11 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
 {
     let Some(update_frames) = npc_update_frames(
+        authority,
+        (
+            session.admitted.game_session_id,
+            session.selected_capabilities,
+        ),
         session.generation,
         &mut session.sequence,
         &mut session.admitted.continuity.npc,

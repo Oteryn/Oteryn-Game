@@ -66,9 +66,15 @@ pub fn hears(mode: SpeechMode, speaker: ChatPosition, listener: ChatPosition) ->
                 Some(Heard::Obscured)
             }
         }
-        SpeechMode::Yell => (yell_floors(speaker.floor).contains(&listener.floor)
-            && speaker.within(listener, YELL_RANGE_X, YELL_RANGE_Y))
-        .then_some(Heard::Text),
+        SpeechMode::Yell => {
+            let offset = i64::from(speaker.floor) - i64::from(listener.floor);
+            (yell_floors(speaker.floor).contains(&listener.floor)
+                && i64::from(speaker.x).abs_diff(i64::from(listener.x) - offset)
+                    <= u64::from(YELL_RANGE_X)
+                && i64::from(speaker.y).abs_diff(i64::from(listener.y) - offset)
+                    <= u64::from(YELL_RANGE_Y))
+            .then_some(Heard::Text)
+        }
     }
 }
 
@@ -80,5 +86,93 @@ fn yell_floors(floor: u8) -> std::ops::RangeInclusive<u8> {
         6 => 0..=8,
         7 => 0..=9,
         _ => floor.saturating_sub(2)..=floor.saturating_add(2).min(15),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn yell_projects_listener_coordinates_at_each_floor_boundary() {
+        let speaker = ChatPosition {
+            x: 100,
+            y: 100,
+            floor: 7,
+        };
+        for floor in yell_floors(speaker.floor) {
+            let offset = i32::from(speaker.floor) - i32::from(floor);
+            for (dx, dy) in [(18, 14), (18, -14), (-18, 14), (-18, -14)] {
+                let listener = ChatPosition {
+                    x: speaker.x + offset + dx,
+                    y: speaker.y + offset + dy,
+                    floor,
+                };
+                assert_eq!(
+                    hears(SpeechMode::Yell, speaker, listener),
+                    Some(Heard::Text),
+                    "{listener:?}"
+                );
+                let outside_x = ChatPosition {
+                    x: listener.x + dx.signum(),
+                    ..listener
+                };
+                let outside_y = ChatPosition {
+                    y: listener.y + dy.signum(),
+                    ..listener
+                };
+                assert_eq!(hears(SpeechMode::Yell, speaker, outside_x), None);
+                assert_eq!(hears(SpeechMode::Yell, speaker, outside_y), None);
+                if floor != speaker.floor {
+                    assert_eq!(hears(SpeechMode::Say, speaker, listener), None);
+                    assert_eq!(hears(SpeechMode::Whisper, speaker, listener), None);
+                }
+            }
+        }
+        assert_eq!(
+            hears(
+                SpeechMode::Yell,
+                speaker,
+                ChatPosition {
+                    x: 119,
+                    y: 101,
+                    floor: 6
+                }
+            ),
+            Some(Heard::Text)
+        );
+        assert_eq!(
+            hears(
+                SpeechMode::Yell,
+                speaker,
+                ChatPosition {
+                    floor: 10,
+                    ..speaker
+                }
+            ),
+            None
+        );
+    }
+
+    #[test]
+    fn yell_projection_handles_extreme_coordinates_without_overflow() {
+        for x in [i32::MIN, i32::MAX] {
+            let speaker = ChatPosition { x, y: x, floor: 7 };
+            assert_eq!(
+                hears(
+                    SpeechMode::Yell,
+                    speaker,
+                    ChatPosition {
+                        floor: 6,
+                        ..speaker
+                    }
+                ),
+                Some(Heard::Text)
+            );
+            assert_eq!(
+                hears(SpeechMode::Yell, speaker, ChatPosition { x: !x, ..speaker }),
+                None
+            );
+        }
     }
 }

@@ -13,6 +13,7 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 fn row(generation: u64) -> WorldSpatialEntity {
     WorldSpatialEntity {
+        motion: None,
         display_name: None,
         entity: EntityRef {
             identity: [2; 16],
@@ -40,16 +41,23 @@ type AppResult = Result<
     Box<dyn std::error::Error>,
 >;
 pub(super) fn app() -> AppResult {
-    app_with_vitals(Some(ActorVitals {
-        health: 42,
-        max_health: 100,
-        mana: 10,
-        max_mana: 20,
-        ..default()
-    }))
+    app_with(
+        true,
+        Some(ActorVitals {
+            health: 42,
+            max_health: 100,
+            mana: 10,
+            max_mana: 20,
+            ..default()
+        }),
+    )
 }
 fn app_with_vitals(vitals: Option<ActorVitals>) -> AppResult {
+    app_with(true, vitals)
+}
+fn app_with(overlay: bool, vitals: Option<ActorVitals>) -> AppResult {
     let mut app = App::new();
+    app.insert_resource(DevOverlay(overlay));
     app.add_plugins((MinimalPlugins, AssetPlugin::default()))
         .init_asset::<Image>()
         .init_asset::<Font>();
@@ -79,6 +87,20 @@ fn app_with_vitals(vitals: Option<ActorVitals>) -> AppResult {
         bars: entities[9],
         world: entities[10],
     });
+    let mut sidebar = Vec::new();
+    for _ in 0..7 {
+        sidebar.push(app.world_mut().spawn(Node::default()).id());
+    }
+    app.insert_resource(super::super::Sidebar {
+        left: sidebar[0],
+        extra: sidebar[1],
+        left_widgets: sidebar[3],
+        extra_widgets: sidebar[4],
+        right_widgets: sidebar[5],
+        analytics: sidebar[6],
+    });
+    let status_bar = app.world_mut().spawn(Node::default()).id();
+    app.insert_resource(super::super::StatusBar(status_bar));
     app.add_systems(Startup, crate::bevy_shell::ui::setup);
     install(&mut app);
     app.update();
@@ -102,16 +124,15 @@ fn battle_activate_reaches_real_command_owner_and_uses_server_vitals() -> TestRe
         app.world().get::<HudAction>(button).is_some(),
         "pending updates retain the live target control"
     );
-    let text = app
+    let mut labels = app
         .world_mut()
-        .query::<&Text>()
+        .query::<(&VitalLabel, &Text)>()
         .iter(app.world())
-        .map(|value| value.0.as_str())
-        .collect::<Vec<_>>()
-        .join("\n");
-    assert!(text.contains("42/100"));
-    assert!(text.contains("10/20"));
-    assert!(!text.contains("7907"));
+        .map(|(label, text)| (label.0, text.0.clone()))
+        .collect::<Vec<_>>();
+    labels.sort();
+    // Tibia shows the current value only, not "42/100".
+    assert_eq!(labels, [(false, "42".to_owned()), (true, "10".to_owned())]);
     Ok(())
 }
 #[test]
@@ -236,3 +257,130 @@ fn inventory_modal_blocks_prior_battle_focus_enter_and_direct_activation() -> Te
     }
     Ok(())
 }
+
+#[test]
+fn activating_current_battle_target_stops_attacking() -> TestResult {
+    let (mut app, mut commands, outbox) = app()?;
+    outbox.bevy_hud_target(row(7).entity);
+    assert_eq!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .battle_panel()
+            .combat
+            .and_then(|combat| combat.target),
+        Some(row(7).entity)
+    );
+    let button = app
+        .world_mut()
+        .query::<(Entity, &HudAction)>()
+        .iter(app.world())
+        .find_map(|(entity, action)| matches!(action.command, Command::Attack(_)).then_some(entity))
+        .ok_or("battle target")?;
+    app.world_mut().trigger(Activate { entity: button });
+    assert_eq!(
+        commands.try_recv()?,
+        PlayCommand::Battle(CombatCommand::Stop)
+    );
+    Ok(())
+}
+
+#[test]
+fn secondary_battle_click_opens_retained_creature_context() -> TestResult {
+    use bevy::picking::{
+        backend::HitData,
+        events::Pointer,
+        pointer::{Location, PointerButton, PointerId},
+    };
+    let (mut app, mut commands, outbox) = app()?;
+    crate::play::PlayLink::bevy_items_fixture(&outbox, None, None, false, false);
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .play
+        .as_mut()
+        .ok_or("play")?
+        .view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?
+        .with_entities(vec![row(7)])?;
+    let entity = app
+        .world_mut()
+        .query::<(Entity, &HudAction)>()
+        .iter(app.world())
+        .find_map(|(entity, action)| matches!(action.command, Command::Attack(_)).then_some(entity))
+        .ok_or("battle row")?;
+    app.world_mut().trigger(PointerClick {
+        entity,
+        pointer: Pointer::new(
+            PointerId::Mouse,
+            Location {
+                target: bevy::camera::NormalizedRenderTarget::None {
+                    width: 100,
+                    height: 100,
+                },
+                position: Vec2::ZERO,
+            },
+        ),
+        button: PointerButton::Secondary,
+        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        duration: std::time::Duration::ZERO,
+        count: 1,
+    });
+    assert!(app.world().non_send::<HostOwner>().dialogs.active());
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn shift_battle_click_looks_without_attacking() -> TestResult {
+    use bevy::picking::{
+        backend::HitData,
+        events::Pointer,
+        pointer::{Location, PointerButton, PointerId},
+    };
+    let (mut app, mut commands, outbox) = app()?;
+    crate::play::PlayLink::bevy_items_fixture(&outbox, None, None, false, false);
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .play
+        .as_mut()
+        .ok_or("play")?
+        .view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?
+        .with_entities(vec![row(7)])?;
+    app.init_resource::<ButtonInput<KeyCode>>();
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::ShiftLeft);
+    let entity = app
+        .world_mut()
+        .query::<(Entity, &HudAction)>()
+        .iter(app.world())
+        .find_map(|(entity, action)| matches!(action.command, Command::Attack(_)).then_some(entity))
+        .ok_or("battle row")?;
+    app.world_mut().trigger(PointerClick {
+        entity,
+        pointer: Pointer::new(
+            PointerId::Mouse,
+            Location {
+                target: bevy::camera::NormalizedRenderTarget::None {
+                    width: 100,
+                    height: 100,
+                },
+                position: Vec2::ZERO,
+            },
+        ),
+        button: PointerButton::Primary,
+        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        duration: std::time::Duration::ZERO,
+        count: 1,
+    });
+    assert!(
+        matches!(commands.try_recv()?, PlayCommand::WorldContext(command)
+        if command.action == oteryn_client_ui::world_interaction::menu::Action::Look)
+    );
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+include!("hud_projection_tests.rs");

@@ -117,3 +117,6 @@ mod tests {
         Ok(())
     }
 }
+
+#[path = "items/filtered.rs"]
+pub mod filtered;

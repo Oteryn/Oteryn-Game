@@ -1,0 +1,19 @@
+{
+  "id": "TRADE-CONTENTS-STATE-BYTES",
+  "owner_contract": "protocol-oteryn/v1/trade-details-v1.md",
+  "resource": "TRADE-CONTENTS-STATE-BYTES",
+  "unit": "bytes",
+  "hard_maximum": 65536,
+  "configurable_range": {
+    "minimum": 65536,
+    "maximum": 65536
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Negotiated multi-stack NPC trade; reject the complete plan before any write when over its bound.",
+  "client_visible": true,
+  "boundary_tests": [
+    "player_trade_state_rejects_one_byte_above_registered_ceiling",
+    "trade_contents_are_negotiated_bounded_and_parent_indexed"
+  ],
+  "notes": "Capability 501 only. The existing legacy wire byte and count ceilings remain enforced without selection."
+}

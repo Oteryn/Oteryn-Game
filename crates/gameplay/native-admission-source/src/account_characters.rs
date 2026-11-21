@@ -344,12 +344,10 @@ pub trait EpochFence: Send {
 pub type DirectorySync = fn(&OwnedFd) -> rustix::io::Result<()>;
 
 /// F as one file: the decimal value with an optional trailing newline.
-/// Its directory is synced before the first read and after any write whose
-/// rename was not followed by a successful directory sync, so F is never
-/// used at a value a crash could still roll back.
+/// Every read syncs the directory after opening the fence, including when
+/// another handle replaced it, so F is never used before it is durable.
 pub struct EpochFenceFile {
     path: PathBuf,
-    unsynced: bool,
     sync: DirectorySync,
 }
 
@@ -361,32 +359,16 @@ impl EpochFenceFile {
 
     #[must_use]
     pub fn with_sync(path: PathBuf, sync: DirectorySync) -> Self {
-        Self {
-            path,
-            unsynced: true,
-            sync,
-        }
+        Self { path, sync }
     }
 }
 
 impl EpochFence for EpochFenceFile {
     fn read(&mut self) -> Result<u64, FenceUnusable> {
-        if self.unsynced {
-            let (parent, _) = split(&self.path)?;
-            (self.sync)(&open_directory(parent)?).map_err(|_| FenceUnusable)?;
-            self.unsynced = false;
-        }
-        read_fence(&self.path)
+        read_fence_with(&self.path, self.sync)
     }
     fn persist(&mut self, epoch: u64) -> Result<(), FenceUnusable> {
-        match write_fence_with(&self.path, epoch, self.sync) {
-            Ok(()) => Ok(()),
-            Err(FenceWrite::Unsynced) => {
-                self.unsynced = true;
-                Err(FenceUnusable)
-            }
-            Err(FenceWrite::Failed) => Err(FenceUnusable),
-        }
+        write_fence_with(&self.path, epoch, self.sync).map_err(|_| FenceUnusable)
     }
 }
 
@@ -425,7 +407,7 @@ fn open_fence(directory: &OwnedFd, name: &std::ffi::OsStr) -> Result<File, Fence
     let fd = rustix::fs::openat(
         directory,
         name,
-        OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+        OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::CLOEXEC | OFlags::NONBLOCK,
         Mode::empty(),
     )
     .map_err(|_| FenceUnusable)?;
@@ -434,8 +416,13 @@ fn open_fence(directory: &OwnedFd, name: &std::ffi::OsStr) -> Result<File, Fence
 
 /// Read F, refusing anything but an existing, well-formed fence.
 pub fn read_fence(path: &Path) -> Result<u64, FenceUnusable> {
+    read_fence_with(path, |directory| rustix::fs::fsync(directory))
+}
+
+fn read_fence_with(path: &Path, sync: DirectorySync) -> Result<u64, FenceUnusable> {
     let (parent, name) = split(path)?;
-    let file = open_fence(&open_directory(parent)?, name)?;
+    let directory = open_directory(parent)?;
+    let file = open_fence(&directory, name)?;
     fence_file(&file)?;
     let mut raw = Vec::new();
     file.take(FENCE_BYTES as u64 + 1)
@@ -444,7 +431,11 @@ pub fn read_fence(path: &Path) -> Result<u64, FenceUnusable> {
     if raw.len() > FENCE_BYTES {
         return Err(FenceUnusable);
     }
-    parse_fence(&raw).ok_or(FenceUnusable)
+    let epoch = parse_fence(&raw).ok_or(FenceUnusable)?;
+    // Open first: syncing before opening could admit a replacement that was
+    // renamed after the sync, even by a writer whose directory sync failed.
+    sync(&directory).map_err(|_| FenceUnusable)?;
+    Ok(epoch)
 }
 
 /// Replace the existing fence with `value`: write and sync a new file in the
@@ -495,6 +486,20 @@ pub(crate) fn open_directory(parent: &Path) -> Result<OwnedFd, FenceUnusable> {
 fn write_fence_with(path: &Path, value: u64, sync: DirectorySync) -> Result<(), FenceWrite> {
     let (parent, name) = split(path)?;
     let directory = open_directory(parent)?;
+    // A fence rename replaces its inode; the directory remains stable across
+    // handles and processes. Recheck F only after taking this shared lock.
+    rustix::fs::flock(
+        &directory,
+        rustix::fs::FlockOperation::NonBlockingLockExclusive,
+    )
+    .map_err(|_| FenceWrite::Failed)?;
+    let epoch = read_fence(path)?;
+    if value < epoch {
+        return Err(FenceWrite::Failed);
+    }
+    if value == epoch {
+        return sync(&directory).map_err(|_| FenceWrite::Unsynced);
+    }
     let current = open_fence(&directory, name)?;
     let stat = fence_file(&current)?;
     let temp = format!(

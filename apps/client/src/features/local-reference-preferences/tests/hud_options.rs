@@ -6,6 +6,7 @@ fn hud_actor(
     x: i32,
 ) -> oteryn_session::WorldSpatialEntity {
     oteryn_session::WorldSpatialEntity {
+        motion: None,
         entity: EntityRef {
             identity: [id; 16],
             generation: 1,

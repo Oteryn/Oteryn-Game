@@ -99,7 +99,7 @@ async fn pick_native_egg(owner:&ComposedFreshAdmission<'_, '_, '_>,a:&AdmittedSe
  assert_eq!(candidates.len(),1,"one exact movable native egg at the nest");
  let key=ItemKey::MapBase{bundle_digest:map.overlay.base().digest(),placement_key:oteryn_world_bundle::bundle::placement_key(-3,33004,32664,candidates[0]).ok_or("key")?,reset_epoch:owner.reset_epoch};
  let handle=items.table().handle(&key).ok_or("native egg map handle")?;
- let selection=ItemMoveSelection{equip_drop:true,container_tree:true,world_interaction:true};
+ let selection=ItemMoveSelection{equip_drop:true,container_tree:true,world_interaction:true,manual_sort:false};
  let payload=encode_item_move_intent_for(&ItemMoveIntent{source:handle,destination:ItemMoveDestination::MainBackpack},selection).map_err(debug)?;
  let fence=owner.current_quest_fence(a.game_session_id).await.map_err(|()|"fence")?.ok_or("fence")?;
  let command=UseCommand{game_session_id:a.game_session_id,command_id:10000+owner.reset_epoch*10,item_fence:Some(fence.item_fence())};

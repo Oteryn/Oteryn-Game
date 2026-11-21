@@ -1,6 +1,6 @@
 use super::*;
 
-#[cfg_attr(not(any(windows, test)), allow(dead_code))]
+#[cfg_attr(not(test), allow(dead_code))]
 pub(crate) async fn open(
     config: &NativeLoginConfig,
     character_id: Option<String>,

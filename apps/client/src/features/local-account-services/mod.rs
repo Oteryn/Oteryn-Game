@@ -1,13 +1,11 @@
 //! Native account services run outside an admitted character session.
 mod controller;
-#[cfg(windows)]
+#[cfg(test)]
 mod native;
 #[cfg(test)]
 pub(crate) mod test_server;
 #[cfg(test)]
 mod tests;
-#[cfg(windows)]
-pub(crate) mod window;
 
 use oteryn_foundation::CancellationToken;
 use oteryn_platform_client::native_login::bazaar::*;
@@ -44,7 +42,7 @@ pub enum Action {
     Back,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct View {
     pub page: Option<BazaarPage>,
     pub quote: Option<TransferQuote>,
@@ -85,7 +83,17 @@ impl View {
     }
     fn install_page(&mut self, page: BazaarPage) {
         for receipt in &page.recent_operations {
-            if receipt.state == OperationState::Pending {
+            if self
+                .pending
+                .as_ref()
+                .is_some_and(|request| request.request_id == receipt.request_id)
+                || self
+                    .receipt
+                    .as_ref()
+                    .is_some_and(|old| old.request_id == receipt.request_id && old != receipt)
+            {
+                controller::accept(self, receipt.clone());
+            } else if receipt.state == OperationState::Pending {
                 self.unresolved.insert(receipt.request_id.clone());
             } else {
                 self.unresolved.remove(&receipt.request_id);
@@ -157,11 +165,6 @@ impl View {
 }
 pub type Presenter = Arc<dyn Fn(&View, CancellationToken) -> Action + Send + Sync>;
 pub fn present(view: &View, cancel: CancellationToken) -> Action {
-    #[cfg(windows)]
-    {
-        native::present(view, cancel)
-    }
-    #[cfg(not(windows))]
     {
         let _ = (view, cancel);
         Action::Back

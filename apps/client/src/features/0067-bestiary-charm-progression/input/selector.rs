@@ -34,6 +34,7 @@ pub(in crate::play) fn request(
     after: u8,
 ) {
     let p = &mut m.properties.charm_progression;
+    reset_cancelled(p);
     if after > 32 || !p.begin(84) {
         return;
     }
@@ -57,11 +58,19 @@ pub(in crate::play) fn apply(
     command: &FeatureCommand,
     result: &GatedCommandResult,
 ) -> bool {
+    reset_cancelled(p);
     if command.payload.starts_with(&[255, 3]) {
         return apply_races(p, command, result);
     }
     if !command.payload.starts_with(&[255, 2]) {
-        return p.selector.pending.is_some() || p.selector.race_pending.is_some();
+        if oteryn_client_runtime::charm_progression::decode_charm_progression_request(
+            &command.payload,
+        )
+        .is_ok()
+        {
+            clear_pending(p);
+        }
+        return false;
     }
     let [255, 2, after] = command.payload.as_slice() else {
         return true;
@@ -113,6 +122,7 @@ pub(in crate::play) fn request_races(
     commands: &UnboundedSender<PlayCommand>,
 ) -> bool {
     let p = &mut m.properties.charm_progression;
+    reset_cancelled(p);
     if !p.selected || p.pending || p.selector.race_failed {
         return false;
     }
@@ -186,6 +196,7 @@ pub(in crate::play) fn submit(
     intent: oteryn_client_ui::charm_progression::Intent,
 ) {
     let p = &mut m.properties.charm_progression;
+    reset_cancelled(p);
     if p.selected && !p.pending && intent == oteryn_client_ui::charm_progression::Intent::Assign {
         p.fields[1] = p
             .selector
@@ -193,4 +204,17 @@ pub(in crate::play) fn submit(
             .map_or_else(String::new, |race| race.to_string());
     }
     super::submit(m, commands, intent);
+}
+
+fn reset_cancelled(panel: &mut Panel) {
+    if !panel.pending {
+        clear_pending(panel);
+    }
+}
+
+fn clear_pending(panel: &mut Panel) {
+    if panel.selector.pending.take().is_some() {
+        panel.selector.attempted = false;
+    }
+    panel.selector.race_pending = None;
 }

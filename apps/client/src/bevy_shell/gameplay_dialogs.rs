@@ -12,9 +12,6 @@ use oteryn_client_ui::world_interaction::menu::Menu;
 use oteryn_client_ui_bevy as source;
 use oteryn_renderer::TileCoord;
 
-mod channel_switch;
-use channel_switch::{SwitchView, channel_switch_body};
-
 #[derive(Default)]
 pub(super) struct Dialogs {
     next: u64,
@@ -25,6 +22,8 @@ struct Request {
     generation: u64,
     content: Content,
 }
+type AttackChoice = (TileCoord, (oteryn_session::EntityRef, bool));
+
 enum Content {
     Logout,
     /// chsw (capability 512): the Change Channel window, its confirmation and its errors.
@@ -34,6 +33,13 @@ enum Content {
         party: Option<Box<party::Target>>,
         inspection: Option<(TileCoord, oteryn_session::EntityRef)>,
         report: Option<Box<rule_violation::Target>>,
+        trade: Option<(TileCoord, oteryn_session::EntityRef)>,
+        browse: Option<(TileCoord, i16)>,
+        npc: Option<(TileCoord, oteryn_session::EntityRef)>,
+        /// The name of the clicked player other than the own character.
+        player: Option<String>,
+        /// The clicked opponent and the attack state displayed when the menu opened.
+        attack: Option<Box<AttackChoice>>,
     },
 }
 #[derive(Clone, Copy, Component)]
@@ -48,6 +54,17 @@ enum Choice {
     Invite,
     Party,
     Report,
+    Trade,
+    Browse,
+    Talk,
+    NpcTrade,
+    Rotate,
+    Wrap,
+    Attack,
+    Message,
+    Vip,
+    Ignore,
+    CopyName,
 }
 impl Dialogs {
     pub fn active(&self) -> bool {
@@ -55,6 +72,19 @@ impl Dialogs {
     }
     pub fn clear(&mut self) {
         self.pending = None;
+    }
+    /// The player name of the pending context menu `id`.
+    fn context_player_name(&self, id: u64) -> Option<String> {
+        match self.pending.as_ref().filter(|request| request.id == id)? {
+            Request {
+                content:
+                    Content::Context {
+                        player: Some(name), ..
+                    },
+                ..
+            } => Some(name.clone()),
+            _ => None,
+        }
     }
     fn open(&mut self, generation: u64, content: Content) {
         let Some(id) = self.next.checked_add(1) else {
@@ -91,8 +121,53 @@ impl HostOwner {
         let party = party::context(self, tile).map(Box::new);
         let report = rule_violation::context(self, tile).map(Box::new);
         let inspection = item_details::player_context(self, tile).map(|entity| (tile, entity));
+        let trade = self
+            .play
+            .as_ref()
+            .filter(|play| {
+                let panel = play.link.player_trade_panel();
+                panel.selected
+                    && !panel.pending
+                    && !panel.items.pending
+                    && crate::play::feature_0060_player_trade::view::trade_phase(&panel)
+                        == crate::play::feature_0060_player_trade::view::TradePhase::Inactive
+            })
+            .and_then(|play| play.view.player_trade_context_target(tile))
+            .map(|entity| (tile, entity));
+        let browse = self
+            .play
+            .as_ref()
+            .filter(|play| {
+                let panel = play.link.browse_field_panel();
+                panel.selected && !panel.pending
+            })
+            .map(|play| (tile, play.view.satellite_player().2));
+        let npc = npc::target(self, tile).map(|entity| (tile, entity));
+        let player = self
+            .play
+            .as_ref()
+            .and_then(|play| play.view.party_context_target(tile)?.1);
+        let attack = self
+            .play
+            .as_ref()
+            .filter(|_| {
+                menu.as_ref().is_some_and(|menu| {
+                    matches!(
+                        menu.target,
+                        oteryn_client_ui::world_interaction::menu::Target::Creature(_)
+                    )
+                })
+            })
+            .and_then(|play| play.view.attack_target(tile, &play.link))
+            .map(|target| Box::new((tile, target)));
         if self.phase == Phase::Playing
-            && (menu.is_some() || party.is_some() || report.is_some() || inspection.is_some())
+            && (menu.is_some()
+                || npc.is_some()
+                || party.is_some()
+                || report.is_some()
+                || inspection.is_some()
+                || trade.is_some()
+                || browse.is_some())
         {
             self.dialogs.open(
                 self.generation(),
@@ -101,9 +176,69 @@ impl HostOwner {
                     party,
                     inspection,
                     report,
+                    trade,
+                    browse,
+                    npc,
+                    player,
+                    attack,
                 },
             );
         }
+    }
+    pub(super) fn request_creature_context(&mut self, target: oteryn_session::EntityRef) {
+        let unambiguous = self.play.as_ref().and_then(|play| {
+            let row = play
+                .link
+                .filtered_battle_rows(play.link.active_battle_list())
+                .into_iter()
+                .find(|row| row.entity == target)?;
+            let tile = TileCoord::new(row.position.x, row.position.y);
+            let menu = play.view.world_context(tile, &play.link)?;
+            (menu.target == oteryn_client_ui::world_interaction::menu::Target::Creature(target))
+                .then_some(tile)
+        });
+        if let Some(tile) = unambiguous {
+            self.request_world_context(tile);
+            return;
+        }
+        let menu = self
+            .play
+            .as_ref()
+            .and_then(|play| play.view.creature_context(target, &play.link));
+        if self.phase == Phase::Playing
+            && let Some(menu) = menu
+        {
+            self.dialogs.open(
+                self.generation(),
+                Content::Context {
+                    menu: Some(Box::new(menu)),
+                    party: None,
+                    inspection: None,
+                    report: None,
+                    trade: None,
+                    browse: None,
+                    npc: None,
+                    player: None,
+                    attack: None,
+                },
+            );
+        }
+    }
+    /// Tibia Global offers Rotate and Wrap/Unwrap on a clicked item; the session's house
+    /// furniture lists (capabilities 445 and 207) then name the eligible furniture.
+    fn furniture(&self, menu: Option<&Menu>) -> (bool, bool) {
+        use oteryn_client_ui::world_interaction::menu::Target;
+        let Some(play) = self.play.as_ref().filter(|_| {
+            menu.is_some_and(|menu| matches!(menu.target, Target::Item(_) | Target::Object(_)))
+        }) else {
+            return (false, false);
+        };
+        let rotation = play.link.house_rotation_panel();
+        let wrap = play.link.house_furniture_panel();
+        (
+            rotation.selected && !rotation.pending,
+            wrap.selected && !wrap.pending,
+        )
     }
     fn choose_dialog(&mut self, id: u64, choice: Choice) -> bool {
         if self
@@ -135,7 +270,84 @@ impl HostOwner {
                 },
                 Choice::Inspect,
             ) => item_details::inspect_player(self, tile, entity),
-            (_, Choice::Cancel) => true,
+            (
+                Content::Context {
+                    trade: Some((tile, target)),
+                    ..
+                },
+                Choice::Trade,
+            ) => {
+                if self.modal_active() {
+                    return false;
+                }
+                self.play.as_ref().is_some_and(|play| {
+                    !play.view.gameplay_input_blocked(&play.link)
+                        && play.view.player_trade_context_target(tile) == Some(target)
+                        && play.link.player_trade_choose_partner(target)
+                })
+            }
+            (
+                Content::Context {
+                    browse: Some((tile, floor)),
+                    ..
+                },
+                Choice::Browse,
+            ) => self.request_container_tool(
+                super::controls::ContainerTool::BrowseField,
+                Some((tile.x, tile.y, floor)),
+                None,
+            ),
+            (
+                Content::Context {
+                    npc: Some((tile, entity)),
+                    ..
+                },
+                Choice::Talk | Choice::NpcTrade,
+            ) => npc::talk(self, tile, entity, matches!(choice, Choice::NpcTrade)),
+            (_, Choice::Cancel | Choice::CopyName) => true,
+            (
+                Content::Context {
+                    attack: Some(attack),
+                    ..
+                },
+                Choice::Attack,
+            ) => self.play.as_ref().is_some_and(|play| {
+                let (tile, (target, attacking)) = *attack;
+                if play.view.gameplay_input_blocked(&play.link)
+                    || play.view.attack_target(tile, &play.link) != Some((target, attacking))
+                {
+                    return false;
+                }
+                #[cfg(test)]
+                tests::publish_after_attack_validation();
+                play.link.request_context_combat(target, attacking)
+            }),
+            (
+                Content::Context {
+                    player: Some(name), ..
+                },
+                Choice::Message | Choice::Vip | Choice::Ignore,
+            ) => self.play.as_ref().is_some_and(|play| {
+                if play.view.gameplay_input_blocked(&play.link) {
+                    return false;
+                }
+                match choice {
+                    Choice::Message => play.link.chat_open_conversation(&name),
+                    Choice::Vip => {
+                        play.link
+                            .vip_request(oteryn_client_ui::vip::Intent::Add(name));
+                        true
+                    }
+                    _ => {
+                        play.link.chat_communication(
+                            Some(oteryn_client_ui::chat::CommunicationList::Ignore),
+                            &name,
+                            true,
+                        );
+                        true
+                    }
+                }
+            }),
             (Content::Logout, Choice::Logout) => self.play.as_mut().is_some_and(|play| {
                 play.view.logout();
                 true
@@ -176,6 +388,23 @@ impl HostOwner {
                 },
                 Choice::Report,
             ) => rule_violation::open(self, &target),
+            (Content::Context { menu, .. }, Choice::Rotate | Choice::Wrap) => {
+                let (rotate, wrap) = self.furniture(menu.as_deref());
+                if self.modal_active() {
+                    return false;
+                }
+                self.play.as_ref().is_some_and(|play| {
+                    if play.view.gameplay_input_blocked(&play.link) {
+                        return false;
+                    }
+                    match choice {
+                        Choice::Rotate if rotate => play.link.house_rotation_open(),
+                        Choice::Wrap if wrap => play.link.house_furniture_open(),
+                        _ => return false,
+                    }
+                    true
+                })
+            }
             _ => false,
         }
     }
@@ -192,20 +421,34 @@ struct Skin {
     buttons: source::ButtonImages,
     frame: Handle<Image>,
     font: Handle<Font>,
+    checked: Handle<Image>,
+    unchecked: Handle<Image>,
 }
 
 pub(super) fn install(app: &mut App) {
     app.add_systems(Startup, setup)
-        .add_systems(Update, (escape.after(super::input::route), project).chain());
+        .add_systems(Update, (escape.after(super::input::route), project).chain())
+        .init_resource::<scale::ModuleScale>()
+        .add_systems(Update, (art::project, popup::layout, scale::zoom))
+        .add_systems(
+            PostUpdate,
+            scale::apply.before(bevy::ui::UiSystems::Prepare),
+        );
 }
-fn setup(mut commands: Commands, assets: Res<AssetServer>) {
+fn setup(
+    mut commands: Commands,
+    assets: Res<AssetServer>,
+    fallback: Option<Res<crate::bevy_shell::BuiltInFont>>,
+) {
     commands.insert_resource(Skin {
         buttons: source::ButtonImages {
             up: assets.load("images/skin/classic/button-grey-up.png"),
             down: assets.load("images/skin/classic/button-grey-down.png"),
         },
         frame: assets.load("images/skin/classic/dialog-frame-borderimage.png"),
-        font: assets.load("fonts/verdanab.ttf"),
+        font: crate::bevy_shell::ui_font(&assets, fallback.is_some()),
+        checked: assets.load("images/skin/classic/checkbox-checked.png"),
+        unchecked: assets.load("images/skin/classic/checkbox-unchecked.png"),
     });
     commands.spawn((
         Overlay,
@@ -246,8 +489,18 @@ fn escape(
             && key.state == bevy::input::ButtonState::Pressed
             && !key.repeat
     }) {
-        owner.dialogs.clear();
-        owner.pointer_context_closed();
+        if let Some(id) = owner
+            .dialogs
+            .pending
+            .as_ref()
+            .filter(|request| matches!(request.content, Content::ChannelSwitch))
+            .map(|request| request.id)
+        {
+            owner.choose_dialog(id, Choice::Cancel);
+        } else {
+            owner.dialogs.clear();
+            owner.pointer_context_closed();
+        }
     }
 }
 fn activate(
@@ -255,333 +508,35 @@ fn activate(
     replies: Query<&Reply>,
     mut owner: NonSendMut<HostOwner>,
     modal: super::game_ui::modal::ModalGuard,
+    clipboard: Option<ResMut<bevy::clipboard::Clipboard>>,
 ) {
     if !modal.allows(event.entity) {
         return;
     }
     if let Ok(reply) = replies.get(event.entity) {
+        if matches!(reply.choice, Choice::CopyName)
+            && let Some(mut clipboard) = clipboard
+            && let Some(name) = owner.dialogs.context_player_name(reply.id)
+        {
+            let _ = clipboard.set_text(name);
+        }
         owner.choose_dialog(reply.id, reply.choice);
     }
 }
-#[allow(
-    clippy::too_many_arguments,
-    reason = "Bevy injects dialog state and retained row entities"
-)]
-fn project(
-    mut commands: Commands,
-    owner: NonSend<HostOwner>,
-    skin: Res<Skin>,
-    mut overlays: Query<(Entity, &mut Node), With<Overlay>>,
-    mut previous: Local<Option<(u64, Option<SwitchView>)>>,
-    mut rows: Query<(&channel_switch::TableRow, &mut Text, &mut TextColor)>,
-    mut panel: Local<Option<Entity>>,
-    mut focus: ResMut<InputFocus>,
-) {
-    let pending = owner.dialogs.pending.as_ref();
-    // The Change Channel window follows its panel and redraws its countdown once a second.
-    let switch = pending
-        .filter(|request| matches!(request.content, Content::ChannelSwitch))
-        .and_then(|_| owner.play.as_ref())
-        .map(|play| {
-            let now_ms = crate::play::feature_0512_channel_switch::view::now_ms();
-            let panel = play.link.channel_switch_panel();
-            let left = panel
-                .status
-                .map_or(0, |s| i64::from(s.cooldown_left_ms))
-                .saturating_sub(now_ms.saturating_sub(panel.status_at_ms).max(0))
-                .max(0);
-            (panel, now_ms, (left + 999) / 1000)
-        });
-    let id = pending.map(|request| {
-        (
-            request.id,
-            switch
-                .as_ref()
-                .map(|(panel, _, second)| (panel.clone(), *second)),
-        )
-    });
-    let Ok((overlay, mut node)) = overlays.single_mut() else {
-        return;
-    };
-    node.display = if pending.is_some() {
-        Display::Flex
-    } else {
-        Display::None
-    };
-    if id == *previous {
-        return;
-    }
-    if let (Some((old_id, Some((old_panel, _)))), Some((new_id, Some((new_panel, _))))) =
-        (&*previous, &id)
-        && old_id == new_id
-        && old_panel == new_panel
-        && let Some((_, now_ms, _)) = &switch
-    {
-        channel_switch::refresh_rows(&mut rows, new_panel, *now_ms);
-        *previous = id;
-        return;
-    }
-    *previous = id;
-    if let Some(entity) = panel.take() {
-        commands.entity(entity).despawn();
-    }
-    let Some(request) = pending else {
-        return;
-    };
-    let window = commands
-        .spawn((
-            bevy::ui_widgets::ScrollArea,
-            source::frame(skin.frame.clone(), [4., 17., 4., 4.]),
-            TabGroup {
-                order: 3,
-                modal: true,
-            },
-            Node {
-                width: px(if matches!(request.content, Content::ChannelSwitch) {
-                    460.
-                } else {
-                    300.
-                }),
-                max_width: percent(95.),
-                max_height: percent(95.),
-                padding: UiRect::axes(px(16.), px(29.)),
-                flex_direction: FlexDirection::Column,
-                row_gap: px(5.),
-                overflow: Overflow::scroll_y(),
-                ..default()
-            },
-        ))
-        .id();
-    commands.entity(overlay).add_child(window);
-    *panel = Some(window);
-    let title = match request.content {
-        Content::Logout => "Logout",
-        Content::ChannelSwitch => "Change Channel",
-        Content::Context { .. } => "Actions",
-    };
-    source::dialog_caption(&mut commands, window, title, skin.font.clone());
-    match &request.content {
-        Content::Logout => {
-            let text = commands
-                .spawn(source::text(
-                    "Log out of the game?",
-                    source::font(skin.font.clone(), false),
-                ))
-                .id();
-            commands.entity(window).add_child(text);
-            button(
-                &mut commands,
-                &skin,
-                window,
-                request.id,
-                "Ok",
-                Choice::Logout,
-            );
-        }
-        Content::ChannelSwitch => {
-            if let Some((panel, now_ms, _)) = &switch {
-                channel_switch_body(&mut commands, &skin, window, request.id, panel, *now_ms);
-            }
-        }
-        Content::Context {
-            menu,
-            party,
-            inspection,
-            report,
-        } => {
-            if report.is_some() {
-                button(
-                    &mut commands,
-                    &skin,
-                    window,
-                    request.id,
-                    "Report",
-                    Choice::Report,
-                );
-            }
-            for (index, (label, _)) in menu.iter().flat_map(|menu| menu.entries.iter()).enumerate()
-            {
-                button(
-                    &mut commands,
-                    &skin,
-                    window,
-                    request.id,
-                    label,
-                    Choice::Context(index),
-                );
-            }
-            if inspection.is_some() {
-                button(
-                    &mut commands,
-                    &skin,
-                    window,
-                    request.id,
-                    "Inspect",
-                    Choice::Inspect,
-                );
-            }
-            if let Some(target) = party {
-                if let Some(name) = target.name() {
-                    let label = commands
-                        .spawn(source::text(name, source::font(skin.font.clone(), false)))
-                        .insert((
-                            TextLayout::default(),
-                            Node {
-                                width: percent(100.),
-                                ..default()
-                            },
-                        ))
-                        .id();
-                    commands.entity(window).add_child(label);
-                }
-                let invite = button(
-                    &mut commands,
-                    &skin,
-                    window,
-                    request.id,
-                    "Invite to Party",
-                    Choice::Invite,
-                );
-                if !target.invite_enabled() {
-                    commands
-                        .entity(invite)
-                        .insert(bevy::ui::InteractionDisabled);
-                }
-                button(
-                    &mut commands,
-                    &skin,
-                    window,
-                    request.id,
-                    "Party",
-                    Choice::Party,
-                );
-            }
-        }
-    }
-    let cancel = button(
-        &mut commands,
-        &skin,
-        window,
-        request.id,
-        "Cancel",
-        Choice::Cancel,
-    );
-    focus.set(cancel, FocusCause::Navigated);
-}
-fn button(
-    commands: &mut Commands,
-    skin: &Skin,
-    parent: Entity,
-    id: u64,
-    caption: &str,
-    choice: Choice,
-) -> Entity {
-    let button = commands
-        .spawn((
-            source::button(skin.buttons.clone(), 260.),
-            Reply { id, choice },
-        ))
-        .observe(activate)
-        .id();
-    let text = commands
-        .spawn(source::button_caption(caption, skin.font.clone()))
-        .id();
-    commands.entity(button).add_child(text);
-    commands.entity(parent).add_child(button);
-    button
-}
+
+pub(super) mod art;
+mod channel_switch;
+mod npc;
+pub(super) mod popup;
+mod projection;
+pub(super) mod scale;
+use projection::project;
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::play::{PlayView, play_channel};
-    type Result = std::result::Result<(), Box<dyn std::error::Error>>;
+mod furniture_tests;
 
-    #[test]
-    fn shared_logout_cancel_duplicate_and_stale_confirm_reach_existing_queue() -> Result {
-        // Test-only play fixture; shipping admission still comes exclusively from Reentry.
-        let mut host = HostOwner::new(None)?;
-        let (link, mut commands, _events) = play_channel();
-        host.play = Some(super::super::owner::ActivePlay {
-            view: PlayView::new(TileCoord::new(100, 100), 7, &[])?,
-            link,
-        });
-        host.phase = Phase::Playing;
-        host.request_logout_confirmation();
-        let first = host.dialogs.pending.as_ref().ok_or("confirmation")?.id;
-        assert!(host.choose_dialog(first, Choice::Cancel));
-        assert!(!host.dialogs.active());
-        assert!(commands.try_recv().is_err());
-        host.request_logout_confirmation();
-        let second = host
-            .dialogs
-            .pending
-            .as_ref()
-            .ok_or("second confirmation")?
-            .id;
-        assert!(!host.choose_dialog(first, Choice::Logout));
-        assert!(
-            host.dialogs.active(),
-            "late click must not dismiss a newer dialog"
-        );
-        assert!(host.choose_dialog(second, Choice::Logout));
-        assert!(!host.choose_dialog(second, Choice::Logout));
-        let play = host.play.as_mut().ok_or("play")?;
-        play.view
-            .tick(&play.link)
-            .map_err(|end| format!("unexpected end {end:?}"))?;
-        assert!(matches!(
-            commands.try_recv()?,
-            crate::combat_input::PlayCommand::Logout
-        ));
-        assert!(commands.try_recv().is_err());
-        Ok(())
-    }
-
-    #[test]
-    fn previous_generation_and_wrong_context_target_cannot_dispatch() -> Result {
-        let mut host = HostOwner::new(None)?;
-        let (link, mut commands, _events) = play_channel();
-        host.play = Some(super::super::owner::ActivePlay {
-            view: PlayView::new(TileCoord::new(100, 100), 7, &[])?,
-            link,
-        });
-        host.phase = Phase::Playing;
-        host.request_logout_confirmation();
-        let request = host.dialogs.pending.as_mut().ok_or("confirmation")?;
-        request.generation = request.generation.saturating_add(1);
-        let id = request.id;
-        assert!(!host.choose_dialog(id, Choice::Logout));
-        let menu = Menu {
-            tile: Some(TileCoord::new(i32::MAX, i32::MAX)),
-            binding: None,
-            target: oteryn_client_runtime::world_interaction::Target::Position(
-                oteryn_session::ActorPosition {
-                    x: 100,
-                    y: 100,
-                    floor: 7,
-                },
-            ),
-            entries: vec![(
-                "Look",
-                oteryn_client_runtime::world_interaction::Action::Look,
-            )],
-        };
-        host.dialogs.open(
-            host.generation(),
-            Content::Context {
-                menu: Some(Box::new(menu)),
-                party: None,
-                inspection: None,
-                report: None,
-            },
-        );
-        let id = host.dialogs.pending.as_ref().ok_or("context")?.id;
-        assert!(!host.choose_dialog(id, Choice::Context(0)));
-        assert!(commands.try_recv().is_err());
-        Ok(())
-    }
-}
+#[cfg(test)]
+mod tests;
 
 #[cfg(test)]
 mod party_tests;

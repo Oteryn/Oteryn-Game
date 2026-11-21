@@ -38,6 +38,7 @@ struct Document {
 #[derive(Deserialize)]
 struct Quest {
     identity: Identity,
+    display_name: String,
     kind: String,
     shown_in_quest_log: bool,
     start: Option<Start>,
@@ -150,6 +151,7 @@ fn parse(quests: &str, texts: &str, lowered: &LoweredQuestState) -> Result<Loade
             });
         }
         entries.push(QuestLogQuest {
+            title: quest.display_name,
             key,
             kind,
             shown_in_quest_log: quest.shown_in_quest_log,

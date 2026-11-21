@@ -43,6 +43,9 @@ fn platform_error_code(error: PlatformClientError) -> oteryn_error_codes::ErrorC
     }
 }
 
+const PRODUCTION_WEB_ORIGIN: &str = "https://oteryn.com/";
+const PRODUCTION_API_ORIGIN: &str = "https://api.oteryn.com/";
+
 pub const DEFAULT_MAX_RESPONSE_BYTES: usize = 1_048_576;
 pub const MAX_WORLDS: usize = 256;
 pub const MAX_CHANNELS_PER_WORLD: usize = 128;
@@ -87,6 +90,7 @@ impl std::error::Error for PlatformClientError {}
 #[derive(Debug, Clone)]
 pub struct PlatformClientConfig {
     base_url: Url,
+    api_base_url: Url,
     max_response_bytes: usize,
     connect_timeout: Duration,
     request_timeout: Duration,
@@ -104,8 +108,14 @@ impl PlatformClientConfig {
         if base_url.scheme() != "https" && !(loopback && base_url.scheme() == "http") {
             return Err(PlatformClientError::InsecureBaseUrl);
         }
+        let api_base_url = if base_url.as_str() == PRODUCTION_WEB_ORIGIN {
+            Url::parse(PRODUCTION_API_ORIGIN).map_err(|_| PlatformClientError::InvalidBaseUrl)?
+        } else {
+            base_url.clone()
+        };
         Ok(Self {
             base_url,
+            api_base_url,
             max_response_bytes: DEFAULT_MAX_RESPONSE_BYTES,
             connect_timeout: Duration::from_secs(5),
             request_timeout: Duration::from_secs(15),
@@ -185,7 +195,7 @@ impl PlatformClient {
     ) -> Result<T, PlatformClientError> {
         let endpoint = self
             .config
-            .base_url
+            .api_base_url
             .join(path)
             .map_err(|_error| PlatformClientError::InvalidBaseUrl)?;
         let mut span = oteryn_error_codes::Span::start(
@@ -392,6 +402,40 @@ mod tests {
     use super::*;
 
     const SAFE: &[u8] = br#"{"epoch":7,"worlds":[{"id":"w-alpha","name":"Alpha","channels":[{"id":"c-1","name":"Default","pvp_type":"OPTIONAL_PVP","region":"EU"}],"characters":[{"id":"char-1","name":"Ari"}]}]}"#;
+
+    fn assert_platform_routes(web: &str, api: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let config = PlatformClientConfig::new(web)?;
+        for path in [
+            "/api/v1/game-auth/tickets",
+            "/oauth/token",
+            "/v1/client/directory",
+            "/api/v1/native-account/premium",
+            "/api/v1/native-account/coin-purchases/catalogue",
+            "/api/v1/native-account/bazaar/auctions",
+        ] {
+            let url = config.api_base_url.join(path)?;
+            assert_eq!(url.as_str(), format!("{}{path}", api.trim_end_matches('/')));
+        }
+
+        let native = native_login::NativeLoginClient::new(&config, &config, "native-test")?;
+        let authorize =
+            native.authorization_url("http://127.0.0.1:1234/callback", "state", "pkce")?;
+        assert_eq!(authorize.origin(), Url::parse(web)?.origin());
+        assert_eq!(authorize.path(), "/oauth/authorize");
+        assert!(
+            authorize
+                .query_pairs()
+                .any(|(key, value)| key == "state" && value == "state")
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn nonproduction_uses_one_origin_for_machine_calls_and_authorize()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let base = "https://platform.preprod.oteryn.internal/";
+        assert_platform_routes(base, base)
+    }
 
     #[test]
     fn safe_directory_contains_no_route() -> Result<(), PlatformClientError> {

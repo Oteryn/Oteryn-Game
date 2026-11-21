@@ -491,8 +491,8 @@ def item_facts(definitions: Path = ITEM_DEFINITIONS, appearances: Path = APPEARA
     return facts
 
 
-def corruptor_loot_projection(tables: dict, facts: dict, item_definitions: Path) -> list[dict]:
-    """Current named drops and the owner-approved native30 corpse projection.
+def corruptor_loot_projection(tables: dict, facts: dict, profiles: dict) -> list[dict]:
+    """Current named drops and the corpse's source48 capacity (CORPSE48, owner 2026-11-17).
 
     Crystal201189f8 the_corruptor.lua:68-77 supplies chance/count fields; current
     Wiki names resolve its four stale Item IDs (QUESTPC newhaven proposal).
@@ -515,7 +515,6 @@ def corruptor_loot_projection(tables: dict, facts: dict, item_definitions: Path)
     table['entries'].append({'item': facts['oteryn:item.tibia.i51760']['item'],
                              'min_count': 1, 'max_count': 1, 'probability_ppm': 47600})
     tables[key] = table
-    _, profiles = read(item_definitions / 'spell-native-profiles.json')
     # Include every guaranteed-vocation item and each durable decay stage, even
     # when the ordinary table cannot roll that item.
     selected = (3359, 3285, 3375, 3571, 51760, 3074, 7991, 3066, 50195, 51119, 3338,
@@ -532,8 +531,8 @@ def corruptor_loot_projection(tables: dict, facts: dict, item_definitions: Path)
         capacity = container.get('value', {}).get('capacity', {}) if container.get('state') == 'KNOWN' else {}
         fact['materializable'] = True
         fact['container_capacity'] = capacity['value'] if capacity.get('state') == 'KNOWN' else None
-        if item in (52113, 52114, 52115) and fact['container_capacity'] != 30:
-            raise ValueError('Corruptor corpse requires the explicit native30 projection')
+        if item in (52113, 52114, 52115) and fact['container_capacity'] != 48:
+            raise ValueError('Corruptor corpse requires its source48 capacity')
         if item == 52116 and fact['container_capacity'] is not None:
             raise ValueError('Corruptor final decay stage is not a container')
     return [facts[f'oteryn:item.tibia.i{item}']['item'] for item in selected]
@@ -585,17 +584,17 @@ def native_corpse_capacity(ref: dict, profile: dict, *, reward_boss: bool = Fals
             or known_native(stack['stackable']) is not False or not isinstance(container, dict)):
         return None
     capacity = known_native(container.get('capacity', {}))
-    # Physical capacity and the existing 30-entry MINT work bound are distinct.
+    # Physical capacity and the 48-entry MINT work bound (CORPSE48) are distinct.
     # Crystal201189f items.xml declares48 for these exact Soul War corpses.
-    # Ground-only physical capacity does not raise the30-item MINT work bound.
+    # Ground-only physical capacity does not raise the 48-item MINT work bound.
     source_48 = {f'oteryn:item.tibia.i{i}' for i in (
         33797,33801,33805,33809,33813,33817,33859,33863,33867,33871,33875,33889,
         33897,33901,33905,33909)}
     if (type(capacity) is int and capacity == 48 and ref['key'] in source_48
             and profile['admission']['legal_destinations'] == ['Ground']):
         return capacity
-    # Exact QuestPC7 source physical capacities are independent of the retained
-    # 30-entry corpse MINT/work/view limits. No general container policy changes.
+    # Exact QuestPC7 source physical capacities are independent of the 48-entry
+    # corpse MINT/work/view limits (CORPSE48). No general container policy changes.
     questpc7_capacity = {'oteryn:item.tibia.i6048': 36,
                         'oteryn:item.tibia.i20972': 38,
                         'oteryn:item.tibia.i33821': 48}
@@ -607,9 +606,9 @@ def native_corpse_capacity(ref: dict, profile: dict, *, reward_boss: bool = Fals
             and known_native(physical['pickupable']) is False):
         return capacity
     # Reward-boss loot stays in personal entitlements; the physical corpse retains
-    # its source capacity. Ordinary corpse contents keep GAMEITEM01's 30-entry cap,
-    # matching CreatureRewardTable's existing per-creature admission rule.
-    maximum = 0xffffffff if reward_boss else 30
+    # its source capacity. Ordinary corpse contents keep GAMEITEM01's 48-entry cap
+    # (CORPSE48, owner 2026-11-17), matching CreatureRewardTable's per-creature admission rule.
+    maximum = 0xffffffff if reward_boss else 48
     return capacity if type(capacity) is int and 1 <= capacity <= maximum else None
 
 
@@ -701,7 +700,7 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
 
     if any(record['profile']['target']['key'] == 'oteryn:creature.the_corruptor'
            for record in creatures['records']):
-        for ref in corruptor_loot_projection(tables, facts, item_definitions):
+        for ref in corruptor_loot_projection(tables, facts, native_profiles):
             name(ref)
 
     for record in creatures['records']:

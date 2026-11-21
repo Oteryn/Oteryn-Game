@@ -91,7 +91,7 @@ class NewhavenItemTests(unittest.TestCase):
         self.assertEqual(selected[0]['semantics']['stack']['value']['stack_max'], newhaven.known(100))
         self.assertEqual(selected[0]['semantics']['physical']['value']['weight'], newhaven.known(40))
 
-    def test_complete_corruptor_chain_projects_source48_to_native30(self):
+    def test_complete_corruptor_chain_keeps_source48(self):
         self.assertEqual(newhaven.CORPSE_SOURCE_CAPACITY, 48)
         for item in (52113, 52114, 52115, 52116):
             definition = {'identity': {'family': 'Item', 'key': f'oteryn:item.tibia.i{item}'}}
@@ -101,7 +101,7 @@ class NewhavenItemTests(unittest.TestCase):
             self.assertEqual(sem['physical']['value']['pickupable'], newhaven.known(False))
             self.assertTrue(definition['materializable'])
             if item != 52116:
-                self.assertEqual(sem['container']['value']['capacity'], newhaven.known(30))
+                self.assertEqual(sem['container']['value']['capacity'], newhaven.known(48))
             else:
                 self.assertEqual(sem['container'], {'state': 'NOT_APPLICABLE'})
 

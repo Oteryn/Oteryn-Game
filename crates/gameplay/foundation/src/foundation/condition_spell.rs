@@ -7,7 +7,7 @@
 )]
 use super::{
     ApplicationFacts, Applied, ConditionDefinition, ConditionRefusal, ConditionSourceKind,
-    ConditionStore, ConditionType, ConditionValues,
+    ConditionStore, ConditionType, ConditionValues, StatusKind,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -555,6 +555,9 @@ fn adjust(base: u32, delta: i32) -> Option<u32> {
 impl<S: Clone> ConditionStore<S> {
     pub fn invisible_at(&self, now: u64) -> bool {
         self.active_at(super::ConflictKey::Invisible, now).is_some()
+            || self
+                .active_at(super::ConflictKey::Status(StatusKind::Invisible), now)
+                .is_some()
     }
     pub fn skill_adjustments(&self, now: u64) -> Option<SkillAdjustments> {
         if now < self.pass_at || self.instances.iter().any(|v| v.started_at > now) {

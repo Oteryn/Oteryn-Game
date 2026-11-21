@@ -10,7 +10,8 @@ use oteryn_session::{
 #[test]
 fn damage_heal_and_hit_effect_reach_the_play_scene() -> Result<(), Box<dyn std::error::Error>> {
     let (link, _commands, outbox) = play_channel();
-    let mut view = PlayView::new(TileCoord::new(100, 200), 7, &[])?;
+    // Wire floor 7 is ground level, represented as -7 by the native scene.
+    let mut view = PlayView::new(TileCoord::new(100, 200), -7, &[])?;
     let base = view.scene().sprites().len();
     let position = ActorPosition {
         x: 101,

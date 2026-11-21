@@ -3,7 +3,7 @@ use super::*;
 
 type JoinedAppearance = (appearance::Snapshot, WorldSpatialEntity, (u32, Vec<u8>));
 
-pub(super) fn snapshot() -> Result<JoinedAppearance, BoxError> {
+pub(in crate::tests) fn snapshot() -> Result<JoinedAppearance, BoxError> {
     let mut snapshot = appearance::Snapshot::decode(GOLDEN).map_err(|e| format!("{e:?}"))?;
     snapshot.catalogue.context.content_generation = CONTENT_GENERATION;
     snapshot.bindings[0].context = snapshot.catalogue.context;

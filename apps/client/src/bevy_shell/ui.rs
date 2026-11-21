@@ -10,14 +10,13 @@ use oteryn_client_ui_bevy as source;
 use std::path::Path;
 
 const SKIN: &str = "images/skin/classic/";
-const FILES: [&str; 7] = [
+const FILES: [&str; 6] = [
     "images/skin/classic/button-grey-up.png",
     "images/skin/classic/button-grey-down.png",
     "images/skin/classic/checkbox-checked.png",
     "images/skin/classic/checkbox-unchecked.png",
     "images/skin/classic/dialog-frame-borderimage.png",
     "images/1pixel-down-frame.png",
-    "fonts/verdanab.ttf",
 ];
 pub(super) fn validate_assets(root: &Path) -> Result<(), String> {
     for name in FILES {
@@ -30,6 +29,77 @@ pub(super) fn validate_assets(root: &Path) -> Result<(), String> {
         }
     }
     Ok(())
+}
+/// Optional Tibia Global art. These files are not required by `validate_assets`: until a slot's
+/// file loads, the slot keeps its fallback (a caption child or the parent's plain backdrop).
+#[derive(Component, Clone, Debug, PartialEq, Eq)]
+pub(super) enum ArtSlot {
+    /// Entry-screen background behind the login window.
+    LoginBackground,
+    /// Market category icon, keyed by the server's category name.
+    MarketCategory(String),
+}
+impl ArtSlot {
+    pub fn path(&self) -> String {
+        match self {
+            Self::LoginBackground => "images/login/background.png".into(),
+            Self::MarketCategory(name) => {
+                let key: String = name
+                    .chars()
+                    .map(|c| {
+                        if c.is_ascii_alphanumeric() {
+                            c.to_ascii_lowercase()
+                        } else {
+                            '-'
+                        }
+                    })
+                    .collect();
+                format!("images/market/category-{key}.png")
+            }
+        }
+    }
+}
+/// The caption a slot shows while its art file is absent.
+#[derive(Component)]
+pub(super) struct ArtFallback;
+/// Loads each new slot's file; once the image is available the slot shows and its sibling
+/// fallback caption hides.
+// One node query covers the slots and their fallbacks; Bevy injects the queries.
+#[allow(clippy::type_complexity)]
+pub(super) fn project_art(
+    mut commands: Commands,
+    assets: Res<AssetServer>,
+    added: Query<(Entity, &ArtSlot), Without<ImageNode>>,
+    slots: Query<(Entity, &ImageNode, Option<&ChildOf>), With<ArtSlot>>,
+    children: Query<&Children>,
+    mut nodes: Query<(&mut Node, Has<ArtFallback>), Or<(With<ArtSlot>, With<ArtFallback>)>>,
+) {
+    for (entity, slot) in &added {
+        commands
+            .entity(entity)
+            .insert(ImageNode::new(assets.load(slot.path())));
+    }
+    for (entity, image, parent) in &slots {
+        if !assets.is_loaded(&image.image) {
+            continue;
+        }
+        let siblings = parent
+            .and_then(|parent| children.get(parent.parent()).ok())
+            .into_iter()
+            .flat_map(|children| children.iter());
+        for target in std::iter::once(entity).chain(siblings) {
+            if let Ok((mut node, fallback)) = nodes.get_mut(target) {
+                let display = if fallback {
+                    Display::None
+                } else {
+                    Display::Flex
+                };
+                if node.display != display {
+                    node.display = display;
+                }
+            }
+        }
+    }
 }
 #[derive(Resource)]
 pub(super) struct Skins {
@@ -44,16 +114,23 @@ pub(super) struct Skins {
 pub(super) enum Control {
     ChangeChannel,
     Options,
+    ManageButtons,
+    Shortcut(&'static str),
     Panel(&'static str),
     Analysers,
+    CyclopediaMap,
+    Depot,
     Inspection,
     Loot,
     Notices,
     Skills,
+    Social,
     Market,
     Party,
     Quests,
     Spells,
+    StoreInbox,
+    UnjustifiedPoints,
     Login,
     CancelLogin,
     Fullscreen,
@@ -63,24 +140,31 @@ pub(super) enum Control {
     Ok,
     Cancel,
 }
-mod toolbar;
-pub(super) use toolbar::project_toolbar;
+pub(super) mod toolbar;
+pub(in crate::bevy_shell) mod window_layout;
 use toolbar::{TOOLBAR, open_toolbar};
+pub(super) use toolbar::{project_manager, project_toolbar};
 impl Control {
     pub fn id(self) -> &'static str {
         match self {
-            Self::Panel(id) => id,
+            Self::Panel(id) | Self::Shortcut(id) => id,
+            Self::ManageButtons => "shell.manage_buttons",
+            Self::Depot => "shell.depot",
             Self::Analysers => "shell.analysers",
             Self::ChangeChannel => "shell.change_channel",
+            Self::CyclopediaMap => "shell.cyclopedia_map",
             Self::Inspection => "shell.inspection",
             Self::Loot => "shell.loot",
             Self::Notices => "shell.notices",
             Self::Skills => "shell.skills",
+            Self::Social => "shell.social",
             Self::Options => "shell.options",
             Self::Market => "shell.market",
             Self::Party => "shell.party",
             Self::Quests => "shell.quests",
             Self::Spells => "shell.spells",
+            Self::StoreInbox => "shell.store_inbox",
+            Self::UnjustifiedPoints => "shell.unjustified_points",
             Self::Login => "shell.sign_in",
             Self::CancelLogin => "shell.cancel_sign_in",
             Self::Fullscreen => "graphics.fullscreen",
@@ -105,15 +189,40 @@ pub(super) struct ShellToolbar;
 #[derive(Component)]
 pub(super) struct Dialog;
 #[derive(Component)]
-pub(super) struct Status;
-#[derive(Component)]
-pub(super) struct Feedback;
+pub(super) enum Feedback {
+    Settings,
+    Admission,
+}
 #[derive(Component)]
 pub(super) struct ScopeLabel;
 #[derive(Component)]
 pub(super) struct Indicator(Entity);
 
-pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
+#[derive(Resource)]
+pub(crate) struct BuiltInFont;
+
+pub(super) const EXTERNAL_FONT: &str = "fonts/verdanab.ttf";
+
+pub(crate) fn install_font_fallback(app: &mut App, assets: &std::path::Path) {
+    if !assets.join(EXTERNAL_FONT).is_file() {
+        app.insert_resource(BuiltInFont);
+    }
+}
+
+pub(crate) fn ui_font(assets: &AssetServer, fallback: bool) -> Handle<Font> {
+    if fallback {
+        Handle::default()
+    } else {
+        assets.load(EXTERNAL_FONT)
+    }
+}
+
+pub(super) fn setup(
+    mut commands: Commands,
+    assets: Res<AssetServer>,
+    fallback: Option<Res<BuiltInFont>>,
+) {
+    commands.init_resource::<toolbar::Manager>();
     commands.spawn((
         Camera2d,
         Camera {
@@ -132,7 +241,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         unchecked: assets.load(format!("{SKIN}checkbox-unchecked.png")),
         frame: assets.load(format!("{SKIN}dialog-frame-borderimage.png")),
         inset: assets.load("images/1pixel-down-frame.png"),
-        font: assets.load("fonts/verdanab.ttf"),
+        font: ui_font(&assets, fallback.is_some()),
     };
     let shell = commands
         .spawn((
@@ -150,16 +259,6 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
             GlobalZIndex(10),
         ))
         .id();
-    let status = commands
-        .spawn((
-            source::text(
-                "Offline — no admitted character or world.",
-                source::font(skins.font.clone(), false),
-            ),
-            Status,
-        ))
-        .insert(TextLayout::default())
-        .id();
     let toolbar = commands
         .spawn(Node {
             column_gap: px(6.),
@@ -171,13 +270,13 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
     let shell_feedback = commands
         .spawn((
             source::text("", source::font(skins.font.clone(), false)),
-            Feedback,
+            Feedback::Admission,
         ))
         .insert(TextLayout::default())
         .id();
     commands
         .entity(shell)
-        .add_children(&[status, toolbar, shell_feedback]);
+        .add_children(&[toolbar, shell_feedback]);
     for (control, caption, width) in [
         (Control::Login, "Sign in", 80.),
         (Control::CancelLogin, "Cancel sign-in", 100.),
@@ -189,6 +288,14 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         let button = action_button(&mut commands, &skins, control, caption, 100.);
         commands.entity(toolbar).add_child(button);
     }
+    let manage = action_button(
+        &mut commands,
+        &skins,
+        Control::ManageButtons,
+        "Manage Buttons",
+        120.,
+    );
+    commands.entity(toolbar).add_child(manage);
     // Full-window modal scrim blocks world pointer input while settings are open.
     let modal = commands
         .spawn((
@@ -215,21 +322,24 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
                 modal: true,
             },
             source::frame(skins.frame.clone(), [4., 17., 4., 4.]),
-            Node {
-                width: px(740.),
-                height: px(550.),
-                max_width: percent(98.),
-                max_height: percent(98.),
-                padding: UiRect {
-                    left: px(14.),
-                    right: px(14.),
-                    top: px(27.),
-                    bottom: px(14.),
+            Name::new("options.window"),
+            // Tibia Global options: 685 wide; a 129px category column beside a 470px page.
+            crate::bevy_shell::ui::window_layout::window(
+                "options",
+                Node {
+                    max_width: percent(98.),
+                    max_height: percent(98.),
+                    padding: UiRect {
+                        left: px(14.),
+                        right: px(14.),
+                        top: px(27.),
+                        bottom: px(14.),
+                    },
+                    flex_direction: FlexDirection::Column,
+                    row_gap: px(8.),
+                    ..default()
                 },
-                flex_direction: FlexDirection::Column,
-                row_gap: px(8.),
-                ..default()
-            },
+            ),
         ))
         .id();
     commands.entity(modal).add_child(panel);
@@ -333,7 +443,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
     let feedback = commands
         .spawn((
             source::text("", source::font(skins.font.clone(), false)),
-            Feedback,
+            Feedback::Settings,
         ))
         .insert(TextLayout::default())
         .id();
@@ -357,79 +467,10 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
     commands.entity(panel).add_children(&[content, footer]);
     commands.insert_resource(skins);
 }
-fn action_button(
-    commands: &mut Commands,
-    skins: &Skins,
-    control: Control,
-    caption: &str,
-    width: f32,
-) -> Entity {
-    let button = commands
-        .spawn((source::button(skins.buttons.clone(), width), control))
-        .observe(activate)
-        .id();
-    let text = commands
-        .spawn(source::button_caption(caption, skins.font.clone()))
-        .id();
-    commands.entity(button).add_child(text);
-    button
-}
-fn activate(
-    event: On<Activate>,
-    controls: Query<&Control>,
-    mut owner: NonSendMut<HostOwner>,
-    modal: super::game_ui::modal::ModalGuard,
-) {
-    if !modal.allows(event.entity) {
-        return;
-    }
-    if let Ok(control) = controls.get(event.entity) {
-        if owner.modal_active()
-            && matches!(
-                control,
-                Control::Options
-                    | Control::ChangeChannel
-                    | Control::Market
-                    | Control::Party
-                    | Control::Quests
-                    | Control::Spells
-                    | Control::Login
-                    | Control::CancelLogin
-            )
-        {
-            return;
-        }
-        match control {
-            control if TOOLBAR.iter().any(|entry| entry.1.id() == control.id()) => {
-                let _ = open_toolbar(&mut owner, *control);
-            }
-            Control::Login => owner.request_login(),
-            Control::CancelLogin => owner.cancel_login(),
-            Control::Apply => owner.apply(false),
-            Control::Ok => owner.apply(true),
-            Control::Cancel => owner.cancel(),
-            _ => {}
-        }
-    }
-}
-fn toggle(
-    event: On<ValueChange<bool>>,
-    controls: Query<&Control>,
-    mut owner: NonSendMut<HostOwner>,
-    modal: super::game_ui::modal::ModalGuard,
-) {
-    if !modal.allows(event.source) {
-        return;
-    }
-    if let Ok(control) = controls.get(event.source) {
-        owner.edit(|draft| match control {
-            Control::Fullscreen => draft.fullscreen = event.value,
-            Control::Vsync => draft.vsync = event.value,
-            Control::IntegerScaling => draft.integer_scaling = event.value,
-            _ => {}
-        });
-    }
-}
+mod controls;
+#[cfg(test)]
+use controls::activate;
+use controls::{action_button, toggle};
 // Bevy injects the independent ECS queries/resources in this system signature.
 #[allow(clippy::too_many_arguments, clippy::type_complexity)]
 pub(super) fn project(
@@ -437,7 +478,7 @@ pub(super) fn project(
     owner: NonSend<HostOwner>,
     skins: Res<Skins>,
     mut dialogs: Query<&mut Node, With<Dialog>>,
-    mut text: Query<(&mut Text, Has<Status>, Has<Feedback>, Has<ScopeLabel>)>,
+    mut text: Query<(&mut Text, Option<&Feedback>, Has<ScopeLabel>)>,
     controls: Query<(Entity, &Control, Has<Checked>)>,
     mut indicators: Query<(&Indicator, &mut ImageNode)>,
     mut focus: ResMut<InputFocus>,
@@ -461,19 +502,19 @@ pub(super) fn project(
     for mut node in &mut dialogs {
         node.display = if open { Display::Flex } else { Display::None };
     }
-    for (mut text, status, feedback, scope) in &mut text {
-        let next = if status {
-            Some(owner.status.as_str())
-        } else if feedback {
-            Some(owner.settings.feedback.as_str())
-        } else if scope {
-            Some(owner.settings.scope_label())
-        } else {
-            None
+    for (mut text, feedback, scope) in &mut text {
+        let next = match feedback {
+            Some(Feedback::Admission)
+                if owner.phase == super::owner::Phase::Entering && !owner.login.visible =>
+            {
+                owner.status.as_str()
+            }
+            Some(Feedback::Admission) => "",
+            Some(Feedback::Settings) => owner.settings.feedback.as_str(),
+            None if scope => owner.settings.scope_label(),
+            None => continue,
         };
-        if let Some(next) = next
-            && text.0 != next
-        {
+        if text.0 != next {
             text.0 = next.into();
         }
     }
@@ -539,3 +580,14 @@ pub(super) fn keyboard(
 
 #[cfg(test)]
 mod toolbar_tests;
+
+#[cfg(test)]
+pub(super) fn assert_editor_acquires_focus(world: &mut World, field: Entity) {
+    use bevy::input_focus::{AcquireFocus, InputFocus, tab_navigation::acquire_focus_tab_index};
+    world.add_observer(acquire_focus_tab_index);
+    world.trigger(AcquireFocus {
+        focused_entity: field,
+        window: Entity::PLACEHOLDER,
+    });
+    assert_eq!(world.resource::<InputFocus>().get(), Some(field));
+}

@@ -7,24 +7,96 @@ use super::{
 };
 use bevy::{prelude::*, window::PrimaryWindow};
 use serde::Serialize;
-use std::path::PathBuf;
+use std::{collections::VecDeque, path::PathBuf};
 
 mod named;
 
-/// In the explicit UI audit mode, F12 captures the rendered window through Bevy.
-/// GPU capture also works on native test displays without a desktop compositor.
+const MAX_PENDING_MANUAL_CAPTURES: usize = 4;
+
+pub(super) enum ManualCapture {
+    Audit(PathBuf),
+    Player(super::screenshots::PlayerCapture),
+}
+
+/// F12 captures the rendered window; explicit audit mode keeps its diagnostic PNG path.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "The input and capture systems share the F12 entry point"
+)]
 pub(super) fn capture_on_key(
     mut commands: Commands,
     keys: Res<ButtonInput<KeyCode>>,
     output: Res<AuditOutput>,
+    mut owner: NonSendMut<HostOwner>,
+    viewport: Res<super::game_ui::viewport::WorldViewport>,
+    mut automatic: Local<super::screenshots::AutomaticState>,
+    mut manual_pending: Local<VecDeque<(u64, ManualCapture)>>,
+    captures: Query<Entity, With<bevy::render::view::screenshot::Screenshot>>,
+    clock: Res<Time<Real>>,
+    mut writes: NonSendMut<super::screenshots::Writes>,
 ) {
-    if keys.just_pressed(KeyCode::F12)
-        && let Some(path) = &output.path
-    {
-        use bevy::render::view::screenshot::{Screenshot, save_to_disk};
-        commands
-            .spawn(Screenshot::primary_window())
-            .observe(save_to_disk(path.with_extension("png")));
+    writes.poll(&mut owner);
+    let occupied = !captures.is_empty();
+    let generation = owner.generation();
+    manual_pending.retain(|(requested, _)| *requested == generation);
+    let pressed = keys.just_pressed(KeyCode::F12);
+    let rejected =
+        pressed && (manual_pending.len() >= MAX_PENDING_MANUAL_CAPTURES || writes.is_full());
+    if pressed && !rejected {
+        let request = if let Some(path) = &output.path {
+            ManualCapture::Audit(path.with_extension("png"))
+        } else {
+            let preferences = owner.settings.preferences.screenshots.effective();
+            ManualCapture::Player(super::screenshots::PlayerCapture {
+                directory: preferences.directory,
+                game_only: preferences.game_only,
+                backlog: owner.play.is_some() && preferences.backlog_frames > 0,
+            })
+        };
+        manual_pending.push_back((generation, request));
+    }
+    let manual_batch = match manual_pending.front() {
+        Some((_, ManualCapture::Player(request)))
+            if request.backlog
+                && owner.play.is_some()
+                && request.game_only
+                    == owner.settings.preferences.screenshots.effective().game_only =>
+        {
+            Some(request)
+        }
+        _ => None,
+    };
+    let readback = super::screenshots::observe(
+        &mut commands,
+        &mut owner,
+        *viewport,
+        &mut automatic,
+        occupied,
+        &clock,
+        &writes,
+        manual_batch,
+    );
+    if !occupied && !writes.is_full() && (manual_batch.is_none() || readback.is_some()) {
+        let batch_scheduled = manual_batch.is_some();
+        match manual_pending.pop_front() {
+            Some((generation, ManualCapture::Audit(path))) => {
+                super::screenshots::request_audit(&mut commands, readback, generation, path);
+            }
+            Some((generation, ManualCapture::Player(request))) if !batch_scheduled => {
+                super::screenshots::request(
+                    &mut commands,
+                    readback,
+                    &mut owner,
+                    generation,
+                    request,
+                    *viewport,
+                );
+            }
+            _ => {}
+        }
+    }
+    if rejected {
+        owner.status = "Screenshot failed: capture queue is full".into();
     }
 }
 #[derive(Resource)]
@@ -259,3 +331,31 @@ pub(super) fn write(
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod screenshot_tests {
+    use super::*;
+    #[test]
+    fn ordinary_f12_requests_window_capture_without_audit() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let mut app = App::new();
+        app.insert_non_send(HostOwner::new(None)?)
+            .insert_resource(AuditOutput::new(None))
+            .init_resource::<ButtonInput<KeyCode>>()
+            .init_resource::<Time<Real>>()
+            .init_resource::<super::super::game_ui::viewport::WorldViewport>()
+            .init_non_send::<super::super::screenshots::Writes>()
+            .add_systems(Update, capture_on_key);
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .press(KeyCode::F12);
+        app.update();
+        let count = app
+            .world_mut()
+            .query::<&bevy::render::view::screenshot::Screenshot>()
+            .iter(app.world())
+            .count();
+        assert_eq!(count, 1, "ordinary F12 must capture without --ui-audit");
+        Ok(())
+    }
+}

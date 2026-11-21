@@ -399,6 +399,7 @@ pub(super) async fn exercise(
         sqlx::query("CREATE TRIGGER m49_ack_fail BEFORE INSERT ON game_elemental_boss_realizations FOR EACH ROW EXECUTE FUNCTION m49_ack_fail()").execute(&h.pool).await?;
     }
     let request = LoopMove {
+        slot: None,
         item: ItemKey::Instance(corpse.item_instance_id),
         count: None,
         target: LoopTarget::Ground(oteryn_protocol_oteryn::item_view::WorldTilePosition {
@@ -428,6 +429,7 @@ pub(super) async fn exercise(
         })
         .map_err(debug)?;
     let selection = ItemMoveSelection {
+        manual_sort: false,
         equip_drop: true,
         container_tree: false,
         world_interaction: true,

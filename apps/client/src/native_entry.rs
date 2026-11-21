@@ -2,6 +2,9 @@
 #[cfg(test)]
 #[path = "features/local-account-services/tests/entry.rs"]
 mod account_services_tests;
+#[cfg(test)]
+#[path = "play/admission_scene_test.rs"]
+mod admission_scene_test;
 mod admitted;
 mod authorize;
 mod challenge;
@@ -190,7 +193,9 @@ impl AdmissionAttempt for NativeAttempt<'_> {
             self.config.preference_path.as_deref(),
         );
         self.queue = None;
-        let session = oteryn_session_tcp::connection::admit_detailed_optimized(
+        let traffic = std::sync::Arc::new(crate::traffic::Traffic::default());
+        let counted = std::sync::Arc::clone(&traffic);
+        let session = oteryn_session_tcp::connection::admit_detailed_optimized_wrapped(
             &self.grant.endpoint.host,
             self.grant.endpoint.port,
             &self.grant.endpoint.tls_server_name,
@@ -209,6 +214,7 @@ impl AdmissionAttempt for NativeAttempt<'_> {
                 .clone()
                 .and_then(|path| crate::play::PreferenceStore::load(path).ok())
                 .is_some_and(|store| store.preferences().optimise_connection),
+            |stream| crate::traffic::Counting::new(stream, counted),
         )
         .await
         .map_err(|refusal| {
@@ -224,6 +230,7 @@ impl AdmissionAttempt for NativeAttempt<'_> {
             character_name: self.character_name.clone(),
             training_requested: self.training_requested,
             session,
+            traffic,
             world_id: self.grant.world_id.clone(),
             channel_id: self.grant.channel_id.clone(),
             channels: self.channels.clone(),

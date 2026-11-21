@@ -196,7 +196,7 @@ pub enum SnapshotError {
     NotSupported,
     InvalidQuery,
     SnapshotExpired,
-    /// A concurrent publisher won the repeatable-read race. No automatic retry.
+    /// A concurrent publisher won the repeatable-read race.
     RetryableConflict,
     /// The World's cut exceeds HIGHSCORES0-RL-04; nothing is published and the previous
     /// snapshot stays current.
@@ -302,8 +302,14 @@ impl DurabilityRoot {
         catalogues: SnapshotCatalogues,
         planned_reset: bool,
     ) -> Result<SnapshotRefresh> {
-        self.publish_highscore_cut(world, catalogues, !planned_reset, CutLimits::REGISTERED)
-            .await
+        self.publish_highscore_cut(
+            world,
+            catalogues,
+            !planned_reset,
+            CutLimits::REGISTERED,
+            &mut false,
+        )
+        .await
     }
 
     /// Fixture-only planned-reset cut under tighter `limits`, crossing page boundaries and
@@ -319,7 +325,7 @@ impl DurabilityRoot {
         catalogues: SnapshotCatalogues,
         limits: CutLimits,
     ) -> Result<Vec<SnapshotInfo>> {
-        self.publish_highscore_cut(world, catalogues, false, limits)
+        self.publish_highscore_cut(world, catalogues, false, limits, &mut false)
             .await
             .map(|refresh| refresh.snapshots)
     }
@@ -330,12 +336,15 @@ impl DurabilityRoot {
         catalogues: SnapshotCatalogues,
         only_if_due: bool,
         limits: CutLimits,
+        retry_schedule: &mut bool,
     ) -> Result<SnapshotRefresh> {
         self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+            .run_with_context(retry_schedule, move |holder, deadline, retry_schedule| {
                 Box::pin(async move {
                     let mut tx = begin_projection(holder, deadline).await?;
-                    match publish_cut(&mut tx, world, &catalogues, only_if_due, limits).await {
+                    match publish_cut(&mut tx, world, &catalogues, only_if_due, limits, retry_schedule)
+                        .await
+                    {
                         Ok(value) => {
                             commit_semantic_transaction(tx, deadline).await?;
                             Ok(Ok(value))
@@ -925,7 +934,7 @@ pub async fn publish_in_transaction(
     world: WorldId,
     catalogues: &SnapshotCatalogues,
 ) -> Result<Vec<SnapshotInfo>> {
-    publish_cut(tx, world, catalogues, false, CutLimits::REGISTERED)
+    publish_cut(tx, world, catalogues, false, CutLimits::REGISTERED, &mut false)
         .await
         .map(|refresh| refresh.snapshots)
 }
@@ -936,7 +945,16 @@ async fn publish_cut(
     catalogues: &SnapshotCatalogues,
     only_if_due: bool,
     limits: CutLimits,
+    retry_schedule: &mut bool,
 ) -> Result<SnapshotRefresh> {
+    // Activation proves all channels have drained. Read its epoch in the same
+    // repeatable snapshot as the ranking sources, before assuming the job role.
+    let reset_epoch: String = sqlx::query_scalar(
+        "SELECT coalesce((SELECT reset_epoch FROM game_world_reset_active WHERE world_id=encode($1,'hex')::uuid),0)::text",
+    )
+    .bind(world.as_bytes().as_slice())
+    .fetch_one(&mut **tx)
+    .await?;
     // HIGHSCORES0 §4: only the job's role writes the snapshot tables. The runtime login is its
     // member without inheritance, so these privileges last for this transaction only.
     sqlx::query("SET LOCAL ROLE oteryn_game_highscore_job")
@@ -960,9 +978,18 @@ async fn publish_cut(
     // Read due state while holding the same per-category locks used by publication. A stale
     // concurrent RR cut loses with a typed conflict rather than publishing a second generation.
     if only_if_due {
-        let recent = sqlx::query("SELECT count(*) AS recent,min(s.computed_at_ms) AS oldest FROM game_world_highscore_heads h JOIN game_world_highscore_snapshots s ON s.snapshot_id=h.current_snapshot_id WHERE h.world_id=encode($1,'hex')::uuid AND h.category=ANY($2::int[]) AND s.computed_at_ms>$3 AND (h.category<>17 OR s.computed_at_ms/$4=$5/$4)")
+        let recent = sqlx::query("SELECT count(*) FILTER (WHERE h.published_reset_epoch=$6::text::numeric
+                     AND s.computed_at_ms>$3 AND (h.category<>17 OR s.computed_at_ms/$4=$5/$4)) AS recent,
+                    min(s.computed_at_ms) AS oldest,
+                    bool_or(h.published_reset_epoch<>$6::text::numeric) AS reset_pending
+             FROM game_world_highscore_heads h
+             LEFT JOIN game_world_highscore_snapshots s ON s.snapshot_id=h.current_snapshot_id
+             WHERE h.world_id=encode($1,'hex')::uuid AND h.category=ANY($2::int[])")
             .bind(world.as_bytes().as_slice()).bind(&categories)
-            .bind(computed_at_ms.saturating_sub(SNAPSHOT_INTERVAL_MS)).bind(DROME_ROTATION_MS).bind(computed_at_ms).fetch_one(&mut **tx).await?;
+            .bind(computed_at_ms.saturating_sub(SNAPSHOT_INTERVAL_MS)).bind(DROME_ROTATION_MS).bind(computed_at_ms).bind(&reset_epoch).fetch_one(&mut **tx).await?;
+        // The caller can distinguish an ordinary cut failure even if the outer
+        // Root deadline expires or the COMMIT acknowledgement is lost.
+        *retry_schedule = recent.try_get("reset_pending")?;
         if recent.try_get::<i64, _>("recent")?
             == i64::try_from(categories.len()).map_err(|_| corrupt())?
         {
@@ -1024,8 +1051,8 @@ async fn publish_cut(
         if inserted != u64::try_from(count).map_err(|_| corrupt())? {
             return Err(corrupt());
         }
-        sqlx::query("UPDATE game_world_highscore_heads SET previous_snapshot_id=current_snapshot_id,current_snapshot_id=$3 WHERE world_id=encode($1,'hex')::uuid AND category=$2")
-            .bind(world.as_bytes().as_slice()).bind(i32::from(category)).bind(id).execute(&mut **tx).await?;
+        sqlx::query("UPDATE game_world_highscore_heads SET previous_snapshot_id=current_snapshot_id,current_snapshot_id=$3,published_reset_epoch=$4::text::numeric WHERE world_id=encode($1,'hex')::uuid AND category=$2")
+            .bind(world.as_bytes().as_slice()).bind(i32::from(category)).bind(id).bind(&reset_epoch).execute(&mut **tx).await?;
         sqlx::query("DELETE FROM game_world_highscore_snapshots WHERE world_id=encode($1,'hex')::uuid AND category=$2 AND snapshot_id<>$3 AND ($4::bigint IS NULL OR snapshot_id<>$4)")
             .bind(world.as_bytes().as_slice()).bind(i32::from(category)).bind(id).bind(old).execute(&mut **tx).await?;
         published.push(SnapshotInfo {

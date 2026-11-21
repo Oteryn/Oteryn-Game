@@ -14,6 +14,7 @@ use oteryn_gameplay_foundation::foundation::condition::{ConditionTick, TickFacts
 
 /// A field recipe observed by the current map owner. Cursor and HP remain in
 /// the creature slot; this value never restores a historical controller.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CreatureFieldEntry {
     pub definition: oteryn_gameplay_foundation::foundation::condition::ConditionDefinition,
     pub source: Option<ExactActorRef>,
@@ -29,11 +30,12 @@ pub struct PreparedCreaturePeriodicTurn {
     original_slot: Slot,
     damage_contributors: Box<DamageContributors>,
     after: CompanionState,
+    conditions_after: super::runtime_actor_conditions::ActorConditionState,
     health_after: i64,
     stamp: RuntimeWorkStamp,
     ticks: Vec<ConditionTick<ExactActorRef>>,
     next_ordinal: u64,
-    lethal_record: Option<OwnerCommitRecord>,
+    lethal_committed: Option<Box<super::runtime_actor_conditions::CreatureCommitState>>,
     native_death: Option<super::native_source_death::SourceCreatureDeathNotice>,
 }
 #[derive(Debug)]
@@ -70,7 +72,16 @@ impl ChannelRuntimeV1 {
         let Slot::CreatureOccupied { committed, .. } = &self.carrier.slots[index] else {
             return Err(CarrierError::NotCreature);
         };
-        if committed.field_entry_revision == Some(before.position_revision) {
+        if committed.field_entry_revision == Some(before.position_revision)
+            && match (committed.field_entry.as_ref(), field) {
+                (Some(previous), Some(current)) => {
+                    previous.occurrence == current.occurrence
+                        && previous.definition == current.definition
+                }
+                (None, None) => true,
+                _ => false,
+            }
+        {
             return Ok(());
         }
         let mut next = before.state.clone();
@@ -142,34 +153,8 @@ impl ChannelRuntimeV1 {
         };
         *companion = Some(Box::new(next));
         committed.field_entry_revision = Some(before.position_revision);
+        committed.field_entry = field.cloned();
         Ok(())
-    }
-
-    /// The state of a creature the field owner has nothing to do for now: its
-    /// entry for the current position is already committed and its condition
-    /// store holds no instance or cleanse immunity, so neither
-    /// `commit_creature_field_entry` nor a periodic turn would change it.
-    /// `None`, any read error included, means the owner must visit it.
-    pub fn idle_field_creature(&self, actor: ExactActorRef) -> Option<&CompanionState> {
-        self.carrier
-            .validate_current_continuity(&self.continuity)
-            .ok()?;
-        let index = self.carrier.validate_ref(&self.continuity, actor.0).ok()?;
-        let Slot::CreatureOccupied {
-            committed,
-            health,
-            position: Some(position),
-            companion: Some(state),
-            ..
-        } = self.carrier.slots.get(index)?
-        else {
-            return None;
-        };
-        (*health > 0
-            && committed.field_entry_revision == Some(position.revision)
-            && state.conditions.instances().is_empty()
-            && state.conditions.next_non_ticking_expiry().is_none())
-        .then_some(state.as_ref())
     }
 
     /// Stages only a source-qualified physical actor's existing condition store.
@@ -248,6 +233,28 @@ impl ChannelRuntimeV1 {
         if !before.state.conditions.accepts_time(now_us) {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
         }
+        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        let Slot::CreatureOccupied {
+            committed,
+            damage_contributors,
+            ..
+        } = &self.carrier.slots[index]
+        else {
+            return Err(CarrierError::NotCreature);
+        };
+        let soulpit = match &self.carrier.slots[index] {
+            Slot::CreatureOccupied { spell_combat, .. } => spell_combat.soulpit,
+            _ => return Err(CarrierError::NotCreature),
+        };
+        let ordinal = committed.next_ordinal;
+        let mut contributors_after = damage_contributors.clone();
+        contributors_after
+            .entries
+            .try_reserve(
+                COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX
+                    .saturating_sub(contributors_after.entries.len()),
+            )
+            .map_err(|_| CarrierError::AllocationFailed)?;
         let stamp = self.issue_owner_work()?;
         let mut after = before.state.clone();
         let ticks = after.conditions.take_due(now_us, facts);
@@ -398,6 +405,11 @@ impl ChannelRuntimeV1 {
                     )?;
                     // Source combatBlockHit heals before residual damage; each
                     // real tick caps independently, and lethal never resurrects.
+                    let healing = if let Some(tag) = soulpit {
+                        tag.incoming_health_change(healing, health_after, before.maximum_health)?
+                    } else {
+                        healing
+                    };
                     let health_before_healing = health_after;
                     health_after = health_after
                         .saturating_add(healing)
@@ -414,14 +426,31 @@ impl ChannelRuntimeV1 {
                         now_us,
                     )?;
                     current_type.state.policy = after.policy.clone();
-                    had_damage |= damage > 0;
-                    if damage > 0 {
+                    let healed = health_after.saturating_sub(health_before_healing);
+                    let damage = if let Some(tag) = soulpit {
+                        tag.incoming_health_change(damage, health_after, before.maximum_health)?
+                    } else {
+                        damage
+                    };
+                    let applied = damage.min(health_after).max(0);
+                    had_damage |= applied > 0;
+                    if applied > 0 {
                         after.conditions.remove_type(
                             oteryn_gameplay_domain::domain::condition::ConditionType::Invisible,
                         );
+                        after.conditions.remove_type(
+                            oteryn_gameplay_domain::domain::condition::ConditionType::Status(
+                                oteryn_gameplay_domain::domain::condition::StatusKind::Invisible,
+                            ),
+                        );
                     }
-                    let healed = health_after.saturating_sub(health_before_healing);
-                    let applied = damage.min(health_after).max(0);
+                    self.record_periodic_contributor(
+                        &mut contributors_after,
+                        tick,
+                        applied as u64,
+                        ordinal,
+                        now_us,
+                    )?;
                     if let TickKind::Damage { element, .. } = tick.kind {
                         impacts.push(CreaturePeriodicImpact {
                             source: tick.provenance.source,
@@ -467,12 +496,29 @@ impl ChannelRuntimeV1 {
                         now_us,
                     )?;
                     current_type.state.policy = after.policy.clone();
+                    let damage = if let Some(tag) = soulpit {
+                        tag.incoming_health_change(damage, health_after, before.maximum_health)?
+                    } else {
+                        damage
+                    };
                     had_damage |= damage > 0;
                     if damage > 0 {
                         after.conditions.remove_type(
                             oteryn_gameplay_domain::domain::condition::ConditionType::Invisible,
                         );
+                        after.conditions.remove_type(
+                            oteryn_gameplay_domain::domain::condition::ConditionType::Status(
+                                oteryn_gameplay_domain::domain::condition::StatusKind::Invisible,
+                            ),
+                        );
                     }
+                    self.record_periodic_contributor(
+                        &mut contributors_after,
+                        tick,
+                        damage.min(health_after).max(0) as u64,
+                        ordinal,
+                        now_us,
+                    )?;
                     impacts.push(CreaturePeriodicImpact {
                         source: tick.provenance.source,
                         element: None,
@@ -514,16 +560,24 @@ impl ChannelRuntimeV1 {
         let Slot::CreatureOccupied { committed, .. } = &self.carrier.slots[index] else {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::NotCreature);
         };
+        let mut conditions_after = committed.conditions.clone();
+        if had_damage {
+            conditions_after.remove_type_at(
+                oteryn_gameplay_domain::domain::condition::ConditionType::Invisible,
+                now_us,
+            )?;
+            conditions_after.remove_type_at(
+                oteryn_gameplay_domain::domain::condition::ConditionType::Status(
+                    oteryn_gameplay_domain::domain::condition::StatusKind::Invisible,
+                ),
+                now_us,
+            )?;
+        }
         let original_slot = self.carrier.slots[index].clone();
         let ordinal = committed.next_ordinal;
-        let Slot::CreatureOccupied {
-            damage_contributors,
-            ..
-        } = &original_slot
-        else {
-            return Err(CarrierError::NotCreature);
-        };
-        let mut damage_contributors = damage_contributors.clone();
+        // One attribution successor: lineage and summon-master ticks were recorded
+        // above; this pass adds the bound-session fence and Soul War source players.
+        let mut damage_contributors = contributors_after;
         // Attribution is prepared with the same HP/store successor. No new
         // input command is consumed by a condition tick; the existing source
         // stream convention seeds only a zero high-water when none exists.
@@ -559,9 +613,6 @@ impl ChannelRuntimeV1 {
             }) {
                 return Err(CarrierError::SupersededAttackerSession);
             }
-            let mark = previous
-                .filter(|mark| mark.0 == lease.generation() && mark.1 == *session)
-                .unwrap_or((lease.generation(), *session, 0, 0));
             let context = self.carrier.soul_war_health_context(
                 &self.continuity,
                 Some(source),
@@ -570,13 +621,6 @@ impl ChannelRuntimeV1 {
                 super::soul_war_player_source::SoulWarPlayerSourceOrigin::Condition,
                 self.content_pin(),
             )?;
-            damage_contributors.record(
-                lease.character_id(),
-                impact.damage,
-                ordinal,
-                Some(mark),
-                Some(now_us / 1_000),
-            );
             damage_contributors.record_source_player(
                 lease.character_id(),
                 impact.damage,
@@ -591,13 +635,10 @@ impl ChannelRuntimeV1 {
         } else {
             ordinal
         };
-        let lethal_record = if before.health > 0 && health_after == 0 {
+        let lethal_committed = if before.health > 0 && health_after == 0 {
             // The retained lethal source is the real store-issued owner input.
             // Nonlethal replay is fenced by complete store+HP comparison; no
             // unsequenced command receipt is consumed for every DOT pulse.
-            if committed.entries.len() >= COMBAT01_DAMAGE_RECEIPTS_PER_CREATURE_GENERATION_MAX {
-                return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::DamageReceiptCapacityExceeded);
-            }
             let occurrence = format!(
                 "owner-tick/{}/{}/{}/{}",
                 actor.actor_local_id(),
@@ -605,7 +646,7 @@ impl ChannelRuntimeV1 {
                 stamp.generation().get(),
                 stamp.ordinal().get()
             );
-            let mut binding = occurrence.into_bytes();
+            let mut binding = occurrence.as_bytes().to_vec();
             binding.push(0);
             binding.extend_from_slice(&actor.placement_identity());
             binding.extend_from_slice(&now_us.to_be_bytes());
@@ -613,18 +654,32 @@ impl ChannelRuntimeV1 {
                 binding.extend_from_slice(&tick.sequence.to_be_bytes());
                 binding.extend_from_slice(&tick.due.to_be_bytes());
             }
-            Some(OwnerCommitRecord {
-                binding: copy_bounded_binding(&binding)?,
-                damage: total,
-                result: OwnerDamageResult {
-                    applied: true,
-                    health_before: before.health,
-                    health_after,
+            let Slot::CreatureOccupied {
+                target_identity, ..
+            } = &original_slot
+            else {
+                return Err(CarrierError::NotCreature);
+            };
+            let (_, successor, _) = self.carrier.prepare_creature_damage_inner_bounded(
+                &self.continuity,
+                actor.0,
+                OwnerDamageCommand {
+                    target: target_identity,
+                    occurrence: occurrence.as_bytes(),
+                    binding: &binding,
+                    damage: total,
                 },
-                ordinal,
-                origin: None,
-                reflection: None,
-            })
+                None,
+                false,
+                None,
+                false,
+                Some(now_us / 1000),
+                true,
+            )?;
+            let Some(Slot::CreatureOccupied { committed, .. }) = successor else {
+                return Err(CarrierError::PlanConflict);
+            };
+            Some(committed)
         } else {
             None
         };
@@ -634,8 +689,10 @@ impl ChannelRuntimeV1 {
                 && !spell_combat.restored_splinter_death.as_ref().is_some_and(|original|
                     original.current_for(self) && original.projection(before.actor).is_some()))
         {
-            lethal_record
+            // The lethal receipt is the last entry of the prepared committed ledger.
+            lethal_committed
                 .as_ref()
+                .and_then(|committed| committed.entries.last())
                 .map(|record| {
                     ChannelActorCarrier::native_death_notice_for_record(
                         before.actor,
@@ -655,14 +712,79 @@ impl ChannelRuntimeV1 {
             before,
             original_slot,
             after,
+            conditions_after,
             health_after,
             stamp,
             ticks,
             next_ordinal,
-            lethal_record,
+            lethal_committed,
             native_death,
         })
     }
+    fn record_periodic_contributor(
+        &self,
+        contributors: &mut DamageContributors,
+        tick: &ConditionTick<ExactActorRef>,
+        damage: u64,
+        ordinal: u64,
+        now_us: u64,
+    ) -> Result<(), CarrierError> {
+        if damage == 0 {
+            return Ok(());
+        }
+        let identity = if let Some(lineage) = &tick.provenance.lineage {
+            if lineage.source_content_digest != self.content_pin().server_artifact_digest()
+                || tick.provenance.source.is_none_or(|source| {
+                    lineage.source_actor_placement != source.placement_identity()
+                        || lineage.source_scope_generation != source.scope_generation().get()
+                })
+            {
+                return Err(CarrierError::PlanConflict);
+            }
+            Some((
+                CharacterId::decode(&lineage.source_character)
+                    .map_err(|_| CarrierError::PlanConflict)?,
+                lineage.source_lease_generation,
+                GameSessionId::decode(&lineage.source_session)
+                    .map_err(|_| CarrierError::PlanConflict)?,
+            ))
+        } else if let Some(source) = tick.provenance.source {
+            let master = self
+                .companion_snapshot_including_dead(source)
+                .ok()
+                .and_then(|s| s.state.master);
+            let player = master.map(|m| (m.actor, m.session)).or_else(|| {
+                if !self.borrow_exact_actor_lookup().contains(source) {
+                    return None;
+                }
+                let index = self.carrier.validate_ref(&self.continuity, source.0).ok()?;
+                match &self.carrier.slots[index] {
+                    Slot::Occupied {
+                        game_session_id: Some(session),
+                        ..
+                    } => Some((source, *session)),
+                    _ => None,
+                }
+            });
+            player.and_then(|(actor, session)| {
+                self.bound_attacker_lease(actor, session)
+                    .ok()
+                    .map(|lease| (lease.character_id(), lease.generation(), session))
+            })
+        } else {
+            None
+        };
+        if let Some((character, lease, session)) = identity {
+            let mark = match contributors.high_water(character) {
+                Some(mark) if mark.0 > lease || (mark.0 == lease && mark.1 != session) => None,
+                Some(mark) if mark.0 == lease && mark.1 == session => Some(mark),
+                _ => Some((lease, session, 0, 0)),
+            };
+            contributors.record(character, damage, ordinal, mark, Some(now_us / 1000));
+        }
+        Ok(())
+    }
+
     /// One real slot mutation installs consumed store state and physical HP.
     pub fn commit_creature_periodic_turn(
         &mut self,
@@ -703,34 +825,23 @@ impl ChannelRuntimeV1 {
             health,
             companion,
             committed,
-            damage_contributors,
             spell_combat,
             target_identity,
+            damage_contributors,
             ..
         } = &mut self.carrier.slots[index]
         else {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::NotCreature);
         };
-        if let Some(record) = &prepared.lethal_record {
-            if record.ordinal != committed.next_ordinal
-                || committed.entries.len() >= COMBAT01_DAMAGE_RECEIPTS_PER_CREATURE_GENERATION_MAX
-            {
-                return Err(
-                    oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict,
-                );
-            }
-            committed.entries.try_reserve(1).map_err(|_| {
-                oteryn_gameplay_domain::domain::carrier_values::CarrierError::CapacityArithmeticOverflow
-            })?;
-        }
-        // Box allocation precedes HP/store/ordinal installation.
+        // All receipt admission and allocation happened in the retained successor.
         let next = Box::new(prepared.after);
-        if let Some(record) = prepared.lethal_record {
-            committed.entries.push(record);
+        if let Some(next_committed) = prepared.lethal_committed {
+            *committed = next_committed;
         }
         committed.next_ordinal = prepared.next_ordinal;
         *damage_contributors = prepared.damage_contributors;
         *health = prepared.health_after;
+        committed.conditions = prepared.conditions_after;
         if prepared.health_after == 0 {
             committed.conditions.die();
         }
@@ -935,16 +1046,6 @@ mod tests {
         amount: u32,
         repetitions: u32,
     ) {
-        install_dot_at(runtime, creature, amount, repetitions, 0);
-    }
-
-    fn install_dot_at(
-        runtime: &mut ChannelRuntimeV1,
-        creature: ExactActorRef,
-        amount: u32,
-        repetitions: u32,
-        now: u64,
-    ) {
         let before = runtime.companion_snapshot(creature).unwrap();
         let mut after = before.state.clone();
         let definition = ConditionDefinition::new(
@@ -969,7 +1070,7 @@ mod tests {
                 ConditionSourceKind::Field,
                 &[],
                 &ApplicationFacts {
-                    now,
+                    now: 0,
                     base_speed: 220,
                     mana_shield_capacity: 0,
                     target_reentry_protected: false,
@@ -981,93 +1082,6 @@ mod tests {
             )
             .unwrap();
         runtime.compare_companion_state(&before, after).unwrap();
-    }
-    #[test]
-    fn idle_field_creature_needs_committed_entry_and_empty_conditions() {
-        let (mut runtime, _, _) = owner();
-        let creature = runtime
-            .admit_pinned_monster_lab_creature(
-                MovementLocalPosition {
-                    x: 1,
-                    y: 0,
-                    floor: 0,
-                },
-                "creature:rat",
-                812,
-            )
-            .unwrap();
-        runtime
-            .install_creature_policy(creature, "creature:rat")
-            .unwrap();
-        // No entry is committed for this position yet: the owner must visit it.
-        assert!(runtime.idle_field_creature(creature).is_none());
-        runtime
-            .commit_creature_field_entry(creature, 0, None)
-            .unwrap();
-        assert!(runtime.idle_field_creature(creature).is_some());
-        // A condition in the store makes it due for periodic turns again.
-        install_dot(&mut runtime, creature, 10, 2);
-        assert!(runtime.idle_field_creature(creature).is_none());
-    }
-    #[test]
-    fn skipped_idle_creature_ticks_like_one_visited_every_pass() {
-        // The field owner skips an idle creature, so its empty store no longer
-        // advances pass_at/pass_ticks. Its first condition must tick exactly as
-        // for a creature that was visited on every pass: no burst, no lost tick.
-        let facts = || TickFacts {
-            in_protection_zone: false,
-            standing_on_field: None,
-        };
-        let run = |visit_idle: bool| {
-            let (mut runtime, _, _) = owner();
-            let creature = runtime
-                .admit_pinned_monster_lab_creature(
-                    MovementLocalPosition {
-                        x: 1,
-                        y: 0,
-                        floor: 0,
-                    },
-                    "creature:rat",
-                    812,
-                )
-                .unwrap();
-            runtime
-                .install_creature_policy(creature, "creature:rat")
-                .unwrap();
-            runtime
-                .commit_creature_field_entry(creature, 0, None)
-                .unwrap();
-            for now in (1..=5).map(|second| second * 1_000_000) {
-                assert!(runtime.idle_field_creature(creature).is_some());
-                if visit_idle {
-                    let prepared = runtime
-                        .stage_creature_periodic_turn(creature, now, facts())
-                        .unwrap();
-                    assert!(
-                        runtime
-                            .commit_creature_periodic_turn(prepared)
-                            .unwrap()
-                            .ticks
-                            .is_empty()
-                    );
-                }
-            }
-            // The field applies it at the instant of the last pass.
-            install_dot_at(&mut runtime, creature, 10, 3, 5_000_000);
-            (6..=10)
-                .map(|second| second * 1_000_000)
-                .map(|now| {
-                    let prepared = runtime
-                        .stage_creature_periodic_turn(creature, now, facts())
-                        .unwrap();
-                    let receipt = runtime.commit_creature_periodic_turn(prepared).unwrap();
-                    (now, receipt.ticks.len(), receipt.health_after)
-                })
-                .collect::<Vec<_>>()
-        };
-        let visited = run(true);
-        assert!(visited.iter().any(|(_, ticks, _)| *ticks > 0));
-        assert_eq!(visited, run(false));
     }
     fn retired_dot_source(reused: bool) {
         let (mut runtime, source, session) = owner();
@@ -1169,6 +1183,694 @@ mod tests {
     #[test]
     fn review9_dot_survives_reused_source_slot() {
         retired_dot_source(true);
+    }
+
+    #[test]
+    fn periodic_damage_dispels_native_and_companion_invisibility_for_dot_and_agony() {
+        use super::super::runtime_actor_conditions::{ActorConditionTransition, ConditionSource};
+        use oteryn_gameplay_domain::domain::condition::ConditionType;
+        use oteryn_simulation_determinism::SemanticTimeMicros;
+        for agony in [false, true] {
+            let (mut runtime, owner, session) = owner();
+            let creature = runtime
+                .create_companion(
+                    owner,
+                    session,
+                    "rat",
+                    MovementLocalPosition {
+                        x: 1,
+                        y: 0,
+                        floor: 0,
+                    },
+                    None,
+                    None,
+                    0,
+                )
+                .unwrap();
+            let root = GameplayDecisionRoot::from_bytes([7; 32]);
+            let invisible = ConditionDefinition::new(
+                "test.invisible",
+                1,
+                ConditionValues::Invisible {
+                    duration_ms: 10_000,
+                },
+            )
+            .unwrap();
+            let facts = ApplicationFacts {
+                now: 0,
+                base_speed: 220,
+                mana_shield_capacity: 0,
+                target_reentry_protected: false,
+                source_reentry_protected: false,
+                target_is_player: false,
+                decision_root: &root,
+                occurrence: DecisionOccurrenceId::from_bytes([6; 16]),
+            };
+            let plan = runtime
+                .prepare_actor_condition(
+                    creature,
+                    None,
+                    ActorConditionTransition::Apply {
+                        definition: &invisible,
+                        source: ConditionSource {
+                            actor: creature,
+                            session: None,
+                            kind: ConditionSourceKind::SelfUse,
+                        },
+                        immunities: &[],
+                        facts,
+                    },
+                    SemanticTimeMicros::from_micros(0),
+                )
+                .unwrap();
+            runtime
+                .commit_actor_condition(&plan, SemanticTimeMicros::from_micros(0))
+                .unwrap();
+            let before = runtime.companion_snapshot(creature).unwrap();
+            let mut after = before.state.clone();
+            after.conditions = runtime.actor_conditions(creature, None).unwrap().clone();
+            let values = if agony {
+                ConditionValues::Agony {
+                    total_min: 100,
+                    total_max: 100,
+                    per_tick: 100,
+                    interval_ms: 1000,
+                    delayed: true,
+                }
+            } else {
+                ConditionValues::DamageOverTime {
+                    element: DotElement::Fire,
+                    total_min: 100,
+                    total_max: 100,
+                    per_tick: 100,
+                    interval_ms: 1000,
+                    delayed: true,
+                }
+            };
+            let damage = ConditionDefinition::new("test.damage", 1, values).unwrap();
+            after
+                .conditions
+                .apply(&damage, None, ConditionSourceKind::Field, &[], &facts)
+                .unwrap();
+            runtime.compare_companion_state(&before, after).unwrap();
+            let prepared = runtime
+                .stage_creature_periodic_turn(creature, 1_000_000, TickFacts::default())
+                .unwrap();
+            assert!(
+                runtime
+                    .actor_conditions(creature, None)
+                    .unwrap()
+                    .active_at(ConditionType::Invisible.conflict_key(), 1_000_000)
+                    .is_some()
+            );
+            let receipt = runtime.commit_creature_periodic_turn(prepared).unwrap();
+            assert!(receipt.health_after < receipt.health_before);
+            assert!(
+                runtime
+                    .actor_conditions(creature, None)
+                    .unwrap()
+                    .active_at(ConditionType::Invisible.conflict_key(), 1_000_000)
+                    .is_none()
+            );
+            assert!(
+                runtime
+                    .companion_snapshot(creature)
+                    .unwrap()
+                    .state
+                    .conditions
+                    .active_at(ConditionType::Invisible.conflict_key(), 1_000_000)
+                    .is_none()
+            );
+        }
+    }
+
+    #[test]
+    fn a_periodic_hit_reveals_a_creature_with_timed_status_invisibility() {
+        use super::super::runtime_actor_conditions::{ActorConditionTransition, ConditionSource};
+        use oteryn_gameplay_domain::domain::condition::StatusKind;
+        use oteryn_simulation_determinism::SemanticTimeMicros;
+        let (mut runtime, player, session) = owner();
+        let creature = runtime
+            .create_companion(
+                player,
+                session,
+                "rat",
+                MovementLocalPosition {
+                    x: 1,
+                    y: 0,
+                    floor: 0,
+                },
+                None,
+                None,
+                0,
+            )
+            .unwrap();
+        let invisible = ConditionDefinition::new(
+            "test.timed-invisible",
+            1,
+            ConditionValues::TimedStatus {
+                kind: StatusKind::Invisible,
+                duration_ms: 10_000,
+            },
+        )
+        .unwrap();
+        let now = SemanticTimeMicros::from_micros(0);
+        let plan = runtime
+            .prepare_actor_condition(
+                creature,
+                None,
+                ActorConditionTransition::Apply {
+                    definition: &invisible,
+                    source: ConditionSource {
+                        actor: creature,
+                        session: None,
+                        kind: ConditionSourceKind::SelfUse,
+                    },
+                    immunities: &[],
+                    facts: ApplicationFacts {
+                        now: 0,
+                        base_speed: 220,
+                        mana_shield_capacity: 0,
+                        target_reentry_protected: false,
+                        source_reentry_protected: false,
+                        target_is_player: false,
+                        decision_root: &GameplayDecisionRoot::from_bytes([7; 32]),
+                        occurrence: DecisionOccurrenceId::from_bytes([6; 16]),
+                    },
+                },
+                now,
+            )
+            .unwrap();
+        runtime.commit_actor_condition(&plan, now).unwrap();
+        let before = runtime.companion_snapshot(creature).unwrap();
+        let mut after = before.state.clone();
+        after.conditions = runtime.actor_conditions(creature, None).unwrap().clone();
+        runtime.compare_companion_state(&before, after).unwrap();
+        install_dot(&mut runtime, creature, 100, 1);
+        let at = 1_000_000;
+        assert!(
+            runtime
+                .actor_conditions(creature, None)
+                .unwrap()
+                .invisible_at(at)
+        );
+        let prepared = runtime
+            .stage_creature_periodic_turn(creature, at, TickFacts::default())
+            .unwrap();
+        let receipt = runtime.commit_creature_periodic_turn(prepared).unwrap();
+        assert!(receipt.health_after < receipt.health_before);
+        assert!(
+            !runtime
+                .actor_conditions(creature, None)
+                .unwrap()
+                .invisible_at(at)
+        );
+        assert!(
+            !runtime
+                .companion_snapshot(creature)
+                .unwrap()
+                .state
+                .conditions
+                .invisible_at(at)
+        );
+    }
+
+    #[test]
+    fn enrage_periodic_damage_matches_receipt_and_preserves_zero_damage_state() {
+        use super::super::soulpit::{SoulpitBossState, SoulpitCreatureTag};
+        use oteryn_gameplay_domain::domain::soulpit::{BossAbility, SoulpitStack};
+        use oteryn_simulation_determinism::SemanticTimeMicros;
+        for (agony, damage) in [
+            (false, 1),
+            (false, 10),
+            (true, 10),
+            (false, 1000),
+            (true, 1000),
+        ] {
+            let (mut runtime, owner, session) = owner();
+            let creature = runtime
+                .create_companion(
+                    owner,
+                    session,
+                    "rat",
+                    MovementLocalPosition {
+                        x: 1,
+                        y: 0,
+                        floor: 0,
+                    },
+                    None,
+                    None,
+                    0,
+                )
+                .unwrap();
+            let index = runtime
+                .carrier
+                .validate_ref(&runtime.continuity, creature.0)
+                .unwrap();
+            let Slot::CreatureOccupied {
+                health,
+                spell_combat,
+                ..
+            } = &mut runtime.carrier.slots[index]
+            else {
+                unreachable!()
+            };
+            *health = 30;
+            spell_combat.maximum_health = 147;
+            spell_combat.soulpit = Some(SoulpitCreatureTag {
+                handoff_id: id(7),
+                wave: 4,
+                monster_id: 7,
+                stack: SoulpitStack::Boss,
+                is_summon: false,
+                boss: Some(SoulpitBossState {
+                    ability: BossAbility::Enrage,
+                    next_oppressor_at_micros: 0,
+                    ordinal: 0,
+                }),
+            });
+            if agony {
+                let before = runtime.companion_snapshot(creature).unwrap();
+                let mut after = before.state.clone();
+                let definition = ConditionDefinition::new(
+                    "test.agony",
+                    1,
+                    ConditionValues::Agony {
+                        total_min: damage,
+                        total_max: damage,
+                        per_tick: damage,
+                        interval_ms: 1000,
+                        delayed: true,
+                    },
+                )
+                .unwrap();
+                after
+                    .conditions
+                    .apply(
+                        &definition,
+                        None,
+                        ConditionSourceKind::Field,
+                        &[],
+                        &ApplicationFacts {
+                            now: 0,
+                            base_speed: 220,
+                            mana_shield_capacity: 0,
+                            target_reentry_protected: false,
+                            source_reentry_protected: false,
+                            target_is_player: false,
+                            decision_root: &GameplayDecisionRoot::from_bytes([7; 32]),
+                            occurrence: DecisionOccurrenceId::from_bytes([5; 16]),
+                        },
+                    )
+                    .unwrap();
+                runtime.compare_companion_state(&before, after).unwrap();
+            } else {
+                install_dot(&mut runtime, creature, damage, 1);
+            }
+            let ordinal_before = if damage == 1 {
+                let Slot::CreatureOccupied {
+                    health, committed, ..
+                } = &mut runtime.carrier.slots[index]
+                else {
+                    unreachable!()
+                };
+                *health = 73;
+                let ordinal = committed.next_ordinal;
+                let invisible = ConditionDefinition::new(
+                    "test.enrage.invisible",
+                    1,
+                    ConditionValues::Invisible { duration_ms: 3000 },
+                )
+                .unwrap();
+                let now = SemanticTimeMicros::from_micros(0);
+                let plan = runtime
+                    .prepare_actor_condition(
+                        creature,
+                        None,
+                        ActorConditionTransition::Apply {
+                            definition: &invisible,
+                            source: ConditionSource {
+                                actor: creature,
+                                session: None,
+                                kind: ConditionSourceKind::SelfUse,
+                            },
+                            immunities: &[],
+                            facts: ApplicationFacts {
+                                now: 0,
+                                base_speed: 220,
+                                mana_shield_capacity: 0,
+                                target_reentry_protected: false,
+                                source_reentry_protected: false,
+                                target_is_player: false,
+                                decision_root: &GameplayDecisionRoot::from_bytes([7; 32]),
+                                occurrence: DecisionOccurrenceId::from_bytes([6; 16]),
+                            },
+                        },
+                        now,
+                    )
+                    .unwrap();
+                runtime.commit_actor_condition(&plan, now).unwrap();
+                assert!(
+                    runtime
+                        .actor_conditions(creature, None)
+                        .unwrap()
+                        .invisible_at(1_000_000)
+                );
+                Some(ordinal)
+            } else {
+                None
+            };
+            let turn = runtime
+                .stage_creature_periodic_turn(creature, 1_000_000, TickFacts::default())
+                .unwrap();
+            let receipt = runtime.commit_creature_periodic_turn(turn).unwrap();
+            if let Some(ordinal) = ordinal_before {
+                assert_eq!(receipt.health_after, 73);
+                assert_eq!(receipt.impacts.len(), 1);
+                assert_eq!(receipt.impacts[0].damage, 0);
+                assert!(
+                    runtime
+                        .actor_conditions(creature, None)
+                        .unwrap()
+                        .invisible_at(1_000_000)
+                );
+                let Slot::CreatureOccupied { committed, .. } = &runtime.carrier.slots[index] else {
+                    unreachable!()
+                };
+                assert_eq!(committed.next_ordinal, ordinal);
+                continue;
+            }
+            if damage == 10 {
+                assert_eq!(receipt.health_after, 24, "Enrage resolves each tick once");
+                assert_eq!(receipt.impacts.iter().map(|i| i.damage).sum::<u64>(), 6);
+                continue;
+            }
+            assert_eq!(receipt.health_after, 0);
+            assert_eq!(receipt.impacts.iter().map(|i| i.damage).sum::<u64>(), 30);
+            let mut death = runtime.borrow_combat_death();
+            let lethal = death.committed_lethal_receipt(creature).unwrap();
+            death.project_committed_lethal(lethal).unwrap();
+        }
+    }
+
+    #[test]
+    fn stationary_field_control_changes_do_not_reapply_or_reset_ticks() {
+        use oteryn_gameplay_foundation::foundation::condition::ConditionLineage;
+        let (mut runtime, owner, session) = owner();
+        let creature = runtime
+            .create_companion(
+                owner,
+                session,
+                "rat",
+                MovementLocalPosition {
+                    x: 1,
+                    y: 0,
+                    floor: 0,
+                },
+                None,
+                None,
+                0,
+            )
+            .unwrap();
+        let mut field = CreatureFieldEntry {
+            definition: ConditionDefinition::new(
+                "test.field",
+                1,
+                ConditionValues::DamageOverTime {
+                    element: DotElement::Fire,
+                    total_min: 10,
+                    total_max: 10,
+                    per_tick: 1,
+                    interval_ms: 1000,
+                    delayed: false,
+                },
+            )
+            .unwrap(),
+            source: Some(owner),
+            lineage: Some(ConditionLineage {
+                source_character: id(9),
+                source_session: id(4),
+                source_lease_generation: 1,
+                source_actor_placement: owner.placement_identity(),
+                source_scope_generation: runtime.binding().scope_generation().get(),
+                source_content_digest: runtime.content_pin().server_artifact_digest(),
+                source_catalog_digest: [1; 32],
+                source_creation_command: 1,
+            }),
+            occurrence: DecisionOccurrenceId::from_bytes([1; 16]),
+        };
+        runtime
+            .commit_creature_field_entry(creature, 0, Some(&field))
+            .unwrap();
+        let original = runtime.companion_snapshot(creature).unwrap();
+        let source = field.source.take();
+        let lineage = field.lineage.take();
+        runtime
+            .commit_creature_field_entry(creature, 100, Some(&field))
+            .unwrap();
+        assert_eq!(runtime.companion_snapshot(creature).unwrap(), original);
+        field.source = source;
+        field.lineage = lineage;
+        runtime
+            .commit_creature_field_entry(creature, 200, Some(&field))
+            .unwrap();
+        assert_eq!(runtime.companion_snapshot(creature).unwrap(), original);
+    }
+
+    #[test]
+    fn stationary_creature_admits_new_and_replaced_fields_once_per_field_identity() {
+        let (mut runtime, owner, session) = owner();
+        let creature = runtime
+            .create_companion(
+                owner,
+                session,
+                "rat",
+                MovementLocalPosition {
+                    x: 1,
+                    y: 0,
+                    floor: 0,
+                },
+                None,
+                None,
+                0,
+            )
+            .unwrap();
+        runtime
+            .commit_creature_field_entry(creature, 0, None)
+            .unwrap();
+        for identity in 1..=2 {
+            let definition = ConditionDefinition::new(
+                &format!("test.field.{identity}"),
+                1,
+                ConditionValues::DamageOverTime {
+                    element: DotElement::Fire,
+                    total_min: 10,
+                    total_max: 10,
+                    per_tick: 1,
+                    interval_ms: 1000,
+                    delayed: false,
+                },
+            )
+            .unwrap();
+            let field = CreatureFieldEntry {
+                definition: definition.clone(),
+                source: None,
+                lineage: None,
+                occurrence: DecisionOccurrenceId::from_bytes([identity; 16]),
+            };
+            runtime
+                .commit_creature_field_entry(creature, u64::from(identity), Some(&field))
+                .unwrap();
+            let current = runtime.companion_snapshot(creature).unwrap();
+            assert!(
+                current
+                    .state
+                    .conditions
+                    .instances()
+                    .iter()
+                    .any(|i| i.definition() == &definition)
+            );
+            runtime
+                .commit_creature_field_entry(creature, u64::from(identity) + 1, Some(&field))
+                .unwrap();
+            assert_eq!(runtime.companion_snapshot(creature).unwrap(), current);
+        }
+    }
+
+    #[test]
+    fn lethal_periodic_tick_evicts_safe_history_and_preserves_original_candidate() {
+        let (mut runtime, owner, session) = owner();
+        let creature = runtime
+            .create_companion(
+                owner,
+                session,
+                "rat",
+                MovementLocalPosition {
+                    x: 1,
+                    y: 0,
+                    floor: 0,
+                },
+                None,
+                None,
+                0,
+            )
+            .unwrap();
+        let character = CharacterId::decode(&id(9)).unwrap();
+        runtime
+            .bind_attacker_lease(owner, session, CharacterLease::new(character, 1).unwrap())
+            .unwrap();
+        for sequence in 1..=16 {
+            runtime
+                .commit_source_damage(
+                    creature,
+                    owner,
+                    session,
+                    b"test.history",
+                    sequence,
+                    1,
+                    sequence,
+                )
+                .unwrap();
+        }
+        install_dot(&mut runtime, creature, 1000, 1);
+        let before = runtime.companion_snapshot(creature).unwrap();
+        let prepared = runtime
+            .stage_creature_periodic_turn(creature, 1_000_000, TickFacts::default())
+            .unwrap();
+        assert_eq!(runtime.companion_snapshot(creature).unwrap(), before);
+        let receipt = runtime.commit_creature_periodic_turn(prepared).unwrap();
+        assert_eq!(receipt.health_after, 0);
+        let mut owner = runtime.borrow_combat_death();
+        let lethal = owner.committed_lethal_receipt(creature).unwrap();
+        owner.project_committed_lethal(lethal).unwrap();
+    }
+
+    #[test]
+    fn player_periodic_dot_and_agony_damage_updates_reward_and_current_session_shares_once() {
+        for agony in [false, true] {
+            let (mut runtime, owner, session) = owner();
+            let creature = runtime
+                .create_companion(
+                    owner,
+                    session,
+                    "rat",
+                    MovementLocalPosition {
+                        x: 1,
+                        y: 0,
+                        floor: 0,
+                    },
+                    None,
+                    None,
+                    0,
+                )
+                .unwrap();
+            let character = CharacterId::decode(&id(9)).unwrap();
+            runtime
+                .bind_attacker_lease(owner, session, CharacterLease::new(character, 1).unwrap())
+                .unwrap();
+            let before = runtime.companion_snapshot(creature).unwrap();
+            let mut after = before.state.clone();
+            let values = if agony {
+                ConditionValues::Agony {
+                    total_min: 100,
+                    total_max: 100,
+                    per_tick: 100,
+                    interval_ms: 1000,
+                    delayed: true,
+                }
+            } else {
+                ConditionValues::DamageOverTime {
+                    element: DotElement::Fire,
+                    total_min: 100,
+                    total_max: 100,
+                    per_tick: 100,
+                    interval_ms: 1000,
+                    delayed: true,
+                }
+            };
+            let definition = ConditionDefinition::new("test.player.dot", 1, values).unwrap();
+            let root = GameplayDecisionRoot::from_bytes([7; 32]);
+            after
+                .conditions
+                .apply(
+                    &definition,
+                    Some(owner),
+                    ConditionSourceKind::Player,
+                    &[],
+                    &ApplicationFacts {
+                        now: 0,
+                        base_speed: 220,
+                        mana_shield_capacity: 0,
+                        target_reentry_protected: false,
+                        source_reentry_protected: false,
+                        target_is_player: false,
+                        decision_root: &root,
+                        occurrence: DecisionOccurrenceId::from_bytes([7; 16]),
+                    },
+                )
+                .unwrap();
+            runtime.compare_companion_state(&before, after).unwrap();
+            let mut source = |r: &ChannelRuntimeV1, actor: ExactActorRef, _: u64| {
+                r.player_control_facts(actor, session)?;
+                r.bound_attacker_lease(actor, session)?;
+                Ok(Some(100))
+            };
+            let receipt = runtime
+                .apply_creature_periodic_turn_with_sources(
+                    creature,
+                    1_000_000,
+                    TickFacts::default(),
+                    &mut source,
+                )
+                .unwrap();
+            let damage = receipt.impacts.iter().map(|i| i.damage).sum::<u64>();
+            assert!(damage > 0);
+            runtime
+                .apply_creature_periodic_turn_with_sources(
+                    creature,
+                    1_000_000,
+                    TickFacts::default(),
+                    &mut source,
+                )
+                .unwrap();
+            let view = runtime.borrow_combat_death();
+            let shares = view.reward_damage_shares(creature).unwrap();
+            assert_eq!(shares.len(), 1);
+            assert_eq!(shares[0].character, character);
+            assert_eq!(shares[0].total, damage);
+            let current = view.current_session_damage_shares(creature).unwrap();
+            assert_eq!(current.len(), 1);
+            assert_eq!(current[0].total, damage);
+        }
+    }
+
+    #[test]
+    fn lethal_periodic_projection_retains_original_owner_timestamp() {
+        let (mut runtime, owner, session) = owner();
+        let creature = runtime
+            .create_companion(
+                owner,
+                session,
+                "rat",
+                MovementLocalPosition {
+                    x: 1,
+                    y: 0,
+                    floor: 0,
+                },
+                None,
+                None,
+                0,
+            )
+            .unwrap();
+        install_dot(&mut runtime, creature, 1000, 1);
+        let prepared = runtime
+            .stage_creature_periodic_turn(creature, 1_234_567, TickFacts::default())
+            .unwrap();
+        runtime.commit_creature_periodic_turn(prepared).unwrap();
+        let mut view = runtime.borrow_combat_death();
+        let lethal = view.committed_lethal_receipt(creature).unwrap();
+        view.project_committed_lethal(lethal).unwrap();
+        assert_eq!(view.projected_death_at_ms(creature).unwrap(), Some(1234));
     }
 
     #[test]

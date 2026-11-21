@@ -1,7 +1,8 @@
 //! CREATURE-MOVE-1 (CREATURE-AI-0 §5.3): the shared bounded path search of the Movement owner,
 //! for a player chase (RANGED-0 §8, `combat_attack::chase`) and later creatures.
 //!
-//! This search retains cardinal neighbours in north, east, south, west order; 10 per step plus the caller's extra tile cost (+40 over an
+//! Cardinal neighbours north, east, south, west followed by diagonals; cardinal steps cost 10,
+//! diagonals cost 30, plus the caller's extra tile cost (+40 over an
 //! occupied tile); ties by lowest total, then lowest estimate, then neighbour order, then
 //! discovery order; at most `AI01-PATH-SEARCH-WORK` (1,024) expansions and `AI01-ROUTE-STEPS`
 //! (128) steps, within the caller's search distance (Chebyshev, 12 tiles for a chase). The goal
@@ -41,11 +42,15 @@ pub const CREATURE_COST: u32 = 40;
 
 /// The cost of one step.
 const STEP_COST: u32 = 10;
-const NEIGHBOURS: [CardinalStep; 4] = [
+const NEIGHBOURS: [CardinalStep; 8] = [
     CardinalStep::North,
     CardinalStep::East,
     CardinalStep::South,
     CardinalStep::West,
+    CardinalStep::NorthEast,
+    CardinalStep::SouthEast,
+    CardinalStep::SouthWest,
+    CardinalStep::NorthWest,
 ];
 
 /// The bounds of one search.
@@ -54,6 +59,7 @@ struct SearchBounds {
     work: usize,
     route_steps: usize,
     distance: i32,
+    directions: usize,
 }
 
 pub const fn delta(step: CardinalStep) -> (i32, i32) {
@@ -66,8 +72,8 @@ pub fn chebyshev(from: MovementLocalPosition, to: MovementLocalPosition) -> i64 
     dx.max(dy)
 }
 
-/// The fewest cardinal steps from `at` to a tile at Chebyshev distance 1 from `target`, times
-/// the step cost: admissible and consistent for the goal set.
+/// The cheapest unobstructed cardinal cost to the goal set. A diagonal costs 30, more
+/// than the two cardinal steps it replaces, so this remains admissible and consistent.
 fn estimate(at: MovementLocalPosition, target: MovementLocalPosition, exact: bool) -> u32 {
     let dx = (i64::from(target.x) - i64::from(at.x)).unsigned_abs();
     let dy = (i64::from(target.y) - i64::from(at.y)).unsigned_abs();
@@ -112,6 +118,7 @@ pub fn route_next_to(
             work: PATH_SEARCH_WORK,
             route_steps: ROUTE_STEPS,
             distance,
+            directions: NEIGHBOURS.len(),
         },
         tile_cost,
     )
@@ -126,7 +133,7 @@ fn search(
     measured_search(start, target, bounds, false, &mut 0, tile_cost)
 }
 
-/// A measured search uses the same bounded cardinal A* for chase and the exact spawn cell.
+/// A measured search uses the same bounded A* for chase and the exact spawn cell.
 /// The field owner can add its cost to `tile_cost`; production currently supplies zero.
 pub fn measured_route(
     start: MovementLocalPosition,
@@ -159,12 +166,41 @@ pub fn measured_route_with_distance(
             work: PATH_SEARCH_WORK,
             route_steps: ROUTE_STEPS,
             distance,
+            directions: NEIGHBOURS.len(),
         },
         exact,
         &mut work,
         tile_cost,
     );
     (route, work)
+}
+
+/// Creature proposals encode only cardinal steps.
+pub fn measured_creature_route(
+    start: MovementLocalPosition,
+    target: MovementLocalPosition,
+    exact: bool,
+    tile_cost: impl FnMut(MovementLocalPosition) -> Option<u32>,
+) -> (Option<Vec<CardinalStep>>, usize) {
+    let mut work = 0;
+    let route = measured_search(
+        start,
+        target,
+        default_search_bounds(exact, false),
+        exact,
+        &mut work,
+        tile_cost,
+    );
+    (route, work)
+}
+
+fn default_search_bounds(exact: bool, diagonals: bool) -> SearchBounds {
+    SearchBounds {
+        work: PATH_SEARCH_WORK,
+        route_steps: ROUTE_STEPS,
+        distance: if exact { 50 } else { CHASE_SEARCH_DISTANCE },
+        directions: if diagonals { NEIGHBOURS.len() } else { 4 },
+    }
 }
 
 fn measured_search(
@@ -222,6 +258,52 @@ mod tests {
                 floor: at.floor,
             }
         })
+    }
+
+    #[test]
+    fn search_labels_price_each_direction_at_its_movement_cost() {
+        for step in [
+            CardinalStep::North,
+            CardinalStep::East,
+            CardinalStep::South,
+            CardinalStep::West,
+            CardinalStep::NorthEast,
+            CardinalStep::SouthEast,
+            CardinalStep::SouthWest,
+            CardinalStep::NorthWest,
+        ] {
+            let start = at(0, 0);
+            let (dx, dy) = delta(step);
+            let mut labels = SearchLabels::new(start, 12);
+            let next = labels
+                .visit(at(dx, dy), 0, step, &mut |_| Some(40))
+                .unwrap();
+            assert_eq!(labels.get(next).cost, 40 + STEP_COST * step.pacing_cost());
+        }
+    }
+
+    #[test]
+    fn diagonal_corridor_routes_through_every_search_entry() {
+        let corridor =
+            |p: MovementLocalPosition| (p.x == p.y && (0..=3).contains(&p.x)).then_some(0);
+        let exact = vec![CardinalStep::SouthEast; 3];
+        let chase = vec![CardinalStep::SouthEast; 2];
+        assert_eq!(
+            route_next_to(at(0, 0), at(3, 3), 12, corridor),
+            Some(chase.clone())
+        );
+        assert_eq!(
+            measured_route(at(0, 0), at(3, 3), false, corridor).0,
+            Some(chase)
+        );
+        assert_eq!(
+            measured_route(at(0, 0), at(3, 3), true, corridor).0,
+            Some(exact.clone())
+        );
+        assert_eq!(
+            measured_route_with_distance(at(0, 0), at(3, 3), true, 12, corridor).0,
+            Some(exact)
+        );
     }
 
     #[test]
@@ -326,16 +408,36 @@ mod tests {
 
     #[test]
     fn a_dearer_shorter_label_survives_a_cheaper_longer_one_under_the_step_bound() {
-        // Through the creature on (1, 0): 4 steps costing 80; around it: 6 steps costing 60,
-        // beyond a 4-step bound. A tile-keyed search keeps only the cheaper label of (1, 0)'s
-        // neighbours and fails; the step-aware search finds the 4-step route.
+        // Through the creature on (1, 0): 4 steps costing 80; around it: 6 steps costing 70,
+        // beyond a 4-step bound. Only (4, 0) is an admitted goal. The off-axis surcharge
+        // keeps a four-step diagonal shortcut dearer than the direct route.
         let creature = at(1, 0);
-        let cost =
-            |cell: MovementLocalPosition| Some(if cell == creature { CREATURE_COST } else { 0 });
+        let cost = |cell: MovementLocalPosition| {
+            if cell.x >= 4 && cell.y != 0 {
+                return None;
+            }
+            Some(if cell == creature {
+                CREATURE_COST
+            } else if cell.x == 1 && cell.y != 0 {
+                10
+            } else {
+                0
+            })
+        };
+        let cheap = chase(at(0, 0), at(5, 0), cost).unwrap();
+        assert_eq!(cheap.len(), 6);
+        let mut position = at(0, 0);
+        let mut total = 0;
+        for step in cheap {
+            position = walk(position, &[step]);
+            total += STEP_COST * step.pacing_cost() + cost(position).unwrap();
+        }
+        assert_eq!(total, 70);
         let bounds = SearchBounds {
             work: PATH_SEARCH_WORK,
             route_steps: 4,
             distance: i32::MAX,
+            directions: NEIGHBOURS.len(),
         };
         let route = search(at(0, 0), at(5, 0), bounds, cost).unwrap();
         assert_eq!(route, vec![CardinalStep::East; 4]);
@@ -351,6 +453,7 @@ mod tests {
             work: PATH_SEARCH_WORK,
             route_steps: usize::MAX,
             distance: i32::MAX,
+            directions: NEIGHBOURS.len(),
         };
         let route = search(at(0, 0), at(1_025, 0), bounds, corridor).map(|r| r.len());
         assert_eq!(route, Some(1_024), "1,024 expansions reach (1024, 0)");
@@ -366,6 +469,7 @@ mod tests {
             work,
             route_steps: usize::MAX,
             distance: i32::MAX,
+            directions: NEIGHBOURS.len(),
         };
         let far = |expansions: usize| at(i32::try_from(expansions + 1).unwrap(), 0);
         let route = search(

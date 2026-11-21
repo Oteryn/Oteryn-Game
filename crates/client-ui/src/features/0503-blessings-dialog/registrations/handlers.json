@@ -1,0 +1,24 @@
+{
+  "mechanic": "0503-blessings-dialog",
+  "kind": "handlers",
+  "id": "0503-blessings-dialog-command388",
+  "status": "supported",
+  "commands": [],
+  "shared_commands": [
+    388
+  ],
+  "direction": "server_to_client",
+  "capability": 503,
+  "entry": "protocol.rs::decode",
+  "reducer": "protocol.rs::decode",
+  "push_messages": [
+    "BlessingsDialogReply"
+  ],
+  "test": "tests.rs::blessings_dialog_replays_real_dispatch_capture",
+  "not_applicable": {
+    "state": "The existing 0199 BlessingsPanel retains the snapshot.",
+    "input": "The existing blessing shortcut and Ankh details button query selector 134 when 503 is selected.",
+    "settings": "No client setting.",
+    "view": "The existing 0199 panel and native HUD render the authoritative snapshot."
+  }
+}

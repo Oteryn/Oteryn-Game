@@ -304,6 +304,7 @@ fn scenario(mode: Scenario) -> TestResult {
                             == oteryn_protocol_oteryn::world_map::MapOrigin::Handle(handle)
                 }));
                 let selection = ItemMoveSelection {
+                    manual_sort: false,
                     equip_drop: false,
                     container_tree: false,
                     world_interaction: true,
@@ -333,6 +334,7 @@ fn scenario(mode: Scenario) -> TestResult {
                             deps.actor,
                             command(897)?,
                             LoopMove {
+                                slot: None,
                                 item: fixed_source,
                                 count: None,
                                 target: LoopTarget::Ground(WorldTilePosition {
@@ -375,6 +377,7 @@ fn scenario(mode: Scenario) -> TestResult {
                         deps.actor,
                         command(899)?,
                         LoopMove {
+                            slot: None,
                             item: source,
                             count: Some(2),
                             target: LoopTarget::Ground(
@@ -446,6 +449,7 @@ fn scenario(mode: Scenario) -> TestResult {
                         deps.actor,
                         command(901)?,
                         LoopMove {
+                            slot: None,
                             item: source,
                             count: None,
                             target: LoopTarget::MainBackpack,
@@ -458,6 +462,7 @@ fn scenario(mode: Scenario) -> TestResult {
                         deps.actor,
                         command(902)?,
                         LoopMove {
+                            slot: None,
                             item: ItemKey::Instance(item),
                             count: None,
                             target: LoopTarget::MainBackpack,

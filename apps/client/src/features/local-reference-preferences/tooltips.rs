@@ -35,7 +35,7 @@ impl PlayView {
         if !self.preferences().tooltips_enabled {
             return None;
         }
-        let tile = self.scene().view().screen_to_tile(point[0], point[1])?;
+        let tile = self.click_tile(f64::from(point[0]), f64::from(point[1]))?;
         let entity = self.entities.iter().rev().find(|entity| {
             entity.position.floor == self.floor
                 && entity.position.x == tile.x

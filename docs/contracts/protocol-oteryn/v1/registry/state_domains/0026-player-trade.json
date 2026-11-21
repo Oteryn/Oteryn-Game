@@ -4,13 +4,13 @@
   "owner_decision": "PLAYER-TRADE0-DIRECT-TRADE-V1",
   "owner": "Channel trade owner",
   "capability": 60,
-  "revision": "per GameSessionId; monotonic across reconnect",
+  "revision": "per GameSessionId; monotonic across reconnect; with selected capability 501 the byte ceiling includes both frozen contents trees; without 501 the legacy ceiling remains 4608 bytes.",
   "delta_types": [
     {
       "id": 1,
       "name": "PLAYER_TRADE_DELTA_V1",
       "payload_schema": "docs/contracts/protocol-oteryn/v1/player_trade_v1.proto#PlayerTradeStateV1",
-      "max_payload_bytes": 4608
+      "max_payload_bytes": 65536
     }
   ],
   "snapshot_types": [
@@ -18,7 +18,7 @@
       "id": 1,
       "name": "PLAYER_TRADE_SNAPSHOT_V1",
       "payload_schema": "docs/contracts/protocol-oteryn/v1/player_trade_v1.proto#PlayerTradeStateV1",
-      "max_payload_bytes": 4608
+      "max_payload_bytes": 65536
     }
   ]
 }

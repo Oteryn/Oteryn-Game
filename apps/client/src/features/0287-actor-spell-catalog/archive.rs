@@ -16,7 +16,10 @@ pub struct ArchivedSpell {
 }
 impl ArchivedSpell {
     fn matches(&self, spell: &SpellCatalogEntry) -> bool {
-        self.name == spell.name && self.words == spell.words && self.rune_item == spell.rune_item
+        if self.words != spell.words || self.rune_item != spell.rune_item {
+            return false;
+        }
+        display_name_matches(&self.name, &spell.name, spell.rune_item)
     }
     fn valid(&self) -> bool {
         !self.name.is_empty()
@@ -30,6 +33,27 @@ impl ArchivedSpell {
             && self.rune_item.is_none_or(|item| item > 0 && item < 1 << 28)
     }
 }
+fn display_name_matches(saved: &str, current: &str, rune_item: Option<u32>) -> bool {
+    if saved == current {
+        return true;
+    }
+    let Some(item) = rune_item else {
+        return false;
+    };
+    saved.eq_ignore_ascii_case(current)
+        || match item {
+            3149 => legacy_rune_name(saved, current, "energybomb rune", "Energy Bomb Rune"),
+            3153 => legacy_rune_name(saved, current, "antidote rune", "Cure Poison Rune"),
+            3192 => legacy_rune_name(saved, current, "firebomb rune", "Fire Bomb Rune"),
+            3197 => legacy_rune_name(saved, current, "desintegrate rune", "Disintegrate Rune"),
+            _ => false,
+        }
+}
+fn legacy_rune_name(saved: &str, current: &str, legacy: &str, canonical: &str) -> bool {
+    (saved.eq_ignore_ascii_case(legacy) && current.eq_ignore_ascii_case(canonical))
+        || (saved.eq_ignore_ascii_case(canonical) && current.eq_ignore_ascii_case(legacy))
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", content = "spell", deny_unknown_fields)]
 pub enum ArchiveSlot {
@@ -43,37 +67,59 @@ pub enum ArchiveSlot {
 #[serde(deny_unknown_fields)]
 pub struct ArchiveBindings {
     #[serde(deserialize_with = "read_slots", serialize_with = "write_slots")]
-    pub slots: [ArchiveSlot; oteryn_client_runtime::spell::ACTION_BAR_SLOTS],
+    pub slots: Box<[ArchiveSlot]>,
 }
 fn write_slots<S: serde::Serializer>(
-    slots: &[ArchiveSlot; oteryn_client_runtime::spell::ACTION_BAR_SLOTS],
+    slots: &[ArchiveSlot],
     serializer: S,
 ) -> Result<S::Ok, S::Error> {
-    slots.as_slice().serialize(serializer)
+    slots.serialize(serializer)
 }
 fn read_slots<'de, D: serde::Deserializer<'de>>(
     deserializer: D,
-) -> Result<[ArchiveSlot; oteryn_client_runtime::spell::ACTION_BAR_SLOTS], D::Error> {
-    let slots = Vec::<ArchiveSlot>::deserialize(deserializer)?;
+) -> Result<Box<[ArchiveSlot]>, D::Error> {
+    let mut slots = Vec::<ArchiveSlot>::deserialize(deserializer)?;
     if slots.len() > oteryn_client_runtime::spell::ACTION_BAR_SLOTS {
         return Err(serde::de::Error::custom("Too many action slots"));
     }
-    let mut slots = slots.into_iter();
-    Ok(std::array::from_fn(|_| slots.next().unwrap_or_default()))
+    slots.resize_with(
+        oteryn_client_runtime::spell::ACTION_BAR_SLOTS,
+        ArchiveSlot::default,
+    );
+    Ok(slots.into_boxed_slice())
 }
 impl Default for ArchiveBindings {
     fn default() -> Self {
         Self {
-            slots: std::array::from_fn(|_| ArchiveSlot::default()),
+            slots: vec![ArchiveSlot::default(); oteryn_client_runtime::spell::ACTION_BAR_SLOTS]
+                .into_boxed_slice(),
         }
     }
 }
 impl ArchiveBindings {
+    /// Target-option actions persist name/words only. Resolve their existing identity
+    /// conservatively against the current catalogue, before checking availability.
+    pub(in crate::play) fn matching_spell<'a>(
+        name: &str,
+        words: &str,
+        entries: &'a [SpellCatalogEntry],
+    ) -> Option<&'a SpellCatalogEntry> {
+        let mut matching = entries.iter().filter(|spell| {
+            words == spell.words && display_name_matches(name, &spell.name, spell.rune_item)
+        });
+        let found = matching.next();
+        if matching.next().is_some() {
+            None
+        } else {
+            found
+        }
+    }
     pub fn valid(&self) -> bool {
-        self.slots.iter().all(|slot| match slot {
-            ArchiveSlot::Spell(spell) => spell.valid(),
-            _ => true,
-        })
+        self.slots.len() == oteryn_client_runtime::spell::ACTION_BAR_SLOTS
+            && self.slots.iter().all(|slot| match slot {
+                ArchiveSlot::Spell(spell) => spell.valid(),
+                _ => true,
+            })
     }
     pub fn labels(&self) -> Vec<String> {
         self.slots

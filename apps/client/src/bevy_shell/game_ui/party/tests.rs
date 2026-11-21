@@ -140,6 +140,10 @@ fn app() -> std::result::Result<
     super::super::modal::install(&mut app);
     install(&mut app);
     app.world_mut().spawn((PartyDock, Node::default()));
+    // Command tests advance the clock only when exercising live refresh.
+    app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+        std::time::Duration::ZERO,
+    ));
     app.update();
     Ok((app, commands, outbox))
 }
@@ -174,6 +178,19 @@ fn actual_member_and_invitation_controls_send_exact_handles_without_optimistic_m
         Kind::Shared,
     ] {
         let (mut app, mut commands, outbox) = app()?;
+        let roles: Vec<_> = app
+            .world_mut()
+            .query::<&crate::bevy_shell::game_ui::install::RememberScroll>()
+            .iter(app.world())
+            .map(|key| (key.0, key.1))
+            .collect();
+        assert_eq!(
+            roles
+                .iter()
+                .collect::<std::collections::BTreeSet<_>>()
+                .len(),
+            roles.len()
+        );
         let before = app
             .world()
             .non_send::<HostOwner>()
@@ -318,3 +335,138 @@ fn stale_revision_selection_pending_capability_and_top_modal_never_dispatch() ->
     Ok(())
 }
 mod context;
+
+#[test]
+fn party_combat_rows_show_wire_vitals_summons_and_reachable_filters() -> Result {
+    use crate::character_selection::ChannelChoice;
+    use oteryn_platform_contracts::DirectoryPvpType;
+
+    let (mut app, mut commands, outbox) = app()?;
+    let mut result = state();
+    let current = "01900000-0000-7000-8000-000000000001";
+    let other = "01900000-0000-7000-8000-000000000002";
+    let choice = |id: &str, name: &str| ChannelChoice {
+        id: id.into(),
+        name: name.into(),
+        pvp_type: DirectoryPvpType::OptionalPvp,
+        region: "EU".into(),
+    };
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .world_channels(
+            "character",
+            current,
+            &[choice(current, "A"), choice(other, "B")],
+        );
+    result.members[0].channel = oteryn_platform_client::native_login::parse_uuid_v7(current);
+    result.members[1].channel = oteryn_platform_client::native_login::parse_uuid_v7(other);
+    let row = |id, name: &str, summon, distance| party::PartyListEntity {
+        entity: EntityRef {
+            identity: [id; 16],
+            generation: 1,
+        },
+        name: name.into(),
+        vocation: 1,
+        summon,
+        distance,
+        health_percent: (distance <= 30).then_some(42),
+        mana_percent: (distance <= 30).then_some(65),
+        skull: (distance <= 30).then_some(3),
+        portrait: None,
+        portrait_colours: [[0; 3]; 4],
+    };
+    result.members[0].list = vec![row(1, "Zed", false, 30), row(3, "Summon", true, 30)];
+    result.members[1].list = vec![row(2, "Amy", false, 31)];
+    click(&mut app, |kind| matches!(kind, Kind::Refresh))?;
+    let _ = command(&mut commands)?;
+    publish(&outbox, &result, party::PartyDisposition::Ok)?;
+    app.update();
+    let count = |app: &mut App, tag: &str| {
+        app.world_mut()
+            .query::<&Name>()
+            .iter(app.world())
+            .filter(|name| name.as_str() == tag)
+            .count()
+    };
+    assert_eq!(count(&mut app, "party.combat-row"), 3);
+    assert_eq!(count(&mut app, "party.health"), 2);
+    assert_eq!(count(&mut app, "party.mana"), 2);
+    assert_eq!(count(&mut app, "party.skull"), 2);
+    let mut text = app.world_mut().query::<(&Text, &TextColor)>();
+    for (name, color) in [
+        ("Zed — A", Color::srgb_u8(248, 219, 56)),
+        ("Amy — B", Color::srgb_u8(128, 128, 128)),
+        ("↳ Summon", Color::srgb_u8(248, 219, 56)),
+    ] {
+        assert!(
+            text.iter(app.world())
+                .any(|(text, tint)| text.0 == name && tint.0 == color),
+            "{name}"
+        );
+    }
+    let fills: Vec<_> = app
+        .world_mut()
+        .query::<(&Name, &Node)>()
+        .iter(app.world())
+        .filter(|(name, _)| name.as_str() == "party.health.fill")
+        .map(|(_, node)| node.width)
+        .collect();
+    assert_eq!(fills, vec![percent(42.); 2]);
+    // Drive the actual button observer, rather than changing the retained model directly.
+    let button = app
+        .world_mut()
+        .query::<(&Text, &ChildOf)>()
+        .iter(app.world())
+        .find(|(text, _)| text.0 == "Summons")
+        .map(|(_, parent)| parent.parent())
+        .ok_or("summon filter")?;
+    app.world_mut().trigger(Activate { entity: button });
+    app.update();
+    assert_eq!(count(&mut app, "party.combat-row"), 2);
+    assert_eq!(count(&mut app, "party.health"), 1);
+    click(&mut app, |kind| {
+        matches!(kind, Kind::Sort(oteryn_client_ui::party::ListSort::Name))
+    })?;
+    app.update();
+    let parent = app
+        .world_mut()
+        .query::<(&Name, &ChildOf)>()
+        .iter(app.world())
+        .find(|(name, _)| name.as_str() == "party.combat-row")
+        .map(|(_, parent)| parent.parent())
+        .ok_or("combat list")?;
+    let order: Vec<_> = app
+        .world()
+        .get::<Children>(parent)
+        .ok_or("rows")?
+        .iter()
+        .filter_map(|entity| app.world().get::<Control>(entity))
+        .filter_map(|control| {
+            if let Kind::Member(handle) = control.kind {
+                Some(handle)
+            } else {
+                None
+            }
+        })
+        .collect();
+    assert_eq!(
+        order,
+        [2, 1],
+        "Name sorting must reorder the actual rendered rows"
+    );
+    click(&mut app, |kind| matches!(kind, Kind::Filter(1)))?;
+    app.update();
+    assert_eq!(count(&mut app, "party.combat-row"), 0);
+
+    assert!(
+        commands.try_recv().is_err(),
+        "local filtering must not send membership commands"
+    );
+    Ok(())
+}
+
+include!("party_dock_cases.rs");

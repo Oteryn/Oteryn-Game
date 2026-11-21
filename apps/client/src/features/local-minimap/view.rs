@@ -163,6 +163,11 @@ impl crate::play::PlayView {
         };
         self.local.minimap_binding = Some(binding.clone());
         self.local.minimap_origin = Some(map.header.origin);
+        if super::state::lock(&self.minimap).is_read_only() {
+            // Drop any unsynced preference edit from the previous binding.
+            self.local.minimap_edit = 0;
+            return;
+        }
         let old = self.local.preferences.minimap.clone();
         self.local.preferences.minimap.observe(map, binding);
         if self.local.preferences.minimap != old {
@@ -179,4 +184,15 @@ impl crate::play::PlayView {
         self.scene.minimap_floor = self.floor;
         self.scene.minimap_origin = self.local.minimap_origin;
     }
+}
+
+/// Sidebar navigation changes the same camera used for drawing and click-to-walk.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MinimapNavigation {
+    Pan(i32, i32),
+    Centre,
+    ZoomIn,
+    ZoomOut,
+    FloorUp,
+    FloorDown,
 }

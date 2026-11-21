@@ -245,6 +245,41 @@ mod tests {
     }
 
     #[test]
+    fn destination_apostrophes_survive_native_route_resolution()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            &std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content"),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )?;
+        let model = catalogue.service_model_for_project()?;
+        for (npc, slug, keyword) in [
+            ("captain_bluebear", "ab_dendriel", "ab'dendriel"),
+            ("captain_fearless", "ab_dendriel", "ab'dendriel"),
+            ("captain_greyhound", "ab_dendriel", "ab'dendriel"),
+            ("captain_seahorse", "ab_dendriel", "ab'dendriel"),
+            ("junkar_mines", "robsons_isle", "robson's isle"),
+            ("junkar_thais", "robsons_isle", "robson's isle"),
+        ] {
+            let key = format!("oteryn:npc.{npc}");
+            let entry = model
+                .npcs()
+                .iter()
+                .find(|(reference, _)| reference.key == key)
+                .map(|(_, entry)| entry)
+                .ok_or("NPC")?;
+            let routes = super::resolve(&model, &key, &entry.services);
+            let route = routes
+                .iter()
+                .find(|route| route.route.key == slug)
+                .ok_or("route")?;
+            assert_eq!(route.keyword, keyword, "{npc}/{slug}");
+            assert!(!route.held);
+        }
+        Ok(())
+    }
+
+    #[test]
     fn paid_travel_routes_preserve_all_195_corrected_fares_premium_and_arrivals()
     -> Result<(), Box<dyn std::error::Error>> {
         let corrections: Vec<super::Correction> = serde_json::from_str(revision_material())?;
@@ -283,7 +318,13 @@ mod tests {
         assert_eq!(evidence.len(), 195);
         for ((row, source), evidence) in corrected.into_iter().zip(sources).zip(evidence) {
             assert_eq!(serde_json::json!(row.key), source["key"]);
-            assert_eq!(serde_json::json!(row.keyword), source["keyword"]);
+            // Historical evidence stores slugs; talk keywords use the destination spelling.
+            let keyword = match source["keyword"].as_str().ok_or("source keyword")? {
+                "ab_dendriel" => "ab'dendriel",
+                "robsons_isle" => "robson's isle",
+                keyword => keyword,
+            };
+            assert_eq!(row.keyword, keyword);
             assert_eq!(serde_json::json!(row.price), source["selected_fare"]);
             assert_eq!(serde_json::json!(row.premium), source["selected_premium"]);
             assert_eq!(serde_json::json!(row.x), source["destination"]["x"]);

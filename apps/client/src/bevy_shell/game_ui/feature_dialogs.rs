@@ -1,9 +1,11 @@
 //! Real session-owned server dialogs; Bevy owns only focus and transient selection.
 mod banner_queue;
 mod build;
+mod guide;
+#[path = "houses.rs"]
+mod houses;
 mod notices;
 mod submission;
-mod text_window;
 use super::modal::ModalGuard;
 
 use super::{
@@ -57,8 +59,10 @@ struct State {
 }
 
 pub(super) fn install(app: &mut App) {
-    text_window::install(app);
+    houses::install(app);
+    notices::install(app);
     banner_queue::install(app);
+    app.init_resource::<guide::State>();
     app.init_resource::<State>()
         .add_systems(Startup, (setup, notices::setup).after(super::setup))
         .add_systems(
@@ -136,6 +140,11 @@ fn project(
     let (Some(key), Some(projected)) = (key, projected) else {
         return;
     };
+    state.selected = projected
+        .panel
+        .active
+        .as_ref()
+        .and_then(|dialog| dialog.choices.first().map(|(id, _)| *id));
     let (panel, initial_focus) = build::panel(
         &mut commands,
         &skin,
@@ -211,8 +220,22 @@ fn activate(
     actions: Query<&Action>,
     input: Query<(Entity, &EditableText), With<ValueField>>,
     owner: NonSend<HostOwner>,
+    keys: Option<Res<ButtonInput<KeyCode>>>,
     mut state: ResMut<State>,
 ) {
+    // Capability 505 owns Enter, regardless of which button has focus.
+    let defaults = owner
+        .play
+        .as_ref()
+        .and_then(|play| play.link.server_modal_panel())
+        .is_some_and(|panel| panel.panel.defaults);
+    if defaults
+        && keys.is_some_and(|keys| {
+            keys.just_pressed(KeyCode::Enter) || keys.just_pressed(KeyCode::NumpadEnter)
+        })
+    {
+        return;
+    }
     if !guard.allows(event.entity) {
         return;
     }
@@ -251,11 +274,13 @@ fn remember(
 fn keyboard(
     guard: ModalGuard,
     overlays: Query<Entity, With<Overlay>>,
+    focused_checkbox: (Res<InputFocus>, Query<(), With<bevy::ui_widgets::Checkbox>>),
     mut keys: MessageReader<bevy::input::keyboard::KeyboardInput>,
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
     input: Query<(Entity, &EditableText), With<ValueField>>,
 ) {
+    let (focus, checkboxes) = focused_checkbox;
     if !overlays.single().is_ok_and(|overlay| guard.allows(overlay)) {
         keys.clear();
         return;
@@ -268,13 +293,48 @@ fn keyboard(
         if event.state != bevy::input::ButtonState::Pressed || event.repeat {
             continue;
         }
-        if event.key_code == KeyCode::Escape {
+        if matches!(event.key_code, KeyCode::ArrowUp | KeyCode::ArrowDown)
+            && let Some(dialog) = owner
+                .play
+                .as_ref()
+                .and_then(|play| play.link.server_modal_panel())
+                .and_then(|panel| panel.panel.active)
+            && !dialog.choices.is_empty()
+        {
+            let index = dialog
+                .choices
+                .iter()
+                .position(|(id, _)| Some(*id) == state.selected)
+                .unwrap_or(0);
+            let next = if event.key_code == KeyCode::ArrowUp {
+                index.saturating_sub(1)
+            } else {
+                (index + 1).min(dialog.choices.len() - 1)
+            };
+            state.selected = Some(dialog.choices[next].0);
+            state.pending = None;
+        }
+        if matches!(event.key_code, KeyCode::Enter | KeyCode::NumpadEnter)
+            && focus
+                .get()
+                .is_some_and(|entity| checkboxes.contains(entity))
+        {
+            continue;
+        }
+        if matches!(
+            event.key_code,
+            KeyCode::Escape | KeyCode::Enter | KeyCode::NumpadEnter
+        ) {
             let button = owner
                 .play
                 .as_ref()
                 .and_then(|p| p.link.server_modal_panel())
-                .and_then(|p| p.panel.active)
-                .and_then(|p| p.cancel_button);
+                .and_then(|p| {
+                    oteryn_client_ui::server_modal_defaults::keyboard_button(
+                        &p.panel,
+                        event.key_code == KeyCode::Escape,
+                    )
+                });
             if let Some(button) = button
                 && let Ok(overlay) = overlays.single()
             {
@@ -342,6 +402,7 @@ mod tests;
 pub(super) struct NoticeInputForTest;
 #[cfg(test)]
 pub(super) fn install_notice_input_for_test(app: &mut App) {
+    app.init_resource::<guide::State>();
     app.add_systems(Startup, notices::setup.after(crate::bevy_shell::ui::setup))
         .add_systems(
             Update,
@@ -349,4 +410,38 @@ pub(super) fn install_notice_input_for_test(app: &mut App) {
                 .chain()
                 .in_set(NoticeInputForTest),
         );
+}
+
+fn choice_double_click(
+    event: On<bevy::picking::events::PointerClick>,
+    guard: ModalGuard,
+    actions: Query<&Action>,
+    input: Query<(Entity, &EditableText), With<ValueField>>,
+    owner: NonSend<HostOwner>,
+    mut state: ResMut<State>,
+) {
+    if event.button != bevy::picking::pointer::PointerButton::Primary
+        || event.count < 2
+        || !guard.allows(event.entity)
+    {
+        return;
+    }
+    let Ok(action) = actions.get(event.entity) else {
+        return;
+    };
+    if !current(&owner, &state, action.key) {
+        return;
+    }
+    let ActionKind::Choice(choice) = action.kind else {
+        return;
+    };
+    state.selected = Some(choice);
+    let button = owner
+        .play
+        .as_ref()
+        .and_then(|p| p.link.server_modal_panel())
+        .and_then(|p| oteryn_client_ui::server_modal_defaults::keyboard_button(&p.panel, false));
+    if let Some(button) = button {
+        submission::request(&owner, &mut state, action.key, button, event.entity, &input);
+    }
 }

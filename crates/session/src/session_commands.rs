@@ -140,6 +140,7 @@ impl<S: SessionStream> Session<S> {
                 equip_drop: self.is_selected(12),
                 container_tree: self.is_selected(14),
                 world_interaction: self.is_selected(11),
+                manual_sort: self.is_selected(510),
             },
         )
         .map_err(SessionError::ItemView)?;

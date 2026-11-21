@@ -322,6 +322,71 @@ def test_exact_candidate_reference_scan(module):
     print("Exact candidate reference scan PASS: file, directory, package and canonical-control consumers")
 
 
+def test_workflow_routing(module):
+    """Auxiliary workflows route by consumers; gate workflows and dynamic selectors stay FULL."""
+    merge_gate_base = (
+        "      - uses: actions/checkout@v7\n"
+        "        with:\n"
+        "          sparse-checkout: |\n"
+        "            .github/workflows\n"
+        "            tools/repository\n"
+    )
+    merge_group_gate = (
+        '          echo "abc  .github/workflows/node-boot-build.yml" | sha256sum -c -\n'
+        "    uses: ./.github/workflows/node-boot-build.yml\n"
+    )
+    changed = [
+        ".github/workflows/integration-regressions.yml",
+        ".github/workflows/node-boot-build.yml",
+    ]
+    for extra, auxiliary in (("", set()), ("run: ls .github/workflows/*.yml\n", {module.CONTROL_CONSUMER})):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            git(root, "init", "-q")
+            git(root, "config", "user.email", "ci@example.invalid")
+            git(root, "config", "user.name", "CI")
+            metadata = fixture()
+            metadata_root = PurePosixPath(metadata["workspace_root"])
+            for package in metadata["packages"]:
+                relative_manifest = PurePosixPath(package["manifest_path"]).relative_to(metadata_root)
+                manifest = root.joinpath(*relative_manifest.parts)
+                manifest.parent.mkdir(parents=True, exist_ok=True)
+                manifest.write_text("[package]\n", encoding="utf-8")
+            workflows = root / ".github/workflows"
+            workflows.mkdir(parents=True, exist_ok=True)
+            (workflows / "merge-gate.yml").write_text(merge_gate_base + extra, encoding="utf-8")
+            (workflows / "merge-group-gate.yml").write_text(merge_group_gate, encoding="utf-8")
+            (workflows / "rust.yml").write_text("name: control\n", encoding="utf-8")
+            for path in changed:
+                (root / path).write_text("name: workflow\n", encoding="utf-8")
+            git(root, "add", ".")
+            git(root, "commit", "-qm", "fixture")
+            sha = git(root, "rev-parse", "HEAD")
+            old_cwd = os.getcwd()
+            os.chdir(root)
+            try:
+                found = module.candidate_reference_consumers(metadata, sha, changed)
+            finally:
+                os.chdir(old_cwd)
+            assert found[".github/workflows/integration-regressions.yml"] == auxiliary, (extra, found)
+            assert found[".github/workflows/node-boot-build.yml"] == {module.CONTROL_CONSUMER}, found
+
+    for path in module.GATE_WORKFLOW_PATHS | module.CANONICAL_CONTROL_PATHS:
+        assert module.canonical_control(path), path
+    assert not module.canonical_control(".github/workflows/integration-regressions.yml")
+
+    # Every reusable workflow called from the repository's workflows is a gate workflow.
+    callees = set()
+    for workflow in (ROOT / ".github/workflows").glob("*.yml"):
+        for match in re.finditer(r"uses:\s*\./(\.github/workflows/[A-Za-z0-9_.-]+\.ya?ml)",
+                                 workflow.read_text(encoding="utf-8")):
+            callees.add(match.group(1))
+    assert callees, "no reusable workflow calls found"
+    for callee in sorted(callees):
+        assert module.canonical_control(callee), callee
+    print("Workflow routing PASS: auxiliary workflows narrow, gate workflows and selectors stay FULL")
+
+
 def test_documentation_fast_path(module):
     """Docs-only candidates skip product lanes; anything else stays conservative."""
     with tempfile.TemporaryDirectory() as directory:
@@ -1511,6 +1576,7 @@ def main() -> int:
     test_client_only_pg_scope(module)
     test_exact_candidate_reference_scan(module)
     test_directory_reference_left_boundary(module)
+    test_workflow_routing(module)
     test_documentation_fast_path(module)
     test_candidate_modes(module)
     test_pr_audit_blob_rotation()

@@ -91,7 +91,10 @@ message EquippedItemV1 {
 // StateDomainSnapshot.payload of domain 11, snapshot type 1, and StateDelta.payload of domain 11,
 // delta type 1. A delta carries the whole view. The one open corpse, by the handle it has in domain 1,
 // and its entries in display order; an empty payload means nothing is open. At most 30 entries
-// (GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX), 941 legacy bytes or 1061 with capability 499.
+// (ITEMV0-RL-02), 941 legacy bytes or 1061 with capability 499. Negotiated CORPSE_CONTAINER_48_V1
+// (514, requires 4) raises the bound to 48 entries (ITEMV0-RL-02-CORPSE48, equal to
+// GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX), 1499 bytes or 1691 with capability 499. Without 514 the
+// server sends only the first 30 entries of a larger corpse.
 message OpenContainerV1 {
   uint64 container_handle = 1;
   repeated ItemEntryV1 entries = 2;
@@ -117,10 +120,14 @@ message WorldTilePositionV1 {
 // view, or an entry of a view). The handle is required.
 message ContainerDestinationV1 {
   uint64 handle = 1;
+  // Capability 510 CONTAINER_MANUAL_SORT_V1 only: the index the moved item takes in the
+  // container's view order (newest first); past the last entry is last. Absent is the first slot.
+  // See container-manual-sort-v1.md.
+  optional uint32 slot = 2;
 }
 
 // ClientCommand.payload of command type 9. At most 13 bytes, 29 under capability 12,
-// or 31 under capability 61 ITEM_STACK_COUNT_V1. Without count the whole item moves.
+// 31 under capability 61 ITEM_STACK_COUNT_V1, or 32 under capability 510. Without count the whole item moves.
 message ItemMoveIntentV1 {
   uint64 source_handle = 1;
   oneof destination {

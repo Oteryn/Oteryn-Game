@@ -25,6 +25,7 @@ fn normalized_npc_shortcut_reaches_current_floor_actor_and_respects_blocked_moda
     host.play.as_ref().ok_or("play")?.link.npc_shop_close();
     let mut view = PlayView::new(TileCoord::new(100, 100), 7, &[])?.with_entities(vec![
         WorldSpatialEntity {
+            motion: None,
             display_name: None,
             kind: EntityKind::Npc,
             entity: npc(),

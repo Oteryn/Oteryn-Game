@@ -12,6 +12,8 @@ pub enum DepotAction {
     Browse,
     Deposit(ItemHandle),
     Withdraw(u64),
+    /// Server routing form of a withdrawal using a capability-510 display ordinal.
+    WithdrawDisplayed(u64),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -60,16 +62,27 @@ fn valid(box_number: u8, page: u32) -> bool {
 }
 
 pub fn encode_depot_intent(value: DepotIntent) -> Result<Vec<u8>, Error> {
+    encode_depot_intent_at(value, None)
+}
+
+/// Capability 510 (`CONTAINER_MANUAL_SORT_V1`): a deposit may carry field 6 `slot`, the index
+/// the item takes in the box's view order (newest first). Without a slot the bytes are those of
+/// [`encode_depot_intent`].
+pub fn encode_depot_intent_at(value: DepotIntent, slot: Option<u32>) -> Result<Vec<u8>, Error> {
     if !valid(value.box_number, value.page)
         || (value.town.is_none() && value.action != DepotAction::Browse)
-        || matches!(value.action, DepotAction::Withdraw(0))
+        || matches!(
+            value.action,
+            DepotAction::Withdraw(0) | DepotAction::WithdrawDisplayed(0)
+        )
+        || (slot.is_some() && !matches!(value.action, DepotAction::Deposit(_)))
     {
         return Err(Error::Malformed);
     }
     let (action, item) = match value.action {
         DepotAction::Browse => (1, 0),
         DepotAction::Deposit(handle) => (2, handle.get()),
-        DepotAction::Withdraw(ordinal) => (3, ordinal),
+        DepotAction::Withdraw(ordinal) | DepotAction::WithdrawDisplayed(ordinal) => (3, ordinal),
     };
     let mut out = Vec::new();
     for (field, number) in [
@@ -83,18 +96,30 @@ pub fn encode_depot_intent(value: DepotIntent) -> Result<Vec<u8>, Error> {
     if let Some(town) = value.town {
         push_varint_field(&mut out, 4, u64::from(town));
     }
+    if let Some(slot) = slot {
+        push_varint_field(&mut out, 6, u64::from(slot));
+    }
     Ok(out)
 }
 
 pub fn decode_depot_intent(bytes: &[u8]) -> Result<DepotIntent, Error> {
+    decode_depot_intent_at(bytes, false).map(|(intent, _)| intent)
+}
+
+/// Field 6 `slot` is accepted only when the session selected capability 510 (`manual_sort`).
+pub fn decode_depot_intent_at(
+    bytes: &[u8],
+    manual_sort: bool,
+) -> Result<(DepotIntent, Option<u32>), Error> {
     if bytes.len() > 48 {
         return Err(Error::LimitExceeded);
     }
-    let mut fields = [None; 5];
+    let mut fields = [None; 6];
+    let last = if manual_sort { 6 } else { 5 };
     let mut at = 0;
     while at < bytes.len() {
         let tag = read_varint(bytes, &mut at)?;
-        if tag & 7 != 0 || !(1..=5).contains(&(tag >> 3)) {
+        if tag & 7 != 0 || !(1..=last).contains(&(tag >> 3)) {
             return Err(Error::Malformed);
         }
         set_once(
@@ -106,6 +131,7 @@ pub fn decode_depot_intent(bytes: &[u8]) -> Result<DepotIntent, Error> {
     let action = match fields[0] {
         Some(1) if item == 0 => DepotAction::Browse,
         Some(2) => DepotAction::Deposit(ItemHandle::new(item).ok_or(Error::Malformed)?),
+        Some(3) if item > 0 && manual_sort => DepotAction::WithdrawDisplayed(item),
         Some(3) if item > 0 => DepotAction::Withdraw(item),
         _ => return Err(Error::Malformed),
     };
@@ -118,8 +144,12 @@ pub fn decode_depot_intent(bytes: &[u8]) -> Result<DepotIntent, Error> {
         page: u32::try_from(fields[2].unwrap_or(0)).map_err(|_| Error::Malformed)?,
         action,
     };
-    encode_depot_intent(value)?;
-    Ok(value)
+    let slot = fields[5]
+        .map(u32::try_from)
+        .transpose()
+        .map_err(|_| Error::Malformed)?;
+    encode_depot_intent_at(value, slot)?;
+    Ok((value, slot))
 }
 
 pub fn encode_depot_reply(value: &DepotReply) -> Result<Vec<u8>, Error> {
