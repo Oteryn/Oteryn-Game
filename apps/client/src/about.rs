@@ -54,10 +54,15 @@ pub fn survey_consent(response: &str) -> String {
 }
 /// Queues a consented response for delivery on the next signed-in play session.
 pub fn queue_survey_response(path: &Path, response: &str) -> io::Result<bool> {
-    if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent)?;
-    }
-    crate::crash_report::save(response, path, true)
+    use std::io::Write;
+    queue_survey_with(path, |file| file.write_all(response.as_bytes()))
+}
+fn queue_survey_with(
+    path: &Path,
+    write: impl FnOnce(&mut std::fs::File) -> io::Result<()>,
+) -> io::Result<bool> {
+    crate::atomic_file::replace_with(path, true, write)?;
+    Ok(true)
 }
 /// The sign-in survey's invitation, answer, preview and consent flow.
 pub fn review_survey_at(path: &Path, mut ask: impl FnMut(&str) -> bool) -> io::Result<bool> {
@@ -88,5 +93,43 @@ pub(crate) fn show_information(message: &str) {
             wide(tr!("About Oteryn")).as_ptr(),
             MB_OK | MB_ICONINFORMATION,
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+
+    #[test]
+    fn about_survey_replaces_only_after_complete_write() -> io::Result<()> {
+        let directory = tempfile::tempdir()?;
+        let path = directory.path().join("approved-survey.txt");
+        let result = queue_survey_with(&path, |file| {
+            file.write_all(b"partial")?;
+            Err(io::Error::other("injected write failure"))
+        });
+        assert!(result.is_err());
+        assert!(
+            !path.exists(),
+            "failed write exposed a partial survey target"
+        );
+        assert_eq!(std::fs::read_dir(directory.path())?.count(), 0);
+
+        std::fs::write(&path, b"earlier response")?;
+        let result = queue_survey_with(&path, |file| {
+            file.write_all(b"partial")?;
+            Err(io::Error::other("injected write failure"))
+        });
+        assert!(result.is_err());
+        assert_eq!(std::fs::read(&path)?, b"earlier response");
+        assert!(queue_survey_with(&path, |file| {
+            file.write_all(b"new ")?;
+            assert_eq!(std::fs::read(&path)?, b"earlier response");
+            file.write_all(b"response")
+        })?);
+        assert_eq!(std::fs::read(&path)?, b"new response");
+        assert_eq!(std::fs::read_dir(directory.path())?.count(), 1);
+        Ok(())
     }
 }

@@ -164,13 +164,13 @@ fn login_survey_declined_or_refused_queues_nothing() -> TestResult {
     answer(&mut app, Action::No)?;
     assert!(!shown(&mut app)?);
     assert!(!path.exists());
-    std::fs::write(&path, b"earlier response")?;
+    std::fs::create_dir(&path)?;
     open(&mut app)?;
     answer(&mut app, Action::Yes)?;
     answer(&mut app, Action::Yes)?;
     answer(&mut app, Action::Yes)?;
     wait_for_save(&mut app)?;
-    assert_eq!(std::fs::read(&path)?, b"earlier response");
+    assert!(path.is_dir());
     assert!(
         app.world()
             .non_send::<HostOwner>()
