@@ -75,6 +75,6 @@ quests whose claims match the wiki totals.
   (Explorer Society/Spoiler rev 1090719), Beregar firewalker boots 9019 → 9018 (rev 1148768),
   Secret Service poem scroll 5952 → 347 (rev 1115206), Secret Service lottery ticket 5956 → 5957 (rev 1114329).
 - BLOCKED-ENGINE: Kingdom of Kormarak corpse is a daily respawn (Spoiler rev 884223); waits on the daily-reset mechanic.
-- Koshei platinum (100 vs 50): owned by qcx6 (record 78); not changed here.
+- Platinum count of the u8_1 boss reward chest (100 vs 50): owned by qcx6 (record 78); not changed here.
 - Owner batch: Magic Sword north wand (Yellow Spell Wand), Dark Trails notebook/Shargon chest positions,
   missing one-time items (Outlaw Camp bag, Shargon chest, Crystal of Focus, Explorer Society books), 53 placements without wiki contents.

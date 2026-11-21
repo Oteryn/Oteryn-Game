@@ -13,57 +13,6 @@ use sha2::{Digest, Sha384};
 
 const TRACK: &str = "oteryn:quest-progress/questpc7/friends/program";
 
-pub(super) const LEGACY_CASE: &str = "questpc7-friends-legacy";
-
-pub(super) async fn exercise_legacy(
-    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &mut AdmittedSession,
-    h: &Harness,
-    trigger: Position,
-) -> TestResult {
-    const QUEST: &str = "oteryn:quest.friends_and_traders";
-    const QUENTIN: &str = "oteryn:npc.quentin";
-    super::qc_pinned_world::seed_saved_progress(
-        h,
-        owner,
-        admitted,
-        QUEST,
-        "0a665893aa6b602883c71bfee786a71e86b2b9d3fdbffedf0ce619f17156d223",
-        TRACK,
-        14,
-    )
-    .await?;
-    let (bytes, pin) = super::qc_pinned_world::artifact()?;
-    let bundle = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    assert_eq!(
-        Some(oteryn_world_bundle::npc::hex(&bundle.digest).as_str()),
-        pin["digest"].as_str()
-    );
-    let placement = bundle
-        .npcs
-        .npcs
-        .iter()
-        .find(|npc| npc.key == QUENTIN)
-        .and_then(|npc| {
-            npc.placements
-                .iter()
-                .find(|p| (p.x, p.y, p.floor) == (trigger.x, trigger.y, trigger.floor))
-        })
-        .ok_or("pinned Quentin placement")?;
-    let quentin =
-        super::classic_quests_fixtures::place_pinned_contact(owner, admitted, QUENTIN, *placement).await?;
-    super::classic_quests_fixtures::talk(owner, admitted, quentin, 5_000, "hi").await?;
-    let disposition =
-        super::qengine_rewards_fixtures::talk(owner, admitted, quentin, 5_001, "complete friendships")
-            .await?;
-    assert_eq!(disposition, NpcIntentDisposition::Ok);
-    let state: (i64, bool) = sqlx::query_as(
-        "SELECT t.value, s.completed_character_revision IS NOT NULL FROM game_character_quest_tracks t JOIN game_character_quest_states s USING(character_id,quest_key) WHERE t.track_key=$1",
-    ).bind(TRACK).fetch_one(&h.pool).await?;
-    assert_eq!(state, (15, true));
-    Ok(())
-}
-
 async fn count(h: &Harness, item: u32) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT coalesce(sum(i.quantity),0)::bigint FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE e.character_id=encode($1,'hex')::uuid AND i.lifecycle=1 AND i.definition_production_key=$2")
         .bind(id(41).as_slice()).bind(format!("oteryn:item.tibia.i{item}")).fetch_one(&h.pool).await?)

@@ -447,7 +447,7 @@ fn scenario_in_world(
                 trigger: Trigger::StepIn,
                 use_range: 1,
                 disguise: None,
-                selector: Selector { target_definition: None,
+                selector: Selector {
                     position_aliases: Vec::new(),
                     native: None,
                     ordinal: None,

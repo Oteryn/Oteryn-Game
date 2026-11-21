@@ -10,7 +10,6 @@ import import_current_spell_sources as current
 import import_spell_families as importer
 import monster_seven_spell_overlay as overlay
 from bind_monster_source_definitions import bind_definitions
-from quest_shared_boss_corpses import bind_koshei
 
 
 class ComposeTests(unittest.TestCase):
@@ -27,16 +26,6 @@ class ComposeTests(unittest.TestCase):
         # The pre-existing final binder supplies canonical attack closures and
         # explicit nullable MRL defaults. Preserve the entire qualified record.
         expected_adopted = json.loads(bind_definitions(self.root, self.adopted)[compose.CREATURES])
-        # The only intended non-melee change: Koshei's fresh remains (Crystal 201189f),
-        # in the profile and in its attack-definition copy.
-        bind_koshei(expected_adopted)
-        bind_koshei({"records": [
-            {"profile": profile}
-            for record in expected_adopted["records"]
-            if record["profile"]["target"]["key"] == "oteryn:creature.koshei_the_deathless"
-            for profile in record["attack_definitions"]["profiles"]
-            if profile["target"] == record["profile"]["target"]
-        ]})
         adopted = compose.indexed(expected_adopted)
         incoming = compose.indexed(json.loads(self.current[compose.CREATURES]))
         baseline = compose.indexed(json.loads(self.base[compose.CREATURES]))

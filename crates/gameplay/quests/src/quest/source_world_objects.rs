@@ -31,7 +31,7 @@ pub(crate) fn uneasy_crystal() -> Callback {
         key: UNEASY_CRYSTAL.into(),
         quest: "oteryn:quest.an_uneasy_alliance_quest".into(),
         trigger: Trigger::Use,
-        selector: Selector { target_definition: None,
+        selector: Selector {
         position_aliases: Vec::new(),
         ordinal: None,
             // The retained B3 counterpart has no legacy action attribute.
@@ -122,7 +122,7 @@ pub(crate) fn lions_amphora() -> Vec<Callback> {
             callback.quest = "oteryn:quest.tibia_tales".into();
             callback.trigger = Trigger::StepIn;
             callback.requires_world_admission = true;
-            callback.selector = Selector { target_definition: None,
+            callback.selector = Selector {
         position_aliases: Vec::new(),
         ordinal: None,
                 native: Some(NativeSelector { position: Position { x, y, floor: -9 }, ordinal: 0, appearance }),
@@ -166,7 +166,7 @@ pub(crate) fn lions_flowers() -> Vec<Callback> {
         callback.key = format!("oteryn:quest-callback/m44-lions-flower-{index}");
         callback.quest = "oteryn:quest.tibia_tales".into();
         callback.requires_world_admission = true;
-        callback.selector = Selector { target_definition: None,
+        callback.selector = Selector {
         position_aliases: Vec::new(),
         ordinal: None,
             native: Some(NativeSelector { position: Position { x,y,floor }, ordinal, appearance: 21388 }),

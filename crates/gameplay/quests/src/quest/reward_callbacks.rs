@@ -507,7 +507,6 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/m13-siflind-paint.json"),
     // Keep the shared document at DOCUMENTS[0]; Oramond is the final extension.
     include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/qc-programmes.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-m10.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-sams-old-backpack.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-steal-from-thieves.json"),
@@ -1540,93 +1539,18 @@ fn is_qb_outfit_extension(callback: &RewardCallback) -> bool {
 pub(super) fn retain_qc_reward_predecessors(active: &mut QuestStateCatalogue) {
     // Main at 492ca0e6ba, before Package C.
     type DefinitionPin = (&'static str, [u8; 32], &'static [(&'static str, i64)]);
-    const PREVIOUS: &[DefinitionPin] = &[
-        (
-            "oteryn:quest.friends_and_traders",
-            [
-                0x0a, 0x66, 0x58, 0x93, 0xaa, 0x6b, 0x60, 0x28, 0x83, 0xc7, 0x1b, 0xfe, 0xe7, 0x86,
-                0xa7, 0x1e, 0x86, 0xb2, 0xb9, 0xd3, 0xfd, 0xbf, 0xfe, 0xdf, 0x0c, 0xe6, 0x19, 0xf1,
-                0x71, 0x56, 0xd2, 0x23,
-            ],
-            &[
-                (
-                    "oteryn:quest-progress/quest/u7_8/friends_and_traders/default_start",
-                    0,
-                ),
-                (
-                    "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_blessed_stake",
-                    0,
-                ),
-                (
-                    "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_blessed_stake_wait_time",
-                    0,
-                ),
-                (
-                    "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_mermaid_marina",
-                    0,
-                ),
-                (
-                    "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_sweaty_cyclops",
-                    0,
-                ),
-                ("oteryn:quest-progress/questpc7/friends/program", -1),
-                ("oteryn:quest-progress/questpc7/friends/steel-uses", 0),
-                ("oteryn:quest-progress/questpc7/friends/yarn-uses", 0),
-            ],
-        ),
-        (
-            "oteryn:quest.treasure_hunt_quest",
-            [
-                0xf5, 0x96, 0x11, 0x56, 0xeb, 0xf0, 0x43, 0x9a, 0x52, 0x2a, 0x95, 0xe0, 0x77, 0x22,
-                0x87, 0x88, 0x67, 0xa3, 0x26, 0x3e, 0x14, 0x0c, 0x11, 0x35, 0x81, 0xdb, 0x8f, 0xa7,
-                0x31, 0x10, 0x9f, 0x22,
-            ],
-            &[
-                ("oteryn:quest-progress/m09/treasure/ingots", -1),
-                ("oteryn:quest-progress/m09/treasure/telescope", -1),
-            ],
-        ),
-        (
-            "oteryn:quest.koshei_the_deathless_quest",
-            [
-                0x1a, 0x1c, 0x54, 0x3d, 0xbe, 0x51, 0x1c, 0x3a, 0x56, 0x54, 0xd1, 0x38, 0x59, 0x56,
-                0x22, 0x4b, 0x73, 0x23, 0x24, 0x3a, 0xce, 0x53, 0xfa, 0x5e, 0xb1, 0x42, 0xe6, 0x76,
-                0x36, 0x1f, 0xc4, 0x20,
-            ],
-            &[
-                (
-                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1",
-                    0,
-                ),
-                (
-                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part1",
-                    0,
-                ),
-                (
-                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part2",
-                    0,
-                ),
-                (
-                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part3",
-                    0,
-                ),
-                (
-                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part4",
-                    0,
-                ),
-                ("oteryn:quest-progress/qnpcfx/koshei/amulet", 0),
-                ("oteryn:quest-progress/qnpcfx/koshei/amulet_started_at", 0),
-                (
-                    "oteryn:quest-progress/quest/u8_1/koshei_the_deathless/koshei_the_deathless_legs/claimed",
-                    0,
-                ),
-                (
-                    "oteryn:quest-progress/quest/u8_1/koshei_the_deathless/koshei_the_deathless_platinum/claimed",
-                    0,
-                ),
-            ],
-        ),
-    ];
+    const PREVIOUS: &[DefinitionPin] = &[(
+        "oteryn:quest.treasure_hunt_quest",
+        [
+            0xf5, 0x96, 0x11, 0x56, 0xeb, 0xf0, 0x43, 0x9a, 0x52, 0x2a, 0x95, 0xe0, 0x77, 0x22,
+            0x87, 0x88, 0x67, 0xa3, 0x26, 0x3e, 0x14, 0x0c, 0x11, 0x35, 0x81, 0xdb, 0x8f, 0xa7,
+            0x31, 0x10, 0x9f, 0x22,
+        ],
+        &[
+            ("oteryn:quest-progress/m09/treasure/ingots", -1),
+            ("oteryn:quest-progress/m09/treasure/telescope", -1),
+        ],
+    )];
     for &(quest, hash, defaults) in PREVIOUS {
         if active
             .definition_hash(quest)
@@ -2373,7 +2297,7 @@ mod tests {
         // shared-reward-callbacks.json has 207 existing rows plus the generated
         // QB routes: 17 Barbarian, 5 Citizen and 9 Warrior.
         // The other terms are QuestPC7, other registered shards, M43 peer and Kingsday journal.
-        assert_eq!(load()?.len(), 238 + 59 + 126 + 1 + 1);
+        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;

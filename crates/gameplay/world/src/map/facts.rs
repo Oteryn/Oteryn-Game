@@ -145,9 +145,8 @@ impl From<LoadError> for FactsRefusal {
 }
 
 /// The facts of one palette entry, and whether an Item entry is solid.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 struct PaletteFacts {
-    definition_key: String,
     static_surface: bool,
     family: Family,
     id: u32,
@@ -1193,7 +1192,6 @@ fn palette_facts(
         door = palette_door(&entry.key, item);
     }
     Ok(PaletteFacts {
-        definition_key: entry.key.clone(),
         static_surface: static_surface.is_some(),
         family: entry.family,
         id: entry.id,
@@ -1820,7 +1818,6 @@ mod tests {
             };
             let mut facts = BundleFacts::default();
             facts.palette.push(PaletteFacts {
-                definition_key: format!("oteryn:item.tibia.i{source}"),
                 static_surface: false,
                 family: Family::Item,
                 id: 0,

@@ -7,7 +7,6 @@ from bind_monster_source_definitions import CREATURES, bind_definitions
 from import_spell_families import canonical_bytes
 from cake_native_successor import admit as admit_cake_successor
 from monster_seven_spell_overlay import ALLOWED_PATHS, apply_overlay
-from quest_shared_boss_corpses import bind_koshei
 
 
 def identity(row):
@@ -56,7 +55,6 @@ def compose(root, baseline, current):
     # Retain every adopted appearance, variant, Wiki field and source mechanic.
     for path in ALLOWED_PATHS:
         result[path] = adopted[path]
-    bind_koshei(result_doc)
     result[CREATURES] = canonical_bytes(result_doc)
     # Player catalog/selection pins belong to the separately qualified current
     # source stage; Monster/presentation pins belong to the adopted stage.

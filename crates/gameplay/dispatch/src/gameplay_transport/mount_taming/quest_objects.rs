@@ -9,8 +9,7 @@ pub(crate) const TOP_OF_THE_CITY_DIG: &str = "oteryn:quest-callback/authored-top
 
 pub(crate) fn accepts(callback: &Callback) -> bool {
     callback.item_on_target.is_some()
-        && (callback.selector.target_definition.is_some()
-            || callback.key == targuna_ram::KEY
+        && (callback.key == targuna_ram::KEY
             || callback.key == TOP_OF_THE_CITY_DIG
             || (callback
                 .item_on_target

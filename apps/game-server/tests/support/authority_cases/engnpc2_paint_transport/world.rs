@@ -7,24 +7,24 @@ use oteryn_world_bundle::{bundle, sector};
 use oteryn_world_bundle_compiler::compile::{KeyResolver, Resolution};
 use std::collections::BTreeMap;
 
-pub(in super::super) struct ExpectedTile {
+pub(super) struct ExpectedTile {
     pub position: (u16, u16),
     pub ids: Vec<u32>,
     pub counted_entry: Option<(usize, u32)>,
 }
-pub(in super::super) struct NativeCrop {
+pub(super) struct NativeCrop {
     pub bytes: &'static [u8],
     pub region: (u8, u16, u16),
     pub bounds: (u16, u16, u16, u16),
     pub start: (u16, u16),
     pub expected: Vec<ExpectedTile>,
 }
-pub(in super::super) struct ExpectedTeleport {
+pub(super) struct ExpectedTeleport {
     pub position: (u16, u16, u8),
     pub ordinal: usize,
     pub destination: (u16, u16, u8),
 }
-pub(in super::super) fn native_scene(
+pub(super) fn native_scene(
     native: &NativeGameplayState,
     specs: Vec<NativeCrop>,
     teleports: &[ExpectedTeleport],

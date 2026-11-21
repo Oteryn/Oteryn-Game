@@ -21,7 +21,6 @@ fn w19_house_base_facts_exclude_channel_door_rotation_and_callback_overrides() {
     };
     let mut facts = BundleFacts::default();
     facts.palette.push(PaletteFacts {
-        definition_key: "oteryn:item.tibia.i2358".into(),
         static_surface: false,
         family: Family::Item,
         id: 17,

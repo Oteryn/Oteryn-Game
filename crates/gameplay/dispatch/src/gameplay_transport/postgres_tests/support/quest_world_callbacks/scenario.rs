@@ -77,12 +77,9 @@ fn scenario_case(
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
     let last_creep = name == "qengine-rewards-m23-last-creep";
-    let koshei_spawn = name == super::super::koshei_amulet_fixtures::SPAWN_CASE;
-    let pinned_qc_world = koshei_spawn || name.starts_with("m09-treasure-")
-        || super::super::qc_lizard_sanctuary_fixtures::matches_world(name)
-        || name == super::super::questpc7_friends_fixtures::LEGACY_CASE;
+    let pinned_qc_world = name.starts_with("m09-treasure-")
+        || super::super::qc_lizard_sanctuary_fixtures::matches_world(name);
     let native_crop = pinned_qc_world
-        || name == "qc-obsidian-knife"
         || m03_use
         || qd_world
         || engenc_asura
@@ -131,8 +128,6 @@ fn scenario_case(
             y: 32167,
             floor: -8,
         }
-    } else if name == "qc-obsidian-knife" {
-        trigger
     } else if super::super::qc_lizard_sanctuary_fixtures::matches_world(name) {
         super::super::qc_lizard_sanctuary_fixtures::START
     } else if super::super::qh_authored_cases_fixtures::is_dig(name) {
@@ -304,9 +299,7 @@ fn scenario_case(
         || name.starts_with("questpc7-eligibility-")
         || name.starts_with("qengine-rewards-")
         || name == "questpc7-golden"
-        || name == "questpc7-friends"
-        || name == super::super::questpc7_friends_fixtures::LEGACY_CASE
-        || super::super::qc_npc_programmes_fixtures::matches(name);
+        || name == "questpc7-friends";
     let classic_npc = shared_rewards
         || name.starts_with("engoutfit-")
         || qengine_reward
@@ -952,7 +945,6 @@ fn scenario_case(
                 name,
                 "catalogue-npc" | "catalogue-npc-inventory" | "catalogue-npc-scoped"
             )
-            || name.starts_with("koshei-amulet")
             || name == "srv7-reliable-ram"
             || name.starts_with("m09-treasure-")
             || super::super::qc_chests_fixtures::matches(name)
@@ -1032,14 +1024,8 @@ fn scenario_case(
             .await
             .map_err(|e| format!("callback session: {e}"))?;
         let seal = h.recovery.seal_current().map_err(debug)?;
-        // The Cyclops steel service mints through the production runtime role too.
-        let runtime_login = if koshei_spawn || name == "qc-obsidian-knife" {
-            Some(super::super::koshei_amulet_fixtures::runtime_login(&h).await?)
-        } else {
-            None
-        };
-        let root = runtime_login.as_ref().map_or(&h.root, |(_, root)| root);
-        let authority = root
+        let authority = h
+            .root
             .open_character_authority(&seal)
             .await
             .map_err(|e| format!("callback authority: {e:?}"))?;
@@ -1055,10 +1041,6 @@ fn scenario_case(
                 generation
                     .native_gameplay()
                     .ok_or("native pinned world policies")?,
-            )?
-        } else if name == "qc-obsidian-knife" {
-            super::super::qc_npc_programmes_fixtures::cyclops_world(
-                generation.native_gameplay().ok_or("native NPC room policies")?,
             )?
         } else if m03_use {
             super::super::qengine_m03_use_fixtures::world(
@@ -1307,13 +1289,7 @@ fn scenario_case(
         } else {
             world
         };
-        let world = if name.starts_with("koshei-amulet") && !koshei_spawn {
-            // A Terrain lookalike and the real Item deliberately share appearance 7535.
-            let mut physical = callback.clone();
-            physical.selector.appearance = Some(7535);
-            let items = if name.ends_with("-ground") { Vec::new() } else { vec![(trigger, 7535)] };
-            world_with_native_items(&physical, trigger, &[], generation.native_gameplay().ok_or("native")?, &items)?
-        } else if name == "qengine-rewards-smith-story" {
+        let world = if name == "qengine-rewards-smith-story" {
             world_with_native_items(
                 &callback,
                 trigger,
@@ -1564,10 +1540,6 @@ fn scenario_case(
             } else if name == "questpc7-friends" {
                 // Thirteen selected vendors/priests and one player; charge every actor slot.
                 14
-            } else if koshei_spawn {
-                3 // Player, Koshei and the activation owner's reserved player slot.
-            } else if name == "qc-obsidian-knife" {
-                2 // One player and the Sweaty Cyclops.
             } else if native_story
                 || (native_upper && name.ends_with("-complete"))
                 || matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped")
@@ -1722,7 +1694,6 @@ fn scenario_case(
         let hydra_reset_drain =
             crate::gameplay_transport::gameplay_drain::GameplayDrain::at_reset_epoch(1);
         let mut owner = deps.owner(&h, &authority);
-        owner.root = root;
         owner.premium_coordinator = premium.as_ref();
         if mead || m07_lion || lion_trial || m44_lions || m07_realm || m07_too_hot {
             owner.premium_coordinator = Some(&mead_premium);
@@ -1864,7 +1835,7 @@ fn scenario_case(
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(generation.identity().server_artifact_digest().as_slice())
             .bind(generation.identity().client_artifact_digest().as_slice()).bind(activation_frame_binding.as_slice()).execute(&h.pool).await?;
         let fresh = super::super::fresh_fixture::fresh::Source::new(0)?.request()?;
-        root
+        h.root
             .initialize_admission_equipment(
                 &authority,
                 &h.node,
@@ -1883,7 +1854,7 @@ fn scenario_case(
             },
             ..crate::durability::starter_grant::StarterTemplate::main()
         };
-        root
+        h.root
             .grant_starter_items(
                 &authority,
                 &h.node,
@@ -2606,16 +2577,6 @@ fn scenario_case(
                 &authority,
             ))
             .await?;
-        } else if name.starts_with("koshei-amulet") {
-            if name.ends_with("-ground") {
-                if koshei_spawn {
-                    let at = Position { y: trigger.y + 1, ..trigger };
-                    Box::pin(super::super::koshei_amulet_fixtures::kill_shipped_spawn(&owner, &admitted, &world, at)).await?;
-                }
-                Box::pin(super::super::koshei_amulet_fixtures::exercise_ground(&mut owner, &mut admitted, &h, trigger, name == "koshei-amulet-saved-ground", koshei_spawn)).await?;
-            } else {
-                Box::pin(super::super::koshei_amulet_fixtures::exercise(&mut owner, &mut admitted, &h, trigger)).await?;
-            }
         } else if name == "engitem-native-seal-paint" {
             Box::pin(super::super::engitem_seal_paint_fixtures::exercise(
                 &mut owner,
@@ -2732,9 +2693,6 @@ fn scenario_case(
         } else if name.starts_with("questpc7-eligibility-") {
             super::super::questpc7_eligibility_fixtures::exercise(&mut owner, &mut admitted, &h, name)
                 .await?;
-        } else if name == super::super::questpc7_friends_fixtures::LEGACY_CASE {
-            super::super::questpc7_friends_fixtures::exercise_legacy(&mut owner, &mut admitted, &h, trigger)
-                .await?;
         } else if name == "questpc7-friends" {
             super::super::questpc7_friends_fixtures::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
@@ -2743,8 +2701,6 @@ fn scenario_case(
                 &mut owner, &mut admitted, &h, &callback, trigger,
             ))
             .await?;
-        } else if super::super::qc_npc_programmes_fixtures::matches(name) {
-            super::super::qc_npc_programmes_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-golden" {
             super::super::questpc7_golden_fixtures::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
@@ -3844,19 +3800,6 @@ fn scenario_case(
         drop(owner);
         drop(authority);
         drop(seal);
-        if let Some((login, root)) = runtime_login {
-            drop(root);
-            let options = h.pool.connect_options();
-            let database = options.get_database().ok_or("test database name")?;
-            for statement in [
-                format!("REVOKE CONNECT ON DATABASE {database} FROM {login}"),
-                format!("DROP ROLE {login}"),
-            ] {
-                sqlx::query(sqlx::AssertSqlSafe(statement))
-                    .execute(&h.pool)
-                    .await?;
-            }
-        }
         h.cleanup().await
     })
 }

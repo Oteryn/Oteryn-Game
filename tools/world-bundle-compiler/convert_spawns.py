@@ -134,7 +134,6 @@ def convert(xml: bytes) -> dict[str, str]:
     chances_bytes = BOSS_CHANCES.read_bytes()
     chances = json.loads(chances_bytes)["bosses"]
     scheduled_bosses = []
-    koshei_spawn = None
     pharaohs = {}
     for ordinal, element in enumerate(ET.fromstring(xml)):
         cx, cy, cz = (int(element.get(k)) for k in ("centerx", "centery", "centerz"))
@@ -162,19 +161,7 @@ def convert(xml: bytes) -> dict[str, str]:
             )
         live_points = []
         for point in points:
-            # Crystal's real mainland encounter has a normal 15-second spawn.
-            # Keep the alternate example-map spawn held.
-            if (point["creature"] == "oteryn:creature.koshei_the_deathless"
-                    and point["cell"] == {"x": 33271, "y": 32406, "floor": 12}):
-                if koshei_spawn is not None or point["respawn_ms"] != 15000:
-                    sys.exit("Koshei mainland spawn differs from the reviewed source")
-                koshei_spawn = {"declaration": {
-                    "centre": {"floor": cz, "x": cx, "y": cy},
-                    "identity": {"key": key, "revision": "definition-r1"},
-                    "points": [point],
-                }}
-                continue
-            elif point["creature"] in PHARAOHS:
+            if point["creature"] in PHARAOHS:
                 creature = point["creature"]
                 x, y, z = PHARAOHS[creature]
                 if (creature in pharaohs or point["cell"] != {"floor": z, "x": x, "y": y}
@@ -225,9 +212,6 @@ def convert(xml: bytes) -> dict[str, str]:
     if pharaohs.keys() != PHARAOHS.keys():
         sys.exit("Ancient Tombs source spawns are incomplete")
     records.extend(scheduled_bosses)
-    if koshei_spawn is None:
-        sys.exit("Koshei mainland spawn missing from the pinned source")
-    records.append(koshei_spawn)
     records.extend(pharaohs[key] for key in sorted(pharaohs))
     files, shards = {}, []
     for start in range(0, len(records), SHARD_SIZE):

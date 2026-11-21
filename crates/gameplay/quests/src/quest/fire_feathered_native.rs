@@ -51,7 +51,7 @@ pub fn callbacks() -> Vec<Callback> {
         requirements: None,track_initials: Default::default(),required_completed_quests:Vec::new(),admission: None, requires_premium: false,actor_kind: Default::default(), opening_only: false, requires_world_admission: false, facing: None, state_ops: Vec::new(), world_requirements: Vec::new(),
         key:(*key).into(),quest:QUEST.into(),trigger:Trigger::Use,
 use_range:1,disguise:None,completes:false,premium_required:false,present:vec![],required_travel:vec![],
-        selector:Selector{ target_definition: None, position_aliases: Vec::new(),ordinal:None,native: None,position:Some(Position{x:pos.0,y:pos.1,floor:pos.2}),unique:None,action:None,appearance:Some(*appearance)},
+        selector:Selector{ position_aliases: Vec::new(),ordinal:None,native: None,position:Some(Position{x:pos.0,y:pos.1,floor:pos.2}),unique:None,action:None,appearance:Some(*appearance)},
         lever:None,reversible:false,passages:vec![],teleport:None,
         storage:vec![Storage{add: None, read_only: false, set_if: None, increment: false, at_least: false,track:TRACKS[index].into(),minimum:0,maximum:0,set:1,preserve:false}],
         minimum_level:None, character_requirements: None,experience: None, world_change: None,monk_reward:None,offerings:vec![],

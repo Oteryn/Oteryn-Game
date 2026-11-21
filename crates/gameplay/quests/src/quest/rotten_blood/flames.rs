@@ -82,7 +82,7 @@ pub(crate) fn callbacks() -> Vec<Callback> {
         actor_kind: Default::default(), opening_only: false, requires_world_admission: false,
         state_ops: Vec::new(), world_requirements: Vec::new(), facing: None,
         key:source.key.into(), quest:QUEST.into(), trigger:Trigger::Use,
-        selector:Selector { target_definition: None,
+        selector:Selector {
         position_aliases: Vec::new(),
         ordinal: None, native: None, position:None, unique:None, action:None, appearance:Some(source.inactive) },
         // Fixed optional source targets are resolved by the sealed current World

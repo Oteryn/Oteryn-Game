@@ -1475,30 +1475,6 @@ impl BundleFacts {
             })
     }
 
-    /// A use-with route binds the current Item definition, never an appearance.
-    pub fn quest_callback_target_definition(&self, key: u64, id: u32, definition: &str) -> bool {
-        let Some((pos, ordinal)) = view::placement_of(key) else {
-            return false;
-        };
-        if self.house_tile(pos) || self.base_hidden(key) {
-            return false;
-        }
-        let index = self
-            .placements
-            .binary_search_by_key(&key, |(key, _)| *key)
-            .ok()
-            .map(|at| self.placements[at].1.palette)
-            .or_else(|| self.unique_index(id));
-        let Some(palette) = index.and_then(|index| self.palette.get(index as usize)) else {
-            return false;
-        };
-        palette.family == oteryn_world_bundle::bundle::Family::Item
-            && palette.definition_key == definition
-            && self
-                .base_entry(pos, ordinal, id)
-                .is_some_and(|current| current.definition == palette.facts.definition)
-    }
-
     /// Match an exact authored counterpart only while the retained base object is bare.
     /// Sparse placements and plain palette entries share the same original appearance proof.
     pub fn quest_callback_native_object(&self, key: u64, id: u32, appearance: u16) -> bool {

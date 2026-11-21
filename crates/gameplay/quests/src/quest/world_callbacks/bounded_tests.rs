@@ -32,7 +32,6 @@ fn merged_registry_keeps_document_and_runtime_bounds() -> Result<(), String> {
         let mut callback = source.clone();
         callback.key = format!("oteryn:quest-callback/runtime-bounded-{index}");
         callback.selector = Selector {
-            target_definition: None,
             position: Some(Position {
                 x: index as u16,
                 y: 1,

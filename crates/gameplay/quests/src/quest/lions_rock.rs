@@ -45,7 +45,7 @@ pub(crate) fn callbacks() -> Vec<Callback> {
         let mut callback = super::source_world_objects::uneasy_crystal();
         callback.key = KEYS[index].into();
         callback.quest = QUEST.into();
-        callback.selector = Selector { target_definition: None,
+        callback.selector = Selector {
         position_aliases: Vec::new(),
         ordinal: None,
             native: Some(NativeSelector { position:Position{x,y,floor:-8},ordinal,appearance }),

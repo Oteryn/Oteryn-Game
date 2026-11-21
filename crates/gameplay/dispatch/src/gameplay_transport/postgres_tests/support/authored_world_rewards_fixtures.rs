@@ -35,7 +35,6 @@ pub(super) fn placeholder(at: Position) -> TestResult<Callback> {
     callback.quest = QUEST.into();
     callback.trigger = Trigger::Use;
     callback.selector = Selector {
-        target_definition: None,
         ordinal: None,
         native: None,
         position: Some(at),
