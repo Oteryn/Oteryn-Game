@@ -400,10 +400,31 @@ fn minimap_background_save_polls_the_failed_write_and_keeps_dirty_cells()
 }
 
 #[cfg(bevy_shell)]
+fn hold_background_save(map: &mut Minimap) -> tokio::sync::oneshot::Sender<()> {
+    let pool = bevy_tasks::IoTaskPool::get_or_init(|| {
+        bevy_tasks::TaskPoolBuilder::new().num_threads(1).build()
+    });
+    let (release, blocked) = tokio::sync::oneshot::channel();
+    map.save_task = Some(pool.spawn(async move { blocked.await.map_err(io::Error::other) }));
+    release
+}
+
+#[cfg(bevy_shell)]
+fn poll_mark_save(map: &mut Minimap) -> io::Result<()> {
+    let deadline = Instant::now() + Duration::from_secs(2);
+    while map.save_task.is_some() {
+        map.poll_background_save();
+        if Instant::now() >= deadline {
+            return Err(io::Error::other("marker save did not finish"));
+        }
+        std::thread::yield_now();
+    }
+    Ok(())
+}
+
+#[cfg(bevy_shell)]
 #[test]
 fn removing_a_persisted_mark_defers_the_cache_write() -> Result<(), Box<dyn std::error::Error>> {
-    use bevy_tasks::{IoTaskPool, TaskPoolBuilder};
-    IoTaskPool::get_or_init(|| TaskPoolBuilder::new().num_threads(1).build());
     let root = tempfile::tempdir()?;
     let mut map = Minimap::default();
     map.root = Some(root.path().to_path_buf());
@@ -411,9 +432,8 @@ fn removing_a_persisted_mark_defers_the_cache_write() -> Result<(), Box<dyn std:
     map.observe(&joined_window(100, 200));
     map.edit_marker(100, 200, 7, "Camp".into(), 0)?;
     let cache = map.path().ok_or("bound cache")?;
-    let staging = cache.with_extension("tmp");
-    std::fs::create_dir(&staging)?;
     map.enable_background_save();
+    let release = hold_background_save(&mut map);
     map.remove_marker(100, 200, 7)?;
     assert!(map.markers.is_empty());
     assert!(map.save_task.is_some());
@@ -424,9 +444,8 @@ fn removing_a_persisted_mark_defers_the_cache_write() -> Result<(), Box<dyn std:
             .len(),
         1
     );
-    map.finish_pending_save();
-    std::fs::remove_dir(&staging)?;
-    map.save()?;
+    release.send(()).map_err(|()| "save worker dropped")?;
+    poll_mark_save(&mut map)?;
     assert!(
         Saved::read_from(&cache)?
             .ok_or("saved cache")?
@@ -436,29 +455,28 @@ fn removing_a_persisted_mark_defers_the_cache_write() -> Result<(), Box<dyn std:
     Ok(())
 }
 
-
 #[cfg(bevy_shell)]
 #[test]
-fn creating_and_editing_persisted_marks_defer_the_cache_write() -> Result<(), Box<dyn std::error::Error>> {
-    use bevy_tasks::{IoTaskPool, TaskPoolBuilder};
-    IoTaskPool::get_or_init(|| TaskPoolBuilder::new().num_threads(1).build());
+fn creating_and_editing_persisted_marks_defer_the_cache_write()
+-> Result<(), Box<dyn std::error::Error>> {
     let root = tempfile::tempdir()?;
     let mut map = Minimap::default();
     map.root = Some(root.path().to_path_buf());
     map.bind_world("11111111-1111-4111-8111-111111111111");
     map.observe(&joined_window(100, 200));
     let cache = map.path().ok_or("bound cache")?;
-    let staging = cache.with_extension("tmp");
-    std::fs::create_dir(&staging)?;
     map.enable_background_save();
+    let release = hold_background_save(&mut map);
     assert!(map.create_mark_at((100, 200, 7))?);
     map.edit_marker(100, 200, 7, "Camp".into(), 3)?;
     assert_eq!(map.markers[0].label, "Camp");
     assert!(!cache.exists());
-    map.finish_pending_save();
-    std::fs::remove_dir(&staging)?;
-    map.save()?;
-    assert_eq!(Saved::read_from(&cache)?.ok_or("saved cache")?.markers[0].label, "Camp");
+    release.send(()).map_err(|()| "save worker dropped")?;
+    poll_mark_save(&mut map)?;
+    assert_eq!(
+        Saved::read_from(&cache)?.ok_or("saved cache")?.markers[0].label,
+        "Camp"
+    );
     Ok(())
 }
 
