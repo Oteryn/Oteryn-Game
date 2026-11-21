@@ -37,6 +37,11 @@ impl Outbox {
         let mut mailbox = lock(&self.0);
         std::mem::take(&mut mailbox.scope_initialize)
     }
+    pub(super) fn scope_waiting(&self) -> bool {
+        let mailbox = lock(&self.0);
+        mailbox.scope_pending || mailbox.scope_initialize
+    }
+
     pub(super) fn take_scope_modal_reset(&self) -> bool {
         std::mem::take(&mut lock(&self.0).scope_reset_modal)
     }

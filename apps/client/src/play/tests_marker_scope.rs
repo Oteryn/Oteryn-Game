@@ -4,6 +4,8 @@ use oteryn_session::activity_scope::{ActivityScope, ActivityScopeSnapshot, encod
 
 #[path = "tests_marker_scope/connection_handoff.rs"]
 mod connection_handoff;
+#[path = "tests_marker_scope/presentation_gate.rs"]
+mod presentation_gate;
 #[path = "tests_marker_scope/wire_handoff.rs"]
 mod wire_handoff;
 
@@ -61,6 +63,20 @@ impl Stepper for AutomaticQueryHandoff {
         }
         if command.capability == 451 && !self.feature_selected(451) {
             return Err(SessionError::CapabilityNotSelected { capability: 451 });
+        }
+        if self.changed && self.capability == 182 && command.capability == 182 {
+            use oteryn_session::daily_reward::returner::Reply;
+            return Ok(oteryn_session::GatedCommandResult {
+                command_id: 1,
+                server_sequence: 1,
+                status: CommandStatus::Accepted,
+                payload: Reply {
+                    state: 1,
+                    id: Some(self.scope.session),
+                }
+                .encode()
+                .map_err(|_| SessionError::SessionUnusable)?,
+            });
         }
         assert_eq!(
             command.capability, self.capability,
@@ -402,6 +418,13 @@ fn query_handoff_continues(
             link.cooldown_bar_icons()
                 .iter()
                 .any(|icon| icon.group && icon.id == 1 && icon.tooltip.contains("2000"))
+        );
+    }
+    if capability == 182 {
+        assert_eq!(
+            link.daily_reward_panel().returner_notified,
+            Some(destination),
+            "interrupted Returner query was not retried after presentation"
         );
     }
     runtime.shutdown(Duration::from_millis(250));

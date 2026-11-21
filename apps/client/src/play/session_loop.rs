@@ -16,20 +16,7 @@ const IDLE_SLICE: Duration = Duration::from_millis(20);
 pub use super::stepper::Stepper;
 
 mod scope_transition;
-use scope_transition::{publish_scope_transition, query_initial_returner, reset_modal};
-
-fn initialize<T: Stepper>(
-    session: &T,
-    outbox: &Outbox,
-) -> Result<(), oteryn_session::SessionError> {
-    super::session_initialize::initialize(session, outbox)?;
-    outbox.cast_control_initialize(session.server_mechanic_selected(290));
-    outbox.cast_consent_initialize(session.server_mechanic_selected(292));
-    outbox.cast_chat_initialize(
-        session.server_mechanic_selected(290) && session.server_mechanic_selected(291),
-    );
-    Ok(())
-}
+use scope_transition::{initialize, publish_scope_transition, query_initial_returner, reset_modal};
 
 /// Initializes the live map, sends commands and services session liveness.
 pub async fn run_session<T: Stepper>(
@@ -69,7 +56,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
     // snapshot with the same initial sequence and revisions.
     publish(&mut session, &outbox, &mut held);
     let mut personal_marks_refresh = std::time::Instant::now();
-    let mut read_initial_features = !super::mailbox::lock(&outbox.0).scope_pending;
+    let mut read_initial_features = !outbox.scope_waiting();
     let mut query_returner = true;
     'session: loop {
         if outbox.session_cancelled() {
@@ -88,8 +75,14 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
         if std::mem::take(&mut read_initial_features) {
             // An initial recovery receipt clears the admission mailbox. Wait for
             // the destination to be presented and initialized before querying.
-            if std::mem::take(&mut query_returner)
-                && query_initial_returner(&mut session, &outbox, &mut held, &mut modal).await
+            if query_initial_returner(
+                &mut session,
+                &outbox,
+                &mut held,
+                &mut modal,
+                &mut query_returner,
+            )
+            .await
             {
                 continue 'session;
             }
@@ -116,7 +109,12 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 }
             }
         }
-        match modal.poll(&mut session).await {
+        let scope_waiting = outbox.scope_waiting();
+        match if scope_waiting {
+            Ok(None)
+        } else {
+            modal.poll(&mut session).await
+        } {
             Ok(Some(ModalCompletion::Answered(answer))) => outbox.store_modal_answered(answer),
             Ok(Some(ModalCompletion::LoggedOut)) => {
                 outbox.logged_out();
@@ -131,7 +129,10 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 return;
             }
         }
-        if session.feature_selected(451) && std::time::Instant::now() >= personal_marks_refresh {
+        if !scope_waiting
+            && session.feature_selected(451)
+            && std::time::Instant::now() >= personal_marks_refresh
+        {
             let command = oteryn_client_ui::personal_map_marks::request();
             match session.feature(&command).await {
                 Ok(result) => {

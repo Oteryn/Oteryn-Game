@@ -1,6 +1,19 @@
 //! The scope barrier a session error crosses: reset the source scope and publish the destination.
 use super::{Outbox, Stepper, publish};
 
+pub(super) fn initialize<T: Stepper>(
+    session: &T,
+    outbox: &Outbox,
+) -> Result<(), oteryn_session::SessionError> {
+    super::super::session_initialize::initialize(session, outbox)?;
+    outbox.cast_control_initialize(session.server_mechanic_selected(290));
+    outbox.cast_consent_initialize(session.server_mechanic_selected(292));
+    outbox.cast_chat_initialize(
+        session.server_mechanic_selected(290) && session.server_mechanic_selected(291),
+    );
+    Ok(())
+}
+
 pub(super) fn publish_scope_transition<T: Stepper>(
     error: &oteryn_session::SessionError,
     session: &mut T,
@@ -48,7 +61,11 @@ pub(super) async fn query_initial_returner<T: Stepper>(
     outbox: &Outbox,
     held: &mut Vec<oteryn_session::WorldSpatialEntity>,
     modal: &mut crate::play::feature_0450_server_modal::protocol::Driver,
+    armed: &mut bool,
 ) -> bool {
+    if !*armed {
+        return false;
+    }
     let Some(command) = outbox.returner_initial_request() else {
         return false;
     };
@@ -61,5 +78,6 @@ pub(super) async fn query_initial_returner<T: Stepper>(
             outbox.returner_unavailable();
         }
     }
+    *armed = false;
     false
 }
