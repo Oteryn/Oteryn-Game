@@ -49,7 +49,7 @@ fn open(app: &mut App) -> TestResult {
     app.update();
     Ok(())
 }
-fn answer(app: &mut App, action: Action) -> TestResult {
+fn activate_answer(app: &mut App, action: Action) -> TestResult {
     let entity = app
         .world_mut()
         .query::<(Entity, &Action)>()
@@ -60,6 +60,10 @@ fn answer(app: &mut App, action: Action) -> TestResult {
         .resource_mut::<InputFocus>()
         .set(entity, FocusCause::Navigated);
     app.world_mut().trigger(Activate { entity });
+    Ok(())
+}
+fn answer(app: &mut App, action: Action) -> TestResult {
+    activate_answer(app, action)?;
     app.update();
     Ok(())
 }
@@ -150,5 +154,28 @@ fn login_survey_declined_or_refused_queues_nothing() -> TestResult {
                 |(title, text)| title == "Survey" && text.contains("Cannot save the response")
             )
     );
+    Ok(())
+}
+
+#[test]
+fn login_survey_same_frame_activations_cannot_skip_consent() -> TestResult {
+    let temp = Temp::new()?;
+    let path = temp.0.join("approved-survey.txt");
+    let mut app = app(&temp)?;
+    open(&mut app)?;
+    answer(&mut app, Action::Yes)?;
+    activate_answer(&mut app, Action::Yes)?;
+    activate_answer(&mut app, Action::Yes)?;
+    app.update();
+    assert!(
+        !path.exists(),
+        "the response was queued before consent was displayed"
+    );
+    let review = body(&mut app)?;
+    assert!(shown(&mut app)?);
+    assert!(review.contains("Send exactly this response"));
+    answer(&mut app, Action::Yes)?;
+    assert!(review.starts_with(&std::fs::read_to_string(path)?));
+    assert_eq!(std::fs::read_dir(&temp.0)?.count(), 1);
     Ok(())
 }

@@ -1,6 +1,7 @@
 //! Reviews the optional survey response and collects consent in the login window.
 use super::*;
 use crate::about;
+use bevy::diagnostic::FrameCount;
 
 enum Step {
     Invite,
@@ -11,6 +12,7 @@ enum Step {
 
 pub(in crate::bevy_shell) struct State {
     step: Option<Step>,
+    shown: Option<(std::mem::Discriminant<Step>, u32)>,
     /// Where consented responses wait for the next signed-in play session.
     directory: Option<PathBuf>,
 }
@@ -18,6 +20,7 @@ impl Default for State {
     fn default() -> Self {
         Self {
             step: None,
+            shown: None,
             directory: crate::support_delivery::directory(),
         }
     }
@@ -28,6 +31,16 @@ impl State {
     }
     pub(super) fn open(&mut self) {
         self.step = Some(Step::Invite);
+        self.shown = None;
+    }
+    fn can_answer(&self, frame: u32) -> bool {
+        self.shown.is_some_and(|(shown, shown_frame)| {
+            frame != shown_frame
+                && self
+                    .step
+                    .as_ref()
+                    .is_some_and(|step| std::mem::discriminant(step) == shown)
+        })
     }
     fn text(&self) -> String {
         match &self.step {
@@ -154,10 +167,14 @@ pub(super) fn setup(commands: &mut Commands, skins: &Skins) {
 fn activate(
     event: On<Activate>,
     actions: Query<&Action>,
+    frame: Res<FrameCount>,
     guard: ModalGuard,
     mut owner: NonSendMut<HostOwner>,
 ) {
-    if !owner.login.visible || !owner.login.survey.visible() || !guard.allows(event.entity) {
+    if !owner.login.visible
+        || !owner.login.survey.can_answer(frame.0)
+        || !guard.allows(event.entity)
+    {
         return;
     }
     let Ok(action) = actions.get(event.entity) else {
@@ -192,7 +209,7 @@ fn project(
     mut bodies: Query<&mut Text, With<Body>>,
     actions: Query<(Entity, &Action)>,
     mut focus: ResMut<InputFocus>,
-    mut shown: Local<Option<std::mem::Discriminant<Step>>>,
+    frame: Res<FrameCount>,
 ) {
     if !owner.login.visible {
         owner.login.survey.step = None;
@@ -214,7 +231,8 @@ fn project(
             }
         }
     }
-    if visible && *shown != step {
+    let shown = owner.login.survey.shown.map(|(shown, _)| shown);
+    if visible && shown != step {
         // Declining is the safe default for an optional survey.
         if let Some((entity, _)) = actions.iter().find(|(_, action)| **action == Action::No) {
             focus.set(entity, FocusCause::Navigated);
@@ -227,7 +245,9 @@ fn project(
     {
         focus.clear();
     }
-    *shown = step;
+    if shown != step {
+        owner.login.survey.shown = step.map(|step| (step, frame.0));
+    }
 }
 
 #[cfg(test)]
