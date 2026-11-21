@@ -6,6 +6,7 @@ use bevy::{
     ui_widgets::TextInput,
 };
 use oteryn_client_ui_bevy as source;
+use std::collections::VecDeque;
 
 #[derive(Component)]
 struct ItemField;
@@ -21,7 +22,7 @@ pub(super) struct TrackerControl {
     action: Action,
 }
 #[derive(Resource, Default)]
-struct Pending(Option<(Entity, TrackerControl)>);
+struct Pending(VecDeque<(Entity, TrackerControl)>);
 
 pub(super) fn install(app: &mut App) {
     app.init_resource::<Pending>()
@@ -35,7 +36,7 @@ pub(super) fn install(app: &mut App) {
 }
 fn activate(event: On<Activate>, controls: Query<&TrackerControl>, mut pending: ResMut<Pending>) {
     if let Ok(control) = controls.get(event.entity) {
-        pending.0 = Some((event.entity, *control));
+        pending.0.push_back((event.entity, *control));
     }
 }
 fn finish(
@@ -44,39 +45,41 @@ fn finish(
     guard: ModalGuard,
     fields: Query<&EditableText, With<ItemField>>,
 ) {
-    let Some((entity, control)) = pending.0.take() else {
+    let Some(play) = &owner.play else {
+        pending.0.clear();
         return;
     };
-    if !guard.allows(entity) || owner.modal_active() || control.generation != owner.generation() {
-        return;
-    }
-    let Some(play) = &owner.play else { return };
-    let panel = play.link.analyser_panel();
-    if !panel.selected
-        || !panel.open
-        || !panel.open_tools.contains(&Tool::LootTracker)
-        || play.view.gameplay_input_blocked(&play.link)
-    {
-        return;
-    }
-    play.link.analyser_select(Tool::LootTracker.key());
-    match control.action {
-        Action::Filter => play.link.analyser_filter_tracked(),
-        Action::Track | Action::Untrack => {
-            let Ok(field) = fields.single() else { return };
-            if field.pending_paste.is_some()
-                || field
-                    .pending_edits
-                    .iter()
-                    .any(bevy::text::TextEdit::is_destructive)
-            {
-                pending.0 = Some((entity, control));
-                return;
+    while let Some((entity, control)) = pending.0.pop_front() {
+        if !guard.allows(entity) || owner.modal_active() || control.generation != owner.generation() {
+            continue;
+        }
+        let panel = play.link.analyser_panel();
+        if !panel.selected
+            || !panel.open
+            || !panel.open_tools.contains(&Tool::LootTracker)
+            || play.view.gameplay_input_blocked(&play.link)
+        {
+            continue;
+        }
+        play.link.analyser_select(Tool::LootTracker.key());
+        match control.action {
+            Action::Filter => play.link.analyser_filter_tracked(),
+            Action::Track | Action::Untrack => {
+                let Ok(field) = fields.single() else { continue };
+                if field.pending_paste.is_some()
+                    || field
+                        .pending_edits
+                        .iter()
+                        .any(bevy::text::TextEdit::is_destructive)
+                {
+                    pending.0.push_front((entity, control));
+                    break;
+                }
+                play.link.analyser_track_item(
+                    &field.value().to_string(),
+                    matches!(control.action, Action::Track),
+                );
             }
-            play.link.analyser_track_item(
-                &field.value().to_string(),
-                matches!(control.action, Action::Track),
-            );
         }
     }
 }

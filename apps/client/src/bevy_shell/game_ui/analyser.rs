@@ -7,6 +7,7 @@ use super::modal::ModalGuard;
 use crate::bevy_shell::{owner::HostOwner, ui::Skins};
 use bevy::{input_focus::InputFocus, prelude::*, ui_widgets::Activate};
 use oteryn_client_ui::analyser::Tool;
+use std::collections::VecDeque;
 
 #[derive(Component)]
 struct Overlay(Tool);
@@ -110,7 +111,7 @@ struct ConfigControl {
     kind: ConfigKind,
 }
 #[derive(Resource, Default)]
-struct ConfigPending(Option<(Entity, u64, Tool, ConfigKind)>);
+struct ConfigPending(VecDeque<(Entity, u64, Tool, ConfigKind)>);
 fn configure(
     event: On<Activate>,
     controls: Query<&ConfigControl>,
@@ -124,8 +125,8 @@ fn configure(
     let Ok(control) = controls.get(event.entity) else {
         return;
     };
-    if control.generation == owner.generation() && pending.0.is_none() {
-        pending.0 = Some((event.entity, control.generation, control.tool, control.kind));
+    if control.generation == owner.generation() {
+        pending.0.push_back((event.entity, control.generation, control.tool, control.kind));
     }
 }
 fn finish_configuration(
@@ -134,60 +135,58 @@ fn finish_configuration(
     guard: ModalGuard,
     fields: Query<(&ConfigField, &bevy::text::EditableText)>,
 ) {
-    let Some((entity, generation, tool, kind)) = pending.0 else {
-        return;
-    };
     let Some(play) = &owner.play else {
-        pending.0 = None;
+        pending.0.clear();
         return;
     };
-    let panel = play.link.analyser_panel();
-    if generation != owner.generation()
-        || owner.modal_active()
-        || !guard.allows(entity)
-        || !panel.open
-        || !panel.open_tools.contains(&tool)
-    {
-        pending.0 = None;
-        return;
-    }
-    if fields.iter().any(|(field, text)| {
-        if field.1 != tool {
-            return false;
-        }
-        text.pending_paste.is_some()
-            || text
-                .pending_edits
-                .iter()
-                .any(bevy::text::TextEdit::is_destructive)
-    }) {
-        return;
-    }
-    pending.0 = None;
-    let mut values: [String; 3] = default();
-    for (field, text) in &fields {
-        if field.1 != tool {
+    while let Some((entity, generation, tool, kind)) = pending.0.pop_front() {
+        let panel = play.link.analyser_panel();
+        if generation != owner.generation()
+            || owner.modal_active()
+            || !guard.allows(entity)
+            || !panel.open
+            || !panel.open_tools.contains(&tool)
+        {
             continue;
         }
-        if let Some(value) = values.get_mut(field.0) {
-            *value = text.value().to_string();
+        if fields.iter().any(|(field, text)| {
+            if field.1 != tool {
+                return false;
+            }
+            text.pending_paste.is_some()
+                || text
+                    .pending_edits
+                    .iter()
+                    .any(bevy::text::TextEdit::is_destructive)
+        }) {
+            pending.0.push_front((entity, generation, tool, kind));
+            break;
         }
-    }
-    match kind {
-        ConfigKind::Goal => {
-            play.link.analyser_xp_goal(&values[0]);
+        let mut values: [String; 3] = default();
+        for (field, text) in &fields {
+            if field.1 != tool {
+                continue;
+            }
+            if let Some(value) = values.get_mut(field.0) {
+                *value = text.value().to_string();
+            }
         }
-        ConfigKind::Loot | ConfigKind::Supply => {
-            let selected = if matches!(kind, ConfigKind::Supply) {
-                Tool::Supply
-            } else {
-                Tool::Loot
-            };
-            let saved = play
-                .link
-                .analyser_item_price_for(selected, &values[1], &values[2]);
-            if saved && tool == Tool::Party {
-                play.link.analyser_party_refresh();
+        match kind {
+            ConfigKind::Goal => {
+                play.link.analyser_xp_goal(&values[0]);
+            }
+            ConfigKind::Loot | ConfigKind::Supply => {
+                let selected = if matches!(kind, ConfigKind::Supply) {
+                    Tool::Supply
+                } else {
+                    Tool::Loot
+                };
+                let saved = play
+                    .link
+                    .analyser_item_price_for(selected, &values[1], &values[2]);
+                if saved && tool == Tool::Party {
+                    play.link.analyser_party_refresh();
+                }
             }
         }
     }

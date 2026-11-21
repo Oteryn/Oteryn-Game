@@ -398,6 +398,26 @@ fn analyser_tracker_controls_filter_confirmed_drops_and_keep_selection() -> Test
 }
 
 #[test]
+fn analyser_tracker_applies_track_and_filter_in_the_same_frame() -> TestResult {
+    let (mut app, _) = app()?;
+    select(&mut app, Tool::LootTracker)?;
+    tracker_item(&mut app, "202")?;
+    for caption in ["Track item", "Show tracked only"] {
+        let world = app.world_mut();
+        let button = world.query::<(&Text, &ChildOf)>().iter(world)
+            .find_map(|(text, parent)| (text.0 == caption).then_some(parent.parent()))
+            .ok_or("tracker button")?;
+        world.trigger(Activate { entity: button });
+    }
+    app.update();
+    let owner = app.world().non_send::<HostOwner>();
+    let panel = owner.play.as_ref().ok_or("play")?.link.analyser_panel();
+    assert!(panel.loot_tracked.contains(&202));
+    assert!(panel.loot_only_tracked);
+    Ok(())
+}
+
+#[test]
 fn analyser_tracker_rejects_stale_controls_and_preserves_counts() -> TestResult {
     let (mut app, _outbox) = app()?;
     select(&mut app, Tool::LootTracker)?;
@@ -695,7 +715,9 @@ fn analyser_configuration_reaches_validated_goal_and_price_owners() -> TestResul
             .editor_mut()
             .set_text(value);
     }
+    let price = find(&mut app, "Set loot value")?;
     app.world_mut().trigger(Activate { entity: goal });
+    app.world_mut().trigger(Activate { entity: price });
     app.update();
     assert_eq!(
         app.world()
@@ -708,9 +730,6 @@ fn analyser_configuration_reaches_validated_goal_and_price_owners() -> TestResul
             .goal_xp,
         Some(1150)
     );
-    let price = find(&mut app, "Set loot value")?;
-    app.world_mut().trigger(Activate { entity: price });
-    app.update();
     app.update();
     let text = report(&mut app)?;
     assert!(text.contains("Priced balance: 107 gold"), "{text}");
