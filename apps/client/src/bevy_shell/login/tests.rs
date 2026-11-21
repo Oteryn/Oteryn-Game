@@ -487,3 +487,18 @@ fn login_errors_open_a_titled_message_box_instead_of_dialog_prose() -> TestResul
     );
     Ok(())
 }
+
+#[test]
+fn review_3376_sign_in_uses_the_visible_platform() -> TestResult {
+    let temp = Temp::new()?;
+    let path = temp.join("login.json");
+    let visible = settings(&temp)?;
+    visible.save(&path)?;
+    let mut state = LoginState::default();
+    state.load(Some(path.clone()), |_| None);
+    let mut another = visible.clone();
+    another.platform_url = "http://127.0.0.1:18566".into();
+    another.save(&path)?;
+    assert_eq!(state.submit()?.platform_url, visible.platform_url);
+    Ok(())
+}

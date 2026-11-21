@@ -72,9 +72,8 @@ impl LoginState {
             .as_ref()
             .ok_or_else(|| "Cannot locate the login configuration directory.".to_owned())
             .and_then(|p| self.form.settings.save_edits(p, &self.baseline));
-        let saved = saved.inspect_err(|error| self.form.feedback(error.clone()))?;
-        self.baseline = saved.clone();
-        self.form.settings = saved;
+        saved.inspect_err(|error| self.form.feedback(error.clone()))?;
+        self.baseline = self.form.settings.clone();
         self.form.submit()
     }
 }
