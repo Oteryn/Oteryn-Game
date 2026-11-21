@@ -47,6 +47,7 @@ impl AudioOutput {
         let dir =
             std::env::var("OTERYN_SOUND_DIR").map_err(|_| tr!("sound directory not configured"))?;
         let catalog = SoundCatalog::open(Path::new(&dir), Path::new(&manifest), &pin)?;
+        pin_audio_host();
         let devices: Vec<_> = rodio::cpal::default_host()
             .output_devices()
             .map_err(|e| e.to_string())?
@@ -70,10 +71,6 @@ impl AudioOutput {
         })
     }
 
-    #[cfg(windows)]
-    pub(crate) fn ambient_id(&self) -> Option<u32> {
-        self.ambient.as_ref().map(|(id, _)| *id)
-    }
 
     /// Confirmed local UI tones share the bounded voices and stop with the session.
     pub(crate) fn play_ui(&mut self, settings: AudioSettings, cues: Vec<UiSound>) {
@@ -193,8 +190,47 @@ impl AudioOutput {
     }
 }
 
+/// cpal's WASAPI host keeps one process-wide device enumerator, created in the COM apartment of
+/// the first thread that touches it and released when that thread exits. Creating it on a thread
+/// that lives as long as the process keeps every later enumeration and stream open valid, whatever
+/// thread (a Bevy task, a test) asks first.
+#[cfg(windows)]
+fn pin_audio_host() {
+    static PINNED: std::sync::Mutex<bool> = std::sync::Mutex::new(false);
+    pin_once(&PINNED, || {
+        let (ready, wait) = std::sync::mpsc::channel();
+        std::thread::Builder::new()
+            .name("oteryn-audio-host".into())
+            .spawn(move || {
+                let _ = rodio::cpal::default_host().output_devices();
+                let _ = ready.send(());
+                loop {
+                    std::thread::park();
+                }
+            })
+            .is_ok()
+            && wait.recv().is_ok()
+    });
+}
+
+/// Runs `pin` until it succeeds once; a failed pin (the host thread could not be spawned)
+/// leaves `pinned` unset, so a later call tries again.
+#[cfg(any(windows, test))]
+fn pin_once(pinned: &std::sync::Mutex<bool>, pin: impl FnOnce() -> bool) {
+    let mut pinned = pinned
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    if !*pinned {
+        *pinned = pin();
+    }
+}
+
+#[cfg(not(windows))]
+fn pin_audio_host() {}
+
 /// Device names for the Sound page; saved missing devices remain explicit selections.
 pub fn audio_device_names() -> Vec<String> {
+    pin_audio_host();
     rodio::cpal::default_host()
         .output_devices()
         .map(|devices| devices.filter_map(|device| device.name().ok()).collect())

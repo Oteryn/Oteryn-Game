@@ -122,6 +122,8 @@ enum Direction {
 pub fn apply_item_bed_promotion_v1(
     draft: &mut ProjectV2Draft,
 ) -> Result<ItemBedPromotion, ItemBedPromotionError> {
+    super::item_identity::validate_unique_item_keys(draft)
+        .map_err(ItemBedPromotionError::Decode)?;
     if world_project_sha256(ITEM_BED_PROMOTION_V1_PACKET) != ITEM_BED_PROMOTION_V1_PACKET_SHA256 {
         return Err(ItemBedPromotionError::Digest);
     }
@@ -221,10 +223,13 @@ fn apply_rows<'a>(
         items: 0,
         replaced: 0,
     };
-    for (key, semantics) in items {
+    let mut planned = Vec::new();
+    for (key, original) in items {
         let Some(row) = by_item.remove(key) else {
             continue;
         };
+        let mut candidate = original.clone();
+        let semantics = &mut candidate;
         let TypedValue::Bed(value) = &row.typed_value;
         let target = |wire: &str| {
             if !keys.contains(wire) {
@@ -253,12 +258,16 @@ fn apply_rows<'a>(
         semantics.bed = ReferenceItemField::Known(bed);
         applied.fields += 1;
         applied.items += 1;
+        planned.push((original, candidate));
     }
     if let Some((item_key, _)) = by_item.into_iter().next() {
         return Err(ItemBedPromotionError::Row {
             item_key: item_key.to_owned(),
             reason: "no Item record with this key",
         });
+    }
+    for (semantics, candidate) in planned {
+        *semantics = candidate;
     }
     Ok(applied)
 }
@@ -309,6 +318,18 @@ mod tests {
             (HEAD, ReferenceItemSemantics::default()),
             (HEAD_OCCUPIED, ReferenceItemSemantics::default()),
         ]
+    }
+
+    #[test]
+    fn late_missing_item_preserves_all_semantics() {
+        let bytes = packet(&[
+            row(HEAD, "HEAD", "SOUTH", HEAD, HEAD),
+            row(HEAD_OCCUPIED, "HEAD", "SOUTH", HEAD_OCCUPIED, HEAD_OCCUPIED),
+        ]);
+        let mut items = [(HEAD, ReferenceItemSemantics::default())];
+        let before = items.clone();
+        assert!(apply(&bytes, &mut items).is_err());
+        assert_eq!(items, before);
     }
 
     #[test]

@@ -21,8 +21,19 @@ pub fn request(panel: &mut ChatPartyRoomPanel) -> Option<ChatIntent> {
     })
 }
 
-pub fn apply_result(panel: &mut ChatPartyRoomPanel) {
+pub fn apply_result(
+    panel: &mut ChatPartyRoomPanel,
+    outcome: &oteryn_client_runtime::chat_public_channels::ChatOutcome,
+) {
     panel.pending = false;
+    panel.feedback = (outcome.disposition
+        != oteryn_client_runtime::chat_public_channels::ChatDisposition::Ok)
+        .then(|| {
+            format!(
+                "{:?}: wait {} seconds",
+                outcome.disposition, outcome.wait_seconds
+            )
+        });
 }
 
 pub fn replace_rooms(

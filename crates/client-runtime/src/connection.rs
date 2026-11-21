@@ -52,7 +52,6 @@ pub async fn enter<A: AdmissionAttempt>(
     let mut grant_retries = 0;
     let mut reconciliations = 0;
     let mut capacity_retried = false;
-    let mut queued_retries = 0;
     loop {
         let code = match attempt.admit().await {
             Ok(session) => return Ok(session),
@@ -70,8 +69,7 @@ pub async fn enter<A: AdmissionAttempt>(
             .then(|| attempt.queue())
             .flatten();
         let delay = match code {
-            CAPACITY_EXCEEDED if queue.is_some() && queued_retries < 16 => {
-                queued_retries += 1;
+            CAPACITY_EXCEEDED if queue.is_some() => {
                 Duration::from_millis(u64::from(queue.map_or(0, |queue| queue.retry_after_ms)))
             }
             GRANT_NOT_YET_VALID | GRANT_SECURITY_EVIDENCE_STALE
@@ -92,7 +90,7 @@ pub async fn enter<A: AdmissionAttempt>(
             }
             _ => return Err(A::rejected(class)),
         };
-        if Instant::now() + delay >= attempt.usable_until() {
+        if tokio::time::Instant::now() + delay >= attempt.usable_until().into() {
             return Err(A::rejected(class));
         }
         attempt.waiting(AdmissionWait {
@@ -102,6 +100,11 @@ pub async fn enter<A: AdmissionAttempt>(
             queue_position: queue.map(|queue| queue.position),
         });
         match cancellable(cancellation.clone(), tokio::time::sleep(delay)).await {
+            Cancellable::Completed(())
+                if tokio::time::Instant::now() >= attempt.usable_until().into() =>
+            {
+                return Err(A::rejected(class));
+            }
             Cancellable::Completed(()) => {}
             Cancellable::Cancelled => return Err(A::rejected(class)),
         }

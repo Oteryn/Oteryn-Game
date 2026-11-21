@@ -32,6 +32,7 @@ fn render(input: Option<DialogInput>, message: &str) -> Result<World, Box<dyn st
                 message: message.into(),
                 choices: vec![],
                 buttons: vec![(1, "Ok".into())],
+                default_button: None,
                 cancel_button: None,
                 image: None,
             }),
@@ -106,7 +107,7 @@ fn house_list_window() -> TestResult {
     let skin = app.world_mut().remove_resource::<Skins>().ok_or("skins")?;
     let mut queue = bevy::ecs::world::CommandQueue::default();
     let mut commands = Commands::new(&mut queue, app.world());
-    super::super::text_window::build(
+    super::super::houses::build(
         &mut commands,
         &skin,
         1,
@@ -119,6 +120,8 @@ fn house_list_window() -> TestResult {
             String::new(),
             String::new(),
         ],
+        [None; 7],
+        &oteryn_client_ui::house::Panel::default(),
         "",
     );
     queue.apply(app.world_mut());
@@ -127,10 +130,32 @@ fn house_list_window() -> TestResult {
         world
             .query::<&Text>()
             .iter(world)
-            .any(|text| text.0 == "Enter one name per line.")
+            .any(|text| text.0 == "Enter one member UUID per line.")
+    );
+    for caption in [
+        "Bid",
+        "Owned / incoming",
+        "Review transfer",
+        "Review accept transfer",
+        "Review reject transfer",
+        "Confirm reviewed action",
+        "Cancel review",
+    ] {
+        assert!(
+            world
+                .query::<&Text>()
+                .iter(world)
+                .any(|text| text.0 == caption)
+        );
+    }
+    assert!(
+        world
+            .query::<(&super::super::houses::Field, &EditableText)>()
+            .iter(world)
+            .any(|(field, _)| field.0 == 3)
     );
     let editor = world
-        .query::<(&super::super::text_window::Field, &EditableText)>()
+        .query::<(&super::super::houses::Field, &EditableText)>()
         .iter(world)
         .find(|(field, _)| field.0 == 4)
         .ok_or("list editor")?
@@ -138,6 +163,31 @@ fn house_list_window() -> TestResult {
     assert_eq!(editor.value().to_string(), "Ada\nBob");
     assert!(editor.allow_newlines);
     Ok(())
+}
+
+#[test]
+fn house_query_rejects_identical_panel_from_new_activity() {
+    let (link, mut receiver, _) = crate::play::play_channel();
+    link.bevy_house_list_fixture();
+    let expected = link.house_panel();
+    link.bevy_house_list_fixture();
+    let current = link.house_panel();
+    assert_ne!(expected.activity_revision, current.activity_revision);
+    assert_eq!(expected.model, current.model);
+    assert_eq!(expected.fields, current.fields);
+    let mut drafts = expected.fields.clone();
+    drafts[4] = "origin member".into();
+    drafts[6] = "CONFIRM".into();
+    assert!(!super::super::houses::submit(
+        &link,
+        expected.activity_revision,
+        &expected.model,
+        &expected.fields,
+        drafts,
+        0
+    ));
+    assert_eq!(link.house_panel().fields, current.fields);
+    assert!(receiver.try_recv().is_err());
 }
 
 #[test]
@@ -150,7 +200,14 @@ fn house_list_window_sends_existing_list_intent() -> TestResult {
     let mut fields = expected.fields.clone();
     fields[4] = "02020202-0202-7202-8202-020202020202\n03030303-0303-7303-8303-030303030303".into();
     fields[6] = "CONFIRM".into();
-    super::super::text_window::submit(&link, &expected.model, &expected.fields, fields, 3);
+    super::super::houses::submit(
+        &link,
+        expected.activity_revision,
+        &expected.model,
+        &expected.fields,
+        fields,
+        3,
+    );
     let PlayCommand::Feature(command) = receiver.try_recv()? else {
         return Err("list intent".into());
     };
@@ -161,8 +218,9 @@ fn house_list_window_sends_existing_list_intent() -> TestResult {
         matches!(intent.action, wire::HouseAction::Acl { subowners: false, revision: 7, members } if members.len() == 2)
     );
     // A response invalidates the old descriptor; it cannot submit a second mutation.
-    super::super::text_window::submit(
+    super::super::houses::submit(
         &link,
+        expected.activity_revision,
         &expected.model,
         &expected.fields,
         expected.fields.clone(),
@@ -173,15 +231,12 @@ fn house_list_window_sends_existing_list_intent() -> TestResult {
 }
 
 #[test]
-fn house_list_window_shortcut_save_and_session_cleanup() -> TestResult {
-    use crate::{
-        combat_input::PlayCommand,
-        play::{PlayView, play_channel},
-    };
+fn house_browser_shows_and_closes_the_entrance_map_of_the_selected_row() -> TestResult {
+    use crate::play::{PlayView, play_channel};
     use bevy::input::keyboard::{Key as LogicalKey, KeyboardInput};
     let (link, mut receiver, _) = play_channel();
     link.use_shared_frontend();
-    link.bevy_house_list_fixture();
+    link.bevy_house_map_fixture();
     let mut owner = HostOwner::new(None)?;
     let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
     view.use_shared_frontend();
@@ -196,7 +251,7 @@ fn house_list_window_shortcut_save_and_session_cleanup() -> TestResult {
         .insert_non_send(owner)
         .add_systems(Startup, crate::bevy_shell::ui::setup);
     super::super::super::modal::install(&mut app);
-    super::super::text_window::install(&mut app);
+    super::super::houses::install(&mut app);
     app.update();
     {
         let mut keys = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
@@ -212,40 +267,267 @@ fn house_list_window_shortcut_save_and_session_cleanup() -> TestResult {
         window: Entity::PLACEHOLDER,
     });
     app.update();
-    let save = app
+    let button = |app: &mut App, caption: &str| {
+        app.world_mut()
+            .query::<(&Text, &ChildOf)>()
+            .iter(app.world())
+            .find_map(|(text, parent)| (text.0 == caption).then_some(parent.parent()))
+            .ok_or(format!("missing button {caption}"))
+    };
+    let texts = |app: &mut App| {
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .map(|text| text.0.clone())
+            .collect::<Vec<_>>()
+    };
+    for (field, mut text) in app
+        .world_mut()
+        .query::<(&super::super::houses::Field, &mut EditableText)>()
+        .iter_mut(app.world_mut())
+    {
+        if field.0 == 2 {
+            text.editor_mut().set_text("2");
+        }
+    }
+    let show = button(&mut app, "Show entrance map")?;
+    app.world_mut().trigger(Activate { entity: show });
+    app.update();
+    app.update();
+    let shown = texts(&mut app);
+    for expected in [
+        "House entrances — north up",
+        "Floor 7 · selected entrance ◆ · other entrances ⌂ · page fitted to view",
+        "◆ 2: Harbour Home\n120,130,7",
+        "⌂ 1: Home\n100,110,7",
+        "Edit House List — Harbour Home",
+    ] {
+        assert!(
+            shown.iter().any(|text| text == expected),
+            "missing entrance map text: {expected}"
+        );
+    }
+    // The house list still names every row; only the map panel (caption -> header -> panel)
+    // must leave the other floor's entrance out.
+    let map = app
         .world_mut()
         .query::<(&Text, &ChildOf)>()
         .iter(app.world())
-        .find_map(|(text, parent)| (text.0 == "Save guests").then_some(parent.parent()))
-        .ok_or("save button")?;
-    for (field, mut text) in app
-        .world_mut()
-        .query::<(&super::super::text_window::Field, &mut EditableText)>()
-        .iter_mut(app.world_mut())
+        .find_map(|(text, parent)| {
+            (text.0 == "House entrances — north up").then_some(parent.parent())
+        })
+        .and_then(|header| app.world().get::<ChildOf>(header))
+        .map(ChildOf::parent)
+        .ok_or("missing entrance map panel")?;
+    let on_map = app
+        .world()
+        .iter_entities()
+        .filter(|entity| {
+            std::iter::successors(Some(entity.id()), |id| {
+                app.world().get::<ChildOf>(*id).map(ChildOf::parent)
+            })
+            .any(|id| id == map)
+        })
+        .filter_map(|entity| entity.get::<Text>().map(|text| text.0.clone()))
+        .collect::<Vec<_>>();
+    assert!(
+        on_map
+            .iter()
+            .any(|text| text == "◆ 2: Harbour Home\n120,130,7"),
+        "the map panel holds the markers"
+    );
+    assert!(
+        !on_map.iter().any(|text| text.contains("Cellar Flat")),
+        "an entrance on another floor stays off the map"
+    );
+    assert!(
+        // The catalogue text names every row; the map labels its markers "<row>: <name>".
+        !shown.iter().any(|text| text.contains("3: Cellar Flat")),
+        "an entrance on another floor stays off the map"
+    );
+    assert!(receiver.try_recv().is_err(), "the map sends no request");
+    let close = button(&mut app, "Close map")?;
+    app.world_mut().trigger(Activate { entity: close });
+    app.update();
+    let closed = texts(&mut app);
+    assert!(
+        !closed
+            .iter()
+            .any(|text| text == "House entrances — north up")
+    );
+    assert!(
+        closed
+            .iter()
+            .any(|text| text == "Edit House List — Harbour Home"),
+        "closing the map keeps the house window"
+    );
+    Ok(())
+}
+
+#[test]
+fn house_browser_rejects_an_invalid_row_instead_of_reusing_the_previous_map() -> TestResult {
+    use crate::play::{PlayView, play_channel};
+    use bevy::input::keyboard::{Key as LogicalKey, KeyboardInput};
+    let (link, _, _) = play_channel();
+    link.use_shared_frontend();
+    link.bevy_house_map_fixture();
+    let mut owner = HostOwner::new(None)?;
+    let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+    view.use_shared_frontend();
+    owner.play = Some(crate::bevy_shell::owner::ActivePlay { view, link });
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .init_resource::<InputFocus>()
+        .init_resource::<ButtonInput<KeyCode>>()
+        .add_message::<KeyboardInput>()
+        .insert_non_send(owner)
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+    super::super::super::modal::install(&mut app);
+    super::super::houses::install(&mut app);
+    app.update();
     {
-        if field.0 == 4 {
-            text.editor_mut()
-                .set_text("02020202-0202-7202-8202-020202020202");
-        }
-        if field.0 == 6 {
-            text.editor_mut().set_text("CONFIRM");
-        }
+        let mut keys = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
+        keys.press(KeyCode::ControlLeft);
+        keys.press(KeyCode::ShiftLeft);
     }
-    app.world_mut().trigger(Activate { entity: save });
+    app.world_mut().write_message(KeyboardInput {
+        key_code: KeyCode::KeyH,
+        logical_key: LogicalKey::Character("H".into()),
+        state: bevy::input::ButtonState::Pressed,
+        text: None,
+        repeat: false,
+        window: Entity::PLACEHOLDER,
+    });
     app.update();
-    let PlayCommand::Feature(command) = receiver.try_recv()? else {
-        return Err("house intent".into());
-    };
-    assert_eq!((command.capability, command.kind), (49, 56));
-    app.world_mut().non_send_mut::<HostOwner>().close();
-    app.update();
-    assert_eq!(
-        app.world_mut()
-            .query::<&super::super::text_window::Field>()
+    let show_map = |app: &mut App, row: &str| -> Result<Vec<String>, String> {
+        for (field, mut text) in app
+            .world_mut()
+            .query::<(&super::super::houses::Field, &mut EditableText)>()
+            .iter_mut(app.world_mut())
+        {
+            if field.0 == 2 {
+                text.editor_mut().set_text(row);
+            }
+        }
+        let show = app
+            .world_mut()
+            .query::<(&Text, &ChildOf)>()
             .iter(app.world())
-            .count(),
-        0
+            .find_map(|(text, parent)| (text.0 == "Show entrance map").then_some(parent.parent()))
+            .ok_or("missing button Show entrance map")?;
+        app.world_mut().trigger(Activate { entity: show });
+        app.update();
+        app.update();
+        Ok(app
+            .world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .map(|text| text.0.clone())
+            .collect())
+    };
+    let shown = show_map(&mut app, "1")?;
+    assert!(shown.iter().any(|text| text == "◆ 1: Home\n100,110,7"));
+    for row in ["0", "first", "9"] {
+        let shown = show_map(&mut app, row)?;
+        assert!(
+            !shown
+                .iter()
+                .any(|text| text == "House entrances — north up"),
+            "row {row:?} must not show the previous house's map"
+        );
+        let owner = app.world().non_send::<HostOwner>();
+        let model = owner.play.as_ref().ok_or("play")?.link.house_panel().model;
+        assert_eq!(model.index, 0, "row {row:?} keeps the previous selection");
+        assert_eq!(model.feedback, "Select a house row (starting at 1)");
+    }
+    Ok(())
+}
+
+#[test]
+fn house_list_window_uses_selected_house_name() -> TestResult {
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+    app.update();
+    let skin = app.world_mut().remove_resource::<Skins>().ok_or("skins")?;
+    let mut model = oteryn_client_ui::house::Panel::default();
+    model.page.rows = vec![
+        oteryn_client_runtime::house::Row {
+            name: "First house".into(),
+            ..default()
+        },
+        oteryn_client_runtime::house::Row {
+            name: "Harbour Place 2".into(),
+            house: "oteryn:house.harbour-2".into(),
+            ..default()
+        },
+    ];
+    model.index = 1;
+    let mut queue = bevy::ecs::world::CommandQueue::default();
+    let mut commands = Commands::new(&mut queue, app.world());
+    super::super::houses::build(
+        &mut commands,
+        &skin,
+        1,
+        &Default::default(),
+        [None; 7],
+        &model,
+        "",
+    );
+    queue.apply(app.world_mut());
+    let world = app.world_mut();
+    assert!(
+        world
+            .query::<&Text>()
+            .iter(world)
+            .any(|text| text.0 == "Edit House List — Harbour Place 2")
+    );
+    assert!(
+        !world
+            .query::<&Text>()
+            .iter(world)
+            .any(|text| text.0 == "Enter one name per line.")
+    );
+    Ok(())
+}
+
+#[test]
+fn house_browser_bid_sends_existing_auction_intent() -> TestResult {
+    use crate::{combat_input::PlayCommand, play::play_channel};
+    use oteryn_protocol_oteryn::house as wire;
+    let (link, mut receiver, _) = play_channel();
+    link.bevy_house_list_fixture();
+    let expected = link.house_panel();
+    let mut fields = expected.fields.clone();
+    fields[3] = "1250".into();
+    super::super::houses::submit(
+        &link,
+        expected.activity_revision,
+        &expected.model,
+        &expected.fields,
+        fields.clone(),
+        2,
     );
     assert!(receiver.try_recv().is_err());
+    let expected = link.house_panel();
+    fields[6] = "CONFIRM".into();
+    super::super::houses::submit(
+        &link,
+        expected.activity_revision,
+        &expected.model,
+        &expected.fields,
+        fields,
+        2,
+    );
+    let PlayCommand::Feature(command) = receiver.try_recv()? else {
+        return Err("auction intent".into());
+    };
+    let intent = wire::decode_house_intent(&command.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(intent.house, "oteryn:house.test");
+    assert!(matches!(intent.action, wire::HouseAction::Bid(1250)));
     Ok(())
 }

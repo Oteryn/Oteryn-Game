@@ -14,7 +14,11 @@ pub fn select(panel: &mut Panel, value: &str, tracked: bool) -> bool {
         panel.feedback = Some(tr!("Enter an item number to track"));
         return false;
     };
-    if tracked && !panel.loot.contains_key(&item) && !panel.item_info.contains_key(&item) {
+    let loot = panel
+        .reports
+        .get(super::Tool::LootTracker.key())
+        .map_or(&panel.loot, |report| &report.loot);
+    if tracked && !loot.contains_key(&item) && !panel.item_info.contains_key(&item) {
         panel.feedback = Some(tr!(
             "Choose an item from confirmed loot or resolved item information"
         ));
@@ -78,7 +82,7 @@ pub fn text(panel: &Panel, seconds: u64) -> String {
                 text,
                 " · {} confirmed items\r\n{}\r\n",
                 row.count,
-                row.history.chart(seconds)
+                super::view::report_chart(panel, &row.history, seconds, super::Tool::LootTracker)
             );
         } else {
             text.push_str(tr!(" · no confirmed drops\r\n"));

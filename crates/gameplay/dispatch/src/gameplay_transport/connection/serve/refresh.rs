@@ -59,6 +59,7 @@ where
         return Err(ServeEnd::Disconnected);
     }
     session.admitted.continuity.vitals_revision = to;
+    inventory_capacity::reread_after_vitals(session, &value);
     Ok(())
 }
 
@@ -413,6 +414,11 @@ where
         return Ok(());
     };
     let Some(update_frames) = npc_update_frames(
+        authority,
+        (
+            session.admitted.game_session_id,
+            session.selected_capabilities,
+        ),
         session.generation,
         &mut session.sequence,
         &mut session.admitted.continuity.npc,
@@ -671,6 +677,8 @@ where
             session.revision = to_revision;
             session.admitted.continuity.spatial_revision = session.revision;
             party_skull::refresh(stream, authority, session).await?;
+            inventory_capacity::refresh(stream, authority, session).await?;
+            guild_emblem::refresh(stream, authority, session).await?;
             // MAP-WIRE-2: tiles in view changed by others (an item dropped, a door opened).
             if let (Some(view), Some(items)) =
                 (session.world_map.as_mut(), session.item_view.as_mut())

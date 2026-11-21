@@ -34,6 +34,11 @@ fn newhaven_starter_live_grant_publishes_inventory_equipment_without_relogin_pos
     scenario(KitCase::Live)
 }
 
+#[test]
+fn newhaven_first_entry_refuses_an_unqualified_backpack_revision_postgres() -> TestResult {
+    scenario(KitCase::InvalidKitContent)
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum KitCase {
     Initial,
@@ -41,6 +46,7 @@ enum KitCase {
     Legacy,
     Unregistered,
     Live,
+    InvalidKitContent,
 }
 
 fn scenario(case: KitCase) -> TestResult {
@@ -82,7 +88,7 @@ fn scenario(case: KitCase) -> TestResult {
             owner.active_generation = Some(active);
             let mut admitted = deps.admitted;
             Box::pin(owner.admit_progression_session(&mut admitted)).await;
-            let mut live_view = if live {
+            let mut live_view = if live || case == KitCase::InvalidKitContent {
                 admit(&owner, &deps, &request).await?;
                 let mut view = crate::gameplay_transport::item_view::SessionItemView::resume(
                     Default::default(),
@@ -128,6 +134,23 @@ fn scenario(case: KitCase) -> TestResult {
                 )
                 .await
                 .map_err(debug)?;
+            if case == KitCase::InvalidKitContent {
+                let mut tx = h.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+                sqlx::query("UPDATE game_item_instances SET definition_revision_ref='unqualified-revision' WHERE item_instance_id=(SELECT item_instance_id FROM game_item_container_slots WHERE character_id=encode($1,'hex')::uuid)")
+                    .bind(id(41).as_slice()).execute(&mut *tx).await?;
+                tx.commit().await?;
+                let (outcome, _, _) = Box::pin(owner.initialize_first_entry(
+                    &request, deps.admitted.game_session_id,
+                    crate::foundation::AuthenticatedTransportRefV1::decode(&[9; 16]).map_err(debug)?,
+                    deps.actor,
+                )).await;
+                assert_eq!(outcome, crate::gameplay_transport::connection::FirstEntryOutcome::RefusedUnavailable);
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
+            }
             let mut legacy_items: Vec<(String, String, i64)> = Vec::new();
             if legacy {
                 admit(&owner, &deps, &request).await?;

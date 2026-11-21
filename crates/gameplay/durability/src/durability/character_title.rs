@@ -295,6 +295,7 @@ impl DurabilityRoot {
         page: PageRequest,
         now_unix_ms: i64,
     ) -> Result<Vec<u8>, CharacterAuthorityError> {
+        let catalogue = info_catalogue()?;
         let recovery = authority.record_for(self)?;
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
@@ -302,8 +303,7 @@ impl DurabilityRoot {
             let allowed: bool = sqlx::query_scalar("SELECT $1=$2 OR EXISTS(SELECT 1 FROM game_vip_consents c JOIN game_character_roots v ON v.account_id=c.account_id AND v.world_id=c.world_id WHERE v.character_id=encode($1,'hex')::uuid AND c.character_id=encode($2,'hex')::uuid AND c.consent=2)")
                 .bind(viewer.as_bytes().as_slice()).bind(target.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
             if !allowed { return Ok(Err(CharacterAuthorityError::Rejected)); }
-            let row = sqlx::query("SELECT p.level,p.total_experience,(SELECT count(*) FROM game_account_achievements a JOIN game_character_roots r ON r.account_id=a.account_id WHERE r.character_id=encode($1,'hex')::uuid) AS achievements,(SELECT count(*) FROM game_account_appearance_unlocks a JOIN game_character_roots r ON r.account_id=a.account_id WHERE r.character_id=encode($1,'hex')::uuid) AS appearances,(SELECT count(*) FROM game_character_equipment_slots WHERE character_id=encode($1,'hex')::uuid) AS inventory,COALESCE((SELECT sum(committed)::bigint FROM game_character_depot_box_counters WHERE character_id=encode($1,'hex')::uuid),0) AS depot,COALESCE((SELECT committed::bigint FROM game_character_inbox_counters WHERE character_id=encode($1,'hex')::uuid),0) AS inboxes,COALESCE((SELECT sum(quantity)::bigint FROM game_character_stash_balances WHERE character_id=encode($1,'hex')::uuid),0) AS stash FROM game_character_progression_state p WHERE p.character_id=encode($1,'hex')::uuid")
-                .bind(target.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+            let row = read_info_summary(&mut tx, target, catalogue).await?;
             let deaths = sqlx::query("SELECT committed_at FROM game_character_death_receipts WHERE character_id=encode($1,'hex')::uuid AND committed_at BETWEEN $2 AND $3 ORDER BY committed_at DESC OFFSET $4 LIMIT $5")
                 .bind(target.as_bytes().as_slice()).bind(now_unix_ms.saturating_sub(oteryn_protocol_oteryn::character_info::HISTORY_WINDOW_MS)).bind(now_unix_ms).bind(i64::from(page.offset)).bind(i64::from(page.limit)).fetch_all(&mut *tx).await?;
             let kills = sqlx::query("SELECT floor(extract(epoch FROM committed_at)*1000)::bigint AS committed_at FROM game_character_unjustified_points WHERE character_id=encode($1,'hex')::uuid AND committed_at BETWEEN to_timestamp($2::double precision/1000) AND to_timestamp($3::double precision/1000) ORDER BY committed_at DESC OFFSET $4 LIMIT $5")
@@ -587,6 +587,32 @@ impl DurabilityRoot {
     }
 }
 
+struct InfoCatalogue {
+    keys: Vec<String>,
+    points: Vec<i64>,
+}
+
+fn info_catalogue() -> Result<&'static InfoCatalogue, super::DurabilityError> {
+    use oteryn_gameplay_progression::achievement_catalogue::{SHARDS, parse_shards};
+    static CATALOGUE: std::sync::LazyLock<Option<InfoCatalogue>> = std::sync::LazyLock::new(|| {
+        let (keys, points) = parse_shards(&SHARDS).ok()?.into_iter().map(|(key, entry)| (key, i64::from(entry.points))).unzip();
+        Some(InfoCatalogue { keys, points })
+    });
+    CATALOGUE.as_ref().ok_or(super::DurabilityError::InvalidStoredState)
+}
+
+async fn read_info_summary(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>, target: CharacterId, catalogue: &InfoCatalogue) -> Result<sqlx::postgres::PgRow, super::DurabilityError> {
+    let world: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(world_id) FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR SHARE").bind(target.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+    let inventory = super::item_use::read_carried_inventory(tx, target, world.try_into().map_err(|_| super::DurabilityError::InvalidStoredState)?, String::new(), String::new()).await.map_err(|error| match error {
+        super::item_use::ItemUseError::Unavailable(error) => error,
+        _ => super::DurabilityError::InvalidStoredState,
+    })?;
+    let inventory = i64::try_from(inventory.equipment.len() + inventory.nested.len() + inventory.backpack.as_ref().map_or(0, |bag| 1 + bag.entries.len())).map_err(|_| super::DurabilityError::InvalidStoredState)?;
+    Ok(sqlx::query("SELECT p.level,p.total_experience,(SELECT COALESCE(sum(c.points),0)::bigint FROM game_account_achievements a JOIN game_character_roots r ON r.account_id=a.account_id JOIN unnest($2::text[],$3::bigint[]) c(key,points) ON c.key=a.achievement_key WHERE r.character_id=encode($1,'hex')::uuid) AS achievements,(SELECT count(*) FROM game_account_appearance_unlocks a JOIN game_character_roots r ON r.account_id=a.account_id WHERE r.character_id=encode($1,'hex')::uuid) AS appearances,$4::bigint AS inventory,COALESCE((SELECT sum(committed)::bigint FROM game_character_depot_box_counters WHERE character_id=encode($1,'hex')::uuid),0) AS depot,COALESCE((SELECT committed::bigint FROM game_character_inbox_counters WHERE character_id=encode($1,'hex')::uuid),0) AS inboxes,COALESCE((SELECT sum(quantity)::bigint FROM game_character_stash_balances WHERE character_id=encode($1,'hex')::uuid),0) AS stash FROM game_character_progression_state p WHERE p.character_id=encode($1,'hex')::uuid")
+                .bind(target.as_bytes().as_slice()).bind(&catalogue.keys).bind(&catalogue.points).bind(inventory).fetch_one(&mut **tx).await?)
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -650,5 +676,70 @@ mod tests {
         };
         assert!(!revoked_conditional_titles(low).contains(&42));
         assert!(revoked_conditional_titles(low).contains(&20));
+    }
+}
+
+
+#[cfg(test)]
+mod summary_tests {
+    use super::*;
+    type TestResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
+
+    async fn fixture(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>) -> Result<CharacterId, Box<dyn std::error::Error + Send + Sync>> {
+        sqlx::raw_sql("CREATE TEMP TABLE game_character_roots(character_id uuid,account_id uuid,world_id uuid);
+            CREATE TEMP TABLE game_character_progression_state(character_id uuid,level bigint,total_experience bigint);
+            CREATE TEMP TABLE game_account_achievements(account_id uuid,achievement_key text);
+            CREATE TEMP TABLE game_account_appearance_unlocks(account_id uuid);
+            CREATE TEMP TABLE game_character_equipment_slots(character_id uuid,item_instance_id uuid,world_id uuid,slot smallint);
+            CREATE TEMP TABLE game_item_container_slots(character_id uuid,item_instance_id uuid,world_id uuid);
+            CREATE TEMP TABLE game_item_container_entries(parent_item_instance_id uuid,item_instance_id uuid,world_id uuid,placement_ordinal numeric,character_id uuid);
+            CREATE TEMP TABLE game_item_nested_entries(parent_item_instance_id uuid,item_instance_id uuid,world_id uuid,placement_ordinal numeric);
+            CREATE TEMP TABLE game_item_instances(item_instance_id uuid,lifecycle smallint,world_id uuid,definition_family text,definition_production_key text,definition_revision_ref text,quantity bigint);
+            CREATE TEMP TABLE game_item_keys(item_instance_id uuid,key_number integer);
+            CREATE TEMP TABLE game_item_fluid_states(item_instance_id uuid,fluid_subtype smallint);
+            CREATE TEMP TABLE game_character_depot_box_counters(character_id uuid,committed bigint);
+            CREATE TEMP TABLE game_character_inbox_counters(character_id uuid,committed bigint);
+            CREATE TEMP TABLE game_character_stash_balances(character_id uuid,quantity bigint);
+            INSERT INTO game_character_roots VALUES('01020304-0506-7008-800a-0b0c0d0e0f01','01020304-0506-7008-800a-0b0c0d0e0f02','01020304-0506-7008-800a-0b0c0d0e0f03');
+            INSERT INTO game_character_progression_state SELECT character_id,10,1000 FROM game_character_roots;").execute(&mut **tx).await?;
+        Ok(CharacterId::from_bytes([1,2,3,4,5,6,0x70,8,0x80,10,11,12,13,14,15,1])?)
+    }
+
+    #[test]
+    fn character_info_counts_complete_carried_graph() -> TestResult {
+        std::thread::Builder::new().stack_size(64 << 20).spawn(|| {
+            tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+                use sqlx::Connection;
+                let Ok(url) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()); };
+                let mut connection = sqlx::PgConnection::connect(&url).await?;
+                let mut tx = connection.begin().await?;
+                let character = fixture(&mut tx).await?;
+                sqlx::raw_sql("INSERT INTO game_item_instances SELECT ('00000000-0000-7000-8000-'||lpad(n::text,12,'0'))::uuid,1,world_id,'Item','oteryn:item.tibia.i3031','1',99 FROM game_character_roots CROSS JOIN generate_series(1,5) n;
+                    INSERT INTO game_item_container_slots SELECT character_id,'00000000-0000-7000-8000-000000000001',world_id FROM game_character_roots;
+                    INSERT INTO game_item_container_entries SELECT '00000000-0000-7000-8000-000000000001','00000000-0000-7000-8000-000000000002',world_id,1,character_id FROM game_character_roots;
+                    INSERT INTO game_item_nested_entries SELECT '00000000-0000-7000-8000-000000000002','00000000-0000-7000-8000-000000000003',world_id,1 FROM game_character_roots;
+                    INSERT INTO game_character_equipment_slots SELECT character_id,'00000000-0000-7000-8000-000000000004',world_id,1 FROM game_character_roots;").execute(&mut *tx).await?;
+                let row = read_info_summary(&mut tx, character, info_catalogue()?).await?;
+                assert_eq!(row.try_get::<i64,_>("inventory")?, 4);
+                Ok(())
+            })
+        })?.join().map_err(|_| "test thread panicked")?
+    }
+
+    #[test]
+    fn character_info_sums_catalogue_achievement_points() -> TestResult {
+        std::thread::Builder::new().stack_size(64 << 20).spawn(|| {
+            tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+                use sqlx::Connection;
+                let Ok(url) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()); };
+                let mut connection = sqlx::PgConnection::connect(&url).await?;
+                let mut tx = connection.begin().await?;
+                let character = fixture(&mut tx).await?;
+                sqlx::query("INSERT INTO game_account_achievements SELECT account_id,'oteryn:achievement/teamplayer' FROM game_character_roots").execute(&mut *tx).await?;
+                let row = read_info_summary(&mut tx, character, info_catalogue()?).await?;
+                assert_eq!(row.try_get::<i64,_>("achievements")?, 2);
+                Ok(())
+            })
+        })?.join().map_err(|_| "test thread panicked")?
     }
 }

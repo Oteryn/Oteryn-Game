@@ -19,8 +19,15 @@ enum Kind {
     Close,
     Collect,
     History,
+    Help(Help),
     Refresh,
     Wall,
+}
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Help {
+    RewardRules,
+    Jokers,
+    Access,
 }
 #[derive(Clone, Copy, Component)]
 struct Control {
@@ -36,6 +43,8 @@ struct State {
     root: Option<Entity>,
     history: bool,
     rendered_history: bool,
+    help: Option<Help>,
+    rendered_help: Option<Help>,
 }
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
@@ -83,6 +92,7 @@ fn project(
     if state.generation == owner.generation()
         && state.snapshot == panel
         && state.history == state.rendered_history
+        && state.help == state.rendered_help
     {
         return;
     }
@@ -94,6 +104,7 @@ fn project(
     }
     if state.generation != owner.generation() || panel.is_none() {
         state.history = false;
+        state.help = None;
     }
     state.generation = owner.generation();
     let Some(revision) = state.revision.checked_add(1) else {
@@ -102,12 +113,14 @@ fn project(
     state.revision = revision;
     state.snapshot = panel;
     state.rendered_history = state.history;
+    state.rendered_help = state.help;
     if let Some(panel) = &state.snapshot {
         state.root = Some(widgets::build(
             &mut commands,
             &skins,
             panel,
             state.history,
+            state.help,
             Control {
                 generation: state.generation,
                 revision,
@@ -132,8 +145,14 @@ fn perform(owner: &HostOwner, state: &mut State, control: Control) {
     }
     match control.kind {
         Kind::Close => play.link.daily_reward_close(),
-        Kind::History => state.history = true,
-        Kind::Wall => state.history = false,
+        Kind::History | Kind::Wall => {
+            state.history = control.kind == Kind::History;
+            state.help = None;
+        }
+        Kind::Help(help) => {
+            state.history = false;
+            state.help = (state.help != Some(help)).then_some(help);
+        }
         Kind::Refresh | Kind::Collect => {
             if play.view.gameplay_input_blocked(&play.link) {
                 return;

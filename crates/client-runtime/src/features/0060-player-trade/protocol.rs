@@ -52,7 +52,8 @@ pub async fn send<S: SessionStream>(
         let delta = session
             .read_gated_delta(player_trade::STATE_DOMAIN_PLAYER_TRADE, 1)
             .await?;
-        player_trade::decode_state(&delta.payload).map_err(|_| SessionError::SessionUnusable)?
+        player_trade::decode_state_for(&delta.payload, session.is_selected(501))
+            .map_err(|_| SessionError::SessionUnusable)?
     } else {
         current
     };

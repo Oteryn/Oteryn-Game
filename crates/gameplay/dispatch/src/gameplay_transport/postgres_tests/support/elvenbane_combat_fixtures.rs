@@ -1,4 +1,5 @@
 use oteryn_gameplay_world::map::view::MapFacts;
+use super::annihilator_combat::{KNIGHT_POTION, PALADIN_POTION};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::debug};
 
 use oteryn_protocol_oteryn::attack::*;
@@ -40,7 +41,12 @@ pub(super) async fn scenario(
             })
             .ok_or("actual source Dragon")?
     };
-    fight(owner, member, target.actor, target.generation).await?;
+    let potion = if all_defenders {
+        PALADIN_POTION
+    } else {
+        KNIGHT_POTION
+    };
+    fight(owner, member, target.actor, target.generation, potion).await?;
     let fence = owner
         .current_quest_fence(member.game_session_id)
         .await
@@ -100,6 +106,7 @@ async fn fight(
     member: &mut AdmittedSession,
     target: crate::foundation::ExactActorRef,
     generation: u64,
+    potion: &str,
 ) -> TestResult {
     let player = member.runtime_actor.ok_or("player")?;
     let initial = owner
@@ -136,9 +143,9 @@ async fn fight(
     .await?;
     let mut killed = false;
     let mut dealt_damage = false;
-    for pass in 0..512 {
+    for _ in 0..512 {
         // The connection scheduler normally drives chase separately from swings.
-        let chase = owner.chase_step_now(player, member.game_session_id).await;
+        owner.chase_step_now(player, member.game_session_id).await;
         owner
             .refresh_attack_weapon(player, member.game_session_id)
             .await;
@@ -190,35 +197,7 @@ async fn fight(
             break;
         }
         if heal {
-            super::annihilator_combat::heal(owner, member).await?;
-        }
-        if pass % 32 == 0 {
-            let (player_at, target_at, origin, maximum, forge) = {
-                let runtime = owner.runtime.lock().await;
-                let current = runtime.companion_snapshot(target).map_err(debug)?;
-                (
-                    runtime
-                        .read_actor_position(player)
-                        .map_err(debug)?
-                        .position(),
-                    current.position,
-                    runtime.creature_spawn_cell(target),
-                    current.maximum_health,
-                    current.forge,
-                )
-            };
-            eprintln!(
-                "ELVENBANE_WIRE_POS pass={pass} player={player_at:?} target={target_at:?} origin={origin:?} maximum={maximum} forge={forge:?} chase={chase:?}"
-            );
-            eprintln!(
-                "ELVENBANE_WIRE_ATTACK pass={pass} health={remaining} initial_max={} combat={:?}",
-                initial.maximum_health,
-                owner.states.attack.lock().await.combat_state(
-                    player,
-                    member.game_session_id,
-                    owner.owner_now()
-                )
-            );
+            super::annihilator_combat::heal(owner, member, potion).await?;
         }
         owner.clock_origin = owner
             .clock_origin
@@ -325,7 +304,7 @@ async fn upper_defenders(
             targets
         };
         for target in targets {
-            fight(owner, member, target.actor, target.generation).await?;
+            fight(owner, member, target.actor, target.generation, PALADIN_POTION).await?;
         }
     }
     Ok(())

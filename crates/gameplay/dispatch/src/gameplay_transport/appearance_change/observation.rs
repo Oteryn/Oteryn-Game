@@ -4,6 +4,7 @@ use crate::domain::carrier_values::CarrierError;
 use oteryn_gameplay_foundation::foundation::condition::TemporaryDisplayedAppearance;
 #[path = "observation/house.rs"]
 mod house;
+pub(super) use house::{current_runtime_for_read, read_state};
 
 #[derive(Debug, Clone)]
 pub struct Observation {
@@ -13,7 +14,7 @@ pub struct Observation {
     pub skipped: Vec<wire::EntityRef>,
 }
 
-/// Only a proven exhausted holder retry may defer an established observer's refresh.
+/// A busy observation can defer an established observer's refresh.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ObservationError {
     HolderBusy,
@@ -26,6 +27,7 @@ pub enum ObservationError {
 /// Why one attempt's durable read produced no value.
 pub(super) enum ReadFailure {
     Durable(crate::durability::DurabilityError),
+    HouseAccessBusy,
     RespawnPending,
 }
 
@@ -88,6 +90,7 @@ pub(in crate::gameplay_transport) async fn observe_result(
             // acquire with try_issue_root/try_issue_semantic_pass, never a wait.
             match failure {
                 Some(ReadFailure::Durable(error)) => Err(error),
+                Some(ReadFailure::HouseAccessBusy) => Ok(Err(ObservationError::HolderBusy)),
                 Some(ReadFailure::RespawnPending) => Ok(Err(ObservationError::RespawnPending)),
                 None => Ok(observation.ok_or(ObservationError::Unavailable)),
             }
@@ -150,6 +153,19 @@ fn skip_entity(skipped: &mut Vec<wire::EntityRef>, entity: wire::EntityRef, reas
     skipped.push(entity);
 }
 
+async fn observation_fence(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    session: GameSessionId,
+    reconnectable: bool,
+) -> Result<Option<crate::durability::character_progression::CurrentCharacterGameplayFence>, crate::durability::DurabilityError> {
+    use crate::durability::character_authority::CharacterAuthorityError;
+    match admission.root.observe_current_gameplay_fence(admission.character, session, reconnectable).await {
+        Ok(fence) => Ok(fence),
+        Err(CharacterAuthorityError::Unavailable(error)) => Err(error),
+        Err(_) => Ok(None),
+    }
+}
+
 async fn observe_once(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     observer: ExactActorRef,
@@ -160,7 +176,7 @@ async fn observe_once(
 ) -> Option<Observation> {
     let (context, content) = note_none(admission.appearance_context(), "content")?;
     let own_fence = read_result(
-        super::super::character_gameplay_fence::current_once(admission, session, false).await,
+        observation_fence(admission, session, false).await,
         failure,
         "fence",
     )?;
@@ -297,7 +313,7 @@ async fn observe_once(
             continue;
         };
         let fence = read_result(
-            super::super::character_gameplay_fence::current_once(admission, target_session, true)
+            observation_fence(admission, target_session, true)
                 .await,
             failure,
             "fence",
@@ -433,7 +449,10 @@ async fn observe_once(
             condition_revision: note_none(
                 player.revision().checked_add(
                     note_none(
-                        runtime.actor_staff_visibility(*actor).ok(),
+                        runtime
+                            .actor_staff_visibility(*actor)
+                            .or_else(|_| runtime.house_staff_visibility(*actor, target_session))
+                            .ok(),
                         "visibility reason=staff_visibility_missing",
                     )?
                     .2,

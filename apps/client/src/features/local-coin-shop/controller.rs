@@ -10,8 +10,6 @@ pub(super) async fn execute(
     browser: &Browser,
     cancel: CancellationToken,
 ) {
-    #[cfg(windows)]
-    let _progress = crate::account_services::window::Progress::open(cancel.clone());
     if let Err(error) = apply(view, action, client, token, browser, cancel).await {
         view.feedback = lfmt!(
             "Coin service unavailable ({:?}). Pending requests keep their identity; check status or retry. No browser result credits coins.",
@@ -135,11 +133,15 @@ async fn refresh(
             )
         })
         .collect();
-    if let Some(pending) = &view.pending
+    if let Some(request_id) = view
+        .pending
+        .as_ref()
+        .map(|request| &request.request_id)
+        .or_else(|| view.order.as_ref().map(|order| &order.request_id))
         && let Some(order) = catalogue
             .recent_orders
             .iter()
-            .find(|o| o.request_id == pending.request_id)
+            .find(|o| &o.request_id == request_id)
     {
         accept(view, order.clone())?;
     }

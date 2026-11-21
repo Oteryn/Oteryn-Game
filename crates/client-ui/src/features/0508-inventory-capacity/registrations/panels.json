@@ -1,0 +1,7 @@
+{
+  "mechanic": "0508-inventory-capacity",
+  "kind": "panels",
+  "id": "0508-inventory-capacity-panel",
+  "status": "supported",
+  "entry": "protocol.rs::cap_text"
+}

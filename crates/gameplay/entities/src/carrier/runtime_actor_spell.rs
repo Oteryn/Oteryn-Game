@@ -894,7 +894,7 @@ impl ChannelRuntimeV1 {
 
     /// Exact existing physical target identity; never infer a spawn's atom from its prototype.
     pub fn creature_spell_target_atom(&self, actor: ExactActorRef) -> Result<String, Error> {
-        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        let index = self.carrier.current_slot_index(&self.continuity, actor.0)?;
         let Slot::CreatureOccupied {
             target_identity, ..
         } = &self.carrier.slots[index]
@@ -1506,7 +1506,7 @@ impl ChannelRuntimeV1 {
         actor: ExactActorRef,
         now_ms: u64,
     ) -> Result<CreatureCombatFacts, Error> {
-        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        let index = self.carrier.current_slot_index(&self.continuity, actor.0)?;
         let Slot::CreatureOccupied {
             health,
             spell_combat,

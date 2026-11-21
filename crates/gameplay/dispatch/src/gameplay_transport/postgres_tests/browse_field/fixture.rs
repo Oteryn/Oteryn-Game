@@ -1,5 +1,5 @@
 use super::super::fixture::{Harness, debug, id, run};
-use super::super::{Dependencies, item_look_fixtures as item_look, prepare_current_session};
+use super::super::{Dependencies, item_look_fixtures, prepare_current_session};
 use super::{BAG, COIN, Case, TestResult, wire};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
@@ -127,7 +127,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
             .bind(generation.identity().server_artifact_digest().as_slice())
             .bind(generation.identity().client_artifact_digest().as_slice())
             .bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-        item_look::seed_main_backpack(&harness, &[(COIN, 7), (BAG, 1)]).await?;
+        item_look_fixtures::seed_main_backpack(&harness, &[(COIN, 7), (BAG, 1)]).await?;
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;

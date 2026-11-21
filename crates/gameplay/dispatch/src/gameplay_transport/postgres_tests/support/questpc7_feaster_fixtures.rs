@@ -270,7 +270,7 @@ pub(super) async fn begin(
         a,
         ["oteryn:npc.para_norbert"],
         [Position {
-            x: 32628,
+            x: 32625,
             y: 32076,
             floor: -7,
         }],
@@ -302,8 +302,7 @@ pub(super) async fn exercise(
     h: &Harness,
 ) -> TestResult {
     let (rows,npc)=begin(owner,a,h).await?;
-    // Norbert's approach is also the entrance selector. A STEP callback needs
-    // an actual crossing after accepting the mission, rather than a no-op walk.
+    // A STEP callback needs an actual crossing after accepting the mission.
     step(
         owner,
         a,

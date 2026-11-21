@@ -570,3 +570,74 @@ fn inflight_native_bank_commit_is_replayed_before_any_new_money_execution() -> T
         drop(b);drop(other);drop(a);drop(seal);h.cleanup().await
     })
 }
+
+#[test]
+fn ordinary_npc_trades_respect_the_carried_tree_limit() -> TestResult {
+    use crate::durability::npc_trade::{NpcTradeError, NpcTradeSide};
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new().stack_size(64 << 20).spawn(move || -> Result<(), String> {
+        runtime().map_err(debug)?.block_on(async {
+            let h = Harness::create(admin, "npc_tree_limit").await?;
+            let result: TestResult = async {
+                let seal = h.recovery.seal_current().map_err(debug)?;
+                let a = h.root.open_character_authority(&seal).await.map_err(debug)?;
+                fund(&h, &a).await?;
+                sqlx::query("INSERT INTO game_type2_audit_activation VALUES(1,now())").execute(&h.pool).await?;
+                let platinum = h.mint(&a, "oteryn:item.tibia.i3035", 1).await?;
+                h.transfer(&a, fence()?, fixture::to_backpack(fixture::command(3)?, platinum,
+                    ItemDefinitionFacts { weight: Some(10), definition: coins().platinum,
+                        stack: ItemStackClass::Stackable { proven_maximum: Some(100) },
+                        container_capacity: None, container_slot_equip_pattern: false }
+                )).await.map_err(debug)?;
+                h.root.bank_deposit(&a, &h.node, fence()?, BankDepositRequest {
+                    identity: identity(13), amount: 100, coins: coins(),
+                    change_item_instance_ids: [id(14), id(15)],
+                }).await.map_err(debug)?;
+                assert_eq!(balance(&h).await?, 200);
+                let mut buy = trade_request(30, 1)?;
+                buy.quantity = 101;
+                buy.item.stack = ItemStackClass::Stackable { proven_maximum: Some(100) };
+
+                // Seed a legal tree of 499 entries. Items 1 and 2 are the two
+                // direct sale stacks; the other 497 form a fan-out-20 bag tree.
+                let mut seed = h.pool.begin().await?;
+                seed.execute("SET LOCAL session_replication_role=replica; CREATE TEMP TABLE tree_fixture ON COMMIT DROP AS SELECT n, game_character_uuid_v7() AS item, game_character_uuid_v7() AS cause FROM generate_series(1,499) n").await?;
+                sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) SELECT f.item,s.world_id,'Item',CASE WHEN f.n<=2 THEN $1 ELSE $2 END,'definition-r1',CASE WHEN f.n<=2 THEN 100 ELSE 1 END,1,f.cause FROM tree_fixture f CROSS JOIN game_item_container_slots s")
+                    .bind(&buy.item.definition.production_key).bind(fixture::BACKPACK).execute(&mut *seed).await?;
+                seed.execute("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) SELECT f.item,s.world_id,s.character_id,s.item_instance_id,f.n,f.cause FROM tree_fixture f CROSS JOIN game_item_container_slots s WHERE f.n<=3; INSERT INTO game_item_nested_entries SELECT child.item,s.world_id,parent.item,1+(child.n-4)%20,child.cause FROM tree_fixture child JOIN tree_fixture parent ON parent.n=3+(child.n-4)/20 CROSS JOIN game_item_container_slots s WHERE child.n>=4").await?;
+                seed.commit().await?;
+                let carried: i64 = sqlx::query_scalar("SELECT game_item_loop_tree_size(character_id) FROM game_item_container_slots").fetch_one(&h.pool).await?;
+                assert_eq!(carried, 499);
+
+                let mut sell = trade_request(40, 101)?;
+                sell.cause.side = NpcTradeSide::Sell;
+                sell.quantity = 101;
+                sell.item = buy.item.clone();
+                let before = footprint(&h).await?;
+                for request in [buy, sell] {
+                    h.root.await_ready().await?;
+                    let outcome = h.root.commit_npc_trade(&a, &h.node, fence()?, request).await;
+                    assert!(matches!(outcome, Err(NpcTradeError::DoesNotFit)), "{outcome:?}");
+                    assert_eq!(footprint(&h).await?, before);
+                    assert_eq!(balance(&h).await?, 200);
+                }
+                let mut fits = trade_request(50, 1)?;
+                fits.quantity = 100;
+                fits.item.stack = ItemStackClass::Stackable { proven_maximum: Some(100) };
+                h.root.await_ready().await?;
+                assert!(matches!(
+                    h.root.commit_npc_trade(&a, &h.node, fence()?, fits).await.map_err(debug)?,
+                    crate::durability::npc_trade::NpcTradeOutcome::Committed(_)
+                ));
+                let carried: i64 = sqlx::query_scalar("SELECT game_item_loop_tree_size(character_id) FROM game_item_container_slots").fetch_one(&h.pool).await?;
+                assert_eq!(carried, 500);
+                assert_eq!(balance(&h).await?, 100);
+                Ok(())
+            }.await;
+            h.cleanup().await?;
+            result
+        }).map_err(debug)
+    })?.join().map_err(|_| "NPC tree test thread failed")?.map_err(Into::into)
+}

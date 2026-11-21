@@ -41,6 +41,47 @@ pub fn request(p: &mut DepotPanel, intent: Intent) -> Option<DepotIntent> {
     })
 }
 
+/// Tibia Global's Manual Sort Mode (capability 510) in a depot box. While `manual_sort` is on, a
+/// deposit holds its item until the player picks a displayed entry row: the item is then
+/// deposited at that row's box slot (`32 * page + row`). Picking the held item again deposits it
+/// at the first slot. Without the mode nothing is held and every request is [`request`]'s.
+pub fn request_in_mode(
+    p: &mut DepotPanel,
+    intent: Intent,
+    manual_sort: bool,
+) -> Option<(DepotIntent, Option<u32>)> {
+    if !manual_sort {
+        p.held = None;
+        return request(p, intent).map(|intent| (intent, None));
+    }
+    match (intent, p.held) {
+        (Intent::Deposit(handle), held) if held != Some(handle) => {
+            if !p.selected
+                || p.pending
+                || p.reply.as_ref().and_then(|r| r.town).is_none()
+                || !deposit_items(p).iter().any(|item| item.handle == handle)
+            {
+                return None;
+            }
+            p.held = Some(handle);
+            p.feedback = tr!("Choose the depot slot for the item");
+            None
+        }
+        (Intent::Withdraw(row), Some(handle)) => {
+            let slot = p.placement_slot(row)?;
+            let intent = request(p, Intent::Deposit(handle))?;
+            p.held = None;
+            Some((intent, Some(slot)))
+        }
+        (Intent::Deposit(handle), Some(_)) => {
+            let intent = request(p, Intent::Deposit(handle))?;
+            p.held = None;
+            Some((intent, None))
+        }
+        (intent, _) => request(p, intent).map(|intent| (intent, None)),
+    }
+}
+
 /// Only server-issued carried inventory and bag handles can be deposited.
 pub fn deposit_items(p: &DepotPanel) -> Vec<ItemEntry> {
     let mut items = Vec::new();

@@ -128,13 +128,13 @@ impl PlayLink {
 }
 
 /// Keeps the real driver's mailbox projection alive for frontend caller tests.
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 #[must_use]
 pub(crate) struct BevyServerModalFixture {
     _driver: Driver,
     input_peer: Option<super::tests::AmountPeer>,
 }
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl PlayLink {
     pub(crate) fn bevy_server_modal_fixture(&self) -> BevyServerModalFixture {
         self.use_shared_frontend();
@@ -145,6 +145,7 @@ impl PlayLink {
             message: "Frontend modal gating fixture".into(),
             choices: Vec::new(),
             buttons: vec![(1, "Close".into())],
+            default_button: None,
             cancel_button: Some(1),
             image: None,
         });
@@ -156,7 +157,7 @@ impl PlayLink {
     }
 }
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl PlayLink {
     pub(crate) fn bevy_server_modal_input_fixture(
         &self,
@@ -176,8 +177,16 @@ impl PlayLink {
         })
     }
 }
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl BevyServerModalFixture {
+    pub(crate) fn with_defaults(&mut self) {
+        self._driver.panel.defaults = true;
+        if let Some(dialog) = &mut self._driver.panel.active {
+            dialog.default_button = Some(1);
+            dialog.buttons.insert(0, (8, "Help".into()));
+        }
+        self._driver.publish(false);
+    }
     pub(crate) fn with_choices(&mut self) {
         if let Some(dialog) = &mut self._driver.panel.active {
             dialog.choices = vec![(7, "First".into()), (9, "Second".into())];

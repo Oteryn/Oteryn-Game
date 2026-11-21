@@ -16,11 +16,6 @@ fn raster_frame(rgba: Vec<u8>) -> Result<(AtlasImage, TileBatch), oteryn_rendere
     Ok((atlas, batch))
 }
 
-#[cfg(windows)]
-#[path = "wheel_surface_native.rs"]
-mod native;
-#[cfg(windows)]
-pub(super) use native::Surface;
 #[cfg(test)]
 #[path = "tests/wheel_surface.rs"]
 mod tests;

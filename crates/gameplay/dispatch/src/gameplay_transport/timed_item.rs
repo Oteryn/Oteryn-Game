@@ -32,6 +32,7 @@ pub(super) struct MagicConverterClock {
 pub(super) struct SessionClock {
     recent: [Option<u64>; 5],
     pub(super) items: HashMap<[u8; 16], ItemClock>,
+    pub(super) refresh_equipment: bool,
     pub(super) serial: u64,
 }
 pub(super) struct ItemClock {

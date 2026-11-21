@@ -1,6 +1,13 @@
 use crate::play::{Outbox, mailbox::lock};
 use oteryn_client_runtime::raw_feature::GatedCommandResult;
 impl Outbox {
+    pub(in crate::play) fn blessings_details_initialize(&self, selected: bool) {
+        lock(&self.0)
+            .cyclopedia_character
+            .blessings
+            .details_selected = selected;
+    }
+
     pub(in crate::play) fn cyclopedia_character_initialize(&self, selected: bool) {
         let mut mailbox = lock(&self.0);
         mailbox.cyclopedia_character.selected = selected;
@@ -14,9 +21,24 @@ impl Outbox {
                 death_details: deaths,
             };
     }
+    pub(in crate::play) fn holdings_initialize(&self, selected: bool) {
+        lock(&self.0).cyclopedia_character.holdings_selected = selected;
+    }
     pub(in crate::play) fn cyclopedia_character_result(&self, result: &GatedCommandResult) {
+        let mut mailbox = lock(&self.0);
+        if mailbox.store_inbox_refresh_pending
+            && mailbox
+                .cyclopedia_character
+                .items
+                .pending_offset
+                .take()
+                .is_some()
+        {
+            mailbox.cyclopedia_character.pending = false;
+            return;
+        }
         oteryn_client_ui::cyclopedia_character::apply_result(
-            &mut lock(&self.0).cyclopedia_character,
+            &mut mailbox.cyclopedia_character,
             result,
         );
     }
@@ -33,11 +55,17 @@ impl Outbox {
     }
 }
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl Outbox {
     pub(crate) fn bevy_cyclopedia_initialize(&self, selected: bool, vocation: bool, deaths: bool) {
         self.cyclopedia_character_initialize(selected);
         self.cyclopedia_character_extensions(vocation, deaths);
+    }
+    pub(crate) fn bevy_holdings_initialize(&self) {
+        self.holdings_initialize(true);
+    }
+    pub(crate) fn bevy_blessings_details_initialize(&self) {
+        self.blessings_details_initialize(true);
     }
     pub(crate) fn bevy_cyclopedia_result(&self, result: &GatedCommandResult) {
         self.cyclopedia_character_result(result);

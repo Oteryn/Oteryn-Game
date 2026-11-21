@@ -299,3 +299,40 @@ fn activity_handoff_restarts_chat_extension_cursors() -> Result<(), Error> {
     assert_eq!(link.chat_panel().console.channel_notices.len(), 1);
     Ok(())
 }
+
+#[test]
+fn successful_private_send_clears_only_the_submitted_draft() -> Result<(), Error> {
+    for (draft, disposition, expected) in [
+        ("hello", ChatDisposition::Ok, ""),
+        ("next message", ChatDisposition::Ok, "next message"),
+        ("hello", ChatDisposition::Rejected, "hello"),
+    ] {
+        let (link, mut commands, outbox) = play_channel();
+        {
+            let mut m = crate::play::mailbox::lock(&link.mailbox);
+            m.chat_private.selected = true;
+            m.chat_private.channel = Some(100);
+            m.chat_private.text = "hello".into();
+        }
+        link.chat_private_request(Intent::Send);
+        let crate::combat_input::PlayCommand::ChatPublic(intent) = commands.try_recv()? else {
+            return Err("missing private send".into());
+        };
+        link.chat_private_text(draft.into());
+        assert!(outbox.chat_private_result(
+            &intent,
+            &ChatOutcome {
+                command_id: 1,
+                status: CommandStatus::Accepted,
+                disposition,
+                wait_seconds: 0,
+                result_server_sequence: 1
+            },
+        ));
+        assert_eq!(link.chat_private_panel().text, expected);
+    }
+    Ok(())
+}
+
+#[path = "../native.rs"]
+mod native_controls;

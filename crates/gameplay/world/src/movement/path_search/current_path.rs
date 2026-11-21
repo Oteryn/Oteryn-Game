@@ -9,17 +9,14 @@ pub async fn measured_current_route(
     start: MovementLocalPosition,
     target: MovementLocalPosition,
     exact: bool,
+    diagonals: bool,
     reader: &mut impl PathTileReader,
     budget: &mut crate::movement::path_budget::ChannelPathBudget,
 ) -> (Option<Vec<CardinalStep>>, usize) {
     let mut search = SearchKernel::new(
         start,
         target,
-        SearchBounds {
-            work: PATH_SEARCH_WORK,
-            route_steps: ROUTE_STEPS,
-            distance: if exact { 50 } else { CHASE_SEARCH_DISTANCE },
-        },
+        default_search_bounds(exact, diagonals),
         exact,
     );
     let mut charge = SearchCharge { budget, work: 0 };

@@ -5,6 +5,8 @@ use crate::{
 };
 use bevy::asset::AssetPlugin;
 
+mod tooltips;
+
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 pub(super) fn fixture() -> Result<
@@ -40,7 +42,10 @@ pub(super) fn fixture() -> Result<
     Ok((app, commands))
 }
 
-fn slot(app: &mut App, wanted: usize) -> Result<Entity, Box<dyn std::error::Error>> {
+pub(in crate::bevy_shell::game_ui) fn slot(
+    app: &mut App,
+    wanted: usize,
+) -> Result<Entity, Box<dyn std::error::Error>> {
     app.world_mut()
         .query::<(Entity, &ActionControl)>()
         .iter(app.world())
@@ -130,7 +135,8 @@ fn stale_modal_disabled_and_empty_slots_never_dispatch_casts() -> TestResult {
 
 #[test]
 fn visible_slots_follow_real_computed_width_and_saved_scroll_offset() -> TestResult {
-    let (mut app, _) = fixture()?;
+    use super::super::hud_panes::tests::{laid_out_app_with, rect};
+    let mut app = laid_out_app_with(1200, 720, install)?;
     app.world()
         .non_send::<HostOwner>()
         .play
@@ -138,22 +144,61 @@ fn visible_slots_follow_real_computed_width_and_saved_scroll_offset() -> TestRes
         .ok_or("play")?
         .link
         .bar_gesture(BarGesture::Scroll { bar: 0, by: 40 });
-    for (width, expected) in [(218., 40..45), (110., 40..42)] {
-        for (bar, mut computed) in app
+    for (dock, extent, expected) in [
+        (crate::play::BarDock::Bottom, 218., 40..44),
+        (crate::play::BarDock::Bottom, 110., 40..41),
+        (crate::play::BarDock::Left, 230., 40..44),
+    ] {
+        let link = &app
+            .world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link;
+        link.bar_gesture(BarGesture::Configure {
+            bar: 0,
+            dock,
+            enabled: true,
+            locked: true,
+        });
+        let side = dock != crate::play::BarDock::Bottom;
+        let anchor = app
             .world_mut()
-            .query::<(&BarRow, &mut ComputedNode)>()
-            .iter_mut(app.world_mut())
-        {
-            if bar.0 == 0 {
-                computed.size = Vec2::new(width, 34.);
-                computed.inverse_scale_factor = 1.;
-            }
+            .query::<(Entity, &DockAnchor)>()
+            .iter(app.world())
+            .find_map(|(entity, anchor)| (anchor.0 == dock).then_some(entity))
+            .ok_or("dock anchor")?;
+        let mut node = app
+            .world_mut()
+            .get_mut::<Node>(anchor)
+            .ok_or("anchor node")?;
+        if side {
+            node.height = px(extent);
+        } else {
+            node.width = px(extent);
         }
         app.update();
-        let visible = app
+        app.update();
+        let (lock, row) = app
             .world_mut()
-            .query::<(&ActionControl, &Node)>()
+            .query::<(Entity, &ActionControl, &ChildOf)>()
             .iter(app.world())
+            .find_map(|(entity, control, parent)| {
+                matches!(control, ActionControl::Lock(0)).then_some((entity, parent.parent()))
+            })
+            .ok_or("lock")?;
+        let visible = app
+            .world()
+            .get::<Children>(row)
+            .ok_or("row children")?
+            .iter()
+            .filter_map(|child| {
+                Some((
+                    app.world().get::<ActionControl>(child)?,
+                    app.world().get::<Node>(child)?,
+                ))
+            })
             .filter_map(|(control, node)| match control {
                 ActionControl::Slot(index)
                     if *index < ROW_SLOTS && node.display != Display::None =>
@@ -163,7 +208,142 @@ fn visible_slots_follow_real_computed_width_and_saved_scroll_offset() -> TestRes
                 _ => None,
             })
             .collect::<Vec<_>>();
+        let row = rect(&app, row)?;
+        let lock = rect(&app, lock)?;
+        assert_eq!(if side { row.height() } else { row.width() }, extent);
+        assert_eq!(lock.size(), LOCK_SIZE);
+        assert!(
+            row.contains(lock.min) && row.contains(lock.max),
+            "{lock:?} outside {row:?}"
+        );
         assert_eq!(visible, expected.collect::<Vec<_>>());
+        let mut arrows = app.world_mut().query::<(Entity, &ActionControl)>();
+        for by in [1, -1] {
+            let arrow = arrows
+                .iter(app.world())
+                .find_map(|(entity, control)| {
+                    matches!(control, ActionControl::Scroll(0, step) if *step == by)
+                        .then_some(entity)
+                })
+                .ok_or("arrow")?;
+            for _ in 0..if by == 1 { 12 } else { 1 } {
+                app.world_mut().trigger(Activate { entity: arrow });
+            }
+        }
+        let link = &app
+            .world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link;
+        let offset = link.bar_layout().rows[0].offset;
+        assert_eq!(usize::from(offset), ROW_SLOTS - visible.len() - 1);
+        link.bar_gesture(BarGesture::Scroll {
+            bar: 0,
+            by: 40 - offset as i8,
+        });
+    }
+    Ok(())
+}
+
+fn dispatch_click(app: &mut App, click: &PointerClick, button: PointerButton) {
+    press(app, click, button);
+    release(app, click, button);
+}
+
+fn press(app: &mut App, click: &PointerClick, button: PointerButton) {
+    app.world_mut()
+        .trigger(bevy::picking::events::PointerPress {
+            entity: click.entity,
+            pointer: click.pointer.clone(),
+            hit: click.hit.clone(),
+            count: 1,
+            button,
+        });
+    app.world_mut().flush();
+}
+
+fn release(app: &mut App, click: &PointerClick, button: PointerButton) {
+    app.world_mut().trigger(PointerClick {
+        button,
+        ..click.clone()
+    });
+    app.world_mut()
+        .trigger(bevy::picking::events::PointerRelease {
+            entity: click.entity,
+            pointer: click.pointer.clone(),
+            hit: click.hit.clone(),
+            button,
+        });
+    app.world_mut().flush();
+}
+
+#[test]
+fn overlapping_pointer_presses_activate_only_the_primary_click() -> TestResult {
+    let (mut app, mut commands) = fixture()?;
+    app.add_plugins(bevy::ui_widgets::ButtonPlugin);
+    let first = slot(&mut app, 0)?;
+    let click = secondary_click(first);
+    press(&mut app, &click, PointerButton::Middle);
+    press(&mut app, &click, PointerButton::Primary);
+    release(&mut app, &click, PointerButton::Middle);
+    assert!(commands.try_recv().is_err(), "middle release must not cast");
+    release(&mut app, &click, PointerButton::Primary);
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::Combat(
+            crate::combat_input::CombatCommand::Cast(id)
+        ) if id.get() == 71
+    ));
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn nonprimary_clicks_leave_lock_and_scroll_arrows_alone() -> TestResult {
+    let (mut app, _) = fixture()?;
+    app.add_plugins(bevy::ui_widgets::ButtonPlugin);
+    let controls: Vec<_> = app
+        .world_mut()
+        .query::<(Entity, &ActionControl)>()
+        .iter(app.world())
+        .filter_map(|(entity, control)| {
+            matches!(
+                control,
+                ActionControl::Lock(0) | ActionControl::Scroll(0, _)
+            )
+            .then_some(entity)
+        })
+        .collect();
+    assert_eq!(controls.len(), 3);
+    let layout = |app: &App| {
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .map(|play| play.link.bar_layout())
+    };
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .bar_gesture(BarGesture::Scroll { bar: 0, by: 5 });
+    for entity in controls {
+        let before = layout(&app);
+        let click = secondary_click(entity);
+        for button in [PointerButton::Secondary, PointerButton::Middle] {
+            dispatch_click(&mut app, &click, button);
+            assert_eq!(layout(&app), before);
+        }
+        press(&mut app, &click, PointerButton::Middle);
+        press(&mut app, &click, PointerButton::Primary);
+        release(&mut app, &click, PointerButton::Middle);
+        assert_eq!(layout(&app), before);
+        release(&mut app, &click, PointerButton::Primary);
+        assert_ne!(layout(&app), before);
     }
     Ok(())
 }
@@ -171,6 +351,7 @@ fn visible_slots_follow_real_computed_width_and_saved_scroll_offset() -> TestRes
 #[test]
 fn unlocking_and_selecting_slot_opens_shared_editor_without_casting() -> TestResult {
     let (mut app, mut commands) = fixture()?;
+    app.add_plugins(bevy::ui_widgets::ButtonPlugin);
     let lock = app
         .world_mut()
         .query::<(Entity, &ActionControl)>()
@@ -190,8 +371,66 @@ fn unlocking_and_selecting_slot_opens_shared_editor_without_casting() -> TestRes
             .locked
     );
     let first = slot(&mut app, 0)?;
-    app.world_mut().trigger(Activate { entity: first });
+    app.insert_resource(UiScale(1.5));
+    // Editing is an explicit secondary click; ordinary activation still executes.
+    let click = secondary_click(first);
+    for button in [
+        bevy::picking::pointer::PointerButton::Primary,
+        bevy::picking::pointer::PointerButton::Middle,
+        click.button,
+    ] {
+        dispatch_click(&mut app, &click, button);
+        if button == bevy::picking::pointer::PointerButton::Primary {
+            assert!(
+                matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id)) if id.get() == 71)
+            );
+        }
+    }
     app.update();
+    let parent = app
+        .world_mut()
+        .query_filtered::<&ChildOf, With<popup::PopupEntry>>()
+        .iter(app.world())
+        .next()
+        .ok_or("popup entry")?
+        .parent();
+    crate::bevy_shell::game_ui::hud_panes::context_menu::assert_anchor(
+        app.world(),
+        parent,
+        Vec2::new(200. / 1.5, 100. / 1.5),
+    );
+    // The secondary click opens the Tibia slot menu; its Assign Spell entry opens the editor.
+    let mut labels = Vec::new();
+    let mut assign = None;
+    for (entity, entry) in app
+        .world_mut()
+        .query::<(Entity, &MenuEntry)>()
+        .iter(app.world())
+    {
+        labels.push(entry.choice);
+        if entry.choice == MenuChoice::AssignSpell {
+            assign = Some(entity);
+        }
+    }
+    assert_eq!(labels.len(), 8);
+    for choice in [
+        MenuChoice::AssignSpell,
+        MenuChoice::AssignObject,
+        MenuChoice::SetText,
+        MenuChoice::EditHotkey,
+        MenuChoice::Clear,
+        MenuChoice::Lock,
+        MenuChoice::Hide,
+        MenuChoice::ResetZoom,
+    ] {
+        assert!(labels.contains(&choice), "{choice:?}");
+    }
+    assert!(!app.world().resource::<editor::EditorState>().active());
+    app.world_mut().trigger(Activate {
+        entity: assign.ok_or("Assign Spell")?,
+    });
+    app.update();
+    assert!(app.world().resource::<SlotMenu>().0.is_none());
     assert!(app.world().resource::<editor::EditorState>().active());
     assert!(commands.try_recv().is_err());
     // Disconnect clears the session-bound edit and its text focus.
@@ -246,7 +485,8 @@ fn native_drop_swaps_only_unlocked_slots_then_casts_new_binding() -> TestResult 
     let (mut app, mut commands) = fixture()?;
     let from = slot(&mut app, 0)?;
     let to = slot(&mut app, 1)?;
-    let window = app.world_mut().spawn_empty().id();
+    // Pointer traversal must terminate at a real window, rather than revisit an empty entity.
+    let window = app.world_mut().spawn(Window::default()).id();
     let target = bevy::camera::NormalizedRenderTarget::Window(
         bevy::window::WindowRef::Entity(window)
             .normalize(None)
@@ -376,4 +616,325 @@ fn inventory_modal_blocks_prior_action_slot_focus_enter_and_direct_activation() 
         );
     }
     Ok(())
+}
+
+#[test]
+fn unlocked_action_slot_still_executes_ordinary_activation() -> TestResult {
+    let (mut app, mut commands) = fixture()?;
+    let entity = slot(&mut app, 0)?;
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .bar_gesture(BarGesture::Configure {
+            bar: 0,
+            dock: crate::play::BarDock::Bottom,
+            enabled: true,
+            locked: false,
+        });
+    app.world_mut().trigger(Activate { entity });
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id)) if id.get() == 71)
+    );
+    let window = app.world_mut().spawn(Window::default()).id();
+    app.world_mut().trigger(FocusedInput::new(
+        entity,
+        KeyboardInput {
+            key_code: KeyCode::Enter,
+            logical_key: bevy::input::keyboard::Key::Enter,
+            state: ButtonState::Pressed,
+            text: None,
+            repeat: false,
+            window,
+        },
+        window,
+    ));
+    app.world_mut().flush();
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id)) if id.get() == 71)
+    );
+    assert!(!app.world().resource::<editor::EditorState>().active());
+    Ok(())
+}
+
+#[test]
+fn side_bars_project_their_dock_and_vertical_capacity() -> TestResult {
+    let (mut app, _) = fixture()?;
+    for (bar, dock) in [
+        (1, crate::play::BarDock::Left),
+        (2, crate::play::BarDock::Right),
+    ] {
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .bar_gesture(BarGesture::Configure {
+                bar,
+                dock,
+                enabled: true,
+                locked: true,
+            });
+    }
+    app.update();
+    let layout = app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .bar_layout();
+    for (bar, node, parent) in app
+        .world_mut()
+        .query::<(&BarRow, &Node, &ChildOf)>()
+        .iter(app.world())
+    {
+        if layout.rows[bar.0].dock != crate::play::BarDock::Bottom {
+            assert_eq!(node.flex_direction, FlexDirection::Column);
+            assert_ne!(
+                parent.parent(),
+                app.world().resource::<super::super::GameRegions>().bars
+            );
+            assert_eq!(node.width, px(SLOT_SIZE));
+        } else {
+            assert_eq!(node.flex_direction, FlexDirection::Row);
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn slot_menu_lists_tibia_entries_and_the_bar_lock_state() {
+    let labels = |locked| {
+        menu_items(locked)
+            .into_iter()
+            .map(|(item, _)| match item {
+                popup::Item::Entry { label, checked, .. } => {
+                    format!(
+                        "{label}{}",
+                        checked.map_or("", |on| if on { " [x]" } else { " [ ]" })
+                    )
+                }
+                popup::Item::Separator => "-".to_owned(),
+            })
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(
+        labels(true),
+        [
+            "Assign Spell",
+            "Assign Object",
+            "Set Text",
+            "Edit Hotkey",
+            "Clear",
+            "-",
+            "Lock Action Bar [x]",
+            "Hide Action Bar",
+            "-",
+            "Reset Zoom",
+        ]
+    );
+    assert_eq!(labels(false)[6], "Lock Action Bar [ ]");
+}
+
+#[test]
+fn each_bar_has_a_twelve_by_sixteen_lock_and_no_configuration_row() -> TestResult {
+    let (mut app, _) = fixture()?;
+    let mut locks = app
+        .world_mut()
+        .query::<(&ActionControl, &Node, &Children)>();
+    let mut found = Vec::new();
+    for (control, node, children) in locks.iter(app.world()) {
+        if let ActionControl::Lock(bar) = control {
+            found.push(*bar);
+            assert_eq!((node.width, node.height), (px(12.), px(16.)));
+            assert!(
+                children
+                    .iter()
+                    .any(|child| app.world().get::<art::ArtIcon>(child).is_some())
+            );
+        }
+    }
+    found.sort_unstable();
+    assert_eq!(found, (0..9).collect::<Vec<_>>());
+    // The removed "1 on / Locked" row left no text captions behind.
+    let captions: Vec<String> = app
+        .world_mut()
+        .query::<&Text>()
+        .iter(app.world())
+        .map(|text| text.0.clone())
+        .collect();
+    assert!(
+        !captions
+            .iter()
+            .any(|text| text == "Locked" || text.ends_with(" on"))
+    );
+    Ok(())
+}
+
+#[test]
+fn hotkey_labels_abbreviate_modifiers_like_the_tibia_bar() {
+    assert_eq!(projection::hotkey_label("F1"), "F1");
+    assert_eq!(projection::hotkey_label("CTRL+F2"), "C+F2");
+    assert_eq!(projection::hotkey_label("SHIFT+ALT+3"), "S+A+3");
+    assert_eq!(projection::hotkey_label("SUPER+J"), "M+J");
+    assert_eq!(projection::hotkey_label(""), "");
+}
+
+#[test]
+fn slots_show_their_bound_hotkey_and_follow_a_150_percent_bar_zoom() -> TestResult {
+    use crate::bevy_shell::gameplay_dialogs::scale::{self, Module, ModuleScale};
+    let (mut app, _) = fixture()?;
+    let mut zoom = ModuleScale::default();
+    zoom.set(Module::ActionBars, 1.5);
+    app.insert_resource(zoom)
+        .add_systems(PostUpdate, scale::apply);
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .settings
+        .preferences
+        .rebind("local-spell-action-bar-spell-1", "CTRL+F1")?;
+    app.update();
+    let label = app
+        .world_mut()
+        .query::<(&SlotHotkey, &Text)>()
+        .iter(app.world())
+        .find_map(|(hotkey, text)| (hotkey.0 == 0).then(|| text.0.clone()))
+        .ok_or("slot hotkey")?;
+    assert_eq!(label, "C+F1");
+    let first = slot(&mut app, 0)?;
+    let node = app.world().get::<Node>(first).ok_or("slot node")?;
+    assert_eq!((node.width, node.height), (px(51.), px(51.)));
+    Ok(())
+}
+
+#[test]
+fn clear_removes_assigned_fourth_bar_action() -> TestResult {
+    let (mut app, mut commands) = fixture()?;
+    {
+        let owner = app.world().non_send::<HostOwner>();
+        owner
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .bar_gesture(BarGesture::Configure {
+                bar: 3,
+                dock: crate::play::BarDock::Bottom,
+                enabled: true,
+                locked: false,
+            });
+        let link = &owner.play.as_ref().ok_or("play")?.link;
+        assert!(link.assign_bar_action(
+            150,
+            crate::play::BarAction::Text {
+                text: "hello".into(),
+                send_automatically: true,
+            }
+        ));
+        assert!(link.spell_slot_tooltips()[150].contains("hello"));
+    }
+    app.update();
+    let target = slot(&mut app, 150)?;
+    app.world_mut().trigger(secondary_click(target));
+    app.update();
+    let entry = app
+        .world_mut()
+        .query::<(Entity, &MenuEntry)>()
+        .iter(app.world())
+        .find_map(|(entity, entry)| (entry.choice == MenuChoice::Clear).then_some(entity))
+        .ok_or("Clear entry")?;
+    app.world_mut().trigger(Activate { entity: entry });
+    let link = &app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link;
+    assert!(!link.spell_slot_tooltips()[150].contains("hello"));
+    assert!(!app.world().resource::<editor::EditorState>().active());
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn each_side_shows_an_enabled_bar_on_its_own_dock() -> TestResult {
+    for (bar, dock) in [
+        (3, crate::play::BarDock::Bottom),
+        (5, crate::play::BarDock::Left),
+        (7, crate::play::BarDock::Right),
+    ] {
+        let (mut app, _) = fixture()?;
+        {
+            let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+            let mut preferences = owner.settings.preferences.clone();
+            preferences.bar_layout.rows[bar].enabled = true;
+            owner.settings.apply(preferences);
+            let owner = &mut *owner;
+            let link = &owner.play.as_ref().ok_or("play")?.link;
+            owner.settings.sync_bar_actions(link);
+        }
+        app.update();
+        app.update();
+        let anchor = app
+            .world_mut()
+            .query::<(Entity, &DockAnchor)>()
+            .iter(app.world())
+            .find_map(|(entity, anchor)| (anchor.0 == dock).then_some(entity))
+            .ok_or("anchor")?;
+        let mut shown = Vec::new();
+        for (row, node, parent) in app
+            .world_mut()
+            .query::<(&BarRow, &Node, &ChildOf)>()
+            .iter(app.world())
+        {
+            if node.display != Display::None {
+                shown.push(row.0);
+            }
+            if row.0 == bar {
+                assert_eq!(parent.parent(), anchor, "bar {bar} sits on its dock");
+                let vertical = dock != crate::play::BarDock::Bottom;
+                assert_eq!(
+                    node.flex_direction,
+                    if vertical {
+                        FlexDirection::Column
+                    } else {
+                        FlexDirection::Row
+                    }
+                );
+            }
+        }
+        shown.sort_unstable();
+        assert_eq!(
+            shown,
+            vec![0, bar],
+            "only the default and the enabled bar show"
+        );
+    }
+    Ok(())
+}
+
+pub(in crate::bevy_shell::game_ui) fn secondary_click(entity: Entity) -> PointerClick {
+    PointerClick {
+        entity,
+        pointer: bevy::picking::events::Pointer::new(
+            bevy::picking::pointer::PointerId::Mouse,
+            bevy::picking::pointer::Location {
+                target: bevy::camera::NormalizedRenderTarget::None {
+                    width: 1000,
+                    height: 600,
+                },
+                position: Vec2::new(200., 100.),
+            },
+        ),
+        button: bevy::picking::pointer::PointerButton::Secondary,
+        hit: bevy::picking::backend::HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        duration: std::time::Duration::ZERO,
+        count: 1,
+    }
 }

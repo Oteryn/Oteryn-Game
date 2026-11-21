@@ -10,11 +10,17 @@ use bevy::{
 use oteryn_renderer::{AtlasImage, QuadInstance, lighting::QuadLayer};
 
 #[cfg(test)]
+mod palette_tests;
+mod smooth;
+#[cfg(test)]
 mod tests;
 pub(super) mod typing;
+#[cfg(test)]
+mod typing_tests;
 
 #[derive(Resource, Default)]
 pub(super) struct SceneCache {
+    smooth: smooth::Cache,
     atlas: Option<AtlasImage>,
     image: Option<Handle<Image>>,
     entities: Vec<Entity>,
@@ -34,9 +40,10 @@ pub(super) fn project(
     window: Query<&Window, With<PrimaryWindow>>,
     mut cache: ResMut<SceneCache>,
     (viewport, time): (Res<WorldViewport>, Res<Time>),
-    mut images: ResMut<Assets<Image>>,
+    (mut images, mut mesh_assets): (ResMut<Assets<Image>>, smooth::MeshAssets),
     mut quads: Query<(&mut Sprite, &mut Transform, &mut RenderLayers), With<WorldQuad>>,
 ) {
+    cache.smooth.hide(&mut commands);
     let Some(play) = &owner.play else {
         for entity in cache.entities.drain(..) {
             commands.entity(entity).despawn();
@@ -84,6 +91,12 @@ pub(super) fn project(
     };
     let offset = ((size - Vec2::new(scene_size.0 as f32, scene_size.1 as f32)) * 0.5).floor();
     let minimap_range = scene.minimap_quad_range();
+    let tile_count = scene.tiles().instances().len();
+    let camera = play
+        .view
+        .camera_offset(std::time::Instant::now())
+        .map_or(Vec2::ZERO, Vec2::from);
+    let player_quads = scene.player_quads();
     cache.floor_alpha.retain(|floor, _| {
         scene
             .floor_quad_ranges()
@@ -99,10 +112,12 @@ pub(super) fn project(
         *alpha = crate::scene::floor_lighting::fade_alpha(*alpha, visible, time.delta_secs());
     }
     let lighting = &scene.sprites().lighting;
-    let circle_quads = &scene.health_circle_quads;
+    let hud_quads = &scene.native_hud_quads;
+    let shared_frontend = play.link.uses_shared_frontend();
     let SceneCache {
         floor_alpha,
         entities,
+        smooth,
         ..
     } = &mut *cache;
     let ordered = scene
@@ -110,14 +125,23 @@ pub(super) fn project(
         .instances()
         .iter()
         .enumerate()
-        .map(|(i, q)| (q, lighting.quad_tint(q, i, QuadLayer::Terrain), false))
+        .map(|(i, q)| {
+            (
+                i,
+                q,
+                lighting.quad_tint(q, i, QuadLayer::Terrain),
+                false,
+                i,
+                QuadLayer::Terrain,
+            )
+        })
         .chain(
             scene
                 .sprites()
                 .instances()
                 .iter()
                 .enumerate()
-                .filter(|(i, _)| !circle_quads.contains(i))
+                .filter(|(i, _)| !shared_frontend || !hud_quads.contains(i))
                 .map(|(i, q)| {
                     let mut tint = lighting.quad_tint(q, i, QuadLayer::Overlay);
                     if let Some((_, floor)) = scene
@@ -127,12 +151,25 @@ pub(super) fn project(
                     {
                         tint[3] *= floor_alpha.get(floor).copied().unwrap_or(1.0);
                     }
-                    (q, tint, minimap_range.contains(&i))
+                    (
+                        tile_count + i,
+                        q,
+                        tint,
+                        minimap_range.contains(&i),
+                        i,
+                        QuadLayer::Overlay,
+                    )
                 }),
         );
+    let smooth_enabled = !lighting.sources.is_empty();
+    let mut batches = [smooth::Vertices::default(), smooth::Vertices::default()];
     let mut count = 0;
-    for (index, (quad, tint, minimap)) in ordered.enumerate() {
+    for (index, quad, tint, minimap, source_index, source_layer) in ordered {
         let layer = RenderLayers::layer(if minimap { 2 } else { 1 });
+        let follows_player = index >= tile_count
+            && player_quads
+                .iter()
+                .any(|range| range.contains(&(index - tile_count)));
         let (scale, size, offset, clip_size) = if minimap {
             let size = super::game_ui::minimap::SIZE.as_vec2();
             (1., size, Vec2::ZERO, size)
@@ -144,21 +181,33 @@ pub(super) fn project(
                 Vec2::new(scene_size.0 as f32, scene_size.1 as f32),
             )
         };
-        let Some((sprite, transform)) = project_quad(
-            quad,
-            tint,
-            index,
-            &image,
-            scene.atlas(),
-            QuadViewport {
-                scale,
-                size,
-                offset,
-                clip_size,
+        let viewport = QuadViewport {
+            scale,
+            size,
+            offset,
+            clip_size,
+            // The camera follows the player's step: the map slides, the player stays.
+            scroll: if minimap || follows_player {
+                Vec2::ZERO
+            } else {
+                camera
             },
-        ) else {
+        };
+        let Some((sprite, transform)) =
+            project_quad(quad, tint, index, &image, scene.atlas(), viewport)
+        else {
             continue;
         };
+        if smooth_enabled {
+            batches[usize::from(minimap)].push(
+                lighting,
+                quad,
+                source_index,
+                source_layer,
+                (&sprite, transform, viewport),
+            );
+            continue;
+        }
         if let Some(entity) = entities.get(count) {
             if let Ok((mut old_sprite, mut old_transform, mut old_layer)) = quads.get_mut(*entity) {
                 if *old_layer != layer {
@@ -176,6 +225,9 @@ pub(super) fn project(
         }
         count += 1;
     }
+    if smooth_enabled {
+        smooth.draw(&mut commands, &mut mesh_assets, &image, batches);
+    }
     for entity in entities.drain(count..) {
         commands.entity(entity).despawn();
     }
@@ -186,6 +238,7 @@ struct QuadViewport {
     size: Vec2,
     offset: Vec2,
     clip_size: Vec2,
+    scroll: Vec2,
 }
 fn project_quad(
     quad: &QuadInstance,
@@ -200,8 +253,9 @@ fn project_quad(
         size: viewport_size,
         offset,
         clip_size,
+        scroll,
     } = viewport;
-    let [x, y] = quad.position;
+    let [x, y] = (Vec2::from(quad.position) + scroll).into();
     let [w, h] = quad.size;
     let [u0, v0, u1, v1] = quad.uv;
     let start = Vec2::new(x, y).max(Vec2::ZERO);
@@ -216,7 +270,7 @@ fn project_quad(
     let uv_end =
         Vec2::new(u0, v0) + Vec2::new(u1 - u0, v1 - v0) * (end - Vec2::new(x, y)) / Vec2::new(w, h);
     let (x, y, w, h) = (start.x, start.y, visible.x, visible.y);
-    let sprite = Sprite {
+    let mut sprite = Sprite {
         image: image.clone(),
         color: Color::linear_rgba(tint[0], tint[1], tint[2], tint[3]),
         rect: Some(Rect::new(
@@ -228,6 +282,29 @@ fn project_quad(
         custom_size: Some(Vec2::new(w / scale, h / scale)),
         ..default()
     };
+    // Palette primitives sample a single texel, independently of their geometry.
+    // Bevy source rectangles need area; use a solid sprite to preserve constant
+    // sampling without stretching neighbouring palette colours into the quad.
+    if u0 == u1 && v0 == v1 {
+        let x = (u0 * atlas.width() as f32)
+            .floor()
+            .clamp(0., atlas.width() as f32 - 1.) as usize;
+        let y = (v0 * atlas.height() as f32)
+            .floor()
+            .clamp(0., atlas.height() as f32 - 1.) as usize;
+        let at = (y * atlas.width() as usize + x) * 4;
+        let rgba = atlas.rgba().get(at..at + 4)?;
+        let color = Color::srgba_u8(rgba[0], rgba[1], rgba[2], rgba[3]).to_linear();
+        sprite = Sprite::from_color(
+            Color::linear_rgba(
+                color.red * tint[0],
+                color.green * tint[1],
+                color.blue * tint[2],
+                color.alpha * tint[3],
+            ),
+            Vec2::new(w / scale, h / scale),
+        );
+    }
     let transform = Transform::from_xyz(
         (x + w / 2. + offset.x - viewport_size.x / 2.) / scale,
         (viewport_size.y / 2. - (y + h / 2. + offset.y)) / scale,

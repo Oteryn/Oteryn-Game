@@ -148,6 +148,8 @@ struct ElementalAttack {
 pub fn apply_item_stats_promotion_v2(
     draft: &mut ProjectV2Draft,
 ) -> Result<ItemStatsPromotion, ItemStatsPromotionError> {
+    super::item_identity::validate_unique_item_keys(draft)
+        .map_err(ItemStatsPromotionError::Decode)?;
     if world_project_sha256(ITEM_STATS_PROMOTION_V2_PACKET) != ITEM_STATS_PROMOTION_V2_PACKET_SHA256
     {
         return Err(ItemStatsPromotionError::Digest);

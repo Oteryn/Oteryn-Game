@@ -6,6 +6,7 @@ pub(super) enum Page {
     #[default]
     Basic,
     Controls,
+    GeneralHotkeys,
     Interface,
     Hud,
     Console,
@@ -18,11 +19,14 @@ pub(super) enum Page {
     UiSounds,
     Misc,
     Gameplay,
+    Screenshots,
+    Diagnostics,
 }
 impl Page {
     pub const BASIC_NAV: [Self; 1] = [Self::Basic];
-    pub const ADVANCED: [Self; 13] = [
+    pub const ADVANCED: [Self; 16] = [
         Self::Controls,
+        Self::GeneralHotkeys,
         Self::Interface,
         Self::Hud,
         Self::Console,
@@ -35,11 +39,14 @@ impl Page {
         Self::UiSounds,
         Self::Misc,
         Self::Gameplay,
+        Self::Screenshots,
+        Self::Diagnostics,
     ];
     pub const fn label(self) -> &'static str {
         match self {
             Self::Basic => "Basic Options",
             Self::Controls => "Controls",
+            Self::GeneralHotkeys => "General Hotkeys",
             Self::Interface => "Interface",
             Self::Hud => "HUD",
             Self::Console => "Console",
@@ -52,12 +59,15 @@ impl Page {
             Self::UiSounds => "UI Sounds",
             Self::Misc => "Misc.",
             Self::Gameplay => "Gameplay",
+            Self::Screenshots => "Screenshots",
+            Self::Diagnostics => "Diagnostics",
         }
     }
     pub const fn child(self) -> bool {
         matches!(
             self,
-            Self::Hud
+            Self::GeneralHotkeys
+                | Self::Hud
                 | Self::Console
                 | Self::GameWindow
                 | Self::ActionBars
@@ -144,6 +154,7 @@ macro_rules! number {
 }
 
 mod controls;
+mod diagnostics;
 mod graphics;
 mod interface;
 mod miscellaneous;
@@ -152,6 +163,8 @@ pub(super) fn rows(page: Page) -> &'static [Row] {
     match page {
         Page::Basic => &BASIC,
         Page::Controls => &controls::ROWS,
+        // Hotkey sets and key bindings are list editors (`profiles.rs`, `keys.rs`).
+        Page::GeneralHotkeys => &[],
         Page::Interface => &interface::MAIN,
         Page::Hud => &interface::HUD,
         Page::Console => &interface::CONSOLE,
@@ -164,6 +177,47 @@ pub(super) fn rows(page: Page) -> &'static [Row] {
         Page::UiSounds => &sound::UI,
         Page::Misc => &miscellaneous::MAIN,
         Page::Gameplay => &miscellaneous::GAMEPLAY,
+        Page::Diagnostics => &diagnostics::ROWS,
+        Page::Screenshots => &[
+            check!(
+                "screenshots.game-only",
+                "Capture game area only",
+                screenshots.game_only
+            ),
+            check!(
+                "screenshots.death",
+                "Capture on death",
+                screenshots.on_death
+            ),
+            check!(
+                "screenshots.level",
+                "Capture on level up",
+                screenshots.on_level
+            ),
+            check!(
+                "screenshots.skill",
+                "Capture on skill up",
+                screenshots.on_skill
+            ),
+            check!(
+                "screenshots.achievement",
+                "Capture on achievement",
+                screenshots.on_achievement
+            ),
+            Row {
+                id: "screenshots.backlog",
+                label: "Screenshot backlog (seconds, 0 disables)",
+                editor: Editor::Number {
+                    read: |p| u16::from(p.screenshots.effective().backlog_frames),
+                    write: |p, value| {
+                        p.screenshots.backlog_frames = 0;
+                        p.screenshots.backlog_seconds = value as u8;
+                    },
+                    min: 0,
+                    max: 10,
+                },
+            },
+        ],
     }
 }
 const BASIC: [Row; 7] = [
@@ -175,6 +229,7 @@ const BASIC: [Row; 7] = [
     sound::MAIN[0],
     sound::MAIN[1],
 ];
+pub(super) use miscellaneous::LOGIN_CHOICES;
 pub(super) fn find(page: Page, id: &str) -> Option<Row> {
     rows(page).iter().find(|row| row.id == id).copied()
 }

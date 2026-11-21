@@ -18,7 +18,7 @@ fn stack_quantity_dispatch_split_merge_drop_replay_and_atomic_refusals() -> Test
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(Mode::Stack).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "stack quantity e2e panic")??;
     Ok(())
@@ -31,13 +31,36 @@ fn boss_activity_item_consumer_postgres_real_dispatch() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(true).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(Mode::BossFences).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "boss item consumer e2e panic")??;
     Ok(())
 }
 
-fn scenario(boss_item_fences: bool) -> TestResult {
+/// INVCAP-1: the player's own drop through real dispatch rereads `Cap` on the next tick,
+/// well inside the 5 s bound that only out-of-connection changes wait for.
+#[test]
+fn inventory_capacity_rereads_after_own_drop_postgres() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(Mode::CapacityReread).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "capacity reread e2e panic")??;
+    Ok(())
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Mode {
+    Stack,
+    BossFences,
+    CapacityReread,
+}
+
+fn scenario(mode: Mode) -> TestResult {
+    let boss_item_fences = mode == Mode::BossFences;
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "stack_quantity", true, false).await?;
@@ -172,6 +195,13 @@ fn scenario(boss_item_fences: bool) -> TestResult {
             },
         )
         .ok_or("count capability selectable")?;
+        if mode == Mode::CapacityReread {
+            capacity_reread(&owner, admitted).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         if boss_item_fences {
             eprintln!(
                 "Canonical PostgreSQL 18.6; boss prerequisite Channel item consumer through real dispatch"
@@ -397,7 +427,7 @@ async fn exchange_with_boss_fences(
                 }
             }
             let destination = match (to, nested) {
-                (true, true) => ItemMoveDestination::Container(bag.ok_or("carried bag")?),
+                (true, true) => ItemMoveDestination::Container(bag.ok_or("carried bag")?, None),
                 (true, false) => ItemMoveDestination::Ground(WorldTilePosition {
                     x: 6,
                     y: 0,
@@ -533,6 +563,132 @@ async fn exchange_with_boss_fences(
     };
     let (result, actual) = result.ok_or("client did not finish")??;
     Ok((admitted, result, actual))
+}
+
+/// Joins with capability 508, waits for the first `Cap`, drops 10 coins on the own tile and
+/// expects the changed `Cap` before the 5 s bound could have elapsed.
+async fn capacity_reread(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: AdmittedSession,
+) -> TestResult {
+    use crate::gameplay_transport::capabilities::OfferedCapability;
+    use oteryn_protocol_oteryn::inventory_capacity::InventoryCapacity;
+    use oteryn_protocol_oteryn::world_spatial_entities as entities;
+    let ids = [4, 6, 12, 14, 18, CAPABILITY_ITEM_STACK_COUNT_V1, 508];
+    let offered = ids.map(|id| OfferedCapability { id, requires: &[] });
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(&offered, &ids).ok_or("capacity selection")?;
+    let fields = entities::EntityFields::selected(&ids);
+    let capacity_of = |raw: &[u8]| -> TestResult<Option<InventoryCapacity>> {
+        let envelope = crate::foundation::decode_wire_envelope(raw)?;
+        if envelope.message_type() != crate::foundation::MessageType::StateDelta {
+            return Ok(None);
+        }
+        let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())?;
+        if delta.domain_id
+            != oteryn_protocol_oteryn::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY
+        {
+            return Ok(None);
+        }
+        let (_, _, sidecar) =
+            entities::decode_world_spatial_entities_delta_with_sidecar(delta.payload, fields)
+                .map_err(debug)?;
+        Ok(match sidecar {
+            Some(entities::DeltaSidecar::InventoryCapacity(capacity)) => Some(capacity),
+            _ => None,
+        })
+    };
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let client_task = async {
+        let mut source = None;
+        loop {
+            let raw = super::item_look_fixtures::read_frame(&mut client).await?;
+            let envelope = crate::foundation::decode_wire_envelope(&raw)?;
+            if envelope.message_type() == crate::foundation::MessageType::SnapshotChunk {
+                let (_, domains) =
+                    oteryn_protocol_oteryn::decode_snapshot_chunk(envelope.payload())?;
+                for domain in domains {
+                    if domain.domain_id == STATE_DOMAIN_CHARACTER_INVENTORY {
+                        source = decode_character_inventory_with_equip_drop(domain.payload, true)
+                            .map_err(debug)?
+                            .entries
+                            .iter()
+                            .max_by_key(|entry| entry.count)
+                            .map(|entry| entry.handle);
+                    }
+                }
+            }
+            if envelope.message_type() == crate::foundation::MessageType::SnapshotCommit {
+                break;
+            }
+        }
+        let first = loop {
+            let raw = super::item_look_fixtures::read_frame(&mut client).await?;
+            if let Some(capacity) = capacity_of(&raw)? {
+                break capacity;
+            }
+        };
+        let first_at = std::time::Instant::now();
+        let mut payload = encode_item_move_intent_for(
+            &ItemMoveIntent {
+                source: source.ok_or("coin stack")?,
+                destination: ItemMoveDestination::Ground(WorldTilePosition {
+                    x: 6,
+                    y: 0,
+                    floor: 7,
+                }),
+            },
+            ItemMoveSelection {
+                equip_drop: true,
+                container_tree: true,
+                ..ItemMoveSelection::default()
+            },
+        )
+        .map_err(debug)?;
+        payload.extend([0x30, 10]);
+        send(&mut client, 1, COMMAND_TYPE_ITEM_MOVE_INTENT, &payload).await?;
+        let mut moved = false;
+        let second = loop {
+            let raw = super::item_look_fixtures::read_frame(&mut client).await?;
+            let envelope = crate::foundation::decode_wire_envelope(&raw)?;
+            if envelope.message_type() == crate::foundation::MessageType::CommandResult {
+                let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
+                assert_eq!(
+                    decode_item_move_result_with_equip_drop(result.payload, true)
+                        .map_err(debug)?,
+                    ItemMoveOutcome::Moved
+                );
+                moved = true;
+            } else if let Some(capacity) = capacity_of(&raw)? {
+                break capacity;
+            }
+        };
+        let elapsed = first_at.elapsed();
+        assert!(moved, "the changed Cap follows the committed drop");
+        assert_eq!(second.capacity, first.capacity);
+        assert!(second.free > first.free, "{first:?} -> {second:?}");
+        assert!(
+            elapsed < std::time::Duration::from_secs(4),
+            "own drop waited for the 5 s bound: {elapsed:?}"
+        );
+        client.shutdown().await?;
+        Ok::<_, Box<dyn std::error::Error>>(())
+    };
+    let serving = async {
+        let end = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
+        drop(server);
+        end
+    };
+    let (end, result) = tokio::time::timeout(std::time::Duration::from_secs(30), async {
+        tokio::join!(serving, client_task)
+    })
+    .await?;
+    result?;
+    assert!(
+        matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)),
+        "{end:?}"
+    );
+    Ok(())
 }
 
 async fn command_result(

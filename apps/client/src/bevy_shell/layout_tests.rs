@@ -16,7 +16,8 @@ use bevy::{
 #[test]
 fn computed_audit_keeps_footer_inside_small_window_at_large_interface_scale()
 -> Result<(), Box<dyn std::error::Error>> {
-    let path = std::env::temp_dir().join(format!("oteryn-bevy-layout-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("oteryn-bevy-layout.json");
     let mut app = App::new();
     app.add_plugins((
         MinimalPlugins,

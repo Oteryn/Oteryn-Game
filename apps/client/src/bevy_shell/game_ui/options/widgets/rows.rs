@@ -35,7 +35,11 @@ pub(super) fn number(
     max: u16,
     value: u16,
 ) -> Entity {
-    let row = row(commands, skins, field.label);
+    let row = row(
+        commands,
+        skins,
+        oteryn_client_ui::localization::tr(field.label),
+    );
     let slider = commands
         .spawn((
             Slider::default(),
@@ -110,7 +114,11 @@ pub(super) fn choice(
     values: &[&str],
     value: usize,
 ) -> Entity {
-    let row = row(commands, skins, field.label);
+    let row = row(
+        commands,
+        skins,
+        oteryn_client_ui::localization::tr(field.label),
+    );
     let editor = button(
         commands,
         skins,

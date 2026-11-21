@@ -1144,8 +1144,8 @@ pub struct Publisher<C, S, K, F> {
     pub last_online_watermark: Mutex<Option<(u64, i64)>>,
     /// The `world_online` watermark's §6 state.
     online_watermark_gate: Mutex<Gate>,
-    /// When the last store pass ended (`STORE_PASS_GAP`).
-    last_pass: Mutex<Option<Duration>>,
+    /// Serializes admission through completion, retaining the last pass end.
+    last_pass: tokio::sync::Mutex<Option<Duration>>,
 }
 
 fn log(family: Family, operation: &str, class: &str, elapsed: Duration) {
@@ -1221,7 +1221,7 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
             last_cut: Mutex::new(None),
             last_online_watermark: Mutex::new(None),
             online_watermark_gate: Mutex::new(Gate::default()),
-            last_pass: Mutex::new(None),
+            last_pass: tokio::sync::Mutex::new(None),
         }
     }
 
@@ -1249,9 +1249,9 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
         &self,
         call: impl FnOnce() -> R,
     ) -> Result<T, ()> {
-        let last = self.last_pass.lock().ok().and_then(|last| *last);
-        if let Some(last) = last {
-            let wait = (last + STORE_PASS_GAP).saturating_sub(self.clock.elapsed());
+        let mut last = self.last_pass.lock().await;
+        if let Some(ended) = *last {
+            let wait = (ended + STORE_PASS_GAP).saturating_sub(self.clock.elapsed());
             if !wait.is_zero() {
                 self.clock.sleep(wait).await;
             }
@@ -1261,9 +1261,7 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
         } else {
             call().await
         };
-        if let Ok(mut last) = self.last_pass.lock() {
-            *last = Some(self.clock.elapsed());
-        }
+        *last = Some(self.clock.elapsed());
         result
     }
 

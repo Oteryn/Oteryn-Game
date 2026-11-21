@@ -249,7 +249,7 @@ mod tests {
                 x: 100.0,
                 y: 60.0,
                 secondary: false,
-                toggle_attack: false
+                shortcut: None
             }]
         );
         assert!(actions.route(&[primary(ButtonState::Released)]).is_empty());
@@ -301,7 +301,7 @@ mod tests {
                 x: 30.0,
                 y: 40.0,
                 secondary: false,
-                toggle_attack: false
+                shortcut: None
             }]
         );
         actions.route(&[

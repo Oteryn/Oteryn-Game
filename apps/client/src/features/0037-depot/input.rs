@@ -3,7 +3,7 @@ use crate::play::{
     PlayLink,
     mailbox::{Mailbox, lock},
 };
-use oteryn_client_ui::depot::{Intent, open_key, request};
+use oteryn_client_ui::depot::{Intent, open_key, request_in_mode};
 use oteryn_input_actions::NormalizedInputEvent;
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -28,8 +28,9 @@ pub(in crate::play) fn enqueue(
     commands: &UnboundedSender<PlayCommand>,
     intent: Intent,
 ) {
-    if let Some(command) = request(&mut mailbox.depot, intent)
-        && commands.send(PlayCommand::Depot(command)).is_err()
+    let manual_sort = mailbox.container_manual_sort.active();
+    if let Some((command, slot)) = request_in_mode(&mut mailbox.depot, intent, manual_sort)
+        && commands.send(PlayCommand::Depot(command, slot)).is_err()
     {
         mailbox.depot.pending = false;
         mailbox.depot.feedback = tr!("The session has ended");

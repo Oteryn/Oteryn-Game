@@ -16,6 +16,12 @@ fn refuses_further_sign_in_and_displays_manual_download_without_update_trust() {
     form.feedback("generic offline message".into());
     assert!(form.message().contains(url));
     assert!(!form.can_submit());
+    form.inform("About", "Client details".into());
+    assert_eq!(form.alert(), Some(("About", "Client details")));
+    form.dismiss_alert();
+    assert!(form.message().contains(url));
+    #[cfg(bevy_shell)]
+    assert!(form.show_status());
 }
 
 #[test]

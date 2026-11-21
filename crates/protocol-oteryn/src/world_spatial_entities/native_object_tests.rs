@@ -2,6 +2,7 @@
 use super::*;
 fn corpse() -> Result<WorldSpatialEntity, WorldSpatialError> {
     Ok(WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: EntityKind::Corpse,
         entity: EntityRef {

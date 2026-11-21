@@ -4,7 +4,7 @@ use tokio::io::AsyncReadExt;
 use tokio::io::AsyncWriteExt;
 use super::super::fixture::{Harness, debug, id, run};
 
-use super::super::{Dependencies, TestResult, item_look_fixtures as item_look, prepare_current_session};
+use super::super::{Dependencies, TestResult, item_look_fixtures, prepare_current_session};
 
 use crate::domain::CharacterRevision;
 
@@ -122,7 +122,7 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
             .bind(id(42).as_slice()).bind(id(43).as_slice())
             .bind(generation.identity().server_artifact_digest().as_slice()).bind(generation.identity().client_artifact_digest().as_slice()).bind(frame_digest.as_slice()).execute(&h.pool).await?;
-        item_look::seed_main_backpack(&h, &[]).await?;
+        item_look_fixtures::seed_main_backpack(&h, &[]).await?;
         let (dust, limit) = match case {
             Case::Preview
             | Case::Items(_)
@@ -485,7 +485,7 @@ pub(in super::super) async fn send_command(
     let mut received = 0_u64;
     let mut last_message = None;
     loop {
-        let frame = item_look::read_frame(client).await.map_err(|error| {
+        let frame = item_look_fixtures::read_frame(client).await.map_err(|error| {
             format!(
                 "command {id} type {command_type}: server frame read failed after {received} frames \
                  (last message: {last_message:?}): {error}"

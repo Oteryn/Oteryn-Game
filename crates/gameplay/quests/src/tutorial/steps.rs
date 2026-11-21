@@ -85,7 +85,7 @@ pub fn tutorial_transition(
             next.progress.corruptor = false;
             next.place_islet = true;
         }
-        TutorialEvent::Forcefield => {
+        TutorialEvent::Forcefield if stored.is_none_or(|row| row.step == TutorialStep::Islet) => {
             next.progress = TutorialProgress {
                 step: TutorialStep::Island,
                 hunting: true,

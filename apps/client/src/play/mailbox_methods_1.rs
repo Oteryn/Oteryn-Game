@@ -23,6 +23,11 @@ impl Outbox {
         mailbox.dialogue_events(&events);
         mailbox.npc_shop_events(&events);
         for event in &events {
+            if let SessionEvent::GatedSnapshotReplaced(delta) = event
+                && delta.value.domain_id == 1
+            {
+                mailbox.pushed.motion_reset = true;
+            }
             if let SessionEvent::ContainerViews(update) = event {
                 super::feature_0230_browse_field::protocol::replace_views(
                     &mut mailbox.browse_field,

@@ -53,13 +53,27 @@ fn srvenc_source_sugar_daddy_template_creates_instance_and_settles_personal_rewa
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(|| scenario(equipment::Case::Neither).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "source boss scenario panicked")??;
     Ok(())
 }
 
-fn scenario() -> TestResult {
+#[test]
+fn activity_equipment_clocks_charge_worn_items_and_imbuements_postgres() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(equipment::Case::Tick).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "activity equipment scenario panicked")??;
+    Ok(())
+}
+
+fn scenario(case: equipment::Case) -> TestResult {
+    let clock_handoff = case == equipment::Case::Return;
     run(async |admin| {
         reset();
         let h =
@@ -275,6 +289,13 @@ fn scenario() -> TestResult {
                 .is_none(),
             "only the production template caller may instantiate the destination"
         );
+        let entry_budget = if case == equipment::Case::Entry {
+            equipment::activity_equipment_clocks_charge_worn_items(&h, &mut owner, admitted, case).await?;
+            owner.clock_origin -= std::time::Duration::from_secs(59);
+            Some(equipment::remaining_budgets(&h).await?)
+        } else {
+            None
+        };
         let old = admitted;
         let (_, reply, barrier) =
             super::boss_activity_fixtures::exchange(&owner, &mut admitted, BOSS, true).await?;
@@ -299,7 +320,10 @@ fn scenario() -> TestResult {
         assert_eq!(barrier.handoff, handoff);
         assert_eq!(barrier.source_session, *old.game_session_id.as_bytes());
         assert_eq!(barrier.session, *admitted.game_session_id.as_bytes());
-        let destination = owner
+        if let Some(budget) = entry_budget {
+            return equipment::assert_elapsed(&h, budget).await;
+        }
+        let mut destination = owner
             .resolve_runtime_view(admitted)
             .await
             .map_err(|_| "resolve production Instance")?
@@ -344,6 +368,15 @@ fn scenario() -> TestResult {
                 CREATURE
             );
         }
+        if case != equipment::Case::Neither {
+            equipment::activity_equipment_clocks_charge_worn_items(&h, &mut destination, admitted, case).await?;
+            if case == equipment::Case::LostExpiry {
+                return equipment::settle_lost_expiry(&h, &mut destination, admitted).await;
+            }
+            if !clock_handoff {
+                return Ok(());
+            }
+        }
         settle_source_boss(&h, &destination, admitted, policy).await?;
         let exit_deadline: (i64,i64) = sqlx::query_as("SELECT terminal_at,exit_deadline FROM game_boss_room_activities WHERE admission=encode($1,'hex')::uuid")
             .bind(handoff.as_slice()).fetch_one(&h.pool).await?;
@@ -368,6 +401,16 @@ fn scenario() -> TestResult {
             )?))
             .await;
         }
+        let before = if clock_handoff {
+            let actor = admitted.runtime_actor.ok_or("activity actor")?;
+            let permit = destination.spell_lane_permit().await.ok_or("activity spell lane")?;
+            assert!(destination.checkpoint_timed_equipment(actor, admitted.game_session_id, true).await);
+            drop(permit);
+            owner.clock_origin = destination.clock_origin - std::time::Duration::from_secs(59);
+            Some(equipment::remaining_budgets(&h).await?)
+        } else {
+            None
+        };
         let (_, returned, barrier) = super::boss_activity_fixtures::exchange_command(
             &owner,
             &mut admitted,
@@ -393,6 +436,9 @@ fn scenario() -> TestResult {
                 .position(),
             EXIT
         );
+        if let Some(budget) = before {
+            equipment::assert_elapsed(&h, budget).await?;
+        }
         let retained_rewards: i64 =
             sqlx::query_scalar("SELECT count(*) FROM game_boss_reward_items")
                 .fetch_one(&h.pool)
@@ -407,6 +453,9 @@ fn scenario() -> TestResult {
         Ok(())
     })
 }
+
+#[path = "srvenc_source_boss/equipment.rs"]
+mod equipment;
 
 async fn settle_source_boss(
     h: &Harness,

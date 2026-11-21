@@ -103,4 +103,35 @@ mod tests {
             false,
         );
     }
+
+    #[test]
+    fn negotiated_trade_resource_limits_register_their_byte_boundary_tests() {
+        let registry: Value =
+            serde_json::from_str(RESOURCE_LIMITS_REGISTRY_JSON).expect("resource limits JSON");
+        for (id, boundary_test) in [
+            (
+                "NPC-QUOTE-DETAILS-BYTES",
+                "npc_quote_window_rejects_one_byte_above_registered_ceiling",
+            ),
+            (
+                "TRADE-CONTENTS-STATE-BYTES",
+                "player_trade_state_rejects_one_byte_above_registered_ceiling",
+            ),
+        ] {
+            let entry = registry["entries"]
+                .as_array()
+                .expect("entries")
+                .iter()
+                .find(|entry| entry["id"] == id)
+                .expect("trade byte limit");
+            assert!(
+                entry["boundary_tests"]
+                    .as_array()
+                    .expect("boundary tests")
+                    .iter()
+                    .any(|name| name == boundary_test),
+                "{id}"
+            );
+        }
+    }
 }

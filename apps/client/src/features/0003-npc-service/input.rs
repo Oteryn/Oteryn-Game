@@ -4,7 +4,8 @@ impl PlayView {
     pub fn selected_npc(&self) -> Option<EntityRef> {
         self.npc_at(self.scene.target()?.tile)
     }
-    pub(in crate::play) fn npc_at(&self, tile: oteryn_renderer::TileCoord) -> Option<EntityRef> {
+    /// The NPC standing on the tile of the current floor.
+    pub fn npc_at(&self, tile: oteryn_renderer::TileCoord) -> Option<EntityRef> {
         self.entities
             .iter()
             .rev()
@@ -23,10 +24,6 @@ impl PlayView {
 impl PlayLink {
     pub fn talk_to_npc(&self, npc: EntityRef, text: &str) {
         self.npc_dialogue_submit(npc, text);
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
     }
     /// Returns whether the retained NPC owner enqueued this exact talk request.
     pub fn npc_dialogue_submit(&self, npc: EntityRef, text: &str) -> bool {
@@ -79,7 +76,7 @@ impl PlayLink {
     }
 }
 
-#[cfg(any(windows, test))]
+#[cfg(test)]
 impl PlayLink {
     pub(in crate::play) fn npc_context_target(
         &self,
@@ -113,7 +110,7 @@ impl PlayLink {
             ) {
                 let pointer = lock(&self.mailbox).dialogue_pointer;
                 if let Some((x, y)) = pointer
-                    && let Some(tile) = crate::input::click_tile(view.scene().view(), x, y)
+                    && let Some(tile) = view.click_tile(x, y)
                     && let Some(npc) = view.npc_at(tile)
                 {
                     target = Some(npc);
@@ -121,20 +118,5 @@ impl PlayLink {
             }
         }
         target
-    }
-}
-
-#[cfg(windows)]
-impl PlayLink {
-    pub fn npc_context_input(
-        &self,
-        events: &[oteryn_input_actions::NormalizedInputEvent],
-        view: &PlayView,
-    ) -> bool {
-        let Some(npc) = self.npc_context_target(events, view) else {
-            return false;
-        };
-        super::view::context_menu(self, npc);
-        true
     }
 }

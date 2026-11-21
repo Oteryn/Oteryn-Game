@@ -17,13 +17,7 @@ impl PlayLink {
         if !oteryn_client_ui::player_typing::open_key(events) {
             return false;
         }
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).player_typing.open = true;
-        }
+        lock(&self.mailbox).player_typing.open = true;
         true
     }
 }

@@ -25,6 +25,7 @@ enum Kind {
     Cancel,
     Close,
     Look(bool),
+    Inspect(bool, u8),
     Select(oteryn_session::ItemHandle),
     Offer,
     Open(oteryn_session::ItemHandle),
@@ -34,6 +35,7 @@ impl Kind {
         match self {
             Self::Accept => TradeAction::Request(Intent::Accept),
             Self::Cancel => TradeAction::Request(Intent::Cancel),
+            Self::Inspect(counter, index) => TradeAction::Inspect { counter, index },
             Self::Look(false) => TradeAction::Request(Intent::LookOwn),
             Self::Look(true) => TradeAction::Request(Intent::LookCounter),
             Self::Select(item) => TradeAction::Select(item),

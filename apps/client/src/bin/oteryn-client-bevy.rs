@@ -1,4 +1,5 @@
-//! Opt-in production composition; the legacy client entry point remains intact.
+//! The Bevy host for non-Windows development builds (`--features bevy-shell`); on Windows
+//! `oteryn-client` runs the same host.
 fn main() -> std::process::ExitCode {
     #[cfg(windows)]
     if let Some(result) = oteryn_client::updater::login_update_requested() {
@@ -28,6 +29,15 @@ fn main() -> std::process::ExitCode {
             }
             return std::process::ExitCode::FAILURE;
         }
+    }
+    if std::env::args_os().any(|arg| arg == "--watch") {
+        return match oteryn_client::cast_watch::run() {
+            Ok(()) => std::process::ExitCode::SUCCESS,
+            Err(error) => {
+                eprintln!("Oteryn Watch: {error}");
+                std::process::ExitCode::FAILURE
+            }
+        };
     }
     match oteryn_client::bevy_shell::run(std::env::args_os().skip(1)) {
         Ok(()) => std::process::ExitCode::SUCCESS,

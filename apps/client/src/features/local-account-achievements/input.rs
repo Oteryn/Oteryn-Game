@@ -38,13 +38,7 @@ impl PlayLink {
             return false;
         }
         self.achievements_request(Intent::Refresh);
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).achievements.open = true;
-        }
+        lock(&self.mailbox).achievements.open = true;
         true
     }
 }

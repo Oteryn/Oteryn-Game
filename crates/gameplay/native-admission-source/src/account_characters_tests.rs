@@ -773,3 +773,123 @@ fn a_raise_is_the_migration_expression_and_strictly_above_the_fence() {
     assert_eq!(raised_epoch(i64::MAX, 0, 0), None);
     assert_eq!(raised_epoch(-5, -1_000_000, 0), None);
 }
+
+#[test]
+fn fence_replacements_never_lower_an_epoch_across_handles() {
+    let directory = std::env::temp_dir().join(format!(
+        "oteryn-monotone-fence-{}-{:?}",
+        std::process::id(),
+        std::thread::current().id()
+    ));
+    std::fs::create_dir_all(&directory).unwrap();
+    let path = directory.join("epoch.fence");
+    std::fs::write(&path, b"5\n").unwrap();
+    let mut earlier = EpochFenceFile::new(path.clone());
+    let mut later = EpochFenceFile::new(path.clone());
+    assert_eq!(earlier.read(), Ok(5));
+    assert_eq!(later.read(), Ok(5));
+    // Resync transactions committed 6 then 7, but finish their file writes in reverse.
+    later.persist(7).unwrap();
+    assert_eq!(earlier.persist(6), Err(FenceUnusable));
+    assert_eq!(read_fence(&path), Ok(7));
+    assert_eq!(write_fence(&path, 6), Err(FenceUnusable));
+    assert_eq!(read_fence(&path), Ok(7));
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn fence_replacements_contend_on_the_stable_directory_inode() {
+    let directory = std::env::temp_dir().join(format!(
+        "oteryn-locked-fence-{}-{:?}",
+        std::process::id(),
+        std::thread::current().id()
+    ));
+    std::fs::create_dir_all(&directory).unwrap();
+    let path = directory.join("epoch.fence");
+    std::fs::write(&path, b"5\n").unwrap();
+    let lock = open_directory(&directory).unwrap();
+    rustix::fs::flock(&lock, rustix::fs::FlockOperation::NonBlockingLockExclusive).unwrap();
+    assert_eq!(write_fence(&path, 6), Err(FenceUnusable));
+    assert_eq!(
+        EpochFenceFile::new(path.clone()).persist(7),
+        Err(FenceUnusable)
+    );
+    assert_eq!(read_fence(&path), Ok(5));
+    drop(lock);
+    write_fence(&path, 7).unwrap();
+    assert_eq!(read_fence(&path), Ok(7));
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn initialized_fence_readers_require_durability_after_another_handle_replaces_it() {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    static SYNC_FAILS: AtomicBool = AtomicBool::new(false);
+    fn sync(directory: &OwnedFd) -> rustix::io::Result<()> {
+        if SYNC_FAILS.load(Ordering::SeqCst) {
+            Err(rustix::io::Errno::IO)
+        } else {
+            rustix::fs::fsync(directory)
+        }
+    }
+    let directory = std::env::temp_dir().join(format!(
+        "oteryn-shared-durability-{}-{:?}",
+        std::process::id(),
+        std::thread::current().id()
+    ));
+    std::fs::create_dir_all(&directory).unwrap();
+    let path = directory.join("epoch.fence");
+    std::fs::write(&path, b"5\n").unwrap();
+    let mut reader = EpochFenceFile::with_sync(path.clone(), sync);
+    let mut writer = EpochFenceFile::with_sync(path.clone(), sync);
+    assert_eq!(reader.read(), Ok(5));
+    SYNC_FAILS.store(true, Ordering::SeqCst);
+    assert_eq!(writer.persist(9), Err(FenceUnusable));
+    assert_eq!(std::fs::read(&path).unwrap(), b"9\n");
+    let refused = reader.read();
+    SYNC_FAILS.store(false, Ordering::SeqCst);
+    assert_eq!(refused, Err(FenceUnusable));
+    assert_eq!(reader.read(), Ok(9));
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn fence_fifo_without_a_writer_is_refused_without_blocking() {
+    let directory = std::env::temp_dir().join(format!(
+        "oteryn-fifo-fence-{}-{:?}",
+        std::process::id(),
+        std::thread::current().id()
+    ));
+    std::fs::create_dir_all(&directory).unwrap();
+    let path = directory.join("epoch.fence");
+    rustix::fs::mkfifoat(rustix::fs::CWD, &path, Mode::RUSR | Mode::WUSR).unwrap();
+    let mut outcomes = Vec::new();
+    for persist in [false, true] {
+        let (sent, received) = std::sync::mpsc::channel();
+        let target = path.clone();
+        let worker = std::thread::spawn(move || {
+            let result = if persist {
+                write_fence(&target, 7)
+            } else {
+                read_fence(&target).map(|_| ())
+            };
+            sent.send(result).unwrap();
+        });
+        let outcome = received.recv_timeout(Duration::from_secs(1));
+        if outcome.is_err() {
+            // Unblock the buggy implementation so a failed regression never hangs.
+            let rescue = rustix::fs::openat(
+                rustix::fs::CWD,
+                &path,
+                OFlags::WRONLY | OFlags::NONBLOCK,
+                Mode::empty(),
+            )
+            .unwrap();
+            drop(rescue);
+        }
+        worker.join().unwrap();
+        outcomes.push(outcome);
+    }
+    std::fs::remove_dir_all(directory).unwrap();
+    assert_eq!(outcomes, vec![Ok(Err(FenceUnusable)); 2]);
+}

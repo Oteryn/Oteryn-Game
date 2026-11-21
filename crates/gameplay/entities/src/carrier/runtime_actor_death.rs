@@ -68,13 +68,15 @@ impl ChannelRuntimeV1 {
     ) -> Result<MovementPositionSnapshot, CarrierError> {
         self.player_control_facts(actor, game_session_id)?;
         let current = self.carrier.read_position(&self.continuity, actor.0)?;
-        let free = |cell: MovementLocalPosition| {
-            let cell = LocalPosition {
-                x: cell.x,
-                y: cell.y,
-                floor: cell.floor,
-            };
-            !occupied_by_another(&self.carrier, actor.0, current.version.context, cell)
+        let free = |cell| {
+            !self
+                .position_occupied_excluding_in_context(
+                    Some(actor),
+                    cell,
+                    current.version.context,
+                    false,
+                )
+                .unwrap_or(true)
         };
         let target = recorded
             .and_then(|recorded| {
@@ -83,35 +85,6 @@ impl ChannelRuntimeV1 {
             .unwrap_or_else(|| self.respawn_position());
         self.place_respawned_player(actor, game_session_id, target)
     }
-}
-
-/// True when a live actor other than `actor` occupies `cell` under `context`, under the same
-/// rule as `ChannelActorCarrier::cell_occupied`: a committed player, or a creature with health
-/// left. Only `actor` itself is excluded, so another actor on its own current cell still counts.
-fn occupied_by_another(
-    carrier: &ChannelActorCarrier,
-    actor: ActorRef,
-    context: PreProductionPositionContext,
-    cell: LocalPosition,
-) -> bool {
-    carrier.slots.iter().any(|slot| match slot {
-        Slot::Occupied {
-            committed: true,
-            position: Some(version),
-            ..
-        }
-        | Slot::CreatureOccupied {
-            position: Some(version),
-            health: 1..,
-            ..
-        } => {
-            version.context == context
-                && version.position == cell
-                && (version.actor_local_id, version.actor_local_generation)
-                    != (actor.actor_local_id, actor.actor_local_generation)
-        }
-        _ => false,
-    })
 }
 
 /// NPC-0 §6.1: the placement fallback searches within this Chebyshev distance.

@@ -499,3 +499,49 @@ fn a_sell_all_burns_every_eligible_stack_whole_and_mints_their_price() {
         (101, 0, 2)
     );
 }
+
+#[test]
+fn npc_trade_bulk_buy_splits_stacks_and_sell_spans_stacks() {
+    let value = request(NpcTradeSide::Buy, 150, 1);
+    let bought = plan_buy(&value, 0, 150, 20, &[], Type2EventTuple::V2, false).unwrap();
+    let items: Vec<_> = bought
+        .lines
+        .iter()
+        .filter(|line| line.kind == NpcTradeLineKind::ItemMint)
+        .collect();
+    assert_eq!(
+        items
+            .iter()
+            .map(|line| line.quantity_after)
+            .collect::<Vec<_>>(),
+        vec![100, 50]
+    );
+    assert_ne!(items[0].item_instance_id, items[1].item_instance_id);
+    let entries = vec![entry(1, 2, sword(), 100), entry(2, 1, sword(), 100)];
+    let sold = super::plan_sell_for(&input(&value), 150, 150, 20, &entries).unwrap();
+    let burns: Vec<_> = sold
+        .lines
+        .iter()
+        .filter(|line| line.kind == NpcTradeLineKind::ItemBurn)
+        .collect();
+    assert_eq!(
+        burns
+            .iter()
+            .map(|line| line.quantity_before - line.quantity_after)
+            .collect::<Vec<_>>(),
+        vec![100, 50]
+    );
+    assert_eq!(burns[1].quantity_after, 50);
+    let last_entry = [entry(11, u64::MAX - 1, sword(), 1)];
+    let last = plan_buy(
+        &request(NpcTradeSide::Buy, 1, 0),
+        0,
+        1,
+        20,
+        &last_entry,
+        Type2EventTuple::V2,
+        false,
+    )
+    .unwrap();
+    assert_eq!(last.lines[0].placement_ordinal, u64::MAX);
+}

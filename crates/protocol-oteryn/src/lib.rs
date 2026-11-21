@@ -16,6 +16,7 @@ pub mod achievement_notices;
 pub mod action_bar_cooldowns;
 pub mod activity_scope;
 pub mod actor_condition_snapshot_candidate;
+pub mod actor_motion;
 pub mod actor_spell;
 pub mod actor_spell_catalog;
 pub mod actor_spell_item_v2;
@@ -78,9 +79,11 @@ pub mod forge_preview;
 pub mod gem_presentation;
 pub mod guild;
 pub mod guild_bank;
+pub mod guild_emblem;
 pub mod guild_war;
 pub mod hazard;
 pub mod highscores;
+pub mod highscores_catalogue;
 pub mod highscores_loyalty;
 pub mod hireling;
 pub mod hotkey_equip;
@@ -94,7 +97,9 @@ pub mod house_wrap;
 pub mod imbuement;
 pub mod imbuement_details;
 pub mod inspection;
+pub mod inventory_capacity;
 pub mod item_forge;
+pub mod item_inscription;
 pub mod item_look;
 pub mod item_view;
 pub mod logout;
@@ -127,6 +132,7 @@ pub mod refusal_detail;
 mod registered_capabilities;
 pub mod rest_status;
 pub mod sanction_record;
+pub mod server_info;
 pub mod server_modal;
 pub mod server_save_countdown;
 pub mod skill_display;
@@ -147,7 +153,9 @@ pub mod team_finder_members;
 #[path = "tests/lib_tests.rs"]
 mod tests;
 pub mod timed_item;
+pub mod trade_details;
 pub mod tutorial_notices;
+pub mod tutorial_vocation;
 pub mod vip;
 pub mod vip_presence;
 pub mod weapon_proficiency;
@@ -1719,8 +1727,8 @@ pub fn decode_snapshot_id(payload: &[u8]) -> Result<u64, FoundationProtocolError
         let key = read_varint(payload, &mut cursor)?;
         let field = decode_field_number(key)?;
         let wire = (key & 7) as u8;
-        if field == 1 && wire == 0 && snapshot_id.is_none() {
-            snapshot_id = Some(read_varint(payload, &mut cursor)?);
+        if field == 1 {
+            read_singular_varint(payload, &mut cursor, wire, &mut snapshot_id)?;
         } else {
             skip_field(payload, &mut cursor, wire)?;
         }
@@ -1763,21 +1771,10 @@ pub fn decode_snapshot_begin(
         let field = decode_field_number(key)?;
         let wire = (key & 7) as u8;
         match field {
-            1 if wire == 0 && snapshot_id.is_none() => {
-                snapshot_id = Some(read_varint(payload, &mut cursor)?);
-            }
-            2 if wire == 0 && chunk_count.is_none() => {
-                chunk_count = Some(
-                    u32::try_from(read_varint(payload, &mut cursor)?)
-                        .map_err(|_| FoundationProtocolError::MalformedEnvelope)?,
-                );
-            }
-            3 if wire == 0 && total_encoded_bytes.is_none() => {
-                total_encoded_bytes = Some(read_varint(payload, &mut cursor)?);
-            }
-            4 if wire == 0 && target_server_sequence.is_none() => {
-                target_server_sequence = Some(read_varint(payload, &mut cursor)?);
-            }
+            1 => read_singular_varint(payload, &mut cursor, wire, &mut snapshot_id)?,
+            2 => read_singular_varint(payload, &mut cursor, wire, &mut chunk_count)?,
+            3 => read_singular_varint(payload, &mut cursor, wire, &mut total_encoded_bytes)?,
+            4 => read_singular_varint(payload, &mut cursor, wire, &mut target_server_sequence)?,
             _ => skip_field(payload, &mut cursor, wire)?,
         }
     }
@@ -1790,7 +1787,8 @@ pub fn decode_snapshot_begin(
         // chunk_count and total_encoded_bytes are ordinary proto3 scalars: a standard encoder
         // omits a zero value, so both default on omission (FND-02 §7); the caller judges whether
         // a declared zero is semantically usable.
-        chunk_count: chunk_count.unwrap_or(0),
+        chunk_count: u32::try_from(chunk_count.unwrap_or(0))
+            .map_err(|_| FoundationProtocolError::MalformedEnvelope)?,
         total_encoded_bytes: total_encoded_bytes.unwrap_or(0),
         target_server_sequence: target_server_sequence.unwrap_or(0),
     })
@@ -1807,30 +1805,30 @@ pub fn decode_snapshot_chunk_framing(
     payload: &[u8],
 ) -> Result<(u32, &[u8]), FoundationProtocolError> {
     let mut cursor = 0usize;
-    let (mut chunk_index, mut data) = (None, None);
+    let (mut snapshot_id, mut chunk_index, mut data) = (None, None, None);
     while cursor < payload.len() {
         let key = read_varint(payload, &mut cursor)?;
         let field = decode_field_number(key)?;
         let wire = (key & 7) as u8;
         match field {
-            2 if wire == 0 && chunk_index.is_none() => {
-                chunk_index = Some(
-                    u32::try_from(read_varint(payload, &mut cursor)?)
-                        .map_err(|_| FoundationProtocolError::MalformedEnvelope)?,
-                );
-            }
-            3 if wire == 2 && data.is_none() => {
-                data = Some(bounded_length_delimited(
-                    payload,
-                    &mut cursor,
-                    MAX_SNAPSHOT_CHUNK_BYTES,
-                    FoundationProtocolError::SnapshotLimitExceeded,
-                )?);
-            }
+            1 => read_singular_varint(payload, &mut cursor, wire, &mut snapshot_id)?,
+            2 => read_singular_varint(payload, &mut cursor, wire, &mut chunk_index)?,
+            3 => read_singular_bytes(
+                payload,
+                &mut cursor,
+                wire,
+                &mut data,
+                MAX_SNAPSHOT_CHUNK_BYTES,
+                FoundationProtocolError::SnapshotLimitExceeded,
+            )?,
             _ => skip_field(payload, &mut cursor, wire)?,
         }
     }
-    Ok((chunk_index.unwrap_or(0), data.unwrap_or(&[])))
+    Ok((
+        u32::try_from(chunk_index.unwrap_or(0))
+            .map_err(|_| FoundationProtocolError::MalformedEnvelope)?,
+        data.unwrap_or(&[]),
+    ))
 }
 
 /// Decodes an assembled `SnapshotBody` (FND-02 §16: the concatenation, in `chunk_index` order, of
@@ -1901,32 +1899,26 @@ fn decode_domain_snapshot_entry(
         let field = decode_field_number(key)?;
         let wire = (key & 7) as u8;
         match field {
-            1 => {
-                domain_id = Some(
-                    u32::try_from(read_varint(input, &mut cursor)?)
-                        .map_err(|_| FoundationProtocolError::MalformedEnvelope)?,
-                );
-            }
-            2 => revision = Some(read_varint(input, &mut cursor)?),
-            3 => {
-                snapshot_type = Some(
-                    u32::try_from(read_varint(input, &mut cursor)?)
-                        .map_err(|_| FoundationProtocolError::MalformedEnvelope)?,
-                );
-            }
-            4 => {
-                entry_payload = Some(bounded_length_delimited(
-                    input,
-                    &mut cursor,
-                    input.len(),
-                    FoundationProtocolError::MalformedEnvelope,
-                )?);
-            }
+            1 => read_singular_varint(input, &mut cursor, wire, &mut domain_id)?,
+            2 => read_singular_varint(input, &mut cursor, wire, &mut revision)?,
+            3 => read_singular_varint(input, &mut cursor, wire, &mut snapshot_type)?,
+            4 => read_singular_bytes(
+                input,
+                &mut cursor,
+                wire,
+                &mut entry_payload,
+                input.len(),
+                FoundationProtocolError::MalformedEnvelope,
+            )?,
             _ => skip_field(input, &mut cursor, wire)?,
         }
     }
-    let domain_id = domain_id.filter(|id| *id != 0);
-    let snapshot_type = snapshot_type.filter(|value| *value != 0);
+    let domain_id = domain_id
+        .and_then(|id| u32::try_from(id).ok())
+        .filter(|id| *id != 0);
+    let snapshot_type = snapshot_type
+        .and_then(|value| u32::try_from(value).ok())
+        .filter(|value| *value != 0);
     match (domain_id, snapshot_type) {
         (Some(domain_id), Some(snapshot_type)) => Ok(DomainSnapshot {
             domain_id,
@@ -2264,29 +2256,25 @@ fn validate_capability_field(
 
 fn parse_state_revision_domain_id(input: &[u8]) -> Result<u32, FoundationProtocolError> {
     let mut cursor = 0usize;
-    let mut domain_id = None;
+    let (mut domain_id, mut revision) = (None, None);
     while cursor < input.len() {
         let key = read_varint(input, &mut cursor)?;
         let field = decode_field_number(key)?;
         let wire = (key & 7) as u8;
-        match (field, wire) {
-            (1, 0) if domain_id.is_none() => {
-                let raw = read_varint(input, &mut cursor)?;
-                let domain = u32::try_from(raw)
-                    .map_err(|_| FoundationProtocolError::StateRevisionMismatch)?;
-                if domain == 0 {
+        match field {
+            1 => {
+                read_singular_varint(input, &mut cursor, wire, &mut domain_id)?;
+                if domain_id.is_none_or(|id| id == 0 || id > u64::from(u32::MAX)) {
                     return Err(FoundationProtocolError::StateRevisionMismatch);
                 }
-                domain_id = Some(domain);
             }
-            (2, 0) => {
-                read_varint(input, &mut cursor)?;
-            }
-            (1 | 2, _) | (0, _) => return Err(FoundationProtocolError::MalformedEnvelope),
-            (_, unknown_wire) => skip_field(input, &mut cursor, unknown_wire)?,
+            2 => read_singular_varint(input, &mut cursor, wire, &mut revision)?,
+            _ => skip_field(input, &mut cursor, wire)?,
         }
     }
-    domain_id.ok_or(FoundationProtocolError::StateRevisionMismatch)
+    domain_id
+        .and_then(|id| u32::try_from(id).ok())
+        .ok_or(FoundationProtocolError::StateRevisionMismatch)
 }
 
 fn validate_revision_list(
@@ -2765,48 +2753,28 @@ fn validate_state_delta_ingress(payload: &[u8]) -> Result<(), FoundationProtocol
 
 fn validate_snapshot_begin_ingress(payload: &[u8]) -> Result<(), FoundationProtocolError> {
     let mut cursor = 0usize;
+    let mut fields = [None; 4];
     while cursor < payload.len() {
         let key = read_varint(payload, &mut cursor)?;
         let field = decode_field_number(key)?;
         let wire = (key & 7) as u8;
-        match (field, wire) {
-            (2, 0) => {
-                if read_varint(payload, &mut cursor)? > u64::from(MAX_SNAPSHOT_CHUNKS) {
+        match field {
+            1..=4 => {
+                read_singular_varint(payload, &mut cursor, wire, &mut fields[field as usize - 1])?;
+                if fields[1].is_some_and(|count| count > u64::from(MAX_SNAPSHOT_CHUNKS))
+                    || fields[2].is_some_and(|bytes| bytes > MAX_SNAPSHOT_ASSEMBLED_BYTES)
+                {
                     return Err(FoundationProtocolError::SnapshotLimitExceeded);
                 }
             }
-            (3, 0) => {
-                if read_varint(payload, &mut cursor)? > MAX_SNAPSHOT_ASSEMBLED_BYTES {
-                    return Err(FoundationProtocolError::SnapshotLimitExceeded);
-                }
-            }
-            (2 | 3, _) | (0, _) => return Err(FoundationProtocolError::MalformedEnvelope),
-            (_, unknown_wire) => skip_field(payload, &mut cursor, unknown_wire)?,
+            _ => skip_field(payload, &mut cursor, wire)?,
         }
     }
     Ok(())
 }
 
 fn validate_snapshot_chunk_ingress(payload: &[u8]) -> Result<(), FoundationProtocolError> {
-    let mut cursor = 0usize;
-    while cursor < payload.len() {
-        let key = read_varint(payload, &mut cursor)?;
-        let field = decode_field_number(key)?;
-        let wire = (key & 7) as u8;
-        match (field, wire) {
-            (3, 2) => {
-                bounded_length_delimited(
-                    payload,
-                    &mut cursor,
-                    MAX_SNAPSHOT_CHUNK_BYTES,
-                    FoundationProtocolError::SnapshotLimitExceeded,
-                )?;
-            }
-            (3, _) | (0, _) => return Err(FoundationProtocolError::MalformedEnvelope),
-            (_, unknown_wire) => skip_field(payload, &mut cursor, unknown_wire)?,
-        }
-    }
-    Ok(())
+    decode_snapshot_chunk_framing(payload).map(|_| ())
 }
 
 fn validate_client_ingress_payload(

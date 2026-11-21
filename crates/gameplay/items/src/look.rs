@@ -74,7 +74,45 @@ fn item_text_inner(
         if let Known(attack) = weapon.attack
             && attack.0 != 0
         {
-            attributes.push(format!("Atk:{}", attack.0));
+            let mut attack_text = format!("Atk:{}", attack.0);
+            if let Known(elements) = &weapon.elemental {
+                for elemental in elements {
+                    if let Known(points) = elemental.points
+                        && points.0 != 0
+                    {
+                        if !attack_text.contains(" physical") {
+                            attack_text.push_str(" physical");
+                        }
+                        attack_text.push_str(&format!(
+                            " + {} {}",
+                            points.0,
+                            element_name(elemental.element)
+                        ));
+                    }
+                }
+            }
+            attributes.push(attack_text);
+        }
+        if !matches!(weapon.attack, Known(attack) if attack.0 != 0)
+            && let Known(elements) = &weapon.elemental
+        {
+            for elemental in elements {
+                if let Known(points) = elemental.points
+                    && points.0 != 0
+                {
+                    attributes.push(format!("{} {}", points.0, element_name(elemental.element)));
+                }
+            }
+        }
+        if let Known(range) = weapon.range
+            && range.0 != 0
+        {
+            attributes.push(format!("Range:{}", range.0));
+        }
+        if let Known(chance) = weapon.hit_chance
+            && chance.numerator != 0
+        {
+            attributes.push(format!("Hit% {}", signed_percent(chance)?));
         }
         if let Known(defense) = weapon.defense {
             let extra = match weapon.extra_defense {
@@ -95,6 +133,100 @@ fn item_text_inner(
         && armor.0 != 0
     {
         attributes.push(format!("Arm:{}", armor.0));
+    }
+    if let Known(protection) = &semantics.protection
+        && let Known(resistances) = &protection.resistances
+    {
+        use oteryn_gameplay_content::content::ReferenceResistanceKind as Kind;
+        for resistance in resistances {
+            if let Known(percent) = resistance.percent
+                && percent.numerator != 0
+            {
+                let name = match resistance.kind {
+                    Kind::Death => "death",
+                    Kind::Drown => "drown",
+                    Kind::Earth | Kind::Poison => "earth",
+                    Kind::Energy => "energy",
+                    Kind::Fire => "fire",
+                    Kind::Holy => "holy",
+                    Kind::Ice => "ice",
+                    Kind::LifeDrain => "life drain",
+                    Kind::ManaDrain => "mana drain",
+                    Kind::Physical => "physical",
+                    Kind::FireField => "fire field",
+                };
+                attributes.push(format!("protection {name} {}%", signed_percent(percent)?));
+            }
+        }
+    }
+    if let Known(group) = &semantics.skill_modifiers
+        && let Known(modifiers) = &group.modifiers
+    {
+        for modifier in modifiers {
+            use oteryn_gameplay_content::content::{
+                ReferenceModifierParameter as Parameter, ReferenceSkillModifierKind as Kind,
+            };
+            let name = match modifier.kind {
+                Kind::SkillAxe => "axe fighting",
+                Kind::SkillClub => "club fighting",
+                Kind::SkillDistance => "distance fighting",
+                Kind::SkillFist => "fist fighting",
+                Kind::SkillShield => "shielding",
+                Kind::SkillSword => "sword fighting",
+                Kind::MagicLevelPoints => "magic level",
+                Kind::Speed => "speed",
+                Kind::DeathMagicLevelPoints => "death magic level",
+                Kind::EarthMagicLevelPoints => "earth magic level",
+                Kind::EnergyMagicLevelPoints => "energy magic level",
+                Kind::FireMagicLevelPoints => "fire magic level",
+                Kind::HolyMagicLevelPoints => "holy magic level",
+                Kind::IceMagicLevelPoints => "ice magic level",
+                Kind::HealingMagicLevelPoints => "healing magic level",
+                Kind::CleavePercent => "cleave",
+                Kind::CriticalHitChance => "critical hit chance",
+                Kind::CriticalHitDamage => "critical extra damage",
+                Kind::LifeLeechAmount => "life leech",
+                Kind::LifeLeechChance => "life leech chance",
+                Kind::ManaLeechAmount => "mana leech",
+                Kind::ManaLeechChance => "mana leech chance",
+                Kind::MagicShieldCapacityFlat | Kind::MagicShieldCapacityPercent => {
+                    "magic shield capacity"
+                }
+                Kind::PerfectShotDamage => "perfect shot",
+                Kind::PerfectShotRange => "perfect shot range",
+                Kind::ReflectDamage | Kind::ReflectPercentAll => "damage reflection",
+                Kind::HealthGain => "health gain",
+                Kind::HealthTicks => "health interval",
+                Kind::ManaGain => "mana gain",
+                Kind::ManaTicks => "mana interval",
+                Kind::ElementalBond => "elemental bond",
+                Kind::Invisibility => "invisibility",
+                Kind::ManaShield => "mana shield",
+                Kind::Mantra => "mantra",
+                Kind::SuppressDrown => "drowning protection",
+                Kind::SuppressDrunk => "drunkenness protection",
+            };
+            match &modifier.parameter {
+                Known(Parameter::SignedPoints(points)) if points.0 != 0 => {
+                    attributes.push(format!("{name} {:+}", points.0))
+                }
+                Known(Parameter::RationalPercent(percent)) if percent.numerator != 0 => {
+                    attributes.push(format!("{name} {}%", signed_percent(*percent)?))
+                }
+                Known(Parameter::Cells(cells)) if cells.0 != 0 => {
+                    attributes.push(format!("{name} {}", cells.0))
+                }
+                Known(Parameter::Milliseconds(time)) if time.0 != 0 => {
+                    attributes.push(format!("{name} {} ms", time.0))
+                }
+                Known(Parameter::Boolean(true)) => attributes.push(name.into()),
+                Known(Parameter::Element(element)) => attributes.push(format!(
+                    "{name} {}",
+                    format!("{element:?}").to_ascii_lowercase()
+                )),
+                _ => continue,
+            }
+        }
     }
     if let Known(container) = &semantics.container
         && let Known(capacity) = container.capacity
@@ -196,6 +328,29 @@ fn item_text_inner(
     Some(text)
 }
 
+fn element_name(element: oteryn_gameplay_content::content::ReferenceWeaponElement) -> &'static str {
+    use oteryn_gameplay_content::content::ReferenceWeaponElement as Element;
+    match element {
+        Element::Death => "death",
+        Element::Earth => "earth",
+        Element::Energy => "energy",
+        Element::Fire => "fire",
+        Element::Ice => "ice",
+    }
+}
+
+// Display only: gameplay arithmetic continues to use the exact canonical rational.
+#[allow(clippy::cast_precision_loss)]
+fn signed_percent(
+    percent: oteryn_gameplay_content::content::ReferenceRationalPercent,
+) -> Option<String> {
+    percent.validate().ok()?;
+    Some(format!(
+        "{:+}",
+        percent.numerator as f64 / percent.denominator as f64
+    ))
+}
+
 fn requirements(
     text: &mut String,
     level: &ReferenceItemField<u16>,
@@ -254,6 +409,62 @@ mod tests {
         ReferenceItemSemantics {
             presentation: F::Known(ReferenceItemPresentation { name, description }),
             ..Default::default()
+        }
+    }
+
+    #[test]
+    fn look_renders_known_combat_attributes_at_any_distance() {
+        use oteryn_gameplay_content::content::{
+            ReferenceCells, ReferenceElementalAttack, ReferenceItemProtection,
+            ReferenceItemSkillModifiers, ReferenceItemWeapon, ReferenceModifierBinding,
+            ReferenceModifierParameter, ReferenceRationalPercent, ReferenceResistance,
+            ReferenceResistanceKind, ReferenceSignedPoints, ReferenceSkillModifierKind,
+            ReferenceWeaponElement,
+        };
+        let mut facts = semantics(F::Known("sword".into()), F::Unknown);
+        facts.weapon = F::Known(ReferenceItemWeapon {
+            weapon_type: F::Unknown,
+            attack: F::Known(ReferenceSignedPoints(35)),
+            defense: F::Unknown,
+            extra_defense: F::Unknown,
+            range: F::Known(ReferenceCells(7)),
+            hit_chance: F::Known(ReferenceRationalPercent {
+                numerator: 5,
+                denominator: 1,
+            }),
+            max_hit_chance: F::Unknown,
+            ammunition: F::Unknown,
+            elemental: F::Known(vec![ReferenceElementalAttack {
+                element: ReferenceWeaponElement::Fire,
+                points: F::Known(ReferenceSignedPoints(10)),
+            }]),
+        });
+        facts.protection = F::Known(ReferenceItemProtection {
+            armor: F::Unknown,
+            resistances: F::Known(vec![ReferenceResistance {
+                kind: ReferenceResistanceKind::Ice,
+                percent: F::Known(ReferenceRationalPercent {
+                    numerator: -5,
+                    denominator: 1,
+                }),
+            }]),
+        });
+        facts.skill_modifiers = F::Known(ReferenceItemSkillModifiers {
+            modifiers: F::Known(vec![ReferenceModifierBinding {
+                kind: ReferenceSkillModifierKind::SkillSword,
+                target_domain: F::Unknown,
+                evaluation_phase: F::Unknown,
+                priority: F::Unknown,
+                parameter: F::Known(ReferenceModifierParameter::SignedPoints(
+                    ReferenceSignedPoints(3),
+                )),
+            }]),
+        });
+        for distance in [-1, 1, 9] {
+            assert_eq!(
+                item_text(&facts, NonZeroU32::MIN, distance).unwrap(),
+                "You see sword (Atk:35 physical + 10 fire, Range:7, Hit% +5, protection ice -5%, sword fighting +3)."
+            );
         }
     }
 

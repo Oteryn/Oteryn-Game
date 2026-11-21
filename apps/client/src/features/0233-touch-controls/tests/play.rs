@@ -26,35 +26,11 @@ fn touch_overlay_is_hidden_until_touch_and_highlights_the_selected_mode() -> Res
     Ok(())
 }
 
-#[cfg(not(windows))]
 fn touch(view: &mut PlayView, link: &PlayLink, id: u64, phase: Phase, at: [f64; 2]) {
     assert!(view.touch_input(link, id, phase, at).is_ok());
 }
 
 // On the native target these same queue tests drive the actual winit event adapter.
-#[cfg(windows)]
-fn touch(view: &mut PlayView, link: &PlayLink, id: u64, phase: Phase, at: [f64; 2]) {
-    use winit::event::{DeviceId, Touch, TouchPhase, WindowEvent};
-    let phase = match phase {
-        Phase::Started => TouchPhase::Started,
-        Phase::Moved => TouchPhase::Moved,
-        Phase::Ended => TouchPhase::Ended,
-        Phase::Cancelled => TouchPhase::Cancelled,
-    };
-    assert_eq!(
-        view.touch_window_event(
-            link,
-            &WindowEvent::Touch(Touch {
-                device_id: DeviceId::dummy(),
-                phase,
-                location: winit::dpi::PhysicalPosition::new(at[0], at[1]),
-                force: None,
-                id,
-            })
-        ),
-        Ok(true)
-    );
-}
 
 #[test]
 fn touch_joystick_uses_paced_keyboard_steps_and_release_stops()
@@ -120,6 +96,7 @@ fn touch_hotbar_world_taps_equal_mouse_context_and_follow_keys()
     use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
     for mode in 0..4 {
         let entity = WorldSpatialEntity {
+            motion: None,
             display_name: None,
             kind: oteryn_session::EntityKind::Creature,
             entity: EntityRef {
@@ -273,5 +250,43 @@ fn touch_default_tap_dead_zone_and_contact_ownership() -> Result<(), Box<dyn std
     touch(&mut touched, &link, 3, Phase::Cancelled, at);
     touched.tick(&link).map_err(|_| "play ended")?;
     assert!(commands.try_recv().is_err(), "cancel is not a world tap");
+    Ok(())
+}
+
+#[test]
+fn negotiated_touch_diagonals_submit_one_diagonal_step_per_receipt()
+-> Result<(), Box<dyn std::error::Error>> {
+    for (offset, expected) in [
+        ([48.0, -48.0], StepDir::NorthEast),
+        ([48.0, 48.0], StepDir::SouthEast),
+        ([-48.0, 48.0], StepDir::SouthWest),
+        ([-48.0, -48.0], StepDir::NorthWest),
+    ] {
+        let mut view = view()?;
+        let (link, mut commands, outbox) = play_channel();
+        outbox.diagonal_movement_initialize(true);
+        let center = Layout::new(view.scene().view()).center;
+        touch(&mut view, &link, 1, Phase::Started, center);
+        touch(
+            &mut view,
+            &link,
+            1,
+            Phase::Moved,
+            [center[0] + offset[0], center[1] + offset[1]],
+        );
+        for _ in 0..2 {
+            view.tick(&link).map_err(|_| "play ended")?;
+            assert_eq!(
+                commands.try_recv()?,
+                crate::combat_input::PlayCommand::Step(expected)
+            );
+            view.tick(&link).map_err(|_| "play ended")?;
+            assert!(commands.try_recv().is_err());
+            outbox.stepped(moved_to(100, 200, 0));
+        }
+        touch(&mut view, &link, 1, Phase::Ended, center);
+        view.tick(&link).map_err(|_| "play ended")?;
+        assert!(commands.try_recv().is_err());
+    }
     Ok(())
 }

@@ -212,6 +212,7 @@ fn scenario() -> TestResult {
             .map_err(debug)?;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
+        deps.initialize(&owner).await;
         let session = deps.admitted.game_session_id;
         let fence = owner
             .current_quest_fence(session)
@@ -276,6 +277,7 @@ fn scenario() -> TestResult {
         drop(owner);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
+        deps.initialize(&owner).await;
         let replay = exchange(&owner, admitted, &[(1, payload)]).await?;
         assert_eq!(
             replay, results,

@@ -1,0 +1,7 @@
+{
+  "mechanic": "0506-holdings-search",
+  "kind": "panels",
+  "id": "0506-holdings-search-panel",
+  "status": "supported",
+  "entry": "protocol.rs::display_name"
+}

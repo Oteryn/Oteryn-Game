@@ -52,6 +52,11 @@ impl Driver {
         *self = Self::new(selected);
         self.next_query = Instant::now() + Duration::from_secs(5);
     }
+    #[must_use]
+    pub(in crate::play) fn with_defaults(mut self, selected: bool) -> Self {
+        self.panel.defaults = selected;
+        self
+    }
     pub(in crate::play) async fn poll<T: Stepper>(
         &mut self,
         session: &mut T,
@@ -116,5 +121,5 @@ mod bridge;
 pub use bridge::ServerModalPanel;
 pub(in crate::play) use bridge::SharedModal;
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 pub(crate) use bridge::BevyServerModalFixture;

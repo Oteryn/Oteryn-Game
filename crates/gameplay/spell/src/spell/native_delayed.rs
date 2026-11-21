@@ -325,18 +325,21 @@ fn bounds(raw: (f64, f64), multiplier: f64) -> Result<(i64, i64), Error> {
     }
     Ok((low.trunc() as i64, high.trunc() as i64))
 }
+fn draw_magnitude(b: (i64, i64), draw: &mut dyn FnMut(i64, i64) -> i64) -> Result<i64, Error> {
+    let value = draw(b.0, b.1);
+    if value < b.0 || value > b.1 {
+        return Err(Error("damage draw outside bounds".into()));
+    }
+    Ok(value)
+}
 fn draw_hit(
     actor: u64,
     b: (i64, i64),
     draw: &mut dyn FnMut(i64, i64) -> i64,
 ) -> Result<DamageHit, Error> {
-    let value = draw(b.0, b.1);
-    if value < b.0 || value > b.1 {
-        return Err(Error("damage draw outside bounds".into()));
-    }
     Ok(DamageHit {
         actor,
-        magnitude: value,
+        magnitude: draw_magnitude(b, draw)?,
         minimum: b.0,
         maximum: b.1,
     })
@@ -510,9 +513,22 @@ fn strike(
     } else {
         vec![]
     };
+    let area_magnitude = if chain {
+        None
+    } else {
+        Some(draw_magnitude(b, draw)?)
+    };
     let hits = selected
         .into_iter()
-        .map(|t| draw_hit(t.actor, b, draw))
+        .map(|t| match area_magnitude {
+            Some(magnitude) => Ok(DamageHit {
+                actor: t.actor,
+                magnitude,
+                minimum: b.0,
+                maximum: b.1,
+            }),
+            None => draw_hit(t.actor, b, draw),
+        })
         .collect::<Result<Vec<_>, _>>()?;
     Ok(StrikePlan {
         element,
@@ -836,6 +852,95 @@ mod tests {
             "marker_asset_binding":"canary.appearance:effect/divine_grenade",
             "cooldown_ms_by_stage":[26000,20000,14000],"base_damage_bonus_percent_by_stage":[0,16,32]})
     }
+    #[test]
+    fn area_strikes_share_one_roll_while_outburst_keeps_independent_draws() {
+        for (name, event) in [
+            ("death echo", Event::Cast),
+            ("death echo", Event::DelayedOccurrence),
+            ("divine grenade", Event::DelayedOccurrence),
+            ("spiritual outburst", Event::Cast),
+            ("spiritual outburst", Event::DelayedOccurrence),
+        ] {
+            let mut f = facts();
+            f.targets.push(TargetSnapshot {
+                actor: 3,
+                ..f.targets[0].clone()
+            });
+            f.event = event;
+            if event == Event::DelayedOccurrence {
+                f.now_ms = if name == "divine grenade" { 3100 } else { 1100 };
+            }
+            f.captured_raw_bounds = Some((100, 200));
+            let mut p = strike_parameters(name);
+            p["formula"]["maximum"] =
+                json!({"op":"add","args":[p["formula"]["minimum"].clone(),{"const":"100"}]});
+            let mut draws = 0;
+            let result = plan("delayed_strike", &p, &f, &mut |low, high| {
+                draws += 1;
+                if draws == 1 { low } else { high }
+            })
+            .expect("strike plan");
+            let hit = match result {
+                NativeDelayedPlan::Cast {
+                    immediate: Some(hit),
+                    ..
+                }
+                | NativeDelayedPlan::Occurrence {
+                    strike: Some(hit), ..
+                } => hit,
+                _ => panic!("missing strike"),
+            };
+            assert_eq!(hit.hits.len(), 2);
+            if name == "spiritual outburst" {
+                assert_eq!(draws, 2);
+                assert_ne!(hit.hits[0].magnitude, hit.hits[1].magnitude);
+            } else {
+                assert_eq!(draws, 1, "{name} {event:?}");
+                assert_eq!(hit.hits[0].magnitude, hit.hits[1].magnitude);
+            }
+        }
+    }
+
+    #[test]
+    fn empty_area_strikes_still_consume_one_damage_roll() {
+        for (name, event) in [
+            ("death echo", Event::Cast),
+            ("death echo", Event::DelayedOccurrence),
+            ("divine grenade", Event::DelayedOccurrence),
+        ] {
+            let mut f = facts();
+            f.targets.clear();
+            f.event = event;
+            if event == Event::DelayedOccurrence {
+                f.now_ms = if name == "divine grenade" { 3100 } else { 1100 };
+            }
+            f.captured_raw_bounds = Some((100, 200));
+            let mut draws = 0;
+            let result = plan(
+                "delayed_strike",
+                &strike_parameters(name),
+                &f,
+                &mut |low, _| {
+                    draws += 1;
+                    low
+                },
+            )
+            .expect("empty strike");
+            let hit = match result {
+                NativeDelayedPlan::Cast {
+                    immediate: Some(hit),
+                    ..
+                }
+                | NativeDelayedPlan::Occurrence {
+                    strike: Some(hit), ..
+                } => hit,
+                _ => panic!("missing strike"),
+            };
+            assert!(hit.hits.is_empty());
+            assert_eq!(draws, 1, "{name} {event:?}");
+        }
+    }
+
     fn field_parameters() -> Value {
         json!({"spell_name":"divine empowerment","duration_ms":5000,"evaluation_interval_ms":1000,
             "field_item":{"key":"candidate:item/40450","revision":"spell-p2-r21"},

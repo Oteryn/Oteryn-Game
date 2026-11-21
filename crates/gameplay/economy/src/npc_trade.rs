@@ -12,6 +12,8 @@ pub const NPC_TRADE_BUY_GOLD_UNITS_MAX: u64 = 20_000_000 + 999_999_999_999;
 pub const NPC_TRADE_SELL_GOLD_UNITS_MAX: u64 = 1_009_999;
 /// Units of one trade: at most one stack (D82).
 pub const NPC_TRADE_QUANTITY_MAX: u32 = 100;
+/// Global stackable shop transaction ceiling; individual stacks keep their own limit.
+pub const NPC_TRADE_BULK_QUANTITY_MAX: u32 = 10_000;
 
 /// The coins a SELL of `value` gold units mints: crystal, platinum, gold, each only when
 /// positive (NPC-0 §5.4). `None` when a stack would exceed 100.
@@ -159,6 +161,61 @@ pub fn trade_total(buy: bool, quantity: u32, unit_price: u64) -> Result<u64, Pla
     Ok(total)
 }
 
+/// Extended shop totals retain the original single-stack price rules.
+pub fn trade_total_for(buy: bool, quantity: u32, unit_price: u64) -> Result<u64, PlanError> {
+    if quantity <= NPC_TRADE_QUANTITY_MAX {
+        return trade_total(buy, quantity, unit_price);
+    }
+    let total = unit_price
+        .checked_mul(u64::from(quantity))
+        .ok_or(PlanError::InvalidInput)?;
+    let maximum = if buy {
+        NPC_TRADE_BUY_GOLD_UNITS_MAX
+    } else {
+        NPC_TRADE_SELL_GOLD_UNITS_MAX
+    };
+    if quantity > NPC_TRADE_BULK_QUANTITY_MAX || total > maximum {
+        return Err(PlanError::InvalidInput);
+    }
+    Ok(total)
+}
+
+/// Multiple stackable units are materialized as separately bounded stacks.
+pub fn item_units_for(
+    quantity: u32,
+    offer_count: u32,
+    maximum: u32,
+    stackable: bool,
+) -> Result<u32, PlanError> {
+    let units = quantity
+        .checked_mul(offer_count)
+        .ok_or(PlanError::InvalidInput)?;
+    if units <= maximum {
+        return item_units(quantity, offer_count, maximum, stackable);
+    }
+    if !stackable || maximum == 0 || units > NPC_TRADE_BULK_QUANTITY_MAX || offer_count == 0 {
+        return Err(PlanError::InvalidInput);
+    }
+    Ok(units)
+}
+
+fn purchase_item_id(seed: [u8; 16], index: u32) -> [u8; 16] {
+    use sha2::{Digest, Sha256};
+    if index == 0 {
+        return seed;
+    }
+    let digest = Sha256::new()
+        .chain_update(b"oteryn:npc-bulk-item:v1")
+        .chain_update(seed)
+        .chain_update(index.to_be_bytes())
+        .finalize();
+    let mut id = [0; 16];
+    id.copy_from_slice(&digest[..16]);
+    id[6] = (id[6] & 0x0f) | 0x70;
+    id[8] = (id[8] & 0x3f) | 0x80;
+    id
+}
+
 /// Lines of a BUY: the fee plan's BURN lines, the change MINT and the item MINT.
 pub fn plan_buy(
     request: &PlanInput<'_>,
@@ -168,6 +225,17 @@ pub fn plan_buy(
     entries: &[Entry],
     bank_allowed: bool,
 ) -> Result<Plan, PlanError> {
+    use oteryn_gameplay_domain::domain::item_definition::ItemStackClass;
+    let maximum = match request.item.stack {
+        ItemStackClass::NonStackable => 1,
+        ItemStackClass::Stackable { proven_maximum } => proven_maximum.unwrap_or(100),
+        ItemStackClass::Unknown => return Err(PlanError::InvalidInput),
+    };
+    if !(1..=100).contains(&maximum) || units == 0 || units > NPC_TRADE_BULK_QUANTITY_MAX {
+        return Err(PlanError::InvalidInput);
+    }
+    let item_stacks =
+        usize::try_from(units.div_ceil(maximum)).map_err(|_| PlanError::InvalidInput)?;
     let mut inputs = Vec::new();
     // §5.3: a price of 0 pays from no coin, so no coin stack is an input or refused.
     for entry in entries.iter().filter(|entry| entry.live && total != 0) {
@@ -240,7 +308,7 @@ pub fn plan_buy(
     let whole = lines.iter().filter(|line| line.quantity_after == 0).count();
     let change_coins = buy_change_coins(change);
     // §5.3: the change and the item each take a new entry after the burn.
-    if entries.len() - whole + change_coins.len() + 1 > capacity {
+    if entries.len() - whole + change_coins.len() + item_stacks > capacity {
         return Err(PlanError::DoesNotFit);
     }
     let [platinum, gold, item] = request.output_item_instance_ids;
@@ -260,14 +328,25 @@ pub fn plan_buy(
         });
         ordinal = ordinal.checked_add(1).ok_or(PlanError::DoesNotFit)?;
     }
-    lines.push(NpcTradeLine {
-        kind: NpcTradeLineKind::ItemMint,
-        item_instance_id: item,
-        placement_ordinal: ordinal,
-        coin: None,
-        quantity_before: 0,
-        quantity_after: units,
-    });
+    let mut remaining = units;
+    for index in 0..item_stacks {
+        let count = remaining.min(maximum);
+        lines.push(NpcTradeLine {
+            kind: NpcTradeLineKind::ItemMint,
+            item_instance_id: purchase_item_id(
+                item,
+                u32::try_from(index).map_err(|_| PlanError::InvalidInput)?,
+            ),
+            placement_ordinal: ordinal,
+            coin: None,
+            quantity_before: 0,
+            quantity_after: count,
+        });
+        remaining -= count;
+        if remaining != 0 {
+            ordinal = ordinal.checked_add(1).ok_or(PlanError::DoesNotFit)?;
+        }
+    }
     Ok(Plan {
         lines,
         burned_gold_units: coin_part + change,
@@ -330,6 +409,83 @@ pub fn plan_sell(
         burned_gold_units: 0,
         minted_gold_units: total,
         item_instance_id: sold.item_instance_id,
+    })
+}
+
+/// Extended ordinary sales may span several stacks.
+pub fn plan_sell_for(
+    request: &PlanInput<'_>,
+    total: u64,
+    units: u32,
+    capacity: usize,
+    entries: &[Entry],
+) -> Result<Plan, PlanError> {
+    if entries.iter().any(|entry| {
+        entry.live
+            && entry.definition == request.item.definition
+            && entry.quantity >= units
+            && !entry.not_default
+    }) {
+        return plan_sell(request, total, units, capacity, entries);
+    }
+    use oteryn_gameplay_domain::domain::item_definition::ItemStackClass;
+    if !matches!(request.item.stack, ItemStackClass::Stackable { .. }) {
+        return Err(PlanError::ItemNotFound);
+    }
+    let mut lines = Vec::new();
+    let mut remaining = units;
+    for sold in entries.iter().filter(|entry| {
+        entry.live && entry.definition == request.item.definition && !entry.not_default
+    }) {
+        let burned = remaining.min(sold.quantity);
+        if burned == 0 {
+            break;
+        }
+        lines.push(NpcTradeLine {
+            kind: NpcTradeLineKind::ItemBurn,
+            item_instance_id: sold.item_instance_id,
+            placement_ordinal: sold.placement_ordinal,
+            coin: None,
+            quantity_before: sold.quantity,
+            quantity_after: sold.quantity - burned,
+        });
+        remaining -= burned;
+    }
+    if remaining != 0 {
+        return Err(PlanError::ItemNotFound);
+    }
+    let item_instance_id = lines
+        .first()
+        .ok_or(PlanError::ItemNotFound)?
+        .item_instance_id;
+    let coins = sell_coins(total).ok_or(PlanError::InvalidInput)?;
+    let whole = lines.iter().filter(|line| line.quantity_after == 0).count();
+    if entries.len() - whole + coins.len() > capacity {
+        return Err(PlanError::DoesNotFit);
+    }
+    let [crystal, platinum, gold] = request.output_item_instance_ids;
+    let mut ordinal = first_mint_ordinal(entries)?;
+    for (coin, quantity) in coins {
+        lines.push(NpcTradeLine {
+            kind: NpcTradeLineKind::CoinMint,
+            item_instance_id: match coin {
+                Coin::Crystal => crystal,
+                Coin::Platinum => platinum,
+                Coin::Gold => gold,
+            },
+            placement_ordinal: ordinal,
+            coin: Some(coin),
+            quantity_before: 0,
+            quantity_after: quantity,
+        });
+        ordinal = ordinal.checked_add(1).ok_or(PlanError::DoesNotFit)?;
+    }
+    Ok(Plan {
+        bank_debit_gold_units: 0,
+        lines,
+        burned_gold_units: 0,
+        minted_gold_units: total,
+        item_instance_id,
     })
 }
 

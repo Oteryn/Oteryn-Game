@@ -1,0 +1,13 @@
+{
+  "id": 509,
+  "name": "GUILD_EMBLEM_V1",
+  "owner_decision": "gapd owner task 2026-11-16 (T10 G04 Tibia Global guild emblem)",
+  "owner": "Guild membership and guild war owners",
+  "requires": [
+    6
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only. Optional field 8 of a header-only domain-1 type-2 delta; unselected sessions are unchanged. See guild-emblem-v1.md."
+}

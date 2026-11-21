@@ -23,6 +23,7 @@ impl std::error::Error for NativeLoginSettingError {}
 /// Native login settings with an optional character preselection.
 #[derive(Clone)]
 pub struct NativeLoginConfig {
+    pub(crate) session_options: Option<crate::play::MiscellaneousPreferences>,
     pub device_sessions: Arc<crate::device_login::DeviceLogin>,
     pub platform_url: String,
     pub gateway_url: String,
@@ -48,6 +49,7 @@ pub struct NativeLoginConfig {
     /// chsw (capability 512): after the server released the session for a Channel switch, the
     /// next entry takes this character into this Channel of the same World without the picker.
     pub channel_switch: Option<(String, String)>,
+    pub(crate) require_character_picker: bool,
 }
 
 impl Debug for NativeLoginConfig {
@@ -86,6 +88,7 @@ impl NativeLoginConfig {
             lookup("OTERYN_NATIVE_REMEMBERED_DEVICES_ENABLED").as_deref() == Some("true"),
         ));
         Ok(Some(Self {
+            session_options: None,
             device_sessions,
             platform_url,
             gateway_url,
@@ -104,6 +107,7 @@ impl NativeLoginConfig {
             coin_shop: Arc::new(crate::coin_shop::present),
             premium: Arc::new(crate::premium::present),
             channel_switch: None,
+            require_character_picker: false,
         }))
     }
 }
@@ -148,7 +152,7 @@ fn browser_command(platform: BrowserPlatform, url: &str) -> std::process::Comman
 }
 
 impl NativeLoginConfig {
-    pub(crate) async fn forget_devices(&self) {
+    pub(crate) async fn forget_devices(&self) -> bool {
         use oteryn_platform_client::{PlatformClientConfig, gameplay_entry::login_client};
         if let (Ok(platform), Ok(gateway)) = (
             PlatformClientConfig::new(&self.platform_url),
@@ -156,7 +160,9 @@ impl NativeLoginConfig {
         ) && let Ok(client) =
             login_client(&platform, &gateway, &self.oauth_client_id, self.retry_unit)
         {
-            self.device_sessions.sign_out(&client).await;
+            self.device_sessions.sign_out(&client).await.is_ok()
+        } else {
+            false
         }
     }
 }

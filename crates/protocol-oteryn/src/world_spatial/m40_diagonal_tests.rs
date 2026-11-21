@@ -91,6 +91,7 @@ fn m40_actor_facing_remains_cardinal() -> Result<(), String> {
         },
         own_identity: [1; 16],
         entities: vec![WorldSpatialEntity {
+            motion: None,
             display_name: None,
             kind: EntityKind::Player,
             entity: EntityRef {

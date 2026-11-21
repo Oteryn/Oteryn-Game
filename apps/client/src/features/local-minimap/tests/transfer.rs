@@ -4,12 +4,14 @@ use crate::play::{PlayView, SettingsState};
 #[test]
 fn minimap_settings_transfer_is_bound_validated_and_persistent()
 -> Result<(), Box<dyn std::error::Error>> {
-    let root = std::env::temp_dir().join(format!("t074-{}", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let root = fixture.path().join("t074");
     let mut map = Minimap::default();
     map.root = Some(root.join("maps"));
     map.bind_world("11111111-1111-4111-8111-111111111111");
     map.binding = Some(([1; 32], [2; 32], 1));
-    map.cells.insert((7, 500, 500), 55);
+    map.load()?;
+    map.set_cell_colour((7, 500, 500), 55);
     map.edit_marker(500, 500, 7, "Home".into(), 1)?;
     let active = map.path().ok_or("active map")?;
     let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), 7, &[])?;
@@ -58,6 +60,5 @@ fn minimap_settings_transfer_is_bound_validated_and_persistent()
     assert!(reopened.cells.contains_key(&(7, 500, 500)));
     drop(view);
     drop(reopened);
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }

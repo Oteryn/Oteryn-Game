@@ -90,6 +90,7 @@ type InitialDomainBody = (u32, u64, u32, Vec<u8>);
 fn initial_body(stage: u8) -> Result<Vec<InitialDomainBody>, ScopeError> {
     let map = source_map(stage)?;
     let own = wire::world_spatial_entities::WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: wire::world_spatial_entities::EntityKind::Player,
         entity: wire::world_spatial_entities::EntityRef {

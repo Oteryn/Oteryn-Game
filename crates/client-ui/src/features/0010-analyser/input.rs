@@ -11,6 +11,9 @@ pub fn select_tool(panel: &mut super::Panel, key: &str) -> bool {
         .find(|tool| tool.key() == key.trim())
     {
         panel.tool = tool;
+        if panel.open && !panel.open_tools.contains(&tool) {
+            panel.open_tools.push(tool);
+        }
         true
     } else {
         false
@@ -23,11 +26,13 @@ pub fn set_xp_goal(panel: &mut super::Panel, value: &str) -> bool {
     let goal = if value.is_empty() {
         None
     } else {
-        let Some(goal) = value
-            .parse::<u64>()
-            .ok()
-            .and_then(|remaining| panel.gained_xp.checked_add(remaining))
-        else {
+        let Some(goal) = value.parse::<u64>().ok().and_then(|remaining| {
+            panel
+                .reports
+                .get(super::Tool::Experience.key())
+                .map_or(panel.gained_xp, |report| report.gained_xp)
+                .checked_add(remaining)
+        }) else {
             panel.feedback = Some(tr!("Enter the XP still needed for your level goal"));
             return false;
         };

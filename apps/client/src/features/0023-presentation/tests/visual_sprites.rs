@@ -153,3 +153,305 @@ fn t012_spell_words_use_server_catalog_only_after_server_success()
     assert_eq!(view.scene().sprites().len(), baseline);
     Ok(())
 }
+
+#[test]
+fn missiles_apply_source_opacity_to_sprite_and_fallback() -> Result<(), Box<dyn std::error::Error>> {
+    for sprites in [false, true] {
+        let mut view = PlayView::new(TileCoord::new(0, 0), 0, &[])?;
+        if sprites {
+            view.scene.prime_visual_assets(std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."));
+        }
+        let baseline = view.scene().sprites().len();
+        let at = ActorPosition { x: 0, y: 0, floor: 0 };
+        let now = std::time::Instant::now();
+        for source in [PresentationSource::Own, PresentationSource::Others, PresentationSource::Creatures] {
+            view.visuals.clear();
+            view.receive_presentation(&[PresentationEventKind::Missile {
+                from: at, to: ActorPosition { x: 1, ..at }, missile_id: 1, source,
+            }], now);
+            let mut preferences = view.preferences().clone();
+            preferences.effect_opacity = [25; 3];
+            view.set_preferences(preferences.clone())?;
+            view.project_presentation(now)?;
+            let batch = view.scene().sprites();
+            assert!(batch.len() > baseline);
+            assert!(batch.lighting.opacity.iter().any(|(range, alpha)| range.contains(&baseline) && *alpha == 25));
+            preferences.effect_opacity = [0; 3];
+            view.set_preferences(preferences)?;
+            view.project_presentation(now)?;
+            assert_eq!(view.scene().sprites().len(), baseline);
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn shallow_missile_uses_cardinal_artwork_through_presentation_events()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut view = PlayView::new(TileCoord::new(0, 0), 0, &[])?;
+    view.scene.prime_visual_assets(std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."));
+    let (link, _, outbox) = play_channel();
+    let mut uvs = Vec::new();
+    for (i, (x, y)) in [(8, 0), (8, 1), (0, 8), (1, 8), (8, 8)].into_iter().enumerate() {
+        view.visuals.clear();
+        outbox.push(vec![SessionEvent::Presentation(AppliedDelta {
+            server_sequence: i as u64 + 1, base_revision: i as u64, new_revision: i as u64 + 1,
+            value: vec![PresentationEvent { decision_ordinal: i as u32 + 1, emission_ordinal: 1,
+                kind: PresentationEventKind::Missile { from: ActorPosition {x: 0,y: 0,floor: 0},
+                    to: ActorPosition {x,y,floor: 0}, missile_id: 1, source: PresentationSource::Own } }],
+        })]);
+        view.tick(&link).map_err(|e| format!("{e:?}"))?;
+        let now = view.visuals.first().ok_or("cue")?.received;
+        view.project_presentation(now)?;
+        uvs.push(view.scene().sprites().instances().last().ok_or("missile")?.uv);
+    }
+    assert_eq!(uvs[0], uvs[1]);
+    assert_eq!(uvs[2], uvs[3]);
+    assert_ne!(uvs[0], uvs[4]);
+    Ok(())
+}
+
+#[test]
+fn luminous_server_effects_and_missiles_feed_the_live_light_pass()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut view = PlayView::new(TileCoord::new(0,0), 0, &[])?;
+    view.scene.prime_visual_assets(std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."));
+    let (link, _, outbox) = play_channel();
+    let at = ActorPosition { x: 0, y: 0, floor: 0 };
+    outbox.push(vec![SessionEvent::Presentation(AppliedDelta {
+        server_sequence: 1, base_revision: 0, new_revision: 1,
+        value: [PresentationEventKind::MagicEffect { position: at, effect_id: 5, source: PresentationSource::Own },
+            PresentationEventKind::Missile { from: at, to: ActorPosition { x: 8, ..at }, missile_id: 4, source: PresentationSource::Own }]
+            .into_iter().enumerate().map(|(i,kind)| PresentationEvent { decision_ordinal: 1, emission_ordinal: i as u32 + 1, kind }).collect(),
+    })]);
+    view.tick(&link).map_err(|e| format!("{e:?}"))?;
+    let now = view.visuals.first().ok_or("cue")?.received;
+    view.project_presentation(now)?;
+    assert_eq!(view.scene().sprites().lighting.sources.len(), 2);
+    let before = view.scene().sprites().lighting.sources[1].position;
+    view.project_presentation(now + Duration::from_millis(100))?;
+    assert_ne!(view.scene().sprites().lighting.sources[1].position, before);
+    view.project_presentation(now + Duration::from_secs(3))?;
+    assert!(view.scene().sprites().lighting.sources.is_empty());
+    Ok(())
+}
+
+#[test]
+fn received_lower_floor_effect_is_projected_before_foreground_terrain()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::world_map::*;
+    let mut view = PlayView::new(TileCoord::new(100,200), 6, &[])?;
+    let own = ActorPosition { x: 100, y: 200, floor: 6 };
+    let map = WorldMapViewSnapshot { header: MapViewHeader { origin: own, content_generation: [1;32], bundle_digest: [2;32], reset_epoch: 1, first_visible_floor: 6 },
+        tiles: [7,6].into_iter().map(|floor| MapTile { position: ActorPosition { floor, ..own }, items: vec![], ground_speed: 150, more: false }).collect() };
+    view.scene.prime_visual_assets(std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."));
+    view.set_live_map(&map)?;
+    let (link, _, outbox) = play_channel();
+    outbox.push(vec![SessionEvent::Presentation(AppliedDelta { server_sequence: 1, base_revision: 0, new_revision: 1,
+        value: vec![PresentationEvent { decision_ordinal: 1, emission_ordinal: 1,
+            kind: PresentationEventKind::MagicEffect { position: ActorPosition { floor: 7, ..own }, effect_id: 1, source: PresentationSource::Global } }] })]);
+    view.tick(&link).map_err(|e| format!("{e:?}"))?;
+    let now = view.visuals.first().ok_or("cue")?.received;
+    view.project_presentation(now)?;
+    let baseline = view.scene().sprites().len();
+    #[cfg(bevy_shell)]
+    {
+        let ranges = view.scene().floor_quad_ranges();
+        let lower = ranges.iter().find(|(_,floor)| *floor == 7).ok_or("lower floor")?;
+        let foreground = ranges.iter().find(|(_,floor)| *floor == 6).ok_or("foreground")?;
+        // Pinned effect 1 has one cell; the floor also contains one terrain cell.
+        assert_eq!(lower.0.len(), 2);
+        assert!(lower.0.end <= foreground.0.start);
+    }
+    view.project_presentation(now + Duration::from_secs(1))?;
+    assert_eq!(view.scene().sprites().len() + 1, baseline);
+    Ok(())
+}
+
+#[test]
+fn received_lower_floor_actor_is_painted_in_its_floor_and_removed_with_observation()
+-> Result<(),Box<dyn std::error::Error>> {
+    use oteryn_session::world_map::*;
+    let mut view = PlayView::new(TileCoord::new(100,200),6,&[])?;
+    let own = ActorPosition {x:100,y:200,floor:6};
+    let map = WorldMapViewSnapshot {header:MapViewHeader {origin:own,content_generation:[1;32],bundle_digest:[2;32],reset_epoch:1,first_visible_floor:6},
+        tiles:[7,6].into_iter().map(|floor|MapTile {position:ActorPosition {floor,..own},items:vec![],ground_speed:150,more:false}).collect()};
+    view.set_live_map(&map)?;
+    let before = view.scene().sprites().len();
+    let (link,_,outbox) = play_channel();
+    let mut actor = oteryn_session::VisibleAppearance {
+        entity:oteryn_session::WorldSpatialEntity {motion: None, entity:oteryn_session::EntityRef {identity:[4;16],generation:1},kind:oteryn_session::EntityKind::Creature,
+            position:ActorPosition {floor:7,..own},display_name:None,
+            detail:oteryn_session::EntityDetail::Actor {direction:oteryn_session::StepDirection::South,appearance_ref:1,health_percent:100}},
+        look:None,light:None,forge_stacks:None,
+    };
+    outbox.appearances(vec![actor.clone()]);
+    view.tick(&link).map_err(|e|format!("{e:?}"))?;
+    assert_eq!(view.scene().sprites().len(),before+1);
+    #[cfg(bevy_shell)]
+    assert_eq!(view.scene().floor_quad_ranges().iter().find(|(_,floor)| *floor == 7).ok_or("lower floor")?.0.len(),2);
+    actor.entity.position.floor = 5; // No terrain observation for this floor: do not fabricate it.
+    outbox.appearances(vec![actor]);
+    view.tick(&link).map_err(|e|format!("{e:?}"))?;
+    assert_eq!(view.scene().sprites().len(),before);
+    outbox.appearances(Vec::new());
+    view.tick(&link).map_err(|e|format!("{e:?}"))?;
+    assert_eq!(view.scene().sprites().len(),before);
+    Ok(())
+}
+
+#[test]
+fn hiding_other_spells_removes_lower_floor_sprites_and_current_floor_lights()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::world_map::*;
+    let own = ActorPosition {
+        x: 100,
+        y: 200,
+        floor: 6,
+    };
+    let mut view = PlayView::new(TileCoord::new(own.x, own.y), own.floor, &[])?;
+    let map = WorldMapViewSnapshot {
+        header: MapViewHeader {
+            origin: own,
+            first_visible_floor: 6,
+            content_generation: [1; 32],
+            bundle_digest: [2; 32],
+            reset_epoch: 1,
+        },
+        tiles: [7, 6]
+            .into_iter()
+            .map(|floor| MapTile {
+                position: ActorPosition { floor, ..own },
+                items: vec![],
+                ground_speed: 150,
+                more: false,
+            })
+            .collect(),
+    };
+    view.scene
+        .prime_visual_assets(std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."));
+    view.set_live_map(&map)?;
+    let now = std::time::Instant::now();
+    let cues: Vec<_> = [6, 7]
+        .into_iter()
+        .flat_map(|floor| {
+            let from = ActorPosition { floor, ..own };
+            [
+                PresentationEventKind::MagicEffect {
+                    position: from,
+                    effect_id: 5,
+                    source: PresentationSource::Others,
+                },
+                PresentationEventKind::Missile {
+                    from,
+                    to: ActorPosition {
+                        x: own.x + 3,
+                        ..from
+                    },
+                    missile_id: 4,
+                    source: PresentationSource::Others,
+                },
+            ]
+        })
+        .collect();
+    view.receive_presentation(&cues, now);
+    view.project_presentation(now)?;
+    assert_eq!(view.scene.floor_visuals.len(), 2);
+    assert_eq!(view.scene().sprites().lighting.sources.len(), 2);
+    let mut preferences = view.preferences().clone();
+    preferences.game_window.other_spells = false;
+    view.set_preferences(preferences)?;
+    view.project_presentation(now)?;
+    assert_eq!(
+        (
+            view.scene.floor_visuals.len(),
+            view.scene().sprites().lighting.sources.len()
+        ),
+        (0, 0)
+    );
+    Ok(())
+}
+
+#[test]
+fn visible_corpse_sprite_is_painted_only_on_its_own_floor() -> Result<(), Box<dyn std::error::Error>>
+{
+    use oteryn_session::world_map::*;
+    let own = ActorPosition {
+        x: 100,
+        y: 200,
+        floor: 6,
+    };
+    let mut view = PlayView::new(TileCoord::new(own.x, own.y), own.floor, &[])?;
+    let map = WorldMapViewSnapshot {
+        header: MapViewHeader {
+            origin: own,
+            first_visible_floor: 6,
+            content_generation: [1; 32],
+            bundle_digest: [2; 32],
+            reset_epoch: 1,
+        },
+        tiles: [7, 6]
+            .into_iter()
+            .map(|floor| MapTile {
+                position: ActorPosition { floor, ..own },
+                items: vec![],
+                ground_speed: 150,
+                more: false,
+            })
+            .collect(),
+    };
+    view.scene
+        .prime_visual_assets(std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."));
+    view.set_live_map(&map)?;
+    let baseline = view.scene().sprites().len();
+    #[cfg(bevy_shell)]
+    let corpse_floor_baseline = view
+        .scene()
+        .floor_quad_ranges()
+        .iter()
+        .find(|(_, z)| *z == 6)
+        .ok_or("the corpse floor")?
+        .0
+        .len();
+    let corpse = oteryn_session::VisibleAppearance {
+        entity: oteryn_session::WorldSpatialEntity {
+            motion: None,
+            display_name: None,
+            kind: oteryn_session::EntityKind::Corpse,
+            entity: oteryn_session::EntityRef {
+                identity: [9; 16],
+                generation: 0,
+            },
+            position: own,
+            detail: oteryn_session::EntityDetail::ObjectWithAppearance {
+                item_definition_ref: 42,
+                quantity: 1,
+                item_handle: std::num::NonZeroU64::new(2),
+                appearance_id: std::num::NonZeroU16::new(39529).ok_or("appearance")?,
+            },
+        },
+        forge_stacks: None,
+        light: None,
+        look: None,
+    };
+    let position = corpse.entity.position;
+    let (link, _, outbox) = play_channel();
+    outbox.appearances(vec![corpse]);
+    view.tick(&link).map_err(|error| format!("{error:?}"))?;
+    assert!(view.scene().native_item_rendered_at(position, 42));
+    let sprite_count = view.scene().sprites().len() - baseline;
+    #[cfg(bevy_shell)]
+    {
+        let (range, _) = view
+            .scene()
+            .floor_quad_ranges()
+            .iter()
+            .find(|(_, z)| *z == 6)
+            .ok_or("the corpse floor")?;
+        assert!(range.len() > corpse_floor_baseline);
+        assert_eq!(sprite_count, range.len() - corpse_floor_baseline);
+    }
+    #[cfg(not(bevy_shell))]
+    assert!(sprite_count > 0);
+    Ok(())
+}

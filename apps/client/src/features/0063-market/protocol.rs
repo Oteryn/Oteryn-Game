@@ -34,18 +34,38 @@ impl Outbox {
             .reply
             .as_ref()
             .is_some_and(|r| r.code == 1 && r.action >= 5);
-        let next = {
+        let (next, book) = {
             let mut m = lock(&self.0);
             let applied = oteryn_client_ui::market::apply_result(&mut m.market, &response);
             if changed && applied {
-                oteryn_client_ui::market::request(
-                    &mut m.market,
-                    oteryn_client_ui::market::Intent::Refresh,
-                )
+                if m.market.view == oteryn_client_ui::market::MarketView::Browse
+                    && m.market.details.statistics.is_some()
+                {
+                    let query = oteryn_client_ui::market::details::Query::Book {
+                        definition: m.market.definition,
+                        page: m.market.page,
+                    };
+                    let book = oteryn_client_ui::market::details::request(&mut m.market, query);
+                    if book.is_some() {
+                        m.market.details.book_has_next = false;
+                    }
+                    (None, book)
+                } else {
+                    (
+                        oteryn_client_ui::market::request(
+                            &mut m.market,
+                            oteryn_client_ui::market::Intent::Refresh,
+                        ),
+                        None,
+                    )
+                }
             } else {
-                None
+                (None, None)
             }
         };
+        if let Some(book) = book {
+            self.market_details_result(&book, &session.feature(&book).await?);
+        }
         if let Some(next) = next {
             self.market_result(&session.market(&next).await?);
         }

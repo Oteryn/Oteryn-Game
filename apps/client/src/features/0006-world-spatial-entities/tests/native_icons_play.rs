@@ -16,6 +16,7 @@ fn id(value: u8) -> [u8; 16] {
 fn own() -> wire::world_spatial_entities::WorldSpatialEntity {
     use wire::world_spatial_entities::*;
     WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: EntityKind::Player,
         entity: EntityRef {
@@ -173,7 +174,7 @@ async fn rendered(view: &mut PlayView, link: &PlayLink, label: &str) -> Result<(
                 scene.names.is_empty()
             } else {
                 let mut cache = scene.cache.clone();
-                scene.names.len() == 1 && scene.names[0].1 == cache.name(label)
+                scene.names.len() == 1 && scene.names[0].1 == cache.name(label, 100)
             };
             if matching {
                 return Ok::<(), Error>(());
@@ -233,7 +234,7 @@ fn srx3_native_creature_modification_icons_cross_real_session_stationary_delta_a
                 control.send(()).await?;
                 rendered(&mut view, &link, "").await?;
                 assert!(
-                    view.scene().actor_draws.iter().any(|(tile,draws)| *tile == TileCoord::new(101,200) && !draws.is_empty()),
+                    view.scene().actor_draws.iter().any(|draw| draw.tile == TileCoord::new(101,200) && !draw.draws.is_empty()),
                     "clearing icon metadata must keep the stationary creature body"
                 );
                 control.send(()).await?;

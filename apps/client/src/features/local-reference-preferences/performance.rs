@@ -45,6 +45,8 @@ pub struct FramePacer {
     sample_start: Option<Instant>,
     frames: u64,
     fps: Option<u64>,
+    window_max: Duration,
+    max_frame: Option<Duration>,
 }
 impl Default for FramePacer {
     fn default() -> Self {
@@ -56,6 +58,8 @@ impl Default for FramePacer {
             sample_start: None,
             frames: 0,
             fps: None,
+            window_max: Duration::ZERO,
+            max_frame: None,
         }
     }
 }
@@ -83,6 +87,9 @@ impl FramePacer {
     }
     /// Called only after a successful presentation, never merely a redraw request.
     pub fn presented(&mut self, now: Instant) {
+        if let Some(previous) = self.last_frame {
+            self.window_max = self.window_max.max(now.saturating_duration_since(previous));
+        }
         self.last_frame = Some(now);
         let Some(start) = self.sample_start else {
             self.sample_start = Some(now);
@@ -95,9 +102,19 @@ impl FramePacer {
                 u64::try_from(u128::from(self.frames) * 1_000_000_000 / elapsed.as_nanos().max(1))
                     .unwrap_or(u64::MAX),
             );
+            self.max_frame = Some(self.window_max);
+            self.window_max = Duration::ZERO;
             self.frames = 0;
             self.sample_start = Some(now);
         }
+    }
+    /// The last one-second sample: frames per second and the longest frame interval in it,
+    /// while frames are still being presented.
+    pub fn measured(&self, now: Instant) -> Option<(u64, Duration)> {
+        let fresh = self
+            .last_frame
+            .is_some_and(|at| now.saturating_duration_since(at) <= Duration::from_secs(2));
+        self.fps.zip(self.max_frame).filter(|_| fresh)
     }
     pub fn indicator(
         &self,

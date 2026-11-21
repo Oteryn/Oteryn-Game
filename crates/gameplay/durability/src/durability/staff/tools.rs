@@ -51,6 +51,29 @@ impl DurabilityRoot {
             + Send
             + 'static,
     {
+        self.with_staff_fence(authority, node, fence, true, query)
+            .await
+    }
+
+    async fn with_staff_fence<T, F>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        wait: bool,
+        query: F,
+    ) -> Result<T, DurabilityError>
+    where
+        T: Send + 'static,
+        F: for<'a> FnOnce(
+                &'a mut PgConnection,
+                CurrentCharacterItemFence,
+                Option<String>,
+                Option<String>,
+            ) -> QueryFuture<'a, T>
+            + Send
+            + 'static,
+    {
         let recovery = authority
             .record_for(self)
             .map_err(|_| DurabilityError::InvalidStoredState)?;
@@ -62,8 +85,15 @@ impl DurabilityRoot {
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    if !wait {
+                        super::super::db::bound_periodic_lock_wait(&mut tx).await?;
+                    }
                     assert_recovery_fence(&mut tx, &recovery).await?;
-                    lock_admission_relations(&mut tx).await?;
+                    if wait {
+                        lock_admission_relations(&mut tx).await?;
+                    } else {
+                        super::super::db::try_lock_admission_relations(&mut tx).await?;
+                    }
                     if !live_fence::current(&mut tx, &fence, &node).await? {
                         return Err(DurabilityError::Unavailable);
                     }

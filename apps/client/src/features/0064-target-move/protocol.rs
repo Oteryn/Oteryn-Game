@@ -64,11 +64,17 @@ impl Outbox {
         };
     }
 
+    /// A use or move walks to its object on the server and replaces the click walk.
+    pub(in crate::play) fn target_walk_replaced(&self) {
+        oteryn_client_ui::target_move::cancel(&mut lock(&self.0).target_walk);
+    }
+
     pub(in crate::play) async fn target_walk_run(
         &self,
         session: &mut impl Stepper,
         position: ActorPosition,
     ) -> Result<(), SessionError> {
+        let position = lock(&self.0).wire_position(position);
         let response = session.target_walk(position).await?;
         oteryn_client_ui::target_move::apply(&mut lock(&self.0).target_walk, response);
         Ok(())

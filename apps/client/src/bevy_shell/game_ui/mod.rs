@@ -1,17 +1,30 @@
 //! Shared in-game regions. Modules project the retained client owners into these anchors.
 mod actions;
 mod analyser;
+mod bestiary;
+mod bosstiary;
 mod bug_report;
 mod chat;
+mod coin_market;
 mod cyclopedia;
+mod cyclopedia_items;
+mod cyclopedia_map;
 #[cfg(test)]
 #[path = "cyclopedia/tests.rs"]
 mod cyclopedia_tests;
+mod cyclopedia_tracker;
+pub(super) use cyclopedia_tracker::toggle as toggle_cyclopedia_tracker;
+#[path = "hud/art.rs"]
+pub(in crate::bevy_shell) mod art;
+mod depot;
 mod feature_dialogs;
+mod feature_forms;
 mod forge;
 pub(super) mod highscores;
 mod hotkeys;
 mod hud;
+pub(in crate::bevy_shell) mod hud_panes;
+mod imbuement_tracker;
 mod imbuing;
 mod install;
 pub(super) use install::install;
@@ -21,6 +34,7 @@ pub(super) use inventory::ItemPointerCapture;
 pub(super) use inventory::initialize_item_pointer_test_state;
 pub(super) mod item_details;
 mod journal;
+pub(super) mod layout;
 mod market;
 pub(super) mod minimap;
 pub(super) mod modal;
@@ -38,9 +52,13 @@ pub(super) mod rule_violation;
 pub(super) mod satellite_map;
 mod stash;
 mod store;
+mod store_inbox;
 mod task_board;
+mod task_tracker;
+mod team_finder;
 mod trade;
 mod tutorial;
+pub(super) mod unjustified_points;
 pub(super) mod viewport;
 mod wheel;
 use super::{owner::HostOwner, ui::Skins};
@@ -61,6 +79,9 @@ pub(super) struct GameRegions {
     pub bars: Entity,
     pub world: Entity,
 }
+/// The centre-column region over the game window that holds the Tibia status bar.
+#[derive(Resource, Clone, Copy)]
+pub(super) struct StatusBar(pub Entity);
 #[derive(Component)]
 pub(super) struct GameModal;
 #[derive(Component, Clone, Copy)]
@@ -77,177 +98,26 @@ pub(super) struct WorldRegion;
 #[derive(Component)]
 pub(in crate::bevy_shell) struct ToolbarRegion;
 
-pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
-    let root = commands
-        .spawn((
-            GameRoot,
-            bevy::input_focus::tab_navigation::TabGroup::new(0),
-            Node {
-                position_type: PositionType::Absolute,
-                width: percent(100.),
-                height: percent(100.),
-                flex_direction: FlexDirection::Column,
-                display: Display::None,
-                ..default()
-            },
-            GlobalZIndex(0),
-        ))
-        .id();
-    let vitals = commands
-        .spawn(Node {
-            width: percent(100.),
-            min_height: px(28.),
-            flex_shrink: 0.,
-            ..default()
-        })
-        .id();
-    let middle = commands
-        .spawn(Node {
-            width: percent(100.),
-            flex_grow: 1.,
-            min_height: px(0.),
-            ..default()
-        })
-        .id();
-    let main = commands
-        .spawn(Node {
-            flex_grow: 1.,
-            min_width: px(0.),
-            min_height: px(0.),
-            flex_direction: FlexDirection::Column,
-            ..default()
-        })
-        .id();
-    let world = commands
-        .spawn((
-            WorldRegion,
-            Node {
-                width: percent(100.),
-                min_height: px(0.),
-                flex_grow: 1.,
-                overflow: Overflow::clip(),
-                ..default()
-            },
-        ))
-        .id();
-    let bars = commands
-        .spawn((
-            Node {
-                width: percent(100.),
-                min_height: px(36.),
-                max_height: px(156.),
-                flex_shrink: 0.,
-                overflow: Overflow::clip(),
-                flex_direction: FlexDirection::Column,
-                ..default()
-            },
-            BackgroundColor(Color::srgb(0.12, 0.12, 0.12)),
-        ))
-        .id();
-    let chat = commands
-        .spawn((
-            source::frame(skins.inset.clone(), [1.; 4]),
-            Node {
-                width: percent(100.),
-                height: px(150.),
-                min_height: px(90.),
-                max_height: percent(30.),
-                flex_shrink: 0.,
-                padding: UiRect::all(px(2.)),
-                flex_direction: FlexDirection::Column,
-                overflow: Overflow::clip(),
-                ..default()
-            },
-        ))
-        .id();
-    let panels = commands
-        .spawn((
-            Node {
-                width: px(176.),
-                min_width: px(176.),
-                height: percent(100.),
-                flex_shrink: 0.,
-                flex_direction: FlexDirection::Column,
-                overflow: Overflow::scroll_y(),
-                ..default()
-            },
-            bevy::ui_widgets::ScrollArea,
-            BackgroundColor(Color::srgb(0.18, 0.18, 0.18)),
-        ))
-        .id();
-    let inventory = commands
-        .spawn((
-            Node {
-                width: px(176.),
-                min_width: px(176.),
-                height: percent(100.),
-                flex_shrink: 0.,
-                flex_direction: FlexDirection::Column,
-                overflow: Overflow::scroll_y(),
-                ..default()
-            },
-            bevy::ui_widgets::ScrollArea,
-            BackgroundColor(Color::srgb(0.18, 0.18, 0.18)),
-        ))
-        .id();
-    let toolbar = commands
-        .spawn((
-            ToolbarRegion,
-            Node {
-                width: percent(100.),
-                min_height: px(24.),
-                flex_shrink: 0.,
-                flex_direction: FlexDirection::Column,
-                ..default()
-            },
-        ))
-        .id();
-    let minimap = region(&mut commands);
-    let equipment = region(&mut commands);
-    let containers = region(&mut commands);
-    let trade_dock = region(&mut commands);
-    commands.entity(trade_dock).insert(trade::TradeDock);
-    let battle = region(&mut commands);
-    let party_dock = region(&mut commands);
-    commands.entity(party_dock).insert(party::PartyDock);
-    let skills = region(&mut commands);
-    let vip = region(&mut commands);
-    let analyzers = region(&mut commands);
-    commands.entity(root).add_children(&[vitals, middle]);
-    commands
-        .entity(middle)
-        .add_children(&[main, panels, inventory]);
-    commands.entity(main).add_children(&[world, bars, chat]);
-    commands
-        .entity(panels)
-        .add_children(&[battle, party_dock, skills, vip, analyzers]);
-    commands
-        .entity(inventory)
-        .add_children(&[toolbar, minimap, equipment, trade_dock, containers]);
-    commands.insert_resource(GameRegions {
-        vitals,
-        minimap,
-        equipment,
-        containers,
-        battle,
-        skills,
-        vip,
-        analyzers,
-        chat,
-        bars,
-        world,
-    });
+/// The sidebar columns and panes the widget chrome docks into.
+#[derive(Resource, Clone, Copy)]
+pub(super) struct Sidebar {
+    /// The optional left sidebar and the optional second right sidebar (hidden by default).
+    pub left: Entity,
+    pub extra: Entity,
+    /// The dockable widget pane of each column, top to bottom, ending in a fill pane.
+    pub left_widgets: Entity,
+    pub extra_widgets: Entity,
+    pub right_widgets: Entity,
+    /// The content of the analytics selector widget.
+    pub analytics: Entity,
 }
-fn region(commands: &mut Commands) -> Entity {
-    commands
-        .spawn(Node {
-            width: percent(100.),
-            flex_shrink: 0.,
-            flex_direction: FlexDirection::Column,
-            ..default()
-        })
-        .id()
-}
+/// Tibia Global sidebar width; the sidebar cannot be resized.
+pub(super) const SIDEBAR_WIDTH: f32 = 176.;
+/// Tibia Global panel pane margins (PanelPane.qml): horizontal 6, vertical 4.
+pub(super) const PANEL_MARGIN: [f32; 2] = [6., 4.];
+
+mod regions;
+pub(super) use regions::setup;
 
 #[cfg(test)]
 mod native_tests;
@@ -269,3 +139,7 @@ pub(super) fn open_party(owner: &mut HostOwner) {
         play.link.open_party();
     }
 }
+
+#[cfg(test)]
+#[path = "native_tests/pointer_layout.rs"]
+mod pointer_layout;

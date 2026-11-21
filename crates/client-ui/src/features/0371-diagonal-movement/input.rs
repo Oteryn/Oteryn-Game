@@ -1,6 +1,6 @@
 //! Native keypad diagonals; the caller gates these bindings on the negotiated profile.
 use oteryn_client_domain::movement::StepDir;
-use oteryn_input_actions::{ButtonState, Modifiers, NormalizedInputEvent};
+use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
 
 #[path = "view.rs"]
 mod view;
@@ -27,6 +27,66 @@ pub fn keypad_step(events: &[NormalizedInputEvent], selected: bool) -> Option<St
         },
         _ => None,
     })
+}
+
+/// Held arrow keys (up, right, down, left) and when each was pressed, so that two perpendicular
+/// arrows held together walk diagonally, as OTClient's game_walk does.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct ArrowChord {
+    pressed_at: [Option<u64>; 4],
+    clock: u64,
+}
+
+impl ArrowChord {
+    const KEYS: [KeyCode; 4] = [
+        KeyCode::ARROW_UP,
+        KeyCode::ARROW_RIGHT,
+        KeyCode::ARROW_DOWN,
+        KeyCode::ARROW_LEFT,
+    ];
+
+    /// Tracks the arrow transitions of `events` (a lost device releases every key) and returns
+    /// the step for the last arrow press among them, including a platform repeat.
+    pub fn step(&mut self, events: &[NormalizedInputEvent]) -> Option<StepDir> {
+        let mut pressed = None;
+        for event in events {
+            match event {
+                NormalizedInputEvent::FocusChanged { focused: false }
+                | NormalizedInputEvent::CaptureChanged { captured: false }
+                | NormalizedInputEvent::DeviceLost => self.pressed_at = [None; 4],
+                NormalizedInputEvent::Key { code, state, .. } => {
+                    let Some(key) = Self::KEYS.iter().position(|arrow| arrow == code) else {
+                        continue;
+                    };
+                    if *state == ButtonState::Pressed {
+                        self.clock += 1;
+                        self.pressed_at[key] = Some(self.clock);
+                        pressed = Some(key);
+                    } else {
+                        self.pressed_at[key] = None;
+                    }
+                }
+                _ => {}
+            }
+        }
+        let key = pressed?;
+        // The newest held arrow perpendicular to the one just pressed joins it.
+        let partner = [(key + 1) % 4, (key + 3) % 4]
+            .into_iter()
+            .filter_map(|other| Some((self.pressed_at[other]?, other)))
+            .max()
+            .map(|(_, other)| other);
+        Some(match (key, partner) {
+            (0, Some(1)) | (1, Some(0)) => StepDir::NorthEast,
+            (0, Some(3)) | (3, Some(0)) => StepDir::NorthWest,
+            (2, Some(1)) | (1, Some(2)) => StepDir::SouthEast,
+            (2, Some(3)) | (3, Some(2)) => StepDir::SouthWest,
+            (0, _) => StepDir::North,
+            (1, _) => StepDir::East,
+            (2, _) => StepDir::South,
+            _ => StepDir::West,
+        })
+    }
 }
 
 #[cfg(test)]

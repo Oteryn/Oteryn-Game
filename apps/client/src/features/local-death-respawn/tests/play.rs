@@ -4,6 +4,29 @@ use oteryn_renderer::TileCoord;
 use oteryn_session::{ActorVitals, AppliedDelta, SessionEvent};
 
 #[test]
+fn native_enter_acknowledges_respawn_through_normal_input_route()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
+    let (link, mut commands, outbox) = play_channel();
+    let mut view = PlayView::new(TileCoord::new(1, 1), 0, &[])?;
+    outbox.vitals(Some(ActorVitals { health: 0, max_health: 150, ..Default::default() }));
+    view.tick(&link).map_err(|_| "tick")?;
+    let _ = outbox.death_command(&mut commands);
+    outbox.vitals(Some(ActorVitals { health: 150, max_health: 150, ..Default::default() }));
+    view.tick(&link).map_err(|_| "tick")?;
+    let enter = [NormalizedInputEvent::Key {
+        code: KeyCode::new(40)?, state: ButtonState::Pressed,
+        modifiers: Modifiers::NONE, repeat: false,
+    }];
+    assert!(view.world_pointer_input(&link, &enter)?);
+    assert!(!view.gameplay_input_blocked(&link));
+    view.arrow(StepDir::South);
+    view.tick(&link).map_err(|_| "tick")?;
+    assert!(commands.try_recv().is_ok());
+    Ok(())
+}
+
+#[test]
 fn death_blocks_input_and_respawn_does_not_replay_pending_actions() -> Result<(), String> {
     let (link, mut commands, outbox) = play_channel();
     let mut view = PlayView::new(TileCoord::new(1, 1), 0, &[]).map_err(|e| e.to_string())?;
@@ -37,6 +60,7 @@ fn death_blocks_input_and_respawn_does_not_replay_pending_actions() -> Result<()
     assert!(outbox.death_command(&mut commands).is_err());
     outbox.push(vec![event(150)]);
     assert_eq!(view.tick(&link), Ok(()));
+    assert!(view.acknowledge_death(&link));
     assert!(!view.hud_status().contains("You are dead"));
     assert!(commands.try_recv().is_err());
     view.arrow(StepDir::South);
@@ -89,6 +113,7 @@ fn coalesced_death_resets_targets_and_both_input_queues() -> Result<(), String> 
     }
     assert!(outbox.death_command(&mut commands).is_err());
     assert_eq!(view.tick(&link), Ok(()));
+    assert!(view.acknowledge_death(&link));
     assert!(!view.death.dead);
     assert!(!view.in_flight);
     assert!(view.scene.target().is_none());
@@ -167,6 +192,7 @@ fn coalesced_respawn_before_reset_drain_cannot_leave_movement_pending() -> Resul
     }));
     assert!(!crate::play::mailbox::lock(&outbox.0).target_walk.pending);
     assert!(outbox.death_command(&mut commands).is_err());
+    assert!(view.acknowledge_death(&link));
     assert_eq!(view.tick(&link), Ok(()));
     view.arrow(StepDir::East);
     assert_eq!(view.tick(&link), Ok(()));
@@ -266,6 +292,7 @@ fn death_protection_is_requested_at_login_and_after_respawn_and_shown_in_hud() -
     });
     assert!(outbox.death_command(&mut commands).is_err());
     view.tick(&link).map_err(|e| format!("{e:?}"))?;
+    assert!(view.acknowledge_death(&link));
     assert!(
         view.hud_status().contains("Twist Of Fate"),
         "malformed reply must not invent consumption"
@@ -330,4 +357,182 @@ fn coalesced_alive_vitals_refreshes_death_receipt_without_query_feedback() -> Re
         [8; 16]
     );
     Ok(())
+}
+
+#[test]
+fn coalesced_death_keeps_acknowledgement_notice_after_server_respawn() -> Result<(), String> {
+    let (link, mut commands, outbox) = play_channel();
+    let mut view = PlayView::new(TileCoord::new(1, 1), 0, &[]).map_err(|e| e.to_string())?;
+    for health in [0, 150] {
+        outbox.vitals(Some(ActorVitals {
+            health,
+            max_health: 150,
+            ..Default::default()
+        }));
+    }
+    assert!(outbox.death_command(&mut commands).is_err());
+    view.tick(&link).map_err(|e| format!("{e:?}"))?;
+    link.request(StepDir::North);
+    assert!(
+        commands.try_recv().is_err(),
+        "movement waits for acknowledgement"
+    );
+    let notice = view
+        .death_modal_notice()
+        .ok_or("death must survive respawn until acknowledgement")?;
+    assert!(notice.contains("Press Enter"));
+    assert!(notice.contains("temple"));
+    Ok(())
+}
+
+#[test]
+fn death_details_use_only_a_fresh_post_death_protection_receipt() -> Result<(), String> {
+    use oteryn_session::death_protection::{DeathProtection, DeathProtectionReply};
+    let (link, mut commands, outbox) = play_channel();
+    outbox.death_protection_initialize(true);
+    assert!(outbox.death_command(&mut commands).is_ok());
+    let receipt = |occurrence, consumed| -> Result<_, String> {
+        Ok(oteryn_session::GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: oteryn_session::CommandStatus::Accepted,
+            payload: DeathProtectionReply(Some(DeathProtection {
+                occurrence,
+                consumed,
+            }))
+            .encode()
+            .ok_or("receipt")?,
+        })
+    };
+    let mut view = PlayView::new(TileCoord::new(1, 1), 0, &[]).map_err(|e| e.to_string())?;
+    for health in [0, 150] {
+        outbox.vitals(Some(ActorVitals {
+            health,
+            max_health: 150,
+            ..Default::default()
+        }));
+    }
+    // A login query can finish after death. It must not become this death's details.
+    outbox.death_protection_result(&receipt(
+        [1; 16],
+        vec!["oteryn:blessing.twist_of_fate".into()],
+    )?);
+    view.tick(&link).map_err(|e| format!("{e:?}"))?;
+    assert!(
+        !view
+            .death_modal_notice()
+            .ok_or("notice")?
+            .contains("Twist Of Fate")
+    );
+    assert!(outbox.death_command(&mut commands).is_ok());
+    outbox.death_protection_result(&receipt([2; 16], vec![])?);
+    view.tick(&link).map_err(|e| format!("{e:?}"))?;
+    let notice = view.death_modal_notice().ok_or("notice")?;
+    assert!(notice.contains("No blessings or Twist of Fate"));
+    assert!(notice.contains("Exact experience, skill and item losses are unavailable"));
+    Ok(())
+}
+
+#[test]
+fn death_acknowledgement_refuses_a_newer_unseen_death_and_discards_queued_actions()
+-> Result<(), String> {
+    let (link, mut commands, outbox) = play_channel();
+    let mut view = PlayView::new(TileCoord::new(1, 1), 0, &[]).map_err(|e| e.to_string())?;
+    for _ in 0..2 {
+        link.request(StepDir::North);
+        for health in [0, 150] {
+            outbox.vitals(Some(ActorVitals {
+                health,
+                max_health: 150,
+                ..Default::default()
+            }));
+        }
+        assert!(
+            !view.acknowledge_death(&link),
+            "unseen deaths cannot be acknowledged"
+        );
+        view.tick(&link).map_err(|e| format!("{e:?}"))?;
+    }
+    assert!(outbox.death_command(&mut commands).is_err());
+    assert!(view.acknowledge_death(&link));
+    assert!(
+        !view.acknowledge_death(&link),
+        "acknowledgement is idempotent"
+    );
+    assert!(view.death_modal_notice().is_none());
+    link.request(StepDir::East);
+    assert!(matches!(
+        commands.try_recv(),
+        Ok(crate::combat_input::PlayCommand::Step(StepDir::East))
+    ));
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn death_discards_queued_battle_and_bulk_moves_and_releases_controls() -> Result<(), String> {
+    use crate::combat_input::PlayCommand;
+    let (link, mut commands, outbox) = play_channel();
+    let movement = oteryn_client_runtime::inventory::MoveRequest {
+        source: std::num::NonZeroU64::MIN,
+        destination: oteryn_session::ItemMoveDestination::MainBackpack,
+        count: None,
+    };
+    for command in [
+        PlayCommand::MoveItem(movement),
+        PlayCommand::MovementSpeech(oteryn_session::ChatIntent::Say {
+            mode: oteryn_session::ChatSpeechMode::Say,
+            text: "exani hur up".into(),
+        }),
+        PlayCommand::BrowseFieldMove(oteryn_session::ItemMoveIntent {
+            source: movement.source,
+            destination: movement.destination,
+        }),
+        PlayCommand::WorldContext(oteryn_client_runtime::world_interaction::Command {
+            target: oteryn_client_runtime::world_interaction::Target::Item(movement.source),
+            action: oteryn_client_runtime::world_interaction::Action::Use,
+            selection: None,
+        }),
+        PlayCommand::MoveContents(vec![movement]),
+        PlayCommand::MoveContainerContents(vec![movement]),
+    ] {
+        link.commands.send(command).map_err(|e| e.to_string())?;
+    }
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        mailbox.battle.combat = Some(oteryn_session::ActorCombatState {
+            target: None,
+            modes: oteryn_session::FightModes::DEFAULT,
+            in_fight: false,
+        });
+        mailbox.item_movement.pending = true;
+        mailbox.containers.bulk.pending = true;
+        mailbox.browse_field.pending = true;
+        mailbox.world_context.pending = true;
+        mailbox.chat_public.pending = true;
+    }
+    link.battle_request(oteryn_client_ui::battle::Action::Stop);
+    for health in [0, 150] {
+        outbox.vitals(Some(ActorVitals { health, max_health: 150, ..Default::default() }));
+    }
+    assert!(outbox.death_command(&mut commands).is_err());
+    let mailbox = crate::play::mailbox::lock(&link.mailbox);
+    assert!(!mailbox.battle.pending);
+    assert!(mailbox.battle.pending_command.is_none());
+    assert!(!mailbox.item_movement.pending);
+    assert!(!mailbox.world_context.pending);
+    assert!(!mailbox.containers.bulk.pending);
+    assert!(!mailbox.browse_field.pending);
+    assert!(!mailbox.chat_public.pending);
+    Ok(())
+}
+
+#[test]
+fn death_preserves_queued_public_chat_pending_state() {
+    let (link, mut commands, outbox) = play_channel();
+    crate::play::mailbox::lock(&link.mailbox).chat_public.selected = true;
+    link.chat_public_request(oteryn_client_ui::chat_public_channels::Intent::Open(oteryn_session::ChatRoom::World));
+    outbox.vitals(Some(ActorVitals { health: 0, max_health: 150, ..Default::default() }));
+    assert!(matches!(outbox.death_command(&mut commands), Ok(crate::combat_input::PlayCommand::ChatPublic(_))));
+    assert!(crate::play::mailbox::lock(&link.mailbox).chat_public.pending);
 }

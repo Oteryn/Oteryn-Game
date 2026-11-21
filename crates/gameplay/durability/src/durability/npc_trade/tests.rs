@@ -20,7 +20,7 @@ fn definition(family: &str, key: &str) -> TypedDefinitionRef {
     }
 }
 
-fn coin(coin: Coin) -> TypedDefinitionRef {
+pub(super) fn coin(coin: Coin) -> TypedDefinitionRef {
     definition(COIN_DEFINITION_FAMILY, coin.production_key())
 }
 
@@ -38,7 +38,7 @@ fn sword() -> TypedDefinitionRef {
     definition("Item", "oteryn:item.tibia.i3264")
 }
 
-fn request(side: NpcTradeSide, quantity: u32, unit_price: u64) -> NpcTradeRequest {
+pub(super) fn request(side: NpcTradeSide, quantity: u32, unit_price: u64) -> NpcTradeRequest {
     NpcTradeRequest {
         fluid_subtype: None,
         full_charges: None,
@@ -82,7 +82,7 @@ fn request(side: NpcTradeSide, quantity: u32, unit_price: u64) -> NpcTradeReques
     }
 }
 
-fn entry(tag: u8, ordinal: u64, definition: TypedDefinitionRef, quantity: u32) -> Entry {
+pub(super) fn entry(tag: u8, ordinal: u64, definition: TypedDefinitionRef, quantity: u32) -> Entry {
     Entry {
         item_instance_id: id(tag),
         placement_ordinal: ordinal,

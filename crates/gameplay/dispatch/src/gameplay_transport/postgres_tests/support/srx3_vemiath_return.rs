@@ -3,13 +3,17 @@
 use super::{
     TestResult,
     fixture::{Harness, debug},
+    srx3_native_source_cast_fixtures::NativeOwnerClock,
 };
 
 use crate::foundation::RuntimeScopeRefV1;
 
 use crate::gameplay_transport::{ComposedFreshAdmission, connection::AdmittedSession};
 
+use oteryn_gameplay_combat_rules::attack::AttackConstants;
+use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode, FightModes};
 use oteryn_protocol_oteryn::{boss_encounter as wire, world_spatial_entities::EntityRef};
+use oteryn_simulation_determinism::SemanticTimeMicros;
 
 pub(super) async fn exercise(
     h: &Harness,
@@ -106,19 +110,40 @@ pub(super) async fn exercise(
         );
         assert!(!runtime.retains_corpse_projection(boss));
     }
+    let clock = NativeOwnerClock::new(&view);
+    let mut now = view.owner_now().get();
+    clock.set(now);
     assert_eq!(
         view.select_attack_target(player, admitted.game_session_id, 944, Some(target))
             .await,
-        oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
+        AttackIntentDisposition::Ok
     );
+    // The approach drains native work, which can move the boss after the
+    // initial route was read. Follow its live position through the chase owner.
+    let modes = FightModes {
+        chase: ChaseMode::Chase,
+        ..FightModes::DEFAULT
+    };
+    assert_eq!(
+        view.set_fight_modes(player, admitted.game_session_id, modes).await,
+        AttackIntentDisposition::Ok
+    );
+    let interval = AttackConstants::checked_in()
+        .ok_or("actual attack cadence")?
+        .attack_interval_micros();
     for _ in 0..32 {
-        view.refresh_attack_weapon(player, admitted.game_session_id)
+        clock.set(now);
+        let _ = view.chase_step_now(player, admitted.game_session_id).await;
+        h.root.await_ready().await?;
+        let turn = SemanticTimeMicros::from_micros(now);
+        view.refresh_attack_weapon_at(player, admitted.game_session_id, turn)
             .await;
-        view.drain_auto_attacks().await;
+        h.root.await_ready().await?;
+        view.drain_auto_attacks_at(turn).await;
         if view.runtime.lock().await.retains_corpse_projection(boss) {
             break;
         }
-        tokio::time::sleep(std::time::Duration::from_millis(2100)).await;
+        now = now.checked_add(interval).ok_or("actual next swing")?;
     }
     assert!(
         view.runtime.lock().await.retains_corpse_projection(boss),
@@ -128,13 +153,25 @@ pub(super) async fn exercise(
         view.drain_kill_rewards(admitted.game_session_id).await,
         crate::gameplay_transport::kill_reward::DrainOutcome::Drained
     );
+    drop(clock);
     drop(view);
-    let (terminal,deadline,now):(i64,i64,i64)=sqlx::query_as("SELECT terminal_at,exit_deadline,floor(extract(epoch FROM clock_timestamp())*1000)::bigint FROM game_boss_room_activities WHERE boss_key='oteryn:boss.vemiath'")
-        .fetch_one(&h.pool).await?;
+    let RuntimeScopeRefV1::Instance { instance_id, .. } = fence.runtime_scope else {
+        return Err("actual Vemiath Instance".into());
+    };
+    let (terminal, deadline, now): (i64, i64, i64) = sqlx::query_as(
+        "SELECT terminal_at,exit_deadline,floor(extract(epoch FROM clock_timestamp())*1000)::bigint
+         FROM game_boss_room_activities WHERE instance_id=encode($1,'hex')::uuid
+           AND boss_key='oteryn:boss.vemiath' AND state=2",
+    )
+    .bind(instance_id.as_slice())
+    .fetch_one(&h.pool)
+    .await?;
     assert_eq!(deadline - terminal, 60_000);
     let remaining = u64::try_from((deadline - now).max(0))?;
     assert!(remaining < 60_000);
-    tokio::time::sleep(std::time::Duration::from_millis(remaining + 5)).await;
+    // The return writer uses the fixture quest clock in whole Unix seconds.
+    let due_second = deadline.div_euclid(1_000) + i64::from(deadline.rem_euclid(1_000) != 0);
+    owner.root.set_test_quest_clock(due_second).map_err(debug)?;
     let mut frames = Vec::new();
     let (_, reply, barrier) = super::boss_activity_fixtures::exchange_command_capture(
         owner,

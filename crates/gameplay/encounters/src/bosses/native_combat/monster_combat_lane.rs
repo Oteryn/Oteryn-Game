@@ -2585,10 +2585,8 @@ fn commit_paced_summon_follow(
         .prepare_moved_deadline(native_now, duration)
         .ok_or(SummonFollowError::ClockOverflow)?;
     let outcome = commit_summon_follow(runtime, fence, stamp, child, parent, facts)?;
-    if matches!(
-        &outcome,
-        Some(oteryn_gameplay_entities::NativeSummonMovementOutcome::Moved(_))
-    ) {
+    if let Some(oteryn_gameplay_entities::NativeSummonMovementOutcome::Moved(after)) = &outcome {
+        runtime.record_walk(child, *after, duration);
         pacer.record(native_now, Some(duration));
     }
     Ok(outcome)

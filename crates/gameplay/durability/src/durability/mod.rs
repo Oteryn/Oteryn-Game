@@ -33,12 +33,15 @@ pub mod field_removal;
 pub mod guild_chat;
 #[cfg(feature = "test-support")]
 pub mod guild_chat_fixture;
+pub mod guild_emblem;
+pub mod highscores_catalogue;
 pub mod house_base_decorations;
 pub mod house_management;
 pub mod house_transfer;
 pub mod hunting_stamina;
 pub mod hunting_xp;
 pub mod inspection;
+pub mod inventory_capacity;
 pub mod journal;
 pub mod mail_text_policy;
 #[allow(dead_code)]

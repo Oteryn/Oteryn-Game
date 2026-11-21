@@ -63,6 +63,7 @@ fn app() -> Result<Fixture, Box<dyn std::error::Error>> {
         submission::finish.after(bevy::text::EditableTextSystems),
     )
     .add_systems(PostUpdate, bevy::ui::widget::update_editable_text_styles);
+    install_history(&mut app);
     let font = app
         .world_mut()
         .resource_mut::<Assets<Font>>()
@@ -125,6 +126,15 @@ fn last_character_and_enter_in_one_frame_send_the_completed_editor() -> TestResu
     key(&mut app, KeyCode::Enter, Key::Enter, None);
     app.update();
     assert!(matches!(sent(&mut commands), Some(ChatIntent::Say { text, .. }) if text == "hello"));
+    assert_eq!(
+        app.world()
+            .resource::<ChatState>()
+            .history
+            .lines
+            .back()
+            .map(String::as_str),
+        Some("hello")
+    );
     assert!(commands.try_recv().is_err());
     Ok(())
 }
@@ -159,24 +169,13 @@ fn enter_waits_for_async_paste_without_sending_the_old_draft() -> TestResult {
     Ok(())
 }
 #[test]
-fn send_button_waits_for_queued_editor_edits() -> TestResult {
+fn enter_waits_for_queued_editor_edits() -> TestResult {
     let (mut app, editor, mut commands) = app()?;
     app.world_mut()
         .get_mut::<EditableText>(editor)
         .ok_or("editor")?
         .queue_edit(bevy::text::TextEdit::Insert("o".into()));
-    let generation = app.world().non_send::<HostOwner>().generation();
-    let send = app
-        .world_mut()
-        .spawn(Control {
-            action: Action::Send,
-            generation,
-        })
-        .observe(widgets::activate)
-        .id();
-    app.world_mut()
-        .trigger(bevy::ui_widgets::Activate { entity: send });
-    assert!(commands.try_recv().is_err());
+    key(&mut app, KeyCode::Enter, Key::Enter, None);
     app.update();
     assert!(matches!(sent(&mut commands), Some(ChatIntent::Say { text, .. }) if text == "hello"));
     Ok(())
@@ -272,3 +271,45 @@ fn pending_send_cancels_when_destination_or_modal_scope_changes() -> TestResult 
     }
     Ok(())
 }
+
+#[test]
+fn transcript_supports_read_only_selection_and_copy() -> TestResult {
+    use bevy::ecs::system::RunSystemOnce;
+    use bevy::text::TextReadWriteMode;
+    let (mut app, _, _) = app()?;
+    app.world_mut()
+        .run_system_once(crate::bevy_shell::ui::setup)
+        .map_err(|error| format!("{error:?}"))?;
+    let root = app.world_mut().spawn(Node::default()).id();
+    app.insert_resource(GameRegions {
+        vitals: root,
+        minimap: root,
+        equipment: root,
+        containers: root,
+        battle: root,
+        skills: root,
+        vip: root,
+        analyzers: root,
+        chat: root,
+        bars: root,
+        world: root,
+    });
+    app.world_mut()
+        .run_system_once(widgets::setup)
+        .map_err(|error| format!("{error:?}"))?;
+    let entity = app
+        .world_mut()
+        .query_filtered::<Entity, With<Transcript>>()
+        .single(app.world())?;
+    assert_eq!(
+        app.world().get::<TextReadWriteMode>(entity),
+        Some(&TextReadWriteMode::ReadOnly)
+    );
+    assert!(app.world().get::<TextInput>(entity).is_some());
+    assert!(app.world().get::<EditableText>(entity).is_some());
+    assert_ne!(app.world().get::<Pickable>(entity), Some(&Pickable::IGNORE));
+    crate::bevy_shell::ui::assert_editor_acquires_focus(app.world_mut(), entity);
+    Ok(())
+}
+
+include!("text_input_interaction.rs");

@@ -445,6 +445,7 @@ fn scenario(
                                 item,
                                 count: None,
                                 target: LoopTarget::Ground(cell(6)),
+                                slot: None,
                             }
                         )
                         .await,
@@ -494,6 +495,7 @@ fn scenario(
                                     item,
                                     count: None,
                                     target: LoopTarget::Ground(cell(7)),
+                                    slot: None,
                                 }
                             )
                             .await,
@@ -590,6 +592,7 @@ fn scenario(
                                         item,
                                         count: None,
                                         target: LoopTarget::Ground(cell(x)),
+                                        slot: None,
                                     }
                                 )
                                 .await,
@@ -626,6 +629,7 @@ fn scenario(
                     .map_err(debug)?
                     .header;
                     let selection = ItemMoveSelection {
+                        manual_sort: false,
                         equip_drop: false,
                         container_tree: false,
                         world_interaction: true,
@@ -824,7 +828,8 @@ fn scenario(
                                         y: 0,
                                         floor: -7
                                     }
-                                )
+                                ),
+                                slot: None,
                             }
                         )
                         .await,

@@ -162,6 +162,7 @@ mod forced_player_step;
 pub use forced_player_step::ForcedPlayerStepGuard;
 
 mod positions;
+mod presentation;
 mod source_tile_occupancy;
 mod tile_stack;
 
@@ -1196,6 +1197,7 @@ struct CommittedAssignmentOwnerCycle {
 /// resource: no session map or second index is introduced.
 #[derive(Debug)]
 pub struct ScopeRuntimeV1 {
+    presentations: std::collections::BTreeMap<u32, presentation::ActorPresentation>,
     binding: ScopeRuntimeAssignmentBinding,
     continuity: NamespaceContinuityGuard,
     carrier: ChannelActorCarrier,
@@ -1348,6 +1350,7 @@ impl ChannelRuntimeV1 {
             content,
             companion_policies: None,
             classic_creature_deaths: false,
+            presentations: std::collections::BTreeMap::new(),
             owner_cycle:
                 oteryn_gameplay_foundation::foundation::ScopeRuntimeFence::from_owner_cycle_grant(
                     CommittedAssignmentOwnerCycle {

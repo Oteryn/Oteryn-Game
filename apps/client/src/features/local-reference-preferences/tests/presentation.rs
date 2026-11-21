@@ -135,6 +135,7 @@ fn o021_live_health_and_party_marks_project_at_entity_position()
         generation: 2,
     };
     play.entities.push(oteryn_session::WorldSpatialEntity {
+        motion: None,
         entity,
         display_name: None,
         kind: oteryn_session::EntityKind::Creature,
@@ -195,7 +196,8 @@ fn o025_health_circle_tracks_confirmed_resources_and_hides_without_vitals()
 #[test]
 fn o037_shortcut_panel_collapse_and_order_survive_restart() -> Result<(), Box<dyn std::error::Error>>
 {
-    let path = std::env::temp_dir().join(format!("cg-mainpanel-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("cg-mainpanel.json");
     let mut state = crate::play::SettingsState::new(Some(path.clone()));
     let mut json = serde_json::to_value(&state.preferences)?;
     json["shortcuts_collapsed"] = serde_json::json!(true);
@@ -256,6 +258,7 @@ fn t057_pvp_frames_follow_exact_server_entity_generation() -> Result<(), Box<dyn
     let mut play = view()?;
     let entity = oteryn_session::EntityRef { identity: [8;16], generation: 2 };
     play.entities.push(oteryn_session::WorldSpatialEntity {
+        motion: None,
         entity, display_name: None, kind: oteryn_session::EntityKind::Creature,
         position: oteryn_session::ActorPosition { x:101,y:200,floor:0 },
         detail: oteryn_session::EntityDetail::Actor { direction: oteryn_session::StepDirection::South, appearance_ref:1, health_percent:50 },
@@ -284,6 +287,7 @@ fn t057_pvp_frames_follow_exact_server_entity_generation() -> Result<(), Box<dyn
 fn t057_loot_highlight_tracks_live_corpse_visibility() -> Result<(), Box<dyn std::error::Error>> {
     let mut play = view()?;
     play.entities.push(oteryn_session::WorldSpatialEntity {
+        motion: None,
         entity: oteryn_session::EntityRef { identity: [9;16],generation:1 },
         display_name:None,kind:oteryn_session::EntityKind::Corpse,
         position:oteryn_session::ActorPosition {x:101,y:200,floor:0},

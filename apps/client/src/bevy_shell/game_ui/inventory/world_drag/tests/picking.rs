@@ -387,3 +387,41 @@ fn hover(app: &mut App, target: Entity) {
     hits.clear();
     hits.insert(target, HitData::new(Entity::PLACEHOLDER, 0., None, None));
 }
+
+#[test]
+fn configured_secondary_picking_press_reaches_world_drag_bridge() -> TestResult {
+    let (mut owner, ui, gesture, viewport, point, _rx) = fixture(false, false)?;
+    owner.settings.preferences.controls.mouse = crate::play::MousePreset::LeftHanded;
+    let mut app = App::new();
+    super::super::super::initialize_item_pointer_test_state(&mut app);
+    app.insert_non_send(owner)
+        .insert_resource(ui)
+        .insert_resource(gesture)
+        .add_observer(picking::press);
+    let window = app
+        .world_mut()
+        .spawn((Window::default(), PrimaryWindow))
+        .id();
+    let world = app.world_mut().spawn((WorldRegion, Node::default())).id();
+    geometry(&mut app, world, point, Vec2::splat(32.));
+    current_pointer(&mut app, window, point, 1.);
+    app.world_mut().trigger(PointerPress {
+        entity: world,
+        pointer: pointer(window, point, 1.),
+        button: PointerButton::Secondary,
+        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        count: 1,
+    });
+    route(
+        &mut app,
+        viewport,
+        point,
+        NormalizedInputEvent::MouseButton {
+            button: MouseButton::SECONDARY,
+            state: ButtonState::Pressed,
+            modifiers: Modifiers::NONE,
+        },
+    )?;
+    assert!(app.world().resource::<Gesture>().candidate.is_some());
+    Ok(())
+}

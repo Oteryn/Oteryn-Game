@@ -650,6 +650,7 @@ pub(super) fn append_journals(entries: &mut Vec<super::log::QuestLogQuest>) -> R
         entries.retain(|entry| entry.key != p.quest);
         entries.push(QuestLogQuest {
             key: p.quest.clone(),
+            title: p.journal.name.clone(),
             kind: QuestLogKind::Storyline,
             shown_in_quest_log: true,
             start: Some((p.phase_track.clone(), 1)),

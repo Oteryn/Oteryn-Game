@@ -303,6 +303,22 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    fn observe_projected_entities(
+        &self,
+        actor: ExactActorRef,
+        selected: SelectedCapabilities,
+    ) -> impl Future<Output = Option<ChannelEntities>> {
+        async move {
+            if selected.contains(
+                oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2,
+            ) {
+                self.observe_named_visible_entities(actor).await
+            } else {
+                self.observe_visible_entities(actor).await
+            }
+        }
+    }
+
     /// S-ENTNAME: the same visibility read enriched with names for capability 286.
     fn observe_named_visible_entities(
         &self,
@@ -330,6 +346,7 @@ pub trait FreshAdmissionAuthority {
                     source_icons:
                         oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(
                         ),
+                    motion: None,
                     display_name: None,
                     health_percent: 100,
                     direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
@@ -998,6 +1015,24 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    /// Capability 510: a deposit naming its box slot. An owner without slot placement answers
+    /// only an unslotted request.
+    fn depot_at(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: oteryn_protocol_oteryn::depot::DepotIntent,
+        slot: Option<u32>,
+        item: Option<ItemKey>,
+    ) -> impl Future<Output = Option<DepotObservation>> {
+        async move {
+            if slot.is_some() {
+                return None;
+            }
+            self.depot(actor, command, intent, item).await
+        }
+    }
+
     /// ITEM-LOOP-1 replay: the item loop receipt of this command 9's CommandRef, read after the
     /// equipment replay and before its handle is resolved. `None` when it cannot be read: the
     /// connection ends before the CommandId is sequenced.
@@ -1128,6 +1163,25 @@ pub trait FreshAdmissionAuthority {
         &self,
         _admitted: AdmittedSession,
     ) -> impl Future<Output = Option<Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>>> {
+        std::future::ready(None)
+    }
+
+    /// GUILD-EMBLEM-1: every positioned player's guild emblem relative to this session's
+    /// character under capability 509. Unavailable reads produce no update.
+    fn observe_guild_emblems(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Option<Vec<oteryn_protocol_oteryn::guild_emblem::GuildEmblem>>> {
+        std::future::ready(None)
+    }
+
+    /// INVCAP-1: the own character's capacity under capability 508. Unavailable reads produce
+    /// no update.
+    fn observe_inventory_capacity(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::inventory_capacity::InventoryCapacity>>
+    {
         std::future::ready(None)
     }
 
@@ -1476,6 +1530,14 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    fn observe_house_vitals(
+        &self,
+        actor: ExactActorRef,
+        admitted: AdmittedSession,
+    ) -> impl Future<Output = Option<(u64, ActorVitals)>> {
+        self.observe_vitals(actor, admitted.game_session_id)
+    }
+
     /// Coordinate DATA only: the current room may use a different wire floor
     /// convention. Existing authorities preserve their original coordinates.
     fn physical_native_cast_position(
@@ -1544,6 +1606,18 @@ pub trait FreshAdmissionAuthority {
         _world: WorldId,
         _session: GameSessionId,
         _query: HighscoresQuery,
+    ) -> impl Future<Output = HighscoresReply> {
+        async { HighscoresReply::Rejected }
+    }
+
+    fn highscores_catalogue(
+        &self,
+        _world: WorldId,
+        _session: GameSessionId,
+        _query: Option<(
+            HighscoresQuery,
+            Option<oteryn_protocol_oteryn::highscores_catalogue::WorldType>,
+        )>,
     ) -> impl Future<Output = HighscoresReply> {
         async { HighscoresReply::Rejected }
     }

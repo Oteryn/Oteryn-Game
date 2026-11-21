@@ -11,15 +11,9 @@ impl PlayLink {
         if !oteryn_client_ui::inventory::open_key(events) {
             return false;
         }
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            let mut mailbox = lock(&self.mailbox);
-            if !mailbox.inventory_shutdown {
-                mailbox.inventory.open = true;
-            }
+        let mut mailbox = lock(&self.mailbox);
+        if !mailbox.inventory_shutdown {
+            mailbox.inventory.open = true;
         }
         true
     }
@@ -39,6 +33,12 @@ impl PlayLink {
             return;
         }
         let counted = mailbox.item_count_selected;
+        let destination = destination.map(|destination| {
+            oteryn_client_ui::container_manual_sort::drop_destination(
+                mailbox.container_manual_sort,
+                destination,
+            )
+        });
         let request = mailbox.item_movement.drop_on(destination, counted);
         send_move(&mut mailbox, &self.commands, request);
     }
@@ -55,9 +55,37 @@ impl PlayLink {
         };
         send_move(&mut mailbox, &self.commands, request);
     }
+    #[cfg(all(test, bevy_shell))]
+    pub(crate) fn bevy_manual_sort_fixture(outbox: &crate::play::Outbox, selected: bool) {
+        outbox.container_manual_sort_initialize(selected);
+    }
+    /// Tibia Global's `ToggleManualSortMode`; `false` when the session lacks capability 510.
+    pub fn toggle_container_manual_sort(&self) -> bool {
+        toggle_manual_sort(&mut lock(&self.mailbox))
+    }
+    #[must_use]
+    pub fn container_manual_sort_active(&self) -> bool {
+        lock(&self.mailbox).container_manual_sort.active()
+    }
+    /// Whether the session negotiated the mode (510) and whether it is on, for the sort menu.
+    #[must_use]
+    pub fn container_manual_sort_mode(&self) -> oteryn_client_ui::container_manual_sort::ManualSort {
+        lock(&self.mailbox).container_manual_sort
+    }
     pub fn item_movement(&self) -> oteryn_client_ui::inventory::movement::Movement {
         lock(&self.mailbox).item_movement.clone()
     }
+}
+/// The session's Manual Sort Mode, shared by the hotkey, the sort menu and the native sort
+/// window. Turning the mode off drops a depot deposit held for its slot.
+pub(in crate::play) fn toggle_manual_sort(mailbox: &mut crate::play::mailbox::Mailbox) -> bool {
+    if mailbox.inventory_shutdown || !mailbox.container_manual_sort.toggle() {
+        return false;
+    }
+    if !mailbox.container_manual_sort.active() && mailbox.depot.held.take().is_some() {
+        mailbox.depot.feedback = "";
+    }
+    true
 }
 pub(in crate::play) fn send_move(
     mailbox: &mut crate::play::mailbox::Mailbox,

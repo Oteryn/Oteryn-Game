@@ -5,7 +5,8 @@ fn status_order_settings_reach_confirmed_panels_and_survive_restart()
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::{ReferencePreferences, SettingsState};
     use oteryn_client_ui::{condition_status as conditions, skill_progress as skills};
-    let path = std::env::temp_dir().join(format!("cgopt-status-order-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("cgopt-status-order.json");
     let mut settings = SettingsState::new(Some(path.clone()));
     let mut json = serde_json::to_value(ReferencePreferences::default())?;
     json["skill_order"] = serde_json::json!([7, 6, 5, 4, 3, 2, 1, 0]);
@@ -82,7 +83,8 @@ fn status_order_settings_reach_confirmed_panels_and_survive_restart()
 fn t176_condition_matrix_persists_independent_columns_and_shared_group_order()
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::{ReferencePreferences, SettingsState};
-    let path = std::env::temp_dir().join(format!("cg-cond-matrix-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("cg-cond-matrix.json");
     let mut settings = SettingsState::new(Some(path.clone()));
     let mut preferences = ReferencePreferences::default();
     for key in ReferencePreferences::special_condition_keys() {

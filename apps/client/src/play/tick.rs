@@ -6,7 +6,7 @@ use super::{
 use oteryn_platform_client::native_login::PublicClass;
 
 impl PlayView {
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     pub(crate) const fn step_receipt(&self) -> Option<super::StepReceipt> {
         self.last_step
     }
@@ -17,15 +17,15 @@ impl PlayView {
     /// failure.
     pub fn tick(&mut self, link: &PlayLink) -> Result<(), PlayEnd> {
         self.poll_ui_sounds(link);
-        #[cfg(windows)]
-        link.player_trade_present();
         const UNAVAILABLE: PlayEnd = PlayEnd::Ended(PublicClass::SessionUnavailable);
+        self.sync_outfit_palette(link)
+            .map_err(|_error| UNAVAILABLE)?;
         while let Some(event) = link.poll() {
             match event {
                 PlayEvent::ActionFeedback(line) => self.action_line = line,
                 PlayEvent::Stepped(outcome) => {
                     self.apply(&outcome).map_err(|_error| UNAVAILABLE)?;
-                    #[cfg(feature = "bevy-shell")]
+                    #[cfg(bevy_shell)]
                     {
                         self.last_step = Some(super::StepReceipt {
                             reply_count: self
@@ -51,6 +51,7 @@ impl PlayView {
                 PlayEvent::Ended(class) => return Err(PlayEnd::Ended(class)),
             }
         }
+        link.pump_store_inbox_refresh();
         link.cyclopedia_atlas_pump();
         self.present_cyclopedia_discovery(link);
         self.project_arena_hazards(link, std::time::Instant::now())
@@ -103,6 +104,11 @@ impl PlayView {
             self.battle_instinct_refresh = Some(now);
         }
 
+        link.target_walk_follow_up(oteryn_session::ActorPosition {
+            x: self.own.x,
+            y: self.own.y,
+            floor: self.floor,
+        });
         self.target_walk_feedback = link.target_walk_feedback();
         self.pump_touch_step(link);
         // One chronological queue: each input goes out in the order it was given. A step still

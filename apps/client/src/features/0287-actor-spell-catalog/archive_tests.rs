@@ -52,7 +52,8 @@ fn magical_archive_assignments_persist_and_resolve_current_server_indices()
     assert!(link.archive_assign(0, 11));
     assert!(link.archive_assign(0, oteryn_client_runtime::spell::ACTION_BAR_SLOTS - 1));
     assert!(!link.archive_assign(0, oteryn_client_runtime::spell::ACTION_BAR_SLOTS));
-    let path = std::env::temp_dir().join(format!("archive-bindings-{}.json", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("archive-bindings.json");
     let mut settings = SettingsState::new(Some(path.clone()));
     settings.sync_archive_bindings(&link);
     let saved = settings.preferences.archive_bindings.clone();
@@ -129,6 +130,14 @@ fn four_slot_saved_archive_migrates_to_the_full_row_without_losing_bindings()
 -> Result<(), Box<dyn std::error::Error>> {
     let saved = r#"{"slots":[{"kind":"Empty"},{"kind":"Unmanaged"},{"kind":"Empty"},{"kind":"Unmanaged"}]}"#;
     let archive: super::archive::ArchiveBindings = serde_json::from_str(saved)?;
+    assert!(archive.valid());
+    let incomplete = super::archive::ArchiveBindings {
+        slots: Box::default(),
+    };
+    assert!(
+        !incomplete.valid(),
+        "the in-memory archive must retain its fixed slot count"
+    );
     assert_eq!(
         archive.slots.len(),
         oteryn_client_runtime::spell::ACTION_BAR_SLOTS

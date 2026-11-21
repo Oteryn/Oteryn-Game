@@ -4,20 +4,14 @@ use super::capabilities::SelectedCapabilities;
 use super::connection::FreshAdmissionAuthority;
 use super::world_spatial::{ChannelEntities, EntityKind, EntityRef, SessionVisibility};
 use crate::foundation::{ExactActorRef, GameSessionId};
-use oteryn_protocol_oteryn::entity_names::{
-    CAPABILITY_WORLD_SPATIAL_ENTITIES_V2, EntityDisplayName,
-};
+use oteryn_protocol_oteryn::entity_names::EntityDisplayName;
 
 pub(super) async fn observe<A: FreshAdmissionAuthority>(
     authority: &A,
     actor: ExactActorRef,
     selected: SelectedCapabilities,
 ) -> Option<ChannelEntities> {
-    if selected.contains(CAPABILITY_WORLD_SPATIAL_ENTITIES_V2) {
-        authority.observe_named_visible_entities(actor).await
-    } else {
-        authority.observe_visible_entities(actor).await
-    }
+    authority.observe_projected_entities(actor, selected).await
 }
 
 enum Source {
@@ -30,7 +24,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         observer: ExactActorRef,
     ) -> Option<ChannelEntities> {
-        let mut channel = self.observe_channel_entities(observer).await?;
+        self.named_channel_entities_projected(observer, false).await
+    }
+
+    pub(super) async fn named_channel_entities_projected(
+        &self,
+        observer: ExactActorRef,
+        forecasts: bool,
+    ) -> Option<ChannelEntities> {
+        let mut channel = self
+            .observe_channel_entities_projected(observer, forecasts)
+            .await?;
         // Use the same interest owner as the session: at most 256 name reads, and none for
         // actors outside this view. Objects have no display name.
         let selected = SessionVisibility::default()
@@ -139,6 +143,7 @@ mod tests {
             entities: vec![ChannelEntity {
                 source_icons:
                     oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(),
+                motion: None,
                 display_name: Some(EntityDisplayName::new("Before")?),
                 health_percent: 100,
                 direction: StepDirection::South,

@@ -21,7 +21,11 @@ pub(super) fn encode(reply: &Reply) -> WireResult<Vec<u8>> {
             if !dialog.valid() {
                 return Err("invalid modal dialog");
             }
-            out.push(1);
+            out.push(if dialog.default_button.is_some() {
+                4
+            } else {
+                1
+            });
             out.extend_from_slice(&dialog.id.to_le_bytes());
             text(&mut out, &dialog.title)?;
             text(&mut out, &dialog.message)?;
@@ -31,6 +35,9 @@ pub(super) fn encode(reply: &Reply) -> WireResult<Vec<u8>> {
                     out.push(*id);
                     text(&mut out, label)?;
                 }
+            }
+            if let Some(button) = dialog.default_button {
+                out.push(button);
             }
             out.push(u8::from(dialog.cancel_button.is_some()));
             if let Some(button) = dialog.cancel_button {
@@ -112,12 +119,13 @@ pub(super) fn decode_prefix(bytes: &[u8]) -> WireResult<(Reply, &[u8])> {
                 Reply::Answered(answer)
             }
         }
-        1 => {
+        tag @ (1 | 4) => {
             let id = u32::from_le_bytes(reader.take(4)?.try_into().map_err(|_| "modal id")?);
             let title = reader.text(256)?;
             let message = reader.text(8192)?;
             let choices = reader.items(MAX_CHOICES)?;
             let buttons = reader.items(MAX_BUTTONS)?;
+            let default_button = if tag == 4 { Some(reader.byte()?) } else { None };
             let cancel_button = match reader.byte()? {
                 0 => None,
                 1 => Some(reader.byte()?),
@@ -148,6 +156,7 @@ pub(super) fn decode_prefix(bytes: &[u8]) -> WireResult<(Reply, &[u8])> {
                 message,
                 choices,
                 buttons,
+                default_button,
                 cancel_button,
                 image,
             };

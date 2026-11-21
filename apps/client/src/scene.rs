@@ -6,7 +6,9 @@
 
 use crate::input::{StepDir, TargetKind, Targetable, pick_target};
 use crate::map::{BLACK_CELL, Draw, MARKER_CELL, MAX_TILE_DRAWS, SCAN_MARGIN, World};
-use oteryn_client_simulation::scene::{scene_origin, visit_scene_entities};
+use oteryn_client_simulation::scene::{
+    scene_origin, visit_scene_entities_scrolled as visit_scene_entities,
+};
 use oteryn_renderer::{
     AtlasImage, BatchError, MAX_BATCH_QUADS, SpriteBatch, TileBatch, TileCoord, TileView,
 };
@@ -27,17 +29,27 @@ const _: () = assert!(
         < MAX_BATCH_QUADS
 );
 
+#[derive(Clone, Debug)]
+struct ActorDraw {
+    floor: i16,
+    tile: TileCoord,
+    draws: Vec<Draw>,
+}
+
 #[derive(Debug, Clone)]
 pub struct Scene {
     drome_hazards: Vec<drome_hazards::GroundWarning>,
+    actor_clocks: actor_motion::ActorClocks,
     minimap: bool,
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     minimap_quads: std::ops::Range<usize>,
-    /// Retained circle quads replaced by the Bevy circle renderer.
-    #[cfg(feature = "bevy-shell")]
-    pub(crate) health_circle_quads: std::ops::Range<usize>,
+    /// Fixed sprite ranges: the own actor and screen overlays.
+    pub(crate) player_quads: Vec<std::ops::Range<usize>>,
+    /// Retained corner gauges and circles omitted by the Bevy HUD.
+    #[cfg(bevy_shell)]
+    pub(crate) native_hud_quads: std::ops::Range<usize>,
     floor_separator: u8,
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     floor_quads: Vec<(std::ops::Range<usize>, i16)>,
     minimap_state: Option<crate::play::feature_local_minimap::state::SharedMinimap>,
     pub(crate) minimap_memory: crate::play::MinimapMemory,
@@ -49,6 +61,7 @@ pub struct Scene {
     anchor: Option<TileCoord>,
     own: TileCoord,
     facing: StepDir,
+    pub(crate) scroll: [f32; 2],
     view: TileView,
     tiles: TileBatch,
     sprites: SpriteBatch,
@@ -59,10 +72,10 @@ pub struct Scene {
     cache: appearance_cache::PresentationCache,
     own_identity: Option<[u8; 16]>,
     own_draws: Option<Vec<Draw>>,
-    actor_draws: Vec<(TileCoord, Vec<Draw>)>,
+    actor_draws: Vec<ActorDraw>,
     object_draws: Vec<(oteryn_session::ActorPosition, u32, Vec<Draw>)>,
-    names: Vec<(TileCoord, Vec<u16>)>,
-    #[cfg(feature = "bevy-shell")]
+    pub(crate) floor_visuals: Vec<(i16, Vec<oteryn_renderer::QuadInstance>, u8)>,
+    names: Vec<(TileCoord, appearance_cache::NameLabel)>,
     name_entities: Vec<oteryn_session::EntityRef>,
     name_visibility: [bool; 3],
     name_marks: bool,
@@ -119,12 +132,13 @@ impl Scene {
         let mut scene = Self {
             drome_hazards: Vec::new(),
             minimap: false,
-            #[cfg(feature = "bevy-shell")]
+            #[cfg(bevy_shell)]
             minimap_quads: 0..0,
-            #[cfg(feature = "bevy-shell")]
-            health_circle_quads: 0..0,
+            player_quads: Vec::new(),
+            #[cfg(bevy_shell)]
+            native_hud_quads: 0..0,
             floor_separator: 0,
-            #[cfg(feature = "bevy-shell")]
+            #[cfg(bevy_shell)]
             floor_quads: Vec::new(),
             minimap_state: None,
             minimap_floor: 7,
@@ -135,6 +149,7 @@ impl Scene {
             anchor,
             own,
             facing,
+            scroll: [0.; 2],
             view,
             tiles,
             sprites: SpriteBatch::new(),
@@ -147,8 +162,9 @@ impl Scene {
             own_draws: None,
             actor_draws: Vec::new(),
             object_draws: Vec::new(),
+            actor_clocks: actor_motion::ActorClocks::default(),
+            floor_visuals: Vec::new(),
             names: Vec::new(),
-            #[cfg(feature = "bevy-shell")]
             name_entities: Vec::new(),
             name_visibility: [true; 3],
             name_marks: true,
@@ -209,6 +225,14 @@ impl Scene {
         self.target
     }
 
+    pub(crate) fn item_target_at(&self, tile: TileCoord) -> Option<crate::play::GroundItem> {
+        self.visible
+            .iter()
+            .rev()
+            .filter(|target| target.tile == tile)
+            .find_map(|target| target.item)
+    }
+
     pub(crate) fn target_at(&self, tile: TileCoord) -> Option<Targetable> {
         // The own-actor highlight has no command identity; it must not hide an item below it.
         let on_tile = || {
@@ -250,51 +274,58 @@ impl Scene {
         self.rebuild_sprites()
     }
 
-    /// Row by row, [`SCAN_MARGIN`] tiles past the view on the right and bottom (the world drops
-    /// map cells reaching further up and left): each tile's map items, its markers and the
-    /// player, then what goes over them.
-    /// The target highlight is drawn last.
+    /// Painter order over the scrolled viewport and guard tiles; the target is drawn last.
     fn rebuild_sprites(&mut self) -> Result<(), BatchError> {
-        let (mut sprites, dimmed, floor_quads) = self.world_sprites()?;
-        #[cfg(feature = "bevy-shell")]
+        let (mut sprites, dimmed, floor_quads, player_quads) = self.world_sprites()?;
+        #[cfg(bevy_shell)]
         {
             self.floor_quads = floor_quads;
         }
-        #[cfg(not(feature = "bevy-shell"))]
+        #[cfg(not(bevy_shell))]
         let _ = floor_quads;
         let atlas = self.atlas();
         self.draw_drome_hazards(&mut sprites, atlas)?;
-        for (tile, cells) in &self.names {
+        let mut player_quads: Vec<_> = player_quads.into_iter().collect();
+        for (index, (tile, label)) in self.names.iter().enumerate() {
+            let [dx, dy] = self
+                .name_entities
+                .get(index)
+                .map_or([0.; 2], |entity| self.actor_offset(*entity));
             let [x, y] = self.view.tile_to_screen(*tile);
+            let (x, y) = (x + dx, y + dy);
+            let name_start = sprites.len();
             let scale = f32::from(self.label_scale) / 100.0;
-            let left =
-                (x + self.view.tile_px() as f32 / 2.0 - cells.len() as f32 * 4.0 * scale).max(0.0);
-            for (index, cell) in cells.iter().enumerate() {
-                oteryn_renderer::name_text::label_quad_scaled(
-                    &mut sprites,
-                    atlas,
-                    *cell,
-                    [
-                        left + index as f32 * 8.0 * scale,
-                        (y - 14.0 * scale).max(0.0),
-                    ],
-                    self.label_scale,
-                )?;
+            if !(1..=200).contains(&self.label_scale) {
+                return Err(BatchError::InvalidView);
+            }
+            let left = (x + self.view.tile_px() as f32 / 2.0 - label.width / 2.0 * scale).max(0.0);
+            let top = (y - 14.0 * scale).max(0.0);
+            for glyph in &label.glyphs {
+                sprites.push_quad(oteryn_renderer::QuadInstance {
+                    position: [left + glyph.at[0] * scale, top + glyph.at[1] * scale],
+                    size: glyph.size.map(|value| value * scale),
+                    uv: atlas.uv_rect(glyph.cell)?,
+                })?;
+            }
+            if *tile == self.own {
+                player_quads.push(name_start..sprites.len());
             }
         }
+        self.player_quads = player_quads;
+        let opacity = std::mem::take(&mut sprites.lighting.opacity);
         sprites.lighting.clone_from(&self.sprites.lighting);
-        sprites.lighting.opacity.clear();
+        sprites.lighting.opacity = opacity;
         sprites.lighting.dimmed = dimmed;
         self.sprites = sprites;
-        #[cfg(feature = "bevy-shell")]
+        #[cfg(bevy_shell)]
         let start = self.sprites.instances().len();
         if self.minimap {
             self.draw_minimap()?;
         }
-        #[cfg(feature = "bevy-shell")]
+        #[cfg(bevy_shell)]
         {
             self.minimap_quads = start..self.sprites.instances().len();
-            self.health_circle_quads = 0..0;
+            self.native_hud_quads = 0..0;
         }
         Ok(())
     }
@@ -327,13 +358,19 @@ impl Scene {
         &self.tiles
     }
 
+    /// Sprite-batch quad ranges that stay put while the camera scrolls with a walk.
+    #[must_use]
+    pub fn player_quads(&self) -> &[std::ops::Range<usize>] {
+        &self.player_quads
+    }
+
     /// Exact overlay partition for frontends which place the minimap in a sidebar.
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     pub(crate) fn minimap_quad_range(&self) -> std::ops::Range<usize> {
         self.minimap_quads.clone()
     }
 
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     pub(crate) fn health_circle_center(&self) -> [f32; 2] {
         let [x, y] = self.view.tile_to_screen(self.own);
         let half = self.view.tile_px() as f32 / 2.;
@@ -349,6 +386,9 @@ impl Scene {
 #[cfg(test)]
 mod tests;
 
+#[path = "features/0502-actor-motion/scene.rs"]
+mod actor_motion;
+
 #[path = "features/0006-world-spatial-entities/scene.rs"]
 mod live_entities;
 #[path = "features/local-minimap/scene.rs"]
@@ -358,6 +398,7 @@ mod reference_hud;
 
 #[path = "features/0006-world-spatial-entities/cache.rs"]
 mod appearance_cache;
+pub(crate) use appearance_cache::HudIconCells;
 
 #[path = "features/0023-presentation/scene.rs"]
 mod visual_scene;

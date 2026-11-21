@@ -104,6 +104,7 @@ pub(super) async fn capture(
         fence, admitted.channel_id).await,
         Err(crate::durability::character_progression::CharacterProgressionError::AuthorityRejected)));
     let old = crate::durability::character_last_position::ScopedPeriodicLastPosition {
+        pending_vocation_refill: None,
         write: crate::durability::character_last_position::PeriodicLastPosition {
             fence, write_sequence: captured.write_sequence, record: captured.record,
         },

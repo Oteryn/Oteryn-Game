@@ -6,7 +6,12 @@ use bevy::{
     text::EditableText,
     ui_widgets::{Activate, Button, TextInput},
 };
+use oteryn_client_runtime::depot::ItemEntry;
 use oteryn_client_ui_bevy as source;
+mod capture;
+mod object_picker;
+use capture::capture;
+use object_picker::project as objects;
 
 fn save(
     p: &mut ReferencePreferences,
@@ -76,6 +81,8 @@ struct Editor {
     mode: usize,
     send: bool,
     feedback: String,
+    capturing: bool,
+    picking: bool,
 }
 #[derive(Component)]
 struct Field(usize);
@@ -84,9 +91,14 @@ struct Listing;
 #[derive(Component)]
 struct Caption;
 #[derive(Component)]
+struct Objects;
+#[derive(Component)]
 enum Control {
     Select(String),
     New,
+    Capture,
+    Pick,
+    Object(ItemEntry),
     Mode,
     Auto,
     Save,
@@ -94,7 +106,8 @@ enum Control {
 }
 
 pub(super) fn install(app: &mut App) {
-    app.add_systems(Update, project);
+    app.add_message::<bevy::input::keyboard::KeyboardInput>()
+        .add_systems(Update, (capture, project, objects).chain());
 }
 pub(super) fn build(commands: &mut Commands, parent: Entity, skins: &Skins) {
     let root = commands
@@ -105,6 +118,8 @@ pub(super) fn build(commands: &mut Commands, parent: Entity, skins: &Skins) {
                 mode: 0,
                 send: false,
                 feedback: String::new(),
+                capturing: false,
+                picking: false,
             },
             Node {
                 flex_direction: FlexDirection::Column,
@@ -129,6 +144,20 @@ pub(super) fn build(commands: &mut Commands, parent: Entity, skins: &Skins) {
         ))
         .id();
     commands.entity(root).add_child(listing);
+    let objects = commands
+        .spawn((
+            Objects,
+            Node {
+                display: Display::None,
+                height: px(100.),
+                overflow: Overflow::scroll_y(),
+                flex_wrap: FlexWrap::Wrap,
+                ..default()
+            },
+            bevy::ui_widgets::ScrollArea,
+        ))
+        .id();
+    commands.entity(root).add_child(objects);
     for (index, title) in [
         "Key chord (for example F9)",
         "Text macro",
@@ -170,6 +199,8 @@ pub(super) fn build(commands: &mut Commands, parent: Entity, skins: &Skins) {
     commands.entity(root).add_child(bar);
     for (text, control) in [
         ("New", Control::New),
+        ("Capture key", Control::Capture),
+        ("Choose carried object", Control::Pick),
         ("Action", Control::Mode),
         ("Send automatically", Control::Auto),
         ("Add / Save", Control::Save),
@@ -210,6 +241,7 @@ fn activate(
     mut fields: Query<(&Field, &mut EditableText)>,
     mut owner: NonSendMut<HostOwner>,
     guard: super::modal::ModalGuard,
+    mut focus: ResMut<bevy::input_focus::InputFocus>,
 ) {
     if !guard.allows(event.entity) || owner.preferences_draft().is_none() {
         return;
@@ -237,6 +269,9 @@ fn activate(
     for (field, text) in &fields {
         values[field.0] = text.value().to_string();
     }
+    if !matches!(control, Control::Capture) {
+        editor.capturing = false;
+    }
     match control {
         Control::Select(key) => {
             let Some(a) = owner
@@ -245,6 +280,9 @@ fn activate(
             else {
                 return;
             };
+            editor.capturing = false;
+            editor.picking = false;
+            editor.feedback.clear();
             editor.selected = Some(key.clone());
             values[0] = key.clone();
             match a {
@@ -273,7 +311,48 @@ fn activate(
                 }
             }
         }
+        Control::Capture => {
+            editor.capturing = !editor.capturing;
+            editor.picking = false;
+            focus.clear();
+            editor.feedback = if editor.capturing {
+                "Press a key with optional modifiers; click Capture key again to cancel"
+            } else {
+                "Key capture cancelled"
+            }
+            .into();
+        }
+        Control::Pick => {
+            editor.picking = !editor.picking;
+            editor.capturing = false;
+            editor.feedback =
+                "Choose a carried object (definition : subtype × count). Artwork unavailable."
+                    .into();
+        }
+        Control::Object(item) => {
+            if !editor.picking {
+                return;
+            }
+            if !owner
+                .play
+                .as_ref()
+                .is_some_and(|play| object_picker::carried(&play.link).contains(item))
+            {
+                editor.feedback = "Object is no longer carried; choose again".into();
+                return;
+            }
+            editor.picking = false;
+            if editor.mode == 0 {
+                editor.mode = 4;
+            }
+            values[2] = item.item_definition_ref.to_string();
+            values[3] = item.sub_type.to_string();
+            editor.feedback = "Object selected; Add / Save to assign".into();
+        }
         Control::New => {
+            editor.capturing = false;
+            editor.picking = false;
+            editor.feedback.clear();
             editor.selected = None;
             values = [String::new(), String::new(), String::new(), "0".into()];
         }
@@ -319,10 +398,14 @@ fn project(
     skins: Res<Skins>,
     mut editors: Query<&mut Editor>,
     lists: Query<Entity, With<Listing>>,
-    mut captions: Query<&mut Text, With<Caption>>,
+    mut captions: Query<(&mut Text, &mut TextColor), With<Caption>>,
     mut held: Local<Vec<String>>,
 ) {
     let Some(p) = owner.preferences_draft() else {
+        for mut editor in &mut editors {
+            editor.capturing = false;
+            editor.picking = false;
+        }
         held.clear();
         return;
     };
@@ -330,8 +413,17 @@ fn project(
         held.clear();
         return;
     };
+    if editor.generation != owner.generation() {
+        editor.capturing = false;
+        editor.picking = false;
+    }
     editor.generation = owner.generation();
-    for mut text in &mut captions {
+    for (mut text, mut color) in &mut captions {
+        color.0 = if editor.feedback.contains("conflict") {
+            Color::srgb(1., 0.3, 0.3)
+        } else {
+            source::TEXT_COLOR
+        };
         text.0 = format!(
             "Action: {} | Send automatically: {} | {}",
             [
@@ -364,79 +456,5 @@ fn project(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn hotkeys_add_edit_remove() {
-        let mut p = crate::play::ReferencePreferences::default();
-        let action = crate::play::CustomAction::Text {
-            text: "hello".into(),
-            send: false,
-        };
-        assert!(save(&mut p, None, "F9", action.clone()).is_ok());
-        assert!(save(&mut p, Some("F9"), "F10", action.clone()).is_err());
-        assert!(p.custom_hotkeys.contains_key("F9"));
-        assert!(save(&mut p, Some("F9"), "SUPER+F10", action).is_ok());
-        assert!(!p.custom_hotkeys.contains_key("F9"));
-        p.custom_hotkeys.remove("SUPER+F10");
-        assert!(!p.custom_hotkeys.contains_key("SUPER+F10"));
-    }
-    #[test]
-    fn hotkeys_list() {
-        let mut p = crate::play::ReferencePreferences::default();
-        p.custom_hotkeys.clear();
-        p.custom_hotkeys.insert(
-            "F9".into(),
-            crate::play::CustomAction::Text {
-                text: "hello".into(),
-                send: true,
-            },
-        );
-        assert_eq!(rows(&p), vec!["F9 | Text (send automatically) | hello"]);
-    }
-    #[test]
-    fn hotkey_text_macro_auto_send() -> Result<(), Box<dyn std::error::Error>> {
-        let path = std::env::temp_dir().join(format!(
-            "oteryn-hotkeys-{}-{}.json",
-            std::process::id(),
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)?
-                .as_nanos()
-        ));
-        let mut store = crate::play::PreferenceStore::defaults(path.clone());
-        for send in [false, true] {
-            let a = action(0, "hello", send, "", "").ok_or("missing text action")?;
-            assert_eq!(
-                a,
-                crate::play::CustomAction::Text {
-                    text: "hello".into(),
-                    send
-                }
-            );
-            let mut p = crate::play::ReferencePreferences::default();
-            save(&mut p, None, "F9", a.clone())?;
-            store.apply(p)?;
-            let restored = crate::play::PreferenceStore::read_transfer(&path)?;
-            assert_eq!(restored.custom_hotkeys.get("F9"), Some(&a));
-        }
-        std::fs::remove_file(path)?;
-        Ok(())
-    }
-    #[test]
-    fn hotkey_use_object_modes() {
-        for (mode, target) in [
-            (1, crate::play::ObjectTarget::SelfActor),
-            (2, crate::play::ObjectTarget::CurrentTarget),
-            (3, crate::play::ObjectTarget::Cursor),
-        ] {
-            assert_eq!(
-                action(mode, "", false, "100", "0"),
-                Some(crate::play::CustomAction::Object {
-                    definition: 100,
-                    sub_type: 0,
-                    target
-                })
-            );
-        }
-    }
-}
+#[path = "hotkeys/tests.rs"]
+mod tests;

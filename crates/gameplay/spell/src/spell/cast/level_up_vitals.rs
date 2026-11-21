@@ -16,6 +16,7 @@ impl PlayerSpellState {
         let mana_gain = facts.max_mana.checked_sub(self.base_max_mana)?;
         let facts = CharacterCastFacts {
             magic_level: self.facts.magic_level,
+            max_soul: self.facts.max_soul,
             ..facts
         };
         // Use the same constructor to validate maxima and the level's base speed.
@@ -44,7 +45,6 @@ impl PlayerSpellState {
             .saturating_add(health_gain)
             .min(next.facts.max_health);
         next.mana = next.mana.saturating_add(mana_gain).min(next.facts.max_mana);
-        next.soul = next.soul.min(facts.max_soul);
         next.revision = next.revision.checked_add(1)?;
         Some(next)
     }
@@ -73,6 +73,23 @@ mod tests {
         state.health = 100;
         state.mana = 40;
         state
+    }
+
+    #[test]
+    fn level_up_preserves_promoted_soul_maximum_and_current_pool() {
+        let mut before = PlayerSpellState::new(
+            CharacterCastFacts {
+                max_soul: 200,
+                ..knight(8, 185, 90)
+            },
+            0,
+            0,
+        )
+        .expect("promoted state");
+        before.soul = 180;
+        let next = before.after_level_up(knight(9, 200, 95)).expect("level up");
+        assert_eq!(next.facts.max_soul, 200);
+        assert_eq!(next.soul, 180);
     }
 
     #[test]

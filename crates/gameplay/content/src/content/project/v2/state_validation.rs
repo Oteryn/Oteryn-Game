@@ -90,33 +90,24 @@ fn validate_declarations(
         validate_v2_declaration(declaration, require_ref, limits)?;
     }
     item_conversion::validate_item_conversions(state, records, limits)?;
-    for declaration in &state.declarations {
-        let ProjectV2Declaration::Area { identity, .. } = declaration else {
-            continue;
-        };
-        let mut seen = BTreeSet::new();
-        let mut current = Some(identity.key.as_str());
-        while let Some(area_key) = current {
-            if !seen.insert(area_key) {
-                return Err(ProjectError::InvalidProject(
-                    "v2 Area parent chain contains a cycle",
-                ));
+    let parents = state
+        .declarations
+        .iter()
+        .filter_map(|declaration| {
+            if let ProjectV2Declaration::Area {
+                identity, parent, ..
+            } = declaration
+            {
+                Some((
+                    identity.key.as_str(),
+                    parent.as_ref().map(|parent| parent.key.as_str()),
+                ))
+            } else {
+                None
             }
-            current = state
-                .declarations
-                .iter()
-                .find_map(|candidate| match candidate {
-                    ProjectV2Declaration::Area {
-                        identity: candidate_identity,
-                        parent,
-                        ..
-                    } if candidate_identity.key == area_key => {
-                        parent.as_ref().map(|reference| reference.key.as_str())
-                    }
-                    _ => None,
-                });
-        }
-    }
+        })
+        .collect();
+    validate_parent_chains(&parents, "v2 Area parent chain contains a cycle")?;
 
     Ok(())
 }
@@ -318,15 +309,19 @@ fn validate_placements(
             "v2 placements are not identity sorted",
         ));
     }
+    let placements: BTreeMap<_, _> = state
+        .placements
+        .iter()
+        .map(|p| (p.key.as_str(), p))
+        .collect();
     for placement in &state.placements {
         if let Some(parent_key) = &placement.parent_placement {
-            let parent = state
-                .placements
-                .iter()
-                .find(|candidate| &candidate.key == parent_key)
-                .ok_or(ProjectError::InvalidProject(
-                    "v2 parent placement is missing",
-                ))?;
+            let parent =
+                placements
+                    .get(parent_key.as_str())
+                    .ok_or(ProjectError::InvalidProject(
+                        "v2 parent placement is missing",
+                    ))?;
             if parent.world != placement.world || parent.map_revision != placement.map_revision {
                 return Err(ProjectError::InvalidProject(
                     "v2 parent placement world or map revision mismatch",
@@ -334,23 +329,13 @@ fn validate_placements(
             }
         }
     }
-    for placement in &state.placements {
-        let mut seen = BTreeSet::new();
-        let mut current = Some(placement);
-        while let Some(node) = current {
-            if !seen.insert(node.key.as_str()) {
-                return Err(ProjectError::InvalidProject(
-                    "v2 placement parent chain contains a cycle",
-                ));
-            }
-            current = node.parent_placement.as_ref().and_then(|parent_key| {
-                state
-                    .placements
-                    .iter()
-                    .find(|candidate| &candidate.key == parent_key)
-            });
-        }
-    }
+    let parents = state
+        .placements
+        .iter()
+        .map(|p| (p.key.as_str(), p.parent_placement.as_deref()))
+        .collect();
+    validate_parent_chains(&parents, "v2 placement parent chain contains a cycle")?;
+
     Ok(())
 }
 
@@ -560,4 +545,128 @@ fn validate_editor(
         ));
     }
     Ok(())
+}
+
+fn validate_parent_chains(
+    parents: &BTreeMap<&str, Option<&str>>,
+    error: &'static str,
+) -> Result<(), ProjectError> {
+    let mut done = BTreeSet::new();
+    for &start in parents.keys() {
+        let mut path = BTreeSet::new();
+        let mut current = Some(start);
+        while let Some(key) = current {
+            if done.contains(key) {
+                break;
+            }
+            if !path.insert(key) {
+                return Err(ProjectError::InvalidProject(error));
+            }
+            current = parents.get(key).copied().flatten();
+        }
+        done.extend(path);
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod regression_tests {
+    use super::*;
+
+    #[test]
+    fn deep_parent_chains_have_bounded_validation_work() -> Result<(), ProjectError> {
+        let limits = ProjectEvidenceLimits {
+            max_documents: 10000,
+            max_document_bytes: 1000000,
+            max_total_bytes: 10000000,
+            max_json_depth: 64,
+            max_decoded_fields: 100000,
+            max_string_bytes: 10000,
+            max_locator_bytes: 10000,
+            max_locator_segments: 100,
+            max_reference_records: 10000,
+            max_import_records: 10000,
+            max_reimport_states: 10000,
+        };
+        let mut state = ProjectV2State::default();
+        for index in 0..2048 {
+            state.declarations.push(ProjectV2Declaration::Area {
+                identity: ProjectV2Identity {
+                    key: format!("oteryn:area/{index:04}"),
+                    revision: "r1".into(),
+                },
+                visibility: PublicVisibility::Public,
+                parent: (index > 0).then(|| ProjectV2DefinitionRef {
+                    family: ProjectV2Family::Area,
+                    key: format!("oteryn:area/{:04}", index - 1),
+                    revision: "r1".into(),
+                }),
+                fields: Vec::new(),
+            });
+        }
+        let started = std::time::Instant::now();
+        validate_declarations(&state, &[], &|_| Ok(()), limits)?;
+        assert!(
+            started.elapsed() < std::time::Duration::from_secs(2),
+            "deep parent validation exceeded two seconds"
+        );
+        state.worlds.push(ProjectV2World {
+            key: "oteryn:world/chain".into(),
+            world_id: "unused".into(),
+            coordinate_frame: "oteryn:frame/chain".into(),
+            bounds: ProjectV2Bounds {
+                min_x: 0,
+                min_y: 0,
+                max_x_exclusive: 1,
+                max_y_exclusive: 1,
+            },
+            floors: vec![0],
+        });
+        for index in 0..2048 {
+            state.placements.push(ProjectV2Placement {
+                key: format!("oteryn:placement/{index:04}"),
+                world: "oteryn:world/chain".into(),
+                map_revision: "r1".into(),
+                definition: ProjectV2DefinitionRef {
+                    family: ProjectV2Family::Area,
+                    key: "oteryn:area/0000".into(),
+                    revision: "r1".into(),
+                },
+                area: None,
+                document: None,
+                parent_placement: (index > 0).then(|| format!("oteryn:placement/{:04}", index - 1)),
+                coordinate_frame: "oteryn:frame/chain".into(),
+                x: 0,
+                y: 0,
+                floor: 0,
+                presentation_order: ProjectV2PresentationOrder {
+                    plane: 0,
+                    order: index,
+                },
+                disposition: ProjectV2Disposition::CandidateOnly,
+            });
+        }
+        let worlds = state
+            .worlds
+            .iter()
+            .map(|world| (&world.key, world))
+            .collect();
+        let started = std::time::Instant::now();
+        validate_placements(&state, &worlds, &|_| Ok(()), limits)?;
+        assert!(
+            started.elapsed() < std::time::Duration::from_secs(2),
+            "deep placement validation exceeded two seconds"
+        );
+        state.placements[0].parent_placement = Some("oteryn:placement/2047".into());
+        assert!(validate_placements(&state, &worlds, &|_| Ok(()), limits).is_err());
+        if let ProjectV2Declaration::Area { parent, .. } = &mut state.declarations[0] {
+            *parent = Some(ProjectV2DefinitionRef {
+                family: ProjectV2Family::Area,
+                key: "oteryn:area/2047".into(),
+                revision: "r1".into(),
+            });
+        }
+        assert!(validate_declarations(&state, &[], &|_| Ok(()), limits).is_err());
+        Ok(())
+    }
 }

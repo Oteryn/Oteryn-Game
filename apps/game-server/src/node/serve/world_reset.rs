@@ -21,9 +21,7 @@ pub(super) async fn serve_watching_reset(
     let world = owners.world_id;
     let watch = async {
         loop {
-            if let Ok(Some(reset)) = root.retiring_world_reset(world).await {
-                state.requested.store(true, Ordering::Release);
-                drain.request(reset);
+            if observe_reset(root, world, state, &drain).await {
                 std::future::pending::<()>().await;
             }
             if first(
@@ -43,6 +41,20 @@ pub(super) async fn serve_watching_reset(
         Some(result) => result,
         None => unreachable!("reset watch parks after requesting the sealed drain"),
     }
+}
+
+async fn observe_reset(
+    root: &DurabilityRoot,
+    world: WorldId,
+    state: &ResetWatch,
+    drain: &GameplayDrain,
+) -> bool {
+    if let Ok(Some(reset)) = root.retiring_world_reset(world).await {
+        state.requested.store(true, Ordering::Release);
+        drain.request(reset);
+        return true;
+    }
+    false
 }
 
 pub(super) fn classify_exit(
@@ -104,7 +116,12 @@ pub(super) async fn recover_retiring(
                 Ok(None) if tokio::time::Instant::now() < wait_until => {}
                 Ok(None) => return Err(BootError::Readiness("World reset drain wait")),
                 Err(crate::durability::item_decay_retire::DecayRetireError::Unavailable(error))
-                    if boot_step_retryable(&error) && tokio::time::Instant::now() < wait_until => {}
+                    if (boot_step_retryable(&error)
+                        || matches!(
+                            error,
+                            crate::durability::DurabilityError::CommitTransactionTimeout
+                        ))
+                        && tokio::time::Instant::now() < wait_until => {}
                 Err(_) => return Err(BootError::Readiness("World reset completion")),
             }
             tokio::time::sleep(ASSIGNMENT_POLL).await;

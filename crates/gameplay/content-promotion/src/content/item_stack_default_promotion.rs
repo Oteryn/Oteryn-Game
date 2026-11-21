@@ -14,6 +14,7 @@ pub const ITEM_STACK_DEFAULT_PACKET_SHA256: &str =
 pub fn apply_item_stack_default_promotion_v1(
     draft: &mut ProjectV2Draft,
 ) -> Result<StackFalsePromotion, String> {
+    super::item_identity::validate_unique_item_keys(draft)?;
     if world_project_sha256(ITEM_STACK_DEFAULT_PACKET) != ITEM_STACK_DEFAULT_PACKET_SHA256 {
         return Err("documented stack default packet digest drift".into());
     }

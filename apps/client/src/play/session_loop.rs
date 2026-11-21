@@ -15,27 +15,8 @@ const IDLE_SLICE: Duration = Duration::from_millis(20);
 
 pub use super::stepper::Stepper;
 
-fn publish_scope_transition<T: Stepper>(
-    error: &oteryn_session::SessionError,
-    session: &mut T,
-    outbox: &Outbox,
-    held: &mut Vec<oteryn_session::WorldSpatialEntity>,
-    modal: &mut super::feature_0450_server_modal::protocol::Driver,
-) -> bool {
-    if matches!(
-        error,
-        oteryn_session::SessionError::ScopeChanged
-            | oteryn_session::SessionError::ActivityScopeChanged
-    ) {
-        // Publish the destination and discard unsent source actions through the
-        // same scope barrier, whether a command or an automatic query saw it.
-        publish(session, outbox, held);
-        modal.reset_scope(session.feature_selected(450));
-        true
-    } else {
-        false
-    }
-}
+mod scope_transition;
+use scope_transition::publish_scope_transition;
 
 fn initialize<T: Stepper>(
     session: &T,
@@ -59,6 +40,7 @@ pub async fn run_session<T: Stepper>(
     let modal = super::feature_0450_server_modal::protocol::Driver::new(
         session.feature_selected(450),
     )
+    .with_defaults(session.feature_selected(505))
     .with_input(session.feature_selected(
         oteryn_session::property_services::server_modal::input::CAPABILITY_SERVER_MODAL_INPUT_V1,
     ));
@@ -73,25 +55,67 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
 ) {
     modal = modal.with_outbox(&outbox);
     outbox.performance_reset();
-    let personal_marks_selected = session.feature_selected(451);
-    if personal_marks_selected {
-        outbox.personal_map_marks_initialize();
-    }
     let commands = std::sync::Arc::new(std::sync::Mutex::new(commands));
     outbox.scope_receiver(&commands);
+    if outbox.session_cancelled() {
+        return;
+    }
     if let Err(error) = initialize(&session, &outbox) {
         outbox.end(public_class(&error));
         return;
     }
-    if let Some(command) = outbox.returner_initial_request() {
-        match session.feature(&command).await {
-            Ok(result) => outbox.daily_reward_returner_result(command.kind, &result),
-            Err(_) => outbox.returner_unavailable(),
-        }
-    }
     let mut held = Vec::new();
+    // Publish the admission queue before any query can append a new scope's
+    // snapshot with the same initial sequence and revisions.
+    publish(&mut session, &outbox, &mut held);
     let mut personal_marks_refresh = std::time::Instant::now();
-    loop {
+    let mut read_initial_features = !super::mailbox::lock(&outbox.0).scope_pending;
+    let mut query_returner = true;
+    'session: loop {
+        if outbox.session_cancelled() {
+            return;
+        }
+        if outbox.scope_needs_initialize() {
+            if let Err(error) = initialize(&session, &outbox) {
+                outbox.end(public_class(&error));
+                return;
+            }
+            read_initial_features = true;
+        }
+        if std::mem::take(&mut read_initial_features) {
+            // An initial recovery receipt clears the admission mailbox. Wait for
+            // the destination to be presented and initialized before querying.
+            if std::mem::take(&mut query_returner)
+                && let Some(command) = outbox.returner_initial_request()
+            {
+                match session.feature(&command).await {
+                    Ok(result) => outbox.daily_reward_returner_result(command.kind, &result),
+                    Err(_) => outbox.returner_unavailable(),
+                }
+            }
+            for command in outbox.server_info_initial_commands() {
+                let Some(query) = oteryn_session::server_info::Query::decode(&command.payload)
+                else {
+                    continue;
+                };
+                match session.feature(&command).await {
+                    Ok(result) => outbox.server_info_result(&query, &result),
+                    Err(error) => {
+                        if publish_scope_transition(
+                            &error,
+                            &mut session,
+                            &outbox,
+                            &mut held,
+                            &mut modal,
+                        ) {
+                            continue 'session;
+                        }
+                        outbox.end(public_class(&error));
+                        return;
+                    }
+                }
+            }
+        }
         match modal.poll(&mut session).await {
             Ok(Some(ModalCompletion::Answered(answer))) => outbox.store_modal_answered(answer),
             Ok(Some(ModalCompletion::LoggedOut)) => {
@@ -107,7 +131,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 return;
             }
         }
-        if personal_marks_selected && std::time::Instant::now() >= personal_marks_refresh {
+        if session.feature_selected(451) && std::time::Instant::now() >= personal_marks_refresh {
             let command = oteryn_client_ui::personal_map_marks::request();
             match session.feature(&command).await {
                 Ok(result) => {
@@ -135,11 +159,45 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
             personal_marks_refresh = std::time::Instant::now() + Duration::from_secs(5);
         }
 
-        if outbox.scope_needs_initialize()
-            && let Err(error) = initialize(&session, &outbox)
-        {
-            outbox.end(public_class(&error));
-            return;
+        if let Some(command) = outbox.server_info_quest_observation_command() {
+            match session.feature(&command).await {
+                Ok(result) => {
+                    outbox.server_info_result(&oteryn_session::server_info::Query::Quests, &result)
+                }
+                Err(error) => {
+                    if publish_scope_transition(
+                        &error,
+                        &mut session,
+                        &outbox,
+                        &mut held,
+                        &mut modal,
+                    ) {
+                        continue;
+                    }
+                    outbox.end(public_class(&error));
+                    return;
+                }
+            }
+            publish(&mut session, &outbox, &mut held);
+        }
+        if let Some(command) = outbox.highscores_continuation_command() {
+            match session.server_mechanic(&command).await {
+                Ok(result) => outbox.highscores_result(&result),
+                Err(error) => {
+                    if publish_scope_transition(
+                        &error,
+                        &mut session,
+                        &outbox,
+                        &mut held,
+                        &mut modal,
+                    ) {
+                        continue;
+                    }
+                    outbox.end(public_class(&error));
+                    return;
+                }
+            }
+            publish(&mut session, &outbox, &mut held);
         }
         let ended = super::feature_0014_container_tree::protocol::dispatch! {
             outbox.scope_command(&commands), session, outbox, held, publish;
@@ -164,11 +222,13 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 }
             },
             Ok(PlayCommand::Feature(command)) => {
+                let item_scope = outbox.bar_action_scope();
                 let started = std::time::Instant::now();
                 match session.feature(&command).await {
                 Ok(result) => {
                     outbox.performance_command_result(started.elapsed());
                     match command.capability {
+                        502 => outbox.mount_result(),
                         7 => outbox.console_result(&result),
                         10 => outbox.analyser_result(&command, &result),
                         63 => outbox.market_details_result(&command, &result),
@@ -177,8 +237,8 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                         14 => outbox.player_trade_container_result(&result),
                         25 | 67 | 87 => outbox.properties_result(&command, &result),
                         53 => outbox.world_event_result(&result),
-                        54 | 55 | 115 | 150 | 207 => outbox.properties_result(&command, &result),
-                        39 | 57 | 134 => outbox.properties_result(&command, &result),
+                        54 | 55 | 115 | 150 | 207 | 511 => outbox.properties_result(&command, &result),
+                        39 | 49 | 57 | 134 => outbox.properties_result(&command, &result),
                         97 if command.kind == 113 && command.payload == [5] => outbox.premium_game_result(&command,&result),
                         97 | 149 => outbox.properties_result(&command, &result),
                         59 | 86 | 99 => outbox.properties_result(&command, &result),
@@ -199,6 +259,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                         225 => outbox.boss_difficulty_result(&result),
                         497 => outbox.sanction_record_result(&result),
                         512 => outbox.channel_switch_result(&command, &result),
+                        504 => outbox.tutorial_vocation_result(&result),
                         250 => outbox.hireling_management_result(&result),
                         276 => outbox.condition_status_result(&result),
                         384 => outbox.mechanics_status_result(&result),
@@ -208,8 +269,18 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                         280 => outbox.party_effects_result(&result),
                         381 => outbox.potion_durations_result(&result),
                         382 => outbox.death_protection_result(&result),
-                        449 => outbox.spellbook_details_result(&result),
-                        463 => outbox.bar_item_cooldowns_result(&result),
+                        449 => {
+                            outbox.spellbook_details_result(&result);
+                            for info_command in outbox.server_info_spell_commands() {
+                                let query=oteryn_session::server_info::Query::decode(&info_command.payload);
+                                match session.feature(&info_command).await {
+                                    Ok(info_result)=>if let Some(query)=query {outbox.server_info_result(&query,&info_result);},
+                                    Err(error)=>{if publish_scope_transition(&error,&mut session,&outbox,&mut held,&mut modal) {break;}outbox.end(public_class(&error));return;}
+                                }
+                            }
+                        },
+                        500 => if let Some(query)=oteryn_session::server_info::Query::decode(&command.payload) {outbox.server_info_result(&query,&result);},
+                        463 => outbox.bar_item_cooldowns_result(item_scope, &result),
                         _ => {}
                     }
                     publish(&mut session, &outbox, &mut held);
@@ -239,7 +310,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                             64 => outbox.target_move_result(&request, &response),
                             82 => outbox.creature_push_result(&response),
                             98 | 132 | 200 | 232 | 285 => outbox.discovery_result(request.capability, &response),
-                            9 => outbox.highscores_result(&response),
+                            9 | 507 => outbox.highscores_result(&response),
                             17 if request.command_type == oteryn_session::battle_metadata::COMMAND_TYPE_BATTLE_METADATA_QUERY => outbox.battle_metadata_result(&response),
                             14 => outbox.browse_field_result(&response),
                             152 => outbox.item_forge_result(&response),
@@ -284,6 +355,13 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
             Ok(PlayCommand::QuestLog(payload)) => match session.quest_log(&payload).await {
                 Ok(result) => {
                     outbox.quest_result(&result);
+                    let query=oteryn_session::server_info::Query::Quests;
+                    if let Some(info_command)=outbox.server_info_command(query.clone()) {
+                        match session.feature(&info_command).await {
+                            Ok(info_result)=>outbox.server_info_result(&query,&info_result),
+                            Err(error)=>{if publish_scope_transition(&error,&mut session,&outbox,&mut held,&mut modal) {continue;}outbox.end(public_class(&error));return;}
+                        }
+                    }
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }
@@ -328,7 +406,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                     Err(error) => error,
                 }
             }
-            Ok(command @ (PlayCommand::Combat(_) | PlayCommand::Battle(_))) => {
+            Ok(command @ (PlayCommand::Combat(_) | PlayCommand::Battle(_) | PlayCommand::StopAttacking(_))) => {
                 match outbox.battle_run(&mut session, command).await {
                     Ok(()) => {
                         publish(&mut session, &outbox, &mut held);
@@ -449,7 +527,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 }
                 Err(error) => error,
             },
-            Ok(PlayCommand::Hireling(request)) => match session.hireling(&request).await {
+            Ok(PlayCommand::Hireling(request)) => match session.hireling(&outbox.wire_hireling(request)).await {
                 Ok(response) => {
                     outbox.hireling_result(&response);
                     publish(&mut session, &outbox, &mut held);

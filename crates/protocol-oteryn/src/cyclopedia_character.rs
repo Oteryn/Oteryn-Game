@@ -4,6 +4,7 @@
 
 #[path = "cyclopedia_character/badge_visibility.rs"]
 pub mod badge_visibility;
+pub mod blessings_dialog;
 
 #[path = "cyclopedia_character/achievements.rs"]
 pub mod achievements;

@@ -170,7 +170,7 @@ pub(super) fn build(
             120.,
         );
     }
-    let rows = scroll(commands, left, true);
+    let rows = scroll(commands, left, true, 0);
     let search_value = if key.tab == Tab::Quests {
         quest.list_search.as_str()
     } else if book.selected {
@@ -217,14 +217,14 @@ pub(super) fn build(
             .id();
         commands.entity(left).add_child(hint);
     }
-    let missions = scroll(commands, right, false);
+    let missions = scroll(commands, right, false, 1);
     if key.tab == Tab::Spells {
         commands.entity(missions).insert(Node {
             display: Display::None,
             ..default()
         });
     }
-    let description = scroll(commands, right, true);
+    let description = scroll(commands, right, true, 2);
     let detail = commands
         .spawn((
             source::text("", source::font(skin.font.clone(), false)),
@@ -240,7 +240,7 @@ pub(super) fn build(
         .id();
     commands.entity(description).add_child(detail);
     if key.tab == Tab::Quests {
-        let tracker = scroll(commands, right, true);
+        let tracker = scroll(commands, right, true, 3);
         let text = commands
             .spawn((
                 source::text("", source::font(skin.font.clone(), false)),
@@ -314,10 +314,11 @@ fn row(commands: &mut Commands, parent: Entity) -> Entity {
     commands.entity(parent).add_child(row);
     row
 }
-fn scroll(commands: &mut Commands, parent: Entity, grow: bool) -> Entity {
+fn scroll(commands: &mut Commands, parent: Entity, grow: bool, role: u32) -> Entity {
     let scroll = commands
         .spawn((
             ScrollArea,
+            crate::bevy_shell::game_ui::install::RememberScroll("journal", role),
             Node {
                 width: percent(100.),
                 min_height: px(0.),

@@ -73,6 +73,7 @@ impl FreshAdmissionAuthority for TypingAuthority {
                 .iter()
                 .map(|entry| ChannelEntity {
  source_icons: oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(),
+                    motion: None,
                     display_name: None,
                     health_percent: 100,
                     direction: StepDirection::South,
