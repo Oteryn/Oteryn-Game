@@ -31,45 +31,44 @@ impl Survey {
         crate::crash_report::save(&self.preview(), path, consent)
     }
 }
-/// The sign-in survey's invitation, answer, preview and consent flow.
-pub fn review_survey_at(path: &Path, mut ask: impl FnMut(&str) -> bool) -> io::Result<bool> {
-    if !ask(tr!(
+/// The survey's invitation; No ends it.
+pub fn survey_invitation() -> &'static str {
+    tr!(
         "Would you like to answer an optional one-question Oteryn client survey? You can decline delivery after reviewing your answer."
-    )) {
-        return Ok(false);
-    }
-    let survey = Survey::new(ask(tr!(
-        "Was browser sign-in easy? Yes = Easy; No = Difficult."
-    )));
-    let preview = crate::support_delivery::preview(&survey.preview());
-    if !ask(&lfmt!(
+    )
+}
+/// The survey's one question; Yes answers Easy, No answers Difficult.
+pub fn survey_question() -> &'static str {
+    tr!("Was browser sign-in easy? Yes = Easy; No = Difficult.")
+}
+/// The exact response text that consent queues, with its delivery reference.
+pub fn survey_response(easy_sign_in: bool) -> String {
+    crate::support_delivery::preview(&Survey::new(easy_sign_in).preview())
+}
+/// The consent question under the response it would queue.
+pub fn survey_consent(response: &str) -> String {
+    lfmt!(
         "{}\nSend exactly this response to the Oteryn game server on your next signed-in play session?",
-        preview
-    )) {
-        return Ok(false);
-    }
+        response
+    )
+}
+/// Queues a consented response for delivery on the next signed-in play session.
+pub fn queue_survey_response(path: &Path, response: &str) -> io::Result<bool> {
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)?;
     }
-    crate::crash_report::save(&preview, path, true)
+    crate::crash_report::save(response, path, true)
 }
-#[cfg(windows)]
-pub(crate) fn run_survey() {
-    let result = (|| -> io::Result<Option<std::path::PathBuf>> {
-        let settings = crate::native_login::settings_path().map_err(io::Error::other)?;
-        let directory = settings
-            .parent()
-            .ok_or_else(|| io::Error::other(tr!("No configuration directory")))?;
-        let path = directory.join("approved-survey.txt");
-        Ok(review_survey_at(&path, crate::crash_report::consent_dialog)?.then_some(path))
-    })();
-    match result {
-        Ok(None) => {}
-        Ok(Some(_)) => show_information(tr!(
-            "Survey response queued for delivery on your next play session."
-        )),
-        Err(_) => show_information(tr!("Cannot save the response. No response was sent.")),
+/// The sign-in survey's invitation, answer, preview and consent flow.
+pub fn review_survey_at(path: &Path, mut ask: impl FnMut(&str) -> bool) -> io::Result<bool> {
+    if !ask(survey_invitation()) {
+        return Ok(false);
     }
+    let response = survey_response(ask(survey_question()));
+    if !ask(&survey_consent(&response)) {
+        return Ok(false);
+    }
+    queue_survey_response(path, &response)
 }
 #[cfg(windows)]
 // Native informational dialog; both UTF-16 buffers outlive the synchronous call.
