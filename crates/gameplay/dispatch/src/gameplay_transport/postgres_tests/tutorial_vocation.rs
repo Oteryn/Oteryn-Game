@@ -568,7 +568,12 @@ fn vocation_scenario(case: Case) -> TestResult {
                                 movement.commit_cardinal(at, crate::foundation::MovementLocalPosition { x, ..at.position() }).map_err(debug)?;
                             }
                             if logout {
-                                let _ = owner.logout_session(admitted).await;
+                                assert_eq!(
+                                    owner.logout_session(admitted).await,
+                                    crate::gameplay_transport::logout::LogoutReply::Result(
+                                        oteryn_protocol_oteryn::logout::LogoutResult::Accepted,
+                                    ),
+                                );
                             } else {
                                 assert_eq!(owner.write_due_last_positions(true).await, 0);
                             }
