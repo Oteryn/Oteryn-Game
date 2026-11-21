@@ -284,6 +284,19 @@ impl HostOwner {
                 self.login.form.feedback(error);
             }
         }
+        let notices = crate::atomic_file::take_malformed_notices();
+        if !notices.is_empty() {
+            let message = notices.join("\n");
+            self.settings.feedback.clone_from(&message);
+            if let Some(play) = &self.play {
+                play.link.local_persistence_notice(message);
+            } else {
+                self.login.form.feedback(message);
+                if self.phase == Phase::Offline {
+                    self.login.show();
+                }
+            }
+        }
         if self.entry.as_ref().is_some_and(Reentry::is_entering) {
             self.phase = Phase::Entering;
         }

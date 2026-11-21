@@ -17,12 +17,18 @@ impl WindowLayout {
         let mut bytes = Vec::new();
         file.take((1 << 20) + 1).read_to_end(&mut bytes)?;
         if bytes.len() > 1 << 20 {
-            return Err(io::Error::other(tr!("Window layout exceeds 1 MiB")));
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                tr!("Window layout exceeds 1 MiB"),
+            ));
         }
-        let layout: Self = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
+        let layout: Self = serde_json::from_slice(&bytes)
+            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
         let mut checked = Self::default();
         for (id, bounds) in layout.0 {
-            checked.record(&id, bounds)?;
+            checked
+                .record(&id, bounds)
+                .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
         }
         Ok(checked)
     }
@@ -51,7 +57,13 @@ impl WindowLayout {
     #[cfg(bevy_shell)]
     pub(crate) fn save_edits(&self, path: &Path, before: &Self) -> io::Result<()> {
         let _lock = crate::atomic_file::try_lock(path)?;
-        let mut active = Self::load(path)?;
+        let mut active = match Self::load(path) {
+            Err(error) if error.kind() == io::ErrorKind::InvalidData => {
+                crate::atomic_file::preserve_malformed(path)?;
+                Self::default()
+            }
+            result => result?,
+        };
         for (id, &bounds) in &self.0 {
             let previous = before.bounds(id);
             if previous != Some(bounds) {
@@ -98,6 +110,23 @@ mod tests {
         assert_eq!(
             WindowLayout::load(&path)?.bounds("window"),
             Some([31, 42, 800, 600])
+        );
+        Ok(())
+    }
+
+    #[cfg(bevy_shell)]
+    #[test]
+    fn review_3376_malformed_geometry_is_recovered_on_save() -> io::Result<()> {
+        let root = tempfile::tempdir()?;
+        let path = root.path().join("window.json");
+        std::fs::write(&path, b"{")?;
+        let baseline = WindowLayout::load(&path).unwrap_or_default();
+        let mut edited = baseline.clone();
+        edited.record("window", [31, 42, 640, 480])?;
+        assert!(edited.save_edits(&path, &baseline).is_ok());
+        assert_eq!(
+            WindowLayout::load(&path)?.bounds("window"),
+            Some([31, 42, 640, 480])
         );
         Ok(())
     }

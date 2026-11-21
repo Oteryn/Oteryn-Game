@@ -96,7 +96,24 @@ fn update_book(
 ) -> Result<PresetBook, &'static str> {
     let error = || tr!("Cannot save presets");
     let _lock = crate::atomic_file::lock(path).map_err(|_| error())?;
-    let mut book = PresetBook::load(path)?;
+    let mut book = match PresetBook::load(path) {
+        // The book API returns display text. These errors represent I/O or a future schema.
+        Err(message)
+            if [
+                tr!("Cannot inspect presets"),
+                tr!("Cannot read presets"),
+                tr!("Unsupported preset version"),
+            ]
+            .contains(&message) =>
+        {
+            return Err(message);
+        }
+        Err(_) => {
+            crate::atomic_file::preserve_malformed(path).map_err(|_| error())?;
+            PresetBook::default()
+        }
+        Ok(book) => book,
+    };
     edit(&mut book)?;
     let bytes = serde_json::to_vec_pretty(&serde_json::json!({"version": 1, "presets": book.0}))
         .map_err(|_| error())?;
@@ -149,6 +166,21 @@ mod e2e_n02;
 #[cfg(test)]
 mod management_tests {
     use super::*;
+
+    #[test]
+    fn review_3376_malformed_wheel_book_is_recovered_on_save()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let root = tempfile::tempdir()?;
+        let path = root.path().join("wheel.json");
+        std::fs::write(&path, b"{")?;
+        let (link, _, _) = crate::play::play_channel();
+        let mut mailbox = lock(&link.mailbox);
+        mailbox.wheel.preset_fields[0] = "Recovered".into();
+        submit_at(&mut mailbox, 0, "", &path);
+        assert!(PresetBook::load(&path).is_ok_and(|book| book.0.contains_key("Recovered")));
+        Ok(())
+    }
+
     #[test]
     fn wheel_presets_create_rename_delete_are_durable_and_collision_safe()
     -> Result<(), Box<dyn std::error::Error>> {

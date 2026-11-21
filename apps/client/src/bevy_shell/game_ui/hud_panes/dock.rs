@@ -95,9 +95,9 @@ impl SidebarWidgets {
         let Some(revision) = read_revision(path)? else {
             return Ok(Self::default());
         };
-        let saved = serde_json::from_slice(&revision)
-            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
-        let mut widgets = Self::sanitize(saved);
+        let mut widgets = serde_json::from_slice(&revision)
+            .map(Self::sanitize)
+            .unwrap_or_default();
         widgets.saved_revision = Some(revision);
         Ok(widgets)
     }
@@ -151,19 +151,29 @@ impl SidebarWidgets {
     /// Writes beside the target and renames, so a crash never leaves half a file.
     pub(in crate::bevy_shell) fn save(&mut self, path: &Path) -> io::Result<()> {
         let _lock = crate::atomic_file::try_lock(path)?;
-        let mut active = Self::load(path)?;
+        let mut active = Self::load_for_write(path)?;
         let before = self
             .saved_revision
             .as_deref()
-            .map(serde_json::from_slice)
-            .transpose()
-            .map_err(io::Error::other)?
+            .and_then(|bytes| serde_json::from_slice(bytes).ok())
             .map(Self::sanitize)
             .unwrap_or_default();
         active.apply_edits(&before, self);
         active.publish(path)?;
         *self = active;
         Ok(())
+    }
+
+    fn load_for_write(path: &Path) -> io::Result<Self> {
+        let active = Self::load(path)?;
+        if active
+            .saved_revision
+            .as_deref()
+            .is_some_and(|bytes| serde_json::from_slice::<Saved>(bytes).is_err())
+        {
+            crate::atomic_file::preserve_malformed(path)?;
+        }
+        Ok(active)
     }
 
     fn apply_edits(&mut self, before: &Self, edited: &Self) {
@@ -256,7 +266,7 @@ impl SidebarWidgets {
         let mut reset = Self::default();
         if let Some(path) = path {
             let _lock = crate::atomic_file::try_lock(path)?;
-            let _active = Self::load(path)?;
+            let _active = Self::load_for_write(path)?;
             reset.publish(path)?;
         }
         *self = reset;
@@ -394,6 +404,18 @@ mod staging_tests {
         assert!(combined.left && combined.extra);
         first.reset(Some(&path))?;
         assert_eq!(SidebarWidgets::load(&path)?, SidebarWidgets::default());
+        Ok(())
+    }
+
+    #[test]
+    fn review_3376_malformed_dock_is_recovered_on_save() -> io::Result<()> {
+        let root = tempfile::tempdir()?;
+        let path = root.path().join("dock.json");
+        std::fs::write(&path, b"{")?;
+        let mut edited = SidebarWidgets::load(&path).unwrap_or_default();
+        edited.extra = true;
+        assert!(edited.save(&path).is_ok());
+        assert!(SidebarWidgets::load(&path)?.extra);
         Ok(())
     }
 

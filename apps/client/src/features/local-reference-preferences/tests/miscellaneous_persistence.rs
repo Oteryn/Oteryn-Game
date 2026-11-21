@@ -233,3 +233,17 @@ fn import_from_active_file_waits_for_the_pending_save() -> TestResult {
     assert_eq!(state.preferences.ui_scale, 125);
     Ok(())
 }
+
+#[test]
+fn review_3376_malformed_session_options_recover_on_apply() -> TestResult {
+    let temp = Temp::new()?;
+    std::fs::write(temp.sidecar(), b"{")?;
+    let mut state = SettingsState::new(Some(temp.preferences()));
+    let mut edited = state.preferences.clone();
+    edited.miscellaneous.confirm_exit = false;
+    state.apply(edited);
+    assert!(
+        MiscellaneousPreferences::read(&temp.sidecar()).is_ok_and(|options| !options.confirm_exit)
+    );
+    Ok(())
+}

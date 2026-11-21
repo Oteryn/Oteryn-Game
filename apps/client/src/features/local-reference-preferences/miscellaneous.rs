@@ -36,9 +36,13 @@ impl MiscellaneousPreferences {
             .take(4097)
             .read_to_end(&mut bytes)?;
         if bytes.len() > 4096 {
-            return Err(std::io::Error::other("Invalid session options size"));
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "Invalid session options size",
+            ));
         }
-        serde_json::from_slice(&bytes).map_err(std::io::Error::other)
+        serde_json::from_slice(&bytes)
+            .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))
     }
     pub fn save(&self, path: &std::path::Path) -> std::io::Result<()> {
         let _lock = crate::atomic_file::lock(path)?;
@@ -53,6 +57,10 @@ impl MiscellaneousPreferences {
         use std::io::ErrorKind;
         let mut active = match Self::read(path) {
             Err(error) if error.kind() == ErrorKind::NotFound => Self::default(),
+            Err(error) if error.kind() == ErrorKind::InvalidData => {
+                crate::atomic_file::preserve_malformed(path)?;
+                Self::default()
+            }
             result => result?,
         };
         let Self {

@@ -159,6 +159,10 @@ impl PlayLink {
         })();
         report_log_result(&self.mailbox, &result);
     }
+    #[cfg(bevy_shell)]
+    pub(crate) fn local_persistence_notice(&self, message: String) {
+        lock(&self.mailbox).chat.feedback = Some(message);
+    }
     pub fn chat_save_log(&self, path: &Path, append: bool) -> std::io::Result<()> {
         save_log(&self.mailbox, path, append)
     }
