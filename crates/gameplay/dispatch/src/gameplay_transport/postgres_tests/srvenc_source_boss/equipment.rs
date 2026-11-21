@@ -142,9 +142,16 @@ pub(super) async fn remaining_budgets(h: &Harness) -> TestResult<(i64, i64)> {
 }
 
 
-pub(super) async fn assert_elapsed(h: &Harness, before: (i64, i64)) -> TestResult {
+pub(super) async fn assert_elapsed(
+    h: &Harness,
+    before: (i64, i64),
+    since: std::time::Instant,
+    advanced_ms: i64,
+) -> TestResult<(i64, i64)> {
     let remaining = remaining_budgets(h).await?;
-    assert!(remaining.0 <= before.0 - 59_000);
-    assert!(remaining.1 <= before.1 - 59_000);
-    Ok(())
+    let maximum = advanced_ms + i64::try_from(since.elapsed().as_millis())? + 1;
+    for (item, debit) in [("boots", before.0 - remaining.0), ("imbuement", before.1 - remaining.1)] {
+        assert!((advanced_ms..=maximum).contains(&debit), "{item} charged {debit} ms outside {advanced_ms}..={maximum}");
+    }
+    Ok(remaining)
 }

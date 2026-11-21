@@ -289,6 +289,7 @@ fn scenario(case: equipment::Case) -> TestResult {
                 .is_none(),
             "only the production template caller may instantiate the destination"
         );
+        let entry_checked_at = std::time::Instant::now();
         let entry_budget = if case == equipment::Case::Entry {
             equipment::activity_equipment_clocks_charge_worn_items(&h, &mut owner, admitted, case).await?;
             owner.clock_origin -= std::time::Duration::from_secs(59);
@@ -321,7 +322,8 @@ fn scenario(case: equipment::Case) -> TestResult {
         assert_eq!(barrier.source_session, *old.game_session_id.as_bytes());
         assert_eq!(barrier.session, *admitted.game_session_id.as_bytes());
         if let Some(budget) = entry_budget {
-            return equipment::assert_elapsed(&h, budget).await;
+            equipment::assert_elapsed(&h, budget, entry_checked_at, 59_000).await?;
+            return Ok(());
         }
         let mut destination = owner
             .resolve_runtime_view(admitted)
@@ -401,6 +403,7 @@ fn scenario(case: equipment::Case) -> TestResult {
             )?))
             .await;
         }
+        let return_checked_at = std::time::Instant::now();
         let before = if clock_handoff {
             let actor = admitted.runtime_actor.ok_or("activity actor")?;
             let permit = destination.spell_lane_permit().await.ok_or("activity spell lane")?;
@@ -437,7 +440,7 @@ fn scenario(case: equipment::Case) -> TestResult {
             EXIT
         );
         if let Some(budget) = before {
-            equipment::assert_elapsed(&h, budget).await?;
+            equipment::assert_elapsed(&h, budget, return_checked_at, 59_000).await?;
         }
         let retained_rewards: i64 =
             sqlx::query_scalar("SELECT count(*) FROM game_boss_reward_items")
