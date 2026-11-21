@@ -47,14 +47,18 @@ impl Outbox {
                 && mailbox.activity_scope.as_ref().map(|old| old.session) != Some(scope.session)
             {
                 discard_commands(&mailbox);
+                mailbox.cancel_activity_requests();
                 let receiver = mailbox.command_receiver.clone();
                 let achievements = mailbox.achievement_notices.clone();
                 let shared_frontend = mailbox.shared_frontend;
                 let traffic = mailbox.traffic.take();
                 let character = std::mem::take(&mut mailbox.party.own_character_name);
                 let world = match scope.scope {
-                    ActivityScope::Channel { world, .. }
-                    | ActivityScope::Instance { world, .. } => world,
+                    ActivityScope::Channel { world, channel } => {
+                        mailbox.connection.channel_current = Some(channel);
+                        world
+                    }
+                    ActivityScope::Instance { world, .. } => world,
                 };
                 let mut world_field = String::with_capacity(36);
                 for (index, byte) in world.iter().enumerate() {
@@ -72,7 +76,8 @@ impl Outbox {
                 };
                 #[cfg(bevy_shell)]
                 let look_receipt = mailbox.look_receipt;
-                *mailbox = mailbox::Mailbox::default();
+                mailbox.reset_scope_state();
+                mailbox.project_world_channels();
                 mailbox.shared_frontend = shared_frontend;
                 mailbox.traffic = traffic;
                 mailbox.party.own_character_name = character;

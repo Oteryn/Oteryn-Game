@@ -3,6 +3,10 @@ use super::{Mailbox, Outbox, Pushed, SessionEvent, lock};
 
 impl Mailbox {
     pub(in crate::play) fn cancel_activity_requests(&mut self) {
+        if let Some(cancel) = self.channel_probe_cancel.take() {
+            cancel.cancel();
+            self.channel_probe_refreshed = None;
+        }
         self.reset_wire_frame();
         self.chat.scope = self.chat.scope.wrapping_add(1);
         // Every queued command belonged to the source namespace, including panel queries.

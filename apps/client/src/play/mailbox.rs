@@ -132,8 +132,19 @@ impl Pushed {
 /// dropped until the next poll, an update of a held one is still kept.
 pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
+/// Admission inputs shared across activity scopes on this connection.
+#[derive(Debug, Default)]
+pub(super) struct ConnectionInputs {
+    pub(super) channel_character: String,
+    pub(super) channel_current: Option<[u8; 16]>,
+    pub(super) channel_rows: Vec<oteryn_client_ui::channel_switch::ChannelRow>,
+    pub(super) coin_shop: Option<Arc<crate::coin_shop::launcher::Launcher>>,
+    pub(super) probe_platform: Option<String>,
+}
+
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) connection: ConnectionInputs,
     #[cfg(bevy_shell)]
     pub(super) screen_look: Option<super::feature_local_text_messages::view::LookMessage>,
     #[cfg(bevy_shell)]
@@ -225,7 +236,6 @@ pub(super) struct Mailbox {
     pub(super) item_forge: oteryn_client_ui::item_forge::ItemForgePanel,
     pub(super) store: oteryn_client_ui::store::StorePanel,
     pub(super) premium_game: crate::premium::game::Panel,
-    pub(super) coin_shop: Option<Arc<crate::coin_shop::launcher::Launcher>>,
     pub(super) vip_presence: oteryn_client_ui::vip_presence::VipPresencePanel,
     pub(super) vip_presence_confirmed_at: Option<tokio::time::Instant>,
     /// chsw (capability 513): VIP login, logout and Channel-change notices naming the Channel,
@@ -237,10 +247,7 @@ pub(super) struct Mailbox {
     /// released the session for a switch.
     pub(super) channel_switch: oteryn_client_ui::channel_switch::ChannelSwitchPanel,
     pub(super) channel_switch_target: Option<[u8; 16]>,
-    pub(super) channel_switch_character: String,
-    /// client-channel-probe-v1: the Platform the probe list comes from, the last refresh and
-    /// the measured pings by Channel.
-    pub(super) channel_probe_platform: Option<String>,
+    /// client-channel-probe-v1: the active refresh and its measured pings by Channel.
     pub(super) channel_probe_cancel: Option<oteryn_foundation::CancellationToken>,
     pub(super) channel_probe_refreshed: Option<std::time::Instant>,
     pub(super) channel_probe_pings: Vec<([u8; 16], Option<u32>)>,
@@ -331,6 +338,13 @@ const MAX_COMBAT_REPORTS: usize = 8;
 pub(super) type SharedMailbox = Arc<Mutex<Mailbox>>;
 
 impl Mailbox {
+    pub(super) fn reset_scope_state(&mut self) {
+        *self = Self {
+            connection: std::mem::take(&mut self.connection),
+            ..Default::default()
+        };
+    }
+
     pub(super) fn reset_server_message_namespace(&mut self) {
         self.before.server_messages = ServerMessageInbox::default();
         self.pushed.server_messages = ServerMessageInbox::default();

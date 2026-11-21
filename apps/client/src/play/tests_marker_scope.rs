@@ -2,6 +2,9 @@
 use super::*;
 use oteryn_session::activity_scope::{ActivityScope, ActivityScopeSnapshot, encode_activity_scope};
 
+#[path = "tests_marker_scope/connection_handoff.rs"]
+mod connection_handoff;
+
 struct AutomaticQueryHandoff {
     scope: ActivityScopeSnapshot,
     changed: bool,

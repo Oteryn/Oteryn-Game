@@ -186,7 +186,7 @@ impl Outbox {
         self.container_end();
         let mut mailbox = lock(&self.0);
         mailbox.end_custom_hotkeys();
-        if let Some(launcher) = &mailbox.coin_shop {
+        if let Some(launcher) = &mailbox.connection.coin_shop {
             launcher.end();
         }
         mailbox.arena.end();
@@ -250,7 +250,7 @@ impl Outbox {
         self.container_end();
         let mut mailbox = lock(&self.0);
         mailbox.end_custom_hotkeys();
-        if let Some(launcher) = &mailbox.coin_shop {
+        if let Some(launcher) = &mailbox.connection.coin_shop {
             launcher.end();
         }
         mailbox.arena.end();
@@ -419,7 +419,7 @@ impl Drop for PlayLink {
         self.channel_switch_close();
         let mut mailbox = lock(&self.mailbox);
         mailbox.end_custom_hotkeys();
-        if let Some(launcher) = &mailbox.coin_shop {
+        if let Some(launcher) = &mailbox.connection.coin_shop {
             launcher.end();
         }
         mailbox.properties.end();
