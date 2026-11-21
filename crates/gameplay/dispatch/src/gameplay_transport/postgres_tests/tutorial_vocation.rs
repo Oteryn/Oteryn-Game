@@ -12,6 +12,11 @@ fn tutorial_vocation_offer_and_submit_real_dispatch() -> TestResult {
 }
 
 #[test]
+fn tutorial_vocation_can_choose_again_after_a_missing_kit_revision() -> TestResult {
+    vocation_scenario(Case::MissingKitRevision)
+}
+
+#[test]
 fn tutorial_vocation_waits_for_main_backpack() -> TestResult {
     vocation_scenario(Case::MissingBag)
 }
@@ -95,6 +100,7 @@ fn committed_dawnport_trial_pools_survive_a_live_installation_miss() -> TestResu
 enum Case {
     Ordinary,
     MissingBag,
+    MissingKitRevision,
     Retained,
     Uninstalled,
     Capacity,
@@ -251,6 +257,18 @@ fn vocation_scenario(case: Case) -> TestResult {
                     .0,
                 CommandStatus::Rejected
             );
+            if case == Case::MissingKitRevision {
+                use crate::gameplay_transport::tutorial_vocation::MISSING_KIT_REVISION;
+                use oteryn_gameplay_items::starter_grant::newhaven_starter_items;
+                let missing = newhaven_starter_items("knight")
+                    .ok_or("knight kit")?.iter()
+                    .find(|item| !newhaven_starter_items("paladin").is_some_and(|kit| {
+                        kit.iter().any(|other| other.tibia_id == item.tibia_id)
+                    }))
+                    .ok_or("knight-only item")?.tibia_id;
+                assert!(MISSING_KIT_REVISION.scope(missing, owner.tutorial_vocation_wire(admitted, &[1])).await.is_none());
+                assert!(owner.states.tutorial_sessions.vocation(admitted.game_session_id).map_err(debug)?.is_none());
+            }
             if case == Case::MissingBag {
                 move_fixture_bag(&h, 41, 98).await?;
                 assert!(
