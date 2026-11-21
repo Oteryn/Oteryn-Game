@@ -207,7 +207,7 @@ fn simultaneous_publications_are_complete_documents() -> TestResult {
                                     if error.kind() == io::ErrorKind::WouldBlock
                                         && std::time::Instant::now() < deadline =>
                                 {
-                                    std::thread::yield_now();
+                                    std::thread::sleep(std::time::Duration::from_millis(1));
                                 }
                                 result => {
                                     result?;

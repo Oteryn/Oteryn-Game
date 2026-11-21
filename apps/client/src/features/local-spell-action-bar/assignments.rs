@@ -2,6 +2,7 @@
 use super::item_actions::item_source;
 #[path = "readiness.rs"]
 mod readiness;
+use crate::play::feature_0287_actor_spell_catalog::view::ArchiveBindings;
 use crate::play::{
     PlayLink, SettingsState,
     mailbox::{Mailbox, lock},
@@ -352,12 +353,11 @@ fn activate_inner(
     };
     match action {
         BarAction::Spell { name, words, aim } => {
-            if let Some(entry) = mailbox
-                .spell_catalog
-                .catalog
-                .entries()
-                .iter()
-                .find(|entry| entry.name == name && entry.words == words && entry.available)
+            if let Some(entry) = ArchiveBindings::matching_spell(
+                &name,
+                &words,
+                mailbox.spell_catalog.catalog.entries(),
+            ) && entry.available
                 && let Some(index) = NonZeroU32::new(entry.cast_index)
             {
                 let cursor_aim = if aim == SpellAim::Cursor {

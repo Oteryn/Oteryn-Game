@@ -529,6 +529,8 @@ fn native_battle_key_uses_hovered_entity_generation_without_crosshair()
 
 #[path = "parity_multiaction.rs"]
 mod parity_multiaction;
+#[path = "parity_renamed_runes.rs"]
+mod parity_renamed_runes;
 
 #[test]
 fn multiaction_skips_unaffordable_mana_and_soul_in_labels_and_activation()

@@ -1,14 +1,11 @@
 //! Shared readiness for multiaction activation and next-action labels.
-use super::{BarAction, Mailbox, NonZeroU32, item_source};
+use super::{ArchiveBindings, BarAction, Mailbox, NonZeroU32, item_source};
 
 pub(super) fn action_ready(mailbox: &Mailbox, action: &BarAction) -> bool {
     let entry = match action {
-        BarAction::Spell { name, words, .. } => mailbox
-            .spell_catalog
-            .catalog
-            .entries()
-            .iter()
-            .find(|entry| entry.name == *name && entry.words == *words),
+        BarAction::Spell { name, words, .. } => {
+            ArchiveBindings::matching_spell(name, words, mailbox.spell_catalog.catalog.entries())
+        }
         BarAction::Use {
             definition,
             sub_type,
