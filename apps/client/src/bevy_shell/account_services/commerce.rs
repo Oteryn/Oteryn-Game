@@ -5,7 +5,7 @@ use super::{
 };
 use crate::{account_services::Action as Account, coin_shop::Action as Coin};
 use bevy::{input_focus::tab_navigation::TabIndex, text::EditableText, ui_widgets::TextInput};
-use oteryn_platform_client::native_login::bazaar::{AuctionState, AuctionView};
+use oteryn_platform_client::native_login::bazaar::{AuctionState, AuctionView, MAX_COINS};
 
 #[derive(Component)]
 struct Form {
@@ -411,9 +411,11 @@ fn finish(
                             text.parse::<u64>().ok()
                         }
                     })
-                    .filter(|coins| coins >= minimum)
+                    .filter(|coins| (*minimum..=MAX_COINS).contains(coins))
                 else {
-                    status(format!("Enter a bid of at least {minimum} coins"));
+                    status(format!(
+                        "Enter a bid between {minimum} and {MAX_COINS} coins"
+                    ));
                     continue;
                 };
                 (
@@ -430,17 +432,16 @@ fn finish(
             Action::Sell => {
                 let minimum = value(FieldKind::MinimumBid)
                     .and_then(|text| text.parse::<u64>().ok())
-                    .filter(|n| *n > 0);
+                    .filter(|n| (1..=MAX_COINS).contains(n));
                 let hours = value(FieldKind::Duration)
                     .and_then(|text| text.parse::<u32>().ok())
                     .filter(|n| (1..=168).contains(n));
                 let (Some(character_id), Some(minimum_bid), Some(duration_hours)) =
                     (&form.character, minimum, hours)
                 else {
-                    status(
-                        "Select a character and enter a minimum bid and a duration of 1–168 hours"
-                            .into(),
-                    );
+                    status(format!(
+                        "Select a character and enter a minimum bid of 1–{MAX_COINS} coins and a duration of 1–168 hours"
+                    ));
                     continue;
                 };
                 let name = owner

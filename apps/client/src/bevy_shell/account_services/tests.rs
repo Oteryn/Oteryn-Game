@@ -28,11 +28,15 @@ fn finish_worker<T>(worker: thread::JoinHandle<T>, action: &str) -> Result<T, St
     let deadline = Instant::now() + Duration::from_secs(5);
     while !worker.is_finished() {
         if Instant::now() >= deadline {
-            return Err(format!("{action}: worker did not finish within five seconds"));
+            return Err(format!(
+                "{action}: worker did not finish within five seconds"
+            ));
         }
         thread::yield_now();
     }
-    worker.join().map_err(|_| format!("{action}: worker panicked"))
+    worker
+        .join()
+        .map_err(|_| format!("{action}: worker panicked"))
 }
 
 fn click(app: &mut App, action: Action) -> TestResult {
@@ -192,6 +196,28 @@ fn click_named(app: &mut App, name: &str) -> TestResult {
     world.trigger(Activate { entity });
     app.update();
     Ok(())
+}
+
+fn edit_commerce_field(app: &mut App, previous: &str, next: &str) -> TestResult {
+    use bevy::text::EditableText;
+    let world = app.world_mut();
+    let mut fields = world.query::<&mut EditableText>();
+    let mut field = fields
+        .iter_mut(world)
+        .find(|field| field.value() == previous)
+        .ok_or("commerce input field")?;
+    *field = EditableText::new(next);
+    Ok(())
+}
+
+fn assert_no_confirmation(app: &mut App) {
+    let world = app.world_mut();
+    assert!(
+        !world
+            .query::<&Name>()
+            .iter(world)
+            .any(|name| name.as_str() == "commerce.confirm")
+    );
 }
 
 #[test]
@@ -393,6 +419,10 @@ fn bazaar_page_keeps_auction_details_during_bid_retry_and_status_recovery() -> T
         let browse = wait(&mut app, Some(menu))?;
         click_named(&mut app, "account.bazaar.next")?;
         let page = wait(&mut app, Some(browse))?;
+        edit_commerce_field(&mut app, "", "1000000000000")?;
+        click_named(&mut app, &format!("account.auction.{AUCTION}"))?;
+        assert_no_confirmation(&mut app);
+        edit_commerce_field(&mut app, "1000000000000", "")?;
         click_named(&mut app, &format!("account.auction.{AUCTION}"))?;
         click_named(&mut app, "commerce.confirm")?;
         let pending = wait(&mut app, Some(page))?;
@@ -451,6 +481,10 @@ fn bazaar_page_keeps_auction_details_during_bid_retry_and_status_recovery() -> T
         click_named(&mut app, &format!("account.receipt.{id}"))?;
         let receipt = wait(&mut app, Some(resolved))?;
         click_named(&mut app, &format!("account.character.{CHARACTER}"))?;
+        edit_commerce_field(&mut app, "1", "1000000000000")?;
+        click_named(&mut app, "account.sell")?;
+        assert_no_confirmation(&mut app);
+        edit_commerce_field(&mut app, "1000000000000", "1")?;
         click_named(&mut app, "account.sell")?;
         click_named(&mut app, "commerce.confirm")?;
         let listed = wait(&mut app, Some(receipt))?;
@@ -532,7 +566,14 @@ fn commerce_uses_a_character_selected_in_the_same_frame_as_the_action() -> TestR
         if listing {
             click_named(&mut app, "commerce.confirm")?;
         }
-        let action = finish_worker(worker, if listing { "confirm listing" } else { "request transfer quote" })?;
+        let action = finish_worker(
+            worker,
+            if listing {
+                "confirm listing"
+            } else {
+                "request transfer quote"
+            },
+        )?;
         if listing {
             assert!(matches!(action, Action::Sell { character_id, .. } if character_id == "Bob"));
         } else {
