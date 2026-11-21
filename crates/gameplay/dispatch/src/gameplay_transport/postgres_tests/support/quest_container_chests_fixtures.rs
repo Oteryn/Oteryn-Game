@@ -16,7 +16,9 @@ use crate::gameplay_transport::connection::FirstEntryOutcome;
 
 use crate::gameplay_transport::item_ref_admission::{NativeItemWeights, generation_item_facts};
 
+use oteryn_gameplay_quests::quest::QuestStateCatalogue;
 use oteryn_protocol_oteryn::CommandStatus;
+use std::sync::Arc;
 
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
@@ -66,26 +68,37 @@ fn scenario(case: Case) -> TestResult {
     scenario_case(case, None, None, None)
 }
 
+pub(super) struct CatalogueBatch<'a> {
+    pub(super) template: &'a super::fixture::MigratedDatabaseTemplate,
+    pub(super) quests: Arc<QuestStateCatalogue>,
+}
+
+pub(super) fn embedded_catalogue() -> TestResult<Arc<QuestStateCatalogue>> {
+    let loaded = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(debug)?;
+    Ok(Arc::new(loaded.catalogue().clone()))
+}
+
 pub(super) fn catalogue_scenario(
     chest: &super::quest_catalogue_chests_fixtures::CatalogueChest,
     activation: &super::quest_catalogue_chests_fixtures::CatalogueActivation,
 ) -> TestResult {
-    catalogue_scenario_with_template(chest, activation, None)
+    scenario_case(Case::Catalogue, Some(chest), Some(activation), None)
 }
 
-pub(super) fn catalogue_scenario_with_template(
+pub(super) fn catalogue_scenario_in_batch(
     chest: &super::quest_catalogue_chests_fixtures::CatalogueChest,
     activation: &super::quest_catalogue_chests_fixtures::CatalogueActivation,
-    template: Option<&super::fixture::MigratedDatabaseTemplate>,
+    batch: &CatalogueBatch,
 ) -> TestResult {
-    scenario_case(Case::Catalogue, Some(chest), Some(activation), template)
+    scenario_case(Case::Catalogue, Some(chest), Some(activation), Some(batch))
 }
 
 fn scenario_case(
     case: Case,
     catalogue: Option<&super::quest_catalogue_chests_fixtures::CatalogueChest>,
     activation: Option<&super::quest_catalogue_chests_fixtures::CatalogueActivation>,
-    template: Option<&super::fixture::MigratedDatabaseTemplate>,
+    batch: Option<&CatalogueBatch>,
 ) -> TestResult {
     let (claim, chest, unique, root_key, expected) = match case {
         Case::Catalogue => {
@@ -191,12 +204,14 @@ fn scenario_case(
             ],
         ),
     };
+    let mut phase = super::quest_catalogue_chests_fixtures::profile_phases(claim);
     run(async |admin| {
-        let harness = if let Some(template) = template {
-            Harness::create_from_template(admin, "quest_container", template).await?
+        let harness = if let Some(batch) = batch {
+            Harness::create_from_template(admin, "quest_container", batch.template).await?
         } else {
             Harness::create_with_admission_seed(admin, "quest_container", false, false).await?
         };
+        phase("database_create");
         prepare_current_session(&harness).await?;
         if catalogue.is_some_and(|chest| chest.unique == 0) {
             eprintln!(
@@ -235,7 +250,9 @@ fn scenario_case(
         } else {
             None
         };
+        phase("session_prepare");
         let mut deps = Dependencies::new()?;
+        phase("dependencies");
         let owned_activation;
         let (controller, activated_pin) = if let Some(activation) = activation {
             activation
@@ -343,29 +360,21 @@ fn scenario_case(
             catalogue.is_none_or(|chest| chest.servable),
             "source namespace must match the native World binder"
         );
+        phase("world_binding");
         // Quest-coupled source chests need the real catalogue at every owner,
         // including command and cold replay, just as they do at channel boot.
-        let quest_catalogue = if report.served.iter().any(|claim| {
-            claim
-                .placements
-                .iter()
-                .any(|bound| bound.placement.quest_transition.is_some())
-        }) {
-            Some(std::sync::Arc::new(
-                oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
-                    .map_err(debug)?
-                    .catalogue()
-                    .clone(),
-            ))
-        } else {
-            None
+        let embedded_catalogue = match batch {
+            Some(batch) => Arc::clone(&batch.quests),
+            None => embedded_catalogue()?,
         };
-        let embedded_catalogue = std::sync::Arc::new(
-            oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
-                .map_err(debug)?
-                .catalogue()
-                .clone(),
-        );
+        let quest_catalogue = report
+            .served
+            .iter()
+            .any(|claim| {
+                claim.placements.iter().any(|bound| bound.placement.quest_transition.is_some())
+            })
+            .then(|| Arc::clone(&embedded_catalogue));
+        phase("quest_catalogue");
         let cells = world
             .movement_cells(if matches!(case, Case::ChoiceDoor) {
                 activated_pin.qualified_room().movement_cells()
@@ -478,6 +487,7 @@ fn scenario_case(
             })
         };
         let target = target_at(chest.0)?;
+        phase("actor_and_equipment");
         if matches!(case, Case::ChoiceDoor) {
             {
                 let mut owner = deps.owner(&harness, &authority);
@@ -506,9 +516,12 @@ fn scenario_case(
                     .bind(claim).fetch_one(&harness.pool).await?;
                 assert_eq!(counts, (1, 1, 1));
             }
+            phase("remaining_checks");
             drop(authority);
             drop(seal);
-            return harness.cleanup().await;
+            let cleaned = harness.cleanup().await;
+            phase("cleanup");
+            return cleaned;
         }
         {
             let mut owner = deps.owner(&harness, &authority);
@@ -523,7 +536,6 @@ fn scenario_case(
                 );
             }
             owner.active_generation = Some(generation);
-            owner.quest_catalogue = quest_catalogue.clone();
             owner.movement_cells = (&cells).into();
             owner.quest_catalogue = Some(std::sync::Arc::clone(&embedded_catalogue));
             owner.admit_progression_session(&mut admitted).await;
@@ -668,7 +680,6 @@ fn scenario_case(
                     );
                 }
                 owner.active_generation = Some(generation);
-                owner.quest_catalogue = quest_catalogue.clone();
                 owner.movement_cells = (&cells).into();
                 owner.quest_catalogue = Some(std::sync::Arc::clone(&embedded_catalogue));
                 owner.admit_progression_session(&mut admitted).await;
@@ -764,12 +775,12 @@ fn scenario_case(
                     );
                 }
                 owner.active_generation = Some(generation);
-                owner.quest_catalogue = quest_catalogue.clone();
                 owner.movement_cells = (&cells).into();
                 owner.quest_catalogue = Some(std::sync::Arc::clone(&embedded_catalogue));
                 owner.admit_progression_session(&mut admitted).await;
                 owner.admit_quest_session(&admitted).await;
                 deps.initialize(&owner).await;
+                phase("owner_admission");
                 if cold_replay {
                     assert_eq!(
                         wire_use_targets(&owner, admitted, &[(1, &target)]).await?,
@@ -798,6 +809,7 @@ fn scenario_case(
                         "{claim} at {chest:?}"
                     );
                 }
+                phase(if cold_replay { "cold_replay" } else { "use_and_repeat" });
                 let bag = harness
                     .root
                     .read_character_backpack(&authority, fence.character_id)
@@ -979,6 +991,7 @@ fn scenario_case(
                         "authored text must not forge a player rewrite receipt"
                     );
                 }
+                phase("receipt_verification");
             }
             let achievements:i64 = sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/annihilator'")
                 .fetch_one(&harness.pool).await?;
@@ -1020,8 +1033,11 @@ fn scenario_case(
                 matches!(changed,Err(sqlx::Error::Database(ref error)) if error.code().as_deref()==Some("23514"))
             );
         }
+        phase("remaining_checks");
         drop(authority);
         drop(seal);
-        harness.cleanup().await
+        let cleaned = harness.cleanup().await;
+        phase("cleanup");
+        cleaned
     })
 }

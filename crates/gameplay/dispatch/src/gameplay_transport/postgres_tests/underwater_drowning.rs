@@ -819,6 +819,8 @@ async fn seed_swimming_conditions(
     use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
     let runtime = owner.runtime.lock().await;
     let mut states = owner.states.spell_states.lock().await;
+    // Keep Drunk active for the cleanse while pinning its steering roll for this fixture.
+    states.drunk_seed_fixture = Some([0; 32]);
     let state = states
         .get_mut(&runtime, actor, session)
         .ok_or("spell state")?;

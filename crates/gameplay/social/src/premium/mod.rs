@@ -135,6 +135,13 @@ pub struct CurrentPremium {
     pub benefit_until_us: i64,
 }
 
+/// A current, explicitly negative entitlement decision and its authority window.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CurrentPremiumDenial {
+    pub authority_revision: u64,
+    pub valid_until_us: i64,
+}
+
 /// The ticket of one pull, taken when it starts: increasing across accounts and `release`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct PullTicket(u64);
@@ -404,6 +411,36 @@ impl PremiumConsumer {
                 .effective_until_us
                 .min(latest.authority_valid_until_us)
                 .min(latest.refresh_after_us),
+        })
+    }
+
+    /// Current terminal evidence for a consumer that reconciles an existing paid benefit.
+    /// Missing, failed, conflicted or stale evidence supplies no decision to write.
+    pub fn current_premium_denial(
+        &self,
+        account_id: [u8; 16],
+        now: TrustedNow,
+    ) -> Option<CurrentPremiumDenial> {
+        let accounts = self.lock();
+        let view = accounts.get(&account_id)?;
+        let fence = view.fence.as_ref()?;
+        let latest = &fence.latest;
+        let valid_until_us = latest.authority_valid_until_us.min(latest.refresh_after_us);
+        (view.proven
+            && !view.unavailable
+            && !view.quarantined
+            && !view.conflicting
+            && !fence.conflicting
+            && view.profile_b_hint_revision <= latest.lifecycle_revision
+            && now.lower_us() >= latest.authority_issued_at_us
+            && now.upper_us() < valid_until_us
+            && matches!(
+                latest.state,
+                EntitlementState::Expired | EntitlementState::Revoked | EntitlementState::None
+            ))
+        .then_some(CurrentPremiumDenial {
+            authority_revision: latest.authority_revision,
+            valid_until_us,
         })
     }
 

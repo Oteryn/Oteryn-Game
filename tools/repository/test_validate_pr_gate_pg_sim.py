@@ -88,18 +88,26 @@ class QualificationPlacementTests(unittest.TestCase):
                 self.assertEqual(output.read_text(), f"mode={expected}\n")
 
     def test_rust_fast_runner_toggle_and_hosted_cache(self):
-        job = self.pr.split("  rust_fast:\n", 1)[1].split("\n  rust_supply_chain:\n", 1)[0]
+        job = self.pr.split("  rust_fast:\n", 1)[1].split("\n  rust_clippy:\n", 1)[0]
+        clippy = self.pr.split("  rust_clippy:\n", 1)[1].split("\n  rust_supply_chain:\n", 1)[0]
         # Pin the complete expression: unset/off defaults to hosted, only the
         # Clippy leg uses the PC, and only same-repository, non-dependabot PRs
         # may execute on the owner's PC.
         expected = (
-            "${{ (needs.runner_route.outputs.rust_runner_mode == 'on' && matrix.kind == 'clippy' && "
+            "${{ (needs.runner_route.outputs.rust_runner_mode == 'on' && "
             "github.event.pull_request.head.repo.full_name == github.repository && "
             "github.actor != 'dependabot[bot]') && "
             "fromJSON('[\"self-hosted\",\"linux\",\"x64\",\"oteryn-molehill\"]') "
             "|| 'ubuntu-24.04' }}"
         )
-        self.assertEqual(re.findall(r"(?m)^    runs-on: (.+)$", job), [expected])
+        self.assertIn("    needs: [scope, lanes, runner_route]\n", clippy)
+        self.assertIn("    steps: *rust_fast_steps\n", clippy)
+        self.assertIn("    steps: &rust_fast_steps\n", job)
+        self.assertIn("    runs-on: ubuntu-24.04\n", job)
+        self.assertNotIn("leg: clippy", job)
+        self.assertEqual(job.count("kind: tests\n"), 5)
+        self.assertEqual(clippy.count("kind: clippy\n"), 1)
+        self.assertEqual(re.findall(r"(?m)^    runs-on: (.+)$", clippy), [expected])
         build = self.pr.split("  rust_fast_build:\n", 1)[1].split("\n  rust_fast:\n", 1)[0]
         self.assertIn("    runs-on: ubuntu-24.04\n", build)
         self.assertIn("needs.runner_route.outputs.rust_test_build_required == 'true'", build)
@@ -124,6 +132,21 @@ class QualificationPlacementTests(unittest.TestCase):
             with self.subTest(step=name):
                 self.assertIn(f"      - name: {name}\n", build)
                 self.assertNotIn(f"      - name: {name}\n", job)
+
+    def test_hosted_disk_cleanup_requires_pressure(self):
+        step = self.archive_step("Free hosted runner disk before the Cargo cache restore")
+        script = textwrap.dedent(step.split("run: &cleanup_cargo_disk |\n", 1)[1])
+        self.assertEqual(self.pr.count("run: *cleanup_cargo_disk\n"), 2)
+        mocks = """
+set -euo pipefail
+df() { if [[ "$1" == -Pk ]]; then echo "/dev/root 150000000 60000000 $FREE_KIB 40% /"; fi; }
+sudo() { echo "sudo $*"; }
+"""
+        for available, cleanup in (("83886081", False), ("83886080", False), ("83886079", True), ("unknown", True)):
+            with self.subTest(available=available):
+                run = subprocess.run(["bash", "-c", mocks + script], check=True, capture_output=True,
+                                     text=True, env=dict(os.environ, FREE_KIB=available))
+                self.assertEqual("sudo rm -rf" in run.stdout, cleanup)
 
     def test_unit_test_archive_uses_full_cargo_selection_on_partial_ledger_hit(self):
         step = self.archive_step("Archive changed-crate unit tests")

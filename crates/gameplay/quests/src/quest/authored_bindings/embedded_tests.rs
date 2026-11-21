@@ -570,7 +570,14 @@ mod main_native_contract {
         assert_eq!(baseline.counts(), explicit.counts());
         let before = baseline.catalogue();
         let after = explicit.catalogue();
-        assert_eq!(before.tracks.len(), 2131);
+        assert_eq!(before.tracks.len(), 2138);
+        for pharaoh in ["omruc", "vashresamun"] {
+            let key = format!(
+                "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/{pharaoh}_sarcophagus_claim"
+            );
+            let track = before.tracks.get(&key).ok_or("sarcophagus claim track")?;
+            assert_eq!(track.quest, "oteryn:quest.the_ancient_tombs_quest");
+        }
         for supply in ["anatomy-book", "colourful-mushroom"] {
             let key = format!("oteryn:quest-progress/dream-courts/supplies/{supply}");
             let expected = crate::quest::QuestTrack {

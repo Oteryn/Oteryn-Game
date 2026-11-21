@@ -157,6 +157,28 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "m09-rookie-mission11" => &["yes"],
         "m09-tower" => &["mission"],
         "knight-sword" => &["forge"],
+        "qb-barbarian-ajax-axe-start" => &["present", "yes"],
+        "qb-barbarian-ajax-crude-iron" => &["crude iron"],
+        "qb-barbarian-ajax-fangs" => &["behemoth fang"],
+        "qb-barbarian-ajax-gelagos" => &["gelagos"],
+        "qb-barbarian-ajax-leather" => &["lizard leather"],
+        "qb-barbarian-ajax-ore" => &["iron ore"],
+        "qb-barbarian-ajax-please" => &["mine", "no", "no", "no", "say please"],
+        "qb-barbarian-bron-cloth" => &["red piece of cloth"],
+        "qb-barbarian-bron-person" => &["brother is right. fist not always good.", "person"],
+        "qb-barbarian-bron-start" => &["violence", "yes"],
+        "qb-barbarian-bron-sweat" => &["warrior's sweat"],
+        "qb-barbarian-bron-task" => &["yes", "yes"],
+        "qb-barbarian-bron-yarn" => &["spider silk"],
+        "qb-citizen-backpack-start" => &["addon", "backpack"],
+        "qb-citizen-backpack-materials" => &["addon"],
+        "qb-citizen-hat-start" | "qb-citizen-hat" => &["hat"],
+        "qb-warrior-shoulder-start" => &["earn", "yes"],
+        "qb-warrior-shoulder-bones" => &["hardened bones"],
+        "qb-warrior-shoulder-claw" => &["dragon claw"],
+        "qb-warrior-shoulder-shells" => &["turtle shells"],
+        "qb-warrior-shoulder-spirit" => &["fighting spirit"],
+        "qb-warrior-sword" => &["forge"],
         "questpc7-golden-base" => &["base outfit"],
         "questpc7-golden-gloves" => &["boots and gloves"],
         "questpc7-golden-helmet" => &["golden helmet"],
@@ -881,6 +903,12 @@ pub(super) async fn exercise(
     if name.starts_with("qengine-rewards-l2-djinn-") {
         return Box::pin(questl2_djinn_journeys::exercise(owner, admitted, h, name)).await;
     }
+    if name == super::terrified_elephant_corpse_decay_fixtures::NAME {
+        return Box::pin(super::terrified_elephant_corpse_decay_fixtures::exercise(
+            owner, admitted, h,
+        ))
+        .await;
+    }
     if name == "qengine-rewards-m25-galthen-native-deaths" {
         return Box::pin(super::m25_galthen_native_death_fixtures::exercise(
             owner, admitted, h,
@@ -1127,6 +1155,7 @@ pub(super) async fn exercise(
         || name.starts_with("qengine-rewards-l4-")
         || name.starts_with("qengine-rewards-l5-")
         || name.starts_with("qengine-rewards-l6-")
+        || name.starts_with("qengine-rewards-qb-")
     {
         return Box::pin(super::qengine_outfit_stories_fixtures::exercise(
             owner, admitted, h, authority, name,

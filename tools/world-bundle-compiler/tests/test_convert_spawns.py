@@ -26,10 +26,10 @@ class ConvertSpawnsTest(unittest.TestCase):
         cls.held = json.loads(cs.HELD.read_text())["records"]
 
     def test_counts(self):
-        self.assertEqual(len(self.records), 54684)
-        self.assertEqual(sum(len(r["declaration"]["points"]) for r in self.records), 87812)
-        self.assertEqual(self.index["record_count"], 54684)
-        self.assertEqual(self.index["point_count"], 87812)
+        self.assertEqual(len(self.records), 54691)
+        self.assertEqual(sum(len(r["declaration"]["points"]) for r in self.records), 87819)
+        self.assertEqual(self.index["record_count"], 54691)
+        self.assertEqual(self.index["point_count"], 87819)
 
     def test_provenance_is_crystalserver(self):
         self.assertEqual(self.index["source"]["source_key"], "oteryn:source.crystalserver")
@@ -63,9 +63,19 @@ class ConvertSpawnsTest(unittest.TestCase):
                 self.assertNotIn("respawn_ms", point)
         self.assertEqual(self.index["additional_sources"][0]["record_count"], 10)
         held = json.loads(self.files["held-bosses.json"])["records"]
-        self.assertEqual(len(held), 42)
-        self.assertEqual(self.index["held_bosses"]["point_count"], 42)
+        self.assertEqual(len(held), 35)
+        self.assertEqual(self.index["held_bosses"]["point_count"], 35)
         self.assertTrue(all("boss_policy" not in row["point"] for row in held))
+
+    def test_public_pharaohs_retain_their_exact_spawn_and_respawn(self):
+        points = [point for record in self.records for point in record["declaration"]["points"]
+                  if point["creature"] in cs.PHARAOHS]
+        self.assertEqual(len(points), 7)
+        for point in points:
+            x, y, z = cs.PHARAOHS[point["creature"]]
+            self.assertEqual(point["cell"], {"floor": z, "x": x, "y": y})
+            self.assertEqual(point["boss_policy"], {"respawn": {"min_s": 90, "max_s": 90}})
+            self.assertNotIn("respawn_ms", point)
 
     def test_other_hash_fails_closed(self):
         with self.assertRaises(SystemExit):

@@ -22,14 +22,15 @@ pub fn validate_resolved_world(
             }
         }
     }
-    // The published cohorts share the boot bound; only additional resolved
-    // owners consume the closed per-source admission bound.
-    if callbacks.len() > world_callbacks::MAX_RUNTIME_CALLBACKS
+    // The exact immutable catalogue registry already passed both composition bounds.
+    // Independently resolved inputs still share the boot and per-source bounds.
+    if (callbacks.len() > world_callbacks::MAX_RUNTIME_CALLBACKS
         || callbacks
             .iter()
             .filter(|callback| !published.owners.contains_key(&callback.key))
             .count()
-            > world_callbacks::MAX_CALLBACKS
+            > world_callbacks::MAX_CALLBACKS)
+        && catalogue.authored_world_callbacks() != Some(callbacks)
     {
         return Err("resolved World source bounds".into());
     }
@@ -82,12 +83,31 @@ mod tests {
         let source = super::super::super::loader::load_embedded_quest_state("content-1")
             .map_err(|error| format!("{error:?}"))?;
         let catalogue = source.catalogue();
+        let base = world_callbacks::load()?;
+        let bindings = catalogue.authored_bindings().ok_or("authored bindings")?;
         let callbacks = world_callbacks::load_for(catalogue)?;
-        assert!(callbacks.len() > world_callbacks::MAX_CALLBACKS);
+        assert_eq!(base.len(), 1003);
+        assert_eq!(bindings.world_callbacks().count(), 31);
+        assert_eq!(callbacks.len(), 1034);
+        let expected: BTreeSet<_> = base
+            .iter()
+            .chain(bindings.world_callbacks())
+            .map(|callback| &callback.key)
+            .collect();
+        let keys: BTreeSet<_> = callbacks.iter().map(|callback| &callback.key).collect();
+        assert_eq!(keys.len(), callbacks.len());
+        assert_eq!(keys, expected);
         let transition = catalogue
             .transition("oteryn:quest-transition/kv/bear_chest3/chest")
             .ok_or("bear claim transition")?;
-        validate_resolved_world(catalogue, transition, false, &callbacks)
+        validate_resolved_world(catalogue, transition, false, &callbacks)?;
+        let mut substituted = callbacks.clone();
+        substituted[0] = callbacks[1].clone();
+        assert_eq!(
+            validate_resolved_world(catalogue, transition, false, &substituted),
+            Err("resolved World source bounds".into())
+        );
+        Ok(())
     }
 
     #[test]

@@ -381,7 +381,9 @@ pub(super) fn lower_embedded_quest_state(
     // whether native bindings are imported by the caller.
     super::source_deaths::retain_overlord_predecessor(&mut lowered.catalogue)
         .map_err(QuestLoadError::Json)?;
-    restrict_runtime_scope(lowered, content_revision)
+    let mut lowered = restrict_runtime_scope(lowered, content_revision)?;
+    super::published_quest_pins::retain_predecessors(&mut lowered.catalogue);
+    Ok(lowered)
 }
 
 fn restrict_runtime_scope(

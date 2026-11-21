@@ -61,16 +61,19 @@ class CorpseQualification(unittest.TestCase):
             expected = self.plan.records[key]['semantics']['container']['value']['capacity']['value']
             self.assertTrue(facts[key]['materializable'], key)
             self.assertEqual(facts[key]['container_capacity'], expected, key)
+        for number in (5967, 5999, 6031, 25814):
+            self.assertTrue(facts[f'oteryn:item.tibia.i{number}']['ordinary_corpse_only'])
 
     def test_exact_source_capacities_and_complete_decay_chains(self):
         self.assertEqual(self.plan.roots, {
-            5960, 5962, 5968, 5973, 5975, 5995, 6006, 6048, 6078, 7535, 17445, 17446,
+            5960, 5962, 5967, 5968, 5973, 5975, 5995, 5999, 6006, 6025, 6030, 6031, 6044,
+            6048, 6055, 6072, 6078, 7535, 8909, 11675, 17445, 17446,
             17449, 17454, 18099, 20972, 21910, 22010, 22066, 22067, 25085,
-            27714, 27718, 30272, 31453, 31599, 31611, 33821})
-        self.assertEqual(len(self.plan.records), 100)
+            25815, 27714, 27718, 30272, 31453, 31599, 31611, 33821})
+        self.assertEqual(len(self.plan.records), 142)
         for number, capacity, target, duration in [
             (5960, 7, 3987, 10000), (5962, 30, 3989, 10000),
-            (5968, 5, 4007, 10000), (5975, 20, 4291, 10000),
+            (5967, 10, 4266, 10000), (5968, 5, 4007, 10000), (5975, 20, 4291, 10000),
             (7535, 7, 7537, 10000), (7537, 7, 7538, 10000),
             (7538, 7, 7539, 300000), (7539, 7, 7540, 300000),
         ]:
@@ -94,7 +97,7 @@ class CorpseQualification(unittest.TestCase):
     def test_queen_projection_retains_source40_and_native30_without_changing_other_corpses(self):
         key = 'oteryn:item.tibia.i30272'
         self.assertEqual(corpse.grizzly.source.attrs(self.xml[30272])['containersize'], '40')
-        self.assertEqual(self.plan.projected_source_capacities, {key: 40})
+        self.assertEqual(self.plan.projected_source_capacities, {key: 40, 'oteryn:item.tibia.i5999': 50, 'oteryn:item.tibia.i8909': 36})
         self.assertEqual(self.plan.records[key]['semantics']['container'],
                          corpse.grizzly.source.K({'capacity': corpse.grizzly.source.K(30)}))
         packet = json.loads((corpse.ROOT / corpse.REQUIREMENTS).read_bytes())

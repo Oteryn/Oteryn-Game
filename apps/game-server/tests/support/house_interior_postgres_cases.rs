@@ -317,7 +317,9 @@ async fn check_database(url: &str) -> TestResult {
         oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
         "canonical target is PostgreSQL 18.6"
     );
-    sqlx::migrate!("./migrations").run(&mut connection).await?;
+    oteryn_gameplay_durability::GAME_MIGRATOR
+        .run(&mut connection)
+        .await?;
     let stub: i64 =
         sqlx::query_scalar("SELECT count(*) FROM game_house_access($1::uuid,$2,$3::uuid)")
             .bind(WORLD)

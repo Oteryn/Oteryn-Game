@@ -163,7 +163,7 @@ impl Harness {
             oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
             "canonical target is PostgreSQL 18.6"
         );
-        let migrator = sqlx::migrate!("./migrations");
+        let migrator = &oteryn_gameplay_durability::GAME_MIGRATOR;
         match upto {
             Some(version) => migrator.run_to(version, &mut connection).await?,
             None => migrator.run(&mut connection).await?,
@@ -1200,7 +1200,9 @@ fn rows_stored_before_0072_verify_as_v1_and_only_the_two_tuples_are_admitted() -
         harness.seed(&script).await?;
         // GOLD-FEE-2's migration validates its tuple CHECK against every stored row.
         let mut connection = sqlx::PgConnection::connect(&harness.url).await?;
-        sqlx::migrate!("./migrations").run(&mut connection).await?;
+        oteryn_gameplay_durability::GAME_MIGRATOR
+            .run(&mut connection)
+            .await?;
         connection.close().await?;
         for (seed, (shape, _)) in (1_u8..).zip(TYPE2_GOLDEN_V1) {
             let (envelope, revision, profile): (Vec<u8>, i64, String) = sqlx::query_as(
