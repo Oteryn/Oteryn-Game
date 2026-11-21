@@ -17,6 +17,10 @@ impl Outbox {
 impl PlayLink {
     pub(crate) fn riding(&self) -> Option<bool> {
         let mailbox = lock(&self.mailbox);
+        Self::riding_locked(&mailbox)
+    }
+
+    fn riding_locked(mailbox: &crate::play::mailbox::Mailbox) -> Option<bool> {
         if !mailbox.motion_selected {
             return None;
         }
@@ -25,11 +29,13 @@ impl PlayLink {
     }
 
     pub(crate) fn mount_request(&self) {
-        let Some(riding) = self.riding() else { return };
         let mut mailbox = lock(&self.mailbox);
         if mailbox.mount_pending || mailbox.world_input_blocked() {
             return;
         }
+        let Some(riding) = Self::riding_locked(&mailbox) else {
+            return;
+        };
         if let Some(command) =
             oteryn_client_ui::actor_motion::mount_command(mailbox.motion_selected, !riding)
         {
