@@ -341,6 +341,7 @@ fn vocation_scenario(case: Case) -> TestResult {
                         fence,
                     ));
                     assert_eq!(owner.write_due_last_positions(true).await, 0);
+                    assert!(owner.last_position_cached_for_test(session));
                     move_tutorial_actor(&deps, landing.x + 1).await?;
                 }
                 assert!(owner.states.tutorial_sessions.retain_vocation(
@@ -371,6 +372,7 @@ fn vocation_scenario(case: Case) -> TestResult {
                         .map_err(|()| "retained choice")?.ok_or("retained choice")?;
                     assert!(owner.save_first_vocation_vitals(deps.actor, session, old, &retained.request.before).await);
                     if case == Case::RetainedBacktrack {
+                        assert!(!owner.last_position_cached_for_test(session));
                         assert_eq!(saved_tutorial_x(&h).await?, landing.x + 1);
                         move_tutorial_actor(&deps, landing.x).await?;
                         assert_eq!(owner.write_due_last_positions(true).await, 0);
@@ -473,7 +475,7 @@ fn vocation_scenario(case: Case) -> TestResult {
                         return h.cleanup().await;
                     }
                     let mut slot = owner.revision_sequencer.acquire(old.character_id).await;
-                    if matches!(case, Case::RetainedMovement | Case::Uninstalled) {
+                    if matches!(case, Case::RetainedMovement | Case::Uninstalled | Case::RetainedCleared | Case::RetainedResumed) {
                         use crate::durability::character_revision_sequencer::NewhavenBuildContext;
                         use crate::durability::starter_grant::NewhavenKit;
                         use crate::gameplay_transport::{
@@ -512,17 +514,21 @@ fn vocation_scenario(case: Case) -> TestResult {
                             entered.notified().await;
                             let result = async {
                                 if clear {
-                                    let slot = owner.revision_sequencer.acquire(old.character_id).await;
-                                    owner.states.tutorial_sessions.clear_vocation(session, retained.request.occurrence);
-                                    drop(slot);
+                                    assert_eq!(owner.tutorial_vocation_wire(admitted, &[]).await, Some(vec![0, 4]));
+                                    assert!(owner.states.tutorial_sessions.vocation(session).map_err(debug)?.is_none());
                                 } else {
-                                    // Publish the one durable fact that changes at resume. The
-                                    // full resume path also waits for the revision lane, held by
-                                    // the old periodic writer until after this boundary.
-                                    sqlx::query("UPDATE game_durability_reconnect_sessions SET current_generation=current_generation+1 WHERE game_session_id=encode($1,'hex')::uuid")
-                                        .bind(session.as_bytes().as_slice()).execute(&h.pool).await?;
-                                    let current = owner.current_quest_fence(session).await.map_err(|()| "successor fence")?.ok_or("successor fence")?;
-                                    assert_eq!(current.connection_generation.get(), old.connection_generation.get() + 1);
+                                    owner.states.command_ingress.admit(session);
+                                    assert_eq!(owner.lose_control(admitted, std::time::Duration::ZERO, None).await, ControlLossResult::Recorded);
+                                    let token = super::house_transfer_fixtures::RecoverySource::token(88)?;
+                                    let resumed = owner.resume_session(ResumeAttempt {
+                                        game_session_id: session,
+                                        recovery_material: token.as_bytes(),
+                                        transport: crate::foundation::AuthenticatedTransportRefV1::decode(&[88; 16]).map_err(debug)?,
+                                        last_applied_server_sequence: admitted.continuity.server_sequence,
+                                        supported_capabilities: admitted.continuity.selected_capabilities.as_slice(),
+                                    }).await.map_err(debug)?;
+                                    assert_eq!(resumed.game_session_id, session);
+                                    assert_eq!(resumed.continuity.connection_generation, old.connection_generation.get() + 1);
                                 }
                                 Ok::<_, Box<dyn std::error::Error>>(())
                             }.await;
@@ -533,13 +539,16 @@ fn vocation_scenario(case: Case) -> TestResult {
                             tokio::join!(write, change)
                         }).await?;
                         changed?;
-                        let (health, _, sequence) = saved_vitals(&h).await?;
                         if clear {
                             assert_eq!(failures, 0);
-                            assert_eq!(health, 1);
+                            assert_eq!(saved_tutorial_x(&h).await?, landing.x + 1);
+                            let at_maximum: bool = sqlx::query_scalar(
+                                "SELECT health IS NULL AND mana IS NULL FROM game_character_last_positions WHERE character_id=encode($1,'hex')::uuid",
+                            ).bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+                            assert!(at_maximum, "the recapture sees the installed maximum pools");
                         } else {
                             assert_eq!(failures, 1);
-                            assert_eq!(sequence, refill.2, "old capture cannot write under the resumed fence");
+                            assert_eq!(saved_vitals(&h).await?, refill, "the old capture cannot write under the resumed fence");
                         }
                         drop(owner);
                         drop(authority);
