@@ -156,6 +156,7 @@ impl ChannelRuntimeV1 {
             .ok()?;
         let index = self.carrier.validate_ref(&self.continuity, actor.0).ok()?;
         let Slot::CreatureOccupied {
+            generation,
             committed,
             health,
             position: Some(position),
@@ -165,11 +166,50 @@ impl ChannelRuntimeV1 {
         else {
             return None;
         };
-        (*health > 0
+        (actor.runtime_scope() == self.binding.runtime_scope
+            && actor.scope_generation() == self.binding.scope_generation
+            && *generation == actor.0.actor_local_generation.0
+            && position.context == self.pinned_position_context()
+            && *health > 0
             && committed.field_entry_revision == Some(position.revision)
             && state.conditions.instances().is_empty()
             && state.conditions.next_non_ticking_expiry().is_none())
         .then_some(state.as_ref())
+    }
+
+    /// The field owner's skip of an idle creature (`idle_field_creature`) that
+    /// `skip` accepts. The empty periodic turn it replaces would only have moved the
+    /// condition pass cursor, so this moves it to `now` and nothing else. A creature
+    /// that turn would have refused (reserved, encounter-hooked, a time before its
+    /// cursor) is not skipped. `true` means the creature was skipped.
+    pub fn skip_idle_field_creature(
+        &mut self,
+        actor: ExactActorRef,
+        now: u64,
+        skip: impl FnOnce(&CompanionState) -> bool,
+    ) -> bool {
+        if self.actor_spell_reserved(actor)
+            || self
+                .encounter_hooks()
+                .is_some_and(|hooks| hooks.contains(actor))
+            || !self
+                .idle_field_creature(actor)
+                .is_some_and(|state| state.conditions.accepts_time(now) && skip(state))
+        {
+            return false;
+        }
+        let Ok(index) = self.carrier.validate_ref(&self.continuity, actor.0) else {
+            return false;
+        };
+        let Some(Slot::CreatureOccupied {
+            companion: Some(state),
+            ..
+        }) = self.carrier.slots.get_mut(index)
+        else {
+            return false;
+        };
+        state.conditions.advance_pass(now);
+        true
     }
 
     /// Stages only a source-qualified physical actor's existing condition store.
@@ -1011,8 +1051,8 @@ mod tests {
     }
     #[test]
     fn skipped_idle_creature_ticks_like_one_visited_every_pass() {
-        // The field owner skips an idle creature, so its empty store no longer
-        // advances pass_at/pass_ticks. Its first condition must tick exactly as
+        // The field owner skips an idle creature and only moves its cursor
+        // (skip_idle_field_creature). Its first condition must tick exactly as
         // for a creature that was visited on every pass: no burst, no lost tick.
         let facts = || TickFacts {
             in_protection_zone: false,
@@ -1039,7 +1079,9 @@ mod tests {
                 .unwrap();
             for now in (1..=5).map(|second| second * 1_000_000) {
                 assert!(runtime.idle_field_creature(creature).is_some());
-                if visit_idle {
+                if !visit_idle {
+                    assert!(runtime.skip_idle_field_creature(creature, now, |_| true));
+                } else {
                     let prepared = runtime
                         .stage_creature_periodic_turn(creature, now, facts())
                         .unwrap();
@@ -1052,6 +1094,13 @@ mod tests {
                     );
                 }
             }
+            let conditions = runtime
+                .companion_snapshot(creature)
+                .unwrap()
+                .state
+                .conditions;
+            assert!(conditions.accepts_time(5_000_000));
+            assert!(!conditions.accepts_time(4_999_999), "the cursor advanced");
             // The field applies it at the instant of the last pass.
             install_dot_at(&mut runtime, creature, 10, 3, 5_000_000);
             (6..=10)

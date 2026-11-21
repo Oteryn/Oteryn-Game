@@ -498,6 +498,16 @@ impl<S: Clone> ConditionStore<S> {
     pub fn accepts_time(&self, now: u64) -> bool {
         now >= self.pass_at && self.instances.iter().all(|v| v.started_at <= now)
     }
+
+    /// Moves the pass cursor to `now` as a pass over this store does
+    /// (`take_due_matching`), without taking anything due: a later time is
+    /// accepted again only from `now` on, and a new pass at `now` keeps its budget.
+    pub fn advance_pass(&mut self, now: u64) {
+        if self.pass_at != now {
+            self.pass_at = now;
+            self.pass_ticks = 0;
+        }
+    }
 }
 
 impl<S: Clone> ConditionStore<S> {

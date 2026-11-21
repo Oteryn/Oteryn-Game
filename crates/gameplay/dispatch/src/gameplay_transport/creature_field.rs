@@ -47,22 +47,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // A creature whose entry for this position is committed and whose condition store is
         // empty has no field or periodic work; visiting it costs a snapshot, a tile read and an
         // owner turn on every pass, which kept the durability holder busy (#3358).
-        let creatures = runtime
-            .visible_entities()
-            .creatures
-            .into_iter()
-            .filter(|visible| {
-                runtime
-                    .idle_field_creature(visible.actor)
-                    .is_none_or(|state| {
-                        tracks_condition_sources(
-                            native,
-                            &state.policy.definition_key,
-                            &state.policy.definition_revision,
-                        )
-                    })
+        // A skipped creature still moves its condition pass cursor to `now`.
+        let mut creatures = runtime.visible_entities().creatures;
+        creatures.retain(|visible| {
+            !runtime.skip_idle_field_creature(visible.actor, now, |state| {
+                !tracks_condition_sources(
+                    native,
+                    &state.policy.definition_key,
+                    &state.policy.definition_revision,
+                )
             })
-            .collect::<Vec<_>>();
+        });
         let positions = creatures
             .iter()
             .map(|visible| visible.position)
