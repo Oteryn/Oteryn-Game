@@ -51,6 +51,11 @@ fn raids_global_postgres_dracola_death_before_later_wave_e2e() -> TestResult {
     )
 }
 
+#[test]
+fn nbhold_raid_discovery_and_execution_survive_changing_publication_postgres() -> TestResult {
+    run_case("nbhold_raid_publication", "raid:badger", 100, false)
+}
+
 fn run_case(name: &'static str, key: &'static str, expected: usize, boss: bool) -> TestResult {
     let Some(admin) = crate::bestiary_postgres_harness::configured_admin() else {
         eprintln!("RAIDS_GLOBAL POSTGRES_CASE_COMPLETED {name} route_less=true");
@@ -63,7 +68,14 @@ fn run_case(name: &'static str, key: &'static str, expected: usize, boss: bool) 
                 crate::bestiary_postgres_harness::runtime()?.block_on(async {
                     let harness =
                         Harness::create_with_admission_seed(admin, name, false, false).await?;
-                    let result = scenario(&harness, key, expected, boss).await;
+                    let result = scenario(
+                        &harness,
+                        key,
+                        expected,
+                        boss,
+                        name == "nbhold_raid_publication",
+                    )
+                    .await;
                     let cleanup = harness.cleanup().await;
                     result?;
                     cleanup
@@ -103,7 +115,13 @@ async fn seed(
     Ok(())
 }
 
-async fn scenario(harness: &Harness, key: &str, expected: usize, boss: bool) -> TestResult {
+async fn scenario(
+    harness: &Harness,
+    key: &str,
+    expected: usize,
+    boss: bool,
+    contention: bool,
+) -> TestResult {
     prepare_current_session(harness).await?;
     let seal = harness.recovery.seal_current().map_err(debug)?;
     let authority = harness
@@ -240,6 +258,68 @@ async fn scenario(harness: &Harness, key: &str, expected: usize, boss: bool) -> 
     owner.movement_cells = (&cells).into();
     owner.reset_epoch = 1;
     seed(harness, &owner, &key, &selected, firing, bundle_digest).await?;
+    if contention {
+        use crate::durability::DurabilityRoot;
+        let foreground = harness.root.foreground_demand()?;
+        let shutdown = oteryn_foundation::CancellationToken::new();
+        let mut admitted = deps.admitted;
+        admitted.runtime_actor = Some(deps.actor);
+        let probe = async {
+            let deadline = tokio::time::Instant::now()
+                + crate::durability::ROOT_RECOVERY_WINDOW * 2
+                + std::time::Duration::from_secs(2);
+            let mut present = false;
+            let mut observed = None;
+            loop {
+                let publication: Option<i64> =
+                    sqlx::query_scalar("SELECT max(observed_at_ms) FROM game_world_raid_activity")
+                        .fetch_one(&harness.pool)
+                        .await?;
+                // Change the source after each successful publication, rather
+                // than toggling on a timer that can alias the owner's cadence.
+                if publication != observed {
+                    observed = publication;
+                    if present {
+                        owner
+                            .states
+                            .gameplay_idle_presence
+                            .forget(admitted.game_session_id);
+                    } else {
+                        owner.states.gameplay_idle_presence.observe(admitted);
+                    }
+                    present = !present;
+                }
+                let effects: i64 = sqlx::query_scalar(
+                    "SELECT count(*) FROM game_world_raid_effects WHERE state=2",
+                )
+                .fetch_one(&harness.pool)
+                .await?;
+                if effects > 0 {
+                    return Ok::<(), Box<dyn std::error::Error>>(());
+                }
+                assert!(
+                    tokio::time::Instant::now() < deadline,
+                    "changing publication consumed every fairness turn before discovery/execution"
+                );
+                tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+            }
+        };
+        let result = crate::gameplay_transport::first(probe, async {
+            DurabilityRoot::with_background_holder(owner.run_raid_effects(&shutdown)).await;
+        })
+        .await;
+        result.ok_or("raid owner stopped before execution")??;
+        assert!(
+            sqlx::query_scalar::<_, i64>(
+                "SELECT count(*) FROM game_world_raid_creature_placements WHERE placed"
+            )
+            .fetch_one(&harness.pool)
+            .await?
+                > 0
+        );
+        drop(foreground);
+        return Ok(());
+    }
     let generation = ScopeOwnershipGeneration::new(1).map_err(debug)?;
     let now = i64::from(selected.definition.waves.first().ok_or("wave")?.delay_ms);
     if key.as_str() == "raid:porthope.stampede" {

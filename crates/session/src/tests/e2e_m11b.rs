@@ -39,10 +39,10 @@ fn e2e_m11b_magic_rope_replay() -> Result<(), Box<dyn std::error::Error + Send +
             };
             (
                 spatial(10, 20, 7),
-                spatial(11, 20, 8),
+                spatial(11, 20, 6),
                 vitals(80)?,
                 vitals(60)?,
-                "11 20 8 150 60\n".into(),
+                "11 20 6 150 60\n".into(),
             )
         };
     block_on(async {

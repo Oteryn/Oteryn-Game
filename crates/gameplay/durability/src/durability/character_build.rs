@@ -532,13 +532,25 @@ pub(super) async fn apply_build_in_transaction(
     binding: Vec<u8>,
     offline: Option<super::offline_training_state::OfflineChange>,
 ) -> std::result::Result<Result<BuildCommitOutcome>, DurabilityError> {
-    apply_build_with_fence(tx, BuildFence::Gameplay(node), fence, request, policy_digest,
-        content_revision, binding, offline).await
+    apply_build_with_fence(
+        tx,
+        BuildFence::Gameplay(node),
+        fence,
+        request,
+        policy_digest,
+        content_revision,
+        binding,
+        offline,
+    )
+    .await
 }
 
 /// Only the native explicit House logout participant can supply this proof.
 /// No general Character build caller acquires House write authority here.
-#[allow(clippy::too_many_arguments, reason = "the existing build participant plus its closed House logout proof")]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the existing build participant plus its closed House logout proof"
+)]
 pub(super) async fn apply_house_logout_in_transaction(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     house: super::loop_training::HouseLogout<'_>,
@@ -549,13 +561,24 @@ pub(super) async fn apply_house_logout_in_transaction(
     binding: Vec<u8>,
     offline: super::offline_training_state::OfflineChange,
 ) -> std::result::Result<Result<BuildCommitOutcome>, DurabilityError> {
-    if house.fence() != *fence || request.cause != BuildCause::Logout
-        || request.before != request.after || request.pruned_stance.is_some()
+    if house.fence() != *fence
+        || request.cause != BuildCause::Logout
+        || request.before != request.after
+        || request.pruned_stance.is_some()
     {
         return Ok(Err(CharacterProgressionError::InvalidInput));
     }
-    apply_build_with_fence(tx, BuildFence::HouseLogout(house), fence, request, policy_digest,
-        content_revision, binding, Some(offline)).await
+    apply_build_with_fence(
+        tx,
+        BuildFence::HouseLogout(house),
+        fence,
+        request,
+        policy_digest,
+        content_revision,
+        binding,
+        Some(offline),
+    )
+    .await
 }
 
 enum BuildFence<'a> {
@@ -563,7 +586,10 @@ enum BuildFence<'a> {
     HouseLogout(super::loop_training::HouseLogout<'a>),
 }
 
-#[allow(clippy::too_many_arguments, reason = "the unchanged native build transaction participant")]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the unchanged native build transaction participant"
+)]
 async fn apply_build_with_fence(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     authority: BuildFence<'_>,
@@ -1114,6 +1140,44 @@ impl DurabilityRoot {
                     }).transpose()?;
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok((build, points, progression)))
+                })
+            })
+            .await?
+    }
+
+    /// Qualification-only read of reconciled birth provenance. Build receipts that
+    /// preserve the vocation, including admission settlement, do not invalidate it.
+    pub async fn has_unchanged_bootstrap_vocation(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        character_id: CharacterId,
+        vocation: &str,
+    ) -> Result<bool> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        let vocation = vocation.to_owned();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    let unchanged = sqlx::query_scalar(
+                        "SELECT EXISTS (SELECT 1 FROM game_character_roots r \
+                           JOIN game_character_operation_receipts o USING (character_id) \
+                          WHERE r.character_id = encode($1,'hex')::uuid \
+                            AND r.creation_vocation = $2 \
+                            AND substring(o.command_binding FROM 1 FOR 1) = decode('04','hex') \
+                            AND NOT EXISTS (SELECT 1 FROM game_character_build_receipts b \
+                                WHERE b.character_id = r.character_id \
+                                  AND b.vocation_before <> b.vocation_after))",
+                    )
+                    .bind(character_id.as_bytes().as_slice())
+                    .bind(vocation)
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(unchanged))
                 })
             })
             .await?

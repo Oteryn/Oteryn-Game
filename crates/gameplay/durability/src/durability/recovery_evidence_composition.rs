@@ -24,7 +24,6 @@ use crate::foundation::fnd04_verifier::{
 };
 use crate::foundation::{Fnd04ConsumerError, Fnd04EvidenceError, Fnd04EvidenceScope};
 use sqlx::{Postgres, Row, Transaction};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 type Result<T> = std::result::Result<T, DurabilityError>;
 type CredentialResult = std::result::Result<VerifiedRecoveryDurabilityFactsV2, Fnd04ConsumerError>;
@@ -140,7 +139,11 @@ impl DurabilityRoot {
                     fence_custody(&mut tx, &custody).await?;
                     let authority = registered_authority(&mut tx).await?;
                     let source = resolve_current(&mut tx, &authority, &subject).await?;
-                    let now = server_now()?;
+                    let now: i64 = sqlx::query_scalar(
+                        "SELECT floor(extract(epoch FROM clock_timestamp()))::bigint",
+                    )
+                    .fetch_one(&mut *tx)
+                    .await?;
                     let result = {
                         let context = RecoveryDurabilityTrustContextV2::from_owning_source(&source);
                         // Synchronous bounded verifier; no IO or nested writer pass.
@@ -192,13 +195,6 @@ fn bounded_bindings(current: &RecoveryCurrentEvidence) -> bool {
         ]
         .iter()
         .all(|revision| (1..=64).contains(&revision.len()))
-}
-
-fn server_now() -> Result<i64> {
-    let elapsed = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_err(|_| DurabilityError::Unavailable)?;
-    i64::try_from(elapsed.as_secs()).map_err(|_| DurabilityError::Unavailable)
 }
 
 async fn registered_authority(tx: &mut Transaction<'_, Postgres>) -> Result<String> {

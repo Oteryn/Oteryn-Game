@@ -3,6 +3,9 @@
 Pinned XML supplies capacities, durations, decay edges and explicit late-stage
 weights. Missing weights use the existing non-pickupable Game corpse policy0.
 WorldObject movement/corpse identity and canonical known facts remain binding.
+The native record also carries its source classification and collision facts
+(appearance unpass/unsight as captured on the WorldObject), which the runtime
+corpse Ground read requires for every decay stage.
 """
 import copy
 import hashlib
@@ -71,14 +74,7 @@ def apply_admissions(definitions, root=ROOT):
         raise ValueError('NATIVE_GOAL_CORPSE_DUPLICATE_ITEM')
     values, weights = policies(root)
     wanted = {f'oteryn:item.tibia.i{i}' for i in values}
-    objects = {}
-    for path in (root / 'content/world/objects').glob('objects-*.json'):
-        for row in json.loads(path.read_bytes())['records']:
-            pointer = row.get('provenance', {}).get('item_pointer')
-            if pointer and pointer['key'] in wanted:
-                if pointer['key'] in objects:
-                    raise ValueError('NATIVE_GOAL_CORPSE_DUPLICATE_OBJECT')
-                objects[pointer['key']] = row
+    objects = world_objects(root, wanted)
     builder = module('primal_corpse_items', root)
     replacements = []
     for item, (capacity, duration, target) in values.items():
@@ -114,10 +110,54 @@ def apply_admissions(definitions, root=ROOT):
         definition.update(replacement)
 
 
+def world_objects(root, wanted):
+    objects = {}
+    for path in (root / 'content/world/objects').glob('objects-*.json'):
+        for row in json.loads(path.read_bytes())['records']:
+            pointer = row.get('provenance', {}).get('item_pointer')
+            if pointer and pointer['key'] in wanted:
+                if pointer['key'] in objects:
+                    raise ValueError('NATIVE_GOAL_CORPSE_DUPLICATE_OBJECT')
+                objects[pointer['key']] = row
+    return objects
+
+
+def known(field, code):
+    if not isinstance(field, dict) or field.get('state') != 'KNOWN' or type(field.get('value')) is not bool:
+        raise ValueError(code)
+    return field['value']
+
+
+def source_facts(record, world, node):
+    """Mirror build_source_item_profiles.profile for an XML/DAT corpse stage.
+
+    Crystal ItemType: blockSolid is DAT unpass, blockProjectile is DAT unsight
+    unless items.xml overrides it, and an untyped container is CONTAINER.
+    The classification only fills an UNKNOWN one; both kinds are non-field.
+    """
+    attributes = {a.get('key', '').lower() for a in node.findall('attribute')}
+    if attributes & {'type', 'field', 'blockprojectile', 'blocksolid'}:
+        raise ValueError('NATIVE_GOAL_CORPSE_SOURCE_OVERRIDE')
+    collision = world['collision']
+    solid = known(collision['blocks_movement'], 'NATIVE_GOAL_CORPSE_COLLISION_PROOF')
+    projectile = known(collision['blocks_sight'], 'NATIVE_GOAL_CORPSE_COLLISION_PROOF')
+    movable = known(record['semantics']['physical']['value']['movable'], 'NATIVE_GOAL_CORPSE_PHYSICAL_PROOF')
+    if collision['blocks_projectile'] not in ({'state': 'UNKNOWN'}, {'state': 'KNOWN', 'value': projectile}):
+        raise ValueError('NATIVE_GOAL_CORPSE_COLLISION_PROOF')
+    container = record['semantics']['container']
+    item_type = {'state': 'KNOWN', 'value': 'CONTAINER'} if container.get('state') == 'KNOWN' else {'state': 'NOT_APPLICABLE'}
+    classification = {'state': 'KNOWN', 'value': {'item_type': item_type, 'capabilities': {'state': 'UNKNOWN'}}}
+    return classification, {'blocks_movement': solid, 'blocks_projectile': projectile,
+                            'immovable_block_solid': solid and not movable}
+
+
 def admit_native(root, generated, profile_path, manifest_path, order, canonical):
     portable = module('questpc2_portable_corpse_facts', root).profiles(root)
     values, _ = policies(root)
     wanted = {f'oteryn:item.tibia.i{i}' for i in values}
+    objects = world_objects(root, wanted)
+    nodes = {int(n.get('id')): n for n in ET.fromstring(
+        (root / module('encounter_corpse_items', root).XML).read_bytes()) if n.get('id')}
     definitions = {}
     for path in (root / 'content/items/definitions').glob('items-*.json'):
         for row in json.loads(path.read_bytes())['records']:
@@ -164,6 +204,16 @@ def admit_native(root, generated, profile_path, manifest_path, order, canonical)
         for group in GROUPS:
             record['semantics'][group] = copy.deepcopy(definition['semantics'][group])
         record['admission'] = dict(materializable=True, stack_class='NonStackable', legal_destinations=['Ground'])
+        if key not in objects or objects[key]['provenance']['item_pointer'] != definition['identity']:
+            raise ValueError('NATIVE_GOAL_CORPSE_WORLDOBJECT_PROOF')
+        classification, collision = source_facts(record, objects[key], nodes[int(key.rsplit('.i', 1)[1])])
+        # A known classification may come from the DAT container flag, which
+        # the XML capacity policy does not carry (terminal4027); keep it.
+        if record['semantics'].get('classification', {'state': 'UNKNOWN'}) == {'state': 'UNKNOWN'}:
+            record['semantics']['classification'] = classification
+        for name, value in collision.items():
+            if record['attributes'].setdefault(name, value) != value:
+                raise ValueError('NATIVE_GOAL_CORPSE_NATIVE_FACT_CONFLICT')
     document['records'].sort(key=order)
     raw = canonical(document)
     generated[profile_path] = raw

@@ -3,38 +3,13 @@
 #[path = "src/build_source.rs"]
 mod build_source;
 
-use std::process::Command;
-
-fn git(arguments: &[&str]) -> Option<String> {
-    let output = Command::new("git").args(arguments).output().ok()?;
-    if !output.status.success() {
-        return None;
-    }
-    let text = String::from_utf8(output.stdout).ok()?;
-    let text = text.trim();
-    (!text.is_empty()).then(|| text.to_owned())
-}
-
-fn watch(path: &str) {
-    if std::path::Path::new(path).exists() {
-        println!("cargo:rerun-if-changed={path}");
-    }
-}
-
 fn main() {
-    println!("cargo:rerun-if-env-changed=OTERYN_BUILD_SHA");
-    watch("build.rs");
-    if let Some(head) = git(&["rev-parse", "--git-path", "HEAD"]) {
-        watch(&head);
-    }
-    if let Some(reference) = git(&["symbolic-ref", "-q", "HEAD"])
-        && let Some(path) = git(&["rev-parse", "--git-path", &reference])
-    {
-        watch(&path);
-    }
-    // A branch that exists only in `packed-refs` has no loose ref file to watch.
-    if let Some(packed) = git(&["rev-parse", "--git-path", "packed-refs"]) {
-        watch(&packed);
+    for directive in [
+        "rerun-if-env-changed=OTERYN_BUILD_SHA",
+        "rerun-if-changed=build.rs",
+        "rerun-if-changed=src/build_source.rs",
+    ] {
+        println!("cargo:{directive}");
     }
     let sha = match std::env::var("OTERYN_BUILD_SHA") {
         Ok(value) => Some(value),
@@ -44,8 +19,7 @@ fn main() {
             std::process::exit(1);
         }
     };
-    let head = git(&["rev-parse", "--short=12", "HEAD"]);
-    match build_source::resolve(sha.as_deref(), head.as_deref()) {
+    match build_source::resolve(sha.as_deref()) {
         Ok(source) => println!("cargo:rustc-env=OTERYN_BUILD_SOURCE={source}"),
         Err(reason) => {
             eprintln!("error: {reason}");

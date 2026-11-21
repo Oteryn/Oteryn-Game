@@ -63,7 +63,7 @@ fn atlas_geometry_pages_layers_and_floor_filters_use_real_queue()
     };
     assert_eq!((command.capability, command.kind), (57, 72));
     let request = wire::decode_request(&command.payload).map_err(|e| format!("{e:?}"))?;
-    assert_eq!((request.area, request.floor, request.after), (0, 1, 0));
+    assert_eq!((request.area, request.floor, request.after), (0, wire::AREA_LIST, 0));
     let names = wire::Reply::Areas(wire::AreaPage {
         parent: 0,
         after: 0,
@@ -88,10 +88,10 @@ fn atlas_geometry_pages_layers_and_floor_filters_use_real_queue()
         return Err("missing geometry query".into());
     };
     let request = wire::decode_request(&command.payload).map_err(|e| format!("{e:?}"))?;
-    assert_eq!((request.area, request.floor, request.after), (1, -7, 0));
+    assert_eq!((request.area, request.floor, request.after), (1, 7, 0));
     let geometry = wire::GeometryPage {
         area: 1,
-        floor: -7,
+        floor: 7,
         page: 0,
         next: Some(1),
         total: 1025,
@@ -128,7 +128,7 @@ fn atlas_geometry_pages_layers_and_floor_filters_use_real_queue()
     );
     let geometry = wire::GeometryPage {
         area: 1,
-        floor: -7,
+        floor: 7,
         page: 1,
         next: None,
         total: 1025,
@@ -163,7 +163,7 @@ fn atlas_geometry_pages_layers_and_floor_filters_use_real_queue()
         pool: 0,
         epoch: 1,
         improved: false,
-        visible: vec![(10, 0, -7)],
+        visible: vec![(10, 0, 7)],
     };
     outbox.properties_result(
         &command,
@@ -171,7 +171,7 @@ fn atlas_geometry_pages_layers_and_floor_filters_use_real_queue()
             command_id: 4,
             server_sequence: 4,
             status: CommandStatus::Accepted,
-            payload: cyclopedia_map::encode_result(&points).map_err(|e| format!("{e:?}"))?,
+            payload: cyclopedia_map::encode_wire_result(&points).map_err(|e| format!("{e:?}"))?,
         },
     );
     let drawing =
@@ -198,7 +198,7 @@ fn atlas_geometry_pages_layers_and_floor_filters_use_real_queue()
         wire::decode_request(&command.payload)
             .map_err(|e| format!("{e:?}"))?
             .floor,
-        -6
+        6
     );
     outbox.logged_out();
     assert!(link.cyclopedia_map_panel().geometry.runs.is_empty());

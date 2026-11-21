@@ -1,16 +1,21 @@
 use super::*;
 
-pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
+pub(super) fn initialize<T: Stepper>(
+    session: &T,
+    outbox: &Outbox,
+) -> Result<(), oteryn_session::SessionError> {
+    outbox.diagonal_initialize(
+        session.feature_selected(oteryn_session::CAPABILITY_DIAGONAL_MOVEMENT_V1),
+    );
+    if session.feature_selected(451) {
+        outbox.personal_map_marks_initialize();
+    }
     outbox.discovery_initialize(session);
     outbox.hud_stamina_initialize(session.feature_selected(199));
     outbox.properties_initialize(session);
     outbox.analyser_initialize(session.feature_selected(10));
-    if let Err(error) = outbox
-        .spell_catalog_initialize(session.feature_selected(287), session.feature_snapshot(100))
-    {
-        outbox.end(public_class(&error));
-        return false;
-    }
+    outbox
+        .spell_catalog_initialize(session.feature_selected(287), session.feature_snapshot(100))?;
     outbox.battle_metadata_initialize(session.server_mechanic_selected(17));
     outbox.spell_bar_initialize(session.feature_snapshot(20));
     outbox.bar_item_cooldowns_initialize(session.feature_selected(463));
@@ -88,7 +93,7 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     );
     outbox.browse_field_initialize(session.server_mechanic_selected(230));
     if let Some(payload) = session.feature_snapshot(14) {
-        outbox.browse_field_views(&payload);
+        outbox.browse_field_views(&payload, session.feature_selected(499));
     }
     if let Some(inventory) = session.inventory() {
         outbox.browse_field_inventory(inventory);
@@ -132,11 +137,15 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     );
     outbox.store_tokens_initialize(session.server_mechanic_selected(479));
     outbox.premium_game_initialize(session.feature_selected(97));
-    outbox.vip_presence_initialize(session.feature_selected(258));
+    outbox.vip_presence_initialize(session.feature_selected(258), session.feature_selected(513));
+    outbox.channel_switch_initialize(
+        session
+            .feature_selected(oteryn_client_runtime::channel_switch::CAPABILITY_CHANNEL_SWITCH_V1),
+    );
     outbox.weapon_proficiency_initialize(session.feature_selected(195));
     outbox.weapon_proficiency_state_initialize(session.feature_selected(448));
     outbox.depot_initialize(session.feature_selected(37));
     outbox.achievements_initialize();
     outbox.player_trade_items(session.player_trade_items());
-    true
+    Ok(())
 }

@@ -15,6 +15,7 @@ fn e2e_all_quest_journal_replay() -> Result<(), Box<dyn std::error::Error>> {
             )
         } else {
             let log = QuestLog {
+                map_marks: Vec::new(),
                 view: Some(QuestLogView::List(vec![
                     QuestListEntry {
                         quest_index: 7,

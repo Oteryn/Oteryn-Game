@@ -1,7 +1,7 @@
 [package]
 name = "oteryn-input-platform"
 version.workspace = true
-description = "Bounded Windows and winit physical-input adapter for Oteryn"
+description = "Bounded physical-input adapter for Oteryn native hosts"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -13,11 +13,18 @@ category = "input-platform"
 release-role = "production"
 source-disposition = "MIGRATE_AS_IS"
 
+[features]
+native-winit = ["dep:winit"]
+
 [dependencies]
 oteryn-input-actions = { version = "=0.1.0", path = "../input-actions" }
+winit = { workspace = true, optional = true }
 
 [target.'cfg(windows)'.dependencies]
 winit.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+winit = { workspace = true, optional = true, features = ["x11"] }
 
 [lints]
 workspace = true

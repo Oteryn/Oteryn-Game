@@ -543,7 +543,7 @@ fn scenario(case: Case) -> TestResult {
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (generation, pin) =
-            super::super::death_ml_loss_composed::production_generation_with_pin(
+            super::super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 world,
                 "content-1",
             )?;
@@ -681,6 +681,7 @@ fn scenario(case: Case) -> TestResult {
                     &owner,
                     capabilities,
                 )
+                .await
             } else {
                 SelectedCapabilities::select(owner.offered_capabilities(), capabilities)
             }

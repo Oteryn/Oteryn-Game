@@ -24,7 +24,7 @@ fn t060_selected_engine_and_aa_survive_restart_and_live_input_queue()
         repeat: false,
     }]);
     assert!(!opened);
-    play.arrow(crate::input::arrow_step(&events).ok_or("missing movement")?);
+    play.arrow(crate::input::arrow_step(&events, false).ok_or("missing movement")?);
     play.tick(&link).map_err(|_| "tick failed")?;
     assert_eq!(
         commands.try_recv()?,
@@ -96,7 +96,7 @@ fn graphics_preferences_reach_live_scene_lighting_and_gpu_floor_separation()
     below.position = ActorPosition {
         x: 99,
         y: 199,
-        floor: -1,
+        floor: 1,
     };
     map.tiles.push(below);
     play.set_live_map(&map)?;
@@ -148,7 +148,7 @@ fn graphics_preferences_reach_live_scene_lighting_and_gpu_floor_separation()
         own: Some(ActorPosition {
             x: 100,
             y: 200,
-            floor: -8,
+            floor: 8,
         }),
         ..Default::default()
     })?;

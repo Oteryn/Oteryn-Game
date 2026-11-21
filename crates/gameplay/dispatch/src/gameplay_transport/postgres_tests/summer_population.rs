@@ -60,6 +60,8 @@ fn summer_population_all_six_radiant_rewards_admit_native_corpses() -> TestResul
         assert!(
             reward
                 .corpse_item
+                .as_ref()
+                .ok_or("actual Summer source corpse")?
                 .production_key
                 .starts_with("oteryn:item.tibia.i54")
         );
@@ -292,7 +294,7 @@ fn summer_population_all_six_execute_exact_pinned_loot_plans_and_replay() -> Tes
 
 #[test]
 fn summer_population_npc_placements_greeting_lore_and_stale_actor_on_postgres() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("summer-population-pg", scenario)
+    super::kill_reward_e2e_fixtures::scenario_thread::run("summer-population-pg", scenario)
 }
 
 fn scenario() -> TestResult {

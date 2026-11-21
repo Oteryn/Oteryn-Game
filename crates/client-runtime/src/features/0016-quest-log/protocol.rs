@@ -31,7 +31,7 @@ pub async fn send<S: SessionStream>(
         .await?;
     let list_only = matches!(decode_quest_log_query(payload), Ok(QuestLogQuery::ListOnly));
     let valid = if list_only && result.status == CommandStatus::Accepted {
-        matches!(decode_quest_log(&result.payload), Ok(QuestLog { view: Some(QuestLogView::List(_)), tracked }) if tracked.is_empty())
+        valid_list_only(&result.payload)
     } else {
         result.payload.is_empty()
     };
@@ -42,4 +42,26 @@ pub async fn send<S: SessionStream>(
         });
     }
     Ok(result)
+}
+
+fn valid_list_only(payload: &[u8]) -> bool {
+    matches!(decode_quest_log(payload), Ok(QuestLog { map_marks: _, view: Some(QuestLogView::List(_)), tracked }) if tracked.is_empty())
+}
+
+#[cfg(test)]
+#[test]
+fn review10_list_only_accepts_personal_map_marks() -> Result<(), String> {
+    let payload = encode_quest_log(&QuestLog {
+        map_marks: vec![QuestMapMark {
+            x: 100,
+            y: 100,
+            floor: 7,
+            text: "Treasure".into(),
+        }],
+        view: Some(QuestLogView::List(vec![])),
+        tracked: vec![],
+    })
+    .map_err(|error| format!("{error:?}"))?;
+    assert!(valid_list_only(&payload));
+    Ok(())
 }

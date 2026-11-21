@@ -20,16 +20,31 @@ mod content;
 mod entry;
 mod handoff;
 mod handoff_owner;
+pub(super) use handoff_owner::NativeSoulpitHandoff as SharedSoulpitOwner;
 mod owner_runtime;
 mod passages;
 mod rewards;
 pub mod runtime;
+mod scene;
+#[cfg(test)]
+mod source_owner_compat;
 pub use handoff::{
     BossActivityHandoff, BossActivityHandoffSlot, SoulpitCoreSelection, SoulpitEntryIntent,
     SoulpitSelection,
 };
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static SOULPIT_TEST_HANDOFF_ID: [u8; 16];
+}
+
+#[cfg_attr(test, track_caller)]
 fn outcome(disposition: UseDisposition) -> UseOutcome {
+    #[cfg(test)]
+    eprintln!(
+        "SRX3_SOULPIT disposition={disposition:?} source={}",
+        std::panic::Location::caller()
+    );
     UseOutcome {
         disposition,
         ..UseOutcome::rejected()

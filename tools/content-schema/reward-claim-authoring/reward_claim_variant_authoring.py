@@ -16,6 +16,8 @@ import reward_claim_variant_migration as migration
 
 PROFILE = 'authored_variant_v1'
 SCHEMA = 'OTERYN_REWARD_CLAIM_VARIANT_SHARD/v1'
+# Refreshed only by tools/content-migration/refresh_reward_stack_weight_proof.py.
+STACK_NORMALIZATION_PROOF_SHA256 = 'b549b8f620d1146744ae9ced2e2615f8c94b369012c7db479031fe22ecdd481e'
 
 
 def canonical_schema(root):
@@ -33,6 +35,7 @@ def canonical_schema(root):
             'items': {'type': 'object', 'additionalProperties': False,
                 'required': ['appearance_tibia_id', 'source_binding', 'reward'], 'properties': {
                     'appearance_tibia_id': {'type': 'integer', 'minimum': 1},
+                    'quest_transition': {'type': 'string', 'pattern': '^oteryn:quest-transition/'},
                     'source_binding': {'type': 'object', 'additionalProperties': False,
                         'required': ['project_position', 'legacy_unique_ids'], 'properties': {
                             'project_position': {'$ref': '#/$defs/position'},
@@ -117,7 +120,7 @@ def semantic_digest(value):
 
 def stack_normalization_proof():
     path = Path(__file__).with_name('reward_stack_normalization.json')
-    if hashlib.sha256(path.read_bytes()).hexdigest() != '4a71efae53f80b2080729959caa4d02b7cdd875a813118025e944376a480e248':
+    if hashlib.sha256(path.read_bytes()).hexdigest() != STACK_NORMALIZATION_PROOF_SHA256:
         raise ValueError('selected stack normalization proof changed')
     return json.loads(path.read_text())
 
@@ -126,7 +129,7 @@ def stack_normalization_checks():
     proof = stack_normalization_proof()
     return [{'code': 'OTERYN_SELECTED_STACK_SERIALIZATION', 'proof_path':
         'tools/content-schema/reward-claim-authoring/reward_stack_normalization.json',
-        'proof_sha256': '4a71efae53f80b2080729959caa4d02b7cdd875a813118025e944376a480e248', 'source_behavior': 'RECORDED_DIVERGENCE',
+        'proof_sha256': STACK_NORMALIZATION_PROOF_SHA256, 'source_behavior': 'RECORDED_DIVERGENCE',
         'native_admission': 'WAITING_IMPLEMENTATION', 'selected_cases': proof['cases']}]
 
 
@@ -206,6 +209,10 @@ def derive_definitions(packet, items, stack_problem, root=Path(__file__).resolve
                 if len(grants) != 1:
                     raise ValueError('ambiguous canonical Achievement grant')
                 p['achievement_grant'] = copy.deepcopy(grants[0]['grant_request'])
+            from reward_claim_authoring import chest_transitions
+            transition = "oteryn:quest-transition/" + source["identity"]["key"].split("reward-claim/", 1)[1] + "/chest"
+            if transition in chest_transitions():
+                p["quest_transition"] = transition
             placements.append(p)
         marker = source['identity']['key'].split(':reward-claim/', 1)[1].replace('/', '.')
         definition = {'identity': {'key': 'oteryn:reward-claim.' + marker, 'revision': 'reward-claim-r1'},

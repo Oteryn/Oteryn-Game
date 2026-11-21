@@ -1,18 +1,19 @@
 //! Real native damage and draining prove Primal's admitted corpse settlement and
-//! Rotten Blood's independently sourced XP/Quest progression despite unavailable
-//! corpse content. Captured-death consumer calls only replay those native writes;
+//! Rotten Blood's independently sourced XP/Quest progression with admitted
+//! physical bodies and private loot. Captured-death consumer calls only replay those native writes;
 //! real NPC mutations, cleanse fences and immutable reconciliation remain covered.
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+use super::rotten_blood_progression_fixtures::{current, place_npc, talk};
+
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::content::channel_content_pin::ChannelContentPin;
-use crate::durability::character_progression::{
-    CharacterProgressionError, CurrentCharacterGameplayFence,
-};
+use crate::durability::character_progression::CharacterProgressionError;
 use crate::durability::quest_state::rotten_blood::RottenBloodOutcome;
 use crate::foundation::{CommandId, CommandRef, MovementLocalPosition};
 use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::kill_reward::{DrainOutcome, KillSink, TakeOutcome};
-use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+
 use oteryn_gameplay_quests::quest::rotten_blood::{
     ACCESS_TRACK, CLEANSE_COOLDOWN_SECONDS, CleanseMode, RottenBloodBoss, RottenBloodRefusal,
     RottenBloodState,
@@ -24,7 +25,7 @@ fn rotten_blood_postgres_native_chain_final_reward_replay_and_cleanse() -> TestR
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("rotten-blood-progression", scenario)
+    super::kill_reward_e2e_fixtures::scenario_thread::run("rotten-blood-progression", scenario)
 }
 
 fn scenario() -> TestResult {
@@ -38,7 +39,7 @@ fn qengine_l13_decaying_defender_parent_and_accessories() -> TestResult {
     }
     let started = std::time::Instant::now();
     let result =
-        super::kill_reward_e2e::scenario_thread::run("qengine-l13-decaying_defender", || {
+        super::kill_reward_e2e_fixtures::scenario_thread::run("qengine-l13-decaying_defender", || {
             scenario_with_outfit(true)
         });
     eprintln!(
@@ -74,7 +75,7 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
         );
         let (controller, pin) = if qualify_outfit {
             // Appearance selection must use the Character's actual content revision.
-            super::death_ml_loss_composed::production_generation_with_source(
+            super::death_ml_loss_composed_fixtures::production_generation_with_source(
                 world,
                 "content-1",
                 source,
@@ -92,7 +93,7 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
             .into_iter()
             .find(|callback| callback.key == oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE)
             .ok_or("Rotten sacrifice source callback")?;
-        let bundle = super::quest_world_callbacks::world(
+        let bundle = super::quest_world_callbacks_fixtures::world(
             &callback,
             oteryn_gameplay_quests::quest::world_callbacks::Position {
                 x: 3,
@@ -104,6 +105,18 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
             .movement_cells(room.movement_cells())
             .map_err(|error| format!("Rotten progression bundle movement cells: {error:?}"))?;
         let frame = bundle.frame_binding_digest(world);
+        let room = room
+            .bundle_view(
+                cells.clone(),
+                frame,
+                bundle.map_revision_digest(),
+                crate::content::NativeEntryStart {
+                    x: 2,
+                    y: 11,
+                    floor: 7,
+                },
+            )
+            .ok_or("Rotten progression bundle view")?;
         let channel_pin = ChannelContentPin::from_activation(
             world,
             pin.activation_sequence(),
@@ -132,6 +145,8 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
             .execute(&h.pool).await?;
         {
             let mut runtime = deps.runtime.lock().await;
+            // This altar fixture has no qualified native boss callback room.
+            runtime.use_classic_creature_deaths().map_err(debug)?;
             native
                 .install_companion_policies(&mut runtime)
                 .map_err(debug)?;
@@ -151,7 +166,7 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
                 .map_err(debug)?;
         }
         let premium = if qualify_outfit {
-            Some(super::qengine_endgame_stories::current_premium(&h).await?)
+            Some(super::qengine_endgame_stories_fixtures::current_premium(&h).await?)
         } else {
             None
         };
@@ -310,7 +325,7 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
         assert_eq!(addons, 0);
         if qualify_outfit {
             admitted.runtime_actor = Some(deps.actor);
-            super::qengine_endgame_stories::accessories(
+            super::qengine_endgame_stories_fixtures::accessories(
                 &mut owner,
                 &mut admitted,
                 &h,
@@ -515,7 +530,7 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
             );
         }
         eprintln!(
-            "ROTTEN_BLOOD POSTGRES_CASE_COMPLETED primal_corpse_settlement physical_corpse_refusals captured_death_consumer_chain final_reward shared_terminal_failure replay npc_command7_cleanse fences guards"
+            "ROTTEN_BLOOD POSTGRES_CASE_COMPLETED primal_corpse_settlement empty_rotten_corpses captured_death_consumer_chain final_reward shared_terminal_failure replay npc_command7_cleanse fences guards"
         );
         drop(owner);
         drop(authority);
@@ -610,17 +625,6 @@ async fn failed_final(
     Ok(())
 }
 
-async fn current(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
-    session: crate::foundation::GameSessionId,
-) -> TestResult<CurrentCharacterGameplayFence> {
-    owner
-        .current_quest_fence(session)
-        .await
-        .map_err(|_| "current Quest fence unavailable")?
-        .ok_or_else(|| "current Quest fence missing".into())
-}
-
 async fn read(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
@@ -652,22 +656,36 @@ async fn kill_key(
     creature_key: &str,
     command_id: u64,
 ) -> TestResult {
-    use super::soul_war::{CapturedEndgameDeath, settle_captured_endgame_death};
+    use super::soul_war_fixtures::{CapturedEndgameDeath, settle_captured_endgame_death};
     use crate::content::ProjectV2AuthoringProfileData;
-    use crate::content::creature_reward::NoSettlementReason;
 
     let primal = creature_key == "oteryn:creature.the_primal_menace";
     let empty_bakragore = creature_key == "oteryn:creature.bakragore";
+    let rotten_corpse = match creature_key {
+        "oteryn:creature.bakragore" => Some("oteryn:item.tibia.i44012"),
+        "oteryn:creature.murcion" => Some("oteryn:item.tibia.i44015"),
+        "oteryn:creature.ichgahal" => Some("oteryn:item.tibia.i44018"),
+        "oteryn:creature.vemiath" => Some("oteryn:item.tibia.i44021"),
+        "oteryn:creature.chagorz" => Some("oteryn:item.tibia.i44024"),
+        _ => None,
+    };
+    let private_loot_entries = match creature_key {
+        "oteryn:creature.bakragore" => 26,
+        "oteryn:creature.murcion" => 22,
+        "oteryn:creature.ichgahal" | "oteryn:creature.vemiath" => 24,
+        "oteryn:creature.chagorz" => 25,
+        _ => 0,
+    };
     if primal {
         // PR #2851 admits Primal corpse stages 39527-39530 from Crystal.
         let row = rewards.row(creature_key).map_err(debug)?;
         assert_eq!(
             row.corpse_item,
-            crate::combat::LootDefinitionRef::new(
+            Some(crate::combat::LootDefinitionRef::new(
                 "Item",
                 "oteryn:item.tibia.i39530",
                 "definition-r1"
-            )
+            ))
         );
         assert_eq!(row.xp_amount.get(), 0);
         assert!(
@@ -677,33 +695,50 @@ async fn kill_key(
         );
     } else if empty_bakragore {
         assert_eq!(
-            rewards.row(creature_key).err(),
-            Some(NoSettlementReason::LootItemInadmissible)
+            rewards
+                .row(creature_key)
+                .map_err(debug)?
+                .loot_table
+                .entries
+                .len(),
+            private_loot_entries
         );
         let corpse = rewards
             .reward_boss_corpse(creature_key)
             .ok_or("admitted empty Bakragore corpse")?;
         assert_eq!(
             corpse.corpse_item,
-            crate::combat::LootDefinitionRef::new(
+            Some(crate::combat::LootDefinitionRef::new(
                 "Item",
                 "oteryn:item.tibia.i44012",
                 "definition-r1"
-            )
+            ))
         );
         assert!(
             corpse.loot_table.entries.is_empty(),
             "physical admission grants no private loot"
         );
     } else {
-        // The other four Rotten Blood corpses still lack admitted container facts.
+        // The manifest admits both the capacity-eight body and the exact
+        // private table; ordinary physical corpses never receive that loot.
         assert!(
             matches!(
                 rewards.row(creature_key),
-                Err(NoSettlementReason::CorpseItemInadmissible)
+                Ok(row) if row.loot_table.entries.len() == private_loot_entries
             ),
-            "{creature_key}: retain physical corpse qualification refusal"
+            "{creature_key}: exact admitted private source table"
         );
+        let corpse = rewards
+            .reward_boss_corpse(creature_key)
+            .ok_or("admitted empty Rotten Blood body")?;
+        assert_eq!(
+            corpse
+                .corpse_item
+                .as_ref()
+                .map(|item| item.production_key.as_str()),
+            rotten_corpse
+        );
+        assert!(corpse.loot_table.entries.is_empty());
     }
     let native = owner
         .active_generation
@@ -729,6 +764,12 @@ async fn kill_key(
         at.checked_mul(1000).ok_or("death clock")?,
     );
     let before_physical = progression_receipts(h).await?;
+    let before_corpses: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_item_instances WHERE definition_production_key=$1",
+    )
+    .bind(rotten_corpse)
+    .fetch_one(&h.pool)
+    .await?;
     let source = {
         let mut runtime = owner.runtime.lock().await;
         let pin = runtime.content_pin().clone();
@@ -862,7 +903,13 @@ async fn kill_key(
                 );
             } else if empty_bakragore {
                 let row = entry.row.as_ref().ok_or("queued empty Bakragore corpse")?;
-                assert_eq!(row.corpse_item.production_key, "oteryn:item.tibia.i44012");
+                assert_eq!(
+                    row.corpse_item
+                        .as_ref()
+                        .ok_or("queued Bakragore physical body")?
+                        .production_key,
+                    "oteryn:item.tibia.i44012"
+                );
                 assert!(row.loot_table.entries.is_empty());
                 assert!(
                     entry.bosstiary_only.is_none(),
@@ -870,12 +917,30 @@ async fn kill_key(
                 );
             } else {
                 assert!(
-                    entry.row.is_none(),
-                    "unqualified corpse cannot enter the physical reward path"
+                    entry.row.is_some(),
+                    "qualified empty body must enter the physical reward path"
                 );
                 assert!(
-                    entry.bosstiary_only.is_some(),
-                    "only the existing Bosstiary fallback is admitted"
+                    entry.bosstiary_only.is_none(),
+                    "the admitted body uses physical settlement"
+                );
+                let row = entry.row.as_ref().ok_or("queued Rotten Blood body")?;
+                assert_eq!(
+                    row.corpse_item
+                        .as_ref()
+                        .map(|item| item.production_key.as_str()),
+                    rotten_corpse
+                );
+                assert!(row.loot_table.entries.is_empty());
+            }
+            if !primal {
+                let private = entry
+                    .boss_reward
+                    .as_ref()
+                    .ok_or("captured private boss rewards")?;
+                assert_eq!(
+                    private.reward.loot_table.entries.len(),
+                    private_loot_entries
                 );
             }
             held.requeue();
@@ -912,9 +977,22 @@ async fn kill_key(
         if empty_bakragore {
             let (corpses, children): (i64, i64) = sqlx::query_as("SELECT count(*), (SELECT count(*) FROM game_item_corpse_container_entries e JOIN game_item_instances parent ON parent.item_instance_id=e.parent_item_instance_id WHERE parent.definition_production_key='oteryn:item.tibia.i44012') FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i44012'").fetch_one(&h.pool).await?;
             assert_eq!(corpses, 1, "the admitted Bakragore body materializes once");
-            assert_eq!(children, 0, "no unavailable private loot enters the physical corpse");
+            assert_eq!(
+                children, 0,
+                "private loot stays outside the physical corpse"
+            );
         } else {
-            eprintln!("ROTTEN_BLOOD PHYSICAL_CORPSE_REFUSED creature={creature_key} reason=corpse_item_inadmissible");
+            let corpse_key = rotten_corpse.ok_or("actual Rotten Blood body key")?;
+            let (corpses, children): (i64, i64) = sqlx::query_as("SELECT count(*), (SELECT count(*) FROM game_item_corpse_container_entries e JOIN game_item_instances parent ON parent.item_instance_id=e.parent_item_instance_id WHERE parent.definition_production_key=$1) FROM game_item_instances WHERE definition_production_key=$1").bind(corpse_key).fetch_one(&h.pool).await?;
+            assert_eq!(
+                corpses,
+                before_corpses + 1,
+                "each admitted body materializes once"
+            );
+            assert_eq!(
+                children, 0,
+                "private loot stays outside the physical corpse"
+            );
         }
     }
     let before_replay = progression_receipts(h).await?;
@@ -949,64 +1027,6 @@ async fn drain(
     Err("native boss kill remained unsettled".into())
 }
 
-pub(super) async fn place_npc(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
-    actor: crate::foundation::ExactActorRef,
-    session: crate::foundation::GameSessionId,
-    key: &str,
-) -> TestResult<oteryn_protocol_oteryn::world_spatial_entities::EntityRef> {
-    use crate::foundation::{MovementFacing, NpcPlacement, NpcPlacementTable, NpcPlacements};
-    let catalogue = crate::content::NpcDataCatalogue::load(
-        std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
-        std::ffi::OsStr::new("world"),
-        crate::content::npc_catalogue_preproduction_limits(),
-    )
-    .map_err(debug)?;
-    let model = catalogue.service_model_for_project().map_err(debug)?;
-    owner.states.chat.install_npc_talk(std::sync::Arc::new(
-        crate::gameplay_transport::npc_talk::NpcTalkBook::from_model(&model),
-    ));
-    owner
-        .states
-        .chat
-        .admit(session, "Rotten Blood Hero", owner.owner_now());
-    owner.states.chat.set_npc_service(session);
-    let mut runtime = owner.runtime.lock().await;
-    let spot = runtime
-        .read_actor_position(actor)
-        .map_err(|error| format!("Rotten NPC {key} actor position: {error:?}"))?
-        .position();
-    runtime
-        .place_npcs(
-            &NpcPlacementTable {
-                npcs: vec![NpcPlacements {
-                    key: key.into(),
-                    placements: vec![NpcPlacement {
-                        floor: -i8::try_from(spot.floor)?,
-                        x: u16::try_from(spot.x + 1)?,
-                        y: u16::try_from(spot.y)?,
-                        direction: MovementFacing::South,
-                    }],
-                }],
-            },
-            |_| true,
-            true,
-        )
-        .map_err(|error| {
-            format!("Rotten NPC {key} placement beside carrier position {spot:?}: {error:?}")
-        })?;
-    let placed = runtime
-        .visible_entities()
-        .npcs
-        .first()
-        .copied()
-        .ok_or("Bloodshade placement")?;
-    Ok(oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
-        identity: placed.actor.placement_identity(),
-        generation: placed.generation,
-    })
-}
-
 fn advance_npc_turn(owner: &mut ComposedFreshAdmission<'_, '_, '_>) -> TestResult {
     // Separate source dialogue turns by the existing NPC ingress window.
     // The production limiter and database cleanse clock remain unchanged.
@@ -1016,42 +1036,5 @@ fn advance_npc_turn(owner: &mut ComposedFreshAdmission<'_, '_, '_>) -> TestResul
             oteryn_gameplay_npc::npc_command::RATE_WINDOW_MICROS,
         ))
         .ok_or("Rotten NPC rate-window clock")?;
-    Ok(())
-}
-
-pub(super) async fn talk(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
-    actor: crate::foundation::ExactActorRef,
-    session: crate::foundation::GameSessionId,
-    npc: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
-    number: u64,
-    text: &str,
-) -> TestResult {
-    use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
-    use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
-    let fence = current(owner, session).await?;
-    let result = owner
-        .npc_talk(
-            actor,
-            UseCommand {
-                game_session_id: session,
-                command_id: number,
-                item_fence: Some(fence.item_fence()),
-            },
-            NpcTalkIntent {
-                npc_actor: npc,
-                text: text.into(),
-            },
-        )
-        .await;
-    assert!(
-        !result.unknown,
-        "command {number}, NPC {npc:?}, text {text:?}: NPC outcome must be retained"
-    );
-    assert_eq!(
-        result.disposition,
-        NpcIntentDisposition::Ok,
-        "command {number}, NPC {npc:?}, text {text:?}"
-    );
     Ok(())
 }

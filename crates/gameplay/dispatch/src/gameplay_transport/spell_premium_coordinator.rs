@@ -14,12 +14,7 @@ use super::{
 use crate::domain::premium::{PreDelivery, PremiumGate, PremiumStatus};
 mod promotion_gate;
 
-pub(super) struct QuestPremium<'a>(pub(super) Option<&'a SpellPremiumCoordinator>);
-
 pub(super) struct DailyRewardPremium<'a>(pub(super) Option<&'a SpellPremiumCoordinator>);
-
-/// An absent native Premium authority cannot authorize a premium quest reward.
-pub(super) struct QuestRewardPremium<'a>(pub(super) Option<&'a SpellPremiumCoordinator>);
 use crate::durability::premium_activation_latch::{
     EmptyLatchHeld, PreDeliveryBypass, PremiumActivationLatch, PremiumActivationRead, PremiumGateTx,
 };
@@ -266,6 +261,32 @@ impl CurrentSpellAccessOwner for RegisteredSpellAccessOwner {
             },
         })
     }
+
+    fn read_familiar_restore_denial(
+        &self,
+        binding: &CastFactsBinding,
+        now: u64,
+    ) -> Option<CurrentProjection<()>> {
+        let Self::Premium {
+            account,
+            consumer,
+            clock,
+            delivery,
+        } = self
+        else {
+            return None;
+        };
+        let trusted = delivery.delivered_now(clock.read_current_window())?;
+        let denial = consumer.current_premium_denial(*account, trusted)?;
+        let remaining =
+            u64::try_from(denial.valid_until_us.checked_sub(trusted.upper_us())?).ok()?;
+        Some(CurrentProjection {
+            binding: binding.clone(),
+            authority_revision: denial.authority_revision,
+            valid_until_micros: now.checked_add(remaining)?,
+            value: (),
+        })
+    }
 }
 impl owner_registration::Registered for Arc<RegisteredSpellAccessOwner> {}
 impl CurrentSpellAccessOwner for Arc<RegisteredSpellAccessOwner> {
@@ -278,6 +299,14 @@ impl CurrentSpellAccessOwner for Arc<RegisteredSpellAccessOwner> {
         now: u64,
     ) -> Result<AccessProjections, AccessFactsError> {
         self.as_ref().read_current(binding, now)
+    }
+
+    fn read_familiar_restore_denial(
+        &self,
+        binding: &CastFactsBinding,
+        now: u64,
+    ) -> Option<CurrentProjection<()>> {
+        self.as_ref().read_familiar_restore_denial(binding, now)
     }
 }
 /// The node's Premium reads: the one PREM-1 consumer, the registered trusted clock owner, the
@@ -625,8 +654,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if physical.control_loss.is_some() {
             return None;
         }
-        let mut states = self.states.spell_states.lock().await;
-        let state = states.get_mut(&runtime, actor, session)?;
+        // A read: a retained cast attempt reserves the actor until its retry settles, and that
+        // retry needs this binding for its Premium access (the transition itself is skipped).
+        let states = self.states.spell_states.lock().await;
+        let state = states.get(&runtime, actor, session)?;
         let player_revision = state.revision();
         Some(PremiumOwnerBinding {
             account: raw.account,

@@ -180,6 +180,7 @@ fn house_capacity_maximum_crosses_real_session_snapshot_and_delta_frames() -> Re
         for id in 0..16_u8 {
             let base = u64::from(id) * 100;
             let entries = (0..25_u64).map(|n| Ok(ItemEntry {
+                appearance_id: 0,
                 handle: ItemHandle::new(u64::MAX-base-n).ok_or("maximum entry handle")?,
                 item_definition_ref:std::num::NonZeroU32::MAX,
                 count:std::num::NonZeroU32::MAX,sub_type:u32::MAX,

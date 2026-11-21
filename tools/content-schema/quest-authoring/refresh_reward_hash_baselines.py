@@ -7,6 +7,14 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parents[3]
 TARGET = ROOT / 'crates/gameplay/quests/src/quest/reward_callbacks.rs'
+OUTFIT = 'oteryn:quest.outfit_and_addon_quests'
+
+
+def definition_hashes(*arguments):
+    return json.loads(subprocess.check_output([
+        'cargo', 'run', '--locked', '--quiet', '-p', 'oteryn-gameplay-quests',
+        '--example', 'quest_definition_hashes', '--', *arguments,
+    ], cwd=ROOT, text=True))
 
 
 def main():
@@ -17,22 +25,28 @@ def main():
     start = source.index('    fn published_ungated_quest_hash_baseline()')
     end = source.index('    #[test]', start)
     baseline = source[start:end]
-    pattern = re.compile(r'("(oteryn:quest\.[^"]+)",\s*")[0-9a-f]{64}("\s*,)')
+    pattern = re.compile(r'("(oteryn:quest\.[^"]+)",\s*(?://[^\n]*\n\s*)*")[0-9a-f]{64}("\s*,)')
     keys = [match[2] for match in pattern.finditer(baseline)]
-    if not keys or len(set(keys)) != len(keys):
+    if OUTFIT not in keys or len(set(keys)) != len(keys):
         raise ValueError('missing or ambiguous reward hash baseline declarations')
-    hashes = json.loads(subprocess.check_output([
-        'cargo', 'run', '--locked', '--quiet', '-p', 'oteryn-gameplay-quests',
-        '--example', 'quest_definition_hashes', '--', *keys,
-    ], cwd=ROOT, text=True))
+    # Citizen NPC lowering keeps the full reward definition as its predecessor.
+    hashes = definition_hashes(*(key for key in keys if key != OUTFIT))
+    hashes.update(definition_hashes('--npc-predecessor', OUTFIT))
     if set(hashes) != set(keys) or any(not re.fullmatch('[0-9a-f]{64}', h) for h in hashes.values()):
         raise ValueError('canonical loader returned invalid quest hashes')
     refreshed = pattern.sub(lambda m: m[1] + hashes[m[2]] + m[3], baseline)
-    if args.check and refreshed != baseline:
+    updated = source[:start] + refreshed + source[end:]
+    updated, count = re.subn(
+        r'(hex\(&full_hash\),\s*")[0-9a-f]{64}(")',
+        lambda m: m[1] + hashes[OUTFIT] + m[2], updated,
+    )
+    if count != 1:
+        raise ValueError('missing or ambiguous full outfit predecessor assertion')
+    if args.check and updated != source:
         raise ValueError('stale reward hash baselines')
     if not args.check:
-        TARGET.write_text(source[:start] + refreshed + source[end:])
-    print(f'reward quest hash baselines: {len(keys)} exact assertions')
+        TARGET.write_text(updated)
+    print(f'reward quest hash baselines: {len(keys) + count} exact assertions')
 
 
 if __name__ == '__main__':

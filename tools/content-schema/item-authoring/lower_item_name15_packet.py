@@ -18,7 +18,7 @@ from source_relocations import current_path as relocated_path
 
 COMPILER = "tools/content-schema/item-authoring/lower_item_name15_packet.py"
 PROOF = "docs/agents/evidence/OTV2-20261002-item-name15-source-qualification-v5.json"
-PROOF_SHA = "8ef6e3776ca56e4f3dfb8c954d71bdfbc86bc163ed7e47d8e2488fc949876792"
+PROOF_SHA = "376ae1cb8427bae6b7ff804be45b3534474cf5cf7d46024be0b9fc62579ed4ca"
 OUTPUT = ROOT / "docs/agents/evidence/OTV2-20261002-item-name15-promotion-v1.json"
 IDS = (
     23577,

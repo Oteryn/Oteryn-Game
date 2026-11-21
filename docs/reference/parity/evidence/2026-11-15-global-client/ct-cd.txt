@@ -1,0 +1,5 @@
+D=9.4 m0=2545 m1=2143 m2=2147 first=402 second=-4
+D=10.2 m0=3062 m1=2662 m2=2670 first=400 second=-8
+D=10.8 m0=5490 m1=90 m2=98 first=5400 second=-8
+D=9.8 m0=3918 m1=5518 m2=5526 first=-1600 second=-8
+DONE

@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/ice-islands/siflind-paint",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "npc": "oteryn:npc.siflind",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission04",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 1
+        }
+      ],
+      "requires": [],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i7253",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Take this paint to Tyrsung and mark three different baby seals."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:65-67,137-145"
+      ]
+    }
+  ]
+}

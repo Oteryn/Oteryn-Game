@@ -160,11 +160,61 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
-            let row = sqlx::query("SELECT r.account_id::text, r.character_id::text, r.world_id::text, r.character_revision::text, o.event_id::text, o.transaction_id::text, o.account_id::text AS creation_account_id FROM game_character_roots r JOIN game_character_creation_receipts o USING (character_id) WHERE r.character_id = encode($1,'hex')::uuid AND r.lifecycle = 1 AND NOT game_account_closure_detached(r.character_id)").bind(character.as_slice()).fetch_optional(&mut *tx).await?;
-            let Some(row) = row else { return Ok(Err(CharacterAuthorityError::Rejected)); };
-            let record = decode_current_row(&row)?;
+            let Some(record) = read_current_character_in_transaction(&mut tx, character).await? else {
+                return Ok(Err(CharacterAuthorityError::Rejected));
+            };
             commit_semantic_transaction(tx, deadline).await?;
             Ok(Ok(record))
+        })).await?
+    }
+
+    /// Read a live session and its current Character revision in one fenced pass.
+    /// Periodic gameplay consumers need both, so they must not return and reacquire
+    /// the single holder between the admission journal and Character reads.
+    pub async fn read_current_gameplay_fence(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        session: crate::foundation::GameSessionId,
+    ) -> Result<Option<super::character_progression::CurrentCharacterGameplayFence>> {
+        let recovery = authority.record_for(self)?;
+        let store = super::fresh_admission::FreshAdmissionStore::from_root(self.clone());
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            super::db::lock_admission_relations(&mut tx).await?;
+            let current = match store.current_session_in_transaction(&mut tx, session).await {
+                Ok(current) => current,
+                Err(DurabilityError::Unavailable) => {
+                    let exists: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid)")
+                        .bind(session.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+                    if exists {
+                        return Err(DurabilityError::Unavailable);
+                    }
+                    commit_semantic_transaction(tx, deadline).await?;
+                    return Ok(Ok(None));
+                }
+                Err(error) => return Err(error),
+            };
+            if current.session_state() == crate::foundation::GameSessionState::Terminal {
+                commit_semantic_transaction(tx, deadline).await?;
+                return Ok(Ok(None));
+            }
+            let character = *current.commit().character_id().as_bytes();
+            let character_id = CharacterId::from_bytes(character)
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
+            let Some(record) = read_current_character_in_transaction(&mut tx, character).await? else {
+                return Ok(Err(CharacterAuthorityError::Rejected));
+            };
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(Some(super::character_progression::CurrentCharacterGameplayFence {
+                character_id,
+                game_session_id: session,
+                connection_generation: current.current_connection_generation(),
+                character_lease_generation: current.current_character_lease().generation(),
+                runtime_scope: current.current_runtime_scope(),
+                scope_ownership_generation: current.current_scope_generation(),
+                expected_character_revision: record.revision,
+            })))
         })).await?
     }
 
@@ -577,6 +627,16 @@ pub fn uuid_text(value: &str) -> std::result::Result<[u8; 16], DurabilityError> 
     }
     Ok(out)
 }
+
+async fn read_current_character_in_transaction(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: [u8; 16],
+) -> std::result::Result<Option<CharacterAuthorityRecord>, DurabilityError> {
+    let row = sqlx::query("SELECT r.account_id::text, r.character_id::text, r.world_id::text, r.character_revision::text, o.event_id::text, o.transaction_id::text, o.account_id::text AS creation_account_id FROM game_character_roots r JOIN game_character_creation_receipts o USING (character_id) WHERE r.character_id = encode($1,'hex')::uuid AND r.lifecycle = 1 AND NOT game_account_closure_detached(r.character_id)")
+        .bind(character.as_slice()).fetch_optional(&mut **tx).await?;
+    row.as_ref().map(decode_current_row).transpose()
+}
+
 /// In-transaction current read for a composition that already holds the
 /// reconciled capability: asserts the sealed recovery fence in the caller's
 /// transaction, then returns the active Character (lifecycle 1), if any.
@@ -779,6 +839,8 @@ pub(super) async fn account_security(
 // invalid row; chain continuity and latest state are joined by Character revision.
 // Keep the composite arm aligned with the installed progression consistency guard.
 // Its Premium and Prey descendants must not also appear as separate arms.
+// The migration-expanded view includes premium, Cyclopedia, Atelier, Hazard, Prey,
+// home town, Primal, Soul War, Rotten Blood and Arena receipts exactly once.
 // Keep the additive view aligned with game_character_progression_consistency_guard.
 // It includes premium and prey receipts, so neither may be repeated as another arm.
 // Each arm names the first violating row it finds (LOGDBG-C): the receipt family, a closed
@@ -794,6 +856,7 @@ const RECEIPT_CHAIN_TABLES: &[&str] = &[
     "game_character_monk_state_receipts",
     "game_character_proficiency_receipts",
     "game_character_quest_receipts",
+    "game_character_service_revision_chain",
     "game_character_stance_receipts",
     "game_character_wheel_receipts",
     "game_character_xp_receipts",
@@ -1320,7 +1383,8 @@ pub(super) async fn verify_character_proficiency_receipt_history(
 
 /// CHAR-BUILD-1 (A13 §4.2, #1271 F4) build state, checked by name at admission:
 /// build-chain continuity (each build receipt, and each death receipt with build
-/// fields, starts from its predecessor's `after`, or from the seed `none`, magic
+/// fields, starts from its predecessor's `after`, or from the immutable creation vocation
+/// (historically `none`), magic
 /// level (0, 0) and every skill at (10, 0) for the first), and the build row equal
 /// to the latest build-carrying receipt (values, revision, occurrence), absent when
 /// there is none. The death receipt's build fields are covered by both checks.
@@ -1373,7 +1437,7 @@ async fn verify_character_build_chain(
                   o.distance_tries_before, o.shielding_level_before, \
                   o.shielding_tries_before, o.fishing_level_before, \
                   o.fishing_tries_before) \
-                 IS DISTINCT FROM ('none', 0, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0)) \
+                 IS DISTINCT FROM ((SELECT coalesce(creation_vocation,'none') FROM game_character_roots WHERE character_id=o.character_id), 0, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0)) \
              OR (p.position IS NOT NULL AND (o.vocation_before, o.magic_level_before, o.mana_spent_before, \
                   o.fist_level_before, o.fist_tries_before, o.club_level_before, \
                   o.club_tries_before, o.sword_level_before, o.sword_tries_before, \
@@ -1410,6 +1474,10 @@ async fn verify_character_build_chain(
          UNION ALL \
          SELECT 1 FROM game_character_build_state r \
           WHERE NOT EXISTS (SELECT 1 FROM build_chain c WHERE c.character_id = r.character_id) \
+            AND NOT game_character_creation_build_seed(r.character_id) \
+         UNION ALL \
+         SELECT 1 FROM game_character_roots r WHERE r.creation_vocation IS NOT NULL \
+           AND NOT EXISTS (SELECT 1 FROM game_character_build_state b WHERE b.character_id=r.character_id) \
          LIMIT 1",
     )
     .fetch_optional(&mut **tx)

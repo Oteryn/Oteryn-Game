@@ -136,6 +136,7 @@ async fn join(stream: &mut DuplexStream) -> Result<(), Error> {
     .map_err(|e| format!("{e:?}"))?;
     let inventory = item_view::encode_character_inventory(&CharacterInventory {
         main_backpack: Some(item_view::ItemEntry {
+            appearance_id: 0,
             handle: 2.try_into()?,
             item_definition_ref: 1.try_into()?,
             count: 1.try_into()?,
@@ -145,6 +146,7 @@ async fn join(stream: &mut DuplexStream) -> Result<(), Error> {
             .into_iter()
             .map(|handle| {
                 Ok(item_view::ItemEntry {
+                    appearance_id: 0,
                     handle: handle.try_into()?,
                     item_definition_ref: 1.try_into()?,
                     count: 1.try_into()?,

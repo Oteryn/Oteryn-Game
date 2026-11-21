@@ -50,7 +50,7 @@ fn scenario(native: bool) -> TestResult {
             let (controller, pin) =
                 crate::content::native_gameplay::test_support::activated_loop_monster(world, false);
             let active = controller.active().ok_or("active generation")?;
-            let (deps, creature) = super::loop_monster::fixture::dependencies(active, &pin)?;
+            let (deps, creature) = super::loop_monster_fixtures::fixture::dependencies(active, &pin)?;
             (controller, deps, creature)
         } else {
             use crate::content::{
@@ -114,6 +114,7 @@ fn scenario(native: bool) -> TestResult {
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.continuity.selected_capabilities =
             crate::gameplay_transport::connection::fresh_capability_selection(&owner, &[6, 286])
+                .await
                 .ok_or("named selection")?;
         let selected = admitted.continuity.selected_capabilities;
         assert_eq!(
@@ -121,7 +122,7 @@ fn scenario(native: bool) -> TestResult {
             if native { &[6, 286][..] } else { &[6][..] }
         );
         let (_, output) =
-            super::weather_wire::fixture_access::serve_input(&owner, admitted, &[]).await?;
+            super::weather_wire_fixtures::fixture_access::serve_input(&owner, admitted, &[]).await?;
         let mut cursor = 0;
         let mut entities = Vec::new();
         while cursor < output.len() {

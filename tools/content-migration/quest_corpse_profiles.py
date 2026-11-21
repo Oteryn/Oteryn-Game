@@ -24,8 +24,8 @@ OBJECTIVES = 'content/quests/authored-death-objectives.json'
 RULES = 'content/quests/authored-death-loot.json'
 REQUIREMENTS = 'tools/content-schema/native-gameplay/quest-corpse-objectives.json'
 CREATURES = 'content/creatures/definitions/spell-native-profiles.json'
-GROUPS = ('physical', 'stack', 'container', 'temporal')
-MAX_ROOTS, MAX_CHAIN, MAX_ITEMS = 32, 8, 128
+GROUPS = ('physical', 'stack', 'container', 'temporal', 'classification')
+MAX_RULES, MAX_ROOTS, MAX_CHAIN, MAX_ITEMS = 32, 40, 8, 144
 
 
 def item_id(reference):
@@ -41,9 +41,14 @@ def item_id(reference):
 
 def required(root=ROOT, creatures=None):
     """Only joined active rule/objective requests admit a corpse, never a name guess."""
+    roots, _ = required_with_loot_scope(root, creatures)
+    return roots
+
+
+def required_with_loot_scope(root, creatures):
     rules = json.loads((root / RULES).read_bytes())
     objectives = json.loads((root / OBJECTIVES).read_bytes())
-    if rules.get('schema') != 1 or objectives.get('schema') != 1 or len(rules['rules']) > MAX_ROOTS:
+    if rules.get('schema') != 1 or objectives.get('schema') != 1 or len(rules['rules']) > MAX_RULES:
         raise ValueError('QUEST_CORPSE_RULE_BOUNDS')
     by_objective = {row['key']: row for row in objectives['objectives']}
     if len(by_objective) != len(objectives['objectives']):
@@ -54,8 +59,8 @@ def required(root=ROOT, creatures=None):
         raise ValueError('QUEST_CORPSE_DUPLICATE_CREATURE')
     ordinary = json.loads((root / REQUIREMENTS).read_bytes())
     if (not {'schema', 'objectives', 'sources'} <= set(ordinary)
-            or set(ordinary) - {'schema', 'objectives', 'sources', 'capacity_projections'} or ordinary.get('schema') != 1
-            or not isinstance(ordinary['objectives'], list) or len(ordinary['objectives']) > MAX_ROOTS
+            or set(ordinary) - {'schema', 'objectives', 'sources', 'capacity_projections', 'loot_creatures'} or ordinary.get('schema') != 1
+            or not isinstance(ordinary['objectives'], list) or len(ordinary['objectives']) > MAX_RULES
             or any(not isinstance(key, str) or not key.startswith('oteryn:quest-death/') for key in ordinary['objectives'])
             or len(set(ordinary['objectives'])) != len(ordinary['objectives'])
             or not isinstance(ordinary['sources'], list)
@@ -87,11 +92,29 @@ def required(root=ROOT, creatures=None):
         if corpse is None:
             raise ValueError('QUEST_CORPSE_REQUIRED_SOURCE_ABSENT')
         roots.add(item_id(corpse))
+    loot_creatures = ordinary.get('loot_creatures', {})
+    if (not isinstance(loot_creatures, dict) or len(loot_creatures) > MAX_ROOTS
+            or (loot_creatures and not ordinary['sources'])):
+        raise ValueError('QUEST_CORPSE_LOOT_REQUIREMENTS')
+    loot_roots = set()
+    for key, number in loot_creatures.items():
+        profile = by_creature.get(key)
+        if (profile is None or profile['target'] != {'family': 'Creature', 'key': key, 'revision': 'definition-r1'}):
+            raise ValueError('QUEST_CORPSE_LOOT_CREATURE_BINDING')
+        details = profile['data']['profile']['details']
+        corpse = details.get('corpse_item')
+        if (type(number) is not int or corpse is None or item_id(corpse) != number
+                or details['system_eligibility']['reward_boss']):
+            raise ValueError('QUEST_CORPSE_LOOT_SOURCE_BODY_CHANGED')
+        loot_roots.add(number)
     import quest_shared_boss_corpses
     roots.update(quest_shared_boss_corpses.roots(by_creature))
-    if len(roots) > MAX_ROOTS:
+    import questpc7_corpse_requirements
+    roots.update(questpc7_corpse_requirements.roots(root, by_creature))
+    required_roots = roots | loot_roots
+    if len(required_roots) > MAX_ROOTS:
         raise ValueError('QUEST_CORPSE_ROOT_BOUNDS')
-    return roots
+    return required_roots, loot_roots - roots
 
 
 def decay_closure(roots, xml):
@@ -216,12 +239,13 @@ class Qualification:
     roots: set[int]
     records: dict[str, dict]
     projected_source_capacities: dict[str, int] = field(default_factory=dict)
+    ordinary_loot_only: set[int] = field(default_factory=set)
 
 
 def projection_limits(root, roots, xml):
     """Explicit source-to-native projections retain the accepted30-entry corpse bound."""
     records = json.loads((root / REQUIREMENTS).read_bytes()).get('capacity_projections', [])
-    if not isinstance(records, list) or len(records) > MAX_ROOTS:
+    if not isinstance(records, list) or len(records) > MAX_RULES:
         raise ValueError('QUEST_CORPSE_CAPACITY_PROJECTION_BOUNDS')
     limits, source_capacities = {}, {}
     for record in records:
@@ -240,13 +264,14 @@ def projection_limits(root, roots, xml):
 
 
 def qualifications(root=ROOT, creatures=None):
-    roots = required(root, creatures)
+    roots, ordinary_loot_roots = required_with_loot_scope(root, creatures)
     raw = (root / XML).read_bytes()
     if hashlib.sha256(raw).hexdigest() != XML_SHA:
         raise ValueError('QUEST_CORPSE_XML_PIN')
     xml = grizzly.source.xml_index(raw)
     limits, source_capacities = projection_limits(root, roots, xml)
     selected = decay_closure(roots, xml)
+    ordinary_loot_only = selected - decay_closure(roots - ordinary_loot_roots, xml)
     if not selected:
         return Qualification(roots, {})
     client = (root / custody.CLIENT).read_bytes()
@@ -264,7 +289,7 @@ def qualifications(root=ROOT, creatures=None):
             raise ValueError('QUEST_CORPSE_CLIENT_ITEM_ABSENT')
         records[key] = qualify(number, accepted[key], objects.get(number), xml[number],
                                appearances[number], policies[number], bindings, number in roots, limits.get(number))
-    return Qualification(roots, records, source_capacities)
+    return Qualification(roots, records, source_capacities, ordinary_loot_only)
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):
@@ -280,8 +305,15 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
             if (prior['production_definition'] != record['production_definition']
                     or prior['production_binding'] != record['production_binding']
                     or prior['admission'] != record['admission']
-                    or any(prior['semantics'][group] != record['semantics'][group] for group in GROUPS)):
+                    or any(prior['semantics'][group] != record['semantics'][group]
+                           for group in GROUPS if group != 'classification')
+                    or grizzly.known_conflict(prior['semantics']['classification'],
+                                             record['semantics']['classification'])):
                 raise ValueError('QUEST_CORPSE_EXISTING_NATIVE_CONFLICT')
+            # Complete only UNKNOWN classification facts from this exact pinned
+            # XML/DAT corpse closure. All other existing policy/attributes remain.
+            prior['semantics']['classification'] = grizzly.accepted_first(
+                prior['semantics']['classification'], record['semantics']['classification'])
             continue
         document['records'].append(record)
     document['records'].sort(key=order)
@@ -308,7 +340,10 @@ def apply_loot_facts(facts, root=ROOT, creatures=None):
                 or fact['container_capacity'] is not None and fact['container_capacity'] != capacity
                 and (fact['materializable'] or fact['container_capacity'] != qualified.projected_source_capacities.get(key))):
             raise ValueError('QUEST_CORPSE_LOOT_CAPACITY_CONFLICT')
-        updates.append((fact, capacity))
-    for fact, capacity in updates:
+        ordinary_only = not fact['materializable'] and item_id(identity) in qualified.ordinary_loot_only
+        updates.append((fact, capacity, ordinary_only))
+    for fact, capacity, ordinary_only in updates:
         fact['materializable'] = True
         fact['container_capacity'] = capacity
+        if ordinary_only:
+            fact['ordinary_corpse_only'] = True

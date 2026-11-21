@@ -3,7 +3,60 @@ use super::*;
 use crate::content::{CollisionClass, LogicalCell};
 use crate::map::view::EntryFacts;
 
+pub(in crate::gameplay_transport) fn room_contains(
+    encounter: &oteryn_gameplay_quests::quest::world_callbacks::Encounter,
+    at: MovementLocalPosition,
+) -> bool {
+    at.floor == -i16::from(encounter.room_min.floor)
+        && (i32::from(encounter.room_min.x)..=i32::from(encounter.room_max.x)).contains(&at.x)
+        && (i32::from(encounter.room_min.y)..=i32::from(encounter.room_max.y)).contains(&at.y)
+}
+
+pub(super) struct EncounterVisit {
+    room: oteryn_gameplay_quests::quest::world_callbacks::Encounter,
+    participants: Vec<(ExactActorRef, GameSessionId)>,
+    creatures: Vec<ExactActorRef>,
+}
+
+impl EncounterVisit {
+    fn active(&self, runtime: &ChannelRuntimeV1) -> bool {
+        self.creatures
+            .iter()
+            .any(|actor| runtime.contains_live_creature(*actor))
+    }
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(in crate::gameplay_transport) fn encounter_blocks_channel_switch(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        position: MovementLocalPosition,
+    ) -> bool {
+        if self.states.grizzly_boss.has_pending(session) {
+            return true;
+        }
+        let callbacks = &self.states.quest_callbacks;
+        if callbacks.encounters.lock().map_or(true, |visits| {
+            visits.iter().any(|visit| {
+                visit.participants.contains(&(actor, session))
+                    && room_contains(&visit.room, position)
+                    && visit.active(runtime)
+            })
+        }) {
+            return true;
+        }
+        self.bundle_map().is_some_and(|map| {
+            let now = self.owner_now().get();
+            callbacks.timed.lock().map_or(true, |visits| {
+                visits.iter().any(|visit| {
+                    visit.contains_participant(runtime, map, actor, session, position, now)
+                })
+            })
+        })
+    }
+
     #[allow(
         clippy::too_many_arguments,
         reason = "one owner turn binds party, native carrier, map and exact lever revision"
@@ -19,10 +72,99 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         key: u64,
         expected_revision: u64,
         after: EntryFacts,
+        preflight: bool,
+        cause: QuestCause,
+        reservation: Option<&mut personal_encounter::Reservation<'_>>,
+    ) -> UseDisposition {
+        self.quest_encounter(
+            runtime,
+            states,
+            actor,
+            session,
+            map,
+            callback,
+            key,
+            expected_revision,
+            after,
+            preflight,
+            cause,
+            reservation,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn preflight_personal_quest_encounter(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        map: &BundleMap,
+        callback: &Callback,
+        key: u64,
+        expected_revision: u64,
+        after: EntryFacts,
+        cause: QuestCause,
+    ) -> UseDisposition {
+        self.quest_encounter(
+            runtime,
+            states,
+            actor,
+            session,
+            map,
+            callback,
+            key,
+            expected_revision,
+            after,
+            true,
+            cause,
+            None,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn quest_encounter(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        map: &BundleMap,
+        callback: &Callback,
+        key: u64,
+        expected_revision: u64,
+        after: EntryFacts,
+        preflight: bool,
+        cause: QuestCause,
+        reservation: Option<&mut personal_encounter::Reservation<'_>>,
     ) -> UseDisposition {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
         };
+        if preflight && callback.has_personal_state() {
+            if !callback.requires_world_admission {
+                return UseDisposition::Rejected;
+            }
+            if encounter.timing.is_some() {
+                // A timed personal trial schedules only after its durable receipt.
+                // Preflight checks the same guards without reserving a timer.
+                let ready = oteryn_gameplay_quests::quest::world_callbacks::personal_trial::admitted(
+                    callback,
+                ) && encounter.players.is_empty()
+                    && states.get(runtime, actor, session).is_some_and(|state| {
+                        state.character_facts().level >= encounter.minimum_level
+                    })
+                    && self.personal_trial_ready(runtime, callback, key);
+                return if ready {
+                    UseDisposition::Committed
+                } else {
+                    UseDisposition::Rejected
+                };
+            }
+        }
+        if callback.has_personal_state() && !preflight && reservation.is_none() {
+            return UseDisposition::Rejected;
+        }
         if encounter.timing.is_some() {
             return self.schedule_timed_quest_encounter(
                 runtime,
@@ -39,17 +181,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(census) = runtime.positioned_melee_census() else {
             return UseDisposition::Rejected;
         };
-        let in_room = |at: MovementLocalPosition| {
-            at.floor == -i16::from(encounter.room_min.floor)
-                && (i32::from(encounter.room_min.x)..=i32::from(encounter.room_max.x))
-                    .contains(&at.x)
-                && (i32::from(encounter.room_min.y)..=i32::from(encounter.room_max.y))
-                    .contains(&at.y)
-        };
-        if census
-            .iter()
-            .any(|(_, pos, session)| session.is_some() && in_room(pos.position()))
-        {
+        let personal_entry = callback.personal_room_entry().map(local);
+        if census.iter().any(|(who, pos, occupant_session)| {
+            occupant_session.is_some()
+                && room_contains(encounter, pos.position())
+                && !(Some(pos.position()) == personal_entry
+                    && *who == actor
+                    && *occupant_session == Some(session))
+        }) {
             return UseDisposition::Occupied;
         }
         let closed = crate::map::floor::BundleDoors(&map.facts);
@@ -60,6 +199,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .iter()
                 .filter(|(_, pos, _)| pos.position() == local(member.from));
             let Some(&(who, expected, Some(member_session))) = occupants.next() else {
+                // Cults collects whoever stands on the five source staging tiles.
+                if encounter.phase.is_some() {
+                    continue;
+                }
                 return UseDisposition::Rejected;
             };
             if occupants.next().is_some()
@@ -70,13 +213,43 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .is_none_or(|state| state.character_facts().level < encounter.minimum_level)
                 || runtime.bound_attacker_lease(who, member_session).is_err()
                 || !self.states.player_trades.physical(member_session, None)
-                || self.has_pending_quest_callback(member_session)
+                || (self.has_pending_quest_callback(member_session)
+                    && !(who == actor
+                        && member_session == session
+                        && !self.states.grizzly_boss.has_pending(session)
+                        && self
+                            .states
+                            .quest_callbacks
+                            .soul_rewards
+                            .lock()
+                            .is_ok_and(|pending| !pending.contains_key(&session))
+                        && self
+                            .states
+                            .quest_callbacks
+                            .records
+                            .lock()
+                            .is_ok_and(|pending| {
+                                pending.get(&session).is_some_and(|record| {
+                                    pending_encounter_matches(
+                                        record,
+                                        actor,
+                                        member_session,
+                                        expected,
+                                        &callback.key,
+                                        key,
+                                        expected_revision,
+                                        cause,
+                                    )
+                                })
+                            })))
             {
                 return UseDisposition::Rejected;
             }
             let blocked =
                 super::super::pvp_live::pz_blocked(states, who, member_session, self.owner_now());
-            let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+            // Preserve voluntary-entry control and protection-zone admission checks.
+            // The runtime remains locked through the shared landing commit below.
+            if crate::map::floor::prepare_quest_callback_teleport(
                 runtime,
                 &self.movement_cells,
                 who,
@@ -84,6 +257,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 expected,
                 local(member.to),
                 blocked,
+                &closed,
+            )
+            .is_err()
+            {
+                return UseDisposition::NotPossible;
+            }
+            // Court Warlock and Cults gather the staged party on one centre tile.
+            let Ok(proof) = crate::map::floor::prepare_quest_encounter_ejection(
+                runtime,
+                &self.movement_cells,
+                who,
+                member_session,
+                expected,
+                local(member.to),
                 &closed,
             ) else {
                 return UseDisposition::NotPossible;
@@ -122,12 +309,140 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             monsters.push((monster.creature.as_str(), policy.maximum_health, at));
         }
-        let Ok(snapshots) = runtime.commit_quest_encounter_entry(proofs, &monsters, || {
-            map.facts
-                .apply_quest_callback(key, expected_revision, after, &[], &[], false, None)
-        }) else {
+        if preflight {
+            let result = if encounter.phase.is_some() {
+                runtime.preflight_quest_encounter_with_phase(proofs, &monsters)
+            } else {
+                runtime.preflight_quest_encounter_entry(proofs, &monsters)
+            };
+            return if result.is_ok() {
+                UseDisposition::Committed
+            } else {
+                UseDisposition::Occupied
+            };
+        }
+        let party: Vec<_> = players
+            .iter()
+            .map(|(actor, session, _)| (*actor, *session))
+            .collect();
+        let scoped_hash = self.quest_catalogue.as_deref().and_then(|catalogue| {
+            let bindings = catalogue.authored_bindings()?;
+            bindings.quests.iter().find(|quest| quest.stages.iter().any(|stage|
+                matches!(&stage.trigger, oteryn_gameplay_quests::quest::authored_bindings::Trigger::MapUse { callback: source }
+                    if source.as_ref() == callback))
+                && quest.stages.iter().any(|stage|
+                    matches!(&stage.trigger, oteryn_gameplay_quests::quest::authored_bindings::Trigger::Kill { counter }
+                        if counter.encounter_source.as_deref() == Some(callback.key.as_str()))))
+                .and_then(|quest| catalogue.definition_hash(&quest.quest))
+        });
+        let attack = if scoped_hash.is_some() {
+            match self.states.attack.try_lock() {
+                Ok(attack) => Some(attack),
+                Err(_) => return UseDisposition::Rejected,
+            }
+        } else {
+            None
+        };
+        let mut capture = if let Some(attack) = attack.as_ref() {
+            match attack.kills().1.lock() {
+                Ok(capture) => Some(capture),
+                Err(_) => return UseDisposition::Rejected,
+            }
+        } else {
+            None
+        };
+        let prepared = if let (Some(capture), Some(hash)) = (capture.as_mut(), scoped_hash) {
+            match capture.prepare_encounter(runtime, &callback.key, hash, &party) {
+                Ok(prepared) => Some(prepared),
+                Err(_) => return UseDisposition::Rejected,
+            }
+        } else {
+            None
+        };
+        let credits = if encounter.phase.is_some() {
+            let Ok(credits) =
+                super::super::grizzly_kills::capture_encounter_admission(self, runtime, &party)
+            else {
+                return UseDisposition::Rejected;
+            };
+            Some(credits)
+        } else {
+            None
+        };
+        let mut phases = if encounter.phase.is_some() {
+            let Ok(active) = states.encounter_phases.reserve(runtime, key) else {
+                return UseDisposition::Occupied;
+            };
+            Some(active)
+        } else {
+            None
+        };
+        let mut visits = if encounter.phase.is_none() && !monsters.is_empty() {
+            let Ok(mut visits) = self.states.quest_callbacks.encounters.lock() else {
+                return UseDisposition::Rejected;
+            };
+            visits.retain(|visit| visit.active(runtime));
+            if visits.len() >= super::timed_encounter::MAX_TIMED_ENCOUNTERS
+                || visits.try_reserve(1).is_err()
+            {
+                return UseDisposition::Exhausted;
+            }
+            Some(visits)
+        } else {
+            None
+        };
+        let Ok((snapshots, (phase, actors, roster))) = runtime.commit_quest_encounter_with_phase(
+            proofs,
+            &monsters,
+            |runtime, actors| {
+                let roster = if prepared.is_some() {
+                    Some(oteryn_gameplay_entities::carrier::encounter_access::EncounterDefenders::from_admission(
+                        party.iter().map(|(actor, _)| *actor).collect(), actors.to_vec(),
+                    )?)
+                } else { None };
+                credits
+                    .map(|credits| {
+                        super::super::encounter_phases::bind(
+                            runtime,
+                            callback,
+                            key,
+                            actors,
+                            &party,
+                            credits,
+                            self.movement_cells().clone(),
+                            self.owner_now().get(),
+                        )
+                    })
+                    .transpose().map(|phase| (phase, actors.to_vec(), roster))
+            },
+            || {
+                map.facts
+                    .apply_quest_callback(key, expected_revision, after, &[], &[], false, None)
+            },
+        ) else {
             return UseDisposition::Rejected;
         };
+        if let (Some(capture), Some(prepared), Some(roster)) = (capture.as_mut(), prepared, roster)
+        {
+            capture.publish_encounter(prepared, roster);
+        }
+        if let (Some(phases), Some(phase)) = (&mut phases, phase) {
+            phases.push(phase);
+        }
+        drop(phases);
+        if let Some(visits) = &mut visits {
+            visits.push(EncounterVisit {
+                room: encounter.clone(),
+                participants: party,
+                creatures: actors.clone(),
+            });
+        }
+        drop(visits);
+        if let Some(reservation) = reservation
+            && let Err(disposition) = reservation.publish(runtime, actors)
+        {
+            return disposition;
+        }
         for ((who, member_session, expected), snapshot) in players.into_iter().zip(snapshots) {
             states.stage_special_movement_step(
                 runtime,
@@ -154,3 +469,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         UseDisposition::Committed
     }
 }
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "compare the original actor, movement, object and command fences"
+)]
+fn pending_encounter_matches(
+    pending: &Pending,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    expected: MovementPositionSnapshot,
+    callback: &str,
+    key: u64,
+    revision: u64,
+    cause: QuestCause,
+) -> bool {
+    pending.actor == actor
+        && pending.session == session
+        && pending.expected == expected
+        && pending.callback == callback
+        && pending.key == key
+        && pending.revision == revision
+        && pending.cause == cause
+}
+
+#[cfg(test)]
+#[path = "encounter_tests.rs"]
+mod tests;
+
+#[cfg(test)]
+#[path = "elemental_tests.rs"]
+mod elemental_tests;

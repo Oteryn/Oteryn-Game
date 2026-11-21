@@ -1,0 +1,55 @@
+{
+  "repo_head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+  "client_staticdata_sha256": "bd1f4c30c3e03268a315caf14050ea584aca8c241831422c41f4e7f264dcaa02",
+  "client_races": 845,
+  "client_classes": 21,
+  "old_races": 833,
+  "identical_old_rows": 833,
+  "changed_old_rows": 0,
+  "new_rows": 12,
+  "removed_rows": 0,
+  "canonical_creatures": 1865,
+  "canonical_bestiary": 824,
+  "bestiary_keys": {
+    "occurrence": 824,
+    "difficulty": 824,
+    "kill_thresholds[]": 824,
+    "charm_points": 824
+  },
+  "name_candidate_counts": {
+    "AMBIGUOUS_NAME": 21,
+    "NAME_CANDIDATE_ONLY": 798,
+    "NO_CANONICAL_NAME_MATCH": 26
+  },
+  "name_outfit_candidate_counts": {
+    "NAME_AND_OUTFIT_CANDIDATE_NOT_ID_AUTHORITY": 813,
+    "NEEDS_BINDING_REVIEW": 32
+  },
+  "canonical_bestiary_class_counts": {
+    "Aquatic": 40,
+    "Slime": 14,
+    "Human": 95,
+    "Reptile": 38,
+    "Vermin": 62,
+    "Bird": 19,
+    "Fey": 20,
+    "Inkborn": 22,
+    "Construct": 36,
+    "Magical": 57,
+    "Demon": 43,
+    "Amphibic": 11,
+    "Mammal": 72,
+    "Plant": 20,
+    "Undead": 93,
+    "Humanoid": 96,
+    "Giant": 15,
+    "Extra Dimensional": 12,
+    "Elemental": 25,
+    "Lycanthrope": 15,
+    "Dragon": 19
+  },
+  "outfit_metadata_counts": {
+    "METADATA_ONLY_NO_PIXEL_OR_UI_ANIMATION_PARITY": 844,
+    "NO_OUTFIT_LOOK_OR_MISSING_OUTFIT": 1
+  }
+}

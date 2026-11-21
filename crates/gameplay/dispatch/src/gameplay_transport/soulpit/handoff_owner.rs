@@ -91,62 +91,139 @@ impl NativeSoulpitHandoff {
             .runtime_scope()
             .world_id();
         let owner = ActivityHandoffOwner::new(admission.root.clone());
-        let mut after = None;
+        let mut after = *admission
+            .activity_runtimes
+            .soulpit_after
+            .lock()
+            .map_err(|_| ())?;
         let mut next = None;
         loop {
-            let Some(bindings) = owner_read(
-                owner
-                    .active_soulpits(admission.character, admission.holder, world, after)
-                    .await,
-            )?
-            else {
+            // Discovery shares the first room's grant, so the page read cannot
+            // consume every fairness window before any room is driven.
+            let page = admission
+                .root
+                .with_background_operation(async {
+                    let Some(bindings) = owner_read(
+                        owner
+                            .active_soulpits(admission.character, admission.holder, world, after)
+                            .await,
+                    )?
+                    else {
+                        return Ok(None);
+                    };
+                    *admission
+                        .activity_runtimes
+                        .soulpit_after
+                        .lock()
+                        .map_err(|_| ())? = bindings.first().map(|binding| binding.handoff_id);
+                    let due = if let Some(binding) = bindings.first() {
+                        self.drive_soulpit_room(
+                            admission,
+                            &owner,
+                            *binding,
+                            now_micros,
+                            global_tick,
+                        )
+                        .await?
+                    } else {
+                        None
+                    };
+                    Ok::<_, ()>(Some((bindings, due)))
+                })
+                .await?;
+            let Some((bindings, first_due)) = page else {
                 return Ok(read_retry_deadline(now_micros, next));
             };
-            for binding in &bindings {
-                let registered = admission
-                    .activity_runtimes
-                    .get(binding.scope, binding.generation.get())
-                    .ok_or(())?;
-                let Some(members) = owner_read(
-                    owner
-                        .soulpit_members(admission.character, admission.holder, *binding)
-                        .await,
-                )?
-                else {
-                    return Ok(read_retry_deadline(now_micros, next));
-                };
-                let driven = super::owner_runtime::drive_registered(
-                    admission,
-                    &registered,
-                    super::runtime::SoulpitActivityBinding {
-                        handoff_id: binding.handoff_id,
-                        scope: binding.scope,
-                        generation: binding.generation,
-                    },
-                    &members,
-                    now_micros,
-                    global_tick,
-                )
-                .await;
-                let due = match driven {
-                    Ok(due) => due,
-                    // A busy native owner retains all receipts and retries on
-                    // the next short owner deadline; contention is not lost authority.
-                    Err(super::runtime::SoulpitRuntimeError::AdapterUnavailable) => {
-                        Some(now_micros.saturating_add(10_000))
-                    }
-                    Err(_) => return Err(()),
-                };
+            if let Some(due) = first_due {
+                next = Some(next.map_or(due, |old: u64| old.min(due)));
+            }
+            for binding in bindings.iter().skip(1) {
+                let due = admission
+                    .root
+                    .with_background_operation(self.drive_soulpit_room(
+                        admission,
+                        &owner,
+                        *binding,
+                        now_micros,
+                        global_tick,
+                    ))
+                    .await?;
                 if let Some(due) = due {
                     next = Some(next.map_or(due, |old: u64| old.min(due)));
                 }
             }
             if bindings.len() < 15 {
+                // A completed traversal must revisit its rooms at their next
+                // deadline, rather than spend that turn on an empty tail page.
+                *admission
+                    .activity_runtimes
+                    .soulpit_after
+                    .lock()
+                    .map_err(|_| ())? = None;
                 break;
             }
             after = bindings.last().map(|binding| binding.handoff_id);
         }
+        for registered in admission.activity_runtimes.activity_owners()? {
+            if registered.template.as_ref().is_none_or(|template| {
+                template.key != crate::content::soulpit_activity::SOULPIT_TEMPLATE_KEY
+                    || template.revision
+                        != crate::content::soulpit_activity::SOULPIT_TEMPLATE_REVISION
+            }) {
+                continue;
+            }
+            match super::owner_runtime::cleanup_terminal(admission, &registered).await {
+                Ok(()) => {}
+                Err(super::runtime::SoulpitRuntimeError::AdapterUnavailable) => {
+                    next = read_retry_deadline(now_micros, next);
+                }
+                Err(_) => return Err(()),
+            }
+        }
         Ok(next)
+    }
+
+    async fn drive_soulpit_room(
+        &self,
+        admission: &ComposedFreshAdmission<'_, '_, '_>,
+        owner: &ActivityHandoffOwner,
+        binding: crate::durability::activity_handoff::soulpit::SoulpitBinding,
+        now_micros: u64,
+        global_tick: bool,
+    ) -> Result<Option<u64>, ()> {
+        let registered = admission
+            .activity_runtimes
+            .get(binding.scope, binding.generation.get())
+            .ok_or(())?;
+        let Some(members) = owner_read(
+            owner
+                .soulpit_members(admission.character, admission.holder, binding)
+                .await,
+        )?
+        else {
+            return Ok(read_retry_deadline(now_micros, None));
+        };
+        match super::owner_runtime::drive_registered(
+            admission,
+            &registered,
+            super::runtime::SoulpitActivityBinding {
+                handoff_id: binding.handoff_id,
+                scope: binding.scope,
+                generation: binding.generation,
+            },
+            &members,
+            now_micros,
+            global_tick,
+        )
+        .await
+        {
+            Ok(due) => Ok(due),
+            // Contention retains the room's receipts for the next short deadline.
+            Err(super::runtime::SoulpitRuntimeError::AdapterUnavailable) => {
+                Ok(read_retry_deadline(now_micros, None))
+            }
+            Err(_) => Err(()),
+        }
     }
 
     pub(super) async fn enter_soulpit(
@@ -470,6 +547,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         let handoff_id = *SecureIdentifiers.game_session_id().ok_or(())?.as_bytes();
+        #[cfg(test)]
+        let handoff_id = super::SOULPIT_TEST_HANDOFF_ID
+            .try_with(|id| *id)
+            .unwrap_or(handoff_id);
         let entry = SoulpitEntryRequest {
             handoff_id,
             command: CommandRef::new(

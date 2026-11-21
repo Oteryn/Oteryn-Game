@@ -426,11 +426,16 @@ fn draw(key: &BossClockKey, ordinal: u64, purpose: &str) -> Result<u64> {
 #[path = "boss_encounter/activity_assignment_tests.rs"]
 mod activity_assignment_tests;
 
+#[path = "boss_encounter/cooldown_list.rs"]
+mod cooldown_list;
+
 #[path = "boss_encounter/cooldown_storage.rs"]
 pub(crate) mod cooldown_storage;
 
-#[path = "boss_encounter/cooldown_list.rs"]
-mod cooldown_list;
+#[path = "boss_encounter/court_warlock.rs"]
+mod court_warlock;
+mod elemental_arrival;
+pub(super) use elemental_arrival::{ElementalClockSource, claim_elemental_clock};
 mod world_spawns;
 pub use world_spawns::spawned_bosses_for_epoch;
 #[path = "boss_encounter/reward_chest.rs"]

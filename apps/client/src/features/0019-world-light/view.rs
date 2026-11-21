@@ -16,7 +16,7 @@ impl PlayView {
             graphics.ambient_rgb(
                 self.world_clock
                     .map_or([255; 3], oteryn_client_ui::world_light::ambient_rgb),
-                self.floor < -7 || self.scene.has_roof(),
+                self.floor > 7 || self.scene.has_roof(),
                 self.world_weather,
             ).map(|channel| channel.max((u16::from(self.preferences().ambient_brightness) * 255 / 100) as u8)),
         )?;

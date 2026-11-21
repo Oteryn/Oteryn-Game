@@ -1,6 +1,9 @@
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::weapon_proficiency::WeaponProficiencyPanel;
 impl PlayLink {
+    pub fn weapon_proficiency_is_open(&self) -> bool {
+        lock(&self.mailbox).weapon_proficiency.open
+    }
     pub fn weapon_proficiency_hud(&self) -> Option<oteryn_client_ui::weapon_proficiency::HudView> {
         oteryn_client_ui::weapon_proficiency::hud_view(&lock(&self.mailbox).weapon_proficiency)
     }
@@ -14,3 +17,12 @@ impl PlayLink {
 pub(in crate::play) mod native;
 #[cfg(windows)]
 pub(in crate::play) use native::open_window;
+
+/// Actions from a presentation bound to the exact observed catalogue.
+#[derive(Clone, Copy)]
+pub enum ProficiencyAction {
+    Close,
+    Refresh,
+    Weapon(usize),
+    Perk(usize, usize),
+}

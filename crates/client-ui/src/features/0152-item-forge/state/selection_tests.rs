@@ -16,6 +16,7 @@ fn item(handle: u64, name: &str, container: bool) -> wire::Item {
 }
 fn entry(handle: u64) -> ItemEntry {
     ItemEntry {
+        appearance_id: 0,
         handle: NonZeroU64::new(handle).unwrap_or(NonZeroU64::MIN),
         item_definition_ref: NonZeroU32::MIN,
         count: NonZeroU32::MIN,

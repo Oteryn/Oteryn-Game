@@ -15,6 +15,9 @@ fn wide(text: &str) -> Vec<u16> {
 }
 
 pub(super) fn open_window(link: &PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     {
         let mut mailbox = lock(&link.mailbox);
         if mailbox.hireling.open {

@@ -69,7 +69,8 @@ A missing operation returns unknown_account (no separate not-found result).
 Balance returns `{result,account_id,transferable,non_transferable,reserved}`.
 History returns `{result,entries,next_cursor}`; entry members are
 `{entry_id,operation_id,kind,coin_class,counterparty_account_id,available_delta,
-reserved_delta,occurred_at}`. coin_class is transferable or non_transferable.
+reserved_delta,occurred_at}`. coin_class is always `transferable`, including for
+legacy non-transferable ledger rows.
 Counterparty is the other account, including on a recipient entry. Cursor is the
 last entry UUID, exclusive, ordered descending. next_cursor is null on an empty
 page, otherwise the last entry ID (a following empty page ends the scan). Default
@@ -94,11 +95,18 @@ Errors contain only `{result}`. Transport/body/canonical failures are invalid
 (422), including size violations; unauthorized remains empty 401. No refusal
 commits a claim or ledger entries. Unknown authorization fails closed as unavailable.
 
-Purchased top_up coins are transferable. Audited reward/promotion/staff credits
-may be non-transferable. Store spending consumes non-transferable first and then
-transferable. Transfers and SELL reserves consume transferable only. Both transfer
-parties and market settlement parties must be Active and transfer Allowed. A gift
-and a settlement credit the recipient as transferable.
+Platform has one coin class: every available coin is transferable. Top-ups,
+reward/promotion/staff grants, gifts and settlements credit that one balance;
+Store spending, transfers and SELL reserves consume it. `transferable` and
+`transferable_after` carry the whole available balance; `non_transferable` and
+`non_transferable_after` are always `"0"`. Reserved coins remain unavailable.
+Wire names and shapes are unchanged; no field or enum value is removed and no
+`coin_kind` field is added. Game still accepts legacy non-zero non-transferable
+fields and presents their saturating sum with the transferable amount as one balance.
+Both transfer parties and market settlement parties must be Active and transfer Allowed.
+
+This one-class rule follows Platform contract commit `bcaa1605`, section "One coin
+class", and implementation `a058456e`.
 
 Settlement uses the trade UUIDv7 as operation_id and atomically reduces the seller's
 remaining reservation and credits the buyer by the same amount in one transaction.

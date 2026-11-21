@@ -223,6 +223,7 @@ fn a_bound_corpse_is_a_domain_1_object_named_by_the_pinned_index() {
     assert_eq!(
         corpse.kind,
         VisibleKind::Corpse {
+            native_appearance_id: None,
             item_definition_ref: index
                 .definition_ref("Item", CORPSE_KEY, "definition-r1")
                 .unwrap()
@@ -429,7 +430,8 @@ fn corpse_take_facts_are_the_generation_item_profiles() {
     let not_found = |definition: TypedDefinitionRef| {
         generation_item_facts(native, &definition) == Err(PickupContentError::DefinitionNotFound)
     };
-    // Every coin of the closed D176 table resolves to its stack maximum.
+    // Every coin of the closed D176 table resolves to its stack maximum and its Global client
+    // weight (gold, platinum and crystal 0.10 oz, in hundredths of an ounce).
     for coin in Coin::ALL {
         let definition = item(coin.production_key());
         assert_eq!(

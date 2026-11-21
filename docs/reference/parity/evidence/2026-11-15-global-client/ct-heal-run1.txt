@@ -1,0 +1,19 @@
+VIRTUE utori virtu
+@1220,892 | 15:53 29 Screenshot for event LowHealth has heen saved to location 'fhomef moles _local/share/CipSoft GmhH/Tihia/packages/T ihiaBtternal/screenshot
+@1220,892 | 15:55 36 You healed yourself for 683 hitpoints.
+@1220,892 | 15:53 47 Screenshot for event LowHealth has heen saved to location 'fhomefmole/local/share/CipSoft GmhH/Tihia/packages/T ihiaBrternal/screenshot
+@1220,892 | 15:54205 You healed yourself for 750 hitpoints.
+@1220,892 | 15:54:05 You healed yourself for 750 hitpoints.
+@1220,892 | 15:55:48 You healed yourself for 685 hitpoints.
+@1220,892 | 15:55:49 You healed yourself for 714 hitpoints.
+@1220,892 | 15:55:50 You healed yourself for 818 hitpoints.
+@1220,892 | 15:55:52 You healed yourself for 712 hitpoints.
+@1220,892 | 15:55:54 You healed yourself for 820 hitpoints.
+@1220,892 | 15:56:05 You healed yourself for 760 hitpoints.
+@1220,892 | 15:56°05 You healed yourself for 760 hitpoints.
+@1220,892 | 15:56:18 You healed yourself for 762 hitpoints.
+@1220,892 | 15:56:19 You healed yourself for 813 hitpoints.
+@1220,892 | 15:56 20 You healed yourself for 755 hitpoints.
+@1220,892 | 15:56 35 You healed yourself for 435 hitpoints.
+VIRTUE utura tio
+DONE

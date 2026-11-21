@@ -14,7 +14,7 @@
 //!   the header.
 //! - **Handles.** The handle-bearing entries within the budget are the session handle table's
 //!   map view ([`SessionItemView::map_view`]); an entry that leaves it loses its handle. A movable
-//!   base entry's handle is bound to `(bundle_digest, placement_key, reset_epoch)`.
+//!   leaf or read-only captured container's handle is bound to `(bundle_digest, placement_key, reset_epoch)`.
 //! - **Targets.** [`resolve_map_target`] resolves the 40-byte `WorldObjectTargetV1` of a
 //!   `base_ordinal` entry (contract §4) and [`resolve_map_handle`] a handle-bearing entry. Command
 //!   9 from a base-entry handle is `ITEM_MOVE_OUTCOME_NOT_SUPPORTED` until MAP-PICKUP-1
@@ -133,7 +133,7 @@ struct PlannedTile {
 #[derive(Debug, Clone)]
 pub struct MapPlan {
     header: MapViewHeader,
-    /// The non-empty tiles in wire order `(floor, y, x)`.
+    /// The non-empty tiles in wire order, deepest floor first.
     tiles: Vec<PlannedTile>,
     entries: Vec<PlannedEntry>,
     /// The handle-bearing entries within the budget, nearest first.
@@ -185,6 +185,7 @@ impl MapPlan {
                         ordinal,
                         placement_key,
                         movable: false,
+                        openable_source: false,
                     } => MapOrigin::BaseOrdinal {
                         ordinal,
                         object_revision: source.facts.object_revision(placement_key),
@@ -218,7 +219,7 @@ fn position(pos: TilePos) -> ActorPosition {
     ActorPosition {
         x: i32::from(pos.x),
         y: i32::from(pos.y),
-        floor: i16::from(pos.floor),
+        floor: -i16::from(pos.floor),
     }
 }
 
@@ -434,8 +435,8 @@ fn plan_with_house<F: MapFacts>(
             content_generation: source.content_generation,
             bundle_digest: source.digest(),
             reset_epoch: source.reset_epoch,
-            origin: actor,
-            first_visible_floor: i16::from(first_visible_floor),
+            origin: position(at),
+            first_visible_floor: -i16::from(first_visible_floor),
         },
         tiles,
         entries,
@@ -563,6 +564,22 @@ impl SessionMapView {
                 }))
             }
         };
+        if matches!(&update, Some(MapUpdate::Snapshot(_))) {
+            let origin = plan.header.origin;
+            super::operator_event(&format!(
+                "event=map_view_snapshot revision={} tiles={} items={} origin_x={} origin_y={} origin_floor={} first_visible_floor={} origin_tile={}",
+                self.revision,
+                tiles.len(),
+                tiles.iter().map(|tile| tile.items.len()).sum::<usize>(),
+                origin.x,
+                origin.y,
+                origin.floor,
+                plan.header.first_visible_floor,
+                tiles
+                    .iter()
+                    .any(|tile| tile.position == origin && !tile.items.is_empty()),
+            ));
+        }
         self.sent = Some(SentView {
             header: plan.header,
             tiles,

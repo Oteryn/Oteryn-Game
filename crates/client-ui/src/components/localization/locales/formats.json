@@ -1,4 +1,10 @@
 [
+ "Update required. Oteryn will restart after the update. Manual download at {manual_download_url}",
+ "Automatic update could not finish. Download Oteryn at {url}",
+ "Installed verified release {installed}. Oteryn will restart when you close this message.",
+ "Installed verified release {installed}. Start the launcher to play.",
+ "Update required. Download the current client at {manual_download_url}, then sign in again.",
+ "Oteryn is undergoing maintenance. Try signing in again in {seconds} s.",
  "Reshaping a gem's mods lets you randomly re-roll each mod of the gem. Reshape position {}: {} gold and {} {} fragments.",
  "Mod Reshaping unavailable: {}.",
  "Reshape mod {} of the selected gem?\nCost: {} gold and {} {} fragments. The server rerolls the mod.",
@@ -11,7 +17,7 @@
  "Modified slot {} — rank {}",
  "{} — {}%",
  "↑\n{}",
- "\n  Candidates: {}", "\nBalance: {} Oteryn Coins", "\nBalance: {} coins; available {}; transferable {}.{}",
+ "\n  Candidates: {}", "\nBalance: {} Oteryn Coins", "\nBalance: {} coins.{}",
  "\nBonus: {}", "\nBoss details: {key}", "\nBosstiary browser — {:?}\n",
  "\nBuild details: {}; OS: {}; architecture: {}", "\nChange sex of Hireling: {}", "\nCurrent dust: {dust} / {limit}",
  "\nExpiry: {until} UTC Unix seconds. Time remaining: {} days, {} hours, {} minutes.", "\nHazard [{gauge}]\nSelected level {selected} of {unlocked} unlocked", "\nHireling: {}; new name: {}",
@@ -38,7 +44,7 @@
  "Admission not ready. Retrying in {}s.", "Advance: {text}", "Allocated points: {committed}. Edited points: {draft}{}.",
  "Appearance\r\n{}\r\n{}", "Appearance committed at revision {revision}; catalogue updates follow", "Applied for this session; could not save: {error}",
  "Area 1 | Revision {} | Discovered: {}\r\nFound {}/7 | Area {}% | Pool {} | Epoch {} | Improved: {}\r\nVisible points: {:?}", "Assigned charm {}: {:?}, stage {}\r\n", "Badges: {}",
- "Balance: {} Soulseals\r\nPending weekly rewards: {} Soulseals\r\n", "Balance: {} coins; transferable: {}", "Battle Instinct: {}\r\nMelee: +{}\r\nShielding: +{}\r\n",
+ "Balance: {} Soulseals\r\nPending weekly rewards: {} Soulseals\r\n", "Balance: {} coins", "Battle Instinct: {}\r\nMelee: +{}\r\nShielding: +{}\r\n",
  "Battle Instinct: {} (+{} melee, +{} shielding)", "Bestiary and Charms\r\n{}\r\n{}", "Bestiary — {:?}\r\n",
  "Bid {coins} Oteryn coins for {}? The service reserves funds; settlement requires the Game ownership receipt.", "Blessing: {}", "Boss Tracker\r\n{}\r\nPersonal drop chests (refresh confirms live contents)\r\n",
  "Boss entry accepted. Deadline: {deadline}", "Boss points: {}\nServer time: {}", "Boss request refused: {reason:?}",
@@ -192,5 +198,13 @@
  "{name} has been excluded from the channel",
  "\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}\n",
  "Weapon proficiency XP: {}% chance to gain double XP\n",
- "Bounty: state {}, difficulty {}, Reroll Tokens {} — each reroll costs 1 token"
+ "Bounty: state {}, difficulty {}, Reroll Tokens {} — each reroll costs 1 token",
+ "You can change the channel again in {time}.",
+ "Wait {time}",
+ "Do you want to change to channel {name}?",
+ "You are now on channel {name} ({kind}).",
+ "You are now on channel {name}.",
+ "{name} has logged in on channel {channel}.",
+ "{name} has logged out of channel {channel}.",
+ "{name} has changed to channel {channel}."
 ]

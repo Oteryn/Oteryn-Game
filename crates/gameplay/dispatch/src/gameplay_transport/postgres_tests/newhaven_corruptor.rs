@@ -18,7 +18,7 @@ fn newhaven_corruptor_all_five_vocations_kill_loot_take_equip() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("newhaven-corruptor", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("newhaven-corruptor", || {
         for vocation in ["knight", "paladin", "sorcerer", "druid", "monk"] {
             let started = Instant::now();
             scenario(vocation, false, false, vocation == "knight", false)?;
@@ -36,7 +36,7 @@ fn newhaven_corruptor_ordinary_loot_is_frozen_across_stamina_boundary() -> TestR
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("newhaven-corruptor-stamina", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("newhaven-corruptor-stamina", || {
         let started = Instant::now();
         scenario("knight", false, false, true, false)?;
         println!(
@@ -52,7 +52,7 @@ fn newhaven_corruptor_low_stamina_and_double_loot_keep_one_guaranteed_set() -> T
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("newhaven-corruptor-modifiers", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("newhaven-corruptor-modifiers", || {
         let started = Instant::now();
         scenario("monk", true, false, false, false)?;
         scenario("paladin", false, true, false, false)?;
@@ -69,7 +69,7 @@ fn newhaven_corruptor_lifecycle_recovers_original_corpse_and_child_custody() -> 
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("newhaven-corruptor-lifecycle", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("newhaven-corruptor-lifecycle", || {
         let started = Instant::now();
         scenario("knight", false, false, false, true)?;
         println!(
@@ -104,7 +104,7 @@ fn scenario(
             .await
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
-        let (controller, pin) = super::death_ml_loss_composed::production_generation_with_source(
+        let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_source(
             world,
             "content-1",
             Some(include_bytes!(
@@ -176,6 +176,10 @@ fn scenario(
                     .reward_table()
                     .row("oteryn:creature.the_corruptor")
                     .map_err(debug)?;
+                let loot_table_ref = reward
+                    .loot_table_ref
+                    .as_ref()
+                    .ok_or("Corruptor ordinary loot table reference")?;
                 let mut witness = None;
                 for generation in 1..=20_000 {
                     let death = oteryn_gameplay_items::loot_plan::LootPlanDeathKey::new(
@@ -187,7 +191,7 @@ fn scenario(
                     );
                     let plan = oteryn_gameplay_items::loot_plan::plan_creature_loot(
                         death,
-                        &reward.loot_table_ref,
+                        loot_table_ref,
                         &reward.loot_table,
                     )
                     .map_err(debug)?;
@@ -698,9 +702,10 @@ async fn qualify_lifecycle(
 ) -> TestResult {
     // Harness creation applies the complete migration chain. Reapplying 1300
     // collides with its CREATE FUNCTION and would also replace later proofs.
-    let chain: Vec<i32> = sqlx::query_scalar(
-        "SELECT game_summer_corpse_chain('oteryn:item.tibia.i52113')",
-    ).fetch_one(&h.pool).await?;
+    let chain: Vec<i32> =
+        sqlx::query_scalar("SELECT game_summer_corpse_chain('oteryn:item.tibia.i52113')")
+            .fetch_one(&h.pool)
+            .await?;
     assert_eq!(chain, vec![52113, 52114, 52115, 52116]);
     let schedules: Vec<(i32, i64, i64)> = sqlx::query_as("SELECT p.source_stage,p.duration_millis,p.expires_at_unix_ms-m.materialized_at FROM game_spell_field_temporal_schedules p JOIN game_item_mint_receipts m USING(item_instance_id) WHERE p.item_instance_id=encode($1,'hex')::uuid ORDER BY source_stage")
         .bind(corpse.as_slice()).fetch_all(&h.pool).await?;
@@ -820,7 +825,7 @@ fn newhaven_corruptor_lifecycle_process_restart() -> TestResult {
     };
     let parent = std::env::var("NEWHAVEN_RESTART_PARENT")?;
     let mode = std::env::var("NEWHAVEN_RESTART_MODE")?;
-    super::kill_reward_e2e::scenario_thread::run("newhaven-corpse-restart", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("newhaven-corpse-restart", move || {
         run(async |admin| {
             let prefix = admin
                 .strip_suffix("/postgres")
@@ -846,8 +851,11 @@ fn newhaven_corruptor_lifecycle_process_restart() -> TestResult {
                 .await
                 .map_err(debug)?;
             assert_eq!(schedule.corpses.len(), 1);
+            let decay_at = schedule.corpses[0]
+                .decay_at_unix_ms
+                .ok_or("Corruptor corpse decay deadline")?;
             assert_eq!(
-                schedule.corpses[0].decay_at_unix_ms - schedule.corpses[0].materialized_at_unix_ms,
+                decay_at - schedule.corpses[0].materialized_at_unix_ms,
                 1_810_000
             );
             let corpse = schedule.corpses[0].corpse_item_instance_id;

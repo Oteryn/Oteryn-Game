@@ -30,9 +30,10 @@ impl PlayLink {
             controller::activate(&mut mailbox, &self.commands, controller::Action::Refresh);
         }
         #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            super::view::open_window(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).item_forge.open = true;
         }
         true

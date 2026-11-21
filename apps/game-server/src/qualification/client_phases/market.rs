@@ -11,7 +11,8 @@ pub(super) async fn market(client: &mut oteryn_dev_client::DevClientSession) -> 
         selected: true,
         ..Default::default()
     };
-    let command = ui::request(&mut panel, ui::Intent::Browse).ok_or("market request")?;
+    // Browse (action 2) names one definition; the opening overview is Wares (action 1).
+    let command = ui::request(&mut panel, ui::Intent::Wares).ok_or("market request")?;
     let reply = market::send(client.session_mut(), &command).await?;
     if !ui::apply_result(&mut panel, &reply) {
         return Err("market reducer rejected browse".into());

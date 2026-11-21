@@ -20,7 +20,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "ca101ab0e41b7ca661a981d22e9522c5220fc8a8"
+APPROVED = "fc84a163207949f3e207c7114c8d818ee7bc2d3c"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 REGISTERED_POSTGRES_TARGETS = (
     ("durability_postgres", "apps/game-server/tests/durability_postgres.rs"),
@@ -33,13 +33,13 @@ NATIVE_POLICY = (
     "$PSNativeCommandUseErrorActionPreference = $true",
 )
 WINDOWS_REQUIRED_FRAGMENTS = (
-    "cargo +1.99.1 build --locked --release -p oteryn-client --target x86_64-pc-windows-msvc",
-    "cargo +1.99.1 clippy --locked -p oteryn-client --all-targets --target x86_64-pc-windows-msvc -- -D warnings",
+    "cargo +1.100.0 build --locked --release -p oteryn-client --target x86_64-pc-windows-msvc",
+    "cargo +1.100.0 clippy --locked -p oteryn-client --all-targets --target x86_64-pc-windows-msvc -- -D warnings",
     '$client = ".\\target\\x86_64-pc-windows-msvc\\release\\oteryn-client.exe"',
     "Test-Path -LiteralPath $client -PathType Leaf",
     "& $client --smoke",
-    "cargo +1.99.1 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc",
-    "cargo +1.99.1 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
+    "cargo +1.100.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc",
+    "cargo +1.100.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
 )
 
 
@@ -87,7 +87,12 @@ def _queue_lane_routing_canaries(candidate: str) -> None:
         rust=True, windows=False, surface="server",
         reason="server-only-exact-consumer-closure",
     )
+    client = dict(rust=True, windows=True, surface="client", reason="windows-consumer-affected")
     cases = (
+        (dict(client, postgres=False), ("true", "true", "full")),
+        (client, ("true", "true", "full")),  # older protected classifier lacks the PG decision
+        (dict(client, postgres="false"), ("true", "true", "full")),
+        (dict(client, postgres=False, reason="unresolved-input"), ("true", "true", "full")),
         (server, ("true", "false", "server")),
         (dict(server, surface="durability"), ("true", "false", "durability")),
         (dict(rust=False, windows=False, surface="auxiliary"), ("false", "false", "auxiliary")),
@@ -128,6 +133,10 @@ def _queue_lane_routing_canaries(candidate: str) -> None:
                 exec(compile(source, "<queue consumer routing>", "exec"), namespace)
             actual = namespace["result"]
             assert tuple(actual[key] for key in ("rust", "windows", "surface")) == expected, (routed, actual)
+            if routed == dict(client, postgres=False):
+                assert actual.get("postgres") == "false"
+            else:
+                assert actual.get("postgres", actual["rust"]) == actual["rust"]
             assert len(classify_calls) == 1
 
         # Unreadable/malformed metadata never deselects Windows.
@@ -150,8 +159,8 @@ def _postgres_cache_consumer_regressions() -> None:
         block = re.split(r"^  [A-Za-z_][A-Za-z_0-9-]*:\n", block, maxsplit=1, flags=re.M)[0]
         assert "actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9" in block
         assert "actions/cache/save@" not in block
-        assert "key: rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}" in block
-        assert "            rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-\n" in block
+        assert "key: rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}" in block
+        assert "            rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-\n" in block
         assert block.index("Restore trimmed Cargo cache") < block.index("Verify locked metadata")
         assert block.index("Verify locked metadata") < block.index("Archive registered PostgreSQL E2E targets")
     # The PostgreSQL partitions only download and run the archives: no toolchain, cache or compile.
@@ -209,7 +218,7 @@ def _atlas_queue_canaries(original: str, core) -> None:
     assert "ATLAS_FULLWORLD: ${{ needs.atlas_fullworld.result }}" in gate
     script = textwrap.dedent(gate.split("        run: |\n", 1)[1])
     base = dict(os.environ, **dict.fromkeys((
-        "CANDIDATE", "DEPENDENCY_REVIEW", "CODEQL", "RUST_LINUX",
+        "CANDIDATE", "DEPENDENCY_REVIEW", "CODEQL", "RUST_LINUX", "RUST_DISPATCH",
         "DURABILITY_POSTGRES", "RUST_WINDOWS", "RUST_SUPPLY_CHAIN",
         "NODE_BOOT", "SERVER_SEAM", "WORLD_BUNDLE",
     ), "success"))
@@ -224,7 +233,7 @@ def _atlas_queue_canaries(original: str, core) -> None:
     assert subprocess.run(["bash", "-c", script], env=base, capture_output=True).returncode != 0
     atlas_only = dict(base, RUST_REQUIRED="false", WINDOWS_REQUIRED="false",
         SERVER_QUALIFICATION_REQUIRED="false", ATLAS_FULLWORLD_REQUIRED="true",
-        RUST_LINUX="skipped", DURABILITY_POSTGRES="skipped", RUST_WINDOWS="skipped",
+        RUST_LINUX="skipped", RUST_DISPATCH="skipped", DURABILITY_POSTGRES="skipped", RUST_WINDOWS="skipped",
         RUST_SUPPLY_CHAIN="skipped", NODE_BOOT="skipped", SERVER_SEAM="skipped",
         WORLD_BUNDLE_REQUIRED="false", WORLD_BUNDLE="skipped")
     for result in ("success", "skipped"):
@@ -278,7 +287,7 @@ def _world_bundle_queue_canaries(original: str, core) -> None:
     assert "WORLD_BUNDLE: ${{ needs.world_bundle.result }}" in gate
     script = textwrap.dedent(gate.split("        run: |\n", 1)[1])
     base = dict(os.environ, **dict.fromkeys((
-        "CANDIDATE", "DEPENDENCY_REVIEW", "CODEQL", "ATLAS_FULLWORLD", "RUST_LINUX",
+        "CANDIDATE", "DEPENDENCY_REVIEW", "CODEQL", "ATLAS_FULLWORLD", "RUST_LINUX", "RUST_DISPATCH",
         "DURABILITY_POSTGRES", "RUST_WINDOWS", "RUST_SUPPLY_CHAIN",
         "NODE_BOOT", "SERVER_SEAM",
     ), "success"))
@@ -318,7 +327,7 @@ def test_cargo_deny_install_fallback_preserves_findings():
                     "curl": 'exit "$DOWNLOAD"',
                     "sha256sum": 'cat >/dev/null; exit "$CHECKSUM"',
                     "tar": 'cp "$BINARY" "$RUNNER_TEMP/deny-root/bin/cargo-deny"',
-                    "cargo": 'echo install >> "$CALLS"; test "$*" = "+1.99.1 install --locked --quiet cargo-deny --version =0.20.2 --root $RUNNER_TEMP/deny-root" || exit 90; test "$INSTALL" = 0 || exit 1; cp "$BINARY" "$RUNNER_TEMP/deny-root/bin/cargo-deny"',
+                    "cargo": 'echo install >> "$CALLS"; test "$*" = "+1.100.0 install --locked --quiet cargo-deny --version =0.20.2 --root $RUNNER_TEMP/deny-root" || exit 90; test "$INSTALL" = 0 || exit 1; cp "$BINARY" "$RUNNER_TEMP/deny-root/bin/cargo-deny"',
                 }.items():
                     tool = root / command
                     tool.write_text("#!/bin/bash\n" + body + "\n")
@@ -366,7 +375,7 @@ def main() -> int:
         "      - name: Classify trusted merge-group lanes",
         "path.startswith('docs/architecture/') and path.endswith('.md')",
         "result = {'rust': 'false', 'windows': 'false', 'surface': 'architecture-docs'}",
-        "cargo +1.99.1 metadata --locked --no-deps --all-features --format-version 1 > \"$RUNNER_TEMP/queue-metadata.json\"",
+        "cargo +1.100.0 metadata --locked --no-deps --all-features --format-version 1 > \"$RUNNER_TEMP/queue-metadata.json\"",
         "if result['surface'] == 'full' and isinstance(records, list) and records:",
         "candidate_modes_verified=module.candidate_modes_safe(head),",
         "if routed.get('rust') is False and routed.get('windows') is False:",
@@ -376,11 +385,14 @@ def main() -> int:
 
     for job, condition in (
         ("rust_linux", "if: needs.candidate.outputs.rust == 'true'"),
+        ("rust_dispatch", "if: needs.candidate.outputs.rust == 'true'"),
         ("durability_postgres_build", "if: needs.candidate.outputs.rust == 'true'"),
-        ("durability_postgres", "if: needs.candidate.outputs.rust == 'true'"),
+        ("durability_postgres", "if: needs.candidate.outputs.rust == 'true' && needs.candidate.outputs.postgres != 'false'"),
         ("rust_windows", "if: needs.candidate.outputs.windows == 'true'"),
         ("rust_supply_chain", "if: needs.candidate.outputs.rust == 'true'"),
-        ("node_boot", "if: needs.candidate.outputs.server_qualification != 'false'"),
+        ("node_boot_plan", "if: needs.candidate.outputs.server_qualification != 'false'"),
+        ("node_boot_shard", "if: needs.candidate.outputs.server_qualification != 'false'"),
+        ("node_boot", "if: always() && needs.candidate.outputs.server_qualification != 'false'"),
         ("server_seam", "if: needs.candidate.outputs.server_qualification != 'false'"),
     ):
         block = core.indented_yaml_mapping_block(original, job, 2)
@@ -395,7 +407,7 @@ def main() -> int:
         '            if git cat-file -e "$HEAD_SHA:$path" 2>/dev/null; then',
         '            if [[ "$base_present" == true && "$head_present" == false ]]; then',
         "          verify_registered_target_binding() {",
-        '            cargo +1.99.1 metadata --locked --no-deps --format-version 1 > "$metadata"',
+        '          cargo +1.100.0 metadata --locked --no-deps --format-version 1 > "$metadata"',
         "              owners = [package for package in packages if package.get('name') == 'oteryn-game-server']",
         "              expected_manifest = (pathlib.Path.cwd() / 'apps/game-server/Cargo.toml').resolve(strict=True)",
         "              observed_manifest = pathlib.Path(owners[0]['manifest_path']).resolve(strict=True)",
@@ -406,14 +418,19 @@ def main() -> int:
         "              observed = pathlib.Path(matches[0]['src_path']).resolve(strict=True)",
         '              verify_registered_target_binding "$name" "$path"',
         '              archived_targets+=(--test "$name")',
-        '          cargo +1.99.1 nextest archive --locked --workspace "${archived_targets[@]}" --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"',
+        '          cargo +1.100.0 nextest archive --locked --workspace "${archived_targets[@]}" --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"',
     ):
         assert fragment in postgres, f"Merge Queue PostgreSQL routing missing: {fragment}"
     for name, target in REGISTERED_POSTGRES_TARGETS:
         marker = f"          run_registered_target {name} {target}"
         assert postgres.count(marker) == 1, marker
+    # The only dynamic matrix selects between two fixed producer sets. E2E
+    # target custody and all route-less unit consumers remain in both.
+    trusted_matrix = """fromJSON(needs.candidate.outputs.postgres == 'false' && '["e2e","lib-1","lib-2","lib-3"]' || '["e2e","lib","lib-1","lib-2","lib-3"]')"""
+    assert postgres.count(trusted_matrix) == 1
+    target_routing = postgres.replace(trusted_matrix, "")
     for forbidden in ("glob(", "rglob(", "fnmatch", "TARGETS_JSON", "fromJSON(", "postgres-target-manifest"):
-        assert forbidden not in postgres, f"Merge Queue PostgreSQL routing is PR/data controlled: {forbidden}"
+        assert forbidden not in target_routing, f"Merge Queue PostgreSQL routing is PR/data controlled: {forbidden}"
 
     marker = '            python - "$metadata" "$name" "$path" <<\'PY\'\n'
     verifier = textwrap.dedent(postgres.split(marker, 1)[1].split("          PY\n", 1)[0])
@@ -469,7 +486,7 @@ def main() -> int:
         assert policy in windows, f"Merge Queue Windows block lacks fail-closed policy: {policy}"
     for fragment in WINDOWS_REQUIRED_FRAGMENTS:
         assert windows.count(fragment) == 1, f"required Windows fragment missing or duplicated: {fragment}"
-    assert "cargo +1.99.1 run --locked -p oteryn-client --target x86_64-pc-windows-msvc -- --smoke" not in windows
+    assert "cargo +1.100.0 run --locked -p oteryn-client --target x86_64-pc-windows-msvc -- --smoke" not in windows
     # Release identity must be embedded before compiling the exact queue client;
     # installer lifecycle runs after that production build, never just on the PR.
     assert windows.index("- name: Derive release identity") < windows.index("- name: Build lint and smoke production client")
@@ -508,16 +525,16 @@ def main() -> int:
             return core.main()
 
     mutations = 0
-    for job in ("durability_postgres_build", "durability_postgres", "rust_windows"):
+    for job in ("durability_postgres_build", "durability_postgres", "rust_dispatch", "rust_windows"):
         for key in ("if: false", "continue-on-error: true", '"continue-on-error": true'):
             changed = original.replace(f"  {job}:\n", f"  {job}:\n    {key}\n", 1)
             assert changed != original and validate(changed) != 0, (job, key)
             mutations += 1
     for command in (
-        '          cargo +1.99.1 nextest archive --locked --workspace "${archived_targets[@]}" --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"',
-        '          cargo +1.99.1 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"',
-        "        run: cargo +1.99.1 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
-        "        run: cargo +1.99.1 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
+        '          cargo +1.100.0 nextest archive --locked --workspace "${archived_targets[@]}" --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"',
+        '          cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-game-server',
+        "        run: cargo +1.100.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
+        "        run: cargo +1.100.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
     ):
         assert command in original
         for replacement in (
@@ -534,17 +551,26 @@ def main() -> int:
         assert validate(original.replace(marker, "", 1)) != 0
         mutations += 1
 
-    for archive in ("pg-e2e", "pg-lib"):
-        run = f'          cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/{archive}.tar.zst" \\'
-        plan = f'          mapfile -t filters < "$RUNNER_TEMP/pg-plan/{archive}.filters"'
+    for archive in ("pg-e2e", "$archive"):
+        run = f'cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/{archive}.tar.zst"'
+        plan = f'mapfile -t filters < "$RUNNER_TEMP/pg-plan/{archive}.filters"'
         assert original.count(run) == 1, run
         assert original.count(plan) == 1, plan
         for replacement in ("", run.replace("cargo-nextest", "echo cargo-nextest", 1)):
             assert validate(original.replace(run, replacement, 1)) != 0, (archive, replacement)
-            mutations += 1
+        mutations += 2
         assert validate(original.replace(plan, "", 1)) != 0, (archive, plan)
         mutations += 1
-    for compile_step in ("        run: rustup toolchain install 1.99.1 --profile minimal\n",):
+    for verification in (
+        'python3 tools/ci/pg_archive_affinity.py route "$PG_ARCHIVES" "$JOB_INDEX" "$JOB_TOTAL"',
+        '          name: mq-postgres-test-archives-${{ steps.affinity.outputs.archive }}',
+        'python3 tools/ci/pg_archive_affinity.py verify "$RUNNER_TEMP" mq',
+        'unset OTERYN_TEST_POSTGRES_ADMIN_URL',
+    ):
+        assert original.count(verification) == 1, verification
+        assert validate(original.replace(verification, "", 1)) != 0, verification
+        mutations += 1
+    for compile_step in ("        run: rustup toolchain install 1.100.0 --profile minimal\n",):
         partitions = core.indented_yaml_mapping_block(original, "durability_postgres", 2)
         marker = "      - name: Install pinned cargo-nextest\n"
         changed = original.replace(partitions, partitions.replace(marker, "      - name: Install Rust toolchain\n" + compile_step + "\n" + marker, 1), 1)
@@ -569,7 +595,7 @@ def main() -> int:
     mutations += 1
 
     binding_fragments = (
-        '            cargo +1.99.1 metadata --locked --no-deps --format-version 1 > "$metadata"',
+        '          cargo +1.100.0 metadata --locked --no-deps --format-version 1 > "$metadata"',
         "              expected_manifest = (pathlib.Path.cwd() / 'apps/game-server/Cargo.toml').resolve(strict=True)",
         "              observed_manifest = pathlib.Path(owners[0]['manifest_path']).resolve(strict=True)",
         "              if observed_manifest != expected_manifest:",
@@ -592,7 +618,7 @@ def main() -> int:
     script = textwrap.dedent(block.split("        run: |\n", 1)[1])
     predicates = (
         "CANDIDATE", "DEPENDENCY_REVIEW", "CODEQL", "ATLAS_FULLWORLD", "WORLD_BUNDLE",
-        "RUST_LINUX", "DURABILITY_POSTGRES", "RUST_WINDOWS", "RUST_SUPPLY_CHAIN",
+        "RUST_LINUX", "RUST_DISPATCH", "DURABILITY_POSTGRES", "RUST_WINDOWS", "RUST_SUPPLY_CHAIN",
         "NODE_BOOT", "SERVER_SEAM",
     )
     env = dict(os.environ, **dict.fromkeys(predicates, "success"))
@@ -608,7 +634,7 @@ def main() -> int:
         env,
         RUST_REQUIRED="false",
         WINDOWS_REQUIRED="false",
-        RUST_LINUX="skipped",
+        RUST_LINUX="skipped", RUST_DISPATCH="skipped",
         DURABILITY_POSTGRES="skipped",
         RUST_WINDOWS="skipped",
         RUST_SUPPLY_CHAIN="skipped",
@@ -621,6 +647,10 @@ def main() -> int:
         WORLD_BUNDLE="skipped",
     )
     assert subprocess.run(["bash", "-c", script], env=docs_env, check=False).returncode == 0
+    client_env = dict(env, RUST_REQUIRED="true", WINDOWS_REQUIRED="true", PG_REQUIRED="false")
+    for result in ("success", "skipped", "failure", "cancelled", ""):
+        rc = subprocess.run(["bash", "-c", script], env=dict(client_env, DURABILITY_POSTGRES=result)).returncode
+        assert (rc == 0) == (result in {"success", "skipped"}), result
     server_env = dict(env, RUST_REQUIRED="true", WINDOWS_REQUIRED="false", RUST_WINDOWS="skipped")
     assert subprocess.run(["bash", "-c", script], env=server_env, check=False).returncode == 0
     for predicate in predicates:
@@ -647,7 +677,7 @@ def main() -> int:
             assert subprocess.run(
                 ["bash", "-c", script], env=dict(docs_env, **{predicate: failure}), check=False
             ).returncode != 0, (predicate, failure)
-    for predicate in ("RUST_LINUX", "DURABILITY_POSTGRES", "RUST_WINDOWS", "RUST_SUPPLY_CHAIN"):
+    for predicate in ("RUST_LINUX", "RUST_DISPATCH", "DURABILITY_POSTGRES", "RUST_WINDOWS", "RUST_SUPPLY_CHAIN"):
         for failure in ("failure", "cancelled", ""):
             assert subprocess.run(
                 ["bash", "-c", script], env=dict(docs_env, **{predicate: failure}), check=False

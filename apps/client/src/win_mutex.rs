@@ -7,7 +7,8 @@ use std::fmt::{self, Display, Formatter};
 use std::io;
 use std::ptr;
 use windows_sys::Win32::Foundation::{
-    CloseHandle, ERROR_FILE_NOT_FOUND, GetLastError, HANDLE, HLOCAL, LocalFree,
+    CloseHandle, ERROR_ALREADY_EXISTS, ERROR_FILE_NOT_FOUND, GetLastError, HANDLE, HLOCAL,
+    LocalFree, SetLastError,
 };
 use windows_sys::Win32::Security::Authorization::ConvertSidToStringSidW;
 use windows_sys::Win32::Security::{GetTokenInformation, TOKEN_QUERY, TOKEN_USER, TokenUser};
@@ -84,16 +85,33 @@ pub fn acquire_client_instance() -> Result<NamedMutex, InstanceError> {
 
 /// Creates or opens the named mutex without owning it.
 pub fn create(name: &str) -> io::Result<NamedMutex> {
+    create_named(name, false)
+}
+
+/// Takes the install transaction name only when there is no existing installer.
+pub(crate) fn create_exclusive(name: &str) -> io::Result<NamedMutex> {
+    create_named(name, true)
+}
+
+fn create_named(name: &str, exclusive: bool) -> io::Result<NamedMutex> {
     let wide = wide(name);
     // SAFETY: `wide` is a NUL-terminated UTF-16 string that outlives the call; null security
     // attributes select the default descriptor.
-    let handle = unsafe { CreateMutexW(ptr::null(), 0, wide.as_ptr()) };
+    let (handle, error) = unsafe {
+        SetLastError(0);
+        let handle = CreateMutexW(ptr::null(), 0, wide.as_ptr());
+        (handle, GetLastError())
+    };
     if handle.is_null() {
-        return Err(io::Error::last_os_error());
+        return Err(io::Error::from_raw_os_error(error as i32));
     }
-    Ok(NamedMutex {
+    let mutex = NamedMutex {
         _handle: OwnedHandle(handle),
-    })
+    };
+    if exclusive && error == ERROR_ALREADY_EXISTS {
+        return Err(io::Error::from_raw_os_error(error as i32));
+    }
+    Ok(mutex)
 }
 
 /// Whether any process currently holds the named mutex open.

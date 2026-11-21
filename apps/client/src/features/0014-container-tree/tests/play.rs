@@ -113,6 +113,7 @@ fn newhaven_starter_wire_data_reaches_native_equipment_backpack_and_quiver_panel
             .ok_or("native starter Item")?;
         let reference = u32::try_from(ordinal + 1)?;
         Ok(ItemEntry {
+            appearance_id: 0,
             handle: handle.try_into()?,
             item_definition_ref: reference.try_into()?,
             count: count.try_into()?,

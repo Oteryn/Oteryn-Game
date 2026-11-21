@@ -15,8 +15,8 @@ use std::{
     },
 };
 #[derive(Default)]
-struct Peer {
-    answers: usize,
+pub(super) struct Peer {
+    pub(super) answers: usize,
     terminal: bool,
     queries: Vec<Vec<u8>>,
     query_results: VecDeque<Result<GatedCommandResult, SessionError>>,
@@ -98,6 +98,34 @@ impl Stepper for Peer {
         self.record_after_answer_call();
         Ok(None)
     }
+}
+
+#[test]
+fn scope_reset_closes_source_answers_and_allows_a_fresh_destination_query()
+-> Result<(), Box<dyn std::error::Error>> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let mut driver = Driver::new(true);
+            let source_sender = driver.sender.clone();
+            assert!(ui::query(&mut driver.panel).is_some());
+            assert!(driver.panel.pending.is_some());
+            driver.reset_scope(true);
+            assert!(source_sender.is_closed());
+            assert!(driver.panel.pending.is_none());
+            assert!(driver.next_query > Instant::now());
+
+            let mut peer = Peer::default();
+            driver.next_query = Instant::now();
+            assert_eq!(driver.poll(&mut peer).await?, None);
+            assert_eq!(
+                driver.panel.active.as_ref().map(|dialog| dialog.id),
+                Some(73)
+            );
+            assert!(driver.panel.pending.is_none());
+            Ok::<(), Box<dyn std::error::Error>>(())
+        })
 }
 #[test]
 fn server_modal_session_caller_delivers_inline_image_and_exact_answer_ack()
@@ -309,8 +337,8 @@ fn terminal_modal_ack_ends_the_session_before_queued_gameplay_or_idle_io() -> Re
 
 /// Serves one dialog that asks for an amount and records the raw answer it receives.
 #[derive(Default)]
-struct AmountPeer {
-    answer: Option<Vec<u8>>,
+pub(super) struct AmountPeer {
+    pub(super) answer: Option<Vec<u8>>,
 }
 impl Stepper for AmountPeer {
     fn feature_selected(&self, capability: u32) -> bool {

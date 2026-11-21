@@ -114,6 +114,7 @@ fn action_amount_labels_follow_server_inventory_replacements()
         outbox.inventory_initialize(
             Some(oteryn_session::CharacterInventory {
                 entries: vec![oteryn_session::ItemEntry {
+                    appearance_id: 0,
                     handle: NonZeroU64::MIN,
                     item_definition_ref: NonZeroU32::new(256).ok_or("item")?,
                     count: NonZeroU32::new(count).ok_or("count")?,

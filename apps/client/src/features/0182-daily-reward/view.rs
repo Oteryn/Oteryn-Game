@@ -16,9 +16,10 @@ impl PlayLink {
     pub fn open_returner_reward(&self) {
         self.returner_reward_request(false);
         #[cfg(windows)]
-        returner_native::open_reward(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            returner_native::open_reward(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).daily_reward.returner_open = true;
         }
     }

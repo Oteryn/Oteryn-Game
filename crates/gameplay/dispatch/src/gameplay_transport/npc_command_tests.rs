@@ -61,10 +61,15 @@ fn book() -> NpcTalkBook {
 
 /// The chat state of the session: admitted, serving capability 3, with the NPC book installed.
 fn chat_of(session: GameSessionId) -> ChatRuntime {
+    chat_with(session, Arc::new(book()))
+}
+
+/// The talk book is installed once per Channel, so a test with another book starts here.
+fn chat_with(session: GameSessionId, book: Arc<NpcTalkBook>) -> ChatRuntime {
     let chat = ChatRuntime::default();
     chat.admit(session, "Aela", at(BASE));
     chat.set_npc_service(session);
-    chat.install_npc_talk(Arc::new(book()));
+    chat.install_npc_talk(book);
     chat
 }
 
@@ -73,6 +78,45 @@ fn intent(npc_actor: EntityRef, text: &str) -> NpcTalkIntent {
         npc_actor,
         text: text.to_owned(),
     }
+}
+
+#[test]
+fn native_focus_without_literal_greeting_is_wire_encodable() {
+    let (runtime, actor, session, npc) = fixture(2);
+    let conversations = NpcConversations::default();
+    let chat = ChatRuntime::default();
+    chat.admit(session, "Aela", at(BASE));
+    chat.set_npc_service(session);
+    chat.install_npc_talk(Arc::new(NpcTalkBook::default().with(
+        "oteryn:npc.alice",
+        NpcTalkEntry::new("Alice", Some("Ask me about a task.")).with_source_greeting(""),
+    )));
+    let greeting = conversations.talk(
+        &chat,
+        &runtime,
+        actor,
+        session,
+        &intent(npc, "hi"),
+        at(BASE),
+    );
+    assert_eq!(greeting.disposition, NpcIntentDisposition::Ok);
+    let focus = greeting.conversation.expect("focus is still opened");
+    assert_eq!(focus.open, Some((npc, NpcConversationState::Open)));
+    oteryn_protocol_oteryn::npc_service::encode_npc_conversation(&focus)
+        .expect("a focus-only native greeting must be valid on the real wire");
+    assert!(focus.lines.is_empty(), "no source greeting is invented");
+    let next = conversations.talk(
+        &chat,
+        &runtime,
+        actor,
+        session,
+        &intent(npc, "job"),
+        at(BASE + 1),
+    );
+    assert_eq!(next.disposition, NpcIntentDisposition::Ok);
+    let answer = next.conversation.expect("conversation remains usable");
+    assert_eq!(answer.lines, ["Ask me about a task."]);
+    oteryn_protocol_oteryn::npc_service::encode_npc_conversation(&answer).expect("normal reply");
 }
 
 #[test]
@@ -449,6 +493,231 @@ fn offers_project_in_order_with_the_player_side_and_drop_what_does_not_resolve()
             },
         ]
     );
+}
+
+fn frodo_mordecai_book() -> Arc<NpcTalkBook> {
+    let catalogue = crate::content::NpcDataCatalogue::load(
+        std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+        std::ffi::OsStr::new("world"),
+        crate::content::npc_catalogue_preproduction_limits(),
+    )
+    .expect("NPC catalogue");
+    Arc::new(NpcTalkBook::from_model(
+        &catalogue.service_model_for_project().expect("NPC model"),
+    ))
+}
+
+fn shop_index(ids: &[u32]) -> ItemDefinitionIndex {
+    let mut records: Vec<_> = ids
+        .iter()
+        .map(|id| (format!("oteryn:item.tibia.i{id}"), "definition-r1"))
+        .collect();
+    records.sort_unstable();
+    ItemDefinitionIndex::decode(
+        &serde_json::to_vec(&serde_json::json!({
+            "schema": crate::content::item_ref::ITEM_KEYS_SCHEMA,
+            "records": records,
+        }))
+        .expect("json"),
+    )
+    .expect("index")
+}
+
+fn shown_items(window: &NpcTradeWindow, index: &ItemDefinitionIndex) -> Vec<u32> {
+    let mut ids: Vec<_> = window
+        .offers
+        .iter()
+        .map(|offer| {
+            let (key, _) = index
+                .definition_at(
+                    offer
+                        .item_definition_ref
+                        .try_into()
+                        .expect("nonzero reference"),
+                )
+                .expect("item reference");
+            key.strip_prefix("oteryn:item.tibia.i")
+                .expect("Tibia item key")
+                .parse()
+                .expect("numeric item id")
+        })
+        .collect();
+    ids.sort_unstable();
+    ids
+}
+
+#[test]
+fn frodo_and_mordecai_trade_offers_reach_talk_in() {
+    let book = frodo_mordecai_book();
+    let index = shop_index(&[3577, 3180, 3165, 3174, 3152, 3177, 3178]);
+    for (key, expected) in [
+        ("oteryn:npc.frodo", &[3577][..]),
+        (
+            "oteryn:npc.mordecai",
+            &[3152, 3165, 3174, 3177, 3178, 3180][..],
+        ),
+    ] {
+        let (runtime, actor, session, npc) = fixture_for(2, key);
+        let chat = chat_with(session, Arc::clone(&book));
+        let conversations = NpcConversations::default();
+        let say = |text, now| {
+            conversations.talk_in(
+                &chat,
+                &runtime,
+                actor,
+                session,
+                &intent(npc, text),
+                at(now),
+                Some(&index),
+            )
+        };
+        let greeting = say("hi", BASE).conversation.expect("greeting");
+        assert_eq!(greeting.open, Some((npc, NpcConversationState::Open)));
+        let window = say("trade", BASE + 1_000_000).window.expect("trade window");
+        assert_eq!(window.open, Some((npc, book.catalogue_revision())));
+        assert_eq!(shown_items(&window, &index), expected, "{key}");
+    }
+}
+
+#[test]
+fn frodo_phrase_keywords_reach_talk_in() {
+    let (runtime, actor, session, npc) = fixture_for(2, "oteryn:npc.frodo");
+    let chat = chat_with(session, frodo_mordecai_book());
+    let conversations = NpcConversations::default();
+    let say = |text, now| {
+        conversations.talk_in(
+            &chat,
+            &runtime,
+            actor,
+            session,
+            &intent(npc, text),
+            at(now),
+            None,
+        )
+    };
+    assert!(say("hi", BASE).conversation.is_some());
+    for (offset, text, reply) in [
+        (
+            1,
+            "royal archives",
+            "Oh, the Royal Archives are in Rain Castle!",
+        ),
+        (
+            2,
+            "one eyed stranger",
+            "Yes, I remember him. His name was Berfasmur.",
+        ),
+    ] {
+        let conversation = say(text, BASE + offset * 1_000_000)
+            .conversation
+            .expect(text);
+        assert_eq!(conversation.lines, [reply]);
+    }
+}
+
+#[test]
+fn frodo_authored_keyword_preempts_farewell_and_trade() {
+    let (runtime, actor, session, npc) = fixture_for(2, "oteryn:npc.frodo");
+    let chat = chat_with(session, frodo_mordecai_book());
+    let conversations = NpcConversations::default();
+    let index = shop_index(&[3577]);
+    let say = |text, now| {
+        conversations.talk_in(
+            &chat,
+            &runtime,
+            actor,
+            session,
+            &intent(npc, text),
+            at(now),
+            Some(&index),
+        )
+    };
+    assert!(say("hi", BASE).conversation.is_some());
+    for (offset, text) in [(1, "news bye"), (2, "news trade")] {
+        let outcome = say(text, BASE + offset * 1_000_000);
+        let conversation = outcome.conversation.expect(text);
+        assert_eq!(conversation.open, Some((npc, NpcConversationState::Open)));
+        assert_eq!(
+            conversation.lines,
+            [
+                "Some travelers from Edron told about a great treasure guarded by cruel demons in the dungeons there."
+            ]
+        );
+        assert!(outcome.window.is_none(), "{text}");
+    }
+}
+
+#[test]
+fn mordecai_categories_open_only_the_selected_offers() {
+    let (runtime, actor, session, npc) = fixture_for(2, "oteryn:npc.mordecai");
+    let book = frodo_mordecai_book();
+    let chat = chat_with(session, Arc::clone(&book));
+    let conversations = NpcConversations::default();
+    let index = shop_index(&[3074, 3180]);
+    let say = |text, now| {
+        conversations.talk_in(
+            &chat,
+            &runtime,
+            actor,
+            session,
+            &intent(npc, text),
+            at(now),
+            Some(&index),
+        )
+    };
+    assert!(say("hi", BASE).conversation.is_some());
+    for (offset, category, expected, alternatives) in [
+        (
+            1,
+            "runes",
+            &[3180][..],
+            "{wands} or {exercise weapons} or {others}",
+        ),
+        (
+            2,
+            "Wands",
+            &[3074][..],
+            "{runes} or {exercise weapons} or {others}",
+        ),
+        (
+            3,
+            "exercise weapons",
+            &[][..],
+            "{runes} or {wands} or {others}",
+        ),
+        (
+            4,
+            "others",
+            &[][..],
+            "{runes} or {wands} or {exercise weapons}",
+        ),
+    ] {
+        let outcome = say(category, BASE + offset * 1_000_000);
+        let conversation = outcome.conversation.expect("category reply");
+        assert_eq!(
+            conversation.lines,
+            [format!(
+                "Of course, just browse through my wares. You can also look at {alternatives}."
+            )]
+        );
+        let window = outcome.window.expect("category window");
+        assert_eq!(window.open, Some((npc, book.catalogue_revision())));
+        assert_eq!(shown_items(&window, &index), expected, "{category}");
+        if category == "runes" {
+            let refusal = conversations
+                .trade_in(
+                    &chat,
+                    &runtime,
+                    actor,
+                    session,
+                    &trade(npc, 0),
+                    Some(&index),
+                )
+                .expect_err("stale trade");
+            assert_eq!(refusal.disposition, NpcIntentDisposition::Stale);
+            assert_eq!(refusal.update.window, Some(window));
+        }
+    }
 }
 
 #[test]
@@ -877,6 +1146,7 @@ fn quest_source_walkaway_uses_its_own_text_and_the_admitted_player_name() {
             "Yes, flee from death. But know it shall be always one step behind you.",
         ),
         ("oteryn:npc.taegen", "May enlightenment be your path, Aela."),
+        ("oteryn:npc.mordecai", "Ah, the impetuosity of youth."),
     ] {
         let (runtime, _, session, npc) = fixture_for(TALK_RANGE_TILES + 1, key);
         let chat = ChatRuntime::default();

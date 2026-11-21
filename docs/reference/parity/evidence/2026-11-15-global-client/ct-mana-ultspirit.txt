@@ -1,0 +1,54 @@
+MANA 7359/8305
+15:44:10 You healed yourself for 647 hitpoints.
+15:44:12 Using one of 492 ultimate spirit potions...
+15:44:12 You gained 156 mana.
+15:44:12 You healed yourself for 516 hitpoints.
+MANA 7135/8305
+15:44 25 You healed yourself for 671 hitpoints.
+15:44 34 Using one of 491 ultimate spirit potions...
+15:44 34 You gained 150 mana.
+15:44 34 You healed yourself for 460 hitpoints.
+MANA 6501/8505
+15:44:54 You healed yourself for 678 hitpoints.
+15:44:55 Using one of 490 ultimate spirit potions...
+15:44:55 You gained 237 mana.
+15:44:55 You healed yourself for 474 hitpoints.
+MANA 6354/8505
+15:45:09 You healed yourself for 685 hitpoints.
+15:45:17 Using one of 489 ultimate spirit potions...
+15:45:17 You gained 176 mana.
+15:45:17 You healed yourself for 92 hitpoints.
+MANA 5746/8305
+154539 Using one of 488 ultimate spirit potions...
+15:45:39 You gained 165 mana.
+MANA 5523/8305
+13:45:39 You gained 165 mana.
+1546-01 Using one of 487 ultimate spirit potions...
+13:46:01 You gained 208 mana.
+MANA 4947/8505
+1546:01 Using one of 487 ultimate spirit potions...
+154625 Using one of 486 ultimate spirit potions...
+13:46 23 You gained 195 mana.
+MANA 4756/8305
+1346 23 Using one of 486 ultimate spirit potions...
+1546-44 Using one of 485 ultimate spirit potions...
+13:46:45 You gained 190 mana.
+MANA 4158/8505
+1546 44 Using one of 485 ultimate spirit potions...
+1547-206 Using one of 484 ultimate spirit potions...
+13:47 206 You gained 157 mana.
+MANA 3931/8305
+15:47 206 You gained 157 mana.
+15-47 20 Ratha: I wonder how the dragon emperorand Nimmersatt get along with each other.
+15:47 28 Using one of 485 ultimate spirit potions
+15:47 28 You gained 245 mana.
+MANA SEB IBS O5
+1547 28 Using one of 483 ultimate spirit potions...
+13:47 28 You gained 245 mana.
+S47 49 Using one of 482 ultimate spirit potions...
+13:47 49 You gained 248 mana.
+MANA 3252/8305
+1547 49 Using one of 482 ultimate spirit potions...
+15:48:11 Using one of 481 ultimate spirit potions...
+13:48:11 You gained 161 mana.
+DONE

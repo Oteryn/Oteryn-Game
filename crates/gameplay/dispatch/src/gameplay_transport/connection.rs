@@ -455,7 +455,7 @@ pub enum FirstEntryOutcome {
     RefusedStaleAuthority,
     /// Current authority could not be read; nothing was written.
     RefusedUnavailable,
-    /// Positioned and otherwise initialized, but final spell repair must be retried on resume.
+    /// Positioned and otherwise initialized; the connection or resume retries final spell repair.
     AwaitingSpellRepair,
     /// The Channel owner refused the write; nothing was written.
     RefusedByChannel,
@@ -463,6 +463,7 @@ pub enum FirstEntryOutcome {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AdmissionRefusal {
+    ChannelSwitch(oteryn_protocol_oteryn::channel_switch::SwitchStatus),
     /// PREMCHAN: authenticated destination entry requires current Premium. Uses the existing
     /// silent rejection path; no new public error code is allocated.
     PremiumRequired,
@@ -501,6 +502,20 @@ pub(super) fn admission_refused_event(refusal: AdmissionRefusal) -> Option<&'sta
 pub(super) fn report_admission_refusal(refusal: AdmissionRefusal) {
     let (kind, reason) = match refusal {
         AdmissionRefusal::PremiumRequired | AdmissionRefusal::Rejected => ("rejected", None),
+        AdmissionRefusal::ChannelSwitch(status) => {
+            use oteryn_protocol_oteryn::channel_switch::SwitchLock;
+            (
+                match status.lock {
+                    SwitchLock::ChannelFull => "channel_full",
+                    SwitchLock::Cooldown => "channel_cooldown",
+                    SwitchLock::Combat => "channel_combat",
+                    SwitchLock::Skull => "channel_skull",
+                    SwitchLock::Transition => "channel_transition",
+                    _ => "channel_locked",
+                },
+                None,
+            )
+        }
         AdmissionRefusal::Unavailable => ("unavailable", None),
         AdmissionRefusal::Classified(error) => ("classified", Some(error)),
         AdmissionRefusal::Queued(_) => ("queued", None),
@@ -894,7 +909,8 @@ where
     };
     // CAP-NEG-1: the client's supported capabilities the server offers, with their `requires`.
     // WEATHER-1: capability 26 is offered only while the authority holds a weather source.
-    let Some(selected) = fresh_capability_selection(authority, bootstrap.supported_capabilities)
+    let Some(selected) =
+        fresh_capability_selection(authority, bootstrap.supported_capabilities).await
     else {
         return Err(ConnectionEnd::AdmissionRefused(
             AdmissionRefusal::Unavailable,
@@ -922,6 +938,16 @@ where
                 let _ = tokio::time::timeout(
                     ADMISSION_REFUSAL_WRITE_BOUND,
                     send_error(stream, error, 0),
+                )
+                .await;
+            }
+            if let AdmissionRefusal::ChannelSwitch(status) = refusal
+                && status.lock == oteryn_protocol_oteryn::channel_switch::SwitchLock::ChannelFull
+            {
+                let frame = oteryn_protocol_oteryn::admission_queue::encode_channel_full();
+                let _ = tokio::time::timeout(
+                    ADMISSION_REFUSAL_WRITE_BOUND,
+                    write_frame(stream, &frame),
                 )
                 .await;
             }
@@ -976,7 +1002,9 @@ where
 /// The existing fresh wire selection, shared with native saved-House admission.
 /// It is data only; the owner independently authenticates the grant and current
 /// required capabilities before any committed scope transition.
-pub(in crate::gameplay_transport) fn fresh_capability_selection<A: FreshAdmissionAuthority>(
+pub(in crate::gameplay_transport) async fn fresh_capability_selection<
+    A: FreshAdmissionAuthority,
+>(
     authority: &A,
     supported: &[u32],
 ) -> Option<SelectedCapabilities> {
@@ -985,6 +1013,39 @@ pub(in crate::gameplay_transport) fn fresh_capability_selection<A: FreshAdmissio
         authority.world_weather().is_some(),
     );
     let offered = mechanic_offers(authority, offered);
+    let offered = super::native_cue_offer::offered(
+        &offered,
+        authority.native_world_presentation_available().await,
+    );
+    SelectedCapabilities::select(&offered, supported)
+}
+
+/// Test observation of a current actor's optional offer. Production Fresh/
+/// House selection remains before its immutable acknowledgement; this helper
+/// neither installs a selection nor widens a transfer/resume.
+#[cfg(test)]
+pub(in crate::gameplay_transport) async fn fresh_current_actor_capability_selection<
+    A: FreshAdmissionAuthority,
+>(
+    authority: &A,
+    supported: &[u32],
+    admitted: AdmittedSession,
+) -> Option<SelectedCapabilities> {
+    let (Some(actor), Some(_)) = (admitted.runtime_actor, admitted.controller) else {
+        return fresh_capability_selection(authority, supported).await;
+    };
+    let offered = with_weather_offer(
+        authority.offered_capabilities(),
+        authority.world_weather().is_some(),
+    );
+    let offered = mechanic_offers(authority, offered);
+    let offered = super::native_cue_offer::offered(
+        &offered,
+        authority
+            .native_current_actor_map_cue_frame(actor, admitted.game_session_id)
+            .await
+            .is_some(),
+    );
     SelectedCapabilities::select(&offered, supported)
 }
 

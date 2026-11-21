@@ -210,6 +210,13 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
         .domain_selected(STATE_DOMAIN_CHARACTER_INVENTORY)
     {
         let mut view = SessionItemView::resume(admitted.continuity.item_view);
+        if admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_APPEARANCE_V1)
+        {
+            view = view.with_appearances();
+        }
         if admitted.continuity.selected_capabilities.contains(
             oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2,
         ) {
@@ -406,9 +413,13 @@ pub(super) async fn sessions<A: FreshAdmissionAuthority>(
         let observation = authority
             .observe_quest_log(actor, admitted.game_session_id, None)
             .await;
-        let Ok((state, domain)) =
-            QuestLogState::snapshot(&mut admitted.continuity.quest_log, observation)
-        else {
+        let Ok((state, domain)) = QuestLogState::snapshot(
+            &mut admitted.continuity.quest_log,
+            observation,
+            admitted.continuity.selected_capabilities.contains(
+                oteryn_protocol_oteryn::personal_map_marks::CAPABILITY_PERSONAL_MAP_MARKS_V1,
+            ),
+        ) else {
             return Err(ServeEnd::Disconnected);
         };
         quest_log_snapshot = domain;

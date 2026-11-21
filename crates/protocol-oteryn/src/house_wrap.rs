@@ -111,7 +111,7 @@ mod tests {
                 item: [7; 16],
                 expected_revision: u64::MAX,
                 acl_revision: 1,
-                position: [100, 200, -7],
+                position: [100, 200, 7],
             };
             let bytes = request.encode();
             assert_eq!(Request::decode(&bytes), Some(request));

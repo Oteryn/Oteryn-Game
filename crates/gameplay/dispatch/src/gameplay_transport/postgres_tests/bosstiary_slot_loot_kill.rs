@@ -244,7 +244,7 @@ fn scenario(assigned: bool) -> TestResult {
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "p02_slot_loot", true, false).await?;
         prepare_current_session(&h).await?;
-        super::charm_progression::seed(&h, &[]).await?;
+        super::charm_progression_fixtures::seed(&h, &[]).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root

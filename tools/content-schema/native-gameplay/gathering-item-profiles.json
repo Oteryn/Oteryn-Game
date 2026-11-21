@@ -60,11 +60,11 @@
       "inputs": [
         {
           "path": "content/items/definitions/items-33000-33499.json",
-          "sha256": "b59926c451893928fd8e23bb92d4f02370354e18a64a74f4e162c438c31be412"
+          "sha256": "88ac1699a81fa419afbbd234e5c348da1ee07550c82f9141b1e452b1479f938c"
         },
         {
           "path": "imports/tibiawiki/facts/items-stats.json",
-          "sha256": "24e3e57fddc6c14f00aa5c4976e91117d31bc2102bd3835b3d7891d9e41fbeae"
+          "sha256": "4dd7557ba437421396835dafe7dde3eabfa64ae4d3d797fa3f0f05155f797705"
         }
       ]
     }

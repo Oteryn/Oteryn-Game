@@ -40,7 +40,7 @@ pub(super) fn draw(
     vitals: Option<&ActorVitals>,
     own: TileCoord,
     options: Options,
-) -> Result<(), BatchError> {
+) -> Result<std::ops::Range<usize>, BatchError> {
     let Options {
         combo,
         bars,
@@ -123,6 +123,7 @@ pub(super) fn draw(
             )?;
         }
     }
+    let mut circle_quads = batch.len()..batch.len();
     if health_circle && let Some(vitals) = vitals {
         let start = batch.len();
         let [x, y] = view.tile_to_screen(own);
@@ -164,6 +165,7 @@ pub(super) fn draw(
         }
         let end = batch.len();
         batch.lighting.set_opacity(start..end, opacity)?;
+        circle_quads = start..end;
     }
     // The small combo gauge repeats confirmed Harmony charges beside the actor.
     if combo && let Some(vitals) = vitals {
@@ -187,5 +189,5 @@ pub(super) fn draw(
             )?;
         }
     }
-    Ok(())
+    Ok(circle_quads)
 }

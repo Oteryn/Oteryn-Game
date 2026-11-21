@@ -4006,26 +4006,6 @@
         }
       ]
     },
-    "40016": {
-      "item_id": 40016,
-      "observations": [
-        {
-          "content_sha256": "1f2bc33c64ebe987b90380d45a8bca86ff4200e94f03c4350bc3c3cf43df9015",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Quest Items",
-            "stackable": "yes",
-            "weight": "0.50"
-          },
-          "page_id": 101150,
-          "revision_id": 1116246,
-          "revision_sha1": "e0735d1bacbe619f2b21b30794bfc02395d35e88",
-          "revision_timestamp": "2025-07-26T12:29:32Z",
-          "url": "https://tibia.fandom.com/wiki/Fresh_Hydra_Herbs",
-          "wiki_title": "Fresh Hydra Herbs"
-        }
-      ]
-    },
     "40018": {
       "item_id": 40018,
       "observations": [
@@ -4292,25 +4272,6 @@
         }
       ]
     },
-    "40598": {
-      "item_id": 40598,
-      "observations": [
-        {
-          "content_sha256": "4e64dc378a9f5e47c42560f243304f0a61ccb8983eb6e77d193bbe037b9f53b3",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Quest Items",
-            "weight": "1.50"
-          },
-          "page_id": 101181,
-          "revision_id": 1116259,
-          "revision_sha1": "16c981f22a09c74fd28eee4b5826647661b82f8a",
-          "revision_timestamp": "2025-07-26T12:34:45Z",
-          "url": "https://tibia.fandom.com/wiki/Bottled_Yolk",
-          "wiki_title": "Bottled Yolk"
-        }
-      ]
-    },
     "40599": {
       "item_id": 40599,
       "observations": [
@@ -4331,25 +4292,6 @@
         }
       ]
     },
-    "40601": {
-      "item_id": 40601,
-      "observations": [
-        {
-          "content_sha256": "0493fc63cf92c973993c025119775153ce1e0a7b34334e8000ed588dcadcb1ca",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Quest Items",
-            "weight": "1.50"
-          },
-          "page_id": 101183,
-          "revision_id": 1116261,
-          "revision_sha1": "259e0b9efb0ff1c980300842e73e5f3ecae43e86",
-          "revision_timestamp": "2025-07-26T12:34:49Z",
-          "url": "https://tibia.fandom.com/wiki/Nutrient_Solution",
-          "wiki_title": "Nutrient Solution"
-        }
-      ]
-    },
     "40602": {
       "item_id": 40602,
       "observations": [
@@ -4366,24 +4308,6 @@
           "revision_timestamp": "2025-06-02T11:17:16Z",
           "url": "https://tibia.fandom.com/wiki/Crumbled_Diary_Page",
           "wiki_title": "Crumbled Diary Page"
-        }
-      ]
-    },
-    "40603": {
-      "item_id": 40603,
-      "observations": [
-        {
-          "content_sha256": "720b6a3c31140cc605059035a9e7214623e9c4dfb46a7bb4fb7195e163667199",
-          "fields": {
-            "stackable": "yes",
-            "weight": "1.50"
-          },
-          "page_id": 101185,
-          "revision_id": 1011469,
-          "revision_sha1": "d9f14ab1281ff6ffcd99521ec524dc816d5eb6e8",
-          "revision_timestamp": "2023-07-11T21:02:34Z",
-          "url": "https://tibia.fandom.com/wiki/Flask_with_Anti-Mutagen",
-          "wiki_title": "Flask with Anti-Mutagen"
         }
       ]
     },
@@ -4638,42 +4562,6 @@
           "revision_timestamp": "2023-07-30T16:25:47Z",
           "url": "https://tibia.fandom.com/wiki/Crocodile_Hunter_Statue",
           "wiki_title": "Crocodile Hunter Statue"
-        }
-      ]
-    },
-    "42851": {
-      "item_id": 42851,
-      "observations": [
-        {
-          "content_sha256": "57567b37f4a92141d13af48672b8317c2921afd3933f359f109e402720af5764",
-          "fields": {
-            "objectclass": "Magical Effects",
-            "primarytype": "Fields"
-          },
-          "page_id": 104854,
-          "revision_id": 1106032,
-          "revision_sha1": "19322bb4f6907b42d2da79face8c1133596d7401",
-          "revision_timestamp": "2025-06-19T06:38:21Z",
-          "url": "https://tibia.fandom.com/wiki/Mould_(Field)",
-          "wiki_title": "Mould (Field)"
-        }
-      ]
-    },
-    "42853": {
-      "item_id": 42853,
-      "observations": [
-        {
-          "content_sha256": "57567b37f4a92141d13af48672b8317c2921afd3933f359f109e402720af5764",
-          "fields": {
-            "objectclass": "Magical Effects",
-            "primarytype": "Fields"
-          },
-          "page_id": 104854,
-          "revision_id": 1106032,
-          "revision_sha1": "19322bb4f6907b42d2da79face8c1133596d7401",
-          "revision_timestamp": "2025-06-19T06:38:21Z",
-          "url": "https://tibia.fandom.com/wiki/Mould_(Field)",
-          "wiki_title": "Mould (Field)"
         }
       ]
     },
@@ -8892,60 +8780,6 @@
         }
       ]
     },
-    "43589": {
-      "item_id": 43589,
-      "observations": [
-        {
-          "content_sha256": "48e444cb7e4c61a32e78965a9d62b1d03bfec976d5822106e4ae275cb3e53813",
-          "fields": {
-            "objectclass": "Magical Effects",
-            "primarytype": "Fields"
-          },
-          "page_id": 104539,
-          "revision_id": 1080210,
-          "revision_sha1": "d91e8606a12f646f031d01138821d116c20a6187",
-          "revision_timestamp": "2024-10-27T08:34:59Z",
-          "url": "https://tibia.fandom.com/wiki/Darklight_Spark",
-          "wiki_title": "Darklight Spark"
-        }
-      ]
-    },
-    "43590": {
-      "item_id": 43590,
-      "observations": [
-        {
-          "content_sha256": "48e444cb7e4c61a32e78965a9d62b1d03bfec976d5822106e4ae275cb3e53813",
-          "fields": {
-            "objectclass": "Magical Effects",
-            "primarytype": "Fields"
-          },
-          "page_id": 104539,
-          "revision_id": 1080210,
-          "revision_sha1": "d91e8606a12f646f031d01138821d116c20a6187",
-          "revision_timestamp": "2024-10-27T08:34:59Z",
-          "url": "https://tibia.fandom.com/wiki/Darklight_Spark",
-          "wiki_title": "Darklight Spark"
-        }
-      ]
-    },
-    "43625": {
-      "item_id": 43625,
-      "observations": [
-        {
-          "content_sha256": "c73da9c8eeccbde347f6b78e27930d1c02c79e9e1b5b35ece67afbd53b772628",
-          "fields": {
-            "objectclass": "Magical Effects",
-            "primarytype": "Fields"
-          },
-          "page_id": 104538,
-          "revision_id": 1080211,
-          "revision_sha1": "7f1fe01e02618114560e6a5818d9dcf2e6430373",
-          "revision_timestamp": "2024-10-27T08:35:12Z",
-          "url": "https://tibia.fandom.com/wiki/Darklight_Field",
-          "wiki_title": "Darklight Field"
-        }
-      ]
-    },
     "43626": {
       "item_id": 43626,
       "observations": [
@@ -9622,25 +9456,6 @@
           "revision_timestamp": "2023-08-06T21:25:10Z",
           "url": "https://tibia.fandom.com/wiki/Symbol_of_Sula_(Silver)",
           "wiki_title": "Symbol of Sula (Silver)"
-        }
-      ]
-    },
-    "43860": {
-      "item_id": 43860,
-      "observations": [
-        {
-          "content_sha256": "50609ad5032af6d5b3b14b3a8d2dc3c285fe70f9f5a4732865c06c90e0a42253",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Valuables",
-            "weight": "2.00"
-          },
-          "page_id": 103014,
-          "revision_id": 1106048,
-          "revision_sha1": "34e4a7edef6dadc827628c1bada10b2d1f591f4f",
-          "revision_timestamp": "2025-06-19T07:48:44Z",
-          "url": "https://tibia.fandom.com/wiki/Bag_You_Covet",
-          "wiki_title": "Bag You Covet"
         }
       ]
     },
@@ -192127,6 +191942,26 @@
         }
       ]
     },
+    "oteryn:item.tibia.i40016": {
+      "item_id": 40016,
+      "observations": [
+        {
+          "content_sha256": "1f2bc33c64ebe987b90380d45a8bca86ff4200e94f03c4350bc3c3cf43df9015",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Quest Items",
+            "stackable": "yes",
+            "weight": "0.50"
+          },
+          "page_id": 101150,
+          "revision_id": 1116246,
+          "revision_sha1": "e0735d1bacbe619f2b21b30794bfc02395d35e88",
+          "revision_timestamp": "2025-07-26T12:29:32Z",
+          "url": "https://tibia.fandom.com/wiki/Fresh_Hydra_Herbs",
+          "wiki_title": "Fresh Hydra Herbs"
+        }
+      ]
+    },
     "oteryn:item.tibia.i40022": {
       "item_id": 40022,
       "observations": [
@@ -193866,6 +193701,25 @@
         }
       ]
     },
+    "oteryn:item.tibia.i40598": {
+      "item_id": 40598,
+      "observations": [
+        {
+          "content_sha256": "4e64dc378a9f5e47c42560f243304f0a61ccb8983eb6e77d193bbe037b9f53b3",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Quest Items",
+            "weight": "1.50"
+          },
+          "page_id": 101181,
+          "revision_id": 1116259,
+          "revision_sha1": "16c981f22a09c74fd28eee4b5826647661b82f8a",
+          "revision_timestamp": "2025-07-26T12:34:45Z",
+          "url": "https://tibia.fandom.com/wiki/Bottled_Yolk",
+          "wiki_title": "Bottled Yolk"
+        }
+      ]
+    },
     "oteryn:item.tibia.i406": {
       "item_id": 406,
       "observations": [
@@ -193885,6 +193739,43 @@
           "revision_timestamp": "2026-07-04T12:44:20Z",
           "url": "https://tibia.fandom.com/wiki/Family_Signet_Ring",
           "wiki_title": "Family Signet Ring"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i40601": {
+      "item_id": 40601,
+      "observations": [
+        {
+          "content_sha256": "0493fc63cf92c973993c025119775153ce1e0a7b34334e8000ed588dcadcb1ca",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Quest Items",
+            "weight": "1.50"
+          },
+          "page_id": 101183,
+          "revision_id": 1116261,
+          "revision_sha1": "259e0b9efb0ff1c980300842e73e5f3ecae43e86",
+          "revision_timestamp": "2025-07-26T12:34:49Z",
+          "url": "https://tibia.fandom.com/wiki/Nutrient_Solution",
+          "wiki_title": "Nutrient Solution"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i40603": {
+      "item_id": 40603,
+      "observations": [
+        {
+          "content_sha256": "720b6a3c31140cc605059035a9e7214623e9c4dfb46a7bb4fb7195e163667199",
+          "fields": {
+            "stackable": "yes",
+            "weight": "1.50"
+          },
+          "page_id": 101185,
+          "revision_id": 1011469,
+          "revision_sha1": "d9f14ab1281ff6ffcd99521ec524dc816d5eb6e8",
+          "revision_timestamp": "2023-07-11T21:02:34Z",
+          "url": "https://tibia.fandom.com/wiki/Flask_with_Anti-Mutagen",
+          "wiki_title": "Flask with Anti-Mutagen"
         }
       ]
     },
@@ -195851,6 +195742,42 @@
         }
       ]
     },
+    "oteryn:item.tibia.i42851": {
+      "item_id": 42851,
+      "observations": [
+        {
+          "content_sha256": "57567b37f4a92141d13af48672b8317c2921afd3933f359f109e402720af5764",
+          "fields": {
+            "objectclass": "Magical Effects",
+            "primarytype": "Fields"
+          },
+          "page_id": 104854,
+          "revision_id": 1106032,
+          "revision_sha1": "19322bb4f6907b42d2da79face8c1133596d7401",
+          "revision_timestamp": "2025-06-19T06:38:21Z",
+          "url": "https://tibia.fandom.com/wiki/Mould_(Field)",
+          "wiki_title": "Mould (Field)"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i42853": {
+      "item_id": 42853,
+      "observations": [
+        {
+          "content_sha256": "57567b37f4a92141d13af48672b8317c2921afd3933f359f109e402720af5764",
+          "fields": {
+            "objectclass": "Magical Effects",
+            "primarytype": "Fields"
+          },
+          "page_id": 104854,
+          "revision_id": 1106032,
+          "revision_sha1": "19322bb4f6907b42d2da79face8c1133596d7401",
+          "revision_timestamp": "2025-06-19T06:38:21Z",
+          "url": "https://tibia.fandom.com/wiki/Mould_(Field)",
+          "wiki_title": "Mould (Field)"
+        }
+      ]
+    },
     "oteryn:item.tibia.i429": {
       "item_id": 429,
       "observations": [
@@ -196198,6 +196125,42 @@
         }
       ]
     },
+    "oteryn:item.tibia.i43589": {
+      "item_id": 43589,
+      "observations": [
+        {
+          "content_sha256": "48e444cb7e4c61a32e78965a9d62b1d03bfec976d5822106e4ae275cb3e53813",
+          "fields": {
+            "objectclass": "Magical Effects",
+            "primarytype": "Fields"
+          },
+          "page_id": 104539,
+          "revision_id": 1080210,
+          "revision_sha1": "d91e8606a12f646f031d01138821d116c20a6187",
+          "revision_timestamp": "2024-10-27T08:34:59Z",
+          "url": "https://tibia.fandom.com/wiki/Darklight_Spark",
+          "wiki_title": "Darklight Spark"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i43590": {
+      "item_id": 43590,
+      "observations": [
+        {
+          "content_sha256": "48e444cb7e4c61a32e78965a9d62b1d03bfec976d5822106e4ae275cb3e53813",
+          "fields": {
+            "objectclass": "Magical Effects",
+            "primarytype": "Fields"
+          },
+          "page_id": 104539,
+          "revision_id": 1080210,
+          "revision_sha1": "d91e8606a12f646f031d01138821d116c20a6187",
+          "revision_timestamp": "2024-10-27T08:34:59Z",
+          "url": "https://tibia.fandom.com/wiki/Darklight_Spark",
+          "wiki_title": "Darklight Spark"
+        }
+      ]
+    },
     "oteryn:item.tibia.i436": {
       "item_id": 436,
       "observations": [
@@ -196214,6 +196177,24 @@
           "revision_timestamp": "2023-10-20T22:12:47Z",
           "url": "https://tibia.fandom.com/wiki/Stone_Floor",
           "wiki_title": "Stone Floor"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i43625": {
+      "item_id": 43625,
+      "observations": [
+        {
+          "content_sha256": "c73da9c8eeccbde347f6b78e27930d1c02c79e9e1b5b35ece67afbd53b772628",
+          "fields": {
+            "objectclass": "Magical Effects",
+            "primarytype": "Fields"
+          },
+          "page_id": 104538,
+          "revision_id": 1080211,
+          "revision_sha1": "7f1fe01e02618114560e6a5818d9dcf2e6430373",
+          "revision_timestamp": "2024-10-27T08:35:12Z",
+          "url": "https://tibia.fandom.com/wiki/Darklight_Field",
+          "wiki_title": "Darklight Field"
         }
       ]
     },
@@ -197141,6 +197122,25 @@
           "revision_timestamp": "2026-08-22T19:48:49Z",
           "url": "https://tibia.fandom.com/wiki/Basalt_Core",
           "wiki_title": "Basalt Core"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i43860": {
+      "item_id": 43860,
+      "observations": [
+        {
+          "content_sha256": "50609ad5032af6d5b3b14b3a8d2dc3c285fe70f9f5a4732865c06c90e0a42253",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Valuables",
+            "weight": "2.00"
+          },
+          "page_id": 103014,
+          "revision_id": 1106048,
+          "revision_sha1": "34e4a7edef6dadc827628c1bada10b2d1f591f4f",
+          "revision_timestamp": "2025-06-19T07:48:44Z",
+          "url": "https://tibia.fandom.com/wiki/Bag_You_Covet",
+          "wiki_title": "Bag You Covet"
         }
       ]
     },
@@ -278547,7 +278547,7 @@
     }
   },
   "schema": "OTERYN_ITEM_WIKI_STATS_SNAPSHOT/v1",
-  "snapshot_sha256": "513c4cfd9c9d5723677fb479458dfb48b88414ea5f7c51d5ab58a2b116ee01ef",
+  "snapshot_sha256": "a4cd8038051518678121ea59f8f3b195dd04b4329e77dfbfe217cf998770be49",
   "source": {
     "api": "https://tibia.fandom.com/api.php",
     "attribution": {

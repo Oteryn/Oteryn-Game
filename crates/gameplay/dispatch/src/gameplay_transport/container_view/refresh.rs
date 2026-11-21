@@ -22,10 +22,16 @@ pub(in super::super) async fn refresh<A: FreshAdmissionAuthority>(
         if !seen.insert(key) {
             continue;
         }
-        let observation = authority
+        let Some(observation) = authority
             .observe_container_with_house_capacity(actor, fence, key, views.house_capacity_v2())
-            .await;
-        observed.push((key, observation));
+            .await
+        else {
+            // A busy/yielded background read is not evidence that the container
+            // is gone. Keep this projection intact and retry on the next tick.
+            view.inventory_refresh_pending = true;
+            return Ok(None);
+        };
+        observed.push((key, Some(observation)));
     }
     views.refresh(view, &observed)
 }

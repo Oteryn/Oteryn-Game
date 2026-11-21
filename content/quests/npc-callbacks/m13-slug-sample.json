@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/goblin_merchant/slug_sample",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "chosen:Goblin Merchant Quest/s3:Slug slime sample"
+      ]
+    }
+  ],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/goblin-merchant/slug-sample",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "slug sample"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "carried_item": "oteryn:item.tibia.i17670",
+      "creature_target": "oteryn:creature.slug",
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/goblin_merchant/slug_sample",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "requires": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i17670",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i17672",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You collect the Slug slime."
+      ],
+      "sources": [
+        "docs/reference/content-prep/engnpc2-m13/slug-sample.md: ordered variant derivation 17670 to 17672; this personal receipt does not finish the four-odour stage",
+        "https://www.tibiawiki.com.br/wiki/Task:Rafzan: fresh Slug slime is the first perfume sample"
+      ],
+      "fresh_corpse": true
+    }
+  ]
+}

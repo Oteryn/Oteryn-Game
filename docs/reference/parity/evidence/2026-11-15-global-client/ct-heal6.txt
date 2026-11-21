@@ -1,0 +1,7 @@
+VIRTUE utura tio
+TEST/utura tio 16:33:28 heal=1083 hp0=5944 hp1=7027
+REJECT TEST/utura tio 16:33:42 heal=1085 hp0=1 hp1=113
+REJECT TEST/utura tio 16:33:44 heal=1180 hp0=113 hp1=2316
+TEST/utura tio 16:33:51 heal=1187 hp0=2328 hp1=3515
+TEST/utura tio 16:33:54 heal=1080 hp0=3515 hp1=4601
+DONE TEST

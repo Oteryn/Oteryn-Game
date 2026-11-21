@@ -1,6 +1,9 @@
 //! W15c portals through command-1 movement, native policy admission and PostgreSQL.
 //! The fixture supplies walkable source coordinates; room qualification is the real
 //! pinned Crystal map evidence, never a test override of the portal's authority.
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+use super::grizzly_boss_fixtures::{world};
+
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::content::channel_content_pin::ChannelContentPin;
@@ -15,7 +18,7 @@ use crate::foundation::{
 use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::connection::{AdmittedSession, FirstEntryOutcome};
 use crate::gameplay_transport::last_position::AdmissionPosition;
-use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+
 use oteryn_gameplay_quests::quest::grizzly_adams::{self as quest, GrizzlyAction as Action};
 use std::sync::Arc;
 
@@ -23,8 +26,6 @@ use std::sync::Arc;
 mod combat;
 #[path = "grizzly_boss/vacancy.rs"]
 mod vacancy;
-#[path = "grizzly_boss/world.rs"]
-pub(super) mod world;
 
 #[test]
 fn grizzly_boss_portal_wire_occupied_spawn_expiry_and_relog_return() -> TestResult {
@@ -86,7 +87,7 @@ fn scenario(boss_id: u8, unknown_expiry: bool, vacancy: Option<vacancy::Case>) -
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activated) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;
@@ -95,6 +96,21 @@ fn scenario(boss_id: u8, unknown_expiry: bool, vacancy: Option<vacancy::Case>) -
         let cells = world
             .movement_cells(activated.qualified_room().movement_cells())
             .map_err(debug)?;
+        deps.combat_room = Some(
+            activated
+                .qualified_room()
+                .bundle_view(
+                    cells.clone(),
+                    activated.frame_binding().digest(),
+                    world.map_revision_digest(),
+                    crate::content::NativeEntryStart {
+                        x: origin.x,
+                        y: origin.y,
+                        floor: origin.floor,
+                    },
+                )
+                .ok_or("qualified Grizzly bundle room")?,
+        );
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
@@ -209,6 +225,9 @@ fn scenario(boss_id: u8, unknown_expiry: bool, vacancy: Option<vacancy::Case>) -
                 vacancy.is_none(),
             )
             .await?;
+            super::channel_switch_fixtures::assert_encounter_switch_lock(
+                &owner, admitted, true,
+            ).await?;
             if let Some(case) = vacancy {
                 vacancy::qualify(&owner, &mut admitted, &h, &deps, boss, origin, case).await?;
                 drop(owner);
@@ -623,7 +642,7 @@ async fn east(
     admitted: &mut AdmittedSession,
     n: u64,
 ) -> TestResult {
-    super::quest_world_callbacks::wire(
+    super::quest_world_callbacks_fixtures::wire(
         owner,
         admitted,
         n,

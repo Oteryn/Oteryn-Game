@@ -1,0 +1,43 @@
+{
+  "schema": "OTERYN_CHARMS_CURRENT_ACTION_TRIAGE/v1",
+  "observed_date": "2026-11-13",
+  "main_head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+  "predecessor_evidence_head": "6022488f959d0ba8c25d5836bcb978b38734cdc1",
+  "implementation_pr": {"url":"https://github.com/Oteryn/Oteryn-Game/pull/3174","head":"0550cc3eafd6d1fe07580eaac0c27bfd8cbcf329","state":"OPEN","draft":true,"merged_or_deployed":false,"patch_read":true},
+  "status_meanings": {"FIXED":"Code correction published in named draft, not merged/deployed","ALREADY_CORRECT":"Current scoped behavior already matches qualified constraint","NO_ACTION_SUPPORTED":"Available evidence does not justify runtime change; no universal parity claim","HISTORICAL_ONLY":"Numeric/creator evidence exists but current-rule transfer is unqualified","CONCRETE_OPEN":"Specific potentially material behavior needs targeted source/evidence trace; not a proven bug"},
+  "topics": [
+    {"topic":"full_reset_fee","status":"FIXED","impact":"757 expansion fee corrected by825000gold in draft3174","action":"No duplicate patch. Preserve main/draft distinction; no gameplay retest needed for arithmetic."},
+    {"topic":"Cleanse_Agony","status":"ALREADY_CORRECT","impact":"Cannot cure/blockAgony; domainnegative selector already excludes it","action":"Closed by domaincondition137 plus existing foundationtest295; no redundant patch."},
+    {"topic":"Cleanse_Hex","status":"CONCRETE_OPEN","impact":"Removal and subsequent immunity on currentHex; official8935/8960","action":"Separately allocated worker traces exactnative kind; do not infer from Root/Fear or oldwiki list."},
+    {"topic":"Cleanse_Root_Fear","status":"ALREADY_CORRECT","impact":"DomainStatusRooted/Feared already classified negative","action":"Datedwiki-image reply corroborates existing source; no need to repeat basic eligibility capture."},
+    {"topic":"Cleanse_replacement_reproc","status":"HISTORICAL_ONLY","impact":"Multiple simultaneous immunities or expiry refresh could alter survival","action":"Do not patch from2020video; only current timestamped multi-status successful-proc trace can resolve."},
+    {"topic":"leech_AoE_overkill_rounding","status":"HISTORICAL_ONLY","impact":"AoE/overkill model may materially affect sustain; half-ties are narrower","action":"2022numeric cases retained. Prioritize current targetcount/HP-loss trace over moreaggregatehunts; no currentbug claim."},
+    {"topic":"Parry_armor_mana","status":"CONCRETE_OPEN","impact":"Reflected magnitude and mana-only eligibility affect damage","action":"Need isolated armor/prepostmitigation/mana-only evidence, not anotherParryvsFreeze hunt."},
+    {"topic":"Dodge_Minor_order","status":"CONCRETE_OPEN","impact":"Minor eligibility on dodged attack may change condition/haste uptime","action":"Same-hit visibleDodge+Minor case needed. Purchase priority discussions do not answer event ordering."},
+    {"topic":"LowBlow_correlated_AoE","status":"CONCRETE_OPEN","impact":"Shared roll changes burst and sustain variance; under equal marginalprobabilities it does not change expected aggregate damage","action":"Perattack target-correlated observations needed; rawXP/totaldamage hunt comparisons do not identify correlation."},
+    {"topic":"Carnage_chain_credit_summons","status":"CONCRETE_OPEN","impact":"Recursive extra damage and rewardprincipal may be material","action":"Basicfourcardinalgeometry already source-covered; focus childkills/reentry/rewardcredit. Diamondarrow comment is prediction, not test."},
+    {"topic":"Wound_weapon_pierce","status":"NO_ACTION_SUPPORTED","impact":"Potentialbonusdamage, but newercommunityauthorcorrection agrees no weaponpierce contribution","action":"Do not patch pierce into charm damage based on supersededJune model. No universalinstrumentedproof claimed."},
+    {"topic":"Gabriel_hunt_comparison","status":"NO_ACTION_SUPPORTED","impact":"Near-equaldamage with potion/build/latencyconfounders","action":"Preserve actualnumbers; no additionalaggregatehunt or formula patch justified."}
+  ],
+  "additional_closed_basics": ["25visible stagevalues andcosts already matched; notall3stages","Fourdescriptionprojectionomissions already explained by fullermechanics; notfourruntimebugs","Carnagebasicgeometry and ordinary stage-rate catalogue questions do not need repeated generic research"],
+  "new_discovery": {
+    "discord_url":"https://discord.com/channels/836592213327609957/836593610811768833/1510979248092086473",
+    "discord_date":"2026-06-01 14:12 local UI",
+    "source_url":"https://www.reddit.com/r/TibiaMMO/comments/1ttp58c/why_carnage_isnt_a_bad_charm/",
+    "source_date_utc":"2026-06-01T11:20:30.388Z",
+    "classification":"Author mathematical performance model, not measured controlled combat experiment",
+    "correction_url":"https://www.reddit.com/r/TibiaMMO/comments/1ttp58c/comment/19rzu7dnxlmm9/",
+    "correction_date_utc":"2026-11-01T20:14:55.361Z",
+    "correction":"Author accepts later commenter correction that physical/energy pierce no longer applies to charms, weakening earlierCarnage model slightly.",
+    "limitations":"No officialpatchlink or isolatedmeasurement. Model assumptions are not runtimeformula authority."
+  },
+  "query_windows": [
+    {"server":"Kusnier","literal":"carnage","contains":"link","count":4,"reviewed":"All4matches: Redditmodel followedincludingresponses; oneunrelatedGIF; oneTestServerPuminvideo retainedunreviewed; oneWiki link."},
+    {"server":"Tibia Analysers","literal":"carnage","count":1,"reviewed":"One analogy aboutcasterautoattackrange; no controlledCarnagechain proof."},
+    {"server":"Tibia Analysers","literal":"leech","count":75,"reviewed":"First25renderedresults inspected forsourceleads, notall75; genericbuild/eventchat. ThenContainsLink filter."},
+    {"server":"Tibia Analysers","literal":"leech","contains":"link","count":0,"reviewed":"Scopedlinkquery only; not absence of leech research or uncaptionedattachments."}
+  ],
+  "runtime_changes_in_evidence_branch":false,
+  "game_actions":false,
+  "all_discord_research_complete":false
+}

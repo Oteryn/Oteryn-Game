@@ -1,23 +1,22 @@
 //! GUILD-WIRE-1: real admitted connection bytes and native Guild persistence.
+use super::guild_wire_fixtures::{exchange};
+
 #[path = "guild_wire/paging.rs"]
 mod paging;
 
-use super::fixture::{self, Harness, debug, id, run};
+use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::domain::CharacterId;
 use crate::durability::guild_chat_fixture as seed;
-use crate::foundation::{MessageType, decode_wire_envelope};
+
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
-    AdmittedSession, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS, serve_admitted,
+    AdmittedSession, FirstEntryOutcome, FreshAdmissionAuthority,
 };
-use crate::gameplay_transport::tcp_tls::{read_frame, write_frame};
+
 use crate::gameplay_transport::{ComposedFreshAdmission, item_fence_of};
 use oteryn_protocol_oteryn::guild::*;
-use oteryn_protocol_oteryn::{
-    ClientCommandValue, CommandStatus, decode_command_result, encode_client_command,
-};
-use tokio::io::AsyncWriteExt;
+use oteryn_protocol_oteryn::CommandStatus;
 
 #[test]
 fn guild_wire_postgres_real_dispatch() -> TestResult {
@@ -32,75 +31,6 @@ fn guild_wire_postgres_real_dispatch() -> TestResult {
     Ok(())
 }
 
-pub(super) async fn exchange(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &mut AdmittedSession,
-    id: u64,
-    kind: u32,
-    payload: &[u8],
-) -> TestResult<(CommandStatus, Vec<u8>)> {
-    let before = *admitted;
-    let (mut server, mut client) = tokio::io::duplex(1024);
-    let serving = async move {
-        let ended = serve_admitted(&mut server, before, owner, IDLE_LIVENESS).await;
-        drop(server);
-        ended
-    };
-    let driving = async {
-        loop {
-            let frame = read_frame(&mut client).await?;
-            if decode_wire_envelope(&frame).map_err(debug)?.message_type()
-                == MessageType::SnapshotCommit
-            {
-                break;
-            }
-        }
-        write_frame(
-            &mut client,
-            &encode_client_command(
-                before.continuity.connection_generation,
-                &ClientCommandValue {
-                    command_id: id,
-                    command_type: kind,
-                    payload,
-                },
-            )
-            .map_err(debug)?,
-        )
-        .await?;
-        let reply = loop {
-            let frame = read_frame(&mut client).await?;
-            let env = decode_wire_envelope(&frame).map_err(debug)?;
-            if env.message_type() == MessageType::CommandResult {
-                let r = decode_command_result(env.payload()).map_err(debug)?;
-                assert_eq!(r.command_id, id);
-                break (r.status, r.payload.to_vec());
-            }
-        };
-        client.shutdown().await?;
-        Ok(reply)
-    };
-    let (ended, result): (_, TestResult<(CommandStatus, Vec<u8>)>) = tokio::time::timeout(
-        std::time::Duration::from_secs(30),
-        fixture::join_two(serving, driving),
-    )
-    .await?;
-    match &ended {
-        crate::gameplay_transport::connection::ConnectionEnd::AdmittedThenDisconnected(current)
-        | crate::gameplay_transport::connection::ConnectionEnd::AdmittedThenClosed(current, _) => {
-            *admitted = *current
-        }
-        _ => {}
-    }
-    let reply =
-        result.map_err(|error| format!("guild command {id}/{kind} ended {ended:?}: {error}"))?;
-    assert_eq!(
-        admitted.continuity.next_command_id,
-        before.continuity.next_command_id + u64::from(id == before.continuity.next_command_id)
-    );
-    assert!(admitted.continuity.server_sequence > before.continuity.server_sequence);
-    Ok(reply)
-}
 async fn intent(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,

@@ -16,6 +16,16 @@ pub(super) fn publish<T: Stepper>(
     outbox: &Outbox,
     held: &mut Vec<WorldSpatialEntity>,
 ) {
+    if outbox.scope_publish(session) {
+        outbox.own_identity(session.own_identity());
+        outbox.appearances(session.visible_appearances());
+        if let Some(entities) = session.entities_changed(&[]) {
+            outbox.entities(entities);
+        }
+        held.clear();
+        return;
+    }
+    outbox.own_identity(session.own_identity());
     outbox.hotkey_equip_items(session.hotkey_equip_items());
     outbox.hotkey_own_actor(session.hotkey_own_actor());
     outbox.chat_private_publish(session);

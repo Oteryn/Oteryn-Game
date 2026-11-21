@@ -58,7 +58,7 @@ async fn peer(
         actor_position: ActorPosition {
             x: 1,
             y: 2,
-            floor: -7,
+            floor: 7,
         },
     });
     let overlay =

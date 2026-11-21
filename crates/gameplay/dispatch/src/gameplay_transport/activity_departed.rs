@@ -36,16 +36,54 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !matches!(origin, RuntimeScopeRefV1::Channel { .. }) {
             return Ok(());
         }
-        let owner = ActivityHandoffOwner::new(self.root.clone());
-        let mut after = None;
+        let start = self.background_start("departed-phase", 2);
         let mut deferred = false;
-        loop {
+        for index in (start..2).chain(0..start) {
+            let result = self
+                .background_unit("departed-phase", index + 1, async {
+                    if index == 0 {
+                        self.recover_departed_participant_unit(origin, generation)
+                            .await
+                    } else {
+                        self.retire_departed_ground_unit(origin, generation).await
+                    }
+                })
+                .await;
+            deferred |= result.is_err();
+        }
+        if deferred { Err(()) } else { Ok(()) }
+    }
+
+    async fn recover_departed_participant_unit(
+        &self,
+        origin: RuntimeScopeRefV1,
+        generation: crate::foundation::ScopeOwnershipGeneration,
+    ) -> Result<(), ()> {
+        let owner = ActivityHandoffOwner::new(self.root.clone());
+        let after = *self
+            .activity_runtimes
+            .departed_after
+            .lock()
+            .map_err(|_| ())?;
+        let mut deferred = false;
+        {
             let page = owner
                 .departed_activities_after(self.character, self.holder, origin, generation, after)
                 .await
                 .map_err(|_| ())?;
-            after = page.next_after;
-            for activity in page.activities {
+            let count = page.activities.len();
+            let start = self.background_start("departed-participant", count);
+            if let Ok(mut cursors) = self.states.background_cursors.lock() {
+                cursors.insert("departed-participant", start + 1);
+            }
+            if start + 1 >= count {
+                *self
+                    .activity_runtimes
+                    .departed_after
+                    .lock()
+                    .map_err(|_| ())? = page.next_after;
+            }
+            for activity in page.activities.into_iter().skip(start).take(1) {
                 let source = activity.source();
                 // A retained native owner must first reconcile its own captured
                 // effects/tokens. This path handles state lost with the process.
@@ -165,19 +203,40 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     Err(_) => deferred = true, // retain the exact unknown proposal
                 }
             }
-            if after.is_none() {
-                break;
-            }
         }
 
-        let mut after = None;
-        loop {
+        if deferred { Err(()) } else { Ok(()) }
+    }
+    async fn retire_departed_ground_unit(
+        &self,
+        origin: RuntimeScopeRefV1,
+        generation: crate::foundation::ScopeOwnershipGeneration,
+    ) -> Result<(), ()> {
+        let owner = ActivityHandoffOwner::new(self.root.clone());
+        let after = *self
+            .activity_runtimes
+            .departed_retirement_after
+            .lock()
+            .map_err(|_| ())?;
+        let mut deferred = false;
+        {
             let (activities, next) = owner
                 .departed_retirements_after(self.character, self.holder, origin, generation, after)
                 .await
                 .map_err(|_| ())?;
-            after = next;
-            for activity in activities {
+            let count = activities.len();
+            let start = self.background_start("departed-ground", count);
+            if let Ok(mut cursors) = self.states.background_cursors.lock() {
+                cursors.insert("departed-ground", start + 1);
+            }
+            if start + 1 >= count {
+                *self
+                    .activity_runtimes
+                    .departed_retirement_after
+                    .lock()
+                    .map_err(|_| ())? = next;
+            }
+            for activity in activities.into_iter().skip(start).take(1) {
                 let _transition = self.activity_runtimes.transitions.lock().await;
                 if self
                     .activity_runtimes
@@ -198,9 +257,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 {
                     deferred = true;
                 }
-            }
-            if after.is_none() {
-                break;
             }
         }
         if deferred { Err(()) } else { Ok(()) }

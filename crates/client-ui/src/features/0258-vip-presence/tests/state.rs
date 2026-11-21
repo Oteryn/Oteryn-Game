@@ -14,6 +14,7 @@ fn pushed_vip_presence_is_visible_with_online_and_offline_state() {
         VipPresenceBatch {
             entries: vec![
                 VipPresenceEntry {
+                    channel: None,
                     entry: 1,
                     name: "Online Friend".into(),
                     status: VipPresenceStatus::Online,
@@ -21,6 +22,7 @@ fn pushed_vip_presence_is_visible_with_online_and_offline_state() {
                     confirmed_for_ms: 1_000,
                 },
                 VipPresenceEntry {
+                    channel: None,
                     entry: 2,
                     name: "Offline Friend".into(),
                     status: VipPresenceStatus::Offline,

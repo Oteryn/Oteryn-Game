@@ -120,3 +120,42 @@ fn violation_review_is_invalidated_by_edits() -> Result<(), Error> {
     assert!(receiver.try_recv().is_ok());
     Ok(())
 }
+
+#[test]
+fn rule_violation_send_guard() -> Result<(), Error> {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_runtime::player_report as wire;
+    let (link, mut receiver, _) = play_channel();
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        mailbox.properties.player_report.selected = true;
+    }
+    link.rule_violation_open("Other Player");
+    link.player_report_edit(4, "Observed repeated messages".into());
+    assert!(!link.rule_violation_can_send());
+    link.rule_violation_send();
+    assert!(receiver.try_recv().is_err());
+    link.player_report_edit(0, "6".into());
+    link.rule_violation_send();
+    assert!(receiver.try_recv().is_err());
+    link.player_report_edit(0, String::new());
+    link.player_report_edit(1, "1".into());
+    link.rule_violation_send();
+    assert!(receiver.try_recv().is_err());
+    link.player_report_edit(0, "6".into());
+    assert!(link.rule_violation_can_send());
+    link.rule_violation_send();
+    let PlayCommand::Feature(command) = receiver.try_recv()? else {
+        return Err("missing report intent".into());
+    };
+    let report = wire::decode_player_report_request(&command.payload)
+        .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(report.kind, wire::KIND_RULE_VIOLATION);
+    assert_eq!((report.reason, report.action), (6, 1));
+    assert_eq!(report.target, "Other Player");
+    assert_eq!(report.comment, "Observed repeated messages");
+    assert!(!link.rule_violation_can_send());
+    link.rule_violation_send();
+    assert!(receiver.try_recv().is_err());
+    Ok(())
+}

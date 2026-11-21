@@ -40,6 +40,10 @@ fn installation_check() -> Option<std::process::ExitCode> {
 /// install or uninstall holds the transaction mutex (CLIENT-INSTALLER-0 §2.1).
 #[cfg(windows)]
 fn main() -> std::process::ExitCode {
+    #[cfg(windows)]
+    if let Some(result) = oteryn_client::updater::login_update_requested() {
+        return result;
+    }
     oteryn_client::crash_report::install_hook();
     let _instance = match oteryn_client::win_mutex::acquire_client_instance() {
         Ok(instance) => instance,
@@ -91,10 +95,23 @@ fn main() -> std::process::ExitCode {
     {
         let mut entry = oteryn_client::reentry::Reentry::new(client.with_native_login(config));
         entry.request();
-        while entry.poll().is_none() {
+        let result = loop {
+            if let Some(result) = entry.poll() {
+                break result;
+            }
             std::thread::park_timeout(std::time::Duration::from_millis(10));
-        }
+        };
         entry.shutdown();
+        use oteryn_client::GameplayEntryError;
+        use oteryn_platform_client::native_login::PublicClass;
+        if let Err(
+            error @ (GameplayEntryError::ClientUpdateRequired { .. }
+            | GameplayEntryError::Rejected(PublicClass::ClientUpdateRequired)),
+        ) = result
+        {
+            eprintln!("{}", oteryn_client::native_login::error_text(error));
+            return std::process::ExitCode::FAILURE;
+        }
     }
     lprintln!("Oteryn pre-native client: Windows desktop target only");
     std::process::ExitCode::SUCCESS

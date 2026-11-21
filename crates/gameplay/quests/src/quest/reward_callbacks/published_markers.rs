@@ -3,9 +3,10 @@ use super::{BTreeSet, Document, RewardCallback};
 
 pub(super) fn keys() -> Result<BTreeSet<String>, String> {
     let mut keys = BTreeSet::new();
-    // These are the published shared and l6 documents; chosen callbacks follow.
+    // These documents contain callbacks published before value-plan markers.
     for source in [
         include_str!("../../../../../../content/quests/shared-reward-callbacks.json"),
+        include_str!("../../../../../../content/quests/npc-callbacks/questpc7-programmes.json"),
         include_str!("../../../../../../content/quests/npc-callbacks/l13-outfits.json"),
         include_str!("../../../../../../content/quests/npc-callbacks/l6-stories.json"),
     ] {

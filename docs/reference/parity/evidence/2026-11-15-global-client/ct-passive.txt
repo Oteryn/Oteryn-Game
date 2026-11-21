@@ -1,0 +1,17 @@
+sustain/flurry 18:43:19 harm=0->1 hp=41->43711 heals=-
+sustain/flurry 18:43:28 harm=1->2 hp=4377->4653 heals=-
+sustain/flurry 18:43:37 harm=2->3 hp=4659->4951 heals=-
+sustain/flurry 18:43:45 harm=3->3 hp=4957->4969 heals=-
+sustain/flurry 18:43:54 harm=3->4 hp=4975->5251 heals=-
+sustain/flurry 18:44:04 harm=4->5 hp=5257->5475 heals=-
+sustain/flurry 18:44:13 harm=5->5 hp=5481->5493 heals=-
+sustain/flurry 18:44:22 harm=5->5 hp=5493->5505 heals=-
+END sustain/flurry
+sustain/sweeping 18:45:25 harm=5->0 hp=5589->6305 heals=704
+END sustain/sweeping
+sustain/flurry 18:45:39 harm=0->1 hp=6317->6535 heals=-
+STOP sustain/flurry hp=65411 too high
+END sustain/flurry
+sustain/sweeping 18:45:53 harm=1->0 hp=6547->6812 heals=-
+END sustain/sweeping
+# corrections from the log (heal lines arrive ~3 s after the cast): 18:43:21 229 (h0) 18:43:30 270 (h1) 18:43:39 286 (h2) 18:43:56 270 (h3) 18:44:07 212 (h4) flurry sustain; 18:45:28 704 sweeping h5 sustain; 18:45:42 212 flurry h0 sustain; 18:45:55 253 sweeping h1 sustain

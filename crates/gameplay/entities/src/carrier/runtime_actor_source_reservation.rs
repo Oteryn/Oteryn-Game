@@ -17,6 +17,7 @@ pub trait SourceActorReservationProof: source_reservation_seal::Sealed {
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum SourceReservationOwner {
     Character(ExactActorRef, GameSessionId),
+    Death(ExactActorRef),
     Scope(super::RuntimeScopeRefV1, super::ScopeOwnershipGeneration),
 }
 
@@ -26,19 +27,45 @@ pub trait ScopeCreatureReservationProof: source_reservation_seal::Sealed {
     fn source_binding_digest(&self) -> [u8; 32];
     fn affected_creatures(&self) -> &[ExactActorRef];
     fn current_for(&self, runtime: &ChannelRuntimeV1) -> bool;
+    /// A physical Item-only callback may freeze a parent without acquiring
+    /// removal authority over it or its children. Existing owners remain leaf-only.
+    fn permits_non_leaf_item_only(&self) -> bool {
+        false
+    }
 }
 
+/// Only retained, source-qualified registered GlobalEvent work implements this
+/// port. It carries no Player or Creature ownership identity.
+pub trait SourceGlobalReservationProof: source_reservation_seal::Sealed {
+    fn registration(
+        &self,
+    ) -> &oteryn_gameplay_content::content::native_soul_war_global_events::QualifiedSpiteGlobalEvent;
+    fn work_stamp(&self) -> oteryn_gameplay_foundation::foundation::RuntimeWorkStamp;
+    fn event_binding(&self) -> [u8; 32];
+    fn execution_micros(&self) -> u64;
+    fn current_for(&self, runtime: &ChannelRuntimeV1) -> bool;
+}
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct SourceReservationIdentity {
     owner: SourceReservationOwner,
+
     event: [u8; 16],
     source: [u8; 32],
+    death_cursor: Option<usize>,
 }
 #[derive(Debug, Clone)]
 pub struct SourceActorReservation {
     identity: Arc<SourceReservationIdentity>,
     originals: Vec<(usize, Slot)>,
     installed: bool,
+}
+/// Canonical copied-death action reservation. Its owner is the real BEGIN
+/// incarnation/cursor, without inventing a Player session for a NULL death.
+#[derive(Debug, Clone)]
+pub struct SourceDeathActionReservation {
+    inner: SourceActorReservation,
+    begin: super::native_source_death::SourceCreatureDeathSeal,
+    index: usize,
 }
 fn state(slot: &Slot) -> Result<&ActorCombatState, CarrierError> {
     match slot {
@@ -60,11 +87,272 @@ fn identity(proof: &impl SourceActorReservationProof) -> SourceReservationIdenti
     let (actor, session) = proof.owner();
     SourceReservationIdentity {
         owner: SourceReservationOwner::Character(actor, session),
+
         event: proof.event_identity(),
         source: proof.source_binding_digest(),
+        death_cursor: None,
+    }
+}
+fn global_identity(
+    runtime: &ChannelRuntimeV1,
+    proof: &impl SourceGlobalReservationProof,
+) -> SourceReservationIdentity {
+    let mut event = [0; 16];
+    event[..8].copy_from_slice(&proof.execution_micros().to_be_bytes());
+    event[8..].copy_from_slice(&proof.work_stamp().ordinal().get().to_be_bytes());
+    SourceReservationIdentity {
+        owner: SourceReservationOwner::Scope(
+            runtime.binding().runtime_scope(),
+            runtime.binding().scope_generation(),
+        ),
+        event,
+        source: proof.event_binding(),
+        death_cursor: None,
     }
 }
 impl ChannelRuntimeV1 {
+    /// Reserve the actual callback-time target cohort before detached physical
+    /// SQL. Unknown outcomes must retain this same reservation and proof.
+    #[allow(
+        clippy::expect_used,
+        reason = "all exact source slots are validated before atomic reservation publication"
+    )]
+    pub fn reserve_source_global_action(
+        &mut self,
+        proof: &impl SourceGlobalReservationProof,
+        affected: &[ExactActorRef],
+    ) -> Result<SourceActorReservation, CarrierError> {
+        self.owner_fence()?;
+        if !proof.current_for(self)
+            || proof.registration().content() != self.content_pin().server_artifact_digest()
+            || !self.owner_fence()?.accepts_stamp(proof.work_stamp())
+            || proof.event_binding() == [0; 32]
+            || affected.len() > self.carrier.slots.len()
+            || affected.len() > 1
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        let identity = Arc::new(global_identity(self, proof));
+        let mut originals = Vec::new();
+        originals
+            .try_reserve_exact(affected.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        for actor in affected {
+            let slot = self.carrier.validate_ref(&self.continuity, actor.0)?;
+            self.assert_actor_spell_unreserved(*actor)?;
+            let snapshot = self.companion_snapshot_including_dead(*actor)?;
+            if !self.source_creature_is_registered(*actor)?
+                || snapshot.state.policy.definition_key != super::soul_war_spite::SPITE
+                || snapshot.state.master.is_some()
+                || self.native_summon_master(*actor).is_some()
+            {
+                return Err(CarrierError::CreatureTargetMismatch);
+            }
+            state(&self.carrier.slots[slot])?;
+            originals.push((slot, self.carrier.slots[slot].clone()));
+        }
+        for (slot, original) in &mut originals {
+            state_mut(&mut self.carrier.slots[*slot])
+                .expect("validated Global source slot")
+                .pending_source = Some(Arc::clone(&identity));
+            state_mut(original)
+                .expect("validated Global source original")
+                .pending_source = Some(Arc::clone(&identity));
+        }
+        Ok(SourceActorReservation {
+            identity,
+            originals,
+            installed: true,
+        })
+    }
+
+    pub fn validate_source_global_action(
+        &self,
+        reservation: &SourceActorReservation,
+        proof: &impl SourceGlobalReservationProof,
+    ) -> Result<(), CarrierError> {
+        if !proof.current_for(self)
+            || !self.owner_fence()?.accepts_stamp(proof.work_stamp())
+            || proof.registration().content() != self.content_pin().server_artifact_digest()
+            || *reservation.identity != global_identity(self, proof)
+            || !reservation.installed
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        for (slot, original) in &reservation.originals {
+            if self.carrier.slots.get(*slot) != Some(original) {
+                return Err(CarrierError::PlanConflict);
+            }
+            let combat = state(original)?;
+            if combat.pending_owner.is_some()
+                || combat.pending_source.as_ref() != Some(&reservation.identity)
+            {
+                return Err(CarrierError::PlanConflict);
+            }
+        }
+        Ok(())
+    }
+
+    /// Complete one known physical result in the same runtime turn. A missing
+    /// field releases its target without empowering it; Unknown retains both.
+    #[allow(
+        clippy::expect_used,
+        reason = "all canonical Spite mutation gates are checked before releasing its exact reservation"
+    )]
+    pub fn complete_spite_global_action(
+        &mut self,
+        reservation: &SourceActorReservation,
+        proof: &impl SourceGlobalReservationProof,
+        target: Option<(&super::runtime_actor_companion::CompanionSnapshot, u32)>,
+        removed: bool,
+    ) -> Result<(), CarrierError> {
+        self.validate_source_global_action(reservation, proof)?;
+        if let Some((expected, defense)) = target {
+            let slot = self
+                .carrier
+                .validate_ref(&self.continuity, expected.actor.0)?;
+            self.validate_companion_snapshot(expected)?;
+            if reservation.originals.len() != 1
+                || reservation.originals[0].0 != slot
+                || !self.source_creature_is_registered(expected.actor)?
+                || expected.state.policy.definition_key != super::soul_war_spite::SPITE
+                || expected.state.master.is_some()
+                || self.native_summon_master(expected.actor).is_some()
+                || expected.health < 0
+                || expected.maximum_health <= 0
+                || expected.health > expected.maximum_health
+                || self.effective_creature_defense(expected)? != defense
+            {
+                return Err(CarrierError::CreatureTargetMismatch);
+            }
+            if removed {
+                defense
+                    .checked_add(10)
+                    .ok_or(CarrierError::CapacityArithmeticOverflow)?;
+            }
+        } else if !reservation.originals.is_empty() {
+            return Err(CarrierError::PlanConflict);
+        }
+        for (slot, _) in &reservation.originals {
+            state_mut(&mut self.carrier.slots[*slot])
+                .expect("validated Global source slot")
+                .pending_source = None;
+        }
+        if removed && let Some((expected, defense)) = target {
+            self.change_soul_war_spite(
+                expected,
+                defense,
+                super::soul_war_spite::SpiteChange::FireExpired,
+            )
+            .expect("prevalidated canonical Spite expiry");
+        }
+        Ok(())
+    }
+    #[allow(
+        clippy::expect_used,
+        reason = "all fixed-slot kinds are validated before atomic reservation publication"
+    )]
+    pub fn reserve_source_death_action(
+        &mut self,
+        begin: &super::native_source_death::SourceCreatureDeathSeal,
+        event: &oteryn_gameplay_content::content::QualifiedNativeDeathEvent,
+        affected: &[ExactActorRef],
+    ) -> Result<SourceDeathActionReservation, CarrierError> {
+        self.owner_fence()?;
+        let index = self
+            .source_creature_death_event_index(begin)?
+            .ok_or(CarrierError::PlanConflict)?;
+        if begin.events().get(index) != Some(event) || affected.len() > self.carrier.slots.len() {
+            return Err(CarrierError::PlanConflict);
+        }
+        let mut originals = Vec::new();
+        originals
+            .try_reserve_exact(
+                affected
+                    .len()
+                    .checked_add(1)
+                    .ok_or(CarrierError::CapacityArithmeticOverflow)?,
+            )
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        let source_actor = begin.actor();
+        for actor in std::iter::once(&source_actor).chain(affected) {
+            let slot = self.carrier.validate_ref(&self.continuity, actor.0)?;
+            self.assert_actor_spell_unreserved(*actor)?;
+            state(&self.carrier.slots[slot])?;
+            if !originals.iter().any(|(old, _)| *old == slot) {
+                originals.push((slot, self.carrier.slots[slot].clone()));
+            }
+        }
+        let identity = Arc::new(SourceReservationIdentity {
+            owner: SourceReservationOwner::Death(source_actor),
+            event: source_actor.placement_identity(),
+            source: begin.content_digest(),
+            death_cursor: Some(index),
+        });
+        // All allocation/validation precedes publication to the same fixed-slot
+        // pending_source gates used by Player-owned source reservations.
+        for (slot, original) in &mut originals {
+            state_mut(&mut self.carrier.slots[*slot])
+                .expect("prevalidated source slot")
+                .pending_source = Some(Arc::clone(&identity));
+            state_mut(original)
+                .expect("prevalidated source original")
+                .pending_source = Some(Arc::clone(&identity));
+        }
+        Ok(SourceDeathActionReservation {
+            inner: SourceActorReservation {
+                identity,
+                originals,
+                installed: true,
+            },
+            begin: begin.clone(),
+            index,
+        })
+    }
+    pub fn validate_source_death_action_reservation(
+        &self,
+        reservation: &SourceDeathActionReservation,
+    ) -> Result<(), CarrierError> {
+        self.owner_fence()?;
+        if self.source_creature_death_event_index(&reservation.begin)? != Some(reservation.index)
+            || reservation.inner.identity.owner
+                != SourceReservationOwner::Death(reservation.begin.actor())
+            || reservation.inner.identity.death_cursor != Some(reservation.index)
+            || reservation.inner.identity.source != reservation.begin.content_digest()
+            || !reservation.inner.installed
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        for (slot, original) in &reservation.inner.originals {
+            if self.carrier.slots.get(*slot) != Some(original) {
+                return Err(CarrierError::PlanConflict);
+            }
+            let state = state(original)?;
+            if state.pending_owner.is_some()
+                || state.pending_source.as_ref() != Some(&reservation.inner.identity)
+            {
+                return Err(CarrierError::PlanConflict);
+            }
+        }
+        Ok(())
+    }
+    #[allow(
+        clippy::expect_used,
+        reason = "release validates all retained fixed-slot originals before publication"
+    )]
+    pub fn release_source_death_action_reservation(
+        &mut self,
+        reservation: SourceDeathActionReservation,
+    ) -> Result<(), CarrierError> {
+        self.validate_source_death_action_reservation(&reservation)?;
+        for (slot, _) in reservation.inner.originals {
+            state_mut(&mut self.carrier.slots[slot])
+                .expect("validated source slot")
+                .pending_source = None;
+        }
+        Ok(())
+    }
+
     pub fn prepare_source_actor_reservation(
         &self,
         proof: &impl SourceActorReservationProof,
@@ -72,7 +360,7 @@ impl ChannelRuntimeV1 {
         self.owner_fence()?;
         let (actor, session) = proof.owner();
         if !proof.current_for(self)
-            || proof.affected_actors().len() > 256
+            || proof.affected_actors().len() > self.carrier.slots.len()
             || proof.event_identity() == [0; 16]
             || proof.source_binding_digest() == [0; 32]
             || self
@@ -147,6 +435,93 @@ impl ChannelRuntimeV1 {
         prepared.installed = true;
         Ok(())
     }
+    /// A retained movement may resolve a source name through a fenced read.
+    /// Add that exact target to the same reservation before issuing its Item
+    /// write, without releasing or reconstructing the original Player slot.
+    #[allow(
+        clippy::expect_used,
+        reason = "all original and added slots and allocation are validated before atomic publication"
+    )]
+    pub fn extend_source_actor_reservation(
+        &mut self,
+        prepared: &mut SourceActorReservation,
+        proof: &impl SourceActorReservationProof,
+        affected: &[ExactActorRef],
+    ) -> Result<(), CarrierError> {
+        self.validate_source_actor_reservation(prepared, proof)?;
+        if !prepared.installed || affected.len() > self.carrier.slots.len() {
+            return Err(CarrierError::PlanConflict);
+        }
+        let mut additions = Vec::new();
+        additions
+            .try_reserve_exact(affected.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        for actor in affected {
+            let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+            if prepared.originals.iter().any(|(slot, _)| *slot == index)
+                || additions.iter().any(|(slot, _)| *slot == index)
+            {
+                continue;
+            }
+            self.assert_actor_spell_unreserved(*actor)?;
+            state(&self.carrier.slots[index])?;
+            additions.push((index, self.carrier.slots[index].clone()));
+        }
+        prepared
+            .originals
+            .try_reserve_exact(additions.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        for (index, original) in &mut additions {
+            state_mut(&mut self.carrier.slots[*index])
+                .expect("validated added source slot")
+                .pending_source = Some(Arc::clone(&prepared.identity));
+            state_mut(original)
+                .expect("validated added source original")
+                .pending_source = Some(Arc::clone(&prepared.identity));
+        }
+        prepared.originals.extend(additions);
+        Ok(())
+    }
+
+    /// Release only targets added after the original owner proof, following a
+    /// known physical outcome. The original Player and affected-actor cohort
+    /// remain under the same reservation while later original callbacks run.
+    #[allow(
+        clippy::expect_used,
+        reason = "every exact added slot is validated before synchronous release without allocation"
+    )]
+    pub fn release_source_actor_targets_after_observed_outcome(
+        &mut self,
+        prepared: &mut SourceActorReservation,
+        proof: &impl SourceActorReservationProof,
+        affected: &[ExactActorRef],
+    ) -> Result<(), CarrierError> {
+        self.validate_source_actor_reservation(prepared, proof)?;
+        if !prepared.installed {
+            return Err(CarrierError::PlanConflict);
+        }
+        for (ordinal, actor) in affected.iter().enumerate() {
+            let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+            if *actor == proof.owner().0
+                || proof.affected_actors().contains(actor)
+                || affected[..ordinal].contains(actor)
+                || !prepared.originals.iter().any(|(slot, _)| *slot == index)
+            {
+                return Err(CarrierError::PlanConflict);
+            }
+        }
+        for actor in affected {
+            let index = self
+                .carrier
+                .validate_ref(&self.continuity, actor.0)
+                .expect("validated original added source target");
+            state_mut(&mut self.carrier.slots[index])
+                .expect("validated added source slot")
+                .pending_source = None;
+            prepared.originals.retain(|(slot, _)| *slot != index);
+        }
+        Ok(())
+    }
     /// The registered compositor calls this only after genuine COMMIT or proven
     /// rollback, followed immediately by source installation in the same owner turn.
     /// Unknown COMMIT retains this reservation; dropping its data never releases it.
@@ -178,6 +553,7 @@ fn scope_identity(proof: &impl ScopeCreatureReservationProof) -> SourceReservati
         owner: SourceReservationOwner::Scope(scope, generation),
         event: proof.event_identity(),
         source: proof.source_binding_digest(),
+        death_cursor: None,
     }
 }
 
@@ -210,7 +586,8 @@ impl ChannelRuntimeV1 {
                 .carrier
                 .validate_summon_actor(&self.continuity, *actor)?;
             if originals.iter().any(|(i, _)| *i == index)
-                || self.carrier.native_summons.has_children(*actor)
+                || (!proof.permits_non_leaf_item_only()
+                    && self.carrier.native_summons.has_children(*actor))
             {
                 return Err(CarrierError::PlanConflict);
             }
@@ -291,6 +668,63 @@ impl ChannelRuntimeV1 {
         Ok(())
     }
 
+    /// Reuse the exact reservation storage allocated before a real position
+    /// commit. Only that commit's position and canonical tile insertion order
+    /// may differ; every other actual Slot value must remain byte-for-byte equal.
+    /// This consumes an existing movement receipt and grants no relocation.
+    pub fn reserve_scope_creatures_after_committed_step(
+        &mut self,
+        prepared: &mut SourceActorReservation,
+        proof: &impl ScopeCreatureReservationProof,
+        movement: super::native_translation_events::CommittedMovementOccurrence,
+    ) -> Result<(), CarrierError> {
+        let (scope, generation) = proof.scope();
+        if !self.owner_fence()?.is_current_for_scope(scope, generation)
+            || prepared.installed
+            || *prepared.identity != scope_identity(proof)
+            || !proof.current_for(self)
+            || proof.affected_creatures() != [movement.mover()]
+            || self.committed_movement_occurrence(movement.mover())? != Some(movement)
+            || self.read_actor_position(movement.mover())? != movement.after()
+            || movement.after().last_translation_revision() != movement.after().revision()
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        let [(index, original)] = prepared.originals.as_mut_slice() else {
+            return Err(CarrierError::PlanConflict);
+        };
+        if self
+            .carrier
+            .validate_ref(&self.continuity, movement.mover().0)?
+            != *index
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        let Slot::CreatureOccupied {
+            position: Some(position),
+            committed,
+            ..
+        } = original
+        else {
+            return Err(CarrierError::NotCreature);
+        };
+        if *position != movement.before().0.version {
+            return Err(CarrierError::PlanConflict);
+        }
+        let Slot::CreatureOccupied {
+            committed: actual, ..
+        } = &self.carrier.slots[*index]
+        else {
+            return Err(CarrierError::NotCreature);
+        };
+        *position = movement.after().0.version;
+        committed.tile_entry_order = actual.tile_entry_order;
+        if &self.carrier.slots[*index] != original {
+            return Err(CarrierError::PlanConflict);
+        }
+        self.reserve_scope_creatures(prepared, proof)
+    }
+
     #[allow(
         clippy::expect_used,
         reason = "validated current exact source slots cannot change during this owner turn"
@@ -326,6 +760,7 @@ impl ChannelRuntimeV1 {
     ) -> Result<(), CarrierError> {
         self.validate_scope_creature_reservation(&prepared, proof)?;
         if !prepared.installed
+            || proof.permits_non_leaf_item_only()
             || !proof.affected_creatures().contains(&actor)
             || self.content_pin().server_artifact_digest() != content
             || !self.matches_live_creature_identity(actor, key.as_bytes())
@@ -473,6 +908,199 @@ mod tests {
             .release_source_actors_after_observed_outcome(reserved, &proof)
             .unwrap();
         assert!(!runtime.actor_spell_reserved(actor));
+        assert!(!runtime.actor_spell_reserved(target));
+        runtime.remove_test_actor(target).unwrap();
+    }
+    #[test]
+    fn source_cohort_reservation_is_bounded_by_owned_slots_instead_of_256_spectators() {
+        let world = WorldId::decode(&id(1)).unwrap();
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            ChannelId::decode(&id(2)).unwrap(),
+            NodeId::decode(&id(3)).unwrap(),
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            300,
+            ChannelContentPin::test(world),
+        )
+        .unwrap();
+        let session = GameSessionId::decode(&id(4)).unwrap();
+        let reservation = runtime.reserve_fresh_session(session).unwrap();
+        let actor = runtime.commit_fresh_session(reservation).unwrap();
+        let position = match runtime.initialize_first_entry_position(actor).unwrap() {
+            super::super::FirstEntryPosition::Initialized(p)
+            | super::super::FirstEntryPosition::Reconciled(p) => p,
+        };
+        // This is a fixed-slot owner regression, not an admission of source monsters.
+        // A source caller independently qualifies every actual affected actor.
+        let affected = (0..257)
+            .map(|x| {
+                runtime
+                    .admit_test_creature(MovementLocalPosition { x, y: 1, floor: 0 })
+                    .unwrap()
+            })
+            .collect::<Vec<_>>();
+        let proof = Proof {
+            actor,
+            session,
+            position,
+            affected,
+            event: id(5),
+        };
+        let prepared = runtime.prepare_source_actor_reservation(&proof);
+        assert!(
+            prepared.is_ok(),
+            "actual owned source cohorts have no 256-spectator gameplay cap: {prepared:?}"
+        );
+        let mut reservation = prepared.unwrap();
+        runtime
+            .reserve_source_actors(&mut reservation, &proof)
+            .unwrap();
+        assert!(
+            proof
+                .affected
+                .iter()
+                .all(|a| runtime.actor_spell_reserved(*a))
+        );
+        runtime
+            .validate_source_actor_reservation(&reservation, &proof)
+            .unwrap();
+        // No SQL has been issued: this is a proven pre-write cancellation.
+        runtime
+            .release_source_actors_after_observed_outcome(reservation, &proof)
+            .unwrap();
+        assert!(
+            proof
+                .affected
+                .iter()
+                .all(|a| !runtime.actor_spell_reserved(*a))
+        );
+    }
+
+    #[test]
+    fn source_name_target_extension_keeps_original_owner_and_refuses_partial_additions() {
+        let world = WorldId::decode(&id(1)).unwrap();
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            ChannelId::decode(&id(2)).unwrap(),
+            NodeId::decode(&id(3)).unwrap(),
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            4,
+            ChannelContentPin::test(world),
+        )
+        .unwrap();
+        let session = GameSessionId::decode(&id(4)).unwrap();
+        let player = runtime.reserve_fresh_session(session).unwrap();
+        let player = runtime.commit_fresh_session(player).unwrap();
+        let position = match runtime.initialize_first_entry_position(player).unwrap() {
+            super::super::FirstEntryPosition::Initialized(p)
+            | super::super::FirstEntryPosition::Reconciled(p) => p,
+        };
+        let target = runtime
+            .admit_test_creature(MovementLocalPosition {
+                x: 1,
+                y: 0,
+                floor: 0,
+            })
+            .unwrap();
+        let stale = runtime
+            .admit_test_creature(MovementLocalPosition {
+                x: 2,
+                y: 0,
+                floor: 0,
+            })
+            .unwrap();
+        runtime.remove_test_actor(stale).unwrap();
+        let proof = Proof {
+            actor: player,
+            session,
+            position,
+            affected: Vec::new(),
+            event: id(5),
+        };
+        let mut reservation = runtime.prepare_source_actor_reservation(&proof).unwrap();
+        runtime
+            .reserve_source_actors(&mut reservation, &proof)
+            .unwrap();
+        let identity = Arc::clone(&reservation.identity);
+        assert!(
+            runtime
+                .extend_source_actor_reservation(&mut reservation, &proof, &[target, stale])
+                .is_err()
+        );
+        assert!(runtime.actor_spell_reserved(player));
+        assert!(
+            !runtime.actor_spell_reserved(target),
+            "a later invalid addition cannot partially reserve the first target"
+        );
+        runtime
+            .validate_source_actor_reservation(&reservation, &proof)
+            .unwrap();
+        runtime
+            .extend_source_actor_reservation(&mut reservation, &proof, &[target])
+            .unwrap();
+        assert!(
+            Arc::ptr_eq(&identity, &reservation.identity),
+            "original movement proof identity remains the owner"
+        );
+        assert!(runtime.actor_spell_reserved(player));
+        assert!(runtime.actor_spell_reserved(target));
+        runtime
+            .extend_source_actor_reservation(&mut reservation, &proof, &[target])
+            .unwrap();
+        assert_eq!(
+            reservation.originals.len(),
+            2,
+            "exact target replay adds no second slot"
+        );
+        assert_eq!(
+            runtime.remove_test_actor(target),
+            Err(CarrierError::PlanConflict)
+        );
+        assert!(
+            runtime
+                .release_source_actor_targets_after_observed_outcome(
+                    &mut reservation,
+                    &proof,
+                    &[player],
+                )
+                .is_err(),
+            "the original movement owner cannot be released as an added target"
+        );
+        assert!(
+            runtime
+                .release_source_actor_targets_after_observed_outcome(
+                    &mut reservation,
+                    &proof,
+                    &[target, target],
+                )
+                .is_err(),
+            "duplicate subset release refuses before mutation"
+        );
+        assert!(runtime.actor_spell_reserved(target));
+        runtime
+            .release_source_actor_targets_after_observed_outcome(
+                &mut reservation,
+                &proof,
+                &[target],
+            )
+            .unwrap();
+        assert!(runtime.actor_spell_reserved(player));
+        assert!(!runtime.actor_spell_reserved(target));
+        assert!(Arc::ptr_eq(&identity, &reservation.identity));
+        runtime
+            .validate_source_actor_reservation(&reservation, &proof)
+            .unwrap();
+        // No SQL was issued: this is a proven pre-write release of the one reservation.
+        runtime
+            .release_source_actors_after_observed_outcome(reservation, &proof)
+            .unwrap();
+        assert!(!runtime.actor_spell_reserved(player));
         assert!(!runtime.actor_spell_reserved(target));
         runtime.remove_test_actor(target).unwrap();
     }
@@ -683,5 +1311,119 @@ mod scope_tests {
         };
         assert!(r.prepare_scope_creature_reservation(&p).is_err());
         assert!(!r.actor_spell_reserved(p.actors[0]));
+    }
+
+    #[test]
+    fn srx3_creature_step_rebases_preallocated_slot_only_from_actual_committed_movement() {
+        let (mut runtime, mut proof) = fixture();
+        let actor = proof.actors[0];
+        let mut reservation = runtime.prepare_scope_creature_reservation(&proof).unwrap();
+        let identity = Arc::clone(&reservation.identity);
+        let next = MovementLocalPosition {
+            x: 2,
+            y: 0,
+            floor: 0,
+        };
+        proof.position = runtime
+            .borrow_movement_position()
+            .commit_cardinal(proof.position, next)
+            .unwrap();
+        let movement = runtime
+            .committed_movement_occurrence(actor)
+            .unwrap()
+            .unwrap();
+        runtime
+            .reserve_scope_creatures_after_committed_step(&mut reservation, &proof, movement)
+            .unwrap();
+        assert!(Arc::ptr_eq(&identity, &reservation.identity));
+        assert!(runtime.actor_spell_reserved(actor));
+        runtime
+            .validate_scope_creature_reservation(&reservation, &proof)
+            .unwrap();
+        assert!(
+            runtime
+                .borrow_movement_position()
+                .commit_cardinal(proof.position, MovementLocalPosition { x: 3, ..next })
+                .is_err()
+        );
+        runtime
+            .release_scope_creatures_after_observed_outcome(reservation, &proof)
+            .unwrap();
+        assert!(!runtime.actor_spell_reserved(actor));
+    }
+
+    #[test]
+    fn srx3_creature_step_rebase_refuses_intervening_health_and_item_only_proof_cannot_remove() {
+        let (mut runtime, mut proof) = fixture();
+        let actor = proof.actors[0];
+        let mut reservation = runtime.prepare_scope_creature_reservation(&proof).unwrap();
+        proof.position = runtime
+            .borrow_movement_position()
+            .commit_cardinal(
+                proof.position,
+                MovementLocalPosition {
+                    x: 2,
+                    y: 0,
+                    floor: 0,
+                },
+            )
+            .unwrap();
+        let movement = runtime
+            .committed_movement_occurrence(actor)
+            .unwrap()
+            .unwrap();
+        runtime
+            .commit_monster_lab_damage(actor, b"different-owner-after-step", 1)
+            .unwrap();
+        assert!(
+            runtime
+                .reserve_scope_creatures_after_committed_step(&mut reservation, &proof, movement)
+                .is_err()
+        );
+        assert!(!runtime.actor_spell_reserved(actor));
+
+        struct ItemOnly(Proof);
+        impl source_reservation_seal::Sealed for ItemOnly {}
+        impl ScopeCreatureReservationProof for ItemOnly {
+            fn scope(&self) -> (RuntimeScopeRefV1, ScopeOwnershipGeneration) {
+                self.0.scope()
+            }
+            fn event_identity(&self) -> [u8; 16] {
+                self.0.event_identity()
+            }
+            fn source_binding_digest(&self) -> [u8; 32] {
+                self.0.source_binding_digest()
+            }
+            fn affected_creatures(&self) -> &[ExactActorRef] {
+                self.0.affected_creatures()
+            }
+            fn current_for(&self, runtime: &ChannelRuntimeV1) -> bool {
+                self.0.current_for(runtime)
+            }
+            fn permits_non_leaf_item_only(&self) -> bool {
+                true
+            }
+        }
+        let proof = ItemOnly(proof);
+        let mut reservation = runtime.prepare_scope_creature_reservation(&proof).unwrap();
+        runtime
+            .reserve_scope_creatures(&mut reservation, &proof)
+            .unwrap();
+        assert!(
+            runtime
+                .remove_scope_creature_after_observed_outcome(
+                    reservation.clone(),
+                    &proof,
+                    actor,
+                    "creature:rat",
+                    runtime.content_pin().server_artifact_digest(),
+                )
+                .is_err(),
+            "Item-only non-leaf permission never grants Creature removal"
+        );
+        assert!(runtime.contains_live_creature(actor));
+        runtime
+            .release_scope_creatures_after_observed_outcome(reservation, &proof)
+            .unwrap();
     }
 }

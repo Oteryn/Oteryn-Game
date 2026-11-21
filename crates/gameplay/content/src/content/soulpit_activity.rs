@@ -89,9 +89,10 @@ mod tests {
             scope,
             BundleCollisionIndex(source.clone()),
             Arc::new(BundleSpellTiles {
+                phases: Default::default(),
                 base: source,
-                tiles: vec![],
-                shapes: vec![],
+                tiles: vec![].into(),
+                shapes: vec![].into(),
             }),
         );
         let view = room

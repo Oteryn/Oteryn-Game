@@ -115,10 +115,12 @@ impl SnapshotState {
                     item_view::SNAPSHOT_TYPE_CHARACTER_INVENTORY_V1,
                 ) if item_selected => {
                     state.inventory = Some(
-                        item_view::decode_character_inventory_with_equip_drop(
+                        item_view::decode_character_inventory_with_appearances(
                             domain.payload,
                             selected_capabilities
                                 .contains(&item_view::CAPABILITY_ITEM_EQUIP_DROP_V1),
+                            selected_capabilities
+                                .contains(&item_view::CAPABILITY_ITEM_APPEARANCE_V1),
                         )
                         .map_err(SessionError::ItemView)?,
                     );
@@ -128,8 +130,12 @@ impl SnapshotState {
                     if item_selected =>
                 {
                     state.open_container = Some(
-                        item_view::decode_open_container(domain.payload)
-                            .map_err(SessionError::ItemView)?,
+                        item_view::decode_open_container_with_appearances(
+                            domain.payload,
+                            selected_capabilities
+                                .contains(&item_view::CAPABILITY_ITEM_APPEARANCE_V1),
+                        )
+                        .map_err(SessionError::ItemView)?,
                     );
                     state.container_revision = domain.revision;
                 }

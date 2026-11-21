@@ -262,7 +262,7 @@ async fn decide(tx: &mut Tx<'_>, r: &Request) -> Result<Option<Decision>, Durabi
         .bind(&r.issuer).bind(&r.operation).fetch_optional(&mut **tx).await? {
         return Ok(Some(if row.try_get::<Vec<u8>,_>("intent")? != r.raw {Decision::Conflict} else { Decision::Publish {receipt:row.try_get("receipt")?,result_code:row.try_get("result_code")?}}));
     }
-    if r.issuer==CHARACTER_ISSUER && sqlx::query("SELECT 1 FROM game_character_command_receipts WHERE operation_id=$1::uuid UNION ALL SELECT 1 FROM game_character_operation_receipts WHERE operation_id=$1::uuid LIMIT 1")
+    if r.issuer==CHARACTER_ISSUER && sqlx::query("SELECT 1 FROM game_character_command_receipts WHERE operation_id=$1::uuid UNION ALL SELECT 1 FROM game_character_operation_receipts WHERE operation_id=$1::uuid UNION ALL SELECT 1 FROM game_character_service_receipts WHERE operation_id=$1::uuid LIMIT 1")
         .bind(&r.operation).fetch_optional(&mut **tx).await?.is_some(){return Ok(Some(Decision::Conflict));}
     if r.issuer == CHARACTER_ISSUER
         && super::character_command::account_deletion::operation_exists(
@@ -278,21 +278,19 @@ async fn decide(tx: &mut Tx<'_>, r: &Request) -> Result<Option<Decision>, Durabi
             .fetch_one(&mut **tx)
             .await?;
     if r.issuer == CHARACTER_ISSUER {
-        let enabled: bool = sqlx::query_scalar(
-            "SELECT enabled FROM game_bazaar_configuration WHERE singleton FOR SHARE",
-        )
-        .fetch_one(&mut **tx)
-        .await?;
+        let enabled: bool =
+            sqlx::query_scalar("SELECT enabled FROM game_character_service_bazaar_policy()")
+                .fetch_one(&mut **tx)
+                .await?;
         if !enabled {
             return Ok(None);
         }
         return transfer::decide(tx, r, now).await;
     }
-    let configuration = sqlx::query(
-        "SELECT enabled,policy::text FROM game_bazaar_configuration WHERE singleton FOR SHARE",
-    )
-    .fetch_one(&mut **tx)
-    .await?;
+    let configuration =
+        sqlx::query("SELECT enabled,policy FROM game_character_service_bazaar_policy()")
+            .fetch_one(&mut **tx)
+            .await?;
     // Rollback stops new work while existing immutable receipts remain replayable.
     if !configuration.try_get::<bool, _>("enabled")? {
         return Ok(None);

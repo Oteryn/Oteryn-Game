@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
 # WP5 S3-B: sealed composition of the real protected owners.
 #
-# Reuses the protected S3-A Platform topology (exact Platform producer behind
-# TLS 1.3 mTLS nginx/FastCGI, MariaDB, retained witness) with the S3-B overlay
-# for the Platform Character bootstrap-intent producer, and a PostgreSQL 18.6
-# service for the Game owners (S2, #414, #415 and the durable admission store).
+# Reuses the node-boot Platform lifecycle for its mTLS producer and real
+# Character bootstrap-intent issuer. The caller supplies Game's PostgreSQL.
 # Both Characters are bootstrapped from intents issued by the real Platform
 # operator command immediately before the qualification run.
 # The fresh grant is signed with an ephemeral Ed25519 key generated here; only
@@ -13,18 +11,17 @@
 set -Eeuo pipefail
 umask 077
 
-readonly PLATFORM_SHA=3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
-readonly TOPOLOGY_REVISION=wp5-s3b-v2
+readonly PLATFORM_SHA=6d04b52a16145723eedb0c56640ad052dbd26e94
+readonly TOPOLOGY_REVISION=portal-rs-game-platform-v1
 readonly ACCOUNT_ID=01934f10-7c00-7000-8000-000000000001
 readonly SECOND_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000002
 readonly FRESH_KEY_ID=s3b-fresh-key-1
 readonly RECOVERY_KEY_ID=s3b-recovery-key-1
-readonly COMPOSE_FILE=tools/qualification/wp5_s3a/compose.yml
-readonly COMPOSE_OVERLAY=tools/qualification/wp5_s3b/compose.override.yml
+readonly PG_IMAGE=postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc
 # Must equal the harness constants (v7 identities and INTERPRETATION).
 readonly WORLD_ID=01934f10-7c02-7001-805b-3b1122334401
+readonly CHANNEL_ID=01934f10-7c03-7001-805b-3b1122334401
 readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402)
-# CHAR-NAME-1: bootstrap intent contract version 2 names each Character (naming policy revision 1).
 readonly INTENT_NAMES=("Qualification One" "Qualification Two")
 readonly INTERPRETATION=(s3b-profile-1 s3b-ruleset-1 s3b-content-1 s3b-starter-1)
 
@@ -71,33 +68,29 @@ if [[ "$(git -C "$PLATFORM_SOURCE" rev-parse HEAD)" != "$PLATFORM_SHA" ]]; then
   exit 2
 fi
 if [[ -z "${OTERYN_TEST_POSTGRES_ADMIN_URL:-}" ]]; then
-  echo 'S3B_RESULT=BLOCKED reason=postgres_17_6_service_missing'
+  echo 'S3B_RESULT=BLOCKED reason=postgres_18_6_service_missing'
   exit 2
 fi
 
+# shellcheck source=tools/qualification/game_platform/lifecycle.sh
+source "$GAME_SOURCE/tools/qualification/game_platform/lifecycle.sh"
+PG_PORT="$(python3 -c 'import os, urllib.parse; print(urllib.parse.urlsplit(os.environ["OTERYN_TEST_POSTGRES_ADMIN_URL"]).port or 5432)')"
+
 WORK="$(mktemp -d "${RUNNER_TEMP:-/tmp}/wp5-s3b.XXXXXX")"
 WP5_PKI="$WORK/pki"
-WP5_SCRATCH="$WORK/scratch"
-mkdir -p "$WP5_PKI" "$WP5_SCRATCH"
-WP5_PORT="${WP5_S3B_PORT:-18453}"
+mkdir -p "$WP5_PKI"
 WP5_PROJECT="wp5s3b${GITHUB_RUN_ID:-local}${GITHUB_RUN_ATTEMPT:-1}"
-WP5_DB_PASSWORD="$(openssl rand -hex 24)"
-WP5_DB_ROOT_PASSWORD="$(openssl rand -hex 24)"
-WP5_APP_KEY="base64:$(openssl rand -base64 32 | tr -d '\n')"
-WP5_TOPOLOGY_REVISION="$TOPOLOGY_REVISION"
-WP5_FSYNC_FAULT=none
-export GAME_SOURCE PLATFORM_SOURCE WP5_PKI WP5_SCRATCH WP5_PORT WP5_PROJECT
-export WP5_DB_PASSWORD WP5_DB_ROOT_PASSWORD WP5_APP_KEY WP5_TOPOLOGY_REVISION WP5_FSYNC_FAULT
+# Platform seeds this disposable Game route. Game's own database is external.
+export NODE_BOOT_GAME_PORT="${NODE_BOOT_GAME_PORT:-17181}"
+export GAME_PLATFORM_INTERNAL_PORT="${WP5_S3B_PORT:-18453}"
 
 result=COMPOSED_FAIL
 cleaned=false
-compose() { docker compose --project-name "$WP5_PROJECT" --file "$GAME_SOURCE/$COMPOSE_FILE" --file "$GAME_SOURCE/$COMPOSE_OVERLAY" "$@"; }
 evidence() { printf 'S3B_EVIDENCE %s\n' "$*"; }
 cleanup() {
   local rc=$?
   if [[ "$cleaned" != true ]]; then
-    if [[ $rc -ne 0 ]]; then compose logs --no-color --tail 80 db >&2 || true; fi
-    compose down --volumes --remove-orphans --timeout 15 >/dev/null 2>&1 || true
+    game_platform_cleanup || true
     cleaned=true
   fi
   find "$WORK" -type f -exec chmod 600 {} + 2>/dev/null || true
@@ -108,29 +101,6 @@ cleanup() {
   exit "$rc"
 }
 trap cleanup EXIT INT TERM
-
-make_ca() {
-  local prefix=$1 subject=$2
-  openssl req -x509 -newkey rsa:2048 -sha256 -nodes -days 1 \
-    -subj "/CN=$subject" -keyout "$WP5_PKI/$prefix.key" -out "$WP5_PKI/$prefix.crt" >/dev/null 2>&1
-}
-make_leaf() {
-  local prefix=$1 subject=$2 ca=$3 usage=$4 san=${5:-}
-  openssl req -new -newkey rsa:2048 -nodes -sha256 -subj "/CN=$subject" \
-    -keyout "$WP5_PKI/$prefix.key" -out "$WP5_PKI/$prefix.csr" >/dev/null 2>&1
-  local ext="$WP5_PKI/$prefix.ext"
-  printf 'basicConstraints=CA:FALSE\nkeyUsage=digitalSignature,keyEncipherment\nextendedKeyUsage=%s\n' "$usage" > "$ext"
-  [[ -z "$san" ]] || printf 'subjectAltName=%s\n' "$san" >> "$ext"
-  openssl x509 -req -sha256 -days 1 -in "$WP5_PKI/$prefix.csr" \
-    -CA "$WP5_PKI/$ca.crt" -CAkey "$WP5_PKI/$ca.key" -CAcreateserial \
-    -extfile "$ext" -out "$WP5_PKI/$prefix.crt" >/dev/null 2>&1
-}
-make_ca server-ca wp5-s3b-server-ca
-make_ca client-ca wp5-s3b-client-ca
-make_leaf server source.test server-ca serverAuth DNS:source.test
-make_leaf client oteryn-game-native-evidence client-ca clientAuth
-make_leaf intent-client oteryn-game-character-authority client-ca clientAuth
-find "$WP5_PKI" -type f -name '*.key' -exec chmod 600 {} +
 
 # Ephemeral fresh-admission signing key; the private seed never leaves $WORK
 # except through the environment of the single qualification test process.
@@ -151,21 +121,16 @@ fi
 
 # Compile before disposable services start: reduce peak scratch storage and
 # keep the 300 s intent validity available for the actual run.
-cargo +1.99.1 test --locked -p oteryn-game-server "${TEST_TARGET[@]}" --no-run
+cargo +1.100.0 test --locked -p oteryn-game-server "${TEST_TARGET[@]}" --no-run
 
-compose config --quiet
-compose build --pull platform
-compose up --detach --wait db platform nginx
-
-php_exec() {
-  compose exec --no-TTY --user www-data platform php -r 'try {'"$1"'} catch (Throwable $e) { fwrite(STDERR, "S3B_PHP_FAILURE class=".get_class($e)." detail=".($e instanceof Error ? substr($e->getMessage(),0,200) : "redacted")." code=".$e->getCode()." file=".basename($e->getFile())." line=".$e->getLine()."\n"); exit(1); }' >/dev/null
-}
-php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach ([["'"$ACCOUNT_ID"'","s3b-one@example.invalid"],["'"$SECOND_ACCOUNT_ID"'","s3b-two@example.invalid"]] as [$accountId,$email]) { Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>$email,"password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>$accountId,"native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]); } app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishTrustedKey(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission","'"$FRESH_KEY_ID"'",hex2bin("'"$FRESH_PUBLIC_HEX"'"));'
-php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishTrustedKey("urn:oteryn:platform:game-recovery","oteryn-reauth-recovery-v1","existing_actor_recovery","'"$RECOVERY_KEY_ID"'",hex2bin("'"$RECOVERY_PUBLIC_HEX"'"));'
+game_platform_start
 evidence "platform_seed=synthetic_accounts=2 fresh_trust=published_public_key_only"
 evidence "recovery_trust=published_public_key_only purpose=existing_actor_recovery"
 
 export WP5_S3A_PORT="$WP5_PORT"
+export WP5_S3A_SERVER_NAME="$WP5_SERVER_NAME"
+export WP5_S3A_SOURCE_AUTHORITY="$WP5_SOURCE_AUTHORITY"
+export WP5_S3A_ROUTE_REVISION="$WP5_ROUTE_REVISION"
 export WP5_S3A_CA_CERT="$WP5_PKI/server-ca.crt"
 export WP5_S3A_CLIENT_CERT="$WP5_PKI/client.crt"
 export WP5_S3A_CLIENT_KEY="$WP5_PKI/client.key"
@@ -175,24 +140,25 @@ export WP5_S3B_FRESH_KEY_ID="$FRESH_KEY_ID"
 export WP5_S3B_FRESH_PUBLIC_KEY="$FRESH_PUBLIC_HEX"
 export WP5_S3B_RECOVERY_KEY_ID="$RECOVERY_KEY_ID"
 export WP5_S3B_RECOVERY_PUBLIC_KEY="$RECOVERY_PUBLIC_HEX"
-export WP5_S3B_INTENT_CLIENT_CERT="$WP5_PKI/intent-client.crt"
-export WP5_S3B_INTENT_CLIENT_KEY="$WP5_PKI/intent-client.key"
+WP5_S3B_INTENT_CLIENT_CERT="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["clients"]["bootstrap-intents"]["cert"])' "$WORK/portal-report.json")"
+WP5_S3B_INTENT_CLIENT_KEY="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["clients"]["bootstrap-intents"]["key"])' "$WORK/portal-report.json")"
+export WP5_S3B_INTENT_CLIENT_CERT WP5_S3B_INTENT_CLIENT_KEY
 export WP5_S3B_CHARACTER_FENCE_DIR="$WORK/character-fence"
 mkdir -p "$WP5_S3B_CHARACTER_FENCE_DIR"
-
 
 # Real Platform operator command: one bootstrap intent per synthetic account.
 index=0
 for account in "$ACCOUNT_ID" "$SECOND_ACCOUNT_ID"; do
   operation="${INTENT_OPERATIONS[$index]}"
   name="${INTENT_NAMES[$index]}"
-  php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $id=Illuminate\Support\Facades\DB::table("identities")->where("account_id","'"$account"'")->value("id"); $code=Illuminate\Support\Facades\Artisan::call("game-auth:character-bootstrap-intent:issue",["--identity-id"=>(string)$id,"--operation-id"=>"'"$operation"'","--target-world-id"=>"'"$WORLD_ID"'","--requested-name"=>"'"$name"'","--requested-sex"=>"Female","--profile-revision"=>"'"${INTERPRETATION[0]}"'","--ruleset-revision"=>"'"${INTERPRETATION[1]}"'","--content-revision"=>"'"${INTERPRETATION[2]}"'","--starter-template-revision"=>"'"${INTERPRETATION[3]}"'"]); exit($code);'
+  python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" bootstrap \
+    "$WORK" "$account" "$WORLD_ID" "$operation" "${INTERPRETATION[@]}" "$name" Sorcerer
   index=$((index + 1))
 done
 evidence "platform_intents=issued count=2 path=operator_command ttl_seconds=300"
 WP5_S3B_FRESH_KEY_SEED="$FRESH_SEED_HEX" \
 WP5_S3B_RECOVERY_KEY_SEED="$RECOVERY_SEED_HEX" \
-  cargo +1.99.1 test --locked -p oteryn-game-server "${TEST_TARGET[@]}" \
+  cargo +1.100.0 test --locked -p oteryn-game-server "${TEST_TARGET[@]}" \
   "$TEST_NAME" -- --ignored --exact --nocapture
 unset FRESH_SEED_HEX RECOVERY_SEED_HEX
 result="$PASS_RESULT"

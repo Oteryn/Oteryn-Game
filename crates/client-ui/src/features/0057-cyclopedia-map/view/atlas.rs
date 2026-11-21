@@ -16,8 +16,9 @@ pub fn atlas_action(p: &mut Panel, action: usize) -> bool {
             let Some(a) = &p.atlas else {
                 return false;
             };
-            let floors: Vec<_> = (-15i8..=0)
-                .filter(|f| a.floors & (1u16 << (-*f as u8)) != 0)
+            let floors: Vec<_> = (0i8..=15)
+                .rev()
+                .filter(|f| a.floors & (1u16 << (*f as u8)) != 0)
                 .collect();
             let Some(i) = floors.iter().position(|f| *f == q.floor) else {
                 return false;

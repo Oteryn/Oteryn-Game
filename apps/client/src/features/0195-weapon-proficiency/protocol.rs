@@ -18,3 +18,13 @@ impl Outbox {
         );
     }
 }
+
+#[cfg(all(test, feature = "bevy-shell"))]
+impl Outbox {
+    pub(crate) fn bevy_proficiency_initialize(&self) {
+        self.weapon_proficiency_initialize(true);
+    }
+    pub(crate) fn bevy_proficiency_result(&self, result: &GatedCommandResult) {
+        self.weapon_proficiency_result(result);
+    }
+}

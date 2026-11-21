@@ -1214,6 +1214,89 @@ fn qualified_curse_seventeen_groups_retain_all_fifty_five_occurrences() {
 }
 
 #[test]
+fn cleanse_hex_removes_and_blocks_reapplication_until_exact_deadline() {
+    let root = root();
+    let mut store = ConditionStore::new();
+    let hex = def(
+        "cond.intense_hex",
+        ConditionValues::IntenseHex {
+            duration_ms: 3_000,
+            damage_dealt_percent: 50,
+            healing_received_percent: 50,
+        },
+    );
+    apply(
+        &mut store,
+        &hex,
+        ConditionSourceKind::Creature,
+        &facts(0, &root),
+    )
+    .unwrap();
+    let plan = store.prepare_cleanse(&facts(MS, &root)).unwrap();
+    assert!(plan.is_some(), "official Cleanse Hex eligibility");
+    let plan = plan.unwrap();
+    assert!(store.commit_cleanse(plan));
+    assert!(store.instances().is_empty());
+    assert!(!store.commit_cleanse(plan));
+    assert_eq!(
+        store.cleanse_immunity_remaining(ConflictKey::IntenseHex, MS),
+        11_000 * MS
+    );
+    assert_eq!(
+        apply(
+            &mut store,
+            &hex,
+            ConditionSourceKind::Creature,
+            &facts(11_001 * MS - 1, &root)
+        ),
+        Err(ConditionRefusal::Immune)
+    );
+    assert!(
+        apply(
+            &mut store,
+            &hex,
+            ConditionSourceKind::Creature,
+            &facts(11_001 * MS, &root)
+        )
+        .is_ok()
+    );
+    assert!(
+        store
+            .prepare_cleanse(&facts(11_001 * MS, &root))
+            .unwrap()
+            .is_some()
+    );
+}
+
+#[test]
+fn cleanse_hex_exception_does_not_expand_generic_negative_dispels() {
+    let root = root();
+    let mut store = ConditionStore::new();
+    let hex = def(
+        "cond.hex",
+        ConditionValues::IntenseHex {
+            duration_ms: 3_000,
+            damage_dealt_percent: 50,
+            healing_received_percent: 50,
+        },
+    );
+    apply(
+        &mut store,
+        &hex,
+        ConditionSourceKind::Creature,
+        &facts(0, &root),
+    )
+    .unwrap();
+    assert_eq!(store.cleanse_candidate_count(0), 1);
+    assert_eq!(store.cleanse_negative(), 0);
+    assert_eq!(store.cleanse_candidate_count(3_000 * MS), 0);
+    assert_eq!(
+        store.prepare_cleanse_at_index(&facts(0, &root), 1),
+        Ok(None)
+    );
+}
+
+#[test]
 fn cleanse_excludes_drowning_positive_and_expired_speed_conditions() {
     let root = root();
     let mut store = ConditionStore::new();
@@ -1583,6 +1666,11 @@ fn non_ticking_expiry_preserves_overdue_dot_regeneration_and_tick_budget() {
         )
         .unwrap();
     }
+    assert_eq!(
+        store.next_non_ticking_expiry(),
+        None,
+        "periodic debt never becomes a native housekeeping expiry deadline"
+    );
     let now = 20_000 * MS;
     assert_eq!(
         store.take_due(now, TickFacts::default()).len(),
@@ -1735,4 +1823,144 @@ fn pubproj_historical_source_expires_with_condition_and_never_restores_authority
         store.instances().is_empty(),
         "metadata has no lifetime outside its exhausted condition"
     );
+}
+
+/// Canary 47dfd51f lisa_heal.lua:1-5, tyrn_heal.lua:1-5 and
+/// glooth_fairy_healing.lua:1-5 and omrafir_beam.lua:1-5 share regeneration sub-ID 88888.
+/// Integer health gain is zero; their scripted heals are separate callbacks.
+#[test]
+fn srx3_source_regeneration_88888_uses_canonical_store_and_exact_expiry() {
+    for duration_ms in [5_000_u32, 6_000, 7_000, 10_000, 30_000, 600_000, 900_000] {
+        let values: ConditionValues = serde_json::from_value(serde_json::json!({
+            "SpellRegeneration": {
+                "duration_ms": duration_ms,
+                "sub_id": 88888,
+                "health_gain": 0,
+                "health_interval_ms": duration_ms,
+                "mana_gain": 0,
+                "mana_interval_ms": 1000
+            }
+        }))
+        .expect("source regeneration marker retains its complete source sub-ID");
+        let marker = ConditionDefinition::new("source.regeneration.marker", 1, values)
+            .expect("zero-gain source marker is a real canonical condition");
+        assert_eq!(
+            serde_json::to_value(marker.condition_type()).expect("condition type"),
+            serde_json::json!({"SpellRegeneration": 88888})
+        );
+        let root = root();
+        let mut store = ConditionStore::<u32>::new();
+        store
+            .apply(
+                &marker,
+                Some(7),
+                ConditionSourceKind::SelfUse,
+                &[],
+                &facts(0, &root),
+            )
+            .expect("source marker admission");
+        let before_expiry = u64::from(duration_ms) * MS - 1;
+        assert_eq!(
+            store.next_non_ticking_expiry(),
+            Some(before_expiry + 1),
+            "native housekeeping preserves the exact microsecond marker deadline"
+        );
+        assert_eq!(store.instances().len(), 1);
+        assert_eq!(
+            store.instances()[0].remaining_duration_ms(before_expiry),
+            Some(0)
+        );
+        assert_eq!(store.instances()[0].definition(), &marker);
+        let mut expiry_only = store.clone();
+        assert!(!expiry_only.expire_non_ticking(before_expiry));
+        assert!(expiry_only.expire_non_ticking(before_expiry + 1));
+        assert!(expiry_only.instances().is_empty());
+        assert_eq!(expiry_only.next_non_ticking_expiry(), None);
+        // A retained marker schedules no HP/mana gain. It still owns its exact
+        // source lifetime and is removed by the existing condition tick owner.
+        assert!(
+            store
+                .take_due(before_expiry, TickFacts::default())
+                .is_empty()
+        );
+        assert_eq!(store.instances().len(), 1);
+        assert!(
+            store
+                .take_due(before_expiry + 1, TickFacts::default())
+                .is_empty()
+        );
+        assert!(store.instances().is_empty());
+    }
+}
+
+#[test]
+fn srx3_regeneration_marker_does_not_admit_arbitrary_zero_gain_subids() {
+    for (sub_id, health_gain, mana_gain) in [(0, 0, 0), (1, 0, 0), (88_889, 0, 0), (88_888, 1, 0)] {
+        assert!(
+            ConditionDefinition::new(
+                "source.regeneration.invalid",
+                1,
+                ConditionValues::SpellRegeneration {
+                    duration_ms: 6_000,
+                    sub_id,
+                    health_gain,
+                    health_interval_ms: 6_000,
+                    mana_gain,
+                    mana_interval_ms: 1_000,
+                },
+            )
+            .is_none()
+        );
+    }
+}
+
+#[test]
+fn charm_gaps_single_tick_selection_preserves_order_and_shared_budget() {
+    let root = root();
+    let mut store = ConditionStore::new();
+    for element in [DotElement::Poison, DotElement::Fire] {
+        apply(
+            &mut store,
+            &dot(element, 100, 100, true),
+            ConditionSourceKind::Creature,
+            &facts(0, &root),
+        )
+        .unwrap();
+    }
+    let mut batched = store.clone();
+    let now = 10_000 * MS;
+    let expected = batched.take_due(now, TickFacts::default());
+    for tick in &expected {
+        assert_eq!(
+            store.take_next_due(now, TickFacts::default()).as_ref(),
+            Some(tick)
+        );
+    }
+    assert_eq!(expected.len(), COND0_RL_03_DAMAGE_TICKS_PER_SIM_TICK);
+    assert!(store.take_next_due(now, TickFacts::default()).is_none());
+    assert!(store.take_due(now, TickFacts::default()).is_empty());
+    assert_eq!(store, batched);
+    assert!(store.take_next_due(now + 1, TickFacts::default()).is_some());
+}
+
+#[test]
+fn charm_gaps_single_tick_allows_cleanse_before_next_overdue_occurrence() {
+    let root = root();
+    let mut store = ConditionStore::new();
+    apply(
+        &mut store,
+        &dot(DotElement::Poison, 30, 30, true),
+        ConditionSourceKind::Creature,
+        &facts(0, &root),
+    )
+    .unwrap();
+    let now = 4_000 * MS;
+    assert_eq!(
+        store.take_next_due(now, TickFacts::default()).unwrap().due,
+        2_000 * MS
+    );
+    let plan = store.prepare_cleanse(&facts(now, &root)).unwrap().unwrap();
+    assert!(store.commit_cleanse(plan));
+    assert!(store.take_next_due(now, TickFacts::default()).is_none());
+    assert!(store.cleanse_immunity_remaining(ConflictKey::Element(DotElement::Poison), now) > 0);
 }

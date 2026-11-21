@@ -1,6 +1,11 @@
 use super::super::*;
 use crate::device_sessions::{DeviceCredential, DeviceSession, SessionKey, now};
 use serde::Deserialize;
+#[derive(serde::Serialize)]
+struct OperationRequest<'a> {
+    protocol_version: u32,
+    client_id: &'a str,
+}
 const DEVICE_BASE: &str = "/api/v1/game-auth/device-sessions";
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -53,7 +58,7 @@ impl NativeLoginClient {
         &self,
         suffix: &str,
         authorization: String,
-        body: serde_json::Value,
+        body: impl serde::Serialize + Send + Sync,
         cancellation: CancellationToken,
     ) -> Result<Vec<u8>, NativeLoginError> {
         if self.platform.scheme() != "https"
@@ -73,14 +78,21 @@ impl NativeLoginClient {
                 .client
                 .post(endpoint)
                 .header(reqwest::header::AUTHORIZATION, header)
+                .header(reqwest::header::ACCEPT, "application/json")
+                .header(reqwest::header::ACCEPT_LANGUAGE, "en")
                 .json(&body)
                 .send()
                 .await
                 .map_err(|_| PlatformClientError::Request)?;
-            if response.status() != StatusCode::OK {
-                return Err(NativeLoginError::TokenRefused);
+            let status = response.status();
+            let bytes = read_bounded(response, 16_384).await?;
+            if status != StatusCode::OK {
+                return Err(NativeLoginError::DeviceRefused(DeviceRefusal::decode(
+                    status.as_u16(),
+                    &bytes,
+                )?));
             }
-            Ok(read_bounded(response, 16_384).await?)
+            Ok(bytes)
         })
         .await
     }
@@ -125,7 +137,10 @@ impl NativeLoginClient {
             .device_post(
                 suffix,
                 format!("OterynDevice {}", session.device_credential.expose()),
-                serde_json::json!({"protocol_version":1,"client_id":self.oauth_client_id}),
+                OperationRequest {
+                    protocol_version: 1,
+                    client_id: &self.oauth_client_id,
+                },
                 cancel,
             )
             .await?;
@@ -207,7 +222,10 @@ impl NativeLoginClient {
             .device_post(
                 "/revoke",
                 format!("OterynDevice {}", credential.expose()),
-                serde_json::json!({"protocol_version":1,"client_id":self.oauth_client_id}),
+                OperationRequest {
+                    protocol_version: 1,
+                    client_id: &self.oauth_client_id,
+                },
                 cancel,
             )
             .await?;
@@ -247,6 +265,82 @@ impl NativeLoginClient {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn operation_request_matches_contract_fixture_bytes() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let bytes = serde_json::to_vec(&OperationRequest {
+            protocol_version: 1,
+            client_id: "019a5f4a-1000-7000-8000-000000000001",
+        })?;
+        assert_eq!(
+            bytes,
+            include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../docs/contracts/fixtures/remembered-device-v1/rotate.json"
+            ))
+        );
+        Ok(())
+    }
+    #[test]
+    fn pinned_site_error_envelope_is_exact() -> Result<(), Box<dyn std::error::Error>> {
+        assert_eq!(
+            DeviceRefusal::decode(400, br#"{"status":400,"error":"Invalid request"}"#)?,
+            DeviceRefusal {
+                status: 400,
+                error: "Invalid request"
+            }
+        );
+        assert_eq!(
+            DeviceRefusal::decode(503, br#"{"status":503,"error":"Temporarily unavailable"}"#)?,
+            DeviceRefusal {
+                status: 503,
+                error: "Temporarily unavailable"
+            }
+        );
+        assert!(
+            DeviceRefusal::decode(
+                400,
+                br#"{"status":400,"error":"Invalid request","extra":true}"#
+            )
+            .is_err()
+        );
+        assert!(
+            DeviceRefusal::decode(401, br#"{"status":400,"error":"Invalid request"}"#).is_err()
+        );
+        assert!(
+            DeviceRefusal::decode(400, br#"{"status":400,"error":"invalid_request"}"#).is_err()
+        );
+        assert!(DeviceRefusal::decode(400, br#"{"error":"Invalid request"}"#).is_err());
+        Ok(())
+    }
+    #[test]
+    fn refusal_retains_exact_status_and_only_contract_error_values()
+    -> Result<(), Box<dyn std::error::Error>> {
+        for status in [400, 401, 429, 503] {
+            for error in [
+                "invalid_request",
+                "device_authorization_unavailable",
+                "too_many_requests",
+            ] {
+                let bytes = serde_json::to_vec(&serde_json::json!({"error":error}))?;
+                assert_eq!(
+                    DeviceRefusal::decode(status, &bytes)?,
+                    DeviceRefusal { status, error }
+                );
+            }
+        }
+        for bytes in [
+            br#"{"error":"unrecognized"}"#.as_slice(),
+            br#"{"error":"invalid_request","extra":true}"#,
+            br#"{"error":"invalid_request","error":"invalid_request"}"#,
+        ] {
+            assert_eq!(
+                DeviceRefusal::decode(401, bytes),
+                Err(PlatformClientError::InvalidPayload)
+            );
+        }
+        Ok(())
+    }
     #[test]
     fn exact_device_response_shapes_reject_null_extras_and_duplicate_members()
     -> Result<(), Box<dyn std::error::Error>> {

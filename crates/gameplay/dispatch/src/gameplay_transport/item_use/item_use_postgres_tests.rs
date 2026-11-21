@@ -81,16 +81,17 @@ fn nested_food_hotkey_and_potion_handle_commit_through_wire_dispatch_on_postgres
 }
 
 fn run_scenario(case: Option<item_use_view_refresh_tests::Case>) -> TestResult {
-    run_scenario_items(case, false)
+    run_scenario_items(case, false, false)
 }
 
 pub(crate) fn run_matching_crystal_consumables() -> TestResult {
-    run_scenario_items(None, true)
+    run_scenario_items(None, true, false)
 }
 
 fn run_scenario_items(
     case: Option<item_use_view_refresh_tests::Case>,
     crystal: bool,
+    appearances: bool,
 ) -> TestResult {
     let Some(admin) = configured_admin() else {
         return Ok(());
@@ -100,7 +101,7 @@ fn run_scenario_items(
         .spawn(move || {
             postgres_fixture::runtime()
                 .map_err(|error| error.to_string())?
-                .block_on(scenario(admin, case, crystal, None))
+                .block_on(scenario(admin, case, crystal, None, appearances))
                 .map_err(|error| error.to_string())
         })?
         .join()
@@ -113,6 +114,7 @@ async fn scenario(
     case: Option<item_use_view_refresh_tests::Case>,
     crystal: bool,
     current_potion: Option<u32>,
+    appearances: bool,
 ) -> TestResult {
     use item_use_view_refresh_tests::Case;
     let tag = match case {
@@ -309,9 +311,15 @@ async fn scenario(
                 id: 15,
                 requires: &[4],
             },
+            super::super::capabilities::OfferedCapability {
+                id: 499,
+                requires: &[4],
+            },
         ],
         if matches!(case, Some(Case::WithoutContainerCapability)) {
             &[4, 15]
+        } else if appearances {
+            &[4, 14, 15, 499]
         } else {
             &[4, 14, 15]
         },
@@ -619,7 +627,7 @@ fn srx1_current_mana_potion_variants_wire_replay_postgres() -> TestResult {
                 .block_on(async {
                     for item in [53162, 53163, 53164] {
                         let started = std::time::Instant::now();
-                        scenario(admin.clone(), None, true, Some(item)).await?;
+                        scenario(admin.clone(), None, true, Some(item), false).await?;
                         eprintln!(
                             "SRX1_PG current_potion={item} wire/replay/flask elapsed={:?}",
                             started.elapsed()

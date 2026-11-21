@@ -21,6 +21,42 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    if matches!(
+        next,
+        Next::Serene | Next::QuestLog | Next::Chat | Next::Visibility | Next::Combat | Next::Npc
+    ) {
+        crate::durability::DurabilityRoot::with_background_holder(
+            authority.background_operation(receive_inner(stream, authority, session, next)),
+        )
+        .await
+    } else {
+        receive_inner(stream, authority, session, next).await
+    }
+}
+
+async fn receive_inner<S, A>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+    next: Next,
+) -> Result<Option<Input>, ServeEnd>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    // Filter before a held queue or item-walk/hotkey retransmission peek can
+    // treat old source-session bytes as a current successor operation.
+    let incoming = match &next {
+        Next::Frame(Ok(frame)) | Next::Held(frame, _, _) => Some(frame),
+        _ => None,
+    };
+    if let Some(frame) = incoming {
+        match command_session_matches(frame, session.admitted, session.require_session_binding) {
+            Ok(false) => return Ok(None),
+            Ok(true) => {}
+            Err(error) => return Err(close(stream, session.admitted, error).await),
+        }
+    }
     let buffered_original = matches!(&next, Next::StepDue);
     let (frame, arrived_while_buffered, received_at) = match next {
         // SPEED-1: the buffered step is due; its frame runs now, before any frame held
@@ -162,6 +198,7 @@ where
                 )
                 .await
                 .ok_or(ServeEnd::Disconnected)?;
+                super::native_cues::refresh(stream, authority, session).await?;
                 achievement_notices::refresh(stream, authority, session).await
             };
             return match tokio::time::timeout(interval, updates).await {

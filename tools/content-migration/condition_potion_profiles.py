@@ -12,6 +12,7 @@ import json
 import sys
 from pathlib import Path
 
+from import_cyclopedia_global import apply_profile_weights
 from native_profile_composition import encode_native_profile
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -102,11 +103,14 @@ def capture(canary, crystal):
         key = f'oteryn:item.tibia.i{item}'
         if canonical[key]['identity'] != bindings[str(item)]['target']:
             raise ValueError('CONDITION_POTION_CANONICAL_IDENTITIES')
-        if row['semantics']['physical'] != canonical[key]['semantics']['physical']:
-            raise ValueError('CONDITION_POTION_CANONICAL_PHYSICAL_DRIFT')
         row['semantics']['use_requirements'] = requirements(item)
         records.append(row)
     bound = source.bind_profiles({'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1', 'records': records}, bindings, set(IDS))
+    # The donor weight stays in the capture; the Global client weight wins (ITEMGLOB).
+    apply_profile_weights(bound['records'], ROOT)
+    for row in bound['records']:
+        if row['semantics']['physical'] != canonical[row['production_definition']['production_key']]['semantics']['physical']:
+            raise ValueError('CONDITION_POTION_CANONICAL_PHYSICAL_DRIFT')
     return {
         'schema': 'OTERYN_NATIVE_CONDITION_POTION_PROFILES/v1',
         'producer': 'tools/content-migration/condition_potion_profiles.py',

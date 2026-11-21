@@ -253,11 +253,26 @@ fn foreign_nested_stack_is_refused_and_a_forged_sql_burn_rolls_back() -> TestRes
             used.use_item(&food(2, 152, 2)).await,
             Err(ItemUseError::StaleState)
         ));
+        // Generated receipt projections are recomputed by PostgreSQL. Copy only
+        // writable columns so this forged-custody probe reaches the custody guard.
+        let use_columns: String = sqlx::query_scalar(
+            "SELECT string_agg(quote_ident(attname), ', ' ORDER BY attnum) \
+             FROM pg_attribute WHERE attrelid='game_item_use_records'::regclass \
+               AND attnum>0 AND NOT attisdropped AND attgenerated=''",
+        )
+        .fetch_one(&used.harness.pool)
+        .await?;
+        let forged_columns = use_columns
+            .split(", ")
+            .map(|column| format!("forged.{column}"))
+            .collect::<Vec<_>>()
+            .join(", ");
         assert_eq!(used.runtime_sql(format!(
-            "INSERT INTO game_item_use_records SELECT (jsonb_populate_record(NULL::game_item_use_records, \
+            "INSERT INTO game_item_use_records ({use_columns}) SELECT {forged_columns} FROM game_item_use_records u \
+             CROSS JOIN LATERAL jsonb_populate_record(NULL::game_item_use_records, \
                to_jsonb(u) || jsonb_build_object('transaction_id', {}, 'event_id', {}, \
                  'command_id', 2, 'source_quantity_before', 2, 'source_quantity_after', 1, \
-                 'created_xact_id', pg_current_xact_id()::text))).* FROM game_item_use_records u; \
+                 'created_xact_id', pg_current_xact_id()::text)) AS forged; \
              UPDATE game_item_instances SET quantity = 1, last_transaction_id = {} WHERE item_instance_id = {}; \
              INSERT INTO game_item_audit_outbox SELECT (jsonb_populate_record(NULL::game_item_audit_outbox, \
                to_jsonb(a) || jsonb_build_object('transaction_id', {}, 'event_id', {}, \

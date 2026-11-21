@@ -11,7 +11,14 @@ impl Outbox {
     }
 
     /// Delivers validated session events to the native view (also used by the headless harness).
-    pub fn push(&self, events: Vec<SessionEvent>) {
+    pub fn push(&self, mut events: Vec<SessionEvent>) {
+        let received_at = tokio::time::Instant::now();
+        if let Some(index) = events
+            .iter()
+            .rposition(|event| matches!(event, SessionEvent::ActivityScope(_)))
+        {
+            events.drain(..index);
+        }
         self.console_events(&events);
         self.activity_scope_events(&events);
         self.channel_list_events(&events);
@@ -80,6 +87,19 @@ impl Outbox {
             oteryn_client_ui::chat_party_room::replace_rooms(&mut mailbox.chat_party_room, rooms);
         }
         if let Some(presence) = mailbox.pushed.vip_presence.take() {
+            if mailbox.social_channel_selected {
+                let notices = oteryn_client_ui::social_channel::presence_notices(
+                    &mailbox.party.channel_names,
+                    &mailbox.vip_presence.presence,
+                    &presence,
+                );
+                for notice in notices {
+                    mailbox.vip_channel_notice_serial += 1;
+                    let serial = mailbox.vip_channel_notice_serial;
+                    mailbox.vip_channel_notices.push((serial, notice));
+                }
+            }
+            mailbox.vip_presence_confirmed_at = Some(received_at);
             oteryn_client_ui::vip_presence::replace(&mut mailbox.vip_presence, presence);
         }
         if let Some(position) = mailbox.pushed.own
@@ -141,6 +161,8 @@ impl Outbox {
         mailbox.depot = Default::default();
         mailbox.depot_shutdown = true;
         mailbox.imbue_shutdown = true;
+        #[cfg(feature = "bevy-shell")]
+        mailbox.achievement_banners.clear();
         mailbox.achievement_notices = Default::default();
         mailbox.achievements = Default::default();
         mailbox.highscores = Default::default();
@@ -199,6 +221,8 @@ impl Outbox {
         mailbox.depot = Default::default();
         mailbox.depot_shutdown = true;
         mailbox.imbue_shutdown = true;
+        #[cfg(feature = "bevy-shell")]
+        mailbox.achievement_banners.clear();
         mailbox.achievement_notices = Default::default();
         mailbox.achievements = Default::default();
         mailbox.highscores = Default::default();
@@ -234,6 +258,17 @@ pub struct PlayLink {
 }
 
 impl PlayLink {
+    /// Select a shared desktop frontend before presenting any admitted game UI.
+    /// Stored in the connection mailbox so all non-owning links use the same presenter.
+    pub fn use_shared_frontend(&self) {
+        lock(&self.mailbox).shared_frontend = true;
+    }
+
+    #[must_use]
+    pub fn uses_shared_frontend(&self) -> bool {
+        lock(&self.mailbox).shared_frontend
+    }
+
     pub fn request(&self, direction: StepDir) {
         let mailbox = lock(&self.mailbox);
         if mailbox.world_input_blocked() {
@@ -258,14 +293,17 @@ impl PlayLink {
     pub fn poll(&self) -> Option<PlayEvent> {
         self.poll_weekly_results();
         #[cfg(windows)]
-        super::super::feature_0148_wheel_allocation::view::poll_gems(&self.mailbox, &self.commands);
-        #[cfg(windows)]
-        super::super::feature_0152_item_forge::view::poll_resource_dialog(
-            &self.mailbox,
-            &self.commands,
-        );
-        #[cfg(windows)]
-        super::super::feature_0081_npc_shop::view::open_window(&self.mailbox, &self.commands);
+        if !self.uses_shared_frontend() {
+            super::super::feature_0148_wheel_allocation::view::poll_gems(
+                &self.mailbox,
+                &self.commands,
+            );
+            super::super::feature_0152_item_forge::view::poll_resource_dialog(
+                &self.mailbox,
+                &self.commands,
+            );
+            super::super::feature_0081_npc_shop::view::open_window(&self.mailbox, &self.commands);
+        }
         let mut mailbox = lock(&self.mailbox);
         if mailbox.before != Pushed::default() {
             return Some(PlayEvent::Pushed(Box::new(std::mem::take(
@@ -313,6 +351,7 @@ impl Drop for PlayLink {
         if !self.owns_session {
             return;
         }
+        self.channel_switch_close();
         let mut mailbox = lock(&self.mailbox);
         mailbox.end_custom_hotkeys();
         if let Some(launcher) = &mailbox.coin_shop {

@@ -32,14 +32,13 @@ impl PlayLink {
             tr!("Character effects — Ctrl+Alt+Shift+U"),
             |mailbox| &mut mailbox.mechanics_status,
         );
-        #[cfg(not(windows))]
-        {
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).mechanics_status.open = true;
         }
         true
     }
-    #[cfg(test)]
-    pub(in crate::play) fn mechanics_status_panel(
+    #[cfg(any(test, feature = "bevy-shell"))]
+    pub(crate) fn mechanics_status_panel(
         &self,
     ) -> oteryn_client_ui::mechanics_status::MechanicsStatusPanel {
         lock(&self.mailbox).mechanics_status.clone()
@@ -61,5 +60,23 @@ impl Outbox {
         lock(&self.0)
             .mechanics_status
             .finish(accepted, &result.payload);
+    }
+}
+
+// Publish the same view models read by the Bevy HUD without a network peer.
+#[cfg(all(test, feature = "bevy-shell"))]
+impl PlayLink {
+    pub(crate) fn bevy_status_fixture(
+        &self,
+        conditions: oteryn_client_ui::condition_status::ConditionStatusPanel,
+        rest: oteryn_client_ui::rest_status::RestStatusPanel,
+        battle: oteryn_client_ui::battle_instinct_status::BattleInstinctStatusPanel,
+        mechanics: oteryn_client_ui::mechanics_status::MechanicsStatusPanel,
+    ) {
+        let mut mailbox = lock(&self.mailbox);
+        mailbox.condition_status = conditions;
+        mailbox.rest_status = rest;
+        mailbox.battle_instinct_status = battle;
+        mailbox.mechanics_status = mechanics;
     }
 }

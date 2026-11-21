@@ -1,5 +1,5 @@
 use super::super::fixture::{Harness, debug, id, join_two};
-use super::super::item_look::read_frame;
+use super::super::item_look_fixtures::read_frame;
 use super::{Case, FIELD, TestResult};
 use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::connection::{
@@ -200,7 +200,7 @@ async fn autowalk(client: &mut DuplexStream, harness: &Harness) -> TestResult {
     let opened = views(client).await?;
     assert_eq!(opened.views[0].browse.ok_or("walked field")?.position, far);
     for (command_id, position) in [
-        (2, WorldTilePosition { floor: -8, ..far }),
+        (2, WorldTilePosition { floor: 8, ..far }),
         (3, WorldTilePosition { x: 1, ..FIELD }),
     ] {
         let payload = encode_browse_field_intent(&BrowseFieldIntent::Open { position }).map_err(debug)?;

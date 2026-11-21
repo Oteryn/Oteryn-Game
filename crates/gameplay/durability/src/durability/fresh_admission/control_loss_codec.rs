@@ -80,7 +80,11 @@ pub(super) fn write_fresh_loss(w: &mut Writer, operation: &ControlLossOperationV
             w.bytes(admission_id)?;
             write_protection(w, *protection)?;
         }
-        ControlLossHistoryV1::ScopeTransfer { transfer, entry_epoch, protection } => {
+        ControlLossHistoryV1::ScopeTransfer {
+            transfer,
+            entry_epoch,
+            protection,
+        } => {
             // Main's tag 3 is the persisted activity origin; House history is additive.
             w.tag(4)?;
             w.bytes(transfer)?;

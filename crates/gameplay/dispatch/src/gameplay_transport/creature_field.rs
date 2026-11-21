@@ -8,6 +8,25 @@ use oteryn_gameplay_foundation::foundation::condition::{
 };
 use sha2::{Digest, Sha256};
 
+/// Soul War mirror and fourth-taint creatures publish their condition and field
+/// sources on every pass, so the field owner never skips them.
+fn tracks_condition_sources(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    definition_key: &str,
+    definition_revision: &str,
+) -> bool {
+    native
+        .policies()
+        .soul_war_health_policy(definition_key, definition_revision)
+        .is_some_and(|policy| {
+            matches!(
+                policy.kind(),
+                crate::content::native_soul_war_callbacks::SoulWarHealthCallbackKind::MirrorImage
+                    | crate::content::native_soul_war_callbacks::SoulWarHealthCallbackKind::FourthTaint
+            )
+        })
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn tick_creature_fields(
         &self,
@@ -16,9 +35,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         states: &ChannelSpellStates,
         native: &crate::content::native_gameplay::NativeGameplayState,
         now: u64,
+        native_health_names: &super::source_names::NativeHealthNamesData,
     ) -> Result<(), DurabilityError> {
-        let creatures = runtime.visible_entities().creatures;
+        native_health_names
+            .validate_frame(runtime)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let mut plans = Vec::new();
+        let mut source_players = Vec::new();
+
         // Passive source creatures are outside the AI table, but still own field conditions.
+        // A creature whose entry for this position is committed and whose condition store is
+        // empty has no field or periodic work; visiting it costs a snapshot, a tile read and an
+        // owner turn on every pass, which kept the durability holder busy (#3358).
+        let creatures = runtime
+            .visible_entities()
+            .creatures
+            .into_iter()
+            .filter(|visible| {
+                runtime
+                    .idle_field_creature(visible.actor)
+                    .is_none_or(|state| {
+                        tracks_condition_sources(
+                            native,
+                            &state.policy.definition_key,
+                            &state.policy.definition_revision,
+                        )
+                    })
+            })
+            .collect::<Vec<_>>();
         let positions = creatures
             .iter()
             .map(|visible| visible.position)
@@ -74,9 +118,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             })
                         })
                         .filter(|(actor, session, _)| {
-                            runtime
-                                .player_control_facts(*actor, *session)
-                                .is_ok_and(|facts| facts.control_loss.is_none())
+                            runtime.player_control_facts(*actor, *session).is_ok()
                         })
                         .map(|(actor, _, _)| *actor);
                     let lineage =
@@ -113,18 +155,66 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if !snapshot.state.conditions.accepts_time(now) {
                 continue;
             }
+            let facts = TickFacts {
+                in_protection_zone: protection_zone,
+                standing_on_field: standing,
+            };
+            // Preview only a cloned condition store. Actual due work is consumed
+            // once by the existing canonical owner after all source reads finish.
+            if tracks_condition_sources(
+                native,
+                &snapshot.state.policy.definition_key,
+                &snapshot.state.policy.definition_revision,
+            ) {
+                let mut preview = snapshot.state.conditions.clone();
+                for tick in preview.take_due(now, facts) {
+                    if let Some(source) = tick.provenance.source {
+                        source_players.push(source);
+                    }
+                }
+                if let Some(source) = entry.as_ref().and_then(|field| field.source) {
+                    source_players.push(source);
+                }
+            }
+            plans.push((visible.actor, entry, facts));
+        }
+        if let Some(active) = self.active_generation {
+            let room = map.room();
+            let (tx, authority) = map.scope_transaction();
+            super::soul_war_callbacks::player_source::publish_condition_sources(
+                tx,
+                self.root,
+                authority,
+                active,
+                room,
+                runtime,
+                states,
+                &source_players,
+                now,
+            )
+            .await?;
+        }
+        if !map.validate_transaction(runtime).await {
+            return Err(DurabilityError::Unavailable);
+        }
+        for (actor, entry, facts) in plans {
             runtime
-                .commit_creature_field_entry(visible.actor, now, entry.as_ref())
+                .commit_creature_field_entry(actor, now, entry.as_ref())
                 .map_err(|_| DurabilityError::Unavailable)?;
+            let observations = match native_health_names.observe(runtime, actor) {
+                Ok(observation) => observation.into_iter().collect::<Vec<_>>(),
+                // Only this required health callback lacks facts. The original
+                // condition/entry clock remains installed and its HP ticks
+                // remain unconsumed; unrelated actors continue normally.
+                Err(()) => continue,
+            };
             states
-                .tick_source_creature_conditions(
+                .tick_source_creature_conditions_with_health_observations(
                     runtime,
-                    visible.actor,
-                    TickFacts {
-                        in_protection_zone: protection_zone,
-                        standing_on_field: standing,
-                    },
+                    actor,
+                    facts,
                     crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now),
+                    &observations,
                 )
                 .map_err(|_| DurabilityError::Unavailable)?;
         }

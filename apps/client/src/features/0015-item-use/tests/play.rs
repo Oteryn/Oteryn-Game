@@ -1,6 +1,9 @@
 use super::*;
 use oteryn_client_runtime::world_interaction::{Action, Target};
 
+#[path = "activity_scope.rs"]
+mod activity_scope;
+
 #[test]
 fn targeting_click_sends_one_command_without_walking_or_attacking() -> Result<(), BatchError> {
     let mut view = view()?;
@@ -77,6 +80,7 @@ fn pending_and_self_targets_preserve_targeting_and_send_nothing() -> Result<(), 
 
 fn carried(handle: u64) -> Result<oteryn_session::ItemEntry, Box<dyn std::error::Error>> {
     Ok(oteryn_session::ItemEntry {
+        appearance_id: 0,
         handle: handle.try_into()?,
         item_definition_ref: 1.try_into()?,
         count: 1.try_into()?,
@@ -266,3 +270,13 @@ fn native_inventory_targeting_keeps_other_panels_alive() -> Result<(), Box<dyn s
 
 #[path = "play_additional.rs"]
 mod additional;
+
+#[test]
+fn use_with_sets_crosshair_cursor() {
+    let (link, _, _) = play_channel();
+    assert!(!link.use_with_armed());
+    super::super::mailbox::lock(&link.mailbox).world_context.begin_targeting(std::num::NonZeroU64::MIN);
+    assert!(link.use_with_armed());
+    super::super::mailbox::lock(&link.mailbox).world_context.cancel_targeting();
+    assert!(!link.use_with_armed());
+}

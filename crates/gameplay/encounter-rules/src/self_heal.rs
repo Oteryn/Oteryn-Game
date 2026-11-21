@@ -1,7 +1,8 @@
 //! Typed loaded-document membership qualification. No digest->membership inference.
 use oteryn_gameplay_content::content::{
-    EffectFamilyDocument, ProjectReferenceRecord, ProjectV2AuthoringProfileData, ProjectV2Draft,
-    ProjectV2Family, ProjectV2FormulaAuthoring, ProjectV2SourceIdentityDisposition,
+    EffectFamilyDocument, ProjectReferenceRecord, ProjectV2AuthoringProfile,
+    ProjectV2AuthoringProfileData, ProjectV2Draft, ProjectV2Family, ProjectV2FormulaAuthoring,
+    ProjectV2SourceIdentityDisposition,
 };
 #[derive(Debug, Clone)]
 pub struct QualifiedCreatureSelfHeal {
@@ -33,9 +34,23 @@ impl QualifiedCreatureSelfHeal {
         }) {
             return Err("missing exact loaded Creature source membership");
         }
-        let creature = draft
-            .state
-            .authoring_profiles
+        Self::qualify_native_parts(
+            &draft.core.records,
+            &draft.state.authoring_profiles,
+            target,
+            ability,
+        )
+    }
+
+    /// Pure typed closure qualification; runtime callers must read these parts from
+    /// their current loader-owned NativeGameplayState, never from network input.
+    pub fn qualify_native_parts(
+        records: &[ProjectReferenceRecord],
+        profiles: &[ProjectV2AuthoringProfile],
+        target: &str,
+        ability: &str,
+    ) -> Result<Self, &'static str> {
+        let creature = profiles
             .iter()
             .find(|p| {
                 p.target.family == ProjectV2Family::Creature
@@ -53,9 +68,7 @@ impl QualifiedCreatureSelfHeal {
         }) {
             return Err("ability outside exact Creature membership");
         }
-        let behavior = draft
-            .core
-            .records
+        let behavior = records
             .iter()
             .find_map(|r| match r {
                 ProjectReferenceRecord::Creature {
@@ -66,9 +79,7 @@ impl QualifiedCreatureSelfHeal {
                 _ => None,
             })
             .ok_or("missing native Creature behavior binding")?;
-        let behavior_profile = draft
-            .state
-            .authoring_profiles
+        let behavior_profile = profiles
             .iter()
             .find(|p| {
                 p.target.family == ProjectV2Family::Behavior
@@ -89,9 +100,7 @@ impl QualifiedCreatureSelfHeal {
                     && d.ability.revision == "definition-r1"
             })
             .ok_or("ability absent from actual Behavior.defenses")?;
-        let ability_profile = draft
-            .state
-            .authoring_profiles
+        let ability_profile = profiles
             .iter()
             .find(|p| {
                 p.target.family == ProjectV2Family::Ability
@@ -134,9 +143,7 @@ impl QualifiedCreatureSelfHeal {
                 },
             }
         }
-        let effects = draft
-            .core
-            .records
+        let effects = records
             .iter()
             .find_map(|r| match r {
                 ProjectReferenceRecord::Ability { identity, effects }
@@ -151,9 +158,7 @@ impl QualifiedCreatureSelfHeal {
             return Err("selfheal slice requires one exact native Effect");
         }
         let effect = &effects[0];
-        let formula = draft
-            .core
-            .records
+        let formula = records
             .iter()
             .find_map(|r| match r {
                 ProjectReferenceRecord::Effect {
@@ -167,9 +172,7 @@ impl QualifiedCreatureSelfHeal {
                 _ => None,
             })
             .ok_or("native Effect is not Heal")?;
-        let effect_profile = draft
-            .state
-            .authoring_profiles
+        let effect_profile = profiles
             .iter()
             .find(|p| {
                 p.target.family == ProjectV2Family::Effect
@@ -186,10 +189,8 @@ impl QualifiedCreatureSelfHeal {
         {
             return Err("not source selfheal Effect");
         }
-        if !draft.core.records.iter().any(|r|matches!(r,ProjectReferenceRecord::Formula{identity} if identity.key==formula.key && identity.revision==formula.revision)){return Err("missing native Formula record")}
-        let profile = draft
-            .state
-            .authoring_profiles
+        if !records.iter().any(|r|matches!(r,ProjectReferenceRecord::Formula{identity} if identity.key==formula.key && identity.revision==formula.revision)){return Err("missing native Formula record")}
+        let profile = profiles
             .iter()
             .find(|p| {
                 p.target.family == ProjectV2Family::Formula

@@ -381,6 +381,7 @@ def test_documentation_fast_path(module):
                     metadata,
                     candidate_modes_verified=module.candidate_modes_safe(head),
                     candidate_sha=head,
+                    report_doc_packages=True,
                 )
             finally:
                 os.chdir(old_cwd)
@@ -393,12 +394,14 @@ def test_documentation_fast_path(module):
         result = candidate(docs_only)
         assert result["rust"] is False and result["windows"] is False, result
         assert result["reason"] == "unconsumed-auxiliary-inputs", result
+        assert "doc_packages" not in result, result
 
         # Mixed documentation and code never takes the documentation skip.
         result = candidate(docs_only | {"apps/game-server/src/lib.rs": "//! changed\n"})
         assert result["rust"] is True and result["reason"] != "unconsumed-auxiliary-inputs", result
         result = candidate(docs_only | {"apps/client/src/main.rs": "fn main() {}\n"})
         assert result["rust"] is True and result["windows"] is True, result
+        assert "doc_packages" not in result, result
 
         # Canonical workflow, composite action and classifier changes run FULL.
         for control in (
@@ -419,6 +422,7 @@ def test_documentation_fast_path(module):
         for consumed in ("docs/guides/new.md", "docs/contracts/NOTE.md"):
             result = candidate({consumed: "# changed\n"})
             assert result["rust"] is True and result["windows"] is True, (consumed, result)
+            assert "oteryn-client" in result["doc_packages"], result
 
     for path in (
         "docs/architecture/reviews/X.md", "docs/agents/tasks/archive/T.md",
@@ -469,6 +473,165 @@ def test_candidate_modes(module):
     print("Candidate mode PASS: regular trees accepted, special modes fail closed")
 
 
+def test_pr_audit_blob_rotation():
+    group_pin = b"EXPECTED_MERGE_GROUP_GATE_BLOB"
+    pr_pin = b"EXPECTED_MERGE_GATE_BLOB"
+    for pin, other_pin in ((group_pin, pr_pin), (pr_pin, group_pin)):
+        check_pr_audit_blob_rotation(pin, other_pin)
+
+
+def check_pr_audit_blob_rotation(pin, other_pin):
+    audit_path = ".github/workflows/merge-authority-audit.yml"
+    old, new = b"a" * 40, b"b" * 40
+    audit = (
+        b'    env:\n      ' + pin + b': "' + old + b'"\n'
+        b'      ' + other_pin + b': "' + b"c" * 40 + b'"\n'
+        b'      EXPECTED_AGENT_GOVERNANCE_BLOB: "' + b"e" * 40 + b'"\n'
+        b"    run: |\n      pin = os.environ['" + pin + b"']\n"
+    )
+    rotated = audit.replace(old, new)
+    audit_record = {"filename": audit_path, "status": "modified"}
+
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        git(root, "init", "-q")
+        git(root, "config", "user.email", "ci@example.invalid")
+        git(root, "config", "user.name", "CI")
+        path = root / audit_path
+        path.parent.mkdir(parents=True)
+        path.with_name("merge-gate.yml").write_text(f"run: test -f {audit_path}\n", encoding="utf-8")
+        path.write_bytes(audit)
+        git(root, "add", ".github")
+        git(root, "commit", "-qm", "protected base")
+        base = git(root, "rev-parse", "HEAD")
+        metadata = root / "metadata.json"
+        output = root / "output"
+        metadata.write_text(json.dumps(fixture()), encoding="utf-8")
+
+        def candidate(content, *, before=base, mode="100644", other_path=None):
+            git(root, "checkout", "-q", "--detach", before)
+            if content is None:
+                git(root, "rm", "-q", audit_path)
+            else:
+                blob = subprocess.check_output(
+                    ["git", "-C", str(root), "hash-object", "-w", "--stdin"], input=content
+                ).decode().strip()
+                target = other_path or audit_path
+                git(root, "update-index", "--add", "--cacheinfo", mode, blob, target)
+                git(root, "checkout-index", "-f", "--", target)
+                if other_path is not None:
+                    git(root, "rm", "-q", audit_path)
+            git(root, "commit", "-qm", "candidate")
+            return git(root, "rev-parse", "HEAD")
+
+        def route(head, *, before=base, post_merge=False, **overrides):
+            git(root, "checkout", "-q", "--detach", head if post_merge else before)
+            output.write_text("", encoding="utf-8")
+            env = dict(
+                os.environ, GITHUB_EVENT_NAME="pull_request", GITHUB_OUTPUT=str(output),
+                EXPECTED_HEAD=head, ENUMERATION_COMPLETE="true", CHANGED_FILE_COUNT="1",
+                CHANGED_FILE_RECORDS=json.dumps([audit_record]),
+            )
+            flags = []
+            if post_merge:
+                event = root / "push.json"
+                event.write_text(json.dumps(dict(
+                    before=before, after=head, ref="refs/heads/main",
+                    repository={"full_name": "Oteryn/Oteryn-Game"},
+                    forced=False, created=False, deleted=False,
+                )), encoding="utf-8")
+                env.update(
+                    GITHUB_EVENT_NAME="push", GITHUB_EVENT_PATH=str(event), GITHUB_SHA=head,
+                    GITHUB_REF="refs/heads/main", GITHUB_REF_PROTECTED="true",
+                    GITHUB_REPOSITORY="Oteryn/Oteryn-Game",
+                )
+                flags.append("--post-merge")
+            result = subprocess.check_output(
+                [sys.executable, "-I", "-B", str(MODULE.resolve()), *flags, str(metadata)],
+                cwd=root, env=env | overrides,
+            )
+            wire = dict(line.split("=", 1) for line in output.read_text(encoding="utf-8").splitlines())
+            return json.loads(result), wire
+
+        def assert_full(head, **kwargs):
+            result, _ = route(head, **kwargs)
+            assert result["rust"] is True and result["windows"] is True, (kwargs, result)
+            return result
+
+        exact = candidate(rotated)
+        for transport in ("true", "false"):
+            result, wire = route(exact, ENUMERATION_COMPLETE=transport)
+            assert result == dict(
+                rust=False, windows=False, surface="control-plane",
+                reason="merge-authority-audit-pin-only", routing_health="modelled",
+            ), result
+            assert wire == dict(
+                rust="false", windows="false", atlas_fullworld="false",
+                server_qualification="false", world_bundle="false", surface=result["surface"],
+                reason=result["reason"], routing_health="modelled",
+            ), wire
+
+        for content in (
+            rotated.replace(b"c" * 40, b"d" * 40),
+            rotated.replace(b': "', b':  "', 1),
+            rotated + b"\n",
+            rotated.replace(new, b"G" * 40),
+            rotated.replace(new, new[:-1]),
+            audit.replace(b"e" * 40, b"d" * 40),
+        ):
+            assert_full(candidate(content))
+        for invalid_base, base_pin in (
+            (audit.replace(old, b"G" * 40), b"G" * 40),
+            (audit + b'      "' + pin + b'" : "' + old + b'"\n', old),
+        ):
+            before = candidate(invalid_base)
+            head = candidate(invalid_base.replace(base_pin, new, 1), before=before)
+            assert_full(head, before=before)
+        assert_full(candidate(rotated, mode="100755"))
+        executable_base = candidate(audit, mode="100755")
+        assert_full(candidate(rotated, before=executable_base), before=executable_base)
+        assert_full(candidate(b"merge-gate.yml", mode="120000"))
+        assert_full(candidate(None))
+        assert_full(candidate(rotated, other_path=audit_path + ".renamed"))
+
+        git(root, "checkout", "-q", "--detach", exact)
+        (root / "unknown.bin").write_bytes(b"extra")
+        git(root, "add", "unknown.bin")
+        git(root, "commit", "-qm", "mixed")
+        mixed = git(root, "rev-parse", "HEAD")
+        assert_full(mixed)  # Even when the transported enumeration claims the one allowed path.
+        assert_full(mixed, ENUMERATION_COMPLETE="false")
+
+        empty_tree = subprocess.check_output(
+            ["git", "-C", str(root), "mktree"], input="", text=True,
+        ).strip()
+        tree = subprocess.check_output(
+            ["git", "-C", str(root), "mktree"],
+            input=git(root, "ls-tree", exact) + f"\n040000 tree {empty_tree}\tempty\n",
+            text=True,
+        ).strip()
+        tree_only_extra = git(root, "commit-tree", tree, "-p", base, "-m", "extra empty tree")
+        assert git(root, "diff", "--name-only", base, tree_only_extra) == audit_path
+        assert_full(tree_only_extra, ENUMERATION_COMPLETE="false")
+
+        git(root, "checkout", "-q", "--detach", base)
+        (root / "base-only.bin").write_bytes(b"base moved")
+        git(root, "add", "base-only.bin")
+        git(root, "commit", "-qm", "advanced protected base")
+        assert_full(exact, before=git(root, "rev-parse", "HEAD"))
+
+        assert_full(exact, CHANGED_FILE_COUNT="2")
+        assert_full(exact, ENUMERATION_COMPLETE="unknown")
+        assert_full(exact, CHANGED_FILE_RECORDS=json.dumps([dict(audit_record, previous_filename=audit_path)]))
+        assert_full(exact, GITHUB_EVENT_NAME="merge_group")
+        assert_full(base)
+        assert_full("0" * 40)
+        assert assert_full(exact, post_merge=True)["reason"] == "canonical-control-consumer-affected"
+        metadata.write_text("{}", encoding="utf-8")
+        assert_full(exact)
+    print("Audit rotation PASS: exact PR pin replacement only, full routing for all other cases")
+
+
 def test_large_pr_fallback(module):
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
@@ -506,6 +669,188 @@ def test_large_pr_fallback(module):
         assert complete is True and count == 301 and len(files) == 301, (count, len(files))
         assert before != after
     print("Large PR fallback PASS: exact Git trees recover complete changed-file evidence")
+
+
+def scope_pull(count, head="a" * 40, base="b" * 40):
+    return {
+        "state": "open",
+        "head": {"sha": head, "repo": {"full_name": "Oteryn/Oteryn-Game"}},
+        "base": {"ref": "main", "sha": base},
+        "changed_files": count,
+    }
+
+
+def run_scope(before, after, records=(), *, expected_head="a" * 40):
+    """Execute the production scope body; replace only its API and output boundary."""
+    import urllib.request
+
+    gate = (ROOT / ".github/workflows/merge-gate.yml").read_text(encoding="utf-8")
+    block = gate.split("  scope:\n", 1)[1].split("  lanes:\n", 1)[0]
+    script = textwrap.dedent(block.split("python - <<'PY'\n", 1)[1].rsplit("          PY", 1)[0])
+    pull_url = "https://api.github.com/repos/Oteryn/Oteryn-Game/pulls/42"
+    compare_url = (
+        "https://api.github.com/repos/Oteryn/Oteryn-Game/compare/"
+        f"{before['base']['sha']}...{expected_head}?per_page=1"
+    )
+    pulls = iter((before, after))
+    requests = []
+
+    def response(request, *, timeout):
+        assert timeout == 30
+        requests.append(request.full_url)
+        if request.full_url == pull_url:
+            return io.StringIO(json.dumps(next(pulls)))
+        assert request.full_url == compare_url, request.full_url
+        return io.StringIO(json.dumps({"files": records}))
+
+    with tempfile.TemporaryDirectory() as directory:
+        output = Path(directory) / "output"
+        env = {
+            "REPOSITORY": "Oteryn/Oteryn-Game", "EVENT_PR_NUMBER": "42",
+            "EVENT_PR_HEAD_SHA": expected_head, "GH_TOKEN": "fixture",
+            "GITHUB_OUTPUT": str(output),
+        }
+        errors = io.StringIO()
+        code = 0
+        with patch.dict(os.environ, env, clear=True), patch.object(
+            urllib.request, "urlopen", side_effect=response,
+        ), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(errors):
+            try:
+                exec(compile(script, "merge-gate:scope", "exec"), {})
+            except SystemExit as error:
+                code = error.code
+        wire = output.read_text(encoding="utf-8") if output.exists() else ""
+    return code, wire, errors.getvalue(), requests
+
+
+def test_scope_stable_small_pr():
+    pull = scope_pull(1)
+    records = [{"filename": "docs/note.md", "status": "modified"}]
+    code, wire, errors, requests = run_scope(pull, pull, records)
+    assert code == 0 and not errors, (code, errors)
+    outputs = dict(line.split("=", 1) for line in wire.splitlines())
+    assert outputs == {
+        "pr_number": "42", "target_sha": "a" * 40, "base_sha": "b" * 40,
+        "file_count": "1", "file_records": json.dumps(records, separators=(",", ":")),
+        "complete": "true",
+    }, outputs
+    assert len(requests) == 3 and requests[0] == requests[2], requests
+    assert f"/compare/{'b' * 40}...{'a' * 40}?per_page=1" in requests[1], requests
+    print("Scope stable small PR PASS: exact immutable comparison records remain complete")
+
+
+def test_scope_file_count_drift(module):
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        git(root, "init", "-q")
+        git(root, "config", "user.email", "ci@example.invalid")
+        git(root, "config", "user.name", "CI")
+        (root / "README.md").write_text("base\n", encoding="utf-8")
+        git(root, "add", ".")
+        git(root, "commit", "-qm", "base")
+        base = git(root, "rev-parse", "HEAD")
+        for name in (".github/workflows/merge-gate.yml", "docs/note.md"):
+            path = root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("changed\n", encoding="utf-8")
+        git(root, "add", ".")
+        git(root, "commit", "-qm", "candidate")
+        head = git(root, "rev-parse", "HEAD")
+        git(root, "checkout", "-q", base)
+        old_cwd = os.getcwd()
+        os.chdir(root)
+        try:
+            for first, second in ((2974, 2975), (2975, 2974), (1, 2), (2, 1),
+                                  (300, 301), (301, 300), (0, 2), (2, 0)):
+                records = [{"filename": f"docs/api-only-{index}.md", "status": "modified"}
+                           for index in range(first if first <= 300 else 0)]
+                code, wire, errors, requests = run_scope(
+                    scope_pull(first, head, base), scope_pull(second, head, base), records,
+                    expected_head=head,
+                )
+                assert code == 0, (first, second, errors)
+                outputs = dict(line.split("=", 1) for line in wire.splitlines())
+                assert outputs["complete"] == "false" and outputs["file_records"] == "[]", outputs
+                assert outputs["target_sha"] == head and outputs["base_sha"] == base, outputs
+                assert outputs["file_count"] == str(first), outputs
+                assert requests[0] == requests[-1] and len(requests) == (3 if first <= 300 else 2), requests
+                if first == 0:
+                    metadata = root / "zero-count-metadata.json"
+                    metadata.write_text(json.dumps(fixture()), encoding="utf-8")
+                    lane_output = root / "zero-count-lanes-output"
+                    lane_output.write_text("", encoding="utf-8")
+                    env = {
+                        "ENUMERATION_COMPLETE": outputs["complete"],
+                        "CHANGED_FILE_RECORDS": outputs["file_records"],
+                        "CHANGED_FILE_COUNT": outputs["file_count"],
+                        "EXPECTED_HEAD": outputs["target_sha"],
+                        "GITHUB_OUTPUT": str(lane_output),
+                        "GITHUB_EVENT_NAME": "pull_request",
+                    }
+                    run = subprocess.run(
+                        [sys.executable, str(MODULE), str(metadata)], cwd=root,
+                        env=dict(os.environ, **env), capture_output=True, text=True, check=False,
+                    )
+                    assert run.returncode == 0, run
+                    lanes = dict(line.split("=", 1) for line in lane_output.read_text().splitlines())
+                    assert lanes == {
+                        "rust": "true", "windows": "true", "atlas_fullworld": "true",
+                        "server_qualification": "true", "world_bundle": "true",
+                        "surface": "unknown", "reason": "classifier-or-metadata-failure",
+                        "routing_health": "degraded",
+                    }, lanes
+                    continue
+                with patch.dict(os.environ, {
+                    "ENUMERATION_COMPLETE": outputs["complete"],
+                    "CHANGED_FILE_RECORDS": outputs["file_records"],
+                    "CHANGED_FILE_COUNT": outputs["file_count"],
+                    "EXPECTED_HEAD": outputs["target_sha"],
+                }):
+                    files, count, complete = module.pr_file_records()
+                assert complete is True and count == 2, (files, count, complete)
+                assert {item["filename"] for item in files} == {
+                    ".github/workflows/merge-gate.yml", "docs/note.md",
+                }, files
+                result = classify(module, files)
+                assert result["rust"] is True and result["windows"] is True, result
+        finally:
+            os.chdir(old_cwd)
+    print("Scope count drift PASS: seven positive-first transitions recover exact Git; zero-first selects FULL")
+
+
+def test_scope_invalid_file_counts():
+    invalid = (-1, None, "1", 1.5, True, False)
+    records = [{"filename": "docs/note.md", "status": "modified"}]
+    for phase in ("before", "after"):
+        for value in invalid:
+            before, after = scope_pull(1), scope_pull(1)
+            target = before if phase == "before" else after
+            target["changed_files"] = value
+            code, wire, errors, _ = run_scope(before, after, records)
+            assert code == 1 and wire == "", (phase, value, code, wire, errors)
+            assert "invalid" in errors, (phase, value, errors)
+        before, after = scope_pull(1), scope_pull(1)
+        del (before if phase == "before" else after)["changed_files"]
+        code, wire, errors, _ = run_scope(before, after, records)
+        assert code == 1 and wire == "" and "invalid" in errors, (phase, code, wire, errors)
+    print("Scope invalid counts PASS: both reads reject negative/missing/null/string/float/bool without outputs")
+
+
+def test_scope_identity_drift():
+    records = [{"filename": "docs/note.md", "status": "modified"}]
+    changes = (
+        {"state": "closed"},
+        {"head": {"sha": "c" * 40, "repo": {"full_name": "Oteryn/Oteryn-Game"}}},
+        {"head": {"sha": "a" * 40, "repo": {"full_name": "fork/Game"}}},
+        {"base": {"ref": "main", "sha": "c" * 40}},
+        {"base": {"ref": "other", "sha": "b" * 40}},
+    )
+    for second_count in (1, 2):
+        for change in changes:
+            after = dict(scope_pull(second_count), **change)
+            code, wire, errors, _ = run_scope(scope_pull(1), after, records)
+            assert code == 1 and wire == "", (second_count, change, code, wire, errors)
+    print("Scope identity fences PASS: five identity changes fail with stable or drifting counts and no outputs")
 
 
 def test_scope_count_drift(module):
@@ -610,6 +955,106 @@ def test_scope_count_drift(module):
     print("Scope count drift PASS: immutable recovery or FULL fallback; authority and count validity stay strict")
 
 
+def test_hosted_rust_edit_receipt():
+    import qualified_rust_edit as proof
+
+    repo, head, pr, stamp = "org/repo", "a" * 40, "38", "b" * 64
+    run = {"id": 7, "run_attempt": 1, "display_title": "Merge gate • pull_request • 38",
+           "status": "completed", "conclusion": "success", "event": "pull_request", "head_sha": head,
+           "path": ".github/workflows/merge-gate.yml", "head_repository": {"full_name": repo}}
+    jobs = [{"name": "game-gate", "conclusion": "success"},
+            {"name": "Merge gate / validate", "conclusion": "success", "steps": [
+                {"name": "Qualified hosted Rust inputs " + stamp, "conclusion": "success"}]}]
+
+    def check(runs, listed=jobs, wanted=stamp, live=None, extra_pages=False):
+        history = iter([runs, runs if live is None else live])
+        def fetch(path):
+            if path.startswith("actions/workflows/merge-gate.yml/runs?"):
+                rows = next(history)
+                return {"total_count": len(rows) + int(extra_pages), "workflow_runs": rows}
+            assert path == "actions/runs/7/attempts/1/jobs?per_page=100"
+            return {"total_count": len(listed), "jobs": listed}
+        return proof.reusable(fetch, repo, pr, head, 8, wanted)
+
+    assert check([run | {"id": 8, "status": "in_progress"}, run]) == "7/1"
+    assert not check([])
+    assert not check([run], wanted="different base, image or selection")
+    assert not check([run], listed=jobs[1:])
+    assert not check([run], listed=[jobs[0], jobs[1] | {"conclusion": "skipped"}])
+    assert not check([run], live=[run | {"run_attempt": 2}])
+    assert not check([run], extra_pages=True)
+    older = run | {"id": 6}
+    assert check([older, run])
+    for change in ({"run_attempt": 2}, {"run_attempt": 2, "conclusion": "failure"},
+                   {"status": "queued", "conclusion": None}, {"status": "in_progress", "conclusion": None},
+                   {"conclusion": "cancelled"}, {"conclusion": "failure"}):
+        assert not check([older | change, run])
+        assert not check([older, run], live=[older | change, run])
+    for changed in ({"display_title": "Merge gate • pull_request • 39"}, {"id": 9},
+                    {"run_attempt": 2}, {"status": "in_progress"}, {"conclusion": "failure"},
+                    {"conclusion": "cancelled"}, {"event": "push"}, {"head_sha": "c" * 40},
+                    {"head_repository": {"full_name": "another/repo"}}, {"path": "some-other-workflow"}):
+        assert not check([run | changed]), changed
+    assert not check([run | {"id": 5}, run | {"conclusion": "failure"}])
+
+    from hashlib import sha1
+    content = (ROOT / proof.WORKFLOW).read_bytes()
+    blob = sha1(f"blob {len(content)}\0".encode() + content).hexdigest()
+    execution_sha, event_base = "d" * 40, "c" * 40
+    def contents(path):
+        assert path == f"contents/{proof.WORKFLOW}?ref={execution_sha}"
+        return {"type": "file", "sha": blob}
+    assert proof.protected_workflow(contents, execution_sha, event_base, event_base) == blob
+    assert not proof.protected_workflow(contents, execution_sha, event_base, "e" * 40)
+    assert not proof.protected_workflow(lambda _: {"type": "file", "sha": "f" * 40},
+                                        execution_sha, event_base, event_base)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        event_path = Path(tmp) / "event.json"
+        out = Path(tmp) / "out"
+        env = {"GITHUB_EVENT_PATH": str(event_path), "GITHUB_OUTPUT": str(out),
+               "GITHUB_REPOSITORY": repo, "GITHUB_RUN_ID": "8", "GITHUB_RUN_ATTEMPT": "1",
+               "PR_NUMBER": pr, "HEAD_SHA": head, "BASE_SHA": "c" * 40, "ImageVersion": "20261120",
+               "RUNNER_OS": "Linux", "RUNNER_ARCH": "X64", "ROUTING": "full", "FILE_RECORDS": "[]",
+               "MOLEHILL_MODE": "off", "GITHUB_WORKFLOW_SHA": execution_sha, "GH_TOKEN": "test"}
+        def execute(action, changes, *, final=False, source="7/1", **updates):
+            event_path.write_text(json.dumps({"action": action, "changes": changes,
+                                              "pull_request": {"base": {"sha": event_base}}}))
+            out.write_text("")
+            with (patch.dict(os.environ, env | updates), patch.object(proof, "reusable", return_value=source),
+                  patch.object(proof.request, "urlopen", return_value=response(contents(
+                      f"contents/{proof.WORKFLOW}?ref={execution_sha}")))):
+                proof.main(final=final)
+            return dict(line.split("=", 1) for line in out.read_text().splitlines())
+
+        def response(data):
+            return io.BytesIO(json.dumps(data).encode())
+
+        initial = execute("opened", {})
+        assert initial["reuse"] == "false" and initial["stamp"]
+        for changes in ({"title": {}}, {"body": {}}, {"title": {}, "body": {}}):
+            rpt = execute("edited", changes)
+            assert rpt["reuse"] == "true" and rpt["stamp"] == initial["stamp"]
+        for changes in ({}, {"base": {}}, {"body": {}, "base": {}}, {"unknown": {}}):
+            assert execute("edited", changes)["reuse"] == "false"
+        assert execute("edited", {"body": {}}, GITHUB_RUN_ATTEMPT="2")["reuse"] == "false"
+        assert execute("edited", {"title": {}}, MOLEHILL_MODE="auto")["stamp"] == ""
+        for key in ("BASE_SHA", "HEAD_SHA", "ImageVersion", "RUNNER_ARCH", "ROUTING", "FILE_RECORDS"):
+            assert execute("opened", {}, **{key: "e" * 40})["stamp"] != initial["stamp"]
+
+        # A partial rerun can retain the planning job's outputs. The authoritative
+        # check must use the same source even when the upstream jobs did not rerun.
+        final_env = {"GITHUB_RUN_ATTEMPT": "2", "EXPECTED_SOURCE": "7/1", "EXPECTED_STAMP": initial["stamp"]}
+        execute("edited", {"body": {}}, final=True, **final_env)
+        for changed in ({"source": None}, {"source": "6/1"}, {"EXPECTED_SOURCE": "7/2"},
+                        {"EXPECTED_STAMP": "expired"}, {"BASE_SHA": "e" * 40}):
+            try:
+                execute("edited", {"body": {}}, final=True, **(final_env | changed))
+            except SystemExit:
+                continue
+            raise AssertionError(f"invalid retained proof authorized publication: {changed}")
+
+
 def test_metadata_events():
     """PR edits must qualify normally without cancelling the product run."""
     core_path = ROOT / "tools/repository/validate_repository_policy_core.py"
@@ -627,20 +1072,18 @@ def test_metadata_events():
     final = core.indented_yaml_mapping_block(gate, "game_gate", 2)
     aggregate_guard = f"    if: always() && ({main_guard})\n"
     assert aggregate_guard in aggregate and aggregate_guard in final
-    assert "    name: game-gate\n" in final and "    needs: [scope, validate]\n" in final
-    assert '        run: test "$LEGACY_VALIDATE" = "success"\n' in final
+    assert "    name: game-gate\n" in final and "    needs: [scope, lanes, rust_fast_build, validate]\n" in final
+    assert '          test "$LEGACY_VALIDATE" = "success" &&\n' in final
+    assert '            [[ "$RUST_FAST_BUILD" == success || "$RUST_FAST_BUILD" == skipped ]]\n' in final
 
     # Evaluate the exact hosted concurrency expressions for overlapping runs.
-    # Every run of one PR shares one group, so an edit queues behind the active
-    # qualification and reuses its job-result markers. Only metadata edits
-    # leave the running qualification alone; retarget and synchronize
-    # supersede it, and unrelated PRs never share a group.
+    # A burst of edits must not replace the pending product run for this PR.
     def expression_of(prefix):
         line = next(line for line in gate.splitlines() if line.startswith(prefix))
         return line, line.split("${{", 1)[1].rsplit("}}", 1)[0].strip()
     group_line, group_expression = expression_of("  group:")
     cancel_line, cancel_expression = expression_of("  cancel-in-progress:")
-    assert group_line == "  group: ${{ format('merge-gate-{0}', github.event.pull_request.number) }}"
+    assert group_line == "  group: ${{ github.event.action == 'edited' && github.event.changes.base == null && format('merge-gate-{0}-edits', github.event.pull_request.number) || format('merge-gate-{0}', github.event.pull_request.number) }}"
     assert cancel_line == "  cancel-in-progress: ${{ !(github.event.action == 'edited' && github.event.changes.base == null) }}"
     def evaluate(expression, action, base_changed, number, run_id):
         expression = expression.replace("github.event.action", "action")
@@ -660,9 +1103,11 @@ def test_metadata_events():
         return evaluate(cancel_expression, action, base_changed, 42, 1)
     product = group("synchronize", False, 42, 1)
     assert product == "merge-gate-42"
-    for action, base_changed in (("edited", False), ("edited", True), ("synchronize", False),
+    for action, base_changed in (("edited", True), ("synchronize", False),
                                  ("opened", False), ("reopened", False)):
         assert group(action, base_changed, 42, 9) == product
+    assert group("edited", False, 42, 7) != product
+    assert group("edited", False, 42, 7) == group("edited", False, 42, 8)
     assert group("synchronize", False, 43, 6) != product
     for action in ("synchronize", "opened", "reopened"):
         assert cancels(action, False) is True
@@ -708,9 +1153,11 @@ def test_aggregate():
     block = gate.split("  validate:\n", 1)[1].split("  game_gate:\n", 1)[0]
     script = textwrap.dedent(block.split("python - <<'PY'\n", 1)[1].rsplit("          PY", 1)[0])
     mandatory = ("SCOPE", "LANES", "GOVERNANCE", "DEPENDENCY_REVIEW", "ROUTING_CONTRACT")
-    fast_rust = ("RUST_POLICY", "RUST_FAST", "RUST_SUPPLY_CHAIN")
+    fast_rust = ("RUST_POLICY", "RUST_FAST", "RUST_CLIPPY", "RUST_SUPPLY_CHAIN")
     env = dict.fromkeys(mandatory + fast_rust, "success")
     env.update(WORLD_BUNDLE="success", RUST_REQUIRED="true", WINDOWS_REQUIRED="true")
+    env.update(RUST_CLIENT_UI_REQUIRED="true", RUST_CLIENT_UI="success")
+    env.update(RUST_FAST_BUILD_REQUIRED="true", RUST_FAST_BUILD="success")
 
     def accepts(changes):
         with patch.dict(os.environ, dict(env, **changes)), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
@@ -721,6 +1168,29 @@ def test_aggregate():
                 return False
 
     assert accepts({})
+    reused = {"REUSE_RUST": "true", "RUST_ROUTE": "skipped", "RUST_FAST": "skipped", "RUST_CLIPPY": "skipped",
+              "RUST_FAST_BUILD": "skipped", "RUST_CLIENT_UI": "skipped"}
+    assert accepts(reused)
+    for result in ("skipped", "failure", "cancelled", ""):
+        assert not accepts({"RUST_CLIPPY": result})
+    for name in reused.keys() - {"REUSE_RUST"}:
+        assert not accepts(reused | {name: "failure"})
+    for name in ("SCOPE", "GOVERNANCE", "DEPENDENCY_REVIEW", "RUST_SUPPLY_CHAIN", "RUST_POLICY"):
+        assert not accepts(reused | {name: "failure"})
+    assert accepts({"RUST_FAST_BUILD_REQUIRED": "false", "RUST_FAST_BUILD": "skipped"})
+    for result in ("skipped", "failure", "cancelled", ""):
+        assert not accepts({"RUST_FAST_BUILD": result})
+    for result in ("success", "failure", "cancelled", ""):
+        assert not accepts({"RUST_FAST_BUILD_REQUIRED": "false", "RUST_FAST_BUILD": result})
+    for flag in ("", "maybe"):
+        assert not accepts({"RUST_FAST_BUILD_REQUIRED": flag, "RUST_FAST_BUILD": "skipped"})
+    for result in ("skipped", "failure", "cancelled", ""):
+        assert not accepts({"RUST_CLIENT_UI": result})
+    for flag in ("", "maybe"):
+        assert not accepts({"RUST_CLIENT_UI_REQUIRED": flag})
+    assert accepts({"RUST_CLIENT_UI_REQUIRED": "false", "RUST_CLIENT_UI": "skipped"})
+    for result in ("failure", "cancelled", ""):
+        assert not accepts({"RUST_CLIENT_UI_REQUIRED": "false", "RUST_CLIENT_UI": result})
     # Labels cannot demand a heavyweight PR qualification anymore.
     assert "full_ci" not in gate and "full-ci" not in gate
     for name in ("codeql", "atlas_fullworld", "rust_linux", "rust_windows", "node_boot", "server_seam"):
@@ -728,6 +1198,8 @@ def test_aggregate():
         assert "needs." + name + ".result" not in block, name
     assert accepts(dict.fromkeys(fast_rust, "skipped") | {
         "RUST_REQUIRED": "false", "WINDOWS_REQUIRED": "false",
+        "RUST_CLIENT_UI_REQUIRED": "", "RUST_CLIENT_UI": "skipped",
+        "RUST_FAST_BUILD_REQUIRED": "", "RUST_FAST_BUILD": "skipped",
     })
     assert not accepts({"RUST_REQUIRED": "false", "WINDOWS_REQUIRED": "true"})
     for flag in ("RUST_REQUIRED", "WINDOWS_REQUIRED"):
@@ -932,16 +1404,122 @@ def test_repository_tool_dependencies(module):
     print("Repository tool dependencies PASS: auxiliary case, consumer promotion, security and unknown FULL")
 
 
+def test_directory_reference_left_boundary(module):
+    """Prose naming a directory is not a consumer (#3243, #3236, #3211, #3197, #3192,
+    #3177, #3143); quoted, `/`-joined and exact-file references still are."""
+    prose = b'"source": "no pinned spawn chance in content or docs/reference"\n'
+    assert module.directory_reference_occurrences(prose, "docs/reference") == [], prose
+    for content in (b'"docs/reference"', b"'docs/reference'", b'"/../../docs/reference/"', b"docs/reference\n"):
+        assert module.directory_reference_occurrences(content, "docs/reference"), content
+
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        git(root, "init", "-q")
+        git(root, "config", "user.email", "ci@example.invalid")
+        git(root, "config", "user.name", "CI")
+        metadata = fixture()
+        metadata_root = PurePosixPath(metadata["workspace_root"])
+        for package in metadata["packages"]:
+            relative = PurePosixPath(package["manifest_path"]).relative_to(metadata_root)
+            manifest = root.joinpath(*relative.parts)
+            manifest.parent.mkdir(parents=True, exist_ok=True)
+            manifest.write_text("[package]\n", encoding="utf-8")
+        files = {
+            # tools/world-bundle-compiler/held-boss-chances.json:12
+            "crates/foundation/held-boss-chances.json":
+                '{"source": "BOSS-SPAWN-1 owner decision 2026-11-05; no pinned spawn chance in content or docs/reference"}\n',
+            # apps/game-server/src/node/serve/bundle_npcs.rs:799
+            "apps/game-server/src/bundle_npcs.rs":
+                'const E: &str = include_str!(concat!(\n    env!("CARGO_MANIFEST_DIR"),\n'
+                '    "/../../docs/reference/content-prep/season-20261107/seasonal-calendar-source.json"\n));\n',
+            # crates/gameplay/content/src/content/character_progression_content/tests.rs:138
+            "crates/foundation/src/tests.rs":
+                'const T: &[u8] = include_bytes!(\n'
+                '    "../../../../../../docs/reference/experience-table-20261005/evidence.json"\n);\n',
+            "apps/client/src/lib.rs": 'fn d() { let _ = std::fs::read_dir("/../../docs/reference/quoted"); }\n',
+        }
+        changed = (
+            "docs/reference/content-prep/season-20261107/seasonal-calendar-source.json",
+            "docs/reference/experience-table-20261005/evidence.json",
+            "docs/reference/parity/damage.md",
+            "docs/reference/global-test-server/batch-summary.json",
+            "docs/reference/quoted/data.json",
+        )
+        for path, text in files.items():
+            (root / path).parent.mkdir(parents=True, exist_ok=True)
+            (root / path).write_text(text, encoding="utf-8")
+        for path in changed:
+            (root / path).parent.mkdir(parents=True, exist_ok=True)
+            (root / path).write_text("{}\n", encoding="utf-8")
+        workflows = root / ".github/workflows"
+        workflows.mkdir(parents=True, exist_ok=True)
+        for name in ("merge-gate.yml", "merge-group-gate.yml", "rust.yml"):
+            (workflows / name).write_text("name: control\n", encoding="utf-8")
+        git(root, "add", ".")
+        git(root, "commit", "-qm", "fixture")
+        sha = git(root, "rev-parse", "HEAD")
+        old_cwd = os.getcwd()
+        os.chdir(root)
+        try:
+            found = module.candidate_reference_consumers(metadata, sha, list(changed))
+        finally:
+            os.chdir(old_cwd)
+    assert found["docs/reference/parity/damage.md"] == set(), found
+    assert found["docs/reference/global-test-server/batch-summary.json"] == set(), found
+    assert found[changed[0]] == {module.SERVER}, found
+    assert found[changed[1]] == {"oteryn-foundation"}, found
+    assert found["docs/reference/quoted/data.json"] == {"oteryn-client"}, found
+    print("Directory reference left boundary PASS: prose ignored; quoted, joined and exact-file consumers kept")
+
+
+def test_client_only_pg_scope(module):
+    metadata = fixture()
+    for suffix in ("dispatch", "durability"):
+        name = "oteryn-gameplay-" + suffix
+        metadata["workspace_members"].append(name)
+        metadata["packages"].append({
+            "name": name, "id": name, "dependencies": [],
+            "manifest_path": f"/repo/crates/gameplay/{suffix}/Cargo.toml",
+        })
+
+    def needs_pg(*paths):
+        return module.classify(
+            [{"filename": path, "status": "modified"} for path in paths],
+            len(paths), metadata, candidate_modes_verified=True,
+            reference_consumers={path: set() for path in paths},
+        ).get("postgres", True)
+
+    client = "apps/client/src/about.rs"
+    assert not needs_pg(client)
+    assert needs_pg(client, "apps/game-server/src/lib.rs")
+    assert needs_pg("apps/client/Cargo.toml")
+    assert needs_pg("apps/client/src/migrations/schema.rs")
+    assert needs_pg("apps/client/src/world.json")
+    # A new optional/build/dev dependency of a PG owner must widen coverage.
+    metadata["packages"][-1]["dependencies"].append({
+        "name": "oteryn-client", "kind": "dev", "path": "/repo/apps/client",
+    })
+    assert needs_pg(client)
+
+
 def main() -> int:
     module = load_module()
+    test_hosted_rust_edit_receipt()
     test_metadata_events()
     test_repository_tool_dependencies(module)
     test_routing_matrix(module)
+    test_client_only_pg_scope(module)
     test_exact_candidate_reference_scan(module)
+    test_directory_reference_left_boundary(module)
     test_documentation_fast_path(module)
     test_candidate_modes(module)
+    test_pr_audit_blob_rotation()
     test_large_pr_fallback(module)
+    test_scope_file_count_drift(module)
     test_scope_count_drift(module)
+    test_scope_identity_drift()
+    test_scope_invalid_file_counts()
+    test_scope_stable_small_pr()
     test_aggregate()
     test_server_qualification(module)
     test_world_bundle(module)

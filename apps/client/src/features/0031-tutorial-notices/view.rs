@@ -1,5 +1,10 @@
 use crate::play::{PlayLink, mailbox::lock};
 impl PlayLink {
+    /// Changes presentation visibility without changing the retained server notices.
+    pub fn notices_set_open(&self, open: bool) {
+        lock(&self.mailbox).notices.open = open;
+    }
+
     #[must_use]
     pub fn notices_panel(&self) -> oteryn_client_ui::tutorial_notices::NoticePanel {
         lock(&self.mailbox).notices.clone()
