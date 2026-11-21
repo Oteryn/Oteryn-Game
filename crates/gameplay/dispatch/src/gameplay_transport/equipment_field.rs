@@ -140,6 +140,22 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                     *field_only = false;
                     true
                 }
+                ItemAbility::ElementalProtection { percent }
+                    if matches!(
+                        element,
+                        ReferenceResistanceKind::Fire
+                            | ReferenceResistanceKind::Ice
+                            | ReferenceResistanceKind::Earth
+                            | ReferenceResistanceKind::Energy
+                    ) =>
+                {
+                    *ability = ItemAbility::Protection {
+                        element,
+                        percent: *percent,
+                        field_only: false,
+                    };
+                    true
+                }
                 _ => false,
             });
             if let Some((facts, target, revision)) = timed {
