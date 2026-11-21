@@ -1,6 +1,6 @@
 //! Starter-backpack, temple-respawn and first-vocation journeys on the ordinary Character.
 //! No provisioning: all assertions consume native admission, command or delta frames.
-use super::starter_inventory::check_starter;
+use super::starter_inventory::{check_starter, newhaven_loadout};
 use super::*;
 use oteryn_dev_client::client_runtime::inventory;
 use oteryn_dev_client::{CharacterInventory, DevClientSession, SessionEvent};
@@ -787,22 +787,26 @@ async fn starter_backpack(row: &mut Row, clients: &SeamClients<'_>) -> TestResul
     let mut client = connect_world(clients, 0xe0).await?;
     let result: TestResult = async {
         let index = provisioning::item_index()?;
-        let definition = provisioning::item_reference(&index, 2854)?;
-        let entries = [
-            provisioning::item_reference(&index, 3003)?,
-            provisioning::item_reference(&index, 3457)?,
-        ];
+        // run.sh bootstraps the ordinary Character with the profile's vocation under
+        // `newhaven-starter-r1`; the explorer profile is a Knight.
+        let profile = std::env::var("NODE_BOOT_PROFILE").unwrap_or_else(|_| "sorcerer".into());
+        let vocation = if profile == "explorer" {
+            "knight"
+        } else {
+            profile.as_str()
+        };
+        let expected = newhaven_loadout(vocation, |id| provisioning::item_reference(&index, id))?;
         check_starter(
             client
                 .inventory()
                 .ok_or("starter inventory snapshot missing")?,
-            definition,
-            entries,
+            &expected,
         )?;
         row.pass("first-entry-backpack", client.inventory());
 
-        // A container cannot become a weapon. Require the native refusal, then re-admit
-        // to check both rollback and the first-entry grant's occupied-slot replay path.
+        // A container cannot be worn as an amulet (the kit occupies both hands). Require the
+        // native refusal, then re-admit to check both rollback and the first-entry grant's
+        // occupied-slot replay path.
         let source = client
             .inventory()
             .and_then(|inventory| inventory.main_backpack)
@@ -812,7 +816,7 @@ async fn starter_backpack(row: &mut Row, clients: &SeamClients<'_>) -> TestResul
             client.session_mut(),
             inventory::MoveRequest {
                 source,
-                destination: items::ItemMoveDestination::Equipment(items::EquipmentSlot::RightHand),
+                destination: items::ItemMoveDestination::Equipment(items::EquipmentSlot::Necklace),
                 count: None,
             },
         )
@@ -831,8 +835,7 @@ async fn starter_backpack(row: &mut Row, clients: &SeamClients<'_>) -> TestResul
             client
                 .inventory()
                 .ok_or("starter relog inventory missing")?,
-            definition,
-            entries,
+            &expected,
         )?;
         row.pass("relog-custody-no-second-grant", client.inventory());
         relog(&mut client, clients, 0xe2).await?;
@@ -840,8 +843,7 @@ async fn starter_backpack(row: &mut Row, clients: &SeamClients<'_>) -> TestResul
             client
                 .inventory()
                 .ok_or("second starter relog inventory missing")?,
-            definition,
-            entries,
+            &expected,
         )?;
         row.pass("second-relog-no-second-grant", client.inventory());
         Ok(())

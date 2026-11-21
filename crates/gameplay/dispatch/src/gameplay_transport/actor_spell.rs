@@ -114,6 +114,8 @@ use crate::spell::cast::{CastContext, CharacterCastFacts, PlayerSpellState, cast
 /// command, no damage and no credit, and its death record goes with its entry.
 #[derive(Debug)]
 pub struct ChannelSpellStates {
+    #[cfg(test)]
+    pub(super) drunk_seed_fixture: Option<[u8; 32]>,
     pub(super) encounter_phases: super::encounter_phases::Registry,
     pub(super) native_self_heals: crate::foundation::CreatureSelfHealLedger,
     pub(super) native_self_heal_content: Option<[u8; 32]>,
@@ -327,6 +329,8 @@ impl<I, T> PendingSpellMarker<I, T> {
 impl Default for ChannelSpellStates {
     fn default() -> Self {
         Self {
+            #[cfg(test)]
+            drunk_seed_fixture: None,
             encounter_phases: Default::default(),
             native_self_heals: Default::default(),
             native_self_heal_content: None,

@@ -58,6 +58,7 @@ mod liquid_black;
 mod magic_effects;
 mod marriage;
 mod monk;
+mod mordecai_shop;
 mod npc_item_exchanges;
 mod planegazer_finale;
 mod premium_purchase;
@@ -81,8 +82,8 @@ pub(super) use premium_purchase::resume_npc_talk;
 struct SessionNpc {
     recent: RecentIntents,
     healing_command: Option<u64>,
-    /// The NPC whose trade window the session was shown (domain 8).
-    window: Option<EntityRef>,
+    /// The NPC and optional shop category shown to the session (domain 8).
+    window: Option<(EntityRef, Option<&'static mordecai_shop::Category>)>,
     /// The exact bounded offer list shown in this window, including its rank filter.
     window_offers: Vec<crate::content::ProjectV2ServiceOffer>,
     /// Display cache only; the NPC trade writer independently checks quest points.
@@ -327,7 +328,7 @@ impl NpcConversations {
     ) -> Option<NpcTradeWindow> {
         let mut sessions = self.sessions.lock().ok()?;
         let state = sessions.get_mut(&session)?;
-        let shown = state.window?;
+        let (shown, _) = state.window?;
         talking_to
             .is_none_or(|identity| identity != shown.identity)
             .then(|| {
@@ -353,16 +354,41 @@ impl NpcConversations {
         now: SemanticTimeMicros,
         items: Option<&ItemDefinitionIndex>,
     ) -> NpcTalkOutcome {
+        let prior_focus = chat.engaged(session);
         let mut outcome = self.converse(chat, runtime, actor, session, intent, now);
         let talking_to = chat.engaged(session);
         let opened = (outcome.disposition == NpcIntentDisposition::Ok
-            && talking_to.is_some_and(|npc| npc.placement_identity() == intent.npc_actor.identity)
-            && ChatText::parse(&intent.text).is_ok_and(|text| {
-                service_context::live_npc(runtime, actor, session, intent.npc_actor).is_some_and(
-                    |npc| oteryn_gameplay_npc::npc_talk::asks_to_trade_for(&npc.key, text.as_str()),
-                )
-            }))
-        .then(|| self.open_window(chat, runtime, session, intent.npc_actor, items))
+            && talking_to.is_some_and(|npc| npc.placement_identity() == intent.npc_actor.identity))
+        .then(|| {
+            let npc = service_context::live_npc(runtime, actor, session, intent.npc_actor)?;
+            let focused = prior_focus == Some(npc.actor);
+            let category = focused
+                .then(|| mordecai_shop::Category::for_message(&npc.key, &intent.text))
+                .flatten();
+            let text = ChatText::parse(&intent.text).ok()?;
+            if category.is_none()
+                && !oteryn_gameplay_npc::npc_talk::asks_to_trade_for(&npc.key, text.as_str())
+            {
+                return None;
+            }
+            if focused
+                && chat
+                    .npc_talk()
+                    .and_then(|book| book.get(&npc.key))
+                    .is_some_and(|entry| {
+                        entry.dialogue_keyword_preempts_trade(&npc.key, text.as_str())
+                    })
+            {
+                return None;
+            }
+            if let Some(category) = category {
+                outcome.conversation = Some(NpcConversation {
+                    open: Some((intent.npc_actor, NpcConversationState::Open)),
+                    lines: vec![category.reply()],
+                });
+            }
+            self.open_window(chat, runtime, session, intent.npc_actor, items, category)
+        })
         .flatten();
         outcome.window = match opened {
             Some(window) => Some(window),
@@ -413,15 +439,15 @@ impl NpcConversations {
                     .map(|state| (state.window, state.window_offers.clone()))
             })
             .unwrap_or_default();
-        if shown != Some(intent.npc_actor) {
+        let Some((_, category)) = shown.filter(|(npc, _)| *npc == intent.npc_actor) else {
             // No window is open on this NPC: there is nothing to re-project.
             return Err(Box::new(NpcTradeRefusal::only(Disposition::Rejected)));
-        }
+        };
         // NPC-0 §5.1: the client's revision, offer and price are only stale checks; a mismatch
         // is STALE and re-projects the window.
         let stale = || {
             let window = self
-                .open_window(chat, runtime, session, intent.npc_actor, items)
+                .open_window(chat, runtime, session, intent.npc_actor, items, category)
                 .unwrap_or_default();
             if window.open.is_none()
                 && let Ok(mut sessions) = self.sessions.lock()

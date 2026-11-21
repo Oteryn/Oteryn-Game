@@ -59,7 +59,9 @@ fn run_case(tag: &str, body: impl AsyncFnOnce(&mut PgConnection) -> TestResult) 
                 let prefix = admin_url.strip_suffix("/postgres").ok_or("invalid route")?;
                 let mut connection = PgConnection::connect(&format!("{prefix}/{name}")).await?;
                 // The actual native migration chain supplies both items and tiers.
-                sqlx::migrate!("./migrations").run(&mut connection).await?;
+                oteryn_gameplay_durability::GAME_MIGRATOR
+                    .run(&mut connection)
+                    .await?;
                 let installed: bool =
                     sqlx::query_scalar("SELECT success FROM _sqlx_migrations WHERE version=$1")
                         .bind(FORGE_TIER_MIGRATION_VERSION)

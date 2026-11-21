@@ -635,7 +635,9 @@ async fn database() -> TestResult<(String, String)> {
             format!("the seam qualification requires PostgreSQL 18.6, found {version}").into(),
         );
     }
-    sqlx::migrate!("./migrations").run(&mut connection).await?;
+    oteryn_gameplay_durability::GAME_MIGRATOR
+        .run(&mut connection)
+        .await?;
     connection.close().await?;
     Ok((url, version))
 }

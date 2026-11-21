@@ -21,6 +21,7 @@ use oteryn_gameplay_quests::quest::{
 };
 
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
+use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
 use serde::Deserialize;
 
@@ -474,6 +475,411 @@ pub(super) async fn seed_quest_prerequisites(
     Ok(())
 }
 
+async fn earn_rook_citizen_addon(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    npc: EntityRef,
+    callbacks: &[RewardCallback],
+    backpack: bool,
+) -> TestResult {
+    use super::qengine_rewards_fixtures::wire_reward;
+
+    select_outfit_capabilities(owner, admitted)?;
+    let steps: &[&str] = if backpack {
+        &["backpack-start", "backpack-materials", "backpack"]
+    } else {
+        &["hat-start", "hat"]
+    };
+    let mut bags = Vec::new();
+    let mut occurrence = 400;
+    for step in steps {
+        let key = format!("oteryn:quest-reward/l6-citizen-rook-{step}");
+        let reward = callbacks.iter().find(|row| row.key == key).ok_or("Rook Citizen callback")?;
+        for item in &reward.take {
+            supply(owner, admitted, h, item, &mut bags, &mut occurrence).await?;
+        }
+        if *step == "backpack" {
+            let track = &reward.state_ops.first().ok_or("Rook backpack wait")?.track;
+            // Age only the timer written by Amber's successful material hand-in.
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+            let affected = sqlx::query(
+                "UPDATE game_character_quest_tracks SET value=value-7201 WHERE track_key=$1 AND value>7201",
+            ).bind(track).execute(&mut *tx).await?.rows_affected();
+            assert_eq!(affected, 1);
+            tx.commit().await?;
+            owner.refresh_quest_session(admitted.game_session_id, false).await;
+        }
+        let (result, _, _) = wire_reward(owner, admitted, npc, reward, reward.outfit.is_some()).await?;
+        assert_eq!(result, NpcIntentDisposition::Ok, "{key}");
+    }
+    Ok(())
+}
+
+async fn crystal_citizen(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    name: &str,
+) -> TestResult {
+    use super::classic_quests_fixtures::{install, talk};
+    let (label, key) = match name {
+        "qengine-rewards-qb-crystal-lubo-mission-zero" => ("lubo", "qb-citizen-backpack-materials"),
+        "qengine-rewards-qb-crystal-amber-mission-zero" => {
+            ("amber", "l6-citizen-rook-backpack-materials")
+        }
+        "qengine-rewards-qb-crystal-norma-mission-zero" => ("norma", "l6-citizen-rook-hat"),
+        "qengine-rewards-qb-crystal-hanna-mission-zero"
+        | "qengine-rewards-qb-crystal-hanna-completed" => ("hanna", "qb-citizen-hat"),
+        "qengine-rewards-qb-crystal-lubo-completed" => ("lubo", "qb-citizen-backpack"),
+        "qengine-rewards-qb-crystal-amber-completed" => ("amber", "l6-citizen-rook-backpack"),
+        "qengine-rewards-qb-crystal-lubo-progress"
+        | "qengine-rewards-qb-crystal-lubo-free-account" => ("lubo", "qb-citizen-backpack"),
+        "qengine-rewards-qb-crystal-norma-restart" => ("norma", "l6-citizen-rook-hat"),
+        _ => return Err("unknown Citizen parity case".into()),
+    };
+    let npc_key = format!("oteryn:npc.{label}");
+    let callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
+    let owned_backpack = name.ends_with("lubo-progress");
+    let npc = if owned_backpack {
+        let [lubo, amber] = install(owner, admitted, [npc_key.as_str(), "oteryn:npc.amber"]).await?;
+        earn_rook_citizen_addon(owner, admitted, h, amber, &callbacks, true).await?;
+        lubo
+    } else {
+        let [npc] = install(owner, admitted, [npc_key.as_str()]).await?;
+        npc
+    };
+    let key = format!("oteryn:quest-reward/{key}");
+    let reward = callbacks
+        .iter()
+        .find(|row| row.key == key)
+        .ok_or("Citizen reward")?;
+    if name.ends_with("norma-restart") {
+        use super::qengine_rewards_fixtures::wire_reward;
+        select_outfit_capabilities(owner, admitted)?;
+        let start = callbacks
+            .iter()
+            .find(|row| row.key == "oteryn:quest-reward/l6-citizen-rook-hat-start")
+            .ok_or("Norma's recipe")?;
+        let mut bags = Vec::new();
+        let mut occurrence = 500;
+        for owned in [false, true] {
+            let (result, _, _) = wire_reward(owner, admitted, npc, start, false).await?;
+            assert_eq!(result, NpcIntentDisposition::Ok, "Norma opens her recipe");
+            for item in &reward.take {
+                supply(owner, admitted, h, item, &mut bags, &mut occurrence).await?;
+            }
+            let before = counts(h).await?;
+            let mut inventory_before = Vec::new();
+            for item in &reward.take {
+                inventory_before.push(quantity(h, &item.item).await?);
+            }
+            let (result, _, _) = wire_reward(owner, admitted, npc, reward, !owned).await?;
+            if owned {
+                assert_eq!(result, NpcIntentDisposition::Rejected);
+                assert_eq!(counts(h).await?, before);
+            } else {
+                assert_eq!(result, NpcIntentDisposition::Ok);
+                assert!(counts(h).await?.3 > before.3, "first hand-in earns the hat");
+            }
+            for (item, available) in reward.take.iter().zip(inventory_before) {
+                assert_eq!(
+                    quantity(h, &item.item).await?,
+                    available - if owned { 0 } else { i64::from(item.count) },
+                    "Norma charges only for the first hat"
+                );
+            }
+        }
+        return Ok(());
+    }
+    let mut progress = reward
+        .storage
+        .iter()
+        .map(|row| (row.track.clone(), row.set))
+        .collect::<Vec<_>>();
+
+    if name.ends_with("mission-zero") {
+        select_outfit_capabilities(owner, admitted)?;
+        for (track, value) in &mut progress {
+            *value = i64::from(!track.contains("/mission_"));
+        }
+        seed_quest_prerequisites(h, owner, admitted, &progress, 106).await?;
+        owner
+            .refresh_quest_session(admitted.game_session_id, false)
+            .await;
+        let mut bags = Vec::new();
+        let mut occurrence = 500;
+        let mut inventory_before = Vec::new();
+        for item in &reward.take {
+            supply(owner, admitted, h, item, &mut bags, &mut occurrence).await?;
+            inventory_before.push(quantity(h, &item.item).await?);
+        }
+        let (result, _, _) =
+            super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, reward, false).await?;
+        assert_eq!(
+            result,
+            NpcIntentDisposition::Ok,
+            "{label} accepts payment at mission zero"
+        );
+        for (item, available) in reward.take.iter().zip(inventory_before) {
+            assert_eq!(
+                quantity(h, &item.item).await?,
+                available - i64::from(item.count)
+            );
+        }
+        for state in &reward.storage {
+            let value: i64 = sqlx::query_scalar(
+                "SELECT value FROM game_character_quest_tracks WHERE track_key=$1",
+            )
+            .bind(&state.track)
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(value, state.set);
+        }
+        if let Some(timer) = reward.state_ops.first() {
+            let value: i64 = sqlx::query_scalar(
+                "SELECT value FROM game_character_quest_tracks WHERE track_key=$1",
+            )
+            .bind(&timer.track)
+            .fetch_one(&h.pool)
+            .await?;
+            assert!(value > 0, "{label} starts the backpack timer after payment");
+        }
+        return Ok(());
+    }
+
+    let lubo_payment = matches!(
+        name,
+        "qengine-rewards-qb-crystal-lubo-progress" | "qengine-rewards-qb-crystal-lubo-free-account"
+    );
+    if lubo_payment {
+        for (_, value) in &mut progress {
+            *value = 1;
+        }
+        let materials = callbacks
+            .iter()
+            .find(|row| row.key == "oteryn:quest-reward/qb-citizen-backpack-materials")
+            .ok_or("leather payment")?;
+        let leather = materials.take.first().ok_or("leather")?;
+        let mut bags = Vec::new();
+        let mut occurrence = 500;
+        if owned_backpack {
+            let start = callbacks.iter()
+                .find(|row| row.key == "oteryn:quest-reward/qb-citizen-backpack-start")
+                .ok_or("Lubo's recipe")?;
+            let (result, _, _) =
+                super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, start, false).await?;
+            assert_eq!(result, NpcIntentDisposition::Ok);
+        }
+        supply(owner, admitted, h, leather, &mut bags, &mut occurrence).await?;
+        if owned_backpack {
+            let before = counts(h).await?;
+            let available = quantity(h, &leather.item).await?;
+            let (result, _, _) =
+                super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, materials, false).await?;
+            assert_eq!(result, NpcIntentDisposition::Rejected);
+            assert_eq!(counts(h).await?, before);
+            assert_eq!(quantity(h, &leather.item).await?, available);
+            return Ok(());
+        }
+    }
+    seed_quest_prerequisites(h, owner, admitted, &progress, 106).await?;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    talk(owner, admitted, npc, 110, "hi").await?;
+    let before = counts(h).await?;
+    let leather = "oteryn:item.tibia.i5878";
+    let leather_before = quantity(h, leather).await?;
+    let lines = talk(owner, admitted, npc, 111, "addon").await?;
+    if name.ends_with("completed") {
+        let expected = if label == "hanna" {
+            "Pretty hat, isn't it?"
+        } else {
+            "I can only make one backpack per person"
+        };
+        assert!(
+            lines.iter().any(|line| line.contains(expected)),
+            "{lines:?}"
+        );
+        assert_eq!(counts(h).await?, before);
+        assert_eq!(quantity(h, leather).await?, leather_before);
+    } else {
+        let result =
+            super::qengine_rewards_fixtures::talk(owner, admitted, npc, 112, "yes").await?;
+        if lubo_payment {
+            assert_eq!(result, NpcIntentDisposition::Ok);
+            assert_eq!(quantity(h, leather).await?, leather_before - 100);
+            assert_eq!(counts(h).await?.3, before.3);
+        }
+    }
+    Ok(())
+}
+
+pub(super) fn select_outfit_capabilities(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+) -> TestResult {
+    let mut selected = admitted
+        .continuity
+        .selected_capabilities
+        .as_slice()
+        .to_vec();
+    selected.extend([3, 6, 25]);
+    selected.sort_unstable();
+    selected.dedup();
+    let offered = crate::gameplay_transport::appearance_change::offer::offered(
+        owner.offered_capabilities(),
+        owner.appearance_available(),
+    );
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
+            .ok_or("capabilities")?;
+    Ok(())
+}
+
+async fn citizen_hat_regression(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    name: &str,
+) -> TestResult {
+    select_outfit_capabilities(owner, admitted)?;
+    let callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
+    let starting = name.starts_with("qengine-rewards-qb-start-");
+    let key = if starting {
+        "oteryn:quest-reward/qb-citizen-hat-start"
+    } else {
+        "oteryn:quest-reward/qb-citizen-hat"
+    };
+    let hat = callbacks
+        .iter()
+        .find(|callback| callback.key == key)
+        .ok_or("mainland hat callback")?;
+    let already_owned = name.ends_with("owned-hat");
+    let hanna = if already_owned {
+        let [hanna, norma] = super::classic_quests_fixtures::install(
+            owner, admitted, ["oteryn:npc.hanna", "oteryn:npc.norma"],
+        ).await?;
+        earn_rook_citizen_addon(owner, admitted, h, norma, &callbacks, false).await?;
+        if !starting {
+            let start = callbacks.iter()
+                .find(|row| row.key == "oteryn:quest-reward/qb-citizen-hat-start")
+                .ok_or("Hanna's recipe")?;
+            let (result, _, _) =
+                super::qengine_rewards_fixtures::wire_reward(owner, admitted, hanna, start, false).await?;
+            assert_eq!(result, NpcIntentDisposition::Ok);
+        }
+        hanna
+    } else {
+        let [hanna] = super::classic_quests_fixtures::install(owner, admitted, ["oteryn:npc.hanna"]).await?;
+        hanna
+    };
+    let ready = hat
+        .storage
+        .iter()
+        .map(|state| {
+            let value = if !starting && state.track.ends_with("/mission_hat") {
+                1
+            } else {
+                state.minimum
+            };
+            (state.track.clone(), value)
+        })
+        .collect::<Vec<_>>();
+    if !already_owned {
+        seed_quest_prerequisites(h, owner, admitted, &ready, 106).await?;
+    }
+
+    if name.ends_with("main-predecessor") {
+        // Restore a historical pin alongside the progress populated by the fixture.
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("INSERT INTO game_character_quest_states(character_id,quest_key,pinned_content_revision,definition_hash,started_character_revision,committed_character_revision) SELECT character_id,$1,'content-1',decode('f03faa35abd9af89c281d3b4f7db2dd569ae32eadd9187727e7882e4c90e3ccf','hex'),character_revision,character_revision FROM game_character_roots")
+            .bind(&hat.quest).execute(&mut *tx).await?;
+        tx.commit().await?;
+    }
+    assert_eq!(
+        owner
+            .session_premium_gate(admitted.game_session_id)
+            .await
+            .premium_current(),
+        !name.ends_with("free-account")
+    );
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    let mut bags = Vec::new();
+    let mut occurrence = 500;
+    let mut inventory_before = Vec::new();
+    for item in &hat.take {
+        supply(owner, admitted, h, item, &mut bags, &mut occurrence).await?;
+        let available = quantity(h, &item.item).await?;
+        assert!(available >= i64::from(item.count));
+        inventory_before.push(available);
+    }
+    let (result, _, _) = super::qengine_rewards_fixtures::wire_reward(
+        owner,
+        admitted,
+        hanna,
+        hat,
+        name.ends_with("main-predecessor"),
+    )
+    .await?;
+    assert_eq!(
+        result,
+        if already_owned && !starting {
+            NpcIntentDisposition::Rejected
+        } else {
+            NpcIntentDisposition::Ok
+        },
+        "{name}"
+    );
+    let hat_key = callbacks
+        .iter()
+        .find(|callback| callback.key == "oteryn:quest-reward/qb-citizen-hat")
+        .and_then(|callback| callback.outfit.as_ref())
+        .ok_or("mainland hat reward")?
+        .grant_key(2);
+    let receipts: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_account_appearance_unlock_receipts WHERE unlock_key=$1",
+    )
+    .bind(hat_key)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(receipts, i64::from(already_owned || !starting));
+    for state in &hat.storage {
+        let value: i64 =
+            sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
+                .bind(&state.track)
+                .fetch_one(&h.pool)
+                .await?;
+        let prior = ready.iter().find(|(track, _)| *track == state.track).ok_or("prior track")?.1;
+        assert_eq!(value, if already_owned && !starting { prior } else { state.set });
+    }
+    for (item, available) in hat.take.iter().zip(inventory_before) {
+        assert_eq!(
+            quantity(h, &item.item).await?,
+            if already_owned { available } else { available - i64::from(item.count) },
+        );
+    }
+    Ok(())
+}
+
+fn outfit_loot_creature(family: &str, item: &str) -> Option<&'static str> {
+    match (family, item) {
+        ("barbarian" | "warrior", "oteryn:item.tibia.i5884") => Some("souleater"),
+        ("barbarian", "oteryn:item.tibia.i5885") => Some("undead_gladiator"),
+        ("barbarian", "oteryn:item.tibia.i5893") => Some("behemoth"),
+        ("warrior", "oteryn:item.tibia.i5899") => Some("tortoise"),
+        ("warrior", "oteryn:item.tibia.i5925") => Some("bonebeast"),
+        _ => None,
+    }
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -481,6 +887,42 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-qb-creature-loot" {
+        for (index, (creature, item)) in [
+            ("merlkin", 3348),
+            ("dworc_voodoomaster", 3403),
+            ("faun", 5014),
+            ("souleater", 5884),
+            ("undead_gladiator", 5885),
+            ("behemoth", 5893),
+            ("tortoise", 5899),
+            ("bonebeast", 5925),
+            ("rotworm", 3374),
+        ].into_iter().enumerate() {
+            let key = format!("oteryn:item.tibia.i{item}");
+            super::l6_tomb_native_fixtures::hunt_loot(
+                owner, admitted, h, creature, &key, 1, 20_000 + 4 * u64::try_from(index)?,
+            ).await?;
+            assert!(quantity(h, &key).await? > 0, "{creature} materialized {item}");
+        }
+        return Ok(());
+    }
+    if name.ends_with("-main-outfit-pin") {
+        return Box::pin(super::outfit_participant_pins_fixtures::exercise(owner, admitted, h, name)).await;
+    }
+    if name.starts_with("qengine-rewards-qb-crystal-") {
+        return Box::pin(crystal_citizen(owner, admitted, h, name)).await;
+    }
+    if matches!(
+        name,
+        "qengine-rewards-qb-main-predecessor"
+            | "qengine-rewards-qb-owned-hat"
+            | "qengine-rewards-qb-free-account"
+            | "qengine-rewards-qb-start-owned-hat"
+            | "qengine-rewards-qb-start-free-account"
+    ) {
+        return Box::pin(citizen_hat_regression(owner, admitted, h, name)).await;
+    }
     let (family, steps, look): (&str, &[StoryStep], u16) = match name {
         "qengine-rewards-l2-wizard-skull-story" => (
             "wizard",
@@ -795,6 +1237,58 @@ pub(super) async fn exercise(
             ],
             136,
         ),
+        // TibiaWiki `Barbarian_Outfits_Quest/Spoiler`: Bron's wig and Ajax's axe near Northport.
+        "qengine-rewards-qb-barbarian-story" => (
+            "barbarian",
+            &[
+                ("bron-start", None, None, None),
+                ("ajax-please", None, None, None),
+                ("ajax-wait", None, None, None),
+                ("bron-person", None, None, None),
+                ("ajax-gelagos", None, None, None),
+                ("bron-spirit", Some((5884, 1)), None, None),
+                ("bron-task", None, None, None),
+                ("bron-cloth", Some((5911, 50)), None, None),
+                ("bron-yarn", Some((5886, 10)), None, None),
+                ("bron-sweat", Some((5885, 1)), None, None),
+                ("bron-wig", None, None, Some(2)),
+                ("ajax-axe-start", None, None, None),
+                ("ajax-ore", Some((5880, 100)), None, None),
+                ("ajax-crude-iron", Some((5892, 1)), None, None),
+                ("ajax-fangs", Some((5893, 50)), None, None),
+                ("ajax-leather", Some((5876, 50)), None, None),
+                ("ajax-axe", None, None, Some(1)),
+            ],
+            147,
+        ),
+        // TibiaWiki `Citizen_Outfits_Quest/Spoiler`: Lubo and Hanna on the mainland.
+        "qengine-rewards-qb-citizen-story" => (
+            "citizen",
+            &[
+                ("backpack-start", None, None, None),
+                ("backpack-materials", Some((5878, 100)), None, None),
+                ("backpack", None, None, Some(1)),
+                ("hat-start", None, None, None),
+                ("hat", Some((3374, 1)), None, Some(2)),
+            ],
+            136,
+        ),
+        // TibiaWiki `Warrior_Outfits_Quest/Spoiler`: Trisha, Cornelia and Morgan.
+        "qengine-rewards-qb-warrior-story" => (
+            "warrior",
+            &[
+                ("shoulder-start", None, None, None),
+                ("shoulder-bones", Some((5925, 100)), None, None),
+                ("shoulder-shells", Some((5899, 100)), None, None),
+                ("shoulder-spirit", Some((5884, 1)), None, None),
+                ("shoulder-claw", Some((5919, 1)), None, None),
+                ("shoulder-work", None, None, None),
+                ("shoulder", None, None, Some(1)),
+                ("sword-start", None, None, None),
+                ("sword", Some((5887, 1)), Some((5880, 100)), Some(2)),
+            ],
+            142,
+        ),
         _ => return Err("unknown outfit story".into()),
     };
     let outfit_family = if family == "druid-rook" {
@@ -826,6 +1320,8 @@ pub(super) async fn exercise(
             "l4"
         } else if name.starts_with("qengine-rewards-l3-") {
             "l3"
+        } else if name.starts_with("qengine-rewards-qb-") {
+            "qb"
         } else {
             "l2"
         };
@@ -861,11 +1357,14 @@ pub(super) async fn exercise(
                 .map(amount)
                 .collect();
         }
-        if family == "citizen-rook" && *suffix == "hat" {
+        if matches!(family, "citizen-rook" | "citizen") && *suffix == "hat" {
             expected_take = [(3374, 1), (5902, 50), (5890, 100)]
                 .iter()
                 .map(amount)
                 .collect();
+        }
+        if family == "barbarian" && *suffix == "bron-cloth" {
+            expected_take = [(5910, 50), (5911, 50)].iter().map(amount).collect();
         }
         if family == "pirate" && *suffix == "hat" {
             expected_take = [(6101, 1), (6102, 1), (6100, 1), (6099, 1)]
@@ -875,7 +1374,7 @@ pub(super) async fn exercise(
         }
         if matches!(
             family,
-            "royal-costume" | "druid-rook" | "druid" | "knight" | "assassin" | "hunter"
+            "royal-costume" | "druid-rook" | "druid" | "knight" | "assassin" | "hunter" | "warrior"
         ) {
             expected_take.extend(present.iter().map(amount));
         }
@@ -884,7 +1383,13 @@ pub(super) async fn exercise(
             callback.present,
             if matches!(
                 family,
-                "royal-costume" | "druid-rook" | "druid" | "knight" | "assassin" | "hunter"
+                "royal-costume"
+                    | "druid-rook"
+                    | "druid"
+                    | "knight"
+                    | "assassin"
+                    | "hunter"
+                    | "warrior"
             ) {
                 vec![]
             } else {
@@ -927,6 +1432,14 @@ pub(super) async fn exercise(
             "exact source quest gift"
         );
 
+        if batch == "qb" {
+            assert_eq!(
+                callback.requires_premium,
+                family != "citizen",
+                "Premium gate for {}",
+                callback.key
+            );
+        }
         if family == "beggar" && *suffix == "first-materials" {
             assert_eq!(
                 serde_json::to_value(&callback)?["fee"],
@@ -1305,27 +1818,24 @@ pub(super) async fn exercise(
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
-    let mut selected = admitted
-        .continuity
-        .selected_capabilities
-        .as_slice()
-        .to_vec();
-    selected.extend([3, 6, 25]);
-    selected.sort_unstable();
-    selected.dedup();
-    let offered = crate::gameplay_transport::appearance_change::offer::offered(
-        owner.offered_capabilities(),
-        owner.appearance_available(),
-    );
-    admitted.continuity.selected_capabilities =
-        crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
-            .ok_or("capabilities")?;
+    select_outfit_capabilities(owner, admitted)?;
     // Earn ordinary carrying capacity through the real progression owner for
     // the largest source recipes, preserving every native weight check.
     if matches!(
         family,
-        "battle-mage" | "royal-costume" | "pirate" | "oriental" | "knight" | "hunter" | "mage"
+        "barbarian"
+            | "battle-mage"
+            | "royal-costume"
+            | "pirate"
+            | "oriental"
+            | "knight"
+            | "hunter"
+            | "mage"
+            | "shaman"
+            | "warrior"
     ) {
+        // The fixture carries full source batches and a surplus unit to verify exact
+        // consumption. Trisha's 100 hardened bones alone weigh 600 oz.
         let carrying_level = if family == "royal-costume" { 200 } else { 50 };
         earn_level(owner, admitted, authority, carrying_level).await?;
     }
@@ -1433,6 +1943,18 @@ pub(super) async fn exercise(
         for (key, actor) in keys.into_iter().zip(actors) {
             npcs.insert(key.to_owned(), actor);
         }
+    } else if family == "barbarian" {
+        let keys = ["oteryn:npc.ajax", "oteryn:npc.bron"];
+        let actors = super::classic_quests_fixtures::install(owner, admitted, keys).await?;
+        for (key, actor) in keys.into_iter().zip(actors) {
+            npcs.insert(key.to_owned(), actor);
+        }
+    } else if family == "citizen" {
+        let keys = ["oteryn:npc.lubo", "oteryn:npc.hanna"];
+        let actors = super::classic_quests_fixtures::install(owner, admitted, keys).await?;
+        for (key, actor) in keys.into_iter().zip(actors) {
+            npcs.insert(key.to_owned(), actor);
+        }
     } else if family == "citizen-rook" {
         let keys = ["oteryn:npc.amber", "oteryn:npc.norma"];
         let actors = super::classic_quests_fixtures::install(owner, admitted, keys).await?;
@@ -1474,6 +1996,16 @@ pub(super) async fn exercise(
         }
     } else if family == "assassin" {
         let keys = ["oteryn:npc.vescu", "oteryn:npc.erayo", "oteryn:npc.atrad"];
+        let actors = super::classic_quests_fixtures::install(owner, admitted, keys).await?;
+        for (key, actor) in keys.into_iter().zip(actors) {
+            npcs.insert(key.to_owned(), actor);
+        }
+    } else if family == "warrior" {
+        let keys = [
+            "oteryn:npc.trisha",
+            "oteryn:npc.cornelia",
+            "oteryn:npc.morgan",
+        ];
         let actors = super::classic_quests_fixtures::install(owner, admitted, keys).await?;
         for (key, actor) in keys.into_iter().zip(actors) {
             npcs.insert(key.to_owned(), actor);
@@ -1613,9 +2145,16 @@ pub(super) async fn exercise(
                 }
             }
             if quantity(h, &item.item).await? < i64::from(item.count) {
-                supply(owner, admitted, h, item, &mut bags, &mut occurrence)
-                    .await
-                    .map_err(|e| format!("source ingredient {}: {e}", item.item))?;
+                if let Some(creature) = outfit_loot_creature(family, &item.item) {
+                    super::l6_tomb_native_fixtures::hunt_loot(
+                        owner, admitted, h, creature, &item.item, item.count, 20_000 + occurrence,
+                    ).await?;
+                    occurrence += 1 + u64::from(item.count);
+                } else {
+                    supply(owner, admitted, h, item, &mut bags, &mut occurrence)
+                        .await
+                        .map_err(|e| format!("source ingredient {}: {e}", item.item))?;
+                }
             }
             if (matches!(
                 family,
@@ -1626,7 +2165,8 @@ pub(super) async fn exercise(
                     | "assassin"
                     | "hunter"
                     | "mage"
-            ) || (matches!(family, "pirate" | "citizen-rook")
+                    | "warrior"
+            ) || (matches!(family, "pirate" | "citizen-rook" | "citizen")
                 && callback.key.ends_with("-hat")))
                 && needed.len() > 1
                 && index == 0

@@ -10,6 +10,26 @@ const KILLS: &str = "oteryn:quest-progress/questpc7/hero/constructs";
 
 const BOSS: &str = "oteryn:quest-progress/questpc7/hero/maxxen";
 
+async fn reward_quantities(h: &Harness) -> TestResult<[i64; 3]> {
+    use super::questpc7_outfit_items_fixtures::quantity;
+
+    Ok([
+        quantity(h, 21897).await?,
+        quantity(h, 21203).await?,
+        quantity(h, 3035).await?,
+    ])
+}
+
+async fn reward_sources(h: &Harness) -> TestResult<i64> {
+    let count = sqlx::query_scalar(
+        "SELECT count(*) FROM game_quest_reward_sources WHERE transition_key=$1",
+    )
+    .bind("oteryn:quest-callback/questpc7-hero-reward")
+    .fetch_one(&h.pool)
+    .await?;
+    Ok(count)
+}
+
 async fn value(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     a: &AdmittedSession,
@@ -254,19 +274,20 @@ pub(super) async fn exercise(
     assert_eq!(value(owner, a, BOSS).await?, 1);
     let premium = owner.premium_coordinator;
     owner.premium_coordinator = None;
+    // The quantity query includes platinum coins from the constructs' corpses.
+    let before_reward = reward_quantities(h).await?;
     assert_eq!(
         use_at(owner, a, 33571, 31952, 1855).await?,
         UseDisposition::Rejected,
         "fresh Premium is required at reward delivery"
     );
     owner.premium_coordinator = premium;
-    for item in [21897, 21203, 3035] {
-        assert_eq!(
-            super::questpc7_outfit_items_fixtures::quantity(h, item).await?,
-            0,
-            "refusal must not mint any reward"
-        );
-    }
+    assert_eq!(
+        reward_quantities(h).await?,
+        before_reward,
+        "refusal must not mint any reward"
+    );
+    assert_eq!(reward_sources(h).await?, 0);
     assert_eq!(
         use_at(owner, a, 33571, 31952, 1855).await?,
         UseDisposition::Committed
@@ -277,24 +298,20 @@ pub(super) async fn exercise(
         1,
         "native dungeon-door access is earned with completion"
     );
-    for (item, amount) in [(21897, 1), (21203, 4), (3035, 5)] {
-        assert_eq!(
-            super::questpc7_outfit_items_fixtures::quantity(h, item).await?,
-            amount
-        );
-    }
+    let [blueprints, bags, coins] = before_reward;
+    let after_reward = [blueprints + 1, bags + 4, coins + 5];
+    assert_eq!(reward_quantities(h).await?, after_reward);
     let completed:bool=sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.hero_of_rathleton_quest'").bind(super::fixture::id(41).as_slice()).fetch_one(&h.pool).await?;
     assert!(completed);
     assert_eq!(
         use_at(owner, a, 33571, 31952, 1855).await?,
         UseDisposition::Rejected
     );
-    for (item, amount) in [(21897, 1), (21203, 4), (3035, 5)] {
-        assert_eq!(
-            super::questpc7_outfit_items_fixtures::quantity(h, item).await?,
-            amount,
-            "repeat cannot duplicate rewards"
-        );
-    }
+    assert_eq!(
+        reward_quantities(h).await?,
+        after_reward,
+        "repeat cannot duplicate rewards"
+    );
+    assert_eq!(reward_sources(h).await?, 1);
     Ok(())
 }
