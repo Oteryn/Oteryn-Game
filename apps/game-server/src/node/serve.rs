@@ -12,6 +12,9 @@ mod audit_collector;
 mod channel_boot;
 mod public_house_catalogue;
 mod qualification_fixture;
+#[cfg(test)]
+#[path = "serve/postgres_tests/readiness.rs"]
+mod readiness_postgres_tests;
 mod supervision;
 mod t94;
 mod world_reset;
@@ -35,7 +38,9 @@ use crate::durability::admission_authority_guards::{
 use crate::durability::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority,
 };
-use crate::durability::character_command::{Classified, classify_intent};
+use crate::durability::character_command::{
+    Classified, RetainedCreatePublisherStore, classify_intent,
+};
 use crate::durability::native_admission_source::{DescriptorRegistration, FreshStoreProvenance};
 use crate::durability::runtime_scope_assignment::{
     AssignmentError, AssignmentState, BootstrapSecret, LaunchBinding, NodeIncarnationProof,
@@ -58,7 +63,7 @@ use crate::native_admission_source::account_characters::{
 };
 use crate::native_admission_source::bazaar::transport as bazaar_transport;
 use crate::native_admission_source::character_commands::{
-    CommandDescriptor, Consumer, Decider, Decision, Input, MtlsSource,
+    CommandDescriptor, Consumer, CreateSendability, Decider, Decision, Input, MtlsSource,
 };
 use crate::native_admission_source::descriptor::ProducerDescriptor;
 use crate::native_admission_source::public_projections::{
@@ -80,7 +85,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, UnixListener, UnixStream};
 use tokio::sync::Mutex;
 
-mod bundle_npcs;
+pub(crate) mod bundle_npcs;
 pub(crate) mod daily_world_changes;
 
 /// Registered protocol facts fixed by the build (D5).
@@ -99,7 +104,9 @@ const LAST_POSITION_FLUSH_BUDGET: Duration = Duration::from_secs(3);
 const AUDIT_INTERVAL: Duration = Duration::from_secs(60 * 60);
 const AUDIT_BATCH: u16 = 64;
 const AUDIT_RUN_CAP: u32 = 64;
-const CONTROL_REQUEST_BYTES: usize = 64;
+/// The longest valid control line: `spawn <36-byte session> <key of at most 128 bytes>\n`
+/// (172 bytes); `qualify` and operation ids are shorter. A longer line is refused unread.
+const CONTROL_REQUEST_BYTES: usize = 6 + 36 + 1 + 128 + 1;
 const CONTROL_DEADLINE: Duration = Duration::from_secs(30);
 const MAX_GAMEPLAY_KEY_BYTES: usize = 16 * 1024;
 
@@ -453,6 +460,20 @@ fn invalid(key: &'static str) -> BootError {
     BootError::Startup(StartupError::Invalid { key })
 }
 
+type ServiceProjectionMaterial = (
+    crate::native_admission_source::character_services_projection::Descriptor,
+    String,
+    std::path::PathBuf,
+);
+
+type CommandTransportMaterial = (
+    CommandDescriptor,
+    String,
+    crate::durability::character_command::account_deletion::Config,
+    bool,
+    Option<ServiceProjectionMaterial>,
+);
+
 type BazaarTransportMaterial = (
     bazaar_transport::BazaarDescriptor,
     ProducerDescriptor,
@@ -477,13 +498,7 @@ struct Material {
         std::sync::Mutex<Option<(ProjectionDescriptor, String, std::path::PathBuf)>>,
     /// Character-command consumer identity and source authority; `None`
     /// (the default) disables it. Taken once by the serving loop.
-    character_commands: std::sync::Mutex<
-        Option<(
-            CommandDescriptor,
-            String,
-            crate::durability::character_command::account_deletion::Config,
-        )>,
-    >,
+    character_commands: std::sync::Mutex<Option<CommandTransportMaterial>>,
     bazaar: std::sync::Mutex<Option<BazaarTransportMaterial>>,
     /// Public-projection publisher: its identity, source authority and epoch
     /// fence `F_pub`; `None` (absent or not enabled) disables it. Taken once
@@ -703,10 +718,98 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
                 &others,
             )
             .map_err(|_| invalid("platform.character_commands"))?;
+            let services = if platform.services_v2_enabled {
+                let services = platform
+                    .character_services
+                    .as_ref()
+                    .ok_or_else(|| invalid("platform.character_services"))?;
+                let own = chain(
+                    "platform.character_services.client_certificate_file",
+                    &services.client_certificate_file,
+                )?;
+                let key = private_key(
+                    "platform.character_services.client_key_file",
+                    &secret(
+                        "platform.character_services.client_key_file",
+                        &services.client_key_file,
+                        MAX_GAMEPLAY_KEY_BYTES,
+                    )?,
+                )?;
+                let mut other_chains = vec![client.clone(), gameplay_chain.clone()];
+                let mut paths = vec![&commands.client_certificate_file];
+                if let Some(v) = &platform.bootstrap_intents {
+                    paths.push(&v.client_certificate_file);
+                }
+                if let Some(v) = &platform.runtime_status {
+                    paths.push(&v.client_certificate_file);
+                }
+                if let Some(v) = &platform.account_characters {
+                    paths.push(&v.client_certificate_file);
+                }
+                if let Some(v) = &platform.bazaar {
+                    paths.push(&v.client_certificate_file);
+                }
+                if let Some(v) = platform.public_projections.as_ref().filter(|v| v.enabled) {
+                    paths.push(&v.client_certificate_file);
+                }
+                if let Some(v) = platform.world_event_outcomes.as_ref().filter(|v| v.enabled) {
+                    paths.push(&v.client_certificate_file);
+                }
+                if let Some(v) = config
+                    .journal
+                    .as_ref()
+                    .filter(|_| config.game_journal_items_export_enabled)
+                {
+                    paths.push(&v.client_certificate_file);
+                }
+                for path in paths {
+                    other_chains.push(chain(
+                        "platform.character_services.identity_separation",
+                        path,
+                    )?);
+                }
+                for name in [
+                    "OTERYN_PREMIUM_CLIENT_IDENTITY_PEM",
+                    "OTERYN_PLATFORM_SANCTION_STREAM_CLIENT_IDENTITY_PEM",
+                    "OTERYN_PLATFORM_LOYALTY_STREAM_CLIENT_IDENTITY_PEM",
+                    "OTERYN_PLATFORM_SECURITY_REVOCATION_STREAM_CLIENT_IDENTITY_PEM",
+                    "OTERYN_PLATFORM_ENFORCEMENT_READER_CLIENT_IDENTITY_PEM",
+                    "OTERYN_PLATFORM_ENFORCEMENT_RESULTS_CLIENT_IDENTITY_PEM",
+                    "OTERYN_PLATFORM_PROFILE_B_AUTHORITY_CLIENT_IDENTITY_PEM",
+                    "OTERYN_PLATFORM_PROFILE_B_CHANGES_CLIENT_IDENTITY_PEM",
+                ] {
+                    if let Some(path) = std::env::var_os(name) {
+                        other_chains.push(chain(
+                            "platform.character_services.identity_separation",
+                            Path::new(&path),
+                        )?);
+                    }
+                }
+                let others: Vec<_> = other_chains.iter().map(Vec::as_slice).collect();
+                let service_descriptor =
+                    crate::native_admission_source::character_services_projection::Descriptor::new(
+                        endpoint.clone(),
+                        platform.peer_name.clone(),
+                        roots.clone(),
+                        own,
+                        key,
+                        &others,
+                    )
+                    .map_err(|_| invalid("platform.character_services.identity_separation"))?;
+                Some((
+                    service_descriptor,
+                    services.source_authority.clone(),
+                    services.epoch_fence_file.clone(),
+                ))
+            } else {
+                None
+            };
             Some((
                 descriptor,
                 commands.source_authority.clone(),
                 commands.account_deletion.clone(),
+                platform.services_v2_enabled,
+                services,
             ))
         }
     };
@@ -728,7 +831,7 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
                     MAX_GAMEPLAY_KEY_BYTES,
                 )?,
             )?;
-            let Some((receipt, receipt_source, _)) = &character_commands else {
+            let Some((receipt, receipt_source, ..)) = &character_commands else {
                 return Err(invalid("platform.bazaar.character_receipt_identity"));
             };
             let mut others = vec![client.clone()];
@@ -829,6 +932,11 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
                 public.source_authority.clone(),
                 public.epoch_fence_file.clone(),
                 public_projections::v2::Activation {
+                    character_skills: public.character_skills_enabled,
+                    character_achievements: public.character_achievements_enabled,
+                    character_equipment: public.character_equipment_enabled,
+                    character_outfit: public.character_outfit_enabled,
+
                     character_online_sessions: public.character_online_sessions_enabled,
                     world_daily_kills: public.world_daily_kills_enabled,
                 },
@@ -837,14 +945,46 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
         _ => None,
     };
     let world_event_outcomes = t94::material(platform, endpoint.clone(), &roots, &client)?;
+    let (intent_chain, intent_key) = match &platform.bootstrap_intents {
+        None => (client.clone(), client_key),
+        Some(intents) => {
+            let chain = certificates(&secret(
+                "platform.bootstrap_intents.client_certificate_file",
+                &intents.client_certificate_file,
+                MAX_PEM_BYTES,
+            )?)
+            .map_err(|_| invalid("platform.bootstrap_intents.client_certificate_file"))?;
+            let key = private_key(
+                "platform.bootstrap_intents.client_key_file",
+                &secret(
+                    "platform.bootstrap_intents.client_key_file",
+                    &intents.client_key_file,
+                    MAX_GAMEPLAY_KEY_BYTES,
+                )?,
+            )?;
+            // Same issuer and compiled endpoint; refuse reuse of the evidence key.
+            let spki = |chain: &[rustls::pki_types::CertificateDer<'_>]| {
+                chain
+                    .first()
+                    .and_then(|leaf| rustls::server::ParsedCertificate::try_from(leaf).ok())
+                    .map(|parsed| parsed.subject_public_key_info().as_ref().to_vec())
+            };
+            let own = spki(&chain).ok_or_else(|| invalid("platform.bootstrap_intents"))?;
+            let evidence = spki(&client).ok_or_else(|| invalid("platform.bootstrap_intents"))?;
+            if own == evidence {
+                return Err(invalid("platform.bootstrap_intents"));
+            }
+            (chain, key)
+        }
+    };
     let intents = ProducerDescriptor::new(
         CHARACTER_BOOTSTRAP_INTENT_ISSUER.into(),
         endpoint,
         platform.peer_name.clone(),
         platform.peer_name.clone(),
         roots.clone(),
-        client.clone(),
-        client_key,
+        intent_chain,
+        intent_key,
     )
     .map_err(|_| invalid("platform"))?;
     let descriptor = DescriptorRegistration {
@@ -1247,7 +1387,7 @@ async fn public_projections_loop(
     let mut publisher = public_projections::Publisher::new(
         SystemClock::default(),
         crate::durability::public_projections::PublicProjectionsStore { root, authority },
-        MtlsPublicSink::new(descriptor),
+        MtlsPublicSink::new(descriptor).with_v2_activation(activation),
         EpochFenceFile::new(fence),
         source_authority,
         crate::durability::account_characters_projection::MAX_CHARACTER_TRANSACTION,
@@ -1261,9 +1401,8 @@ async fn public_projections_loop(
 /// group role (migration 0129) and schedules from durable database time, so a restart or a second
 /// Channel of the World never publishes early. Category 10 reads the activated Achievement
 /// catalogue. Category 11 is published only with an activated per-race Charm point source; none
-/// exists yet (CHARM-6), so it is withheld and its query is `NOT_SUPPORTED`. The planned World
-/// reset notification source is not wired yet (WORLD-RESET): the sender is held, unused, for the
-/// job's lifetime.
+/// exists yet (CHARM-6), so it is withheld and its query is `NOT_SUPPORTED`. Planned reset
+/// cuts become due when the durable reset epoch activates after the drain.
 async fn highscores_loop(
     root: &DurabilityRoot,
     world: crate::foundation::WorldId,
@@ -1278,7 +1417,7 @@ async fn highscores_loop(
         return;
     };
     let job = HighscoreWorldJob::new(std::sync::Arc::new(root.clone()), world, catalogues);
-    let (_planned_resets, receiver) = tokio::sync::mpsc::channel(1);
+    let (_periodic_lifetime, receiver) = tokio::sync::mpsc::channel(1);
     event("event=highscores state=started");
     first(job.run(receiver), stop.cancelled()).await;
 }
@@ -1322,7 +1461,136 @@ struct CommandDecider<'a, 'r, 'c> {
     source_authority: String,
 }
 
+/// Native node service decision boundary, including immutable receipt recovery.
+pub async fn decide_character_service_for_node(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    evidence: &FreshEvidenceSource,
+    source_authority: &str,
+    entry: (&str, &str),
+    input: Input<'_>,
+) -> Decision {
+    let (command, operation_id) = entry;
+    let prior = match root
+        .replay_character_service(authority, proof, command, operation_id, input)
+        .await
+    {
+        Ok(prior) => prior,
+        Err(_) => return Decision::Transient,
+    };
+    if let Some(stored) = prior {
+        return stored;
+    }
+
+    let account = match input {
+        Input::Intent(raw) => {
+            crate::native_admission_source::character_services_v2::CharacterCommandIntentV2::decode(
+                raw,
+            )
+            .ok()
+            .and_then(|i| {
+                i.field("account_id")
+                    .and_then(serde_json::Value::as_str)
+                    .map(str::to_owned)
+            })
+        }
+        Input::ReadConflict => return Decision::Conflict,
+        _ => None,
+    };
+    let held = if let Some(account) = account {
+        match evidence.refresh_account_held(root, proof, &account).await {
+            Ok(held) => Some(held),
+            Err(_) => return Decision::Transient,
+        }
+    } else {
+        None
+    };
+    let decision = root
+        .decide_character_service(
+            authority,
+            proof,
+            source_authority,
+            (command, operation_id),
+            input,
+        )
+        .await;
+    if let Some(held) = held {
+        let _ = held.release().await;
+    }
+    decision
+}
+
 impl Decider for CommandDecider<'_, '_, '_> {
+    async fn sendable_create(
+        &mut self,
+        operation_id: &str,
+    ) -> Result<CreateSendability, crate::native_admission_source::SourceError> {
+        self.root
+            .sendable_create_receipt(
+                self.authority,
+                self.proof,
+                &self.source_authority,
+                operation_id,
+            )
+            .await
+            .map_err(|_| crate::native_admission_source::SourceError::Unavailable)
+    }
+
+    async fn stop_retained_create_receipt(
+        &mut self,
+        operation_id: &str,
+    ) -> Result<(), crate::native_admission_source::SourceError> {
+        self.root
+            .stop_retained_create_receipt(self.authority, self.proof, operation_id)
+            .await
+            .map_err(|_| {
+                event(
+                    "event=character_commands state=pending reason=retained_create_stop_dependency",
+                );
+                crate::native_admission_source::SourceError::Unavailable
+            })
+    }
+
+    async fn stop_services_receipt(&mut self, operation: &str, receipt: &[u8]) {
+        if self
+            .root
+            .stop_character_service_receipt(self.authority, self.proof, operation, receipt)
+            .await
+            .is_err()
+        {
+            event("event=character_services state=pending reason=receipt_stop_dependency");
+        }
+    }
+
+    async fn decide_services(
+        &mut self,
+        command: &str,
+        operation_id: &str,
+        input: Input<'_>,
+    ) -> Decision {
+        decide_character_service_for_node(
+            self.root,
+            self.authority,
+            self.proof,
+            self.evidence,
+            &self.source_authority,
+            (command, operation_id),
+            input,
+        )
+        .await
+    }
+    async fn maintain_services(&mut self) {
+        if self
+            .root
+            .finalize_character_service_deletion(self.authority, self.proof)
+            .await
+            .is_err()
+        {
+            event("event=character_services state=pending reason=finalization_dependency");
+        }
+    }
+
     async fn begin_closure_lifecycle_read(
         &mut self,
         request: &crate::native_admission_source::account_closure::LifecycleRequest,
@@ -1485,14 +1753,11 @@ async fn character_commands_loop(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     proof: &NodeIncarnationProof,
     evidence: &FreshEvidenceSource,
-    commands: Option<(
-        CommandDescriptor,
-        String,
-        crate::durability::character_command::account_deletion::Config,
-    )>,
+    commands: Option<CommandTransportMaterial>,
     stop: &CancellationToken,
 ) {
-    let Some((descriptor, source_authority, deletion)) = commands else {
+    let Some((descriptor, source_authority, deletion, services_enabled, services)) = commands
+    else {
         return;
     };
     event("event=character_commands state=started");
@@ -1513,14 +1778,56 @@ async fn character_commands_loop(
             make_decider(),
             event,
         );
+    let descriptor_for_retained = descriptor.clone();
+    let retained_create_publisher = async {
+        match RetainedCreatePublisherStore::new(root, authority, proof, &source_authority) {
+            Ok(store) => {
+                crate::native_admission_source::character_commands::run_retained_create_publications(
+                    SystemClock::default(),
+                    MtlsSource::new(descriptor_for_retained),
+                    store,
+                    event,
+                ).await;
+            }
+            Err(_) => event("event=character_commands alarm=retained_create_holder_unavailable"),
+        }
+    };
     let consumer = Consumer::new(
         SystemClock::default(),
         MtlsSource::new(descriptor),
         make_decider(),
         source_authority.clone(),
         event,
-    );
-    first(both(consumer.run(), publisher), stop.cancelled()).await;
+    )
+    .with_services(services_enabled);
+    let delivery = async {
+        if let Some((descriptor, source, fence)) = services {
+            crate::native_admission_source::character_services_projection::Publisher::new(
+                SystemClock::default(),
+                crate::durability::character_services_projection::CharacterServicesStore {
+                    root,
+                    authority,
+                    proof,
+                },
+                crate::native_admission_source::character_services_projection::MtlsPeer::new(
+                    descriptor,
+                ),
+                EpochFenceFile::new(fence),
+                source,
+                crate::durability::account_characters_projection::MAX_CHARACTER_TRANSACTION,
+            )
+            .run()
+            .await;
+        }
+    };
+    first(
+        both(
+            both(consumer.run(), publisher),
+            both(delivery, retained_create_publisher),
+        ),
+        stop.cancelled(),
+    )
+    .await;
 }
 
 /// One bounded owner reconciliation per cadence, independent of Platform reachability.
@@ -2248,19 +2555,17 @@ struct Readiness<'a> {
 }
 
 impl Readiness<'_> {
-    /// Shutdown has stopped the maintenance pump. Replenish or observe the real
-    /// holder here; requesting maintenance and sleeping alone cannot do so.
-    /// Keep the caller's existing shutdown deadline authoritative.
+    /// Replenish or observe the real holder within the boot or shutdown budget;
+    /// requesting maintenance and sleeping alone cannot do so.
     async fn await_holder(
         &self,
         budget: Option<tokio::time::Instant>,
     ) -> Result<(), DurabilityError> {
-        match budget {
-            Some(deadline) => tokio::time::timeout_at(deadline, self.root.await_ready())
-                .await
-                .map_err(|_| DurabilityError::RootUnavailable)?,
-            None => self.root.await_ready().await,
-        }
+        let deadline = budget
+            .unwrap_or_else(|| tokio::time::Instant::now() + self.config.boot_pass_deadline());
+        tokio::time::timeout_at(deadline, self.root.await_ready())
+            .await
+            .map_err(|_| DurabilityError::RootUnavailable)?
     }
 
     /// Prepare the exact successor of the current Runtime guard chain.
@@ -2376,9 +2681,24 @@ impl Readiness<'_> {
     }
 
     /// Publish; a stale or conflicting CAS rereads once. An ambiguous outcome
-    /// replays the exact prepared publication until it is definite (or the
-    /// shutdown budget ends).
+    /// replays the exact prepared publication within the boot retry ceiling or
+    /// shutdown deadline. Holder waits and database passes are bounded too.
     async fn publish(
+        &self,
+        ready: bool,
+        budget: Option<tokio::time::Instant>,
+    ) -> Result<AdmissionAuthorityPublicationV1, BootError> {
+        match budget {
+            Some(deadline) => {
+                tokio::time::timeout_at(deadline, self.publish_with_budget(ready, budget))
+                    .await
+                    .map_err(|_| BootError::Readiness("publication budget"))?
+            }
+            None => self.publish_with_budget(ready, None).await,
+        }
+    }
+
+    async fn publish_with_budget(
         &self,
         ready: bool,
         budget: Option<tokio::time::Instant>,
@@ -2387,8 +2707,12 @@ impl Readiness<'_> {
             let publication = self.prepare(ready, budget).await?;
             let mut attempt = 0;
             loop {
-                if budget.is_some_and(|deadline| tokio::time::Instant::now() >= deadline) {
-                    return Err(BootError::Readiness("shutdown budget"));
+                let exhausted = match budget {
+                    Some(deadline) => tokio::time::Instant::now() >= deadline,
+                    None => attempt >= PENDING_RECONCILE_ATTEMPTS,
+                };
+                if exhausted {
+                    return Err(BootError::Readiness("publication budget"));
                 }
                 let outcome = match self.await_holder(budget).await {
                     Ok(()) => {
@@ -2419,14 +2743,23 @@ impl Readiness<'_> {
                     ) => {
                         return Err(BootError::Readiness("not the current holder"));
                     }
-                    Err(_) => {
+                    Err(error) if readiness_publication_retryable(&error) => {
                         self.root.request_ready();
                         backoff_within(&mut attempt, budget).await;
                     }
+                    Err(_) => return Err(BootError::Readiness("publication")),
                 }
             }
         }
         Err(BootError::Readiness("stale or conflicting publication"))
+    }
+}
+
+fn readiness_publication_retryable(error: &AssignmentError) -> bool {
+    match error {
+        AssignmentError::Ambiguous | AssignmentError::ReconcileRequired => true,
+        AssignmentError::Unavailable(error) => boot_step_retryable(error),
+        _ => false,
     }
 }
 
@@ -2644,6 +2977,7 @@ async fn control_loop(
     intents: &ProducerDescriptor,
     config: &NodeConfig,
     native: Option<&crate::content::native_gameplay::NativeGameplayState>,
+    spawn: Option<qualification_fixture::SpawnOwners<'_>>,
     stop: &CancellationToken,
 ) {
     let capacity = TransientCapacity::new();
@@ -2671,11 +3005,27 @@ async fn control_loop(
                     "ops_diagnose",
                 ),
                 Some(request) if request.starts_with(b"qualify ") => (
-                    qualification_fixture::prepare(
+                    Box::pin(qualification_fixture::prepare(
                         root, authority, proof, config, native, &request,
-                    )
+                    ))
                     .await
                     .to_owned(),
+                    "character_bootstrap",
+                ),
+                #[cfg(any(test, feature = "qualification-spawn"))]
+                Some(request) if request.starts_with(b"inspect-damage ") => (
+                    Box::pin(qualification_fixture::inspect_damage(
+                        config, spawn, &request,
+                    ))
+                    .await
+                    .unwrap_or_else(|| "rejected reason=damage_unavailable".to_owned()),
+                    "qualification_damage",
+                ),
+                Some(request) if request.starts_with(b"spawn ") => (
+                    Box::pin(qualification_fixture::spawn(
+                        root, authority, proof, config, native, spawn, &request,
+                    ))
+                    .await,
                     "character_bootstrap",
                 ),
                 Some(request) if parse_operation_id(&request).is_some() => {
@@ -2695,6 +3045,7 @@ async fn control_loop(
             };
             match event_name {
                 "ops_health" => event_traced("event=ops_health result=served", connection),
+                "qualification_damage" => {}
                 "ops_diagnose" => {
                     event_traced("event=ops_diagnose result=served", connection);
                 }
@@ -2916,7 +3267,7 @@ fn world_bundle_gate(
         start: crate::map::overlay::TilePos {
             x: bundle.start_x,
             y: bundle.start_y,
-            floor: bundle.start_floor,
+            floor: -bundle.start_floor.abs(),
         },
     };
     let data = read(&bundle.path)?;
@@ -3207,6 +3558,169 @@ async fn realize_activation_paced(
     }
 }
 
+fn enforcement_startup(
+    lookup: impl Fn(&str) -> Option<std::ffi::OsString>,
+    other_identities: impl FnOnce() -> Result<Vec<(&'static str, Vec<u8>)>, BootError>,
+) -> Result<
+    Option<oteryn_gameplay_social::platform_streams::enforcement::transport::Clients>,
+    BootError,
+> {
+    use oteryn_gameplay_social::platform_streams::enforcement::transport::Clients;
+    let clients = Clients::from_lookup(lookup)
+        .map_err(|crate::premium::client::ClientConfigError::Invalid(key)| invalid(key))?;
+    if let Some(clients) = &clients {
+        clients
+            .check_other_identities(&other_identities()?)
+            .map_err(|crate::premium::client::ClientConfigError::Invalid(key)| invalid(key))?;
+    }
+    Ok(clients)
+}
+
+fn platform_client_identities(
+    config: &NodeConfig,
+) -> Result<Vec<(&'static str, Vec<u8>)>, BootError> {
+    let platform = &config.platform;
+    let mut paths = vec![(
+        "platform.client_certificate_file",
+        &platform.client_certificate_file,
+    )];
+    if let Some(v) = &platform.bootstrap_intents {
+        paths.push((
+            "platform.bootstrap_intents.client_certificate_file",
+            &v.client_certificate_file,
+        ));
+    }
+    if let Some(v) = &platform.runtime_status {
+        paths.push((
+            "platform.runtime_status.client_certificate_file",
+            &v.client_certificate_file,
+        ));
+    }
+    if let Some(v) = &platform.account_characters {
+        paths.push((
+            "platform.account_characters.client_certificate_file",
+            &v.client_certificate_file,
+        ));
+    }
+    if let Some(v) = &platform.character_commands {
+        paths.push((
+            "platform.character_commands.client_certificate_file",
+            &v.client_certificate_file,
+        ));
+    }
+    if let Some(v) = platform
+        .character_services
+        .as_ref()
+        .filter(|_| platform.services_v2_enabled)
+    {
+        paths.push((
+            "platform.character_services.client_certificate_file",
+            &v.client_certificate_file,
+        ));
+    }
+    if let Some(v) = &platform.bazaar {
+        paths.push((
+            "platform.bazaar.client_certificate_file",
+            &v.client_certificate_file,
+        ));
+    }
+    if let Some(v) = platform.public_projections.as_ref().filter(|v| v.enabled) {
+        paths.push((
+            "platform.public_projections.client_certificate_file",
+            &v.client_certificate_file,
+        ));
+    }
+    if let Some(v) = platform.world_event_outcomes.as_ref().filter(|v| v.enabled) {
+        paths.push((
+            "platform.world_event_outcomes.client_certificate_file",
+            &v.client_certificate_file,
+        ));
+    }
+    if let Some(v) = config
+        .journal
+        .as_ref()
+        .filter(|_| config.game_journal_items_export_enabled)
+    {
+        paths.push((
+            "journal.client_certificate_file",
+            &v.client_certificate_file,
+        ));
+    }
+    let identities = paths
+        .into_iter()
+        .map(|(key, path)| {
+            read_file(key, path, FileClass::Secret, effective_uid(), MAX_PEM_BYTES)
+                .map(|pem| (key, pem))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(identities)
+}
+
+fn profile_b_startup(
+    lookup: impl Fn(&str) -> Option<std::ffi::OsString>,
+    others: impl FnOnce() -> Result<Vec<(&'static str, Vec<u8>)>, BootError>,
+) -> Result<
+    Option<Box<oteryn_gameplay_social::platform_streams::profile_b::transport::Clients>>,
+    BootError,
+> {
+    use oteryn_gameplay_social::platform_streams::profile_b::transport::Clients;
+    let clients = Clients::from_lookup(lookup)
+        .map_err(|crate::premium::client::ClientConfigError::Invalid(key)| invalid(key))?;
+    if let Some(clients) = &clients {
+        clients
+            .check_other_identities(&others()?)
+            .map_err(|crate::premium::client::ClientConfigError::Invalid(key)| invalid(key))?;
+    }
+    Ok(clients.map(Box::new))
+}
+
+async fn enforcement_store_startup(
+    enabled: bool,
+    check: impl Future<
+        Output = Result<
+            oteryn_gameplay_social::platform_streams::enforcement::worker::Reply,
+            DurabilityError,
+        >,
+    >,
+) -> Result<(), BootError> {
+    use oteryn_gameplay_social::platform_streams::enforcement::worker::Reply;
+    if !enabled {
+        return Ok(());
+    }
+    match check.await {
+        Ok(Reply::Cursor(_, _)) => Ok(()),
+        _ => Err(invalid("game_platform_enforcement_configuration")),
+    }
+}
+
+async fn enforcement_owner<T, D, TF, DF>(
+    mut receiver: tokio::sync::mpsc::Receiver<
+        oteryn_gameplay_social::platform_streams::enforcement::worker::StoreRequest,
+    >,
+    transact: T,
+    decide: D,
+) where
+    T: Fn(oteryn_gameplay_social::platform_streams::enforcement::worker::Action) -> TF,
+    D: Fn(Vec<u8>) -> DF,
+    TF: Future<
+        Output = Result<oteryn_gameplay_social::platform_streams::enforcement::worker::Reply, ()>,
+    >,
+    DF: Future<Output = Result<Vec<u8>, ()>>,
+{
+    use oteryn_gameplay_social::platform_streams::enforcement::worker::StoreRequest;
+    while let Some(request) = receiver.recv().await {
+        match request {
+            StoreRequest::Transact(action, reply) => {
+                let _ = reply.send(transact(action).await);
+            }
+            StoreRequest::Decide(raw, reply) => {
+                let _ = reply.send(decide(raw).await);
+            }
+        }
+    }
+    std::future::pending::<()>().await
+}
+
 async fn boot_and_serve(
     root: &DurabilityRoot,
     material: &Material,
@@ -3215,12 +3729,27 @@ async fn boot_and_serve(
     signalled: &CancellationToken,
 ) -> Result<(), BootError> {
     let config = &material.config;
+    let profile_b_clients = profile_b_startup(
+        |key| std::env::var_os(key),
+        || platform_client_identities(config),
+    )?;
+    let enforcement_clients = enforcement_startup(
+        |key| std::env::var_os(key),
+        || platform_client_identities(config),
+    )?;
     let scope = RuntimeScopeRefV1::channel(material.world, material.channel);
     let Some(proof) = first(register(root, &material.launch), signalled.cancelled()).await else {
         stopped_before_ready();
         return Ok(());
     };
     let proof = proof?;
+    // Serving configuration must reject boot before any ready publication.
+    let cast = crate::gameplay_transport::cast::CastRuntimeConfig::from_env(
+        *proof.fact().node_id().as_bytes(),
+    )
+    .map_err(|_| BootError::Serve)?;
+    let coins = crate::native_admission_source::coins::CoinClient::configured()
+        .map_err(|_| BootError::Serve)?;
     with_retries(
         root,
         "staff trust configuration",
@@ -3255,6 +3784,26 @@ async fn boot_and_serve(
     .await
     .map_err(|_| BootError::CharacterAuthority)?;
     event("event=character_authority state=open");
+    enforcement_store_startup(enforcement_clients.is_some(), async {
+        with_retries(
+            root,
+            "enforcement store configuration",
+            config.boot_pass_deadline(),
+            boot_step_retryable,
+            root_busy,
+            || {
+                root.enforcement_transport(
+                    &authority,
+                    oteryn_gameplay_social::platform_streams::enforcement::worker::Action::Cursor {
+                        reconcile: false,
+                    },
+                )
+            },
+        )
+        .await
+    })
+    .await?;
+
     let Some(generation) = first(
         await_assignment(
             root,
@@ -3318,16 +3867,6 @@ async fn boot_and_serve(
         timed_npcs,
         required_capabilities,
     } = channel;
-    public_house_catalogue::capture(
-        root,
-        &authority,
-        &proof,
-        material,
-        &assignment,
-        reset_epoch,
-        bundle.as_ref(),
-    )
-    .await;
     if signalled.is_cancelled() {
         stopped_before_ready();
         return Ok(());
@@ -3347,10 +3886,10 @@ async fn boot_and_serve(
         )
         .map_err(|_| BootError::Bind("control socket mode"))?;
     }
-    event(&format!(
-        "event=listener_bound address={}",
-        config.listener.address
-    ));
+    let bound_address = listener
+        .local_addr()
+        .map_err(|_| BootError::Bind("gameplay listener address"))?;
+    event(&format!("event=listener_bound address={bound_address}"));
     let readiness = Readiness {
         root,
         proof: &proof,
@@ -3364,7 +3903,23 @@ async fn boot_and_serve(
         stopped_before_ready();
         return Ok(());
     }
-    let committed = readiness.publish(true, None).await?;
+    let committed = match first(readiness.publish(true, None), signalled.cancelled()).await {
+        Some(Ok(publication)) => publication,
+        failure => {
+            // Cancellation or a lost response can follow a committed ready=true.
+            // Withdraw even when the publication's outcome is still unknown.
+            let withdrawn = readiness
+                .publish(false, Some(tokio::time::Instant::now() + SHUTDOWN_BUDGET))
+                .await;
+            let _ = std::fs::remove_file(&config.control.socket_path);
+            withdrawn?;
+            if let Some(Err(error)) = failure {
+                return Err(error);
+            }
+            stopped_before_ready();
+            return Ok(());
+        }
+    };
     // Contract §8.1: report the committed publication; never gates serving.
     let reporter = material.runtime_status.as_ref().map(|(descriptor, epoch)| {
         super::runtime_status::start_platform(
@@ -3404,16 +3959,21 @@ async fn boot_and_serve(
     // (PREMIUM-ACTIVATION-0 §1.1), durable latch and optional activation record (§1.2).
     // The serving path pulls into this coordinator's consumer using the existing client gate.
     let premium_reads = production_premium_reads(root, config.premium_activation.as_ref());
+    let _profile_b_tasks =
+        oteryn_gameplay_social::platform_streams::profile_b::runtime::Tasks::spawn(
+            root.clone(),
+            profile_b_clients.map(|c| *c),
+            premium_reads.consumer(),
+        );
+
     // Local operator mode; the Platform runtime-status payload has a closed contract.
     eprintln!(
         "event=store_configuration store_purchases={}",
         config.store_purchases.as_str()
     );
     let owners = GameplaySeamOwners {
-        cast: crate::gameplay_transport::cast::CastRuntimeConfig::from_env(
-            *proof.fact().node_id().as_bytes(),
-        )
-        .map_err(|_| BootError::Serve)?,
+        platform_enforcement_enabled: enforcement_clients.is_some(),
+        cast,
         activity_templates: &activity_templates,
         soulpit_template: soulpit_template.as_ref(),
         gameplay_idle_policy: config.gameplay_idle,
@@ -3427,10 +3987,7 @@ async fn boot_and_serve(
                 ),
                 material.store.source_authority().to_owned(),
             )
-            .with_coins(
-                crate::native_admission_source::coins::CoinClient::configured()
-                    .map_err(|_| BootError::Serve)?,
-            ),
+            .with_coins(coins),
         ),
         emit,
         root,
@@ -3461,7 +4018,25 @@ async fn boot_and_serve(
     };
     // The long-lived supervisor owns its child jobs on the heap. Keep its state out of
     // the boot future too; boxing only the outer node leaves stacked poll temporaries.
-    Box::pin(supervision::supervise(supervision::Serving {
+    use oteryn_gameplay_social::platform_streams::enforcement::worker::{Tasks, store_channel};
+    let (requests, receiver) = store_channel();
+    let _enforcement_tasks = Tasks::spawn(enforcement_clients, requests);
+    let authority = &authority;
+    let proof = &proof;
+    let enforcement_owner = Box::pin(enforcement_owner(
+        receiver,
+        |action| async move {
+            root.enforcement_transport(authority, action)
+                .await
+                .map_err(|_| ())
+        },
+        |raw| async move {
+            root.decide_platform_enforcement(authority, proof, &raw)
+                .await
+                .map_err(|_| ())
+        },
+    ));
+    let serving = Box::pin(supervision::supervise(supervision::Serving {
         listener: &listener,
         control: &control,
         listener_config,
@@ -3475,8 +4050,27 @@ async fn boot_and_serve(
         generation,
         signalled,
         timed_npcs,
-    }))
-    .await
+        spawn_room: combat_room.as_ref().unwrap_or(&qualified_room),
+    }));
+    let catalogue = async {
+        public_house_catalogue::capture(
+            root,
+            authority,
+            proof,
+            material,
+            &assignment,
+            reset_epoch,
+            bundle.as_ref(),
+        )
+        .await;
+        // Successful capture is no reason to end serving; keep the original
+        // enforcement-owner exit authoritative while this auxiliary worker is idle.
+        std::future::pending::<()>().await;
+    };
+    first(first(serving, enforcement_owner), catalogue)
+        .await
+        .flatten()
+        .unwrap_or(Err(BootError::Serve))
 }
 
 #[cfg(test)]
@@ -3487,6 +4081,293 @@ mod future_stack_tests;
 mod tests {
     #![allow(clippy::expect_used)]
     use super::*;
+
+    #[test]
+    fn identity_checks_skip_disabled_optional_transports() {
+        use super::super::config::{NodeConfig, tests::NODE};
+        use std::os::unix::fs::OpenOptionsExt;
+        let directory = std::env::temp_dir().join(format!(
+            "oteryn-identities-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("clock")
+                .as_nanos()
+        ));
+        std::fs::create_dir(&directory).expect("fixture directory");
+        let path = directory.join("identity.pem");
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(0o600)
+            .open(&path)
+            .expect("fixture file");
+        std::io::Write::write_all(&mut file, b"active identity").expect("write");
+        let document = format!(
+            r#"{NODE}
+[platform.account_characters]
+client_certificate_file = "/missing/accounts.crt"
+client_key_file = "/missing/accounts.key"
+source_authority = "accounts"
+epoch_fence_file = "/missing/services.fence"
+[platform.character_services]
+client_certificate_file = "/missing/services.crt"
+client_key_file = "/missing/services.key"
+source_authority = "services"
+epoch_fence_file = "/missing/services.fence"
+[platform.public_projections]
+enabled = false
+client_certificate_file = "/missing/public.crt"
+client_key_file = "/missing/public.key"
+source_authority = "public"
+epoch_fence_file = "/missing/public.fence"
+[journal]
+client_certificate_file = "/missing/journal.crt"
+client_key_file = "/missing/journal.key"
+source_authority = "OTERYN_GAME_JOURNAL"
+"#
+        );
+        let mut config = NodeConfig::parse(document.as_bytes()).expect("fixture config");
+        config.platform.client_certificate_file = path.clone();
+        config
+            .platform
+            .account_characters
+            .as_mut()
+            .expect("accounts")
+            .client_certificate_file = path.clone();
+        config.platform.world_event_outcomes = None;
+        let identities = platform_client_identities(&config);
+        for active in 0..3 {
+            let mut enabled = config.clone();
+            match active {
+                0 => enabled.platform.services_v2_enabled = true,
+                1 => {
+                    enabled
+                        .platform
+                        .public_projections
+                        .as_mut()
+                        .expect("public")
+                        .enabled = true
+                }
+                _ => enabled.game_journal_items_export_enabled = true,
+            }
+            assert!(
+                platform_client_identities(&enabled).is_err(),
+                "active credentials remain required"
+            );
+        }
+        std::fs::remove_dir_all(directory).expect("cleanup");
+        assert_eq!(
+            identities.expect("disabled credentials are not read"),
+            vec![
+                (
+                    "platform.client_certificate_file",
+                    b"active identity".to_vec()
+                ),
+                (
+                    "platform.account_characters.client_certificate_file",
+                    b"active identity".to_vec()
+                )
+            ]
+        );
+    }
+
+    #[test]
+    fn readiness_publication_retries_only_uncertain_or_unsubmitted_outcomes() {
+        for error in [
+            AssignmentError::Ambiguous,
+            AssignmentError::ReconcileRequired,
+            AssignmentError::Unavailable(DurabilityError::RootUnavailable),
+            AssignmentError::Unavailable(DurabilityError::RootPassDeadlineExceeded),
+            AssignmentError::Unavailable(DurabilityError::CommitOutcomeUnknown),
+        ] {
+            assert!(readiness_publication_retryable(&error), "{error:?}");
+        }
+        for error in [
+            AssignmentError::NotCurrentHolder,
+            AssignmentError::InvalidInput,
+            AssignmentError::Unsupported,
+            AssignmentError::QueueFull,
+            AssignmentError::QueueTimeout,
+            AssignmentError::Unavailable(DurabilityError::Database(
+                crate::durability::SqlxFailureClass::Database(None),
+            )),
+            AssignmentError::Unavailable(DurabilityError::CommitRejected),
+            AssignmentError::Unavailable(DurabilityError::InvalidStoredState),
+        ] {
+            assert!(!readiness_publication_retryable(&error), "{error:?}");
+        }
+    }
+
+    #[test]
+    fn readiness_publication_returns_a_definite_database_rejection()
+    -> crate::bestiary_postgres_harness::TestResult {
+        use crate::bestiary_postgres_harness::{
+            Harness, TestResult, configured_admin, debug, runtime, scope,
+        };
+        use sqlx::Executor;
+        let Some(admin) = configured_admin() else {
+            return Ok(());
+        };
+        std::thread::Builder::new().stack_size(64 << 20).spawn(move || -> Result<(), String> {
+            runtime().map_err(debug)?.block_on(async {
+                let h = Harness::create(admin, "readiness_rejection", false).await?;
+                let result: TestResult = async {
+                    let mut config = NodeConfig::parse(super::super::config::tests::NODE.as_bytes())?;
+                    config.readiness.source_authority = "game-runtime-publisher".into();
+                    let readiness = Readiness {root: &h.root, proof: &h.node, scope: scope()?, generation: 1, config: &config};
+                    h.pool.execute("REVOKE EXECUTE ON FUNCTION game_runtime_attest_readiness(BYTEA,UUID,NUMERIC,BYTEA) FROM oteryn_game_runtime").await?;
+                    h.root.await_ready().await?;
+                    let allowed = h.root.try_issue_semantic_pass()?.run(|holder, _| Box::pin(async move {
+                        sqlx::query("SET ROLE oteryn_game_runtime").execute(&mut **holder).await?;
+                        let allowed: bool = sqlx::query_scalar("SELECT has_function_privilege(current_user,'game_runtime_attest_readiness(bytea,uuid,numeric,bytea)','EXECUTE')").fetch_one(&mut **holder).await?;
+                        Ok(allowed)
+                    })).await?;
+                    assert!(!allowed, "the runtime role must reach the real permission rejection");
+                    let prepared = readiness.prepare(true, None).await.map_err(debug)?;
+                    let rejected = h.root.publish_runtime_readiness(&h.node, &prepared).await;
+                    assert!(matches!(rejected, Err(AssignmentError::Unavailable(DurabilityError::Database(_)))), "{rejected:?}");
+                    let result = tokio::time::timeout(Duration::from_secs(2), readiness.publish(true, None)).await;
+                    assert!(matches!(result, Ok(Err(BootError::Readiness("publication")))), "a definite rejection must return instead of retrying: {result:?}");
+                    Ok(())
+                }.await;
+                h.cleanup().await?;
+                result
+            }).map_err(debug)
+        })?.join().map_err(|_| "readiness rejection thread failed")?.map_err(Into::into)
+    }
+
+    #[test]
+    fn profile_b_flags_off_spawn_nothing_and_skip_identity_reads() {
+        let config =
+            profile_b_startup(|_| None, || Err(invalid("unexpected identity read"))).expect("off");
+        assert!(config.is_none());
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("runtime");
+        runtime.block_on(async {
+            let root = DurabilityRoot::connect_test_runtime("postgres://node@127.0.0.1:1/game")
+                .expect("lazy root");
+            let tasks = oteryn_gameplay_social::platform_streams::profile_b::runtime::Tasks::spawn(
+                root,
+                None,
+                std::sync::Arc::default(),
+            );
+            assert!(tasks.is_empty());
+        });
+    }
+    #[test]
+    fn profile_b_missing_identity_fails_startup_with_its_key() {
+        use oteryn_gameplay_social::platform_streams::profile_b::transport::*;
+        for (flag, identity) in [
+            (AUTHORITY_ENABLED_VAR, AUTHORITY_IDENTITY_VAR),
+            (CHANGES_ENABLED_VAR, CHANGES_IDENTITY_VAR),
+        ] {
+            assert!(
+                matches!(profile_b_startup(|key|(key==flag).then(||"true".into()),||Err(invalid("unexpected identity read"))),Err(BootError::Startup(StartupError::Invalid{key})) if key==identity)
+            );
+        }
+    }
+
+    #[test]
+    fn enforcement_owner_routes_requests_and_preserves_errors() {
+        use oteryn_gameplay_social::platform_streams::enforcement::worker::{
+            Action, Reply, Store, store_channel,
+        };
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .build()
+            .expect("runtime");
+        runtime.block_on(async {
+            let (store, receiver) = store_channel();
+            let calls = std::cell::Cell::new(0);
+            let owner = enforcement_owner(
+                receiver,
+                |action| {
+                    calls.set(calls.get() + 1);
+                    std::future::ready(match action {
+                        Action::Next => Ok(Reply::Publication(None)),
+                        _ => Err(()),
+                    })
+                },
+                |raw| std::future::ready(Ok(raw)),
+            );
+            let client = async {
+                assert!(matches!(
+                    store.transact(Action::Next).await,
+                    Ok(Reply::Publication(None))
+                ));
+                assert!(
+                    store
+                        .transact(Action::Stop { reconcile: false })
+                        .await
+                        .is_err()
+                );
+                let raw = b"original command bytes".to_vec();
+                assert_eq!(store.decide(raw.clone()).await, Ok(raw));
+            };
+            assert_eq!(first(client, owner).await, Some(()));
+            assert_eq!(calls.get(), 2);
+        });
+    }
+
+    #[test]
+    fn enforcement_startup_checks_durable_configuration_only_when_enabled() {
+        use oteryn_gameplay_social::platform_streams::enforcement::worker::Reply;
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .build()
+            .expect("runtime");
+        runtime.block_on(async {
+            let polled = std::cell::Cell::new(false);
+            assert!(
+                enforcement_store_startup(false, async {
+                    polled.set(true);
+                    Err(DurabilityError::Unavailable)
+                })
+                .await
+                .is_ok()
+            );
+            assert!(!polled.get(), "OFF must not poll storage");
+            assert!(matches!(
+                enforcement_store_startup(true, async { Err(DurabilityError::Unavailable) }).await,
+                Err(BootError::Startup(StartupError::Invalid {
+                    key: "game_platform_enforcement_configuration"
+                }))
+            ));
+            assert!(
+                enforcement_store_startup(true, async { Ok(Reply::Cursor(None, false)) })
+                    .await
+                    .is_ok()
+            );
+        });
+    }
+
+    #[test]
+    fn enforcement_flag_off_spawns_nothing() {
+        let clients = enforcement_startup(|_| None, || Err(invalid("unexpected identity read")))
+            .expect("off");
+        let (store, mut receiver) =
+            oteryn_gameplay_social::platform_streams::enforcement::worker::store_channel();
+        let tasks = oteryn_gameplay_social::platform_streams::enforcement::worker::Tasks::spawn(
+            clients, store,
+        );
+        assert!(tasks.is_empty());
+        assert!(receiver.try_recv().is_err());
+    }
+    #[test]
+    fn enforcement_flag_on_missing_identity_fails_startup() {
+        use oteryn_gameplay_social::platform_streams::enforcement::{
+            ENABLED_VAR, transport::READER_IDENTITY_VAR,
+        };
+        assert!(matches!(
+            enforcement_startup(
+                |key| (key == ENABLED_VAR).then(|| "true".into()),
+                || Err(invalid("unexpected identity read"))
+            ),
+            Err(BootError::Startup(StartupError::Invalid {
+                key: READER_IDENTITY_VAR
+            }))
+        ));
+    }
 
     #[test]
     fn a_busy_holder_delays_the_privilege_answer_without_refusing() {
@@ -4443,5 +5324,26 @@ mod tests {
             assert!(result.is_ok(), "{result:?}");
             Ok(())
         })
+    }
+
+    #[test]
+    fn serving_configuration_is_validated_before_readiness() {
+        // Guard the composition boundary: either fallible environment loader must
+        // finish before publishing a ready node, including on early boot errors.
+        let source = include_str!("serve.rs");
+        let boot = source
+            .split_once("async fn boot_and_serve(")
+            .expect("boot entry")
+            .1;
+        let boot = boot.split_once("#[cfg(test)]").expect("test boundary").0;
+        let publication = boot
+            .find("readiness.publish(true,")
+            .expect("ready publication");
+        for loader in ["CastRuntimeConfig::from_env(", "CoinClient::configured()"] {
+            assert!(
+                boot.find(loader).expect("serving configuration loader") < publication,
+                "{loader} can reject boot after ready=true was committed"
+            );
+        }
     }
 }

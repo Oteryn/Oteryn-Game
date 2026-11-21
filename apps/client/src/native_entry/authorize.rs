@@ -52,12 +52,14 @@ pub(super) async fn authorize(
     client: &NativeLoginClient,
     config: &NativeLoginConfig,
     cancellation: CancellationToken,
-) -> Result<(NativeTicket, String, Option<String>, String, bool), GameplayEntryError> {
+) -> Result<Authorized, GameplayEntryError> {
     let mut device = config
         .device_sessions
         .begin(
             client,
-            crate::play::MiscellaneousPreferences::load(),
+            config
+                .session_options
+                .unwrap_or_else(|| session_options(config.preference_path.as_deref())),
             cancellation.clone(),
         )
         .await
@@ -73,12 +75,12 @@ pub(super) async fn authorize(
                 .await?,
         );
     }
-    let mut quick = true;
+    let mut quick = !config.require_character_picker;
     let platform = PlatformClientConfig::new(&config.platform_url)
         .map_err(|_| GameplayEntryError::InvalidConfiguration)?;
     let directory_client = oteryn_platform_client::PlatformClient::new(platform)
         .map_err(|_| GameplayEntryError::InvalidConfiguration)?;
-    let (character_id, channel_id, character_name, training_requested) = loop {
+    let (character_id, channel_id, character_name, training_requested, channels) = loop {
         let characters = if let Some(token) = &token {
             client
                 .owner_characters(token, cancellation.clone())
@@ -110,32 +112,40 @@ pub(super) async fn authorize(
             return Err(rejected(PublicClass::RetryLogin));
         };
         let directory = directory_client
-            .fetch_directory(cancellation.clone())
+            .fetch_directory_as(token.as_ref(), cancellation.clone())
             .await
             .map_err(retry_login)?;
         let rows = crate::character_selection::join(characters, &directory);
         use crate::character_selection::SelectionAction;
-        let action = if let Some(selection) = config.training_queue.next() {
-            SelectionAction::Train {
-                character_id: selection.character_id,
-                channel_id: selection.channel_id,
-            }
-        } else if quick
-            && let Some(selection) = device
-                .as_ref()
-                .and_then(|attempt| attempt.quick_selection(&rows))
-        {
-            selection
-        } else {
-            config.training_queue.clear();
-            let selector = config.select_character.clone();
-            let preselect = config.character_id.clone();
-            let cancel = cancellation.clone();
-            let shown = rows.clone();
-            tokio::task::spawn_blocking(move || selector(&shown, &preselect, cancel))
-                .await
-                .map_err(retry_login)?
-        };
+        let action =
+            if quick && let Some((character_id, channel_id)) = config.channel_switch.clone() {
+                // chsw: the switch's fresh admission; the selection check below still requires the
+                // target to be a listed Channel of the character's World.
+                SelectionAction::Play {
+                    character_id,
+                    channel_id: Some(channel_id),
+                }
+            } else if let Some(selection) = config.training_queue.next() {
+                SelectionAction::Train {
+                    character_id: selection.character_id,
+                    channel_id: selection.channel_id,
+                }
+            } else if quick
+                && let Some(selection) = device
+                    .as_ref()
+                    .and_then(|attempt| attempt.quick_selection(&rows))
+            {
+                selection
+            } else {
+                config.training_queue.clear();
+                let selector = config.select_character.clone();
+                let preselect = config.character_id.clone();
+                let cancel = cancellation.clone();
+                let shown = rows.clone();
+                tokio::task::spawn_blocking(move || selector(&shown, &preselect, cancel))
+                    .await
+                    .map_err(retry_login)?
+            };
         quick = false;
         let action = match action {
             SelectionAction::TrainMany { characters } => {
@@ -165,7 +175,7 @@ pub(super) async fn authorize(
                         && row.character.character_id == character_id
                         && channel_id
                             .as_ref()
-                            .is_none_or(|id| row.channels.iter().any(|channel| &channel.0 == id))
+                            .is_none_or(|id| row.channels.iter().any(|channel| &channel.id == id))
                 });
                 let selected = selected.ok_or_else(|| rejected(PublicClass::RetryLogin))?;
                 break (
@@ -173,14 +183,16 @@ pub(super) async fn authorize(
                     channel_id,
                     selected.character.name.clone(),
                     training_requested,
+                    selected.channels.clone(),
                 );
             }
             SelectionAction::TrainMany { .. } => return Err(rejected(PublicClass::RetryLogin)),
             SelectionAction::Create => {
-                let url = format!(
-                    "{}/account/characters/create",
-                    config.platform_url.trim_end_matches('/')
-                );
+                let url = crate::web_links::destination_url(
+                    &config.platform_url,
+                    "account/characters/create",
+                )
+                .ok_or(GameplayEntryError::InvalidConfiguration)?;
                 if !(config.open_browser)(&url) {
                     return Err(rejected(PublicClass::RetryLogin));
                 }
@@ -245,13 +257,25 @@ pub(super) async fn authorize(
     if let Some(attempt) = &device {
         attempt.remember_selection(&character_id, channel_id.as_deref());
     }
-    Ok((
+    Ok(Authorized {
         ticket,
         character_id,
         channel_id,
         character_name,
         training_requested,
-    ))
+        channels,
+    })
+}
+
+/// The consuming ticket and the selection it was issued for.
+pub(super) struct Authorized {
+    pub ticket: NativeTicket,
+    pub character_id: String,
+    pub channel_id: Option<String>,
+    pub character_name: String,
+    pub training_requested: bool,
+    /// The Channels of the selected World, as the directory listed them (chsw, capability 513).
+    pub channels: Vec<crate::character_selection::ChannelChoice>,
 }
 
 async fn enroll_or_fresh_browser(
@@ -271,4 +295,70 @@ async fn enroll_or_fresh_browser(
         return access_token(client, config, cancel, false).await;
     }
     Ok(token)
+}
+
+fn session_options(
+    preference_path: Option<&std::path::Path>,
+) -> crate::play::MiscellaneousPreferences {
+    preference_path
+        .and_then(|path| {
+            crate::play::MiscellaneousPreferences::read(
+                &path.with_extension("session-options.json"),
+            )
+            .ok()
+        })
+        .unwrap_or_default()
+}
+
+#[cfg(test)]
+mod session_options_tests {
+    use super::session_options;
+    use crate::play::{MiscellaneousPreferences, SettingsState};
+
+    #[test]
+    fn admission_reads_session_options_from_selected_preference_path()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let fixture = tempfile::tempdir()?;
+        let folder = fixture.path().join("admission-options");
+        std::fs::create_dir_all(&folder)?;
+        let result = (|| -> Result<(), Box<dyn std::error::Error>> {
+            let first = folder.join("isolated.json");
+            let second = folder.join("other.json");
+            let global = MiscellaneousPreferences::load();
+            let flags = MiscellaneousPreferences {
+                stay_logged_in: !global.stay_logged_in,
+                remember_device: !global.remember_device,
+                quick_login: !global.quick_login,
+                confirm_logout: false,
+                confirm_exit: false,
+            };
+            flags.save(&first.with_extension("session-options.json"))?;
+            MiscellaneousPreferences::default()
+                .save(&second.with_extension("session-options.json"))?;
+            assert_eq!(session_options(Some(&first)), flags);
+            assert_eq!(
+                session_options(Some(&first)),
+                SettingsState::new(Some(first.clone()))
+                    .preferences
+                    .miscellaneous
+            );
+            assert_eq!(
+                session_options(Some(&second)),
+                MiscellaneousPreferences::default()
+            );
+            assert_eq!(session_options(None), MiscellaneousPreferences::default());
+            assert_eq!(
+                session_options(Some(&folder.join("missing.json"))),
+                MiscellaneousPreferences::default()
+            );
+            std::fs::write(first.with_extension("session-options.json"), b"invalid")?;
+            assert_eq!(
+                session_options(Some(&first)),
+                MiscellaneousPreferences::default()
+            );
+            Ok(())
+        })();
+        fixture.close()?;
+        result
+    }
 }

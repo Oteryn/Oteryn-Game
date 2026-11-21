@@ -280,10 +280,11 @@ fn step_outcome(
     disposition: StepDisposition,
     spatial: Option<AppliedDelta<WireSpatialObservation>>,
 ) -> StepOutcome {
-    CommandOutcome {
+    StepOutcome {
         command_id,
         status: CommandStatus::Accepted,
         disposition,
+        step_wait_ms: 0,
         result_server_sequence,
         world_spatial_delta: spatial,
         world_object_overlay_delta: None,

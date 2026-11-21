@@ -4,52 +4,53 @@ impl PlayLink {
         lock(&self.mailbox).properties.mail.clone()
     }
 }
-#[cfg(windows)]
-pub(in crate::play) fn open_window(link: &PlayLink) {
-    use crate::play::feature_0115_mail::view::native::{Form, open};
-    open(
-        link,
-        Form {
-            title: "Writing and mail",
-            labels: &[
-                "Selected item",
-                "Selected mailbox (for posting)",
-                "Text (include recipient address for mail)",
-            ],
-            buttons: &["Write", "Post"],
-            snapshot: |mailbox| {
-                let panel = &mailbox.properties.mail;
-                (
-                    panel.open,
-                    panel.pending,
-                    panel.fields.to_vec(),
-                    oteryn_client_ui::mail::panel_text(panel),
-                )
-            },
-            set_open: |mailbox, value| mailbox.properties.mail.open = value,
-            submit: |mailbox, commands, action, values| {
-                let panel = &mut mailbox.properties.mail;
-                if panel.pending {
-                    return;
-                }
-                for (index, value) in values.into_iter().enumerate() {
-                    super::input::edit(panel, index, value);
-                }
-                let intent = match action {
-                    0 => oteryn_client_ui::mail::Intent::Write,
-                    1 => oteryn_client_ui::mail::Intent::Post,
-                    _ => return,
-                };
-                super::input::submit(mailbox, commands, intent);
-            },
+
+pub(in crate::play) fn form_window(_link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {
+    use crate::play::feature_0115_mail::view::form::Form;
+    Form {
+        title: "Writing and mail",
+        labels: &[
+            "Selected item",
+            "Selected mailbox (for posting)",
+            "Text (include recipient address for mail)",
+        ],
+        buttons: &["Write", "Post"],
+        snapshot: |mailbox| {
+            let panel = &mailbox.properties.mail;
+            (
+                panel.open,
+                panel.pending,
+                panel.fields.to_vec(),
+                oteryn_client_ui::mail::panel_text(panel),
+            )
         },
-    );
+        set_open: |mailbox, value| mailbox.properties.mail.open = value,
+        submit: |mailbox, commands, action, values| {
+            if values.iter().any(|value| !oteryn_client_ui::modal_dialogs::TextEditor::accepts(value, 7996)) {
+                mailbox.properties.mail.feedback = "A form field exceeds its UTF-8 byte limit or contains invalid text".into();
+                return;
+            }
+            let panel = &mut mailbox.properties.mail;
+            if panel.pending {
+                return;
+            }
+            for (index, value) in values.into_iter().enumerate() {
+                super::input::edit(panel, index, value);
+            }
+            let intent = match action {
+                0 => oteryn_client_ui::mail::Intent::Write,
+                1 => oteryn_client_ui::mail::Intent::Post,
+                _ => return,
+            };
+            super::input::submit(mailbox, commands, intent);
+        },
+    }
 }
 
-#[cfg(windows)]
-#[path = "native.rs"]
-pub(in crate::play) mod native;
+#[path = "form.rs"]
+pub(in crate::play) mod form;
 
-#[cfg(any(windows, test))]
+
+#[cfg(test)]
 #[path = "view/dialog_preferences.rs"]
 pub(in crate::play) mod dialog_preferences;

@@ -93,13 +93,40 @@ impl PlayLink {
         }
     }
     pub fn stash_request(&self, intent: Intent) {
+        Self::stash_enqueue_request(&mut lock(&self.mailbox), &self.commands, intent);
+    }
+    /// Close presentation without issuing a new gameplay request.
+    pub fn stash_close(&self) {
+        lock(&self.mailbox).stash.open = false;
+    }
+
+    /// Consent applies only to the exact panel that supplied the visible row.
+    pub fn stash_request_bound(
+        &self,
+        expected: &oteryn_client_ui::stash::StashPanel,
+        intent: Intent,
+    ) -> bool {
         let mut mailbox = lock(&self.mailbox);
-        if let Some(command) = request(&mut mailbox.stash, intent)
-            && self.commands.send(PlayCommand::Stash(command)).is_err()
-        {
+        if &mailbox.stash != expected || !mailbox.stash.open {
+            return false;
+        }
+        Self::stash_enqueue_request(&mut mailbox, &self.commands, intent)
+    }
+
+    fn stash_enqueue_request(
+        mailbox: &mut Mailbox,
+        commands: &tokio::sync::mpsc::UnboundedSender<PlayCommand>,
+        intent: Intent,
+    ) -> bool {
+        let Some(command) = request(&mut mailbox.stash, intent) else {
+            return false;
+        };
+        if commands.send(PlayCommand::Stash(command)).is_err() {
             mailbox.stash.pending = false;
             mailbox.stash.feedback = Some(tr!("The session has ended").into());
+            return false;
         }
+        true
     }
     pub fn stash_input(&self, events: &[NormalizedInputEvent]) -> bool {
         if !oteryn_client_ui::stash::open_key(events) {
@@ -127,11 +154,6 @@ impl PlayLink {
                 mailbox.stash.feedback = Some(tr!("The session has ended").into());
             }
         }
-        #[cfg(windows)]
-        super::view::open_window(shared, commands);
-        #[cfg(not(windows))]
-        {
-            lock(shared).stash.open = true;
-        }
+        lock(shared).stash.open = true;
     }
 }

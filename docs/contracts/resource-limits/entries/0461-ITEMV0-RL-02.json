@@ -9,11 +9,12 @@
     "maximum": 30
   },
   "failure_category": "CAPACITY_EXCEEDED",
-  "allocation_impact": "The decoder refuses a 31st corpse entry before decoding it and any payload over 941 bytes (the container handle and 30 entries of at most 31 bytes) before reading it; the encoder refuses the same view before emitting a byte.",
+  "allocation_impact": "The decoder refuses a 31st corpse entry before decoding it and any payload over 941 bytes (the container handle and 30 entries of at most 31 bytes) before reading it; the encoder refuses the same view before emitting a byte. With capability 499 selected, entry elements are at most 35 bytes and the corresponding bound is 1061 bytes; without 499 the legacy 941-byte bound and 31-byte elements remain unchanged.",
   "client_visible": true,
   "boundary_tests": [
     "max=30: a corpse with 30 entries round-trips within 941 bytes",
-    "max+1=31: 31 entries are refused in both directions"
+    "max+1=31: 31 entries are refused in both directions",
+    "capability 499: maximum-count views round-trip with 35-byte entry elements within 1061 bytes"
   ],
   "consumers": [
     "crates/protocol-oteryn/src/item_view.rs MAX_OPEN_CONTAINER_ENTRIES, MAX_OPEN_CONTAINER_BYTES"

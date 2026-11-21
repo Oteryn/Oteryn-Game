@@ -17,10 +17,18 @@ pub struct MoveResponse {
 }
 
 fn encode(request: MoveRequest, selected: &[u32]) -> Result<Vec<u8>, SessionError> {
+    // A container slot exists only under capability 510; without it the move keeps the default
+    // placement and today's bytes.
+    let destination = match request.destination {
+        ItemMoveDestination::Container(handle, Some(_)) if !selected.contains(&510) => {
+            ItemMoveDestination::Container(handle, None)
+        }
+        destination => destination,
+    };
     let mut payload = wire::encode_item_move_intent_for(
         &ItemMoveIntent {
             source: request.source,
-            destination: request.destination,
+            destination,
         },
         selection(selected),
     )
@@ -42,6 +50,7 @@ fn selection(selected: &[u32]) -> wire::ItemMoveSelection {
         equip_drop: selected.contains(&12),
         container_tree: selected.contains(&14),
         world_interaction: selected.contains(&11),
+        manual_sort: selected.contains(&510),
     }
 }
 
@@ -67,11 +76,8 @@ impl<S: SessionStream> Session<S> {
         let outcome =
             wire::decode_item_move_result_for(payload, selection(self.selected_capabilities()))
                 .map_err(SessionError::ItemView)?;
-        check_status_pairing(
-            result.command_id,
-            result.status,
-            outcome == ItemMoveOutcome::Rejected,
-        )?;
+        // Command 9 accepts every typed outcome, including an equipment refusal.
+        check_status_pairing(result.command_id, result.status, false)?;
         if outcome == ItemMoveOutcome::Moved && detail.is_some() {
             return Err(SessionError::ItemView(wire::ItemViewWireError::Malformed));
         }
@@ -96,7 +102,7 @@ mod tests {
     fn count_and_destinations_follow_negotiation() -> Result<(), SessionError> {
         let request = MoveRequest {
             source: std::num::NonZeroU64::MIN,
-            destination: ItemMoveDestination::Container(std::num::NonZeroU64::MIN),
+            destination: ItemMoveDestination::Container(std::num::NonZeroU64::MIN, None),
             count: Some(7),
         };
         assert!(encode(request, &[4, 6]).is_err());
@@ -120,6 +126,30 @@ mod tests {
                 .is_err()
             );
         }
+        Ok(())
+    }
+
+    /// CONTAINER-MANUAL-SORT-1: the slot reaches the wire only with capability 510; without
+    /// it the request encodes exactly as an unslotted container move.
+    #[test]
+    fn container_slot_is_sent_only_with_capability_510() -> Result<(), SessionError> {
+        let slotted = MoveRequest {
+            source: std::num::NonZeroU64::MIN,
+            destination: ItemMoveDestination::Container(std::num::NonZeroU64::MIN, Some(4)),
+            count: None,
+        };
+        let unslotted = MoveRequest {
+            destination: ItemMoveDestination::Container(std::num::NonZeroU64::MIN, None),
+            ..slotted
+        };
+        let legacy = &[4, 6, 12, 14];
+        assert_eq!(encode(slotted, legacy)?, encode(unslotted, legacy)?);
+        let selected = &[4, 6, 12, 14, 510];
+        let payload = encode(slotted, selected)?;
+        assert_ne!(payload, encode(unslotted, selected)?);
+        let intent = wire::decode_item_move_intent_for(&payload, selection(selected))
+            .map_err(SessionError::ItemView)?;
+        assert_eq!(intent.destination, slotted.destination);
         Ok(())
     }
 }

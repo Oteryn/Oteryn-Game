@@ -2,6 +2,7 @@ use oteryn_client_runtime::spell_catalog::CatalogState;
 #[derive(Debug, Clone, Default)]
 pub struct Panel {
     pub selected: bool,
+    pub info: std::collections::BTreeMap<u32, oteryn_client_runtime::server_info::SpellInfo>,
     pub open: bool,
     pub archive_open: bool,
     pub catalog: CatalogState,
@@ -16,6 +17,16 @@ pub struct Panel {
 }
 
 impl Panel {
+    /// The exact confirmed rows used by both the legacy and shared presenters.
+    pub fn visible_spells(
+        &self,
+    ) -> impl Iterator<Item = &oteryn_client_runtime::spell_catalog::SpellCatalogEntry> {
+        self.catalog
+            .entries()
+            .iter()
+            .filter(|entry| self.selected && !self.filter_error && self.matches(entry))
+    }
+
     #[must_use]
     pub fn selected_spell(
         &self,

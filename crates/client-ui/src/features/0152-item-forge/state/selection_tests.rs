@@ -16,6 +16,7 @@ fn item(handle: u64, name: &str, container: bool) -> wire::Item {
 }
 fn entry(handle: u64) -> ItemEntry {
     ItemEntry {
+        appearance_id: 0,
         handle: NonZeroU64::new(handle).unwrap_or(NonZeroU64::MIN),
         item_definition_ref: NonZeroU32::MIN,
         count: NonZeroU32::MIN,
@@ -76,4 +77,55 @@ fn t116_legacy_server_without_preview_labels_carried_items_without_the_handle() 
     let text = panel_text(&panel);
     assert!(text.contains("Carried item — name unavailable on this server"));
     assert!(!text.contains("7 /"));
+}
+
+#[test]
+fn settled_pair_operations_invalidate_metadata_even_when_live_entries_are_unchanged()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::server_mechanic::{CommandStatus, ServerMechanicResponse};
+    for operation in [
+        Operation::Fusion,
+        Operation::ConvergenceFusion,
+        Operation::Transfer,
+        Operation::ConvergenceTransfer,
+    ] {
+        let mut panel = panel();
+        panel.operation = operation;
+        panel.occurrence = [1; 16];
+        panel.occurrence[6] = 0x70;
+        panel.occurrence[8] = 0x80;
+        panel.first_item = 11;
+        panel.second_item = 12;
+        let live = vec![entry(11), entry(12)];
+        panel.preview.live = live.clone();
+        panel.preview.refresh = false;
+        control_request(&mut panel).ok_or("pair request")?;
+        let op = match operation {
+            Operation::Fusion => "fusion",
+            Operation::ConvergenceFusion => "convergence_fusion",
+            Operation::Transfer => "transfer",
+            Operation::ConvergenceTransfer => "convergence_transfer",
+            _ => return Err("not a pair".into()),
+        };
+        let payload = serde_json::to_vec(&serde_json::json!({
+            "operation": op, "succeeded": operation != Operation::Fusion, "applied": true, "reason": null, "bonus": 0,
+            "result": { "dust": 0, "dust_limit": 100, "first_tier": 1, "second_tier": 0,
+                "gold_spent": 100, "cores_spent": 0, "slivers_spent": 0, "slivers_created": 0, "cores_created": 0 }
+        }))?;
+        apply_result(
+            &mut panel,
+            &ServerMechanicResponse {
+                command_id: 1,
+                server_sequence: 1,
+                status: CommandStatus::Accepted,
+                payload,
+            },
+        );
+        panel.observe(live);
+        assert!(panel.preview.item(11).is_none());
+        assert!(panel.preview.item(12).is_none());
+        assert!(panel.preview.refresh);
+        assert!(!selected_pair_text(&panel).contains("tier 1"));
+    }
+    Ok(())
 }

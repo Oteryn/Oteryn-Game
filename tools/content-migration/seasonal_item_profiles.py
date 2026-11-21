@@ -9,6 +9,7 @@ import hashlib
 import json
 import sys
 from pathlib import Path
+from import_cyclopedia_global import apply_profile_weights
 from compact_record_json import encode
 
 from audit_house_decoration_sources import SOURCE_HASHES
@@ -79,6 +80,8 @@ def capture(crystal, canary):
                for item in sorted(IDS)]
     bound = bind_profiles({'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1', 'records': records}, bindings, IDS,
                           independent_crystal_source=(PIN, xml_raw))
+    # The donor weight stays in the capture; the Global client weight wins (ITEMGLOB).
+    apply_profile_weights(bound['records'], ROOT)
     return {'schema': 'OTERYN_SEASONAL_ITEM_PROFILES/v1', 'crystal_commit': PIN,
             'sources': [{'reference': name, 'revision': revision, 'path': path,
                          'sha256': hashlib.sha256(raw).hexdigest()}

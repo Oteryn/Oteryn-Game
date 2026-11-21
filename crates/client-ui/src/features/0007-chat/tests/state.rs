@@ -407,10 +407,10 @@ mod channels {
         let (mut chat, mut public, mut private) = selected();
         // The default (fixed) tabs cannot be closed.
         assert_eq!(close_current(&mut chat, &mut public, &mut private), None);
-        assert_eq!(chat.console.tab_count(), 4);
+        assert_eq!(chat.console.tab_count(), 1);
         public.rooms = rooms(&[ChatRoom::World, ChatRoom::Help]);
         chat.console.sync_rooms(public.rooms);
-        chat.console.select_index(5);
+        chat.console.select_index(2);
         assert_eq!(chat.console.current, Some(ChannelTab::Room(ChatRoom::Help)));
         assert_eq!(
             close_current(&mut chat, &mut public, &mut private),
@@ -422,7 +422,7 @@ mod channels {
             chat.console.current,
             Some(ChannelTab::Room(ChatRoom::World))
         );
-        assert_eq!(chat.console.tab_count(), 5);
+        assert_eq!(chat.console.tab_count(), 2);
     }
 
     #[test]
@@ -445,12 +445,9 @@ mod channels {
         );
         console.cycle(false);
         assert_eq!(console.current, Some(ChannelTab::Private(101)));
-        assert_eq!(
-            console.tab_labels(),
-            ["All", "Local", "Private", "Guild", "Bryn", "Channel 101"]
-        );
+        assert_eq!(console.tab_labels(), ["Local Chat", "Bryn", "Channel 101"]);
         // Closing the left-most opened tab falls back to the fixed tab.
-        console.select_index(4);
+        console.select_index(1);
         assert_eq!(
             console.close_current(),
             Some(ChannelTab::Conversation("Bryn".into()))
@@ -638,7 +635,7 @@ mod channels {
                 ]
             );
             assert_eq!(chat.console.current, Some(chat.console.channels[0].clone()));
-            assert_eq!(chat.console.tab_index(), 4);
+            assert_eq!(chat.console.tab_index(), 1);
         }
         assert_eq!(close_current(&mut chat, &mut public, &mut private), None);
         assert_eq!(
@@ -662,9 +659,53 @@ mod channels {
     }
 
     #[test]
+    fn guild_members_open_the_guild_channel_from_the_dialog_and_write_in_it() {
+        use oteryn_client_runtime::chat_guild_room::{GuildChatLine, GuildRoomState};
+        let (mut chat, mut public, mut private) = selected();
+        let entry = ChannelEntry::Local(ChannelTab::Guild);
+        assert!(!dialog_entries(None, ChatRoomSet::default(), false).contains(&entry));
+        chat.guild_selected = true;
+        chat.guild = GuildRoomState::Member {
+            guild_id: [1; 16],
+            rank: 1,
+            motd: "".into(),
+        };
+        assert!(crate::chat_guild_room::available(&chat));
+        let entries = dialog_entries(None, ChatRoomSet::default(), true);
+        assert!(entries.contains(&entry));
+        assert_eq!(
+            open_entry(&mut chat, &mut public, &mut private, &entry),
+            None
+        );
+        assert_eq!(chat.console.current, Some(ChannelTab::Guild));
+        assert_eq!(chat.console.tab_labels(), ["Local Chat", "Guild"]);
+        chat.lines = vec![
+            ChatLine::Private {
+                speaker_name: "Bob".into(),
+                text: "local hello".into(),
+            },
+            ChatLine::Guild(GuildChatLine {
+                guild_id: [1; 16],
+                rank: 1,
+                speaker_name: "Alice".into(),
+                text: "guild hello".into(),
+            }),
+        ];
+        let text = panel_text(&chat);
+        assert!(text.contains("guild hello") && !text.contains("local hello"));
+        chat.text = "for the guild".into();
+        assert_eq!(
+            crate::chat::channel_request(&mut chat),
+            Some(ChatIntent::Guild {
+                text: "for the guild".into()
+            })
+        );
+    }
+
+    #[test]
     fn chat_local_tabs_open_from_the_dialog_rows_and_close_without_wire() {
         let (mut chat, mut public, mut private) = selected();
-        let entries = dialog_entries(Some(&list(None, &[])), ChatRoomSet::default());
+        let entries = dialog_entries(Some(&list(None, &[])), ChatRoomSet::default(), false);
         let local: Vec<_> = entries
             .iter()
             .filter(|entry| matches!(entry, ChannelEntry::Local(_)))
@@ -685,7 +726,7 @@ mod channels {
             );
         }
         assert_eq!(
-            chat.console.tab_labels()[4..],
+            chat.console.tab_labels()[1..],
             ["Loot", "Server Log", "NPC"]
         );
         assert_eq!(chat.console.current, Some(ChannelTab::Npc));
@@ -742,7 +783,7 @@ mod channels {
     #[test]
     fn chat_dialog_selects_steps_and_confirms_rows_or_a_typed_name() {
         let channels = list(Some(100), &[(205, "Ana")]);
-        let entries = dialog_entries(Some(&channels), ChatRoomSet::default());
+        let entries = dialog_entries(Some(&channels), ChatRoomSet::default(), false);
         let console = Console::default();
         let rows = dialog_rows(&entries, &console);
         assert_eq!(rows.len(), entries.len());

@@ -1,16 +1,14 @@
 //! PREY-LIVE-1: offered command bytes, durable draws/receipts and hunting expiry.
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+use super::prey_fixtures::{exchange};
+
 use super::*;
-use super::prey_difficulty::{HistoryCounters, assert_history, selected_at};
-use crate::foundation::{MessageType, decode_wire_envelope};
+use super::prey_difficulty_fixtures::{HistoryCounters, assert_history, selected_at};
+
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
-use crate::gameplay_transport::connection::{
-    ConnectionEnd, FreshAdmissionAuthority, IDLE_LIVENESS, serve_admitted,
-};
+
 use oteryn_protocol_oteryn::prey as wire;
-use oteryn_protocol_oteryn::{
-    ClientCommandValue, CommandStatus, decode_command_result, encode_client_command,
-};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use oteryn_protocol_oteryn::CommandStatus;
 
 #[test]
 fn prey_postgres_real_dispatch_draw_select_reroll_expiry_and_replay() -> TestResult {
@@ -69,7 +67,7 @@ fn scenario() -> TestResult {
         .execute(&h.pool)
         .await?;
         prepare_current_session(&h).await?;
-        super::daily_reward::epoch(&h, 1).await?;
+        super::daily_reward_fixtures::epoch(&h, 1).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -78,7 +76,7 @@ fn scenario() -> TestResult {
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (generation, pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
         let room = pin.qualified_room().clone();
         let (channel_pin, _, _, _) = pin.into_channel_parts();
         let deps = Dependencies::with_content(
@@ -337,11 +335,11 @@ fn scenario() -> TestResult {
         )
         .map_err(debug)?;
         for day in 1..=20 {
-            if day > 1 { super::daily_reward::epoch(&h, day).await?; }
+            if day > 1 { super::daily_reward_fixtures::epoch(&h, day).await?; }
             let (end, bytes) =
-                super::daily_reward::serve(&owner, &mut admitted, &[(2, &shrine), (oteryn_protocol_oteryn::daily_reward::COMMAND_TYPE_DAILY_REWARD_CLAIM, &[])])
+                super::daily_reward_fixtures::serve(&owner, &mut admitted, &[(2, &shrine), (oteryn_protocol_oteryn::daily_reward::COMMAND_TYPE_DAILY_REWARD_CLAIM, &[])])
                     .await?;
-            let results = super::daily_reward::results(&bytes)?;
+            let results = super::daily_reward_fixtures::results(&bytes)?;
             assert_eq!(
                 results.last().and_then(|r| r.2.get(1)),
                 Some(&1),
@@ -362,20 +360,32 @@ fn scenario() -> TestResult {
             .await?,
             0
         );
-        // A creature without a loot row is an empty table within the PREY-0 R4 budget and
-        // selectable. Oversized tables stay explicit content refusals, never skipped bonus
-        // rolls; no preyable creature on this world has one (draw.rs unit tests cover it).
-        assert!(native.reward_table().row("oteryn:creature.hydra").is_err());
+        // Hydra's newly qualified 16-entry loot table exceeds PREY-0 R4's seven-entry
+        // budget. Keep that refusal separate from the empty-table selection below.
+        assert!(native
+            .reward_table()
+            .row("oteryn:creature.hydra")
+            .map_err(debug)?
+            .loot_table
+            .entries
+            .len() > 7);
+        // This exact source creature is prey-eligible but declares no corpse. Its explicit
+        // physical-reward refusal is an empty PREY table, not a fabricated loot profile.
+        const EMPTY_REWARD: &str = "oteryn:creature.moonspawn_juggernaut";
+        assert_eq!(
+            native.reward_table().row(EMPTY_REWARD).err(),
+            Some(crate::content::creature_reward::NoSettlementReason::CorpseItemMissing),
+        );
         let any = wire::encode_request(&wire::Request::SelectAny {
             slot: 1,
-            creature: "oteryn:creature.hydra".into(),
+            creature: EMPTY_REWARD.into(),
         })
         .map_err(debug)?;
         let command = admitted.continuity.next_command_id;
         let values = exchange(&owner, &mut admitted, &[(command, &any)]).await?;
         assert_eq!(values[0].0, CommandStatus::Accepted);
         let chosen = wire::decode_reply(&values[0].1).map_err(debug)?;
-        assert_eq!(chosen.slots[0].selected, "oteryn:creature.hydra");
+        assert_eq!(chosen.slots[0].selected, EMPTY_REWARD);
         assert_eq!(chosen.wildcard_balance, 7);
         // Each expiry checkpoints the selected race's real activity, then debits atomically.
         let mut hunt_now = 121 * 60_000_000;
@@ -392,7 +402,7 @@ fn scenario() -> TestResult {
                 CommandStatus::Accepted
             );
             consume_120_minutes(&owner, deps.actor, admitted.game_session_id,
-                "oteryn:creature.hydra", &mut hunt_now).await;
+                EMPTY_REWARD, &mut hunt_now).await;
             let before: i16 = sqlx::query_scalar("SELECT balance FROM game_account_prey_wildcards")
                 .fetch_one(&h.pool)
                 .await?;
@@ -450,7 +460,7 @@ fn scenario() -> TestResult {
         );
         // The retained AUTO_REROLL now has no cards: expiry clears it and draws a list.
         consume_120_minutes(&owner, deps.actor, admitted.game_session_id,
-            "oteryn:creature.hydra", &mut hunt_now).await;
+            EMPTY_REWARD, &mut hunt_now).await;
         assert!(owner.flush_prey(admitted.game_session_id).await);
         let command = admitted.continuity.next_command_id;
         let values = exchange(&owner, &mut admitted, &[(command, &query)]).await?;
@@ -543,62 +553,6 @@ fn scenario() -> TestResult {
         Ok(())
     })
 }
-
-pub(super) async fn exchange(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &mut AdmittedSession,
-    commands: &[(u64, &[u8])],
-) -> TestResult<Vec<(CommandStatus, Vec<u8>)>> {
-    let mut input = Vec::new();
-    for (command_id, payload) in commands {
-        let frame = encode_client_command(
-            admitted.continuity.connection_generation,
-            &ClientCommandValue {
-                command_id: *command_id,
-                command_type: wire::COMMAND_TYPE_PREY,
-                payload,
-            },
-        )
-        .map_err(debug)?;
-        input.extend_from_slice(&u32::try_from(frame.len())?.to_be_bytes());
-        input.extend_from_slice(&frame);
-    }
-    let (mut server, mut client) = tokio::io::duplex(1 << 20);
-    client.write_all(&input).await?;
-    client.shutdown().await?;
-    let end = tokio::time::timeout(
-        Duration::from_secs(30),
-        serve_admitted(&mut server, *admitted, owner, IDLE_LIVENESS),
-    )
-    .await?;
-    match end {
-        ConnectionEnd::AdmittedThenDisconnected(current)
-        | ConnectionEnd::AdmittedThenClosed(current, _) => *admitted = current,
-        other => return Err(format!("prey connection ended {other:?}").into()),
-    }
-    drop(server);
-    let mut output = Vec::new();
-    client.read_to_end(&mut output).await?;
-    let mut cursor = 0;
-    let mut results = Vec::new();
-    while cursor < output.len() {
-        let length = u32::from_be_bytes(output[cursor..cursor + 4].try_into()?) as usize;
-        let envelope =
-            decode_wire_envelope(&output[cursor + 4..cursor + 4 + length]).map_err(debug)?;
-        if envelope.message_type() == MessageType::CommandResult {
-            let result = decode_command_result(envelope.payload()).map_err(debug)?;
-            results.push((result.status, result.payload.to_vec()));
-        }
-        cursor += 4 + length;
-    }
-    assert_eq!(
-        results.len(),
-        commands.len(),
-        "Prey command results: {end:?}"
-    );
-    Ok(results)
-}
-
 
 async fn consume_120_minutes(
     owner: &ComposedFreshAdmission<'_, '_, '_>,

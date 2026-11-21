@@ -89,6 +89,7 @@ pub struct QuestLogMission {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct QuestLogQuest {
     pub key: String,
+    pub title: String,
     pub kind: QuestLogKind,
     pub shown_in_quest_log: bool,
     /// The track and the value it must reach for the quest to be listed.
@@ -160,7 +161,11 @@ impl QuestLogCatalogue {
             if !valid_quest_key(&quest.key) || state.definition_hash(&quest.key).is_none() {
                 return Err(E::UnknownQuest(quest.key));
             }
-            if quest.missions.len() > QUESTGATE0_RL_08 {
+            if quest.title.is_empty()
+                || quest.title.len() > QUESTGATE0_RL_08_NAME
+                || quest.title.contains('\0')
+                || quest.missions.len() > QUESTGATE0_RL_08
+            {
                 return Err(E::CapacityExceeded);
             }
             let mut own = |track: &str| match state.track(track) {
@@ -368,6 +373,17 @@ impl QuestLogContent {
                 let index = u32::try_from(index).ok()?;
                 let (_, _, completed) = self.listed(facts, index)?;
                 Some(ListedQuest { index, completed })
+            })
+            .collect()
+    }
+
+    /// Titles resolve against the same active or pinned revision as the visible mission line.
+    pub fn titles(&self, facts: &(impl QuestLogFacts + ?Sized)) -> Vec<(u32, String)> {
+        self.list(facts)
+            .into_iter()
+            .filter_map(|entry| {
+                let (_, quest, _) = self.listed(facts, entry.index)?;
+                Some((entry.index, quest.title.clone()))
             })
             .collect()
     }

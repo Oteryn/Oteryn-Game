@@ -36,6 +36,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(None);
         }
+        if intent.use_with_map_item.is_none()
+            && let Some(source) = source
+            && let Some(outcome) = self.use_rotten_essence_item(actor, command, source).await
+        {
+            return Ok(Some(outcome));
+        }
         let Some(fence) = command.item_fence else {
             return Ok(refuse(UseDisposition::Rejected));
         };

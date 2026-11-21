@@ -93,6 +93,12 @@ impl InteractionPlan {
             MAX_TRIGGER_CANDIDATES,
             registrations.len(),
         )?;
+        enforce_limit("root work", MAX_ROOT_WORK, selected_children.len())?;
+        enforce_limit(
+            "retained child lifecycles",
+            MAX_RETAINED_CHILD_LIFECYCLES,
+            retained.len(),
+        )?;
         registrations.sort_by(|left, right| left.key.cmp(&right.key));
         if registrations.windows(2).any(|pair| pair[0] == pair[1]) {
             return Err(InteractionError::DuplicateTriggerRegistration);
@@ -124,12 +130,6 @@ impl InteractionPlan {
         if children.windows(2).any(|pair| pair[0] == pair[1]) {
             return Err(InteractionError::DuplicateChild);
         }
-        enforce_limit("root work", MAX_ROOT_WORK, children.len())?;
-        enforce_limit(
-            "retained child lifecycles",
-            MAX_RETAINED_CHILD_LIFECYCLES,
-            retained.len(),
-        )?;
         if children.iter().any(|child| !retained.contains(child)) {
             return Err(InteractionError::MissingRetainedLifecycle);
         }

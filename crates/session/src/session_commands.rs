@@ -140,14 +140,12 @@ impl<S: SessionStream> Session<S> {
                 equip_drop: self.is_selected(12),
                 container_tree: self.is_selected(14),
                 world_interaction: self.is_selected(11),
+                manual_sort: self.is_selected(510),
             },
         )
         .map_err(SessionError::ItemView)?;
-        check_status_pairing(
-            result.command_id,
-            result.status,
-            outcome == ItemMoveOutcome::Rejected,
-        )?;
+        // Command 9 accepts every typed outcome, including an equipment refusal.
+        check_status_pairing(result.command_id, result.status, false)?;
         Ok(ItemMoveOutcomeResult {
             command_id: result.command_id,
             status: result.status,

@@ -1,17 +1,21 @@
 use crate::play::{PlayLink, mailbox::lock};
 impl PlayLink {
+    /// Shared presentation visibility; avoids copying the retained server view.
+    #[must_use]
+    pub fn vip_is_open(&self) -> bool {
+        lock(&self.mailbox).vip.open
+    }
+    /// Closing the sidebar preserves authoritative data and an in-flight request.
+    pub fn vip_close(&self) {
+        lock(&self.mailbox).vip.open = false;
+    }
     #[must_use]
     pub fn vip_panel(&self) -> oteryn_client_ui::vip::VipPanel {
         lock(&self.mailbox).vip.clone()
     }
 }
-#[cfg(windows)]
-#[path = "native.rs"]
-mod native;
-#[cfg(windows)]
-pub(in crate::play) use native::open_window;
 
-#[cfg(any(windows, test))]
+#[cfg(test)]
 #[derive(Default)]
 pub(in crate::play) struct ManagementView {
     pub entries: Vec<Row>,
@@ -19,12 +23,12 @@ pub(in crate::play) struct ManagementView {
     pub consents: Vec<Row>,
     pub next_entry: u64,
 }
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(in crate::play) struct Row {
     pub number: u64,
     pub label: String,
 }
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(in crate::play) fn management_view(
     view: Option<&str>,
 ) -> Result<ManagementView, serde_json::Error> {

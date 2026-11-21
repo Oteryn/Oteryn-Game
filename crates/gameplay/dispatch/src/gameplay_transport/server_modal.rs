@@ -73,6 +73,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             admitted.continuity.connection_generation,
         )?;
         drop(runtime);
+        if admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_DEFAULTS_V1)
+        {
+            self.states.server_modals.select_defaults(root)?;
+        }
         // Capability 490: dialogs carry their input block and an answer carries its value,
         // which is checked against the pending dialog before the V1 answer reaches its owner.
         let answer;
@@ -84,9 +91,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.states.server_modals.select_input(root)?;
             if kind == oteryn_protocol_oteryn::server_modal::COMMAND_TYPE_SERVER_MODAL_ANSWER {
                 let input = decode_answer_selected(true, payload).ok()?;
-                self.states
-                    .server_modals
-                    .check_answer_input(root, &input)?;
+                self.states.server_modals.check_answer_input(root, &input)?;
                 answer = input.answer.encode().ok()?;
                 answer.as_slice()
             } else {
@@ -116,6 +121,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             message: self.server_motd.to_owned(),
             choices: Vec::new(),
             buttons: vec![(1, "Acknowledge".into()), (2, "Cancel".into())],
+            default_button: Some(1),
             cancel_button: Some(2),
             image: None,
         });

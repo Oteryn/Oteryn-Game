@@ -306,7 +306,7 @@ pub fn condition_definition(
                     .as_ref()
                     .ok_or(SpellCastDisposition::Rejected)?;
                 V::SpellRegeneration {
-                    sub_id: qualified_regeneration_sub_id(profile)?,
+                    sub_id: u32::from(qualified_regeneration_sub_id(profile)?),
                     duration_ms: duration()?,
                     health_gain: r.health_gain.unwrap_or(0),
                     health_interval_ms: r
@@ -712,13 +712,33 @@ pub fn stage_typed_hit_in_world(
     ),
     SpellCastDisposition,
 > {
+    stage_typed_hit_with_gate(runtime, actor, state, magnitude, kind, now)
+        .map(|(next, damage, _)| (next, damage))
+}
+
+/// Read-only staging reports the admitted post-mitigation health component before shield/Gift.
+pub fn stage_typed_hit_with_gate(
+    runtime: &crate::foundation::ChannelRuntimeV1,
+    actor: crate::foundation::ExactActorRef,
+    state: &PlayerSpellState,
+    magnitude: u32,
+    kind: crate::player_lethal::PlayerHitKind,
+    now: u64,
+) -> Result<
+    (
+        PlayerSpellState,
+        crate::ability::creature_bite::FlooredDamage,
+        u32,
+    ),
+    SpellCastDisposition,
+> {
     let bonus = state
         .wheel_battle_instinct(runtime, actor, now)
         .ok_or(SpellCastDisposition::Rejected)?;
     let magnitude = state
         .after_player_block(magnitude, kind, bonus.shielding, now)
         .ok_or(SpellCastDisposition::Rejected)?;
-    stage_hit(
+    stage_hit_with_gate(
         state,
         magnitude,
         now,
@@ -896,6 +916,54 @@ enum HitDelivery {
     Undefined,
 }
 
+/// Pinned Soul War Lua `Creature:addHealth(-amount)` bypasses combatBlockHit
+/// and origin reductions, while Game::combatChangeHealth keeps mana shield and
+/// the canonical lethal-health pipeline. The dispatch caller qualifies source.
+pub fn stage_soul_war_lua_health_loss(
+    state: &PlayerSpellState,
+    magnitude: u32,
+    now: u64,
+) -> Result<
+    (
+        PlayerSpellState,
+        crate::ability::creature_bite::FlooredDamage,
+    ),
+    SpellCastDisposition,
+> {
+    stage_hit(
+        state,
+        magnitude,
+        now,
+        false,
+        false,
+        None,
+        HitDelivery::DirectHealth,
+    )
+}
+
+/// Crystal eventcallback_on_combat_taint.lua:114-120 samples both resources
+/// before the health call can consume shield mana. Lua addMana(-n,false) then
+/// changes mana directly, including after the queued lethal-health transition.
+pub fn stage_soul_war_fifth_taint(
+    state: &PlayerSpellState,
+    now: u64,
+) -> Result<
+    (
+        PlayerSpellState,
+        crate::ability::creature_bite::FlooredDamage,
+    ),
+    SpellCastDisposition,
+> {
+    let hp_loss = state.health.div_ceil(10);
+    let mana_loss = state.mana.div_ceil(10);
+    let (mut next, damage) = stage_soul_war_lua_health_loss(state, hp_loss, now)?;
+    // Lua changeMana clamps MP only; it does not run combat shield cleanup.
+    next.mana = next.mana.saturating_sub(mana_loss);
+    // stage_hit already published exactly one resource/condition revision.
+    // A positive pre-hit HP value always changes HP, shield, or Gift state.
+    Ok((next, damage))
+}
+
 fn stage_hit(
     state: &PlayerSpellState,
     magnitude: u32,
@@ -908,6 +976,35 @@ fn stage_hit(
     (
         PlayerSpellState,
         crate::ability::creature_bite::FlooredDamage,
+    ),
+    SpellCastDisposition,
+> {
+    stage_hit_with_gate(
+        state,
+        magnitude,
+        now,
+        mitigated,
+        preprocessed,
+        components,
+        delivery,
+    )
+    .map(|(next, damage, _)| (next, damage))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn stage_hit_with_gate(
+    state: &PlayerSpellState,
+    magnitude: u32,
+    now: u64,
+    mitigated: bool,
+    preprocessed: bool,
+    components: Option<(u32, u32)>,
+    delivery: HitDelivery,
+) -> Result<
+    (
+        PlayerSpellState,
+        crate::ability::creature_bite::FlooredDamage,
+        u32,
     ),
     SpellCastDisposition,
 > {
@@ -960,6 +1057,7 @@ fn stage_hit(
             .after_drome_incoming_bonus(remaining, now)
             .ok_or(SpellCastDisposition::Rejected)?;
     }
+    let hit_gate = remaining;
     // Crystal src/game/game.cpp:8004-8066 skips origin-based reductions for Lua addHealth,
     // but :8142-8155 and :8290 retain mana shields and the existing lethal-health owner.
     // Crystal 201189f src/game/game.cpp:8142 excludes Undefined only from mana
@@ -986,7 +1084,9 @@ fn stage_hit(
             next.mana -= mana_spent;
             remaining -= absorbed;
         }
-        if next.mana == 0 {
+        // NULL-caster Lua health removes the condition only after a real
+        // nonzero mana-damage pass (Crystal game.cpp:8159-8178).
+        if next.mana == 0 && (!direct_health || mana_spent > 0) {
             next.conditions.remove_type(ConditionType::ManaShield);
         }
     }
@@ -1001,7 +1101,7 @@ fn stage_hit(
     if next != *state {
         next.advance_batch_revision()?;
     }
-    Ok((next, damage))
+    Ok((next, damage, hit_gate))
 }
 
 #[cfg(test)]
@@ -1032,6 +1132,136 @@ mod tests {
         )
         .unwrap()
     }
+    #[test]
+    fn srx3_soul_war_lua_health_loss_skips_avatar_but_keeps_mana_shield() {
+        let mut state = actor();
+        apply_combat_change(
+            &mut state,
+            &OwnerCombatChange::Avatar(AvatarState {
+                expires_ms: 15000,
+                outfit_look_type: 1590,
+                incoming_reduction_percent: 80,
+                critical_chance_percent: 100,
+                critical_extra_percentage_points: 15,
+            }),
+            0,
+        )
+        .unwrap();
+        apply_combat_change(
+            &mut state,
+            &OwnerCombatChange::ManaShield(ManaShieldState {
+                capacity: 300,
+                expires_ms: 2000,
+            }),
+            0,
+        )
+        .unwrap();
+        let before = state.clone();
+        let (next, hit) = stage_soul_war_lua_health_loss(&state, 500, 1_000_000).unwrap();
+        assert_eq!(next.vitals().health, 800);
+        assert_eq!(next.vitals().mana, 200);
+        assert_eq!(hit.health_after, 800);
+        assert_eq!(next.conditions.mana_shield_at(1_000_000), None);
+        assert_eq!(
+            state, before,
+            "staging must not publish a partial HP/shield write"
+        );
+    }
+
+    #[test]
+    fn srx3_soul_war_fifth_taint_samples_mana_before_health_shield_in_one_batch() {
+        let mut state = actor();
+        state.facts.max_mana = 1000;
+        state.mana = 1000;
+        apply_combat_change(
+            &mut state,
+            &OwnerCombatChange::ManaShield(ManaShieldState {
+                capacity: 1000,
+                expires_ms: 2000,
+            }),
+            0,
+        )
+        .unwrap();
+        let before = state.clone();
+        let (next, hit) = stage_soul_war_fifth_taint(&state, 1_000_000).unwrap();
+        assert_eq!(
+            (next.vitals().health, next.vitals().mana),
+            (1000, 800),
+            "both source losses sample before shield spends mana"
+        );
+        assert_eq!(hit.health_after, 1000);
+        assert_eq!(
+            next.revision,
+            before.revision + 1,
+            "health, shield and direct mana form one successor"
+        );
+        assert_eq!(
+            state, before,
+            "preparation publishes no partial resource write"
+        );
+    }
+    #[test]
+    fn srx3_soul_war_fifth_taint_direct_mana_zero_does_not_remove_remaining_shield() {
+        let mut state = actor();
+        state.facts.max_mana = 1000;
+        state.mana = 1000;
+        apply_combat_change(
+            &mut state,
+            &OwnerCombatChange::ManaShield(ManaShieldState {
+                capacity: 1000,
+                expires_ms: 2000,
+            }),
+            0,
+        )
+        .unwrap();
+        // Model an earlier direct resource drain after the legal shield grant.
+        state.mana = 110;
+        let (next, _) = stage_soul_war_fifth_taint(&state, 1_000_000).unwrap();
+        assert_eq!((next.vitals().health, next.vitals().mana), (1000, 0));
+        assert_eq!(
+            next.conditions.mana_shield_at(1_000_000),
+            Some(900),
+            "Lua changeMana only clamps resource, unlike health-shield processing"
+        );
+    }
+
+    #[test]
+    fn srx3_soul_war_fifth_taint_zero_mana_health_pass_keeps_unspent_buffer() {
+        let mut state = actor();
+        state.facts.max_mana = 1000;
+        state.mana = 1000;
+        apply_combat_change(
+            &mut state,
+            &OwnerCombatChange::ManaShield(ManaShieldState {
+                capacity: 1000,
+                expires_ms: 2000,
+            }),
+            0,
+        )
+        .unwrap();
+        // Model an earlier direct resource drain after the legal shield grant.
+        state.mana = 0;
+        let (next, _) = stage_soul_war_fifth_taint(&state, 1_000_000).unwrap();
+        assert_eq!((next.vitals().health, next.vitals().mana), (900, 0));
+        assert_eq!(
+            next.conditions.mana_shield_at(1_000_000),
+            Some(1000),
+            "Game8178 removes shield only inside nonzero manaDamage branch"
+        );
+    }
+
+    #[test]
+    fn srx3_soul_war_fifth_taint_keeps_direct_mana_loss_after_queued_lethal_health() {
+        let mut state = actor();
+        state.health = 1;
+        state.mana = 101;
+        let (next, hit) = stage_soul_war_fifth_taint(&state, 1_000_000).unwrap();
+        assert_eq!(
+            (hit.health_after, next.vitals().health, next.vitals().mana),
+            (0, 0, 90)
+        );
+    }
+
     #[test]
     fn news_8933_death_keeps_every_standard_stance_and_its_durable_key() {
         use oteryn_gameplay_spell_rules::native_actor_states::StandardStance;

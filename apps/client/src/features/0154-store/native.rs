@@ -56,6 +56,7 @@ pub(in crate::play) fn customization(
         .flatten();
 }
 
+#[cfg(test)]
 pub(in crate::play) fn panel_text(panel: &StorePanel) -> String {
     if !panel.selected {
         return tr!("Store unavailable in this session").into();
@@ -70,13 +71,7 @@ pub(in crate::play) fn panel_text(panel: &StorePanel) -> String {
     } else {
         panel.catalogue.as_ref().map_or_else(
             || tr!("Load the server catalogue").into(),
-            |page| {
-                lfmt!(
-                    "Balance: {} coins; transferable: {}",
-                    page.total_coins,
-                    page.transferable_coins
-                )
-            },
+            |page| lfmt!("Balance: {} coins", page.total_coins),
         )
     };
     if let Some(preview) = store::offer_preview(panel) {
@@ -86,18 +81,7 @@ pub(in crate::play) fn panel_text(panel: &StorePanel) -> String {
     status
 }
 
-#[cfg(windows)]
-pub(in crate::play) use windows::open_window;
 
-#[cfg(any(windows, test))]
+#[cfg(test)]
 #[path = "native/assets.rs"]
 mod assets;
-#[cfg(windows)]
-#[path = "native/browser.rs"]
-mod windows;
-
-#[cfg(windows)]
-#[path = "native/classic.rs"]
-mod classic;
-#[cfg(windows)]
-pub(in crate::play) use classic::open_window as open_classic_window;

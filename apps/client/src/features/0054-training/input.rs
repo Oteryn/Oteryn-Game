@@ -50,12 +50,7 @@ impl PlayLink {
         submit(&mut lock(&self.mailbox), &self.commands, intent);
     }
     pub fn training_open(&self) {
-        #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
-            lock(&self.mailbox).properties.training.open = true;
-        }
+        lock(&self.mailbox).properties.training.open = true;
     }
     pub fn training_input(&self, events: &[NormalizedInputEvent]) -> bool {
         if !oteryn_client_ui::training::open_key(events) {

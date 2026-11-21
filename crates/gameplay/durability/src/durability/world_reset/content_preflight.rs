@@ -17,11 +17,21 @@ pub(super) async fn check(
             return Err(DurabilityError::InvalidStoredState);
         }
     }
-    let source_map = source.movement_cells().scope().map_revision.as_str().to_owned();
+    let source_map = source
+        .movement_cells()
+        .scope()
+        .map_revision
+        .as_str()
+        .to_owned();
     let source_server = source.compiled().server_digest();
     let source_client = source.compiled().client_digest();
     let source_frame = source.frame_binding().digest();
-    let target_map = target.movement_cells().scope().map_revision.as_str().to_owned();
+    let target_map = target
+        .movement_cells()
+        .scope()
+        .map_revision
+        .as_str()
+        .to_owned();
     let target_server = target.compiled().server_digest();
     let target_client = target.compiled().client_digest();
     let target_frame = target.frame_binding().digest();

@@ -26,3 +26,22 @@ requirements, command/domain ownership and offer closure, and emits sorted Rust 
 It never invents reserved or missing ids. The registry JSON aggregates remain unchanged.
 No generated file is committed. Dispatch materializes its existing `OfferedCapability` arrays
 from the generated protocol pairs in a `const fn`; there is no runtime parsing or allocation.
+
+## Capability 23 transport prerequisite
+
+At `9306b4eadb1209754d65ebd33c31c12291cce1fd`, keep all `PRESENTATION_V1` offers
+disabled. The generator rejects enabling any offer set until the server transport is verified:
+
+- `connection/serve/outbound.rs` emits movement magic effects in domain 19, and
+  `connection/serve/refresh.rs::sounds` emits committed effects/sounds. These are partial paths.
+- `connection/serve/snapshot.rs` does not install domain 19 or 20 snapshots.
+- `spell_presentation_cooldowns.rs::CandidateCooldownPublisher` is candidate-only, uses
+  `spell_presentation_candidate` payloads, and has no production connection caller.
+
+The paths above are relative to `crates/gameplay/dispatch/src/gameplay_transport/`.
+Before removing the generator gate and enabling offers, verify real committed combat events
+and own-actor cooldowns through negotiated connection frames, initial snapshots and reconnect,
+including capability rejection and revision/sequence continuity. Use the already accepted
+`presentation` codecs: `WORLD_PRESENTATION_BATCH_V1`, `WORLD_PRESENTATION_SNAPSHOT_V1`,
+`ACTOR_COOLDOWNS_DELTA_V1` and `ACTOR_COOLDOWNS_SNAPSHOT_V1`. No new wire message is needed.
+The existing movement/sound paths do not justify advertising the complete capability.

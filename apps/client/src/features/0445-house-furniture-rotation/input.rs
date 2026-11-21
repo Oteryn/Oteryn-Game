@@ -45,12 +45,7 @@ impl PlayLink {
         submit(&mut lock(&self.mailbox), &self.commands, intent);
     }
     pub fn house_rotation_open(&self) {
-        #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
-            lock(&self.mailbox).properties.house_furniture_rotation.open = true;
-        }
+        lock(&self.mailbox).properties.house_furniture_rotation.open = true;
         self.house_rotation_request(Intent::Refresh);
     }
     pub fn house_rotation_input(&self, events: &[NormalizedInputEvent]) -> bool {

@@ -35,7 +35,7 @@
       "sha256": "3aaf2965b14d9c3c0252876f8d3e228f20188568a03f8840b122588dbb76b78f"
     }
   ],
-  "records_sha256": "7f95b9a80bd4d80dca807ac4ffcb720da2b13eb4e37d2d0e292d65a9a5417e9a",
+  "records_sha256": "773e36e034c21a86d4cbef405cd12b2577caa5fd1bd8a332b29c304e3d372de3",
   "records": [
     {
       "authoring": {
@@ -1947,7 +1947,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 229
+              "value": 230
             },
             "movable": {
               "state": "KNOWN",
@@ -2091,7 +2091,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 229
+              "value": 230
             },
             "movable": {
               "state": "KNOWN",
@@ -2235,7 +2235,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 229
+              "value": 230
             },
             "movable": {
               "state": "KNOWN",
@@ -2379,7 +2379,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 229
+              "value": 230
             },
             "movable": {
               "state": "KNOWN",
@@ -2523,7 +2523,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 229
+              "value": 230
             },
             "movable": {
               "state": "KNOWN",
@@ -2667,7 +2667,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 229
+              "value": 230
             },
             "movable": {
               "state": "KNOWN",
@@ -2811,7 +2811,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 229
+              "value": 230
             },
             "movable": {
               "state": "KNOWN",

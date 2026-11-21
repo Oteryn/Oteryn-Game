@@ -21,11 +21,6 @@ impl PlayLink {
     }
     pub fn open_guild(&self) {
         self.guild_request(Intent::RefreshOwn);
-        #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
-            lock(&self.mailbox).guild.open = true;
-        }
+        lock(&self.mailbox).guild.open = true;
     }
 }

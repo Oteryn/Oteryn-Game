@@ -72,7 +72,8 @@ impl Stepper for Items {
                     assert_eq!(
                         request.destination,
                         ItemMoveDestination::Container(
-                            8.try_into().map_err(|_| SessionError::SessionUnusable)?
+                            8.try_into().map_err(|_| SessionError::SessionUnusable)?,
+                            None
                         )
                     );
                 } else {
@@ -130,6 +131,7 @@ fn equip_unequip_container_drop_refusal_and_disconnect() -> Result<(), Box<dyn s
 }
 fn scenario() -> Result<(), String> {
     let item = ItemEntry {
+        appearance_id: 0,
         handle: 7.try_into().map_err(|_| "handle")?,
         item_definition_ref: 42.try_into().map_err(|_| "definition")?,
         count: 50.try_into().map_err(|_| "count")?,
@@ -166,7 +168,7 @@ fn scenario() -> Result<(), String> {
             false,
         ),
         (
-            ItemMoveDestination::Container(8.try_into().map_err(|_| "container")?),
+            ItemMoveDestination::Container(8.try_into().map_err(|_| "container")?, None),
             true,
             true,
         ),

@@ -41,8 +41,50 @@ use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_runtime::world_interaction::{Action, Command};
 use oteryn_client_ui::world_interaction::menu::Menu;
 impl PlayView {
+    #[cfg(bevy_shell)]
+    pub(crate) fn creature_context(
+        &self,
+        target: oteryn_session::EntityRef,
+        link: &PlayLink,
+    ) -> Option<Menu> {
+        self.context_creature_position(target)?;
+        let mailbox = lock(&link.mailbox);
+        if mailbox.world_context.pending {
+            return None;
+        }
+        let menu = Menu::new(
+            oteryn_client_runtime::world_interaction::Target::Creature(target),
+            mailbox.world_context.look,
+            false,
+        );
+        (!menu.entries.is_empty()).then_some(menu)
+    }
+    fn context_creature_position(
+        &self,
+        target: oteryn_session::EntityRef,
+    ) -> Option<oteryn_session::ActorPosition> {
+        self.entities.iter().find_map(|row| {
+            (row.entity == target
+                && row.position.floor == self.floor
+                && matches!(
+                    row.detail,
+                    oteryn_session::EntityDetail::Actor { .. }
+                        | oteryn_session::EntityDetail::ActorWithIcons { .. }
+                ))
+            .then_some(row.position)
+        })
+    }
+
     pub fn world_context(&self, tile: TileCoord, link: &PlayLink) -> Option<Menu> {
-        let target = self.world_context_target(tile)?;
+        self.world_context_for(tile, link, false)
+    }
+    fn world_context_for(
+        &self,
+        tile: TileCoord,
+        link: &PlayLink,
+        prefer_item: bool,
+    ) -> Option<Menu> {
+        let target = self.world_context_target_for(tile, prefer_item)?;
         let mailbox = lock(&link.mailbox);
         if mailbox.world_context.pending {
             return None;
@@ -54,9 +96,11 @@ impl PlayView {
         )
         .with_targeting(mailbox.world_context.use_with);
         menu.tile = Some(tile);
-        if let Some(crate::play::GroundItem::Map { header, .. }) =
+        if let Some(crate::play::GroundItem::Map { header, .. }) = if prefer_item {
+            self.scene.item_target_at(tile)
+        } else {
             self.scene.target_at(tile).and_then(|target| target.item)
-        {
+        } {
             menu.binding = Some((
                 header.content_generation,
                 header.bundle_digest,
@@ -66,12 +110,11 @@ impl PlayView {
         (!menu.entries.is_empty()).then_some(menu)
     }
     pub fn world_context_choose(&self, link: &PlayLink, menu: &Menu, action: Action) -> bool {
+        let prefer_item = matches!(action, Action::Use | Action::UseWith | Action::UseRune);
         if !menu.entries.iter().any(|(_, entry)| *entry == action)
-            || menu
-                .tile
-                .and_then(|tile| self.world_context_target(tile))
-                .as_ref()
-                != Some(&menu.target)
+            || menu.tile.is_some_and(|tile| {
+                self.world_context_target_for(tile, prefer_item).as_ref() != Some(&menu.target)
+            })
         {
             lock(&link.mailbox)
                 .world_context
@@ -79,7 +122,7 @@ impl PlayView {
             return false;
         }
         if let Some(tile) = menu.tile {
-            let Some(current) = self.world_context(tile, link) else {
+            let Some(current) = self.world_context_for(tile, link, prefer_item) else {
                 return false;
             };
             if current.binding != menu.binding {
@@ -92,6 +135,47 @@ impl PlayView {
         let mut mailbox = lock(&link.mailbox);
         if mailbox.world_context.pending {
             return false;
+        }
+        let mut position = menu.tile.map(|tile| oteryn_session::ActorPosition {
+            x: tile.x,
+            y: tile.y,
+            floor: self.floor,
+        });
+        if menu.tile.is_none() {
+            use oteryn_client_runtime::world_interaction::Target;
+            let valid = match menu.target {
+                Target::Item(handle) => {
+                    mailbox
+                        .inventory
+                        .inventory
+                        .as_ref()
+                        .is_some_and(|inventory| {
+                            inventory
+                                .main_backpack
+                                .iter()
+                                .chain(&inventory.entries)
+                                .chain(inventory.equipment.iter().map(|equipped| &equipped.item))
+                                .any(|item| item.handle == handle)
+                        })
+                        || mailbox.containers.views.as_ref().is_some_and(|containers| {
+                            containers.views.iter().any(|view| {
+                                view.container_handle == handle
+                                    || view.entries.iter().any(|item| item.handle == handle)
+                            })
+                        })
+                }
+                Target::Creature(entity) => {
+                    position = self.context_creature_position(entity);
+                    position.is_some()
+                }
+                _ => false,
+            };
+            if !valid {
+                mailbox
+                    .world_context
+                    .set_feedback(tr!("Target changed").into(), std::time::Instant::now());
+                return false;
+            }
         }
         let current = Menu::new(
             menu.target.clone(),
@@ -115,13 +199,9 @@ impl PlayView {
             .send(crate::combat_input::PlayCommand::WorldContext(Command {
                 target: menu.target.clone(),
                 action,
-                selection: menu.tile.map(|tile| {
+                selection: position.map(|position| {
                     oteryn_client_runtime::world_interaction::Selection {
-                        position: oteryn_session::ActorPosition {
-                            x: tile.x,
-                            y: tile.y,
-                            floor: self.floor,
-                        },
+                        position,
                         binding: menu.binding,
                     }
                 }),
@@ -142,5 +222,44 @@ impl PlayLink {
         lock(&self.mailbox)
             .world_context
             .feedback(std::time::Instant::now())
+    }
+}
+
+impl PlayView {
+    /// Ordinary modifier clicks use the same observed target and negotiated command as menus.
+    pub fn modifier_click(
+        &mut self,
+        tile: TileCoord,
+        link: &PlayLink,
+        modifier: oteryn_input_actions::Modifier,
+    ) -> bool {
+        use oteryn_input_actions::Modifier;
+        if self.gameplay_input_blocked(link) {
+            return false;
+        }
+        if modifier == Modifier::Alt {
+            return self.attack_toggle_click(tile, link);
+        }
+        let Some(menu) = self.world_context_for(tile, link, modifier == Modifier::Control) else {
+            return false;
+        };
+        let action = match modifier {
+            Modifier::Shift => Action::Look,
+            Modifier::Control => {
+                let multi_use = match self.scene.item_target_at(tile) {
+                    Some(crate::play::GroundItem::Map { item, .. }) => {
+                        self.scene.item_multi_use(item.appearance_id)
+                    }
+                    _ => false,
+                };
+                if multi_use {
+                    Action::UseWith
+                } else {
+                    Action::Use
+                }
+            }
+            _ => return false,
+        };
+        self.world_context_choose(link, &menu, action)
     }
 }

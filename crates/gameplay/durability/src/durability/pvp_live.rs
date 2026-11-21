@@ -162,10 +162,11 @@ pub async fn read_live_pvp_in_transaction(
     .await?;
     let row=sqlx::query("SELECT COALESCE((SELECT skull=2 AND skull_until>clock_timestamp() FROM game_character_pvp_state WHERE character_id=encode($1,'hex')::uuid),false) AS actor_black, COALESCE((SELECT skull=2 AND skull_until>clock_timestamp() FROM game_character_pvp_state WHERE character_id=encode($2,'hex')::uuid),false) AS target_black, COALESCE((SELECT (skull>0 AND skull_until>clock_timestamp()) OR white_skull_until>clock_timestamp() FROM game_character_pvp_state WHERE character_id=encode($2,'hex')::uuid),false) OR EXISTS(SELECT 1 FROM game_character_revenge_marks WHERE victim_character_id=encode($1,'hex')::uuid AND killer_character_id=encode($2,'hex')::uuid AND avenged_at IS NULL AND expires_at>clock_timestamp()) AS marked, (SELECT authorization_decided_at>floor(extract(epoch FROM clock_timestamp()))::bigint-10 FROM game_durability_fresh_admission_receipts r JOIN game_durability_reconnect_sessions s ON COALESCE(s.fresh_replay_key,s.initial_fresh_replay_key)=r.replay_key WHERE s.game_session_id=encode($3,'hex')::uuid) AS immune")
         .bind(attacker.as_slice()).bind(target_id.as_slice()).bind(authority.game_session_id().as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+    let war_between = war_between_in_transaction(tx, &attacker, &target_id).await?;
     Ok(LivePvpFacts {
         world,
         relation: PvpRelation {
-            war_between: false,
+            war_between,
             same_party_or_guild: Some(group),
             friendly_fire: false,
             target_aggressor_of_actor: retaliation,
@@ -182,6 +183,15 @@ pub async fn read_live_pvp_in_transaction(
         actor_placement: actor.placement_identity(),
         target_placement: target.placement_identity(),
     })
+}
+
+async fn war_between_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    attacker: &[u8; 16],
+    target: &[u8; 16],
+) -> std::result::Result<bool, sqlx::Error> {
+    sqlx::query_scalar(concat!("SELECT EXISTS(SELECT 1 FROM game_guild_members a JOIN game_guild_members b ON b.character_id=encode($2,'hex')::uuid JOIN game_guild_wars w ON ", super::guild_war::active_war_predicate!(), " AND ((w.declaring_guild=a.guild_id AND w.opposing_guild=b.guild_id) OR (w.opposing_guild=a.guild_id AND w.declaring_guild=b.guild_id)) JOIN game_character_roots r ON r.character_id=a.character_id AND r.world_id=w.world_id WHERE a.character_id=encode($1,'hex')::uuid)"))
+        .bind(attacker.as_slice()).bind(target.as_slice()).fetch_one(&mut **tx).await
 }
 
 /// Basic unarmoured target qualification. Unknown or equipped mitigation fails closed.
@@ -261,6 +271,7 @@ async fn record_harm_in_transaction(
         ledger::record(tx, facts, damage).await?;
     }
     let unjustified = facts.world == WorldPvpType::Open
+        && !facts.relation.war_between
         && !facts.same_party
         && !facts.marked
         && !facts.relation.target_aggressor_of_actor;
@@ -268,15 +279,16 @@ async fn record_harm_in_transaction(
         sqlx::query("UPDATE game_character_pvp_state SET logout_block_until=GREATEST(logout_block_until,clock_timestamp()+interval '70 seconds'), pz_block_until=CASE WHEN character_id=encode($2,'hex')::uuid AND NOT $4 THEN GREATEST(pz_block_until,clock_timestamp()+interval '70 seconds') ELSE pz_block_until END, white_skull_until=CASE WHEN character_id=encode($2,'hex')::uuid AND $3 THEN GREATEST(white_skull_until,clock_timestamp()+interval '70 seconds') ELSE white_skull_until END, adventurer_forfeited=adventurer_forfeited OR (character_id=encode($2,'hex')::uuid AND NOT $4), revision=revision+1 WHERE character_id=encode($1,'hex')::uuid")
             .bind(id.as_slice()).bind(facts.attacker.as_slice()).bind(unjustified).bind(facts.relation.target_aggressor_of_actor || facts.same_party).execute(&mut **tx).await?;
     }
-    if !facts.same_party {
-    sqlx::query("DELETE FROM game_character_pvp_aggression WHERE attacker=encode($1,'hex')::uuid AND target IN(SELECT target FROM game_character_pvp_aggression WHERE attacker=encode($1,'hex')::uuid AND (until_at<=clock_timestamp() OR attacker_placement<>$2 OR scope_generation<>$3::text::numeric) ORDER BY until_at LIMIT 64 FOR UPDATE)")
+    // Defensive hits must not grant the initiator a reverse retaliation right.
+    if !facts.same_party && !facts.relation.target_aggressor_of_actor {
+        sqlx::query("DELETE FROM game_character_pvp_aggression WHERE attacker=encode($1,'hex')::uuid AND target IN(SELECT target FROM game_character_pvp_aggression WHERE attacker=encode($1,'hex')::uuid AND (until_at<=clock_timestamp() OR attacker_placement<>$2 OR scope_generation<>$3::text::numeric) ORDER BY until_at LIMIT 64 FOR UPDATE)")
         .bind(facts.attacker.as_slice()).bind(facts.actor_placement.as_slice()).bind(authority.scope_generation().to_string()).execute(&mut **tx).await?;
-    let full:bool=sqlx::query_scalar("SELECT (SELECT count(*) FROM game_character_pvp_aggression WHERE attacker=encode($1,'hex')::uuid)>=64 AND NOT EXISTS(SELECT 1 FROM game_character_pvp_aggression WHERE attacker=encode($1,'hex')::uuid AND target=encode($2,'hex')::uuid)")
+        let full:bool=sqlx::query_scalar("SELECT (SELECT count(*) FROM game_character_pvp_aggression WHERE attacker=encode($1,'hex')::uuid)>=64 AND NOT EXISTS(SELECT 1 FROM game_character_pvp_aggression WHERE attacker=encode($1,'hex')::uuid AND target=encode($2,'hex')::uuid)")
         .bind(facts.attacker.as_slice()).bind(facts.target.as_slice()).fetch_one(&mut **tx).await?;
-    if full {
-        return Err(refused());
-    }
-    sqlx::query("INSERT INTO game_character_pvp_aggression(attacker,target,until_at,scope_generation,attacker_placement,target_placement) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,clock_timestamp()+interval '70 seconds',$3::text::numeric,$4,$5) ON CONFLICT(attacker,target) DO UPDATE SET until_at=GREATEST(game_character_pvp_aggression.until_at,EXCLUDED.until_at),scope_generation=EXCLUDED.scope_generation,attacker_placement=EXCLUDED.attacker_placement,target_placement=EXCLUDED.target_placement")
+        if full {
+            return Err(refused());
+        }
+        sqlx::query("INSERT INTO game_character_pvp_aggression(attacker,target,until_at,scope_generation,attacker_placement,target_placement) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,clock_timestamp()+interval '70 seconds',$3::text::numeric,$4,$5) ON CONFLICT(attacker,target) DO UPDATE SET until_at=GREATEST(game_character_pvp_aggression.until_at,EXCLUDED.until_at),scope_generation=EXCLUDED.scope_generation,attacker_placement=EXCLUDED.attacker_placement,target_placement=EXCLUDED.target_placement")
         .bind(facts.attacker.as_slice()).bind(facts.target.as_slice()).bind(authority.scope_generation().to_string()).bind(facts.actor_placement.as_slice()).bind(facts.target_placement.as_slice()).execute(&mut **tx).await?;
     }
     sqlx::query("INSERT INTO game_character_pvp_harm(game_session_id,command_id,ordinal,victim,attacker,binding,damage,unjustified,field_occurrence) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6,$7,$8,$9)")
@@ -399,6 +411,10 @@ pub(super) async fn death_contributors_in_transaction(
             *b = u8::from_str_radix(&hex[i * 2..i * 2 + 2], 16)
                 .map_err(|_| DurabilityError::InvalidStoredState)?;
         }
+        let war_between = war_between_in_transaction(tx, &bytes, victim.as_bytes())
+            .await
+            .map_err(DurabilityError::from)?;
+        let unjustified = unjustified && !war_between;
         out.push(super::pvp_death_request::PvpDeathContributor {
             character_id: crate::domain::CharacterId::from_bytes(bytes)
                 .map_err(|_| DurabilityError::InvalidStoredState)?,
@@ -408,3 +424,7 @@ pub(super) async fn death_contributors_in_transaction(
     }
     Ok(out)
 }
+
+#[cfg(test)]
+#[path = "pvp_live_tests.rs"]
+mod tests;

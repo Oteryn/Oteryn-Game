@@ -6,15 +6,21 @@ impl PlayView {
     ) {
         self.visuals
             .retain(|cue| now.saturating_duration_since(cue.received) < VISUAL_LIFETIME);
-        self.visuals.extend(events.iter().map(|&kind| VisualCue {
-            kind,
-            received: now,
-        }));
+        for &kind in events {
+            if !numbers::merge(&mut self.visuals, kind, now) {
+                self.visuals.push(VisualCue { kind, received: now });
+            }
+        }
         let excess = self.visuals.len().saturating_sub(MAX_VISUAL_CUES);
         self.visuals.drain(..excess);
     }
 
     pub(in crate::play) fn advance_presentation(&mut self, now: Instant) -> Result<(), BatchError> {
+        self.scene.actor_animation(now, self.walk);
+        self.advance_world_animation(now)?;
+        if self.appearances.iter().any(|entry| entry.entity.motion.is_some()) {
+            self.rebuild()?;
+        }
         if self.visuals.is_empty() && !self.tutorial_overlay.enabled && self.hit_flash.is_none() {
             return Ok(());
         }
@@ -24,10 +30,24 @@ impl PlayView {
         });
         self.visuals
             .retain(|cue| now.saturating_duration_since(cue.received) < VISUAL_LIFETIME);
-        self.project_presentation(now)
+        self.project_presentation_at(now)
     }
 
     pub(in crate::play) fn project_presentation(&mut self, now: Instant) -> Result<(), BatchError> {
+        self.scene.actor_animation(now, self.walk);
+        self.advance_world_animation(now)?;
+        if self.appearances.iter().any(|entry| entry.entity.motion.is_some()) {
+            self.rebuild()?;
+        }
+        self.project_presentation_at(now)
+    }
+
+    /// Project overlays without advancing map animation; `rebuild` ends here, so a phase change
+    /// cannot re-enter the animation sampler with a different clock.
+    pub(in crate::play) fn project_presentation_at(
+        &mut self,
+        now: Instant,
+    ) -> Result<(), BatchError> {
         // Palette pixels remain emissive: overlays must be legible in dark areas.
         let (frames, changed) = if self.preferences().show_effects {
             self.scene.visual_frames(&self.visuals, now, self.floor)?
@@ -36,8 +56,9 @@ impl PlayView {
         };
         if changed {
             self.weather_scene();
-            self.light_scene()?;
         }
+        self.scene.floor_visuals = floors::project(self, &frames, now)?;
+        self.light_scene_at(now)?;
         let game_window = self.preferences().game_window;
         let opacity = self.preferences().effect_opacity;
         let boss_opacity = self.preferences().boss_area_opacity;
@@ -51,11 +72,20 @@ impl PlayView {
                 .map(|entry| entry.entity.entity)
         });
         let age = now.saturating_duration_since(self.party_icon_epoch);
-        let actor_options = actor_hud::Options::new(self.preferences(), self.floor, own_ref, age);
+        let (graphics, icon_cells) = self.scene.hud_graphics();
+        let font = graphics.as_deref().map(|graphics| graphics.font());
+        let actor_options = actor_hud::Options::new(
+            self.preferences(),
+            self.floor,
+            own_ref,
+            age,
+            self.shared_frontend,
+            icon_cells,
+        );
         let hit_flash = self.hit_flash;
         let (view, atlas, batch) = self.scene.presentation_base()?;
-        batch.lighting.opacity.clear();
-        resources::draw(
+        let resource_start = batch.len();
+        let hud_quads = resources::draw(
             batch,
             view,
             atlas,
@@ -63,15 +93,19 @@ impl PlayView {
             self.own,
             resource_options,
         )?;
-        actor_hud::draw(
+        let resource_quads = resource_start..batch.len();
+        let mut fixed = actor_hud::draw(
             batch,
             view,
             atlas,
             self.own,
             &self.entities,
             &self.party_icons,
+            &self.guild_emblems,
             actor_options,
         )?;
+        fixed.push(resource_quads);
+        let fixed_start = batch.len();
         if let Some(received) = hit_flash
             && oteryn_client_ui::analyser_hit_attribution::hit_flash_visible(
                 now.saturating_duration_since(received),
@@ -87,7 +121,11 @@ impl PlayView {
         }
         draw_tutorial(batch, view, atlas, &self.tutorial_overlay, now)?;
         crate::play::feature_0233_touch_controls::view::draw(batch, view, atlas, &self.touch)?;
+        fixed.push(fixed_start..batch.len());
         if !effects {
+            self.scene.player_quads.extend(fixed);
+            #[cfg(bevy_shell)]
+            { self.scene.native_hud_quads = hud_quads; }
             return Ok(());
         }
         let mut lines = std::collections::BTreeMap::new();
@@ -115,9 +153,14 @@ impl PlayView {
                     let line = lines.entry((position.x, position.y)).or_insert(0_u32);
                     let top = y - progress * 32.0 - 12.0 * *line as f32;
                     *line += 1 + u32::from(secondary.is_some());
-                    number(batch, view, atlas, [center, top], primary)?;
+                    let start = batch.len();
+                    number(batch, view, atlas, font, [center, top], primary)?;
                     if let Some(value) = secondary {
-                        number(batch, view, atlas, [center, top - 12.0], value)?;
+                        number(batch, view, atlas, font, [center, top - 12.0], value)?;
+                    }
+                    if progress > 1. / 1.2 && batch.len() > start {
+                        let alpha = ((1. - progress) * 6. * 100.).clamp(0., 100.) as u8;
+                        batch.lighting.set_opacity(start..batch.len(), alpha)?;
                     }
                 }
                 PresentationEventKind::MagicEffect {
@@ -203,17 +246,31 @@ impl PlayView {
                     position, spell, ..
                 } if position.floor == self.floor && progress < 1.0 => {
                     if let Some(words) = self.spell_words.get(&spell) {
-                        visual::words(batch, view, atlas, position, words, progress)?;
+                        visual::words(batch, view, atlas, font, position, words, progress)?;
                     }
                 }
-                PresentationEventKind::Missile { from, to, .. }
+                PresentationEventKind::Missile { from, to, source, .. }
                     if from.floor == self.floor && to.floor == self.floor =>
                 {
+                    let alpha = match source {
+                        oteryn_session::PresentationSource::Own => opacity[0],
+                        oteryn_session::PresentationSource::Others => opacity[1],
+                        oteryn_session::PresentationSource::Creatures => opacity[2],
+                        oteryn_session::PresentationSource::Global => 100,
+                    };
+                    if alpha == 0 { continue; }
+                    let start = batch.len();
                     visual::missile(batch, view, atlas, from, to, progress, frame)?;
+                    batch.lighting.set_opacity(start..batch.len(), alpha)?;
                 }
                 _ => {}
             }
         }
+        self.scene.player_quads.extend(fixed);
+        #[cfg(bevy_shell)]
+        { self.scene.native_hud_quads = hud_quads; }
+        #[cfg(not(bevy_shell))]
+        let _ = hud_quads;
         Ok(())
     }
 }

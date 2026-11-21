@@ -1,4 +1,5 @@
-use oteryn_platform_client::updates::{UpdateClient, UpdateConfig};
+use oteryn_platform_client::native_login::ReleaseIdentity;
+use oteryn_platform_client::updates::{UpdateChannel, UpdateClient, UpdateConfig, UpdateError};
 #[test]
 fn update_origin_requires_a_build_pinned_root() {
     assert!(UpdateConfig::new("stable", b"", "windows", "x86_64").is_err());
@@ -62,7 +63,16 @@ fn signed_origin_checks_versions_downloads_and_refuses_corruption()
   let requests=Arc::new(std::sync::Mutex::new(Vec::new()));
   let client=UpdateClient::check_with_transport(UpdateConfig::new("stable",root,"windows","x86_64")?,&folder,Fixture{corrupted:false,requests:requests.clone()}).await?;
   assert_eq!(client.policy.current_release_id,"rel-a");assert_eq!(client.length,7);
-  client.download(&folder.join("package.zip")).await?;
+  assert_eq!(client.require_minimum(Some(2)), Err(oteryn_platform_client::updates::UpdateError::Unavailable));
+  assert_eq!(client.require_minimum(Some(1)), Ok(()));
+  let refused = ReleaseIdentity::new(UpdateChannel::Stable, "rel-a", 1).ok_or("refused release")?;
+  assert_eq!(client.require_login_update(None, refused), Err(UpdateError::Unavailable));
+  let revoked = ReleaseIdentity::new(UpdateChannel::Stable, "rel-revoked", 3).ok_or("revoked release")?;
+  assert_eq!(client.require_login_update(Some(2), revoked), Err(UpdateError::Unavailable));
+  assert_eq!(client.require_login_update(Some(1), revoked), Ok(()));
+  let mut progress = Vec::new();
+  client.download_with_progress(&folder.join("package.zip"), |received, total| progress.push((received, total))).await?;
+  assert_eq!(progress.last(), Some(&(7, 7)));
   assert_eq!(std::fs::read(folder.join("package.zip"))?,b"package");
   let bad=UpdateClient::check_with_transport(UpdateConfig::new("stable",root,"windows","x86_64")?,&folder,Fixture{corrupted:true,requests}).await?;
   assert!(bad.download(&folder.join("bad.zip")).await.is_err());
@@ -72,4 +82,29 @@ fn signed_origin_checks_versions_downloads_and_refuses_corruption()
   std::fs::remove_dir_all(folder)?;
   Ok::<(),Box<dyn std::error::Error>>(())
  })
+}
+
+#[test]
+fn repeated_checks_preserve_the_committed_anchor() -> Result<(), Box<dyn std::error::Error>> {
+    tokio::runtime::Runtime::new()?.block_on(async {
+        let root = include_bytes!("../../../docs/contracts/fixtures/client-update-origin-v1/origin-v1/stable/metadata/1.root.json");
+        let folder = std::env::temp_dir().join(format!("oteryn-anchor-fixture-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&folder);
+        // Exercise both first publication and the trusted-root reuse path.
+        UpdateClient::check_with_transport(UpdateConfig::new("stable", root, "windows", "x86_64")?, &folder, Fixture { corrupted: false, requests: Default::default() }).await?;
+        let anchor = folder.join("stable/anchor.json");
+        std::fs::File::open(&anchor)?.set_times(std::fs::FileTimes::new().set_modified(std::time::UNIX_EPOCH))?;
+        UpdateClient::check_with_transport(UpdateConfig::new("stable", root, "windows", "x86_64")?, &folder, Fixture { corrupted: false, requests: Default::default() }).await?;
+        assert_eq!(std::fs::metadata(&anchor)?.modified()?, std::time::UNIX_EPOCH);
+        assert_eq!(std::fs::read(&anchor)?, root);
+        std::fs::remove_file(folder.join("stable/trusted-root.json"))?;
+        std::fs::write(&anchor, b"stale anchor")?;
+        let previous = folder.join("previous-anchor.json");
+        std::fs::hard_link(&anchor, &previous)?;
+        UpdateClient::check_with_transport(UpdateConfig::new("stable", root, "windows", "x86_64")?, &folder, Fixture { corrupted: false, requests: Default::default() }).await?;
+        assert_eq!(std::fs::read(previous)?, b"stale anchor");
+        assert_eq!(std::fs::read(&anchor)?, root);
+        std::fs::remove_dir_all(folder)?;
+        Ok::<(), Box<dyn std::error::Error>>(())
+    })
 }

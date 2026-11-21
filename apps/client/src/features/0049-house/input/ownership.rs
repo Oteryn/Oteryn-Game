@@ -95,15 +95,10 @@ impl PlayLink {
         lock(&self.mailbox).properties.house.ownership.clone()
     }
     pub fn house_ownership_open(&self) {
-        #[cfg(windows)]
-        super::super::view::ownership_window::open(self);
-        #[cfg(not(windows))]
-        {
-            let mut mailbox = lock(&self.mailbox);
-            if mailbox.properties.house.ownership.model.available() {
-                mailbox.properties.house.ownership.open = true;
-                page(&mut mailbox, &self.commands, 0);
-            }
+        let mut mailbox = lock(&self.mailbox);
+        if mailbox.properties.house.ownership.model.available() {
+            mailbox.properties.house.ownership.open = true;
+            page(&mut mailbox, &self.commands, 0);
         }
     }
     pub fn house_ownership_page(&self, direction: i8) {

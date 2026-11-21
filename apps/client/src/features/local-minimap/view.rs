@@ -45,7 +45,7 @@ impl MinimapMemory {
             && self
                 .tiles
                 .iter()
-                .all(|(_, _, floor, speed)| (-128..=127).contains(floor) && *speed <= 1000)
+                .all(|(_, _, floor, speed)| (0..=15).contains(floor) && *speed <= 1000)
             && self
                 .tiles
                 .iter()
@@ -54,7 +54,7 @@ impl MinimapMemory {
                 .len()
                 == self.tiles.len()
             && self.marks.iter().all(|m| {
-                (-128..=127).contains(&m.floor)
+                (0..=15).contains(&m.floor)
                     && !m.label.is_empty()
                     && m.label.len() <= 64
                     && !m.label.chars().any(char::is_control)
@@ -136,7 +136,13 @@ impl MinimapMemory {
         if bytes.len() as u64 > MAX_TRANSFER_BYTES {
             return Err(io::Error::other("Minimap file exceeds one MiB"));
         }
-        let value: Self = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
+        let mut value: Self = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
+        for (_, _, floor, _) in &mut value.tiles {
+            *floor = floor.saturating_abs();
+        }
+        for mark in &mut value.marks {
+            mark.floor = mark.floor.saturating_abs();
+        }
         if !value.valid() {
             return Err(io::Error::other("Invalid minimap data"));
         }
@@ -157,6 +163,11 @@ impl crate::play::PlayView {
         };
         self.local.minimap_binding = Some(binding.clone());
         self.local.minimap_origin = Some(map.header.origin);
+        if super::state::lock(&self.minimap).is_read_only() {
+            // Drop any unsynced preference edit from the previous binding.
+            self.local.minimap_edit = 0;
+            return;
+        }
         let old = self.local.preferences.minimap.clone();
         self.local.preferences.minimap.observe(map, binding);
         if self.local.preferences.minimap != old {
@@ -173,4 +184,15 @@ impl crate::play::PlayView {
         self.scene.minimap_floor = self.floor;
         self.scene.minimap_origin = self.local.minimap_origin;
     }
+}
+
+/// Sidebar navigation changes the same camera used for drawing and click-to-walk.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MinimapNavigation {
+    Pan(i32, i32),
+    Centre,
+    ZoomIn,
+    ZoomOut,
+    FloorUp,
+    FloorDown,
 }

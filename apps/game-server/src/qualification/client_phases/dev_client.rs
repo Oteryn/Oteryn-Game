@@ -322,7 +322,7 @@ async fn dev_client_door_scenario(
     door_revision: u64,
 ) -> TestResult {
     {
-        use oteryn_dev_client::{AppliedDelta, CommandOutcome, SessionEvent};
+        use oteryn_dev_client::{AppliedDelta, CommandOutcome, SessionEvent, StepOutcome};
         use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectOverlayEntry};
         let icon_push = u64::from(
             dev_client
@@ -351,10 +351,11 @@ async fn dev_client_door_scenario(
         let content_generation = dev_client_content_generation;
         let moved = |command_id: u64, result_sequence: u64, base: u64, x: i32, y: i32| {
             let result_sequence = sequence_base + result_sequence;
-            CommandOutcome {
+            StepOutcome {
                 command_id,
                 status: CommandStatus::Accepted,
                 disposition: StepDisposition::Moved,
+                step_wait_ms: 0,
                 result_server_sequence: result_sequence,
                 world_spatial_delta: Some(AppliedDelta {
                     server_sequence: result_sequence + 1,

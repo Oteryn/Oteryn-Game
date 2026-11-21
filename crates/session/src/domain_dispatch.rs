@@ -23,6 +23,69 @@ impl<S: SessionStream> Session<S> {
             }
         }
         match domain_id {
+            stash::DOMAIN_STASH
+            | market::STATE_DOMAIN_MARKET
+            | cyclopedia_tracker::STATE_DOMAIN_CYCLOPEDIA_TRACKER => {
+                if !capability_of_domain(domain_id).is_some_and(|id| self.is_selected(id)) {
+                    return Err(SessionError::UnselectedDomain { domain_id });
+                }
+                let revision = self
+                    .gated_revisions
+                    .iter()
+                    .find(|(id, _)| *id == domain_id)
+                    .map_or(0, |(_, revision)| *revision);
+                check_delta(&delta, 1, revision)?;
+                let malformed = || SessionError::Protocol(FoundationProtocolError::MalformedFrame);
+                let payload = match domain_id {
+                    stash::DOMAIN_STASH => {
+                        stash::decode_stash_reply(delta.payload).map_err(|_| malformed())?;
+                        delta.payload.to_vec()
+                    }
+                    market::STATE_DOMAIN_MARKET => {
+                        market::decode_reply(delta.payload).map_err(|_| malformed())?;
+                        delta.payload.to_vec()
+                    }
+                    _ => {
+                        let tracker = cyclopedia_tracker::decode_snapshot(delta.payload)
+                            .ok_or_else(malformed)?;
+                        let previous = self
+                            .gated_snapshot(domain_id)
+                            .ok_or(SessionError::MissingDomain(domain_id))?;
+                        let (mut bestiary, mut bosstiary) =
+                            cyclopedia_tracker::decode_domain_snapshot(&previous.payload)
+                                .ok_or_else(malformed)?;
+                        if tracker.boss {
+                            bosstiary = tracker;
+                        } else {
+                            bestiary = tracker;
+                        }
+                        cyclopedia_tracker::encode_domain_snapshot(&bestiary, &bosstiary)
+                            .ok_or_else(malformed)?
+                    }
+                };
+                let snapshot = GatedSnapshot {
+                    domain_id,
+                    snapshot_type: 1,
+                    revision: new_revision,
+                    payload,
+                };
+                self.gated_snapshots.retain(|row| row.domain_id != domain_id);
+                self.gated_snapshots.push(snapshot.clone());
+                match self
+                    .gated_revisions
+                    .iter_mut()
+                    .find(|(id, _)| *id == domain_id)
+                {
+                    Some((_, revision)) => *revision = new_revision,
+                    None => self.gated_revisions.push((domain_id, new_revision)),
+                }
+                Ok(SessionEvent::GatedSnapshotReplaced(applied(
+                    server_sequence,
+                    base_revision,
+                    new_revision,
+                    snapshot,
+                )))
+            }
             103 => crate::cast_chat::apply(self, server_sequence, payload),
             15 => crate::analyser_transport::apply(self, server_sequence, payload),
             100 => crate::spell_catalog::apply(self, server_sequence, payload),
@@ -50,7 +113,7 @@ impl<S: SessionStream> Session<S> {
                         value,
                     ))
                 } else {
-                    let value = npc_service::decode_npc_trade_window(delta.payload)
+                    let value = npc_service::decode_npc_trade_window_for(delta.payload, self.is_selected(oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1))
                         .map_err(|_| SessionError::SessionUnusable)?;
                     SessionEvent::NpcTradeWindow(applied(
                         server_sequence,
@@ -95,11 +158,23 @@ impl<S: SessionStream> Session<S> {
                 )?;
                 let fields =
                     world_spatial_entities::EntityFields::selected(self.selected_capabilities());
-                let (entities_delta, lights, icons) =
-                    world_spatial_entities::decode_world_spatial_entities_delta_with_icons(
+                let (entities_delta, lights, sidecar) =
+                    world_spatial_entities::decode_world_spatial_entities_delta_with_sidecar(
                         delta.payload,
                         fields,
                     )?;
+                let (icons, capacity, emblems) = match sidecar {
+                    Some(world_spatial_entities::DeltaSidecar::PartyIcons(icons)) => {
+                        (Some(icons), None, None)
+                    }
+                    Some(world_spatial_entities::DeltaSidecar::InventoryCapacity(capacity)) => {
+                        (None, Some(capacity), None)
+                    }
+                    Some(world_spatial_entities::DeltaSidecar::GuildEmblems(emblems)) => {
+                        (None, None, Some(emblems))
+                    }
+                    None => (None, None, None),
+                };
                 if entities_delta.content_generation != self.world_spatial.content_generation {
                     return Err(SessionError::ContentGenerationMismatch { domain_id });
                 }
@@ -110,9 +185,15 @@ impl<S: SessionStream> Session<S> {
                     }
                 };
                 appearance_state::validate_entities(self.appearance.as_ref(), Some(&next))?;
-                if icons.as_ref().is_some_and(|icons| icons.iter().any(|icon| {
-                    !next.get(&icon.entity).is_some_and(|entity| entity.kind == EntityKind::Player)
-                })) {
+                let player = |entity: &world_spatial_entities::EntityRef| {
+                    next.get(entity)
+                        .is_some_and(|entity| entity.kind == EntityKind::Player)
+                };
+                if icons.as_ref().is_some_and(|icons| icons.iter().any(|icon| !player(&icon.entity)))
+                    || emblems
+                        .as_ref()
+                        .is_some_and(|emblems| emblems.iter().any(|emblem| !player(&emblem.entity)))
+                {
                     return Err(SessionError::Protocol(FoundationProtocolError::MalformedFrame));
                 }
                 self.entities = Some(next);
@@ -120,6 +201,22 @@ impl<S: SessionStream> Session<S> {
                 self.spatial_revision = new_revision;
                 if let Some(icons) = icons {
                     return Ok(SessionEvent::PartyIcons(applied(server_sequence, base_revision, new_revision, icons)));
+                }
+                if let Some(emblems) = emblems {
+                    return Ok(SessionEvent::GuildEmblems(applied(
+                        server_sequence,
+                        base_revision,
+                        new_revision,
+                        emblems,
+                    )));
+                }
+                if let Some(capacity) = capacity {
+                    return Ok(SessionEvent::InventoryCapacity(applied(
+                        server_sequence,
+                        base_revision,
+                        new_revision,
+                        capacity,
+                    )));
                 }
                 Ok(SessionEvent::WorldSpatialEntities(applied(
                     server_sequence,
@@ -244,6 +341,13 @@ impl<S: SessionStream> Session<S> {
                             }
                         }
                     }
+                    oteryn_protocol_oteryn::native_map_cues::DELTA_TYPE_NATIVE_MAP_CHAT_LINE_V1 => {
+                        if !crate::presentation::native_basis(self) {
+                            return Err(SessionError::SessionUnusable);
+                        }
+                        let line = guild_chat::decode_native_line(delta.payload, &self.selected_capabilities)?;
+                        SessionEvent::ChatLine(applied(server_sequence, base_revision, new_revision, line))
+                    }
                     oteryn_protocol_oteryn::vip_presence::DELTA_TYPE_VIP_PRESENCE_V1 => {
                         use oteryn_protocol_oteryn::vip_presence as wire;
                         if !self.is_selected(wire::CAPABILITY_VIP_PRESENCE_V1) {
@@ -326,9 +430,10 @@ impl<S: SessionStream> Session<S> {
                     item_view::DELTA_TYPE_CHARACTER_INVENTORY_V1,
                     self.inventory_revision,
                 )?;
-                let value = item_view::decode_character_inventory_with_equip_drop(
+                let value = item_view::decode_character_inventory_with_appearances(
                     delta.payload,
                     self.is_selected(item_view::CAPABILITY_ITEM_EQUIP_DROP_V1),
+                    self.is_selected(item_view::CAPABILITY_ITEM_APPEARANCE_V1),
                 )
                 .map_err(SessionError::ItemView)?;
                 self.inventory = Some(value.clone());
@@ -346,8 +451,11 @@ impl<S: SessionStream> Session<S> {
                     item_view::DELTA_TYPE_OPEN_CONTAINER_V1,
                     self.container_revision,
                 )?;
-                let value = item_view::decode_open_container(delta.payload)
-                    .map_err(SessionError::ItemView)?;
+                let value = item_view::decode_open_container_with_appearances(
+                    delta.payload,
+                    self.is_selected(item_view::CAPABILITY_ITEM_APPEARANCE_V1),
+                )
+                .map_err(SessionError::ItemView)?;
                 self.open_container = Some(value.clone());
                 self.container_revision = new_revision;
                 Ok(SessionEvent::OpenContainer(applied(

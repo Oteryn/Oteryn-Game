@@ -37,6 +37,9 @@ use crate::charm_wire::{
 /// Registered capability `ITEM_VIEW_MOVE_V1`: domains 9 and 11, command type 9, the USE item
 /// target and the D85 item handle.
 pub const CAPABILITY_ITEM_VIEW_MOVE_V1: u32 = 4;
+/// Optional appearance field 5 on ItemEntryV1; requires item views.
+pub const CAPABILITY_ITEM_APPEARANCE_V1: u32 = 499;
+pub const CAPABILITY_ITEM_APPEARANCE_V1_REQUIRES: &[u32] = &[CAPABILITY_ITEM_VIEW_MOVE_V1];
 /// Capability 4 requires `WORLD_SPATIAL_ENTITIES`, which carries corpses in domain 1.
 pub const CAPABILITY_ITEM_VIEW_MOVE_V1_REQUIRES: &[u32] = &[
     crate::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES, // WORLD_SPATIAL_ENTITIES
@@ -55,6 +58,14 @@ pub const CAPABILITY_ITEM_EQUIP_DROP_V1: u32 = 12;
 pub const CAPABILITY_ITEM_STACK_COUNT_V1: u32 = 61;
 /// The largest existing destination plus field 6 (count 1..=100).
 pub const MAX_ITEM_MOVE_INTENT_STACK_COUNT_BYTES: usize = MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES + 2;
+/// CONTAINER-MANUAL-SORT-1 (Tibia Global's Manual Sort Mode): the optional `slot` field 2 of the
+/// command-9 container destination. Extends command type 9 of capability 14 only.
+pub const CAPABILITY_CONTAINER_MANUAL_SORT_V1: u32 = 510;
+pub const CAPABILITY_CONTAINER_MANUAL_SORT_V1_REQUIRES: &[u32] =
+    &[crate::container_tree::CAPABILITY_CONTAINER_TREE_V1];
+/// The source handle 1 + 10, the largest destination, a slotted `container` 1 + 1 + 11 + 6 (slot
+/// tag 1 + uint32 5; `ground` is 1 + 1 + 16), and the count 2.
+pub const MAX_ITEM_MOVE_INTENT_MANUAL_SORT_BYTES: usize = 11 + 2 + MAX_ITEM_TARGET_BYTES + 6 + 2;
 pub const CAPABILITY_ITEM_EQUIP_DROP_V1_REQUIRES: &[u32] = &[
     CAPABILITY_ITEM_VIEW_MOVE_V1, // ITEM_VIEW_MOVE_V1
 ];
@@ -100,6 +111,15 @@ pub const MAX_CHARACTER_INVENTORY_EQUIP_DROP_BYTES: usize = MAX_EQUIPPED_ITEMS
 /// Domain 11 snapshot and delta: the corpse handle 1 + 10 and 30 entry elements.
 pub const MAX_OPEN_CONTAINER_BYTES: usize =
     11 + MAX_OPEN_CONTAINER_ENTRIES * MAX_ITEM_ENTRY_ELEMENT_BYTES;
+/// Capability 499 adds at most four bytes per entry; legacy limits stay unchanged.
+pub const MAX_ITEM_ENTRY_APPEARANCE_BYTES: usize = MAX_ITEM_ENTRY_BYTES + 4;
+pub const MAX_CHARACTER_INVENTORY_APPEARANCE_BYTES: usize =
+    MAX_CHARACTER_INVENTORY_BYTES + 4 * MAX_CHARACTER_INVENTORY_ITEMS;
+pub const MAX_CHARACTER_INVENTORY_EQUIP_DROP_APPEARANCE_BYTES: usize =
+    MAX_CHARACTER_INVENTORY_EQUIP_DROP_BYTES + 4 * MAX_CHARACTER_INVENTORY_ITEMS;
+pub const MAX_OPEN_CONTAINER_APPEARANCE_BYTES: usize =
+    MAX_OPEN_CONTAINER_BYTES + 4 * MAX_OPEN_CONTAINER_ENTRIES;
+
 /// `ItemTargetV1`: the handle 1 + 10.
 pub const MAX_ITEM_TARGET_BYTES: usize = 11;
 /// `ItemMoveIntentV1`: the source handle 1 + 10 and the empty `main_backpack` destination 1 + 1.
@@ -118,6 +138,8 @@ pub type ItemHandle = NonZeroU64;
 /// `ItemEntryV1`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ItemEntry {
+    /// Client appearance binding; 0 means no appearance.
+    pub appearance_id: u16,
     pub handle: ItemHandle,
     pub item_definition_ref: NonZeroU32,
     /// The whole stack.
@@ -247,7 +269,7 @@ pub struct EquippedItem {
     pub item: ItemEntry,
 }
 
-/// `WorldTilePositionV1`: the pinned frame's native coordinates; the floor is in the int16 range.
+/// `WorldTilePositionV1`: the pinned frame's coordinates with Global z 0..=15.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct WorldTilePosition {
     pub x: i32,
@@ -262,8 +284,10 @@ pub enum ItemMoveDestination {
     MainBackpack,
     Equipment(EquipmentSlot),
     Ground(WorldTilePosition),
-    /// Into the named visible container (BAGS-0 §5).
-    Container(ItemHandle),
+    /// Into the named visible container (BAGS-0 §5). Under capability 510 the optional slot is
+    /// the index the item takes in the container's view order (newest first); `None` keeps the
+    /// default placement, the first slot.
+    Container(ItemHandle, Option<u32>),
 }
 
 /// The capabilities of a session's selection that extend command type 9.
@@ -276,6 +300,8 @@ pub struct ItemMoveSelection {
     /// Capability 11 `WORLD_INTERACTION_V1` (WORLD-INTERACTION-0 §10.1): the `ground` destination
     /// for a map-item or Ground source, and the `BLOCKED` result; not the `equipment` destination.
     pub world_interaction: bool,
+    /// Capability 510 `CONTAINER_MANUAL_SORT_V1`: the `slot` of the `container` destination.
+    pub manual_sort: bool,
 }
 
 /// `ItemMoveIntentV1`.
@@ -351,31 +377,62 @@ pub fn decode_item_target(input: &[u8]) -> WireResult<ItemHandle> {
     nonzero_u64(handle.unwrap_or(0))
 }
 
+#[cfg(test)]
 pub(crate) fn encode_entry(output: &mut Vec<u8>, field: u64, entry: &ItemEntry) {
-    let mut body = Vec::with_capacity(MAX_ITEM_ENTRY_BYTES);
+    encode_entry_for(output, field, entry, false);
+}
+
+pub(crate) fn encode_entry_for(
+    output: &mut Vec<u8>,
+    field: u64,
+    entry: &ItemEntry,
+    appearances: bool,
+) {
+    let mut body = Vec::with_capacity(if appearances {
+        MAX_ITEM_ENTRY_APPEARANCE_BYTES
+    } else {
+        MAX_ITEM_ENTRY_BYTES
+    });
     push_varint_field(&mut body, 1, entry.handle.get());
     push_varint_field(&mut body, 2, u64::from(entry.item_definition_ref.get()));
     push_varint_field(&mut body, 3, u64::from(entry.count.get()));
     push_nonzero_varint_field(&mut body, 4, u64::from(entry.sub_type));
+    if appearances {
+        push_nonzero_varint_field(&mut body, 5, u64::from(entry.appearance_id));
+    }
     push_message_field(output, field, &body);
 }
 
+#[cfg(test)]
 pub(crate) fn decode_entry(input: &[u8]) -> WireResult<ItemEntry> {
-    if input.len() > MAX_ITEM_ENTRY_BYTES {
+    decode_entry_for(input, false)
+}
+
+pub(crate) fn decode_entry_for(input: &[u8], appearances: bool) -> WireResult<ItemEntry> {
+    let maximum = if appearances {
+        MAX_ITEM_ENTRY_APPEARANCE_BYTES
+    } else {
+        MAX_ITEM_ENTRY_BYTES
+    };
+    if input.len() > maximum {
         return Err(ItemViewWireError::LimitExceeded);
     }
     let mut cursor = 0;
-    let (mut handle, mut definition, mut count, mut sub_type) = (None, None, None, None);
+    let (mut handle, mut definition, mut count, mut sub_type, mut appearance) =
+        (None, None, None, None, None);
     while cursor < input.len() {
         match read_varint(input, &mut cursor)? {
             0x08 => set_once(&mut handle, read_varint(input, &mut cursor)?)?,
             0x10 => set_once(&mut definition, read_uint32(input, &mut cursor)?)?,
             0x18 => set_once(&mut count, read_uint32(input, &mut cursor)?)?,
             0x20 => set_once(&mut sub_type, read_uint32(input, &mut cursor)?)?,
+            0x28 if appearances => set_once(&mut appearance, read_varint(input, &mut cursor)?)?,
             _ => return malformed(),
         }
     }
     Ok(ItemEntry {
+        appearance_id: u16::try_from(appearance.unwrap_or(0))
+            .map_err(|_| ItemViewWireError::Malformed)?,
         handle: nonzero_u64(handle.unwrap_or(0))?,
         item_definition_ref: nonzero_u32(definition.unwrap_or(0))?,
         count: nonzero_u32(count.unwrap_or(0))?,
@@ -435,8 +492,8 @@ fn validate_open_container(view: &OpenContainer) -> WireResult<()> {
     unique_handles(view.container_handle, view.entries.iter())
 }
 
-fn decode_equipped_item(input: &[u8]) -> WireResult<EquippedItem> {
-    if input.len() > MAX_EQUIPPED_ITEM_BYTES {
+fn decode_equipped_item(input: &[u8], appearances: bool) -> WireResult<EquippedItem> {
+    if input.len() > MAX_EQUIPPED_ITEM_BYTES + if appearances { 4 } else { 0 } {
         return Err(ItemViewWireError::LimitExceeded);
     }
     let mut cursor = 0;
@@ -444,7 +501,10 @@ fn decode_equipped_item(input: &[u8]) -> WireResult<EquippedItem> {
     while cursor < input.len() {
         match read_varint(input, &mut cursor)? {
             0x08 => set_once(&mut slot, read_uint32(input, &mut cursor)?)?,
-            0x12 => set_once(&mut item, decode_entry(read_bytes(input, &mut cursor)?)?)?,
+            0x12 => set_once(
+                &mut item,
+                decode_entry_for(read_bytes(input, &mut cursor)?, appearances)?,
+            )?,
             _ => return malformed(),
         }
     }
@@ -465,18 +525,26 @@ pub fn encode_character_inventory_with_equip_drop(
     view: &CharacterInventory,
     equip_drop: bool,
 ) -> WireResult<Vec<u8>> {
+    encode_character_inventory_with_appearances(view, equip_drop, false)
+}
+
+pub fn encode_character_inventory_with_appearances(
+    view: &CharacterInventory,
+    equip_drop: bool,
+    appearances: bool,
+) -> WireResult<Vec<u8>> {
     validate_character_inventory(view, equip_drop)?;
     let mut output = Vec::new();
     if let Some(backpack) = &view.main_backpack {
-        encode_entry(&mut output, 1, backpack);
+        encode_entry_for(&mut output, 1, backpack, appearances);
     }
     for entry in &view.entries {
-        encode_entry(&mut output, 2, entry);
+        encode_entry_for(&mut output, 2, entry, appearances);
     }
     for equipped in &view.equipment {
         let mut body = Vec::with_capacity(MAX_EQUIPPED_ITEM_BYTES);
         push_varint_field(&mut body, 1, equipped.slot as u64);
-        encode_entry(&mut body, 2, &equipped.item);
+        encode_entry_for(&mut body, 2, &equipped.item, appearances);
         push_message_field(&mut output, 3, &body);
     }
     Ok(output)
@@ -491,10 +559,19 @@ pub fn decode_character_inventory_with_equip_drop(
     payload: &[u8],
     equip_drop: bool,
 ) -> WireResult<CharacterInventory> {
-    let bound = if equip_drop {
-        MAX_CHARACTER_INVENTORY_EQUIP_DROP_BYTES
-    } else {
-        MAX_CHARACTER_INVENTORY_BYTES
+    decode_character_inventory_with_appearances(payload, equip_drop, false)
+}
+
+pub fn decode_character_inventory_with_appearances(
+    payload: &[u8],
+    equip_drop: bool,
+    appearances: bool,
+) -> WireResult<CharacterInventory> {
+    let bound = match (equip_drop, appearances) {
+        (true, true) => MAX_CHARACTER_INVENTORY_EQUIP_DROP_APPEARANCE_BYTES,
+        (true, false) => MAX_CHARACTER_INVENTORY_EQUIP_DROP_BYTES,
+        (false, true) => MAX_CHARACTER_INVENTORY_APPEARANCE_BYTES,
+        (false, false) => MAX_CHARACTER_INVENTORY_BYTES,
     };
     if payload.len() > bound {
         return Err(ItemViewWireError::LimitExceeded);
@@ -505,18 +582,21 @@ pub fn decode_character_inventory_with_equip_drop(
         match read_varint(payload, &mut cursor)? {
             0x0a => set_once(
                 &mut view.main_backpack,
-                decode_entry(read_bytes(payload, &mut cursor)?)?,
+                decode_entry_for(read_bytes(payload, &mut cursor)?, appearances)?,
             )?,
             0x12 => {
                 // Entries need the backpack, which takes one of the 30.
                 if view.entries.len() == MAX_CHARACTER_INVENTORY_ITEMS - 1 {
                     return Err(ItemViewWireError::LimitExceeded);
                 }
-                view.entries
-                    .push(decode_entry(read_bytes(payload, &mut cursor)?)?);
+                view.entries.push(decode_entry_for(
+                    read_bytes(payload, &mut cursor)?,
+                    appearances,
+                )?);
             }
             0x1a if equip_drop => {
-                let equipped = decode_equipped_item(read_bytes(payload, &mut cursor)?)?;
+                let equipped =
+                    decode_equipped_item(read_bytes(payload, &mut cursor)?, appearances)?;
                 // Ascending slots, so at most nine.
                 if view
                     .equipment
@@ -536,19 +616,39 @@ pub fn decode_character_inventory_with_equip_drop(
 
 /// Domain 11, snapshot type 1 and delta type 1 (the whole view).
 pub fn encode_open_container(view: &OpenContainer) -> WireResult<Vec<u8>> {
+    encode_open_container_with_appearances(view, false)
+}
+
+pub fn encode_open_container_with_appearances(
+    view: &OpenContainer,
+    appearances: bool,
+) -> WireResult<Vec<u8>> {
     validate_open_container(view)?;
     let mut output = Vec::new();
     if let Some(handle) = view.container_handle {
         push_varint_field(&mut output, 1, handle.get());
     }
     for entry in &view.entries {
-        encode_entry(&mut output, 2, entry);
+        encode_entry_for(&mut output, 2, entry, appearances);
     }
     Ok(output)
 }
 
 pub fn decode_open_container(payload: &[u8]) -> WireResult<OpenContainer> {
-    if payload.len() > MAX_OPEN_CONTAINER_BYTES {
+    decode_open_container_with_appearances(payload, false)
+}
+
+pub fn decode_open_container_with_appearances(
+    payload: &[u8],
+    appearances: bool,
+) -> WireResult<OpenContainer> {
+    if payload.len()
+        > if appearances {
+            MAX_OPEN_CONTAINER_APPEARANCE_BYTES
+        } else {
+            MAX_OPEN_CONTAINER_BYTES
+        }
+    {
         return Err(ItemViewWireError::LimitExceeded);
     }
     let mut cursor = 0;
@@ -561,7 +661,10 @@ pub fn decode_open_container(payload: &[u8]) -> WireResult<OpenContainer> {
                 if entries.len() == MAX_OPEN_CONTAINER_ENTRIES {
                     return Err(ItemViewWireError::LimitExceeded);
                 }
-                entries.push(decode_entry(read_bytes(payload, &mut cursor)?)?);
+                entries.push(decode_entry_for(
+                    read_bytes(payload, &mut cursor)?,
+                    appearances,
+                )?);
             }
             _ => return malformed(),
         }
@@ -592,7 +695,7 @@ fn encode_position(position: WorldTilePosition) -> Vec<u8> {
     output
 }
 
-/// Absent coordinates are 0 (proto3); a floor outside the int16 range fails closed.
+/// Absent coordinates are 0 (proto3); a floor outside 0..=15 fails closed.
 fn decode_position(input: &[u8]) -> WireResult<WorldTilePosition> {
     if input.len() > MAX_WORLD_TILE_POSITION_BYTES {
         return Err(ItemViewWireError::LimitExceeded);
@@ -608,10 +711,14 @@ fn decode_position(input: &[u8]) -> WireResult<WorldTilePosition> {
         };
         set_once(field, decode_sint32(read_varint(input, &mut cursor)?)?)?;
     }
+    let floor = floor.unwrap_or(0);
+    if !(0..=15).contains(&floor) {
+        return malformed();
+    }
     Ok(WorldTilePosition {
         x: x.unwrap_or(0),
         y: y.unwrap_or(0),
-        floor: i16::try_from(floor.unwrap_or(0)).map_err(|_| ItemViewWireError::Malformed)?,
+        floor: floor as i16,
     })
 }
 
@@ -626,6 +733,26 @@ fn decode_equipment_destination(input: &[u8]) -> WireResult<EquipmentSlot> {
         }
     }
     EquipmentSlot::from_wire(slot.unwrap_or(0))
+}
+
+/// `ContainerDestinationV1`: the handle is required; field 2 `slot` only under capability 510.
+fn decode_container_destination(
+    input: &[u8],
+    manual_sort: bool,
+) -> WireResult<(ItemHandle, Option<u32>)> {
+    if !manual_sort {
+        return decode_item_target(input).map(|handle| (handle, None));
+    }
+    let mut cursor = 0;
+    let (mut handle, mut slot) = (None, None);
+    while cursor < input.len() {
+        match read_varint(input, &mut cursor)? {
+            0x08 => set_once(&mut handle, read_varint(input, &mut cursor)?)?,
+            0x10 => set_once(&mut slot, read_uint32(input, &mut cursor)?)?,
+            _ => return malformed(),
+        }
+    }
+    Ok((nonzero_u64(handle.unwrap_or(0))?, slot))
 }
 
 /// `ClientCommand.payload` of command type 9, without capability 12.
@@ -644,6 +771,7 @@ pub fn encode_item_move_intent_with_equip_drop(
             equip_drop,
             container_tree: false,
             world_interaction: false,
+            manual_sort: false,
         },
     )
 }
@@ -657,12 +785,16 @@ pub fn encode_item_move_intent_for(
     push_varint_field(&mut output, 1, intent.source.get());
     match intent.destination {
         ItemMoveDestination::MainBackpack => push_message_field(&mut output, 2, &[]),
-        ItemMoveDestination::Container(handle) if selection.container_tree => {
-            let mut body = Vec::with_capacity(MAX_ITEM_TARGET_BYTES);
+        ItemMoveDestination::Container(_, Some(_)) if !selection.manual_sort => return malformed(),
+        ItemMoveDestination::Container(handle, slot) if selection.container_tree => {
+            let mut body = Vec::with_capacity(MAX_ITEM_TARGET_BYTES + 6);
             push_varint_field(&mut body, 1, handle.get());
+            if let Some(slot) = slot {
+                push_varint_field(&mut body, 2, u64::from(slot));
+            }
             push_message_field(&mut output, 5, &body);
         }
-        ItemMoveDestination::Container(_) => return malformed(),
+        ItemMoveDestination::Container(..) => return malformed(),
         ItemMoveDestination::Ground(_) if !selection.equip_drop && !selection.world_interaction => {
             return malformed();
         }
@@ -673,6 +805,9 @@ pub fn encode_item_move_intent_for(
             push_message_field(&mut output, 3, &body);
         }
         ItemMoveDestination::Ground(position) => {
+            if !(0..=15).contains(&position.floor) {
+                return malformed();
+            }
             push_message_field(&mut output, 4, &encode_position(position));
         }
     }
@@ -697,6 +832,7 @@ pub fn decode_item_move_intent_with_equip_drop(
             equip_drop,
             container_tree: false,
             world_interaction: false,
+            manual_sort: false,
         },
     )
 }
@@ -729,8 +865,11 @@ fn decode_move_intent(
         equip_drop,
         container_tree,
         world_interaction,
+        manual_sort,
     } = selection;
-    let bound = if stack_count {
+    let bound = if manual_sort {
+        MAX_ITEM_MOVE_INTENT_MANUAL_SORT_BYTES
+    } else if stack_count {
         MAX_ITEM_MOVE_INTENT_STACK_COUNT_BYTES
     } else if equip_drop || container_tree || world_interaction {
         MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES
@@ -760,8 +899,12 @@ fn decode_move_intent(
                 set_once(&mut destination, ItemMoveDestination::Ground(position))?;
             }
             0x2a if container_tree => {
-                let handle = decode_item_target(read_bytes(payload, &mut cursor)?)?;
-                set_once(&mut destination, ItemMoveDestination::Container(handle))?;
+                let (handle, slot) =
+                    decode_container_destination(read_bytes(payload, &mut cursor)?, manual_sort)?;
+                set_once(
+                    &mut destination,
+                    ItemMoveDestination::Container(handle, slot),
+                )?;
             }
             0x30 if stack_count => {
                 let value = read_uint32(payload, &mut cursor)?;

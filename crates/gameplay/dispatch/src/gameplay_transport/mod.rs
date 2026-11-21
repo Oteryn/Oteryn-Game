@@ -21,6 +21,7 @@ mod analyser;
 pub mod atelier;
 mod attack;
 mod automatic_spell_progression;
+mod background_sweep;
 mod bank_npc;
 mod bed_regen;
 mod bed_sleep;
@@ -34,6 +35,7 @@ mod bundle_ladder;
 mod bundle_map_position;
 mod cake_event;
 mod capabilities;
+mod carried_recipes;
 mod cast_observer;
 mod channel_states;
 mod character_gameplay_fence;
@@ -47,8 +49,8 @@ mod chat_relay;
 mod coin_use;
 mod combat_lock_fact;
 mod composed_admission;
-#[cfg(test)]
-mod composed_test_owner;
+#[cfg(any(test, feature = "test-support"))]
+pub mod composed_test_owner;
 mod condition_persistence;
 mod condition_snapshots;
 mod connection;
@@ -69,7 +71,10 @@ mod dawnport_trial;
 mod death_ml_loss_postgres;
 mod depot;
 mod echo_warden;
+mod effective_rooms;
+mod encounter_phases;
 mod endgame_entry;
+mod endgame_room_policy;
 mod entity_names;
 mod equipment_move;
 mod equipment_reflection;
@@ -85,6 +90,7 @@ mod grizzly_kills;
 mod grizzly_rewards;
 mod guild_bank;
 mod guild_chat;
+mod guild_emblem;
 mod guild_war;
 mod highscores;
 mod hive_shared_kills;
@@ -97,6 +103,7 @@ mod house_transfer;
 mod hunting_stamina;
 mod imbuement_clock;
 mod input_gate;
+mod inventory_capacity;
 mod item_craft;
 mod item_look;
 mod item_move;
@@ -131,6 +138,8 @@ mod monster_quest_death;
 mod mount_taming;
 mod native_activity;
 mod native_activity_return;
+mod native_claim_reward;
+mod native_cue_offer;
 mod newhaven_arrival;
 mod newhaven_travel;
 mod novelty_item_use;
@@ -140,6 +149,7 @@ mod npc_talk;
 mod npc_trade_command;
 mod npc_travel;
 mod npc_voice;
+mod outburst_entry;
 mod paced_movement;
 pub mod party_command;
 mod party_kill_settlement;
@@ -150,6 +160,8 @@ mod party_xp;
 mod party_xp_command;
 mod player_death_items;
 mod premium_overview;
+mod primal_callbacks;
+mod primal_entry;
 mod primal_menace;
 mod primal_pods;
 mod private_channel_world;
@@ -161,13 +173,21 @@ mod pvp_death;
 mod pvp_expert;
 mod pvp_live;
 mod quest_admission;
+mod quest_batch3_c;
 mod quest_callbacks;
+mod quest_collections;
 mod quest_death_loot;
 mod quest_disguise;
+mod quest_door_uses;
+mod quest_hits;
 mod quest_kill_objectives;
 mod quest_kills;
 mod quest_log_source;
+mod quest_peer_use;
+mod quest_stage_events;
+mod quest_terrain_uses;
 mod quest_timer_cycle;
+mod quest_tool_use;
 mod raid_live;
 mod raid_live_world;
 mod raid_notices;
@@ -175,19 +195,31 @@ mod raid_schedule;
 mod resting_area;
 mod resume;
 mod reward_bag_use;
+mod rotten_blood_callbacks;
 pub mod rotten_blood_dispatch;
+mod rotten_blood_entry;
 mod rune_use_bridge;
 mod seam_rooms;
 pub mod server_save_countdown;
 mod serving;
 pub mod session_ingress;
 mod soul_kill_live;
+mod soul_war_callbacks;
+mod soul_war_cloak_blood;
+mod soul_war_entry;
+mod soul_war_malice;
+mod soul_war_scene;
+mod soul_war_world;
+mod soul_war_world_raid;
 mod soulpit;
+mod source_boss_exit;
+mod source_death;
+mod source_item_cycle;
+mod source_names;
 pub use soulpit::runtime as soulpit_runtime;
 pub use soulpit::{
     BossActivityHandoff, BossActivityHandoffSlot, SoulpitCoreSelection, SoulpitEntryIntent,
 };
-mod source_item_cycle;
 mod source_pvp_expiry;
 mod source_volatile_items;
 pub mod spectate_session;
@@ -198,6 +230,8 @@ mod spell_magnitude_facts;
 mod spell_parameter_cast;
 pub mod spell_premium_coordinator;
 mod spell_presentation_publisher;
+mod spite_global;
+mod spite_step;
 mod stash;
 mod tcp_tls;
 #[cfg(test)]
@@ -216,6 +250,7 @@ mod viola_book;
 mod vip_presence;
 mod vocation_choice;
 pub mod weapon_proficiency;
+mod wire_position;
 mod world_event;
 mod world_map;
 /// ADMIT0: the boot-bound Channel required gameplay capabilities (D1081-D1084).
@@ -374,6 +409,8 @@ async fn first<T>(primary: impl Future<Output = T>, stop: impl Future<Output = (
 /// #414 Character authority, and this GameNode's #415 incarnation holding the
 /// served Channel.
 pub struct GameplaySeamOwners<'a, 'f, 's> {
+    /// Validated once by the composition root before serving.
+    pub platform_enforcement_enabled: bool,
     pub cast: Option<cast::CastRuntimeConfig>,
     /// Sealed bounded templates issued by the same existing Content activation owner.
     pub activity_templates:
@@ -555,10 +592,9 @@ impl SecureIdentifiers {
             .ok()?;
         Some(bytes)
     }
-}
-
-impl ConnectionIdentifiers for SecureIdentifiers {
-    fn game_session_id(&self) -> Option<crate::foundation::GameSessionId> {
+    /// Fresh server DATA occurrence, with no command or session authority.
+    /// Source owners retain this identity before their first asynchronous read.
+    pub(in crate::gameplay_transport) fn source_think_event_id(&self) -> Option<[u8; 16]> {
         let mut bytes: [u8; 16] = Self::random()?;
         let millis = u64::try_from(
             SystemTime::now()
@@ -570,7 +606,13 @@ impl ConnectionIdentifiers for SecureIdentifiers {
         bytes[..6].copy_from_slice(&millis.to_be_bytes()[2..]);
         bytes[6] = 0x70 | (bytes[6] & 0x0f);
         bytes[8] = 0x80 | (bytes[8] & 0x3f);
-        crate::foundation::GameSessionId::decode(&bytes).ok()
+        Some(bytes)
+    }
+}
+
+impl ConnectionIdentifiers for SecureIdentifiers {
+    fn game_session_id(&self) -> Option<crate::foundation::GameSessionId> {
+        crate::foundation::GameSessionId::decode(&self.source_think_event_id()?).ok()
     }
 
     fn transport_ref(&self) -> Option<crate::foundation::AuthenticatedTransportRefV1> {
@@ -1303,6 +1345,43 @@ fn earned_notice(
     )
 }
 
+/// A bounded admission decision, with no player identity or raw failure details.
+fn record_entry_decision(outcome: &str, attempts: u64, elapsed: Duration, phase: &str) {
+    use oteryn_error_codes::{FieldValue, Level, Line};
+    let trace = connection::diagnostic_connection_trace().map(format_connection_trace);
+    let mut line = Line::new(
+        Level::Info,
+        "gameplay_transport",
+        "admission_entry_decision",
+    )
+    .field("outcome", FieldValue::Token(outcome))
+    .field("attempts", FieldValue::U64(attempts))
+    .field(
+        "elapsed_ms",
+        FieldValue::U64(u64::try_from(elapsed.as_millis()).unwrap_or(u64::MAX)),
+    )
+    .field("phase", FieldValue::Token(phase));
+    if let Some(trace) = trace.as_deref() {
+        line = line.trace(trace);
+    }
+    oteryn_error_codes::emit("oteryn-game-server", &line);
+}
+
+/// Join boundaries are emitted before awaiting their work, so a cancelled join still names
+/// its last phase. The entry outcome is the current one, after all admission participants.
+fn record_join_progress(phase: &str, first_entry: connection::FirstEntryOutcome) {
+    use oteryn_error_codes::{FieldValue, Level, Line};
+    let trace = connection::diagnostic_connection_trace().map(format_connection_trace);
+    let first_entry = format!("{first_entry:?}");
+    let mut line = Line::new(Level::Info, "gameplay_transport", "join_progress")
+        .field("phase", FieldValue::Token(phase))
+        .field("first_entry", FieldValue::Token(&first_entry));
+    if let Some(trace) = trace.as_deref() {
+        line = line.trace(trace);
+    }
+    oteryn_error_codes::emit("oteryn-game-server", &line);
+}
+
 /// One structured stderr event line for the operator, as the node's own events are written
 /// (OPS-NODE-BOOT-01 D6).
 fn operator_event(line: &str) {
@@ -1440,7 +1519,7 @@ impl<'r> AdmissionRetryBudget<'r> {
             backoff: RECONCILE_BACKOFF,
             stale_rounds: FRESH_ADMISSION_ROUNDS,
             root: Some(root),
-            _foreground: None,
+            _foreground: root.foreground_demand().ok(),
             waiter: std::sync::OnceLock::new(),
         }
     }
@@ -1533,6 +1612,30 @@ impl<'r> AdmissionRetryBudget<'r> {
                         return Err(refusal);
                     }
                 }
+            }
+        }
+    }
+
+    /// Retry only transient pre-dispatch holder failures, retaining the exact
+    /// failure when this command's fixed foreground budget is exhausted.
+    async fn retry_command_guard<T>(
+        &self,
+        mut step: impl AsyncFnMut() -> Result<T, crate::durability::DurabilityError>,
+    ) -> Result<T, crate::durability::DurabilityError> {
+        loop {
+            match step().await {
+                Err(
+                    error @ (crate::durability::DurabilityError::RootUnavailable
+                    | crate::durability::DurabilityError::RootPassDeadlineExceeded),
+                ) => {
+                    if !self
+                        .retries_unavailable(AdmissionRefusal::Unavailable)
+                        .await
+                    {
+                        return Err(error);
+                    }
+                }
+                result => return result,
             }
         }
     }

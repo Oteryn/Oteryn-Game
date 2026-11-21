@@ -1,7 +1,7 @@
 use oteryn_client_runtime::world_weather::WorldWeather;
-/// Visual-only weather tint. Native floors -7..=0 are outdoors; no roof data is sent.
+/// Visual-only weather tint. Native floors 0..=7 are outdoors; no roof data is sent.
 pub fn overlay(weather: Option<WorldWeather>, floor: i16) -> Option<([u8; 3], u8)> {
-    if !(-7..=0).contains(&floor) {
+    if !(0..=7).contains(&floor) {
         return None;
     }
     let WorldWeather::Active {

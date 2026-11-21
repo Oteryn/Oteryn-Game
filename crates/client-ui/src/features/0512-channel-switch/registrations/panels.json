@@ -1,0 +1,7 @@
+{
+  "mechanic": "0512-channel-switch",
+  "kind": "panels",
+  "id": "0512-channel-switch-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_rows"
+}

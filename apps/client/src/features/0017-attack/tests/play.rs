@@ -13,6 +13,7 @@ fn named_battle_lists_filter_sort_save_and_attack_live_entities()
     };
     let (link, mut commands, outbox) = play_channel();
     let creature = |id, health| WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: EntityKind::Creature,
         entity: EntityRef {
@@ -36,6 +37,12 @@ fn named_battle_lists_filter_sort_save_and_attack_live_entities()
             oteryn_session::EntityDisplayName::new("River wolf")
                 .map_err(|e| std::io::Error::other(format!("{e:?}")))?,
         ),
+        detail: EntityDetail::ActorWithIcons {
+            direction: StepDirection::South,
+            appearance_ref: 1,
+            health_percent: 75,
+            icons: Default::default(),
+        },
         ..creature(2, 90)
     };
     let player = WorldSpatialEntity {
@@ -87,6 +94,7 @@ fn named_battle_lists_filter_sort_save_and_attack_live_entities()
     assert_eq!(search.rows(&link.battle_panel().rows), vec![high]);
     let rows = preferences.battle_lists[0].rows(&link.battle_panel().rows);
     assert_eq!(rows, vec![low]);
+    assert_eq!(link.filtered_battle_rows(0), vec![low]);
     assert_eq!(
         preferences.battle_lists[1].rows(&link.battle_panel().rows),
         vec![player]
@@ -118,7 +126,8 @@ fn named_battle_lists_filter_sort_save_and_attack_live_entities()
         link.sync_battle_lists(&mut preferences.battle_lists, 0)
             .is_none()
     );
-    let path = std::env::temp_dir().join(format!("clientgap-battle-{}.json", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("clientgap-battle.json");
     let mut store = PreferenceStore::defaults(path.clone());
     store.apply(preferences.clone())?;
     assert_eq!(
@@ -244,7 +253,8 @@ fn active_named_battle_list_survives_character_switches() -> Result<(), Box<dyn 
 {
     use crate::play::feature_0017_attack::view::BattleListPreferences;
     use crate::play::{PreferenceStore, SettingsState};
-    let root = std::env::temp_dir().join(format!("active-battle-list-{}", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let root = fixture.path().join("active-battle-list");
     let base = root.join("preferences.json");
     let mut settings = SettingsState::new(Some(base.clone()));
     settings.select_character(Some([15; 16]));
@@ -272,7 +282,6 @@ fn active_named_battle_list_survives_character_switches() -> Result<(), Box<dyn 
     assert_eq!(link.active_battle_list(), 1);
     assert!(!link.battle_select_list(2));
     assert_eq!(link.active_battle_list(), 1);
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }
 
@@ -286,6 +295,7 @@ fn o014_battle_list_filters_by_type_and_sorts_by_each_choice() {
         ActorPosition, EntityDetail, EntityKind, EntityRef, StepDirection, WorldSpatialEntity,
     };
     let row = |id, kind, health| WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind,
         entity: EntityRef {
@@ -303,7 +313,21 @@ fn o014_battle_list_filters_by_type_and_sorts_by_each_choice() {
             health_percent: health,
         },
     };
-    let creature = row(1, EntityKind::Creature, 80);
+    let mut creature = row(1, EntityKind::Creature, 80);
+    creature.detail = EntityDetail::ActorWithIcons {
+        direction: StepDirection::South,
+        appearance_ref: 1,
+        health_percent: 75,
+        icons: Default::default(),
+    };
+    assert!(
+        BattleListPreferences {
+            max_health: 20,
+            ..Default::default()
+        }
+        .rows(&[creature])
+        .is_empty()
+    );
     let player = row(2, EntityKind::Player, 30);
     let rows = [creature, player];
     let list = |players, creatures, sort| BattleListPreferences {
@@ -332,6 +356,14 @@ fn o014_battle_list_filters_by_type_and_sorts_by_each_choice() {
         list(true, true, BattleSort::Identity).rows(&rows),
         vec![creature, player]
     );
+    // Tibia's default list: no kind filter, sorted by display time (the order the creatures
+    // appeared in the session's battle rows).
+    let tibia = BattleListPreferences::default();
+    assert_eq!(tibia.sort, BattleSort::Appearance);
+    assert!(tibia.players && tibia.creatures && tibia.search.is_empty());
+    assert_eq!(tibia.max_health, 100);
+    assert_eq!(tibia.rows(&[player, creature]), vec![player, creature]);
+    assert_eq!(tibia.rows(&rows), vec![creature, player]);
 }
 
 #[test]
@@ -342,13 +374,14 @@ fn n004_alt_click_attacks_a_creature_then_stops_when_it_is_the_target()
     use oteryn_session::{
         ActorPosition, EntityDetail, EntityKind, EntityRef, StepDirection, WorldSpatialEntity,
     };
-    let (link, mut commands, _) = play_channel();
+    let (link, mut commands, outbox) = play_channel();
     let mut view = PlayView::new(TileCoord::new(1, 1), 0, &[])?;
     let creature = EntityRef {
         identity: [7; 16],
         generation: 1,
     };
     view.entities = vec![WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: EntityKind::Creature,
         entity: creature,
@@ -380,6 +413,7 @@ fn n004_alt_click_attacks_a_creature_then_stops_when_it_is_the_target()
         &[target],
     )?;
     assert!(!view.attack_toggle_click(TileCoord::new(0, 0), &link));
+    assert_eq!(view.attack_context(tile, &link), Some(false));
     assert!(view.attack_toggle_click(tile, &link));
     assert!(matches!(
         commands.try_recv()?,
@@ -391,11 +425,18 @@ fn n004_alt_click_attacks_a_creature_then_stops_when_it_is_the_target()
         modes: FightModes::DEFAULT,
         in_fight: true,
     });
+    // The context menu then offers Stop Attack on the current target.
+    assert_eq!(view.attack_context(tile, &link), Some(true));
     assert!(view.attack_toggle_click(tile, &link));
+    let mut commands = outbox.record_queued_combat_wire_for_test(&mut commands)?;
     assert!(matches!(
         commands.try_recv()?,
         crate::combat_input::PlayCommand::Combat(CombatCommand::Stop)
     ));
+    // An NPC is never attackable, so its menu has no Attack.
+    view.entities[0].kind = EntityKind::Npc;
+    assert_eq!(view.attack_context(tile, &link), None);
+    assert!(!view.attack_toggle_click(tile, &link));
     Ok(())
 }
 
@@ -423,6 +464,7 @@ fn alt_click_attacks_a_player_but_not_the_local_actor_and_honours_the_world_inpu
     view.entities = [(other, other_x), (own, own_x)]
         .into_iter()
         .map(|(entity, x)| WorldSpatialEntity {
+            motion: None,
             display_name: None,
             kind: EntityKind::Player,
             entity,
@@ -450,6 +492,7 @@ fn alt_click_attacks_a_player_but_not_the_local_actor_and_honours_the_world_inpu
         &targets,
     )?;
     view.set_own_identity(own.identity);
+    assert_eq!(view.attack_context(TileCoord::new(3, 1), &link), None);
     assert!(!view.attack_toggle_click(TileCoord::new(3, 1), &link));
     assert!(commands.try_recv().is_err());
     assert!(view.attack_toggle_click(TileCoord::new(2, 1), &link));
@@ -462,4 +505,65 @@ fn alt_click_attacks_a_player_but_not_the_local_actor_and_honours_the_world_inpu
     assert!(!view.attack_toggle_click(TileCoord::new(2, 1), &link));
     assert!(commands.try_recv().is_err());
     Ok(())
+}
+
+// Bevy caller tests feed the existing mailbox owner through test-only publication.
+#[cfg(bevy_shell)]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_hud_target(&self, target: oteryn_session::EntityRef) {
+        if let Some(combat) = &mut crate::play::mailbox::lock(&self.0).battle.combat {
+            combat.target = Some(target);
+        }
+    }
+    pub(crate) fn bevy_hud_fixture(
+        &self,
+        rows: &[oteryn_session::WorldSpatialEntity],
+        vitals: Option<oteryn_session::ActorVitals>,
+    ) {
+        self.battle_publish(
+            Some(ActorCombatState {
+                target: None,
+                modes: FightModes::DEFAULT,
+                in_fight: false,
+            }),
+            Some(7),
+            rows,
+        );
+        self.vitals(vitals);
+        let mut mailbox = crate::play::mailbox::lock(&self.0);
+        mailbox.analyser.selected = true;
+        mailbox.analyser.kills = 23;
+    }
+}
+
+#[cfg(bevy_shell)]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_hud_skills_fixture(&self) -> Result<(), &'static str> {
+        use oteryn_session::skill_display::SkillDisplay;
+        use oteryn_session::skill_progress::{SkillProgress, SkillProgressSnapshot};
+        self.skill_display_initialize(true);
+        let snapshot = SkillDisplay {
+            trained: SkillProgressSnapshot {
+                skills: [SkillProgress {
+                    level: 20,
+                    progress: 450,
+                    required: 1000,
+                    percent: 4500,
+                }; 8],
+            },
+            level: 30,
+            experience: 100_000,
+            level_percent: 2345,
+            loyalty_bonus_percent: 10,
+            loyalty_levels: [23; 8],
+            current_levels: Some([24; 8]),
+        };
+        self.skill_progress_result(&oteryn_session::GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: oteryn_session::CommandStatus::Accepted,
+            payload: snapshot.encode().ok_or("skill fixture encode")?,
+        });
+        Ok(())
+    }
 }

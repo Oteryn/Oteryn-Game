@@ -45,7 +45,7 @@ pub(super) fn generation(
     ))
     .join("../../content/spells.manifest.json");
     let mut supplied = NativeGameplayInput::from_manifest(&manifest).map_err(debug)?;
-    // Same pre-activation interpretation as death_ml_loss_composed. The real
+    // Same pre-activation interpretation as death_ml_loss_composed_fixtures. The real
     // Character fixture is content-1; training under another revision refuses.
     supplied
         .build_training

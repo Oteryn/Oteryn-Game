@@ -115,10 +115,12 @@ impl SnapshotState {
                     item_view::SNAPSHOT_TYPE_CHARACTER_INVENTORY_V1,
                 ) if item_selected => {
                     state.inventory = Some(
-                        item_view::decode_character_inventory_with_equip_drop(
+                        item_view::decode_character_inventory_with_appearances(
                             domain.payload,
                             selected_capabilities
                                 .contains(&item_view::CAPABILITY_ITEM_EQUIP_DROP_V1),
+                            selected_capabilities
+                                .contains(&item_view::CAPABILITY_ITEM_APPEARANCE_V1),
                         )
                         .map_err(SessionError::ItemView)?,
                     );
@@ -128,8 +130,12 @@ impl SnapshotState {
                     if item_selected =>
                 {
                     state.open_container = Some(
-                        item_view::decode_open_container(domain.payload)
-                            .map_err(SessionError::ItemView)?,
+                        item_view::decode_open_container_with_appearances(
+                            domain.payload,
+                            selected_capabilities
+                                .contains(&item_view::CAPABILITY_ITEM_APPEARANCE_V1),
+                        )
+                        .map_err(SessionError::ItemView)?,
                     );
                     state.container_revision = domain.revision;
                 }
@@ -219,6 +225,31 @@ impl SnapshotState {
                                         .map(|(_, revision)| *revision)
                                 }),
                             )?;
+                        }
+                        if matches!(
+                            domain_id,
+                            npc_service::STATE_DOMAIN_NPC_TRADE_WINDOW
+                                | player_trade::STATE_DOMAIN_PLAYER_TRADE
+                        ) && snapshot_type != 1
+                        {
+                            return Err(SessionError::UnregisteredSnapshotType {
+                                domain_id,
+                                snapshot_type,
+                            });
+                        }
+                        if domain_id == npc_service::STATE_DOMAIN_NPC_TRADE_WINDOW {
+                            npc_service::decode_npc_trade_window_for(
+                                domain.payload,
+                                selected_capabilities.contains(&501),
+                            )
+                            .map_err(|_| SessionError::SessionUnusable)?;
+                        }
+                        if domain_id == player_trade::STATE_DOMAIN_PLAYER_TRADE {
+                            player_trade::decode_state_for(
+                                domain.payload,
+                                selected_capabilities.contains(&501),
+                            )
+                            .map_err(|_| SessionError::SessionUnusable)?;
                         }
                         state.gated_revisions.retain(|(id, _)| *id != domain_id);
                         state.gated_revisions.push((domain_id, domain.revision));

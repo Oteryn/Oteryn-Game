@@ -7,8 +7,12 @@ run all of it, and fix every failure of one run in one push.
 
 ## Order (cheapest first)
 
-1. If the branch conflicts with `main` or is about to get `heavy-tests`, merge
-   `origin/main` first (`ci-merge.md`, *Before every push*); then `cargo fmt --all`.
+1. If the branch conflicts with `main`, merge `origin/main` first; then
+   `cargo fmt --all`. It conflicts when GitHub reports the PR conflicted, or
+   when, after `git fetch origin main`,
+   `git merge-tree --write-tree origin/main HEAD` exits exactly 1. A conflict
+   and the main-red case are the only reasons to merge (`ci-merge.md`,
+   *Before every push*).
 2. Generated content: `python3 tools/content-migration/regenerate_content.py --resolve`
    (same as `tools/merge-driver/regen.sh`; the python form is the one the
    session allowlist permits) if anything under
@@ -28,6 +32,11 @@ run all of it, and fix every failure of one run in one push.
    process per test, so a test that relies on state left by another passes
    locally under `cargo test` and fails in CI; `cargo nextest run -p <package>`
    reproduces CI when nextest is installed.
+   Then build the changed package without tests:
+   `cargo build --locked -p <package> --quiet` (its default library and binary
+   targets, no tests; it also works for a binary-only package). Test-only code
+   left ungated in a non-test build (an ungated `#[tokio::test]` helper) passes
+   every test run and review and fails only in the node-boot build.
 7. Governance, when `docs/agents/`, `tools/agents/`, `.claude/` or `AGENTS.md`
    changed: `python3 tools/agents/validate_governance.py` and
    `python3 -m unittest discover -s tools/agents/tests`.
@@ -36,6 +45,10 @@ run all of it, and fix every failure of one run in one push.
    Lint with the ruff version pinned in that tool's `requirements*.txt`,
    not whatever ruff is installed.
 9. `git diff --check` and a read of the full diff.
+10. `python3 tools/repository/reliability_checklist.py` (diff against
+    `origin/main`): it lists the checks this diff calls for because the same
+    change went red more than once before. Run each one it lists, or report it
+    as not run with the reason.
 
 ## Jobs that only run after the merge
 
@@ -90,5 +103,9 @@ matching one locally when your change can reach it; commands are copied from
   branch is merged: target dirs are tens of GB.
 - Check free disk space before a build. "No space left on device" mid-build
   leaves a corrupt incremental cache; delete the target dir and rebuild.
+- Before a heavy build check `df -h` and `free -g`; on a small host use
+  `CARGO_BUILD_JOBS=1`. Full disk then out-of-memory at `-j2` cost lanes hours.
+- Compile delegated code (`cargo check -p <crate>`) before sending it to a
+  20-25 minute runner; a compile error found there costs a whole cycle.
 - In shell pipelines take the exit code of the command, not of `tail`/`tee`:
   `set -o pipefail`, or `${PIPESTATUS[0]}`.

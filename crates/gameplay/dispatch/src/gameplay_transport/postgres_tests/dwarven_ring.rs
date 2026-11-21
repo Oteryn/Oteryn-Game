@@ -37,6 +37,7 @@ async fn move_ring(
             equip_drop: true,
             container_tree: false,
             world_interaction: false,
+            manual_sort: false,
         },
     )
     .map_err(debug)?;
@@ -270,7 +271,25 @@ fn scenario() -> TestResult {
         .await?;
         assert!(drunk_refused(&owner, deps.actor, session).await?);
         owner.clock_origin -= std::time::Duration::from_secs(3_600);
-        owner.tick_timed_items().await;
+        use crate::gameplay_transport::timed_item_clock::RETIRED_EQUIPMENT_READ;
+        let entered = std::sync::Arc::new(tokio::sync::Notify::new());
+        let proceed = std::sync::Arc::new(tokio::sync::Notify::new());
+        let expire = RETIRED_EQUIPMENT_READ.scope(
+            (entered.clone(), proceed.clone()), owner.tick_timed_items(),
+        );
+        let contend = async {
+            entered.notified().await;
+            let held = h.root.try_issue_semantic_pass().map_err(debug)?;
+            proceed.notify_one();
+            // The biased join polls the reread with the holder still checked out.
+            tokio::task::yield_now().await;
+            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+            Ok::<_, Box<dyn std::error::Error>>(())
+        };
+        let ((), contention) = tokio::time::timeout(std::time::Duration::from_secs(5), async {
+            tokio::join!(biased; expire, contend)
+        }).await?;
+        contention?;
         let lifecycle: i16 = sqlx::query_scalar("SELECT lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(90).as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(lifecycle, 2, "decayTo 0: the spent ring is burned");
         assert!(

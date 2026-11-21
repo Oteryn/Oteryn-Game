@@ -17,12 +17,7 @@ impl PlayLink {
             return false;
         }
         self.exiva_request(vec![5]);
-        #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
-            lock(&self.mailbox).exiva.open = true;
-        }
+        lock(&self.mailbox).exiva.open = true;
         true
     }
 }

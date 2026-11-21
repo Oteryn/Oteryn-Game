@@ -67,12 +67,7 @@ impl PlayLink {
         if !oteryn_client_ui::hotkey_equip::open_key(events) {
             return false;
         }
-        #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
-            lock(&self.mailbox).hotkey_equip.open = true;
-        }
+        lock(&self.mailbox).hotkey_equip.open = true;
         true
     }
 }

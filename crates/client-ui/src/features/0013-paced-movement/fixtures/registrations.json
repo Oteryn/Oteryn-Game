@@ -2,6 +2,42 @@
   {
     "mechanic": "0013-paced-movement",
     "kind": "keybindings",
+    "id": "0013-paced-movement-keypad-east",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "NUMPAD6",
+    "entry": "input.rs::default_arrow_binding"
+  },
+  {
+    "mechanic": "0013-paced-movement",
+    "kind": "keybindings",
+    "id": "0013-paced-movement-keypad-north",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "NUMPAD8",
+    "entry": "input.rs::default_arrow_binding"
+  },
+  {
+    "mechanic": "0013-paced-movement",
+    "kind": "keybindings",
+    "id": "0013-paced-movement-keypad-south",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "NUMPAD2",
+    "entry": "input.rs::default_arrow_binding"
+  },
+  {
+    "mechanic": "0013-paced-movement",
+    "kind": "keybindings",
+    "id": "0013-paced-movement-keypad-west",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "NUMPAD4",
+    "entry": "input.rs::default_arrow_binding"
+  },
+  {
+    "mechanic": "0013-paced-movement",
+    "kind": "keybindings",
     "id": "0013-paced-movement-move-east",
     "status": "supported",
     "context": "gameplay",

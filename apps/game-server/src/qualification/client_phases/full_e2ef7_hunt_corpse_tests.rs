@@ -5,12 +5,14 @@ fn position(x: i32) -> ActorPosition {
     ActorPosition {
         x: x - 98,
         y: 0,
+        // Forge uses the legacy wire basis; tile() maps this to bundle floor -8.
         floor: 8,
     }
 }
 
 fn creature() -> spatial::WorldSpatialEntity {
     spatial::WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: spatial::EntityKind::Creature,
         entity: spatial::EntityRef {
@@ -28,6 +30,7 @@ fn creature() -> spatial::WorldSpatialEntity {
 
 fn corpse(marker: u8, x: i32) -> spatial::WorldSpatialEntity {
     spatial::WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: spatial::EntityKind::Corpse,
         entity: spatial::EntityRef {

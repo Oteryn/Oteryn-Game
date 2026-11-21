@@ -1,13 +1,14 @@
-//! Decode existing pinned assets only after the server resolves public artwork IDs.
+//! Decode existing pinned assets only after the server resolves public artwork IDs; the Bevy
+//! podium window shows the composed RGBA images.
 use oteryn_client_assets::{AppearanceIndex, AssetStore, Catalog, Placement, SpriteSheets};
-use oteryn_session::property_services::house_podium::preview::Artwork;
+use oteryn_client_runtime::cui3::house_podium::preview::Artwork;
 use std::path::Path;
-pub(super) struct Assets {
+pub(crate) struct Assets {
     index: AppearanceIndex,
     sheets: SpriteSheets,
 }
 impl Assets {
-    pub(super) fn load(root: &Path) -> Result<Self, String> {
+    pub(crate) fn load(root: &Path) -> Result<Self, String> {
         use oteryn_client_assets::world::{MANIFEST_PATH, MANIFEST_SHA256};
         let store = AssetStore::open_pinned(
             &root.join("content/assets/files"),
@@ -22,7 +23,7 @@ impl Assets {
             sheets: SpriteSheets::new(store, catalog),
         })
     }
-    pub(super) fn render(&mut self, artwork: Artwork) -> Result<Vec<Vec<u8>>, String> {
+    pub(crate) fn render(&mut self, artwork: Artwork) -> Result<Vec<Vec<u8>>, String> {
         let count = if artwork.looks[0] == artwork.looks[1] {
             1
         } else {
@@ -35,14 +36,14 @@ impl Assets {
             .map(|look| {
                 let entry = if artwork.object {
                     self.index
-                        .resolve(&self.sheets, look, Placement::at(0, 0, -7))
+                        .resolve(&self.sheets, look, Placement::at(0, 0, 7))
                 } else {
                     self.index
                         .resolve_outfit(&self.sheets, look, u32::from(artwork.direction))
                 }
                 .map_err(|e| e.to_string())?;
                 if entry.cells.len() > 64 {
-                    return Err("Artwork exceeds the preview bound".into());
+                    return Err(tr!("Artwork exceeds the preview bound").into());
                 }
                 let cells = entry
                     .cells

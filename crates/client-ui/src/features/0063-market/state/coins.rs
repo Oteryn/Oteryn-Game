@@ -83,6 +83,41 @@ fn draft(p: &CoinPanel, action: usize) -> Option<wire::Request> {
     wire::encode(&r).ok()?;
     Some(r)
 }
+
+fn review_text(panel: &CoinPanel, request: &wire::Request) -> Option<String> {
+    let row = &panel.fields[2];
+    if request.action == 6 {
+        return Some(format!(
+            "REVIEW cancel remaining offer row {row}. The opening fee is not refunded. Confirm cancellation."
+        ));
+    }
+    let (verb, price) = match request.action {
+        3 => ("Sell", request.price),
+        4 => ("Buy", request.price),
+        5 => {
+            let index = row.trim().parse::<usize>().ok()?.checked_sub(1)?;
+            let quote = panel.quotes["offers"].as_array()?.get(index)?;
+            let verb = match quote["side"].as_str()? {
+                "sell" => "Buy from sell offer",
+                "buy" => "Sell into buy offer",
+                _ => return None,
+            };
+            (verb, quote["price"].as_u64()?)
+        }
+        _ => return None,
+    };
+    let total = request.amount.checked_mul(price)?;
+    let fee = if matches!(request.action, 3 | 4) {
+        (total / 50).clamp(20, 1_000_000)
+    } else {
+        0
+    };
+    Some(format!(
+        "REVIEW {verb}: {} coins, {price} gold each, total {total} gold, fee {fee} gold; offer row {row}. Confirm these exact terms.",
+        request.amount
+    ))
+}
+
 pub fn coin_control(
     p: &mut CoinPanel,
     selected: bool,
@@ -99,48 +134,17 @@ pub fn coin_control(
             p.feedback = "Inspect or retry the unresolved confirmation first".into();
             return None;
         }
-        p.reviewed = draft(p, action);
-        p.feedback = if let Some(r) = &p.reviewed {
-            let (price, total, fee) = if matches!(r.action, 3 | 4) {
-                (
-                    r.price,
-                    r.amount.checked_mul(r.price)?,
-                    (r.amount.checked_mul(r.price)? / 50).clamp(20, 1_000_000),
-                )
-            } else {
-                let index = p.fields[2].trim().parse::<usize>().ok()?.checked_sub(1)?;
-                let q = p.quotes["offers"].as_array()?.get(index)?;
-                let price = q["price"].as_u64()?;
-                (price, r.amount.checked_mul(price)?, 0)
-            };
-            let verb = match r.action {
-                3 => "Sell",
-                4 => "Buy",
-                5 => {
-                    let row = p.fields[2].trim().parse::<usize>().ok()?.checked_sub(1)?;
-                    if p.quotes["offers"][row]["side"] == "sell" {
-                        "Buy from sell offer"
-                    } else {
-                        "Sell into buy offer"
-                    }
-                }
-                6 => "Cancel",
-                _ => "Review",
-            };
-            if r.action == 6 {
-                format!(
-                    "REVIEW cancel remaining offer row {}. The opening fee is not refunded. Confirm cancellation.",
-                    p.fields[2]
-                )
-            } else {
-                format!(
-                    "REVIEW {verb}: {} coins, {} gold each, total {} gold, fee {} gold; offer row {}. Confirm these exact terms.",
-                    r.amount, price, total, fee, p.fields[2]
-                )
-            }
+        let review = draft(p, action)
+            .and_then(|request| review_text(p, &request).map(|feedback| (request, feedback)));
+        if let Some((request, feedback)) = review {
+            p.reviewed = Some(request);
+            p.feedback = feedback;
         } else {
-            "Enter valid amount, price and an offer row; load My Offers before cancelling".into()
-        };
+            p.reviewed = None;
+            p.feedback =
+                "Enter valid amount, price and an offer row; load My Offers before cancelling"
+                    .into();
+        }
         return None;
     }
     let r = match action {
@@ -254,6 +258,7 @@ pub fn coin_result(p: &mut CoinPanel, r: &ServerMechanicResponse) {
     p.book_view = value["offers"].is_array();
     p.detail_rows = presentation::targets(&value);
     if value["offers"].is_array() {
+        p.reviewed = None;
         p.quotes = value.clone();
         p.offer_cursor = value["next_offer_cursor"].as_str().unwrap_or("").into();
         p.own_quotes = pending.as_ref().is_some_and(|r| r.action == 2);
@@ -300,7 +305,7 @@ pub fn coin_result(p: &mut CoinPanel, r: &ServerMechanicResponse) {
 }
 pub fn coin_text(p: &CoinPanel) -> String {
     format!(
-        "Coin market — transferable coins only. Coins belong to your account; gold stays in this World. Pending trades retain their reserved coins or gold.\r\n{}\r\n{}\r\n{}",
+        "Coin market — Oteryn Coins. Coins belong to your account; gold stays in this World. Pending trades retain their reserved coins or gold.\r\n{}\r\n{}\r\n{}",
         p.feedback,
         if p.confirmed.is_some() {
             "An unresolved confirmation is retained for retry."

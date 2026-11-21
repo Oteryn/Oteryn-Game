@@ -51,6 +51,7 @@ mod tests {
             len: 65,
         };
         let entity = crate::world_spatial_entities::WorldSpatialEntity {
+            motion: None,
             display_name: Some(invalid),
             kind: crate::world_spatial_entities::EntityKind::Player,
             entity: crate::world_spatial_entities::EntityRef {

@@ -14,6 +14,10 @@ fn id(seed: u8) -> [u8; 16] {
 }
 
 fn wolf_step(item: u16, key: &str, reward: u16, captures: bool) -> TestResult {
+    wolf_move(item, key, reward, captures, false)
+}
+
+fn wolf_move(item: u16, key: &str, reward: u16, captures: bool, relocating: bool) -> TestResult {
     let world = WorldId::decode(&id(1)).map_err(|e| format!("{e:?}"))?;
     let channel = ChannelId::decode(&id(2)).map_err(|e| format!("{e:?}"))?;
     let node = NodeId::decode(&id(3)).map_err(|e| format!("{e:?}"))?;
@@ -136,6 +140,7 @@ fn wolf_step(item: u16, key: &str, reward: u16, captures: bool) -> TestResult {
         .map_err(|e| format!("{e:?}"))?;
     let binding = runtime.binding();
     let mut map = MonsterMap {
+        cells: cells.clone(),
         valid: true,
         scope: binding.runtime_scope(),
         generation: binding.scope_generation(),
@@ -146,21 +151,40 @@ fn wolf_step(item: u16, key: &str, reward: u16, captures: bool) -> TestResult {
         frame: [3; 32],
         map: booted.map_revision_digest(),
         tiles: BTreeMap::new(),
+        source_steps: Default::default(),
     };
     map.tiles.insert(
         (6, 0, 7),
         Some(Tile {
             admits: true,
+            ground_clear: true,
+            solid: false,
+            // This explicit open ground/trap fixture has no immutable solid barrier.
+            source_spawn_admits: true,
             projectile: false,
             speed: 150,
             field: None,
+            source_placement: SourcePlacementTerrain {
+                exists: true,
+                ground: true,
+                immovable_solid: false,
+                protection_zone: false,
+                floor_change: false,
+                teleport: false,
+            },
+            source_placement_proven: true,
         }),
     );
     let before = runtime
         .read_actor_position(wolf)
         .map_err(|e| format!("{e:?}"))?;
-    map.step(&mut runtime, &cells, wolf, before, CardinalStep::East)
-        .map_err(|e| format!("{e:?}"))?;
+    if relocating {
+        map.relocate(&mut runtime, wolf, at)
+            .map_err(|e| format!("{e:?}"))?;
+    } else {
+        map.step(&mut runtime, &cells, wolf, before, CardinalStep::East)
+            .map_err(|e| format!("{e:?}"))?;
+    }
     assert_eq!(
         !runtime.contains_live_creature(wolf),
         captures,
@@ -268,4 +292,16 @@ fn m10_thornfire_wolf_is_replaced_on_real_monster_step() -> TestResult {
         })?
         .join()
         .map_err(|_| "wolf test thread")?
+}
+
+#[test]
+fn relocation_emits_entry_callbacks_and_one_trap_record() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            wolf_move(12368, "oteryn:creature.starving_wolf", 12369, true, true)?;
+            wolf_move(12721, "oteryn:creature.thornfire_wolf", 100, true, true)
+        })?
+        .join()
+        .map_err(|_| "relocation test panicked")?
 }

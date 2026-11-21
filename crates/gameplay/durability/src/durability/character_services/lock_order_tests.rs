@@ -1,0 +1,106 @@
+use super::*;
+
+#[test]
+fn service_waits_for_admission_before_holding_portfolio() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    portfolio_lock_order(false, false)
+}
+
+#[test]
+fn fresh_admission_waits_for_relations_before_holding_portfolio() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    portfolio_lock_order(true, false)
+}
+
+#[test]
+fn busy_portfolio_does_not_hold_admission_relations() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    portfolio_lock_order(true, true)
+}
+
+fn portfolio_lock_order(fresh_admission: bool, portfolio_blocked: bool) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    std::thread::Builder::new().stack_size(64 << 20).spawn(move || {
+        tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+            use sqlx::Connection;
+            let Ok(url) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()); };
+            let mut admin = sqlx::PgConnection::connect(&url).await?;
+            // Identifiers contain only a fixed prefix and decimal process/time values; tables below are literals.
+            let schema = format!("audit_coin_lock_{}_{}", std::process::id(), std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_nanos());
+            sqlx::query(sqlx::AssertSqlSafe(format!("CREATE SCHEMA {schema}"))).execute(&mut admin).await?;
+            sqlx::query(sqlx::AssertSqlSafe(format!("SET search_path TO {schema}"))).execute(&mut admin).await?;
+            for table in [
+                "game_durability_admission_account_guards", "game_durability_admission_character_guards",
+                "game_durability_admission_guard_history", "game_durability_admission_lifecycle_receipts",
+                "game_durability_admission_runtime_guards", "game_durability_admission_signing_trust_guards",
+                "game_durability_control_loss_continuity", "game_durability_executor_custody",
+                "game_durability_fresh_admission_receipts", "game_durability_reconnect_attempts",
+                "game_durability_reconnect_pending_commands", "game_durability_reconnect_sessions",
+                "game_durability_recovery_grant_consumptions", "game_durability_session_replacements",
+                "game_durability_session_use_ledgers", "game_durability_session_use_memberships",
+                "game_durability_transport_ref_reservations",
+            ] {
+                sqlx::query(sqlx::AssertSqlSafe(format!("CREATE TABLE {table}(id integer)"))).execute(&mut admin).await?;
+            }
+            sqlx::raw_sql("CREATE TABLE game_character_account_guards(account_id uuid PRIMARY KEY); INSERT INTO game_character_account_guards VALUES('00000000-0000-7000-8000-000000000001')").execute(&mut admin).await?;
+            let mut worker = sqlx::PgConnection::connect(&url).await?;
+            sqlx::query(sqlx::AssertSqlSafe(format!("SET search_path TO {schema}"))).execute(&mut worker).await?;
+            let pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()").fetch_one(&mut worker).await?;
+            let mut blocker = sqlx::PgConnection::connect(&url).await?;
+            sqlx::query(sqlx::AssertSqlSafe(format!("SET search_path TO {schema}"))).execute(&mut blocker).await?;
+            let mut blocker = blocker.begin().await?;
+            if portfolio_blocked {
+            sqlx::query("SELECT account_id FROM game_character_account_guards FOR UPDATE")
+                .fetch_one(&mut *blocker).await?;
+        } else {
+            super::super::db::lock_admission_relations(&mut blocker).await?;
+        }
+            let pending = tokio::spawn(async move {
+                let mut tx = worker.begin().await?;
+                let account = "00000000-0000-7000-8000-000000000001";
+                if fresh_admission {
+                    super::super::fresh_admission::lock_admission_portfolio(&mut tx, account).await?;
+                } else {
+                    portfolio(&mut tx, account).await?;
+                }
+                tx.commit().await?;
+                Ok::<_, DurabilityError>(())
+            });
+            if portfolio_blocked {
+            // A separate account's admission can take the relation lock while the first
+            // portfolio row remains locked. Confirm the first worker really started.
+            tokio::time::timeout(std::time::Duration::from_secs(10), async {
+                loop {
+                    let active: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE pid=$1 AND query LIKE '%game_character_account_guards%')")
+                        .bind(pid).fetch_one(&mut admin).await?;
+                    if active { return Ok::<_, sqlx::Error>(()); }
+                    tokio::task::yield_now().await;
+                }
+            }).await??;
+            let mut other = admin.begin().await?;
+            sqlx::query("SET LOCAL lock_timeout='500ms'").execute(&mut *other).await?;
+            let probe = super::super::fresh_admission::lock_admission_portfolio(
+                &mut other, "00000000-0000-7000-8000-000000000002",
+            ).await;
+            other.rollback().await?;
+            assert!(!pending.is_finished());
+            blocker.rollback().await?;
+            pending.await??;
+            sqlx::query(sqlx::AssertSqlSafe(format!("DROP SCHEMA {schema} CASCADE"))).execute(&mut admin).await?;
+            assert!(probe.is_ok(), "unrelated admission waited behind the busy portfolio: {probe:?}");
+            return Ok(());
+        }
+        let waiting = tokio::time::timeout(std::time::Duration::from_secs(10), async {
+                loop {
+                    let waiting: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_locks WHERE pid=$1 AND NOT granted AND locktype='relation')").bind(pid).fetch_one(&mut admin).await?;
+                    if waiting { return Ok::<_, sqlx::Error>(()); }
+                    tokio::task::yield_now().await;
+                }
+            }).await;
+            let probe = sqlx::query("SELECT account_id FROM game_character_account_guards FOR UPDATE NOWAIT").fetch_one(&mut *blocker).await;
+            blocker.rollback().await?;
+            let completed = pending.await?;
+            sqlx::query(sqlx::AssertSqlSafe(format!("DROP SCHEMA {schema} CASCADE"))).execute(&mut admin).await?;
+            waiting??;
+            completed?;
+            assert!(probe.is_ok(), "service held portfolio while waiting for admission: {probe:?}");
+            Ok(())
+        })
+    })?.join().map_err(|_| "test thread panicked")?
+}

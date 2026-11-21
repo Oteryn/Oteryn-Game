@@ -7,11 +7,13 @@ pub use container_tree::ContainerViewOutcome;
 pub use oteryn_session::{CharacterInventory, container_tree};
 use oteryn_session::{Session, SessionError, SessionStream};
 
+/// `slot`: Manual Sort Mode's box slot for a deposit (capability 510).
 pub async fn send<S: SessionStream>(
     session: &mut Session<S>,
     intent: DepotIntent,
+    slot: Option<u32>,
 ) -> Result<Option<DepotReply>, SessionError> {
-    session.depot(intent).await
+    session.depot_at(intent, slot).await
 }
 
 /// The same authoritative item projections used to resolve deposit handles on the server.
@@ -28,10 +30,11 @@ pub fn items<S: SessionStream>(session: &Session<S>) -> Items {
         views: session
             .gated_snapshot(14)
             .and_then(|s| {
-                container_tree::decode_container_views_with_house_capacity(
+                container_tree::decode_container_views_with_appearances(
                     &s.payload,
                     session.is_selected(230),
                     session.is_selected(446),
+                    session.is_selected(499),
                 )
                 .ok()
             })

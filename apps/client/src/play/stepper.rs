@@ -22,6 +22,9 @@ super::feature_0014_container_tree::protocol::session_trait! {
     fn inventory(&self) -> Option<oteryn_session::CharacterInventory> {
         None
     }
+    fn world_position(&self) -> Option<oteryn_session::ActorPosition> {
+        None
+    }
     fn battle_floor(&self) -> Option<i16> {
         None
     }
@@ -119,6 +122,7 @@ super::feature_0014_container_tree::protocol::session_trait! {
         None
     }
     fn visible_appearances(&self) -> Vec<oteryn_session::VisibleAppearance> { Vec::new() }
+    fn own_identity(&self) -> Option<[u8; 16]> { None }
     fn task_board_selected(&self) -> bool {
         false
     }

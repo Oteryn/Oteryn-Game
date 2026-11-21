@@ -258,3 +258,37 @@ fn bootstrap_metadata_limits_cover_build_id_and_capabilities() -> Result<(), Fou
     }
     Ok(())
 }
+
+#[test]
+fn preadm_bootstrap_value_debug_redacts_grant() -> Result<(), FoundationProtocolError> {
+    let value = ClientBootstrapValue {
+        schema_revision: 1,
+        character_id: CharacterId::decode(&test_uuid_v7(4))?,
+        admission_material: b"private-admission-grant",
+        client_build_id: "debug-redaction-test",
+        supported_capabilities: &[],
+    };
+    let debug = format!("{value:?}");
+    assert!(debug.contains("[REDACTED]"));
+    assert!(!debug.contains("private-admission-grant"));
+    assert!(!debug.contains(&format!("{:?}", value.admission_material)));
+    Ok(())
+}
+
+#[test]
+fn preadm_bootstrap_view_debug_redacts_grant() -> Result<(), FoundationProtocolError> {
+    let view = ClientBootstrapView {
+        protocol_major: 1,
+        transport_profile: 1,
+        schema_revision: 1,
+        character_id: CharacterId::decode(&test_uuid_v7(4))?,
+        admission_material: b"private-admission-grant",
+        client_build_id: "debug-redaction-test",
+        supported_capabilities: &[],
+    };
+    let debug = format!("{view:?}");
+    assert!(debug.contains("[REDACTED]"));
+    assert!(!debug.contains("private-admission-grant"));
+    assert!(!debug.contains(&format!("{:?}", view.admission_material)));
+    Ok(())
+}

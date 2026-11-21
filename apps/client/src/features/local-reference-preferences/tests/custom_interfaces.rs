@@ -13,10 +13,8 @@ fn custom_passive_choices_use_confirmed_action_bar_status_interfaces()
         .find(|(label, _)| label == "Passive: Harmony")
         .map(|(_, action)| action)
         .ok_or("Harmony choice is missing")?;
-    let path = std::env::temp_dir().join(format!(
-        "cgopt-passive-interface-{}.json",
-        std::process::id()
-    ));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("cgopt-passive-interface.json");
     let mut settings = SettingsState::new(Some(path.clone()));
     let mut preferences = settings.preferences.clone();
     preferences.assign_custom_hotkey("SUPER+F9", action)?;
@@ -70,8 +68,8 @@ fn custom_passive_choices_use_confirmed_action_bar_status_interfaces()
 fn named_custom_profiles_restore_owner_bar_keys_and_mixed_assignments()
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::{BarAction, PassiveAbility, SettingsState};
-    let path =
-        std::env::temp_dir().join(format!("cgopt-owner-profiles-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("cgopt-owner-profiles.json");
     let (link, _, _) = play_channel();
     let mut settings = SettingsState::new(Some(path.clone()));
     settings.sync_bar_actions(&link);
@@ -169,6 +167,7 @@ fn custom_object_picker_uses_open_container_handles_and_current_combat_generatio
             capacity: 20,
             browse: None,
             entries: vec![oteryn_session::ItemEntry {
+                appearance_id: 0,
                 handle: 2u64.try_into()?,
                 item_definition_ref: 900u32.try_into()?,
                 count: 1u32.try_into()?,
@@ -199,6 +198,7 @@ fn custom_object_picker_uses_open_container_handles_and_current_combat_generatio
         .world_context
         .pending = false;
     let target = WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: EntityKind::Creature,
         entity: EntityRef {
@@ -248,5 +248,44 @@ fn custom_object_picker_uses_open_container_handles_and_current_combat_generatio
             target: ObjectTarget::Use
         }
     ));
+    Ok(())
+}
+
+#[test]
+fn current_target_object_hotkey_without_target_arms_cursor()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{CustomAction, ObjectTarget};
+    let (link, mut commands, outbox) = play_channel();
+    let play = view()?;
+    outbox.targeting_initialize(true);
+    outbox.inventory_initialize(
+        Some(oteryn_session::CharacterInventory {
+            main_backpack: None,
+            entries: vec![oteryn_session::ItemEntry {
+                handle: 77u64.try_into()?,
+                item_definition_ref: 900u32.try_into()?,
+                appearance_id: 0,
+                count: 1u32.try_into()?,
+                sub_type: 7,
+            }],
+            equipment: vec![],
+        }),
+        false,
+    );
+    let action = CustomAction::Object {
+        definition: 900,
+        sub_type: 7,
+        target: ObjectTarget::CurrentTarget,
+    };
+    assert!(link.custom_hotkey_action(&play, &action));
+    assert_eq!(
+        crate::play::mailbox::lock(&link.mailbox)
+            .world_context
+            .targeting,
+        Some(77u64.try_into()?)
+    );
+    assert!(commands.try_recv().is_err());
+    outbox.inventory_end();
+    assert!(!link.custom_hotkey_action(&play, &action));
     Ok(())
 }

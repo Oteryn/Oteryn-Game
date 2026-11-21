@@ -1,8 +1,4 @@
-"""Exact Cake bridge source evidence without canonical Item admission.
-
-PR 2781 ANSWER 6549960114 keeps this known source item unavailable until the
-canonical identity/map owner resolves it. Physical evidence grants no reference.
-"""
+"""Owner-approved Cake bridge identity, captured from the exact Crystal producer."""
 from __future__ import annotations
 
 import argparse
@@ -15,7 +11,7 @@ from canary_generic_item_identity import _fields
 
 CRYSTAL = '201189f871d23597b82caf88fd611454a2ddefb8'
 CANARY = '47dfd51f45280a59a1d3e50ba7edd573d7234446'
-DECISION = 'https://github.com/Oteryn/Oteryn-Game/pull/2781#issuecomment-6549960114'
+DECISION = 'OWNER DECISION 2026-11-08: Zatwierdzam 48227'
 SOURCES = (
     ('crystal', 'src/items/item.cpp', 'e27e622bf4fd9a94d7fffb3a818fd0c5f911e6fbf4b92844320154ded326950b'),
     ('crystal', 'src/items/items.hpp', '06d52ee83250ba852fe804c6b006b0aac150ceb26893e9079fa8c93502d209ca'),
@@ -30,9 +26,9 @@ SOURCES = (
 
 def evidence():
     return {
-        'schema': 'OTERYN_UNAVAILABLE_ITEM_SOURCE_EVIDENCE/v1',
+        'schema': 'OTERYN_CAKE_BRIDGE_IDENTITY/v1',
         'item_id': 48227,
-        'reason': 'EVENT_ITEM_CANONICAL_IDENTITY_UNAVAILABLE',
+        'reason': 'OWNER_APPROVED_CANONICAL_IDENTITY',
         'decision': DECISION,
         'source_revision': CRYSTAL,
         'sources': [{'source_key': 'oteryn:source.crystalserver' if engine == 'crystal' else 'oteryn:source.canary',
@@ -43,8 +39,27 @@ def evidence():
         'items_xml_present': False,
         'appearance_flags': {'bank': True, 'bank_waypoints': 150, 'unmove': True,
                              'automap': True, 'automap_color': 121, 'fullbank': True},
-        'status': 'Unavailable until the canonical Item identity/map owner supplies an admitted definition; no source suffix',
+        'status': 'Canonical Item identity approved by the owner on 2026-11-08',
     }
+
+
+# Historical event profiles are a frozen pre-admission capture. M57's separate
+# owner-approved map identity must not rewrite that receipt or grant inventory.
+HISTORICAL_DECISION = 'https://github.com/Oteryn/Oteryn-Game/pull/2781#issuecomment-6549960114'
+
+
+def historical_evidence():
+    record = evidence()
+    record.update(schema='OTERYN_UNAVAILABLE_ITEM_SOURCE_EVIDENCE/v1',
+                  reason='EVENT_ITEM_CANONICAL_IDENTITY_UNAVAILABLE',
+                  decision=HISTORICAL_DECISION,
+                  status='Unavailable until the canonical Item identity/map owner supplies an admitted definition; no source suffix')
+    return record
+
+
+def historical_source_evidence(canary, crystal):
+    source_evidence(canary, crystal)
+    return historical_evidence()
 
 
 def _contains_item(raw, item_id):
@@ -86,9 +101,44 @@ def source_evidence(canary, crystal):
     return evidence()
 
 
+def generate(canary, crystal):
+    """Generate the canonical packet and exact binding; never invent XML policy."""
+    import re
+    root = Path(__file__).resolve().parents[3]
+    packet = source_evidence(canary, crystal)
+    identity = {'family': 'Item', 'key': 'oteryn:item.tibia.i48227', 'revision': 'definition-r1'}
+    packet['definition'] = {'kind': 'Item', 'identity': identity,
+                            'client_projection': 'ClientSafe', 'materializable': False,
+                            'stack_class': 'Unknown'}
+    packet['binding'] = {'source_key': 'oteryn:source.crystalserver',
+                         'source_revision': CRYSTAL, 'identity_namespace': 'ots/item_server_id',
+                         'external_id': '48227', 'target': identity, 'disposition': 'EXACT'}
+    raw = (json.dumps(packet, indent=2, ensure_ascii=False) + '\n').encode()
+    (root / 'tools/content-schema/native-gameplay/cake-bridge-identity.json').write_bytes(raw)
+    path = root / 'imports/crystalserver/bindings/items.json'
+    document = json.loads(path.read_bytes())
+    existing = [r for r in document['bindings'] if r['external_id'] == '48227']
+    if existing and existing != [packet['binding']]:
+        raise ValueError('CAKE_BRIDGE_BINDING_CONFLICT')
+    if not existing:
+        document['bindings'].append(packet['binding'])
+    if not existing or document['bindings'] != sorted(document['bindings'], key=lambda r: r['external_id']):
+        document['bindings'].sort(key=lambda r: r['external_id'])
+        path.write_text(json.dumps(document, sort_keys=True, separators=(',', ':'), ensure_ascii=False) + '\n')
+    binder = root / 'tools/content-schema/native-gameplay/build_spell_item_identities.py'
+    text, count = re.subn(r'(?m)^BINDINGS_SHA = "[0-9a-f]{64}"',
+                         'BINDINGS_SHA = "' + hashlib.sha256(path.read_bytes()).hexdigest() + '"',
+                         binder.read_text())
+    if count != 1:
+        raise ValueError('CAKE_BRIDGE_BINDING_PIN_ANCHOR')
+    binder.write_text(text)
+    return packet
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--canary', type=Path, required=True)
     parser.add_argument('--crystal', type=Path, required=True)
+    parser.add_argument('--generate', action='store_true')
     args = parser.parse_args()
-    print(json.dumps(source_evidence(args.canary, args.crystal), indent=2))
+    print(json.dumps(generate(args.canary, args.crystal) if args.generate else source_evidence(args.canary, args.crystal), indent=2))

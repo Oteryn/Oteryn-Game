@@ -14,12 +14,7 @@ use tokio::sync::mpsc::UnboundedSender;
 impl PlayLink {
     pub fn cyclopedia_atlas_open(&self) {
         self.cyclopedia_atlas_action(0);
-        #[cfg(windows)]
-        super::super::view::atlas::open_window(self);
-        #[cfg(not(windows))]
-        {
-            lock(&self.mailbox).properties.cyclopedia_map.geometry.open = true;
-        }
+        lock(&self.mailbox).properties.cyclopedia_map.geometry.open = true;
     }
     pub fn cyclopedia_atlas_action(&self, action: usize) {
         submit(&mut lock(&self.mailbox), &self.commands, action);
@@ -92,8 +87,6 @@ pub(in crate::play) fn submit(
         return;
     }
     if action == 11 {
-        #[cfg(windows)]
-        super::super::view::atlas::show_map(panel, commands);
         return;
     }
     if action == 8 || action == 9 {
@@ -108,7 +101,7 @@ pub(in crate::play) fn submit(
     let request = match action {
         0 | 4 => wire::Request {
             area: 0,
-            floor: 1,
+            floor: wire::AREA_LIST,
             after: 0,
         },
         1 | 2 => {
@@ -140,7 +133,7 @@ pub(in crate::play) fn submit(
             }
             wire::Request {
                 area: area.id,
-                floor: 1,
+                floor: wire::AREA_LIST,
                 after: 0,
             }
         }
@@ -151,16 +144,16 @@ pub(in crate::play) fn submit(
             };
             if action == 6 {
                 panel.geometry.floor = if panel.geometry.floor == 0 {
-                    -15
+                    15
                 } else {
-                    panel.geometry.floor + 1
+                    panel.geometry.floor - 1
                 };
             }
             if action == 7 {
-                panel.geometry.floor = if panel.geometry.floor == -15 {
+                panel.geometry.floor = if panel.geometry.floor == 15 {
                     0
                 } else {
-                    panel.geometry.floor - 1
+                    panel.geometry.floor + 1
                 };
             }
             panel.geometry.clear_geometry();
@@ -178,18 +171,18 @@ pub(in crate::play) fn submit(
             };
             wire::Request {
                 area: panel.geometry.parent,
-                floor: 1,
+                floor: wire::AREA_LIST,
                 after,
             }
         }
         13 => wire::Request {
             area: panel.geometry.parent,
-            floor: 1,
+            floor: wire::AREA_LIST,
             after: panel.geometry.after.saturating_sub(wire::AREA_PAGE as u16),
         },
         _ => return,
     };
-    if request.floor == 1 {
+    if request.floor == wire::AREA_LIST {
         panel.geometry.auto_load = false;
     }
     send(panel, commands, request);
@@ -223,7 +216,7 @@ pub(in crate::play) fn apply(
     let a = &mut panel.geometry;
     match reply {
         wire::Reply::Areas(page)
-            if request.floor == 1 && page.parent == request.area && page.after == request.after =>
+            if request.floor == wire::AREA_LIST && page.parent == request.area && page.after == request.after =>
         {
             a.clear_geometry();
             a.parent = page.parent;
@@ -239,7 +232,7 @@ pub(in crate::play) fn apply(
             .into();
         }
         wire::Reply::Geometry(page)
-            if request.floor != 1
+            if request.floor != wire::AREA_LIST
                 && page.area == request.area
                 && page.floor == request.floor
                 && page.page == request.after =>

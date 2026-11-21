@@ -78,8 +78,39 @@ pub(super) use oteryn_gameplay_items::item_ref_admission::{
     definition_ref, generation_inbox_item_facts, generation_item_facts,
 };
 
+fn native_corpse_appearance(
+    runtime: &ChannelRuntimeV1,
+    generation: Option<&ActiveGeneration>,
+    index: &ItemDefinitionIndex,
+    reference: std::num::NonZeroU32,
+) -> Option<std::num::NonZeroU16> {
+    let generation = generation?;
+    let native = generation.native_gameplay()?;
+    let pin = runtime.content_pin();
+    if generation.identity().server_artifact_digest() != pin.server_artifact_digest()
+        || generation.identity().client_artifact_digest() != pin.client_artifact_digest()
+    {
+        return None;
+    }
+    let (key, revision) = index.definition_at(reference)?;
+    let policy = native.item_policy(key, revision)?;
+    if policy.source_digest() != native.source_digest() {
+        return None;
+    }
+    // Native policy qualification proves the source binding, including aliases.
+    // A generation-local ordinal is never interpreted as an appearance number.
+    let id = policy
+        .record()
+        .production_binding
+        .external_id
+        .parse::<u16>()
+        .ok()?;
+    std::num::NonZeroU16::new(id)
+}
+
 /// MAP-ITEM-REF-1 Part B: the bound corpses of the Channel as D85 objects (entity generation 0),
-/// read under the caller's runtime lock. A corpse whose definition the pinned index does not name
+/// read under the caller's runtime lock. Positions are in the runtime movement frame.
+/// A corpse whose definition the pinned index does not name
 /// is left out; with capability 4 not offered, or no pinned index, there are none.
 pub(super) fn visible_corpses(
     runtime: &ChannelRuntimeV1,
@@ -101,10 +132,19 @@ pub(super) fn visible_corpses(
                 &corpse.item.revision_ref,
             )?;
             Some(ChannelEntity {
+                source_icons:
+                    oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(),
+                motion: None,
                 display_name: None,
                 health_percent: 100,
                 direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
                 kind: VisibleKind::Corpse {
+                    native_appearance_id: native_corpse_appearance(
+                        runtime,
+                        generation,
+                        index,
+                        item_definition_ref,
+                    ),
                     item_definition_ref,
                 },
                 identity: corpse.identity,
@@ -168,6 +208,7 @@ pub(super) async fn observe_item_target(
         .iter()
         .map(|entry| {
             Some(ViewItem {
+                appearance_id: super::item_view::appearance_of(&entry.item.definition),
                 key: ItemKey::Instance(entry.item.item_instance_id),
                 item_definition_ref: definition_ref(index, &entry.item.definition)?,
                 count: NonZeroU32::new(entry.item.quantity)?,

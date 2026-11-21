@@ -36,6 +36,19 @@ CANONICAL_CONTROL_PATHS = {
     ".github/workflows/merge-group-gate.yml",
     ".github/workflows/rust.yml",
 }
+MERGE_AUTHORITY_AUDIT_PATH = ".github/workflows/merge-authority-audit.yml"
+# Workflows that build or test product code for a gate without being named by a
+# canonical workflow (reusable-workflow callees, the PostgreSQL harness and the
+# node boot). They stay FULL like the canonical workflows, and the merge authority
+# audit stays FULL unless it is a pin-only rotation; every other workflow is routed
+# by its exact-candidate consumers.
+GATE_WORKFLOW_PATHS = frozenset({
+    ".github/workflows/gameplay-server-seam.yml",
+    ".github/workflows/node-boot-build.yml",
+    ".github/workflows/node-boot-qualification.yml",
+    ".github/workflows/postgres-test-partitions.yml",
+    ".github/workflows/pr-postgres-harness.yml",
+})
 # Explicit tool roles. New/unreviewed repository tools remain FULL until classified.
 REPOSITORY_CONTROL_TOOLS = frozenset({
     "tools/repository/" + name for name in (
@@ -51,6 +64,12 @@ REPOSITORY_AUXILIARY_TOOLS = frozenset({
     "tools/repository/test_validate_game_atlas_semantic_search_triggers.py",
 })
 ROUTING_ONLY_CONTROL_DIRECTORY_PREDICATES = {
+    # The trusted-base verifier sparse-checks out the base workflows as data.
+    (".github/workflows/merge-gate.yml", ".github/workflows"):
+        b".github/workflows\n            tools/repository",
+    # The merge queue pins and calls exactly node-boot-build.yml, which is FULL itself.
+    (".github/workflows/merge-group-gate.yml", ".github/workflows"):
+        b".github/workflows/node-boot-build.yml",
     (".github/workflows/merge-group-gate.yml", "docs/architecture"):
         b"path.startswith('docs/architecture/')",
 }
@@ -231,6 +250,7 @@ def deferrable_content_path(path: str) -> bool:
 def canonical_control(path: str) -> bool:
     return (
         path in CANONICAL_CONTROL_PATHS
+        or path in GATE_WORKFLOW_PATHS
         or path.startswith(".github/actions/")
         or path in REPOSITORY_CONTROL_TOOLS
         or (path.startswith("tools/repository/") and path not in REPOSITORY_AUXILIARY_TOOLS)
@@ -413,7 +433,9 @@ def directory_reference_occurrences(
                 )
             )
         )
-        if bounded:
+        # A package literal starts at a quote, a `/` join or the start of the file; prose
+        # that merely names a directory ("... content or docs/reference") is not a consumer.
+        if bounded and (index == 0 or content[index - 1:index] in {b'"', b"'", b"/"}):
             matches.append(index)
         start = index + 1
 
@@ -656,6 +678,73 @@ def pr_file_records() -> tuple[list[dict], int, bool]:
     return files, len(files), True
 
 
+def exact_git_object(revision: str, kind: bytes) -> bytes:
+    response = subprocess.check_output(
+        ["git", "--no-replace-objects", "cat-file", "--batch"],
+        input=revision.encode("ascii") + b"\n",
+    )
+    header, _, payload = response.partition(b"\n")
+    _, actual_kind, size = header.split()
+    if actual_kind != kind or len(payload) != int(size) + 1 or not payload.endswith(b"\n"):
+        raise ValueError("invalid-git-object")
+    return payload[:-1]
+
+
+def audit_tree_entry(tree: str, name: bytes, mode: bytes) -> tuple[str, tuple[bytes, bytes]]:
+    """Return the unique entry's object ID and the tree bytes around that ID."""
+    raw = exact_git_object(tree, b"tree")
+    matches = []
+    offset = 0
+    while offset < len(raw):
+        separator = raw.index(b"\0", offset)
+        entry_mode, entry_name = raw[offset:separator].split(b" ", 1)
+        oid_start = separator + 1
+        offset = oid_start + 20  # Raw SHA-1 object IDs occupy exactly 20 bytes.
+        if offset > len(raw):
+            raise ValueError("incomplete-git-tree-entry")
+        if entry_name == name:
+            if entry_mode != mode:
+                raise ValueError("unexpected-audit-tree-mode")
+            matches.append(oid_start)
+    [oid_start] = matches
+    oid_end = oid_start + 20
+    return raw[oid_start:oid_end].hex(), (raw[:oid_start], raw[oid_end:])
+
+
+def merge_authority_audit_pin_only(head: str) -> bool:
+    """Prove the exact PR tree differs from the protected checkout only in the pin."""
+    try:
+        # The lane job verifies HEAD against the protected base SHA before running
+        # this entry point. Compare roots directly, including paths absent from a PR diff.
+        before, after = "HEAD^{tree}", f"{head}^{{tree}}"
+        components = MERGE_AUTHORITY_AUDIT_PATH.encode("ascii").split(b"/")
+        for name, mode in zip(components, (b"40000", b"40000", b"100644"), strict=True):
+            before, base_tree = audit_tree_entry(before, name, mode)
+            after, candidate_tree = audit_tree_entry(after, name, mode)
+            if base_tree != candidate_tree or before == after:
+                return False
+
+        base = exact_git_object(before, b"blob")
+        candidate = exact_git_object(after, b"blob")
+        for name in (b"EXPECTED_MERGE_GROUP_GATE_BLOB", b"EXPECTED_MERGE_GATE_BLOB"):
+            # An extra mention could make an otherwise well-formed assignment ambiguous.
+            if base.replace(b"os.environ['" + name + b"']", b"", 1).count(name) != 1:
+                continue
+            assignment = re.search(rb'(?m)^      ' + name + rb': "([0-9a-f]{40})"$', base)
+            if assignment is None:
+                continue
+            start, end = assignment.span(1)
+            new_pin = candidate[start:end]
+            if (
+                new_pin != assignment[1]
+                and re.fullmatch(rb"[0-9a-f]{40}", new_pin) is not None
+                and candidate == base[:start] + new_pin + base[end:]
+            ):
+                return True
+        return False
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return False
+
 
 def classify(
     files,
@@ -667,6 +756,7 @@ def classify(
     candidate_sha=None,
     reference_consumers=None,
     defer_content_consumers=False,
+    report_doc_packages=False,
 ) -> dict:
     try:
         if candidate_modes_verified is not True:
@@ -731,6 +821,9 @@ def classify(
                 return full("explicit-build-or-dependency-input", "dependencies-build")
             if canonical_control(path):
                 return full("explicit-build-or-control-input", "control-plane")
+            if path == MERGE_AUTHORITY_AUDIT_PATH:
+                # FULL, narrowed afterwards only for an exact pin rotation.
+                return full("canonical-control-consumer-affected", "control-plane")
             if atlas_path_disposition(path) == "full":
                 return full("explicit-atlas-non-cargo-full", "atlas")
 
@@ -803,6 +896,13 @@ def classify(
             return full("unmodelled-input")
 
         expand_reverse_closure(affected, reverse)
+        # Only a positive, modelled decision below can export this PR-only proof.
+        # Moves/deletions, mixed inputs and an incomplete transport stay conservative.
+        doc_packages = {}
+        if (report_doc_packages and affected and all(documentation_path(path) for path in paths)
+                and all(status in {"added", "modified"} and previous is None
+                        for _, status, previous in records)):
+            doc_packages["doc_packages"] = sorted(affected)
 
         if affected & WINDOWS:
             surface = (
@@ -810,7 +910,15 @@ def classify(
                 else "shared" if SERVER in affected
                 else "client"
             )
-            return full("windows-consumer-affected", surface)
+            result = full("windows-consumer-affected", surface) | doc_packages
+            # Only client product sources with a known Cargo graph can omit
+            # the server PG suite. Fixtures, manifests and mixed diffs stay full.
+            pg_owners = {SERVER, "oteryn-gameplay-dispatch", "oteryn-gameplay-durability"}
+            if (surface == "client" and pg_owners <= roots.keys() and affected.isdisjoint(pg_owners)
+                    and all(re.fullmatch(r"(?:apps/client|crates/client-(?:ui|ui-bevy|runtime))/src/.+\.rs", path)
+                            and "migrations" not in PurePosixPath(path).parts for path in paths)):
+                result["postgres"] = False
+            return result
 
         if affected:
             if affected != {SERVER}:
@@ -823,7 +931,7 @@ def classify(
             reason = "server-only-exact-consumer-closure"
             if atlas_fullworld:
                 reason += "-plus-atlas-fullworld"
-            return dict(rust=True, windows=False, surface=surface, reason=reason)
+            return dict(rust=True, windows=False, surface=surface, reason=reason) | doc_packages
 
         if atlas_fullworld:
             return dict(
@@ -1013,7 +1121,21 @@ def main() -> int:
                 complete=complete,
                 candidate_modes_verified=modes_verified,
                 candidate_sha=expected_head,
+                report_doc_packages=(os.environ.get("GITHUB_EVENT_NAME") == "pull_request"
+                                     and os.environ.get("ENUMERATION_COMPLETE") == "true"),
             )
+            # Only narrow the established FULL decision after its mode and
+            # enumeration checks and an independent proof over both Git trees.
+            if (
+                os.environ.get("GITHUB_EVENT_NAME") == "pull_request"
+                and result.get("reason") == "canonical-control-consumer-affected"
+                and files == [{"filename": MERGE_AUTHORITY_AUDIT_PATH, "status": "modified"}]
+                and merge_authority_audit_pin_only(expected_head)
+            ):
+                result = dict(
+                    rust=False, windows=False, surface="control-plane",
+                    reason="merge-authority-audit-pin-only",
+                )
             # Only the pull-request gate defers Content consumers; the Merge Queue
             # calls classify() directly and never passes defer_content_consumers.
             if (
@@ -1054,6 +1176,8 @@ def main() -> int:
             output.write(f"surface={result['surface']}\n")
             output.write(f"reason={result['reason']}\n")
             output.write(f"routing_health={health}\n")
+            if "doc_packages" in result:
+                output.write(f"doc_packages={json.dumps(result['doc_packages'])}\n")
     return 0
 
 

@@ -28,7 +28,7 @@ fn templates(
         .into_iter()
         .find(|candidate| candidate.creature_key.as_deref() == Some("oteryn:creature.sugar_daddy"))
         .ok_or("captured Sugar Daddy source")?;
-    let bundle = super::srvenc_source_boss::source_bundle(world, channel, native, &candidate)?;
+    let bundle = super::srvenc_source_boss_fixtures::source_bundle(world, channel, native, &candidate)?;
     let cells = bundle
         .movement_cells(parent.movement_cells())
         .map_err(debug)?;
@@ -67,7 +67,7 @@ fn srvenc_boss_publication_postgres_scopes_replay_conflict_and_current_reader() 
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("scoped-boss-publication", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("scoped-boss-publication", || {
         run(async |admin| {
             reset();
             let h =

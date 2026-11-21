@@ -46,7 +46,7 @@ impl SettingsState {
 use super::{WINDOW_ACTIONS, preference_bindings};
 use oteryn_client_ui::guide::{Guide, Page};
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Topic {
     Faq,
     Manual,
@@ -83,6 +83,10 @@ impl SettingsState {
                             text.push_str(&format!("{label}: {}\r\n", self.preferences.binding_chord(binding)));
                         }
                     }
+                }
+                for (key, action) in &self.preferences.custom_hotkeys {
+                    text.push_str(&action.hotkey_label(key));
+                    text.push_str("\r\n");
                 }
                 text.push_str(tr!("\r\nUse the Controls settings pages to edit shortcuts. Gameplay settings choose mouse behavior and chase cancellation. Screenshots chooses the destination, capture scope and automatic events."));
                 text

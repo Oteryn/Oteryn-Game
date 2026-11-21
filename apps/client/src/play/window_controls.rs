@@ -8,7 +8,6 @@ use oteryn_input_actions::NormalizedInputEvent;
 fn open_slot<'a>(mailbox: &'a mut Mailbox, id: &str) -> Option<&'a mut bool> {
     Some(match id {
         "0199-cyclopedia-character-open" => &mut mailbox.cyclopedia_character.open,
-        "0287-actor-spell-catalog-open" => &mut mailbox.spell_catalog.open,
         "local-spell-action-bar-open" => &mut mailbox.spell_bar.open,
         "0279-skill-progress-open" => &mut mailbox.skill_progress.open,
         "0276-condition-status-open" => &mut mailbox.condition_status.open,
@@ -22,10 +21,21 @@ fn open_slot<'a>(mailbox: &'a mut Mailbox, id: &str) -> Option<&'a mut bool> {
 impl PlayLink {
     #[must_use]
     pub fn window_open(&self, id: &str) -> bool {
+        if id == "0287-actor-spell-catalog-open" {
+            return self.spellbook_window_open();
+        }
         open_slot(&mut lock(&self.mailbox), id).is_some_and(|open| *open)
     }
 
     pub fn window_toggle(&self, id: &str, events: &[NormalizedInputEvent]) -> bool {
+        if id == "0287-actor-spell-catalog-open" {
+            if self.spellbook_window_open() {
+                self.spellbook_set_open(false);
+            } else {
+                self.spell_list_toggle();
+            }
+            return true;
+        }
         {
             let mut mailbox = lock(&self.mailbox);
             let Some(open) = open_slot(&mut mailbox, id) else {
@@ -38,7 +48,6 @@ impl PlayLink {
         }
         match id {
             "0199-cyclopedia-character-open" => self.cyclopedia_character_input(events),
-            "0287-actor-spell-catalog-open" => self.spell_catalog_input(events),
             "local-spell-action-bar-open" => self.spell_bar_input(events),
             "0279-skill-progress-open" => self.skill_progress_input(events),
             "0276-condition-status-open" => self.condition_status_input(events),
@@ -62,5 +71,26 @@ pub fn window_icon(id: &str) -> &'static str {
         "0016-quest-log-open" => "☑",
         "0007-chat-keybindings" => "☏",
         _ => "",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn spell_list_button_tracks_and_closes_selected_spellbook() {
+        let (link, _commands, _outbox) = crate::play::play_channel();
+        link.use_shared_frontend();
+        lock(&link.mailbox).spellbook_details.selected = true;
+        link.spell_catalog_open();
+        assert!(link.spellbook_state().open);
+        let id = "0287-actor-spell-catalog-open";
+        assert!(link.window_open(id));
+        assert!(link.window_toggle(id, &[]));
+        assert!(!link.spellbook_state().open);
+        assert!(!link.window_open(id));
+        assert!(link.window_toggle(id, &[]));
+        assert!(link.window_open(id));
     }
 }

@@ -3,6 +3,10 @@ mod own_actor;
 use super::*;
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
+    fn own_identity(&self) -> Option<[u8; 16]> {
+        self.world_entities()
+            .map(|entities| *entities.own_identity())
+    }
     fn hotkey_own_actor(&self) -> Option<WorldSpatialEntity> {
         own_actor::get(self)
     }
@@ -31,6 +35,10 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     {
         oteryn_client_runtime::container_tree::send(self, intent).await
     }
+    fn world_position(&self) -> Option<oteryn_session::ActorPosition> {
+        Some(self.world_spatial().actor_position)
+    }
+
     fn battle_floor(&self) -> Option<i16> {
         Some(self.world_spatial().actor_position.floor)
     }
@@ -50,8 +58,9 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     async fn depot(
         &mut self,
         intent: oteryn_session::DepotIntent,
+        slot: Option<u32>,
     ) -> Result<Option<oteryn_session::DepotReply>, SessionError> {
-        oteryn_client_runtime::depot::send(self, intent).await
+        oteryn_client_runtime::depot::send(self, intent, slot).await
     }
 
     async fn target_walk(
@@ -314,8 +323,9 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     async fn world_context(
         &mut self,
         command: &oteryn_client_runtime::world_interaction::Command,
+        raw_wire: bool,
     ) -> Result<String, SessionError> {
-        oteryn_client_runtime::world_interaction::send(self, command).await
+        oteryn_client_runtime::world_interaction::send_framed(self, command, raw_wire).await
     }
     fn feature_selected(&self, capability: u32) -> bool {
         self.is_selected(capability)

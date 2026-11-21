@@ -223,7 +223,7 @@ impl DurabilityRoot {
             assert_recovery_fence(&mut tx,&recovery).await?;
             if !prove_current_incarnation(&mut tx,&proof).await?{return Err(DurabilityError::Unavailable);}
             let now:i64=sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp()))::bigint").fetch_one(&mut *tx).await?;
-            let config=sqlx::query("SELECT enabled,policy::text FROM game_bazaar_configuration WHERE singleton FOR SHARE").fetch_one(&mut *tx).await?;
+            let config=sqlx::query("SELECT enabled,policy FROM game_character_service_bazaar_policy()").fetch_one(&mut *tx).await?;
             let mut policy:Policy=serde_json::from_str(config.try_get("policy")?).map_err(|_|DurabilityError::InvalidStoredState)?;
             if let Some(content)=&content {content.bind(&mut policy);}
             // Acquire canonical content/admission serialization before any

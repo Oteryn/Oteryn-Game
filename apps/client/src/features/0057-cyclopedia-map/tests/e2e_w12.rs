@@ -23,7 +23,7 @@ fn replies() -> Result<Replies, Error> {
         });
     }
     let encode = |code, revision, found, visible: Vec<(u16, u16, i8)>| {
-        wire::encode_result(&wire::MapResult {
+        wire::encode_wire_result(&wire::MapResult {
             code,
             revision,
             discovered: false,
@@ -39,8 +39,8 @@ fn replies() -> Result<Replies, Error> {
     Ok(Replies {
         query: encode(0, 4, 0, vec![])?,
         find: encode(4, 4, 0, vec![])?,
-        start: encode(0, 5, 0, vec![(32_100, 32_200, -7), (32_101, 32_203, -7)])?,
-        expected: "query_code=0\nquery_revision=4\nquery_discovered=false\nquery_found=0\nquery_percent=0\nquery_pool=12\nquery_epoch=3\nquery_improved=false\nquery_visible=[]\nfind_code=4\nfind_revision=4\nfind_discovered=false\nfind_found=0\nfind_percent=0\nfind_pool=12\nfind_epoch=3\nfind_improved=false\nfind_visible=[]\nstart_code=0\nstart_revision=5\nstart_discovered=false\nstart_found=0\nstart_percent=0\nstart_pool=12\nstart_epoch=3\nstart_improved=false\nstart_visible=[(32100, 32200, -7), (32101, 32203, -7)]\n".into(),
+        start: encode(0, 5, 0, vec![(32_100, 32_200, 7), (32_101, 32_203, 7)])?,
+        expected: "query_code=0\nquery_revision=4\nquery_discovered=false\nquery_found=0\nquery_percent=0\nquery_pool=12\nquery_epoch=3\nquery_improved=false\nquery_visible=[]\nfind_code=4\nfind_revision=4\nfind_discovered=false\nfind_found=0\nfind_percent=0\nfind_pool=12\nfind_epoch=3\nfind_improved=false\nfind_visible=[]\nstart_code=0\nstart_revision=5\nstart_discovered=false\nstart_found=0\nstart_percent=0\nstart_pool=12\nstart_epoch=3\nstart_improved=false\nstart_visible=[(32100, 32200, 7), (32101, 32203, 7)]\n".into(),
     })
 }
 

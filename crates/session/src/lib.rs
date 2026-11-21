@@ -16,6 +16,12 @@
 //! holds no codec of its own, only the glue that ties one admission to its join-snapshot decode
 //! and its command/sequence discipline. Every admission or codec error fails closed.
 
+/// Real wire codecs for downstream transport fixtures; no session mutation helpers.
+#[cfg(feature = "test-support")]
+pub mod test_support {
+    pub use oteryn_protocol_oteryn as wire;
+}
+
 /// Account achievement query and typed result.
 pub mod account_achievements;
 /// Account-only observer transport; separate from the player Session.
@@ -30,13 +36,14 @@ use session_types::{MAX_RETAINED_DUPLICATES, SERVER_SILENCE_DEADLINE};
 pub use oteryn_protocol_oteryn::admission_queue::{self, AdmissionQueue};
 /// Display and control vocabulary for S17.
 pub use oteryn_protocol_oteryn::cast;
+/// Typed fresh-session activity barriers and their scope namespace.
+pub mod activity_scope;
 
 #[path = "achievement_notices.rs"]
 mod achievement_notices_transport;
 pub use oteryn_protocol_oteryn::achievement_notices;
 mod activity_handoff;
-/// Server-committed shared activity scope receipts.
-pub use oteryn_protocol_oteryn::activity_scope;
+pub use oteryn_protocol_oteryn::actor_motion;
 pub use oteryn_protocol_oteryn::analyser_catalogue;
 pub use oteryn_protocol_oteryn::analyser_party;
 pub use oteryn_protocol_oteryn::battle_metadata;
@@ -57,12 +64,21 @@ mod events;
 mod framing;
 mod pvp_expert;
 pub use events::SessionEvent;
+/// Observer-relative guild emblems (capability 509).
+pub use oteryn_protocol_oteryn::guild_emblem;
 mod gated_command;
 pub use gated_command::world_context;
+/// The in-game Channel switch (capability 512).
+pub use oteryn_protocol_oteryn::channel_switch;
 /// Server-owned highscores query and result codecs.
 pub use oteryn_protocol_oteryn::highscores;
+pub use oteryn_protocol_oteryn::highscores_catalogue;
+/// The own character's capacity (capability 508).
+pub use oteryn_protocol_oteryn::inventory_capacity;
+pub use oteryn_protocol_oteryn::item_inscription;
 /// The own Platform sanction record (capability 497).
 pub use oteryn_protocol_oteryn::sanction_record;
+pub use oteryn_protocol_oteryn::server_info;
 pub mod container_tree;
 mod hotkey_equip_transport;
 #[path = "features/0004-item-view-move/protocol.rs"]
@@ -177,6 +193,7 @@ mod server_save_countdown;
 mod tutorial_notices;
 pub use oteryn_protocol_oteryn::server_save_countdown::ServerSaveCountdown;
 pub use oteryn_protocol_oteryn::tutorial_notices::TutorialNotice;
+pub use oteryn_protocol_oteryn::tutorial_vocation;
 pub use oteryn_protocol_oteryn::{
     arena, boss_difficulty, boss_rewards, character_info, cyclopedia_character, cyclopedia_tracker,
     premium_overview, weapon_proficiency, weapon_proficiency_state, zones_nologout::ServerMessage,
@@ -211,7 +228,8 @@ pub use oteryn_protocol_oteryn::world_object::WorldObjectOverlayEntry;
 use oteryn_protocol_oteryn::world_object::{self, UseDisposition, WorldObjectTarget};
 use oteryn_protocol_oteryn::world_spatial::{self, CAPABILITY_PACED_MOVEMENT_V1};
 pub use oteryn_protocol_oteryn::world_spatial::{
-    ActorPosition, StepDirection, StepDisposition, WorldSpatialObservation,
+    ActorPosition, CAPABILITY_DIAGONAL_MOVEMENT_V1, StepDirection, StepDisposition,
+    WorldSpatialObservation, native_floor,
 };
 use oteryn_protocol_oteryn::world_spatial_entities::{
     self, CAPABILITY_WORLD_SPATIAL_ENTITIES, MAX_SNAPSHOT_ENTITIES,
@@ -265,6 +283,7 @@ use std::io;
 use std::num::NonZeroU32;
 use std::time::Duration;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
+pub use vip_presence::expire_vip_presence;
 
 /// The ALPN protocol id an adapter must negotiate (or otherwise guarantee) before a session is
 /// admitted over its stream. Re-exported so adapters need no direct `protocol-oteryn` edge.
@@ -350,6 +369,8 @@ pub struct Session<S> {
     deadline: Duration,
     last_received: tokio::time::Instant,
     connection_generation: u64,
+    world_id: [u8; 16],
+    activity_scope: Option<activity_scope::ActivityScopeSnapshot>,
     next_command_id: u64,
     last_server_sequence: u64,
     spatial_revision: u64,
@@ -437,3 +458,5 @@ pub use oteryn_protocol_oteryn::gem_presentation;
 
 /// Optional authoritative Wheel graph and advisory draft preview.
 pub use oteryn_protocol_oteryn::wheel_presentation;
+
+pub use oteryn_protocol_oteryn::personal_map_marks;

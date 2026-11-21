@@ -1,6 +1,6 @@
 use super::mailbox::MAX_PUSHED_MARKERS;
 use super::*;
-use crate::combat_input::{CombatCommand, CombatReport};
+use crate::combat_input::{CombatCommand, CombatReport, PlayCommand};
 use oteryn_client_runtime::ClientRuntime;
 use oteryn_platform_client::native_login::PublicClass;
 use oteryn_session::{
@@ -32,6 +32,7 @@ fn entry(placement: Vec<u8>) -> WorldObjectOverlayEntry {
 
 fn moved_to(x: i32, y: i32, floor: i16) -> StepOutcome {
     StepOutcome {
+        step_wait_ms: 0,
         command_id: 1,
         status: CommandStatus::Accepted,
         disposition: StepDisposition::Moved,
@@ -342,3 +343,259 @@ include!(concat!(env!("OUT_DIR"), "/play_feature_tests.rs"));
 
 #[path = "tests_additional.rs"]
 mod additional;
+
+#[path = "tests_marker_scope.rs"]
+mod marker_scope;
+
+#[test]
+fn owner_drop_stops_session_with_auxiliary_sender_alive() -> Result<(), String> {
+    on_session_test_thread(|| {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .map_err(|error| error.to_string())?;
+        runtime.block_on(async {
+            let (link, commands, outbox) = play_channel();
+            let auxiliary = link.commands.clone();
+            let fake = Fake {
+                serves: Arc::default(),
+                fail_step: false,
+                fail_serve_after: usize::MAX,
+                queued: Vec::new(),
+                drained: Arc::default(),
+                combats: Arc::default(),
+                logouts: Arc::default(),
+            };
+            drop(link);
+            let completed = tokio::time::timeout(
+                Duration::from_millis(100),
+                run_session(fake, commands, outbox),
+            )
+            .await;
+            assert!(
+                completed.is_ok(),
+                "owner disposal must stop the session even with an Arena sender alive"
+            );
+            drop(auxiliary);
+            Ok::<(), String>(())
+        })
+    })
+}
+
+struct HandoffPeer {
+    modal: bool,
+    initial_modal: bool,
+    feature_calls: Arc<AtomicUsize>,
+    serve_calls: Arc<AtomicUsize>,
+    /// When each post-handoff modal query reached the session.
+    queries: Arc<std::sync::Mutex<Vec<tokio::time::Instant>>>,
+}
+impl Stepper for HandoffPeer {
+    fn feature_selected(&self, capability: u32) -> bool {
+        capability == if self.modal { 450 } else { 463 }
+    }
+    async fn feature(
+        &mut self,
+        _command: &oteryn_client_runtime::raw_feature::FeatureCommand,
+    ) -> Result<oteryn_session::GatedCommandResult, SessionError> {
+        if std::mem::take(&mut self.initial_modal) {
+            let reply = oteryn_client_runtime::server_modal::Reply::Dialog(
+                oteryn_client_runtime::server_modal::Dialog {
+                    id: 73,
+                    title: "Source activity".into(),
+                    message: "Choose".into(),
+                    choices: Vec::new(),
+                    buttons: vec![(4, "Accept".into())],
+                    default_button: None,
+                    cancel_button: None,
+                    image: None,
+                },
+            );
+            return Ok(oteryn_session::GatedCommandResult {
+                command_id: 1,
+                server_sequence: 1,
+                status: CommandStatus::Accepted,
+                payload: reply.encode().map_err(|_| SessionError::SessionUnusable)?,
+            });
+        }
+        self.queries
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .push(tokio::time::Instant::now());
+        if self.feature_calls.fetch_add(1, Ordering::SeqCst) == 0 {
+            Err(SessionError::ActivityScopeChanged)
+        } else {
+            Err(SessionError::SessionUnusable)
+        }
+    }
+    async fn serve(&mut self, duration: Duration) -> Result<(), SessionError> {
+        self.serve_calls.fetch_add(1, Ordering::SeqCst);
+        if !self.modal {
+            return Err(SessionError::SessionUnusable);
+        }
+        // A modal handoff keeps play alive until the destination query is due.
+        tokio::time::sleep(duration.min(Duration::from_millis(100))).await;
+        Ok(())
+    }
+    async fn step(&mut self, _direction: StepDirection) -> Result<StepOutcome, SessionError> {
+        Ok(moved_to(100, 199, 0))
+    }
+    fn drain(&mut self) -> Vec<SessionEvent> {
+        Vec::new()
+    }
+    async fn combat(&mut self, _command: CombatCommand) -> Result<CombatReport, SessionError> {
+        Ok(CombatReport::Stop(AttackIntentDisposition::Ok))
+    }
+    async fn logout(&mut self) -> Result<Option<LogoutResult>, SessionError> {
+        Ok(None)
+    }
+}
+
+#[test]
+fn modal_and_support_handoffs_recover_before_servicing_destination() -> Result<(), String> {
+    on_session_test_thread(|| {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .map_err(|error| error.to_string())?;
+        runtime.block_on(async {
+            for modal in [true, false] {
+                let (link, commands, outbox) = play_channel();
+                link.use_shared_frontend();
+                let feature_calls = Arc::default();
+                let serve_calls = Arc::default();
+                let queries = Arc::default();
+                let peer = HandoffPeer {
+                    modal,
+                    initial_modal: false,
+                    feature_calls: Arc::clone(&feature_calls),
+                    serve_calls: Arc::clone(&serve_calls),
+                    queries: Arc::clone(&queries),
+                };
+                let fixture = tempfile::tempdir().map_err(|e| e.to_string())?;
+                if !modal {
+                    assert!(
+                        link.commands
+                            .send(PlayCommand::SupportDelivery(
+                                oteryn_client_runtime::raw_feature::FeatureCommand {
+                                    capability: 463,
+                                    kind: 1,
+                                    payload: Vec::new(),
+                                },
+                                fixture.path().join("handoff-delivery"),
+                            ))
+                            .is_ok()
+                    );
+                }
+                outbox.push(vec![SessionEvent::ServerMessage(
+                    oteryn_session::AppliedDelta {
+                        server_sequence: 1000,
+                        base_revision: 0,
+                        new_revision: 1,
+                        value: oteryn_session::ServerMessage::StatusText("source namespace".into()),
+                    },
+                )]);
+                run_session(peer, commands, outbox).await;
+                {
+                    let mailbox = super::mailbox::lock(&link.mailbox);
+                    assert!(mailbox.pushed.server_messages.iter().next().is_none());
+                    assert!(
+                        mailbox.pushed.scope_changed,
+                        "all recovered handoffs restart the message sequence namespace"
+                    );
+                }
+
+                if modal {
+                    assert_eq!(
+                        feature_calls.load(Ordering::SeqCst),
+                        2,
+                        "handoff must release the pending modal query"
+                    );
+                    assert_destination_query_waits_for_the_scope_reset(&queries)?;
+                    assert!(
+                        serve_calls.load(Ordering::SeqCst) > 0,
+                        "the destination keeps servicing play until its query is due"
+                    );
+                } else {
+                    assert_eq!(
+                        serve_calls.load(Ordering::SeqCst),
+                        1,
+                        "support handoff must keep play alive"
+                    );
+                }
+            }
+            Ok::<(), String>(())
+        })
+    })
+}
+
+#[test]
+fn modal_answer_handoff_drops_source_answer_and_queries_destination() -> Result<(), String> {
+    on_session_test_thread(|| {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .map_err(|error| error.to_string())?;
+        runtime.block_on(async {
+            let (link, commands, outbox) = play_channel();
+            link.use_shared_frontend();
+            let feature_calls = Arc::default();
+            let queries = Arc::default();
+            let mut peer = HandoffPeer {
+                modal: true,
+                initial_modal: true,
+                feature_calls: Arc::clone(&feature_calls),
+                serve_calls: Arc::default(),
+                queries: Arc::clone(&queries),
+            };
+            let mut driver =
+                super::feature_0450_server_modal::protocol::Driver::new(true).with_outbox(&outbox);
+            driver
+                .poll(&mut peer)
+                .await
+                .map_err(|error| error.to_string())?;
+            let panel = link.server_modal_panel().ok_or("source modal")?;
+            assert!(link.server_modal_submit(
+                panel.revision,
+                oteryn_client_runtime::server_modal::Answer {
+                    dialog_id: 73,
+                    button_id: 4,
+                    choice_id: None,
+                },
+                Default::default()
+            ));
+            super::session_loop::run_session_with_modal(peer, commands, outbox, driver).await;
+            assert_eq!(feature_calls.load(Ordering::SeqCst), 2);
+            assert_destination_query_waits_for_the_scope_reset(&queries)?;
+            assert!(link.server_modal_panel().is_none());
+            Ok::<(), String>(())
+        })
+    })
+}
+
+/// The destination is queried exactly once more, and only after the scope-reset delay: before
+/// that point the session saw just the query that observed the handoff.
+fn assert_destination_query_waits_for_the_scope_reset(
+    queries: &std::sync::Mutex<Vec<tokio::time::Instant>>,
+) -> Result<(), String> {
+    let queries = queries
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let [handoff, destination] = queries.as_slice() else {
+        return Err(format!("expected two modal queries, saw {}", queries.len()));
+    };
+    assert!(
+        destination.duration_since(*handoff) >= Duration::from_secs(5),
+        "the destination query must wait for the scope-reset delay"
+    );
+    Ok(())
+}
+
+fn on_session_test_thread(test: fn() -> Result<(), String>) -> Result<(), String> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(test)
+        .map_err(|error| error.to_string())?
+        .join()
+        .map_err(|_| "session regression thread failed".to_owned())?
+}

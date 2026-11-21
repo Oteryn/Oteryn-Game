@@ -40,6 +40,7 @@ mod publication_tests {
         p.resource_dialog.result(receipt.clone());
         let serial = p.resource_dialog.serial;
         p.observe(vec![oteryn_client_runtime::depot::ItemEntry {
+            appearance_id: 0,
             handle: std::num::NonZeroU64::MIN,
             item_definition_ref: std::num::NonZeroU32::MIN,
             count: std::num::NonZeroU32::MIN,

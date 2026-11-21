@@ -1,6 +1,56 @@
 use super::*;
 use oteryn_session::EntityRef;
 
+impl Scene {
+    #[cfg(test)]
+    pub(crate) fn native_name_fragment_rendered(&self, text: &str) -> bool {
+        let mut cache = self.cache.clone();
+        let expected: Vec<u16> = cache
+            .name(text, 100)
+            .glyphs
+            .iter()
+            .map(|glyph| glyph.cell)
+            .collect();
+        !expected.is_empty()
+            && self.names.iter().any(|(_, label)| {
+                let cells: Vec<u16> = label.glyphs.iter().map(|glyph| glyph.cell).collect();
+                cells
+                    .windows(expected.len())
+                    .any(|part| part == expected.as_slice())
+            })
+    }
+    #[cfg(test)]
+    pub(crate) fn native_item_rendered_at(
+        &self,
+        at: oteryn_session::ActorPosition,
+        reference: u32,
+    ) -> bool {
+        (self.world.native_item_resolved_at(at, reference)
+            && self
+                .world
+                .tile(at.x, at.y)
+                .is_some_and(|tile| !tile.under.is_empty() || !tile.over.is_empty())
+            || self.object_draws.iter().any(|(position, item, draws)| {
+                *position == at && *item == reference && !draws.is_empty()
+            }))
+            && (at.x - self.own.x).abs() <= 8
+            && (at.y - self.own.y).abs() <= 6
+            && !self.tiles.is_empty()
+    }
+    #[cfg(test)]
+    pub(crate) fn drome_hazard_tiles(&self) -> usize {
+        self.drome_hazards.len()
+    }
+    pub(crate) fn native_own_state(&self) -> (Option<[u8; 16]>, Option<usize>) {
+        (self.own_identity, self.own_draws.as_ref().map(Vec::len))
+    }
+    pub(crate) fn native_own_rendered(&self) -> bool {
+        self.own_draws
+            .as_ref()
+            .is_some_and(|draws| !draws.is_empty())
+    }
+}
+
 fn scene() -> Result<Scene, BatchError> {
     let world = Arc::new(World::builtin()?);
     let markers = [TileCoord::new(3, -1), TileCoord::new(-2, -2)];
@@ -58,9 +108,9 @@ fn a_visible_entity_is_drawn_and_a_click_selects_it_with_its_reference() -> Resu
 fn scene_view_fits_the_default_window_and_maps_clicks_to_tiles() -> Result<(), BatchError> {
     let scene = scene()?;
     assert_eq!(scene.view().viewport_px(), (720, 528));
-    // The player sprite sits on tile (0, 0), drawn last, and a click on it resolves to it.
+    // Diagonal painter order puts the player between the two marker tiles.
     let [x, y] = scene.view().tile_to_screen(TileCoord::new(0, 0));
-    assert_eq!(scene.sprites().instances()[2].position, [x, y]);
+    assert_eq!(scene.sprites().instances()[1].position, [x, y]);
     assert_eq!(
         scene.view().screen_to_tile(x + 1.0, y + 1.0),
         Some(TileCoord::new(0, 0))

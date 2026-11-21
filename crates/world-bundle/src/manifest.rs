@@ -1,5 +1,9 @@
 //! Strict wire extension: keep existing authored Manifest literals source compatible.
-use crate::{Error, bundle::Manifest, layers::Layer};
+use crate::{
+    Error,
+    bundle::{FloorEncoding, Manifest},
+    layers::Layer,
+};
 #[cfg(feature = "writer")]
 use serde::Serialize;
 use serde::{
@@ -53,8 +57,41 @@ pub(super) fn decode(bytes: &[u8]) -> Result<(Manifest, Vec<Layer>), Error> {
         }
     }
     manifest.push('}');
-    Ok((serde_json::from_str(&manifest).map_err(format)?, layers))
+    let mut manifest: Manifest = serde_json::from_str(&manifest).map_err(format)?;
+    if FloorEncoding::for_manifest(&manifest)? == FloorEncoding::Global {
+        convert_floors(&mut manifest, &mut layers, |floor| {
+            FloorEncoding::Global.decode(floor as u8)
+        })?;
+    }
+    Ok((manifest, layers))
 }
+fn convert_floors(
+    manifest: &mut Manifest,
+    layers: &mut [Layer],
+    convert: impl Fn(i8) -> Result<i8, Error>,
+) -> Result<(), Error> {
+    for floor in &mut manifest.world.floors {
+        *floor = convert(*floor)?;
+    }
+    for area in &mut manifest.subareas.areas {
+        if let Some(temple) = &mut area.temple {
+            temple.floor = convert(temple.floor)?;
+        }
+    }
+    for run in &mut manifest.subareas.runs {
+        run.floor = convert(run.floor)?;
+    }
+    for sector in layers.iter_mut().flat_map(|layer| &mut layer.sectors) {
+        sector.floor = convert(sector.floor)?;
+        for item in sector.tiles.iter_mut().flat_map(|tile| &mut tile.items) {
+            if let Some((_, _, floor)) = &mut item.attrs.teleport {
+                *floor = convert(*floor as i8)? as u8;
+            }
+        }
+    }
+    Ok(())
+}
+
 fn format(error: serde_json::Error) -> Error {
     Error::Format(format!("manifest: {error}"))
 }
@@ -68,11 +105,50 @@ pub(super) fn encode(manifest: &Manifest, layers: &[Layer]) -> Result<Vec<u8>, E
         #[serde(flatten)]
         manifest: &'a Manifest,
     }
-    serde_json::to_vec(&Envelope {
-        layers: (!layers.is_empty()).then_some(layers),
-        manifest,
-    })
-    .map_err(format)
+    struct ManifestBytes(Vec<u8>);
+    impl std::io::Write for ManifestBytes {
+        fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+            if bytes.len() > crate::bundle::MAX_MANIFEST_BYTES - self.0.len() {
+                return Err(std::io::Error::other("manifest too large"));
+            }
+            self.0.extend_from_slice(bytes);
+            Ok(bytes.len())
+        }
+
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+    let encode = |manifest, layers: &[Layer]| {
+        let mut bytes = ManifestBytes(Vec::new());
+        serde_json::to_writer(
+            &mut bytes,
+            &Envelope {
+                layers: (!layers.is_empty()).then_some(layers),
+                manifest,
+            },
+        )
+        .map_err(|error| {
+            if error.is_io() {
+                Error::Limit("manifest too large".into())
+            } else {
+                format(error)
+            }
+        })?;
+        Ok(bytes.0)
+    };
+    if FloorEncoding::for_manifest(manifest)? == FloorEncoding::Signed {
+        return encode(manifest, layers);
+    }
+    let (mut manifest, mut layers) = (manifest.clone(), layers.to_vec());
+    convert_floors(&mut manifest, &mut layers, |floor| {
+        if (-15..=0).contains(&floor) {
+            Ok(-floor)
+        } else {
+            Err(Error::Format("invalid signed map-index floor".into()))
+        }
+    })?;
+    encode(&manifest, &layers)
 }
 
 #[cfg(all(test, feature = "writer"))]
@@ -109,6 +185,7 @@ mod tests {
         assert_eq!(decoded, manifest);
         assert!(layers.is_empty());
         let text = String::from_utf8(bytes).map_err(|e| Error::Format(e.to_string()))?;
+        assert!(text.contains("\"floors\":[7]"));
         let duplicate = format!("{{\"format\":\"duplicate\",{}", &text[1..]);
         assert!(decode(duplicate.as_bytes()).is_err());
         let duplicate = format!("{{\"layers\":[],\"layers\":[],{}", &text[1..]);

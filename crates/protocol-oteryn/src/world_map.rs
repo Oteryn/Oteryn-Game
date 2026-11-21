@@ -75,11 +75,11 @@ pub const VIEW_WIDTH: i32 = 18;
 pub const VIEW_HEIGHT: i32 = 14;
 pub const VIEW_LEFT: i32 = 8;
 pub const VIEW_TOP: i32 = 6;
-/// The surface native floor; floors `-7..=0` are on or above it.
-pub const SURFACE_FLOOR: i16 = -7;
-/// The highest and lowest native floors.
+/// The Global ground floor. Floors `0..=7` are on or above it.
+pub const SURFACE_FLOOR: i16 = 7;
+/// The highest and lowest Global floors.
 pub const TOP_FLOOR: i16 = 0;
-pub const BOTTOM_FLOOR: i16 = -15;
+pub const BOTTOM_FLOOR: i16 = 15;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WorldMapWireError {
@@ -162,7 +162,7 @@ impl MapViewHeader {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WorldMapViewSnapshot {
     pub header: MapViewHeader,
-    /// Strictly ascending by `(floor, y, x)`, each in the window.
+    /// Deepest floor first, then ascending by `(y, x)`, each in the window.
     pub tiles: Vec<MapTile>,
 }
 
@@ -173,26 +173,26 @@ pub struct WorldMapViewDelta {
     pub cleared: Vec<ActorPosition>,
 }
 
-/// The floors in view at an actor floor: `-7..=0` on or above the surface, else two above and
-/// two below, bounded to -15. `None` outside `-15..=0`.
+/// The floors in view at an actor floor: `0..=7` on or above ground, otherwise two
+/// above and two below, bounded to 15. `None` outside `0..=15`.
 pub fn floors_in_view(floor: i16) -> Option<std::ops::RangeInclusive<i16>> {
-    if !(BOTTOM_FLOOR..=TOP_FLOOR).contains(&floor) {
+    if !(TOP_FLOOR..=BOTTOM_FLOOR).contains(&floor) {
         return None;
     }
-    Some(if floor >= SURFACE_FLOOR {
-        SURFACE_FLOOR..=TOP_FLOOR
+    Some(if floor <= SURFACE_FLOOR {
+        TOP_FLOOR..=SURFACE_FLOOR
     } else {
-        (floor - 2).max(BOTTOM_FLOOR)..=floor + 2
+        floor - 2..=(floor + 2).min(BOTTOM_FLOOR)
     })
 }
 
 /// The start value of the visible-floor rule: 0 on or above the surface, else
-/// `min(floor + 2, -8)`. It is also the highest `first_visible_floor` the floor admits.
+/// `max(floor - 2, 8)`. It is also the smallest `first_visible_floor` the floor admits.
 pub fn first_visible_floor_start(floor: i16) -> i16 {
-    if floor >= SURFACE_FLOOR {
+    if floor <= SURFACE_FLOOR {
         TOP_FLOOR
     } else {
-        (floor + 2).min(SURFACE_FLOOR - 1)
+        (floor - 2).max(SURFACE_FLOOR + 1)
     }
 }
 
@@ -205,7 +205,7 @@ pub fn in_window(origin: ActorPosition, position: ActorPosition) -> bool {
     if !floors.contains(&position.floor) {
         return false;
     }
-    let shift = i64::from(position.floor) - i64::from(origin.floor);
+    let shift = i64::from(origin.floor) - i64::from(position.floor);
     let left = i64::from(origin.x) - i64::from(VIEW_LEFT) + shift;
     let top = i64::from(origin.y) - i64::from(VIEW_TOP) + shift;
     let (x, y) = (i64::from(position.x), i64::from(position.y));
@@ -213,9 +213,9 @@ pub fn in_window(origin: ActorPosition, position: ActorPosition) -> bool {
         && (top..top + i64::from(VIEW_HEIGHT)).contains(&y)
 }
 
-/// The wire order of tiles and cleared entries: `(floor, y, x)`.
+/// The wire order of tiles and cleared entries: deepest floor first, then `(y, x)`.
 pub fn tile_order(position: &ActorPosition) -> (i16, i32, i32) {
-    (position.floor, position.y, position.x)
+    (-position.floor, position.y, position.x)
 }
 
 fn check_header(header: &MapViewHeader) -> Result<()> {
@@ -224,7 +224,7 @@ fn check_header(header: &MapViewHeader) -> Result<()> {
         return malformed();
     }
     let visible = header.first_visible_floor;
-    if visible < floor || visible > first_visible_floor_start(floor) {
+    if visible > floor || visible < first_visible_floor_start(floor) {
         return malformed();
     }
     Ok(())
@@ -267,8 +267,22 @@ fn check_ascending<'a>(positions: impl Iterator<Item = &'a ActorPosition>) -> Re
     Ok(())
 }
 
+fn check_handles(tiles: &[MapTile]) -> Result<()> {
+    if tiles
+        .iter()
+        .flat_map(|tile| &tile.items)
+        .filter(|item| matches!(item.origin, MapOrigin::Handle(_)))
+        .count()
+        > MAX_MAP_VIEW_HANDLES
+    {
+        return Err(WorldMapWireError::LimitExceeded);
+    }
+    Ok(())
+}
+
 fn check_snapshot(snapshot: &WorldMapViewSnapshot) -> Result<()> {
     check_header(&snapshot.header)?;
+    check_handles(&snapshot.tiles)?;
     if snapshot.tiles.len() > MAX_SNAPSHOT_TILES {
         return Err(WorldMapWireError::LimitExceeded);
     }
@@ -286,6 +300,7 @@ pub type MapViewBinding = MapViewHeader;
 
 fn check_delta(view: &MapViewBinding, delta: &WorldMapViewDelta) -> Result<()> {
     check_header(&delta.header)?;
+    check_handles(&delta.tiles)?;
     if delta.tiles.len() + delta.cleared.len() > MAX_DELTA_ENTRIES {
         return Err(WorldMapWireError::LimitExceeded);
     }

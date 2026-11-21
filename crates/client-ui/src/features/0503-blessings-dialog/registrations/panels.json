@@ -1,0 +1,7 @@
+{
+  "mechanic": "0503-blessings-dialog",
+  "kind": "panels",
+  "id": "0503-blessings-dialog-panel",
+  "status": "supported",
+  "entry": "protocol.rs::decode"
+}

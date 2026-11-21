@@ -156,7 +156,15 @@ pub fn prepare_quest_door_opening<'a>(
 }
 impl DoorOpening<'_> {
     fn check(&self, runtime: &ChannelRuntimeV1) -> Result<(), MovementError> {
-        qualify_origin(runtime, self.cells, self.actor, self.session, self.expected)?;
+        // Source door USE teleports and retains the ordinary player control check.
+        qualify_origin(
+            runtime,
+            self.cells,
+            self.actor,
+            self.session,
+            self.expected,
+            None,
+        )?;
         if self.map.facts.doors().revision(self.key) != self.revision
             || !self
                 .map

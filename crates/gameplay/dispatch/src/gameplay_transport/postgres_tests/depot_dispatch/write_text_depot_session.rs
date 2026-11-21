@@ -164,7 +164,7 @@ pub(super) async fn exercise(
     tokio::time::timeout(std::time::Duration::from_secs(30), exercise).await?
 }
 
-async fn exchange(
+pub(super) async fn exchange(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
     exercise: impl AsyncFnOnce(&mut tokio::io::DuplexStream) -> TestResult,
@@ -195,7 +195,7 @@ async fn exchange(
         client.shutdown().await?;
         Ok::<(), Box<dyn std::error::Error>>(())
     };
-    let (end, result) = super::super::fixture::join_two(serving, driving).await;
+    let (end, result) = super::super::fixture::join_two(Box::pin(serving), Box::pin(driving)).await;
     result?;
     // As in depot_list::dispatch, retain the command stream across served connections.
     match end {
@@ -207,12 +207,21 @@ async fn exchange(
     }
 }
 
-async fn send(
+pub(super) async fn send(
     client: &mut tokio::io::DuplexStream,
     command_id: u64,
     intent: DepotIntent,
 ) -> TestResult {
-    let payload = encode_depot_intent(intent).map_err(debug)?;
+    send_at(client, command_id, intent, None).await
+}
+
+pub(super) async fn send_at(
+    client: &mut tokio::io::DuplexStream,
+    command_id: u64,
+    intent: DepotIntent,
+    slot: Option<u32>,
+) -> TestResult {
+    let payload = encode_depot_intent_at(intent, slot).map_err(debug)?;
     let frame = oteryn_protocol_oteryn::encode_client_command(
         1,
         &oteryn_protocol_oteryn::ClientCommandValue {
@@ -234,7 +243,7 @@ async fn read_frame(client: &mut tokio::io::DuplexStream) -> TestResult<Vec<u8>>
     Ok(frame)
 }
 
-async fn read_reply(
+pub(super) async fn read_reply(
     client: &mut tokio::io::DuplexStream,
     command_id: u64,
 ) -> TestResult<DepotReply> {

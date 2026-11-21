@@ -157,6 +157,7 @@ async fn house_connection(selected: bool, fresh: bool, already_joined: bool) -> 
                 missed_limit: 3,
             },
             &mut integrity,
+            false,
         )
         .await;
         drop(server_messages);

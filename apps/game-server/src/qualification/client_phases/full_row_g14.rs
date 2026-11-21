@@ -233,6 +233,7 @@ mod tests {
             message: "Real modal codec regression".into(),
             choices: Vec::new(),
             buttons: vec![(1, "OK".into())],
+            default_button: None,
             cancel_button: None,
             image: None,
         };

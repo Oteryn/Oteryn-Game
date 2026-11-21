@@ -9,7 +9,7 @@ use crate::gameplay_transport::connection::{AdmittedSession, SessionContinuity};
 
 fn timed(name: &'static str, scenario: fn() -> TestResult) -> TestResult {
     let start = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run(name, scenario);
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run(name, scenario);
     eprintln!(
         "XMECH-E2E-1 {name} duration={:.3}s result={}",
         start.elapsed().as_secs_f64(),

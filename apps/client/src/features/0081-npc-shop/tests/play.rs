@@ -128,6 +128,7 @@ fn closed_server_shop_retains_inline_refusal_and_removes_tradeable_quotes() {
         })
     };
     outbox.push(vec![update(npc_service::NpcTradeWindow {
+        details: Vec::new(),
         open: Some((offer().npc_actor, 7)),
         offers: vec![npc_service::NpcOffer {
             item_definition_ref: 42,
@@ -156,7 +157,7 @@ impl Stepper for HouseViewsPeer {
         true
     }
     fn feature_selected(&self, capability: u32) -> bool {
-        matches!(capability, 3 | 14) || (capability == 446 && self.selected)
+        matches!(capability, 3 | 14 | 499) || (capability == 446 && self.selected)
     }
     fn feature_snapshot(&self, domain: u32) -> Option<Vec<u8>> {
         (domain == 14).then(|| self.payload.clone())
@@ -181,7 +182,7 @@ impl Stepper for HouseViewsPeer {
 fn npc_shop_retains_twenty_fifth_container_source_only_when_negotiated()
 -> Result<(), Box<dyn std::error::Error>> {
     use oteryn_session::container_tree::{
-        ContainerView, ContainerViews, encode_container_views_with_house_capacity,
+        ContainerView, ContainerViews, encode_container_views_with_appearances,
     };
     let views = ContainerViews {
         views: vec![ContainerView {
@@ -192,6 +193,7 @@ fn npc_shop_retains_twenty_fifth_container_source_only_when_negotiated()
             entries: (2_u64..=26)
                 .map(|id| {
                     Ok(oteryn_session::ItemEntry {
+                        appearance_id: 2854,
                         handle: id.try_into()?,
                         item_definition_ref: 2854_u32.try_into()?,
                         count: 1_u32.try_into()?,
@@ -202,7 +204,7 @@ fn npc_shop_retains_twenty_fifth_container_source_only_when_negotiated()
             browse: None,
         }],
     };
-    let payload = encode_container_views_with_house_capacity(&views, false, true)
+    let payload = encode_container_views_with_appearances(&views, false, true, true)
         .map_err(|e| format!("{e:?}"))?;
     for selected in [false, true] {
         let (link, _, outbox) = play_channel();

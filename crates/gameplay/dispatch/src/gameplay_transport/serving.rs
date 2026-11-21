@@ -42,6 +42,35 @@ pub async fn serve_gameplay(
             access: config.access,
         });
     }
+    // Keep the sealed independent activity maps alive for the complete gameplay
+    // seam. They use the current native Item identities without changing Channel
+    // geometry or obtaining an Instance allocation.
+    let activity_source_rooms: Vec<_> = owners
+        .active_generation
+        .zip(owners.rooms.gate_native_combat_cast())
+        .into_iter()
+        .flat_map(|(active, room)| {
+            use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
+            PinnedActivitySourceRoom::ALL
+                .into_iter()
+                .filter_map(move |source| {
+                    active
+                        .qualify_activity_source_room(room, source)
+                        .ok()
+                        .and_then(|room| {
+                            activity_runtime::source_bundle::qualify(
+                                &room,
+                                source,
+                                active,
+                                owners.world_id,
+                                owners.channel_id,
+                            )
+                            .ok()
+                        })
+                        .map(|room| (source, room))
+                })
+        })
+        .collect();
     let authority = ComposedFreshAdmission {
         server_motd: &config.server_motd,
         reset_epoch: drain.epoch(),
@@ -70,6 +99,12 @@ pub async fn serve_gameplay(
         test_step_wait_receipts: None,
         activity_runtimes: Default::default(),
         states: std::sync::Arc::new(channel_states::ChannelSessionStates {
+            platform_enforcement_enabled: owners.platform_enforcement_enabled,
+            security_revocation_stream_enabled: crate::platform_streams::enabled(
+                crate::platform_streams::SECURITY_REVOCATIONS_ENABLED_VAR,
+                std::env::var_os(crate::platform_streams::SECURITY_REVOCATIONS_ENABLED_VAR),
+            )
+            .unwrap_or(true),
             casts,
             bulletin_source: config.bulletin_source,
             gameplay_idle_policy: owners.gameplay_idle_policy,
@@ -102,6 +137,18 @@ pub async fn serve_gameplay(
             .map(|client| std::sync::Arc::new(tokio::sync::Mutex::new(client))),
         store_purchases: owners.store_purchases,
     };
+    // Capture actual registered source execution time before startup awaits,
+    // rather than anchoring a GlobalEvent to its first Think or a boss birth.
+    let registered_global_us = authority.owner_now().get();
+    authority
+        .register_world_spite_global(registered_global_us)
+        .await
+        .map_err(|_| GameplayServeError::OwnerUnavailable)?;
+    authority
+        .states
+        .boss_activity_handoff
+        .install(std::sync::Arc::new(soulpit::SharedSoulpitOwner))
+        .map_err(|_| GameplayServeError::OwnerUnavailable)?;
     authority
         .register_current_runtime()
         .await
@@ -116,6 +163,12 @@ pub async fn serve_gameplay(
         authority
             .activity_runtimes
             .register_soulpit_template(template)
+            .map_err(|_| GameplayServeError::OwnerUnavailable)?;
+    }
+    for (source, room) in &activity_source_rooms {
+        authority
+            .activity_runtimes
+            .register_source_room(*source, room)
             .map_err(|_| GameplayServeError::OwnerUnavailable)?;
     }
     if let Some(book) = owners.npc_talk {
@@ -177,14 +230,20 @@ pub async fn serve_gameplay(
             shutdown,
             Some(drain),
         ),
-        quest_retries,
+        DurabilityRoot::with_background_holder(quest_retries),
     );
     let mut serving = pin!(serving);
     let cycles_stop = CancellationToken::new();
-    let mut cycles = pin!(authority.run_source_owner_cycles(&cycles_stop));
-    let mut activities = pin!(authority.run_activity_owner_cycles(&cycles_stop));
+    let mut cycles = pin!(DurabilityRoot::with_background_holder(
+        authority.run_source_owner_cycles(&cycles_stop)
+    ));
+    let mut activities = pin!(DurabilityRoot::with_background_holder(
+        authority.run_activity_owner_cycles(&cycles_stop)
+    ));
     let mut activities_done = false;
-    let mut respawns = Box::pin(authority.run_world_respawns(shutdown));
+    let mut respawns = Box::pin(DurabilityRoot::with_background_holder(
+        authority.run_world_respawns(shutdown),
+    ));
     let mut respawns_done = false;
     let mut owner_failed = false;
     let mut countdown = pin!(authority.run_server_save_countdown(shutdown));
@@ -196,7 +255,9 @@ pub async fn serve_gameplay(
     let mut quiesced = false;
     // CHAR-POSITION-0 §3.2 (`CHARPOS0-RL-01`): the periodic last-position writes run on their own
     // deadlines, so no other cadence work delays them.
-    let mut positions = pin!(authority.run_last_position_writes(shutdown));
+    let mut positions = pin!(DurabilityRoot::with_background_holder(
+        authority.run_last_position_writes(shutdown)
+    ));
     // CHAR-POSITION-0 §3.2: the shutdown write is polled with the seam and never holds its end.
     let mut flush = pin!(async {
         match owners.last_position_flush {

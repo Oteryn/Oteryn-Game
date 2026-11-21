@@ -20,7 +20,7 @@ fn definition(family: &str, key: &str) -> TypedDefinitionRef {
     }
 }
 
-fn coin(coin: Coin) -> TypedDefinitionRef {
+pub(super) fn coin(coin: Coin) -> TypedDefinitionRef {
     definition(COIN_DEFINITION_FAMILY, coin.production_key())
 }
 
@@ -38,7 +38,7 @@ fn sword() -> TypedDefinitionRef {
     definition("Item", "oteryn:item.tibia.i3264")
 }
 
-fn request(side: NpcTradeSide, quantity: u32, unit_price: u64) -> NpcTradeRequest {
+pub(super) fn request(side: NpcTradeSide, quantity: u32, unit_price: u64) -> NpcTradeRequest {
     NpcTradeRequest {
         fluid_subtype: None,
         full_charges: None,
@@ -82,7 +82,7 @@ fn request(side: NpcTradeSide, quantity: u32, unit_price: u64) -> NpcTradeReques
     }
 }
 
-fn entry(tag: u8, ordinal: u64, definition: TypedDefinitionRef, quantity: u32) -> Entry {
+pub(super) fn entry(tag: u8, ordinal: u64, definition: TypedDefinitionRef, quantity: u32) -> Entry {
     Entry {
         item_instance_id: id(tag),
         placement_ordinal: ordinal,
@@ -122,7 +122,7 @@ fn pick_exchange_fixed_recipe_and_audit_refuse_other_sources() {
         runtime_scope: crate::foundation::RuntimeScopeRefV1::channel(world, channel),
         scope_ownership_generation: crate::foundation::ScopeOwnershipGeneration::new(1).unwrap(),
     };
-    let message = trade_message(&fence, world, channel, &id(4), &value, (1, 0, false), &plan);
+    let message = trade_message(&fence, world, channel, &id(4), &value, (1, 0, false), (&plan, None));
     assert_eq!(super::super::npc_trade_audit::check_npc_trade(&message), Ok(()));
     let mut wrong_source = message.clone();
     wrong_source.lines[0].before.as_mut().unwrap().definition.as_mut().unwrap().production_key = "oteryn:item.tibia.i3264".into();
@@ -169,7 +169,7 @@ fn present_exchange_exact_recipe_empty_container_and_closed_audit() {
         runtime_scope: crate::foundation::RuntimeScopeRefV1::channel(world, channel),
         scope_ownership_generation: crate::foundation::ScopeOwnershipGeneration::new(1).unwrap(),
     };
-    let message = trade_message(&fence, world, channel, &id(4), &value, (1, 0, false), &plan);
+    let message = trade_message(&fence, world, channel, &id(4), &value, (1, 0, false), (&plan, None));
     assert_eq!(
         super::super::npc_trade_audit::check_npc_trade(&message),
         Ok(())
@@ -236,7 +236,7 @@ fn obsidian_knife_two_inputs_partial_steel_and_closed_audit() {
         runtime_scope: crate::foundation::RuntimeScopeRefV1::channel(world, channel),
         scope_ownership_generation: crate::foundation::ScopeOwnershipGeneration::new(1).unwrap(),
     };
-    let message = trade_message(&fence, world, channel, &id(4), &value, (1, 0, false), &plan);
+    let message = trade_message(&fence, world, channel, &id(4), &value, (1, 0, false), (&plan, None));
     assert_eq!(super::super::npc_trade_audit::check_npc_trade(&message), Ok(()));
     let mut wrong_lance = message;
     wrong_lance.lines[1].before.as_mut().unwrap().definition.as_mut().unwrap().production_key = "oteryn:item.tibia.i5889".into();
@@ -307,7 +307,7 @@ fn a_sell_all_audits_every_burned_stack_and_its_units() {
         &id(4),
         &value,
         (units, total, true),
-        &plan,
+        (&plan, None),
     );
     assert!(message.sell_all);
     assert_eq!(message.quantity, 207);
@@ -448,7 +448,7 @@ fn bundled_buy_and_sell_plans_encode_purchase_quantity_and_actual_item_units() {
                 &id(4),
                 &value,
                 (quantity, total, false),
-                &plan,
+                (&plan, None),
             );
             assert_eq!(
                 (
@@ -625,4 +625,124 @@ fn worldchg_trader_source_binding_preserves_legacy_and_separates_selected_ships(
         ankrahmun,
         bind_yasir_position(legacy, Some((33102, 32884, -6)))
     );
+}
+
+#[test]
+fn sinatuki_fixed_exchange_mints_five_shards() {
+    let mut value = request(NpcTradeSide::Exchange, 1, 0);
+    value.cause.npc_key = "oteryn:npc.sinatuki".into();
+    value.item.definition = TypedDefinitionRef {
+        family: "Item".into(),
+        production_key: "oteryn:item.tibia.i7290".into(),
+        revision_ref: "definition-r1".into(),
+    };
+    value.offer_count = 5;
+    assert_eq!(priced(&value).unwrap(), (0, 5));
+    let trout = TypedDefinitionRef {
+        family: "Item".into(),
+        production_key: "oteryn:item.tibia.i7158".into(),
+        revision_ref: "definition-r1".into(),
+    };
+    let perch = TypedDefinitionRef {
+        production_key: "oteryn:item.tibia.i7159".into(),
+        ..trout.clone()
+    };
+    let split_trout = [
+        entry(10, 2, trout.clone(), 90),
+        entry(11, 1, trout.clone(), 20),
+    ];
+    let (plan, input, taken) = sinatuki_exchange::plan(&value, 2, &split_trout).unwrap();
+    assert_eq!((input, taken), (trout.clone(), 100));
+    assert_eq!(plan.lines[0].quantity_after, 0);
+    assert_eq!(plan.lines[1].quantity_after, 10);
+    assert_eq!(plan.lines[2].quantity_after, 5);
+
+    let both = [
+        entry(10, 2, trout.clone(), 99),
+        entry(11, 1, perch.clone(), 100),
+    ];
+    let (plan, input, taken) = sinatuki_exchange::plan(&value, 2, &both).unwrap();
+    assert_eq!((input, taken), (trout.clone(), 99));
+    assert_eq!(plan.lines[0].quantity_after, 0);
+    assert_eq!(plan.lines[1].quantity_after, 5);
+
+    let mixed = [entry(10, 2, trout, 98), entry(11, 1, perch, 2)];
+    assert!(matches!(
+        sinatuki_exchange::plan(&value, 2, &mixed),
+        Err(NpcTradeError::ItemNotFound)
+    ));
+
+    value.offer_count = 4;
+    assert!(priced(&value).is_err());
+}
+
+#[test]
+fn sinatuki_fixed_exchange_skips_species_that_exceeds_burn_line_limit() {
+    use sinatuki_exchange::{NPC, SHARD, plan};
+
+    let mut value = request(NpcTradeSide::Exchange, 1, 0);
+    value.cause.npc_key = NPC.into();
+    value.item.definition = TypedDefinitionRef {
+        revision_ref: "definition-r1".into(),
+        ..definition("Item", SHARD)
+    };
+    value.offer_count = 5;
+    let trout = TypedDefinitionRef {
+        production_key: "oteryn:item.tibia.i7158".into(),
+        ..value.item.definition.clone()
+    };
+    let perch = TypedDefinitionRef {
+        production_key: "oteryn:item.tibia.i7159".into(),
+        ..trout.clone()
+    };
+    let stacks = [
+        entry(10, 1, trout.clone(), 25),
+        entry(11, 2, trout.clone(), 25),
+        entry(12, 3, trout.clone(), 25),
+        entry(13, 4, trout.clone(), 25),
+        entry(14, 5, perch.clone(), 100),
+    ];
+
+    let (result, input, taken) = plan(&value, 5, &stacks).unwrap();
+    assert_eq!((input, taken), (perch, 100));
+    assert_eq!(result.lines.len(), 2);
+    assert_eq!(result.lines[0].kind, NpcTradeLineKind::ItemBurn);
+    assert_eq!(result.lines[0].item_instance_id, id(14));
+    assert_eq!(result.lines[0].quantity_after, 0);
+    assert_eq!(result.lines[1].kind, NpcTradeLineKind::ItemMint);
+    assert_eq!(result.lines[1].quantity_after, 5);
+}
+
+#[test]
+fn sinatuki_fixed_exchange_accepts_99_from_three_largest_stacks() {
+    use sinatuki_exchange::{NPC, SHARD, plan};
+
+    let mut value = request(NpcTradeSide::Exchange, 1, 0);
+    value.cause.npc_key = NPC.into();
+    value.item.definition = TypedDefinitionRef {
+        revision_ref: "definition-r1".into(),
+        ..definition("Item", SHARD)
+    };
+    value.offer_count = 5;
+    let trout = TypedDefinitionRef {
+        production_key: "oteryn:item.tibia.i7158".into(),
+        ..value.item.definition.clone()
+    };
+    let stacks = [
+        entry(10, 1, trout.clone(), 1),
+        entry(11, 2, trout.clone(), 33),
+        entry(12, 3, trout.clone(), 33),
+        entry(13, 4, trout.clone(), 33),
+    ];
+
+    let (result, input, taken) = plan(&value, 4, &stacks).unwrap();
+    assert_eq!((input, taken), (trout, 99));
+    assert_eq!(result.lines.len(), 4);
+    for (line, tag) in result.lines[..3].iter().zip(11..=13) {
+        assert_eq!(line.kind, NpcTradeLineKind::ItemBurn);
+        assert_eq!(line.item_instance_id, id(tag));
+        assert_eq!((line.quantity_before, line.quantity_after), (33, 0));
+    }
+    assert_eq!(result.lines[3].kind, NpcTradeLineKind::ItemMint);
+    assert_eq!(result.lines[3].quantity_after, 5);
 }

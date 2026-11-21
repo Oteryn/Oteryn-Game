@@ -47,7 +47,9 @@ use oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL;
 use sqlx::Row;
 mod house;
 pub use house::{HouseLastPosition, ScopedLastPosition, ScopedPeriodicLastPosition};
-pub(super) use house::{load_scoped_last_position, upsert_scoped_last_position, release_terminal_house_entry};
+pub(super) use house::{
+    load_scoped_last_position, release_terminal_house_entry, upsert_scoped_last_position,
+};
 
 type Result<T> = std::result::Result<T, CharacterProgressionError>;
 
@@ -132,6 +134,8 @@ pub enum LastPositionWrite {
     /// A pending respawn decides the next placement, so nothing is written (§3.2 "Not
     /// written").
     PendingObligation,
+    /// A retained choice kept the locked row's vitals, with the same cell/rest or a new one.
+    RetainedVitals(Option<LastVitals>),
 }
 
 /// The most periodic writes one batch carries ([`DurabilityRoot::write_character_last_positions`]).
@@ -216,8 +220,15 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         writes: Vec<PeriodicLastPosition>,
     ) -> Result<Vec<Result<LastPositionWrite>>> {
-        self.write_scoped_character_last_positions(authority, node,
-            writes.into_iter().map(|write| ScopedPeriodicLastPosition { write, house: None }).collect()).await
+        self.write_scoped_character_last_positions(
+            authority,
+            node,
+            writes
+                .into_iter()
+                .map(|write| ScopedPeriodicLastPosition { write, house: None, pending_vocation_refill: None })
+                .collect(),
+        )
+        .await
     }
 
     /// §3.3: the Character's last position, read under the session fence of `fence` when a new
@@ -263,7 +274,8 @@ impl DurabilityRoot {
 async fn write_periodic(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     node: &NodeIncarnationProof,
-    write: PeriodicLastPosition,
+    mut write: PeriodicLastPosition,
+    pending_vocation_refill: Option<super::character_build::BuildOccurrence>,
 ) -> std::result::Result<Result<LastPositionWrite>, DurabilityError> {
     if let Err(error) = validate_fence(&write.fence, &write.record) {
         return Ok(Err(error));
@@ -274,13 +286,50 @@ async fn write_periodic(
     if let Err(error) = assert_session_fence(tx, &write.fence.item_fence(), node).await? {
         return Ok(Err(error));
     }
+    let preserve_vitals = match pending_vocation_refill {
+        Some(occurrence) => committed_vocation_refill(tx, write.fence.character_id, occurrence).await?,
+        None => false,
+    };
+    if preserve_vitals {
+        let Some(stored) = load_last_position_in(tx, write.fence.character_id, true).await? else {
+            return Ok(Err(CharacterProgressionError::MissingProgressionState));
+        };
+        if stored.record.cell == write.record.cell && stored.record.rest == write.record.rest {
+            return Ok(Ok(LastPositionWrite::RetainedVitals(stored.record.vitals)));
+        }
+        write.record.vitals = stored.record.vitals;
+    }
     let key = LastPositionKey {
         character_lease_generation: write.fence.character_lease_generation,
         write_sequence: write.write_sequence,
     };
     let outcome =
         upsert_last_position(tx, write.fence.character_id.as_bytes(), key, &write.record).await?;
+    let outcome = if preserve_vitals && outcome == LastPositionWrite::Written {
+        LastPositionWrite::RetainedVitals(write.record.vitals)
+    } else {
+        outcome
+    };
     Ok(Ok(outcome))
+}
+
+/// The build receipt and refill commit in the same transaction. An occurrence
+/// retained after a refused build must not suppress a newer live health sample.
+pub(super) async fn committed_vocation_refill(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: CharacterId,
+    occurrence: super::character_build::BuildOccurrence,
+) -> std::result::Result<bool, DurabilityError> {
+    Ok(sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM game_character_build_receipts
+         WHERE build_occurrence_id = encode($1,'hex')::uuid
+           AND character_id = encode($2,'hex')::uuid
+           AND cause IN ('vocation_choice', 'vocation_trial'))",
+    )
+    .bind(occurrence.as_bytes().as_slice())
+    .bind(character.as_bytes().as_slice())
+    .fetch_one(&mut **tx)
+    .await?)
 }
 
 pub(super) fn validate_fence(
@@ -313,13 +362,21 @@ pub(super) async fn load_last_position(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     character_id: CharacterId,
 ) -> std::result::Result<Option<StoredLastPosition>, DurabilityError> {
-    let row = sqlx::query(
-        "SELECT world_id::text, tile_x, tile_y, tile_floor, coordinate_frame_digest, \
+    load_last_position_in(tx, character_id, false).await
+}
+
+async fn load_last_position_in(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character_id: CharacterId,
+    lock: bool,
+) -> std::result::Result<Option<StoredLastPosition>, DurabilityError> {
+    const SQL: &str = "SELECT world_id::text, tile_x, tile_y, tile_floor, coordinate_frame_digest, \
                 map_revision_digest, server_artifact_digest, \
                 character_lease_generation::text, write_sequence::text, health, mana, rest \
            FROM game_character_last_positions \
-          WHERE character_id = encode($1,'hex')::uuid",
-    )
+          WHERE character_id = encode($1,'hex')::uuid FOR UPDATE";
+    let sql = if lock { SQL } else { SQL.trim_end_matches(" FOR UPDATE") };
+    let row = sqlx::query(sql)
     .bind(character_id.as_bytes().as_slice())
     .fetch_optional(&mut **tx)
     .await?;

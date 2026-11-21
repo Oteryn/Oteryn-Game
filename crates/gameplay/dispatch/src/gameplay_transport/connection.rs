@@ -222,7 +222,7 @@ pub mod quest_log;
 pub const SERVER_SCHEMA_REVISION: u32 = 1;
 
 /// Validated fresh-admission input handed to the owning authority.
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct FreshAdmissionAttempt<'a> {
     pub character_id: CharacterId,
     pub admission_material: &'a [u8],
@@ -231,6 +231,19 @@ pub struct FreshAdmissionAttempt<'a> {
     /// The bootstrap's supported capabilities, untrusted. ADMIT0 §4: the owner checks them
     /// against the Channel's required set only after authenticating the grant.
     pub supported_capabilities: &'a [u32],
+}
+
+impl std::fmt::Debug for FreshAdmissionAttempt<'_> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("FreshAdmissionAttempt")
+            .field("character_id", &self.character_id)
+            .field("admission_material", &"[REDACTED]")
+            .field("game_session_id", &self.game_session_id)
+            .field("transport", &self.transport)
+            .field("supported_capabilities", &self.supported_capabilities)
+            .finish()
+    }
 }
 
 /// One `ClientResume` attempt: the GameSession to resume, the untrusted reauthenticated
@@ -442,7 +455,7 @@ pub enum FirstEntryOutcome {
     RefusedStaleAuthority,
     /// Current authority could not be read; nothing was written.
     RefusedUnavailable,
-    /// Positioned and otherwise initialized, but final spell repair must be retried on resume.
+    /// Positioned and otherwise initialized; the connection or resume retries final spell repair.
     AwaitingSpellRepair,
     /// The Channel owner refused the write; nothing was written.
     RefusedByChannel,
@@ -450,6 +463,7 @@ pub enum FirstEntryOutcome {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AdmissionRefusal {
+    ChannelSwitch(oteryn_protocol_oteryn::channel_switch::SwitchStatus),
     /// PREMCHAN: authenticated destination entry requires current Premium. Uses the existing
     /// silent rejection path; no new public error code is allocated.
     PremiumRequired,
@@ -488,6 +502,20 @@ pub(super) fn admission_refused_event(refusal: AdmissionRefusal) -> Option<&'sta
 pub(super) fn report_admission_refusal(refusal: AdmissionRefusal) {
     let (kind, reason) = match refusal {
         AdmissionRefusal::PremiumRequired | AdmissionRefusal::Rejected => ("rejected", None),
+        AdmissionRefusal::ChannelSwitch(status) => {
+            use oteryn_protocol_oteryn::channel_switch::SwitchLock;
+            (
+                match status.lock {
+                    SwitchLock::ChannelFull => "channel_full",
+                    SwitchLock::Cooldown => "channel_cooldown",
+                    SwitchLock::Combat => "channel_combat",
+                    SwitchLock::Skull => "channel_skull",
+                    SwitchLock::Transition => "channel_transition",
+                    _ => "channel_locked",
+                },
+                None,
+            )
+        }
         AdmissionRefusal::Unavailable => ("unavailable", None),
         AdmissionRefusal::Classified(error) => ("classified", Some(error)),
         AdmissionRefusal::Queued(_) => ("queued", None),
@@ -881,7 +909,8 @@ where
     };
     // CAP-NEG-1: the client's supported capabilities the server offers, with their `requires`.
     // WEATHER-1: capability 26 is offered only while the authority holds a weather source.
-    let Some(selected) = fresh_capability_selection(authority, bootstrap.supported_capabilities)
+    let Some(selected) =
+        fresh_capability_selection(authority, bootstrap.supported_capabilities).await
     else {
         return Err(ConnectionEnd::AdmissionRefused(
             AdmissionRefusal::Unavailable,
@@ -909,6 +938,16 @@ where
                 let _ = tokio::time::timeout(
                     ADMISSION_REFUSAL_WRITE_BOUND,
                     send_error(stream, error, 0),
+                )
+                .await;
+            }
+            if let AdmissionRefusal::ChannelSwitch(status) = refusal
+                && status.lock == oteryn_protocol_oteryn::channel_switch::SwitchLock::ChannelFull
+            {
+                let frame = oteryn_protocol_oteryn::admission_queue::encode_channel_full();
+                let _ = tokio::time::timeout(
+                    ADMISSION_REFUSAL_WRITE_BOUND,
+                    write_frame(stream, &frame),
                 )
                 .await;
             }
@@ -963,7 +1002,9 @@ where
 /// The existing fresh wire selection, shared with native saved-House admission.
 /// It is data only; the owner independently authenticates the grant and current
 /// required capabilities before any committed scope transition.
-pub(in crate::gameplay_transport) fn fresh_capability_selection<A: FreshAdmissionAuthority>(
+pub(in crate::gameplay_transport) async fn fresh_capability_selection<
+    A: FreshAdmissionAuthority,
+>(
     authority: &A,
     supported: &[u32],
 ) -> Option<SelectedCapabilities> {
@@ -972,6 +1013,39 @@ pub(in crate::gameplay_transport) fn fresh_capability_selection<A: FreshAdmissio
         authority.world_weather().is_some(),
     );
     let offered = mechanic_offers(authority, offered);
+    let offered = super::native_cue_offer::offered(
+        &offered,
+        authority.native_world_presentation_available().await,
+    );
+    SelectedCapabilities::select(&offered, supported)
+}
+
+/// Test observation of a current actor's optional offer. Production Fresh/
+/// House selection remains before its immutable acknowledgement; this helper
+/// neither installs a selection nor widens a transfer/resume.
+#[cfg(test)]
+pub(in crate::gameplay_transport) async fn fresh_current_actor_capability_selection<
+    A: FreshAdmissionAuthority,
+>(
+    authority: &A,
+    supported: &[u32],
+    admitted: AdmittedSession,
+) -> Option<SelectedCapabilities> {
+    let (Some(actor), Some(_)) = (admitted.runtime_actor, admitted.controller) else {
+        return fresh_capability_selection(authority, supported).await;
+    };
+    let offered = with_weather_offer(
+        authority.offered_capabilities(),
+        authority.world_weather().is_some(),
+    );
+    let offered = mechanic_offers(authority, offered);
+    let offered = super::native_cue_offer::offered(
+        &offered,
+        authority
+            .native_current_actor_map_cue_frame(actor, admitted.game_session_id)
+            .await
+            .is_some(),
+    );
     SelectedCapabilities::select(&offered, supported)
 }
 
@@ -1428,13 +1502,16 @@ fn chat_delta(
 /// The domain 7 and 8 delta frames of `update`, in that order, from the sequence after
 /// `sequence` (advanced to the last one); `npc_shown` follows the conversation. `None` on an
 /// encoding fault.
-fn npc_update_frames(
+fn npc_update_frames<A: FreshAdmissionAuthority>(
+    authority: &A,
+    viewer: (GameSessionId, SelectedCapabilities),
     generation: u64,
     sequence: &mut u64,
     continuity: &mut NpcContinuity,
     update: &NpcUpdate,
     npc_shown: &mut Option<WireEntityRef>,
 ) -> Option<Vec<Vec<u8>>> {
+    let (game_session_id, selected) = viewer;
     let mut frames = Vec::new();
     let mut next = *sequence;
     let mut conversation_revision = continuity.conversation_revision;
@@ -1448,6 +1525,15 @@ fn npc_update_frames(
         frames.push(frame);
     }
     if let Some(window) = &update.window {
+        let details =
+            selected.contains(oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1);
+        let window = if details {
+            authority
+                .npc_quote_window(game_session_id, window)
+                .unwrap_or_else(|| window.clone())
+        } else {
+            window.clone()
+        };
         let delta_sequence = next.checked_add(1)?;
         let to = window_revision.checked_add(1)?;
         let frame = encode_state_delta(
@@ -1457,7 +1543,8 @@ fn npc_update_frames(
             window_revision,
             to,
             DELTA_TYPE_NPC_TRADE_WINDOW_V1,
-            &encode_npc_trade_window(window).ok()?,
+            &oteryn_protocol_oteryn::npc_service::encode_npc_trade_window_for(&window, details)
+                .ok()?,
         )
         .ok()?;
         (next, window_revision) = (delta_sequence, to);

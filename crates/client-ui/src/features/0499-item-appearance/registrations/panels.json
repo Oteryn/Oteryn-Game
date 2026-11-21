@@ -1,0 +1,7 @@
+{
+  "mechanic": "0499-item-appearance",
+  "kind": "panels",
+  "id": "0499-item-appearance-icon",
+  "status": "supported",
+  "entry": "protocol.rs::atlas_key"
+}

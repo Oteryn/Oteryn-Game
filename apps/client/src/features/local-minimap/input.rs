@@ -35,13 +35,23 @@ impl PlayView {
     }
 }
 
+#[cfg(bevy_shell)]
+pub(crate) struct MinimapSaves(super::state::SharedMinimap);
+
+#[cfg(bevy_shell)]
+impl MinimapSaves {
+    pub(crate) fn poll(&self) -> bool {
+        super::state::lock(&self.0).flush_background()
+    }
+}
+
 impl PlayView {
     /// Route a native screen click through the overlay before selecting the world beneath it.
     pub fn click_screen(&mut self, x: f64, y: f64) -> Result<(), oteryn_renderer::BatchError> {
         if self.minimap_click(x, y) {
             return Ok(());
         }
-        if let Some(tile) = crate::input::click_tile(self.scene().view(), x, y) {
+        if let Some(tile) = self.click_tile(x, y) {
             self.click(tile)?;
         }
         Ok(())
@@ -49,31 +59,141 @@ impl PlayView {
 }
 
 impl PlayView {
+    #[cfg(bevy_shell)]
+    pub(crate) fn enable_background_minimap_save(&mut self) {
+        super::state::lock(&self.minimap).enable_background_save();
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn poll_background_minimap_save(&mut self) -> Option<std::io::Result<()>> {
+        let (loaded, imported) = {
+            let mut map = super::state::lock(&self.minimap);
+            (map.poll_background_save(), map.poll_background_import())
+        };
+        if loaded || imported.as_ref().is_some_and(Result::is_ok) {
+            let rebuilt = self.rebuild().map_err(std::io::Error::other);
+            if imported.is_some() {
+                return Some(rebuilt);
+            }
+        }
+        imported
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn minimap_saves(&self) -> MinimapSaves {
+        MinimapSaves(self.minimap.clone())
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn minimap_binding_generation(&self) -> u64 {
+        super::state::lock(&self.minimap).binding_generation
+    }
+
     pub fn bind_minimap_world(&mut self, world: &str) {
         super::state::lock(&self.minimap).bind_world(world);
     }
     pub fn minimap_input(&mut self, events: &[oteryn_input_actions::NormalizedInputEvent]) -> bool {
         if oteryn_client_ui::minimap::create_mark_key(events) {
             let own = (self.own.x, self.own.y, self.floor);
-            let created = super::state::lock(&self.minimap).create_mark_at(own);
-            if let Err(error) = &created {
-                super::state::lock(&self.minimap).feedback = error.to_string();
-            }
-            // A mark already sits at the player's position: edit it.
-            #[cfg(windows)]
-            if matches!(created, Ok(false)) {
-                native::open(self.minimap.clone(), own);
+            let mut map = super::state::lock(&self.minimap);
+            match map.create_mark_at(own) {
+                Ok(false) => map.pending_edit = Some(own),
+                Ok(true) => {}
+                Err(error) => map.feedback = error.to_string(),
             }
             return true;
         }
-        if !oteryn_client_ui::minimap::editor_key(events) {
-            return false;
-        }
-        #[cfg(windows)]
-        native::open(self.minimap.clone(), (self.own.x, self.own.y, self.floor));
-        true
+        oteryn_client_ui::minimap::editor_key(events)
     }
 }
-#[cfg(windows)]
-#[path = "native.rs"]
-mod native;
+
+impl PlayView {
+    /// Current player position for a separately navigable overview.
+    pub fn satellite_player(&self) -> (i32, i32, i16) {
+        (self.own.x, self.own.y, self.floor)
+    }
+    /// Read local exploration and markers without changing sidebar navigation.
+    pub fn satellite_map<R>(
+        &self,
+        read: impl FnOnce(
+            &std::collections::BTreeMap<(i16, i32, i32), u8>,
+            &[super::state::Marker],
+        ) -> R,
+    ) -> R {
+        let map = super::state::lock(&self.minimap);
+        read(&map.cells, &map.markers)
+    }
+}
+
+impl PlayView {
+    /// Local camera only; navigation never queues a movement command.
+    pub fn navigate_minimap(
+        &mut self,
+        action: super::view::MinimapNavigation,
+    ) -> Result<(), oteryn_renderer::BatchError> {
+        use super::view::MinimapNavigation as Nav;
+        use oteryn_client_ui::minimap;
+        {
+            let mut map = super::state::lock(&self.minimap);
+            match action {
+                Nav::Pan(x, y) => map.pan(x, y),
+                Nav::Centre => {
+                    map.tracking = true;
+                    map.follow(self.own.x, self.own.y, self.floor);
+                }
+                Nav::ZoomIn => map.zoom = minimap::zoom_in(map.zoom),
+                Nav::ZoomOut => map.zoom = minimap::zoom_out(map.zoom),
+                Nav::FloorUp => {
+                    map.tracking = false;
+                    map.floor = minimap::floor_up(map.floor);
+                }
+                Nav::FloorDown => {
+                    map.tracking = false;
+                    map.floor = minimap::floor_down(map.floor);
+                }
+            }
+        }
+        self.rebuild()
+    }
+    /// Camera coordinates, floor, tiles per cell, and player-follow mode.
+    pub fn minimap_camera(&self) -> (i32, i32, i16, i32, bool) {
+        let map = super::state::lock(&self.minimap);
+        (map.x, map.y, map.floor, map.zoom, map.tracking)
+    }
+}
+
+impl PlayView {
+    #[cfg(bevy_shell)]
+    pub(crate) fn take_minimap_marker_edit(&self) -> Option<(i32, i32, i16)> {
+        super::state::lock(&self.minimap).pending_edit.take()
+    }
+    #[cfg(bevy_shell)]
+    pub(crate) fn take_minimap_feedback(&self) -> String {
+        std::mem::take(&mut super::state::lock(&self.minimap).feedback)
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn remove_minimap_marker(&mut self, at: (i32, i32, i16)) -> std::io::Result<()> {
+        let removed = super::state::lock(&self.minimap).remove_marker(at.0, at.1, at.2);
+        removed
+            .and_then(|()| self.rebuild().map_err(std::io::Error::other))
+            .inspect_err(|error| {
+                super::state::lock(&self.minimap).feedback = format!("Map mark: {error}");
+            })
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn remembered_minimap_mark(&self, at: (i32, i32, i16)) -> Option<&super::view::MinimapMark> {
+        self.scene.minimap_memory.marks.iter().find(|mark| (mark.x, mark.y, mark.floor) == at)
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn edit_minimap_marker(&mut self, at: (i32, i32, i16), label: String, color: u8) -> std::io::Result<()> {
+        let edited = super::state::lock(&self.minimap).edit_marker(at.0, at.1, at.2, label, color);
+        edited
+            .and_then(|()| self.rebuild().map_err(std::io::Error::other))
+            .inspect_err(|error| {
+                super::state::lock(&self.minimap).feedback = format!("Map mark: {error}");
+            })
+    }
+}

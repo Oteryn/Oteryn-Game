@@ -1,6 +1,8 @@
 //! The immutable cosmetics view of an admitted native artifact.
 use super::{Arc, cosmetics_loader};
-use crate::domain::appearance::{AppearanceContent, EarnedCosmetic, UnlockFact};
+use crate::domain::appearance::{
+    AppearanceContent, AppearanceSelection, EarnedCosmetic, Sex, UnlockFact,
+};
 
 /// Immutable decoded definitions and sorted identities from this exact native artifact.
 /// This is borrowed data; ActiveGeneration remains the current admission authority.
@@ -29,6 +31,9 @@ impl std::ops::Deref for NativeCosmeticsView {
     }
 }
 impl AppearanceContent<String> for NativeCosmeticsView {
+    fn projection_fallback(&self, sex: Sex) -> Option<AppearanceSelection<String>> {
+        Some(self.content.fallback(sex))
+    }
     fn earned_grant_keys(&self) -> Vec<String> {
         let mut keys = self.content.earned_grant_keys();
         for selector in [17, 18] {
@@ -102,7 +107,8 @@ impl AppearanceContent<String> for NativeCosmeticsView {
         target: EarnedCosmetic<'_>,
         sex: crate::domain::appearance::Sex,
     ) -> UnlockFact {
-        if provenance == DROME_PROVENANCE
+        if grant_key == MARRIAGE_GRANT_KEY
+            || provenance == DROME_PROVENANCE
             || provenance == crate::content::store_cosmetics::PROVENANCE
         {
             self.earned_unlock(grant_key, provenance, target)

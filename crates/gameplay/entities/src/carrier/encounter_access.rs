@@ -1,6 +1,9 @@
 //! Generic owner operations used by encounter rules in the runtime layer.
 use super::*;
 use crate::SourceStepCommitProof;
+#[path = "encounter_defenders.rs"]
+mod encounter_defenders;
+pub use encounter_defenders::EncounterDefenders;
 
 pub type EncounterHealProjection = (Vec<(ExactActorRef, String, u64, u64)>, Vec<usize>);
 
@@ -75,6 +78,7 @@ impl ChannelActorCarrier {
             max_sub_ordinal,
             false,
             now_ms,
+            false,
         )?;
         if let Some(next) = next {
             self.slots[index] = next;
@@ -136,6 +140,7 @@ impl ChannelActorCarrier {
                 max_sub_ordinal,
                 false,
                 now_ms,
+                false,
             )?;
             indexes[i] = index;
             staged[i] = next;
@@ -160,10 +165,7 @@ impl ChannelRuntimeV1 {
         monsters: &[(&str, i64, MovementLocalPosition)],
         project: impl FnOnce() -> bool,
     ) -> Result<Vec<MovementPositionSnapshot>, CarrierError> {
-        if monsters.is_empty() {
-            return Err(CarrierError::PlanConflict);
-        }
-        self.commit_source_group(players, monsters, project)
+        self.quest_encounter_entry(players, monsters, project, true)
     }
 
     /// The same bounded carrier transaction for a source party rite that has
@@ -173,16 +175,148 @@ impl ChannelRuntimeV1 {
         players: Vec<P>,
         project: impl FnOnce() -> bool,
     ) -> Result<Vec<MovementPositionSnapshot>, CarrierError> {
-        self.commit_source_group(players, &[], project)
+        if !(1..=8).contains(&players.len()) {
+            return Err(CarrierError::PlanConflict);
+        }
+        self.commit_quest_relocation(players, project)
     }
 
-    fn commit_source_group<P: SourceStepCommitProof>(
+    /// Validate the complete encounter admission while retaining the exclusive owner borrow.
+    /// No actor, movement revision, slot generation or projection escapes this preview.
+    pub fn preflight_quest_encounter_entry<P: SourceStepCommitProof>(
+        &mut self,
+        players: Vec<P>,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+    ) -> Result<(), CarrierError> {
+        self.quest_encounter_entry(players, monsters, || true, false)
+            .map(|_| ())
+    }
+
+    /// Preview a phased encounter whose first monsters are spawned by its scheduler.
+    /// The preview always restores the carrier, including all player positions.
+    pub fn preflight_quest_encounter_with_phase<P: SourceStepCommitProof>(
+        &mut self,
+        players: Vec<P>,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+    ) -> Result<(), CarrierError> {
+        self.quest_encounter_with_phase(players, monsters, |_, _, _| Ok(()), || true, false, true)
+            .map(|_| ())
+    }
+
+    pub fn commit_quest_encounter_entry_with_roster<P: SourceStepCommitProof>(
         &mut self,
         players: Vec<P>,
         monsters: &[(&str, i64, MovementLocalPosition)],
         project: impl FnOnce() -> bool,
+    ) -> Result<(Vec<MovementPositionSnapshot>, Vec<ExactActorRef>), CarrierError> {
+        self.quest_encounter_with_phase(
+            players,
+            monsters,
+            |_, actors, _| Ok(actors.to_vec()),
+            project,
+            true,
+            false,
+        )
+    }
+    pub fn commit_quest_encounter_with_phase<P: SourceStepCommitProof, T>(
+        &mut self,
+        players: Vec<P>,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        bind: impl FnOnce(&mut Self, &[ExactActorRef]) -> Result<T, CarrierError>,
+        project: impl FnOnce() -> bool,
+    ) -> Result<(Vec<MovementPositionSnapshot>, T), CarrierError> {
+        self.quest_encounter_with_phase(
+            players,
+            monsters,
+            |runtime, actors, _| bind(runtime, actors),
+            project,
+            true,
+            true,
+        )
+    }
+    /// Build the participant-bound defender owner before the map CAS; every failure rolls back.
+    pub fn commit_quest_encounter_entry_with_defenders<P: SourceStepCommitProof>(
+        &mut self,
+        players: Vec<P>,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        project: impl FnOnce() -> bool,
+    ) -> Result<(Vec<MovementPositionSnapshot>, EncounterDefenders), CarrierError> {
+        if !(1..=8).contains(&players.len()) || !(1..=8).contains(&monsters.len()) {
+            return Err(CarrierError::PlanConflict);
+        }
+        let mut participants = Vec::new();
+        participants
+            .try_reserve(players.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        participants.extend(players.iter().map(|proof| proof.parts().0));
+        self.commit_quest_encounter_prepared(
+            players,
+            monsters,
+            |positions, actors| {
+                Ok((
+                    positions,
+                    EncounterDefenders::from_admission(participants, actors)?,
+                ))
+            },
+            project,
+        )
+    }
+
+    fn commit_quest_encounter_prepared<P: SourceStepCommitProof, T>(
+        &mut self,
+        players: Vec<P>,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        prepare: impl FnOnce(
+            Vec<MovementPositionSnapshot>,
+            Vec<ExactActorRef>,
+        ) -> Result<T, CarrierError>,
+        project: impl FnOnce() -> bool,
+    ) -> Result<T, CarrierError> {
+        self.quest_encounter_with_phase(
+            players,
+            monsters,
+            |_, actors, positions| prepare(positions.to_vec(), actors.to_vec()),
+            project,
+            true,
+            false,
+        )
+        .map(|(_, prepared)| prepared)
+    }
+    fn quest_encounter_entry<P: SourceStepCommitProof>(
+        &mut self,
+        players: Vec<P>,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        project: impl FnOnce() -> bool,
+        publish: bool,
     ) -> Result<Vec<MovementPositionSnapshot>, CarrierError> {
-        if players.is_empty() || players.len() > 8 || monsters.len() > 8 {
+        self.quest_encounter_with_phase(
+            players,
+            monsters,
+            |_, _, _| Ok(()),
+            project,
+            publish,
+            false,
+        )
+        .map(|(positions, ())| positions)
+    }
+    fn quest_encounter_with_phase<P: SourceStepCommitProof, T>(
+        &mut self,
+        players: Vec<P>,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        bind: impl FnOnce(
+            &mut Self,
+            &[ExactActorRef],
+            &[MovementPositionSnapshot],
+        ) -> Result<T, CarrierError>,
+        project: impl FnOnce() -> bool,
+        publish: bool,
+        deferred_spawns: bool,
+    ) -> Result<(Vec<MovementPositionSnapshot>, T), CarrierError> {
+        if players.is_empty()
+            || players.len() > 16
+            || (!deferred_spawns && monsters.is_empty())
+            || monsters.len() > 16
+        {
             return Err(CarrierError::PlanConflict);
         }
         for proof in &players {
@@ -196,10 +330,50 @@ impl ChannelRuntimeV1 {
         // The exclusive runtime owner prevents an observer from seeing these staged slots.
         let before = self.carrier.clone();
         let result = (|| {
+            let mut actors = Vec::new();
+            actors
+                .try_reserve(monsters.len())
+                .map_err(|_| CarrierError::AllocationFailed)?;
             for (key, health, at) in monsters {
                 let actor = self.admit_encounter_actor(key, *health, *at)?;
                 self.install_creature_policy(actor, key)?;
+                actors.push(actor);
             }
+            for proof in players {
+                snapshots.push(self.commit_source_step(proof)?);
+            }
+            let phase = bind(self, &actors, &snapshots)?;
+            if !project() {
+                return Err(CarrierError::PlanConflict);
+            }
+            Ok((snapshots, phase))
+        })();
+        if !publish || result.is_err() {
+            self.carrier = before;
+        }
+        result
+    }
+
+    /// Publish a bounded group relocation and its source map projection together.
+    /// Failed current proofs or projection restore every player's original position.
+    pub fn commit_quest_relocation<P: SourceStepCommitProof>(
+        &mut self,
+        players: Vec<P>,
+        project: impl FnOnce() -> bool,
+    ) -> Result<Vec<MovementPositionSnapshot>, CarrierError> {
+        self.owner_fence()?;
+        if players.len() > self.actor_slot_capacity() {
+            return Err(CarrierError::PlanConflict);
+        }
+        for proof in &players {
+            proof.validate_current(self)?;
+        }
+        let mut snapshots = Vec::new();
+        snapshots
+            .try_reserve(players.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        let before = self.carrier.clone();
+        let result = (|| {
             for proof in players {
                 snapshots.push(self.commit_source_step(proof)?);
             }
@@ -221,6 +395,17 @@ impl ChannelRuntimeV1 {
         &mut self,
         monsters: &[(&str, i64, MovementLocalPosition)],
     ) -> Result<Vec<ExactActorRef>, CarrierError> {
+        self.commit_quest_creature_spawn_with_projection(monsters, || true)
+    }
+
+    /// Publish a bounded spawn and its already observed world readset together.
+    /// A stale or refused map projection restores every staged actor and policy.
+    /// Starting health may be reduced; maximum health remains the native policy's.
+    pub fn commit_quest_creature_spawn_with_projection(
+        &mut self,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        project: impl FnOnce() -> bool,
+    ) -> Result<Vec<ExactActorRef>, CarrierError> {
         if monsters.is_empty() || monsters.len() > 8 {
             return Err(CarrierError::PlanConflict);
         }
@@ -231,9 +416,24 @@ impl ChannelRuntimeV1 {
         let before = self.carrier.clone();
         let result = (|| {
             for (key, health, at) in monsters {
-                let actor = self.admit_encounter_actor(key, *health, *at)?;
+                let maximum = self.companion_policy(key)?.maximum_health;
+                if *health <= 0 || *health > maximum {
+                    return Err(CarrierError::InvalidCreatureHealth);
+                }
+                let actor = self.admit_encounter_actor(key, maximum, *at)?;
                 self.install_creature_policy(actor, key)?;
+                let index = self.encounter_actor_index(actor)?;
+                let Slot::CreatureOccupied {
+                    health: current, ..
+                } = &mut self.carrier.slots[index]
+                else {
+                    return Err(CarrierError::NotCreature);
+                };
+                *current = *health;
                 actors.push(actor);
+            }
+            if !project() {
+                return Err(CarrierError::PlanConflict);
             }
             Ok(actors)
         })();
@@ -535,3 +735,7 @@ impl CreatureSelfHealLedger {
         self.entries.get(actor, key).map(|entry| entry.sequence)
     }
 }
+
+#[cfg(test)]
+#[path = "encounter_roster_tests.rs"]
+mod encounter_roster_tests;

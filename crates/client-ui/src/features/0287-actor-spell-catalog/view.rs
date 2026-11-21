@@ -68,7 +68,7 @@ pub fn detail_text(panel: &Panel, bar: &oteryn_client_runtime::spell::ActionBar)
     } else {
         "unknown".into()
     };
-    format!(
+    let mut detail = format!(
         "Selected spell\r\n{} — {}\r\nLevel: {} | Mana: {}{} | Soul: {}\r\nLearned: {} | Available: {}\r\nCooldown: {}\r\nGroups: {:?} | Rune: {:?}\r\nReference professions: {:?}\r\n",
         entry.name,
         entry.words,
@@ -82,5 +82,9 @@ pub fn detail_text(panel: &Panel, bar: &oteryn_client_runtime::spell::ActionBar)
         entry.cooldown_groups,
         entry.rune_item,
         super::professions(entry)
-    )
+    );
+    if let Some(info) = panel.info.get(&entry.cast_index) {
+        detail.push_str(&crate::server_info::spell_text(info));
+    }
+    detail
 }

@@ -73,6 +73,9 @@ pub(super) async fn exercise(
     actor: ExactActorRef,
     fence: CurrentCharacterItemFence,
 ) -> TestResult {
+    // Production stash writes run as the runtime role; the admin role hid a missing
+    // UPDATE privilege on backpack slot rows (node boot run 79).
+    runtime_role(owner.root).await?;
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 18, 37, 62, 153])
             .ok_or("stash capability")?;
@@ -333,7 +336,7 @@ pub(super) async fn exercise(
     let mut input = u32::try_from(frame.len())?.to_be_bytes().to_vec();
     input.extend(frame);
     let (_, output) =
-        super::super::weather_wire::fixture_access::serve_input(owner, old, &input).await?;
+        super::super::weather_wire_fixtures::fixture_access::serve_input(owner, old, &input).await?;
     let mut at = output.as_slice();
     let mut refused = 0;
     while !at.is_empty() {
@@ -628,5 +631,25 @@ pub(super) async fn exercise(
         replay.rows.is_empty(),
         "a historical receipt grants no locker access"
     );
+    Ok(())
+}
+
+/// Run the root's only connection as `oteryn_game_runtime`, as the node does.
+async fn runtime_role(root: &crate::durability::DurabilityRoot) -> TestResult {
+    let mut connection = root.try_acquire_ready()?;
+    sqlx::query("SET ROLE oteryn_game_runtime")
+        .execute(&mut *connection)
+        .await?;
+    let role: String = sqlx::query_scalar("SELECT current_user")
+        .fetch_one(&mut *connection)
+        .await?;
+    assert_eq!(role, "oteryn_game_runtime");
+    let returned = connection
+        .return_to_pool_observed_until(std::time::Instant::now() + std::time::Duration::from_secs(5))
+        .await;
+    assert!(matches!(
+        returned,
+        sqlx::pool::PoolConnectionReturnDisposition::ReturnedToIdle
+    ));
     Ok(())
 }

@@ -26,6 +26,7 @@ struct Capture {
 
 fn entry(handle: u64, reference: u32, count: u32) -> Result<ItemEntry, BoxError> {
     Ok(ItemEntry {
+        appearance_id: 0,
         handle: ItemHandle::new(handle).ok_or("handle")?,
         item_definition_ref: std::num::NonZeroU32::new(reference).ok_or("reference")?,
         count: std::num::NonZeroU32::new(count).ok_or("count")?,
@@ -87,6 +88,7 @@ fn fixture() -> Result<Capture, BoxError> {
     };
     let list = |entries: &[(u32, bool)]| -> Result<Vec<u8>, BoxError> {
         quest_log::encode_quest_log(&quest_log::QuestLog {
+            map_marks: Vec::new(),
             view: Some(quest_log::QuestLogView::List(
                 entries
                     .iter()
@@ -278,6 +280,7 @@ fn entity_snapshot() -> Result<(u32, Vec<u8>), BoxError> {
     };
     let own_identity = [0xa0; 16];
     let own = WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: EntityKind::Player,
         entity: EntityRef {

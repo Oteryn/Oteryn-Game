@@ -54,9 +54,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let mut placed = self.placed_record(&runtime, position.position());
             // Explicit even at maxima: NULL would mean the *new* class's maxima on restart.
             placed.record.vitals = Some(vitals);
+            placed.record.rest = Some(state.bed_rest_snapshot(self.owner_now().get()));
             // Reserve the successor used by the build transaction's atomic refill. Captures
             // are held while the retained choice awaits installation (last_position.rs).
             self.states.last_positions.next_sequence();
+            // The write may commit even if its acknowledgement is lost or this
+            // future is cancelled. Retire the old cache before submitting it.
+            self.invalidate_first_vocation_position(session, actor, std::time::Instant::now());
             placed
         };
         matches!(

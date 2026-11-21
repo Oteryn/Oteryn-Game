@@ -25,14 +25,14 @@ fn run_effects_sliders() -> Result<(), Box<dyn std::error::Error>> {
             let mut preferences = ReferencePreferences::default();
             preferences.set_effect_opacity_slider(index, percent)?;
             assert_eq!(preferences.effect_opacity[index], percent as u8);
-            for other in 0..3 {
+            for (other, value) in preferences.effect_opacity.iter().enumerate() {
                 if other != index {
-                    assert_eq!(preferences.effect_opacity[other], 100);
+                    assert_eq!(*value, 100);
                 }
             }
             settings.apply(preferences);
             settings.sync_local_preferences(&link);
-            let mut view = PlayView::new(TileCoord::new(0, 0), 7, &[])?;
+            let mut view = PlayView::new(TileCoord::new(0, 0), -7, &[])?;
             settings.restore(&mut view, [900, 600])?;
             let baseline = view.scene().sprites().len();
             outbox.push(vec![SessionEvent::Presentation(AppliedDelta {
@@ -99,7 +99,7 @@ fn source_opacity_reaches_confirmed_effect_gpu_upload() -> Result<(), Box<dyn st
         (PresentationSource::Creatures, 2),
     ] {
         let (link, _commands, outbox) = play_channel();
-        let mut view = PlayView::new(TileCoord::new(0, 0), 7, &[])?;
+        let mut view = PlayView::new(TileCoord::new(0, 0), -7, &[])?;
         let mut preferences = view.preferences().clone();
         preferences.effect_opacity[index] = 25;
         view.set_preferences(preferences)?;

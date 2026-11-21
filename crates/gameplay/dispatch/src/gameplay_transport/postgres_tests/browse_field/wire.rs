@@ -1,5 +1,5 @@
 use super::super::fixture::{Harness, debug, id, join_two};
-use super::super::item_look::read_frame;
+use super::super::item_look_fixtures::read_frame;
 use super::{Case, FIELD, TestResult};
 use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::connection::{
@@ -24,6 +24,7 @@ const SELECTION: ItemMoveSelection = ItemMoveSelection {
     equip_drop: true,
     container_tree: true,
     world_interaction: false,
+    manual_sort: false,
 };
 // The deadline bounds the scenario. Liveness is tested elsewhere and must not
 // disconnect a test client while it checks committed PostgreSQL rows.
@@ -96,7 +97,7 @@ async fn transfers(
     let source = field.entries.first().ok_or("advertised Ground coin")?.handle;
     assert_eq!(field.entries.len(), 1);
     let destination = if case == Case::Nested {
-        ItemMoveDestination::Container(bag)
+        ItemMoveDestination::Container(bag, None)
     } else {
         ItemMoveDestination::MainBackpack
     };
@@ -109,20 +110,23 @@ async fn transfers(
     let before = custody(harness).await?;
     let bag_before = bag_custody(harness).await?;
     assert_eq!(bag_before, (0, 1, 0, 1));
-    // The same durable owner retains its nonempty-container-drop refusal.
-    if case == Case::Nested {
-        move_command(client, 4, &move_payload(bag, ItemMoveDestination::Ground(FIELD))?, ItemMoveOutcome::NotSupported).await?;
-        assert_eq!(bag_custody(harness).await?, bag_before);
-        assert_eq!(custody(harness).await?, before);
-        assert_eq!(receipts(harness).await?, 2);
-    }
     // Crystal Container::queryAdd refuses its locked browse destination.
     let field = picked_up.views.first().ok_or("field after pickup")?;
-    let command_id = if case == Case::Nested { 5 } else { 4 };
-    move_command(client, command_id, &move_payload(bag, ItemMoveDestination::Container(field.container_handle))?, ItemMoveOutcome::NotSupported).await?;
+    move_command(client, 4, &move_payload(bag, ItemMoveDestination::Container(field.container_handle, None))?, ItemMoveOutcome::NotSupported).await?;
     assert_eq!(bag_custody(harness).await?, bag_before);
     assert_eq!(custody(harness).await?, before);
     assert_eq!(receipts(harness).await?, 2);
+    // Crystal game.cpp:2215–2238 permits the ordinary bag and its contents on a tile.
+    if case == Case::Nested {
+        move_command(client, 5, &move_payload(bag, ItemMoveDestination::Ground(FIELD))?, ItemMoveOutcome::Moved).await?;
+        let dropped = views(client).await?;
+        let field = dropped.views.first().ok_or("field after dropping a full bag")?;
+        assert_eq!(field.browse.ok_or("browse metadata")?.total, 1);
+        assert_eq!(field.entries.len(), 1);
+        assert_eq!(bag_custody(harness).await?, (1, 0, 0, 1));
+        assert_eq!(custody(harness).await?, before);
+        assert_eq!(receipts(harness).await?, 3);
+    }
     Ok(payload)
 }
 
@@ -200,7 +204,7 @@ async fn autowalk(client: &mut DuplexStream, harness: &Harness) -> TestResult {
     let opened = views(client).await?;
     assert_eq!(opened.views[0].browse.ok_or("walked field")?.position, far);
     for (command_id, position) in [
-        (2, WorldTilePosition { floor: -8, ..far }),
+        (2, WorldTilePosition { floor: 8, ..far }),
         (3, WorldTilePosition { x: 1, ..FIELD }),
     ] {
         let payload = encode_browse_field_intent(&BrowseFieldIntent::Open { position }).map_err(debug)?;

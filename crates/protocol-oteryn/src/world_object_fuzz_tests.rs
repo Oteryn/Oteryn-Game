@@ -124,7 +124,7 @@ fn fuzz_decode_use_intent_target() {
                         Some(SpellTargetPosition {
                             x: rng.u64() as i32,
                             y: rng.u64() as i32,
-                            floor: rng.u64() as i16,
+                            floor: rng.below(16) as i16,
                         })
                     } else {
                         None

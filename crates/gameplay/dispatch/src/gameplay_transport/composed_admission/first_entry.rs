@@ -1,79 +1,6 @@
 use super::*;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    /// Retryable Newhaven kit admission. The durable owner rechecks the current vocation and
-    /// item fence; no cached tutorial transition or historical receipt grants current authority.
-    pub(in crate::gameplay_transport) async fn grant_newhaven_starter(
-        &self,
-        fence: CurrentCharacterItemFence,
-    ) -> std::result::Result<
-        crate::durability::starter_grant::NewhavenStarterOutcome,
-        crate::durability::DurabilityError,
-    > {
-        use crate::durability::starter_grant::NewhavenStarterOutcome;
-        use oteryn_gameplay_items::starter_grant::newhaven_starter_items;
-        let interpretation = self
-            .root
-            .read_character_root_interpretation(self.character, fence.character_id)
-            .await
-            .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-        if interpretation.is_none_or(|value| {
-            value.revisions()[3]
-                != oteryn_gameplay_items::starter_grant::NEWHAVEN_STARTER_TEMPLATE_REVISION
-        }) {
-            return Ok(NewhavenStarterOutcome::NotApplicable);
-        }
-        let build = self
-            .root
-            .read_character_build_state(self.character, fence.character_id)
-            .await
-            .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-        let Some(kit) = newhaven_starter_items(build.vocation()) else {
-            return Ok(NewhavenStarterOutcome::NotApplicable);
-        };
-        let Some(native) = self
-            .active_generation
-            .and_then(|active| active.native_gameplay())
-        else {
-            return Ok(NewhavenStarterOutcome::NotAdmitted);
-        };
-        let Some(index) = native.item_index() else {
-            return Ok(NewhavenStarterOutcome::NotAdmitted);
-        };
-        let mut definitions = Vec::with_capacity(kit.len());
-        for item in kit {
-            let key = format!("oteryn:item.tibia.i{}", item.tibia_id);
-            let Some(revision) = index.revision(&key).map(str::to_owned) else {
-                return Ok(NewhavenStarterOutcome::NotAdmitted);
-            };
-            definitions.push(crate::durability::item_mint::TypedDefinitionRef {
-                family: "Item".into(),
-                production_key: key,
-                revision_ref: revision,
-            });
-        }
-        let Some(_permit) = self.spell_lane_permit().await else {
-            return Err(crate::durability::DurabilityError::Unavailable);
-        };
-        let outcome = self
-            .root
-            .grant_newhaven_starter_items(
-                self.character,
-                self.holder,
-                &fence,
-                &item_ref_admission::NativeItemWeights(native),
-                build.vocation(),
-                definitions,
-            )
-            .await?;
-        if outcome == NewhavenStarterOutcome::Granted {
-            self.states
-                .tutorial_sessions
-                .inventory_changed(fence.game_session_id);
-        }
-        Ok(outcome)
-    }
-
     /// [`Self::initialize_first_entry`], repeated from fresh reads while it is refused before
     /// the Channel-owner write: on a busy holder under `budget` (NODEBOOT-1), on stale authority
     /// for at most [`RECONCILE_ATTEMPTS`] rounds. A refused round wrote no runtime state.
@@ -89,23 +16,39 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         Option<CurrentCharacterItemFence>,
         Option<last_position::AdmissionPosition>,
     ) {
-        let mut stale_rounds = 1;
-        loop {
-            let result = self
-                .initialize_first_entry(request, game_session_id, transport, actor)
-                .await;
-            match result.0 {
-                FirstEntryOutcome::RefusedUnavailable
-                    if budget
-                        .retries_unavailable(AdmissionRefusal::Unavailable)
-                        .await => {}
-                FirstEntryOutcome::RefusedStaleAuthority if stale_rounds < RECONCILE_ATTEMPTS => {
-                    stale_rounds += 1;
-                    tokio::time::sleep(RECONCILE_BACKOFF).await;
-                }
-                _ => break result,
-            }
-        }
+        let phase = EntryPhase::default();
+        enter_with_retry(budget, &phase, async || {
+            self.initialize_first_entry_traced(
+                request,
+                game_session_id,
+                transport,
+                actor,
+                &phase,
+                budget,
+            )
+            .await
+        })
+        .await
+    }
+
+    #[cfg(test)]
+    pub(in crate::gameplay_transport) async fn initialize_first_entry(
+        &self,
+        request: &FreshAdmissionCommitRequestV1,
+        game_session_id: GameSessionId,
+        transport: AuthenticatedTransportRefV1,
+        actor: ExactActorRef,
+    ) -> EntryResult {
+        let budget = AdmissionRetryBudget::for_root(&game_session_id, self.root);
+        self.initialize_first_entry_traced(
+            request,
+            game_session_id,
+            transport,
+            actor,
+            &EntryPhase::default(),
+            &budget,
+        )
+        .await
     }
 
     /// Immediately before the position write, resolve independently current
@@ -114,12 +57,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// assignment of this runtime. The immutable request supplies only the
     /// expected values those current reads are compared against. A positioned
     /// actor also gets its session's item fence (C2), from that current read.
-    pub(in crate::gameplay_transport) async fn initialize_first_entry(
+    async fn initialize_first_entry_traced(
         &self,
         request: &FreshAdmissionCommitRequestV1,
         game_session_id: GameSessionId,
         transport: AuthenticatedTransportRefV1,
         actor: ExactActorRef,
+        phase: &EntryPhase,
+        budget: &AdmissionRetryBudget<'_>,
     ) -> (
         FirstEntryOutcome,
         Option<CurrentCharacterItemFence>,
@@ -133,12 +78,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         #[cfg(test)]
         stage("resolve_session");
+        phase.set("resolve_session");
         let store = FreshAdmissionStore::from_root(self.root.clone());
         let current = match store.reconcile(request.operation()).await {
             Ok(FreshReconciliation::Committed(snapshot)) => snapshot.current_session,
             Ok(_) => return (FirstEntryOutcome::RefusedStaleAuthority, None, None),
             Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
         };
+        phase.set("reserve_precondition");
         match self.reserve_precondition().await {
             Ok(()) => {}
             Err(AdmissionRefusal::Unavailable) => {
@@ -153,6 +100,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(character_id) => character_id,
                 Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
             };
+        phase.set("conditions");
         let saved_conditions = match self
             .root
             .read_character_conditions(self.character, character_id)
@@ -161,6 +109,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(saved) => saved,
             Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
         };
+        phase.set("gourmet");
         let gourmet = match self
             .root
             .read_gourmet_conditions(self.character, character_id)
@@ -169,6 +118,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(saved) => saved,
             Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
         };
+        phase.set("daily_streak");
         let daily_streak = match self
             .root
             .read_daily_reward_streak(self.character, character_id, self.world_id)
@@ -177,6 +127,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(streak) => streak,
             Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
         };
+        phase.set("cast_facts");
         let (facts, character_revision) = match spell_character_facts::load_character_cast_facts(
             self.root,
             self.character,
@@ -196,6 +147,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return (FirstEntryOutcome::RefusedUnavailable, None, None);
             }
         };
+        phase.set("known_spells");
         let learned = match self
             .root
             .read_character_known_spells(self.character, character_id)
@@ -206,9 +158,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         #[cfg(test)]
         stage("character_facts_loaded");
+        phase.set("monk");
         let Some(monk) = self.load_monk_state(character_id).await else {
             return (FirstEntryOutcome::RefusedUnavailable, None, None);
         };
+        phase.set("build");
         let build = match self
             .root
             .read_character_build_state(self.character, character_id)
@@ -217,6 +171,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(build) => build,
             Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
         };
+        phase.set("stamina");
         let stamina = match self
             .root
             .read_hunting_stamina(self.character, character_id)
@@ -225,6 +180,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(minutes) => minutes,
             Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
         };
+        phase.set("stance");
         let stance = match self
             .root
             .read_character_stance(self.character, character_id)
@@ -242,6 +198,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             #[cfg(test)]
             stage("equipment_initialize");
+            phase.set("equipment");
             if let Err(_error) = self
                 .root
                 .initialize_admission_equipment(
@@ -257,99 +214,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 stage(&format!("equipment_refused:{_error:?}"));
                 return (FirstEntryOutcome::RefusedUnavailable, None, None);
             }
-            let interpretation = self
-                .root
-                .read_character_root_interpretation(self.character, character_id)
-                .await;
-            let Ok(Some(interpretation)) = interpretation else {
-                return (FirstEntryOutcome::RefusedStaleAuthority, None, None);
-            };
-            if interpretation.revisions()[3]
-                == oteryn_gameplay_items::starter_grant::NEWHAVEN_STARTER_TEMPLATE_REVISION
+            if let Err(outcome) = self
+                .initialize_starter_items(
+                    native,
+                    character_id,
+                    fence,
+                    &build,
+                    facts.vocation,
+                    phase,
+                )
+                .await
             {
-                // Newhaven roots use the original plain backpack component, then their own
-                // profession kit. Never also execute the legacy send_first_items loadout.
-                let backpack_result = self
-                    .root
-                    .grant_starter_items(
-                        self.character,
-                        self.holder,
-                        &fence,
-                        &item_ref_admission::NativeItemWeights(native),
-                        &crate::durability::starter_grant::StarterTemplate::main(),
-                    )
-                    .await;
-                #[cfg(test)]
-                stage(&format!("newhaven_backpack:{backpack_result:?}"));
-                if !matches!(
-                    backpack_result,
-                    Ok(
-                        crate::durability::starter_grant::StarterGrantOutcome::Minted(_)
-                            | crate::durability::starter_grant::StarterGrantOutcome::AlreadyGranted
-                            | crate::durability::starter_grant::StarterGrantOutcome::Skipped
-                    )
-                ) {
-                    return (FirstEntryOutcome::RefusedUnavailable, None, None);
-                }
-                let kit_result = if facts.vocation != crate::spell::Vocation::None {
-                    Some(self.grant_newhaven_starter(fence).await)
-                } else {
-                    None
-                };
-                #[cfg(test)]
-                stage(&format!("newhaven_kit:{kit_result:?}"));
-                if kit_result.is_some_and(|result| {
-                    !matches!(result,
-                    Ok(crate::durability::starter_grant::NewhavenStarterOutcome::Granted
-                        | crate::durability::starter_grant::NewhavenStarterOutcome::AlreadyGranted))
-                }) {
-                    return (FirstEntryOutcome::RefusedUnavailable, None, None);
-                }
-            } else {
-                let loadout = crate::durability::starter_grant::StartingLoadout::resolve(
-                    build.vocation(),
-                    |id| {
-                        let key = format!("oteryn:item.tibia.i{id}");
-                        let revision = native.item_index()?.revision(&key)?.to_owned();
-                        Some(crate::durability::item_mint::TypedDefinitionRef {
-                            family: "Item".into(),
-                            production_key: key,
-                            revision_ref: revision,
-                        })
-                    },
-                );
-                if loadout.is_none()
-                    && oteryn_gameplay_items::starter_grant::starting_loadout::items(
-                        build.vocation(),
-                    )
-                    .is_some()
-                {
-                    return (FirstEntryOutcome::RefusedUnavailable, None, None);
-                }
-                // Crystal 201189f8 data/scripts/creaturescripts/player/send_first_items.lua:107-109:
-                // unlisted vocations (including promotions) receive no kit.
-                if let Some(loadout) = loadout {
-                    // STARTER-1 (CP D1438): the starter grant of the Character's first entry, once per
-                    // Character and template; a replay writes nothing.
-                    if !matches!(
-                        self.root
-                            .grant_starting_loadout(
-                                self.character,
-                                self.holder,
-                                &fence,
-                                &item_ref_admission::NativeItemWeights(native),
-                                &loadout,
-                            )
-                            .await,
-                        Ok(
-                            crate::durability::starter_grant::StarterGrantOutcome::Minted(_)
-                                | crate::durability::starter_grant::StarterGrantOutcome::AlreadyGranted
-                                | crate::durability::starter_grant::StarterGrantOutcome::Skipped
-                        )
-                    ) {
-                        return (FirstEntryOutcome::RefusedUnavailable, None, None);
-                    }
-                }
+                return (outcome, None, None);
             }
             let gameplay =
                 crate::durability::character_progression::CurrentCharacterGameplayFence {
@@ -363,6 +239,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
             #[cfg(test)]
             stage("familiar_initialize");
+            phase.set("familiar_group");
             if let Err(_error) = self
                 .root
                 .initialize_familiar_group(self.character, self.holder, gameplay)
@@ -374,11 +251,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         // EQUIP-0 §4 / SPELL-LOCK-2: acquire the lane before final authority revalidation.
+        phase.set("spell_lane");
         let Some(permit) = self.spell_lane_permit().await else {
             return (FirstEntryOutcome::RefusedUnavailable, None, None);
         };
         // Character facts, monk and stance loads are data reads, never current session authority.
         // Reject a changed root and resolve session, guard and assignment again after them.
+        phase.set("revalidate_character");
         let Ok(latest_character) = self
             .root
             .read_current_character(self.character, character_id)
@@ -389,6 +268,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if latest_character.revision != character_revision {
             return (FirstEntryOutcome::RefusedStaleAuthority, None, None);
         }
+        phase.set("revalidate_session");
         let current = match store.reconcile(request.operation()).await {
             Ok(FreshReconciliation::Committed(snapshot)) => snapshot.current_session,
             Ok(_) => return (FirstEntryOutcome::RefusedStaleAuthority, None, None),
@@ -397,6 +277,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if current.commit().character_id().as_bytes() != character_id.as_bytes() {
             return (FirstEntryOutcome::RefusedStaleAuthority, None, None);
         }
+        phase.set("authority_guard");
         let key = AdmissionAuthorityGuardKeyV1::Character(current.commit().character_id());
         let character = match AdmissionGuardStore::from_root(self.root.clone())
             .load(&[key])
@@ -419,6 +300,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 scope_ownership_generation: current.current_scope_generation(),
                 expected_character_revision: character_revision,
             };
+        phase.set("death_items");
         if self
             .resume_pending_player_death_items(&permit, position_fence)
             .await
@@ -426,6 +308,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return (FirstEntryOutcome::RefusedUnavailable, None, None);
         }
+        phase.set("home_town");
         if self
             .bundle_map()
             .and_then(|map| map.overlay.base().subareas.default_town)
@@ -434,11 +317,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return (FirstEntryOutcome::RefusedUnavailable, None, None);
         }
+        phase.set("tutorial_position");
         let Ok(decided) = self.read_tutorial_admission_position(position_fence).await else {
             return (FirstEntryOutcome::RefusedUnavailable, None, None);
         };
         // P20: Crystal's login check (`login.lua:8-15`) runs before the owner places the actor.
         let account = super::super::store::uuid_bytes(&request.binding().account_id);
+        phase.set("premium_temple");
         let temple = match account {
             Some(account) => self.premium_ended_temple(account, game_session_id).await,
             None => None,
@@ -447,6 +332,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let placement = relocated.as_ref().unwrap_or(&decided);
         #[cfg(test)]
         stage("durable_position_read");
+        phase.set("reserve_precondition");
         match self.reserve_precondition().await {
             Ok(()) => {}
             Err(AdmissionRefusal::Unavailable) => {
@@ -455,10 +341,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(_) => return (FirstEntryOutcome::RefusedStaleAuthority, None, None),
         }
         // Hold the lane through installation; the equipment reader runs before runtime locks.
+        phase.set("equipment_effects");
         let Ok(equipment_effects) = self.read_admission_effects(game_session_id).await else {
             return (FirstEntryOutcome::RefusedUnavailable, None, None);
         };
         // One Channel-owner lock covers the binding comparison and the write.
+        phase.set("channel_owner");
         let mut runtime = self.runtime.lock().await;
         let expected = FirstEntryExpectation {
             game_session_id,
@@ -489,6 +377,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // CHAR-POSITION-0 §3.3: initialized and placed at the durable position in this one
         // owner step, before the lock is released and any owner reads the actor's position.
+        #[cfg(test)]
+        let _ = FAMILIAR_LOGIN_CHECKOUT.try_with(|probe| {
+            probe.placement.set(probe.placement.get() + 1);
+        });
         let outcome = match self
             .initialize_admitted_position(&mut runtime, actor, game_session_id, placement)
             .await
@@ -634,6 +526,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None
         };
         drop(runtime);
+        phase.set("premium_relocation");
         if let Some(placed) = relocation
             && !self
                 .commit_premium_ended_relocation(game_session_id, actor, &decided, placed)
@@ -645,6 +538,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drop(permit);
         #[cfg(test)]
         stage("runtime_facts_initialized");
+        phase.set("party_presence");
         if self
             .active_generation
             .and_then(|active| active.native_gameplay())
@@ -654,6 +548,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .refresh_source_party_presence(actor, game_session_id)
                 .await;
         }
+        // ARCH-PROGRESSION-SOURCE-0 §1.5: the committed, positioned session now has its
+        // gameplay fence. Familiar Login reads the durable progression this step owns.
+        phase.set("progression");
+        if budget
+            .retry_unavailable(async || self.bind_positioned_progression(game_session_id).await)
+            .await
+            .is_err()
+        {
+            return (
+                FirstEntryOutcome::RefusedUnavailable,
+                item_fence,
+                Some(decided),
+            );
+        }
         // A Character without a vocation has no familiar; its absent build row is valid.
         if facts.vocation != crate::spell::Vocation::None
             && let Some(native) = self
@@ -661,15 +569,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .and_then(|active| active.native_gameplay())
             && let Some(config) = native.familiar_config()
         {
+            phase.set("familiar_login");
+            // The test seeds its durable Familiar checkpoint with the positioned fence.
+            #[cfg(test)]
+            if let Ok(Some(barrier)) = FAMILIAR_LOGIN_CHECKOUT.try_with(|probe| {
+                (!probe.seed_started.replace(true)).then(|| probe.seed_barrier.clone())
+            }) {
+                barrier.0.notify_one();
+                barrier.1.notified().await;
+            }
             let access = self
                 .refresh_and_apply_spell_access(actor, game_session_id)
                 .await;
             // #2199: a familiar Login that did not complete restored neither the stored familiar
             // nor its cooldowns, so the entry fails closed like the other post-position owners.
-            let initialized = self
-                .initialize_familiar_login(actor, game_session_id, request, native, &access, config)
-                .await
-                .is_ok();
+            let initialized = Box::pin(self.initialize_familiar_login(
+                budget,
+                actor,
+                game_session_id,
+                request,
+                native,
+                &access,
+                config,
+            ))
+            .await
+            .is_ok();
             let outcome = familiar_login_first_entry(outcome, initialized);
             if outcome == FirstEntryOutcome::RefusedByChannel {
                 return (outcome, None, None);
@@ -678,3 +602,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         (outcome, item_fence, Some(decided))
     }
 }
+
+mod retry;
+mod starter;
+
+#[cfg(test)]
+use retry::EntryResult;
+use retry::{EntryPhase, enter_with_retry};

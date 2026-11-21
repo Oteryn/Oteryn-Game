@@ -32,16 +32,18 @@ impl Outbox {
             kind,
             result,
         );
-        #[cfg(windows)]
-        if notice.is_some() && !super::view::notify_returner() {
-            lock(&self.0).daily_reward.returner_notified = None;
-        }
-        #[cfg(not(windows))]
         let _ = notice;
     }
     pub(in crate::play) fn returner_unavailable(&self) {
         let mut m = lock(&self.0);
         m.daily_reward.returner.pending = false;
         m.daily_reward.returner_pending = None;
+    }
+}
+
+#[cfg(all(test, bevy_shell))]
+impl Outbox {
+    pub(crate) fn bevy_reward_wall(&self, panel: oteryn_client_ui::daily_reward::DailyRewardPanel) {
+        lock(&self.0).daily_reward = panel;
     }
 }

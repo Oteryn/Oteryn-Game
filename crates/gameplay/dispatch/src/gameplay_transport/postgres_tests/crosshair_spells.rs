@@ -1,6 +1,6 @@
 //! C18b: position-target ("crosshair") casts of Divine Barrage, Ethereal Barrage and Thousand
 //! Fist Blows through the wire command, with real Character, Equipment and Premium owners.
-use super::death_ml_loss_composed::{current_fence, production_generation_with_source};
+use super::death_ml_loss_composed_fixtures::{current_fence, production_generation_with_source};
 use super::fixture::{Harness, debug, id, join_two, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::character_build::{
@@ -77,15 +77,20 @@ fn scenario(plan: Plan) -> TestResult {
     std::thread::Builder::new()
         .stack_size(128 << 20)
         .spawn(move || {
-            run(async move |admin| scenario_inner(admin, plan).await)
-                .map_err(|error| error.to_string())
+            run(async move |admin| {
+                for native_frame in [false, true] {
+                    scenario_inner(admin.clone(), plan, native_frame).await?;
+                }
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
         })?
         .join()
         .map_err(|_| "crosshair spell thread panicked")?
         .map_err(Into::into)
 }
 
-async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
+async fn scenario_inner(admin: String, plan: Plan, native_frame: bool) -> TestResult {
     let h = Harness::create_with_admission_seed(admin, plan.tag, false, false).await?;
     prepare_current_session(&h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -105,7 +110,21 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
     .map_err(debug)?;
     let active = controller.active().ok_or("active")?;
     let native = active.native_gameplay().ok_or("native")?;
-    let room = pin.qualified_room().clone();
+    let bundle = native_frame.then(|| {
+        crate::map::spell_tiles::tests::movement_arena::rectangle((0, 0), (16, 16), -7)
+    });
+    let room = if let Some(bundle) = &bundle {
+        pin.qualified_room()
+            .bundle_view(
+                bundle.movement_cells(pin.qualified_room().movement_cells()).map_err(debug)?,
+                bundle.frame_binding_digest(world),
+                bundle.map_revision_digest(),
+                crate::content::NativeEntryStart { x: 2, y: 11, floor: 7 },
+            )
+            .ok_or("bundle room")?
+    } else {
+        pin.qualified_room().clone()
+    };
     let cp = ChannelContentPin::from_activation(
         world,
         1,
@@ -113,7 +132,7 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
         pin.identity().client_artifact_digest(),
         room.frame_binding().digest(),
         room.map_revision_digest(),
-        (2, 11, -7),
+        (2, 11, if native_frame { 7 } else { -7 }),
     );
     let mut deps = Dependencies::with_content_and_capacity(
         cp,
@@ -218,6 +237,7 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             .read_actor_position(actor)
             .map_err(debug)?
             .position();
+        assert_eq!(p.floor, if native_frame { 7 } else { -7 });
         position = crate::foundation::MovementLocalPosition {
             x: p.x + 1,
             y: p.y,
@@ -330,7 +350,7 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             target: actor_spell::SpellTarget::Position(actor_spell::SpellTargetPosition {
                 x: position.x,
                 y: position.y,
-                floor: position.floor,
+                floor: position.floor.abs(),
             }),
             aim_at_target: false,
         });
@@ -383,7 +403,7 @@ async fn exchange(
     let serving = async move { serve_admitted(&mut server, session, owner, IDLE_LIVENESS).await };
     let driving = async move {
         loop {
-            let frame = super::item_look::read_frame(&mut client).await?;
+            let frame = super::item_look_fixtures::read_frame(&mut client).await?;
             if decode_wire_envelope(&frame).map_err(debug)?.message_type()
                 == MessageType::SnapshotCommit
             {
@@ -404,7 +424,7 @@ async fn exchange(
             client.write_u32(u32::try_from(frame.len())?).await?;
             client.write_all(&frame).await?;
             loop {
-                let frame = super::item_look::read_frame(&mut client).await?;
+                let frame = super::item_look_fixtures::read_frame(&mut client).await?;
                 let envelope = decode_wire_envelope(&frame).map_err(debug)?;
                 if envelope.message_type() == MessageType::CommandResult {
                     let result = decode_command_result(envelope.payload()).map_err(debug)?;

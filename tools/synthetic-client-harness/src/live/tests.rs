@@ -121,7 +121,8 @@ fn snapshot() -> Result<JoinSnapshot, BoxError> {
 }
 
 fn step_outcome(disposition: StepDisposition, moved_to: Option<(i32, i32)>) -> StepOutcome {
-    CommandOutcome {
+    StepOutcome {
+        step_wait_ms: 0,
         command_id: 7,
         status: CommandStatus::Accepted,
         disposition,
@@ -344,6 +345,7 @@ fn position(x: i32, y: i32) -> ActorPosition {
 
 fn actor_entity(kind: EntityKind, marker: u8, at: ActorPosition) -> WorldSpatialEntity {
     WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind,
         entity: EntityRef {
@@ -365,6 +367,7 @@ fn actor_entity(kind: EntityKind, marker: u8, at: ActorPosition) -> WorldSpatial
 
 fn object_entity(kind: EntityKind, marker: u8, at: ActorPosition) -> WorldSpatialEntity {
     WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind,
         entity: EntityRef {
@@ -1498,6 +1501,7 @@ fn handle(value: u64) -> ItemHandle {
 
 fn entry(handle_value: u64, definition: u32, count: u32) -> ItemEntry {
     ItemEntry {
+        appearance_id: 0,
         handle: handle(handle_value),
         item_definition_ref: std::num::NonZeroU32::new(definition)
             .unwrap_or(std::num::NonZeroU32::MIN),

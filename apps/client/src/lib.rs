@@ -5,6 +5,12 @@ extern crate oteryn_client_ui;
 pub mod about;
 #[path = "features/local-account-services/mod.rs"]
 pub mod account_services;
+#[cfg(any(test, bevy_shell))]
+#[path = "features/0025-appearance/mount_binding.rs"]
+mod appearance_mount_binding;
+mod atomic_file;
+#[cfg(bevy_shell)]
+pub mod bevy_shell;
 pub mod bulletin;
 pub mod cast_watch;
 #[path = "features/local-character-selection/mod.rs"]
@@ -14,11 +20,12 @@ pub mod coin_shop;
 pub mod combat_input;
 pub mod crash_report;
 pub mod cyclopedia;
+#[cfg(bevy_shell)]
+pub mod desktop_startup;
 pub mod device_login;
 pub mod hud_error;
 pub mod input;
 pub mod map;
-pub mod miniwindow;
 #[path = "features/local-native-login/mod.rs"]
 pub mod native_login;
 pub mod package_integrity;
@@ -30,6 +37,7 @@ pub mod scene;
 pub mod screenshots;
 pub mod spell;
 mod support_delivery;
+pub mod traffic;
 pub mod updater;
 #[path = "features/local-web-links/mod.rs"]
 pub mod web_links;
@@ -61,6 +69,7 @@ pub use build_info::{CLIENT_BUILD, RELEASE_ID, is_contract_release_id, is_valid_
 pub use oteryn_platform_client::gameplay_entry::GameplayEntryError;
 
 pub struct ClientBootstrap {
+    shared_frontend: bool,
     runtime: ClientRuntime,
     renderer_state: SurfaceState,
     input_adapter: InputPlatformAdapter,
@@ -71,10 +80,18 @@ impl ClientBootstrap {
     pub fn new() -> Result<Self, RuntimeError> {
         Ok(Self {
             runtime: ClientRuntime::new()?,
+            shared_frontend: false,
             renderer_state: SurfaceState::new(ProcessGeneration::new(1)),
             input_adapter: InputPlatformAdapter::new(),
             native_login: None,
         })
+    }
+
+    /// Select the shared frontend before admission starts its session task.
+    #[must_use]
+    pub fn with_shared_frontend(mut self) -> Self {
+        self.shared_frontend = true;
+        self
     }
 
     /// Enables native gameplay entry (ADR-0011 order: availability, credential, connect).
@@ -129,11 +146,26 @@ impl ClientBootstrap {
         admitted: AdmittedSession,
     ) -> Result<(play::PlayView, play::PlayLink), GameplayEntryError> {
         let unavailable = || GameplayEntryError::Rejected(PublicClass::SessionUnavailable);
-        let view = admitted.play_view().map_err(|_error| unavailable())?;
+        let mut view = admitted.play_view().map_err(|_error| unavailable())?;
         let (link, commands, events) = play::play_channel();
+        if self.shared_frontend {
+            view.use_shared_frontend();
+            link.use_shared_frontend();
+        }
         link.configure_coin_shop(self.native_login.clone(), admitted.character_id());
         link.party_own_character(admitted.character_name());
+        link.world_channels(
+            admitted.character_id(),
+            admitted.channel_id(),
+            admitted.channels(),
+        );
+        link.channel_probe_platform(
+            self.native_login
+                .as_ref()
+                .map(|config| config.platform_url.clone()),
+        );
         link.house_world(admitted.world_id());
+        link.set_traffic(admitted.traffic());
         if admitted.training_requested() {
             let remaining = self
                 .native_login

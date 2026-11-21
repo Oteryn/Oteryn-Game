@@ -6,7 +6,7 @@ use std::collections::BTreeSet;
 
 #[test]
 fn spell_catalog_granted_spell_is_learned_after_rejoin_postgres() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("spell-catalog-rejoin", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("spell-catalog-rejoin", || {
         run(async |admin| {
             let h =
                 Harness::create_with_admission_seed(admin, "spell_catalog", false, false).await?;
@@ -67,9 +67,9 @@ fn spell_catalog_granted_spell_is_learned_after_rejoin_postgres() -> TestResult 
 
 #[test]
 fn spell_catalog_projection_preserves_native_runes_costs_and_indices() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("spell-catalog-projection", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("spell-catalog-projection", || {
         let deps = Dependencies::new()?;
-        let (controller, _) = super::death_ml_loss_composed::production_generation_with_pin(
+        let (controller, _) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
             deps.admitted.world_id,
             "content-1",
         )?;

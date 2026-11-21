@@ -1,4 +1,11 @@
 use super::*;
+#[cfg(bevy_shell)]
+#[derive(Default)]
+pub(crate) struct PreferenceSaveCompletion {
+    pub(crate) replaced: bool,
+    pub(crate) error: Option<String>,
+}
+
 impl SettingsState {
     pub fn request_hud_toggle(&mut self, panel: crate::play::HudPanel) {
         self.hud_toggle = Some(panel);
@@ -17,6 +24,15 @@ impl SettingsState {
     }
     pub fn take_magical_archive_request(&mut self) -> bool {
         std::mem::take(&mut self.magical_archive_requested)
+    }
+
+    /// Global's ShowOptionsHotkeys: the options window shows `page`, open or not yet open.
+    pub fn request_page(&mut self, page: SettingsPage) {
+        self.page = page;
+        self.page_request = Some(page);
+    }
+    pub fn take_page_request(&mut self) -> Option<SettingsPage> {
+        self.page_request.take()
     }
 
     pub fn select_page(&mut self, index: usize) -> bool {
@@ -107,6 +123,14 @@ impl SettingsState {
     }
 
     pub fn import_from(&mut self, path: &Path) -> io::Result<()> {
+        #[cfg(bevy_shell)]
+        if let Some(store) = &mut self.store
+            && (self.background_preferences || store.saving())
+        {
+            let source = path.to_owned();
+            store.replace_in_background(&self.preferences, move |_| PreferenceStore::read_transfer(&source));
+            return Ok(());
+        }
         self.replace_saved(PreferenceStore::read_transfer(path)?)
     }
 
@@ -115,6 +139,12 @@ impl SettingsState {
     }
 
     pub fn restore_backup(&mut self) -> io::Result<()> {
+        #[cfg(bevy_shell)]
+        if let Some(store) = &mut self.store
+            && (self.background_preferences || store.saving())
+        {
+            return store.restore_in_background(&self.preferences);
+        }
         let path = self
             .store
             .as_ref()
@@ -123,12 +153,26 @@ impl SettingsState {
         self.import_from(&path)
     }
 
-    pub(super) fn replace_saved(&mut self, preferences: ReferencePreferences) -> io::Result<()> {
+    pub(super) fn replace_saved(
+        &mut self,
+        mut preferences: ReferencePreferences,
+    ) -> io::Result<()> {
+        preferences.miscellaneous = self.preferences.miscellaneous;
         let store = self
             .store
             .as_mut()
             .ok_or_else(|| io::Error::other(tr!("Preference storage is unavailable")))?;
+        #[cfg(bevy_shell)]
+        if self.background_preferences || store.saving() {
+            store.replace_in_background(&self.preferences, move |_| Ok(preferences));
+            return Ok(());
+        }
         store.replace_with_backup(preferences.clone(), &self.preferences)?;
+        self.accept_replaced(preferences);
+        Ok(())
+    }
+
+    pub(super) fn accept_replaced(&mut self, preferences: ReferencePreferences) {
         self.preferences = preferences;
         self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
         self.skills_edit = self.battle_edit;
@@ -139,7 +183,6 @@ impl SettingsState {
         self.spellbook_edit = self.battle_edit;
         self.stash_sort_edit = self.battle_edit;
         self.archive_edit = self.battle_edit;
-        Ok(())
     }
 
     pub fn new(path: Option<PathBuf>) -> Self {
@@ -167,15 +210,18 @@ impl SettingsState {
             screenshot_requested: false,
             native_sign_out: false,
             web_link: None,
+            #[cfg(bevy_shell)]
+            skills_toggles: Vec::new(),
             window_actions: Default::default(),
             custom_choices: Vec::new(),
             custom_choices_refreshed: None,
             pending_chat_mode: None,
+            chat_mode_seen: None,
             chat_context: None,
             help_report_pending: false,
             control_input: super::super::controls::ControlInput::default(),
             control_epoch: std::time::Instant::now(),
-            base_path,
+            base_path: base_path.clone(),
             character: None,
             skills_edit: 0,
             item_hotkeys_edit: 0,
@@ -187,7 +233,26 @@ impl SettingsState {
             archive_edit: 0,
             battle_edit: 0,
             store,
-            preferences: {let mut p=preferences;p.miscellaneous=crate::play::MiscellaneousPreferences::load();p},
+            #[cfg(bevy_shell)]
+            outgoing_stores: Vec::new(),
+            #[cfg(bevy_shell)]
+            background_preferences: false,
+            #[cfg(bevy_shell)]
+            session_save: None,
+            preferences: {
+                let mut preferences = preferences;
+                preferences.reconcile_controls(None);
+                preferences.miscellaneous = base_path
+                    .as_ref()
+                    .and_then(|path| {
+                        super::super::MiscellaneousPreferences::read(
+                            &path.with_extension("session-options.json"),
+                        )
+                        .ok()
+                    })
+                    .unwrap_or_default();
+                preferences
+            },
             feedback,
             open: false,
             shutdown: false,
@@ -195,6 +260,7 @@ impl SettingsState {
             page: SettingsPage::default(),
             hud_toggle: None,
             magical_archive_requested: false,
+            page_request: None,
             last_key: Default::default(),
         }
     }
@@ -221,12 +287,25 @@ impl SettingsState {
         chat_open: bool,
         now: std::time::Duration,
     ) -> Vec<NormalizedInputEvent> {
-        self.control_input
-            .route(&self.preferences.controls, events, chat_open, now)
+        let mut controls = self.preferences.controls.clone();
+        if self.preferences.swap_mouse_buttons {
+            controls.mouse = super::super::MousePreset::LeftHanded;
+        }
+        if controls.rotation == super::super::RotationModifier::Control {
+            controls.rotation = match self.preferences.rotation_modifier.as_str() {
+                "ALT" => super::super::RotationModifier::Alt,
+                "SHIFT" => super::super::RotationModifier::Shift,
+                _ => super::super::RotationModifier::Control,
+            };
+        }
+        controls.keyboard_delay_ms = controls
+            .keyboard_delay_ms
+            .max(self.preferences.keyboard_delay_ms);
+        self.control_input.route(&controls, events, chat_open, now)
     }
 
     pub fn input(&mut self, events: &[NormalizedInputEvent]) -> (Vec<NormalizedInputEvent>, bool) {
-        self.input_in_context(events, self.preferences.hotkey_contexts.chat_on)
+        self.input_in_context_inner(events, self.preferences.hotkey_contexts.chat_on, false)
     }
 
     pub fn input_from_play(
@@ -242,22 +321,43 @@ impl SettingsState {
         events: &[NormalizedInputEvent],
         chat_on: bool,
     ) -> (Vec<NormalizedInputEvent>, bool) {
+        self.input_in_context_inner(events, chat_on, true)
+    }
+
+    fn input_in_context_inner(
+        &mut self,
+        events: &[NormalizedInputEvent],
+        chat_on: bool,
+        controls_applied: bool,
+    ) -> (Vec<NormalizedInputEvent>, bool) {
         let mut routed = self
             .input
             .route_chat(&self.preferences, events, chat_on)
             .unwrap_or_default();
-        use oteryn_input_actions::{ButtonState, MouseButton};
+        use oteryn_input_actions::{ButtonState, Modifier, Modifiers};
         let now = std::time::Instant::now();
         routed.retain_mut(|event| {
+            if controls_applied
+                && let NormalizedInputEvent::Key {
+                    code, modifiers, ..
+                } = event
+                && (79..=82).contains(&code.get())
+                && *modifiers == Modifiers::one(Modifier::Control)
+            {
+                *modifiers = Modifiers::one(match self.preferences.rotation_modifier.as_str() {
+                    "ALT" => Modifier::Alt,
+                    "SHIFT" => Modifier::Shift,
+                    _ => Modifier::Control,
+                });
+            }
             match event {
                 NormalizedInputEvent::MouseButton { button, .. }
-                    if self.preferences.swap_mouse_buttons =>
+                    if !controls_applied
+                        && (self.preferences.swap_mouse_buttons
+                            || self.preferences.controls.mouse
+                                == super::super::MousePreset::LeftHanded) =>
                 {
-                    *button = match *button {
-                        MouseButton::PRIMARY => MouseButton::SECONDARY,
-                        MouseButton::SECONDARY => MouseButton::PRIMARY,
-                        other => other,
-                    };
+                    *button = super::super::controls::swap_button(*button);
                 }
                 NormalizedInputEvent::Key {
                     code,
@@ -295,16 +395,28 @@ impl SettingsState {
         }
     }
 
-    pub fn apply(&mut self, preferences: ReferencePreferences) {
+    pub fn apply(&mut self, mut preferences: ReferencePreferences) {
         if let Err(error) = preferences.validate() {
             self.feedback = error.to_string();
             return;
         }
-        let result = self
-            .store
-            .as_mut()
-            .ok_or_else(|| tr!("Preference storage is unavailable").to_owned())
-            .and_then(|store| store.apply(preferences.clone()).map_err(|e| e.to_string()));
+        preferences.reconcile_controls(Some(&self.preferences));
+        let result = match &mut self.store {
+            Some(store) => {
+                #[cfg(bevy_shell)]
+                if self.background_preferences || store.saving() {
+                    store.apply_in_background(preferences.clone());
+                    self.save_miscellaneous_in_background(preferences.miscellaneous)
+                } else {
+                    store.apply(preferences.clone()).map_err(|error| error.to_string())
+                        .and_then(|()| self.save_miscellaneous(preferences.miscellaneous))
+                }
+                #[cfg(not(bevy_shell))]
+                store.apply(preferences.clone()).map_err(|error| error.to_string())
+                    .and_then(|()| self.save_miscellaneous(preferences.miscellaneous))
+            }
+            None => Err(tr!("Preference storage is unavailable").to_owned()),
+        };
         // A disk error must not disable local controls for this process.
         if self.preferences.bar_actions != preferences.bar_actions {
             self.bar_actions_edit = crate::play::feature_0017_attack::view::next_edit();
@@ -321,7 +433,9 @@ impl SettingsState {
         if self.preferences.minimap != preferences.minimap {
             self.minimap_edit = crate::play::feature_0017_attack::view::next_edit();
         }
-        if self.preferences.hud_layout != preferences.hud_layout || self.preferences.hud_bounds != preferences.hud_bounds {
+        if self.preferences.hud_layout != preferences.hud_layout
+            || self.preferences.hud_bounds != preferences.hud_bounds
+        {
             self.hud_edit = crate::play::feature_0017_attack::view::next_edit();
         }
         if self.preferences.skills_layout != preferences.skills_layout {
@@ -338,11 +452,25 @@ impl SettingsState {
         }
         self.preferences = preferences;
         self.feedback = match result {
+            #[cfg(bevy_shell)]
+            Ok(()) if self.preference_save_pending() => "Saving preferences…".into(),
             Ok(()) => tr!("Applied and saved").into(),
             Err(error) => lfmt!(
                 "Applied for this session; could not save: {error}",
                 error = error
             ),
+        };
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn apply_minimap_marks_in_background(&mut self, preferences: ReferencePreferences) {
+        self.preferences.minimap = preferences.minimap;
+        self.minimap_edit = crate::play::feature_0017_attack::view::next_edit();
+        self.feedback = if let Some(store) = &mut self.store {
+            store.apply_in_background(self.preferences.clone());
+            String::new()
+        } else {
+            tr!("Preference storage is unavailable").into()
         };
     }
 

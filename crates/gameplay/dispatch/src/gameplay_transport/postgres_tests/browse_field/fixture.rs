@@ -1,5 +1,5 @@
 use super::super::fixture::{Harness, debug, id, run};
-use super::super::{Dependencies, item_look, prepare_current_session};
+use super::super::{Dependencies, item_look_fixtures, prepare_current_session};
 use super::{BAG, COIN, Case, TestResult, wire};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
@@ -19,7 +19,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
         let authority = harness.root.open_character_authority(&seal).await.map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, pin) =
-            super::super::death_ml_loss_composed::production_generation_with_pin(
+            super::super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;
@@ -81,6 +81,12 @@ pub(super) fn scenario(case: Case) -> TestResult {
         )
         .map_err(debug)?;
         let cells = world.movement_cells(deps.room.movement_cells()).map_err(debug)?;
+        let combat_room = deps.room.bundle_view(
+            cells.clone(),
+            pin.frame_binding().digest(),
+            world.map_revision_digest(),
+            crate::content::NativeEntryStart { x: 6, y: 0, floor: 7 },
+        ).ok_or("browse combat room")?;
         let content_pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
@@ -106,6 +112,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(generation);
         owner.movement_cells = (&cells).into();
+        owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&combat_room));
         deps.initialize(&owner).await;
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
             harness.root.clone(),
@@ -120,7 +127,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
             .bind(generation.identity().server_artifact_digest().as_slice())
             .bind(generation.identity().client_artifact_digest().as_slice())
             .bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-        item_look::seed_main_backpack(&harness, &[(COIN, 7), (BAG, 1)]).await?;
+        item_look_fixtures::seed_main_backpack(&harness, &[(COIN, 7), (BAG, 1)]).await?;
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -131,7 +138,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
         if case == Case::Backpack {
             use crate::gameplay_transport::container_view::ContainerObservation;
             use crate::gameplay_transport::item_view::ItemKey;
-            let field = ItemKey::BrowseField { x: 7, y: 0, floor: -7 };
+            let field = ItemKey::BrowseField { x: 7, y: 0, floor: 7 };
             assert!(matches!(
                 owner.observe_container(deps.actor, Some(fence), field).await,
                 Some(ContainerObservation::BrowseField { .. })
@@ -164,6 +171,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
             let mut restarted = deps.owner(&harness, &authority);
             restarted.active_generation = Some(generation);
             restarted.movement_cells = (&cells).into();
+            restarted.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&combat_room));
             deps.initialize(&restarted).await;
             admitted.continuity.item_view.handle_counter = 1000;
             admitted.continuity.next_command_id = 1;

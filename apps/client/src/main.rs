@@ -1,9 +1,8 @@
 #[macro_use]
 extern crate oteryn_client_ui;
-#[cfg(windows)]
-mod windows_shell;
 
-/// Build the process runtime once; the window owns every native entry attempt.
+/// Build the process runtime once for the pre-native entry.
+#[cfg(not(windows))]
 fn native_client() -> Option<oteryn_client::ClientBootstrap> {
     match oteryn_client::ClientBootstrap::new() {
         Ok(client) => Some(client),
@@ -37,9 +36,14 @@ fn installation_check() -> Option<std::process::ExitCode> {
 }
 
 /// Holds `Global\OterynClient-<SID>` for the process lifetime and refuses to start while an
-/// install or uninstall holds the transaction mutex (CLIENT-INSTALLER-0 §2.1).
+/// install or uninstall holds the transaction mutex (CLIENT-INSTALLER-0 §2.1), then runs the
+/// Bevy desktop host over the shared client owners.
 #[cfg(windows)]
 fn main() -> std::process::ExitCode {
+    #[cfg(windows)]
+    if let Some(result) = oteryn_client::updater::login_update_requested() {
+        return result;
+    }
     oteryn_client::crash_report::install_hook();
     let _instance = match oteryn_client::win_mutex::acquire_client_instance() {
         Ok(instance) => instance,
@@ -61,12 +65,12 @@ fn main() -> std::process::ExitCode {
         };
     }
 
-    match windows_shell::run(native_client()) {
+    match oteryn_client::bevy_shell::run(std::env::args_os().skip(1)) {
         Ok(()) => std::process::ExitCode::SUCCESS,
         Err(error) => {
             oteryn_client::crash_report::record_startup_failure(
                 "client",
-                &format!("windows shell failed: {error}"),
+                &format!("Bevy host failed: {error}"),
             );
             leprintln!("Error: {error:?}", error = error);
             std::process::ExitCode::FAILURE
@@ -80,6 +84,17 @@ fn main() -> std::process::ExitCode {
     if let Some(result) = installation_check() {
         return result;
     }
+    #[cfg(bevy_shell)]
+    if std::env::args().any(|arg| arg == "--watch") {
+        return match oteryn_client::cast_watch::run() {
+            Ok(()) => std::process::ExitCode::SUCCESS,
+            Err(error) => {
+                leprintln!("Oteryn Watch: {error}", error = error);
+                std::process::ExitCode::FAILURE
+            }
+        };
+    }
+    #[cfg(not(bevy_shell))]
     if std::env::args().any(|arg| arg == "--watch") {
         leprintln!("Oteryn Watch uses the native Windows desktop shell");
         return std::process::ExitCode::SUCCESS;
@@ -91,10 +106,23 @@ fn main() -> std::process::ExitCode {
     {
         let mut entry = oteryn_client::reentry::Reentry::new(client.with_native_login(config));
         entry.request();
-        while entry.poll().is_none() {
+        let result = loop {
+            if let Some(result) = entry.poll() {
+                break result;
+            }
             std::thread::park_timeout(std::time::Duration::from_millis(10));
-        }
+        };
         entry.shutdown();
+        use oteryn_client::GameplayEntryError;
+        use oteryn_platform_client::native_login::PublicClass;
+        if let Err(
+            error @ (GameplayEntryError::ClientUpdateRequired { .. }
+            | GameplayEntryError::Rejected(PublicClass::ClientUpdateRequired)),
+        ) = result
+        {
+            eprintln!("{}", oteryn_client::native_login::error_text(error));
+            return std::process::ExitCode::FAILURE;
+        }
     }
     lprintln!("Oteryn pre-native client: Windows desktop target only");
     std::process::ExitCode::SUCCESS

@@ -1,0 +1,21 @@
+{
+  "mechanic": "0508-inventory-capacity",
+  "kind": "handlers",
+  "id": "0508-inventory-capacity-push",
+  "status": "supported",
+  "commands": [],
+  "direction": "server_to_client",
+  "capability": 508,
+  "entry": "protocol.rs::apply",
+  "push_messages": [
+    "InventoryCapacity"
+  ],
+  "reducer": "protocol.rs::apply",
+  "test": "tests.rs::capacity_line_shows_whole_ounces_of_free_capacity_only_once_sent",
+  "not_applicable": {
+    "state": "The inventory panel retains the latest capacity.",
+    "view": "The Bevy inventory panel and the native inventory window render the Cap line.",
+    "input": "Capacity is server-pushed; there is no command.",
+    "settings": "Cap is always shown, as in Tibia Global."
+  }
+}

@@ -227,7 +227,7 @@ pub async fn prepare_current_player_in_transaction(
         frame: pin.frame_binding_digest(),
         x: p.x,
         y: p.y,
-        floor: p.floor,
+        floor: crate::movement::interest::tibia_floor(p.floor).ok_or(Error::Unqualified)?,
         owner_time_us: now_us,
         player_revision: state.revision(),
         invisible,

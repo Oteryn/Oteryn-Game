@@ -16,3 +16,8 @@ impl Outbox {
         );
     }
 }
+
+#[cfg(all(test, bevy_shell))]
+pub(crate) fn bevy_typing_fixture(outbox: &Outbox) {
+    outbox.player_typing_initialize(true);
+}

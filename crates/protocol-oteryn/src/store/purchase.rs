@@ -117,7 +117,7 @@ pub fn decode_purchase_request_with_hireling(
 
 pub fn encode_purchase_result(value: &StorePurchaseResult) -> Result<Vec<u8>, StoreWireError> {
     let accepted = value.code == StorePurchaseCode::Accepted;
-    if accepted != (value.order_id.is_some() && value.operation_id.is_some()) {
+    if value.order_id.is_some() != accepted || value.operation_id.is_some() != accepted {
         return Err(StoreWireError::Malformed);
     }
     let mut out = Vec::new();

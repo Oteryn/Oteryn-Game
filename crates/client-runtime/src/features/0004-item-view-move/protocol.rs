@@ -1,4 +1,5 @@
 //! Live inventory projection; handles retain their session identity.
+pub use oteryn_session::inventory_capacity::InventoryCapacity;
 pub use oteryn_session::{CharacterInventory, ItemEntry, ItemHandle};
 
 #[must_use]
@@ -31,7 +32,7 @@ pub async fn send<S: oteryn_session::SessionStream>(
     if !crate::equipment::available(request.destination, session.is_selected(12))
         || !session.is_selected(4)
         || (request.count.is_some() && !session.is_selected(61))
-        || (matches!(request.destination, ItemMoveDestination::Container(_))
+        || (matches!(request.destination, ItemMoveDestination::Container(..))
             && !session.is_selected(14))
         || (matches!(request.destination, ItemMoveDestination::Ground(_))
             && !session.is_selected(12)
@@ -71,6 +72,7 @@ mod tests {
     fn projection_preserves_server_display_order() -> Result<(), Box<dyn std::error::Error>> {
         let entry = |handle: u64| -> Result<ItemEntry, Box<dyn std::error::Error>> {
             Ok(ItemEntry {
+                appearance_id: 3031,
                 handle: handle.try_into()?,
                 item_definition_ref: 42.try_into()?,
                 count: 1.try_into()?,

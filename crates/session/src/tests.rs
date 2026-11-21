@@ -2,6 +2,8 @@
 mod account_achievements_tests;
 #[path = "tests/activity_handoff.rs"]
 mod activity_handoff_tests;
+#[path = "tests/activity_scope.rs"]
+mod activity_scope_tests;
 #[path = "tests/analyser.rs"]
 mod analyser_tests;
 mod appearance_session_tests;
@@ -350,3 +352,12 @@ mod wheel_presentation_gated;
 #[cfg(test)]
 #[path = "e2e_c16d.rs"]
 mod e2e_c16d;
+
+#[test]
+fn preadm_admission_debug_redacts_grant() -> Result<(), BoxError> {
+    let value = admission()?;
+    let debug = format!("{value:?}");
+    assert!(debug.contains("[REDACTED]"));
+    assert!(!debug.contains(&format!("{:?}", value.admission_material)));
+    Ok(())
+}

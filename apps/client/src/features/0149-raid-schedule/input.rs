@@ -44,12 +44,7 @@ impl PlayLink {
         submit(&mut lock(&self.mailbox), &self.commands, intent);
     }
     pub fn raid_schedule_open(&self) {
-        #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
-            lock(&self.mailbox).properties.raid_schedule.open = true;
-        }
+        lock(&self.mailbox).properties.raid_schedule.open = true;
     }
     pub fn raid_schedule_input(&self, events: &[NormalizedInputEvent]) -> bool {
         if !oteryn_client_ui::raid_schedule::open_key(events) {

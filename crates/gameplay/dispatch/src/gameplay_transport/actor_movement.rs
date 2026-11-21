@@ -9,9 +9,7 @@ use crate::content::{LogicalCell, NativeEntryMovementCells};
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition, MovementPositionSnapshot,
 };
-use crate::movement::speed::{
-    EngineeringGroundSpeed, GroundSpeedSource, player_step_duration, runtime_player_speed,
-};
+use crate::movement::speed::{EngineeringGroundSpeed, GroundSpeedSource, player_effective_speed};
 use crate::movement::{
     CardinalStep, MovementEngineeringSelection, MovementError, MovementOwnerTurn,
     MovementTurnOutcome,
@@ -22,6 +20,14 @@ use std::time::Duration;
 
 /// A committed step and its SPEED-1 duration (CONDITIONS-0 §4.2), or why nothing moved.
 pub type StepInChannel = Result<(MovementPositionSnapshot, Duration), MovementError>;
+
+fn drome_drunk(state: &crate::spell::cast::PlayerSpellState, now_us: u64) -> bool {
+    use oteryn_gameplay_domain::domain::condition::{ConflictKey, StatusKind};
+    state
+        .owned_conditions()
+        .active_at(ConflictKey::Status(StatusKind::Drunk), now_us)
+        .is_some_and(|instance| instance.definition().key() == "drome.drunk")
+}
 
 impl ChannelSpellStates {
     /// Resolve Drome control before field/floor preflight. The common movement owner
@@ -53,12 +59,7 @@ impl ChannelSpellStates {
         ) {
             return Err(MovementError::Blocked);
         }
-        use oteryn_gameplay_domain::domain::condition::{ConflictKey, StatusKind};
-        if !state
-            .owned_conditions()
-            .active_at(ConflictKey::Status(StatusKind::Drunk), now_us)
-            .is_some_and(|instance| instance.definition().key() == "drome.drunk")
-        {
+        if !drome_drunk(state, now_us) {
             return Ok(requested);
         }
         use oteryn_simulation_determinism::{
@@ -122,8 +123,14 @@ fn duration_onto(
     direction: CardinalStep,
 ) -> Result<Duration, MovementError> {
     speed
-        .and_then(|speed| player_step_duration(source, cell(onto), speed))
-        .and_then(|duration| duration.checked_mul(direction.pacing_cost()))
+        .and_then(|speed| {
+            crate::movement::speed::player_directional_step_duration(
+                source,
+                cell(onto),
+                speed,
+                direction,
+            )
+        })
         .ok_or(MovementError::NotQualified)
 }
 
@@ -135,13 +142,18 @@ fn baseline_speed(
     session: GameSessionId,
     now_us: u64,
 ) -> Option<u16> {
-    runtime_player_speed(
-        runtime,
-        actor,
-        session,
+    let delta = runtime
+        .actor_active_speed_delta(
+            actor,
+            Some(session),
+            SemanticTimeMicros::from_micros(now_us),
+        )
+        .ok()?;
+    Some(player_effective_speed(
         crate::gameplay_transport::PLAYER_LEVEL_UNTIL_PROGRESSION_OWNER,
-        SemanticTimeMicros::from_micros(now_us),
-    )
+        delta,
+        i64::from(runtime.actor_motion(actor).map_or(0, |motion| motion.3)),
+    ))
 }
 
 /// An initialized player's effective speed: its base speed, the runtime condition owner's and
@@ -173,8 +185,117 @@ fn spell_state_speed(
         state,
         now_us,
         runtime_delta,
-        equipment,
+        equipment + i64::from(runtime.actor_motion(actor).map_or(0, |motion| motion.3)),
     ))
+}
+
+/// Read-only forecast using the same destination proof and speed calculation as
+/// the step owner. Special destinations are deliberately left to that owner.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "forecast binds the same independently owned inputs as movement"
+)]
+pub(in crate::gameplay_transport) fn prewalk_forecast(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    cells: &NativeEntryMovementCells,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    now_us: u64,
+    equipment_delta: Option<i32>,
+    blocking: &dyn crate::map::floor::CellBlocker,
+) -> [u32; 8] {
+    use CardinalStep::*;
+    let source = crate::movement::source_floor_change::is_source_profile(cells);
+    let speed = states.get(runtime, actor, session).map_or_else(
+        || baseline_speed(runtime, actor, session, now_us),
+        |state| {
+            spell_state_speed(
+                runtime,
+                state,
+                actor,
+                session,
+                now_us,
+                equipment_delta,
+                source,
+            )
+        },
+    );
+    let Some(expected) = runtime.read_actor_position(actor).ok() else {
+        return [0; 8];
+    };
+    if states.is_dead(actor)
+        || (runtime.is_tibiadrome(actor)
+            && states
+                .get(runtime, actor, session)
+                .is_some_and(|state| state.drome_practice && drome_drunk(state, now_us)))
+        || runtime.player_control_facts(actor, session).is_err()
+        || (states.get(runtime, actor, session).is_some()
+            && !states.native_condition_movement_allowed(
+                runtime,
+                actor,
+                session,
+                SemanticTimeMicros::from_micros(now_us),
+            ))
+    {
+        return [0; 8];
+    }
+    [
+        North, East, South, West, NorthEast, SouthEast, SouthWest, NorthWest,
+    ]
+    .map(|direction| {
+        let from = expected.position();
+        let (dx, dy) = direction.delta();
+        let Some(x) = from.x.checked_add(dx) else {
+            return 0;
+        };
+        let Some(y) = from.y.checked_add(dy) else {
+            return 0;
+        };
+        let onto = MovementLocalPosition {
+            x,
+            y,
+            floor: from.floor,
+        };
+        if blocking.blocks(cell(onto))
+            || crate::map::floor::is_teleport(cells, cell(onto))
+            || runtime.position_occupied_by_other(actor, onto) != Ok(false)
+        {
+            return 0;
+        }
+        let duration = if crate::map::floor::table_of(cells).is_some() {
+            let Ok(proof) = crate::map::floor::prepare_bundle_step(
+                runtime, cells, actor, session, expected, direction, false, blocking,
+            ) else {
+                return 0;
+            };
+            if proof.destination() != onto {
+                return 0;
+            }
+            duration_onto(&EngineeringGroundSpeed, onto, speed, direction)
+        } else if source {
+            let Ok(proof) = crate::movement::source_floor_change::prepare_source_step(
+                runtime, cells, actor, session, expected, direction,
+            ) else {
+                return 0;
+            };
+            if proof.destination() != onto {
+                return 0;
+            }
+            duration_onto(&proof, onto, speed, direction)
+        } else {
+            if cells.index().lookup(cells.scope(), cell(onto))
+                != Ok(crate::content::CollisionClass::Walkable)
+            {
+                return 0;
+            }
+            duration_onto(&EngineeringGroundSpeed, onto, speed, direction)
+        };
+        duration
+            .ok()
+            .and_then(|duration| u32::try_from(duration.as_millis()).ok())
+            .unwrap_or(0)
+    })
 }
 
 /// Equipment delta is supplied only by the actual persisted-equipment owner. An actor without
@@ -227,7 +348,11 @@ pub fn step_in_channel_with_source_step(
     prepared_source_step: Option<crate::movement::source_floor_change::SourceStepProof<'_>>,
 ) -> StepInChannel {
     use oteryn_gameplay_spell_rules::cast::{STAIRHOP_COOLDOWN_KEY, STAIRHOP_MICROS};
-    let direction = states.drome_step_direction(runtime, actor, session, now_us, direction)?;
+    let direction = if runtime.forced_player_step_current(actor, session) {
+        direction
+    } else {
+        states.drome_step_direction(runtime, actor, session, now_us, direction)?
+    };
     let expected = runtime
         .read_actor_position(actor)
         .map_err(MovementError::Actor)?;
@@ -285,6 +410,16 @@ pub fn step_in_channel_with_source_step(
     {
         state.cooldowns = cooldowns;
     }
+    let (dx, dy) = direction.delta();
+    let from = expected.position();
+    let to = result.0.position();
+    if to.floor == from.floor
+        && from.x.checked_add(dx) == Some(to.x)
+        && from.y.checked_add(dy) == Some(to.y)
+        && !crate::map::floor::is_teleport(cells, cell(to))
+    {
+        runtime.record_walk(actor, result.0, result.1);
+    }
     Ok(result)
 }
 
@@ -308,10 +443,7 @@ fn step_in_channel_inner(
     {
         return failure(MovementError::NotQualified);
     }
-    if !runtime
-        .player_control_facts(actor, session)
-        .is_ok_and(|facts| facts.control_loss.is_none())
-    {
+    if !runtime.player_step_allowed(actor, session, direction.delta()) {
         return failure(MovementError::NotQualified);
     }
     let Some(state) = states.get_mut(runtime, actor, session) else {
@@ -551,6 +683,7 @@ mod tests {
     #![allow(clippy::items_after_test_module)]
     #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
     use super::*;
+    include!("actor_movement/m25_forced_step_tests.rs");
     use crate::spell::cast::CharacterCastFacts;
     use oteryn_simulation_determinism::{
         DecisionOccurrenceId, GameplayDecisionRoot, SemanticTimeMicros,
@@ -585,6 +718,65 @@ mod tests {
         assert!(
             duration_onto(&EngineeringGroundSpeed, onto, None, CardinalStep::NorthEast).is_err()
         );
+    }
+
+    #[test]
+    fn qn6_diagonal_duration_is_tripled_and_fits_the_wire_ceiling() -> Result<(), String> {
+        use oteryn_protocol_oteryn::world_spatial::{
+            CAPABILITY_DIAGONAL_MOVEMENT_V1, CAPABILITY_PACED_MOVEMENT_V1,
+            MAX_DIAGONAL_STEP_WAIT_MS, MAX_STEP_WAIT_MS, StepDisposition, StepResult,
+            decode_step_result_profile, decode_step_result_receipt, encode_step_outcome,
+            encode_step_result_paced,
+        };
+        struct SlowestGround;
+        impl GroundSpeedSource for SlowestGround {
+            fn ground_speed(&self, _: LogicalCell) -> u16 {
+                1000
+            }
+        }
+        let at = MovementLocalPosition {
+            x: 1,
+            y: 1,
+            floor: -1,
+        };
+        let cardinal = duration_onto(&SlowestGround, at, Some(10), CardinalStep::East)
+            .map_err(|e| format!("{e:?}"))?;
+        assert_eq!(cardinal.as_millis(), u128::from(MAX_STEP_WAIT_MS));
+        let selected = [
+            CAPABILITY_PACED_MOVEMENT_V1,
+            CAPABILITY_DIAGONAL_MOVEMENT_V1,
+        ];
+        for direction in [
+            CardinalStep::NorthEast,
+            CardinalStep::SouthEast,
+            CardinalStep::SouthWest,
+            CardinalStep::NorthWest,
+        ] {
+            let diagonal = duration_onto(&SlowestGround, at, Some(10), direction)
+                .map_err(|e| format!("{e:?}"))?;
+            assert_eq!(
+                diagonal,
+                cardinal.checked_mul(3).ok_or("duration overflow")?
+            );
+            let receipt = StepResult {
+                disposition: StepDisposition::Moved,
+                step_wait_ms: u32::try_from(diagonal.as_millis()).map_err(|e| e.to_string())?,
+            };
+            assert_eq!(receipt.step_wait_ms, MAX_DIAGONAL_STEP_WAIT_MS);
+            assert!(encode_step_result_paced(receipt, true).is_err());
+            let bytes = encode_step_outcome(&selected, receipt.disposition, receipt.step_wait_ms);
+            assert!(decode_step_result_receipt(&bytes, true).is_err());
+            assert_eq!(
+                decode_step_result_profile(
+                    &bytes,
+                    selected.contains(&CAPABILITY_PACED_MOVEMENT_V1),
+                    selected.contains(&CAPABILITY_DIAGONAL_MOVEMENT_V1),
+                )
+                .map_err(|e| format!("{e:?}"))?,
+                receipt
+            );
+        }
+        Ok(())
     }
 
     fn id(n: u8) -> [u8; 16] {
@@ -697,6 +889,102 @@ mod tests {
             .unwrap()
             .position();
         (position.x, position.y, position.floor)
+    }
+
+    #[test]
+    fn qn1_environment_energy_field_step_commits_hit_only_with_movement() {
+        use super::super::{NonPlayerFieldContact, NonPlayerFieldOrigin};
+        let document: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../tools/content-schema/spell-authoring/samples/native-field-profiles.json"
+        ))
+        .unwrap();
+        let record = document["profiles"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|record| {
+                record["source"]["server"] == "crystal"
+                    && record["source"]["server_item_id"] == 2126
+            })
+            .unwrap();
+        let recipe: oteryn_gameplay_content::content::field_condition::QualifiedFieldCondition =
+            serde_json::from_value(record.clone()).unwrap();
+        for (origin, blocked, accepted) in [
+            (NonPlayerFieldOrigin::Environment, false, true),
+            (NonPlayerFieldOrigin::Environment, true, false),
+            (NonPlayerFieldOrigin::Creature, false, false),
+        ] {
+            let (mut runtime, mut states, room, actor, session) = owner();
+            states
+                .initialize(
+                    &runtime,
+                    actor,
+                    session,
+                    CharacterCastFacts {
+                        vocation: crate::spell::Vocation::Knight,
+                        level: 100,
+                        magic_level: 10,
+                        max_health: 1000,
+                        max_mana: 500,
+                        max_soul: 100,
+                    },
+                    (0, 0),
+                    SemanticTimeMicros::from_micros(0),
+                )
+                .unwrap();
+            let before = states.get(&runtime, actor, session).unwrap().clone();
+            let position = at(&mut runtime, actor);
+            let mut blocking = std::collections::BTreeSet::new();
+            if blocked {
+                blocking.insert(LogicalCell {
+                    x: position.0 + 1,
+                    y: position.1,
+                    z: i32::from(position.2),
+                });
+            }
+            let contact = NonPlayerFieldContact {
+                origin,
+                source: "environment:field:fixture2126".into(),
+                definition: crate::foundation::ConditionDefinition::new(
+                    "native.field.i2126",
+                    1,
+                    recipe.condition_values().unwrap().unwrap(),
+                )
+                .unwrap(),
+                element: recipe.element().unwrap(),
+                content: runtime.content_pin().server_artifact_digest(),
+            };
+            let result = states.step_with_non_player_field_contact(
+                &mut runtime,
+                room.movement_cells(),
+                actor,
+                session,
+                1,
+                CardinalStep::East,
+                &blocking,
+                None,
+                None,
+                Some(contact),
+            );
+            assert_eq!(result.is_ok(), accepted);
+            if accepted {
+                assert_eq!(
+                    at(&mut runtime, actor),
+                    (position.0 + 1, position.1, position.2)
+                );
+                assert_eq!(
+                    states
+                        .get(&runtime, actor, session)
+                        .unwrap()
+                        .vitals()
+                        .health,
+                    900
+                );
+            } else {
+                assert_eq!(at(&mut runtime, actor), position);
+                assert_eq!(states.get(&runtime, actor, session), Some(&before));
+            }
+        }
     }
 
     #[test]
@@ -830,6 +1118,35 @@ mod tests {
         // So does one whose destination tile the bundle lacks.
         step(&mut runtime, CardinalStep::West).unwrap();
         assert_eq!(at(&mut runtime, actor), (3, 1, 8));
+    }
+
+    #[test]
+    fn bundle_teleport_landing_can_share_a_cell_with_a_creature() {
+        let (mut runtime, mut states, cells, actor, session) =
+            bundle_owner_of(crate::map::boot::tests::teleport_bundle);
+        let landing = MovementLocalPosition {
+            x: 5,
+            y: 1,
+            floor: 8,
+        };
+        let creature = runtime.admit_pinned_test_creature(landing).unwrap();
+        let (after, _) = step_in_channel(
+            &mut runtime,
+            &mut states,
+            &cells,
+            actor,
+            session,
+            1,
+            CardinalStep::South,
+            &std::collections::BTreeSet::new(),
+            None,
+        )
+        .unwrap();
+        assert_eq!(after.position(), landing);
+        assert_eq!(
+            runtime.read_actor_position(creature).unwrap().position(),
+            landing
+        );
     }
 
     #[test]
@@ -1109,6 +1426,99 @@ mod tests {
             1
         );
     }
+
+    #[test]
+    fn actor_motion_forecast_matches_real_step_and_riding_is_independent() {
+        let (mut runtime, mut states, room, actor, session) = owner();
+        let empty = std::collections::BTreeSet::new();
+        let forecast = prewalk_forecast(
+            &runtime,
+            &states,
+            room.movement_cells(),
+            actor,
+            session,
+            0,
+            None,
+            &empty,
+        );
+        assert_eq!(forecast[1], 550);
+        let blocked = std::collections::BTreeSet::from([LogicalCell { x: 1, y: 0, z: 0 }]);
+        assert_eq!(
+            prewalk_forecast(
+                &runtime,
+                &states,
+                room.movement_cells(),
+                actor,
+                session,
+                0,
+                None,
+                &blocked
+            )[1],
+            0
+        );
+        assert_eq!(runtime.actor_motion(actor).unwrap().2, 0);
+        let wrong = GameSessionId::decode(&id(99)).unwrap();
+        assert!(runtime.set_riding(actor, wrong, 139, 10).is_err());
+        runtime.set_riding(actor, session, 139, 10).unwrap();
+        assert_eq!(runtime.actor_motion(actor).unwrap().2, 139);
+        let riding = prewalk_forecast(
+            &runtime,
+            &states,
+            room.movement_cells(),
+            actor,
+            session,
+            0,
+            None,
+            &empty,
+        );
+        let (snapshot, duration) = step_in_channel(
+            &mut runtime,
+            &mut states,
+            room.movement_cells(),
+            actor,
+            session,
+            0,
+            CardinalStep::East,
+            &empty,
+            None,
+        )
+        .unwrap();
+        assert_eq!(u128::from(riding[1]), duration.as_millis());
+        assert!(riding[1] < forecast[1]);
+        let motion = runtime.actor_motion(actor).unwrap();
+        assert_eq!(
+            (motion.0, motion.1),
+            (snapshot.last_translation_revision(), riding[1])
+        );
+        runtime.set_riding(actor, session, 0, 0).unwrap();
+        assert_eq!(runtime.actor_motion(actor).unwrap().2, 0);
+    }
+
+    #[test]
+    fn actor_motion_teleport_is_not_a_walk_receipt_or_prewalk_destination() {
+        let (mut runtime, mut states, cells, actor, session) =
+            bundle_owner_of(crate::map::boot::tests::teleport_bundle);
+        let empty = std::collections::BTreeSet::new();
+        assert_eq!(
+            prewalk_forecast(&runtime, &states, &cells, actor, session, 0, None, &empty)[2],
+            0
+        );
+        let (snapshot, _) = step_in_channel(
+            &mut runtime,
+            &mut states,
+            &cells,
+            actor,
+            session,
+            0,
+            CardinalStep::South,
+            &empty,
+            None,
+        )
+        .unwrap();
+        let motion = runtime.actor_motion(actor).unwrap();
+        assert_eq!(motion.0, snapshot.last_translation_revision());
+        assert_eq!(motion.1, 0);
+    }
     #[test]
     fn initialized_player_on_engineering_ground_is_paced_from_its_base_speed() {
         let (mut runtime, mut states, room, actor, session) = owner();
@@ -1210,7 +1620,7 @@ mod tests {
             spell_state_speed(&runtime, state, actor, session, 1, None, true),
             None
         );
-        let expected = player_step_duration(
+        let expected = crate::movement::speed::player_step_duration(
             &EngineeringGroundSpeed,
             LogicalCell { x: 1, y: 0, z: 0 },
             hasted,
@@ -1266,7 +1676,7 @@ mod creature_field_step_tests {
             .unwrap();
         (runtime, states, room, actor, session)
     }
-    fn contact(runtime: &ChannelRuntimeV1) -> super::super::CreatureFieldContact {
+    fn contact(runtime: &ChannelRuntimeV1) -> super::super::NonPlayerFieldContact {
         // Real immutable qualified field recipe, actual Player/movement owner fixture.
         let catalog: serde_json::Value = serde_json::from_str(include_str!(
             "../../../../../tools/content-schema/spell-authoring/samples/native-field-profiles.json"
@@ -1285,7 +1695,8 @@ mod creature_field_step_tests {
             .find(|r| r.source.server == "canary" && r.source.server_item_id == 2118)
             .unwrap();
         let values = recipe.condition_values().unwrap().unwrap();
-        super::super::CreatureFieldContact {
+        super::super::NonPlayerFieldContact {
+            origin: super::super::NonPlayerFieldOrigin::Creature,
             source: "creature:field:owner-component-fixture".into(),
             definition:
                 oteryn_gameplay_foundation::foundation::condition::ConditionDefinition::new(
@@ -1305,7 +1716,7 @@ mod creature_field_step_tests {
         let before = states.get(&runtime, actor, session).unwrap().clone();
         assert!(
             states
-                .step_with_creature_field_contact(
+                .step_with_non_player_field_contact(
                     &mut runtime,
                     room.movement_cells(),
                     actor,
@@ -1339,7 +1750,7 @@ mod creature_field_step_tests {
         let position = runtime.read_actor_position(actor).unwrap();
         assert!(
             states
-                .step_with_creature_field_contact(
+                .step_with_non_player_field_contact(
                     &mut runtime,
                     room.movement_cells(),
                     actor,
@@ -1363,7 +1774,7 @@ mod creature_field_step_tests {
         let field = contact(&runtime);
         assert!(
             states
-                .step_with_creature_field_contact(
+                .step_with_non_player_field_contact(
                     &mut runtime,
                     room.movement_cells(),
                     actor,
@@ -1382,7 +1793,7 @@ mod creature_field_step_tests {
         let field = contact(&runtime);
         assert!(
             states
-                .step_with_creature_field_contact(
+                .step_with_non_player_field_contact(
                     &mut runtime,
                     room.movement_cells(),
                     actor,
@@ -1415,7 +1826,7 @@ mod creature_field_step_tests {
         let field = contact(&runtime);
         assert!(
             states
-                .step_with_creature_field_contact(
+                .step_with_non_player_field_contact(
                     &mut runtime,
                     room.movement_cells(),
                     actor,
@@ -1436,7 +1847,7 @@ mod creature_field_step_tests {
         let field = contact(&runtime);
         assert!(
             states
-                .step_with_creature_field_contact(
+                .step_with_non_player_field_contact(
                     &mut runtime,
                     room.movement_cells(),
                     actor,

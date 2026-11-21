@@ -41,6 +41,8 @@ struct AppearanceMsg {
 
 #[derive(Clone, PartialEq, Message)]
 struct FrameGroupMsg {
+    #[prost(uint32, optional, tag = "1")]
+    fixed_frame_group: Option<u32>,
     #[prost(message, optional, tag = "3")]
     sprite_info: Option<SpriteInfoMsg>,
 }
@@ -85,6 +87,8 @@ struct FlagsMsg {
     bottom: Option<bool>,
     #[prost(bool, optional, tag = "4")]
     top: Option<bool>,
+    #[prost(bool, optional, tag = "9")]
+    multiuse: Option<bool>,
     #[prost(bool, optional, tag = "6")]
     cumulative: Option<bool>,
     #[prost(bool, optional, tag = "12")]
@@ -95,10 +99,27 @@ struct FlagsMsg {
     hang: Option<bool>,
     #[prost(message, optional, tag = "21")]
     hook: Option<HookMsg>,
+    #[prost(message, optional, tag = "23")]
+    light: Option<LightMsg>,
+    #[prost(message, optional, tag = "30")]
+    automap: Option<AutomapMsg>,
     #[prost(message, optional, tag = "26")]
     shift: Option<ShiftMsg>,
     #[prost(message, optional, tag = "27")]
     height: Option<HeightMsg>,
+}
+
+#[derive(Clone, PartialEq, Message)]
+struct LightMsg {
+    #[prost(uint32, optional, tag = "1")]
+    brightness: Option<u32>,
+    #[prost(uint32, optional, tag = "2")]
+    color: Option<u32>,
+}
+#[derive(Clone, PartialEq, Message)]
+struct AutomapMsg {
+    #[prost(uint32, optional, tag = "1")]
+    color: Option<u32>,
 }
 
 #[derive(Clone, PartialEq, Message)]
@@ -129,6 +150,10 @@ struct HeightMsg {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Appearance {
     pub id: u32,
+    /// Official appearance light intensity and palette colour.
+    pub light: Option<(u8, u8)>,
+    pub minimap_color: Option<u8>,
+    pub multi_use: bool,
     pub pattern_width: u32,
     pub pattern_height: u32,
     pub pattern_depth: u32,
@@ -184,7 +209,7 @@ pub struct Placement {
     pub sub_type: u32,
     pub x: i32,
     pub y: i32,
-    /// Native floor `-15..=0`.
+    /// Global floor `0..=15`.
     pub floor: i32,
     /// The hook given by the entries of the same tile.
     pub hook: Hook,
@@ -222,6 +247,7 @@ pub struct ResolvedEntry {
 pub struct AppearanceIndex {
     objects: HashMap<u32, Appearance>,
     outfits: HashMap<u32, Appearance>,
+    moving_outfits: HashMap<u32, Appearance>,
     effects: HashMap<u32, Appearance>,
     missiles: HashMap<u32, Appearance>,
 }
@@ -229,7 +255,7 @@ pub struct AppearanceIndex {
 include!("appearance_methods_1.rs");
 
 /// The `(x, y, z)` pattern of `appearance` at `placement`, chosen as the Tibia client does. The
-/// depth pattern is selected from `z = -floor`, never from a negative index.
+/// depth pattern is selected directly from Global z.
 fn pattern(appearance: &Appearance, placement: Placement) -> (u32, u32, u32) {
     let Placement {
         count,
@@ -239,7 +265,7 @@ fn pattern(appearance: &Appearance, placement: Placement) -> (u32, u32, u32) {
         floor,
         hook,
     } = placement;
-    let z = floor.unsigned_abs();
+    let z = floor as u32;
     let (pattern_x, pattern_y) = if appearance.fluid {
         let color = fluid_color(sub_type);
         (
@@ -278,6 +304,21 @@ fn pattern(appearance: &Appearance, placement: Placement) -> (u32, u32, u32) {
 
 include!("appearance_entry.rs");
 
+fn convert_movement(id: u32, object: &AppearanceMsg) -> Option<Appearance> {
+    let moving = object
+        .frame_group
+        .iter()
+        .find(|group| group.fixed_frame_group == Some(1))?;
+    convert(
+        id,
+        AppearanceMsg {
+            id: Some(id),
+            frame_group: vec![moving.clone()],
+            flags: object.flags.clone(),
+        },
+    )
+}
+
 fn convert(id: u32, object: AppearanceMsg) -> Option<Appearance> {
     let info = object.frame_group.into_iter().next()?.sprite_info?;
     let flags = object.flags.unwrap_or_default();
@@ -288,7 +329,7 @@ fn convert(id: u32, object: AppearanceMsg) -> Option<Appearance> {
             .map(|phase| {
                 let low = phase.duration_min.unwrap_or(100);
                 let high = phase.duration_max.unwrap_or(low).max(low);
-                (low / 2 + high / 2).clamp(1, 10_000)
+                (low + (high - low) / 2).clamp(1, 10_000)
             })
             .collect()
     });
@@ -316,6 +357,14 @@ fn convert(id: u32, object: AppearanceMsg) -> Option<Appearance> {
     }
     Some(Appearance {
         id,
+        light: flags.light.and_then(|light| {
+            Some((
+                u8::try_from(light.brightness?).ok()?,
+                u8::try_from(light.color?).ok()?,
+            ))
+        }),
+        minimap_color: flags.automap.and_then(|map| u8::try_from(map.color?).ok()),
+        multi_use: flags.multiuse.unwrap_or(false),
         pattern_width: width,
         pattern_height: height,
         pattern_depth: depth,

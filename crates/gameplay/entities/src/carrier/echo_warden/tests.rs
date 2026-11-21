@@ -1,3 +1,9 @@
+#[path = "tests/drome_familiar.rs"]
+mod drome_familiar;
+#[path = "tests/drome_heal.rs"]
+mod drome_heal;
+#[path = "tests/drome_roles.rs"]
+mod drome_roles;
 use super::*;
 use crate::carrier::runtime_actor_companion::{
     CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureFlags,

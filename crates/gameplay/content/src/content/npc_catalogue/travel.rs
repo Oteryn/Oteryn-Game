@@ -7,6 +7,18 @@ use crate::content::{ProjectV2DefinitionRef, ProjectV2TravelRoute};
 use serde::Deserialize;
 use std::sync::OnceLock;
 
+#[path = "travel_return.rs"]
+mod return_policy;
+pub use return_policy::TravelReturnRequirement;
+
+/// A paid ticket's purchase time is a Quest-owned Unix-second track.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TravelTicketRequirement {
+    pub track: String,
+    pub valid_for_seconds: u32,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TravelRoute {
     pub service: String,
@@ -18,6 +30,10 @@ pub struct TravelRoute {
     pub yalahar_gate: bool,
     pub yalahar_town_gate: Option<String>,
     pub quest_gate: Option<String>,
+    /// Refuse travel unless this track is absent or exactly zero (for example an unpaid fine).
+    pub quest_clear_gate: Option<String>,
+    pub ticket: Option<TravelTicketRequirement>,
+    pub return_origin: Option<TravelReturnRequirement>,
     pub world_change: Option<String>,
 }
 
@@ -41,6 +57,12 @@ struct Correction {
     native_addition: bool,
     #[serde(default)]
     quest_gate: Option<String>,
+    #[serde(default)]
+    quest_clear_gate: Option<String>,
+    #[serde(default)]
+    ticket: Option<TravelTicketRequirement>,
+    #[serde(default)]
+    return_origin: Option<TravelReturnRequirement>,
     #[serde(default)]
     world_change: Option<String>,
 }
@@ -116,6 +138,9 @@ pub fn resolve(
                 yalahar_gate: correction.yalahar_gate,
                 yalahar_town_gate: correction.yalahar_town_gate.clone(),
                 quest_gate: correction.quest_gate.clone(),
+                quest_clear_gate: correction.quest_clear_gate.clone(),
+                ticket: correction.ticket.clone(),
+                return_origin: correction.return_origin.clone(),
                 world_change: correction.world_change.clone(),
             })
         })
@@ -125,6 +150,99 @@ pub fn resolve(
 #[cfg(test)]
 mod tests {
     use super::revision_material;
+
+    #[test]
+    fn m38_return_origin_correction_is_optional_and_preserves_exact_policy()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let rows: Vec<serde_json::Value> = serde_json::from_str(revision_material())?;
+        let mut row = rows.into_iter().next().ok_or("travel correction")?;
+        let legacy: super::Correction = serde_json::from_value(row.clone())?;
+        assert!(legacy.return_origin.is_none());
+        row["return_origin"] = serde_json::json!({
+            "inbound_routes": ["oteryn:service.travel.port_a/travora", "oteryn:service.travel.port_b/travora"],
+            "return_from": "oteryn:service.travel.port_b/travora"
+        });
+        let correction: super::Correction = serde_json::from_value(row.clone())?;
+        let policy = correction.return_origin.ok_or("return policy")?;
+        assert!(policy.is_valid());
+        assert_eq!(policy.inbound_routes.len(), 2);
+        assert!(policy.permits_latest_completed(Some("oteryn:service.travel.port_b/travora")));
+        row["return_origin"]["fallback"] = serde_json::json!("any_port");
+        assert!(serde_json::from_value::<super::Correction>(row).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn m38_travel_ticket_requirement_is_optional_and_keeps_elapsed_seconds()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let rows: Vec<serde_json::Value> = serde_json::from_str(revision_material())?;
+        let mut row = rows.into_iter().next().ok_or("travel correction")?;
+        let legacy: super::Correction = serde_json::from_value(row.clone())?;
+        assert!(legacy.ticket.is_none());
+        row["ticket"] = serde_json::json!({"track":"oteryn:quest-progress/travora/ticket_purchased", "valid_for_seconds":86400});
+        let guarded: super::Correction = serde_json::from_value(row.clone())?;
+        assert_eq!(
+            guarded.ticket,
+            Some(super::TravelTicketRequirement {
+                track: "oteryn:quest-progress/travora/ticket_purchased".into(),
+                valid_for_seconds: 86400,
+            })
+        );
+        row["ticket"]["client_clock"] = 1.into();
+        assert!(serde_json::from_value::<super::Correction>(row).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn m38_travel_clear_gate_is_optional_and_preserved_by_the_catalogue_parser()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let rows: Vec<serde_json::Value> = serde_json::from_str(revision_material())?;
+        let mut row = rows.into_iter().next().ok_or("travel correction")?;
+        let legacy: super::Correction = serde_json::from_value(row.clone())?;
+        assert!(legacy.quest_clear_gate.is_none());
+        row["quest_clear_gate"] = "oteryn:quest-progress/monastery/fine".into();
+        let guarded: super::Correction = serde_json::from_value(row)?;
+        assert_eq!(
+            guarded.quest_clear_gate.as_deref(),
+            Some("oteryn:quest-progress/monastery/fine")
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn destination_apostrophes_survive_native_route_resolution()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            &std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content"),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )?;
+        let model = catalogue.service_model_for_project()?;
+        for (npc, slug, keyword) in [
+            ("captain_bluebear", "ab_dendriel", "ab'dendriel"),
+            ("captain_fearless", "ab_dendriel", "ab'dendriel"),
+            ("captain_greyhound", "ab_dendriel", "ab'dendriel"),
+            ("captain_seahorse", "ab_dendriel", "ab'dendriel"),
+            ("junkar_mines", "robsons_isle", "robson's isle"),
+            ("junkar_thais", "robsons_isle", "robson's isle"),
+        ] {
+            let key = format!("oteryn:npc.{npc}");
+            let entry = model
+                .npcs()
+                .iter()
+                .find(|(reference, _)| reference.key == key)
+                .map(|(_, entry)| entry)
+                .ok_or("NPC")?;
+            let routes = super::resolve(&model, &key, &entry.services);
+            let route = routes
+                .iter()
+                .find(|route| route.route.key == slug)
+                .ok_or("route")?;
+            assert_eq!(route.keyword, keyword, "{npc}/{slug}");
+            assert!(!route.held);
+        }
+        Ok(())
+    }
 
     #[test]
     fn paid_travel_routes_preserve_all_195_corrected_fares_premium_and_arrivals()
@@ -165,7 +283,13 @@ mod tests {
         assert_eq!(evidence.len(), 195);
         for ((row, source), evidence) in corrected.into_iter().zip(sources).zip(evidence) {
             assert_eq!(serde_json::json!(row.key), source["key"]);
-            assert_eq!(serde_json::json!(row.keyword), source["keyword"]);
+            // Historical evidence stores slugs; talk keywords use the destination spelling.
+            let keyword = match source["keyword"].as_str().ok_or("source keyword")? {
+                "ab_dendriel" => "ab'dendriel",
+                "robsons_isle" => "robson's isle",
+                keyword => keyword,
+            };
+            assert_eq!(row.keyword, keyword);
             assert_eq!(serde_json::json!(row.price), source["selected_fare"]);
             assert_eq!(serde_json::json!(row.premium), source["selected_premium"]);
             assert_eq!(serde_json::json!(row.x), source["destination"]["x"]);

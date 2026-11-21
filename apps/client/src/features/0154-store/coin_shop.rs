@@ -4,6 +4,17 @@ use crate::play::{PlayLink, mailbox::lock};
 use std::sync::Arc;
 
 impl PlayLink {
+    #[cfg(bevy_shell)]
+    pub(crate) fn coin_checkout_available(&self) -> bool {
+        lock(&self.mailbox).coin_shop.as_ref().is_some_and(|shop| shop.can_start())
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn open_coin_checkout(&self) -> bool {
+        let shop = lock(&self.mailbox).coin_shop.clone();
+        shop.is_some_and(|shop| shop.start())
+    }
+
     pub(crate) fn configure_coin_shop(
         &self,
         config: Option<crate::NativeLoginConfig>,

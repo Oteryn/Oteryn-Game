@@ -4,6 +4,7 @@ use super::*;
 fn slots_project_live_identity_and_clear_on_delta_or_disconnect()
 -> Result<(), Box<dyn std::error::Error>> {
     let item = ItemEntry {
+        appearance_id: 0,
         handle: 7.try_into()?,
         item_definition_ref: 42.try_into()?,
         count: 1.try_into()?,
@@ -46,7 +47,7 @@ fn equip_unequip_and_drop_keep_the_handle_and_wait_for_server()
     for destination in [
         ItemMoveDestination::Equipment(EquipmentSlot::RightHand),
         ItemMoveDestination::MainBackpack,
-        ItemMoveDestination::Container(8.try_into()?),
+        ItemMoveDestination::Container(8.try_into()?, None),
         ItemMoveDestination::Ground(WorldTilePosition {
             x: 2,
             y: 3,
@@ -87,6 +88,7 @@ fn equip_ammo_sends_the_whole_stack_without_a_count_extension()
 #[test]
 fn equipped_ammo_unequips_whole_without_a_count_prompt() -> Result<(), Box<dyn std::error::Error>> {
     let item = ItemEntry {
+        appearance_id: 0,
         handle: 7.try_into()?,
         item_definition_ref: 42.try_into()?,
         count: 50.try_into()?,
@@ -117,6 +119,7 @@ fn equipped_ammo_unequips_whole_without_a_count_prompt() -> Result<(), Box<dyn s
 fn backpack_slot_is_only_a_drop_target() -> Result<(), Box<dyn std::error::Error>> {
     let inventory = CharacterInventory {
         main_backpack: Some(ItemEntry {
+            appearance_id: 0,
             handle: 7.try_into()?,
             item_definition_ref: 42.try_into()?,
             count: 1.try_into()?,

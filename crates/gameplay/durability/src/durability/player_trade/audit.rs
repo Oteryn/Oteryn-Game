@@ -103,6 +103,9 @@ pub(super) fn encode(
 
 pub(super) fn decode(wire: &[u8]) -> Result<(EventEnvelopeV1, OneItemPlayerTradeV1), AuditError> {
     let envelope = mint::decode_common_envelope(wire)?;
+    if envelope.payload.len() > mint::RL07_PAYLOAD_BYTES_MAX {
+        return Err(AuditError::CapacityExceeded);
+    }
     let payload = OneItemTransactionV1::decode(envelope.payload.as_slice())
         .map_err(|_| AuditError::InvalidInput)?;
     if payload.interpretation_revision != mint::INTERPRETATION_REVISION
@@ -151,6 +154,22 @@ pub(super) fn decode(wire: &[u8]) -> Result<(EventEnvelopeV1, OneItemPlayerTrade
         let other = &parties[1 - index];
         let leaf: TradeLeaf =
             serde_json::from_value(party["leaf"].clone()).map_err(|_| AuditError::InvalidInput)?;
+        match (party.get("contents_count"), party.get("contents_sha256")) {
+            (None, None) => {}
+            (Some(count), Some(digest)) => {
+                let digest: Vec<u8> =
+                    serde_json::from_value(digest.clone()).map_err(|_| AuditError::InvalidInput)?;
+                if !count
+                    .as_u64()
+                    .is_some_and(|count| (2..=100).contains(&count))
+                    || digest.len() != 32
+                    || digest.iter().all(|byte| *byte == 0)
+                {
+                    return Err(AuditError::InvalidInput);
+                }
+            }
+            _ => return Err(AuditError::InvalidInput),
+        }
         for key in ["character", "session", "world", "channel"] {
             mint::check_uuid_v7(&bytes(&party["fence"][key])?)?;
         }

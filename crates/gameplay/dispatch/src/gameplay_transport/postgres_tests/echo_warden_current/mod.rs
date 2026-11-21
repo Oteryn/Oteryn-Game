@@ -17,11 +17,11 @@ pub(super) fn world(
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
     data.manifest.palette.truncate(1);
-    let tiles = [2, 3]
+    let tiles = [(2, 11), (3, 11), (2, 12), (3, 12)]
         .into_iter()
-        .map(|x| Tile {
+        .map(|(x, y)| Tile {
             x,
-            y: 11,
+            y,
             flags: 0,
             house: 0,
             zones: vec![],
@@ -109,6 +109,21 @@ pub(super) async fn verify(
             )
             .map_err(debug)?;
         assert!(runtime.visible_entities().creatures.is_empty());
+        for ((actor, position, session), x) in runtime
+            .positioned_melee_census()
+            .map_err(debug)?
+            .into_iter()
+            .filter_map(|(actor, position, session)| {
+                session.filter(|_| actor != player.0).map(|session| (actor, position, session))
+            })
+            .zip(2..)
+        {
+            runtime.relocate_arena_player(actor, session, position, MovementLocalPosition {
+                x,
+                y: 12,
+                floor: POSITION.floor,
+            }).map_err(debug)?;
+        }
     }
     for completed in [false, true] {
         if completed {
@@ -215,13 +230,22 @@ pub(super) async fn verify(
                     .echo_portals(now_ms + 30_000)
                     .any(|portal| portal.occurrence == occurrence)
             );
-            for step in 1..=12 {
-                runtime
-                    .drive_echo_wardens(now_ms + 30_000 + step * 400, |_| true)
-                    .map_err(debug)?;
+            // The production step starts the raid after its Bestiary read, so the
+            // next spawn is anchored to the owner's actual activation time.
+            let last_spawn = walker.owner_now().get() / 1_000
+                + plan
+                    .spawn_delay_ms(plan.spawn_count() - 1)
+                    .ok_or("last raid spawn")?;
+            while let Some(due) = runtime.next_echo_due_ms().filter(|due| *due <= last_spawn) {
+                runtime.drive_echo_wardens(due, |_| true).map_err(debug)?;
             }
             let children = runtime.visible_entities().creatures;
-            assert_eq!(children.len(), usize::from(plan.spawn_count()));
+            assert_eq!(
+                children.len(),
+                usize::from(plan.spawn_count()),
+                "complete {:?} raid after attempt {attempt}",
+                plan.outcome()
+            );
             let mut wardens = 0;
             for child in &children {
                 let snapshot = runtime.companion_snapshot(child.actor).map_err(debug)?;

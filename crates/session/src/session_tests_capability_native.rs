@@ -151,6 +151,7 @@ fn npc_service_and_staff_prerequisites_route_with_interleaved_domains() -> Resul
                     lines: vec!["Trade?".into()],
                 };
                 let window = npc_service::NpcTradeWindow {
+                    details: Vec::new(),
                     open: Some((npc, 7)),
                     offers: vec![npc_service::NpcOffer {
                         item_definition_ref: 5,
@@ -456,4 +457,267 @@ fn highscores_query_uses_selected_session_and_preserves_live_result() -> Result<
         })?
         .join()
         .map_err(|_| "highscores session test panicked")?
+}
+
+#[test]
+fn market_reply_mirrored_into_domain_28_is_applied_not_rejected() -> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            block_on(async {
+                let reply = |action, code| market::MarketReply {
+                    action,
+                    code,
+                    offer: [0; 16],
+                    rows: Vec::new(),
+                };
+                // The join snapshot the dispatch sends for domain 28, at revision 1.
+                let joined = market::encode_reply(&reply(0, 11))
+                    .map_err(|e| format!("market snapshot: {e:?}"))?;
+                let wares = reply(1, 1);
+                let mirrored = wares.clone();
+                let (client, mut server) = tokio::io::duplex(64 * 1024);
+                let peer = tokio::spawn(async move {
+                    join_peer_with(
+                        &mut server,
+                        &[63],
+                        &[63],
+                        &[],
+                        (1, spatial(0)),
+                        &[(market::STATE_DOMAIN_MARKET, 1, 1, joined)],
+                    )
+                    .await?;
+                    // Like the dispatch outbound path: CommandResult, then the domain 28 mirror.
+                    let frame = read_frame(&mut server).await?;
+                    let command = decode_wire_envelope(&frame)?.client_command(1)?;
+                    assert_eq!(command.command_type, market::COMMAND_TYPE_MARKET);
+                    let payload = market::encode_reply(&mirrored)
+                        .map_err(|e| format!("market reply: {e:?}"))?;
+                    write_frame(
+                        &mut server,
+                        &encode_command_result(
+                            1,
+                            41,
+                            command.command_id,
+                            CommandStatus::Accepted,
+                            &payload,
+                        )?,
+                    )
+                    .await?;
+                    write_frame(
+                        &mut server,
+                        &encode_state_delta(1, 42, market::STATE_DOMAIN_MARKET, 1, 2, 1, &payload)?,
+                    )
+                    .await?;
+                    let frame = read_frame(&mut server).await?;
+                    let command = decode_wire_envelope(&frame)?.client_command(1)?;
+                    write_frame(
+                        &mut server,
+                        &encode_command_result(
+                            1,
+                            43,
+                            command.command_id,
+                            CommandStatus::Accepted,
+                            &payload,
+                        )?,
+                    )
+                    .await?;
+                    Ok::<(), BoxError>(())
+                });
+                let mut session = Session::admit(client, admission_with(&[63])?).await?;
+                let request = market::encode_request(market::MarketRequest {
+                    action: 1,
+                    definition: 0,
+                    offer: [0; 16],
+                    amount: 0,
+                    price: 0,
+                    anonymous: false,
+                    page: 0,
+                })
+                .map_err(|e| format!("market request: {e:?}"))?;
+                // The second command reads past the mirrored delta the first one left queued.
+                for _ in 0..2 {
+                    let result = session
+                        .gated_command(market::CAPABILITY_MARKET_V1, market::COMMAND_TYPE_MARKET, &request)
+                        .await?;
+                    assert_eq!(
+                        market::decode_reply(&result.payload)
+                            .map_err(|e| format!("market decode: {e:?}"))?,
+                        wares
+                    );
+                }
+                let mirrored = market::encode_reply(&wares)
+                    .map_err(|e| format!("market mirror: {e:?}"))?;
+                assert!(session.take_events().iter().any(|event| matches!(
+                    event,
+                    SessionEvent::GatedSnapshotReplaced(delta)
+                        if delta.base_revision == 1
+                            && delta.new_revision == 2
+                            && delta.value.domain_id == market::STATE_DOMAIN_MARKET
+                            && delta.value.payload == mirrored
+                )));
+                peer.await??;
+                Ok(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "market session test thread panicked")?
+}
+
+#[test]
+fn stash_reply_mirrored_into_domain_27_is_applied_not_rejected() -> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            block_on(async {
+                let reply = |outcome, page| stash::StashReply {
+                    outcome,
+                    stowed_quantity: 0,
+                    transaction: None,
+                    page,
+                    has_more: false,
+                    rows: Vec::new(),
+                };
+                let opened = reply(stash::StashOutcome::Opened, 0);
+                let refreshed = reply(stash::StashOutcome::Opened, 1);
+                let (first, second) = (opened.clone(), refreshed.clone());
+                let (client, mut server) = tokio::io::duplex(64 * 1024);
+                let peer = tokio::spawn(async move {
+                    join_peer(&mut server, &[62], &[62], &[]).await?;
+                    // Like the dispatch outbound path: CommandResult, then the domain 27 mirror.
+                    for (sequence, base, value) in [(41, 0, first), (43, 1, second)] {
+                        let frame = read_frame(&mut server).await?;
+                        let command = decode_wire_envelope(&frame)?.client_command(1)?;
+                        assert_eq!(command.command_type, stash::COMMAND_TYPE_STASH_INTENT);
+                        let payload = stash::encode_stash_reply(&value)
+                            .map_err(|e| format!("stash reply: {e:?}"))?;
+                        write_frame(
+                            &mut server,
+                            &encode_command_result(
+                                1,
+                                sequence,
+                                command.command_id,
+                                CommandStatus::Accepted,
+                                &payload,
+                            )?,
+                        )
+                        .await?;
+                        write_frame(
+                            &mut server,
+                            &encode_state_delta(
+                                1,
+                                sequence + 1,
+                                stash::DOMAIN_STASH,
+                                base,
+                                base + 1,
+                                1,
+                                &payload,
+                            )?,
+                        )
+                        .await?;
+                    }
+                    Ok::<(), BoxError>(())
+                });
+                let mut session = Session::admit(client, admission_with(&[62])?).await?;
+                for expected in [&opened, &refreshed] {
+                    let result = session
+                        .gated_command(
+                            stash::CAPABILITY_STASH_V1,
+                            stash::COMMAND_TYPE_STASH_INTENT,
+                            &[],
+                        )
+                        .await?;
+                    assert_eq!(
+                        &stash::decode_stash_reply(&result.payload)
+                            .map_err(|e| format!("stash decode: {e:?}"))?,
+                        expected
+                    );
+                }
+                let mirrored = stash::encode_stash_reply(&opened)
+                    .map_err(|e| format!("stash mirror: {e:?}"))?;
+                assert!(matches!(
+                    session.take_events().as_slice(),
+                    [SessionEvent::GatedSnapshotReplaced(delta)]
+                        if delta.base_revision == 0
+                            && delta.new_revision == 1
+                            && delta.value.domain_id == stash::DOMAIN_STASH
+                            && delta.value.payload == mirrored
+                ));
+                peer.await??;
+                Ok(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "stash session test thread panicked")?
+}
+
+#[test]
+fn npc_quote_details_deliver_large_windows_and_reject_overlimit_quantities() -> Result<(), BoxError>
+{
+    npc_quote_boundary(1, 10_000, [0x90, 0x4e])?;
+    npc_quote_boundary(2, 5_000, [0x88, 0x27])
+}
+
+fn npc_quote_boundary(count: u32, maximum_quantity: u32, boundary: [u8; 2]) -> Result<(), BoxError> {
+    block_on(async {
+        use oteryn_protocol_oteryn::{npc_service, trade_details::NpcQuoteDetails};
+        let capabilities = &[3, 4, 6, 501];
+        let (client, mut server) = tokio::io::duplex(64 * 1024);
+        let peer = tokio::spawn(async move {
+            join_peer_with(
+                &mut server,
+                capabilities,
+                capabilities,
+                &[],
+                item_snapshot(vec![])?,
+                &[(8, 1, 1, vec![])],
+            )
+            .await
+        });
+        let mut session = Session::admit(client, admission_with(capabilities)?).await?;
+        peer.await??;
+        let window = npc_service::NpcTradeWindow {
+            open: Some((
+                EntityRef {
+                    identity: [9; 16],
+                    generation: 2,
+                },
+                7,
+            )),
+            offers: vec![
+                npc_service::NpcOffer {
+                    item_definition_ref: 5,
+                    side: NpcTradeSide::Buy,
+                    count,
+                    unit_price: 12,
+                };
+                200
+            ],
+            details: vec![
+                NpcQuoteDetails {
+                    name: "a".repeat(128),
+                    maximum_quantity
+                };
+                200
+            ],
+        };
+        let mut bytes = npc_service::encode_npc_trade_window_for(&window, true)
+            .map_err(|error| format!("{error:?}"))?;
+        assert!(bytes.len() > npc_service::MAX_NPC_TRADE_WINDOW_BYTES);
+        let frame = encode_state_delta(1, 41, 8, 1, 2, 1, &bytes)?;
+        assert!(matches!(
+            session.apply_state_delta(41, decode_wire_envelope(&frame)?.payload())?,
+            SessionEvent::NpcTradeWindow(delta) if delta.value == window
+        ));
+        let quantity = bytes.len() - 2;
+        assert_eq!(&bytes[quantity..], &boundary);
+        bytes[quantity] += 1;
+        let frame = encode_state_delta(1, 42, 8, 2, 3, 1, &bytes)?;
+        assert!(matches!(
+            session.apply_state_delta(42, decode_wire_envelope(&frame)?.payload()),
+            Err(SessionError::SessionUnusable)
+        ));
+        assert!(session.gated_revisions.contains(&(8, 2)));
+        Ok(())
+    })?
 }

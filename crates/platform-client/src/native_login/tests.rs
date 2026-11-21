@@ -4,6 +4,10 @@ mod account_fixtures;
 mod bazaar;
 #[path = "challenge_tests.rs"]
 mod challenge;
+#[path = "channel_probe_fixture_tests.rs"]
+mod channel_probe_fixtures;
+#[path = "directory_fixture_tests.rs"]
+mod directory_fixtures;
 #[path = "platform_fixture_tests.rs"]
 mod platform_fixtures;
 
@@ -109,7 +113,11 @@ fn every_contract_error_row_decodes() -> TestResult {
             PublicClass::CharacterAlreadyActive => "CHARACTER_ALREADY_ACTIVE",
         };
         for echo in [Some(ATTEMPT), None] {
-            let body = error_body(wire, class_text, echo);
+            let mut body = error_body(wire, class_text, echo);
+            if code == GatewayErrorCode::ClientUpdateRequired {
+                body.pop();
+                body = format!("{body},{UPDATE_POINTER}}}");
+            }
             assert_eq!(
                 parse_login_error(status, body.as_bytes(), &attempt())?,
                 code
@@ -610,4 +618,335 @@ pub(super) fn delay(duration: Duration) -> Duration {
         }
         None => duration,
     })
+}
+
+const UPDATE_POINTER: &str = r#""update":{"update_channel":"stable","minimum_release_sequence":null,"current_release_sequence":null,"manual_download_url":"https://oteryn.com/download"}"#;
+
+fn update_refusal(pointer: &str) -> String {
+    format!(
+        "{{{},{pointer}}}",
+        error_body(
+            "NATIVE_LOGIN_CLIENT_UPDATE_REQUIRED",
+            "CLIENT_UPDATE_REQUIRED",
+            None,
+        )
+        .trim_matches(['{', '}'])
+    )
+}
+
+#[test]
+fn client_build_gate_update_requires_a_valid_pointer() {
+    let valid = update_refusal(UPDATE_POINTER);
+    assert!(parse_login_error(409, valid.as_bytes(), &attempt()).is_ok());
+    let protocol_3 = valid.replace(r#""protocol_version":2"#, r#""protocol_version":3"#);
+    assert_eq!(
+        parse_gateway_refusal(3, 409, protocol_3.as_bytes(), &attempt())
+            .map(|refusal| refusal.code()),
+        Ok(GatewayErrorCode::ClientUpdateRequired),
+    );
+    assert!(parse_gateway_refusal(2, 409, protocol_3.as_bytes(), &attempt()).is_err());
+    assert!(parse_login_error(503, valid.as_bytes(), &attempt()).is_err());
+    assert!(
+        parse_login_error(
+            503,
+            valid
+                .replace(
+                    "NATIVE_LOGIN_CLIENT_UPDATE_REQUIRED",
+                    "NATIVE_LOGIN_MAINTENANCE"
+                )
+                .replace(
+                    r#""public_class":"CLIENT_UPDATE_REQUIRED""#,
+                    r#""public_class":"TEMPORARILY_UNAVAILABLE""#
+                )
+                .as_bytes(),
+            &attempt()
+        )
+        .is_err()
+    );
+    for invalid in [
+        error_body(
+            "NATIVE_LOGIN_CLIENT_UPDATE_REQUIRED",
+            "CLIENT_UPDATE_REQUIRED",
+            None,
+        ),
+        update_refusal(r#""update":null"#),
+        valid.replace("https://", "http://"),
+        valid.replace("https://", "file://"),
+        valid.replace("https://", "https:///"),
+        valid.replace("https://", "https://user@"),
+        valid.replace(
+            r#""update_channel":"stable""#,
+            r#""update_channel":"stable","update_channel":"beta""#,
+        ),
+        valid.replace(r#""minimum_release_sequence":null,"#, ""),
+        valid.replace(
+            r#""current_release_sequence":null"#,
+            r#""current_release_sequence":0"#,
+        ),
+        valid.replace(
+            r#""current_release_sequence":null"#,
+            r#""current_release_sequence":9007199254740992"#,
+        ),
+        valid.replace(
+            r#""update_channel":"stable""#,
+            r#""update_channel":"other""#,
+        ),
+        valid.replace(r#""update":{"#, r#""update":{"extra":0,"#),
+    ] {
+        assert!(
+            parse_login_error(409, invalid.as_bytes(), &attempt()).is_err(),
+            "{invalid}"
+        );
+    }
+}
+
+#[test]
+fn client_build_gate_maintenance_requires_a_fresh_sign_in() -> TestResult {
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()?;
+    let refusal = error_body(
+        "NATIVE_LOGIN_MAINTENANCE",
+        "TEMPORARILY_UNAVAILABLE",
+        Some(ATTEMPT),
+    );
+    let server = spawn_server(&runtime, vec![(503, "Retry-After: 2\r\n", refusal)])?;
+    let attempt_ref = attempt();
+    let client = client_for(&server)?;
+    let login = GatewayLogin {
+        attempt_ref: &attempt_ref,
+        character_id: CHARACTER,
+        channel_id: None,
+        client_build: "dev-1",
+    };
+    let started = Instant::now();
+    let result = runtime.block_on(client.with_release(Some(test_release()?)).gateway_login(
+        &ticket(),
+        &login,
+        CancellationToken::new(),
+    ));
+    let Err(NativeLoginError::Maintenance { retry_at }) = result else {
+        return Err("expected maintenance with a fresh sign-in deadline".into());
+    };
+    assert!(retry_at >= started + Duration::from_secs(2));
+    assert_eq!(server.requests.lock().map_err(|_| "poisoned")?.len(), 1);
+    assert_eq!(
+        GatewayErrorCode::Maintenance.progression(),
+        Progression::Retryable
+    );
+    Ok(())
+}
+
+fn test_release() -> Result<ReleaseIdentity, PlatformClientError> {
+    ReleaseIdentity::new(UpdateChannel::Stable, "rel-42", 42)
+        .ok_or(PlatformClientError::InvalidPayload)
+}
+
+#[test]
+fn client_build_gate_release_is_in_the_ordered_offer() -> TestResult {
+    const LEGACY: &str = r#"{"client_build":"dev-1","client_platform":"windows","transports":[{"protocol_major":1,"transport_profile":1,"alpn":"oteryn-game/1"}]}"#;
+    const WITH_RELEASE: &str = r#"{"client_build":"dev-1","client_platform":"windows","release":{"update_channel":"stable","release_id":"rel-42","release_sequence":42},"transports":[{"protocol_major":1,"transport_profile":1,"alpn":"oteryn-game/1"}]}"#;
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    let server = spawn_server(&runtime, vec![])?;
+    let attempt_ref = attempt();
+    let login = GatewayLogin {
+        attempt_ref: &attempt_ref,
+        character_id: CHARACTER,
+        channel_id: None,
+        client_build: "dev-1",
+    };
+    let handle = format!("otr1.{}", "A".repeat(43));
+    let sig = "A".repeat(86);
+    let proof = RecoveryDeviceProof {
+        kid: &handle[5..],
+        sig: &sig,
+    };
+    for (release, offer, digest) in [
+        (
+            None,
+            LEGACY,
+            "a37bedd3e125c473195a8a3789f42bbe2a8cd599540527c7af1b894783f251b2",
+        ),
+        (
+            Some(test_release()?),
+            WITH_RELEASE,
+            "95aca8c3f9bb87fe3acfe499acb2b8d4e66e1a20ef935f217f90c3b4f22f30da",
+        ),
+    ] {
+        let client = client_for(&server)?.with_release(release);
+        for version in [2, 3] {
+            assert_eq!(
+                std::str::from_utf8(&client.login_request(&ticket(), &login, version)?)?,
+                format!(
+                    r#"{{"protocol_version":{version},"game_login_ticket":"ticket-1","attempt_ref":"{ATTEMPT}","character_id":"{CHARACTER}","channel_id":null,"offer":{offer}}}"#
+                )
+            );
+        }
+        let proof_suffix = format!(r#","device_proof":{{"kid":"{}","sig":"{sig}"}}"#, proof.kid);
+        for (device_proof, suffix) in [(None, ""), (Some(&proof), proof_suffix.as_str())] {
+            assert_eq!(
+                std::str::from_utf8(&client.recovery_request(
+                    &handle,
+                    &attempt_ref,
+                    CHARACTER,
+                    "dev-1",
+                    device_proof
+                )?)?,
+                format!(
+                    r#"{{"protocol_version":3,"recovery_handle":"{handle}","attempt_ref":"{ATTEMPT}","character_id":"{CHARACTER}","offer":{offer}{suffix}}}"#
+                )
+            );
+        }
+        assert_eq!(client.offer_digest("dev-1")?, digest);
+    }
+    Ok(())
+}
+
+#[test]
+fn client_build_gate_validates_release_identity_bounds() {
+    use crate::updates::MAX_RELEASE_SEQUENCE;
+    assert!(ReleaseIdentity::new(UpdateChannel::Beta, "rel-42._", MAX_RELEASE_SEQUENCE).is_some());
+    for id in [
+        "",
+        "dev+1",
+        "dev/1",
+        "rél",
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    ] {
+        assert!(ReleaseIdentity::new(UpdateChannel::Stable, id, 1).is_none());
+    }
+    for sequence in [0, MAX_RELEASE_SEQUENCE + 1] {
+        assert!(ReleaseIdentity::new(UpdateChannel::Stable, "rel-42", sequence).is_none());
+    }
+}
+
+#[test]
+fn client_build_gate_update_refusal_is_terminal() -> TestResult {
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()?;
+    let server = spawn_server(
+        &runtime,
+        vec![
+            (409, "Retry-After: 1\r\n", update_refusal(UPDATE_POINTER)),
+            (200, "", success_body(ATTEMPT)),
+        ],
+    )?;
+    let attempt_ref = attempt();
+    let client = client_for(&server)?.with_release(Some(test_release()?));
+    let login = GatewayLogin {
+        attempt_ref: &attempt_ref,
+        character_id: CHARACTER,
+        channel_id: None,
+        client_build: "dev-1",
+    };
+    let result =
+        runtime.block_on(client.gateway_login(&ticket(), &login, CancellationToken::new()));
+    let Err(NativeLoginError::UpdateRequired(pointer)) = result else {
+        return Err("expected update pointer".into());
+    };
+    assert_eq!(pointer.minimum_release_sequence, None);
+    assert_eq!(pointer.current_release_sequence, None);
+    assert_eq!(pointer.manual_download_url, "https://oteryn.com/download");
+    assert_eq!(
+        GatewayErrorCode::ClientUpdateRequired.progression(),
+        Progression::Terminal
+    );
+    assert_eq!(server.requests.lock().map_err(|_| "poisoned")?.len(), 1);
+    Ok(())
+}
+
+#[test]
+fn client_build_gate_maintenance_retry_after_supports_both_forms_and_bounds() {
+    let now = UNIX_EPOCH + Duration::from_secs(1_770_000_000);
+    let date = httpdate::fmt_http_date(now + Duration::from_secs(9));
+    let past = httpdate::fmt_http_date(now - Duration::from_secs(3));
+    for (header, expected) in [
+        (Some("9"), 9),
+        (Some(date.as_str()), 9),
+        (Some(past.as_str()), 1),
+        (Some("99999999999999999999999"), u64::MAX),
+        (Some("0"), 1),
+        (Some("-1"), 1),
+        (Some("invalid"), 1),
+        (None, 1),
+    ] {
+        assert_eq!(
+            maintenance_delay(header, now),
+            Duration::from_secs(expected)
+        );
+    }
+}
+
+#[test]
+fn client_build_gate_maintenance_keeps_long_retry_after() {
+    let now = UNIX_EPOCH + Duration::from_secs(1_770_000_000);
+    let wait = Duration::from_secs(120);
+    let date = httpdate::fmt_http_date(now + wait);
+    for header in ["120", date.as_str()] {
+        assert_eq!(maintenance_delay(Some(header), now), wait);
+    }
+}
+
+#[test]
+fn maintenance_deadline_saturates_without_a_short_retry_or_overflow() {
+    let received = Instant::now();
+    let deadline =
+        maintenance_deadline(received, Some("99999999999999999999999"), SystemTime::now());
+    assert!(deadline > received + Duration::from_secs(120));
+    let remaining = deadline.duration_since(received).as_secs();
+    assert!(
+        remaining == u64::MAX
+            || received
+                .checked_add(Duration::from_secs(remaining + 1))
+                .is_none()
+    );
+}
+
+#[test]
+fn client_build_gate_refusal_requires_objects_in_all_positions() {
+    for body in [
+        r#"[2,{"code":"NATIVE_LOGIN_CLIENT_UPDATE_REQUIRED","public_class":"CLIENT_UPDATE_REQUIRED"},null,{"update_channel":"stable","minimum_release_sequence":null,"current_release_sequence":null,"manual_download_url":"https://oteryn.com/download"}]"#,
+        r#"{"protocol_version":2,"error":["NATIVE_LOGIN_MAINTENANCE","TEMPORARILY_UNAVAILABLE"],"attempt_ref":null}"#,
+        &update_refusal(r#""update":["stable",null,null,"https://oteryn.com/download"]"#),
+    ] {
+        for status in [409, 503] {
+            assert!(
+                parse_login_error(status, body.as_bytes(), &attempt()).is_err(),
+                "{body}"
+            );
+        }
+    }
+    let valid = update_refusal(UPDATE_POINTER);
+    assert!(matches!(
+        parse_gateway_refusal(2, 409, valid.as_bytes(), &attempt()),
+        Ok(GatewayRefusal::UpdateRequired(_))
+    ));
+}
+
+#[test]
+fn owner_character_feed_rejects_invalid_names_and_duplicate_identities() -> TestResult {
+    std::thread::Builder::new().stack_size(64 << 20).spawn(|| {
+        let runtime = tokio::runtime::Builder::new_multi_thread().enable_all().build().map_err(|e| e.to_string())?;
+        let row = serde_json::json!({"character_id": CHARACTER, "world_id": WORLD, "name": "Ari", "availability": "AVAILABLE"});
+        let mut feeds = Vec::new();
+        for name in ["x".repeat(97), "A\nri".into(), "".into()] {
+            let mut invalid = row.clone();
+            invalid["name"] = name.into();
+            feeds.push(serde_json::json!({"protocol_version": 2, "characters": [invalid]}));
+        }
+        let mut conflicting = row.clone();
+        conflicting["world_id"] = CHANNEL.into();
+        feeds.push(serde_json::json!({"protocol_version": 2, "characters": [row.clone(), conflicting]}));
+        feeds.push(serde_json::json!({"protocol_version": 2, "characters": [row.clone(), row]}));
+        let server = spawn_server(&runtime, feeds.iter().map(|v| (200, "", v.to_string())).collect()).map_err(|e| e.to_string())?;
+        let client = client_for(&server).map_err(|e| e.to_string())?;
+        let token = AccessToken(SecretText("owner-access".into()));
+        for _ in feeds {
+            assert_eq!(runtime.block_on(client.owner_characters(&token, CancellationToken::new())).err(), Some(NativeLoginError::Platform(PlatformClientError::InvalidPayload)));
+        }
+        Ok::<(), String>(())
+    })?.join().map_err(|_| "character test panicked")?.map_err(Into::into)
 }

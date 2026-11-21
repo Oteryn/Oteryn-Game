@@ -6,12 +6,15 @@
 //! Decoding happens in memory, on demand; no derived cache is written to disk.
 
 mod appearance;
+pub use appearance::missile_direction;
 mod catalog;
 mod effects;
 mod error;
 pub use effects::EffectCatalog;
 mod sheets;
 mod store;
+/// Tibia's game font and creature HUD flags from the official graphics bundle.
+pub mod tibia_graphics;
 /// Bounded map-window appearance loading.
 pub mod window;
 /// Immutable world placement formats.

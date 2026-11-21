@@ -2,9 +2,15 @@
 #[cfg(test)]
 #[path = "features/local-account-services/tests/entry.rs"]
 mod account_services_tests;
+#[cfg(test)]
+#[path = "play/admission_scene_test.rs"]
+mod admission_scene_test;
 mod admitted;
 mod authorize;
 mod challenge;
+#[cfg(test)]
+#[path = "native_entry/tests/channel_switch.rs"]
+mod channel_switch_tests;
 mod coin_shop_entry;
 mod config;
 pub(crate) use coin_shop_entry::open as open_coin_shop;
@@ -15,7 +21,7 @@ mod live_bulletin_tests;
 #[path = "native_entry/tests/queue_progress.rs"]
 mod queue_progress_tests;
 #[cfg(test)]
-mod test_support;
+pub(crate) mod test_support;
 #[cfg(test)]
 mod tests;
 
@@ -50,7 +56,17 @@ fn retry_login<E>(_error: E) -> GameplayEntryError {
 }
 
 fn login_rejected(error: NativeLoginError) -> GameplayEntryError {
-    rejected(error.public_class())
+    match error {
+        NativeLoginError::UpdateRequired(update) => {
+            let updater_started = crate::updater::start_login_update(&update).is_ok();
+            GameplayEntryError::ClientUpdateRequired {
+                manual_download_url: update.manual_download_url,
+                updater_started,
+            }
+        }
+        NativeLoginError::Maintenance { retry_at } => GameplayEntryError::Maintenance { retry_at },
+        error => rejected(error.public_class()),
+    }
 }
 
 const fn admission_class(class: AdmissionPublicClass) -> PublicClass {
@@ -80,18 +96,23 @@ pub(crate) async fn enter_observed(
         .map_err(|_error| GameplayEntryError::InvalidConfiguration)?;
     let gateway = PlatformClientConfig::new(&config.gateway_url)
         .map_err(|_error| GameplayEntryError::InvalidConfiguration)?;
-    let root = load_root_certificate(&config.dev_root)
-        .map_err(|_error| GameplayEntryError::InvalidConfiguration)?;
-
     // OAuth code + PKCE, owner character selection, then the consuming ticket.
     let client = login_client(
         &platform,
         &gateway,
         &config.oauth_client_id,
         config.retry_unit,
-    )?;
-    let (ticket, selected_character, selected_channel, character_name, training_requested) =
-        authorize::authorize(&client, config, cancellation.clone()).await?;
+    )?
+    .with_release(crate::build_info::login_release(&config.gateway_url));
+    let authorize::Authorized {
+        ticket,
+        character_id: selected_character,
+        channel_id: selected_channel,
+        character_name,
+        training_requested,
+        channels,
+    } = authorize::authorize(&client, config, cancellation.clone()).await?;
+
     let character_id = parse_uuid_v7(&selected_character)
         .and_then(|bytes| CharacterId::decode(&bytes).ok())
         .ok_or(GameplayEntryError::InvalidConfiguration)?;
@@ -110,8 +131,13 @@ pub(crate) async fn enter_observed(
         .await
         .map_err(login_rejected)?;
 
+    // Gameplay TLS applies only after the Gateway has issued a grant.
+    let root = load_root_certificate(&config.dev_root)
+        .map_err(|_error| GameplayEntryError::InvalidConfiguration)?;
+
     let mut attempt = NativeAttempt {
         queue: None,
+        channel_full: false,
         progress,
         client,
         ticket,
@@ -121,12 +147,14 @@ pub(crate) async fn enter_observed(
         character_id,
         character_name,
         training_requested,
+        channels,
         config,
     };
     oteryn_client_runtime::connection::enter(&mut attempt, config.retry_unit, cancellation).await
 }
 
 struct NativeAttempt<'a> {
+    channel_full: bool,
     queue: Option<oteryn_session::AdmissionQueue>,
     progress: Option<tokio::sync::watch::Sender<Option<AdmissionWait>>>,
     client: NativeLoginClient,
@@ -137,12 +165,17 @@ struct NativeAttempt<'a> {
     character_id: CharacterId,
     character_name: String,
     training_requested: bool,
+    channels: Vec<crate::character_selection::ChannelChoice>,
     config: &'a NativeLoginConfig,
 }
 
 impl AdmissionAttempt for NativeAttempt<'_> {
     type Output = AdmittedSession;
     type Error = GameplayEntryError;
+
+    fn terminal_refusal(&self) -> Option<Self::Error> {
+        self.channel_full.then_some(GameplayEntryError::ChannelFull)
+    }
 
     fn queue(&self) -> Option<oteryn_session::AdmissionQueue> {
         self.queue
@@ -157,10 +190,12 @@ impl AdmissionAttempt for NativeAttempt<'_> {
     async fn admit(&mut self) -> Result<Self::Output, Option<u32>> {
         let capabilities = crate::play::feature_0179_hotkey_equip::view::supported_capabilities(
             *self.character_id.as_bytes(),
-            crate::play::PreferenceStore::path().as_deref(),
+            self.config.preference_path.as_deref(),
         );
         self.queue = None;
-        let session = oteryn_session_tcp::connection::admit_detailed_optimized(
+        let traffic = std::sync::Arc::new(crate::traffic::Traffic::default());
+        let counted = std::sync::Arc::clone(&traffic);
+        let session = oteryn_session_tcp::connection::admit_detailed_optimized_wrapped(
             &self.grant.endpoint.host,
             self.grant.endpoint.port,
             &self.grant.endpoint.tls_server_name,
@@ -174,14 +209,18 @@ impl AdmissionAttempt for NativeAttempt<'_> {
                 deadline: CONNECT_DEADLINE,
             },
             &self.root,
-            crate::play::PreferenceStore::path()
+            self.config
+                .preference_path
+                .clone()
                 .and_then(|path| crate::play::PreferenceStore::load(path).ok())
                 .is_some_and(|store| store.preferences().optimise_connection),
+            |stream| crate::traffic::Counting::new(stream, counted),
         )
         .await
         .map_err(|refusal| {
             refusal.map(|refusal| {
                 self.queue = refusal.queue;
+                self.channel_full = refusal.channel_full;
                 refusal.code
             })
         })?;
@@ -191,12 +230,15 @@ impl AdmissionAttempt for NativeAttempt<'_> {
             character_name: self.character_name.clone(),
             training_requested: self.training_requested,
             session,
+            traffic,
             world_id: self.grant.world_id.clone(),
             channel_id: self.grant.channel_id.clone(),
+            channels: self.channels.clone(),
         })
     }
 
     async fn reconcile(&mut self, cancellation: CancellationToken) -> Result<(), Self::Error> {
+        // An identical committed attempt can return its stored grant across a gate change.
         self.grant = self
             .client
             .gateway_login(&self.ticket, &self.login, cancellation)

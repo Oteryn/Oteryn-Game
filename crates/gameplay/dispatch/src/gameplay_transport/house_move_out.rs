@@ -97,6 +97,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn drain_source_house_dispositions(
         &self,
     ) -> Result<(), HouseDispositionError> {
+        let start = self.background_start("house-recovery", 2);
+        let mut failure = None;
+        for index in (start..2).chain(0..start) {
+            let result = self.background_unit("house-recovery", index + 1, async {
+                if index == 0 {
+                    self.drain_source_house_disposition_unit().await
+                } else {
+                    super::hireling::recall_lost_houses(self).await.ok_or(HouseDispositionError::Rejected)
+                }
+            }).await;
+            if let Err(error) = result { failure = Some(error); }
+        }
+        failure.map_or(Ok(()), Err)
+    }
+
+    async fn drain_source_house_disposition_unit(&self) -> Result<(), HouseDispositionError> {
         let permit = self
             .spell_lane_permit()
             .await
@@ -120,7 +136,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })?;
         drop(runtime);
         drop(permit);
-        super::hireling::recall_lost_houses(self).await.ok_or(HouseDispositionError::Rejected)
+        Ok(())
     }
 }
 macro_rules! authority_methods {

@@ -46,12 +46,10 @@ impl PlayLink {
         submit(&mut lock(&self.mailbox), &self.commands, intent);
     }
     pub fn appearance_open(&self) {
-        #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
-            lock(&self.mailbox).properties.appearance.open = true;
-        }
+        lock(&self.mailbox).properties.appearance.open = true;
+    }
+    pub fn appearance_close(&self) {
+        lock(&self.mailbox).properties.appearance.open = false;
     }
     pub fn appearance_input(&self, events: &[NormalizedInputEvent]) -> bool {
         if !oteryn_client_ui::appearance::open_key(events) {

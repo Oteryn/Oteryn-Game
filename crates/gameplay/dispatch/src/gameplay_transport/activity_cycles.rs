@@ -86,8 +86,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let mut pass = pin!(async {
                 let scan = durable_scan.due(tokio::time::Instant::now());
-                let _ = self.activity_lifecycle_pass_with(scan).await;
-                let _ = self.publish_activity_raid_presence().await;
+                let start = self.background_start("activity-cadence", 2);
+                for index in (start..2).chain(0..start) {
+                    let _ = self
+                        .background_turn("activity-cadence", index + 1, async {
+                            if index == 0 {
+                                self.activity_lifecycle_pass_with(scan).await
+                            } else {
+                                self.publish_activity_raid_presence().await
+                            }
+                        })
+                        .await;
+                }
                 tokio::time::sleep(std::time::Duration::from_millis(50)).await;
             });
             let mut stopping = pin!(shutdown.cancelled());

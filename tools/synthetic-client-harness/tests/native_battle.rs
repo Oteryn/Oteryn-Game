@@ -156,7 +156,7 @@ async fn peer(mut stream: DuplexStream) -> Result<(), Error> {
                     generation: 1,
                 },
                 position: ActorPosition {
-                    floor: -1,
+                    floor: 1,
                     ..position(101)
                 },
                 ..creature()
@@ -282,11 +282,12 @@ fn position(x: i32) -> ActorPosition {
     ActorPosition {
         x,
         y: 200,
-        floor: -2,
+        floor: 2,
     }
 }
 fn actor(x: i32) -> WorldSpatialEntity {
     WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: EntityKind::Player,
         entity: EntityRef {

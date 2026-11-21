@@ -74,6 +74,9 @@ pub(super) fn target(
             world_interaction: session
                 .selected_capabilities
                 .contains(CAPABILITY_WORLD_INTERACTION_V1),
+            manual_sort: session
+                .selected_capabilities
+                .contains(oteryn_protocol_oteryn::item_view::CAPABILITY_CONTAINER_MANUAL_SORT_V1),
         };
         let intent = if session
             .selected_capabilities
@@ -197,6 +200,22 @@ where
         .await;
         drop(step_input);
         let moved = outcome.disposition == StepDisposition::Moved;
+        if moved {
+            authority
+                .committed_paced_movement(session.admitted, outcome.moved_to)
+                .await;
+        }
+        if moved
+            && authority
+                .pending_activity_switch(session.admitted)
+                .await
+                .map_err(|_| ServeEnd::Disconnected)?
+                .is_some()
+        {
+            // Native source STEP already handed off this Player. The queued USE
+            // did not execute; send its cancellation before the source barrier.
+            return Ok(WalkOutcome::Cancelled);
+        }
         effects::step(stream, authority, session, outcome).await?;
         let Some(current) = current.filter(|_| moved) else {
             return Ok(if outcome.disposition == StepDisposition::Blocked {

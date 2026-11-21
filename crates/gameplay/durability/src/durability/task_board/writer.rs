@@ -50,6 +50,9 @@ impl DurabilityRoot {
             return Err(Error::InvalidInput);
         }
         match (&request.action, request.cause) {
+            (_, QuestCause::SourceThink(_) | QuestCause::SourceStep(_)) => {
+                return Err(Error::AuthorityRejected);
+            }
             (TaskBoardAction::CreditKill { .. }, QuestCause::CreatureDeath(_)) => {}
             (TaskBoardAction::CreditKill { .. }, _) | (_, QuestCause::CreatureDeath(_)) => {
                 return Err(Error::InvalidInput);

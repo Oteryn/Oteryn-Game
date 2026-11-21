@@ -97,6 +97,7 @@ mod tests {
 
     fn item() -> ItemEntry {
         ItemEntry {
+            appearance_id: 0,
             handle: std::num::NonZeroU64::MIN,
             item_definition_ref: std::num::NonZeroU32::MIN,
             count: std::num::NonZeroU32::MIN,
@@ -219,6 +220,7 @@ fn refusal_keeps_partner_so_another_inventory_item_can_be_offered() -> Result<()
     panel.items.inventory.entries = [1_u64, 2]
         .into_iter()
         .map(|handle| ItemEntry {
+            appearance_id: 0,
             handle: std::num::NonZeroU64::new(handle).unwrap_or(std::num::NonZeroU64::MIN),
             item_definition_ref: std::num::NonZeroU32::MIN,
             count: std::num::NonZeroU32::MIN,

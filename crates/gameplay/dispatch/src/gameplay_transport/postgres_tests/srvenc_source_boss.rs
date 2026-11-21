@@ -2,10 +2,12 @@
 //! production template constructor, native Instance owner and death settlement.
 //! Crystal 201189f data-global/scripts/quests/candia_bosses/sugar_daddy_lever.lua:1-23;
 //! Canary 47dfd51f data-otservbr-global/monster/bosses/sugar_daddy.lua:21-25,76-132.
+use super::srvenc_source_boss_fixtures::{source_bundle};
+
 use super::fixture::{self, Harness, debug, run};
 use super::{Dependencies, TestResult, reset};
-use crate::content::native_gameplay::NativeGameplayState;
-use crate::content::{NativeEntryStart, ReferenceItemField, ReferenceItemType};
+
+use crate::content::NativeEntryStart;
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::foundation::runtime_actor_spell_types::{
     OwnerCombatBatch, OwnerCombatChange, OwnerCombatEffect, SpellOccurrenceBinding,
@@ -22,7 +24,6 @@ use crate::gameplay_transport::kill_reward::{DrainOutcome, KillSink, record_batc
 use crate::gameplay_transport::{ComposedFreshAdmission, item_fence_of};
 use oteryn_protocol_oteryn::activity_scope::ActivityScope;
 use oteryn_protocol_oteryn::boss_encounter::{self as wire, BossActivityReply};
-use oteryn_world_bundle_compiler::{bundle, compile, source};
 
 const BOSS: &str = "oteryn:boss.sugar_daddy";
 type PublishedRoom = (Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>, String, String, i64);
@@ -44,112 +45,6 @@ const EXIT: MovementLocalPosition = MovementLocalPosition {
     floor: 9,
 };
 
-/// Boot exact current Item definition references and policy flags, as
-/// node/serve.rs::boot_bundle_items does; no test-wide walkability override.
-pub(super) fn source_bundle(
-    world: crate::foundation::WorldId,
-    channel: crate::foundation::ChannelId,
-    native: &NativeGameplayState,
-    candidate: &crate::content::bosses::activity_template::BossLeverCandidate,
-) -> TestResult<crate::map::boot::BundleWorld> {
-    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-    let project = source::project_regions(&root, &[(130, 125)])?;
-    let (registry, palette) = source::registry(&root, &project)?;
-    let identity: bundle::Identity = serde_json::from_slice(&source::read(
-        &root.join("content/world/pins/oteryn.identity.json"),
-    )?)?;
-    let input = compile::Input {
-        regions: &project.regions,
-        palette: &palette,
-        identity: identity.clone(),
-        world: source::world_extent(&root)?,
-        build_class: bundle::BuildClass::NonProduction,
-        draft_areas: vec![],
-        families: &project.families,
-    };
-    let compiled = compile::compile(&input, &registry)?;
-    let low = candidate.zone_from.ok_or("source room lower bound")?;
-    let high = candidate.zone_to.ok_or("source room upper bound")?;
-    let held: std::collections::BTreeSet<_> = compiled
-        .diagnostics
-        .iter()
-        .filter(|diagnostic| {
-            let at = [
-                i32::from(diagnostic.x),
-                i32::from(diagnostic.y),
-                -i32::from(diagnostic.floor),
-            ];
-            let in_room = (low[0]..=high[0]).contains(&at[0])
-                && (low[1]..=high[1]).contains(&at[1])
-                && (low[2]..=high[2]).contains(&at[2]);
-            in_room
-                || candidate
-                    .lever_positions
-                    .iter()
-                    .chain(&candidate.entry_positions)
-                    .chain(candidate.boss_position.iter())
-                    .chain(candidate.exit_position.iter())
-                    .any(|anchor| *anchor == at)
-        })
-        .map(|diagnostic| diagnostic.key.as_str())
-        .collect();
-    assert!(
-        held.is_empty(),
-        "a real source boss room cannot silently omit provisional geometry: {held:?}"
-    );
-    let parity = compile::equivalence(&input, &registry, &compiled.bytes)?;
-    assert!(parity.tiles > 0 && parity.entries > 0);
-    let pins = crate::map::boot::BootPins {
-        bundle: crate::map::BundlePins {
-            digest: compiled.digest,
-            project_format_version: identity.project_format_version,
-            world_schema_version: identity.world_schema_version,
-            content_revision: identity.content_revision,
-            production: false,
-        },
-        map_revision: crate::map::overlay::internal_map_revision(
-            &compiled
-                .digest
-                .iter()
-                .map(|byte| format!("{byte:02x}"))
-                .collect::<String>(),
-        ),
-        start: crate::map::overlay::TilePos {
-            x: 33339,
-            y: 32221,
-            floor: -9,
-        },
-    };
-    let index = native.item_index().ok_or("active native Item index")?;
-    crate::map::boot::boot(&compiled.bytes, &pins, world, channel, |key| {
-        let revision = index.revision(key)?;
-        let reference = index.definition_ref("Item", key, revision)?;
-        let profile = native
-            .item_policy(key, revision)
-            .map(|policy| policy.record());
-        let pickupable = profile.is_some_and(|profile| {
-            matches!(
-                &profile.semantics.physical, ReferenceItemField::Known(physical)
-                    if physical.pickupable == ReferenceItemField::Known(true)
-            )
-        });
-        let door = profile.is_some_and(|profile| matches!(
-            &profile.semantics.classification, ReferenceItemField::Known(classification)
-                if classification.item_type == ReferenceItemField::Known(ReferenceItemType::Door)
-        ));
-        Some(crate::map::facts::ItemDefinition {
-            reference,
-            solid: profile.and_then(|profile| profile.attributes.blocks_movement),
-            blocks_projectile: profile
-                .and_then(|profile| profile.attributes.blocks_projectile)
-                .unwrap_or(true),
-            pickupable,
-            door,
-        })
-    })
-    .map_err(debug)
-}
-
 #[test]
 fn srvenc_source_sugar_daddy_template_creates_instance_and_settles_personal_rewards_postgres()
 -> TestResult {
@@ -158,19 +53,33 @@ fn srvenc_source_sugar_daddy_template_creates_instance_and_settles_personal_rewa
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(|| scenario(equipment::Case::Neither).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "source boss scenario panicked")??;
     Ok(())
 }
 
-fn scenario() -> TestResult {
+#[test]
+fn activity_equipment_clocks_charge_worn_items_and_imbuements_postgres() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(equipment::Case::Tick).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "activity equipment scenario panicked")??;
+    Ok(())
+}
+
+fn scenario(case: equipment::Case) -> TestResult {
+    let clock_handoff = case == equipment::Case::Return;
     run(async |admin| {
         reset();
         let h =
             Harness::create_with_admission_seed(admin, "srvenc_source_sugar", true, false).await?;
-        let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-        super::house_transfer::prepare_owned_session(&h).await?;
+        let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+        super::house_transfer_fixtures::prepare_owned_session(&h).await?;
         let expected = fixture::fence(1)?;
         let RuntimeScopeRefV1::Channel {
             world_id,
@@ -236,7 +145,11 @@ fn scenario() -> TestResult {
         assert_eq!(policy.reward_boss, Some(true));
         let rewards = native.reward_table().row(CREATURE).map_err(debug)?;
         assert_eq!(
-            rewards.corpse_item.production_key,
+            rewards
+                .corpse_item
+                .as_ref()
+                .ok_or("native Sugar physical corpse")?
+                .production_key,
             "oteryn:item.tibia.i48416"
         );
         assert!(!rewards.loot_table.entries.is_empty());
@@ -284,7 +197,7 @@ fn scenario() -> TestResult {
         )
         .ok_or("boss capability")?;
         let fence = admitted.item_fence.ok_or("current source item fence")?;
-        super::item_look::seed_main_backpack(&h, &[]).await?;
+        super::item_look_fixtures::seed_main_backpack(&h, &[]).await?;
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT(character_id) DO NOTHING")
             .bind(fence.character_id.as_bytes().as_slice()).execute(&h.pool).await?;
         {
@@ -325,7 +238,7 @@ fn scenario() -> TestResult {
             .activity_runtimes
             .register_template(&template)
             .map_err(|_| "register source template")?;
-        super::boss_activity::issue_content_and_reset_with_runtime_pin(
+        super::boss_activity_fixtures::issue_content_and_reset_with_runtime_pin(
             &h,
             &activation_pin,
             &pin,
@@ -362,7 +275,7 @@ fn scenario() -> TestResult {
             published.6, 1,
             "replaying the sealed source publication is idempotent"
         );
-        let instance = super::activity_runtime::allocate_ready_instance(&h, 88).await?;
+        let instance = super::activity_runtime_fixtures::allocate_ready_instance(&h, 88).await?;
         let assignment = h
             .root
             .read_runtime_scope_assignment(instance)
@@ -376,9 +289,16 @@ fn scenario() -> TestResult {
                 .is_none(),
             "only the production template caller may instantiate the destination"
         );
+        let entry_budget = if case == equipment::Case::Entry {
+            equipment::activity_equipment_clocks_charge_worn_items(&h, &mut owner, admitted, case).await?;
+            owner.clock_origin -= std::time::Duration::from_secs(59);
+            Some(equipment::remaining_budgets(&h).await?)
+        } else {
+            None
+        };
         let old = admitted;
         let (_, reply, barrier) =
-            super::boss_activity::exchange(&owner, &mut admitted, BOSS, true).await?;
+            super::boss_activity_fixtures::exchange(&owner, &mut admitted, BOSS, true).await?;
         let BossActivityReply::Accepted {
             handoff,
             deadline_unix_ms: Some(_),
@@ -400,7 +320,10 @@ fn scenario() -> TestResult {
         assert_eq!(barrier.handoff, handoff);
         assert_eq!(barrier.source_session, *old.game_session_id.as_bytes());
         assert_eq!(barrier.session, *admitted.game_session_id.as_bytes());
-        let destination = owner
+        if let Some(budget) = entry_budget {
+            return equipment::assert_elapsed(&h, budget).await;
+        }
+        let mut destination = owner
             .resolve_runtime_view(admitted)
             .await
             .map_err(|_| "resolve production Instance")?
@@ -445,6 +368,15 @@ fn scenario() -> TestResult {
                 CREATURE
             );
         }
+        if case != equipment::Case::Neither {
+            equipment::activity_equipment_clocks_charge_worn_items(&h, &mut destination, admitted, case).await?;
+            if case == equipment::Case::LostExpiry {
+                return equipment::settle_lost_expiry(&h, &mut destination, admitted).await;
+            }
+            if !clock_handoff {
+                return Ok(());
+            }
+        }
         settle_source_boss(&h, &destination, admitted, policy).await?;
         let exit_deadline: (i64,i64) = sqlx::query_as("SELECT terminal_at,exit_deadline FROM game_boss_room_activities WHERE admission=encode($1,'hex')::uuid")
             .bind(handoff.as_slice()).fetch_one(&h.pool).await?;
@@ -469,7 +401,17 @@ fn scenario() -> TestResult {
             )?))
             .await;
         }
-        let (_, returned, barrier) = super::boss_activity::exchange_command(
+        let before = if clock_handoff {
+            let actor = admitted.runtime_actor.ok_or("activity actor")?;
+            let permit = destination.spell_lane_permit().await.ok_or("activity spell lane")?;
+            assert!(destination.checkpoint_timed_equipment(actor, admitted.game_session_id, true).await);
+            drop(permit);
+            owner.clock_origin = destination.clock_origin - std::time::Duration::from_secs(59);
+            Some(equipment::remaining_budgets(&h).await?)
+        } else {
+            None
+        };
+        let (_, returned, barrier) = super::boss_activity_fixtures::exchange_command(
             &owner,
             &mut admitted,
             BOSS,
@@ -494,6 +436,9 @@ fn scenario() -> TestResult {
                 .position(),
             EXIT
         );
+        if let Some(budget) = before {
+            equipment::assert_elapsed(&h, budget).await?;
+        }
         let retained_rewards: i64 =
             sqlx::query_scalar("SELECT count(*) FROM game_boss_reward_items")
                 .fetch_one(&h.pool)
@@ -508,6 +453,9 @@ fn scenario() -> TestResult {
         Ok(())
     })
 }
+
+#[path = "srvenc_source_boss/equipment.rs"]
+mod equipment;
 
 async fn settle_source_boss(
     h: &Harness,

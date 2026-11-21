@@ -1,0 +1,18 @@
+{
+  "mechanic": "0504-tutorial-vocation",
+  "kind": "handlers",
+  "id": "0504-tutorial-vocation-command6243",
+  "status": "supported",
+  "commands": [
+    6243
+  ],
+  "direction": "client_to_server",
+  "capability": 504,
+  "entry": "protocol.rs::request",
+  "reducer": "protocol.rs::apply_result",
+  "test": "tests.rs::tutorial_vocation_replays_real_dispatch_offer_and_submission",
+  "not_applicable": {
+    "settings": "No client setting.",
+    "input": "The native tutorial card buttons call request with their server-offered choice id."
+  }
+}

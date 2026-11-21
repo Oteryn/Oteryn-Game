@@ -130,6 +130,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         fence: &crate::durability::item_transfer::CurrentCharacterItemFence,
         casters: &[QualifiedCaster],
         access: &(impl crate::gameplay_transport::spell_access_facts::CurrentSpellAccessOwner + Sync),
+        native_health_observations: &[oteryn_gameplay_entities::NativeHealthChangeObservation],
     ) -> Result<FireReport, Error> {
         let objects = self.door.lock().await;
         let pass = self
@@ -155,9 +156,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.root, self.character, self.holder, fence, saved.binding.command, content.source_digest(), &evidence)
                 .await.map_err(|_|DurabilityError::Unavailable)?;
             let state = states.get(runtime, saved.binding.caster, saved.binding.command.game_session_id()).ok_or(DurabilityError::Unavailable)?;
-            let owned = crate::gameplay_transport::spell_access_facts::load_owned_cast_facts_in_transaction(&mut tx,
+            let mut owned = crate::gameplay_transport::spell_access_facts::load_owned_cast_facts_in_transaction(&mut tx,
                 self.root, self.character, self.holder, fence, saved.binding.command, runtime, saved.binding.caster,
                 state, active, access, self.owner_now().get()).await.map_err(|_|DurabilityError::Unavailable)?;
+            owned.set_native_health_observations(native_health_observations.to_vec());
             if let Some(resolved) = &saved.resolved {
                 if resolved.owned.binding() != owned.binding() || resolved.owned.durable_build() != owned.durable_build()
                     || resolved.owned.equipment() != owned.equipment() || resolved.owned.magnitude() != owned.magnitude() {
@@ -179,7 +181,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 let talisman=crate::durability::task_board::read_talisman_in_item_transaction(&mut tx,*fence).await?;
                 let resolved = super::super::native_combat_cast::prepare_strike_due(&mut tx, authority.read_authority(), runtime, states,
-                    room, &objects, content, &owned, self.spells, saved, self.owner_now(), &talisman, decision, &mut draw).await.map_err(|_|DurabilityError::Unavailable)?;
+                    room, &objects, content, self.imported_charms, &owned, self.spells, saved, self.owner_now(), &talisman, decision, &mut draw).await.map_err(|_|DurabilityError::Unavailable)?;
                 if invalid { return Err(DurabilityError::Unavailable); }
                 let Some(resolved) = resolved else {
                     cancel(runtime, states, saved.binding.command).map_err(|_|DurabilityError::Unavailable)?;
@@ -192,7 +194,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .retain_strike(runtime, saved, resolved, crate::foundation::owner_timer::SemanticTimeMicros::from_micros(self.owner_now().get()))
                     .map_err(|_|DurabilityError::Unavailable)?;
             }
-            **accepted = Some(apply_due_under_current_owners(runtime, states, self.spells, casters, self.owner_now()).map_err(|_|DurabilityError::Unavailable)?);
+            **accepted = Some(apply_due_under_current_owners(runtime, states, self.spells, casters, self.owner_now(), content, self.imported_charms).map_err(|_|DurabilityError::Unavailable)?);
             tx.rollback().await.map_err(|_|DurabilityError::Unavailable)?;
             Ok(())
         })).await.map_err(|_|Error::StaleOwner)?;

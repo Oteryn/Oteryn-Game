@@ -1,0 +1,19 @@
+{
+  "id": "NPC-BULK-WORK",
+  "owner_contract": "protocol-oteryn/v1/trade-details-v1.md",
+  "resource": "BUY effect work units",
+  "unit": "work units",
+  "hard_maximum": 106,
+  "configurable_range": {
+    "minimum": 106,
+    "maximum": 106
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Negotiated multi-stack NPC trade; reject the complete plan before any write when over its bound.",
+  "client_visible": false,
+  "boundary_tests": [
+    "npc_trade_bulk_buy_splits_stacks_and_sell_spans_stacks",
+    "npc_shop_postgres_authoritative_side_bounds_and_bulk_quantities"
+  ],
+  "notes": "Individual stacks, price ceilings, gold conservation, custody and session-generation fences remain enforced. Actual per-side quote limits may be lower."
+}

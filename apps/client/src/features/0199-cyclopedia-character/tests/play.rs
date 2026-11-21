@@ -309,3 +309,113 @@ fn native_general_stats_controls_include_confirmed_vocation()
     assert_eq!(native_cards.len(), 15);
     Ok(())
 }
+
+#[test]
+fn native_achievement_paging_uses_the_achievement_adapter() -> Result<(), Box<dyn std::error::Error>>
+{
+    use crate::play::feature_0199_cyclopedia_character::view::native;
+    use oteryn_client_runtime::account_achievements::{
+        AccountAchievementRow, AccountAchievementsResult,
+    };
+    use oteryn_client_runtime::cyclopedia_character::achievements::{
+        AchievementPage, decode_request,
+    };
+    let mut panel = CyclopediaCharacterPanel {
+        selected: true,
+        target: Some([2; 16]),
+        ..Default::default()
+    };
+    request(&mut panel, Intent::Achievements).ok_or("open achievements")?;
+    let reply = |page, more| -> Result<GatedCommandResult, Box<dyn std::error::Error>> {
+        Ok(GatedCommandResult {
+            command_id: 1,
+            status: CommandStatus::Accepted,
+            server_sequence: 1,
+            payload: AchievementPage {
+                character: [2; 16],
+                name: "Test Hero".into(),
+                page: AccountAchievementsResult {
+                    total_points: 64,
+                    fact_count: 64,
+                    page,
+                    rows: if more {
+                        (0..64)
+                            .map(|i| AccountAchievementRow {
+                                key: format!("oteryn:achievement/entry_{i}"),
+                                name: format!("Entry {i}"),
+                                description: "A confirmed feat".into(),
+                                grade: 1,
+                                points: 1,
+                                earned_at: 1,
+                                secret: false,
+                            })
+                            .collect()
+                    } else {
+                        vec![]
+                    },
+                    has_more: more,
+                },
+            }
+            .encode()
+            .map_err(|e| format!("{e:?}"))?,
+        })
+    };
+    assert!(apply_result(&mut panel, &reply(0, true)?));
+    let command = native::submit(
+        &mut panel,
+        113,
+        ["0", "20", "02020202020202020202020202020202"],
+    )
+    .ok_or("next page")?;
+    assert_eq!(
+        command.payload.first(),
+        Some(&128),
+        "achievement adapter selector"
+    );
+    let decoded = decode_request(&command.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(decoded.page, 1);
+    assert_eq!(decoded.target, Some([2; 16]));
+    assert!(apply_result(&mut panel, &reply(1, false)?));
+    let command = native::submit(
+        &mut panel,
+        112,
+        ["0", "20", "02020202020202020202020202020202"],
+    )
+    .ok_or("previous page")?;
+    assert_eq!(
+        decode_request(&command.payload)
+            .map_err(|e| format!("{e:?}"))?
+            .page,
+        0
+    );
+    Ok(())
+}
+
+#[test]
+fn reopened_character_form_preserves_target_and_page_on_next_action() -> Result<(), &'static str> {
+    use crate::play::feature_0199_cyclopedia_character::view::native;
+    use oteryn_client_runtime::cyclopedia_character::CharacterTab;
+    for target in [None, Some([0xab; 16])] {
+        let mut panel = CyclopediaCharacterPanel {
+            selected: true,
+            target,
+            tab: CharacterTab::RecentDeaths,
+            offset: 40,
+            limit: 10,
+            result: Some("retained rows".into()),
+            ..Default::default()
+        };
+        let fields = native::initial_character_fields(&panel);
+        let command = native::submit(&mut panel, 102, fields.each_ref().map(String::as_str))
+            .ok_or("refresh retained page")?;
+        assert_eq!(panel.target, target);
+        assert_eq!(panel.offset, 40);
+        assert_eq!(panel.limit, 10);
+        assert_eq!((command.capability, command.kind), (199, 388));
+        assert_eq!(&command.payload[..4], &[2, 40, 0, 10]);
+        if let Some(target) = target {
+            assert_eq!(&command.payload[4..], &target);
+        }
+    }
+    Ok(())
+}

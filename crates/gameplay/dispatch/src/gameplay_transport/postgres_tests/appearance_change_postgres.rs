@@ -1,11 +1,12 @@
 //! Native dispatch, active artifact, Character sex and the fenced PostgreSQL writer.
 #![allow(clippy::expect_used)]
+use super::appearance_change_postgres_fixtures::{observer_visibility_tests};
+
 #[path = "appearance_change_postgres/command_replay_tests.rs"]
 mod command_replay_tests;
 #[path = "appearance_change_postgres/native_admission_tests.rs"]
 mod native_admission_tests;
-#[path = "appearance_change_postgres/observer_visibility_tests.rs"]
-pub(super) mod observer_visibility_tests;
+
 #[path = "appearance_change_postgres/receipt_substitution_tests.rs"]
 mod receipt_substitution_tests;
 #[path = "appearance_change_postgres/temporary_appearance_tests.rs"]
@@ -85,6 +86,9 @@ fn appearance_change_real_dispatch_commits_reloads_and_rejects_stale_root_on_pos
             )
             .await
             .ok_or("initial appearance")?;
+        assert_eq!(initial.catalogue.root_revision, 1);
+        assert!(initial.catalogue.selected.is_none());
+        assert!(!initial.catalogue.palette.is_empty());
         assert_eq!(
             initial.catalogue.context.content_generation,
             channel.content_generation
@@ -162,6 +166,12 @@ fn appearance_change_real_dispatch_commits_reloads_and_rejects_stale_root_on_pos
             .appearance_observation(dependencies.actor, command.game_session_id, vec![entity])
             .await
             .ok_or("committed appearance")?;
+        let emitted = &updated.catalogue;
+        assert_eq!(emitted.root_revision, 2);
+        let selected = emitted.selected.as_ref().ok_or("committed catalogue selection")?;
+        assert_eq!(selected.revision, 2);
+        assert_eq!(selected.provenance, change.content_revision);
+        assert_eq!(selected.selection, change.selection);
         assert_eq!(updated.bindings[0].selection_revision, Some(2));
         assert!(matches!(
             updated.bindings[0].look,

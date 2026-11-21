@@ -1,0 +1,580 @@
+//! Assignment edits call the retained local owners; no native platform dialog is opened.
+use super::*;
+use crate::bevy_shell::game_ui::modal::ModalGuard;
+use crate::play::{BarAction, ItemUseMode, PassiveAbility};
+use bevy::{
+    input_focus::{
+        FocusCause, InputFocus,
+        tab_navigation::{TabGroup, TabIndex},
+    },
+    text::{EditableText, TextCursorStyle},
+    ui_widgets::TextInput,
+};
+
+mod assign;
+mod catalog;
+mod objects;
+#[cfg(test)]
+use assign::REFUSED;
+use assign::{add_to_multi, apply, toggle_multi};
+#[cfg(test)]
+mod equip_tests;
+#[cfg(test)]
+mod tests;
+
+#[derive(Resource, Default)]
+pub(super) struct EditorState {
+    selected: Option<(usize, u64)>,
+    rendered: Option<(usize, u64)>,
+    message: String,
+    page: usize,
+    catalog_key: Option<catalog::Key>,
+    pending: Option<Pending>,
+    /// The multiaction being composed: spells and objects collect here until it is saved.
+    multi: Option<Vec<BarAction>>,
+}
+impl EditorState {
+    pub(super) fn active(&self) -> bool {
+        self.selected.is_some()
+    }
+    pub(super) fn open(&mut self, slot: usize, generation: u64) {
+        self.pending = None;
+        self.selected = Some((slot, generation));
+        self.message.clear();
+        self.page = 0;
+        self.catalog_key = None;
+        self.multi = None;
+    }
+}
+#[derive(Component)]
+pub(super) struct EditorRoot;
+#[derive(Component)]
+pub(super) struct Field(usize);
+#[derive(Component)]
+pub(super) struct Description;
+#[derive(Component)]
+pub(super) struct Feedback;
+#[derive(Component, Clone, Copy, PartialEq, Eq)]
+enum Edit {
+    PreviousSpells,
+    NextSpells,
+    Text,
+    InsertText,
+    Equip,
+    Use,
+    CursorPosition,
+    SelfActor,
+    Target,
+    Cursor,
+    Instinct,
+    Harmony,
+    Serene,
+    AimTarget,
+    AimFacing,
+    AimCursor,
+    Multi,
+    Key,
+    Clear,
+    Close,
+}
+
+struct Pending {
+    selected: (usize, u64),
+    anchor: Entity,
+    action: Edit,
+    fields: Vec<(Entity, usize)>,
+    assignment: String,
+}
+fn editing(text: &EditableText) -> bool {
+    text.pending_paste.is_some()
+        || text
+            .pending_edits
+            .iter()
+            .any(bevy::text::TextEdit::is_destructive)
+}
+
+pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
+    let root = commands
+        .spawn((
+            EditorRoot,
+            super::super::GameModal,
+            GlobalZIndex(120),
+            Node {
+                position_type: PositionType::Absolute,
+                width: percent(100.),
+                height: percent(100.),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                display: Display::None,
+                ..default()
+            },
+            BackgroundColor(Color::srgba(0., 0., 0., 0.65)),
+        ))
+        .id();
+    let panel = commands
+        .spawn((
+            source::frame(skins.frame.clone(), [4., 17., 4., 4.]),
+            TabGroup {
+                order: 5,
+                modal: true,
+            },
+            bevy::ui_widgets::ScrollArea,
+            Node {
+                width: px(530.),
+                max_width: percent(98.),
+                max_height: percent(98.),
+                padding: UiRect {
+                    left: px(12.),
+                    right: px(12.),
+                    top: px(25.),
+                    bottom: px(12.),
+                },
+                flex_direction: FlexDirection::Column,
+                row_gap: px(5.),
+                overflow: Overflow::scroll_y(),
+                ..default()
+            },
+        ))
+        .id();
+    commands.entity(root).add_child(panel);
+    source::dialog_caption(&mut commands, panel, "Assign Action", skins.font.clone());
+    let description = commands
+        .spawn((
+            Description,
+            source::text("", source::font(skins.font.clone(), false)),
+        ))
+        .insert(TextLayout::default())
+        .id();
+    commands.entity(panel).add_child(description);
+    for (index, caption) in [
+        "Search spells by name or words",
+        "Objects carried (choose one, then an object action)",
+        "Text",
+        "Keyboard chord",
+        "Item subtype (blank: any)",
+        "Equip upgrade tier (0–10 on tiered worlds, otherwise blank)",
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let label = commands
+            .spawn(source::text(
+                caption,
+                source::font(skins.font.clone(), false),
+            ))
+            .id();
+        let frame = commands
+            .spawn((
+                source::frame(skins.inset.clone(), [1.; 4]),
+                Node {
+                    width: percent(100.),
+                    height: px(24.),
+                    min_height: px(24.),
+                    display: if index == 1 {
+                        Display::None
+                    } else {
+                        Display::Flex
+                    },
+                    ..default()
+                },
+            ))
+            .id();
+        let field = commands
+            .spawn((
+                Field(index),
+                TextInput,
+                EditableText {
+                    max_characters: Some(if index == 2 { 1020 } else { 64 }),
+                    ..default()
+                },
+                source::font(skins.font.clone(), false),
+                TextColor(source::TEXT_COLOR),
+                TextLayout::no_wrap(),
+                TextCursorStyle::default(),
+                TabIndex(index as i32),
+                Node {
+                    width: percent(100.),
+                    height: px(24.),
+                    padding: px(4.).all(),
+                    ..default()
+                },
+            ))
+            .id();
+        commands.entity(frame).add_child(field);
+        commands.entity(panel).add_children(&[label, frame]);
+        if index == 0 {
+            let choices = commands
+                .spawn((
+                    catalog::CatalogRoot,
+                    Node {
+                        width: percent(100.),
+                        height: px(92.),
+                        min_height: px(92.),
+                        flex_wrap: FlexWrap::Wrap,
+                        column_gap: px(3.),
+                        row_gap: px(3.),
+                        overflow: Overflow::scroll_y(),
+                        ..default()
+                    },
+                    bevy::ui_widgets::ScrollArea,
+                ))
+                .id();
+            commands.entity(panel).add_child(choices);
+        }
+        if index == 1 {
+            let objects = commands
+                .spawn((
+                    objects::ObjectsRoot,
+                    Node {
+                        width: percent(100.),
+                        max_height: px(62.),
+                        flex_wrap: FlexWrap::Wrap,
+                        column_gap: px(3.),
+                        row_gap: px(3.),
+                        overflow: Overflow::scroll_y(),
+                        ..default()
+                    },
+                    bevy::ui_widgets::ScrollArea,
+                ))
+                .id();
+            commands.entity(panel).add_child(objects);
+        }
+    }
+    let actions = commands
+        .spawn(Node {
+            flex_wrap: FlexWrap::Wrap,
+            column_gap: px(4.),
+            row_gap: px(4.),
+            ..default()
+        })
+        .id();
+    for (action, caption) in [
+        (Edit::PreviousSpells, "Previous spells"),
+        (Edit::NextSpells, "Next spells"),
+        (Edit::Text, "Send text"),
+        (Edit::InsertText, "Insert text"),
+        (Edit::Equip, "Equip"),
+        (Edit::Use, "Use item"),
+        (Edit::CursorPosition, "Use position"),
+        (Edit::SelfActor, "Use on self"),
+        (Edit::Target, "Use on target"),
+        (Edit::Cursor, "Use at cursor"),
+        (Edit::Instinct, "Instinct"),
+        (Edit::Harmony, "Harmony"),
+        (Edit::Serene, "Serene"),
+        (Edit::AimTarget, "Towards target"),
+        (Edit::AimFacing, "Facing"),
+        (Edit::AimCursor, "Towards cursor"),
+        (Edit::Multi, "Multiaction"),
+        (Edit::Key, "Bind key"),
+        (Edit::Clear, "Clear"),
+        (Edit::Close, "Close"),
+    ] {
+        let button = commands
+            .spawn((source::button(skins.buttons.clone(), 90.), action))
+            .observe(activate)
+            .id();
+        let caption = commands
+            .spawn(source::button_caption(caption, skins.font.clone()))
+            .id();
+        commands.entity(button).add_child(caption);
+        commands.entity(actions).add_child(button);
+    }
+    let feedback = commands
+        .spawn((
+            Feedback,
+            source::text("", source::font(skins.font.clone(), false)),
+        ))
+        .insert(TextLayout::default())
+        .id();
+    commands.entity(panel).add_children(&[actions, feedback]);
+}
+
+fn slot_binding(slot: usize) -> Option<crate::play::PreferenceBinding> {
+    let id = format!("local-spell-action-bar-spell-{}", slot + 1);
+    crate::play::preference_bindings()
+        .ok()?
+        .into_iter()
+        .find(|binding| binding.id == id)
+}
+
+pub(super) fn slot_chord<'a>(
+    prefs: &'a crate::play::ReferencePreferences,
+    binding: &'a crate::play::PreferenceBinding,
+    slot: usize,
+    chat_on: bool,
+) -> &'a str {
+    if binding.is_extra_action_bar_slot() {
+        return prefs.binding_chord(binding);
+    }
+    if let Some(chord) = prefs.legacy_action_chord(slot, chat_on) {
+        return chord;
+    }
+    prefs
+        .binding_maps(chat_on)
+        .ok()
+        .and_then(|(primary, _)| primary.get(binding.id))
+        .map_or(binding.default_chord, String::as_str)
+}
+
+fn activate(
+    event: On<Activate>,
+    guard: ModalGuard,
+    edits: Query<&Edit>,
+    fields: Query<(Entity, &Field, &EditableText)>,
+    mut owner: NonSendMut<HostOwner>,
+    mut state: ResMut<EditorState>,
+    mut focus: ResMut<InputFocus>,
+) {
+    if !guard.allows(event.entity) {
+        return;
+    }
+    let Ok(action) = edits.get(event.entity) else {
+        return;
+    };
+    let Some((slot, generation)) = state.selected else {
+        return;
+    };
+    if owner.modal_active() || generation != owner.generation() {
+        return;
+    }
+    if matches!(action, Edit::Close) {
+        state.selected = None;
+        state.pending = None;
+        focus.clear();
+        return;
+    }
+    let Some(play) = &owner.play else {
+        return;
+    };
+    match action {
+        Edit::PreviousSpells => {
+            state.page = state.page.saturating_sub(1);
+            return;
+        }
+        Edit::NextSpells => {
+            state.page = state.page.saturating_add(1);
+            return;
+        }
+        Edit::Multi => {
+            state.pending = None;
+            let saved = owner.settings.preferences.bar_actions.0.get(&slot);
+            let message = toggle_multi(&play.link, slot, saved, &mut state.multi);
+            state.message = message;
+            return;
+        }
+        _ => {}
+    }
+    state.pending = None;
+    if fields.iter().any(|(_, _, text)| editing(text)) {
+        let Some(assignment) = play.link.spell_slot_labels().get(slot).cloned() else {
+            return;
+        };
+        state.pending = Some(Pending {
+            selected: (slot, generation),
+            anchor: event.entity,
+            action: *action,
+            fields: fields
+                .iter()
+                .map(|(entity, field, _)| (entity, field.0))
+                .collect(),
+            assignment,
+        });
+        return;
+    }
+    let mut values: [String; 6] = Default::default();
+    for (_, field, text) in &fields {
+        if let Some(value) = values.get_mut(field.0) {
+            *value = text.value().to_string();
+        }
+    }
+    let message = apply(&mut owner, slot, *action, &values, &mut state.multi);
+    state.message = message;
+}
+
+// Bevy injects the editor owner, disjoint widget queries and focus/input resources separately.
+#[allow(clippy::too_many_arguments)]
+pub(super) fn project(
+    owner: NonSend<HostOwner>,
+    mut state: ResMut<EditorState>,
+    mut root: Query<&mut Node, With<EditorRoot>>,
+    mut fields: Query<(Entity, &Field, &mut EditableText)>,
+    mut descriptions: Query<&mut Text, (With<Description>, Without<Feedback>)>,
+    mut feedback: Query<&mut Text, (With<Feedback>, Without<Description>)>,
+    mut focus: ResMut<InputFocus>,
+) {
+    if state.active()
+        && (owner.play.is_none()
+            || state
+                .selected
+                .is_some_and(|(_, generation)| generation != owner.generation()))
+    {
+        state.selected = None;
+        state.pending = None;
+        focus.clear();
+    }
+    for mut node in &mut root {
+        let next = if state.active() {
+            Display::Flex
+        } else {
+            Display::None
+        };
+        if node.display != next {
+            node.display = next;
+        }
+    }
+    if state.rendered != state.selected {
+        state.pending = None;
+        if let Some((slot, _)) = state.selected {
+            let mut values: [String; 6] = Default::default();
+            if let Some(binding) = slot_binding(slot) {
+                let chat_on = owner
+                    .play
+                    .as_ref()
+                    .is_some_and(|play| play.link.preference_chat_open());
+                values[3] =
+                    slot_chord(&owner.settings.preferences, &binding, slot, chat_on).to_owned();
+            }
+            match owner.settings.preferences.bar_actions.0.get(&slot) {
+                Some(BarAction::Text { text, .. }) => values[2].clone_from(text),
+                Some(BarAction::Use {
+                    definition,
+                    sub_type,
+                    ..
+                }) => {
+                    values[1] = definition.to_string();
+                    values[4] = sub_type.map_or_else(String::new, |value| value.to_string());
+                }
+                Some(BarAction::Equip {
+                    definition,
+                    upgrade_tier,
+                }) => {
+                    values[1] = definition.to_string();
+                    if *upgrade_tier != 0
+                        || owner
+                            .play
+                            .as_ref()
+                            .is_some_and(|play| play.link.hotkey_equip_panel().tiered)
+                    {
+                        values[5] = upgrade_tier.to_string();
+                    }
+                }
+                _ => {}
+            }
+            for (entity, field, mut text) in &mut fields {
+                text.pending_edits.clear();
+                text.pending_paste = None;
+                text.editor_mut().set_text(&values[field.0]);
+                if field.0 == 0 {
+                    focus.set(entity, FocusCause::Navigated);
+                }
+            }
+            let object = matches!(
+                owner.settings.preferences.bar_actions.0.get(&slot),
+                Some(BarAction::Use { .. } | BarAction::Equip { .. })
+            );
+            let description = owner
+                .play
+                .as_ref()
+                .and_then(|play| play.link.spell_slot_tooltips().get(slot).cloned())
+                .unwrap_or_default();
+            let description = if object {
+                "Object appearance unavailable.".into()
+            } else {
+                description
+            };
+            for mut text in &mut descriptions {
+                text.0 = format!("Slot {}\n{}", slot + 1, description);
+            }
+        }
+        state.rendered = state.selected;
+    }
+    for mut text in &mut feedback {
+        if text.0 != state.message {
+            text.0.clone_from(&state.message);
+        }
+    }
+}
+
+fn keyboard(
+    guard: ModalGuard,
+    roots: Query<Entity, With<EditorRoot>>,
+    owner: NonSend<HostOwner>,
+    mut state: ResMut<EditorState>,
+    mut focus: ResMut<InputFocus>,
+    keys: Option<Res<ButtonInput<KeyCode>>>,
+) {
+    if state.active()
+        && keys.is_some_and(|keys| keys.just_pressed(KeyCode::Escape))
+        && !owner
+            .play
+            .as_ref()
+            .is_some_and(|play| play.link.server_modal_active())
+        && roots.iter().any(|entity| guard.allows(entity))
+    {
+        state.selected = None;
+        state.pending = None;
+        focus.clear();
+    }
+}
+fn finish(
+    mut owner: NonSendMut<HostOwner>,
+    guard: ModalGuard,
+    mut state: ResMut<EditorState>,
+    fields: Query<(&Field, &EditableText)>,
+    actions: Query<&Edit>,
+) {
+    let Some(pending) = state.pending.take() else {
+        return;
+    };
+    if owner.modal_active()
+        || owner.generation() != pending.selected.1
+        || state.selected != Some(pending.selected)
+        || !guard.allows(pending.anchor)
+        || !actions
+            .get(pending.anchor)
+            .is_ok_and(|action| *action == pending.action)
+    {
+        return;
+    }
+    let Some(play) = &owner.play else {
+        return;
+    };
+    if play.link.server_modal_active()
+        || play.link.spell_slot_labels().get(pending.selected.0) != Some(&pending.assignment)
+    {
+        return;
+    }
+    let mut values: [String; 6] = Default::default();
+    let mut waiting = false;
+    for &(entity, index) in &pending.fields {
+        let Ok((field, text)) = fields.get(entity) else {
+            return;
+        };
+        if field.0 != index {
+            return;
+        }
+        waiting |= editing(text);
+        if let Some(value) = values.get_mut(index) {
+            *value = text.value().to_string();
+        }
+    }
+    if waiting {
+        state.pending = Some(pending);
+        return;
+    }
+    let message = apply(
+        &mut owner,
+        pending.selected.0,
+        pending.action,
+        &values,
+        &mut state.multi,
+    );
+    state.message = message;
+}
+pub(super) fn install(app: &mut App) {
+    app.add_systems(Update, keyboard.before(project));
+    app.add_systems(PostUpdate, finish.after(bevy::text::EditableTextSystems));
+    app.add_systems(Update, catalog::project.after(project));
+    app.add_systems(Update, objects::project.after(project));
+}

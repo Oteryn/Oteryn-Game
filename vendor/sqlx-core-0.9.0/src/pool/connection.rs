@@ -166,7 +166,8 @@ impl<DB: Database> PoolConnection<DB> {
     pub fn return_to_pool_observed(
         &mut self,
     ) -> impl Future<Output = PoolConnectionReturnDisposition> + Send + 'static {
-        self.return_to_pool_observed_inner(None)
+        let returned = self.return_to_pool_observed_inner(None);
+        async move { returned.await.0 }
     }
 
     /// Return the exact checked-out connection before an absolute deadline.
@@ -179,13 +180,23 @@ impl<DB: Database> PoolConnection<DB> {
         &mut self,
         deadline: Instant,
     ) -> impl Future<Output = PoolConnectionReturnDisposition> + Send + 'static {
+        let returned = self.return_to_pool_observed_until_with_cause(deadline);
+        async move { returned.await.0 }
+    }
+
+    /// Return the holder and preserve the bounded release check that retired it.
+    #[doc(hidden)]
+    pub fn return_to_pool_observed_until_with_cause(
+        &mut self,
+        deadline: Instant,
+    ) -> impl Future<Output = (PoolConnectionReturnDisposition, Option<&'static str>)> + Send + 'static {
         self.return_to_pool_observed_inner(Some(deadline))
     }
 
     fn return_to_pool_observed_inner(
         &mut self,
         deadline: Option<Instant>,
-    ) -> impl Future<Output = PoolConnectionReturnDisposition> + Send + 'static {
+    ) -> impl Future<Output = (PoolConnectionReturnDisposition, Option<&'static str>)> + Send + 'static {
         // Float the connection before moving into the future so dropping the
         // returned future cannot make the pool believe the holder is idle.
         let floating: Option<Floating<DB, Live<DB>>> =
@@ -194,26 +205,26 @@ impl<DB: Database> PoolConnection<DB> {
         let pool = self.pool.clone();
 
         async move {
-            let returned_to_pool = if let Some(floating) = floating {
-                match deadline {
-                    Some(deadline) => floating.return_to_pool_until(deadline).await,
-                    None => floating.return_to_pool().await,
+            let returned = match (floating, deadline) {
+                (Some(floating), Some(deadline)) => {
+                    Box::pin(floating.return_to_pool_until(deadline)).await
                 }
-            } else {
-                false
+                (Some(floating), None) => Box::pin(floating.return_to_pool())
+                    .await
+                    .then_some(())
+                    .ok_or("unbounded_return_retired"),
+                (None, _) => Err("no_evidence"),
             };
-
-            if !returned_to_pool {
-                pool.min_connections_maintenance(None).await;
+            if returned.is_err() {
+                Box::pin(pool.min_connections_maintenance(None)).await;
             }
 
-            if !had_live {
-                PoolConnectionReturnDisposition::NoEvidence
-            } else if returned_to_pool {
-                PoolConnectionReturnDisposition::ReturnedToIdle
-            } else {
-                PoolConnectionReturnDisposition::RetiredClosed
-            }
+            let disposition = match (&returned, had_live) {
+                (_, false) => PoolConnectionReturnDisposition::NoEvidence,
+                (Ok(()), true) => PoolConnectionReturnDisposition::ReturnedToIdle,
+                (Err(_), true) => PoolConnectionReturnDisposition::RetiredClosed,
+            };
+            (disposition, returned.err())
         }
     }
 
@@ -394,12 +405,14 @@ impl<DB: Database> Floating<DB, Live<DB>> {
         }
     }
 
-    async fn return_to_pool_until(mut self, deadline: Instant) -> bool {
-        if self.guard.pool.is_closed()
-            || is_beyond_max_lifetime(&self.inner, &self.guard.pool.options)
-        {
+    async fn return_to_pool_until(mut self, deadline: Instant) -> Result<(), &'static str> {
+        if self.guard.pool.is_closed() {
             self.retire_by_drop();
-            return false;
+            return Err("pool_closed");
+        }
+        if is_beyond_max_lifetime(&self.inner, &self.guard.pool.options) {
+            self.retire_by_drop();
+            return Err("max_lifetime");
         }
 
         if let Some(test) = &self.guard.pool.options.after_release {
@@ -407,25 +420,25 @@ impl<DB: Database> Floating<DB, Live<DB>> {
             let remaining = deadline.saturating_duration_since(Instant::now());
             if remaining.is_zero() {
                 self.retire_by_drop();
-                return false;
+                return Err("after_release_timeout");
             }
 
             match crate::rt::timeout(remaining, (test)(&mut self.inner.raw, meta)).await {
                 Ok(Ok(true)) => {}
                 Ok(Ok(false)) => {
                     self.retire_by_drop();
-                    return false;
+                    return Err("after_release_refused");
                 }
                 Ok(Err(error)) => {
                     let failure_class = redacted_release_failure_class(&error);
                     drop(error);
                     tracing::warn!(failure_class, "error from `after_release`");
                     self.retire_by_drop();
-                    return false;
+                    return Err("after_release_failed");
                 }
                 Err(_) => {
                     self.retire_by_drop();
-                    return false;
+                    return Err("after_release_timeout");
                 }
             }
         }
@@ -433,13 +446,13 @@ impl<DB: Database> Floating<DB, Live<DB>> {
         let remaining = deadline.saturating_duration_since(Instant::now());
         if remaining.is_zero() {
             self.retire_by_drop();
-            return false;
+            return Err("ping_timeout");
         }
 
         match crate::rt::timeout(remaining, self.inner.raw.ping()).await {
             Ok(Ok(())) => {
                 self.release();
-                true
+                Ok(())
             }
             Ok(Err(error)) => {
                 let failure_class = redacted_release_failure_class(&error);
@@ -449,11 +462,11 @@ impl<DB: Database> Floating<DB, Live<DB>> {
                     "error occurred while testing the connection on-release",
                 );
                 self.retire_by_drop();
-                false
+                Err("ping_failed")
             }
             Err(_) => {
                 self.retire_by_drop();
-                false
+                Err("ping_timeout")
             }
         }
     }

@@ -12,10 +12,11 @@ impl Outbox {
         shop.resources_selected = session.feature_selected(272);
         if let Some(payload) = session.feature_snapshot(14)
             && let Ok(views) =
-                oteryn_client_runtime::npc_shop::container_tree::decode_container_views_with_house_capacity(
+                oteryn_client_runtime::npc_shop::container_tree::decode_container_views_with_appearances(
                     &payload,
                     session.feature_selected(230),
                     session.feature_selected(446),
+                    session.feature_selected(499),
                 )
         {
             shop.containers = views;
@@ -27,9 +28,10 @@ impl Outbox {
             shop.conversation = conversation.open.map(|(npc, _)| npc);
         }
         if let Some(payload) = session.feature_snapshot(8)
-            && let Ok(window) = npc_service::decode_npc_trade_window(&payload)
+            && let Ok(window) =
+                npc_service::decode_npc_trade_window_for(&payload, session.feature_selected(501))
         {
-            shop.apply_window(window);
+            oteryn_client_ui::trade_details::apply_window(shop, window);
         }
     }
     pub(in crate::play) async fn npc_shop_greet<T: Stepper>(
@@ -127,7 +129,10 @@ impl Mailbox {
                 SessionEvent::NpcTradeWindow(delta) => {
                     // Keep a closed/refused shop visible with empty offers and inline feedback.
                     self.npc_shop.open |= delta.value.open.is_some();
-                    self.npc_shop.live.apply_window(delta.value.clone());
+                    oteryn_client_ui::trade_details::apply_window(
+                        &mut self.npc_shop.live,
+                        delta.value.clone(),
+                    );
                 }
                 SessionEvent::NpcConversation(delta) => {
                     self.npc_shop.live.conversation = delta.value.open.map(|(npc, _)| npc);
@@ -152,5 +157,14 @@ impl Mailbox {
                 _ => {}
             }
         }
+    }
+}
+
+#[cfg(all(test, bevy_shell))]
+impl Outbox {
+    pub(crate) fn bevy_npc_shop_supported(&self) {
+        let mut mailbox = lock(&self.0);
+        mailbox.npc_shop.selected = true;
+        mailbox.npc_shop.live.selected = true;
     }
 }

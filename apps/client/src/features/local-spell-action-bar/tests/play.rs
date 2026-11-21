@@ -245,6 +245,34 @@ fn full_spell_row_dispatches_last_slot_and_projects_server_cooldown()
 }
 
 #[test]
+fn multiaction_equip_members_need_a_carried_object() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::feature_local_spell_action_bar::view::BarAction;
+    use std::num::NonZeroU32;
+    let (link, _commands, outbox) = play_channel();
+    outbox.hotkey_equip_initialize(true);
+    outbox.hotkey_equip_items(vec![256]);
+    let equip = |definition: u32| -> Result<BarAction, Box<dyn std::error::Error>> {
+        Ok(BarAction::Equip {
+            definition: NonZeroU32::new(definition).ok_or("item")?,
+            upgrade_tier: 0,
+        })
+    };
+    assert!(!link.assign_bar_action(
+        10,
+        BarAction::Multi {
+            actions: vec![equip(256)?, equip(999)?]
+        }
+    ));
+    assert!(link.assign_bar_action(
+        10,
+        BarAction::Multi {
+            actions: vec![equip(256)?]
+        }
+    ));
+    Ok(())
+}
+
+#[test]
 fn mixed_bar_actions_use_real_commands_and_persist_separately_from_spell_indices()
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::feature_local_spell_action_bar::view::{BarAction, PassiveAbility};
@@ -303,7 +331,8 @@ fn mixed_bar_actions_use_real_commands_and_persist_separately_from_spell_indices
         commands.try_recv().is_err(),
         "passive assignments must never cast"
     );
-    let path = std::env::temp_dir().join(format!("mixed-bars-{}.json", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("mixed-bars.json");
     let mut settings = crate::play::SettingsState::new(Some(path.clone()));
     settings.sync_bar_actions(&link);
     let saved = crate::play::SettingsState::new(Some(path.clone()));
@@ -312,7 +341,7 @@ fn mixed_bar_actions_use_real_commands_and_persist_separately_from_spell_indices
         settings.preferences.bar_actions
     );
     assert!(!link.assign_bar_action(
-        150,
+        450,
         BarAction::Text {
             text: "out of bounds".into(),
             send_automatically: true
@@ -472,10 +501,7 @@ fn t058_auto_insert_uses_learned_server_catalog_once() {
         });
     }
     assert!(link.spell_slot_labels()[4].contains("Oteryn test spell"));
-    crate::play::mailbox::lock(&link.mailbox)
-        .spell_bar
-        .bar
-        .bind(4, None);
+    assert!(link.assign_spell_slot(4, None));
     assert!(!link.spell_slot_labels()[4].contains("Oteryn test spell"));
 }
 
@@ -519,6 +545,7 @@ fn t058_rune_amounts_use_live_inventory_stacks() -> Result<(), Box<dyn std::erro
             .inventory
             .apply(Some(oteryn_session::CharacterInventory {
                 entries: vec![oteryn_session::ItemEntry {
+                    appearance_id: 0,
                     handle: 1_u64.try_into()?,
                     item_definition_ref: 42_u32.try_into()?,
                     count: 7_u32.try_into()?,

@@ -18,12 +18,7 @@ impl PlayLink {
             self.cast_control_request(2);
         }
 
-        #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
-            lock(&self.mailbox).cast_control.open = true;
-        }
+        lock(&self.mailbox).cast_control.open = true;
     }
     pub fn cast_control_request(&self, action: usize) {
         let mut shared = lock(&self.mailbox);

@@ -83,11 +83,16 @@ fn derived_gated_routes_match_previous_table() -> Result<(), &'static str> {
         (180, &[], &[]),
         // PREY-DIFF: native Prey controls use the existing command160.
         (140, &[160], &[]),
+        (146, &[168], &[]),
         (147, &[170], &[]),
         // Wheel and Atelier are playable through the selected capability 148.
         (148, &[161, 308, 309, 424, 6119, 6121], &[]),
         (483, &[6210, 6211, 6212, 6213, 6214], &[]),
         (497, &[6240], &[]),
+        (512, &[6247, 6248, 6251], &[]),
+        (513, &[], &[]),
+        (500, &[6241], &[]),
+        (502, &[6242], &[]),
         (150, &[174, 175, 176, 739], &[]),
         // Live balances use their own selected capability without changing Atelier V1.
         (272, &[484], &[]),
@@ -133,14 +138,19 @@ fn derived_gated_routes_match_previous_table() -> Result<(), &'static str> {
         (195, &[378, 379, 380, 392, 393, 394, 395, 641, 660], &[]),
         (197, &[383, 384], &[98]),
         (199, &[387, 388], &[]),
+        (504, &[6243], &[]),
         (225, &[431], &[]),
         (230, &[440], &[]),
         (233, &[447], &[]),
+        // Hireling management (command 470), next to its prerequisite banker hireling 165.
+        (250, &[470], &[]),
         // P-C01: native Bestiary/Charms (command 84) and PvP expert (command 103,
         // confirmed-mode domain 52) panels use their existing gated routes.
         (67, &[84], &[]),
         (83, &[], &[48]),
         (87, &[103], &[52]),
+        (507, &[6244, 6245], &[]),
+        (511, &[6246], &[]),
     ];
     let expected: std::collections::BTreeSet<_> = expected.iter().copied().collect();
     let derived: std::collections::BTreeSet<_> = gated_routes().collect();

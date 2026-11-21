@@ -8,6 +8,10 @@ use crate::foundation::{
 };
 use crate::monster_combat_lane::native_conditions::*;
 
+#[cfg(test)]
+#[path = "actor_charm_cleanse_tests.rs"]
+mod actor_charm_cleanse_tests;
+
 impl ChannelSpellStates {
     fn condition_player_current(
         &self,
@@ -423,9 +427,9 @@ impl std::fmt::Debug for NativeSecondaryMemo {
 impl ChannelSpellStates {
     // Keep native_composite_conditions ABI explicit: current runtime owner, independent fence/stamp, exact actor/session/source and occurrence/policy facts are separate admission inputs.
     #[allow(clippy::too_many_arguments)]
-    pub(super) fn native_composite_conditions(
+    pub(in crate::gameplay_transport) fn native_composite_conditions(
         &mut self,
-        runtime: &mut ChannelRuntimeV1,
+        runtime: &ChannelRuntimeV1,
         target: ExactActorRef,
         session: GameSessionId,
         occurrence: &str,
@@ -514,6 +518,9 @@ impl ChannelSpellStates {
         let mut next = before.clone();
         let mut primary = None;
         if let Some(amount) = magnitude {
+            let amount = runtime
+                .soul_war_hatred_player_primary(source, amount)
+                .ok()?;
             let (successor, damage) = crate::spell::actor_conditions::stage_typed_hit_in_world(
                 runtime, target, &next, amount, kind, facts.now,
             )
@@ -576,6 +583,7 @@ impl ChannelSpellStates {
             (magnitude, receipt, damage_text)
         {
             let memo = NativeSourceMemo {
+                source_primary: Some((source, magnitude)),
                 actor: target,
                 session,
                 occurrence: damage_text,
@@ -1345,6 +1353,24 @@ impl ChannelSpellStates {
 mod appearance_atomic;
 
 impl crate::creature_area_heal::AreaHealStates for ChannelSpellStates {
+    fn commit_source_area_heal_and_paralysis_removal_current(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        content: [u8; 32],
+        heal: &[(ExactActorRef, String, u64, u64)],
+        cure: &[ExactActorRef],
+        now: u64,
+        stamp: RuntimeWorkStamp,
+    ) -> Result<
+        Vec<crate::foundation::OwnerDamageResult>,
+        oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+    > {
+        let current = runtime.owner_fence()?;
+        if !current_owner(runtime, current, stamp) {
+            return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::WrongScope);
+        }
+        runtime.commit_source_creature_heal_and_cure(content, heal, cure, now)
+    }
     fn commit_source_area_heal_and_paralysis_removal(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
@@ -1415,18 +1441,20 @@ impl ChannelSpellStates {
                 .finalize();
             let mut identity = [0; 16];
             identity.copy_from_slice(&digest[..16]);
-            super::super::attack::charm_combat::evaluate(
+            super::super::attack::charm_combat::evaluate_event_category(
                 self,
                 runtime,
                 catalogue,
+                root,
                 target,
                 session,
                 &snapshot.state.policy.definition_key,
-                root,
                 DecisionOccurrenceId::from_bytes(identity),
                 CharmHookEvent::IncomingManaDrain {
                     mana_drained: u64::from(magnitude),
                 },
+                oteryn_gameplay_progression::charm_effects::CharmCategory::Minor,
+                true,
             )
             .iter()
             .any(|outcome| {
@@ -1469,28 +1497,13 @@ impl ChannelSpellStates {
             occurrence: text,
             magnitude,
             kind: None,
+            source_primary: None,
             receipt,
         };
         if let Some(index) = old {
             self.source_mana[index] = memo;
         } else {
             self.source_mana.push(memo);
-        }
-        if !inverted && receipt.applied > 0 {
-            super::super::attack::charm_combat::incoming_conditions(
-                self,
-                runtime,
-                catalogue,
-                root,
-                source,
-                target,
-                session,
-                receipt.applied,
-                receipt.vitals_revision,
-                occurrence,
-                now.get(),
-                true,
-            );
         }
         Some(receipt)
     }
@@ -1504,7 +1517,7 @@ impl ChannelSpellStates {
     )]
     pub(in crate::gameplay_transport) fn apply_player_charm_condition(
         &mut self,
-        runtime: &ChannelRuntimeV1,
+        runtime: &mut ChannelRuntimeV1,
         target: ExactActorRef,
         session: GameSessionId,
         effect: oteryn_gameplay_progression::charm_effects::CharmEffectOutcome,
@@ -1541,6 +1554,7 @@ impl ChannelSpellStates {
         }
         let mut conditions = before.owned_conditions().clone();
         conditions.expire_non_ticking(now);
+        let mut canonical_cleanse = None;
         match effect {
             oteryn_gameplay_progression::charm_effects::CharmEffectOutcome::Haste { duration_ms } => {
                 // Canary 47dfd51f iobestiary.cpp:143-147, condition.cpp:2537-2563.
@@ -1553,10 +1567,36 @@ impl ChannelSpellStates {
                     native::ConditionSourceKind::SelfUse, &[], &facts).is_err() { return false; }
             }
             oteryn_gameplay_progression::charm_effects::CharmEffectOutcome::CleanseOneNegativeCondition => {
-                // Accepted native Cleanse owner selects one negative condition and retains
-                // its 11-second immunity; replay never picks a second replacement.
-                let Ok(Some(plan)) = conditions.prepare_cleanse(&facts) else { return false; };
+                let Ok(canonical) = runtime.actor_conditions(target, Some(session)) else { return false; };
+                let native_count = canonical.cleanse_candidate_count(now);
+                let Some(count) = native_count.checked_add(conditions.cleanse_candidate_count(now)) else { return false; };
+                // One draw across both existing stores, not one proc/removal per store.
+                // Native instances precede player-state instances; each keeps sequence order.
+                let index = match count {
+                    0 => return false,
+                    1 => 0,
+                    count => {
+                        let Ok(draw) = oteryn_simulation_determinism::deterministic_decision_u64(
+                            root, occurrence, native::COND_CLEANSE_PICK, 0,
+                        ) else { return false; };
+                        let Ok(count) = u64::try_from(count) else { return false; };
+                        let Ok(index) = usize::try_from(draw % count) else { return false; };
+                        index
+                    }
+                };
+                let native_index = (index < native_count).then_some(index);
+                let Ok(receipt) = runtime.prepare_actor_condition(
+                    target, Some(session),
+                    ActorConditionTransition::CleanseSelected { facts, index: native_index },
+                    SemanticTimeMicros::from_micros(now),
+                ) else { return false; };
+                if native_index.is_some() {
+                    return runtime.commit_actor_condition(&receipt, SemanticTimeMicros::from_micros(now))
+                        .unwrap_or(false);
+                }
+                let Ok(Some(plan)) = conditions.prepare_cleanse_at_index(&facts, index - native_count) else { return false; };
                 if !conditions.commit_cleanse(plan) { return false; }
+                canonical_cleanse = Some(receipt);
             }
             _ => return false,
         }
@@ -1571,6 +1611,17 @@ impl ChannelSpellStates {
             return false;
         }
         next.source_set_batch_revision(revision);
+        if let Some(receipt) = canonical_cleanse {
+            // The existing owner validates before this immutable callback, then publishes
+            // the condition receipt only if the player-state compare-commit succeeds.
+            return runtime
+                .commit_actor_condition_with_vitals(
+                    &receipt,
+                    SemanticTimeMicros::from_micros(now),
+                    |runtime| self.commit(runtime, target, session, next).then_some(()),
+                )
+                .is_ok_and(|result| result.is_some());
+        }
         self.commit(runtime, target, session, next)
     }
 }

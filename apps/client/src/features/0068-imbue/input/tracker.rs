@@ -73,40 +73,25 @@ pub(in crate::play) fn set_filter(mailbox: &mut Mailbox, value: &str) -> bool {
     value.trim().is_empty() || value.trim().parse::<u32>().is_ok()
 }
 impl PlayLink {
+    /// Shared frontends drive the existing throttled inspection queue from their frame loop.
+    pub fn imbue_tracker_poll(&self) {
+        enqueue(&mut lock(&self.mailbox), &self.commands, false);
+    }
+
+    pub fn imbue_tracker_close(&self) {
+        lock(&self.mailbox).imbue.tracker_open = false;
+    }
+
+    pub fn imbue_tracker_toggle_group(&self, group: usize) {
+        if let Some(hidden) = lock(&self.mailbox).imbue.tracker_hidden.get_mut(group) {
+            *hidden = !*hidden;
+        }
+    }
     pub fn imbue_tracker_filter(&self, value: &str) -> bool {
         set_filter(&mut lock(&self.mailbox), value)
     }
 
     pub fn imbue_tracker_refresh(&self) -> bool {
         enqueue(&mut lock(&self.mailbox), &self.commands, true)
-    }
-}
-#[cfg(windows)]
-pub(in crate::play) fn poll(
-    weak: std::sync::Weak<std::sync::Mutex<Mailbox>>,
-    commands: UnboundedSender<PlayCommand>,
-) {
-    let failed = weak.clone();
-    if std::thread::Builder::new()
-        .name("equipped-imbuement-refresh".into())
-        .spawn(move || {
-            loop {
-                let Some(shared) = weak.upgrade() else { break };
-                {
-                    let mut m = lock(&shared);
-                    if !m.imbue.tracker_open || m.imbue_shutdown || commands.is_closed() {
-                        m.imbue.tracker_open = false;
-                        break;
-                    }
-                    enqueue(&mut m, &commands, false);
-                }
-                std::thread::sleep(std::time::Duration::from_millis(200));
-            }
-        })
-        .is_err()
-        && let Some(shared) = failed.upgrade()
-    {
-        lock(&shared).imbue.equipment.feedback =
-            Some("Automatic refresh unavailable; use Refresh equipment");
     }
 }

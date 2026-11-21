@@ -116,6 +116,7 @@ const fn durability_cause(error: &DurabilityError) -> &'static str {
         DurabilityError::RootUnavailable => "root_unavailable",
         DurabilityError::RootPassDeadlineExceeded => "pass_deadline",
         DurabilityError::CommitRejected => "commit_rejected",
+        DurabilityError::CommitTransactionTimeout => "commit_transaction_timeout",
         DurabilityError::CommitOutcomeUnknown => "commit_unknown",
         DurabilityError::RootTaskFailed => "root_task_failed",
         DurabilityError::InvalidStoredState => "invalid_stored_state",

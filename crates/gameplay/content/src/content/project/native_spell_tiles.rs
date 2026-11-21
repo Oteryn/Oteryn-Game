@@ -205,7 +205,8 @@ pub struct QualifiedSpellTiles {
     /// None retains unknown semantics for the existing entry-r1 source.
     tiles: Option<BTreeMap<LogicalCell, QualifiedSpellTile>>,
     unknown_cells: BTreeSet<LogicalCell>,
-    source_bounds: Option<[i32; 6]>,
+    source_bounds: Option<Vec<[i32; 6]>>,
+    source_exit: Option<LogicalCell>,
     /// A world bundle's tiles (BUNDLE-TILES-1); when set, every lookup under `scope` reads them.
     bundle: Option<Arc<crate::content::bundle_spell_tiles::BundleSpellTiles>>,
 }
@@ -214,7 +215,17 @@ impl QualifiedSpellTiles {
     pub(super) fn bundle_activity_region(&self, bounds: [i32; 6]) -> Option<Self> {
         self.bundle.as_ref()?;
         let mut view = self.clone();
-        view.source_bounds = Some(bounds);
+        view.source_bounds = Some(vec![bounds]);
+        view.source_exit = None;
+        Some(view)
+    }
+    pub(super) fn bundle_activity_region_with_exit(
+        &self,
+        bounds: [i32; 6],
+        exit: LogicalCell,
+    ) -> Option<Self> {
+        let mut view = self.bundle_activity_region(bounds)?;
+        view.source_exit = Some(exit);
         Some(view)
     }
     pub(super) fn from_source_world(
@@ -236,7 +247,8 @@ impl QualifiedSpellTiles {
             scope: world.scope().clone(),
             tiles: Some(tiles),
             unknown_cells,
-            source_bounds: Some(world.native_bounds()),
+            source_bounds: Some(world.captured_regions().to_vec()),
+            source_exit: None,
             bundle: None,
         }
     }
@@ -264,6 +276,7 @@ impl QualifiedSpellTiles {
                 tiles: None,
                 unknown_cells: BTreeSet::new(),
                 source_bounds: None,
+                source_exit: None,
                 bundle: None,
             });
         };
@@ -374,6 +387,7 @@ impl QualifiedSpellTiles {
             tiles: Some(tiles),
             unknown_cells: BTreeSet::new(),
             source_bounds: None,
+            source_exit: None,
             bundle: None,
         })
     }
@@ -388,6 +402,7 @@ impl QualifiedSpellTiles {
             tiles: None,
             unknown_cells: BTreeSet::new(),
             source_bounds: None,
+            source_exit: None,
             bundle: Some(bundle),
         }
     }
@@ -399,32 +414,42 @@ impl QualifiedSpellTiles {
         &self,
         active_scope: &EngineeringStaticCellScope,
         cell: LogicalCell,
-    ) -> Result<&QualifiedSpellTile, SpellTileLookupError> {
+    ) -> Result<std::borrow::Cow<'_, QualifiedSpellTile>, SpellTileLookupError> {
         if active_scope != &self.scope {
             return Err(SpellTileLookupError::ScopeMismatch);
         }
-        if self.unknown_cells.contains(&cell)
-            || self
-                .source_bounds
-                .is_some_and(|[min_x, min_y, max_x, max_y, min_z, max_z]| {
-                    cell.x < min_x
-                        || cell.x > max_x
-                        || cell.y < min_y
-                        || cell.y > max_y
-                        || cell.z < min_z
-                        || cell.z > max_z
-                })
+        if self.unknown_cells.contains(&cell) {
+            return Err(SpellTileLookupError::Unknown);
+        }
+        // Explicit capture cells include the sparse regions of a combined source.
+        // Only absent cells need the rectangle proof that absence is known.
+        if let Some(tile) = self.tiles.as_ref().and_then(|tiles| tiles.get(&cell)) {
+            return Ok(std::borrow::Cow::Borrowed(tile));
+        }
+        if self.source_exit != Some(cell)
+            && self.source_bounds.as_ref().is_some_and(|regions| {
+                !regions
+                    .iter()
+                    .any(|&[min_x, min_y, max_x, max_y, min_z, max_z]| {
+                        cell.x >= min_x
+                            && cell.x <= max_x
+                            && cell.y >= min_y
+                            && cell.y <= max_y
+                            && cell.z >= min_z
+                            && cell.z <= max_z
+                    })
+            })
         {
             return Err(SpellTileLookupError::Unknown);
         }
         if let Some(bundle) = &self.bundle {
             return bundle.lookup(cell);
         }
-        self.tiles
-            .as_ref()
-            .ok_or(SpellTileLookupError::Unknown)?
-            .get(&cell)
-            .ok_or(SpellTileLookupError::Absent)
+        if self.tiles.is_some() {
+            Err(SpellTileLookupError::Absent)
+        } else {
+            Err(SpellTileLookupError::Unknown)
+        }
     }
 }
 

@@ -2,8 +2,8 @@
 use crate::play::Stepper;
 use oteryn_client_ui::server_modal::{self as ui, Answer, Panel};
 use oteryn_client_ui::server_modal_input::Entry;
-use std::sync::{Arc, Mutex, PoisonError};
 use oteryn_session::SessionError;
+use std::sync::{Arc, Mutex, PoisonError};
 use tokio::{
     sync::{mpsc, oneshot},
     time::{Duration, Instant},
@@ -15,6 +15,7 @@ pub(in crate::play) enum Completion {
     LoggedOut,
 }
 pub(in crate::play) struct Driver {
+    shared: Option<crate::play::mailbox::SharedMailbox>,
     panel: Panel,
     answers: mpsc::Receiver<Submission>,
     sender: mpsc::Sender<Submission>,
@@ -27,6 +28,7 @@ impl Driver {
     pub(in crate::play) fn new(selected: bool) -> Self {
         let (sender, answers) = mpsc::channel(1);
         Self {
+            shared: None,
             panel: Panel {
                 selected,
                 ..Panel::default()
@@ -44,6 +46,17 @@ impl Driver {
         self.panel.input = selected;
         self
     }
+    pub(in crate::play) fn reset_scope(&mut self, selected: bool) {
+        // Closing the source receiver also closes its native window and queued answers.
+        // A query interrupted by the handoff must not leave Pending::Query set forever.
+        *self = Self::new(selected);
+        self.next_query = Instant::now() + Duration::from_secs(5);
+    }
+    #[must_use]
+    pub(in crate::play) fn with_defaults(mut self, selected: bool) -> Self {
+        self.panel.defaults = selected;
+        self
+    }
     pub(in crate::play) async fn poll<T: Stepper>(
         &mut self,
         session: &mut T,
@@ -52,8 +65,11 @@ impl Driver {
             return Ok(None);
         }
         let mut completed = None;
+        let mut answered = false;
         if let Ok((answer, acknowledged)) = self.answers.try_recv() {
-            let entry = std::mem::take(&mut *self.entry.lock().unwrap_or_else(PoisonError::into_inner));
+            answered = true;
+            let entry =
+                std::mem::take(&mut *self.entry.lock().unwrap_or_else(PoisonError::into_inner));
             let accepted = if let Some(command) = ui::answer_with(&mut self.panel, answer, &entry) {
                 let result = session.feature(&command).await?;
                 ui::apply_result(&mut self.panel, &result)
@@ -75,20 +91,35 @@ impl Driver {
         }
         if let Some(dialog) = &self.panel.active {
             if self.shown != Some(dialog.id) {
-                super::view::open(
-                    dialog.clone(),
-                    self.panel.active_input.clone(),
-                    self.panel.input,
-                    (self.sender.clone(), self.entry.clone()),
-                );
+                if !self.shared_frontend() {
+                    super::view::open(
+                        dialog.clone(),
+                        self.panel.active_input.clone(),
+                        self.panel.input,
+                        (self.sender.clone(), self.entry.clone()),
+                    );
+                }
                 self.shown = Some(dialog.id);
             }
         } else {
             self.shown = None;
         }
+        self.publish(answered);
         Ok(completed)
     }
 }
 #[cfg(test)]
 #[path = "tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "protocol/bridge_tests.rs"]
+mod bridge_tests;
+
+#[path = "protocol/bridge.rs"]
+mod bridge;
+pub use bridge::ServerModalPanel;
+pub(in crate::play) use bridge::SharedModal;
+
+#[cfg(all(test, bevy_shell))]
+pub(crate) use bridge::BevyServerModalFixture;

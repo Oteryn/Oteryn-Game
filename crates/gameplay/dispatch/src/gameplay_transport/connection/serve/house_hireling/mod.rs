@@ -18,6 +18,11 @@ pub(super) struct State {
     visibility: Option<SessionVisibility>,
     appearances: SessionAppearance,
     spatial_revision: u64,
+    capacity: Option<oteryn_protocol_oteryn::inventory_capacity::InventoryCapacity>,
+    capacity_vitals_max: Option<(u32, u32)>,
+    capacity_refresh_at: Option<tokio::time::Instant>,
+    emblems: Vec<oteryn_protocol_oteryn::guild_emblem::GuildEmblem>,
+    movement_effect_revision: u64,
     npc_shown: Option<WireEntityRef>,
     npc_active: bool,
     stash_rows: Option<Vec<[u8; 16]>>,
@@ -81,13 +86,40 @@ impl State {
             self.stash_rows = None;
             return routing::house_rotation::route(authority, admitted, command).await;
         }
+        match command.command_type {
+            oteryn_protocol_oteryn::item_inscription::COMMAND_TYPE_ITEM_INSCRIPTION_READ => {
+                return Some(
+                    routing::item_inscription::route(authority, admitted, command, &self.items)
+                        .await,
+                );
+            }
+            oteryn_protocol_oteryn::server_info::COMMAND_TYPE_SERVER_INFO_QUERY => {
+                return Some(routing::server_info::route(authority, admitted, command).await);
+            }
+            oteryn_protocol_oteryn::actor_motion::COMMAND_TYPE_MOUNT => {
+                return Some(routing::mount::route(authority, self.actor, admitted, command).await);
+            }
+            _ => {}
+        }
+        if command.command_type == u32::from(oteryn_protocol_oteryn::mail::COMMAND_TYPE_MAIL)
+            && matches!(
+                oteryn_protocol_oteryn::mail::decode_intent(command.payload),
+                Ok(oteryn_protocol_oteryn::mail::MailIntent::WriteText { .. })
+            )
+        {
+            return routing::mail::route(authority, self.actor, admitted, command, &self.items)
+                .await;
+        }
         // Ordinary item USE and container views keep their existing capability gates
         // in a House without requiring the independent hireling mechanic.
         if !self.enabled
             && !(self.items.is_some()
-                && matches!(command.command_type,
-                world_object::COMMAND_TYPE_USE_INTENT
-                | oteryn_protocol_oteryn::container_tree::COMMAND_TYPE_CONTAINER_VIEW_INTENT))
+                && matches!(
+                    command.command_type,
+                    world_object::COMMAND_TYPE_USE_INTENT
+                        | oteryn_protocol_oteryn::container_tree::COMMAND_TYPE_CONTAINER_VIEW_INTENT
+                        | oteryn_protocol_oteryn::item_view::COMMAND_TYPE_ITEM_MOVE_INTENT
+                ))
         {
             return Some(Dispatch::Unregistered);
         }
@@ -183,6 +215,19 @@ impl State {
                 routing::npc_trade::route(authority, self.actor, admitted, command, &mut self.items)
                     .await
             }
+            oteryn_protocol_oteryn::item_view::COMMAND_TYPE_ITEM_MOVE_INTENT => {
+                let selected = admitted.continuity.selected_capabilities;
+                routing::item_move::route(
+                    authority,
+                    self.actor,
+                    admitted,
+                    command,
+                    &mut self.items,
+                    &mut self.containers,
+                    selected,
+                )
+                .await
+            }
             21 => {
                 routing::container_view::route(
                     authority,
@@ -213,6 +258,10 @@ impl State {
         }
     }
 
+    pub(super) fn invalidate_capacity(&mut self) {
+        self.capacity_refresh_at = None;
+    }
+
     pub(super) async fn effects<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
         &mut self,
         stream: &mut S,
@@ -220,6 +269,9 @@ impl State {
         admitted: &mut AdmittedSession,
         dispatch: Dispatch,
     ) -> Result<(), ServeEnd> {
+        if super::inventory_capacity::changes_carried_weight(&dispatch) {
+            self.invalidate_capacity();
+        }
         match dispatch {
             Dispatch::NoLogout | Dispatch::Logout(LogoutResult::InFight { .. }) => {
                 let text = if matches!(dispatch, Dispatch::NoLogout) {
@@ -270,17 +322,22 @@ impl State {
                 if changed {
                     self.inventory(stream, authority, admitted).await?;
                 }
-                self.npc(stream, admitted, &update).await?;
+                self.npc(stream, authority, admitted, &update).await?;
             }
             Dispatch::NpcTrade(_, update, deltas) | Dispatch::NpcShop(_, _, update, deltas) => {
                 for delta in deltas {
                     self.item_delta(stream, admitted, &delta).await?;
                 }
-                self.npc(stream, admitted, &update).await?;
+                self.npc(stream, authority, admitted, &update).await?;
             }
             Dispatch::Use(outcome) if outcome.disposition == UseDisposition::Committed => {
                 self.inventory(stream, authority, admitted).await?;
                 self.vitals(stream, authority, admitted, false).await?;
+            }
+            Dispatch::ItemMove(_, deltas, _) => {
+                for delta in deltas {
+                    self.item_delta(stream, admitted, &delta).await?;
+                }
             }
             Dispatch::UseItem(_, Some(delta)) | Dispatch::ContainerView(_, Some(delta)) => {
                 self.item_delta(stream, admitted, &delta).await?;
@@ -362,14 +419,20 @@ impl State {
         self.refresh_map(stream, authority, admitted).await
     }
 
-    async fn npc<S: AsyncWrite + Unpin>(
+    async fn npc<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
         &mut self,
         stream: &mut S,
+        authority: &A,
         admitted: &mut AdmittedSession,
         update: &NpcUpdate,
     ) -> Result<(), ServeEnd> {
         let mut sequence = admitted.continuity.server_sequence;
         let frames = npc_update_frames(
+            authority,
+            (
+                admitted.game_session_id,
+                admitted.continuity.selected_capabilities,
+            ),
             admitted.continuity.connection_generation,
             &mut sequence,
             &mut admitted.continuity.npc,
@@ -428,11 +491,19 @@ impl State {
             self.spatial_revision = revision;
             admitted.continuity.spatial_revision = revision;
         }
-        self.refresh_map(stream, authority, admitted).await
+        self.refresh_map(stream, authority, admitted).await?;
+        super::native_cues::refresh_house_effects(
+            stream,
+            authority,
+            self.actor,
+            admitted,
+            &mut self.movement_effect_revision,
+        )
+        .await
     }
 
     async fn vitals<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
-        &self,
+        &mut self,
         stream: &mut S,
         authority: &A,
         admitted: &mut AdmittedSession,
@@ -447,6 +518,16 @@ impl State {
         } else {
             None
         };
+        let current = authority.observe_house_vitals(self.actor, *admitted).await;
+        let current = current.or(changed);
+        if let Some((_, vitals)) = &current
+            && self
+                .capacity_vitals_max
+                .replace((vitals.max_health, vitals.max_mana))
+                .is_some_and(|previous| previous != (vitals.max_health, vitals.max_mana))
+        {
+            self.capacity_refresh_at = None;
+        }
         if !admitted
             .continuity
             .selected_capabilities
@@ -455,12 +536,8 @@ impl State {
         {
             return Ok(());
         }
-        let current = authority
-            .observe_vitals(self.actor, admitted.game_session_id)
-            .await;
-        if let Some((to, value)) = current
-            .or(changed)
-            .filter(|(revision, _)| *revision > admitted.continuity.vitals_revision)
+        if let Some((to, value)) =
+            current.filter(|(revision, _)| *revision > admitted.continuity.vitals_revision)
         {
             let (sequence, frame) = vitals_delta(
                 admitted.continuity.connection_generation,
@@ -485,8 +562,13 @@ impl State {
         authority: &A,
         admitted: &mut AdmittedSession,
     ) -> Result<(), ServeEnd> {
-        if self.enabled {
-            self.vitals(stream, authority, admitted, true).await?;
+        if self.enabled
+            || admitted.continuity.selected_capabilities.contains(
+                oteryn_protocol_oteryn::inventory_capacity::CAPABILITY_INVENTORY_CAPACITY_V1,
+            )
+        {
+            self.vitals(stream, authority, admitted, self.enabled)
+                .await?;
         }
         if let Some(catalog) = &mut self.spell_catalog {
             let mut sequence = admitted.continuity.server_sequence;
@@ -499,8 +581,76 @@ impl State {
                 .npc_follow(self.actor, admitted.game_session_id, self.npc_shown)
                 .await
         {
-            self.npc(stream, admitted, &update).await?;
+            self.npc(stream, authority, admitted, &update).await?;
         }
-        self.spatial(stream, authority, admitted, true).await
+        self.spatial(stream, authority, admitted, true).await?;
+        let Some(view) = self.visibility.as_ref() else {
+            return Ok(());
+        };
+        use oteryn_protocol_oteryn::{
+            guild_emblem::CAPABILITY_GUILD_EMBLEM_V1,
+            inventory_capacity::CAPABILITY_INVENTORY_CAPACITY_V1,
+            world_spatial_entities::DeltaSidecar,
+        };
+        let selected = admitted.continuity.selected_capabilities;
+        let now = tokio::time::Instant::now();
+        if selected.contains(CAPABILITY_INVENTORY_CAPACITY_V1)
+            && self.capacity_refresh_at.is_none_or(|next| now >= next)
+        {
+            self.capacity_refresh_at = Some(now + std::time::Duration::from_secs(5));
+            if let Some(capacity) = authority.observe_inventory_capacity(*admitted).await
+                && self.capacity != Some(capacity)
+            {
+                write_sidecar(
+                    stream,
+                    view,
+                    admitted,
+                    &mut self.spatial_revision,
+                    &DeltaSidecar::InventoryCapacity(capacity),
+                )
+                .await?;
+                self.capacity = Some(capacity);
+            }
+        }
+        if selected.contains(CAPABILITY_GUILD_EMBLEM_V1)
+            && let Some(mut emblems) = authority.observe_guild_emblems(*admitted).await
+        {
+            emblems.retain(|emblem| view.shows(emblem.entity));
+            emblems.sort_by_key(|emblem| emblem.entity);
+            if self.emblems != emblems {
+                write_sidecar(
+                    stream,
+                    view,
+                    admitted,
+                    &mut self.spatial_revision,
+                    &DeltaSidecar::GuildEmblems(emblems.clone()),
+                )
+                .await?;
+                self.emblems = emblems;
+            }
+        }
+        Ok(())
     }
+}
+
+async fn write_sidecar<S: AsyncWrite + Unpin>(
+    stream: &mut S,
+    view: &SessionVisibility,
+    admitted: &mut AdmittedSession,
+    revision: &mut u64,
+    sidecar: &oteryn_protocol_oteryn::world_spatial_entities::DeltaSidecar,
+) -> Result<(), ServeEnd> {
+    let (seq, next) = super::sidecar::write_view(
+        stream,
+        view,
+        admitted.continuity.connection_generation,
+        admitted.continuity.server_sequence,
+        *revision,
+        sidecar,
+    )
+    .await?;
+    admitted.continuity.server_sequence = seq;
+    admitted.continuity.spatial_revision = next;
+    *revision = next;
+    Ok(())
 }

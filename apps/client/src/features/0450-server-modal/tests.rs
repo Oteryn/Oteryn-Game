@@ -15,8 +15,8 @@ use std::{
     },
 };
 #[derive(Default)]
-struct Peer {
-    answers: usize,
+pub(super) struct Peer {
+    pub(super) answers: usize,
     terminal: bool,
     queries: Vec<Vec<u8>>,
     query_results: VecDeque<Result<GatedCommandResult, SessionError>>,
@@ -52,6 +52,7 @@ impl Stepper for Peer {
                 message: "Server-defined options".into(),
                 choices: vec![(9, "Nine".into())],
                 buttons: vec![(4, "Accept".into()), (8, "Cancel".into())],
+                default_button: None,
                 cancel_button: Some(8),
                 image: Some(Image {
                     width: 1,
@@ -98,6 +99,34 @@ impl Stepper for Peer {
         self.record_after_answer_call();
         Ok(None)
     }
+}
+
+#[test]
+fn scope_reset_closes_source_answers_and_allows_a_fresh_destination_query()
+-> Result<(), Box<dyn std::error::Error>> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let mut driver = Driver::new(true);
+            let source_sender = driver.sender.clone();
+            assert!(ui::query(&mut driver.panel).is_some());
+            assert!(driver.panel.pending.is_some());
+            driver.reset_scope(true);
+            assert!(source_sender.is_closed());
+            assert!(driver.panel.pending.is_none());
+            assert!(driver.next_query > Instant::now());
+
+            let mut peer = Peer::default();
+            driver.next_query = Instant::now();
+            assert_eq!(driver.poll(&mut peer).await?, None);
+            assert_eq!(
+                driver.panel.active.as_ref().map(|dialog| dialog.id),
+                Some(73)
+            );
+            assert!(driver.panel.pending.is_none());
+            Ok::<(), Box<dyn std::error::Error>>(())
+        })
 }
 #[test]
 fn server_modal_session_caller_delivers_inline_image_and_exact_answer_ack()
@@ -309,8 +338,8 @@ fn terminal_modal_ack_ends_the_session_before_queued_gameplay_or_idle_io() -> Re
 
 /// Serves one dialog that asks for an amount and records the raw answer it receives.
 #[derive(Default)]
-struct AmountPeer {
-    answer: Option<Vec<u8>>,
+pub(super) struct AmountPeer {
+    pub(super) answer: Option<Vec<u8>>,
 }
 impl Stepper for AmountPeer {
     fn feature_selected(&self, capability: u32) -> bool {
@@ -330,6 +359,7 @@ impl Stepper for AmountPeer {
                 message: "How many?".into(),
                 choices: Vec::new(),
                 buttons: vec![(1, "Ok".into()), (2, "Cancel".into())],
+                default_button: None,
                 cancel_button: Some(2),
                 image: None,
             };
@@ -343,8 +373,8 @@ impl Stepper for AmountPeer {
                 .map_err(|_| SessionError::SessionUnusable)?
         } else {
             self.answer = Some(command.payload.clone());
-            let sent = InputAnswer::decode(&command.payload)
-                .map_err(|_| SessionError::SessionUnusable)?;
+            let sent =
+                InputAnswer::decode(&command.payload).map_err(|_| SessionError::SessionUnusable)?;
             Reply::Answered(sent.answer)
                 .encode()
                 .map_err(|_| SessionError::SessionUnusable)?
@@ -402,10 +432,13 @@ fn c0490_driver_sends_the_entered_value_and_the_remember_choice()
                 Some(Completion::Answered(answer))
             );
             assert!(rx.await?);
-            let sent = InputAnswer::decode(&peer.answer.ok_or("no answer")?)
-                .map_err(|_| "answer wire")?;
+            let sent =
+                InputAnswer::decode(&peer.answer.ok_or("no answer")?).map_err(|_| "answer wire")?;
             assert_eq!(sent.value, Some(InputValue::Amount(12)));
             assert!(sent.dont_show_again);
             Ok::<(), Box<dyn std::error::Error>>(())
         })
 }
+
+#[path = "view/native.rs"]
+mod native_controls;

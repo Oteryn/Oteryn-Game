@@ -1,0 +1,10 @@
+{
+  "id": 6246,
+  "name": "ITEM_INSCRIPTION_READ",
+  "owner_decision": "bvsl Tibia Global writing window opens with the item's text",
+  "capability": 511,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/item-inscription-read-v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/item-inscription-read-v1.md#reply",
+  "max_payload_bytes": 64,
+  "max_result_payload_bytes": 32768
+}

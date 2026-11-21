@@ -109,3 +109,53 @@ pub(in crate::play) fn select_carried(
     enqueue(mailbox, commands, Intent::Refresh);
     true
 }
+
+/// Shared frontend actions are bound atomically to the exact displayed shrine snapshot.
+#[derive(Clone, Copy)]
+pub enum ImbueViewAction {
+    Close,
+    Item(ItemHandle),
+    Slot(u8),
+    Offer(usize),
+    Request(Intent),
+}
+impl PlayLink {
+    pub fn imbue_carried_items(&self) -> Vec<oteryn_client_runtime::depot::ItemEntry> {
+        carried_items(&lock(&self.mailbox))
+    }
+
+    pub fn imbue_dispatch_bound(&self, expected: &oteryn_client_ui::imbue::ImbuePanel, action: ImbueViewAction) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        if !mailbox.imbue.open || &mailbox.imbue != expected {
+            return false;
+        }
+        match action {
+            ImbueViewAction::Close => mailbox.imbue.open = false,
+            ImbueViewAction::Item(item) => return select_carried(&mut mailbox, &self.commands, item),
+            ImbueViewAction::Slot(slot) => return mailbox.imbue.select_slot(slot),
+            ImbueViewAction::Offer(offer) => return mailbox.imbue.select_offer(offer),
+            ImbueViewAction::Request(intent) => enqueue(&mut mailbox, &self.commands, intent),
+        }
+        true
+    }
+}
+
+#[cfg(test)]
+pub(in crate::play) fn enqueue_confirmed(
+    mailbox: &mut Mailbox,
+    commands: &UnboundedSender<PlayCommand>,
+    expected: &oteryn_client_ui::imbue::ImbuePanel,
+    intent: Intent,
+    confirmed: bool,
+) -> bool {
+    if !confirmed
+        || !mailbox.imbue.open
+        || mailbox.imbue != *expected
+        || mailbox.world_input_blocked()
+        || commands.is_closed()
+    {
+        return false;
+    }
+    enqueue(mailbox, commands, intent);
+    mailbox.imbue.pending
+}

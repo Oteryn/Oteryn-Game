@@ -12,6 +12,7 @@
 mod cake_speech;
 mod item_actions;
 mod private_echo;
+mod source_speech;
 
 use std::collections::{BTreeMap, HashMap};
 use std::num::NonZeroU64;
@@ -24,16 +25,15 @@ use oteryn_protocol_oteryn::chat::{
 use oteryn_protocol_oteryn::npc_service::{MAX_OPEN_CONVERSATIONS_PER_NPC, TALK_RANGE_TILES};
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
+use super::ComposedFreshAdmission;
 use super::actor_spell::ChannelSpellStates;
 use super::chat_relay::ChatRelay;
 use super::npc_talk::{NpcTalkBook, TalkNpc, talk};
-use super::{ComposedFreshAdmission, FreshAdmissionStore};
 use crate::chat::relay::{RelayDestination, RelayLine};
 use crate::chat::{
     ChatEgress, ChatLimiter, ChatPosition, ChatRefusal, ChatText, SpeechMode, YellGate, local_line,
     local_listeners, private_line, room_line,
 };
-use crate::domain;
 use crate::domain::character_name::CharacterName;
 use crate::domain::premium::PremiumGate;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
@@ -1019,7 +1019,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
     ) -> Option<(String, [u8; 16], u32)> {
         let retry = super::AdmissionRetryBudget::for_foreground_command(self.root).ok()?;
-        self.chat_speaker_name_with_budget(session, &retry).await
+        Box::pin(self.chat_speaker_name_with_budget(session, &retry))
+            .await
+            .ok()
     }
 
     /// Named visibility shares one budget across its bounded interest set. Only
@@ -1028,27 +1030,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         session: GameSessionId,
         retry: &super::AdmissionRetryBudget<'_>,
-    ) -> Option<(String, [u8; 16], u32)> {
+    ) -> Result<(String, [u8; 16], u32), super::connection::AdmissionRefusal> {
         use super::connection::AdmissionRefusal;
         use crate::durability::DurabilityError;
         use crate::durability::character_authority::CharacterAuthorityError;
         use crate::durability::character_progression::CharacterProgressionError;
 
-        let store = FreshAdmissionStore::from_root(self.root.clone());
-        let (current, _) = retry
+        // Entity visibility also uses this name. Resolve its session from an
+        // observation snapshot so a reconnect writer cannot stall that tick.
+        let fence = retry
             .retry_unavailable(async || {
-                store
-                    .current_session_at(session)
+                self.root
+                    .observe_current_gameplay_fence(self.character, session, true)
                     .await
                     .map_err(|error| match error {
-                        DurabilityError::RootUnavailable => AdmissionRefusal::Unavailable,
+                        CharacterAuthorityError::Unavailable(DurabilityError::RootUnavailable) => {
+                            AdmissionRefusal::Unavailable
+                        }
                         _ => AdmissionRefusal::Rejected,
                     })
             })
-            .await
-            .ok()?;
-        let character = *current.commit().character_id().as_bytes();
-        let character_id = domain::CharacterId::from_bytes(character).ok()?;
+            .await?
+            .ok_or(AdmissionRefusal::Rejected)?;
+        let character_id = fence.character_id;
+        let character = *character_id.as_bytes();
         let name = retry
             .retry_unavailable(async || {
                 self.root
@@ -1061,8 +1066,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         _ => AdmissionRefusal::Rejected,
                     })
             })
-            .await
-            .ok()??;
+            .await?
+            .ok_or(AdmissionRefusal::Rejected)?;
         let level = retry
             .retry_unavailable(async || {
                 self.root
@@ -1075,10 +1080,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         _ => AdmissionRefusal::Rejected,
                     })
             })
-            .await
-            .ok()?
+            .await?
             .map_or(1, |progression| progression.level);
-        Some((name.as_str().to_owned(), character, level))
+        Ok((name.as_str().to_owned(), character, level))
     }
 
     /// Opens (or keeps) the chat state of `session` and answers its open rooms (the snapshot).

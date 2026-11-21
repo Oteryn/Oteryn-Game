@@ -1,7 +1,7 @@
 use super::*;
 
 /// Everything [`Session::admit`] needs to admit with one grant and read its join snapshot.
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct Admission<'a> {
     /// Verified client artifact Item references for appearance transforms, when loaded.
     pub appearance_items: Option<AppearanceItemDictionary<'a>>,
@@ -19,6 +19,21 @@ pub struct Admission<'a> {
     /// `SnapshotChunk`, `SnapshotCommit`) and every later per-frame read and write. A stalled
     /// server fails with `SessionError::Timeout` naming the stage, rather than hanging.
     pub deadline: Duration,
+}
+
+impl std::fmt::Debug for Admission<'_> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("Admission")
+            .field("appearance_items", &self.appearance_items)
+            .field("schema_revision", &self.schema_revision)
+            .field("character_id", &self.character_id)
+            .field("admission_material", &"[REDACTED]")
+            .field("client_build_id", &self.client_build_id)
+            .field("supported_capabilities", &self.supported_capabilities)
+            .field("deadline", &self.deadline)
+            .finish()
+    }
 }
 
 /// `oteryn-protocol-oteryn`'s own domain codecs (state domains 1 `WORLD_SPATIAL` and 2

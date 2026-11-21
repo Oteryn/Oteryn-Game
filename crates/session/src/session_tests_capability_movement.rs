@@ -334,3 +334,27 @@ fn unselected_diagonal_step_and_pending_recovery_send_no_bytes() -> Result<(), B
         Ok(())
     })?
 }
+
+#[test]
+fn committed_step_receipt_survives_the_session_exchange() -> Result<(), BoxError> {
+    block_on(async {
+        let (client, mut server) = tokio::io::duplex(64 * 1024);
+        let peer = tokio::spawn(async move {
+            join_peer(&mut server, &[13], &[13], &[]).await?;
+            read_frame(&mut server).await?;
+            let payload = world_spatial::encode_step_result_paced(world_spatial::StepResult {
+                disposition: StepDisposition::Moved, step_wait_ms: 350,
+            }, true).map_err(|error| format!("{error:?}"))?;
+            write_frame(&mut server, &encode_command_result(1,41,7,CommandStatus::Accepted,&payload)?).await?;
+            write_frame(&mut server, &encode_state_delta(1,42,STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,5,6,DELTA_TYPE_WORLD_SPATIAL_V1,&spatial(1))?).await?;
+            Ok::<(),BoxError>(())
+        });
+        let mut session = Session::admit(client,admission()?).await?;
+        let outcome = session.step(StepDirection::East).await?;
+        peer.await??;
+        assert_eq!(outcome.disposition,StepDisposition::Moved);
+        assert_eq!(outcome.step_wait_ms,350);
+        assert!(outcome.world_spatial_delta.is_some());
+        Ok(())
+    })?
+}

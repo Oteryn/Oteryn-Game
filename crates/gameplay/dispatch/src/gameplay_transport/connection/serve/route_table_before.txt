@@ -41,3 +41,5 @@
 33 daily_reward
 64 world_event
 14 highscores
+6244 highscores
+6245 highscores

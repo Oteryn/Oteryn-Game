@@ -1,0 +1,22 @@
+{
+  "mechanic": "0501-trade-details",
+  "kind": "handlers",
+  "id": "0501-trade-details-quotes",
+  "status": "supported",
+  "commands": [],
+  "direction": "server_to_client",
+  "capability": 501,
+  "entry": "protocol.rs::apply_window",
+  "reducer": "protocol.rs::apply_window",
+  "push_messages": [
+    "NpcTradeWindowV1"
+  ],
+  "test": "protocol.rs::authoritative_quotes_reach_ui_rows_and_bounds",
+  "not_applicable": {
+    "state": "The existing NPC shop owns the decoded quote metadata.",
+    "protocol": "Session selects capability-501 window decoding.",
+    "view": "Existing NPC shop rows render server names.",
+    "input": "Existing NPC trade requests use the server quantity bound.",
+    "settings": "No setting."
+  }
+}

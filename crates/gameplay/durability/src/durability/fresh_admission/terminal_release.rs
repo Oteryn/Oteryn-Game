@@ -44,7 +44,7 @@ impl FreshAdmissionStore {
                 let inherited:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_activity_runtime_returns a JOIN game_durability_reconnect_sessions s ON s.game_session_id=a.source_game_session_id JOIN game_durability_reconnect_sessions d ON d.game_session_id=a.destination_game_session_id WHERE a.destination_game_session_id=encode($1,'hex')::uuid AND $2::text::numeric=1 AND s.control_loss_epoch IS NOT NULL AND s.original_grace_deadline=d.original_grace_deadline AND d.control_loss_epoch=1)")
                     .bind(session_id.as_bytes().as_slice()).bind(epoch.get().to_string()).fetch_one(&mut *tx).await?;
                 if !inherited && !has_owning_loss_receipt(&mut tx,session_id.as_bytes().as_slice(),epoch.get()).await? { return Err(DurabilityError::Unavailable); }
-                let signed:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_staff_disconnects d WHERE d.game_session_id=encode($1,'hex')::uuid OR EXISTS(SELECT 1 FROM game_activity_runtime_returns a WHERE a.destination_game_session_id=encode($1,'hex')::uuid AND a.source_game_session_id=d.game_session_id))")
+                let signed:bool=sqlx::query_scalar("SELECT game_security_session_revoked(encode($1,'hex')::uuid) OR EXISTS(SELECT 1 FROM game_staff_disconnects d WHERE d.game_session_id=encode($1,'hex')::uuid OR EXISTS(SELECT 1 FROM game_activity_runtime_returns a WHERE a.destination_game_session_id=encode($1,'hex')::uuid AND a.source_game_session_id=d.game_session_id))")
                     .bind(session_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
                 if !signed { return Err(DurabilityError::Unavailable); }
             }
@@ -75,18 +75,35 @@ impl FreshAdmissionStore {
             } else { None };
             if let Some(training) = &store.training_logout { training.prepare(&mut tx).await?; }
             if let Some(final_position) = store.final_position {
-                write_final_position(&mut tx, &current, &final_position, store.final_house.as_ref()).await?;
+                write_final_position(&mut tx, &current, &final_position, store.final_house.as_ref(), store.pending_vocation_refill).await?;
             }
             Box::pin(super::super::journal::capture::capture(&mut tx, current, store.journal_catalogue.as_deref(), decided_at)).await?;
             let updated = sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state = 3, current_transport_ref = NULL, prepared_attempt_ref = NULL WHERE game_session_id = encode($1,'hex')::uuid AND current_generation = $2::text::numeric(20,0) AND character_lease_generation = $3::text::numeric(20,0) AND scope_ownership_generation = $4::text::numeric(20,0)")
                 .bind(session_id.as_bytes().as_slice()).bind(current.current_connection_generation().get().to_string()).bind(current.current_character_lease().generation().to_string()).bind(current.current_scope_generation().get().to_string()).execute(&mut *tx).await?;
             if updated.rows_affected() != 1 { return Err(DurabilityError::Unavailable); }
+            // M51, Crystal201189f svargrond_arena.lua:259-313: terminal cleanup
+            // shares the fenced release commit; never clear a newer session.
+            super::super::arena_match::terminal::release_terminal_pit(&mut tx,
+                super::super::item_transfer::CurrentCharacterItemFence {
+                    character_id: crate::domain::CharacterId::from_bytes(*current.current_character_lease().character_id().as_bytes())
+                        .map_err(|_| DurabilityError::InvalidStoredState)?,
+                    game_session_id: session_id,
+                    connection_generation: current.current_connection_generation(),
+                    character_lease_generation: current.current_character_lease().generation(),
+                    runtime_scope: current.current_runtime_scope(),
+                    scope_ownership_generation: current.current_scope_generation(),
+                }).await?;
             if let Some(node) = &store.house_release_node {
                 super::super::character_last_position::release_terminal_house_entry(&mut tx, node,
                     session_id, current.current_character_lease().character_id(), decided_at).await?;
             }
-            super::super::world_party::remove_terminal_member_in_transaction(&mut tx, session_id)
-                .await.map_err(|_| DurabilityError::Unavailable)?;
+            if store.channel_switch {
+                super::super::world_party::hold_terminal_member_in_transaction(&mut tx, session_id)
+                    .await.map_err(|_| DurabilityError::Unavailable)?;
+            } else {
+                super::super::world_party::remove_terminal_member_in_transaction(&mut tx, session_id)
+                    .await.map_err(|_| DurabilityError::Unavailable)?;
+            }
             sqlx::query("UPDATE game_durability_reconnect_attempts SET state = 4 WHERE game_session_id = encode($1,'hex')::uuid AND state IN (1,5)")
                 .bind(session_id.as_bytes().as_slice()).execute(&mut *tx).await?;
             store.guards.persist_locked(&mut tx, successors, &rows, &encoded_successors).await?;

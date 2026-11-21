@@ -30,6 +30,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .ordinary_paced_step(actor, session, direction, expected, follow)
                 .await;
         }
+        if !self
+            .states
+            .tutorial_sessions
+            .vocation(session)
+            .is_ok_and(|pending| pending.is_none())
+        {
+            return (StepOutcome::rejected(), None);
+        }
         let here = {
             let mut runtime = self.runtime.lock().await;
             if runtime.player_control_facts(actor, session).is_err()
@@ -54,16 +62,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if self.reconcile_tutorial_position(fence, here).await.is_err() {
             return (StepOutcome::rejected(), None);
         }
-        let (dx, dy) = match direction {
-            StepDirection::North => (0, -1),
-            StepDirection::East => (1, 0),
-            StepDirection::South => (0, 1),
-            StepDirection::West => (-1, 0),
-            StepDirection::NorthEast => (1, -1),
-            StepDirection::SouthEast => (1, 1),
-            StepDirection::SouthWest => (-1, 1),
-            StepDirection::NorthWest => (-1, -1),
-        };
+        let (dx, dy) = direction.delta();
         if (here.x + dx, here.y + dy, here.floor) == ISLET_HOLE
             && super::tutorial_session::tutorial_cell(here)
         {

@@ -1,0 +1,1 @@
+{"schema":"oteryn.security_revocation_stream_page.v1","items":[{"revocation_id":"019a0000-0000-7000-8000-000000000011","account_id":"019a0000-0000-7000-8000-000000000002","native_security_generation":2,"cause":1,"effective_at_ms":1700000000000}],"next_cursor":"v1:1"}

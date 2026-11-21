@@ -22,12 +22,7 @@ impl PlayLink {
         if !oteryn_client_ui::browse_field::open_key(events) {
             return false;
         }
-        #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
-            lock(&self.mailbox).browse_field.open = true;
-        }
+        lock(&self.mailbox).browse_field.open = true;
         true
     }
 }

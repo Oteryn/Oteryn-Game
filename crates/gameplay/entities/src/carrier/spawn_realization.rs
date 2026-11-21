@@ -24,6 +24,11 @@ pub struct SpawnDefinition {
     points: Vec<SpawnPointDefinition>,
     /// D115: 5,000,000 (5 s).
     occupancy_retry_interval_micros: u64,
+    /// Only the full-pin Content XML qualifier can select source warning phases.
+    /// Ordinary D115 definitions retain their accepted warning policy.
+    pub(super) xml_source: Option<
+        oteryn_gameplay_content::content::bosses::activity_template::QualifiedAmbientXmlSpawns,
+    >,
 }
 
 /// SPAWN-1b: what one spawn point realizes and when it respawns.
@@ -117,6 +122,7 @@ impl SpawnDefinition {
             population,
             points: definitions,
             occupancy_retry_interval_micros,
+            xml_source: None,
         })
     }
 
@@ -489,7 +495,7 @@ impl ChannelRuntimeV1 {
     /// fence, no realized or pending activation, every registered ceiling and the slot
     /// capacity, which keeps [`SPAWN_ACTIVATION_PLAYER_HEADROOM`] slots free for player
     /// admission. Returns the total points.
-    fn check_spawn_activation(
+    pub(super) fn check_spawn_activation(
         &self,
         definitions: &[SpawnDefinition],
     ) -> Result<usize, CarrierError> {
@@ -688,14 +694,7 @@ impl ChannelRuntimeV1 {
                 && spawn.definition.points[cell].enabled
                 && self.spawn_schedule.pending(point).is_none()
             {
-                // W05d: a scheduled event spawn rate shortens or lengthens the respawn delay
-                // (Crystal `spawn_monster.cpp:443-458`).
-                let mut timing = spawn.definition.timing(cell)?;
-                timing.respawn_delay_micros =
-                    oteryn_gameplay_foundation::scheduled_events::scale_respawn_delay_micros(
-                        timing.respawn_delay_micros,
-                        oteryn_gameplay_foundation::scheduled_events::current_rates().spawn,
-                    );
+                let timing = self.spawn_timing(point)?;
                 let due_micros = self
                     .spawn_schedule
                     .creature_gone(point, timing, now_micros)
@@ -809,6 +808,11 @@ impl ChannelRuntimeV1 {
             // with the same one-second minimum after applying rates.
             timing.respawn_delay_micros = (timing.respawn_delay_micros / 2).max(1_000_000);
         }
+        timing.respawn_delay_micros =
+            oteryn_gameplay_foundation::scheduled_events::scale_respawn_delay_micros(
+                timing.respawn_delay_micros,
+                oteryn_gameplay_foundation::scheduled_events::current_rates().spawn,
+            );
         Ok(timing)
     }
     pub(super) fn spawn_cell(
@@ -827,9 +831,9 @@ impl ChannelRuntimeV1 {
             floor: cell.floor,
         })
     }
-    /// §6.3 Blocked reads the present players of [`Self::positioned_actor_census`] (committed,
-    /// positioned and in control); their interest area (MOVE-RL-11) is the caller's view
-    /// around these positions. SPAWN-CEILINGS-1 (Codex 4242270322): they are read from the
+    /// §6.3 Blocked reads committed, positioned players, including after control loss, and
+    /// excludes staff ghosts. Their interest area (MOVE-RL-11) is the caller's view around
+    /// these positions. SPAWN-CEILINGS-1 (Codex 4242270322): they are read from the
     /// occupied index without building the census of every creature; a player under a foreign
     /// position context refuses, as in the census.
     pub(super) fn present_player_positions(
@@ -852,7 +856,7 @@ impl ChannelRuntimeV1 {
             else {
                 continue;
             };
-            if lifecycle.control_loss.is_some() {
+            if lifecycle.staff_ghost {
                 continue;
             }
             if version.context != context {
@@ -1068,28 +1072,40 @@ impl ChannelActorCarrier {
         position_context: PreProductionPositionContext,
         cell: LocalPosition,
     ) -> bool {
-        self.slots.iter().any(|slot| match slot {
-            Slot::Occupied { lifecycle, .. } if lifecycle.staff_ghost => false,
-            Slot::Occupied {
-                committed: true,
-                position: Some(version),
-                ..
-            }
-            | Slot::CreatureOccupied {
-                position: Some(version),
-                health: 1..,
-                ..
-            } => version.context == position_context && version.position == cell,
-            Slot::CreatureReserved { planned, .. } => matches!(planned.as_ref(),
+        self.cell_occupied_unless(position_context, cell, |_| false)
+    }
+
+    pub(super) fn cell_occupied_unless(
+        &self,
+        position_context: PreProductionPositionContext,
+        cell: LocalPosition,
+        mut admits_occupant: impl FnMut(&Slot) -> bool,
+    ) -> bool {
+        self.slots
+            .iter()
+            .filter(|slot| match slot {
+                Slot::Occupied { lifecycle, .. } if lifecycle.staff_ghost => false,
+                Slot::Occupied {
+                    committed: true,
+                    position: Some(version),
+                    ..
+                }
+                | Slot::CreatureOccupied {
+                    position: Some(version),
+                    health: 1..,
+                    ..
+                } => version.context == position_context && version.position == cell,
+                Slot::CreatureReserved { planned, .. } => matches!(planned.as_ref(),
                 Slot::CreatureOccupied { position: Some(version), .. }
                     if version.context == position_context && version.position == cell),
-            Slot::NpcOccupied {
-                position: version,
-                hireling: None,
-                ..
-            } => version.context == position_context && version.position == cell,
-            _ => false,
-        })
+                Slot::NpcOccupied {
+                    position: version,
+                    hireling: None,
+                    ..
+                } => version.context == position_context && version.position == cell,
+                _ => false,
+            })
+            .any(|slot| !admits_occupant(slot))
     }
     /// True when `actor`, at its exact actor-local generation, is still this carrier's live
     /// creature (`health > 0`). A spawn cell may still name a removed creature (removal does

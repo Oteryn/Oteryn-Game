@@ -104,18 +104,19 @@ fn fuzz_selected_item_view_decoders() {
                     equip_drop,
                     container_tree,
                     world_interaction,
+                    manual_sort: false,
                 };
                 crate::decoder_fuzz_support::codec(
                     "decode_item_move_intent_for",
                     |rng| ItemMoveIntent {
                         source: handle(rng.u64().max(1)),
                         destination: if container_tree {
-                            ItemMoveDestination::Container(handle(900))
+                            ItemMoveDestination::Container(handle(900), None)
                         } else if equip_drop || world_interaction {
                             ItemMoveDestination::Ground(WorldTilePosition {
                                 x: rng.u64() as i32,
                                 y: rng.u64() as i32,
-                                floor: rng.u64() as i16,
+                                floor: rng.below(16) as i16,
                             })
                         } else {
                             ItemMoveDestination::MainBackpack

@@ -1,7 +1,7 @@
 //! Real USE rune wire -> native field cast -> guarded writer -> durable row/result.
-use super::death_ml_loss_composed::{current_fence, production_generation_with_pin};
+use super::death_ml_loss_composed_fixtures::{current_fence, production_generation_with_pin};
 use super::fixture::{Harness, debug, id, join_two, run};
-use super::item_look::{large_stack, read_frame, seed_main_backpack};
+use super::item_look_fixtures::{large_stack, read_frame, seed_main_backpack};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::character_build::{
     BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState, convert_vocation,
@@ -166,6 +166,12 @@ async fn field_case(admin: String, enabled: bool) -> TestResult {
     owner.active_generation = Some(active);
     owner.rooms = SeamRooms::new(None, Some(&room));
     owner.movement_cells = (&cells).into();
+    let wire_start = {
+        let runtime = owner.runtime.lock().await;
+        owner.wire_position_frame(&runtime).and_then(|frame| frame.project(start))
+            .ok_or("project admission rune caster")?
+    };
+
     owner.required_capabilities = BoundRequiredCapabilities::for_channel_boot(
         if enabled { &[11, 30] } else { &[18] },
         crate::foundation::RuntimeScopeRefV1::channel(world, dependencies.admitted.channel_id),
@@ -323,9 +329,9 @@ async fn field_case(admin: String, enabled: bool) -> TestResult {
             use_with: None,
             use_with_map_item: None,
             use_with_position: Some(SpellTargetPosition {
-                x: 101,
-                y: 100,
-                floor: 7,
+                x: wire_start.x + 1,
+                y: wire_start.y,
+                floor: wire_start.floor,
             }),
         };
         let payload = encode_item_use_intent(&intent).map_err(debug)?;

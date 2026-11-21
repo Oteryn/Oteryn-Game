@@ -27,12 +27,7 @@ impl PlayLink {
             return false;
         }
         self.skills_widget_request();
-        #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
-            lock(&self.mailbox).loyalty_skills.open = true;
-        }
+        lock(&self.mailbox).loyalty_skills.open = true;
         true
     }
 }

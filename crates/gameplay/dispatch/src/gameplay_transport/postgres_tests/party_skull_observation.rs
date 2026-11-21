@@ -63,6 +63,7 @@ async fn snapshot(server: &mut DuplexStream) -> TestResult {
             actor_position: position(),
             own_identity: entity().identity,
             entities: vec![spatial::WorldSpatialEntity {
+                motion: None,
                 display_name: None,
                 kind: spatial::EntityKind::Player,
                 entity: entity(),
@@ -195,7 +196,7 @@ fn observe(trace: Trace) -> TestResult {
         };
         let driving = async move {
             let baseline =
-                super::party_skull::icon_snapshot_revision(&mut client, GENERATION).await?;
+                super::party_skull_fixtures::icon_snapshot_revision(&mut client, GENERATION).await?;
             assert_eq!(baseline, BASELINE);
             write_frame(
                 &mut client,
@@ -210,7 +211,7 @@ fn observe(trace: Trace) -> TestResult {
                 .map_err(debug)?,
             )
             .await?;
-            super::party_skull::read_icons(
+            super::party_skull_fixtures::read_icons(
                 &mut client,
                 GENERATION,
                 COMMAND,

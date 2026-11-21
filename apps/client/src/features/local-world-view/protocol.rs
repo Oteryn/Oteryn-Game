@@ -22,10 +22,17 @@ pub(in crate::play) fn world_map(pushed: &mut Pushed, delta: AppliedDelta<WorldM
 }
 
 impl crate::play::Outbox {
-    pub(in crate::play) fn map_initialize(&self, payload: Option<Vec<u8>>) {
-        crate::play::mailbox::lock(&self.0).map = payload
+    pub(in crate::play) fn map_initialize(
+        &self,
+        payload: Option<Vec<u8>>,
+        wire_position: Option<oteryn_session::ActorPosition>,
+    ) {
+        let map = payload
             .and_then(|bytes| oteryn_session::world_map::decode_world_map_snapshot(&bytes).ok())
             .map(Box::new);
+        let mut mailbox = crate::play::mailbox::lock(&self.0);
+        mailbox.seed_wire_frame(wire_position, map.as_deref().map(|map| map.header.origin));
+        mailbox.map = map;
     }
 }
 
@@ -40,7 +47,11 @@ pub(in crate::play) fn world_map_snapshot(
 
 impl crate::play::mailbox::Mailbox {
     /// Retain the current window across polls, while reducing replacements in wire order.
-    pub(in crate::play) fn coalesce_events(&mut self, events: Vec<oteryn_session::SessionEvent>) {
+    pub(in crate::play) fn coalesce_events(
+        &mut self,
+        mut events: Vec<oteryn_session::SessionEvent>,
+    ) {
+        self.convert_events(&mut events);
         crate::play::feature_0023_presentation::state::ui_sound::observe(self, &events);
         use oteryn_session::SessionEvent;
         let has_map = events.iter().any(|event| {
@@ -57,4 +68,16 @@ impl crate::play::mailbox::Mailbox {
             self.map = self.pushed.map.clone();
         }
     }
+}
+
+/// A scope barrier discards coalesced source projections before fresh destination deltas.
+pub(in crate::play) fn activity_scope(
+    pushed: &mut Pushed,
+    scope: AppliedDelta<oteryn_session::activity_scope::ActivityScopeSnapshot>,
+) {
+    *pushed = Pushed {
+        scope_changed: true,
+        activity_scope: Some(scope.value),
+        ..Pushed::default()
+    };
 }

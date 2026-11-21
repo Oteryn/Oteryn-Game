@@ -112,6 +112,7 @@ enum Slot {
 
 /// Apply the pinned packet to `draft`; returns the number of admitted Items.
 pub fn apply_item_admission_v1(draft: &mut ProjectV2Draft) -> Result<usize, ItemAdmissionError> {
+    super::item_identity::validate_unique_item_keys(draft).map_err(ItemAdmissionError::Decode)?;
     if world_project_sha256(ITEM_ADMISSION_V1_PACKET) != ITEM_ADMISSION_V1_PACKET_SHA256 {
         return Err(ItemAdmissionError::Digest);
     }
@@ -170,6 +171,7 @@ fn apply_admissions<'a>(
         }
     }
     let mut admitted = 0;
+    let mut planned = Vec::new();
     for (key, materializable, stack_class, semantics) in items {
         if !pending.remove(key) {
             continue;
@@ -177,11 +179,33 @@ fn apply_admissions<'a>(
         let Some(admission) = packet.admissions.iter().find(|row| row.item_key == key) else {
             continue;
         };
-        admit(admission, materializable, stack_class, semantics)?;
+        let (mut new_materializable, mut new_class, mut candidate) =
+            (*materializable, *stack_class, semantics.clone());
+        admit(
+            admission,
+            &mut new_materializable,
+            &mut new_class,
+            &mut candidate,
+        )?;
+        planned.push((
+            materializable,
+            stack_class,
+            semantics,
+            new_materializable,
+            new_class,
+            candidate,
+        ));
         admitted += 1;
     }
     if let Some(item_key) = pending.into_iter().next() {
         return Err(item_error(item_key, "no Item record with this key"));
+    }
+    for (materializable, stack_class, semantics, new_materializable, new_class, candidate) in
+        planned
+    {
+        *materializable = new_materializable;
+        *stack_class = new_class;
+        *semantics = candidate;
     }
     Ok(admitted)
 }
@@ -293,6 +317,7 @@ enum TemporalMode {
 
 /// Apply the pinned D3-7 corpse packet to `draft`; returns the number of admitted Items.
 pub fn apply_item_admission_v2(draft: &mut ProjectV2Draft) -> Result<usize, ItemAdmissionError> {
+    super::item_identity::validate_unique_item_keys(draft).map_err(ItemAdmissionError::Decode)?;
     apply_packet_v2(
         draft,
         ITEM_ADMISSION_V2_PACKET,
@@ -305,6 +330,7 @@ pub fn apply_item_admission_v2(draft: &mut ProjectV2Draft) -> Result<usize, Item
 pub fn apply_item_admission_v2_cheese(
     draft: &mut ProjectV2Draft,
 ) -> Result<usize, ItemAdmissionError> {
+    super::item_identity::validate_unique_item_keys(draft).map_err(ItemAdmissionError::Decode)?;
     apply_packet_v2(
         draft,
         ITEM_ADMISSION_V2_CHEESE_PACKET,
@@ -385,6 +411,7 @@ fn apply_admissions_v2<'a>(
         }
     }
     let mut admitted = 0;
+    let mut planned = Vec::new();
     for (key, materializable, stack_class, semantics) in items {
         if !pending.remove(key) {
             continue;
@@ -392,11 +419,33 @@ fn apply_admissions_v2<'a>(
         let Some(admission) = packet.admissions.iter().find(|row| row.item_key == key) else {
             continue;
         };
-        admit_v2(admission, materializable, stack_class, semantics)?;
+        let (mut new_materializable, mut new_class, mut candidate) =
+            (*materializable, *stack_class, semantics.clone());
+        admit_v2(
+            admission,
+            &mut new_materializable,
+            &mut new_class,
+            &mut candidate,
+        )?;
+        planned.push((
+            materializable,
+            stack_class,
+            semantics,
+            new_materializable,
+            new_class,
+            candidate,
+        ));
         admitted += 1;
     }
     if let Some(item_key) = pending.into_iter().next() {
         return Err(item_error(item_key, "no Item record with this key"));
+    }
+    for (materializable, stack_class, semantics, new_materializable, new_class, candidate) in
+        planned
+    {
+        *materializable = new_materializable;
+        *stack_class = new_class;
+        *semantics = candidate;
     }
     Ok(admitted)
 }
@@ -518,6 +567,7 @@ struct EvidenceV3 {
 /// Apply the pinned ITEM-SEM-USE-2 packet to `draft`: every row is a consumable stack shape
 /// (stack-capable with `stack_max` 100, or non-stackable). Returns the number of admitted Items.
 pub fn apply_item_admission_v3(draft: &mut ProjectV2Draft) -> Result<usize, ItemAdmissionError> {
+    super::item_identity::validate_unique_item_keys(draft).map_err(ItemAdmissionError::Decode)?;
     if world_project_sha256(ITEM_ADMISSION_V3_PACKET) != ITEM_ADMISSION_V3_PACKET_SHA256 {
         return Err(ItemAdmissionError::Digest);
     }
@@ -710,6 +760,52 @@ mod tests {
             std::iter::once((KEY, materializable, stack_class, semantics)),
             bytes,
         )
+    }
+
+    #[test]
+    fn late_missing_admission_preserves_all_fields() {
+        let (mut materializable, mut class, mut semantics) =
+            (false, ItemStackDocument::Unknown, backpack());
+        let before = semantics.clone();
+        let bytes = packet(&format!(
+            "{},{}",
+            row(KEY, true, 20),
+            row("missing", true, 20)
+        ));
+        assert!(apply(&bytes, &mut materializable, &mut class, &mut semantics).is_err());
+        assert!(!materializable);
+        assert_eq!(class, ItemStackDocument::Unknown);
+        assert_eq!(semantics, before);
+    }
+
+    #[test]
+    fn late_missing_v2_admission_preserves_all_fields() {
+        let (mut materializable, mut class, mut semantics) = (
+            false,
+            ItemStackDocument::Unknown,
+            ReferenceItemSemantics::default(),
+        );
+        let before = semantics.clone();
+        let mut packet = corpse_packet();
+        let mut missing = packet["admissions"][0].clone();
+        missing["item_key"] = serde_json::json!("missing");
+        packet["admissions"]
+            .as_array_mut()
+            .expect("rows")
+            .push(missing);
+        assert!(
+            apply_v2(
+                &packet,
+                CORPSE,
+                &mut materializable,
+                &mut class,
+                &mut semantics
+            )
+            .is_err()
+        );
+        assert!(!materializable);
+        assert_eq!(class, ItemStackDocument::Unknown);
+        assert_eq!(semantics, before);
     }
 
     #[test]

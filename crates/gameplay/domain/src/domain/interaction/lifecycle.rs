@@ -111,7 +111,10 @@ impl<O: DelegatedOperation> ChildLifecycleBook<O> {
                 ensure_same_authority_fence(entry, fence)?;
                 Ok((ChildLifecycle::Pending, false))
             }
-            ChildLifecycle::Committed | ChildLifecycle::Rejected => Ok((entry.state, false)),
+            ChildLifecycle::Committed | ChildLifecycle::Rejected => {
+                ensure_same_pending_operation(entry, operation)?;
+                Ok((entry.state, false))
+            }
         }
     }
 

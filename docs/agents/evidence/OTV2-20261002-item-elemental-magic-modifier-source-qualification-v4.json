@@ -103,7 +103,7 @@
     },
     {
       "path": "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py",
-      "sha256": "5969b009ed326991e6db310b3e3c48640ae5a5ac361c9c34f5619740bff8ce2e"
+      "sha256": "3f6a78aece8db60a19f0114c4ed9998c28c4330cc598319936e3eb0446740182"
     },
     {
       "path": "tools/content-schema/item-authoring/lower_wiki_movable_packet.py",
@@ -115,11 +115,11 @@
     },
     {
       "path": "imports/crystalserver/bindings/items.json",
-      "sha256": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a"
+      "sha256": "6e2952b3017d8f5e5ab952216387075238bd37e7f1aba5bdc501cdcf43b90b66"
     },
     {
       "path": "imports/tibiawiki/facts/items-stats.json",
-      "sha256": "24e3e57fddc6c14f00aa5c4976e91117d31bc2102bd3835b3d7891d9e41fbeae"
+      "sha256": "4dd7557ba437421396835dafe7dde3eabfa64ae4d3d797fa3f0f05155f797705"
     },
     {
       "path": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
@@ -131,7 +131,7 @@
     },
     {
       "path": "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
-      "sha256": "f782957438c7f83b04bd59ec714132157a49324694413e918125b6d38c08b5a1"
+      "sha256": "82cd7cc71421911cfb85f0fac5375bf9a225706793dd5debca91b147b91215ba"
     }
   ],
   "original_external_qualification": {

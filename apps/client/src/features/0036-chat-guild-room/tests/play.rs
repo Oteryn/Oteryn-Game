@@ -184,3 +184,37 @@ fn session_end_and_logout_clear_guild_chat_membership() {
         assert!(!link.open_guild_chat());
     }
 }
+
+#[test]
+fn guild_form_chat_button_routes_the_composer_to_guild() -> Result<(), Error> {
+    use crate::{combat_input::PlayCommand, play::mailbox::lock};
+    use oteryn_client_ui::chat::ChannelTab;
+
+    let (link, mut incoming, outbox) = play_channel();
+    outbox.chat_initialize(true);
+    let form = crate::play::feature_0040_guild::view::form(&link);
+    {
+        let mut mailbox = lock(&link.mailbox);
+        oteryn_client_ui::chat_guild_room::replace_state(
+            &mut mailbox.chat,
+            true,
+            oteryn_session::GuildRoomState::Member {
+                guild_id: [1; 16],
+                rank: 1,
+                motd: "Welcome".into(),
+            },
+        );
+        assert!(mailbox.chat.console.current.is_none());
+        (form.submit)(&mut mailbox, &link.commands, 11, Vec::new());
+    }
+    link.chat_text("guild only".into());
+    link.chat_request(Mode::Say, "");
+    assert!(matches!(
+        incoming.try_recv()?,
+        PlayCommand::ChatPublic(ChatIntent::Guild { text }) if text == "guild only"
+    ));
+    let panel = link.chat_panel();
+    assert_eq!(panel.console.current, Some(ChannelTab::Guild));
+    assert!(panel.console.channels.contains(&ChannelTab::Guild));
+    Ok(())
+}

@@ -26,13 +26,21 @@ pub fn preference_bindings() -> Result<Vec<PreferenceBinding>, PreferenceError> 
     Ok(bindings)
 }
 
-/// Features whose input chord belongs to a Global channel or help command by default; the
-/// player can still bind them, and the feature keeps reading its own chord internally.
+/// Features whose input chord belongs to a Global channel, help or console command by default;
+/// the player can still bind them, and the feature keeps reading its own chord internally.
+/// Global opens the Market only from the depot locker, and its Ctrl+M toggles server messages.
+/// Prey, VIP and skills open through Global's own window actions (Ctrl+Y, Ctrl+P, Alt+S), Ctrl+K
+/// shows the hotkey options, and Global gives the boss slots no chord.
 const UNBOUND_BY_DEFAULT: &[&str] = &[
     "0009-highscores-open",
+    "0043-vip-open",
     "0060-player-trade-open",
+    "0063-market-open",
     "0072-task-board-open",
+    "0140-prey-open",
     "0147-exiva-settings-open",
+    "0225-boss-difficulty-open",
+    "0274-loyalty-skills-open",
 ];
 
 fn unbound_by_default(id: &str) -> bool {
@@ -57,6 +65,10 @@ use chords::{Chord, parse};
 mod binding_validation;
 pub(super) use binding_validation::validate_custom;
 use binding_validation::{validate_effective, validate_map};
+
+#[cfg(test)]
+#[path = "tests/input_audit.rs"]
+mod input_audit;
 
 impl ReferencePreferences {
     pub fn set_action_bar_hotkeys(&mut self, chords: &[&str; 4]) -> Result<(), PreferenceError> {
@@ -199,8 +211,20 @@ impl ReferencePreferences {
                 let effective = effective_chord(primary, id, default)
                     .map(parse)
                     .transpose()?;
+                let alternate = secondary.get(id).map(|s| parse(s)).transpose()?;
+                let movement_key = match id {
+                    "0013-paced-movement-move-north" => Some(26),
+                    "0013-paced-movement-move-east" => Some(7),
+                    "0013-paced-movement-move-south" => Some(22),
+                    "0013-paced-movement-move-west" => Some(4),
+                    _ => None,
+                };
+                let preserve_arrow = effective.is_some_and(|Chord(code, modifiers)| {
+                    movement_key == Some(code.get()) && modifiers == Modifiers::NONE
+                });
                 if effective == Some(chord)
-                    || secondary.get(id).map(|s| parse(s)).transpose()? == Some(chord)
+                    || alternate == Some(chord)
+                    || (preserve_arrow && original == chord)
                 {
                     target = Some(original);
                     break;
@@ -210,7 +234,9 @@ impl ReferencePreferences {
                 // another registered effective chord still wins above.
                 suppressed |= original.0 == chord.0
                     && chord.1.bits() & original.1.bits() == original.1.bits()
-                    && effective != Some(original);
+                    && effective != Some(original)
+                    && alternate != Some(original)
+                    && !preserve_arrow;
             }
             if let Some(Chord(code, modifiers)) = target {
                 routed.push(NormalizedInputEvent::Key {
@@ -232,6 +258,7 @@ impl ReferencePreferences {
 #[derive(Default)]
 pub struct PreferenceInput {
     actions: Vec<super::CustomAction>,
+    held_actions: std::collections::BTreeMap<KeyCode, super::CustomAction>,
     held: std::collections::BTreeMap<KeyCode, Option<(KeyCode, Modifiers)>>,
 }
 impl PreferenceInput {
@@ -263,6 +290,23 @@ impl PreferenceInput {
                     repeat,
                     modifiers,
                 } => {
+                    if let Some(action) = self.held_actions.get(code) {
+                        if *state == ButtonState::Released {
+                            self.held_actions.remove(code);
+                            self.held.remove(code);
+                        } else if *repeat
+                            && matches!(
+                                action,
+                                super::CustomAction::Object { .. }
+                                    | super::CustomAction::ActionBar { .. }
+                                    | super::CustomAction::Text { send: true, .. }
+                            )
+                            && self.actions.len() < 16
+                        {
+                            self.actions.push(action.clone());
+                        }
+                        continue;
+                    }
                     if !self.held.contains_key(code)
                         && let Some(action) = super::bar_hotkeys::routed_action(
                             preferences,
@@ -273,6 +317,7 @@ impl PreferenceInput {
                     {
                         if *state == ButtonState::Pressed {
                             self.held.insert(*code, None);
+                            self.held_actions.insert(*code, action.clone());
                             if !repeat && self.actions.len() < 16 {
                                 self.actions.push(action);
                             }
@@ -308,6 +353,7 @@ impl PreferenceInput {
                 NormalizedInputEvent::FocusChanged { focused: false }
                 | NormalizedInputEvent::DeviceLost => {
                     self.held.clear();
+                    self.held_actions.clear();
                     self.actions.clear();
                     output.push(event.clone());
                 }
@@ -349,4 +395,20 @@ pub(crate) fn parse_action_chord(value: &str) -> Option<(KeyCode, Modifiers)> {
     parse(value)
         .ok()
         .map(|Chord(code, modifiers)| (code, modifiers))
+}
+
+#[cfg(test)]
+#[test]
+fn qn6_diagonal_default_chords_parse_to_keypad_codes() -> Result<(), &'static str> {
+    for (name, expected) in [
+        ("NUMPAD1", 89),
+        ("NUMPAD3", 91),
+        ("NUMPAD7", 95),
+        ("NUMPAD9", 97),
+    ] {
+        let Chord(code, modifiers) = parse(name).map_err(|_| "diagonal default chord")?;
+        assert_eq!(code.get(), expected);
+        assert_eq!(modifiers, Modifiers::NONE);
+    }
+    Ok(())
 }

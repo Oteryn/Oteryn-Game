@@ -38,11 +38,54 @@ impl CreatureAiTable {
         player_waiting: bool,
         map: &mut CurrentMonsterMap<'_, '_>,
     ) -> Option<u64> {
+        self.drive_current_movement_through(
+            runtime,
+            cells,
+            blocking,
+            source,
+            root,
+            now,
+            now,
+            budget,
+            player_waiting,
+            map,
+        )
+        .await
+    }
+
+    /// An original retained pass limits which scheduled inputs may fire.
+    /// Current speed/conditions, path accounting and new cadence use the real
+    /// execution clock, while all later original deadlines stay in their lane.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn drive_current_movement_through(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        cells: &NativeEntryMovementCells,
+        blocking: &dyn CellBlocker,
+        source: &(impl CurrentCreatureSpeedReader + Sync),
+        root: &GameplayDecisionRoot,
+        through_us: u64,
+        execution_now: u64,
+        budget: &mut ChannelPathBudget,
+        player_waiting: bool,
+        map: &mut CurrentMonsterMap<'_, '_>,
+    ) -> Option<u64> {
+        let now = execution_now;
         if !map.view().matches(runtime)
+            || through_us > execution_now
             || cells.scope().world_id != runtime.binding().world_id()
             || cells.scope().generation_digest != runtime.content_pin().server_artifact_digest()
         {
             return None;
+        }
+        if map.view().source_ground_step_pending() {
+            // A prior real translation is awaiting its original physical Item
+            // outcome. Do not refresh goals, paths or consume later deadlines.
+            return self
+                .entries
+                .values()
+                .filter_map(|entry| entry.motion.due)
+                .min();
         }
         self.forget_dead(runtime);
         // All awaited reads precede goal/timer publication. Dropping this future retains inputs,
@@ -177,7 +220,7 @@ impl CreatureAiTable {
                 ],
             };
             let (route, work) =
-                measured_current_route(start, target, exact, &mut reader, budget).await;
+                measured_current_route(start, target, exact, false, &mut reader, budget).await;
             // No await between charging the completed search and retaining its result.
             if let Some(entry) = self.entry_mut(actor) {
                 super::creature_paths::install_route(entry, runtime, start, route, work);
@@ -186,7 +229,7 @@ impl CreatureAiTable {
         if !map.validate_transaction(runtime).await {
             return None;
         }
-        self.fire_steps(
+        self.fire_steps_through(
             runtime,
             cells,
             blocking,
@@ -194,6 +237,7 @@ impl CreatureAiTable {
             source,
             map.view(),
             root,
+            through_us,
             now,
         );
         let next = self

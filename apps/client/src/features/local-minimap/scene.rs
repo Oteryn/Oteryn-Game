@@ -42,8 +42,7 @@ impl Scene {
             .minimap_memory
             .tiles
             .iter()
-            .filter(|(_, _, floor, _)| *floor == self.minimap_floor)
-            .map(|&(x, y, _, speed)| ((x, y), speed))
+            .map(|&(x, y, floor, speed)| ((floor, x, y), speed))
             .collect();
         for y in 0..ROWS as i32 {
             for x in 0..COLUMNS as i32 {
@@ -54,35 +53,25 @@ impl Scene {
                     continue;
                 };
                 let tile = TileCoord::new(tx, ty);
-                let mut live = false;
-                if floor == self.minimap_floor
-                    && map.zoom == 1
-                    && let Some(anchor) = self.anchor
-                    && let (Some(x), Some(y)) =
-                        (tile.x.checked_add(anchor.x), tile.y.checked_add(anchor.y))
-                    && let Some(terrain) = self.world.tile(x, y)
-                    && let Some(draw) = terrain.under.first().or(terrain.over.first())
+                if let Some((_, &color)) = cell_tiles(&map.cells, floor, tile, map.zoom)
+                    .next()
+                    .or_else(|| {
+                        cell_tiles(&self.world.minimap_colors, floor, tile, map.zoom).next()
+                    })
                 {
-                    self.sprites
-                        .push(&view, self.world.atlas(), cell, draw.cell)?;
-                    live = true;
-                }
-                if !live && let Some(&color) = map.cells.get(&(floor, tx, ty)) {
                     self.sprites.push_quad(QuadInstance {
                         position: view.tile_to_screen(cell),
                         size: [TILE_PX as f32; 2],
                         uv: color_uv(color),
                     })?;
-                } else if let Some(speed) = remembered.get(&(tile.x, tile.y))
-                    && !self.minimap_origin.is_some_and(|origin| {
-                        oteryn_session::world_map::in_window(
-                            origin,
-                            oteryn_session::ActorPosition {
-                                x: tile.x,
-                                y: tile.y,
-                                floor: self.minimap_floor,
-                            },
-                        )
+                } else if let Some((_, &speed)) = cell_tiles(&remembered, floor, tile, map.zoom)
+                    .find(|&(&(floor, x, y), _)| {
+                        !self.minimap_origin.is_some_and(|origin| {
+                            oteryn_session::world_map::in_window(
+                                origin,
+                                oteryn_session::ActorPosition { x, y, floor },
+                            )
+                        })
                     })
                 {
                     memory_pixel(
@@ -90,11 +79,13 @@ impl Scene {
                         &view,
                         self.world.atlas(),
                         cell,
-                        if *speed == 0 { [2, 2, 2] } else { [2, 4, 2] },
+                        if speed == 0 { [2, 2, 2] } else { [2, 4, 2] },
                     )?;
                 }
                 if self.minimap_memory.marks.iter().any(|mark| {
-                    mark.floor == self.minimap_floor && mark.x == tile.x && mark.y == tile.y
+                    mark.floor == floor
+                        && (0..map.zoom).contains(&mark.x.saturating_sub(tx))
+                        && (0..map.zoom).contains(&mark.y.saturating_sub(ty))
                 }) {
                     memory_pixel(
                         &mut self.sprites,
@@ -114,6 +105,26 @@ impl Scene {
                     self.sprites
                         .push(&view, self.world.atlas(), cell, MARKER_CELL)?;
                 }
+                if map.quest_markers.iter().any(|m| {
+                    // Capability 451 owns the icon when both delivery paths contain it.
+                    !map.quest_marks.0.iter().any(|mark| {
+                        i32::from(mark.x) == m.x
+                            && i32::from(mark.y) == m.y
+                            && i16::from(mark.floor) == m.floor
+                    }) && m.floor == floor
+                        && (0..map.zoom).contains(&m.x.saturating_sub(tx))
+                        && (0..map.zoom).contains(&m.y.saturating_sub(ty))
+                }) {
+                    let at = view.tile_to_screen(cell);
+                    // Cross icon, distinct from a user marker's solid cell.
+                    for (offset, size) in [([0.0, 1.0], [4.0, 2.0]), ([1.0, 0.0], [2.0, 4.0])] {
+                        self.sprites.push_quad(QuadInstance {
+                            position: [at[0] + offset[0], at[1] + offset[1]],
+                            size,
+                            uv: color_uv(180),
+                        })?;
+                    }
+                }
                 if let Some(marker) = map.markers.iter().find(|m| {
                     m.floor == floor
                         && (0..map.zoom).contains(&m.x.saturating_sub(tx))
@@ -128,6 +139,7 @@ impl Scene {
                 }
             }
         }
+        self.draw_personal_map_marks(&map)?;
         if map.floor == self.minimap_floor {
             let cell = TileCoord::new(
                 self.own.x.saturating_sub(map.x).div_euclid(map.zoom) + 15,
@@ -169,4 +181,18 @@ fn memory_pixel(
         size: [view.tile_px() as f32; 2],
         uv: [u, v, u, v],
     })
+}
+
+// Query each covered column separately so distant explored rows are never scanned.
+fn cell_tiles<T>(
+    tiles: &std::collections::BTreeMap<(i16, i32, i32), T>,
+    floor: i16,
+    tile: TileCoord,
+    zoom: i32,
+) -> impl Iterator<Item = (&(i16, i32, i32), &T)> {
+    (0..zoom)
+        .filter_map(move |dx| tile.x.checked_add(dx))
+        .flat_map(move |x| {
+            tiles.range((floor, x, tile.y)..=(floor, x, tile.y.saturating_add(zoom - 1)))
+        })
 }

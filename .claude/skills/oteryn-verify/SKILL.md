@@ -26,6 +26,8 @@ Before stating any result:
 | CI is green | check runs on the current head SHA | a green run on an older head |
 | mergeable | `game-gate` green and `mergeable_state` clean on the current head, plus the PostgreSQL rule (`oteryn-dev` `references/ci-merge.md`, *Merge conditions*) | the PR looked fine an hour ago |
 | a worker finished | the diff in the tree and your own run of its checks | the worker's report |
+| fmt/Clippy OK from a worker | the SHA it ran on, and `cargo fmt --all --check` re-run on the pushed head | "fmt rc=0" with no SHA (a head failed rustfmt right after one) |
+| a qualification or E2E job passed | its result rows or test count | a green job or empty output (a job was green while its rows said FAIL) |
 | a mechanic is DONE | the mechanics ledger's definition, element by element | one slice merged |
 
 ## Words

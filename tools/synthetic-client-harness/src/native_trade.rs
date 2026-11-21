@@ -24,6 +24,7 @@ fn partner() -> entities::EntityRef {
 }
 fn actor() -> entities::WorldSpatialEntity {
     entities::WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: entities::EntityKind::Player,
         entity: partner(),
@@ -59,6 +60,7 @@ async fn peer(mut stream: DuplexStream) -> Result<(), Error> {
     )
     .await?;
     let item = item_view::ItemEntry {
+        appearance_id: 0,
         handle: 70.try_into()?,
         item_definition_ref: 123.try_into()?,
         count: 2.try_into()?,
@@ -67,6 +69,7 @@ async fn peer(mut stream: DuplexStream) -> Result<(), Error> {
     let inventory = encoded(item_view::encode_character_inventory_with_equip_drop(
         &item_view::CharacterInventory {
             main_backpack: Some(item_view::ItemEntry {
+                appearance_id: 0,
                 handle: 71.try_into()?,
                 item_definition_ref: 999.try_into()?,
                 count: 1.try_into()?,
@@ -256,12 +259,14 @@ async fn peer(mut stream: DuplexStream) -> Result<(), Error> {
         if index == 1 {
             let updated = item_view::CharacterInventory {
                 main_backpack: Some(item_view::ItemEntry {
+                    appearance_id: 0,
                     handle: 71.try_into()?,
                     item_definition_ref: 999.try_into()?,
                     count: 1.try_into()?,
                     sub_type: 0,
                 }),
                 entries: vec![item_view::ItemEntry {
+                    appearance_id: 0,
                     handle: 80.try_into()?,
                     item_definition_ref: 456.try_into()?,
                     count: 1.try_into()?,

@@ -56,6 +56,8 @@ pub use oteryn_session::cast;
 pub use oteryn_session::cast_chat::decode_line as decode_cast_caster_line;
 pub use oteryn_session::cast_chat::{CasterLine as CastCasterLine, Roster as CastRoster};
 pub use oteryn_session::cast_viewer::CastViewerSession;
+/// Observer-relative guild emblems (capability 509).
+pub use oteryn_session::guild_emblem;
 
 #[path = "features/0289-cast-view/protocol.rs"]
 pub mod cast_view;
@@ -247,7 +249,7 @@ pub mod player_trade;
 pub mod player_typing;
 pub use oteryn_session::{CommandStatus, WorldSpatialEntity, player_typing::TypingUpdate};
 pub use oteryn_session::{
-    arena, boss_difficulty, character_info, creature_push, cyclopedia_character,
+    arena, boss_difficulty, channel_switch, character_info, creature_push, cyclopedia_character,
     cyclopedia_tracker, sanction_record, weapon_proficiency,
 };
 /// Prey command execution through the admitted session.
@@ -293,6 +295,7 @@ pub mod server_mechanic;
 
 #[path = "features/0031-tutorial-notices/protocol.rs"]
 pub mod tutorial_notices;
+pub use oteryn_session::tutorial_vocation;
 
 /// Stash command execution through the admitted session.
 #[path = "features/0062-stash/protocol.rs"]
@@ -341,7 +344,7 @@ pub mod cui3 {
     pub use oteryn_session::property_services::house_podium;
     pub use oteryn_session::{
         battle_metadata, browse_field, container_tree, daily_boost, depot_search, hotkey_equip,
-        item_forge, item_view, store,
+        item_forge, item_view, refusal_detail, store,
     };
 }
 
@@ -355,3 +358,8 @@ pub mod server_modal;
 
 pub use oteryn_session::coin_market;
 pub use oteryn_session::coin_transfer;
+
+pub use oteryn_session::personal_map_marks;
+
+pub use oteryn_session::item_inscription;
+pub use oteryn_session::server_info;

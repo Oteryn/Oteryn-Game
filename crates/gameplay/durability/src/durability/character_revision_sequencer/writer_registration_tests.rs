@@ -12,6 +12,7 @@ const SEQUENCED_WRITERS: &[(&str, &str)] = &[
     (".commit_bestiary_kill_with_talisman(", "durability/character_revision_sequencer.rs|durability/bestiary_progress.rs"),
     (".commit_character_atelier(", "durability/character_revision_sequencer/atelier.rs"),
     (".commit_character_build(", "durability/character_revision_sequencer.rs"),
+    (".commit_character_build_with_kit(", "durability/character_revision_sequencer.rs|durability/character_build/persistence.rs"),
     (".commit_character_death(", "durability/character_revision_sequencer.rs"),
     (".commit_character_experience(", "durability/character_revision_sequencer.rs"),
     // Grizzly's computed quest rules advance the same fenced Character revision chain.
@@ -19,23 +20,27 @@ const SEQUENCED_WRITERS: &[(&str, &str)] = &[
     (".commit_character_grizzly_kill(", "durability/character_revision_sequencer/grizzly.rs"),
     (".commit_character_grizzly_transition(", "durability/character_revision_sequencer/grizzly.rs"),
     (".commit_character_monk_state_save(", "durability/character_revision_sequencer.rs"),
+    (".commit_character_native_quest_door(", "durability/character_revision_sequencer/native_doors.rs"),
+    (".commit_character_native_quest_hit(", "durability/character_revision_sequencer/native_hits.rs"),
     (".commit_character_native_quest_kill(", "durability/character_revision_sequencer/native_kills.rs"),
-    (".commit_character_proficiency(", "durability/character_revision_sequencer.rs"),
-    (".commit_character_proficiency_modification(", "durability/character_revision_sequencer.rs"),
-    (".commit_character_quest_experience(", "durability/character_revision_sequencer.rs"),
-    (".commit_character_quest_transition(", "durability/character_revision_sequencer.rs"),
+    (".commit_character_npc_teleport(", "durability/character_revision_sequencer/npc_teleport.rs"),
+    (".commit_character_proficiency(", "durability/character_revision_sequencer/progression_writers.rs"),
+    (".commit_character_proficiency_modification(", "durability/character_revision_sequencer/world_writers.rs"),
+    (".commit_character_quest_experience(", "durability/character_revision_sequencer/world_writers.rs"),
+    (".commit_character_quest_transition(", "durability/character_revision_sequencer/progression_writers.rs"),
     (".commit_character_wheel(", "durability/character_revision_sequencer.rs"),
     (".commit_character_world_callback(", "durability/character_revision_sequencer.rs"),
+    (".commit_character_world_callback_with_requirements(", "durability/character_revision_sequencer/world_writers.rs"),
     (".commit_charm_command(", "durability/character_revision_sequencer.rs"),
     (".commit_cyclopedia(", "durability/character_revision_sequencer/cyclopedia.rs"),
     (".commit_npc_marriage(", "durability/character_revision_sequencer/npc_marriage.rs"),
     (".commit_npc_purchase(", "durability/character_revision_sequencer/npc_purchase.rs"),
     (".commit_npc_travel(", "durability/character_revision_sequencer/npc_travel.rs"),
     (".commit_proficiency_catalyst(", "durability/character_revision_sequencer/proficiency_catalyst.rs"),
-    (".commit_task_board(", "durability/character_revision_sequencer.rs"),
+    (".commit_task_board(", "durability/character_revision_sequencer/progression_writers.rs"),
     (".commit_task_board_inner(", "durability/task_board/writer.rs|durability/task_board/expansion.rs"),
-    (".grant_task_board_expansion(", "durability/character_revision_sequencer.rs"),
-    (".reset_character_wheel(", "durability/character_revision_sequencer.rs"),
+    (".grant_task_board_expansion(", "durability/character_revision_sequencer/progression_writers.rs"),
+    (".reset_character_wheel(", "durability/character_revision_sequencer/world_writers.rs"),
 ];
 
 // Revision-advancing fees run inside their sequenced Character source.
@@ -163,12 +168,16 @@ fn the_structural_gate_catches_a_bypass_writer() {
     // direct call merely because their spelling differs from an older writer.
     for (call, allowed) in [
         (
+            ".commit_character_native_quest_hit(",
+            "durability/character_revision_sequencer/native_hits.rs",
+        ),
+        (
             ".commit_task_board(",
-            "durability/character_revision_sequencer.rs",
+            "durability/character_revision_sequencer/progression_writers.rs",
         ),
         (
             ".grant_task_board_expansion(",
-            "durability/character_revision_sequencer.rs",
+            "durability/character_revision_sequencer/progression_writers.rs",
         ),
         (
             ".commit_bestiary_kill_with_talisman(",

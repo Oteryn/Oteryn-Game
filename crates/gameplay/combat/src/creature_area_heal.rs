@@ -161,6 +161,7 @@ impl CreatureHealCatalog {
 }
 #[derive(Debug, Clone)]
 pub struct AreaHealSource {
+    content: [u8; 32],
     caster: Ref,
     pub ability: Ref,
     index: usize,
@@ -179,23 +180,80 @@ impl AreaHealSource {
         index: usize,
         content: [u8; 32],
     ) -> Result<Self, AreaHealError> {
+        Self::from_parts(
+            caster,
+            index,
+            content,
+            &draft.core.records,
+            &draft.state.authoring_profiles,
+        )
+    }
+    /// Only the currently admitted native closure supplies this rule body.
+    pub fn from_current_native(
+        runtime: &ChannelRuntimeV1,
+        native: &crate::content::native_gameplay::NativeGameplayState,
+        caster: &Ref,
+        index: usize,
+    ) -> Result<Self, AreaHealError> {
+        runtime
+            .owner_fence()
+            .map_err(|_| AreaHealError::StaleOwner)?;
+        if runtime.content_pin().server_artifact_digest() != native.source_digest() {
+            return Err(AreaHealError::InvalidSource);
+        }
+        let mut records = native
+            .creature_profiles()
+            .records
+            .iter()
+            .filter(|record| record.profile.target == *caster);
+        let record = records.next().ok_or(AreaHealError::InvalidSource)?;
+        if records.next().is_some() {
+            return Err(AreaHealError::InvalidSource);
+        }
+        let definitions = record
+            .attack_definitions
+            .as_ref()
+            .ok_or(AreaHealError::InvalidSource)?;
+        for actual in [Some(&record.profile), record.behavior.as_ref()]
+            .into_iter()
+            .flatten()
+        {
+            let mut bodies = definitions
+                .profiles
+                .iter()
+                .filter(|body| body.target == actual.target);
+            if bodies.next() != Some(actual) || bodies.next().is_some() {
+                return Err(AreaHealError::InvalidSource);
+            }
+        }
+        Self::from_parts(
+            caster,
+            index,
+            native.source_digest(),
+            &definitions.records,
+            &definitions.profiles,
+        )
+    }
+    fn from_parts(
+        caster: &Ref,
+        index: usize,
+        content: [u8; 32],
+        records: &[Record],
+        profiles: &[crate::content::ProjectV2AuthoringProfile],
+    ) -> Result<Self, AreaHealError> {
         use AreaHealError as E;
         if caster.family != ProjectV2Family::Creature || caster.revision != "definition-r1" {
             return Err(E::InvalidSource);
         }
-        let Some(Record::Creature{behavior,..})=draft.core.records.iter().find(|r|matches!(r,Record::Creature{identity,..}if identity.key==caster.key&&identity.revision==caster.revision))else{return Err(E::InvalidSource)};
-        let Some(Data::Creature(cp)) = draft
-            .state
-            .authoring_profiles
+        let Some(Record::Creature{behavior,..})=records.iter().find(|r|matches!(r,Record::Creature{identity,..}if identity.key==caster.key&&identity.revision==caster.revision))else{return Err(E::InvalidSource)};
+        let Some(Data::Creature(cp)) = profiles
             .iter()
             .find(|p| p.target == *caster)
             .map(|p| &p.data)
         else {
             return Err(E::InvalidSource);
         };
-        let Some(Data::Behavior(b)) = draft
-            .state
-            .authoring_profiles
+        let Some(Data::Behavior(b)) = profiles
             .iter()
             .find(|p| p.target.key == behavior.key && p.target.revision == behavior.revision)
             .map(|p| &p.data)
@@ -206,9 +264,7 @@ impl AreaHealSource {
         if !cp.abilities.contains(&e.ability) || index >= 8 {
             return Err(E::InvalidSource);
         }
-        let Some(Data::Ability(a)) = draft
-            .state
-            .authoring_profiles
+        let Some(Data::Ability(a)) = profiles
             .iter()
             .find(|p| p.target == e.ability)
             .map(|p| &p.data)
@@ -251,7 +307,7 @@ impl AreaHealSource {
         {
             return Err(E::InvalidSource);
         }
-        let Some(Record::Ability{effects,..})=draft.core.records.iter().find(|r|matches!(r,Record::Ability{identity,..}if identity.key==e.ability.key&&identity.revision==e.ability.revision))else{return Err(E::InvalidSource)};
+        let Some(Record::Ability{effects,..})=records.iter().find(|r|matches!(r,Record::Ability{identity,..}if identity.key==e.ability.key&&identity.revision==e.ability.revision))else{return Err(E::InvalidSource)};
         if effects.len() != 1
             || effects[0].family != "Effect"
             || effects[0].key != effect.key
@@ -259,10 +315,8 @@ impl AreaHealSource {
         {
             return Err(E::InvalidSource);
         }
-        let Some(Record::Effect{effect_family:EffectFamilyDocument::Heal,formula,..})=draft.core.records.iter().find(|r|matches!(r,Record::Effect{identity,..}if identity.key==effect.key&&identity.revision==effect.revision))else{return Err(E::UnsupportedSource)};
-        let Some(Data::Effect(ep)) = draft
-            .state
-            .authoring_profiles
+        let Some(Record::Effect{effect_family:EffectFamilyDocument::Heal,formula,..})=records.iter().find(|r|matches!(r,Record::Effect{identity,..}if identity.key==effect.key&&identity.revision==effect.revision))else{return Err(E::UnsupportedSource)};
+        let Some(Data::Effect(ep)) = profiles
             .iter()
             .find(|p| p.target == *effect)
             .map(|p| &p.data)
@@ -272,10 +326,8 @@ impl AreaHealSource {
         if ep.damage_type != "healing" || !ep.mitigated_by.is_empty() {
             return Err(E::UnsupportedSource);
         }
-        if !draft.core.records.iter().any(|r|matches!(r,Record::Formula{identity}if identity.key==formula.key&&identity.revision==formula.revision)){return Err(E::InvalidSource)}
-        let Some(Data::Formula(f)) = draft
-            .state
-            .authoring_profiles
+        if !records.iter().any(|r|matches!(r,Record::Formula{identity}if identity.key==formula.key&&identity.revision==formula.revision)){return Err(E::InvalidSource)}
+        let Some(Data::Formula(f)) = profiles
             .iter()
             .find(|p| p.target.key == formula.key && p.target.revision == formula.revision)
             .map(|p| &p.data)
@@ -327,6 +379,7 @@ impl AreaHealSource {
             None
         };
         Ok(Self {
+            content,
             caster: caster.clone(),
             ability: e.ability.clone(),
             index,
@@ -339,7 +392,6 @@ impl AreaHealSource {
             source_load_magnitude,
         })
     }
-    #[cfg(any(test, feature = "test-support"))]
     pub fn requires_paralysis_removal(&self) -> bool {
         self.remove_paralysis
     }
@@ -392,6 +444,16 @@ pub trait AreaHealPolicy {
 /// Atomic heal/cure publication supplied by the existing Channel spell-state owner.
 pub trait AreaHealStates {
     #[allow(clippy::too_many_arguments)]
+    fn commit_source_area_heal_and_paralysis_removal_current(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        content: [u8; 32],
+        heal: &[(ExactActorRef, String, u64, u64)],
+        cure: &[ExactActorRef],
+        now: u64,
+        stamp: RuntimeWorkStamp,
+    ) -> Result<Vec<OwnerDamageResult>, oteryn_gameplay_domain::domain::carrier_values::CarrierError>;
+    #[allow(clippy::too_many_arguments)]
     fn commit_source_area_heal_and_paralysis_removal(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
@@ -437,14 +499,57 @@ impl AreaHealOwner {
         states: &mut impl AreaHealStates,
         now: u64,
     ) -> Result<AreaHealOutcome, AreaHealError> {
+        self.execute_bound(
+            r,
+            Some(fence),
+            stamp,
+            catalog,
+            source,
+            proposal,
+            policy,
+            states,
+            now,
+        )
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub fn execute_current(
+        &mut self,
+        r: &mut ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        catalog: &CreatureHealCatalog,
+        source: &AreaHealSource,
+        proposal: &ProfileAbilityProposal,
+        policy: &mut dyn AreaHealPolicy,
+        states: &mut dyn AreaHealStates,
+        now: u64,
+    ) -> Result<AreaHealOutcome, AreaHealError> {
+        self.execute_bound(
+            r, None, stamp, catalog, source, proposal, policy, states, now,
+        )
+    }
+    #[allow(clippy::too_many_arguments)]
+    fn execute_bound(
+        &mut self,
+        r: &mut ChannelRuntimeV1,
+        fence: Option<&ScopeRuntimeFence>,
+        stamp: RuntimeWorkStamp,
+        catalog: &CreatureHealCatalog,
+        source: &AreaHealSource,
+        proposal: &ProfileAbilityProposal,
+        policy: &mut dyn AreaHealPolicy,
+        states: &mut dyn AreaHealStates,
+        now: u64,
+    ) -> Result<AreaHealOutcome, AreaHealError> {
         use AreaHealError as E;
         let binding = r.binding();
-        if !fence.is_current_for_scope(binding.runtime_scope(), binding.scope_generation())
-            || !fence.accepts_stamp(stamp)
-        {
+        if !fence.or_else(|| r.owner_fence().ok()).is_some_and(|fence| {
+            fence.is_current_for_scope(binding.runtime_scope(), binding.scope_generation())
+                && fence.accepts_stamp(stamp)
+        }) {
             return Err(E::StaleOwner);
         }
-        if r.content_pin().world_id() != catalog.world
+        if source.content != catalog.content
+            || r.content_pin().world_id() != catalog.world
             || r.content_pin().server_artifact_digest() != catalog.content
             || !r.matches_live_creature_identity(proposal.issuer, source.caster.key.as_bytes())
         {
@@ -494,7 +599,11 @@ impl AreaHealOwner {
             }
         }
         if old.is_none() {
-            if self.memos.len() >= 64 * 8 {
+            if self.memos.len()
+                >= r.actor_slot_capacity()
+                    .min(crate::foundation::carrier::CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX)
+                    * crate::foundation::carrier::CREATUREAI0_DEFENCES_PER_CREATURE_MAX
+            {
                 return Err(E::Capacity);
             }
             self.memos.try_reserve(1).map_err(|_| E::Capacity)?;
@@ -523,7 +632,12 @@ impl AreaHealOwner {
             i64::from(center.1) - i64::from(p.y),
             diagonal,
         );
-        let candidates = r.current_live_creature_candidates(64).map_err(E::Carrier)?;
+        let candidates = r
+            .current_live_creature_candidates(
+                r.actor_slot_capacity()
+                    .min(crate::foundation::carrier::CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX),
+            )
+            .map_err(E::Carrier)?;
         let mut requests = Vec::new();
         // Source performs caster:addHealth before Combat target-tile callbacks. Joint
         // publication is deliberately atomic here; absent Combat facts refuses all HP.
@@ -664,15 +778,25 @@ impl AreaHealOwner {
         let ability = source.ability.clone();
         let occurrence = occurrence.to_owned();
         let receipts = if source.remove_paralysis {
-            states.commit_source_area_heal_and_paralysis_removal(
-                r,
-                catalog.content,
-                &requests,
-                &cure,
-                now,
-                fence,
-                stamp,
-            )
+            match fence {
+                Some(fence) => states.commit_source_area_heal_and_paralysis_removal(
+                    r,
+                    catalog.content,
+                    &requests,
+                    &cure,
+                    now,
+                    fence,
+                    stamp,
+                ),
+                None => states.commit_source_area_heal_and_paralysis_removal_current(
+                    r,
+                    catalog.content,
+                    &requests,
+                    &cure,
+                    now,
+                    stamp,
+                ),
+            }
         } else {
             r.commit_source_creature_heal_batch(catalog.content, &requests)
         }
@@ -711,4 +835,310 @@ fn project_prophet_source_load_magnitude(source: [u8; 32]) -> u64 {
     bytes.copy_from_slice(&digest[..8]);
     oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(u64::from_le_bytes(bytes), 200, 350)
         as u64
+}
+
+#[cfg(test)]
+mod regression_tests {
+    #![allow(clippy::expect_used, reason = "native content and owner fixture setup")]
+    use super::*;
+    use crate::foundation::{ChannelContentPin, ChannelId, MovementLocalPosition, NodeId, WorldId};
+    fn fixture() -> (ChannelRuntimeV1, ProjectV2Draft, Ref) {
+        let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/area-heal-native-fixture.json"))).expect("qualified fixture");
+        let id = |t: u8| [1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, t];
+        let w = WorldId::decode(&id(1)).expect("qualified fixture");
+        let r = ChannelRuntimeV1::from_committed_assignment(
+            w,
+            ChannelId::decode(&id(2)).expect("qualified fixture"),
+            NodeId::decode(&id(3)).expect("qualified fixture"),
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            128,
+            ChannelContentPin::test(w),
+        )
+        .expect("qualified fixture");
+        // Fixture envelope only; each source definition/binding below is retained native readback.
+        let draft = ProjectV2Draft {
+            core: crate::content::ProjectDraft {
+                project_revision: "fixture-r1".into(),
+                package_key: "oteryn:fixture".into(),
+                semantic_schema_version: "v2".into(),
+                licensing_metadata: "fixture".into(),
+                world_id: r
+                    .content_pin()
+                    .world_id()
+                    .as_bytes()
+                    .iter()
+                    .map(|b| format!("{b:02x}"))
+                    .collect(),
+                coordinate_frame: "fixture".into(),
+                records: serde_json::from_value(v["records"].clone()).expect("qualified fixture"),
+                imports: vec![],
+                metadata: vec![],
+            },
+            state: crate::content::ProjectV2State {
+                authoring_profiles: serde_json::from_value(v["authoring_profiles"].clone())
+                    .expect("qualified fixture"),
+                source_identity_bindings: serde_json::from_value(
+                    v["source_identity_bindings"].clone(),
+                )
+                .expect("qualified fixture"),
+                sources: serde_json::from_value(v["sources"].clone()).expect("qualified fixture"),
+                ..Default::default()
+            },
+        };
+        (
+            r,
+            draft,
+            Ref {
+                family: ProjectV2Family::Creature,
+                key: "oteryn:creature.frozen_minion".into(),
+                revision: "definition-r1".into(),
+            },
+        )
+    }
+    struct FixturePolicy {
+        missing: bool,
+    }
+    impl AreaHealPolicy for FixturePolicy {
+        fn facing(
+            &mut self,
+            _: &ChannelRuntimeV1,
+            _: ExactActorRef,
+            _: RuntimeWorkStamp,
+        ) -> Option<Facing> {
+            Some(Facing::North)
+        }
+        fn tile_allowed(
+            &mut self,
+            _: &ChannelRuntimeV1,
+            _: ExactActorRef,
+            _: i32,
+            _: i32,
+            _: i16,
+            _: RuntimeWorkStamp,
+        ) -> Option<bool> {
+            (!self.missing).then_some(true)
+        }
+        fn target_allowed(
+            &mut self,
+            _: &ChannelRuntimeV1,
+            _: ExactActorRef,
+            _: ExactActorRef,
+            _: RuntimeWorkStamp,
+        ) -> Option<bool> {
+            Some(true)
+        }
+        fn non_player_side(
+            &mut self,
+            r: &ChannelRuntimeV1,
+            target: ExactActorRef,
+            _: RuntimeWorkStamp,
+        ) -> Option<bool> {
+            r.native_summon_role(target).ok().map(|_| true)
+        }
+        fn masterless(
+            &mut self,
+            r: &ChannelRuntimeV1,
+            target: ExactActorRef,
+            _: RuntimeWorkStamp,
+        ) -> Option<bool> {
+            r.native_summon_role(target).ok().map(|m| m.is_none())
+        }
+        fn is_top_creature(
+            &mut self,
+            _: &ChannelRuntimeV1,
+            _: ExactActorRef,
+            _: RuntimeWorkStamp,
+        ) -> Option<bool> {
+            None
+        }
+    }
+    fn proposal_fixture(actor: ExactActorRef, source: &AreaHealSource) -> ProfileAbilityProposal {
+        // Explicit owner-boundary proposal fixture, not an autonomous scheduler/chance proof.
+        let hex = actor
+            .placement_identity()
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect::<String>();
+        let atom = format!("fixture:{hex}");
+        let revisions = crate::ability::RevisionSet::new(
+            "rules-r1",
+            "content-r1",
+            "policy-r1",
+            "definition-r1",
+            "sim-r1",
+        )
+        .expect("qualified fixture");
+        ProfileAbilityProposal {
+            issuer: actor,
+            target: actor,
+            ability: source.ability.clone(),
+            list: ScheduleList::Defence,
+            entry_index: 0,
+            magnitude: None,
+            range_tiles: 0,
+            occurrence: crate::ability::AbilityOccurrence::new(
+                &format!("ai-profile:{hex}:0:defence:0"),
+                revisions,
+            )
+            .expect("qualified fixture"),
+            intent: crate::ability::AiAbilityAdapter::normalize(&atom, &[&atom])
+                .expect("qualified fixture"),
+        }
+    }
+
+    struct States;
+    impl AreaHealStates for States {
+        fn commit_source_area_heal_and_paralysis_removal_current(
+            &mut self,
+            runtime: &mut ChannelRuntimeV1,
+            content: [u8; 32],
+            heal: &[(ExactActorRef, String, u64, u64)],
+            cure: &[ExactActorRef],
+            _now: u64,
+            _stamp: RuntimeWorkStamp,
+        ) -> Result<Vec<OwnerDamageResult>, CarrierError> {
+            assert!(cure.is_empty());
+            runtime.commit_source_creature_heal_batch(content, heal)
+        }
+        fn commit_source_area_heal_and_paralysis_removal(
+            &mut self,
+            runtime: &mut ChannelRuntimeV1,
+            content: [u8; 32],
+            heal: &[(ExactActorRef, String, u64, u64)],
+            cure: &[ExactActorRef],
+            _now: u64,
+            _fence: &ScopeRuntimeFence,
+            _stamp: RuntimeWorkStamp,
+        ) -> Result<Vec<OwnerDamageResult>, CarrierError> {
+            assert!(cure.is_empty());
+            runtime.commit_source_creature_heal_batch(content, heal)
+        }
+    }
+
+    #[test]
+    fn area_heal_rejects_previous_source_digest_before_replay_or_mutation() {
+        for replay in [false, true] {
+            let (mut r, d, c) = fixture();
+            let digest = r.content_pin().server_artifact_digest();
+            let catalog = CreatureHealCatalog::from_native(&d, digest).expect("catalog");
+            let current = AreaHealSource::from_native(&d, &c, 0, digest).expect("current source");
+            let mut previous_digest = digest;
+            previous_digest[0] ^= 1;
+            let previous =
+                AreaHealSource::from_native(&d, &c, 0, previous_digest).expect("previous source");
+            let caster = r
+                .admit_source_pinned_lab_creature(
+                    MovementLocalPosition {
+                        x: 100,
+                        y: 100,
+                        floor: 7,
+                    },
+                    &c.key,
+                    1000,
+                )
+                .expect("caster");
+            let binding = r.binding();
+            let (fence, stamp) = crate::foundation::crystal_timer_fixture(
+                binding.runtime_scope(),
+                binding.scope_generation(),
+            )
+            .expect("fence");
+            let proposal = proposal_fixture(caster, &current);
+            let mut owner = AreaHealOwner::default();
+            let mut policy = FixturePolicy { missing: false };
+            let mut states = States;
+            if replay {
+                owner
+                    .execute(
+                        &mut r,
+                        &fence,
+                        stamp,
+                        &catalog,
+                        &current,
+                        &proposal,
+                        &mut policy,
+                        &mut states,
+                        0,
+                    )
+                    .expect("current heal");
+            }
+            let health = r.live_creature_health(caster);
+            let memo_count = owner.memos.len();
+            assert_eq!(
+                owner.execute(
+                    &mut r,
+                    &fence,
+                    stamp,
+                    &catalog,
+                    &previous,
+                    &proposal,
+                    &mut policy,
+                    &mut states,
+                    0
+                ),
+                Err(AreaHealError::StaleOwner)
+            );
+            assert_eq!(r.live_creature_health(caster), health);
+            assert_eq!(owner.memos.len(), memo_count);
+        }
+    }
+
+    #[test]
+    fn area_heal_ignores_distant_creatures_beyond_old_channel_ceiling() {
+        let (mut r, d, c) = fixture();
+        let digest = r.content_pin().server_artifact_digest();
+        let catalog = CreatureHealCatalog::from_native(&d, digest).expect("catalog");
+        let source = AreaHealSource::from_native(&d, &c, 0, digest).expect("source");
+        let caster = r
+            .admit_source_pinned_lab_creature(
+                MovementLocalPosition {
+                    x: 100,
+                    y: 100,
+                    floor: 7,
+                },
+                &c.key,
+                1000,
+            )
+            .expect("caster");
+        for x in 0..65 {
+            r.admit_source_pinned_lab_creature(
+                MovementLocalPosition {
+                    x: 1000 + x,
+                    y: 1000,
+                    floor: 7,
+                },
+                &c.key,
+                1000,
+            )
+            .expect("distant creature");
+        }
+        let binding = r.binding();
+        let (fence, stamp) = crate::foundation::crystal_timer_fixture(
+            binding.runtime_scope(),
+            binding.scope_generation(),
+        )
+        .expect("fence");
+        let result = AreaHealOwner::default()
+            .execute(
+                &mut r,
+                &fence,
+                stamp,
+                &catalog,
+                &source,
+                &proposal_fixture(caster, &source),
+                &mut FixturePolicy { missing: false },
+                &mut States,
+                0,
+            )
+            .expect("heal despite distant creatures");
+        assert!(
+            result
+                .targets
+                .iter()
+                .any(|(actor, hit)| *actor == caster && hit.health_after > 1000)
+        );
+    }
 }

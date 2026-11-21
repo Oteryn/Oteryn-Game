@@ -17,6 +17,9 @@ use std::collections::BTreeSet;
 use std::sync::Arc;
 #[path = "npc_actor/atlas.rs"]
 mod atlas;
+#[path = "npc_actor/conditional.rs"]
+mod conditional;
+pub use conditional::ConditionalNpcActor;
 #[path = "npc_actor/hireling.rs"]
 mod hireling;
 #[doc(hidden)]
@@ -448,10 +451,14 @@ impl ChannelRuntimeV1 {
             actor_local_id,
             ActorLocalGeneration(generation),
         );
+        let order = carrier
+            .next_tile_entry_order()
+            .map_err(NpcPlacementError::Carrier)?;
         carrier.slots[index] = Slot::NpcOccupied {
             generation,
             key,
             hireling: None,
+            tile_entry_order: order,
             position: VersionedPosition {
                 actor_local_id,
                 actor_local_generation: ActorLocalGeneration(generation),
@@ -464,6 +471,7 @@ impl ChannelRuntimeV1 {
         };
         carrier.free_head = next_free;
         carrier.occupied.push(free_head);
+        carrier.install_tile_entry_order(index, order);
         Ok(ExactActorRef(actor_ref))
     }
 
@@ -581,6 +589,29 @@ mod tests {
         );
         assert_eq!(moved.revision(), 3);
         assert_eq!(runtime.rotate_rashid_at(86_400_001), Ok(false));
+    }
+
+    #[test]
+    fn npc_actor_motion_retains_walk_receipt() {
+        let (mut runtime, actor, _) = movement_fixture();
+        let before = runtime
+            .borrow_movement_position()
+            .read(actor)
+            .expect("NPC position");
+        let next = MovementLocalPosition {
+            x: 20,
+            y: 9,
+            floor: 7,
+        };
+        let snapshot = runtime
+            .borrow_movement_position()
+            .commit_cardinal(before, next)
+            .expect("NPC step");
+        runtime.record_walk(actor, snapshot, std::time::Duration::from_millis(250));
+        assert_eq!(
+            runtime.actor_motion(actor),
+            Some((snapshot.last_translation_revision(), 250, 0, 0))
+        );
     }
 
     #[test]

@@ -133,6 +133,7 @@ pub enum VisibleKind {
     Hireling,
     Corpse {
         item_definition_ref: std::num::NonZeroU32,
+        native_appearance_id: Option<std::num::NonZeroU16>,
     },
     /// An immovable Source-owned volatile Item, never a durable corpse.
     GroundItem {
@@ -143,6 +144,8 @@ pub enum VisibleKind {
 /// VIS-3: one entity of the session's Channel, before the interest query.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ChannelEntity {
+    pub source_icons: NativeCreatureIcons,
+    pub motion: Option<oteryn_protocol_oteryn::actor_motion::ActorMotion>,
     pub display_name: Option<EntityDisplayName>,
     pub health_percent: u8,
     pub direction: StepDirection,
@@ -169,10 +172,19 @@ pub struct ChannelEntities {
 }
 
 fn wire_entity(entity: &ChannelEntity) -> WorldSpatialEntity {
-    let actor = EntityDetail::Actor {
-        direction: entity.direction,
-        appearance_ref: PLACEHOLDER_APPEARANCE_REF,
-        health_percent: entity.health_percent,
+    let actor = if entity.source_icons.iter().next().is_some() {
+        EntityDetail::ActorWithIcons {
+            direction: entity.direction,
+            appearance_ref: PLACEHOLDER_APPEARANCE_REF,
+            health_percent: entity.health_percent,
+            icons: entity.source_icons,
+        }
+    } else {
+        EntityDetail::Actor {
+            direction: entity.direction,
+            appearance_ref: PLACEHOLDER_APPEARANCE_REF,
+            health_percent: entity.health_percent,
+        }
     };
     let (kind, detail) = match entity.kind {
         VisibleKind::Player => (EntityKind::Player, actor),
@@ -188,12 +200,21 @@ fn wire_entity(entity: &ChannelEntity) -> WorldSpatialEntity {
         // The handle is attached per session under capability 4 (`attach`).
         VisibleKind::Corpse {
             item_definition_ref,
+            native_appearance_id,
         } => (
             EntityKind::Corpse,
-            EntityDetail::Object {
-                item_definition_ref: item_definition_ref.get(),
-                quantity: 1,
-                item_handle: None,
+            match native_appearance_id {
+                Some(appearance_id) => EntityDetail::ObjectWithAppearance {
+                    item_definition_ref: item_definition_ref.get(),
+                    quantity: 1,
+                    item_handle: None,
+                    appearance_id,
+                },
+                None => EntityDetail::Object {
+                    item_definition_ref: item_definition_ref.get(),
+                    quantity: 1,
+                    item_handle: None,
+                },
             },
         ),
         VisibleKind::GroundItem {
@@ -208,6 +229,7 @@ fn wire_entity(entity: &ChannelEntity) -> WorldSpatialEntity {
         ),
     };
     WorldSpatialEntity {
+        motion: entity.motion,
         display_name: entity.display_name,
         kind,
         entity: EntityRef {
@@ -249,11 +271,15 @@ pub struct SessionVisibility {
     shown: Option<VisibilityQuery>,
     entities: BTreeMap<[u8; ENTITY_IDENTITY_BYTES], WorldSpatialEntity>,
     objects: bool,
+    motion: bool,
     light: bool,
     /// The light last sent for each shown lit entity.
     lights: EntityLights,
     /// When each shown entity's light last changed on the wire, in owner milliseconds.
     light_sent_at: BTreeMap<[u8; ENTITY_IDENTITY_BYTES], u64>,
+    /// The content generation and own position of the last view sent: the header a
+    /// header-only sidecar delta must repeat, or the client refuses it.
+    published: Option<([u8; 32], ActorPosition)>,
 }
 
 impl SessionVisibility {
@@ -268,6 +294,11 @@ impl SessionVisibility {
         })
     }
 
+    /// The content generation and own position the session last sent; `None` before any view.
+    pub(crate) fn published(&self) -> Option<([u8; 32], ActorPosition)> {
+        self.published
+    }
+
     /// A view that shows objects (corpses) when `objects`, the session's capability 4.
     pub fn with_objects(objects: bool) -> Self {
         Self {
@@ -279,6 +310,10 @@ impl SessionVisibility {
     /// The same view that also shows lights when `light`, the session's capability 19.
     pub fn lit(self, light: bool) -> Self {
         Self { light, ..self }
+    }
+
+    pub(crate) fn with_motion(self, motion: bool) -> Self {
+        Self { motion, ..self }
     }
 
     /// The light last sent for each shown lit entity, for the encoders.
@@ -398,6 +433,11 @@ impl SessionVisibility {
         {
             return Err(WorldSpatialError::Malformed);
         }
+        if !self.motion {
+            for entity in &mut selected {
+                entity.motion = None;
+            }
+        }
         attach(&mut selected)?;
         Ok((query, selected))
     }
@@ -415,7 +455,15 @@ impl SessionVisibility {
         })
     }
 
-    fn show(&mut self, query: VisibilityQuery, selected: Vec<WorldSpatialEntity>) {
+    fn show(
+        &mut self,
+        channel: &ChannelEntities,
+        query: VisibilityQuery,
+        selected: Vec<WorldSpatialEntity>,
+    ) {
+        self.published = selected
+            .first()
+            .map(|own| (channel.content_generation, own.position));
         self.shown = Some(query);
         self.entities = selected
             .into_iter()
@@ -432,7 +480,7 @@ impl SessionVisibility {
         let (query, selected) = self.select(channel, attach)?;
         let snapshot = Self::snapshot_of(channel, &selected)?;
         self.show_lights(channel, &selected);
-        self.show(query, selected);
+        self.show(channel, query, selected);
         Ok(snapshot)
     }
 
@@ -447,14 +495,14 @@ impl SessionVisibility {
         let Some(shown) = &self.shown else {
             let snapshot = Self::snapshot_of(channel, &selected)?;
             self.show_lights(channel, &selected);
-            self.show(query, selected);
+            self.show(channel, query, selected);
             return Ok(VisibilityUpdate::Snapshot(snapshot));
         };
         let changes = match diff_interest(shown, &query) {
             InterestDiff::Resync(_) => {
                 let snapshot = Self::snapshot_of(channel, &selected)?;
                 self.show_lights(channel, &selected);
-                self.show(query, selected);
+                self.show(channel, query, selected);
                 return Ok(VisibilityUpdate::Snapshot(snapshot));
             }
             InterestDiff::Delta(changes) => changes,
@@ -491,18 +539,25 @@ impl SessionVisibility {
                 ),
             }
         }
-        // Health, corpse Item and display-name changes do not advance a position revision.
-        // Publish stationary changes through the same interest selection and entity record.
+        // Actor metadata, corpse Item and display-name changes do not advance
+        // a position revision. Publish them through the same selected record.
         for entity in &selected {
             let identity = entity.entity.identity;
             let Some(prior) = self.entities.get(&identity) else {
                 continue;
             };
-            let health_changed = matches!((&prior.detail, &entity.detail),
-                (EntityDetail::Actor { health_percent: before, .. }, EntityDetail::Actor { health_percent: after, .. }) if before != after);
-            let corpse_changed = matches!((&prior.detail, &entity.detail),
-                (EntityDetail::Object { item_definition_ref: before, .. }, EntityDetail::Object { item_definition_ref: after, .. }) if before != after);
-            if (health_changed || corpse_changed || prior.display_name != entity.display_name)
+            let actor_changed = matches!(
+                entity.detail,
+                EntityDetail::Actor { .. } | EntityDetail::ActorWithIcons { .. }
+            ) && prior.detail != entity.detail;
+            let object_changed = matches!(
+                entity.detail,
+                EntityDetail::Object { .. } | EntityDetail::ObjectWithAppearance { .. }
+            ) && prior.detail != entity.detail;
+            if (actor_changed
+                || object_changed
+                || prior.display_name != entity.display_name
+                || prior.motion != entity.motion)
                 && !delta
                     .enter
                     .iter()
@@ -512,7 +567,7 @@ impl SessionVisibility {
                 if delta.enter.len() + delta.update.len() + delta.leave.len() == MAX_DELTA_ENTRIES {
                     let snapshot = Self::snapshot_of(channel, &selected)?;
                     self.show_lights(channel, &selected);
-                    self.show(query, selected);
+                    self.show(channel, query, selected);
                     return Ok(VisibilityUpdate::Snapshot(snapshot));
                 }
                 delta.update.push(*entity);
@@ -557,7 +612,7 @@ impl SessionVisibility {
             room -= 1;
         }
         self.forget_lights(&selected);
-        self.show(query, selected);
+        self.show(channel, query, selected);
         if delta.enter.is_empty() && delta.update.is_empty() && delta.leave.is_empty() {
             Ok(VisibilityUpdate::Unchanged)
         } else {
@@ -615,6 +670,7 @@ mod tests {
         let mut identity = [0_u8; ENTITY_IDENTITY_BYTES];
         identity[15] = n;
         WorldSpatialEntity {
+            motion: None,
             display_name: None,
             kind,
             entity: EntityRef {
@@ -652,6 +708,7 @@ mod tests {
             at(
                 3,
                 VisibleKind::Corpse {
+                    native_appearance_id: None,
                     item_definition_ref: std::num::NonZeroU32::MIN,
                 },
                 103,
@@ -854,6 +911,9 @@ mod tests {
 
     fn at(n: u32, kind: VisibleKind, x: i32, y: i32, floor: i16) -> ChannelEntity {
         ChannelEntity {
+            source_icons:
+                oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(),
+            motion: None,
             display_name: None,
             health_percent: 100,
             direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
@@ -893,6 +953,113 @@ mod tests {
             })
             .collect();
         channel
+    }
+
+    #[test]
+    fn qualification_world_spatial_frames_roundtrip() -> Result<(), WorldSpatialError> {
+        use crate::gameplay_transport::capabilities::{
+            BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
+        };
+        use oteryn_protocol_oteryn::{
+            actor_motion::ActorMotion, inventory_capacity::InventoryCapacity,
+        };
+
+        let offered = crate::gameplay_transport::appearance_change::offer::offered(
+            BUNDLE_WORLD_OFFERED_CAPABILITIES,
+            true,
+        );
+        let negotiation = SelectedCapabilities::select(
+            &offered,
+            oteryn_dev_client::CLIENT_SUPPORTED_CAPABILITIES,
+        )
+        .expect("bundle negotiation");
+        let selected = negotiation.as_slice();
+        let fields = EntityFields::selected(selected);
+        assert!(
+            fields.actor_motion
+                && fields.party_icons
+                && fields.inventory_capacity
+                && fields.guild_emblems
+        );
+        for floor in [7, 8] {
+            let mut channel = channel([]);
+            let player = &mut channel.entities[0];
+            player.position.floor = floor;
+            player.display_name = Some(EntityDisplayName::new("Qualification One")?);
+            let mut view = SessionVisibility::with_objects(fields.item_handles)
+                .lit(fields.light)
+                .with_motion(fields.actor_motion);
+            let snapshot = view.snapshot(&channel, &mut no_handles)?;
+            let (kind, bytes) = encode_visibility_snapshot_lit(selected, &snapshot, view.lights())?;
+            assert_eq!(
+                decode_world_spatial_snapshot_view(selected, kind, &bytes)?,
+                WorldSpatialSnapshotView::Entities(snapshot)
+            );
+            channel.entities[0].motion = Some(ActorMotion {
+                translation_revision: 1,
+                step_duration_ms: 200,
+                prewalk_ms: [200; 8],
+                ..ActorMotion::default()
+            });
+            let VisibilityUpdate::Delta(delta) = view.refresh(&channel, &mut no_handles)? else {
+                panic!("motion change should update the actor");
+            };
+            let (kind, bytes) = encode_visibility_delta_lit(selected, &delta, view.lights())?;
+            assert_eq!(
+                decode_world_spatial_delta_view(selected, kind, &bytes)?,
+                WorldSpatialDeltaView::Entities(delta)
+            );
+            let legacy = &[CAPABILITY_WORLD_SPATIAL_ENTITIES];
+            let mut legacy_view = SessionVisibility::default();
+            let snapshot = legacy_view.snapshot(&channel, &mut no_handles)?;
+            let (kind, bytes) =
+                encode_visibility_snapshot_lit(legacy, &snapshot, legacy_view.lights())?;
+            let WorldSpatialSnapshotView::Entities(decoded) =
+                decode_world_spatial_snapshot_view(legacy, kind, &bytes)?
+            else {
+                panic!("expected legacy entity snapshot");
+            };
+            assert_eq!(decoded.entities[0].motion, None);
+            channel.entities[0].motion = None;
+            assert_eq!(
+                legacy_view.refresh(&channel, &mut no_handles)?,
+                VisibilityUpdate::Unchanged
+            );
+            let (generation, position) = view.published().expect("published header");
+            for sidecar in [
+                DeltaSidecar::PartyIcons(Vec::new()),
+                DeltaSidecar::InventoryCapacity(InventoryCapacity {
+                    capacity: 60_000,
+                    free: 58_750,
+                }),
+                DeltaSidecar::GuildEmblems(Vec::new()),
+            ] {
+                let bytes =
+                    encode_world_spatial_entities_sidecar_delta(generation, position, &sidecar)?;
+                let (header, _, decoded) =
+                    decode_world_spatial_entities_delta_with_sidecar(&bytes, fields)?;
+                assert_eq!(decoded, Some(sidecar.clone()));
+                assert_eq!(header.actor_position, position);
+                assert_eq!(
+                    decode_world_spatial_delta_view(
+                        legacy,
+                        DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2,
+                        &bytes
+                    ),
+                    Err(WorldSpatialError::Malformed)
+                );
+                assert_eq!(
+                    decode_world_spatial_delta_view(
+                        selected,
+                        DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2,
+                        &bytes
+                    ),
+                    Ok(WorldSpatialDeltaView::Entities(header)),
+                    "{sidecar:?}"
+                );
+            }
+        }
+        Ok(())
     }
 
     fn update_ids(update: &VisibilityUpdate) -> Vec<[u8; ENTITY_IDENTITY_BYTES]> {
@@ -1060,6 +1227,7 @@ mod tests {
         let mut corpse = at(
             1,
             VisibleKind::Corpse {
+                native_appearance_id: None,
                 item_definition_ref: std::num::NonZeroU32::MIN,
             },
             101,
@@ -1069,6 +1237,7 @@ mod tests {
         view.snapshot(&channel([corpse]), &mut no_handles)
             .expect("snapshot");
         corpse.kind = VisibleKind::Corpse {
+            native_appearance_id: None,
             item_definition_ref: std::num::NonZeroU32::new(2).expect("spent Item ref"),
         };
         let changed = view
@@ -1332,6 +1501,7 @@ mod tests {
     #[test]
     fn objects_are_shown_only_to_a_session_with_capability_4() {
         let corpse = VisibleKind::Corpse {
+            native_appearance_id: None,
             item_definition_ref: std::num::NonZeroU32::new(4240).expect("ref"),
         };
         let mut corpse_at = at(2, corpse, 101, 100, 7);
@@ -1383,5 +1553,39 @@ mod tests {
             CAPABILITY_ITEM_VIEW_MOVE_V1,
         ];
         assert!(encode_visibility_snapshot(&selected, &with).is_ok());
+    }
+}
+
+#[cfg(test)]
+mod soulpit_icon_projection_tests {
+    use super::*;
+    #[test]
+    fn srx3_soulpit_actual_entity_projection_retains_native_source_icon() -> Result<(), String> {
+        let entity = ChannelEntity {
+            motion: None,
+            source_icons: NativeCreatureIcons::new(&[NativeCreatureIcon {
+                category: 1,
+                id: 6,
+                count: 15,
+            }])
+            .map_err(|error| format!("source Powerful badge: {error:?}"))?,
+            display_name: None,
+            health_percent: 100,
+            direction: StepDirection::South,
+            kind: VisibleKind::Creature,
+            identity: [9; 16],
+            generation: 1,
+            position: ActorPosition {
+                x: 32373,
+                y: 31151,
+                floor: 8,
+            },
+            revision: 1,
+        };
+        let EntityDetail::ActorWithIcons { icons, .. } = wire_entity(&entity).detail else {
+            return Err("actual entity projection must preserve source icons".into());
+        };
+        assert_eq!(icons, entity.source_icons);
+        Ok(())
     }
 }

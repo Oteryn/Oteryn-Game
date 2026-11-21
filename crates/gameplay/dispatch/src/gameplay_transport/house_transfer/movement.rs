@@ -12,9 +12,7 @@ use crate::gameplay_transport::actor_spell::ChannelSpellStates;
 use crate::gameplay_transport::connection::StepOutcome;
 use crate::gameplay_transport::world_spatial::{StepDirection, StepDisposition};
 use crate::map::floor::CellBlocker;
-use crate::movement::speed::{
-    EngineeringGroundSpeed, QualifiedCellGroundSpeed, player_step_duration,
-};
+use crate::movement::speed::{EngineeringGroundSpeed, QualifiedCellGroundSpeed};
 use crate::movement::{CardinalStep, MovementError};
 use oteryn_gameplay_entities::carrier::house_custody::HouseMovementSnapshot;
 use std::collections::{BTreeMap, BTreeSet};
@@ -283,20 +281,15 @@ impl Turn<'_, '_, '_, '_> {
             state,
             now.get(),
             delta,
-            i64::from(equipment),
+            i64::from(equipment)
+                + i64::from(
+                    self.runtime
+                        .house_actor_motion(self.actor, self.session)
+                        .map_or(0, |motion| motion.3),
+                ),
         );
-        let duration = if crate::movement::source_floor_change::is_source_profile(cells) {
-            player_step_duration(
-                &QualifiedCellGroundSpeed { cells },
-                cell(destination),
-                speed,
-            )
-        } else {
-            // Identical to the existing native bundle/entry STEP owner. The
-            // map cutover owns switching this established ground-speed source.
-            player_step_duration(&EngineeringGroundSpeed, cell(destination), speed)
-        }
-        .ok_or(MovementError::NotQualified)?;
+        let duration = house_step_duration(cells, destination, speed, direction)
+            .ok_or(MovementError::NotQualified)?;
         let cooldowns = if stairhop {
             use oteryn_gameplay_spell_rules::cast::{STAIRHOP_COOLDOWN_KEY, STAIRHOP_MICROS};
             let until = now
@@ -312,7 +305,8 @@ impl Turn<'_, '_, '_, '_> {
         } else {
             None
         };
-        self.runtime
+        let moved = self
+            .runtime
             .compare_move_house(
                 &current,
                 LocalPosition {
@@ -323,6 +317,12 @@ impl Turn<'_, '_, '_, '_> {
                 facing,
             )
             .map_err(MovementError::Actor)?;
+        // The resolver flags both a floor change and a successful bundle teleport.
+        // Keep STEP pacing, but leave the new translation revision without a walk.
+        if !stairhop {
+            self.runtime
+                .record_house_walk(self.actor, self.session, &moved, duration);
+        }
         if let Some(cooldowns) = cooldowns {
             state.cooldowns = cooldowns;
         }
@@ -651,4 +651,49 @@ impl PlacementCheck<'_, '_, '_, '_> {
         }
         true
     }
+}
+
+fn house_step_duration(
+    cells: &NativeEntryMovementCells,
+    destination: MovementLocalPosition,
+    speed: u16,
+    direction: CardinalStep,
+) -> Option<Duration> {
+    if crate::movement::source_floor_change::is_source_profile(cells) {
+        crate::movement::speed::player_directional_step_duration(
+            &QualifiedCellGroundSpeed { cells },
+            cell(destination),
+            speed,
+            direction,
+        )
+    } else {
+        crate::movement::speed::player_directional_step_duration(
+            &EngineeringGroundSpeed,
+            cell(destination),
+            speed,
+            direction,
+        )
+    }
+}
+
+#[cfg(test)]
+#[test]
+fn review1_house_diagonal_pacing_applies_multiplier_once() -> Result<(), String> {
+    let world = crate::foundation::WorldId::decode(&[
+        1, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 16,
+    ])
+    .map_err(|e| format!("{e:?}"))?;
+    let room = crate::content::qualify_native_entry_room(world).map_err(|e| format!("{e:?}"))?;
+    let cells = room.movement_cells();
+    let destination = MovementLocalPosition {
+        x: 1,
+        y: 0,
+        floor: 7,
+    };
+    let cardinal =
+        house_step_duration(cells, destination, 220, CardinalStep::East).ok_or("cardinal")?;
+    let diagonal =
+        house_step_duration(cells, destination, 220, CardinalStep::NorthEast).ok_or("diagonal")?;
+    assert_eq!(Some(diagonal), cardinal.checked_mul(3));
+    Ok(())
 }

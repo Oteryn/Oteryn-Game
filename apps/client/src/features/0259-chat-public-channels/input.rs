@@ -20,12 +20,7 @@ impl PlayLink {
         if !oteryn_client_ui::chat_public_channels::open_key(events) {
             return false;
         }
-        #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
-            lock(&self.mailbox).chat_public.open = true;
-        }
+        lock(&self.mailbox).chat_public.open = true;
         true
     }
 }

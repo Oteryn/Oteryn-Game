@@ -26,7 +26,7 @@ use std::collections::{BTreeMap, BTreeSet};
 pub const ITEM_TIMED_PROMOTION_V1_PACKET: &[u8] =
     include_bytes!("../../../../../docs/agents/evidence/OTV2-20261003-timed-item-facts-v1.json");
 pub const ITEM_TIMED_PROMOTION_V1_PACKET_SHA256: &str =
-    "7cb26e2ca926b05cef2be23835c1c0aabd33da2500e71bb504d8ca2fd3fa5d7e";
+    "9bf14eb82c8e82b76287a6aa9080441a5540cbec453a58b2ba203c2a0c3fc6a0";
 pub const ITEM_TIMED_PROMOTION_V1_FIELD_COUNT: usize = 271;
 pub const ITEM_TIMED_PROMOTION_V1_ITEM_COUNT: usize = 110;
 const SCHEMA: &str = "OTERYN_ITEM_TIMED_PROMOTION/v1";
@@ -127,6 +127,8 @@ enum ConsumptionMode {
 pub fn apply_item_timed_promotion_v1(
     draft: &mut ProjectV2Draft,
 ) -> Result<ItemTimedPromotion, ItemTimedPromotionError> {
+    super::item_identity::validate_unique_item_keys(draft)
+        .map_err(ItemTimedPromotionError::Decode)?;
     if world_project_sha256(ITEM_TIMED_PROMOTION_V1_PACKET) != ITEM_TIMED_PROMOTION_V1_PACKET_SHA256
     {
         return Err(ItemTimedPromotionError::Digest);
@@ -198,10 +200,13 @@ fn apply_rows<'a>(
         replaced: 0,
         inactive_temporal_cleared: 0,
     };
-    for (key, semantics) in items {
+    let mut planned = Vec::new();
+    for (key, original) in items {
         let Some(rows) = by_item.remove(key) else {
             continue;
         };
+        let mut candidate = original.clone();
+        let semantics = &mut candidate;
         let first = rows[0];
         let timed = rows.iter().any(|row| {
             row.field_path.starts_with("charges.") || row.field_path.starts_with("temporal.")
@@ -242,6 +247,7 @@ fn apply_rows<'a>(
             }
         }
         applied.items += 1;
+        planned.push((original, candidate));
     }
     if let Some((item_key, rows)) = by_item.into_iter().next() {
         return Err(ItemTimedPromotionError::Row {
@@ -249,6 +255,9 @@ fn apply_rows<'a>(
             field_path: rows[0].field_path.clone(),
             reason: "no Item record with this key",
         });
+    }
+    for (semantics, candidate) in planned {
+        *semantics = candidate;
     }
     Ok(applied)
 }
@@ -463,6 +472,23 @@ mod tests {
                 &format!(r#"{{"kind":"ITEM_TARGET","value":"{OTHER}"}}"#),
             ),
         ]
+    }
+
+    #[test]
+    fn late_missing_item_preserves_all_semantics() {
+        let bytes = packet(
+            &[
+                row(KEY, "charges.count", r#"{"kind":"COUNT_U32","value":2}"#),
+                row(OTHER, "charges.count", r#"{"kind":"COUNT_U32","value":3}"#),
+            ]
+            .join(","),
+            2,
+            2,
+        );
+        let mut semantics = ReferenceItemSemantics::default();
+        let before = semantics.clone();
+        assert!(apply(&bytes, &mut semantics).is_err());
+        assert_eq!(semantics, before);
     }
 
     #[test]

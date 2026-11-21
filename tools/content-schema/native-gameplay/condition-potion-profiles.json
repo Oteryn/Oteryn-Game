@@ -2,19 +2,19 @@
   "canonical_inputs": [
     {
       "path": "content/items/definitions/items-21000-21499.json",
-      "sha256": "bbde56730dba51ebf592df924ef0a544f3c56553ff08e52cb627178666d561c0"
+      "sha256": "f873f6d55b382602c8f2d63e13c79f795b5aa7926c3eb5a8c1afc9fffd7af96c"
     },
     {
       "path": "content/items/definitions/items-27000-27499.json",
-      "sha256": "afcc5ebe9e3e0b88bf932e18c8673f99d9af6dab473e941c6072735a30ddfe07"
+      "sha256": "1a87d077a7b529dab75198aaa1fd4a5ebe451db7ae8fbed7970b11cbfb0a92ee"
     },
     {
       "path": "content/items/definitions/items-31000-31499.json",
-      "sha256": "78d89f6fb82d0f5b6b8b222feb5e1d6856e03c9bd560a7abb0e9f2d1a81b99a5"
+      "sha256": "63910417edbaa8a1e8a5b93834ed7dbc298ab4f55662084527aa286ee949e630"
     },
     {
       "path": "content/items/definitions/items-31500-31999.json",
-      "sha256": "4841f1fdb841522222816d72596ca831ddaf249a8d49ca07651788d0e2e3e079"
+      "sha256": "0f0765e2a9df76dac610c99e5eb15fea4821298fb79aca4cd8c6b7ad6f822fa0"
     }
   ],
   "donor_rule": "crystal/data/scripts/actions/items/potions.lua:1-42,52-54,57,62-63,78-110,115-147",
@@ -56,10 +56,6 @@
         "physical": {
           "state": "KNOWN",
           "value": {
-            "weight": {
-              "state": "KNOWN",
-              "value": 200
-            },
             "movable": {
               "state": "KNOWN",
               "value": true
@@ -67,6 +63,10 @@
             "pickupable": {
               "state": "KNOWN",
               "value": true
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 290
             }
           }
         },
@@ -381,10 +381,6 @@
         "physical": {
           "state": "KNOWN",
           "value": {
-            "weight": {
-              "state": "KNOWN",
-              "value": 200
-            },
             "movable": {
               "state": "KNOWN",
               "value": true
@@ -392,6 +388,10 @@
             "pickupable": {
               "state": "KNOWN",
               "value": true
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 290
             }
           }
         },

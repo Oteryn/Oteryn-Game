@@ -54,7 +54,7 @@ fn general_controls_transform_real_inputs_and_preserve_releases()
     let w = key(26, none, ButtonState::Pressed, false)?;
     let mapped = settings.control_events_at(std::slice::from_ref(&w), false, Duration::ZERO);
     assert_eq!(
-        crate::input::arrow_step(&mapped),
+        crate::input::arrow_step(&mapped, false),
         Some(crate::input::StepDir::North)
     );
     let repeat = key(26, none, ButtonState::Pressed, true)?;
@@ -116,7 +116,8 @@ fn general_controls_transform_real_inputs_and_preserve_releases()
     prefs.controls.keyboard_delay_ms = 1001;
     settings.apply(prefs);
     assert_eq!(settings.preferences, good);
-    let path = std::env::temp_dir().join(format!("clientgap-controls-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("clientgap-controls.json");
     crate::play::PreferenceStore::export_to(&good, &path)?;
     assert_eq!(
         crate::play::PreferenceStore::read_transfer(&path)?.controls,
@@ -144,8 +145,8 @@ fn shortcut_order_persists_and_buttons_open_real_panels() -> Result<(), Box<dyn 
     prefs.remove_shortcut(1)?;
     assert!(!prefs.shortcuts.iter().any(|id| id == "battle"));
     assert_eq!(prefs.visible_panels, panels);
-    let path =
-        std::env::temp_dir().join(format!("clientgap-shortcuts-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("clientgap-shortcuts.json");
     let mut store = PreferenceStore::load(path.clone())?;
     store.apply(prefs.clone())?;
     assert_eq!(
@@ -194,7 +195,8 @@ fn actor_placement_does_not_select_a_character_preference_file()
         Some([7; 16]),
         "scene rebuilding retains the admitted character"
     );
-    let root = std::env::temp_dir().join(format!("stable-character-scope-{}", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let root = fixture.path().to_path_buf();
     let path = root.join("preferences.json");
     let mut settings = crate::play::SettingsState::new(Some(path.clone()));
     settings.select_character(play.preference_character());
@@ -210,7 +212,6 @@ fn actor_placement_does_not_select_a_character_preference_file()
     next_admission.set_preference_character([8; 16]);
     restarted.select_character(next_admission.preference_character());
     assert_eq!(restarted.preferences.ui_scale, 100);
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }
 
@@ -250,7 +251,8 @@ fn hud_arcs_project_server_vitals_and_persist_geometry_controls()
             .flat_map(|stroke| &stroke.points)
             .all(|p| p[0] >= 0 && p[1] >= 0 && p[0] <= layout.width && p[1] <= layout.height)
     );
-    let path = std::env::temp_dir().join(format!("arc-preferences-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("arc-preferences.json");
     let mut settings = crate::play::SettingsState::new(Some(path.clone()));
     settings.apply(prefs.clone());
     assert_eq!(

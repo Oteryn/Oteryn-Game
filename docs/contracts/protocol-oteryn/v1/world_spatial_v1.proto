@@ -51,9 +51,9 @@ message WorldActorStepResultV1 {
   // STEP-PACE-WIRE-0 (OQ-1 R1): the pacing receipt, sent only to a session that selected
   // capability 13; without it, field 2 fails closed.
   // - MOVED: the authoritative duration of the step just committed, the exact value the server
-  //   pacer records: a multiple of 50 in 50..=111,150 (step-speed table maximum: speed 10, ground
+  //   pacer records: a multiple of 50 in 50..=333,450 (step-speed table maximum: speed 10, ground
   //   speed 1000).
-  // - TOO_EARLY: the milliseconds left until the server deadline, rounded up, 1..=111,150.
+  // - TOO_EARLY: the milliseconds left until the server deadline, rounded up, 1..=333,450.
   // - BLOCKED, REJECTED: never present.
   // Written only when non-zero: an explicit zero, any other value and a repeated field fail
   // closed. Absent means no receipt, and the client may send its next step on receipt of this
@@ -66,7 +66,7 @@ message WorldActorStepResultV1 {
 message ActorPositionV1 {
   sint32 x = 1;
   sint32 y = 2;
-  // Limited to the int16 range.
+  // Global z in 0..15 inclusive. Ground is 7. Negative floors are invalid.
   sint32 floor = 3;
 }
 
@@ -86,9 +86,18 @@ message WorldSpatialSnapshotV1 {
 // ---------------------------------------------------------------------------------------------
 // VIS-2 (MOVE-RL-11-VISIBILITY-V1, D84-D87): the second schema revision of domain 1, snapshot type
 // 2 and delta type 2, gated by the optional capability 6 WORLD_SPATIAL_ENTITIES. A session that
-// did not select the capability receives only the v1 types above (own actor). Payloads are at
-// most 33,792 bytes without capability 286; with it, 50,688 bytes
-// (256 entries x 194 B + 1,024 B header). Unknown, repeated and kind-
+// did not select the capability receives only the v1 types above (own actor).
+// Type 2 snapshot and delta limits depend on capabilities 286 and 502.
+// The payload limit is 256 times the entry limit plus 1,024 bytes.
+//
+// | Capabilities | Max entry bytes | Max payload bytes |
+// | --- | ---: | ---: |
+// | Neither | 128 | 33792 |
+// | 286 only | 194 | 50688 |
+// | 502 only | 179 | 46848 |
+// | 286 and 502 | 245 | 63744 |
+//
+// Unknown, repeated and kind-
 // inconsistent fields, duplicate identities and zero or unknown enum values fail closed.
 // ---------------------------------------------------------------------------------------------
 
@@ -110,9 +119,10 @@ message EntityRefV1 {
   uint64 generation = 2;
 }
 
-// At most 128 encoded bytes, or 194 under capability 286. Players, creatures and NPCs carry
+// At most 128 encoded bytes, or 194 under capability 286; capability 502 adds at most 51.
+// Players, creatures and NPCs carry
 // fields 5-7 and no fields 8-10; corpses and ground items carry fields 8-9 (and 10 under
-// capability 4) and no fields 3, 5-7 or 11-13.
+// capability 4) and no fields 3, 5-7, 11-14 or 16.
 // Players and creatures also carry fields 11-12 under capability 19; NPCs never do.
 message WorldSpatialEntityV1 {
   EntityKind kind = 1;
@@ -145,8 +155,25 @@ message WorldSpatialEntityV1 {
   // S-ENTNAME: required on players, creatures and NPCs only when capability 286
   // WORLD_SPATIAL_ENTITIES_V2 is selected alongside capability 6. Non-blank UTF-8,
   // at most 64 bytes, no control characters. Never on objects. Unknown to old
-  // decoders, so omitted unless negotiated. Named entries allow at most 194 bytes.
+  // decoders, so omitted unless negotiated. Entry limits for each profile appear above.
   string display_name = 13;
+  // Capability 372 only, actors only, at most three entries.
+  repeated NativeCreatureIconV1 native_icons = 14;
+  // Capability 386 only, objects only, exact source-pinned native resource 1..65535.
+  // The generation-local item_definition_ref and canonical handle remain unchanged.
+  uint32 native_object_appearance_id = 15;
+  // Optional, actors only, exclusively under capability 502 ACTOR_MOTION_V1.
+  // Exactly 48 bytes; the strict little-endian profile is actor-motion-v1.md.
+  // Includes last translation revision, authoritative step duration (zero for a
+  // teleport), active mount look type and own-actor adjacent prewalk forecasts.
+  bytes actor_motion = 16;
+}
+
+// All fields must be explicitly present, including zero category or count.
+message NativeCreatureIconV1 {
+  optional uint32 category = 1;
+  optional uint32 id = 2;
+  optional uint32 count = 3;
 }
 
 // StateDomainSnapshot.payload of domain 1, snapshot type 2. At most 256 entities (MOVE-RL-11),
@@ -169,4 +196,24 @@ message WorldSpatialEntitiesDeltaV2 {
   // PARTY-SKULL-1: capability 134 only; an icons-only delta, no enter/update/leave.
   // Absent on ordinary spatial deltas. The bundle replaces the observer's icon view.
   oteryn.party_skull.v1.PartyIconsV1 party_icons = 6;
+  // Capabilities 508 and 509 respectively. Each is sent alone on a header-only delta.
+  InventoryCapacityV1 inventory_capacity = 7;
+  GuildEmblemsV1 guild_emblems = 8;
+}
+
+message InventoryCapacityV1 {
+  // Both values are required on the wire, in centi-ounces.
+  optional uint32 capacity = 1;
+  optional uint32 free = 2;
+}
+
+message GuildEmblemsV1 {
+  // Replaces the entire view. An empty message clears all emblems.
+  repeated GuildEmblemV1 entries = 1;
+}
+
+message GuildEmblemV1 {
+  bytes identity = 1;
+  uint64 generation = 2;
+  uint32 emblem = 3;
 }

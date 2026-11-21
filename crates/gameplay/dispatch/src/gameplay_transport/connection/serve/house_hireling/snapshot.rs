@@ -14,7 +14,11 @@ impl State {
         let enabled = selected.contains(oteryn_protocol_oteryn::hireling::CAPABILITY_HIRELING_V1);
         let mut items = if selected
             .contains(oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_VIEW_MOVE_V1)
-            && (enabled
+            && (selected.contains(
+                oteryn_protocol_oteryn::item_inscription::CAPABILITY_ITEM_INSCRIPTION_READ_V1,
+            ) || selected.contains(u32::from(oteryn_protocol_oteryn::mail::CAPABILITY_MAIL_V1))
+                || selected.contains(CAPABILITY_ITEM_EQUIP_DROP_V1)
+                || enabled
                 || selected.contains(
                     oteryn_protocol_oteryn::house_wrap::CAPABILITY_HOUSE_FURNITURE_WRAP_V1,
                 )
@@ -24,6 +28,9 @@ impl State {
                     .contains(oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1))
         {
             let mut view = SessionItemView::resume(admitted.continuity.item_view);
+            if selected.contains(oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_APPEARANCE_V1) {
+                view = view.with_appearances();
+            }
             if selected.contains(
                 oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2,
             ) {
@@ -84,7 +91,11 @@ impl State {
                     .await
                     .ok_or(ServeEnd::Disconnected)?;
             let mut view = SessionVisibility::with_objects(items.is_some())
-                .lit(selected.contains(CAPABILITY_WORLD_LIGHT_V1));
+                .lit(selected.contains(CAPABILITY_WORLD_LIGHT_V1))
+                .with_motion(
+                    selected
+                        .contains(oteryn_protocol_oteryn::actor_motion::CAPABILITY_ACTOR_MOTION_V1),
+                );
             let (snapshot_type, payload) = appearances
                 .initial(
                     authority,
@@ -165,9 +176,7 @@ impl State {
         }
         if enabled
             && selected.domain_selected(STATE_DOMAIN_ACTOR_VITALS)
-            && let Some((revision, vitals)) = authority
-                .observe_vitals(actor, admitted.game_session_id)
-                .await
+            && let Some((revision, vitals)) = authority.observe_house_vitals(actor, *admitted).await
         {
             payloads.push(OwnedDomain {
                 domain_id: STATE_DOMAIN_ACTOR_VITALS,
@@ -184,6 +193,8 @@ impl State {
             &mut payloads,
         )
         .await?;
+        super::super::native_cues::snapshot_observations(authority, actor, admitted, &mut payloads)
+            .await?;
         Ok((
             Self {
                 spell_catalog,
@@ -195,13 +206,24 @@ impl State {
                 visibility,
                 appearances,
                 spatial_revision,
+                capacity: None,
+                capacity_vitals_max: None,
+                capacity_refresh_at: None,
+                emblems: Vec::new(),
+                movement_effect_revision: authority
+                    .observe_current_actor_movement_effects(actor, admitted.game_session_id, 0)
+                    .await
+                    .last()
+                    .map_or(0, |entry| entry.0),
                 npc_shown: None,
                 npc_active,
                 stash_rows: None,
                 stash_revision: 0,
                 pacer: StepPacer::resumed(authority.actor_step_deadline(actor).await),
                 step_holder: std::sync::Arc::new(()),
-                step_wait_receipts: authority.step_wait_receipts(),
+                step_wait_receipts: authority.step_wait_receipts()
+                    || selected
+                        .contains(oteryn_protocol_oteryn::actor_motion::CAPABILITY_ACTOR_MOTION_V1),
             },
             payloads,
         ))

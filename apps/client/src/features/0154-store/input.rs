@@ -2,6 +2,32 @@ use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
 
 impl PlayLink {
+    /// Shared presentation uses the same server catalogue request as the native window.
+    pub fn store_set_open(&self, open: bool) {
+        {
+            let mut mailbox = lock(&self.mailbox);
+            mailbox.store.open = open;
+            if !open {
+                mailbox.store.gift_open = false;
+            }
+        }
+        if open {
+            let panel = self.store_panel();
+            if panel.confirmed_purchase.is_none() {
+                self.store_browse(
+                    &panel.browser.category,
+                    &panel.browser.search,
+                    panel.browser.sort,
+                    0,
+                );
+            }
+        }
+    }
+
+    pub fn store_select_product(&self, index: usize) -> bool {
+        oteryn_client_ui::store::select_product(&mut lock(&self.mailbox).store, index)
+    }
+
     pub fn store_browse(&self, category: &str, search: &str, sort: u8, step: i8) {
         let mut mailbox = lock(&self.mailbox);
         if let Some(command) =
@@ -60,15 +86,10 @@ impl PlayLink {
     }
 
     pub fn store_input(&self, events: &[oteryn_input_actions::NormalizedInputEvent]) -> bool {
-        if !oteryn_client_ui::store::open_key(events) {
+        if !crate::input::store_key(events) {
             return false;
         }
-        #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
-            lock(&self.mailbox).store.open = true;
-        }
+        lock(&self.mailbox).store.open = true;
         true
     }
 }
@@ -88,9 +109,9 @@ impl crate::play::PlayLink {
     }
 }
 
-#[cfg(any(windows, test))]
+#[cfg(any(test, bevy_shell))]
 impl PlayLink {
-    /// Called only after the native confirmation, with the exact displayed quote.
+    /// Called only after confirmation, with the exact displayed quote.
     pub fn store_confirm_purchase(
         &self,
         expected: &oteryn_client_runtime::cui3::store::StoreCataloguePage,
@@ -120,5 +141,73 @@ impl PlayLink {
     }
 }
 
+#[cfg(bevy_shell)]
+impl PlayLink {
+    pub(crate) fn store_retry_purchase_bound(
+        &self,
+        expected: &oteryn_client_ui::store::StorePanel,
+    ) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        if mailbox.activity_reset_commands
+            || mailbox.world_input_blocked()
+            || mailbox.server_modal.is_active()
+            || self.commands.is_closed()
+            || mailbox.store != *expected
+            || !expected.open
+            || !expected.selected
+            || expected.pending
+            || expected.gift.pending.is_some()
+            || expected.gift.confirmed.is_some()
+            || expected.hireling_modal_id.is_some()
+            || expected.confirmed_purchase.is_none()
+        {
+            return false;
+        }
+        let mut prepared = expected.clone();
+        prepared.purchase_confirmed = true;
+        let Some(command) = oteryn_client_ui::store::purchase(&mut prepared) else {
+            return false;
+        };
+        if self
+            .commands
+            .send(PlayCommand::ServerMechanic(command))
+            .is_err()
+        {
+            return false;
+        }
+        mailbox.store = prepared;
+        true
+    }
+}
+
 #[path = "input/gift.rs"]
 pub(in crate::play) mod gift;
+
+#[cfg(all(test, bevy_shell))]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_store_initialize(&self) {
+        self.store_initialize(true, false);
+        lock(&self.0).discovery.history.selected = true;
+    }
+    pub(crate) fn bevy_store_reply(
+        &self,
+        response: &oteryn_client_runtime::server_mechanic::ServerMechanicResponse,
+    ) {
+        self.store_result(response);
+    }
+    pub(crate) fn bevy_coin_gift_reply(
+        &self,
+        response: &oteryn_client_runtime::server_mechanic::ServerMechanicResponse,
+    ) {
+        self.coin_gift_result(response);
+    }
+    pub(crate) fn bevy_purchase_history_reply(
+        &self,
+        response: &oteryn_client_runtime::server_mechanic::ServerMechanicResponse,
+    ) {
+        oteryn_client_ui::purchase_history::protocol::apply_result(
+            &mut lock(&self.0).discovery.history,
+            response,
+        );
+    }
+}

@@ -1,6 +1,10 @@
 //! HOUSE-ITEM-WIRE-1: framed commands, real composed House owner and runtime-role PG.
+use tokio::io::AsyncReadExt;
+use tokio::io::AsyncWriteExt;
+use super::house_wrap_fixtures::{wrap_bundle};
+
 use super::fixture::{Harness, debug, id, run};
-use super::house_transfer::{RecoverySource, prepare_owned_session};
+use super::house_transfer_fixtures::{RecoverySource, prepare_owned_session};
 use super::{Dependencies, TestResult};
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::durability::house_scope_handoff::{
@@ -21,7 +25,6 @@ use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, decode_command_result, encode_client_command,
     house_wrap as wire,
 };
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 const HOUSE: &str = "oteryn:content.house.admiral_s_avenue_1";
 const POSITION: [i32; 3] = [32310, 32804, 7];
@@ -127,6 +130,10 @@ async fn scenario(h: &Harness,cask:bool) -> TestResult {
             id: 207,
             requires: &[49],
         },
+        crate::gameplay_transport::capabilities::OfferedCapability {
+            id: 508,
+            requires: &[4, 6],
+        },
     ];
     owner.required_capabilities = crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
         &[],crate::foundation::RuntimeScopeRefV1::channel(deps.admitted.world_id,deps.admitted.channel_id),1,"policy-1",OFFERS,
@@ -182,9 +189,15 @@ async fn scenario(h: &Harness,cask:bool) -> TestResult {
     let mut admitted = deps.admitted;
     admitted.first_entry = FirstEntryOutcome::Positioned;
     admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
-    admitted.continuity.selected_capabilities =
-        SelectedCapabilities::select(owner.offered_capabilities(), if cask {&[4,6,15,49,86,207]} else {&[4, 6, 49, 86, 207]})
-            .ok_or("wrap offer")?;
+    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+        owner.offered_capabilities(),
+        if cask {
+            &[4, 6, 15, 49, 86, 207]
+        } else {
+            &[4, 6, 49, 86, 207, 508]
+        },
+    )
+    .ok_or("wrap offer")?;
     let request = wire::Request {
         action: wire::Action::Wrap,
         item: id(71),
@@ -220,7 +233,7 @@ async fn scenario(h: &Harness,cask:bool) -> TestResult {
     if cask {return house_cask(&owner,h,admitted).await;}
 
     // Seed a real placed oven and a backpack, then restore every constraint before commands.
-    super::item_look::seed_main_backpack(h, &[]).await?;
+    super::item_look_fixtures::seed_main_backpack(h, &[]).await?;
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role = replica")
         .execute(&mut *tx)
@@ -406,6 +419,87 @@ async fn exchange_checked(
     )
     .map_err(debug)?;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    if expect_delta {
+        let serving = async {
+            let end = serve_admitted(&mut server, *admitted, owner, IDLE_LIVENESS).await;
+            drop(server);
+            end
+        };
+        let reading = async {
+            let mut before = None;
+            let mut reply = None;
+            let mut inventory_delta = false;
+            let fields = oteryn_protocol_oteryn::world_spatial_entities::EntityFields::selected(
+                admitted.continuity.selected_capabilities.as_slice(),
+            );
+            loop {
+                let bytes = super::item_look_fixtures::read_frame(&mut client).await?;
+                let envelope = decode_wire_envelope(&bytes)?;
+                match envelope.message_type() {
+                    MessageType::CommandResult => {
+                        let result = decode_command_result(envelope.payload()).map_err(debug)?;
+                        reply = Some((
+                            result.status,
+                            wire::Reply::decode(result.payload).ok_or("wrap result")?,
+                        ));
+                    }
+                    MessageType::StateDelta => {
+                        let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())
+                            .map_err(debug)?;
+                        inventory_delta |= delta.domain_id
+                            == oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY;
+                        if delta.domain_id != 1 || delta.delta_type != 2 {
+                            continue;
+                        }
+                        use oteryn_protocol_oteryn::world_spatial_entities::{
+                            self as spatial, DeltaSidecar,
+                        };
+                        let (_, _, Some(DeltaSidecar::InventoryCapacity(capacity))) =
+                            spatial::decode_world_spatial_entities_delta_with_sidecar(
+                                delta.payload,
+                                fields,
+                            )
+                            .map_err(debug)?
+                        else {
+                            continue;
+                        };
+                        if let Some((initial, at)) = before {
+                            let initial: oteryn_protocol_oteryn::inventory_capacity::InventoryCapacity = initial;
+                            match request.action {
+                                wire::Action::Wrap => assert!(capacity.free < initial.free),
+                                wire::Action::Unwrap => assert!(capacity.free > initial.free),
+                            }
+                            let at: std::time::Instant = at;
+                            assert!(
+                                at.elapsed() < std::time::Duration::from_secs(4),
+                                "wrap waited for periodic capacity refresh"
+                            );
+                            assert!(
+                                inventory_delta,
+                                "committed House conversion must publish inventory delta"
+                            );
+                            client.shutdown().await?;
+                            return reply.ok_or_else(|| "wrap result before capacity".into());
+                        }
+                        before = Some((capacity, std::time::Instant::now()));
+                        crate::gameplay_transport::tcp_tls::write_frame(&mut client, &frame)
+                            .await?;
+                    }
+                    _ => {}
+                }
+            }
+        };
+        let (end, result) = tokio::time::timeout(std::time::Duration::from_secs(10), async {
+            tokio::join!(serving, reading)
+        })
+        .await?;
+        if let ConnectionEnd::AdmittedThenDisconnected(current)
+        | ConnectionEnd::AdmittedThenClosed(current, _) = end
+        {
+            *admitted = current;
+        }
+        return result;
+    }
     client
         .write_all(&(frame.len() as u32).to_be_bytes())
         .await?;
@@ -422,7 +516,6 @@ async fn exchange_checked(
     }
     let mut cursor = 0;
     let mut reply = None;
-    let mut inventory_delta = false;
     while cursor < bytes.len() {
         let n = u32::from_be_bytes(bytes[cursor..cursor + 4].try_into()?) as usize;
         let envelope = decode_wire_envelope(&bytes[cursor + 4..cursor + 4 + n]).map_err(debug)?;
@@ -433,166 +526,9 @@ async fn exchange_checked(
                 result.status,
                 wire::Reply::decode(result.payload).ok_or("wrap result")?,
             ));
-        } else if envelope.message_type() == MessageType::StateDelta {
-            let delta =
-                oteryn_protocol_oteryn::decode_state_delta(envelope.payload()).map_err(debug)?;
-            inventory_delta |= delta.domain_id
-                == oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY;
         }
-    }
-    if expect_delta {
-        assert!(
-            inventory_delta,
-            "committed House conversion must publish inventory delta"
-        );
     }
     reply.ok_or_else(|| format!("wrap command {command}: {end:?}").into())
-}
-
-pub(super) fn wrap_bundle(
-    world: crate::foundation::WorldId,
-    channel: crate::foundation::ChannelId,
-) -> TestResult<crate::map::boot::BundleWorld> {
-    wrap_bundle_with_static_decorations(world, channel, &[])
-}
-
-pub(super) fn static_decoration_bundle(
-    world: crate::foundation::WorldId,
-    channel: crate::foundation::ChannelId,
-) -> TestResult<crate::map::boot::BundleWorld> {
-    static_decoration_bundle_with(world,channel,&[("oteryn:item.tibia.i5302",7,0)])
-}
-
-pub(super) fn static_timed_decoration_bundle(
-    world: crate::foundation::WorldId,
-    channel: crate::foundation::ChannelId,
-) -> TestResult<crate::map::boot::BundleWorld> {
-    static_decoration_bundle_with(world,channel,&[("oteryn:item.tibia.i35949",7,0)])
-}
-
-pub(super) fn static_bed_decoration_bundle(
-    world: crate::foundation::WorldId,
-    channel: crate::foundation::ChannelId,
-) -> TestResult<crate::map::boot::BundleWorld> {
-    static_decoration_bundle_with(world,channel,&[("oteryn:item.tibia.i2491",7,0),("oteryn:item.tibia.i2492",7,1)])
-}
-
-struct StaticDecoration {
-    key: &'static str,
-    x: u16,
-    y: u16,
-    definition: crate::map::facts::ItemDefinition,
-}
-
-fn static_decoration_bundle_with(
-    world: crate::foundation::WorldId,
-    channel: crate::foundation::ChannelId,
-    declarations: &[(&'static str,u16,u16)],
-) -> TestResult<crate::map::boot::BundleWorld> {
-    let (controller, _) = crate::content::native_gameplay::test_support::activated_with_loot_tables(world,None);
-    let native=controller.active().and_then(|active|active.native_gameplay()).ok_or("native generation")?;
-    let index=native.item_index().ok_or("Item index")?;
-    let mut extras=Vec::with_capacity(declarations.len());
-    for &(key,x,y) in declarations {
-        let reference=index.definition_ref("Item",key,"definition-r1").ok_or("decoration reference")?;
-        let policy=native.item_policy(key,"definition-r1").ok_or("decoration policy")?.record();
-        extras.push(StaticDecoration {key,x,y,definition:crate::map::facts::ItemDefinition {
-            reference,solid:policy.attributes.blocks_movement,
-            blocks_projectile:policy.attributes.blocks_projectile.ok_or("decoration projectile fact")?,
-            pickupable:false,door:false }});
-    }
-    wrap_bundle_with_static_decorations(world,channel,&extras)
-}
-
-fn wrap_bundle_with_static_decorations(
-    world: crate::foundation::WorldId,
-    channel: crate::foundation::ChannelId,
-    extras: &[StaticDecoration],
-) -> TestResult<crate::map::boot::BundleWorld> {
-    use crate::map::boot::{self, tests as fixture};
-    use oteryn_world_bundle::bundle;
-    let (bytes, mut pins) =
-        fixture::bundle_with_items("oteryn:item.tibia.i1629", "oteryn:item.tibia.i1000");
-    let mut data = bundle::read(&bytes).map_err(debug)?;
-    let sector = data.sectors.first_mut().ok_or("sector")?;
-    let mut entrance = sector
-        .tiles
-        .iter()
-        .find(|t| t.x == 3)
-        .ok_or("grass tile")?
-        .clone();
-    let seed=sector.tiles.iter().find(|tile|tile.x==7).ok_or("House tile")?;
-    let ground=seed.items.first().ok_or("House ground")?.palette;
-    let flags=seed.flags;
-    // Clear only the fixture seed before placing actual native decorations.
-    for tile in &mut sector.tiles {
-        if tile.x == 7 { tile.items.truncate(1); }
-    }
-    for extra in extras {
-        let palette=if let Some(at)=data.manifest.palette.iter().position(|entry|entry.key==extra.key) {
-            u32::try_from(at)?
-        } else {
-            let at=u32::try_from(data.manifest.palette.len())?;
-            data.manifest.palette.push(bundle::PaletteEntry {key:extra.key.into(),family:bundle::Family::Item,
-                id:extra.definition.reference.get()-1,terrain:None});
-            at
-        };
-        let item=oteryn_world_bundle::sector::Item {palette,depth:0,attrs:Default::default()};
-        if let Some(tile)=sector.tiles.iter_mut().find(|tile|tile.x==extra.x&&tile.y==extra.y) {
-            tile.house=3437;
-            tile.items.push(item);
-        } else {
-            sector.tiles.push(oteryn_world_bundle::sector::Tile {x:extra.x,y:extra.y,flags,house:3437,zones:Vec::new(),
-                items:vec![oteryn_world_bundle::sector::Item {palette:ground,depth:0,attrs:Default::default()},item]});
-        }
-    }
-    for tile in &mut sector.tiles {
-        if tile.x == 7 {
-            tile.house = 3437;
-        }
-        if tile.x == 6 {
-            tile.house = 3437;
-            tile.items.last_mut().ok_or("door")?.attrs.door = Some(42);
-        }
-        tile.x += 32303;
-        tile.y += 32804;
-    }
-    entrance.x = 32309;
-    entrance.y = 32805;
-    sector.tiles.push(entrance);
-    // Native sector encoding orders by (y, x), including the second bed half.
-    sector.tiles.sort_by_key(|tile| (tile.y, tile.x));
-    sector.sx = 1009;
-    sector.sy = 1025;
-    data.manifest.world.min_x = 32288;
-    data.manifest.world.min_y = 32800;
-    data.manifest.world.max_x = 32320;
-    data.manifest.world.max_y = 32832;
-    let bytes = oteryn_world_bundle_compiler::bundle::write_with_npcs(
-        &data.manifest,
-        &data.sectors,
-        &data.spawns,
-        &data.npcs,
-    )
-    .map_err(debug)?;
-    pins.digest = bundle::read(&bytes).map_err(debug)?.digest;
-    let base = crate::map::load(&bytes, &pins).map_err(debug)?;
-    boot::boot(
-        &bytes,
-        &boot::BootPins {
-            bundle: pins,
-            map_revision: crate::map::overlay::map_revision(&base),
-            start: crate::map::overlay::TilePos {
-                x: 32309,
-                y: 32805,
-                floor: -7,
-            },
-        },
-        world,
-        channel,
-        |key| extras.iter().find(|extra|extra.key==key).map(|extra|extra.definition).or_else(||fixture::door_items(key)),
-    )
-    .map_err(debug)
 }
 
 async fn furniture_query(
@@ -625,7 +561,7 @@ async fn house_cask(owner:&ComposedFreshAdmission<'_, '_, '_>,h:&Harness,mut adm
     use oteryn_protocol_oteryn::world_object::{UseIntent,UseTarget,MapUseTarget,UseDisposition};
     use crate::gameplay_transport::item_view::ItemKey;
     // Historical fixture with real named-House placement/provenance and a partial counter.
-    super::item_look::seed_main_backpack(h,&[("oteryn:item.tibia.i283",2),("oteryn:item.tibia.i283",2),("oteryn:item.tibia.i25904",1)]).await?;
+    super::item_look_fixtures::seed_main_backpack(h,&[("oteryn:item.tibia.i283",2),("oteryn:item.tibia.i283",2),("oteryn:item.tibia.i25904",1)]).await?;
     let mut tx=h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
     sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i25880','definition-r1',1,1,game_character_uuid_v7())")

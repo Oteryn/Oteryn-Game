@@ -15,6 +15,7 @@ fn view(
         parent_handle: parent.map(TryInto::try_into).transpose()?,
         capacity: 20,
         entries: vec![ItemEntry {
+            appearance_id: 0,
             handle: entry.try_into()?,
             item_definition_ref: 2854.try_into()?,
             count: 2.try_into()?,

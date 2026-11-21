@@ -237,6 +237,10 @@ fn unzigzag(value: u64) -> i64 {
 
 /// Encodes a table. The caller has validated it.
 pub fn encode(table: &Table) -> Vec<u8> {
+    encode_with_floors(table, crate::bundle::FloorEncoding::Signed)
+}
+
+pub(crate) fn encode_with_floors(table: &Table, floors: crate::bundle::FloorEncoding) -> Vec<u8> {
     let mut out = Vec::new();
     put(&mut out, table.creatures.len() as u64);
     for creature in &table.creatures {
@@ -246,7 +250,7 @@ pub fn encode(table: &Table) -> Vec<u8> {
     put(&mut out, table.sources.len() as u64);
     for source in &table.sources {
         put_text(&mut out, &source.key);
-        out.push(source.floor as u8);
+        out.push(floors.encode(source.floor));
         put(&mut out, source.x.into());
         put(&mut out, source.y.into());
         put(&mut out, source.points.len() as u64);
@@ -277,6 +281,14 @@ pub fn encode(table: &Table) -> Vec<u8> {
 /// Decodes and validates a payload. Every count is checked against the bytes left before
 /// anything is reserved for it, since each element needs at least one byte.
 pub fn decode(raw: &[u8], world: &Extent) -> Result<Table, Error> {
+    decode_with_floors(raw, world, crate::bundle::FloorEncoding::Signed)
+}
+
+pub(crate) fn decode_with_floors(
+    raw: &[u8],
+    world: &Extent,
+    floors: crate::bundle::FloorEncoding,
+) -> Result<Table, Error> {
     let mut r = Reader { buf: raw, pos: 0 };
     let left = |r: &Reader<'_>| r.buf.len() - r.pos;
     let count = |r: &mut Reader<'_>, max: usize, what: &str| -> Result<usize, Error> {
@@ -298,7 +310,7 @@ pub fn decode(raw: &[u8], world: &Extent) -> Result<Table, Error> {
     let mut points = 0usize;
     for _ in 0..source_count {
         let key = r.text(KEY_LIMITS)?;
-        let floor = r.byte()? as i8;
+        let floor = floors.decode(r.byte()?)?;
         let (x, y) = (r.u16("spawn centre x")?, r.u16("spawn centre y")?);
         let n = count(&mut r, MAX_POINTS_PER_SOURCE, "spawn points per source")?;
         points += n;
@@ -307,8 +319,10 @@ pub fn decode(raw: &[u8], world: &Extent) -> Result<Table, Error> {
         for _ in 0..n {
             let creature = r.bounded(u64::from(u32::MAX), "spawn creature index")? as u32;
             let at = |centre: u16, delta: u64| -> Result<u16, Error> {
-                u16::try_from(i64::from(centre) + unzigzag(delta))
-                    .map_err(|_| Error::Format("spawn point outside the u16 plane".into()))
+                i64::from(centre)
+                    .checked_add(unzigzag(delta))
+                    .and_then(|value| u16::try_from(value).ok())
+                    .ok_or_else(|| Error::Format("spawn point outside the u16 plane".into()))
             };
             let px = at(x, r.varint()?)?;
             let py = at(y, r.varint()?)?;
@@ -352,4 +366,40 @@ pub fn decode(raw: &[u8], world: &Extent) -> Result<Table, Error> {
     let table = Table { creatures, sources };
     validate(&table, world)?;
     Ok(table)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn decode_rejects_extreme_coordinate_deltas() {
+        let world = Extent {
+            min_x: 0,
+            min_y: 0,
+            max_x: 32,
+            max_y: 32,
+            floors: vec![-7],
+        };
+        for axis in 0..2 {
+            for delta in [u64::MAX - 1, u64::MAX, 131_070, 131_071] {
+                let mut raw = Vec::new();
+                put(&mut raw, 1);
+                put_text(&mut raw, "rat");
+                raw.push(0);
+                put(&mut raw, 1);
+                put_text(&mut raw, "source");
+                raw.push((-7i8) as u8);
+                put(&mut raw, 1);
+                put(&mut raw, 1);
+                put(&mut raw, 1);
+                put(&mut raw, 0);
+                put(&mut raw, if axis == 0 { delta } else { 0 });
+                put(&mut raw, if axis == 1 { delta } else { 0 });
+                raw.push(0);
+                put(&mut raw, 1_000);
+                assert!(matches!(decode(&raw, &world), Err(Error::Format(_))));
+            }
+        }
+    }
 }

@@ -1,8 +1,12 @@
 //! T005 maintenance caller. Only a build-pinned TUF target may install bytes.
 mod install;
-#[cfg(windows)]
-mod window;
+mod launcher;
+mod login;
 pub use install::verify_archive;
+#[cfg(windows)]
+pub use login::login_update_requested;
+pub(crate) use login::start_login_update;
+use oteryn_platform_client::native_login::ReleaseIdentity;
 use oteryn_platform_client::updates::{UpdateClient, UpdateConfig, UpdateError};
 use std::path::Path;
 
@@ -20,21 +24,34 @@ pub fn pinned_root(channel: &str) -> &'static [u8] {
         _ => &[],
     }
 }
-/// A release pointer may name the accepted opaque Platform release ID or an installer slot.
+const MAX_SLOT_LENGTH: usize = 64;
+
+/// A release slot may name an opaque Platform release or a manual installer release.
 pub fn release_directory(value: &str) -> bool {
+    release_id_from_slot(value).is_some()
+}
+
+fn release_id_from_slot(value: &str) -> Option<&str> {
     let (id, slot) = value
         .split_once('~')
-        .map_or((value, None), |(a, b)| (a, Some(b)));
-    !id.is_empty()
-        && id.len() <= 160
-        && id != "."
-        && id != ".."
+        .map_or((value, None), |(id, slot)| (id, Some(slot)));
+    (value.len() <= MAX_SLOT_LENGTH
+        && !id.is_empty()
+        && !id.starts_with('.')
+        && !id.ends_with('.')
+        && !id.contains("..")
         && id
             .bytes()
-            .all(|b| b.is_ascii_alphanumeric() || b"-_.+".contains(&b))
-        && slot.is_none_or(|s| !s.is_empty() && !s.starts_with('0') && s.parse::<u32>().is_ok())
+            .all(|byte| byte.is_ascii_alphanumeric() || b"-_.+".contains(&byte))
+        && slot.is_none_or(|slot| {
+            !slot.is_empty()
+                && !slot.starts_with('0')
+                && slot.bytes().all(|byte| byte.is_ascii_digit())
+                && slot.parse::<u32>().is_ok()
+        }))
+    .then_some(id)
 }
-fn compiled_platform() -> &'static str {
+pub(crate) fn compiled_platform() -> &'static str {
     if cfg!(windows) {
         "windows"
     } else if cfg!(target_os = "macos") {
@@ -43,7 +60,7 @@ fn compiled_platform() -> &'static str {
         "linux"
     }
 }
-fn compiled_arch() -> &'static str {
+pub(crate) fn compiled_arch() -> &'static str {
     if cfg!(target_arch = "aarch64") {
         "arm64"
     } else if cfg!(target_arch = "x86") {
@@ -57,6 +74,15 @@ pub async fn maintain(
     directory: &Path,
     channel: &str,
     action: Action,
+) -> Result<String, UpdateError> {
+    maintain_release(directory, channel, action, None).await
+}
+
+async fn maintain_release(
+    directory: &Path,
+    channel: &str,
+    action: Action,
+    gate: Option<(ReleaseIdentity, Option<u64>)>,
 ) -> Result<String, UpdateError> {
     let config = UpdateConfig::new(
         channel,
@@ -73,8 +99,11 @@ pub async fn maintain(
         .map_err(|_| UpdateError::Storage)?;
     lock.try_lock().map_err(|_| UpdateError::Unavailable)?;
     #[cfg(windows)]
-    let _maintenance = window::acquire_maintenance()?;
+    let _maintenance = acquire_maintenance()?;
     let update = UpdateClient::check(config, &directory.join(".updates")).await?;
+    if let Some((refused, minimum)) = gate {
+        update.require_login_update(minimum, refused)?;
+    }
     let current = std::fs::read_to_string(directory.join("current.txt")).unwrap_or_default();
     if action == Action::Check {
         return Ok(format!(
@@ -93,24 +122,54 @@ pub async fn maintain(
     update.download(&package).await?;
     if action == Action::Verify {
         let current = current.trim();
-        if !release_directory(current)
-            || current.split('~').next() != Some(&update.policy.current_release_id)
-        {
+        if release_id_from_slot(current) != Some(&update.policy.current_release_id) {
             return Err(UpdateError::Unavailable);
         }
         verify_archive(&package, &directory.join("releases").join(current))?;
         return Ok("Verified installed release against the current signed package.".into());
     }
-    let installed = install::install(&package, directory, &update.policy.current_release_id)?;
-    Ok(format!(
-        "Installed verified release {installed}. Start the launcher to play."
+    let launcher_path = directory.join(launcher::LAUNCHER_EXECUTABLE);
+    let launcher = cfg!(windows).then_some(launcher_path.as_path());
+    let installed = install::install(
+        &package,
+        directory,
+        &update.policy.current_release_id,
+        launcher,
+    )?;
+    if gate.is_some() {
+        return Ok(lfmt!(
+            "Installed verified release {installed}. Oteryn will restart when you close this message.",
+            installed = installed
+        ));
+    }
+    Ok(lfmt!(
+        "Installed verified release {installed}. Start the launcher to play.",
+        installed = installed
     ))
+}
+/// Refuses maintenance while setup or the client runs (the install/client mutex handshake).
+#[cfg(windows)]
+fn acquire_maintenance() -> Result<crate::win_mutex::NamedMutex, UpdateError> {
+    let sid = crate::win_mutex::current_user_sid().map_err(|_| UpdateError::Unavailable)?;
+    let name = crate::win_mutex::setup_mutex_name(&sid);
+    let guard = crate::win_mutex::create_exclusive(&name).map_err(|_| UpdateError::Unavailable)?;
+    if crate::win_mutex::exists(&crate::win_mutex::client_mutex_name(&sid))
+        .map_err(|_| UpdateError::Unavailable)?
+    {
+        return Err(UpdateError::Unavailable);
+    }
+    Ok(guard)
 }
 /// Returns true when a maintenance command was consumed, without starting gameplay.
 pub fn requested(
     directory: &Path,
     args: &[std::ffi::OsString],
 ) -> Option<Result<String, UpdateError>> {
+    let channel = if args.iter().any(|a| a == "--beta") {
+        "beta"
+    } else {
+        "stable"
+    };
     let action = if args.iter().any(|a| a == "--check-updates") {
         Action::Check
     } else if args.iter().any(|a| a == "--verify-release") {
@@ -120,16 +179,13 @@ pub fn requested(
     } else if args.iter().any(|a| a == "--update") {
         Action::Update
     } else {
-        #[cfg(windows)]
+        #[cfg(bevy_shell)]
         if args.iter().any(|a| a == "--updates") {
-            return Some(window::show(directory));
+            return Some(crate::bevy_shell::maintenance::run(
+                directory, args, channel,
+            ));
         }
         return None;
-    };
-    let channel = if args.iter().any(|a| a == "--beta") {
-        "beta"
-    } else {
-        "stable"
     };
     Some(
         tokio::runtime::Runtime::new()

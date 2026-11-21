@@ -10,6 +10,8 @@ pub mod guide;
 #[path = "components/login_queue.rs"]
 pub mod login_queue;
 
+#[path = "features/0502-actor-motion/mod.rs"]
+pub mod actor_motion;
 #[path = "features/0025-appearance/mod.rs"]
 pub mod appearance;
 #[path = "features/0291-cast-chat/mod.rs"]
@@ -116,6 +118,8 @@ pub mod achievement_notices;
 #[path = "features/0170-arena/mod.rs"]
 pub mod arena;
 
+#[path = "features/0503-blessings-dialog/protocol.rs"]
+mod blessings_dialog;
 #[path = "features/0225-boss-difficulty/mod.rs"]
 pub mod boss_difficulty;
 #[path = "features/0492-boss-difficulty-pity/protocol.rs"]
@@ -277,11 +281,19 @@ pub mod wheel_allocation;
 /// Tutorial notices and their shared server-save history.
 #[path = "features/0031-tutorial-notices/mod.rs"]
 pub mod tutorial_notices;
+#[path = "features/0504-tutorial-vocation/mod.rs"]
+pub mod tutorial_vocation;
 
+/// The in-game Change Channel window (capability 512).
+#[path = "features/0512-channel-switch/mod.rs"]
+pub mod channel_switch;
 #[path = "features/0497-sanction-record/mod.rs"]
 pub mod sanction_record;
 #[path = "features/0075-server-save-countdown/protocol.rs"]
 pub mod server_save_countdown;
+/// The Channel on Party, VIP and Guild rows (capability 513).
+#[path = "features/0513-social-channel/mod.rs"]
+pub mod social_channel;
 
 /// Weekly Task Board state and controls.
 #[path = "features/0072-task-board/mod.rs"]
@@ -313,6 +325,8 @@ pub mod target_move;
 /// NPC shop look and sell-all panel state.
 #[path = "features/0081-npc-shop/mod.rs"]
 pub mod npc_shop;
+#[path = "features/0501-trade-details/protocol.rs"]
+pub mod trade_details;
 
 /// Imbuement shrine state, actions, and plain-text view.
 #[path = "features/0068-imbue/mod.rs"]
@@ -387,3 +401,36 @@ pub mod store_cosmetic_tokens;
 pub mod action_bar_cooldowns;
 #[path = "features/0462-support-intake/mod.rs"]
 pub mod support_intake;
+
+#[path = "features/0499-item-appearance/protocol.rs"]
+pub mod item_appearance;
+
+#[path = "features/0372-native-creature-icons/mod.rs"]
+pub mod native_creature_icons;
+
+#[path = "features/0451-personal-map-marks/mod.rs"]
+pub mod personal_map_marks;
+
+#[path = "features/0505-server-modal-defaults/protocol.rs"]
+pub mod server_modal_defaults;
+
+#[path = "features/0507-highscores-catalogue/protocol.rs"]
+pub mod highscores_catalogue;
+
+#[path = "features/0510-container-manual-sort/input.rs"]
+pub mod container_manual_sort;
+
+#[path = "features/0511-item-inscription-read/mod.rs"]
+pub mod item_inscription;
+
+#[path = "features/0506-holdings-search/protocol.rs"]
+pub mod holdings_search;
+
+#[path = "features/0508-inventory-capacity/protocol.rs"]
+pub mod inventory_capacity;
+
+#[path = "features/0509-guild-emblem/protocol.rs"]
+pub mod guild_emblem;
+
+#[path = "features/0500-server-info/mod.rs"]
+pub mod server_info;

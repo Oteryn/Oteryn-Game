@@ -122,6 +122,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .chain(visible.creatures.iter().map(|e| (VisibleKind::Creature, e)))
             .chain(visible.npcs.iter().map(|e| (VisibleKind::Npc, e)))
             .map(|(kind, e)| super::super::world_spatial::ChannelEntity {
+ source_icons: oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(),
+                motion: None,
                 display_name: None,
                 health_percent: 100,
                 direction: match runtime
@@ -174,7 +176,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let digest = runtime.content_pin().server_artifact_digest();
         pinned_index(runtime, self.active_generation).ok_or(ResultCode::Rejected)?;
-        let room = self.rooms()
+        let room = self
+            .rooms()
             .gate_attack_target()
             .ok_or(ResultCode::Rejected)?;
         let objects = self.door.lock().await;
@@ -276,6 +279,43 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         Ok(())
     }
+    pub(super) fn trade_contents(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        root: &TradeLeaf,
+    ) -> Result<Vec<wire::ContentsItem>, CheckError> {
+        use crate::content::ReferenceItemField::Known;
+        let native = self
+            .active_generation
+            .and_then(|g| g.native_gameplay())
+            .ok_or(ResultCode::Rejected)?;
+        let mut tree = Vec::new();
+        for (index, leaf) in std::iter::once(root).chain(root.contents()).enumerate() {
+            let (definition, _) = leaf
+                .definition_and_quantity()
+                .map_err(|_| ResultCode::Rejected)?;
+            let policy = native
+                .item_policy(&definition.production_key, &definition.revision_ref)
+                .ok_or(ResultCode::NotTradeable)?;
+            let Known(presentation) = &policy.record().semantics.presentation else {
+                return Err(ResultCode::NotTradeable.into());
+            };
+            let Known(name) = &presentation.name else {
+                return Err(ResultCode::NotTradeable.into());
+            };
+            tree.push(wire::ContentsItem {
+                item: self.trade_projection(runtime, leaf)?,
+                parent: if index == 0 {
+                    None
+                } else {
+                    root.parent_index(index - 1)
+                        .map_err(|_| ResultCode::Rejected)?
+                },
+                name: name.clone(),
+            });
+        }
+        Ok(tree)
+    }
     pub(super) fn trade_projection(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -296,6 +336,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Err(ResultCode::NotTradeable.into());
         };
+        let facts = crate::durability::item_loop_move::ItemLoopContent::loop_facts(
+            &NativeItemWeights(native),
+            &definition,
+        )
+        .ok_or(ResultCode::NotTradeable)?;
+        if !crate::durability::item_transfer::stack_maximum(facts.stack)
+            .is_ok_and(|(maximum, _)| (1..=maximum).contains(&count))
+        {
+            return Err(ResultCode::NotTradeable.into());
+        }
         oteryn_gameplay_economy::player_trade::LeafFacts {
             direct_backpack_entry: true,
             is_main_backpack: false,
@@ -306,12 +356,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         .check()
         .map_err(CheckError::from)?;
-        Ok(wire::Offer {
-            definition: definition_ref(index, &definition)
-                .ok_or(ResultCode::NotTradeable)?
-                .get(),
-            count,
-            sub_type: 0,
-        })
+        let definition = definition_ref(index, &definition).ok_or(ResultCode::NotTradeable)?;
+        leaf.project_offer(definition.get())
+            .map_err(|_| ResultCode::Rejected.into())
     }
 }

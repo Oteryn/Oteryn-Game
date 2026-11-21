@@ -1,3 +1,6 @@
+#[path = "build_support/launcher_version.rs"]
+mod launcher_version;
+
 #[path = "build_support/release_identity.rs"]
 mod release_identity;
 
@@ -26,8 +29,39 @@ fn emit_common_controls_manifest() {
     }
 }
 
+fn emit_launcher_version() {
+    println!("cargo:rerun-if-changed=build_support/launcher_version.rs");
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("windows") {
+        return;
+    }
+    let (major, minor) = launcher_version::PE_IMAGE_VERSION;
+    match std::env::var("CARGO_CFG_TARGET_ENV").as_deref() {
+        Ok("msvc") => {
+            println!("cargo:rustc-link-arg-bin=oteryn-launcher=/VERSION:{major}.{minor}");
+        }
+        Ok("gnu") => {
+            println!(
+                "cargo:rustc-link-arg-bin=oteryn-launcher=-Wl,--major-image-version,{major},--minor-image-version,{minor}"
+            );
+        }
+        _ => {}
+    }
+}
+
+/// The Bevy host is the Windows client, so `cfg(bevy_shell)` is on for every Windows build;
+/// elsewhere the `bevy-shell` feature opts in.
+fn emit_bevy_shell_cfg() {
+    println!("cargo:rustc-check-cfg=cfg(bevy_shell)");
+    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+    if target_os == "windows" || std::env::var_os("CARGO_FEATURE_BEVY_SHELL").is_some() {
+        println!("cargo:rustc-cfg=bevy_shell");
+    }
+}
+
 fn main() -> Result<(), String> {
     emit_common_controls_manifest();
+    emit_launcher_version();
+    emit_bevy_shell_cfg();
     update_trust::emit()?;
     println!("cargo:rerun-if-changed=build_support/update_trust.rs");
     let manifest = std::env::var("CARGO_MANIFEST_DIR").map_err(|e| e.to_string())?;

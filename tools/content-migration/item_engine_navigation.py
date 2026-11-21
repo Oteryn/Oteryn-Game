@@ -21,6 +21,7 @@ import donor_census
 import engine_items as engine
 from item_id_alias_table import tibia_key
 from item_wiki_family_capture import resolve_infobox_fields
+from source_relocations import read_pinned
 
 QUALIFICATION = Path(__file__).parent / "samples/engine-family-navigation-265.json"
 QUALIFICATION_SHA256 = (
@@ -59,10 +60,7 @@ def source_inputs():
         document["wiki_parser"],
         document["retained_stats"],
     ):
-        if (
-            hashlib.sha256((ROOT / spec["path"]).read_bytes()).hexdigest()
-            != spec["sha256"]
-        ):
+        if read_pinned(ROOT, spec["path"], spec["sha256"]) is None:
             raise ValueError("ENGINE_NAV_PINNED_INPUT")
     index, manifests = appearance_membership.load_admitted()
     spec = document["source_pins"]["official"]

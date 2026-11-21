@@ -28,6 +28,8 @@ pub(super) struct ActorConditionState {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct PlayerRuntimeState {
     pub(super) discovery_speed: u16,
+    pub(super) rotten_presentation: super::rotten_blood_presentation::RottenBloodPresentation,
+    pub(super) tile_entry_order: u64,
     pub(super) control_loss: Option<ControlLossMark>,
     pub(super) control_revision: u64,
     pub(super) staff_ghost: bool,
@@ -38,9 +40,11 @@ pub struct PlayerRuntimeState {
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct CreatureCommitState {
+    pub(super) tile_entry_order: u64,
     damage: DamageReceipts,
     pub(super) conditions: ActorConditionState,
     pub(super) field_entry_revision: Option<u64>,
+    pub(super) field_entry: Option<super::runtime_actor_periodic::CreatureFieldEntry>,
 }
 impl std::ops::Deref for CreatureCommitState {
     type Target = DamageReceipts;
@@ -82,6 +86,12 @@ pub enum ActorConditionTransition<'a> {
         facts: ApplicationFacts<'a>,
     },
     Cleanse(ApplicationFacts<'a>),
+    /// One index from the composed owner's single Cleanse draw. `None` records the
+    /// same occurrence atomically with a selection in the player's other owned store.
+    CleanseSelected {
+        facts: ApplicationFacts<'a>,
+        index: Option<usize>,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -136,6 +146,54 @@ pub enum ConditionOwnerError {
 }
 
 impl ActorConditionState {
+    /// Called on the staged canonical Creature slot at its sole health-drain
+    /// boundary. Advancing the condition revision prevents a pre-hit plan from
+    /// restoring the removed invisibility after the HP commit.
+    pub(super) fn remove_invisibility_on_drain(&mut self) -> Result<(), CarrierError> {
+        let hidden = |kind| {
+            matches!(
+                kind,
+                ConditionType::Invisible | ConditionType::Status(StatusKind::Invisible)
+            )
+        };
+        if !self
+            .store
+            .instances()
+            .iter()
+            .any(|instance| hidden(instance.definition().condition_type()))
+        {
+            return Ok(());
+        }
+        let revision = self
+            .revision
+            .checked_add(1)
+            .ok_or(CarrierError::CapacityArithmeticOverflow)?;
+        self.store.remove_type(ConditionType::Invisible);
+        self.store
+            .remove_type(ConditionType::Status(StatusKind::Invisible));
+        self.revision = revision;
+        self.receipt = None;
+        Ok(())
+    }
+
+    pub(super) fn remove_type_at(
+        &mut self,
+        kind: ConditionType,
+        now: u64,
+    ) -> Result<(), CarrierError> {
+        if now < self.at || !self.store.accepts_time(now) {
+            return Err(CarrierError::StaleAttackerSequence);
+        }
+        let revision = self
+            .revision
+            .checked_add(1)
+            .ok_or(CarrierError::PlanConflict)?;
+        self.store.remove_type(kind);
+        self.revision = revision;
+        self.at = now;
+        self.receipt = None;
+        Ok(())
+    }
     pub(super) fn die(&mut self) {
         self.store.clear_on_death();
         self.receipt = None;
@@ -302,7 +360,115 @@ impl ChannelActorCarrier {
     }
 }
 
+/// The live condition preimage is distinct from any primary spell successor.
+#[derive(Debug, Clone)]
+pub(super) struct SpellParalysisPreimage {
+    conditions: ActorConditionState,
+    target: super::runtime_actor_companion::CompanionSnapshot,
+}
+
 impl ChannelRuntimeV1 {
+    /// Resolve only the canonical charm leaf through the existing condition owner.
+    /// All writes are to the spell's data clone, including policy no-effect receipts.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the retained leaf keeps its source, target, occurrence and exact preimage explicit"
+    )]
+    pub(super) fn stage_spell_charm_paralysis(
+        &self,
+        next: &mut ChannelActorCarrier,
+        batch: &super::runtime_actor_spell_types::OwnerCombatBatch,
+        target: ExactActorRef,
+        root: &oteryn_simulation_determinism::GameplayDecisionRoot,
+        occurrence: DecisionOccurrenceId,
+        expected: Option<&SpellParalysisPreimage>,
+    ) -> Result<SpellParalysisPreimage, ConditionOwnerError> {
+        let index = self.condition_index(target, None)?;
+        let snapshot = self
+            .companion_snapshot(target)
+            .map_err(ConditionOwnerError::Actor)?;
+        let current = self.condition_state(index);
+        if expected.is_some_and(|before| before.conditions != *current || before.target != snapshot)
+        {
+            return Err(ConditionOwnerError::StalePlan);
+        }
+        if snapshot.health <= 0
+            || snapshot.state.master.is_some()
+            || snapshot.state.policy.is_familiar
+        {
+            return Err(ConditionOwnerError::FactsMismatch);
+        }
+        let now = batch.now_us.ok_or(ConditionOwnerError::TimeMismatch)?;
+        let definition = ConditionDefinition::new(
+            "oteryn:charm.paralysis",
+            1,
+            ConditionValues::Speed {
+                paralysis: true,
+                range: SpeedRange {
+                    a_min: -1000,
+                    a_max: -1000,
+                    b_min: 0,
+                    b_max: 0,
+                },
+                duration_ms: 10_000,
+            },
+        )
+        .ok_or(ConditionOwnerError::FactsMismatch)?;
+        let definitions = [definition];
+        let base_speed = u16::try_from(snapshot.state.policy.base_speed)
+            .map_err(|_| ConditionOwnerError::FactsMismatch)?;
+        let transition = || ActorConditionTransition::ApplyBatch {
+            definitions: &definitions,
+            source: ConditionSource {
+                actor: batch.caster,
+                session: Some(batch.command.game_session_id()),
+                kind: ConditionSourceKind::Player,
+            },
+            immunities: &snapshot.state.policy.condition_immunities,
+            facts: ApplicationFacts {
+                now: now.get(),
+                base_speed,
+                mana_shield_capacity: 0,
+                target_reentry_protected: false,
+                source_reentry_protected: false,
+                target_is_player: false,
+                decision_root: root,
+                occurrence,
+            },
+        };
+        // Validate the exact live preimage even if an earlier staged major killed the target.
+        self.prepare_actor_condition(target, None, transition(), now)?;
+        let Slot::CreatureOccupied {
+            health, committed, ..
+        } = &mut next.slots[index]
+        else {
+            return Err(ConditionOwnerError::FactsMismatch);
+        };
+        if *health > 0 {
+            let plan = self.prepare_actor_condition_from_state(
+                target,
+                None,
+                transition(),
+                now,
+                &committed.conditions,
+            )?;
+            committed.conditions = ActorConditionState {
+                store: plan.next,
+                revision: committed
+                    .conditions
+                    .revision
+                    .checked_add(1)
+                    .ok_or(ConditionOwnerError::RevisionExhausted)?,
+                at: now.get(),
+                receipt: Some(plan.receipt),
+            };
+        }
+        Ok(SpellParalysisPreimage {
+            conditions: current.clone(),
+            target: snapshot,
+        })
+    }
+
     fn condition_index(
         &self,
         actor: ExactActorRef,
@@ -397,6 +563,36 @@ impl ChannelRuntimeV1 {
         if now.get() < current.at {
             return Err(ConditionOwnerError::TimeMismatch);
         }
+        if let Slot::CreatureOccupied {
+            companion: Some(companion),
+            ..
+        } = &self.carrier.slots[index]
+        {
+            if !companion.conditions.accepts_time(now.get())
+                || !current.store.accepts_time(now.get())
+            {
+                return Err(ConditionOwnerError::TimeMismatch);
+            }
+            use oteryn_gameplay_domain::domain::condition::ConflictKey;
+            let native = current.store.active_at(ConflictKey::Speed, now.get());
+            let companion_speed = companion
+                .conditions
+                .active_at(ConflictKey::Speed, now.get());
+            let delta = match (native, companion_speed) {
+                (Some(a), Some(b))
+                    if a.definition() == b.definition()
+                        && a.provenance() == b.provenance()
+                        && current.store.active_speed_delta(now.get())
+                            == companion.conditions.active_speed_delta(now.get()) =>
+                {
+                    current.store.active_speed_delta(now.get())
+                }
+                (Some(_), Some(_)) => return Err(ConditionOwnerError::FactsMismatch),
+                (Some(_), None) => current.store.active_speed_delta(now.get()),
+                (None, _) => companion.conditions.active_speed_delta(now.get()),
+            };
+            return Ok(delta.saturating_add(i64::from(companion.creation_speed_delta)));
+        }
         let discovery = match &self.carrier.slots[index] {
             Slot::Occupied { lifecycle, .. } => lifecycle.discovery_speed,
             _ => 0,
@@ -415,6 +611,8 @@ impl ChannelRuntimeV1 {
         bonus: u16,
     ) -> Result<(), ConditionOwnerError> {
         let index = self.condition_index(actor, Some(session))?;
+        self.assert_actor_spell_unreserved(actor)
+            .map_err(ConditionOwnerError::Actor)?;
         let Slot::Occupied { lifecycle, .. } = &mut self.carrier.slots[index] else {
             return Err(ConditionOwnerError::FactsMismatch);
         };
@@ -511,12 +709,29 @@ impl ChannelRuntimeV1 {
         now: SemanticTimeMicros,
     ) -> Result<ActorConditionPlan, ConditionOwnerError> {
         let index = self.condition_index(actor, session)?;
-        let current = self.condition_state(index);
+        self.prepare_actor_condition_from_state(
+            actor,
+            session,
+            transition,
+            now,
+            self.condition_state(index),
+        )
+    }
+
+    fn prepare_actor_condition_from_state(
+        &self,
+        actor: ExactActorRef,
+        session: Option<GameSessionId>,
+        transition: ActorConditionTransition<'_>,
+        now: SemanticTimeMicros,
+        current: &ActorConditionState,
+    ) -> Result<ActorConditionPlan, ConditionOwnerError> {
         let (facts, source) = match &transition {
             ActorConditionTransition::Apply { facts, source, .. }
             | ActorConditionTransition::ApplyBatch { facts, source, .. }
             | ActorConditionTransition::RemoveType { facts, source, .. } => (*facts, Some(*source)),
-            ActorConditionTransition::Cleanse(facts) => (*facts, None),
+            ActorConditionTransition::Cleanse(facts)
+            | ActorConditionTransition::CleanseSelected { facts, .. } => (*facts, None),
         };
         if facts.target_is_player != session.is_some() || (source.is_none() && session.is_none()) {
             return Err(ConditionOwnerError::FactsMismatch);
@@ -591,6 +806,15 @@ impl ChannelRuntimeV1 {
                     .prepare_cleanse(&facts)
                     .map_err(ConditionOwnerError::Condition)?
                 {
+                    next.commit_cleanse(plan);
+                }
+            }
+            ActorConditionTransition::CleanseSelected { index, .. } => {
+                if let Some(index) = index {
+                    let plan = next
+                        .prepare_cleanse_at_index(&facts, index)
+                        .map_err(ConditionOwnerError::Condition)?
+                        .ok_or(ConditionOwnerError::FactsMismatch)?;
                     next.commit_cleanse(plan);
                 }
             }
@@ -780,32 +1004,33 @@ impl ChannelRuntimeV1 {
         let index = self.condition_index(actor, None).map_err(|_| {
             oteryn_gameplay_domain::domain::carrier_values::CarrierError::StaleActorGeneration
         })?;
-        let current = self.condition_state(index);
-        if now < current.at {
-            return Err(
-                oteryn_gameplay_domain::domain::carrier_values::CarrierError::StaleAttackerSequence,
-            );
+        if let Slot::CreatureOccupied {
+            companion: Some(companion),
+            ..
+        } = &self.carrier.slots[index]
+            && !companion.conditions.accepts_time(now)
+        {
+            return Err(CarrierError::StaleAttackerSequence);
         }
-        let revision = current
-            .revision
-            .checked_add(1)
-            .ok_or(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict)?;
-        let mut store = current.store.clone();
-        store.remove_type(ConditionType::Paralysis);
-        Ok((
-            index,
-            ActorConditionState {
-                store,
-                revision,
-                at: now,
-                receipt: None,
-            },
-        ))
+        let mut next = self.condition_state(index).clone();
+        next.remove_type_at(ConditionType::Paralysis, now)?;
+        Ok((index, next))
     }
+
     fn publish_creature_condition_removal(&mut self, index: usize, next: ActorConditionState) {
         // Exact native positive-HP heal methods never retire or replace physical slots.
-        if let Slot::CreatureOccupied { committed, .. } = &mut self.carrier.slots[index] {
+        if let Slot::CreatureOccupied {
+            committed,
+            companion,
+            spell_combat,
+            ..
+        } = &mut self.carrier.slots[index]
+        {
             committed.conditions = next;
+            if let Some(companion) = companion {
+                companion.conditions.remove_type(ConditionType::Paralysis);
+            }
+            spell_combat.paralysed = false;
         } else {
             unreachable!("native positive HP heal preserves preflighted slot")
         }
@@ -1000,7 +1225,7 @@ impl ChannelRuntimeV1 {
         actor: ExactActorRef,
     ) -> Result<(bool, bool, u64), CarrierError> {
         self.owner_fence()?;
-        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        let index = self.carrier.current_slot_index(&self.continuity, actor.0)?;
         Ok(match &self.carrier.slots[index] {
             Slot::Occupied { lifecycle, .. } => (
                 lifecycle.staff_ghost,
@@ -1039,5 +1264,84 @@ impl ChannelRuntimeV1 {
             Slot::Occupied { lifecycle, .. } => Ok(lifecycle.control_revision),
             _ => Err(CarrierError::ControlLossConflict),
         }
+    }
+}
+
+// Prepared in the canonical ActorConditionState module. Caller publishes this
+// successor only in the same staged slot as the canceled lethal hit receipt.
+impl ActorConditionState {
+    pub(super) fn prepare_w01_lethal_heal(
+        &self,
+        actor: ExactActorRef,
+        content: [u8; 32],
+        binding: &[u8],
+        now_ms: u64,
+    ) -> Result<Option<Self>, CarrierError> {
+        use oteryn_gameplay_domain::domain::condition::ConflictKey;
+        use oteryn_simulation_determinism::GameplayDecisionRoot;
+        use sha2::{Digest, Sha256};
+        let now = now_ms
+            .checked_mul(1000)
+            .ok_or(CarrierError::DamageOverflow)?;
+        if now < self.at {
+            return Err(CarrierError::PlanConflict);
+        }
+        if self
+            .store
+            // Source Lua observes the stored condition until postattack housekeeping.
+            .get(ConflictKey::SpellRegeneration(88888))
+            .is_some()
+        {
+            return Ok(None);
+        }
+        let definition = ConditionDefinition::new(
+            "source.monster.prepare-death.regeneration-marker.88888",
+            1,
+            ConditionValues::SpellRegeneration {
+                duration_ms: 900_000,
+                sub_id: 88888,
+                health_gain: 0,
+                health_interval_ms: 900_000,
+                mana_gain: 0,
+                mana_interval_ms: 1000,
+            },
+        )
+        .ok_or(CarrierError::InvalidCommitBinding)?;
+        let root = GameplayDecisionRoot::from_bytes(content);
+        let digest = Sha256::new()
+            .chain_update(b"w01.prepare-death.marker.v1")
+            .chain_update(binding)
+            .finalize();
+        let mut bytes = [0; 16];
+        bytes.copy_from_slice(&digest[..16]);
+        let occurrence = DecisionOccurrenceId::from_bytes(bytes);
+        let mut successor = self.clone();
+        successor.store.expire_non_ticking(now);
+        successor
+            .store
+            .apply(
+                &definition,
+                Some(actor),
+                ConditionSourceKind::SelfUse,
+                &[],
+                &ApplicationFacts {
+                    now,
+                    base_speed: 0,
+                    mana_shield_capacity: 0,
+                    target_reentry_protected: false,
+                    source_reentry_protected: false,
+                    target_is_player: false,
+                    decision_root: &root,
+                    occurrence,
+                },
+            )
+            .map_err(|_| CarrierError::InvalidCommitBinding)?;
+        successor.revision = successor
+            .revision
+            .checked_add(1)
+            .ok_or(CarrierError::CapacityArithmeticOverflow)?;
+        successor.at = now;
+        successor.receipt = None;
+        Ok(Some(successor))
     }
 }

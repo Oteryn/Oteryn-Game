@@ -67,6 +67,10 @@ pub(super) async fn execute<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmission
 
 /// House custody uses the same command ingress and framing, with no Channel
 /// snapshot, combat cadence or Channel mutations while the House owns the slot.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the same transport carries its activity session fence into House ingress"
+)]
 pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
     stream: &mut S,
     mut admitted: AdmittedSession,
@@ -75,6 +79,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
     server_messages: &mut Option<ServerMessageConnection<'a, A>>,
     policy: LivenessPolicy,
     integrity: &mut integrity::Integrity,
+    require_session_binding: bool,
 ) -> Result<AdmittedSession, Box<ConnectionEnd>> {
     let run = async {
         let (_, projection) = authority
@@ -159,6 +164,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
             std::time::Duration::from_secs(1),
         );
         service_cadence.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+        let mut next_staff_refresh = tokio::time::Instant::now() + VISIBILITY_REFRESH;
         loop {
             let event = {
                 let mut sequence = admitted.continuity.server_sequence;
@@ -184,6 +190,16 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                     None => continue,
                 }
             };
+            // Refresh before ingress/probes, not immediately after a reply: stash and
+            // receipt readers need the same holder while we wait for the next command.
+            if !matches!(&event, house_hireling::step::Event::Services)
+                && tokio::time::Instant::now() >= next_staff_refresh
+            {
+                if !authority.staff_refresh(admitted).await {
+                    return Err(ServeEnd::Disconnected);
+                }
+                next_staff_refresh = tokio::time::Instant::now() + VISIBILITY_REFRESH;
+            }
             let inbound::Input {
                 frame,
                 arrived_while_buffered,
@@ -196,6 +212,15 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                     continue;
                 }
                 house_hireling::step::Event::Probe => {
+                    if tokio::time::timeout(
+                        crate::durability::DB_PASS_DEADLINE,
+                        authority.account_closure_check(admitted),
+                    )
+                    .await
+                    .map_err(|_| ServeEnd::Disconnected)?
+                    {
+                        return Err(ServeEnd::Disconnected);
+                    }
                     let probe = liveness
                         .tick()
                         .map_err(|_| ServeEnd::ControlLost("house_transfer"))?;
@@ -225,6 +250,11 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                     .map_err(ServeEnd::Closed)?;
                 continue;
             }
+            if !command_session_matches(&frame, admitted, require_session_binding)
+                .map_err(ServeEnd::Closed)?
+            {
+                continue;
+            }
             let command = envelope
                 .client_command(generation)
                 .map_err(ServeEnd::Closed)?;
@@ -252,13 +282,13 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 }
                 crate::gameplay_transport::session_ingress::CommandAction::Execute => {}
             }
-            let permit = if limited {
+            let mut permit = if limited {
                 None
             } else {
                 authority.enter_input(admitted.game_session_id).await
             };
-            if permit.is_some() && !authority.house_transfer_input(admitted).await {
-                return Err(ServeEnd::Disconnected);
+            if permit.is_some() && !super::command::guards(authority, admitted, command).await? {
+                drop(permit.take());
             }
             let activity_at = authority.gameplay_idle_now();
             let gameplay_activity = permit.is_some()
@@ -268,6 +298,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                     COMMAND_TYPE_HOUSE_TRANSFER
                         | oteryn_protocol_oteryn::house_wrap::COMMAND_WRAP
                         | oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT
+                        | oteryn_protocol_oteryn::item_view::COMMAND_TYPE_ITEM_MOVE_INTENT
                 )
                 && super::super::gameplay_idle::meaningful(command, selected.as_slice());
             let mut effects = None;
@@ -318,6 +349,9 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                         .await
                     {
                         route::StepAction::Wait(due) => {
+                            commands
+                                .buffer_step(command)
+                                .ok_or(ServeEnd::Disconnected)?;
                             integrity.observe(&Dispatch::Step(StepOutcome::too_early(), 0));
                             // The reserved original runs once when due. Release the input
                             // permit while the bounded queue keeps later frames in order.
@@ -335,6 +369,10 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 integrity.observe(&dispatch);
                 let (status, payload) = house_hireling::result(selected, &dispatch)?;
                 effects = Some(dispatch);
+                (None, payload, status)
+            } else if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
+                let (status, payload) =
+                    house_hireling::result(selected, &Dispatch::Step(StepOutcome::rejected(), 0))?;
                 (None, payload, status)
             } else {
                 (None, Vec::new(), CommandStatus::Rejected)
@@ -411,6 +449,12 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                     Some(oteryn_protocol_oteryn::house_wrap::Reply::Committed(_))
                 )
             {
+                services.invalidate_capacity();
+                services.inventory(stream, authority, &mut admitted).await?;
+            } else if command.command_type
+                == u32::from(oteryn_protocol_oteryn::mail::COMMAND_TYPE_MAIL)
+                && payload == [oteryn_protocol_oteryn::mail::MailOutcome::TextWritten as u8]
+            {
                 services.inventory(stream, authority, &mut admitted).await?;
             }
             if let Some(effects) = effects {
@@ -426,6 +470,10 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
     .await;
     run.map_err(|end| Box::new(end.finish(admitted)))
 }
+
+#[cfg(test)]
+#[path = "house_transfer_authority_tests.rs"]
+mod authority_tests;
 
 #[cfg(test)]
 #[path = "house_transfer_raid_tests.rs"]

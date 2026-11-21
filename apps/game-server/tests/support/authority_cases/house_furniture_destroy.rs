@@ -8,14 +8,24 @@ use serde_json::{Value, json};
 use sqlx::{Connection, PgConnection};
 use std::time::Instant;
 
-fn active_definition(item: u32) -> TestResult<TypedDefinitionRef> {
+fn item_shards() -> TestResult<Vec<Value>> {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../");
     let index: Value =
         serde_json::from_slice(&std::fs::read(root.join("content/items/index.json"))?)?;
+    index["shards"]
+        .as_array()
+        .ok_or("shards")?
+        .iter()
+        .map(|shard| {
+            Ok(serde_json::from_slice(&std::fs::read(
+                root.join(shard.as_str().ok_or("shard")?),
+            )?)?)
+        })
+        .collect()
+}
+fn active_definition(shards: &[Value], item: u32) -> TestResult<TypedDefinitionRef> {
     let key = format!("oteryn:item.tibia.i{item}");
-    for shard in index["shards"].as_array().ok_or("shards")? {
-        let doc: Value =
-            serde_json::from_slice(&std::fs::read(root.join(shard.as_str().ok_or("shard")?))?)?;
+    for doc in shards {
         for record in doc["records"].as_array().ok_or("records")? {
             let identity = &record["definition"]["identity"];
             if identity["key"].as_str() == Some(&key) {
@@ -87,6 +97,7 @@ async fn exercise(admin: String) -> TestResult {
     result
 }
 async fn exercise_case(h: &Harness, started: Instant) -> TestResult {
+    let shards = item_shards()?;
     let seal = h
         .recovery
         .seal_current()
@@ -99,7 +110,7 @@ async fn exercise_case(h: &Harness, started: Instant) -> TestResult {
     let mut items = Vec::new();
     for item_id in [3264, 4995, 2295, 2296, 4995, 100, 100, 100, 100] {
         items.push(
-            h.mint_definition(&authority, active_definition(item_id)?, 1)
+            h.mint_definition(&authority, active_definition(&shards, item_id)?, 1)
                 .await?,
         );
     }
@@ -156,10 +167,15 @@ async fn exercise_case(h: &Harness, started: Instant) -> TestResult {
     );
     let input = |target: usize, id: u32, remains: u32, duration: u32| -> TestResult<Value> {
         Ok(json!({"source":hex(&items[0]),"target":hex(&items[target]),
-                        "source_definition":definition(&active_definition(3264)?),"target_definition":definition(&active_definition(id)?),
-                        "remains":definition(&active_definition(remains)?),"decay":definition(&active_definition(id)?),
+                        "source_definition":definition(&active_definition(&shards, 3264)?),"target_definition":definition(&active_definition(&shards, id)?),
+                        "remains":definition(&active_definition(&shards, remains)?),"decay":definition(&active_definition(&shards, id)?),
                         "revision":"1","acl":"1","roll":10,"attack":0,"succeeds":true,"duration":duration}))
     };
+    // DB clock before the first destruction: every timer is armed at or after it.
+    let armed_after_ms: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint")
+            .fetch_one(&h.pool)
+            .await?;
     role(h, Some("OWNER")).await?;
     let first = input(1, 4995, 4996, 300000)?;
     let reply = call(h, 1, first.clone()).await?;
@@ -201,7 +217,11 @@ async fn exercise_case(h: &Harness, started: Instant) -> TestResult {
     for (command, field, value) in [
         (6, "revision", json!("2")),
         (7, "acl", json!("2")),
-        (8, "source_definition", definition(&active_definition(100)?)),
+        (
+            8,
+            "source_definition",
+            definition(&active_definition(&shards, 100)?),
+        ),
     ] {
         let mut stale = input(4, 4995, 4996, 300000)?;
         stale[field] = value;
@@ -241,6 +261,15 @@ async fn exercise_case(h: &Harness, started: Instant) -> TestResult {
     assert_eq!(receipts, 7);
     assert_eq!(remains, 3);
     assert_eq!(durations, vec![120000, 120000, 300000]);
+    // Each deadline is exactly the production duration after a DB-clock instant inside
+    // [armed_after_ms, now]: never early, never late.
+    let deadlines: Vec<(i64, i64, i64)> = sqlx::query_as("SELECT remaining_ms,deadline_at,floor(extract(epoch FROM clock_timestamp())*1000)::bigint FROM game_item_timed_states")
+        .fetch_all(&h.pool).await?;
+    assert_eq!(deadlines.len(), 3);
+    for (remaining_ms, deadline_at, now_ms) in deadlines {
+        assert!(deadline_at >= armed_after_ms + remaining_ms);
+        assert!(deadline_at <= now_ms + remaining_ms);
+    }
     assert_eq!(
         h.root
             .expire_house_furniture(&h.node, house_fence()?, house.clone())
@@ -248,13 +277,27 @@ async fn exercise_case(h: &Harness, started: Instant) -> TestResult {
             .map_err(crate::item_transfer_postgres_cases::debug)?,
         0
     );
-    // Wait for the actual database deadline, rather than altering immutable evidence
-    // or shortening the production duration. This exercises all three real expiries.
-    let delay:i64=sqlx::query_scalar("SELECT max(deadline_at)-floor(extract(epoch FROM clock_timestamp())*1000)::bigint FROM game_item_timed_states").fetch_one(&h.pool).await?;
-    tokio::time::sleep(std::time::Duration::from_millis(u64::try_from(
-        delay.max(0),
-    )?))
-    .await;
+    let matching_deadlines: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_timed_states t JOIN game_item_timed_state_writes w USING(item_instance_id) JOIN game_house_furniture_destroy_receipts r ON t.item_instance_id=(r.remains_item->>'item_instance_id')::uuid WHERE w.expected_revision=0 AND t.deadline_at=w.deadline_after AND t.deadline_at=(r.timed_write->>'deadline_after')::bigint")
+        .fetch_one(&h.pool).await?;
+    assert_eq!(matching_deadlines, 3);
+    // Shift all deadlines equally against the DB clock to exercise the real expiry
+    // path without waiting or changing production durations. Commit restores guards.
+    let mut seed = connection.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *seed)
+        .await?;
+    let shifted = sqlx::query("UPDATE game_item_timed_states SET deadline_at=deadline_at-shift.millis FROM (SELECT max(deadline_at)-floor(extract(epoch FROM clock_timestamp())*1000)::bigint+1 AS millis FROM game_item_timed_states) shift")
+        .execute(&mut *seed).await?;
+    assert_eq!(shifted.rows_affected(), 3);
+    // Keep the fixture's recorded deadlines consistent: the expiry guards compare
+    // the new write's deadline_before with the destruction receipt's deadline_after.
+    let shifted = sqlx::query("UPDATE game_item_timed_state_writes w SET deadline_after=t.deadline_at FROM game_item_timed_states t WHERE w.item_instance_id=t.item_instance_id AND w.expected_revision=0")
+        .execute(&mut *seed).await?;
+    assert_eq!(shifted.rows_affected(), 3);
+    let shifted = sqlx::query("UPDATE game_house_furniture_destroy_receipts r SET timed_write=jsonb_set(r.timed_write,'{deadline_after}',to_jsonb(t.deadline_at)) FROM game_item_timed_states t WHERE t.item_instance_id=(r.remains_item->>'item_instance_id')::uuid")
+        .execute(&mut *seed).await?;
+    assert_eq!(shifted.rows_affected(), 3);
+    seed.commit().await?;
     assert_eq!(
         h.root
             .expire_house_furniture(&h.node, house_fence()?, house.clone())
@@ -271,7 +314,6 @@ async fn exercise_case(h: &Harness, started: Instant) -> TestResult {
             .map_err(crate::item_transfer_postgres_cases::debug)?,
         0
     );
-    assert!(started.elapsed().as_millis() >= 300000);
     println!("WDESTR_EXPIRY transformed={expired} repeated_expiry=0");
     println!(
         "WDESTR_POSTGRES receipts={receipts} remains={remains} moved_children=2 distinct_placements=3 provenance=3 timers={durations:?} elapsed_ms={}",

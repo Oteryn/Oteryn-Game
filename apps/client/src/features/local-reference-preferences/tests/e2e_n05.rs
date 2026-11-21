@@ -52,9 +52,8 @@ fn holds(path: &std::path::Path, preferences: &ReferencePreferences, picked: &Va
 
 #[test]
 fn e2e_n05_settings_export_import_backup_defaults_and_corrupt_file() -> Result<(), Error> {
-    let root = std::env::temp_dir().join(format!("oteryn-n05-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    std::fs::create_dir_all(&root)?;
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let root = fixture.path().to_path_buf();
     let (active, export, fresh) = (
         root.join("settings.json"),
         root.join("export.json"),
@@ -116,6 +115,5 @@ fn e2e_n05_settings_export_import_backup_defaults_and_corrupt_file() -> Result<(
         assert_eq!(std::fs::read(&fresh)?, stored, "{name} rewrote the store");
         assert_eq!(std::fs::read(&backup)?, stored_backup, "{name} rewrote the backup");
     }
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }

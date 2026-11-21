@@ -12,7 +12,7 @@ use super::item_timed_state::{
 };
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
-use crate::foundation::GameSessionId;
+use crate::foundation::{GameSessionId, RuntimeScopeRefV1};
 use oteryn_protocol_oteryn::timed_item::{
     TimedDisposition, TimedItemResult, decode_timed_item_result, encode_timed_item_result,
 };
@@ -74,10 +74,12 @@ pub async fn consume_field_protection_in_transaction(
     tx: &mut super::item_mint_audit::Type2Transaction<'_>,
     read: &super::spell_item_transaction::StandingTileRead,
     character_revision: u64,
-    cycle: [u8;32],
+    cycle: [u8; 32],
     request: &TimedRequest,
 ) -> Result<TimedItemResult> {
-    read.check_transaction(tx).await.map_err(|_| TimedWriteError::AuthorityRejected)?;
+    read.check_transaction(tx)
+        .await
+        .map_err(|_| TimedWriteError::AuthorityRejected)?;
     let item = read.fence();
     let fence = CurrentCharacterGameplayFence {
         character_id: item.character_id,
@@ -91,17 +93,23 @@ pub async fn consume_field_protection_in_transaction(
     };
     let equipped: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_equipment_slots WHERE character_id=encode($1,'hex')::uuid AND item_instance_id=encode($2,'hex')::uuid)")
         .bind(item.character_id.as_bytes().as_slice()).bind(request.item.as_slice()).fetch_one(&mut ***tx).await?;
-    if !equipped || request.content_digest != read.content_digest()
-        || !matches!(request.operation, TimedOperation::Use { elapsed_ms: 0 }) {
+    if !equipped
+        || request.content_digest != read.content_digest()
+        || !matches!(request.operation, TimedOperation::Use { elapsed_ms: 0 })
+    {
         return Err(TimedWriteError::AuthorityRejected);
     }
     sqlx::query("INSERT INTO game_player_field_charge_writes(cycle,item_instance_id,expected_revision,victim,game_session_id) VALUES($1,encode($2,'hex')::uuid,$3::text::numeric,encode($4,'hex')::uuid,encode($5,'hex')::uuid)")
         .bind(cycle.as_slice()).bind(request.item.as_slice()).bind(request.expected_revision.to_string()).bind(item.character_id.as_bytes().as_slice()).bind(item.game_session_id.as_bytes().as_slice()).execute(&mut ***tx).await?;
     // Check each complete one-item shape before the next pulse. The cycle/proof
     // foreign keys remain deferred until the final HP successor is receipted.
-    sqlx::query("SET CONSTRAINTS game_item_timed_state_write_consistent DEFERRED").execute(&mut ***tx).await?;
-    let result = apply(tx, &fence, request).await?;
-    sqlx::query("SET CONSTRAINTS game_item_timed_state_write_consistent IMMEDIATE").execute(&mut ***tx).await?;
+    sqlx::query("SET CONSTRAINTS game_item_timed_state_write_consistent DEFERRED")
+        .execute(&mut ***tx)
+        .await?;
+    let result = apply(tx, &fence, request, None).await?;
+    sqlx::query("SET CONSTRAINTS game_item_timed_state_write_consistent IMMEDIATE")
+        .execute(&mut ***tx)
+        .await?;
     Ok(result)
 }
 
@@ -114,6 +122,18 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         item: [u8; 16],
     ) -> Result<Option<timed::StoredTimedState>> {
+        self.read_timed_row_in_scope(authority, node, fence, item, None)
+            .await
+    }
+
+    pub async fn read_timed_row_in_scope(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        item: [u8; 16],
+        house_origin: Option<[u8; 16]>,
+    ) -> Result<Option<timed::StoredTimedState>> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| TimedWriteError::AuthorityRejected)?;
@@ -124,10 +144,7 @@ impl DurabilityRoot {
                     let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
-                    if assert_gameplay_fence(&mut tx, &fence, &node)
-                        .await?
-                        .is_err()
-                    {
+                    if !assert_timed_fence(&mut tx, &fence, &node, house_origin).await? {
                         return Ok(Err(TimedWriteError::AuthorityRejected));
                     }
                     let state = timed::load_timed_state(&mut tx, &item)
@@ -177,6 +194,24 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         request: TimedRequest,
     ) -> Result<TimedItemResult> {
+        self.commit_timed_action_in_scope(authority, node, fence, request, None)
+            .await
+    }
+
+    /// Private scopes admit only server-owned elapsed equipment time.
+    pub async fn commit_timed_action_in_scope(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: TimedRequest,
+        house_origin: Option<[u8; 16]>,
+    ) -> Result<TimedItemResult> {
+        if (house_origin.is_some() || matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. }))
+            && !matches!(request.operation, TimedOperation::Advance(_))
+        {
+            return Err(TimedWriteError::InvalidInput);
+        }
         if check_uuid_v7(&request.transaction_id).is_err()
             || check_uuid_v7(&request.event_id).is_err()
             || check_uuid_v7(&request.item).is_err()
@@ -200,12 +235,38 @@ impl DurabilityRoot {
                 Err(TimedWriteError::Unavailable(error)) => return Err(error),
                 Err(error) => return Ok(Err(error)),
             }
-            if assert_gameplay_fence(&mut tx, &fence, &node).await?.is_err() { return Ok(Err(TimedWriteError::AuthorityRejected)); }
-            let item_fence = fence.item_fence();
-            if super::character_equipment::assert_current_equipment_in_transaction(&mut tx,&recovery,&node,&item_fence,None,request.content_digest).await.is_err() {
+            if !assert_timed_fence(&mut tx, &fence, &node, house_origin).await? {
                 return Ok(Err(TimedWriteError::AuthorityRejected));
             }
-            let result = match apply(&mut tx, &fence, &request).await {
+            let item_fence = fence.item_fence();
+            let origin_channel = match (house_origin, fence.runtime_scope) {
+                (Some(origin), _) => {
+                    if super::character_equipment::assert_house_equipment_content(
+                        &mut tx, &node, &item_fence, origin, request.content_digest,
+                        super::character_equipment::HouseEquipmentAccess::Clock,
+                    ).await.is_err() {
+                        return Ok(Err(TimedWriteError::AuthorityRejected));
+                    }
+                    Some(origin)
+                }
+                (None, RuntimeScopeRefV1::Instance { .. }) => {
+                    let Ok(origin) = super::character_equipment::activity_clock_origin_in_transaction(
+                        &mut tx, &recovery, &node, &item_fence, request.content_digest,
+                    ).await else {
+                        return Ok(Err(TimedWriteError::AuthorityRejected));
+                    };
+                    Some(origin)
+                }
+                (None, RuntimeScopeRefV1::Channel { .. }) => {
+                    if super::character_equipment::assert_current_equipment_in_transaction(
+                        &mut tx, &recovery, &node, &item_fence, None, request.content_digest,
+                    ).await.is_err() {
+                        return Ok(Err(TimedWriteError::AuthorityRejected));
+                    }
+                    None
+                }
+            };
+            let result = match apply(&mut tx, &fence, &request, origin_channel).await {
                 Ok(result) => result,
                 Err(TimedWriteError::Unavailable(error)) => return Err(error),
                 Err(error) => return Ok(Err(error)),
@@ -217,6 +278,35 @@ impl DurabilityRoot {
             Ok(Ok(result))
         })).await?
     }
+}
+
+async fn assert_timed_fence(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: &CurrentCharacterGameplayFence,
+    node: &NodeIncarnationProof,
+    house_origin: Option<[u8; 16]>,
+) -> std::result::Result<bool, DurabilityError> {
+    if let Some(origin) = house_origin {
+        if super::house_hireling::fence::assert_house_custody_fence(
+            tx,
+            node,
+            &fence.item_fence(),
+            origin,
+        )
+        .await?
+        .is_none()
+        {
+            return Ok(false);
+        }
+        let revision: String = sqlx::query_scalar(
+            "SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+        ).bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        return Ok(revision
+            .parse::<u64>()
+            .map_err(|_| DurabilityError::InvalidStoredState)?
+            == fence.expected_character_revision.get());
+    }
+    Ok(assert_gameplay_fence(tx, fence, node).await?.is_ok())
 }
 
 fn as_storage(error: TimedWriteError) -> DurabilityError {

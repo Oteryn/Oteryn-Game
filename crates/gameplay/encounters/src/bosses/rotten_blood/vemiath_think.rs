@@ -59,23 +59,15 @@ impl VemiathThinkOwner {
             effects.push(VemiathEffect::StartTeleportCycle);
         }
 
-        if !facts.mechanics_disabled && !facts.bloodjaw_spawn_paused {
-            for _ in 0..facts.bloodjaw_target.saturating_sub(facts.nearby_bloodjaws) {
-                effects.push(VemiathEffect::Spawn {
-                    creature_key: ELDER_BLOODJAW_KEY,
-                    around: facts.boss,
-                    offset_tiles: SUMMON_OFFSET_TILES,
-                });
-            }
-        }
-
-        for _ in 0..PILLAR_FLOOR.saturating_sub(facts.nearby_pillars) {
-            effects.push(VemiathEffect::Spawn {
-                creature_key: PILLAR_KEY,
-                around: facts.boss,
-                offset_tiles: SUMMON_OFFSET_TILES,
-            });
-        }
+        effects.extend(
+            population(facts)
+                .into_iter()
+                .map(|spawn| VemiathEffect::Spawn {
+                    creature_key: spawn.creature_key,
+                    around: spawn.around,
+                    offset_tiles: spawn.offset_tiles,
+                }),
+        );
 
         if !facts.mechanics_disabled {
             effects.push(VemiathEffect::RunAgonyCheck);
@@ -83,6 +75,37 @@ impl VemiathThinkOwner {
 
         effects
     }
+}
+
+/// Population-only source phase; teleport and agony remain with the full controller.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct VemiathPopulationSpawn {
+    pub creature_key: &'static str,
+    pub around: RoomPosition,
+    pub offset_tiles: u8,
+}
+
+pub fn population(facts: &VemiathThinkFacts) -> Vec<VemiathPopulationSpawn> {
+    let mut effects = Vec::new();
+    if !facts.mechanics_disabled && !facts.bloodjaw_spawn_paused {
+        for _ in 0..facts.bloodjaw_target.saturating_sub(facts.nearby_bloodjaws) {
+            effects.push(VemiathPopulationSpawn {
+                creature_key: ELDER_BLOODJAW_KEY,
+                around: facts.boss,
+                offset_tiles: SUMMON_OFFSET_TILES,
+            });
+        }
+    }
+
+    for _ in 0..PILLAR_FLOOR.saturating_sub(facts.nearby_pillars) {
+        effects.push(VemiathPopulationSpawn {
+            creature_key: PILLAR_KEY,
+            around: facts.boss,
+            offset_tiles: SUMMON_OFFSET_TILES,
+        });
+    }
+
+    effects
 }
 
 #[cfg(test)]

@@ -4,7 +4,8 @@ impl PlayView {
     pub fn selected_npc(&self) -> Option<EntityRef> {
         self.npc_at(self.scene.target()?.tile)
     }
-    pub(in crate::play) fn npc_at(&self, tile: oteryn_renderer::TileCoord) -> Option<EntityRef> {
+    /// The NPC standing on the tile of the current floor.
+    pub fn npc_at(&self, tile: oteryn_renderer::TileCoord) -> Option<EntityRef> {
         self.entities
             .iter()
             .rev()
@@ -22,19 +23,43 @@ impl PlayView {
 }
 impl PlayLink {
     pub fn talk_to_npc(&self, npc: EntityRef, text: &str) {
+        self.npc_dialogue_submit(npc, text);
+    }
+    /// Returns whether the retained NPC owner enqueued this exact talk request.
+    pub fn npc_dialogue_submit(&self, npc: EntityRef, text: &str) -> bool {
+        self.npc_dialogue_enqueue(npc, text, None)
+    }
+    /// A displayed reply must still address the same actor and server conversation atomically.
+    pub fn npc_dialogue_reply(&self, npc: EntityRef, lines: &[String], text: &str) -> bool {
+        self.npc_dialogue_enqueue(npc, text, Some(lines))
+    }
+    fn npc_dialogue_enqueue(&self, npc: EntityRef, text: &str, context: Option<&[String]>) -> bool {
         let mut mailbox = lock(&self.mailbox);
-        if let Some(intent) =
+        if context.is_some_and(|lines| {
+            mailbox.npc_dialog_dismissed
+                || !mailbox.dialogue.open
+                || mailbox.dialogue.target != Some(npc)
+                || mailbox.dialogue.lines.as_slice() != lines
+        }) {
+            return false;
+        }
+        let Some(intent) =
             oteryn_client_ui::npc_dialogue::request(&mut mailbox.dialogue, npc, text)
-            && self
-                .commands
-                .send(crate::combat_input::PlayCommand::NpcTalk(intent))
-                .is_err()
+        else {
+            return false;
+        };
+        if self
+            .commands
+            .send(crate::combat_input::PlayCommand::NpcTalk(intent))
+            .is_err()
         {
             mailbox.dialogue = Default::default();
+            return false;
         }
-        drop(mailbox);
-        #[cfg(windows)]
-        super::view::open_window(self);
+        if context.is_none() {
+            mailbox.npc_dialog_dismissed = false;
+        }
+        true
     }
     pub fn npc_dialogue_input(
         &self,
@@ -51,7 +76,7 @@ impl PlayLink {
     }
 }
 
-#[cfg(any(windows, test))]
+#[cfg(test)]
 impl PlayLink {
     pub(in crate::play) fn npc_context_target(
         &self,
@@ -85,7 +110,7 @@ impl PlayLink {
             ) {
                 let pointer = lock(&self.mailbox).dialogue_pointer;
                 if let Some((x, y)) = pointer
-                    && let Some(tile) = crate::input::click_tile(view.scene().view(), x, y)
+                    && let Some(tile) = view.click_tile(x, y)
                     && let Some(npc) = view.npc_at(tile)
                 {
                     target = Some(npc);
@@ -93,20 +118,5 @@ impl PlayLink {
             }
         }
         target
-    }
-}
-
-#[cfg(windows)]
-impl PlayLink {
-    pub fn npc_context_input(
-        &self,
-        events: &[oteryn_input_actions::NormalizedInputEvent],
-        view: &PlayView,
-    ) -> bool {
-        let Some(npc) = self.npc_context_target(events, view) else {
-            return false;
-        };
-        super::view::context_menu(self, npc);
-        true
     }
 }

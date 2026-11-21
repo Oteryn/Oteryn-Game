@@ -679,6 +679,14 @@ pub trait PublicSink: Send + Sync {
         operation: Operation,
         body: &str,
     ) -> impl Future<Output = Result<Delivery, NotDelivered>> + Send;
+    /// Retry metadata is independent of acknowledgement. Existing sinks keep their semantics.
+    fn send_with_retry(
+        &self,
+        operation: Operation,
+        body: &str,
+    ) -> impl Future<Output = (Result<Delivery, NotDelivered>, Option<Duration>)> + Send {
+        async move { (self.send(operation, body).await, None) }
+    }
 }
 
 /// The production sink: each exchange on its own connection and capacity;
@@ -688,45 +696,87 @@ pub trait PublicSink: Send + Sync {
 /// reusing connections (contract §11).
 pub struct MtlsPublicSink {
     descriptor: PublicProjectionDescriptor,
+    activation: v2::Activation,
 }
 
 impl MtlsPublicSink {
     #[must_use]
     pub const fn new(descriptor: PublicProjectionDescriptor) -> Self {
-        Self { descriptor }
+        Self {
+            descriptor,
+            activation: v2::Activation {
+                character_skills: false,
+                character_achievements: false,
+                character_equipment: false,
+                character_outfit: false,
+                character_online_sessions: false,
+                world_daily_kills: false,
+            },
+        }
     }
 }
 
+impl MtlsPublicSink {
+    #[must_use]
+    pub const fn with_v2_activation(mut self, activation: v2::Activation) -> Self {
+        self.activation = activation;
+        self
+    }
+}
 impl PublicSink for MtlsPublicSink {
     async fn send(&self, operation: Operation, body: &str) -> Result<Delivery, NotDelivered> {
-        let capacity = TransientCapacity::new();
-        let mut permit = capacity
-            .try_queue()
-            .map_err(|_| NotDelivered::Unavailable)?;
-        permit
-            .try_activate()
-            .map_err(|_| NotDelivered::Unavailable)?;
-        let (status, raw) =
-            http1_mtls::exchange_with_status(&self.descriptor.0, operation, body, &mut permit)
-                .await
-                .map_err(|_| NotDelivered::Unavailable)?;
-        if status == 200 {
-            return if matches!(
-                operation,
-                Operation::PublishCharacterDeathsV2
-                    | Operation::PublishGuildV2
-                    | Operation::PublishHouseV2
-                    | Operation::PublishCharacterOnlineSessionV2
-                    | Operation::PublishWorldDailyKillsV2
-                    | Operation::PublishPublicProjectionWatermarkV2
-            ) {
-                v2::decode_response(&raw)
-            } else {
-                decode_response(&raw)
+        self.send_with_retry(operation, body).await.0
+    }
+    async fn send_with_retry(
+        &self,
+        operation: Operation,
+        body: &str,
+    ) -> (Result<Delivery, NotDelivered>, Option<Duration>) {
+        let mut retry_after = None;
+        let result = async {
+            if !v2::publication_supported(operation, body, self.activation) {
+                return Err(NotDelivered::Unavailable);
             }
-            .map_err(|_| NotDelivered::InvalidResponse);
+            let capacity = TransientCapacity::new();
+            let mut permit = capacity
+                .try_queue()
+                .map_err(|_| NotDelivered::Unavailable)?;
+            permit
+                .try_activate()
+                .map_err(|_| NotDelivered::Unavailable)?;
+            let (status, raw, delay) = http1_mtls::exchange_public_projection(
+                &self.descriptor.0,
+                operation,
+                body,
+                &mut permit,
+            )
+            .await
+            .map_err(|_| NotDelivered::Unavailable)?;
+            retry_after = delay;
+            if status == 200 {
+                return if matches!(
+                    operation,
+                    Operation::PublishCharacterDeathsV2
+                        | Operation::PublishGuildV2
+                        | Operation::PublishCharacterSkillsV2
+                        | Operation::PublishCharacterAchievementsV2
+                        | Operation::PublishCharacterEquipmentV2
+                        | Operation::PublishCharacterOutfitV2
+                        | Operation::PublishHouseV2
+                        | Operation::PublishCharacterOnlineSessionV2
+                        | Operation::PublishWorldDailyKillsV2
+                        | Operation::PublishPublicProjectionWatermarkV2
+                ) {
+                    v2::decode_response(&raw)
+                } else {
+                    decode_response(&raw)
+                }
+                .map_err(|_| NotDelivered::InvalidResponse);
+            }
+            Err(refusal(status, &raw))
         }
-        Err(refusal(status, &raw))
+        .await;
+        (result, retry_after)
     }
 }
 
@@ -790,6 +840,11 @@ pub struct OnlineCut {
 /// The Game side of the public projections (§5). Every call is one database
 /// transaction; an `Err` is "not now".
 pub trait PublicStore: Send + Sync {
+    /// Initialize only an enabled family's Game-owned source interpretation.
+    fn prepare_v2(&self, _family: v2::Family) -> impl Future<Output = Result<(), ()>> + Send {
+        async { Ok(()) }
+    }
+
     fn next_v2(
         &self,
         _family: v2::Family,
@@ -1089,8 +1144,8 @@ pub struct Publisher<C, S, K, F> {
     pub last_online_watermark: Mutex<Option<(u64, i64)>>,
     /// The `world_online` watermark's §6 state.
     online_watermark_gate: Mutex<Gate>,
-    /// When the last store pass ended (`STORE_PASS_GAP`).
-    last_pass: Mutex<Option<Duration>>,
+    /// Serializes admission through completion, retaining the last pass end.
+    last_pass: tokio::sync::Mutex<Option<Duration>>,
 }
 
 fn log(family: Family, operation: &str, class: &str, elapsed: Duration) {
@@ -1166,7 +1221,7 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
             last_cut: Mutex::new(None),
             last_online_watermark: Mutex::new(None),
             online_watermark_gate: Mutex::new(Gate::default()),
-            last_pass: Mutex::new(None),
+            last_pass: tokio::sync::Mutex::new(None),
         }
     }
 
@@ -1194,9 +1249,9 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
         &self,
         call: impl FnOnce() -> R,
     ) -> Result<T, ()> {
-        let last = self.last_pass.lock().ok().and_then(|last| *last);
-        if let Some(last) = last {
-            let wait = (last + STORE_PASS_GAP).saturating_sub(self.clock.elapsed());
+        let mut last = self.last_pass.lock().await;
+        if let Some(ended) = *last {
+            let wait = (ended + STORE_PASS_GAP).saturating_sub(self.clock.elapsed());
             if !wait.is_zero() {
                 self.clock.sleep(wait).await;
             }
@@ -1206,9 +1261,7 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
         } else {
             call().await
         };
-        if let Ok(mut last) = self.last_pass.lock() {
-            *last = Some(self.clock.elapsed());
-        }
+        *last = Some(self.clock.elapsed());
         result
     }
 
@@ -1337,6 +1390,24 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
         within(&self.clock, budget, self.sink.send(operation, body))
             .await
             .unwrap_or(Err(NotDelivered::Unavailable))
+    }
+
+    async fn deliver_with_retry(
+        &self,
+        operation: Operation,
+        body: &str,
+        budget: Duration,
+    ) -> (Result<Delivery, NotDelivered>, Option<Duration>) {
+        if budget.is_zero() {
+            return (Err(NotDelivered::Unavailable), None);
+        }
+        within(
+            &self.clock,
+            budget.min(EXCHANGE_BOUND),
+            self.sink.send_with_retry(operation, body),
+        )
+        .await
+        .unwrap_or((Err(NotDelivered::Unavailable), None))
     }
 
     /// The `character_profile` and `highscores` watermarks, sent concurrently

@@ -196,24 +196,19 @@ pub(super) async fn prepare(
         _ => return Err(SpellCastDisposition::TargetRequired),
     };
     // PKG1R2: Destroy Field reaches the caster's visible screen, with LOS below.
-    // Runtime floors are the negation of the map wire's native floors.
     if profile.spell()["execution"]["native_behavior"]["parameters"]["operation"] == "remove_field"
         && (origin.floor != target.floor
             || !oteryn_protocol_oteryn::world_map::in_window(
                 oteryn_protocol_oteryn::world_spatial::ActorPosition {
                     x: origin.x,
                     y: origin.y,
-                    floor: origin
-                        .floor
-                        .checked_neg()
+                    floor: crate::movement::interest::tibia_floor(origin.floor)
                         .ok_or(SpellCastDisposition::TargetIllegal)?,
                 },
                 oteryn_protocol_oteryn::world_spatial::ActorPosition {
                     x: target.x,
                     y: target.y,
-                    floor: target
-                        .floor
-                        .checked_neg()
+                    floor: crate::movement::interest::tibia_floor(target.floor)
                         .ok_or(SpellCastDisposition::TargetIllegal)?,
                 },
             ))
@@ -502,6 +497,8 @@ pub(super) async fn prepare(
         .map_err(|_| SpellCastDisposition::Rejected)?;
     let players = vec![(b.actor, b.session, before.clone())];
     Ok(PreparedNativeCombatCast {
+        outgoing_charms: None,
+        leech_inputs: Vec::new(),
         item_spell_leech: (0, 0),
         direct_companion: None,
         corpse_companion: None,
@@ -849,6 +846,8 @@ async fn prepare_barrier(
         .map_err(|_| SpellCastDisposition::Rejected)?;
     let players = vec![(b.actor, b.session, before.clone())];
     Ok(PreparedNativeCombatCast {
+        outgoing_charms: None,
+        leech_inputs: Vec::new(),
         item_spell_leech: (0, 0),
         direct_companion: None,
         corpse_companion: None,
@@ -1136,6 +1135,8 @@ async fn prepare_carried(
         .map_err(|_| SpellCastDisposition::Rejected)?;
     let players = vec![(b.actor, b.session, before.clone())];
     Ok(PreparedNativeCombatCast {
+        outgoing_charms: None,
+        leech_inputs: Vec::new(),
         item_spell_leech: (0, 0),
         direct_companion: None,
         corpse_companion: None,

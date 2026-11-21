@@ -47,10 +47,16 @@ pub struct Reentry {
     waiting: Option<(AdmissionWait, QueueWait)>,
     last_wait_text: Option<String>,
     pending: Option<Receiver<Result<AdmittedSession, GameplayEntryError>>>,
+    revocations: Vec<device::Revocation>,
     training_completion: Option<Box<dyn Fn() -> bool + Send>>,
 }
 
 impl Reentry {
+    /// Whether native admission is pending, including a queued training character.
+    pub fn is_entering(&self) -> bool {
+        self.state == EntryState::Entering
+    }
+
     pub fn take_bulletin(&mut self) -> Option<String> {
         self.bulletin.take()
     }
@@ -65,6 +71,7 @@ impl Reentry {
             last_wait_text: None,
             pending: None,
             training_completion: None,
+            revocations: Vec::new(),
         }
     }
 
@@ -78,20 +85,48 @@ impl Reentry {
             && previous.oauth_client_id == config.oauth_client_id
         {
             config.device_sessions = previous.device_sessions.clone();
+        } else if let Some(previous) = self
+            .revocations
+            .iter()
+            .find(|previous| previous.matches(&config))
+        {
+            previous.reuse_device(&mut config);
         }
         self.client.native_login = Some(config);
         true
     }
 
+    #[cfg(bevy_shell)]
+    pub(crate) fn set_session_options(&mut self, options: crate::play::MiscellaneousPreferences) {
+        if let Some(config) = &mut self.client.native_login {
+            config.session_options = Some(options);
+        }
+    }
+
     /// Starts a user-requested attempt without blocking the window. Existing native entry
     /// owns bounded admission retries; there is no automatic outer retry loop.
     pub fn request(&mut self) -> bool {
+        self.request_entry(false)
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn request_picker(&mut self) -> bool {
+        self.request_entry(true)
+    }
+
+    fn request_entry(&mut self, require_character_picker: bool) -> bool {
         if !self.state.begin() {
             return false;
         }
         let (sender, receiver) = mpsc::channel();
         self.pending = Some(receiver);
-        let config = self.client.native_login.clone();
+        let mut config = self.client.native_login.clone();
+        if let Some(config) = &mut config {
+            config.require_character_picker = require_character_picker;
+            if require_character_picker {
+                config.training_queue.clear();
+            }
+        }
         let cancellation = self.client.runtime.cancellation();
         let attempt_cancellation = CancellationToken::new();
         self.attempt_cancellation = Some(attempt_cancellation.clone());
@@ -100,8 +135,12 @@ impl Reentry {
         self.waiting = None;
         self.last_wait_text = None;
         // Dropping the sender on a stopped runtime is handled as a public refusal by poll.
+        let revocation = self.revocation_for_entry();
         let _task = self.client.runtime.spawn(async move {
             let work = async {
+                if let Some(mut revocation) = revocation {
+                    let _ = revocation.wait_for(Option::is_some).await;
+                }
                 match config {
                     Some(config) => {
                         crate::native_entry::enter_observed(
@@ -128,6 +167,20 @@ impl Reentry {
             let _ = sender.send(result);
         });
         true
+    }
+
+    /// chsw (capability 512): the fresh admission of a Channel switch, into `channel_id` of the
+    /// same World for `character_id`, without the character picker.
+    pub fn request_switch(&mut self, character_id: String, channel_id: String) -> bool {
+        let Some(config) = self.client.native_login.as_mut() else {
+            return false;
+        };
+        config.channel_switch = Some((character_id, channel_id));
+        let started = self.request();
+        if let Some(config) = self.client.native_login.as_mut() {
+            config.channel_switch = None;
+        }
+        started
     }
 
     /// Emits only changed countdown text, so a slow form cannot accumulate frame-rate updates.
@@ -180,8 +233,14 @@ impl Reentry {
             )),
         };
         // Cancel and poll are serialized by the UI owner. A completed worker may have
-        // queued its result just before cancellation; it must not start play afterward.
-        let result = if self
+        // queued its result just before cancellation. Keep gate refusals and discard
+        // any result that could start play or allow another sign-in immediately.
+        let result = if !matches!(
+            &result,
+            Err(GameplayEntryError::ClientUpdateRequired { .. }
+                | GameplayEntryError::Maintenance { .. }
+                | GameplayEntryError::Rejected(PublicClass::ClientUpdateRequired))
+        ) && self
             .attempt_cancellation
             .as_ref()
             .is_some_and(CancellationToken::is_cancelled)
@@ -366,7 +425,7 @@ mod tests {
         assert!(entry.cancel_entry());
         let result = entry.poll().ok_or("queued result missing")?;
         assert_eq!(
-            result.as_ref().err().copied(),
+            result.as_ref().err().cloned(),
             Some(GameplayEntryError::Rejected(
                 PublicClass::SessionUnavailable
             ))
@@ -379,3 +438,30 @@ mod tests {
 #[cfg(test)]
 #[path = "features/0054-training/tests/reentry.rs"]
 mod training_batch_tests;
+
+#[cfg(test)]
+#[test]
+fn cancellation_preserves_queued_build_gate_refusals() -> Result<(), Box<dyn std::error::Error>> {
+    for refusal in [
+        GameplayEntryError::Maintenance {
+            retry_at: Instant::now() + std::time::Duration::from_secs(120),
+        },
+        GameplayEntryError::ClientUpdateRequired {
+            manual_download_url: "https://oteryn.com/download".into(),
+            updater_started: true,
+        },
+        GameplayEntryError::Rejected(PublicClass::ClientUpdateRequired),
+    ] {
+        let mut entry = Reentry::new(ClientBootstrap::new()?);
+        entry.state = EntryState::Entering;
+        entry.attempt_cancellation = Some(CancellationToken::new());
+        let (sender, receiver) = mpsc::channel();
+        entry.pending = Some(receiver);
+        assert!(sender.send(Err(refusal.clone())).is_ok());
+        assert!(entry.cancel_entry());
+        let result = entry.poll().ok_or("queued result missing")?;
+        entry.shutdown();
+        assert_eq!(result.err(), Some(refusal));
+    }
+    Ok(())
+}

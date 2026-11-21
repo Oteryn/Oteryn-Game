@@ -1,0 +1,136 @@
+{
+  "schema": 1,
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/qnpcfx/koshei/amulet",
+      "quest": "oteryn:quest.koshei_the_deathless_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_sweaty_cyclops.lua:283-338:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/qnpcfx/koshei/amulet_started_at",
+      "quest": "oteryn:quest.koshei_the_deathless_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_sweaty_cyclops.lua:283-338:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
+      ]
+    }
+  ],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/qnpcfx-koshei-start",
+      "quest": "oteryn:quest.koshei_the_deathless_quest",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 12,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qnpcfx/koshei/amulet",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/qnpcfx/koshei/amulet_started_at",
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 0
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7528",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i7529",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i7530",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i7531",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Well, well. I do that! Big Ben makes li'l amulet unbroken with big hammer in big hands! No worry! Come back after sun hits the horizon 24 times and ask me for amulet."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_sweaty_cyclops.lua:283-338:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
+      ],
+      "fee": {
+        "gold": 5000,
+        "include_bank": true
+      }
+    },
+    {
+      "key": "oteryn:quest-reward/qnpcfx-koshei-collect",
+      "quest": "oteryn:quest.koshei_the_deathless_quest",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "amulet"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qnpcfx/koshei/amulet",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/qnpcfx/koshei/amulet_started_at",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 86400
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i7532",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ahh, li'l one wants amulet. Here! Have it! Mighty, mighty amulet li'l one has. Don't know what but mighty, mighty it is!!!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_sweaty_cyclops.lua:283-338:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
+      ]
+    }
+  ]
+}

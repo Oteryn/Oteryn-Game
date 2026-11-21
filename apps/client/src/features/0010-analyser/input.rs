@@ -2,22 +2,58 @@ use crate::combat_input::PlayCommand;
 use crate::play::PlayLink;
 use crate::play::mailbox::{Mailbox, lock};
 use oteryn_input_actions::NormalizedInputEvent;
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(in crate::play) fn select_tool(panel: &mut oteryn_client_ui::analyser::Panel, index: usize) {
     if let Some(tool) = oteryn_client_ui::analyser::Tool::CYCLOPEDIA.get(index) {
         panel.tool = *tool;
     } else if index == oteryn_client_ui::analyser::Tool::CYCLOPEDIA.len() {
-        oteryn_client_ui::analyser::protocol::reset(panel);
+        let tool = panel.tool;
+        panel.tool = oteryn_client_ui::analyser::Tool::Session;
+        oteryn_client_ui::analyser::protocol::reset_tool(panel);
+        panel.tool = tool;
     }
 }
 
 use tokio::sync::mpsc::UnboundedSender;
-#[cfg(any(windows, test))]
+#[cfg(test)]
 #[path = "input/bosses.rs"]
 mod bosses;
 #[path = "input/party_import.rs"]
 mod party_import;
 impl PlayLink {
+    pub fn analyser_close(&self) {
+        let mut mailbox = lock(&self.mailbox);
+        let tool = mailbox.analyser.tool;
+        mailbox.analyser.open_tools.retain(|open| *open != tool);
+        mailbox.analyser.open = !mailbox.analyser.open_tools.is_empty();
+    }
+    pub fn analyser_reset(&self) {
+        let panel = &mut lock(&self.mailbox).analyser;
+        if panel.selected && panel.open {
+            oteryn_client_ui::analyser::protocol::reset_tool(panel);
+        }
+    }
+
+    /// Local tracker preferences never change confirmed drop measurements.
+    pub fn analyser_track_item(&self, item: &str, tracked: bool) {
+        let panel = &mut lock(&self.mailbox).analyser;
+        if panel.selected
+            && panel.open
+            && panel.tool == oteryn_client_ui::analyser::Tool::LootTracker
+        {
+            oteryn_client_ui::analyser::tracking::select(panel, item, tracked);
+        }
+    }
+    pub fn analyser_filter_tracked(&self) {
+        let panel = &mut lock(&self.mailbox).analyser;
+        if panel.selected
+            && panel.open
+            && panel.tool == oteryn_client_ui::analyser::Tool::LootTracker
+        {
+            panel.loot_only_tracked = !panel.loot_only_tracked;
+        }
+    }
+
     pub fn analyser_xp_goal(&self, value: &str) -> bool {
         oteryn_client_ui::analyser::set_xp_goal(
             &mut crate::play::mailbox::lock(&self.mailbox).analyser,
@@ -30,6 +66,21 @@ impl PlayLink {
             item,
             price,
         )
+    }
+    #[cfg(bevy_shell)]
+    pub(crate) fn analyser_item_price_for(
+        &self,
+        tool: oteryn_client_ui::analyser::Tool,
+        item: &str,
+        price: &str,
+    ) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.analyser;
+        let previous = panel.tool;
+        panel.tool = tool;
+        let saved = oteryn_client_ui::analyser::set_item_price(panel, item, price);
+        panel.tool = previous;
+        saved
     }
     pub fn analyser_resolve_items(&self) {
         resolve_items(&mut lock(&self.mailbox), &self.commands);
@@ -49,11 +100,11 @@ impl PlayLink {
     }
     pub fn analyser_open(&self) {
         self.analyser_resolve_items();
-        #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
-            crate::play::mailbox::lock(&self.mailbox).analyser.open = true;
+        let mut mailbox = lock(&self.mailbox);
+        mailbox.analyser.open = true;
+        let tool = mailbox.analyser.tool;
+        if !mailbox.analyser.open_tools.contains(&tool) {
+            mailbox.analyser.open_tools.push(tool);
         }
     }
 }
@@ -72,7 +123,7 @@ pub(in crate::play) fn resolve_items(
 }
 
 /// Preserve the seven cyclopedia selector actions alongside the expanded analytics controls.
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(in crate::play) fn submit(
     mailbox: &mut Mailbox,
     commands: &UnboundedSender<PlayCommand>,
@@ -97,16 +148,6 @@ pub(in crate::play) fn submit(
         oteryn_client_ui::analyser::set_item_price(&mut mailbox.analyser, item, price);
     } else if action == tools + 3 {
         resolve_items(mailbox, commands);
-    } else if action == tools + 4
-        && let Some(path) = values.get(3)
-    {
-        mailbox.analyser.export_path = path.clone();
-        mailbox.analyser.feedback = Some(
-            match save_session(&mailbox.analyser, std::path::Path::new(path)) {
-                Ok(()) => tr!("Session report exported"),
-                Err(_) => tr!("Session export failed; choose a writable file path"),
-            },
-        );
     } else if action == tools + 5 {
         refresh_party(mailbox, commands);
     } else if action == tools + 6
@@ -152,12 +193,6 @@ pub(in crate::play) fn submit(
             (action == tools + 20).then_some(cost.as_str()),
             (action != tools + 20).then_some(action == tools + 21),
         );
-    } else if (tools + 18..=tools + 19).contains(&action) {
-        party_import::submit(
-            mailbox,
-            action == tools + 18,
-            values.get(3).map(String::as_str),
-        );
     }
 }
 
@@ -196,7 +231,8 @@ impl PlayLink {
         refresh_party(&mut lock(&self.mailbox), &self.commands);
     }
     pub fn analyser_save_session(&self, path: &std::path::Path) -> std::io::Result<()> {
-        save_session(&lock(&self.mailbox).analyser, path)
+        let panel = lock(&self.mailbox).analyser.clone();
+        save_session(&panel, path)
     }
 }
 
@@ -226,7 +262,7 @@ impl PlayLink {
 }
 
 /// Prepare a window without constructing a second session-owning PlayLink.
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(in crate::play) fn begin_shared_window(
     mailbox: &mut Mailbox,
     commands: &UnboundedSender<PlayCommand>,
@@ -237,4 +273,52 @@ pub(in crate::play) fn begin_shared_window(
     resolve_items(mailbox, commands);
     mailbox.analyser.open = true;
     true
+}
+
+#[cfg(test)]
+pub(in crate::play) fn submit_shared(
+    shared: &crate::play::mailbox::SharedMailbox,
+    commands: &UnboundedSender<PlayCommand>,
+    action: usize,
+    values: Vec<String>,
+) {
+    let tools = oteryn_client_ui::analyser::Tool::ALL.len();
+    if ![tools + 4, tools + 18, tools + 19].contains(&action) {
+        submit(&mut lock(shared), commands, action, values);
+        return;
+    }
+    // A mailbox belongs to one session. Work on a snapshot and recheck selection after I/O;
+    // never replace measurements that the session published while the file was being read.
+    let mut panel = {
+        let mailbox = lock(shared);
+        if !mailbox.analyser.selected {
+            return;
+        }
+        mailbox.analyser.clone()
+    };
+    let imported = if action == tools + 4 {
+        let Some(path) = values.get(3) else { return };
+        panel.export_path = path.clone();
+        panel.feedback = Some(match save_session(&panel, std::path::Path::new(path)) {
+            Ok(()) => tr!("Session report exported"),
+            Err(_) => tr!("Session export failed; choose a writable file path"),
+        });
+        false
+    } else {
+        party_import::submit(
+            &mut panel,
+            action == tools + 18,
+            values.get(3).map(String::as_str),
+        ) && action == tools + 18
+    };
+    let mut mailbox = lock(shared);
+    if !mailbox.analyser.selected {
+        return;
+    }
+    if imported {
+        mailbox.analyser.party_import = panel.party_import;
+        mailbox.analyser.tool = panel.tool;
+    }
+    mailbox.analyser.export_path = panel.export_path;
+    mailbox.analyser.feedback = panel.feedback;
 }

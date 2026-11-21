@@ -29,12 +29,7 @@ impl PlayLink {
             }
             controller::activate(&mut mailbox, &self.commands, controller::Action::Refresh);
         }
-        #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
-            lock(&self.mailbox).item_forge.open = true;
-        }
+        lock(&self.mailbox).item_forge.open = true;
         true
     }
 }

@@ -118,6 +118,9 @@ struct PaletteGround {
 /// The Tibia appearance id a palette key names (`oteryn:{item|terrain}.tibia.i<N>` and
 /// `donor:crystalserver@<rev>:item/<N>`); `None` for any other key or an id above `u16`.
 pub fn palette_appearance(key: &str) -> Option<u16> {
+    if let Some(surface) = crate::content::qualified_static_surface(key) {
+        return Some(surface.source_id);
+    }
     let digits = if let Some(rest) = key.strip_prefix("oteryn:") {
         rest.strip_prefix("item.tibia.i")
             .or_else(|| rest.strip_prefix("terrain.tibia.i"))?
@@ -155,8 +158,8 @@ pub struct WorldBase {
     tiles: Vec<BaseTile>,
     ids: Vec<u32>,
     depths: Vec<u8>,
-    /// Compact ids can alias across palette families. Ambiguous appearances stay unbound.
-    appearances: std::collections::BTreeMap<u32, Option<u16>>,
+    /// Exact palette appearance for each entry, parallel to `ids` and `depths`.
+    appearances: Vec<Option<u16>>,
     /// `(global entry index, unique, appearance)` of every top-level entry with a `unique`, in
     /// ascending entry index.
     uniques: Vec<(u32, u16, Option<u16>)>,
@@ -246,14 +249,17 @@ impl<'a> TileView<'a> {
 
     /// Palette appearance at the exact top-level ordinal, without requiring a UID.
     pub fn appearance(&self, ordinal: u8) -> Option<u16> {
-        let id = self
-            .ids()
+        let at = self
+            .depths()
             .iter()
-            .zip(self.depths())
+            .enumerate()
             .filter(|(_, depth)| **depth == 0)
             .nth(usize::from(ordinal))?
             .0;
-        self.base.appearances.get(id).copied().flatten()
+        let entry = usize::try_from(self.tile.first_entry)
+            .ok()?
+            .checked_add(at)?;
+        self.base.appearances.get(entry).copied().flatten()
     }
 
     /// Whether the ground item is walkable; `false` without one.
@@ -282,6 +288,13 @@ impl WorldBase {
     /// Crystal data/libs/functions/boss_lever.lua:54-81 defines a private bounded
     /// room. Copy only existing source cells, preserving the bundle identity.
     pub(super) fn activity_region(&self, bounds: [i32; 6]) -> Option<Self> {
+        self.activity_region_with_exit(bounds, None)
+    }
+    pub(super) fn activity_region_with_exit(
+        &self,
+        bounds: [i32; 6],
+        exit: Option<crate::content::LogicalCell>,
+    ) -> Option<Self> {
         let [x0, y0, x1, y1, z0, z1] = bounds;
         let count = (i64::from(x1) - i64::from(x0) + 1)
             .checked_mul(i64::from(y1) - i64::from(y0) + 1)?
@@ -316,11 +329,30 @@ impl WorldBase {
                 }
             }
         }
+        if let Some(exit) = exit {
+            let x = u16::try_from(exit.x).ok()?;
+            let y = u16::try_from(exit.y).ok()?;
+            if !(0..=15).contains(&exit.z) {
+                return None;
+            }
+            let floor = i8::try_from(-exit.z).ok()?;
+            let index = self.tile_index(x, y, floor)?;
+            if !activity_contains(bounds, crate::map::overlay::TilePos { x, y, floor })
+                && count >= 4096
+            {
+                return None;
+            }
+            let key = sector_key(floor, x / SECTOR_SIZE, y / SECTOR_SIZE)?;
+            let local = usize::from(y % SECTOR_SIZE) * usize::from(SECTOR_SIZE)
+                + usize::from(x % SECTOR_SIZE);
+            selected.entry(key).or_default().insert(local, index);
+        }
         let mut keys = Vec::new();
         let mut sectors = Vec::new();
         let mut tiles = Vec::new();
         let mut ids = Vec::new();
         let mut depths = Vec::new();
+        let mut appearances = Vec::new();
         let mut uniques = Vec::new();
         for (key, positions) in selected {
             let mut sector = SectorTiles {
@@ -335,6 +367,8 @@ impl WorldBase {
                 tile.first_entry = u32::try_from(ids.len()).ok()?;
                 ids.extend_from_slice(self.ids.get(old_start as usize..old_end as usize)?);
                 depths.extend_from_slice(self.depths.get(old_start as usize..old_end as usize)?);
+                appearances
+                    .extend_from_slice(self.appearances.get(old_start as usize..old_end as usize)?);
                 let start = self
                     .uniques
                     .partition_point(|(entry, ..)| *entry < old_start);
@@ -372,7 +406,7 @@ impl WorldBase {
             tiles,
             ids,
             depths,
-            appearances: self.appearances.clone(),
+            appearances,
             uniques,
         })
     }
@@ -415,20 +449,7 @@ impl WorldBase {
             tiles: builder.tiles,
             ids: builder.ids,
             depths: builder.depths,
-            appearances: {
-                let mut appearances = std::collections::BTreeMap::new();
-                for entry in builder.palette.into_iter().flatten() {
-                    appearances
-                        .entry(entry.id)
-                        .and_modify(|appearance| {
-                            if *appearance != entry.appearance {
-                                *appearance = None;
-                            }
-                        })
-                        .or_insert(entry.appearance);
-                }
-                appearances
-            },
+            appearances: builder.appearances,
             uniques: builder.uniques,
         })
     }
@@ -520,6 +541,19 @@ impl WorldBase {
                     })
             })
     }
+}
+
+pub(super) fn activity_footprint_contains(
+    bounds: [i32; 6],
+    exit: Option<crate::content::LogicalCell>,
+    pos: crate::map::overlay::TilePos,
+) -> bool {
+    activity_contains(bounds, pos)
+        || exit.is_some_and(|cell| {
+            i32::from(pos.x) == cell.x
+                && i32::from(pos.y) == cell.y
+                && -i32::from(pos.floor) == cell.z
+        })
 }
 
 pub(super) fn activity_contains(
@@ -647,20 +681,7 @@ fn load_daily_spawns(
             tiles: builder.tiles,
             ids: builder.ids,
             depths: builder.depths,
-            appearances: {
-                let mut appearances = std::collections::BTreeMap::new();
-                for entry in builder.palette.into_iter().flatten() {
-                    appearances
-                        .entry(entry.id)
-                        .and_modify(|appearance| {
-                            if *appearance != entry.appearance {
-                                *appearance = None;
-                            }
-                        })
-                        .or_insert(entry.appearance);
-                }
-                appearances
-            },
+            appearances: builder.appearances,
             uniques: builder.uniques,
         },
         spawns,
@@ -707,6 +728,7 @@ struct Builder {
     tiles: Vec<BaseTile>,
     ids: Vec<u32>,
     depths: Vec<u8>,
+    appearances: Vec<Option<u16>>,
     uniques: Vec<(u32, u16, Option<u16>)>,
 }
 
@@ -717,6 +739,7 @@ impl Builder {
         self.tiles.shrink_to_fit();
         self.ids.shrink_to_fit();
         self.depths.shrink_to_fit();
+        self.appearances.shrink_to_fit();
         self.uniques.shrink_to_fit();
     }
 
@@ -759,6 +782,7 @@ impl Builder {
                     .get(item.palette as usize)
                     .ok_or_else(|| malformed("palette index out of range"))?;
                 self.ids.push(resolved.id);
+                self.appearances.push(resolved.appearance);
                 self.depths.push(item.depth);
                 if item.depth != 0 {
                     continue;
@@ -822,5 +846,30 @@ impl crate::content::world_reward_claims::RewardClaimTile for TileView<'_> {
 
     fn appearance(&self, ordinal: u8) -> Option<u16> {
         self.appearance(ordinal)
+    }
+}
+
+#[cfg(test)]
+mod appearance_tests {
+    use super::*;
+
+    #[test]
+    fn exact_ordinal_appearance_survives_family_aliases_and_activity_copy()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (bytes, pins) = boot::tests::floor_bundle();
+        let bundle = bundle::read(&bytes)?;
+        for base in [
+            load(&bytes, &pins)?,
+            WorldBase::composed(&bundle, &[], &[])?,
+        ] {
+            let tile = base.tile(1, 0, -8).ok_or("tile")?;
+            assert_eq!(tile.appearance(0), Some(100));
+            assert_eq!(tile.appearance(1), Some(1950));
+            let copy = base.activity_region([0, 0, 3, 1, 7, 8]).ok_or("activity")?;
+            let tile = copy.tile(1, 0, -8).ok_or("activity tile")?;
+            assert_eq!(tile.appearance(0), Some(100));
+            assert_eq!(tile.appearance(1), Some(1950));
+        }
+        Ok(())
     }
 }

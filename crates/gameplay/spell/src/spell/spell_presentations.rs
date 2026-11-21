@@ -29,7 +29,7 @@ pub struct CueRequest {
     /// Exact positioned source or target; there is no opaque client address.
     pub actor: ExactActorRef,
 }
-/// Qualification describes a real placed map cell. Current owner authority
+/// Qualification describes a placed or known absent map cell. Current owner authority
 /// is independently checked again at outbox installation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct QualifiedCueTile {
@@ -47,6 +47,8 @@ impl QualifiedCueTile {
         oteryn_gameplay_durability::durability::native_world_items::SpellGroundTarget::from_native_owner(
             room, runtime, position,
         )
+        .map(|_| ())
+        .or_else(|_| Self::from_known_absent_cell(room, runtime, position).map(|_| ()))
         .map_err(|_| Error::UnqualifiedSource)?;
         let pin = runtime.content_pin();
         Ok(Self {
@@ -693,7 +695,7 @@ struct CueRecord {
     clippy::expect_used,
     reason = "post-validation commit invariant; a fallible exit here would leave a partial owner write"
 )]
-fn resolve_source_cue(alias: &str) -> Option<Cue> {
+pub fn resolve_source_cue(alias: &str) -> Option<Cue> {
     static REGISTRY: OnceLock<Vec<CueRecord>> = OnceLock::new();
     let records = REGISTRY.get_or_init(|| {
         serde_json::from_slice::<CueDocument>(include_bytes!(

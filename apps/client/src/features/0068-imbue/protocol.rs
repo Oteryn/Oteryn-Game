@@ -47,3 +47,16 @@ pub(in crate::play) fn equipment_inspection_result(
         mailbox.imbue.equipment.accept(response);
     }
 }
+
+#[cfg(all(test, bevy_shell))]
+impl Outbox {
+    pub(crate) fn bevy_imbue_equipment(&self, inventory: oteryn_session::CharacterInventory) {
+        lock(&self.0).depot.items.inventory = inventory;
+    }
+    pub(crate) fn bevy_imbue_initialize(&self) {
+        self.imbue_initialize(true);
+    }
+    pub(crate) fn bevy_imbue_result(&self, response: &ImbueResponse) {
+        self.imbue_result(response);
+    }
+}

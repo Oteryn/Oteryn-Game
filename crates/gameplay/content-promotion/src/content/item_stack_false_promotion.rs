@@ -10,7 +10,7 @@ pub const ITEM_STACK_FALSE_PACKET: &[u8] = include_bytes!(
     "../../../../../docs/agents/evidence/OTV2-20261001-item-stack-false-promotion-v1.json"
 );
 pub const ITEM_STACK_FALSE_PACKET_SHA256: &str =
-    "0054a2d6ae7f664051914e541fd85153c169c4969ea69e616dbb7bfc9c503211";
+    "bb1a5c4446002a490f12652000332d1b5d68e8d1865c195a174b4acb05211e68";
 #[derive(Deserialize)]
 struct Packet {
     schema: String,
@@ -36,6 +36,7 @@ pub struct StackFalsePromotion {
 pub fn apply_item_stack_false_promotion_v1(
     draft: &mut ProjectV2Draft,
 ) -> Result<StackFalsePromotion, String> {
+    super::item_identity::validate_unique_item_keys(draft)?;
     if world_project_sha256(ITEM_STACK_FALSE_PACKET) != ITEM_STACK_FALSE_PACKET_SHA256 {
         return Err("stack-false packet digest drift".into());
     }

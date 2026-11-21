@@ -38,12 +38,7 @@ impl PlayLink {
             return false;
         }
         self.achievements_request(Intent::Refresh);
-        #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
-            lock(&self.mailbox).achievements.open = true;
-        }
+        lock(&self.mailbox).achievements.open = true;
         true
     }
 }

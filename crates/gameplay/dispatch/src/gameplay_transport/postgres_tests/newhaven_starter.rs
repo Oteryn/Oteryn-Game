@@ -1,4 +1,5 @@
-//! C19b: the Newhaven profession kit is granted by production first entry, once.
+//! C19b: the Newhaven first-login backpack (rope, shovel) and profession kit are granted by
+//! production first entry, once.
 use super::fixture::{Harness, debug, id, run};
 use super::tutorial_vitals_fixture::{admit, native_asset_revisions, publish_native_activation};
 use super::{Dependencies, TestResult, prepare_current_session};
@@ -33,6 +34,11 @@ fn newhaven_starter_live_grant_publishes_inventory_equipment_without_relogin_pos
     scenario(KitCase::Live)
 }
 
+#[test]
+fn newhaven_first_entry_refuses_an_unqualified_backpack_revision_postgres() -> TestResult {
+    scenario(KitCase::InvalidKitContent)
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum KitCase {
     Initial,
@@ -40,6 +46,7 @@ enum KitCase {
     Legacy,
     Unregistered,
     Live,
+    InvalidKitContent,
 }
 
 fn scenario(case: KitCase) -> TestResult {
@@ -51,7 +58,7 @@ fn scenario(case: KitCase) -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("newhaven-starter", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("newhaven-starter", move || {
         run(async move |admin| {
             let h = if legacy {
                 Harness::create_with_admission_seed(admin, "starter_history", false, false).await?
@@ -67,7 +74,7 @@ fn scenario(case: KitCase) -> TestResult {
                 .map_err(debug)?;
             let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
             let (controller, pin) =
-                super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+                super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
             publish_native_activation(&h, &pin).await?;
             let active = controller.active().ok_or("active")?;
             native_asset_revisions(&h, active).await?;
@@ -81,7 +88,7 @@ fn scenario(case: KitCase) -> TestResult {
             owner.active_generation = Some(active);
             let mut admitted = deps.admitted;
             Box::pin(owner.admit_progression_session(&mut admitted)).await;
-            let mut live_view = if live {
+            let mut live_view = if live || case == KitCase::InvalidKitContent {
                 admit(&owner, &deps, &request).await?;
                 let mut view = crate::gameplay_transport::item_view::SessionItemView::resume(
                     Default::default(),
@@ -127,6 +134,23 @@ fn scenario(case: KitCase) -> TestResult {
                 )
                 .await
                 .map_err(debug)?;
+            if case == KitCase::InvalidKitContent {
+                let mut tx = h.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+                sqlx::query("UPDATE game_item_instances SET definition_revision_ref='unqualified-revision' WHERE item_instance_id=(SELECT item_instance_id FROM game_item_container_slots WHERE character_id=encode($1,'hex')::uuid)")
+                    .bind(id(41).as_slice()).execute(&mut *tx).await?;
+                tx.commit().await?;
+                let (outcome, _, _) = Box::pin(owner.initialize_first_entry(
+                    &request, deps.admitted.game_session_id,
+                    crate::foundation::AuthenticatedTransportRefV1::decode(&[9; 16]).map_err(debug)?,
+                    deps.actor,
+                )).await;
+                assert_eq!(outcome, crate::gameplay_transport::connection::FirstEntryOutcome::RefusedUnavailable);
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
+            }
             let mut legacy_items: Vec<(String, String, i64)> = Vec::new();
             if legacy {
                 admit(&owner, &deps, &request).await?;
@@ -343,7 +367,8 @@ fn scenario(case: KitCase) -> TestResult {
                 }
                 let published = published.ok_or("live inventory delta must be transmitted")?;
                 assert_eq!(published.equipment.len(), 7);
-                assert_eq!(published.entries.len(), 4);
+                // Paladin supplies plus the first-login rope and shovel.
+                assert_eq!(published.entries.len(), 6);
                 assert!(view.continuity().inventory_revision > before);
                 assert!(!owner.take_newhaven_inventory_changed(deps.admitted.game_session_id));
             } else {
@@ -381,6 +406,17 @@ fn scenario(case: KitCase) -> TestResult {
                     ("oteryn:item.tibia.i3447".into(), 100),
                     ("oteryn:item.tibia.i35562".into(), 1),
                     ("oteryn:item.tibia.i3578".into(), 1),
+                ]
+            );
+            // Crystal 9f5a72c6 send_first_items.lua:2-7: the first-login backpack of a
+            // Character without vocation holds one rope and one shovel, ahead of the kit.
+            let tools: Vec<(String, i64, String)> = sqlx::query_as("SELECT i.definition_production_key,i.quantity,e.placement_ordinal::text FROM game_item_container_entries e JOIN game_item_container_slots s ON s.item_instance_id=e.parent_item_instance_id JOIN game_item_instances i ON i.item_instance_id=e.item_instance_id WHERE i.definition_production_key IN ('oteryn:item.tibia.i3003','oteryn:item.tibia.i3457') ORDER BY e.placement_ordinal")
+                .fetch_all(&h.pool).await?;
+            assert_eq!(
+                tools,
+                vec![
+                    ("oteryn:item.tibia.i3003".into(), 1, "1".into()),
+                    ("oteryn:item.tibia.i3457".into(), 1, "2".into()),
                 ]
             );
             let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances")

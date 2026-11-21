@@ -31,6 +31,11 @@
 
 pub use oteryn_world_bundle::spawn::{BossChance, BossPolicy};
 
+mod activity_static_surface;
+pub use activity_static_surface::{
+    StaticSurfaceFacts, qualified_static_binding, qualified_static_surface,
+    static_surface_definition_id,
+};
 mod activation;
 mod artifact;
 pub mod blessing_catalogue;
@@ -48,6 +53,7 @@ pub mod daily_boost;
 pub mod daily_reward;
 mod digest;
 pub mod encounter_map_item;
+pub mod feroxa_source_maps;
 pub mod field_condition;
 mod fixture;
 pub mod item_abilities;
@@ -56,8 +62,20 @@ pub mod item_ref;
 pub mod item_spell_augments;
 mod model;
 pub mod native_cell_lookup;
+pub mod native_creature_death_events;
 pub mod native_gameplay;
 pub mod native_items;
+mod native_w01_death_events;
+pub use native_creature_death_events::{QualifiedNativeDeathEvent, QualifiedNativeDeathEvents};
+pub mod native_monster_callbacks;
+pub mod native_omrafir;
+pub mod native_rotten_blood_callbacks;
+mod native_rotten_death_events;
+pub mod native_soul_war;
+pub mod native_soul_war_callbacks;
+mod native_soul_war_death_events;
+pub mod native_soul_war_global_events;
+mod native_soul_war_spawns;
 pub mod native_source_world_carrier;
 pub mod native_spell_appearances;
 pub mod newhaven_travel;
@@ -129,6 +147,11 @@ pub use production::{
     FirstProductionTerrain, FirstProductionXpDefinition, GenerationIdentity,
     PackageManifestBinding, ProductionAtom, ProductionKey, Sha256HexDigest,
     compile_first_production, load_reference_playable_artifact, stage_reference_playable,
+};
+pub use project::native_spell_world::{
+    CallbackBundleBasis, PublishedWorldBundleBasis, PublishedWorldSourceFrame,
+    QualifiedBundleSourceBases, QualifiedCallbackSourceContext, QualifiedPublishedWorldContext,
+    qualify_bundle_source_bases,
 };
 pub use project::*;
 pub use project_fs::*;

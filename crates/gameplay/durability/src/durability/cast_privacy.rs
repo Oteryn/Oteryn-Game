@@ -130,7 +130,6 @@ impl DurabilityRoot {
         worker: &mut CastConsentWorker,
         wait_for_holder: bool,
     ) -> Result<CastConsentBatch, DurabilityError> {
-        let started = Instant::now();
         let pass = if wait_for_holder {
             self.cast_privacy_worker_pass(worker.valid_until()).await?
         } else if worker.valid() {
@@ -138,6 +137,9 @@ impl DurabilityRoot {
         } else {
             self.try_issue_semantic_pass()?
         };
+        // Date the new lease before SQL, after waiting for the previous lease's
+        // holder. The wait still runs within the previous lease's deadline.
+        let started = Instant::now();
         let instance = worker.instance;
         let from = worker.cursor;
         let node = node.clone();
@@ -185,12 +187,13 @@ impl DurabilityRoot {
         {
             return Err(DurabilityError::InvalidStoredState);
         }
-        let started = Instant::now();
         let node = node.clone();
         let instance = worker.instance;
         let from = batch.from;
         let through = batch.through;
-        let renewed=self.cast_privacy_worker_pass(worker.valid_until()).await?.run(move |holder,deadline|Box::pin(async move {
+        let pass = self.cast_privacy_worker_pass(worker.valid_until()).await?;
+        let started = Instant::now();
+        let renewed=pass.run(move |holder,deadline|Box::pin(async move {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             current(&mut tx,&node).await?;
             let latest=control(&mut tx).await?;

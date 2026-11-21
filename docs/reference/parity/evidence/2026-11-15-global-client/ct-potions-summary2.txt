@@ -1,0 +1,13 @@
+Potion table (all types the monk can drink), ML54 L757, values from Server Log text
+health potion    HP   n= 30 min= 125 max= 172 mean= 147.8
+strong health    HP   n= 47 min= 228 max= 349 mean= 305.1
+mana potion      mana n= 30 min=  75 max= 125 mean=  99.9
+strong mana      mana n= 30 min= 117 max= 182 mean= 155.6
+great mana       mana n= 30 min= 150 max= 246 mean= 207.2
+superior mana    mana n= 30 min= 242 max= 356 mean= 301.8
+great spirit     HP   n= 12 min= 262 max= 349 mean= 317.1
+great spirit     mana n= 12 min= 124 max= 160 mean= 143.8
+ultimate spirit  HP   n= 30 min= 424 max= 579 mean= 514.5
+ultimate spirit  mana n= 30 min= 150 max= 247 mean= 207.9
+Not usable by monk: great health ("knights of level 80 or higher"), ultimate health ("knights of level 130"). Not available: supreme health, ultimate mana.
+Exhaust 1 s. Strong health n includes 17 samples first logged as "mana potion" (stack positions shifted).

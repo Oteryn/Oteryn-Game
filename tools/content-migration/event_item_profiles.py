@@ -7,13 +7,16 @@ import re
 import sys
 from pathlib import Path
 
+from import_cyclopedia_global import apply_profile_weights
 from native_profile_composition import encode_native_profile
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
 import build_source_item_profiles as source
 from build_spell_item_identities import BINDINGS, binding_index, bind_profiles
-from event_item_identity import DECISION as BRIDGE_IDENTITY_DECISION, evidence as bridge_source_evidence, source_evidence
+from event_item_identity import (HISTORICAL_DECISION as BRIDGE_IDENTITY_DECISION,
+                                 historical_evidence as bridge_source_evidence,
+                                 historical_source_evidence as source_evidence)
 sys.path.insert(0, str(ROOT / 'tools/content-schema/world-authoring'))
 from build_world_change_layers import BLOBS as WORLD_LAYER_BLOBS
 from build_world_change_layers import PREFIX as WORLD_LAYER_PREFIX
@@ -78,7 +81,9 @@ def world_map_item_ids(root):
     if novelty['schema'] != 'OTERYN_NOVELTY_ITEM_ACTIONS/v1':
         raise ValueError('NOVELTY_ITEM_ACTION_SCHEMA')
     _, seasonal_map = seasonal_item_sets(json.loads((root / ACTIONS).read_bytes()))
-    return (world_layer_item_ids(root) | set(novelty['map_item_ids']) | seasonal_map
+    sys.path.insert(0, str(root / 'tools/content-schema/quest-authoring'))
+    import last_creep_native
+    return (last_creep_native.map_item_ids(root) | world_layer_item_ids(root) | set(novelty['map_item_ids']) | seasonal_map
             | {item for family in world_door_families(root) for item in family})
 
 
@@ -106,6 +111,11 @@ def item_action_ids(root):
     # Seed/flower actions still require ordinary native policy for their existing
     # mutation and harvesting owners. The Horse return floor only supplies geometry.
     ids.update(novelty['map_action_item_ids'])
+    sys.path.insert(0, str(root / 'tools/content-schema/quest-authoring'))
+    import quest_item_disguises
+    ids.update(rule['appearance'] for rule in quest_item_disguises.build(root))
+    import last_creep_native
+    ids.update(last_creep_native.native_item_ids(root))
     for row in novelty['house_transforms']:
         ids.update((row['item_id'], row['target']))
     return ids
@@ -205,6 +215,8 @@ def capture(canary, crystal):
             raise ValueError(f'EVENT_CAKE_BRIDGE_PHYSICAL_SOURCE_DRIFT:{item_id}')
     bound = bind_profiles({'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1', 'records': records},
                           bindings, native_ids)
+    # The donor weight stays in the capture; the Global client weight wins (ITEMGLOB).
+    apply_profile_weights(bound['records'], ROOT)
     cosmetic_rules = json.loads((ROOT / COSMETICS).read_bytes())['rules']
     unavailable = [{'item_id': item_id, 'production_key': f'oteryn:item.tibia.i{item_id}',
                     'reason': ('EVENT_ITEM_CANONICAL_IDENTITY_UNAVAILABLE' if item_id in identity_unavailable_ids

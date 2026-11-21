@@ -8,6 +8,56 @@ use oteryn_gameplay_quests::quest::{
 };
 use sqlx::{Postgres, Transaction};
 
+/// Resolve the current source cycle under its counter lock. Call only after
+/// current World/node authorization, with the Character root already locked.
+/// The lock keeps the lifecycle stable through the eventual Quest receipt.
+pub(crate) async fn first_in_hive_cycle(
+    tx: &mut Transaction<'_, Postgres>,
+    scope: RuntimeScopeRefV1,
+    character: CharacterId,
+) -> Result<Option<bool>, DurabilityError> {
+    let generation: Option<String> = sqlx::query_scalar(
+        "SELECT coalesce(c.state->>'occurrence_generation','1') FROM game_world_change_counters c JOIN game_world_reset_active a ON a.world_id=c.world_id AND a.reset_epoch=c.reset_epoch WHERE c.world_id=encode($1,'hex')::uuid AND c.change_key='hive_born' FOR UPDATE OF c",
+    ).bind(scope.world_id().as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    let Some(generation) = generation else {
+        return Ok(None);
+    };
+    if generation
+        .parse::<u64>()
+        .ok()
+        .filter(|value| *value > 0)
+        .is_none()
+    {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let accepts: Vec<_> = (0..shared_world_progress::ACTIVE_TRACKS.len())
+        .map(shared_world_progress::accept_key)
+        .collect();
+    let accepted: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_character_counter_quest_scopes s JOIN game_character_event_quest_progress p USING(character_id,committed_character_revision) WHERE s.character_id=encode($1,'hex')::uuid AND s.world_id=encode($2,'hex')::uuid AND s.change_key='hive_born' AND s.occurrence_generation=$3::text::numeric AND p.transition_key=ANY($4::text[]))",
+    ).bind(character.as_bytes().as_slice()).bind(scope.world_id().as_bytes().as_slice()).bind(generation).bind(accepts).fetch_one(&mut **tx).await?;
+    Ok(Some(!accepted))
+}
+
+fn cycle_acceptance_shape(task: u8, changes: &[QuestTrackChange]) -> bool {
+    let selected = shared_world_progress::ACTIVE_TRACKS[usize::from(task)];
+    changes
+        .iter()
+        .filter(|change| change.track == selected && change.after == 1)
+        .count()
+        == 1
+        && changes.iter().enumerate().all(|(index, change)| {
+            shared_world_progress::counter_progress_track(
+                shared_world_progress::HIVE_QUEST,
+                &change.track,
+            ) && change.before >= 0
+                && change.after == i64::from(change.track == selected)
+                && !changes[..index]
+                    .iter()
+                    .any(|earlier| earlier.track == change.track)
+        })
+}
+
 /// Call after the complete native quest/object/NPC proof and before any quest
 /// receipt commits. The authority is independently resolved in this same Tx;
 /// source-kind2 deduplicates this immutable session/command across all task keys.
@@ -26,11 +76,17 @@ pub(crate) async fn credit_completed(
     changes: &[QuestTrackChange],
 ) -> Result<CreditOutcome, DurabilityError> {
     if let Some(task) = shared_world_progress::accepted_task(key) {
-        if !matches!(cause, QuestCause::Command(_))
-            || changes.len() != 1
-            || changes[0].track != shared_world_progress::ACTIVE_TRACKS[usize::from(task)]
-            || (changes[0].before, changes[0].after) != (0, 1)
-        {
+        let first = first_in_hive_cycle(tx, scope, character).await?;
+        let valid = match first {
+            Some(true) => cycle_acceptance_shape(task, changes),
+            Some(false) => {
+                changes.len() == 1
+                    && changes[0].track == shared_world_progress::ACTIVE_TRACKS[usize::from(task)]
+                    && (changes[0].before, changes[0].after) == (0, 1)
+            }
+            None => false,
+        };
+        if !matches!(cause, QuestCause::Command(_)) || !valid {
             return Ok(CreditOutcome::Refused);
         }
         let Some(day) = super::super::load(tx, scope.world_id(), epoch).await? else {

@@ -77,8 +77,8 @@ fn largest_tile(at: ActorPosition) -> MapTile {
 fn window(origin: ActorPosition) -> Vec<ActorPosition> {
     let floors = floors_in_view(origin.floor).expect("floor");
     let mut positions = Vec::new();
-    for floor in floors {
-        let shift = i32::from(floor - origin.floor);
+    for floor in floors.rev() {
+        let shift = i32::from(origin.floor - floor);
         for y in 0..VIEW_HEIGHT {
             for x in 0..VIEW_WIDTH {
                 positions.push(position(
@@ -95,7 +95,7 @@ fn window(origin: ActorPosition) -> Vec<ActorPosition> {
 /// The largest valid origin: world coordinates at the top of `0..=65,535` and the floor whose
 /// visible-floor encoding is longest.
 fn far_origin() -> ActorPosition {
-    position(65_000, 65_000, -7)
+    position(65_000, 65_000, 7)
 }
 
 fn snapshot_round_trip(snapshot: &WorldMapViewSnapshot) -> Vec<u8> {
@@ -137,7 +137,7 @@ fn raw_item(fields: &[(u64, u64)]) -> Vec<u8> {
 }
 
 fn decode_item_fields(fields: &[(u64, u64)]) -> Result<WorldMapViewSnapshot> {
-    let origin = position(100, 100, -7);
+    let origin = position(100, 100, 7);
     decode_world_map_snapshot(&snapshot_with_raw_tile(
         origin,
         &raw_tile_with_item(origin, &raw_item(fields)),
@@ -146,12 +146,12 @@ fn decode_item_fields(fields: &[(u64, u64)]) -> Result<WorldMapViewSnapshot> {
 
 #[test]
 fn snapshots_and_deltas_round_trip() {
-    let origin = position(100, 200, -7);
+    let origin = position(100, 200, 7);
     let mut tiles: Vec<MapTile> = [
-        position(92, 194, -7),
-        position(100, 200, -7),
-        position(109, 207, -7),
-        position(100, 201, -6),
+        position(92, 194, 7),
+        position(100, 200, 7),
+        position(109, 207, 7),
+        position(100, 201, 6),
         position(107, 207, 0),
     ]
     .into_iter()
@@ -188,12 +188,12 @@ fn snapshots_and_deltas_round_trip() {
     });
 
     let view = snapshot.header;
-    let mut moved = header(position(101, 199, -7));
-    moved.first_visible_floor = -7;
+    let mut moved = header(position(101, 199, 7));
+    moved.first_visible_floor = 7;
     let delta = WorldMapViewDelta {
         header: moved,
-        tiles: vec![tile(position(110, 193, -7))],
-        cleared: vec![position(93, 193, -7), position(101, 199, -7)],
+        tiles: vec![tile(position(110, 193, 7))],
+        cleared: vec![position(93, 193, 7), position(101, 199, 7)],
     };
     let bytes = encode_world_map_delta(&view, &delta).expect("encode");
     assert_eq!(decode_world_map_delta(&view, &bytes), Ok(delta));
@@ -202,7 +202,7 @@ fn snapshots_and_deltas_round_trip() {
 #[test]
 fn encoded_lengths_match_raw_fields_across_varint_boundaries() {
     // Raw fields use the existing generic wire helpers, independently of item_len/tile_len.
-    for origin in [position(0, 0, 0), position(-64, 64, -7), far_origin()] {
+    for origin in [position(0, 0, 0), position(-64, 64, 7), far_origin()] {
         for reference in [127, 128, 16_383, 16_384, u32::MAX] {
             for entries in 1..=MAX_TILE_ITEMS {
                 let mut full = largest_tile(origin);
@@ -293,7 +293,7 @@ fn encoded_lengths_match_raw_fields_across_varint_boundaries() {
 
 #[test]
 fn ground_speed_round_trips_at_its_bound_and_fails_closed_above_it() {
-    let origin = position(100, 100, -7);
+    let origin = position(100, 100, 7);
     let mut full = tile(origin);
     full.ground_speed = MAX_GROUND_SPEED;
     let mut absent = tile(origin);
@@ -329,7 +329,7 @@ fn ground_speed_round_trips_at_its_bound_and_fails_closed_above_it() {
 
 #[test]
 fn definition_references_are_family_tagged_and_exactly_one() {
-    let origin = position(100, 100, -7);
+    let origin = position(100, 100, 7);
     let mut both = tile(origin);
     both.items.push(MapItem {
         definition: item_ref(2_160),
@@ -413,7 +413,7 @@ fn every_malformed_item_fails_closed() {
     }
     // An explicit zero handle and an explicit false display_only.
     for item in [[0x08, 5, 0x10, 1, 0x28, 0], [0x08, 5, 0x10, 1, 0x30, 0]] {
-        let origin = position(100, 100, -7);
+        let origin = position(100, 100, 7);
         assert_eq!(
             decode_world_map_snapshot(&snapshot_with_raw_tile(
                 origin,
@@ -423,7 +423,7 @@ fn every_malformed_item_fails_closed() {
         );
     }
     // A wrong wire type on a known field.
-    let origin = position(100, 100, -7);
+    let origin = position(100, 100, 7);
     let item = [0x0a, 1, 5, 0x10, 1, 0x20, 0];
     assert_eq!(
         decode_world_map_snapshot(&snapshot_with_raw_tile(
@@ -459,7 +459,7 @@ fn every_malformed_item_fails_closed() {
 
 #[test]
 fn every_malformed_tile_and_snapshot_fails_closed() {
-    let origin = position(100, 100, -7);
+    let origin = position(100, 100, 7);
     let valid = [(8, 7), (2, 1), (4, 0)];
     // An empty tile, a tile without a position, a repeated position, `more` not 1, an unknown
     // field and 11 items.
@@ -508,12 +508,12 @@ fn every_malformed_tile_and_snapshot_fails_closed() {
 
     // A tile outside the window, on each edge and on a floor out of view.
     for outside in [
-        position(91, 100, -7),
-        position(110, 100, -7),
-        position(100, 93, -7),
-        position(100, 108, -7),
-        position(100, 100, -8),
-        position(91, 94, -6),
+        position(91, 100, 7),
+        position(110, 100, 7),
+        position(100, 93, 7),
+        position(100, 108, 7),
+        position(100, 100, 8),
+        position(91, 94, 6),
     ] {
         let snapshot = WorldMapViewSnapshot {
             header: header(origin),
@@ -534,9 +534,9 @@ fn every_malformed_tile_and_snapshot_fails_closed() {
 
     // Unsorted and duplicate tiles.
     for tiles in [
-        vec![tile(position(101, 100, -7)), tile(position(100, 100, -7))],
-        vec![tile(position(100, 101, -7)), tile(position(101, 100, -7))],
-        vec![tile(position(101, 101, -6)), tile(position(100, 100, -7))],
+        vec![tile(position(101, 100, 7)), tile(position(100, 100, 7))],
+        vec![tile(position(100, 101, 7)), tile(position(101, 100, 7))],
+        vec![tile(position(101, 101, 6)), tile(position(100, 100, 7))],
         vec![tile(origin), tile(origin)],
     ] {
         let snapshot = WorldMapViewSnapshot {
@@ -585,25 +585,25 @@ fn every_malformed_tile_and_snapshot_fails_closed() {
 
 #[test]
 fn every_malformed_header_fails_closed() {
-    let origin = position(100, 100, -7);
+    let origin = position(100, 100, 7);
     let encode = |header: MapViewHeader| {
         encode_world_map_snapshot(&WorldMapViewSnapshot {
             header,
             tiles: Vec::new(),
         })
     };
-    // first_visible_floor 1, one below the origin floor, and -7 with an origin at -10.
+    // first_visible_floor -1, one below the origin floor, and 7 with an origin at 10.
     let mut above = header(origin);
-    above.first_visible_floor = 1;
+    above.first_visible_floor = -1;
     let mut below = header(origin);
-    below.first_visible_floor = -8;
-    let mut deep = header(position(100, 100, -10));
-    deep.first_visible_floor = -7;
-    // An origin floor outside -15..=0.
-    let mut sky = header(position(100, 100, 1));
-    sky.first_visible_floor = 1;
-    let mut abyss = header(position(100, 100, -16));
-    abyss.first_visible_floor = -16;
+    below.first_visible_floor = 8;
+    let mut deep = header(position(100, 100, 10));
+    deep.first_visible_floor = 7;
+    // An origin floor outside 0..=15.
+    let mut sky = header(position(100, 100, -1));
+    sky.first_visible_floor = -1;
+    let mut abyss = header(position(100, 100, 16));
+    abyss.first_visible_floor = 16;
     for header in [above, below, deep, sky, abyss] {
         assert_eq!(
             encode(header),
@@ -618,22 +618,14 @@ fn every_malformed_header_fails_closed() {
             "{header:?}"
         );
     }
-    // The bounds of each floor are valid: 0 and -7 on the surface, -8 and -10 at -10, -13 and
-    // -15 at -15.
-    for (floor, visible) in [
-        (-7, 0),
-        (-7, -7),
-        (-10, -8),
-        (-10, -10),
-        (-15, -13),
-        (-15, -15),
-    ] {
+    // Check both endpoints of the visible-floor range at ground and underground.
+    for (floor, visible) in [(7, 0), (7, 7), (10, 8), (10, 10), (15, 13), (15, 15)] {
         let mut valid = header(position(100, 100, floor));
         valid.first_visible_floor = visible;
         assert!(encode(valid).is_ok(), "{floor} {visible}");
     }
     // An absent first_visible_floor is 0, which an underground origin refuses.
-    let underground = header(position(100, 100, -10));
+    let underground = header(position(100, 100, 10));
     let mut payload = Vec::new();
     push_header(
         &mut payload,
@@ -681,31 +673,31 @@ fn every_malformed_header_fails_closed() {
 
 #[test]
 fn floor_sets_and_the_perspective_shift() {
-    assert_eq!(floors_in_view(-7), Some(-7..=0));
-    assert_eq!(floors_in_view(0), Some(-7..=0));
-    assert_eq!(floors_in_view(-8), Some(-10..=-6));
-    assert_eq!(floors_in_view(-10), Some(-12..=-8));
-    assert_eq!(floors_in_view(-14), Some(-15..=-12));
-    assert_eq!(floors_in_view(-15), Some(-15..=-13));
-    assert_eq!(floors_in_view(1), None);
-    assert_eq!(floors_in_view(-16), None);
-    assert_eq!(window(position(100, 100, -7)).len(), MAX_SNAPSHOT_TILES);
-    assert_eq!(window(position(100, 100, -10)).len(), 5 * 18 * 14);
-    assert_eq!(window(position(100, 100, -15)).len(), 3 * 18 * 14);
+    assert_eq!(floors_in_view(7), Some(0..=7));
+    assert_eq!(floors_in_view(0), Some(0..=7));
+    assert_eq!(floors_in_view(8), Some(6..=10));
+    assert_eq!(floors_in_view(10), Some(8..=12));
+    assert_eq!(floors_in_view(14), Some(12..=15));
+    assert_eq!(floors_in_view(15), Some(13..=15));
+    assert_eq!(floors_in_view(-1), None);
+    assert_eq!(floors_in_view(16), None);
+    assert_eq!(window(position(100, 100, 7)).len(), MAX_SNAPSHOT_TILES);
+    assert_eq!(window(position(100, 100, 10)).len(), 5 * 18 * 14);
+    assert_eq!(window(position(100, 100, 15)).len(), 3 * 18 * 14);
 
     // Each floor's window is shifted by its floor difference to the origin.
-    let origin = position(100, 100, -7);
-    assert!(in_window(origin, position(92, 94, -7)));
-    assert!(in_window(origin, position(109, 107, -7)));
-    assert!(in_window(origin, position(93, 95, -6)));
-    assert!(!in_window(origin, position(92, 94, -6)));
-    assert!(in_window(origin, position(110, 108, -6)));
+    let origin = position(100, 100, 7);
+    assert!(in_window(origin, position(92, 94, 7)));
+    assert!(in_window(origin, position(109, 107, 7)));
+    assert!(in_window(origin, position(93, 95, 6)));
+    assert!(!in_window(origin, position(92, 94, 6)));
+    assert!(in_window(origin, position(110, 108, 6)));
     assert!(in_window(origin, position(99, 101, 0)));
     assert!(in_window(origin, position(116, 114, 0)));
     assert!(!in_window(origin, position(117, 114, 0)));
-    let deep = position(100, 100, -10);
-    assert!(in_window(deep, position(90, 92, -12)));
-    assert!(!in_window(deep, position(91, 93, -13)));
+    let deep = position(100, 100, 10);
+    assert!(in_window(deep, position(90, 92, 12)));
+    assert!(!in_window(deep, position(91, 93, 13)));
 }
 
 #[test]
@@ -729,7 +721,7 @@ fn encoded_sizes_stay_within_the_bounds() {
     }
     let mut widest_header = header(origin);
     widest_header.reset_epoch = u64::MAX;
-    widest_header.first_visible_floor = -7;
+    widest_header.first_visible_floor = 7;
     widest_header.content_generation = [0xff; 32];
     assert!(framed(header_len(&widest_header)) <= MAX_MAP_HEADER_BYTES);
 
@@ -831,7 +823,7 @@ fn a_ten_entry_tile_of_base_ordinals_with_the_largest_revisions_fits() {
 
 #[test]
 fn deltas_bind_to_the_view_and_follow_the_origin_rule() {
-    let origin = position(100, 100, -7);
+    let origin = position(100, 100, 7);
     let view = header(origin);
     let delta = |header: MapViewHeader, tiles: Vec<MapTile>, cleared: Vec<ActorPosition>| {
         WorldMapViewDelta {
@@ -900,7 +892,7 @@ fn deltas_bind_to_the_view_and_follow_the_origin_rule() {
     // A delta that changes only first_visible_floor is valid.
     let roof = delta(
         MapViewHeader {
-            first_visible_floor: -7,
+            first_visible_floor: 7,
             ..view
         },
         Vec::new(),
@@ -911,15 +903,15 @@ fn deltas_bind_to_the_view_and_follow_the_origin_rule() {
 
     // Two steps away, on another floor, or empty with nothing changed fails closed.
     for bad in [
-        delta(header(position(102, 100, -7)), Vec::new(), Vec::new()),
+        delta(header(position(102, 100, 7)), Vec::new(), Vec::new()),
         delta(
-            header(position(102, 101, -7)),
-            vec![tile(position(102, 101, -7))],
+            header(position(102, 101, 7)),
+            vec![tile(position(102, 101, 7))],
             Vec::new(),
         ),
         delta(
-            header(position(100, 100, -6)),
-            vec![tile(position(100, 100, -6))],
+            header(position(100, 100, 6)),
+            vec![tile(position(100, 100, 6))],
             Vec::new(),
         ),
         delta(view, Vec::new(), Vec::new()),
@@ -939,22 +931,22 @@ fn deltas_bind_to_the_view_and_follow_the_origin_rule() {
     }
 
     // Tiles and cleared entries are in the new window, each strictly ascending and disjoint.
-    let moved = header(position(101, 100, -7));
+    let moved = header(position(101, 100, 7));
     for bad in [
         // In the old window only.
-        delta(moved, vec![tile(position(92, 100, -7))], Vec::new()),
-        delta(moved, Vec::new(), vec![position(92, 100, -7)]),
+        delta(moved, vec![tile(position(92, 100, 7))], Vec::new()),
+        delta(moved, Vec::new(), vec![position(92, 100, 7)]),
         // Unsorted cleared entries.
         delta(
             moved,
             Vec::new(),
-            vec![position(101, 101, -7), position(101, 100, -7)],
+            vec![position(101, 101, 7), position(101, 100, 7)],
         ),
         // A position both resent and cleared.
         delta(
             moved,
-            vec![tile(position(101, 100, -7))],
-            vec![position(101, 100, -7)],
+            vec![tile(position(101, 100, 7))],
+            vec![position(101, 100, 7)],
         ),
     ] {
         assert_eq!(
@@ -1054,3 +1046,49 @@ fn the_registries_bind_the_world_map_constants() {
 #[cfg(test)]
 #[path = "world_map_fuzz_tests.rs"]
 mod fuzz_tests;
+
+#[test]
+fn handle_budget_rejects_snapshot_and_delta() {
+    let origin = position(0, 0, 0);
+    let tiles: Vec<_> = window(origin)
+        .into_iter()
+        .take(MAX_MAP_VIEW_HANDLES / MAX_TILE_ITEMS + 1)
+        .map(|at| {
+            let mut tile = largest_tile(at);
+            for item in &mut tile.items {
+                item.origin = MapOrigin::Handle(NonZeroU64::MIN);
+            }
+            tile
+        })
+        .collect();
+    let mut raw = Vec::new();
+    push_header(&mut raw, &header(origin));
+    for tile in &tiles {
+        push_tile(&mut raw, 2, tile).expect("tile");
+    }
+    assert_eq!(
+        decode_world_map_snapshot(&raw),
+        Err(WorldMapWireError::LimitExceeded)
+    );
+    assert_eq!(
+        decode_world_map_delta(&header(origin), &raw),
+        Err(WorldMapWireError::LimitExceeded)
+    );
+    let snapshot = WorldMapViewSnapshot {
+        header: header(origin),
+        tiles: tiles.clone(),
+    };
+    assert_eq!(
+        encode_world_map_snapshot(&snapshot),
+        Err(WorldMapWireError::LimitExceeded)
+    );
+    let delta = WorldMapViewDelta {
+        header: header(origin),
+        tiles,
+        cleared: vec![],
+    };
+    assert_eq!(
+        encode_world_map_delta(&header(origin), &delta),
+        Err(WorldMapWireError::LimitExceeded)
+    );
+}

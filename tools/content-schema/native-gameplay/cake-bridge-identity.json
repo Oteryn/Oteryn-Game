@@ -1,0 +1,92 @@
+{
+  "schema": "OTERYN_CAKE_BRIDGE_IDENTITY/v1",
+  "item_id": 48227,
+  "reason": "OWNER_APPROVED_CANONICAL_IDENTITY",
+  "decision": "OWNER DECISION 2026-11-08: Zatwierdzam 48227",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "sources": [
+    {
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "src/items/item.cpp",
+      "sha256": "e27e622bf4fd9a94d7fffb3a818fd0c5f911e6fbf4b92844320154ded326950b"
+    },
+    {
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "src/items/items.hpp",
+      "sha256": "06d52ee83250ba852fe804c6b006b0aac150ceb26893e9079fa8c93502d209ca"
+    },
+    {
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "src/items/items.cpp",
+      "sha256": "f39d8fc6c1c81b8ec6f749e1f152dd945472ffd5a36b9cf3cd9a3a64b2f19b1d"
+    },
+    {
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "src/protobuf/appearances.proto",
+      "sha256": "3aaf2965b14d9c3c0252876f8d3e228f20188568a03f8840b122588dbb76b78f"
+    },
+    {
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/scripts/lib/a_piece_of_cake_config.lua",
+      "sha256": "044d68d0ed8a6b73b860365f6c7e917de62e249c7e176aa575788a0de51f4da9"
+    },
+    {
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data/items/items.xml",
+      "sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509"
+    },
+    {
+      "source_key": "oteryn:source.canary",
+      "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data/items/appearances.dat",
+      "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+    },
+    {
+      "source_key": "oteryn:source.canary",
+      "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data/items/items.xml",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+    }
+  ],
+  "method": "Pinned protobuf flags + exact Crystal Items loader + ItemType defaults + Item factory + explicit Cake bridge producer",
+  "producer": "data-global/scripts/lib/a_piece_of_cake_config.lua:249-292",
+  "items_xml_present": false,
+  "appearance_flags": {
+    "bank": true,
+    "bank_waypoints": 150,
+    "unmove": true,
+    "automap": true,
+    "automap_color": 121,
+    "fullbank": true
+  },
+  "status": "Canonical Item identity approved by the owner on 2026-11-08",
+  "definition": {
+    "kind": "Item",
+    "identity": {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i48227",
+      "revision": "definition-r1"
+    },
+    "client_projection": "ClientSafe",
+    "materializable": false,
+    "stack_class": "Unknown"
+  },
+  "binding": {
+    "source_key": "oteryn:source.crystalserver",
+    "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "identity_namespace": "ots/item_server_id",
+    "external_id": "48227",
+    "target": {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i48227",
+      "revision": "definition-r1"
+    },
+    "disposition": "EXACT"
+  }
+}

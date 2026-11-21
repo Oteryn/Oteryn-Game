@@ -20,12 +20,7 @@ impl PlayLink {
             return false;
         }
         self.animus_request(Intent::Refresh);
-        #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
-            lock(&self.mailbox).animus.open = true;
-        }
+        lock(&self.mailbox).animus.open = true;
         true
     }
 }

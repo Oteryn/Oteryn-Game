@@ -1,4 +1,4 @@
-//! Local HUD sidebars. General game miniwindows have their own independent owner.
+//! Local HUD sidebars. The Bevy shell presents the game windows beside them.
 use super::PlayView;
 use super::feature_local_reference_preferences::settings::PreferenceError;
 use serde::{Deserialize, Serialize};
@@ -217,15 +217,21 @@ impl HudLayout {
                                 .rect(*id, root, scale)
                                 .is_some_and(|rect| bounds[1] < rect[1].saturating_add(rect[3] / 2))
                     });
-                    if let Some(before) = before {
-                        let mut order: Vec<_> =
-                            self.order.into_iter().filter(|id| *id != panel).collect();
-                        if let Some(index) = order.iter().position(|id| *id == before) {
-                            order.insert(index, panel);
-                        }
-                        if let Ok(order) = order.try_into() {
-                            self.order = order;
-                        }
+                    let mut order: Vec<_> =
+                        self.order.into_iter().filter(|id| *id != panel).collect();
+                    let index = before
+                        .and_then(|before| order.iter().position(|id| *id == before))
+                        .unwrap_or_else(|| {
+                            order
+                                .iter()
+                                .rposition(|id| {
+                                    self.pane(*id).visible && self.pane(*id).dock == dock
+                                })
+                                .map_or(order.len(), |index| index + 1)
+                        });
+                    order.insert(index, panel);
+                    if let Ok(order) = order.try_into() {
+                        self.order = order;
                     }
                 }
             }
@@ -246,5 +252,35 @@ impl PlayView {
         self.set_preferences(preferences)?;
         self.local.hud_edit = super::feature_0017_attack::view::next_edit();
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn dragging_to_dock_end_appends_after_last_panel() {
+        for dock in [HudDock::Left, HudDock::Right] {
+            let mut layout = HudLayout::default();
+            for panel in [HudPanel::Combat, HudPanel::Conditions] {
+                layout.apply(HudAction::Visible(panel, true), [1200, 1000], 100);
+                layout.apply(HudAction::Dock(panel, dock), [1200, 1000], 100);
+            }
+            let x = if dock == HudDock::Left { 0 } else { 960 };
+            assert!(layout.apply(
+                HudAction::Dragged(HudPanel::Combat, [x, 800, 240, 120]),
+                [1200, 1000],
+                100
+            ));
+            let docked: Vec<_> = layout
+                .order
+                .iter()
+                .copied()
+                .filter(|panel| layout.pane(*panel).visible && layout.pane(*panel).dock == dock)
+                .collect();
+            assert_eq!(docked, [HudPanel::Conditions, HudPanel::Combat]);
+            assert!(layout.valid());
+        }
     }
 }

@@ -129,6 +129,7 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) {
             }
             panel.catalogue.clear();
             panel.catalogue_query_categories.clear();
+            panel.catalogue_items_query = None;
             panel.catalogue_next = None;
             panel.catalogue_drop_next = None;
             panel.catalogue_market = None;
@@ -163,8 +164,6 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) {
             return;
         }
         if reply.status == 1 && matches!(panel.last_request, Some(Request::Catalogue(_))) {
-            panel.catalogue_page = None;
-            panel.catalogue_query = None;
             panel.clear_sources();
         }
         if reply.status == 1

@@ -213,7 +213,7 @@ fn same_reward_semantics(
 
 /// Both the Charm view and unlock decision call this under the same character root lock.
 /// The rows are immutable earning evidence; no parallel spendable balance is materialized.
-pub(super) async fn earned_points(
+pub(in crate::durability) async fn earned_points(
     connection: &mut PgConnection,
     character: CharacterId,
 ) -> std::result::Result<Vec<u32>, DurabilityError> {

@@ -9,6 +9,7 @@ use std::time::Duration;
 /// A tool identity from the pinned item catalogue.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TerrainTool {
+    ElementalSoil(u16),
     Shovel,
     Pick,
     Machete,
@@ -36,6 +37,10 @@ impl TerrainTool {
             return Some(Self::Crowbar);
         }
         Some(match key {
+            "oteryn:item.tibia.i940" => Self::ElementalSoil(940),
+            "oteryn:item.tibia.i941" => Self::ElementalSoil(941),
+            "oteryn:item.tibia.i944" => Self::ElementalSoil(944),
+            "oteryn:item.tibia.i945" => Self::ElementalSoil(945),
             "oteryn:item.tibia.i3457" | "oteryn:item.tibia.i5710" => Self::Shovel,
             "oteryn:item.tibia.i3456" => Self::Pick,
             // Crystal register_actions.lua:864-885 routes each Secret Agent multi-tool
@@ -85,10 +90,32 @@ pub fn dispatch<'a>(
     committed_at_unix_ms: i64,
 ) -> Option<TerrainTransformPlan<'a>> {
     let tool = TerrainTool::from_production_key(tool_key)?;
-    let binding = catalogue.iter().find(|binding| {
-        binding.tool == tool
-            && binding.target == target_state
-            && binding.required_action == target_action
+    // Crystal's Secret Agent scripts try these actions in source order.
+    let tools: &[TerrainTool] = match tool_key {
+        "oteryn:item.tibia.i9594" => {
+            &[TerrainTool::Shovel, TerrainTool::Pick, TerrainTool::Machete]
+        }
+        "oteryn:item.tibia.i9596" => &[
+            TerrainTool::Scythe,
+            TerrainTool::Sickle,
+            TerrainTool::Shovel,
+            TerrainTool::Pick,
+            TerrainTool::Machete,
+        ],
+        "oteryn:item.tibia.i9598" => &[
+            TerrainTool::Crowbar,
+            TerrainTool::Shovel,
+            TerrainTool::Pick,
+            TerrainTool::Machete,
+        ],
+        _ => std::slice::from_ref(&tool),
+    };
+    let binding = tools.iter().find_map(|tool| {
+        catalogue.iter().find(|binding| {
+            binding.tool == *tool
+                && binding.target == target_state
+                && binding.required_action == target_action
+        })
     })?;
     let first_deadline_unix_ms = binding.decay.first().and_then(|step| {
         i64::try_from(step.after.as_millis())
@@ -151,10 +178,16 @@ pub fn crystal_core_bindings() -> Vec<TerrainToolBinding> {
             required_action: None,
             transformed: 17151,
             yield_item: None,
-            decay: vec![DecayStep {
-                state: 17153,
-                after: Duration::from_secs(300),
-            }],
+            decay: vec![
+                DecayStep {
+                    state: 17152,
+                    after: Duration::from_secs(21600),
+                },
+                DecayStep {
+                    state: 17153,
+                    after: Duration::from_secs(21600),
+                },
+            ],
         },
         TerrainToolBinding {
             tool: TerrainTool::Shovel,
@@ -212,16 +245,7 @@ pub fn crystal_core_bindings() -> Vec<TerrainToolBinding> {
             required_action: None,
             transformed: 5463,
             yield_item: Some(5466),
-            decay: vec![
-                DecayStep {
-                    state: 5470,
-                    after: Duration::from_secs(240),
-                },
-                DecayStep {
-                    state: 5465,
-                    after: Duration::from_secs(240),
-                },
-            ],
+            decay: Vec::new(),
         },
         TerrainToolBinding {
             tool: TerrainTool::Sickle,
@@ -283,17 +307,23 @@ pub fn crystal_core_bindings() -> Vec<TerrainToolBinding> {
     // Global's loose stone piles all open to their immediately following appearance. Keep this
     // family data-driven so the production USE_WITH path applies the same custody, CAS, receipt,
     // and deadline recovery as the large-hole mapping above.
-    bindings.extend([593, 606, 608, 21341].map(|target| TerrainToolBinding {
-        tool: TerrainTool::Shovel,
-        target,
-        required_action: None,
-        transformed: target + 1,
-        yield_item: None,
-        decay: vec![DecayStep {
-            state: target,
-            after: Duration::from_secs(600),
-        }],
-    }));
+    bindings.extend(
+        [(593, 60), (606, 300), (608, 300), (21341, 0)].map(|(target, secs)| TerrainToolBinding {
+            tool: TerrainTool::Shovel,
+            target,
+            required_action: None,
+            transformed: target + 1,
+            yield_item: None,
+            decay: if secs == 0 {
+                Vec::new()
+            } else {
+                vec![DecayStep {
+                    state: target,
+                    after: Duration::from_secs(secs),
+                }]
+            },
+        }),
+    );
     // Crystal their_masters_voice.lua:43,111-127. The encounter's one-hour reset is
     // shared, so these individual mutations must not invent independent regrowth clocks.
     bindings.extend((12059..=12063).map(|target| TerrainToolBinding {
@@ -304,6 +334,30 @@ pub fn crystal_core_bindings() -> Vec<TerrainToolBinding> {
         yield_item: None,
         decay: Vec::new(),
     }));
+    bindings.extend(
+        oteryn_gameplay_items::elemental_soil::CHARGES.map(|(soil, before, after)| {
+            TerrainToolBinding {
+                tool: TerrainTool::ElementalSoil(soil),
+                target: u32::from(before),
+                required_action: None,
+                transformed: u32::from(after),
+                yield_item: None,
+                decay: vec![DecayStep {
+                    state: u32::from(before),
+                    after: Duration::from_secs(120),
+                }],
+            }
+        }),
+    );
+    // Crystal soils1.lua: energy adds a field; it neither replaces nor decays the altar.
+    bindings.push(TerrainToolBinding {
+        tool: TerrainTool::ElementalSoil(945),
+        target: 7737,
+        required_action: None,
+        transformed: 7737,
+        yield_item: None,
+        decay: Vec::new(),
+    });
     bindings
 }
 
@@ -375,6 +429,73 @@ pub fn voice_mage(draw: u64) -> VoiceSpawn {
 #[allow(clippy::expect_used)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn source_decay_chains_follow_transformed_item_definitions() {
+        let catalogue = crystal_core_bindings();
+        for (target, seconds) in [
+            (593, Some(60)),
+            (606, Some(300)),
+            (608, Some(300)),
+            (21341, None),
+        ] {
+            let plan = dispatch(&catalogue, "oteryn:item.tibia.i3457", target, None, 1000)
+                .expect("shovel");
+            assert_eq!(
+                plan.first_deadline_unix_ms,
+                seconds.map(|s| 1000 + s * 1000)
+            );
+            assert_eq!(plan.binding.decay.len(), usize::from(seconds.is_some()));
+        }
+        let spice = dispatch(&catalogue, "oteryn:item.tibia.i3308", 17153, None, 0).expect("spice");
+        assert_eq!(
+            spice.binding.decay,
+            vec![
+                DecayStep {
+                    state: 17152,
+                    after: Duration::from_secs(21600)
+                },
+                DecayStep {
+                    state: 17153,
+                    after: Duration::from_secs(21600)
+                }
+            ]
+        );
+        let cane = dispatch(&catalogue, "oteryn:item.tibia.i3453", 5464, None, 0).expect("cane");
+        assert!(cane.binding.decay.is_empty());
+        assert_eq!(cane.first_deadline_unix_ms, None);
+    }
+
+    #[test]
+    fn multitools_resolve_each_supported_target_family() {
+        let catalogue = crystal_core_bindings();
+        for tool in [
+            "oteryn:item.tibia.i9594",
+            "oteryn:item.tibia.i9596",
+            "oteryn:item.tibia.i9598",
+        ] {
+            for (target, action, family) in [
+                (593, None, TerrainTool::Shovel),
+                (354, Some(101), TerrainTool::Pick),
+                (3696, None, TerrainTool::Machete),
+            ] {
+                let plan =
+                    dispatch(&catalogue, tool, target, action, 0).expect("multi-tool action");
+                assert_eq!(plan.binding.tool, family);
+            }
+        }
+        assert_eq!(
+            dispatch(&catalogue, "oteryn:item.tibia.i9596", 5463, None, 0)
+                .expect("multi-tool sickle")
+                .binding
+                .tool,
+            TerrainTool::Sickle
+        );
+        for tool in ["oteryn:item.tibia.i9594", "oteryn:item.tibia.i9598"] {
+            assert!(dispatch(&catalogue, tool, 5463, None, 0).is_none());
+            assert!(dispatch(&catalogue, tool, 3653, None, 0).is_none());
+        }
+    }
 
     #[test]
     fn tool_dispatch_maps_qualified_pairs_and_refuses_wrong_targets() {

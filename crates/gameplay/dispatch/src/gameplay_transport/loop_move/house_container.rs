@@ -116,6 +116,7 @@ pub(super) async fn observe(
         .take(usize::from(capacity))
         .map(|entry| {
             Some(ViewItem {
+                appearance_id: super::super::item_view::appearance_of(&entry.item.definition),
                 key: ItemKey::Instance(entry.item.item_instance_id),
                 item_definition_ref: definition_ref(index, &entry.item.definition)?,
                 count: NonZeroU32::new(entry.item.quantity)?,
@@ -185,7 +186,7 @@ pub(super) async fn move_item(
     };
     let result = admission
         .root
-        .commit_house_item_loop_move_with_capacity(
+        .commit_house_item_loop_move_at(
             permit,
             admission.character,
             admission.holder,
@@ -200,6 +201,8 @@ pub(super) async fn move_item(
                 destination,
             },
             house_capacity_v2,
+            // Capability 510: the placed entry takes the requested slot in the same transaction.
+            request.slot,
         )
         .await;
     if matches!(result, Ok(Ok(_))) {

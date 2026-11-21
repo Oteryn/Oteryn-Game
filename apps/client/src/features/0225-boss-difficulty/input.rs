@@ -16,12 +16,7 @@ impl PlayLink {
         if !oteryn_client_ui::boss_difficulty::open_key(events) {
             return false;
         }
-        #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
-            lock(&self.mailbox).boss_difficulty.open = true;
-        }
+        lock(&self.mailbox).boss_difficulty.open = true;
         true
     }
 }

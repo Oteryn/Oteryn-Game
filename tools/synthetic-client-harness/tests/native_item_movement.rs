@@ -48,7 +48,7 @@ impl Stepper for Items {
             assert_eq!(request.count, Some(7));
             assert!(matches!(
                 request.destination,
-                ItemMoveDestination::Container(_)
+                ItemMoveDestination::Container(..)
             ));
             self.inventory.entries[0].count =
                 13.try_into().map_err(|_| SessionError::SessionUnusable)?;
@@ -95,6 +95,7 @@ fn wait_for(mut condition: impl FnMut() -> bool) -> Result<(), String> {
 }
 fn scenario() -> Result<(), String> {
     let entry = ItemEntry {
+        appearance_id: 0,
         handle: 2.try_into().map_err(|_| "handle")?,
         item_definition_ref: 3031.try_into().map_err(|_| "definition")?,
         count: 20.try_into().map_err(|_| "count")?,
@@ -119,6 +120,7 @@ fn scenario() -> Result<(), String> {
     }));
     link.item_drag_drop(Some(ItemMoveDestination::Container(
         3.try_into().map_err(|_| "container")?,
+        None,
     )));
     assert!(link.item_movement().prompt.is_some());
     link.item_move_confirm(Some(0));

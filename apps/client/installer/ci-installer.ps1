@@ -4,7 +4,7 @@
 #
 # Two installers are built: A for $ReleaseId and a fixture B (<version>+dev.ci.g000000000000,
 # a rebuild of the same commit) so that the distinct-previous-release rules of section 2.1 can be
-# checked. Only A is published.
+# checked. Only A is published. Use PowerShell 7.4+ and an unused -WorkDir.
 param(
     [Parameter(Mandatory = $true)] [string] $ReleaseId,
     [Parameter(Mandatory = $true)] [string] $ClientVersion,
@@ -24,9 +24,6 @@ $Installer = Join-Path $PSScriptRoot 'oteryn-client.iss'
 $Sign = Join-Path $PSScriptRoot 'sign.ps1'
 $Release = Join-Path (Get-Location) "target\$Target\release"
 $FixtureId = "$ClientVersion+$Channel.ci.g000000000000"
-$InstallDir = Join-Path $WorkDir 'install\Programs\Oteryn'
-$UserData = Join-Path $WorkDir 'install\Oteryn'
-$Logs = Join-Path $WorkDir 'logs'
 $Sid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
 $SetupMutexName = "Global\OterynClientSetup-$Sid"
 $ClientMutexName = "Global\OterynClient-$Sid"
@@ -45,7 +42,7 @@ function Write-Utf8([string] $Path, [string] $Text) {
     [IO.File]::WriteAllText($Path, $Text, [Text.UTF8Encoding]::new($false))
 }
 
-# The release payload of section 2.1: the client, the dev client.env and an empty packages.json.
+# The release payload also includes the shipped UI theme.
 function New-Payload([string] $Id, [string] $Commit) {
     $payload = Join-Path $WorkDir "payload\$Id"
     $launcherDir = Join-Path $WorkDir "launcher\$Id"
@@ -53,6 +50,7 @@ function New-Payload([string] $Id, [string] $Commit) {
     Copy-Item -LiteralPath (Join-Path $Release 'oteryn-client.exe') -Destination $payload
     Copy-Item -LiteralPath (Join-Path $Release 'oteryn-launcher.exe') -Destination $launcherDir
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot "client.env.$Channel") -Destination (Join-Path $payload 'client.env')
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'ui-assets') -Destination $payload -Recurse
     $manifest = [ordered]@{
         schema   = 'oteryn.client.packages.v1'
         release  = [ordered]@{
@@ -105,7 +103,7 @@ function Invoke-Setup([string] $Setup, [string[]] $Extra = @()) {
     $script:Run++
     $log = Join-Path $Logs "setup-$script:Run.log"
     $arguments = @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=`"$InstallDir`"", "/LOG=`"$log`"") + $Extra
-    $process = Wait-Run (Start-Process -FilePath $Setup -ArgumentList $arguments -PassThru) "setup run $script:Run"
+    $process = Wait-Run (Start-Process -FilePath $Setup -ArgumentList $arguments -Environment $ChildEnvironment -PassThru) "setup run $script:Run"
     Write-Host "setup run $script:Run ($([IO.Path]::GetFileName($Setup)) $Extra) exited $($process.ExitCode)"
     $process.ExitCode
 }
@@ -136,6 +134,11 @@ function Assert-Releases([string[]] $Expected) {
     Check ($actual -ceq $wanted) "release directories are [$actual], expected [$wanted]"
 }
 
+function Invoke-Smoke([string] $Client) {
+    $process = Wait-Run (Start-Process -FilePath $Client -ArgumentList '--smoke' -Environment $ChildEnvironment -PassThru) 'client smoke'
+    $process.ExitCode
+}
+
 # Section 2.1 layout, and the active release runs.
 function Assert-Active([string] $Directory) {
     Check ((Current) -ceq $Directory) "current.txt is '$(Current)', expected '$Directory'"
@@ -143,11 +146,13 @@ function Assert-Active([string] $Directory) {
     Check (-not (Test-Path -LiteralPath (Join-Path $InstallDir 'current.txt.new'))) 'current.txt.new was left behind'
     $releaseDir = Join-Path $InstallDir "releases\$Directory"
     $files = @(Get-ChildItem -LiteralPath $releaseDir -Force | ForEach-Object Name | Sort-Object) -join ','
-    Check ($files -ceq 'client.env,oteryn-client.exe,packages.json') "release $Directory holds [$files]"
+    Check ($files -ceq 'client.env,oteryn-client.exe,packages.json,ui-assets') "release $Directory holds [$files]"
     $manifest = Get-Content -Raw -LiteralPath (Join-Path $releaseDir 'packages.json') | ConvertFrom-Json
     Check ($manifest.release.release_id -ceq ($Directory -replace '~\d+$', '')) "packages.json of $Directory names $($manifest.release.release_id)"
-    & (Join-Path $releaseDir 'oteryn-client.exe') --smoke
-    Check ($LASTEXITCODE -eq 0) "installed $Directory --smoke exited $LASTEXITCODE"
+    $assets = Join-Path $releaseDir 'ui-assets'
+    Check (Test-Path -LiteralPath $assets -PathType Container) 'installed runtime UI asset directory is missing'
+    $code = Invoke-Smoke (Join-Path $releaseDir 'oteryn-client.exe')
+    Check ($code -eq 0) "installed $Directory --smoke exited $code"
 }
 
 function Hold-Mutex([string] $Name) {
@@ -172,8 +177,18 @@ function Wait-Until([scriptblock] $Condition, [int] $Seconds, [string] $What) {
     }
 }
 
-New-Item -ItemType Directory -Force -Path $WorkDir, $Logs, $UserData | Out-Null
-Check (-not (Test-Path -LiteralPath $InstallDir)) "$InstallDir already exists"
+Check (-not (Test-Path -LiteralPath $WorkDir)) "'$WorkDir' already exists. Use a fresh -WorkDir."
+foreach ($artifact in @("oteryn-client-$ReleaseId-x86_64-setup.exe", 'packages.json', 'SHA256SUMS')) {
+    $artifactPath = Join-Path $OutputDir $artifact
+    Check (-not (Test-Path -LiteralPath $artifactPath)) "'$artifactPath' already exists. Use a fresh -OutputDir."
+}
+$WorkDir = (New-Item -ItemType Directory -Path $WorkDir).FullName
+$InstallDir = Join-Path $WorkDir 'install\Programs\Oteryn'
+$UserData = Join-Path $WorkDir 'install\Oteryn'
+$Logs = Join-Path $WorkDir 'logs'
+New-Item -ItemType Directory -Force -Path $Logs, $UserData | Out-Null
+# Launcher and client settings and diagnostics follow LOCALAPPDATA inherited by the child.
+$ChildEnvironment = @{ LOCALAPPDATA = (Join-Path $WorkDir 'localappdata'); OTERYN_UI_ASSETS = $null }
 $sentinel = Join-Path $UserData 'client.env'
 Write-Utf8 $sentinel "# per-user data that uninstall must keep`n"
 $sentinelHash = Sha256 $sentinel
@@ -184,7 +199,7 @@ $setupA = New-Installer $ReleaseId $payloadA
 
 # Fixture installer B: the same commit rebuilt with another release id.
 $env:OTERYN_RELEASE_ID = $FixtureId
-& cargo +1.99.1 build --locked --release -p oteryn-client --target $Target
+& cargo +1.100.0 build --locked --release -p oteryn-client --target $Target
 Check ($LASTEXITCODE -eq 0) "fixture build failed with exit code $LASTEXITCODE"
 $payloadB = New-Payload $FixtureId $GameCommit
 $fixtureOutput = Join-Path $WorkDir 'fixture'
@@ -257,7 +272,7 @@ Assert-Releases @($activeA, $FixtureId)
 
 Write-Host '--- Concurrent installer: a second install is refused while the first holds the transaction mutex'
 $before = Current
-$first = Start-Process -FilePath $setupB -ArgumentList @("/DIR=`"$InstallDir`"", "/LOG=`"$(Join-Path $Logs 'concurrent-first.log')`"") -PassThru
+$first = Start-Process -FilePath $setupB -ArgumentList @("/DIR=`"$InstallDir`"", "/LOG=`"$(Join-Path $Logs 'concurrent-first.log')`"") -Environment $ChildEnvironment -PassThru
 try {
     Wait-Until { Mutex-Exists $SetupMutexName } 60 'the first installer to take the transaction mutex'
     $code = Invoke-Setup $setupB
@@ -275,8 +290,8 @@ try {
     $code = Invoke-Uninstall
     Check ($code -ne 0) 'uninstall ran while setup held the transaction mutex'
     Check (Test-Path -LiteralPath (Join-Path $InstallDir 'unins000.exe')) 'the refused uninstall removed files'
-    & (Join-Path $InstallDir "releases\$activeA\oteryn-client.exe") --smoke
-    Check ($LASTEXITCODE -eq 3) "the client started while setup held the transaction mutex (exit $LASTEXITCODE)"
+    $code = Invoke-Smoke (Join-Path $InstallDir "releases\$activeA\oteryn-client.exe")
+    Check ($code -eq 3) "the client started while setup held the transaction mutex (exit $code)"
 } finally {
     $held.Dispose()
 }
@@ -299,7 +314,7 @@ Assert-Active $activeA
 Write-Host '--- Launcher --after-setup starts the client only after the transaction mutex is released'
 $held = Hold-Mutex $SetupMutexName
 try {
-    $launcher = Start-Process -FilePath (Join-Path $InstallDir 'oteryn-launcher.exe') -ArgumentList @('--after-setup', '--smoke') -PassThru
+    $launcher = Start-Process -FilePath (Join-Path $InstallDir 'oteryn-launcher.exe') -ArgumentList @('--after-setup', '--smoke') -Environment $ChildEnvironment -PassThru
     Start-Sleep -Seconds 3
     Check (-not $launcher.HasExited) 'the launcher did not wait for the transaction mutex'
     Check (-not (Mutex-Exists $ClientMutexName)) 'the client started while setup held the transaction mutex'
@@ -311,10 +326,8 @@ Check ($launcher.ExitCode -eq 0) "the launcher exited $($launcher.ExitCode)"
 Wait-Until { -not (Mutex-Exists $ClientMutexName) } 120 'the launched smoke client to exit'
 
 Write-Host '--- /RELAUNCH starts the active client through the launcher after setup exits'
-$relaunchDiagnosticDir = Join-Path $env:LOCALAPPDATA 'Oteryn'
-Remove-Item -Force -ErrorAction SilentlyContinue `
-    (Join-Path $relaunchDiagnosticDir 'startup.log'), `
-    (Join-Path $relaunchDiagnosticDir 'launcher-exit-code.txt')
+$ChildEnvironment.LOCALAPPDATA = Join-Path $WorkDir 'relaunch-localappdata'
+$relaunchDiagnosticDir = Join-Path $ChildEnvironment.LOCALAPPDATA 'Oteryn'
 Check ((Invoke-Setup $setupA @('/RELAUNCH')) -eq 0) 'install with /RELAUNCH failed'
 $relaunchDeadline = [DateTime]::UtcNow.AddSeconds(60)
 while (-not (Mutex-Exists $ClientMutexName) -and [DateTime]::UtcNow -lt $relaunchDeadline) {

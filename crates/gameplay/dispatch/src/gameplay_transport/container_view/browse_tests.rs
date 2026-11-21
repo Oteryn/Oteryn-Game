@@ -17,7 +17,7 @@ fn position() -> WorldTilePosition {
     WorldTilePosition {
         x: 300,
         y: 300,
-        floor: -7,
+        floor: 7,
     }
 }
 
@@ -25,7 +25,7 @@ fn field_key() -> ItemKey {
     ItemKey::BrowseField {
         x: 300,
         y: 300,
-        floor: -7,
+        floor: 7,
     }
 }
 
@@ -37,6 +37,7 @@ fn key(value: u16) -> ItemKey {
 
 fn item(value: u16) -> ViewItem {
     ViewItem {
+        appearance_id: 0,
         key: key(value),
         item_definition_ref: NonZeroU32::MIN,
         count: NonZeroU32::MIN,

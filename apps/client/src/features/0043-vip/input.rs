@@ -1,5 +1,5 @@
 #[path = "account.rs"]
-mod account;
+pub(in crate::play) mod account;
 use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::vip::{Intent, request};
@@ -24,12 +24,7 @@ impl PlayLink {
             return false;
         }
         self.vip_request(Intent::Query(0));
-        #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
-            lock(&self.mailbox).vip.open = true;
-        }
+        lock(&self.mailbox).vip.open = true;
         true
     }
 }

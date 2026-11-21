@@ -28,16 +28,11 @@ impl vault::Vault for MemoryVault {
 fn manager(vault: Arc<MemoryVault>, folder: PathBuf) -> DeviceLogin {
     DeviceLogin {
         enabled: true,
+        forget_requested: Default::default(),
         vault,
         state: Default::default(),
         folder: Some(folder),
     }
-}
-fn folder(name: &str) -> Result<PathBuf, Box<dyn std::error::Error>> {
-    let root = std::env::temp_dir().join(format!("oteryn-t067-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    std::fs::create_dir_all(&root)?;
-    Ok(root)
 }
 fn options() -> MiscellaneousPreferences {
     MiscellaneousPreferences {
@@ -69,7 +64,9 @@ fn remembered_login_enrolls_restarts_rotates_before_results_and_revokes_over_htt
    (200,changed_response(&third,true)?),
    (200,fixture("revoke-response.json")?),
   ]).await?;
-  let path=folder("restart")?;let vault=Arc::new(MemoryVault::default());
+  let scratch = tempfile::tempdir()?;
+  let path = scratch.path().to_path_buf();
+  let vault=Arc::new(MemoryVault::default());
   let first=manager(vault.clone(),path.clone());
   let token=server.client.exchange_code("code","verifier","http://127.0.0.1/callback",CancellationToken::new()).await?;
   {let mut attempt=first.begin(&server.client,options(),CancellationToken::new()).await?.ok_or("attempt")?;
@@ -93,7 +90,7 @@ fn remembered_login_enrolls_restarts_rotates_before_results_and_revokes_over_htt
   assert_eq!(requests.len(),5);assert!(requests[1].ends_with(std::str::from_utf8(&fixture("enroll.json")?)?));
   assert!(requests[2].contains("/device-sessions/native-characters"));assert!(requests[3].contains(&format!("OterynDevice {second}")));
   assert!(requests[4].contains(&format!("OterynDevice {third}")));
-  server.finish().await?;std::fs::remove_dir_all(path)?;Ok(())
+  server.finish().await?;Ok(())
  })
 }
 #[test]
@@ -104,7 +101,8 @@ fn ticket_issued_after_request_clock_boundary_retains_the_rotated_session() -> T
             let server =
                 Server::start_with_delayed_ticket(vec![(200, changed_response(&successor, true)?)])
                     .await?;
-            let path = folder("ticket-boundary")?;
+            let scratch = tempfile::tempdir()?;
+            let path = scratch.path().to_path_buf();
             let vault = Arc::new(MemoryVault::default());
             vault::Vault::write(vault.as_ref(), &enrollment_response()?)
                 .map_err(std::io::Error::other)?;
@@ -133,7 +131,6 @@ fn ticket_issued_after_request_clock_boundary_retains_the_rotated_session() -> T
             }
             assert_eq!(server.requests.lock().map_err(|_| "requests")?.len(), 1);
             server.finish().await?;
-            std::fs::remove_dir_all(path)?;
             Ok(())
         })
     })
@@ -176,7 +173,8 @@ fn failed_rotation_forgets_predecessor_without_retry_and_session_options_are_not
             (200, fixture("revoke-response.json")?),
         ])
         .await?;
-        let path = folder("failure")?;
+        let scratch = tempfile::tempdir()?;
+        let path = scratch.path().to_path_buf();
         let vault = Arc::new(MemoryVault::default());
         vault::Vault::write(vault.as_ref(), &enrollment_response()?)
             .map_err(std::io::Error::other)?;
@@ -216,7 +214,6 @@ fn failed_rotation_forgets_predecessor_without_retry_and_session_options_are_not
                 .is_none()
         );
         server.finish().await?;
-        std::fs::remove_dir_all(path)?;
         Ok(())
     })
 }
@@ -230,7 +227,8 @@ fn a_successor_that_cannot_be_saved_is_revoked_before_any_result_is_used() -> Te
             (200, fixture("revoke-response.json")?),
         ])
         .await?;
-        let path = folder("save-failure")?;
+        let scratch = tempfile::tempdir()?;
+        let path = scratch.path().to_path_buf();
         let vault = Arc::new(MemoryVault::default());
         vault::Vault::write(vault.as_ref(), &enrollment_response()?)
             .map_err(std::io::Error::other)?;
@@ -258,7 +256,6 @@ fn a_successor_that_cannot_be_saved_is_revoked_before_any_result_is_used() -> Te
         assert_eq!(requests.len(), 2);
         assert!(requests[1].contains(&format!("OterynDevice {successor}")));
         server.finish().await?;
-        std::fs::remove_dir_all(path)?;
         Ok(())
     })
 }
@@ -285,7 +282,8 @@ fn process_session_uses_bound_enrollment_keeps_no_vault_secret_and_quick_login_r
             (200, fixture("revoke-response.json")?),
         ])
         .await?;
-        let path = folder("session")?;
+        let scratch = tempfile::tempdir()?;
+        let path = scratch.path().to_path_buf();
         let vault = Arc::new(MemoryVault::default());
         let login = manager(vault.clone(), path.clone());
         let options = MiscellaneousPreferences {
@@ -347,7 +345,72 @@ fn process_session_uses_bound_enrollment_keeps_no_vault_secret_and_quick_login_r
             assert!(!String::from_utf8_lossy(&bytes).contains("otd1."));
         }
         server.finish().await?;
-        std::fs::remove_dir_all(path)?;
+        Ok(())
+    })
+}
+
+impl DeviceLogin {
+    pub(crate) async fn hold_session_for_reentry_test(&self) -> impl Sized {
+        self.state.clone().lock_owned().await
+    }
+}
+
+#[cfg(bevy_shell)]
+impl DeviceLogin {
+    pub(crate) fn quick_login_fixture(folder: PathBuf) -> Self {
+        manager(Arc::new(MemoryVault::default()), folder)
+    }
+}
+
+#[test]
+fn sign_out_stays_failed_until_it_can_lock_and_clear_the_vault() -> TestResult {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    runtime.block_on(async {
+        let server = Server::start(vec![]).await?;
+        let root = tempfile::tempdir()?;
+        let vault = Arc::new(MemoryVault::default());
+        vault::Vault::write(vault.as_ref(), b"invalid saved credential")
+            .map_err(std::io::Error::other)?;
+        let login = manager(vault.clone(), root.path().to_path_buf());
+        let lock_path = root.path().join("credential.lock");
+        std::fs::create_dir(&lock_path)?;
+        assert!(login.sign_out(&server.client).await.is_err());
+        assert!(
+            vault::Vault::read(vault.as_ref())
+                .map_err(std::io::Error::other)?
+                .is_some()
+        );
+        std::fs::remove_dir(&lock_path)?;
+        let held = std::fs::OpenOptions::new()
+            .create(true)
+            .truncate(false)
+            .write(true)
+            .open(&lock_path)?;
+        held.try_lock()?;
+        let result = tokio::time::timeout(
+            std::time::Duration::from_secs(3),
+            login.sign_out(&server.client),
+        )
+        .await;
+        drop(held);
+        assert!(
+            result?.is_err(),
+            "lock contention must report a failed revocation"
+        );
+        assert!(
+            vault::Vault::read(vault.as_ref())
+                .map_err(std::io::Error::other)?
+                .is_some()
+        );
+        login.sign_out(&server.client).await?;
+        assert!(
+            vault::Vault::read(vault.as_ref())
+                .map_err(std::io::Error::other)?
+                .is_none()
+        );
+        server.finish().await?;
         Ok(())
     })
 }

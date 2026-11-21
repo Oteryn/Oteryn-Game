@@ -31,6 +31,8 @@ fn e2e_c07_replays_field_placement_contact_and_expiry() -> Result<(), BoxError> 
         })
         .map_err(|error| format!("map snapshot: {error:?}"))?;
         let (client, mut server) = tokio::io::duplex(256 * 1024);
+        let (go_tx, go_rx) = tokio::sync::oneshot::channel::<()>();
+        let (written_tx, written_rx) = tokio::sync::oneshot::channel::<()>();
         let peer = tokio::spawn(async move {
             join_peer_with(
                 &mut server,
@@ -56,13 +58,16 @@ fn e2e_c07_replays_field_placement_contact_and_expiry() -> Result<(), BoxError> 
             ] {
                 write_frame(&mut server, &frame).await?;
             }
-            tokio::time::sleep(Duration::from_millis(200)).await;
+            go_rx.await?;
             // Replaying the old placement is the refusal case: base revision 1 is stale.
             write_frame(
                 &mut server,
                 &encode_state_delta(1, 44, 17, 1, 2, 1, &placed)?,
             )
             .await?;
+            written_tx
+                .send(())
+                .map_err(|()| "stale frame receiver dropped")?;
             Ok::<(), BoxError>(())
         });
         let admission = Admission {
@@ -83,6 +88,8 @@ fn e2e_c07_replays_field_placement_contact_and_expiry() -> Result<(), BoxError> 
             session.actor_vitals().map(|vitals| vitals.health),
             Some(health_after)
         );
+        go_tx.send(()).map_err(|()| "peer dropped go receiver")?;
+        written_rx.await?;
         let before_invalid = session.actor_vitals().copied();
         assert!(
             session

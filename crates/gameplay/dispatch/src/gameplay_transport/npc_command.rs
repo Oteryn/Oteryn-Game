@@ -38,7 +38,8 @@ type RecentIntents = VecDeque<u64>;
 #[path = "benevola.rs"]
 mod benevola;
 mod cake;
-mod catalogue;
+mod cake_brutus;
+pub(super) mod catalogue;
 mod catalogue_track_mutation;
 mod classic_quests;
 mod coin_exchange;
@@ -54,17 +55,21 @@ pub(super) mod hireling_services;
 mod hive_shared;
 mod isle_of_evil;
 mod liquid_black;
+mod magic_effects;
 mod marriage;
 mod monk;
+mod mordecai_shop;
 mod npc_item_exchanges;
 mod planegazer_finale;
 mod premium_purchase;
 mod quest_dialogue;
 mod quest_shop;
-mod reward_callbacks;
+pub(super) mod reward_callbacks;
+mod reward_facts;
 mod seasonal;
 mod service_context;
 mod session_transfer;
+mod stag_beaks;
 mod threatened_dreams;
 mod viola;
 mod wrath_sleeping_dragon;
@@ -77,8 +82,8 @@ pub(super) use premium_purchase::resume_npc_talk;
 struct SessionNpc {
     recent: RecentIntents,
     healing_command: Option<u64>,
-    /// The NPC whose trade window the session was shown (domain 8).
-    window: Option<EntityRef>,
+    /// The NPC and optional shop category shown to the session (domain 8).
+    window: Option<(EntityRef, Option<&'static mordecai_shop::Category>)>,
     /// The exact bounded offer list shown in this window, including its rank filter.
     window_offers: Vec<crate::content::ProjectV2ServiceOffer>,
     /// Display cache only; the NPC trade writer independently checks quest points.
@@ -131,6 +136,8 @@ pub struct NpcConversations {
     #[cfg(test)]
     fixture_callback_rows:
         std::sync::OnceLock<Vec<oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback>>,
+    #[cfg(test)]
+    fixture_offer_rows: std::sync::OnceLock<Vec<reward_callbacks::Offer>>,
 }
 
 #[cfg(test)]
@@ -321,7 +328,7 @@ impl NpcConversations {
     ) -> Option<NpcTradeWindow> {
         let mut sessions = self.sessions.lock().ok()?;
         let state = sessions.get_mut(&session)?;
-        let shown = state.window?;
+        let (shown, _) = state.window?;
         talking_to
             .is_none_or(|identity| identity != shown.identity)
             .then(|| {
@@ -347,16 +354,41 @@ impl NpcConversations {
         now: SemanticTimeMicros,
         items: Option<&ItemDefinitionIndex>,
     ) -> NpcTalkOutcome {
+        let prior_focus = chat.engaged(session);
         let mut outcome = self.converse(chat, runtime, actor, session, intent, now);
         let talking_to = chat.engaged(session);
         let opened = (outcome.disposition == NpcIntentDisposition::Ok
-            && talking_to.is_some_and(|npc| npc.placement_identity() == intent.npc_actor.identity)
-            && ChatText::parse(&intent.text).is_ok_and(|text| {
-                service_context::live_npc(runtime, actor, session, intent.npc_actor).is_some_and(
-                    |npc| oteryn_gameplay_npc::npc_talk::asks_to_trade_for(&npc.key, text.as_str()),
-                )
-            }))
-        .then(|| self.open_window(chat, runtime, session, intent.npc_actor, items))
+            && talking_to.is_some_and(|npc| npc.placement_identity() == intent.npc_actor.identity))
+        .then(|| {
+            let npc = service_context::live_npc(runtime, actor, session, intent.npc_actor)?;
+            let focused = prior_focus == Some(npc.actor);
+            let category = focused
+                .then(|| mordecai_shop::Category::for_message(&npc.key, &intent.text))
+                .flatten();
+            let text = ChatText::parse(&intent.text).ok()?;
+            if category.is_none()
+                && !oteryn_gameplay_npc::npc_talk::asks_to_trade_for(&npc.key, text.as_str())
+            {
+                return None;
+            }
+            if focused
+                && chat
+                    .npc_talk()
+                    .and_then(|book| book.get(&npc.key))
+                    .is_some_and(|entry| {
+                        entry.dialogue_keyword_preempts_trade(&npc.key, text.as_str())
+                    })
+            {
+                return None;
+            }
+            if let Some(category) = category {
+                outcome.conversation = Some(NpcConversation {
+                    open: Some((intent.npc_actor, NpcConversationState::Open)),
+                    lines: vec![category.reply()],
+                });
+            }
+            self.open_window(chat, runtime, session, intent.npc_actor, items, category)
+        })
         .flatten();
         outcome.window = match opened {
             Some(window) => Some(window),
@@ -380,6 +412,62 @@ impl NpcConversations {
         session: GameSessionId,
         intent: &NpcTradeIntent,
         items: Option<&ItemDefinitionIndex>,
+    ) -> Result<NpcTradeOffer, Box<NpcTradeRefusal>> {
+        self.trade_in_with_maximum(
+            chat,
+            runtime,
+            actor,
+            session,
+            intent,
+            items,
+            MAX_TRADE_QUANTITY,
+        )
+    }
+
+    /// Match metadata to this session's active native hireling window.
+    pub(super) fn hireling_quote(&self, session: GameSessionId, npc: EntityRef) -> bool {
+        self.sessions.lock().ok().is_some_and(|sessions| {
+            sessions
+                .get(&session)
+                .and_then(|state| state.hireling.as_ref())
+                .is_some_and(|hireling| hireling.npc == npc)
+        })
+    }
+
+    /// The negotiated shop extension uses the same range, catalogue and session owner.
+    pub fn trade_in_extended(
+        &self,
+        chat: &ChatRuntime,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        intent: &NpcTradeIntent,
+        items: Option<&ItemDefinitionIndex>,
+    ) -> Result<NpcTradeOffer, Box<NpcTradeRefusal>> {
+        self.trade_in_with_maximum(
+            chat,
+            runtime,
+            actor,
+            session,
+            intent,
+            items,
+            oteryn_gameplay_economy::npc_trade::NPC_TRADE_BULK_QUANTITY_MAX,
+        )
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the exact current NPC context and negotiated quantity ceiling"
+    )]
+    fn trade_in_with_maximum(
+        &self,
+        chat: &ChatRuntime,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        intent: &NpcTradeIntent,
+        items: Option<&ItemDefinitionIndex>,
+        maximum: u32,
     ) -> Result<NpcTradeOffer, Box<NpcTradeRefusal>> {
         use NpcIntentDisposition as Disposition;
         let Some(speaker) = service_context::speaker_position(runtime, actor, session) else {
@@ -407,15 +495,15 @@ impl NpcConversations {
                     .map(|state| (state.window, state.window_offers.clone()))
             })
             .unwrap_or_default();
-        if shown != Some(intent.npc_actor) {
+        let Some((_, category)) = shown.filter(|(npc, _)| *npc == intent.npc_actor) else {
             // No window is open on this NPC: there is nothing to re-project.
             return Err(Box::new(NpcTradeRefusal::only(Disposition::Rejected)));
-        }
+        };
         // NPC-0 §5.1: the client's revision, offer and price are only stale checks; a mismatch
         // is STALE and re-projects the window.
         let stale = || {
             let window = self
-                .open_window(chat, runtime, session, intent.npc_actor, items)
+                .open_window(chat, runtime, session, intent.npc_actor, items, category)
                 .unwrap_or_default();
             if window.open.is_none()
                 && let Ok(mut sessions) = self.sessions.lock()
@@ -439,12 +527,14 @@ impl NpcConversations {
             return Err(Box::new(rejected()));
         };
         if crate::durability::house_hireling::npc_identity(npc_key).is_some() {
-            return hireling_services::resolve_trade(self, session, npc_key, intent, items);
+            return hireling_services::resolve_trade(
+                self, session, npc_key, intent, items, maximum,
+            );
         }
         let Some(entry) = book.get(npc_key) else {
             return Err(Box::new(rejected()));
         };
-        if !(1..=MAX_TRADE_QUANTITY).contains(&intent.quantity) {
+        if !(1..=maximum).contains(&intent.quantity) {
             return Err(Box::new(rejected()));
         }
         if intent.catalogue_revision != book.catalogue_revision() {
@@ -639,7 +729,13 @@ impl NpcConversations {
             disposition: Disposition::Ok,
             conversation: Some(NpcConversation {
                 open,
-                lines: vec![reply.text],
+                // Native conditional greetings may open focus without literal text.
+                // Empty lines are invalid on domain 7; an empty line list is valid.
+                lines: if reply.text.is_empty() {
+                    Vec::new()
+                } else {
+                    vec![reply.text]
+                },
             }),
             window: None,
         }
@@ -695,6 +791,12 @@ pub(super) async fn npc_bank_talk(
     } else {
         None
     };
+    let stag_beaks = match stag_beaks::preview(admission, actor, command, &intent).await {
+        Ok(proof) => proof,
+        Err(()) => return unknown(),
+    };
+    let source_appearance = catalogue::appearance(admission, actor, command, &intent).await;
+    let source_inventory = catalogue::inventory(admission, actor, command, &intent).await;
     let mut runtime = admission.runtime.lock().await;
     let points = admission
         .states
@@ -817,7 +919,53 @@ pub(super) async fn npc_bank_talk(
     }
     // Eligible reward callbacks own their exact keyword before dedicated NPC
     // dialogue; ineligible stages remain with that dialogue's native owner.
-    if let Some(step) = reward_callbacks::prepare(admission, actor, command, &intent, &runtime) {
+    let inventory = if reward_callbacks::needs_facts(admission, actor, command, &intent, &runtime) {
+        let context = admission.states.npc_conversations.current_npc(
+            &admission.states.chat,
+            &runtime,
+            actor,
+            session,
+            &intent,
+        );
+        drop(runtime);
+        let Some(facts) = reward_facts::read(admission, command).await else {
+            return rejected();
+        };
+        runtime = admission.runtime.lock().await;
+        if !runtime
+            .player_control_facts(actor, session)
+            .is_ok_and(|facts| facts.control_loss.is_none())
+            || admission
+                .states
+                .spell_states
+                .try_lock()
+                .map_or(true, |states| states.is_dead(actor))
+        {
+            return rejected();
+        }
+        if admission.states.npc_conversations.current_npc(
+            &admission.states.chat,
+            &runtime,
+            actor,
+            session,
+            &intent,
+        ) != context
+        {
+            return rejected();
+        }
+        Some(facts)
+    } else {
+        None
+    };
+    if let Some(step) = reward_callbacks::prepare(
+        admission,
+        actor,
+        command,
+        &intent,
+        &runtime,
+        inventory.as_ref(),
+        reward_callbacks::Phase::Rewards,
+    ) {
         drop(runtime);
         drop(_trade_permit);
         return quest_dialogue::apply(admission, actor, command, intent, step).await;
@@ -864,6 +1012,11 @@ pub(super) async fn npc_bank_talk(
         )
         .await;
     }
+    if let Some(context) = cake_brutus::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return cake_brutus::apply(admission, actor, command, intent, context).await;
+    }
     if let Some(step) = cake::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
         drop(_trade_permit);
@@ -883,21 +1036,37 @@ pub(super) async fn npc_bank_talk(
         drop(_trade_permit);
         return hero_of_bounac::apply(admission, actor, command, intent, step).await;
     }
-    if let Some(step) = catalogue::prepare(admission, actor, command, &intent, &runtime, &ordinary)
-    {
+    if let Some(step) = catalogue::prepare(
+        admission,
+        actor,
+        command,
+        &intent,
+        &runtime,
+        &ordinary,
+        stag_beaks.as_ref(),
+        source_appearance.as_ref(),
+        source_inventory.as_ref(),
+    ) {
         drop(runtime);
         drop(_trade_permit);
         return catalogue::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = reward_callbacks::prepare(
+        admission,
+        actor,
+        command,
+        &intent,
+        &runtime,
+        inventory.as_ref(),
+        reward_callbacks::Phase::Offers,
+    ) {
+        drop(runtime);
+        drop(_trade_permit);
+        return quest_dialogue::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = viola::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
         return viola::apply(admission, actor, command, intent, step).await;
-    }
-    if let Some(step) = catalogue::prepare(admission, actor, command, &intent, &runtime, &ordinary)
-    {
-        drop(runtime);
-        drop(_trade_permit);
-        return catalogue::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = classic_quests::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);

@@ -13,7 +13,7 @@ const FIELD: oteryn_protocol_oteryn::item_view::WorldTilePosition =
     oteryn_protocol_oteryn::item_view::WorldTilePosition {
         x: 7,
         y: 0,
-        floor: -7,
+        floor: 7,
     };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

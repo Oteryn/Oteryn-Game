@@ -7,6 +7,8 @@ use super::*;
 pub enum SessionEvent {
     CastCasterLine(AppliedDelta<cast_chat::CasterLine>),
     CastRoster(AppliedDelta<cast_chat::Roster>),
+    /// A fully validated handoff and destination snapshot replaced this logical session.
+    ActivityScope(AppliedDelta<activity_scope::ActivityScopeSnapshot>),
     AnalyserFacts(AppliedDelta<Vec<analyser_transport::AnalyserFact>>),
     /// Domain 15 delta 1 of a session with capability 486: each fact with its optional attacker.
     AnalyserAttributedFacts(AppliedDelta<Vec<analyser_transport::AttributedFact>>),
@@ -41,6 +43,10 @@ pub enum SessionEvent {
     WorldSpatialEntities(AppliedDelta<WorldSpatialEntitiesDelta>),
     /// Domain 1 icons-only replacement for the currently visible players.
     PartyIcons(AppliedDelta<Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>>),
+    /// Domain 1 capacity-only delta under capability 508: the own character's capacity.
+    InventoryCapacity(AppliedDelta<oteryn_protocol_oteryn::inventory_capacity::InventoryCapacity>),
+    /// Domain 1 emblems-only replacement under capability 509, for the currently visible players.
+    GuildEmblems(AppliedDelta<Vec<oteryn_protocol_oteryn::guild_emblem::GuildEmblem>>),
     /// Domain 2 `WORLD_OBJECT_OVERLAY`.
     WorldObjectOverlay(AppliedDelta<WorldObjectOverlayEntry>),
     /// Domain 17: validated bundle map changes, bound to the admitted content and reset epoch.
@@ -81,6 +87,7 @@ impl SessionEvent {
     pub const fn domain_id(&self) -> u32 {
         match self {
             Self::CastCasterLine(_) | Self::CastRoster(_) => 103,
+            Self::ActivityScope(_) => 99,
             Self::AnalyserFacts(_) | Self::AnalyserAttributedFacts(_) => 15,
             Self::PlayerTrade(_) => player_trade::STATE_DOMAIN_PLAYER_TRADE,
             Self::GatedSnapshotReplaced(snapshot) => snapshot.value.domain_id,
@@ -104,7 +111,11 @@ impl SessionEvent {
             Self::ServerMessage(_) => {
                 oteryn_protocol_oteryn::zones_nologout::STATE_DOMAIN_SERVER_MESSAGES
             }
-            Self::WorldSpatial(_) | Self::WorldSpatialEntities(_) | Self::PartyIcons(_) => {
+            Self::WorldSpatial(_)
+            | Self::WorldSpatialEntities(_)
+            | Self::PartyIcons(_)
+            | Self::InventoryCapacity(_)
+            | Self::GuildEmblems(_) => {
                 world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY
             }
             Self::WorldObjectOverlay(_) => world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,

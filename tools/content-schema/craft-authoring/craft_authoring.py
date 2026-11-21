@@ -31,7 +31,7 @@ DIRECTORY = "content/craft/"
 INDEX = DIRECTORY + "index.json"
 CATALOGUE = DIRECTORY + "recipes.json"
 SOURCES = DIRECTORY + "sources.json"
-SNAPSHOT_SHA256 = "62cf16d9367b55e489da0e5f22e794f5b4b20ad7618dc865e59192cc4fc9997b"
+SNAPSHOT_SHA256 = "308a912c4995fe985ee6084a94828bb16990a16e88c67687a6f7c115ce558e5d"
 XML_SHA256 = "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
 CURVE = {"base": 10000, "per_skill": 597, "skill_offset": 10,
          "minimum": 10000, "maximum": 50000, "roll_scale": 1000, "roll_max": 100}
@@ -187,6 +187,8 @@ def build():
         {"kind": "map_item", "definition": item(9582)}, [operand("USED", 9306, "KEEP")],
         weighted(entries), tool="rod", target_effect={"effect": "RETIRE"})
     append_rows(row, snapshot, items_xml_lines(), item, operand, fixed)
+    import tainted_souls
+    recipes.append(tainted_souls.row(item, operand, fixed, MESSAGES))
     return sorted(recipes, key=lambda r: r["identity"]["key"])
 
 

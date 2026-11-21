@@ -215,8 +215,8 @@ fn bundle_bytes(
         .collect();
     let manifest = Manifest {
         subareas: Default::default(),
-        format: bundle::FORMAT.into(),
-        min_reader_version: bundle::VERSION,
+        format: bundle::LEGACY_FORMAT.into(),
+        min_reader_version: bundle::LEGACY_VERSION,
         projection_class: "server".into(),
         compiler_version: "test".into(),
         build_class: BuildClass::Production,
@@ -360,7 +360,8 @@ impl Fixture {
     /// The client's window equals a fresh snapshot at its origin.
     fn assert_client_matches_a_fresh_snapshot(&mut self) {
         let client = self.client.clone().expect("joined");
-        let origin = client.header.origin;
+        let mut origin = client.header.origin;
+        origin.floor = -origin.floor;
         let source = MapViewSource {
             overlay: &self.overlay,
             facts: &self.facts,
@@ -381,7 +382,7 @@ impl Fixture {
             .as_ref()
             .expect("joined")
             .tiles
-            .get(&tile_order(&at(pos)))
+            .get(&tile_order(&position(pos)))
     }
 
     fn hide(&mut self, pos: TilePos, ordinal: u8) {
@@ -651,7 +652,7 @@ fn appearance_ids_come_from_the_definition_key() {
 // --- Move source and object revision -----------------------------------------------------------
 
 #[test]
-fn only_a_pickupable_unbound_base_entry_carries_a_handle() {
+fn movable_leaves_and_unbound_captured_containers_carry_handles() {
     let open = tp(21, 20, -7);
     let house = tp(22, 20, -7);
     let mut fixture = Fixture::new(vec![
@@ -679,8 +680,8 @@ fn only_a_pickupable_unbound_base_entry_carries_a_handle() {
     };
     let handle = fixture.items.table().handle(&coin).expect("coin handle");
     assert_eq!(tile.items[1].origin, MapOrigin::Handle(handle));
-    // The door, the bound chest, the furniture and the bag holding contents keep their ordinals.
-    for (index, ordinal) in [(2, 2), (3, 3), (4, 4), (5, 5)] {
+    // Bound objects and fixed empty scenery keep their ordinal targets.
+    for (index, ordinal) in [(2, 2), (3, 3), (4, 4)] {
         assert_eq!(
             tile.items[index].origin,
             MapOrigin::BaseOrdinal {
@@ -689,6 +690,17 @@ fn only_a_pickupable_unbound_base_entry_carries_a_handle() {
             }
         );
     }
+    let source = ItemKey::MapBase {
+        bundle_digest: fixture.digest(),
+        placement_key: key(open, 5),
+        reset_epoch: 1,
+    };
+    let handle = fixture
+        .items
+        .table()
+        .handle(&source)
+        .expect("captured container handle");
+    assert_eq!(tile.items[5].origin, MapOrigin::Handle(handle));
     // Contents are never on the map.
     assert_eq!(tile.items.len(), 6);
     // A house tile's coin is not movable.
@@ -900,7 +912,7 @@ fn the_1024_nearest_entries_carry_handles_and_a_step_resends_the_tile_that_gains
     let resent = delta
         .tiles
         .iter()
-        .find(|tile| tile.position == at(far))
+        .find(|tile| tile.position == position(far))
         .expect("the far tile is resent");
     assert!(
         resent
@@ -917,7 +929,7 @@ fn the_1024_nearest_entries_carry_handles_and_a_step_resends_the_tile_that_gains
     let resent = delta
         .tiles
         .iter()
-        .find(|tile| tile.position == at(far))
+        .find(|tile| tile.position == position(far))
         .expect("the far tile is resent");
     assert_eq!(resent.items[6].origin, MapOrigin::DisplayOnly);
     fixture.assert_client_matches_a_fresh_snapshot();
@@ -960,7 +972,7 @@ fn a_diagonal_step_sends_at_most_31_tiles_per_floor_and_matches_a_fresh_snapshot
     let view = fixture.client.as_ref().expect("joined").header;
     let update = fixture.step(tp(31, 31, -7));
     let delta = decoded_delta(&fixture, &update, &view);
-    for floor in [-7, -6] {
+    for floor in [7, 6] {
         let count = delta
             .tiles
             .iter()
@@ -1007,7 +1019,7 @@ fn a_step_onto_empty_tiles_sends_the_origin_alone() {
     let update = fixture.step(next);
     let delta = decoded_delta(&fixture, &update, &view);
     assert!(delta.tiles.is_empty() && delta.cleared.is_empty());
-    assert_eq!(delta.header.origin, at(next));
+    assert_eq!(delta.header.origin, position(next));
     fixture.assert_client_matches_a_fresh_snapshot();
 }
 
@@ -1021,7 +1033,7 @@ fn an_emptied_tile_in_view_is_cleared() {
     let update = fixture.step(ACTOR);
     let delta = decoded_delta(&fixture, &update, &view);
     assert!(delta.tiles.is_empty());
-    assert_eq!(delta.cleared, vec![at(pos)]);
+    assert_eq!(delta.cleared, vec![position(pos)]);
     assert!(fixture.client_tile(pos).is_none());
     fixture.assert_client_matches_a_fresh_snapshot();
 }
@@ -1077,7 +1089,7 @@ fn an_update_that_does_not_encode_sends_nothing_and_keeps_the_view() {
             ActorPosition {
                 x: -1,
                 y: 0,
-                floor: -7
+                floor: 7
             }
         ),
         Err(MapViewError::Position)
@@ -1094,6 +1106,7 @@ fn entry(id: u32) -> ComposedEntry {
             ordinal: 0,
             placement_key: 0,
             movable: false,
+            openable_source: false,
         },
         facts: facts_of(id),
     }
@@ -1220,7 +1233,7 @@ fn walking_out_of_a_house_changes_only_the_header() {
             .expect("joined")
             .header
             .first_visible_floor,
-        -7
+        7
     );
     assert!(matches!(
         fixture.step(tp(21, 20, -7)),
@@ -1233,7 +1246,7 @@ fn walking_out_of_a_house_changes_only_the_header() {
             .expect("joined")
             .header
             .first_visible_floor,
-        -7
+        7
     );
 
     let view = fixture.client.as_ref().expect("joined").header;
@@ -1245,7 +1258,7 @@ fn walking_out_of_a_house_changes_only_the_header() {
     let view = fixture.client.as_ref().expect("joined").header;
     let update = fixture.step(tp(21, 20, -7));
     let delta = decoded_delta(&fixture, &update, &view);
-    assert_eq!(delta.header.first_visible_floor, -7);
+    assert_eq!(delta.header.first_visible_floor, 7);
     fixture.assert_client_matches_a_fresh_snapshot();
 
     // A stair up sends a snapshot with the new floor's value.
@@ -1268,14 +1281,14 @@ fn an_overlay_change_that_removes_the_roof_sends_the_new_value() {
             .expect("joined")
             .header
             .first_visible_floor,
-        -7
+        7
     );
     fixture.hide(roof, 0);
     let view = fixture.client.as_ref().expect("joined").header;
     let update = fixture.step(ACTOR);
     let delta = decoded_delta(&fixture, &update, &view);
     assert_eq!(delta.header.first_visible_floor, 0);
-    assert_eq!(delta.cleared, vec![at(roof)]);
+    assert_eq!(delta.cleared, vec![position(roof)]);
     fixture.assert_client_matches_a_fresh_snapshot();
 }
 
@@ -1455,18 +1468,22 @@ fn seeded_walks_send_the_bytes_recorded_before_the_viewport_optimisation() {
 // all 324 recorded updates with the v5/runtime-3 fixture proved that only the 32-byte
 // bundle_digest in each of the 283 payload-carrying updates changed; all other bytes,
 // update counts and payload lengths are identical.
+// QREADY1 adds captured-container source handles to these same seeded updates;
+// the retained-identity digest below independently guards their exact wire bytes.
 const GOLDEN: (usize, usize, &str) = (
     324,
-    5_431_963,
-    "212408a7b0779ef39613a505339751452e860ead8f1d1252d277c6584515e4db",
+    6_074_547,
+    "a7853b7f889b06e035b50f64e8e2c16b4acc1fe59b6329931cca20da6e332b56",
 );
 
 // v7 changes only bundle identity in these layerless fixtures. The recorder separately
 // reconstitutes v6 identity and must reproduce this retained wire digest byte for byte.
+// QREADY1 captured-container handles extend the seeded wire in both identity
+// views; the bound-container and read-only source-handle assertions above guard it.
 const LEGACY_GOLDEN: (usize, usize, &str) = (
     324,
-    5_431_963,
-    "de9296f14dff732c590cdf36a8bcd6ae670db88662794e9605354f36b8dcb8d4",
+    6_074_547,
+    "4b99dc8ea6262753cf917c8066f367d90b3de42ef5d6f85ba0b03e51f090469f",
 );
 
 // --- MAP01-VIEWPORT-US -------------------------------------------------------------------------
@@ -1586,7 +1603,7 @@ fn measure_viewports<F: MapFacts>(label: &str, overlay: &ChannelOverlay, facts: 
 }
 
 /// MAP-CUTOVER-1b: the admission path of a bundle World plans domain 17 from the bundle's own
-/// overlay and facts at the runtime position, with the native floor `-z`, a snapshot at join and
+/// overlay and facts at the runtime position, with Global z, a snapshot at join and
 /// a delta after a step; a fixture World has no domain 17.
 #[test]
 fn map_cutover_a_bundle_world_plans_domain_17_at_the_runtime_position() {
@@ -1676,7 +1693,7 @@ fn map_cutover_a_bundle_world_plans_domain_17_at_the_runtime_position() {
     let coin = decoded
         .tiles
         .iter()
-        .find(|tile| tile.position == at(tp(22, 21, -7)))
+        .find(|tile| tile.position == position(tp(22, 21, -7)))
         .expect("the coin tile");
     assert_eq!(
         definitions(coin),

@@ -28,6 +28,7 @@ impl Stepper for Peer {
                 .inventory
                 .entries
                 .push(oteryn_client_runtime::depot::ItemEntry {
+                    appearance_id: 0,
                     handle: NonZeroU64::MIN.saturating_add(41),
                     item_definition_ref: std::num::NonZeroU32::MIN,
                     count: std::num::NonZeroU32::MIN,
@@ -298,4 +299,74 @@ fn t174_all_scroll_families_reach_the_client_imbue_play_queue() -> Result<(), Er
         })?
         .join()
         .map_err(|_| "scroll play queue panic")?
+}
+
+#[test]
+fn paid_imbuement_requires_confirmation_of_the_exact_snapshot() -> Result<(), Error> {
+    for intent in [Intent::Apply, Intent::Clear] {
+        let (link, mut receiver, _) = play_channel();
+        let mut m = crate::play::mailbox::lock(&link.mailbox);
+        m.imbue.selected = true;
+        m.imbue.open = true;
+        m.imbue.select_item(NonZeroU64::MIN);
+        m.imbue.window = Some(imbuement::ImbuementWindow {
+            slot_count: 1,
+            applied: vec![imbuement::AppliedImbuement {
+                slot: 0,
+                family: 2,
+                tier: 1,
+                remaining_ms: 5000,
+            }],
+            offers: vec![imbuement::ImbuementOffer {
+                family: 3,
+                tier: 1,
+                gold: 100,
+                requires_premium: false,
+            }],
+            clear_gold: 50,
+        });
+        if intent == Intent::Apply {
+            m.imbue.window.as_mut().ok_or("window")?.applied.clear();
+        }
+        let expected = m.imbue.clone();
+        assert!(!crate::play::feature_0068_imbue::input::enqueue_confirmed(
+            &mut m,
+            &link.commands,
+            &expected,
+            intent,
+            false
+        ));
+        assert!(receiver.try_recv().is_err());
+        for changed in 0..5 {
+            m.imbue = expected.clone();
+            match changed {
+                0 => m.imbue.item = Some(NonZeroU64::MIN.saturating_add(1)),
+                1 => m.imbue.slot = 1,
+                2 => m.imbue.offer = 1,
+                3 => m.imbue.window.as_mut().ok_or("window")?.offers[0].gold += 1,
+                _ => m.imbue.window.as_mut().ok_or("window")?.clear_gold += 1,
+            }
+            assert!(!crate::play::feature_0068_imbue::input::enqueue_confirmed(
+                &mut m,
+                &link.commands,
+                &expected,
+                intent,
+                true
+            ));
+            assert!(receiver.try_recv().is_err());
+        }
+        m.imbue = expected.clone();
+        assert!(crate::play::feature_0068_imbue::input::enqueue_confirmed(
+            &mut m,
+            &link.commands,
+            &expected,
+            intent,
+            true
+        ));
+        assert!(matches!(
+            receiver.try_recv()?,
+            crate::combat_input::PlayCommand::Imbue(_)
+        ));
+    }
+    Ok(())
 }

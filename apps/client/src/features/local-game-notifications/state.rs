@@ -9,8 +9,8 @@ use std::{
 pub(in crate::play) struct Owned {
     pub center: Mutex<NotificationCenter>,
     pub origin: Instant,
-    #[cfg(all(windows, not(test)))]
-    started: std::sync::atomic::AtomicBool,
+    pub screen_dismissals: std::sync::atomic::AtomicU64,
+    shared_frontend: std::sync::atomic::AtomicBool,
 }
 #[derive(Debug, Clone)]
 pub(in crate::play) struct State(pub Arc<Owned>);
@@ -19,8 +19,8 @@ impl Default for State {
         Self(Arc::new(Owned {
             center: Mutex::new(NotificationCenter::default()),
             origin: Instant::now(),
-            #[cfg(all(windows, not(test)))]
-            started: std::sync::atomic::AtomicBool::new(false),
+            screen_dismissals: std::sync::atomic::AtomicU64::new(0),
+            shared_frontend: std::sync::atomic::AtomicBool::new(false),
         }))
     }
 }
@@ -28,7 +28,15 @@ pub(in crate::play) fn lock(owned: &Owned) -> MutexGuard<'_, NotificationCenter>
     owned.center.lock().unwrap_or_else(PoisonError::into_inner)
 }
 impl State {
+    pub fn use_shared_frontend(&self) {
+        self.0.shared_frontend.store(true, std::sync::atomic::Ordering::Relaxed);
+    }
+
     pub fn observe(&self, message: &AppliedDelta<ServerMessage>) {
+        // The shared frontend projects these receipts into its timed screen areas.
+        if self.0.shared_frontend.load(std::sync::atomic::Ordering::Relaxed) {
+            return;
+        }
         let (text, popup) = match &message.value {
             ServerMessage::StatusText(text) | ServerMessage::Advance(text) => (text, false),
             ServerMessage::Warning(text) => (text, true),
@@ -38,20 +46,7 @@ impl State {
     pub(in crate::play) fn show(&self, id: &str, text: &str, popup: bool) {
         let now_ms = self.elapsed(Instant::now());
         let inserted = lock(&self.0).show(id, text, popup, now_ms, 8000);
-        #[cfg(any(not(windows), test))]
         let _ = inserted;
-        #[cfg(all(windows, not(test)))]
-        if inserted
-            && !self
-                .0
-                .started
-                .swap(true, std::sync::atomic::Ordering::Relaxed)
-            && !super::view::native::open(Arc::downgrade(&self.0))
-        {
-            self.0
-                .started
-                .store(false, std::sync::atomic::Ordering::Relaxed);
-        }
     }
     pub fn elapsed(&self, now: Instant) -> u64 {
         u64::try_from(now.saturating_duration_since(self.0.origin).as_millis()).unwrap_or(u64::MAX)

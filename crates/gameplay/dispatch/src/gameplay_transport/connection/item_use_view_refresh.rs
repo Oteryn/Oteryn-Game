@@ -22,6 +22,7 @@ pub(super) async fn refresh<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
     let changed = view.inventory_committed(inventory);
     admitted.continuity.item_view = view.continuity();
     let mut deltas: Vec<_> = changed.ok()?.into_iter().collect();
+    view.inventory_refresh_pending = false;
     if let Some(views) = views {
         let refreshed = super::super::container_view::refresh::refresh(
             authority,
@@ -41,7 +42,6 @@ pub(super) async fn refresh<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
         admitted.continuity.server_sequence = *sequence;
         write_frame(stream, &frame).await.ok()?;
     }
-    view.inventory_refresh_pending = false;
     Some(())
 }
 

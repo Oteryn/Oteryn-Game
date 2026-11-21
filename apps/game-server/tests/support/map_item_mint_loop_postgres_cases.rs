@@ -270,6 +270,7 @@ fn map_item_mint_loop_preflight_and_overlay_acceptance_batch() -> TestResult {
         };
         let mut overlay = ChannelOverlay::new(base.clone(), world, channel);
         let request = MapItemMintRequest {
+            flat_crate: None,
             base_bundle_digest: base.digest(),
             ..pickup(command(20)?, key, 0, 5)
         };
@@ -332,6 +333,7 @@ fn map_item_mint_loop_preflight_and_overlay_acceptance_batch() -> TestResult {
                     &authority,
                     fence()?,
                     MapItemMintRequest {
+                        flat_crate: None,
                         base_bundle_digest: base.digest(),
                         ..pickup(command(21)?, key, 0, 5)
                     },
@@ -343,6 +345,7 @@ fn map_item_mint_loop_preflight_and_overlay_acceptance_batch() -> TestResult {
         // Fill the remaining nineteen real slots through the same MINT and loop owners.
         for ordinal in 0..19 {
             let request = MapItemMintRequest {
+                flat_crate: None,
                 base_bundle_digest: base.digest(),
                 item: facts(STONE, ItemStackClass::NonStackable),
                 ..pickup(
@@ -374,6 +377,7 @@ fn map_item_mint_loop_preflight_and_overlay_acceptance_batch() -> TestResult {
                 .map_err(debug)?;
         }
         let request = MapItemMintRequest {
+            flat_crate: None,
             base_bundle_digest: base.digest(),
             ..pickup(command(200)?, entry(1, 1, 20)?, 0, 100)
         };
@@ -430,6 +434,7 @@ fn map_item_mint_loop_preflight_and_overlay_acceptance_batch() -> TestResult {
                 &authority,
                 other_fence,
                 MapItemMintRequest {
+                    flat_crate: None,
                     base_bundle_digest: base.digest(),
                     ..pickup(command_in(SECOND_SESSION, 1)?, key, 0, 5)
                 },
@@ -457,6 +462,7 @@ fn map_item_mint_loop_preflight_and_overlay_acceptance_batch() -> TestResult {
                     &authority,
                     other_fence,
                     MapItemMintRequest {
+                        flat_crate: None,
                         base_bundle_digest: base.digest(),
                         ..pickup(command_in(SECOND_SESSION, 2)?, key, 0, 5)
                     },

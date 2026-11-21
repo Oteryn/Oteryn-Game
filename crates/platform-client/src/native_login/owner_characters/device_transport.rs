@@ -1,6 +1,11 @@
 use super::super::*;
 use crate::device_sessions::{DeviceCredential, DeviceSession, SessionKey, now};
 use serde::Deserialize;
+#[derive(serde::Serialize)]
+struct OperationRequest<'a> {
+    protocol_version: u32,
+    client_id: &'a str,
+}
 const DEVICE_BASE: &str = "/api/v1/game-auth/device-sessions";
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -33,6 +38,14 @@ impl ResponseBody {
         if object.len() != 5 + extra.len() || extra.iter().any(|key| !object.contains_key(*key)) {
             return Err(PlatformClientError::InvalidPayload.into());
         }
+        if suffix == "/native-characters"
+            && body
+                .characters
+                .as_ref()
+                .is_none_or(|characters| !super::valid_characters(characters))
+        {
+            return Err(PlatformClientError::InvalidPayload.into());
+        }
         Ok(body)
     }
     fn session(&self) -> Result<DeviceSession, NativeLoginError> {
@@ -53,7 +66,7 @@ impl NativeLoginClient {
         &self,
         suffix: &str,
         authorization: String,
-        body: serde_json::Value,
+        body: impl serde::Serialize + Send + Sync,
         cancellation: CancellationToken,
     ) -> Result<Vec<u8>, NativeLoginError> {
         if self.platform.scheme() != "https"
@@ -73,14 +86,21 @@ impl NativeLoginClient {
                 .client
                 .post(endpoint)
                 .header(reqwest::header::AUTHORIZATION, header)
+                .header(reqwest::header::ACCEPT, "application/json")
+                .header(reqwest::header::ACCEPT_LANGUAGE, "en")
                 .json(&body)
                 .send()
                 .await
                 .map_err(|_| PlatformClientError::Request)?;
-            if response.status() != StatusCode::OK {
-                return Err(NativeLoginError::TokenRefused);
+            let status = response.status();
+            let bytes = read_bounded(response, 16_384).await?;
+            if status != StatusCode::OK {
+                return Err(NativeLoginError::DeviceRefused(DeviceRefusal::decode(
+                    status.as_u16(),
+                    &bytes,
+                )?));
             }
-            Ok(read_bounded(response, 16_384).await?)
+            Ok(bytes)
         })
         .await
     }
@@ -125,7 +145,10 @@ impl NativeLoginClient {
             .device_post(
                 suffix,
                 format!("OterynDevice {}", session.device_credential.expose()),
-                serde_json::json!({"protocol_version":1,"client_id":self.oauth_client_id}),
+                OperationRequest {
+                    protocol_version: 1,
+                    client_id: &self.oauth_client_id,
+                },
                 cancel,
             )
             .await?;
@@ -148,17 +171,6 @@ impl NativeLoginClient {
         let characters = reply
             .characters
             .ok_or(PlatformClientError::InvalidPayload)?;
-        if characters.len() > 64
-            || characters.iter().any(|c| {
-                parse_uuid_v7(&c.character_id).is_none()
-                    || parse_uuid_v7(&c.world_id).is_none()
-                    || c.name.is_empty()
-                    || c.name.len() > 96
-                    || c.name.chars().any(char::is_control)
-            })
-        {
-            return Err(PlatformClientError::InvalidPayload.into());
-        }
         Ok((successor, characters))
     }
     pub async fn device_ticket(
@@ -168,6 +180,7 @@ impl NativeLoginClient {
     ) -> Result<(DeviceSession, NativeTicket), NativeLoginError> {
         let started = Instant::now();
         let reply = self.rotate_device(session, "/tickets", cancel).await?;
+        let received = Instant::now();
         // The issuer's lifetime starts during rotation; qualify its absolute
         // expiry at receipt while keeping the request-start monotonic budget.
         let utc = now()?;
@@ -193,7 +206,7 @@ impl NativeLoginClient {
             successor,
             NativeTicket {
                 secret: SecretText(ticket),
-                usable_until: started + Duration::from_secs(lifetime.min(expiry - utc)),
+                usable_until: ticket_deadline(started, received, lifetime, expiry - utc),
                 requests_sent: AtomicU32::new(0),
             },
         ))
@@ -207,7 +220,10 @@ impl NativeLoginClient {
             .device_post(
                 "/revoke",
                 format!("OterynDevice {}", credential.expose()),
-                serde_json::json!({"protocol_version":1,"client_id":self.oauth_client_id}),
+                OperationRequest {
+                    protocol_version: 1,
+                    client_id: &self.oauth_client_id,
+                },
                 cancel,
             )
             .await?;
@@ -244,9 +260,126 @@ impl NativeLoginClient {
     }
 }
 
+// Keep the monotonic conversion separate from response decoding.
+fn ticket_deadline(started: Instant, received: Instant, lifetime: u64, remaining: u64) -> Instant {
+    (received + Duration::from_secs(remaining)).min(started + Duration::from_secs(lifetime))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn operation_request_matches_contract_fixture_bytes() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let bytes = serde_json::to_vec(&OperationRequest {
+            protocol_version: 1,
+            client_id: "019a5f4a-1000-7000-8000-000000000001",
+        })?;
+        assert_eq!(
+            bytes,
+            include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../docs/contracts/fixtures/remembered-device-v1/rotate.json"
+            ))
+        );
+        Ok(())
+    }
+    #[test]
+    fn pinned_site_error_envelope_is_exact() -> Result<(), Box<dyn std::error::Error>> {
+        assert_eq!(
+            DeviceRefusal::decode(400, br#"{"status":400,"error":"Invalid request"}"#)?,
+            DeviceRefusal {
+                status: 400,
+                error: "Invalid request"
+            }
+        );
+        assert_eq!(
+            DeviceRefusal::decode(503, br#"{"status":503,"error":"Temporarily unavailable"}"#)?,
+            DeviceRefusal {
+                status: 503,
+                error: "Temporarily unavailable"
+            }
+        );
+        assert!(
+            DeviceRefusal::decode(
+                400,
+                br#"{"status":400,"error":"Invalid request","extra":true}"#
+            )
+            .is_err()
+        );
+        assert!(
+            DeviceRefusal::decode(401, br#"{"status":400,"error":"Invalid request"}"#).is_err()
+        );
+        assert!(
+            DeviceRefusal::decode(400, br#"{"status":400,"error":"invalid_request"}"#).is_err()
+        );
+        assert!(DeviceRefusal::decode(400, br#"{"error":"Invalid request"}"#).is_err());
+        Ok(())
+    }
+    #[test]
+    fn refusal_retains_exact_status_and_only_contract_error_values()
+    -> Result<(), Box<dyn std::error::Error>> {
+        for status in [400, 401, 429, 503] {
+            for error in [
+                "invalid_request",
+                "device_authorization_unavailable",
+                "too_many_requests",
+            ] {
+                let bytes = serde_json::to_vec(&serde_json::json!({"error":error}))?;
+                assert_eq!(
+                    DeviceRefusal::decode(status, &bytes)?,
+                    DeviceRefusal { status, error }
+                );
+            }
+        }
+        for bytes in [
+            br#"{"error":"unrecognized"}"#.as_slice(),
+            br#"{"error":"invalid_request","extra":true}"#,
+            br#"{"error":"invalid_request","error":"invalid_request"}"#,
+        ] {
+            assert_eq!(
+                DeviceRefusal::decode(401, bytes),
+                Err(PlatformClientError::InvalidPayload)
+            );
+        }
+        Ok(())
+    }
+    #[test]
+    fn device_character_responses_reject_invalid_summaries_and_duplicate_identities()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut body: serde_json::Value = serde_json::from_slice(include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../docs/contracts/fixtures/remembered-device-v1/enroll-response.json"
+        )))?;
+        let row = serde_json::json!({
+            "character_id": "01890a5d-ac96-774b-bcce-b302099a8058",
+            "world_id": "01890a5d-ac96-774b-bcce-b302099a8059",
+            "name": "Ari", "availability": "AVAILABLE"
+        });
+        body["characters"] = serde_json::json!([row.clone()]);
+        assert!(ResponseBody::parse(&serde_json::to_vec(&body)?, "/native-characters").is_ok());
+        for name in ["x".repeat(97), "A\nri".into(), String::new()] {
+            let mut invalid = row.clone();
+            invalid["name"] = name.into();
+            body["characters"] = serde_json::json!([invalid]);
+            assert!(
+                ResponseBody::parse(&serde_json::to_vec(&body)?, "/native-characters").is_err()
+            );
+        }
+        for world in [
+            "01890a5d-ac96-774b-bcce-b302099a8059",
+            "01890a5d-ac96-774b-bcce-b302099a805a",
+        ] {
+            let mut duplicate = row.clone();
+            duplicate["world_id"] = world.into();
+            body["characters"] = serde_json::json!([row.clone(), duplicate]);
+            assert!(
+                ResponseBody::parse(&serde_json::to_vec(&body)?, "/native-characters").is_err()
+            );
+        }
+        Ok(())
+    }
+
     #[test]
     fn exact_device_response_shapes_reject_null_extras_and_duplicate_members()
     -> Result<(), Box<dyn std::error::Error>> {
@@ -264,5 +397,25 @@ mod tests {
         );
         assert!(ResponseBody::parse(duplicate.as_bytes(), "").is_err());
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod deadline_tests {
+    use super::*;
+
+    #[test]
+    fn ticket_deadline_charges_latency_once_and_caps_the_request_budget() {
+        let started = Instant::now();
+        let received = started + Duration::from_secs(12);
+        assert_eq!(
+            ticket_deadline(started, received, 20, 8),
+            started + Duration::from_secs(20)
+        );
+        assert_eq!(
+            ticket_deadline(started, received, 20, 60),
+            started + Duration::from_secs(20)
+        );
+        assert!(ticket_deadline(started, received, 20, 8) > received);
     }
 }

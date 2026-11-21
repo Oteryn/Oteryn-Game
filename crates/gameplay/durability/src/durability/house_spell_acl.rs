@@ -6,12 +6,12 @@
 )]
 use super::spell_house_abi::{HouseAccess, HouseList, HousePresenceProof};
 use super::spell_item_transaction::{SpellItemAuthority, SpellItemError, check_transaction};
-use sqlx::{Postgres, Row, Transaction};
-use std::collections::BTreeSet;
+pub use oteryn_gameplay_housing::house_spell_acl::list_id as house_list_id;
 pub use oteryn_gameplay_housing::house_spell_acl::{
     HouseEditor, HouseListLine, list_access, list_lines, parse_list_line, permission,
 };
-pub use oteryn_gameplay_housing::house_spell_acl::list_id as house_list_id;
+use sqlx::{Postgres, Row, Transaction};
+use std::collections::BTreeSet;
 
 fn list_id(list: HouseList) -> Result<i64, SpellItemError> {
     house_list_id(list).map_err(SpellItemError::Rejected)
@@ -40,7 +40,60 @@ pub async fn house_access_for_character(
     house: &str,
     character: [u8; 16],
 ) -> Result<(u64, HouseAccess), SpellItemError> {
-    let row=sqlx::query("SELECT uuid_send(owner_character_id) AS owner,ownership_revision::text FROM game_house_ownership WHERE world_id=encode($1,'hex')::uuid AND house_key=$2 FOR SHARE")
+    let [access] = house_access_for_characters(tx, world, [(house, character)]).await?;
+    Ok(access)
+}
+
+/// Lock each property before reading access for a multi-House operation.
+pub async fn house_access_for_characters<const N: usize>(
+    tx: &mut Transaction<'_, Postgres>,
+    world: crate::foundation::WorldId,
+    requests: [(&str, [u8; 16]); N],
+) -> Result<[(u64, HouseAccess); N], SpellItemError> {
+    lock_house_properties(tx, world, requests.map(|(house, _)| house)).await?;
+    let mut result = [(0, HouseAccess::NotInvited); N];
+    for (slot, (house, character)) in result.iter_mut().zip(requests) {
+        *slot = read_house_access(tx, world, house, character).await?;
+    }
+    Ok(result)
+}
+
+/// The property lock port shared by single-House edits and multi-House access.
+pub async fn lock_house_properties<const N: usize>(
+    tx: &mut Transaction<'_, Postgres>,
+    world: crate::foundation::WorldId,
+    mut houses: [&str; N],
+) -> Result<(), SpellItemError> {
+    // All requests share this World. Lock House keys in one order even when
+    // caster/target roles are reversed, and lock a shared House only once.
+    houses.sort_unstable();
+    let mut previous = None;
+    for house in houses {
+        if previous == Some(house) {
+            continue;
+        }
+        previous = Some(house);
+        // The runtime cannot UPDATE the ownership anchor, even for a row lock.
+        // Lock the canonical property through its existing bounded definer port.
+        // Ownership's deferred anchor check requires this property to agree, so
+        // this fences ownership changes and serializes even absent ACL lists.
+        sqlx::query("SELECT house_key FROM game_house_property_lock(encode($1,'hex')::uuid,$2)")
+            .bind(world.as_bytes().as_slice())
+            .bind(house)
+            .fetch_optional(&mut **tx)
+            .await?
+            .ok_or(SpellItemError::Rejected("House ownership unavailable"))?;
+    }
+    Ok(())
+}
+
+async fn read_house_access(
+    tx: &mut Transaction<'_, Postgres>,
+    world: crate::foundation::WorldId,
+    house: &str,
+    character: [u8; 16],
+) -> Result<(u64, HouseAccess), SpellItemError> {
+    let row=sqlx::query("SELECT uuid_send(owner_character_id) AS owner,ownership_revision::text FROM game_house_ownership WHERE world_id=encode($1,'hex')::uuid AND house_key=$2")
         .bind(world.as_bytes().as_slice()).bind(house).fetch_optional(&mut **tx).await?.ok_or(SpellItemError::Rejected("House ownership unavailable"))?;
     let ownership = number(&row, "ownership_revision")?;
     if row.try_get::<Vec<u8>, _>("owner")? == character {
@@ -232,14 +285,20 @@ pub async fn save_editor_in_transaction(
     text: &str,
 ) -> Result<(String, HouseList, u64), SpellItemError> {
     check_transaction(tx, authority).await?;
-    let row=sqlx::query("SELECT house_key,list_id,ownership_revision::text,acl_revision::text,scope_generation::text,content_digest FROM game_house_editors WHERE editor_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND game_session_id=encode($3,'hex')::uuid AND world_id=encode($4,'hex')::uuid AND NOT consumed AND expires_at>statement_timestamp() FOR UPDATE")
-        .bind(editor.as_slice()).bind(authority.character_id_bytes().as_slice()).bind(authority.game_session_id().as_bytes().as_slice()).bind(authority.runtime_scope().world_id().as_bytes().as_slice()).fetch_optional(&mut **tx).await?.ok_or(SpellItemError::Rejected("House editor/session expired"))?;
+    let world = authority.runtime_scope().world_id();
+    // Discover the immutable binding without retaining an editor lock. Release
+    // takes property -> editors, so saves must use that same order and then
+    // revalidate the token under its row lock (it may have been deleted).
+    let house: String = sqlx::query_scalar("SELECT house_key FROM game_house_editors WHERE editor_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND game_session_id=encode($3,'hex')::uuid AND world_id=encode($4,'hex')::uuid AND NOT consumed AND expires_at>statement_timestamp()")
+        .bind(editor.as_slice()).bind(authority.character_id_bytes().as_slice()).bind(authority.game_session_id().as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut **tx).await?.ok_or(SpellItemError::Rejected("House editor/session expired"))?;
+    lock_house_properties(tx, world, [house.as_str()]).await?;
+    let row=sqlx::query("SELECT house_key,list_id,ownership_revision::text,acl_revision::text,scope_generation::text,content_digest FROM game_house_editors WHERE editor_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND game_session_id=encode($3,'hex')::uuid AND world_id=encode($4,'hex')::uuid AND house_key=$5 AND NOT consumed AND expires_at>statement_timestamp() FOR UPDATE")
+        .bind(editor.as_slice()).bind(authority.character_id_bytes().as_slice()).bind(authority.game_session_id().as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(&house).fetch_optional(&mut **tx).await?.ok_or(SpellItemError::Rejected("House editor/session expired"))?;
     if number(&row, "scope_generation")? != authority.scope_generation()
         || row.try_get::<Vec<u8>, _>("content_digest")? != authority.compatible_content_digest()
     {
         return Err(SpellItemError::Rejected("stale House editor generation"));
     }
-    let house: String = row.try_get("house_key")?;
     let id: i64 = row.try_get("list_id")?;
     let list = match id {
         -1 => HouseList::Guest,
@@ -249,17 +308,13 @@ pub async fn save_editor_in_transaction(
         ),
         _ => return Err(SpellItemError::Rejected("stored House list")),
     };
-    let (ownership, access) = owner_access(tx, authority, &house).await?;
+    let (ownership, access) = read_house_access(tx, world, &house, authority.character_id_bytes()).await?;
     if ownership != number(&row, "ownership_revision")? || !permission(access, list) {
         return Err(SpellItemError::Rejected(
             "House access changed after editor opening",
         ));
     }
-    let world = authority.runtime_scope().world_id();
-    // Serialize absent and existing lists on the one actual property row before
-    // reading/replacing a list. This also fences concurrent Guest/Subowner saves.
-    sqlx::query("SELECT house_key FROM game_house_ownership WHERE world_id=encode($1,'hex')::uuid AND house_key=$2 FOR UPDATE")
-        .bind(world.as_bytes().as_slice()).bind(&house).fetch_one(&mut **tx).await?;
+    // The property lock also serializes saves when no ACL row exists yet.
     let current:Option<String>=sqlx::query_scalar("SELECT revision::text FROM game_house_acl WHERE world_id=encode($1,'hex')::uuid AND house_key=$2 AND list_id=$3 FOR UPDATE")
         .bind(world.as_bytes().as_slice()).bind(&house).bind(id).fetch_optional(&mut **tx).await?;
     let revision = current
@@ -281,7 +336,7 @@ pub async fn save_editor_in_transaction(
         .map(|id| id.iter().map(|b| format!("{b:02x}")).collect())
         .collect();
     let command = authority.command();
-    let receipt:Vec<u8>=sqlx::query_scalar("INSERT INTO game_house_acl_receipts(receipt_id,world_id,house_key,list_id,character_id,game_session_id,command_id,ownership_revision,revision_before,revision_after,allow_everyone,members) VALUES(CASE WHEN $11::bytea IS NULL THEN game_character_uuid_v7() ELSE encode($11,'hex')::uuid END,encode($1,'hex')::uuid,$2,$3,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6::text::numeric(20,0),$7::text::numeric(20,0),$8::text::numeric(20,0),$9::text::numeric(20,0),$10,ARRAY(SELECT x::uuid FROM unnest($11::text[]) x)) RETURNING uuid_send(receipt_id)")
+    let receipt:Vec<u8>=sqlx::query_scalar("INSERT INTO game_house_acl_receipts(receipt_id,world_id,house_key,list_id,character_id,game_session_id,command_id,ownership_revision,revision_before,revision_after,allow_everyone,members) VALUES(game_character_uuid_v7(),encode($1,'hex')::uuid,$2,$3,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6::text::numeric(20,0),$7::text::numeric(20,0),$8::text::numeric(20,0),$9::text::numeric(20,0),$10,ARRAY(SELECT x::uuid FROM unnest($11::text[]) x)) RETURNING uuid_send(receipt_id)")
         .bind(world.as_bytes().as_slice()).bind(&house).bind(id).bind(authority.character_id_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(ownership.to_string()).bind(revision.to_string()).bind(next.to_string()).bind(allow).bind(&members).fetch_one(&mut **tx).await?;
     sqlx::query("INSERT INTO game_house_acl(world_id,house_key,list_id,revision,allow_everyone,members,last_receipt) VALUES(encode($1,'hex')::uuid,$2,$3,$4::text::numeric(20,0),$5,ARRAY(SELECT x::uuid FROM unnest($6::text[]) x),encode($7,'hex')::uuid) ON CONFLICT(world_id,house_key,list_id) DO UPDATE SET revision=EXCLUDED.revision,allow_everyone=EXCLUDED.allow_everyone,members=EXCLUDED.members,last_receipt=EXCLUDED.last_receipt")
         .bind(world.as_bytes().as_slice()).bind(&house).bind(id).bind(next.to_string()).bind(allow).bind(&members).bind(receipt).execute(&mut **tx).await?;

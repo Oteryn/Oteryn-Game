@@ -124,6 +124,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(actor) = admitted.runtime_actor else {
             return;
         };
+        if admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::actor_motion::CAPABILITY_ACTOR_MOTION_V1)
+            && !self
+                .runtime
+                .lock()
+                .await
+                .actor_motion(actor)
+                .is_some_and(|motion| motion.2 != 0)
+        {
+            return;
+        }
         let now = self.owner_now().get();
         if !self
             .states

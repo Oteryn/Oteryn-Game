@@ -5,6 +5,8 @@ mod depot_list;
 mod mail_capacity;
 #[path = "depot_dispatch/mail_cases.rs"]
 mod mail_cases;
+#[path = "depot_dispatch/manual_sort_cases.rs"]
+mod manual_sort_cases;
 #[path = "depot_dispatch/retrieve_cases.rs"]
 mod retrieve_cases;
 #[path = "depot_dispatch/stash_cases.rs"]
@@ -86,6 +88,23 @@ fn depot_search_dispatch_retrieves_all_depot_items_until_no_room_once() -> TestR
         .map_err(Into::into)
 }
 
+/// CONTAINER-MANUAL-SORT-1 (capability 510): a slotted deposit takes its depot box slot.
+#[test]
+fn depot_manual_sort_deposit_takes_its_box_slot_and_replays() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            scenario_with_premium(false, false, false, false, false, None, Mode::ManualSort)
+                .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "depot manual sort e2e panicked")?
+        .map_err(Into::into)
+}
+
 #[test]
 fn mail_dispatch_posts_a_carried_letter_into_a_mailbox_once() -> TestResult {
     std::thread::Builder::new()
@@ -96,6 +115,27 @@ fn mail_dispatch_posts_a_carried_letter_into_a_mailbox_once() -> TestResult {
         })?
         .join()
         .map_err(|_| "mail e2e panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn mail_dispatch_posting_a_parcel_refreshes_sender_capacity() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            scenario_with_premium(
+                false,
+                false,
+                false,
+                false,
+                false,
+                None,
+                Mode::MailPostCapacity,
+            )
+            .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "mail capacity thread panicked")?
         .map_err(Into::into)
 }
 
@@ -211,6 +251,8 @@ enum Mode {
     List,
     Mail,
     MailCapacity,
+    MailPostCapacity,
+    ManualSort,
     Retrieve,
 }
 
@@ -241,7 +283,10 @@ fn scenario_with_premium(
     stash_premium: Option<EntitlementState>,
     mode: Mode,
 ) -> TestResult {
-    let mail = matches!(mode, Mode::Mail | Mode::MailCapacity | Mode::List);
+    let mail = matches!(
+        mode,
+        Mode::Mail | Mode::MailCapacity | Mode::MailPostCapacity | Mode::List
+    );
     let retrieve = mode == Mode::Retrieve;
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "depot_dispatch", true, false)
@@ -259,13 +304,11 @@ fn scenario_with_premium(
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activated_pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;
-        if ground_movement || mode == Mode::List {
-            deps.room = activated_pin.qualified_room().clone();
-        }
+        deps.room = activated_pin.qualified_room().clone();
         let generation = controller.active().ok_or("active generation")?;
         let native = generation.native_gameplay().ok_or("native")?;
         let index = native.item_index().ok_or("item index")?;
@@ -386,7 +429,9 @@ fn scenario_with_premium(
                     reference: index.definition_ref("Item", key, "definition-r1")?,
                     solid: Some(key == backpack_definition.production_key),
                     blocks_projectile: false,
-                    pickupable: key == coin_definition.production_key,
+                    pickupable: key == coin_definition.production_key
+                        // This fixture exposes the mailbox handle required by command 124.
+                        || (mode == Mode::MailPostCapacity && key == "oteryn:item.tibia.i3501"),
                     door: false,
                 })
             },
@@ -395,12 +440,28 @@ fn scenario_with_premium(
         let cells = world
             .movement_cells(deps.room.movement_cells())
             .map_err(debug)?;
+        let frame = world.frame_binding_digest(deps.admitted.world_id);
+        deps.combat_room = Some(
+            activated_pin
+                .qualified_room()
+                .bundle_view(
+                    cells.clone(),
+                    frame,
+                    world.map_revision_digest(),
+                    crate::content::NativeEntryStart {
+                        x: 7,
+                        y: 0,
+                        floor: 7,
+                    },
+                )
+                .ok_or("bundle combat view")?,
+        );
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
             generation.identity().server_artifact_digest(),
             generation.identity().client_artifact_digest(),
-            activated_pin.frame_binding().digest(),
+            frame,
             world.map_revision_digest(),
             (7, 0, 7),
         );
@@ -483,7 +544,7 @@ fn scenario_with_premium(
             .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, NULL, $3, $4, $5)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(generation.identity().server_artifact_digest().as_slice())
-            .bind(generation.identity().client_artifact_digest().as_slice()).bind(activated_pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
+            .bind(generation.identity().client_artifact_digest().as_slice()).bind(frame.as_slice()).execute(&harness.pool).await?;
         // Seed only the carried target, using the existing MINT/TRANSFER owners. The behavior
         // under test starts below at the real dispatch, with a map handle issued by domain 17.
         let mut carried = None;
@@ -513,10 +574,17 @@ fn scenario_with_premium(
         } else {
             Vec::new()
         };
+        let page_fixture_start = 5;
+        if mode == Mode::ManualSort {
+            deps.initialize(&owner).await;
+        }
+        let mut first_page_item = None;
         let seeded: u32 = if mode == Mode::List {
             5
         } else if retrieve {
             22
+        } else if mode == Mode::ManualSort {
+            page_fixture_start + oteryn_gameplay_items::depot::DEPOT_PAGE_ENTRIES
         } else if stash || ground_container || mail {
             3
         } else {
@@ -636,14 +704,41 @@ fn scenario_with_premium(
                 .await
                 .map_err(debug)?;
             drop(permit);
-            if ordinal > 0 {
+            if mode == Mode::ManualSort && ordinal >= page_fixture_start {
+                let slot = if ordinal == page_fixture_start {
+                    first_page_item = Some(backpack);
+                    None
+                } else if ordinal == page_fixture_start + 1
+                    && backpack > first_page_item.ok_or("first page fixture item")?
+                {
+                    // Retrieval takes the lowest UUID. Keep the oldest entry
+                    // (the sole page-1 item) above at least one other UUID.
+                    Some(1)
+                } else {
+                    None
+                };
+                manual_sort_cases::deposit_page_fixture(
+                    &owner,
+                    deps.actor,
+                    UseCommand {
+                        game_session_id: session,
+                        command_id: 1_000 + u64::from(ordinal),
+                        item_fence: Some(fence),
+                    },
+                    backpack,
+                    slot,
+                )
+                .await?;
+            } else if ordinal > 0 {
                 stacks.push(backpack);
             }
             if ordinal == 1 {
                 carried = Some(backpack);
             }
         }
-        deps.initialize(&owner).await;
+        if mode != Mode::ManualSort {
+            deps.initialize(&owner).await;
+        }
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
@@ -670,6 +765,23 @@ fn scenario_with_premium(
             .table()
             .handle(&ItemKey::Instance(carried.ok_or("carried")?))
             .ok_or("source handle")?;
+        if mode == Mode::ManualSort {
+            let handles = stacks
+                .iter()
+                .map(|item| {
+                    view.table()
+                        .handle(&ItemKey::Instance(*item))
+                        .map(|handle| (handle, *item))
+                        .ok_or("stack handle")
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            manual_sort_cases::exercise(&owner, admitted, &harness.pool, &handles).await?;
+            Box::pin(manual_sort_cases::stale_withdrawal(&owner, admitted, &harness.pool, &handles)).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         if retrieve {
             let handles = stacks
                 .iter()
@@ -960,7 +1072,7 @@ fn scenario_with_premium(
             input.extend(frame);
         }
         let (end, output) =
-            super::weather_wire::fixture_access::serve_input(&owner, admitted, &input).await?;
+            super::weather_wire_fixtures::fixture_access::serve_input(&owner, admitted, &input).await?;
         let mut replies = Vec::new();
         let mut search_replies = Vec::new();
         let mut cursor = output.as_slice();
@@ -1181,7 +1293,7 @@ fn scenario_with_premium(
                     action: DepotAction::Withdraw(2),
                     ..withdraw
                 },
-                None,
+                Some(ItemKey::Instance(carried.ok_or("displayed item")?)),
             )
             .await
             .ok_or("selection withdraw")?;

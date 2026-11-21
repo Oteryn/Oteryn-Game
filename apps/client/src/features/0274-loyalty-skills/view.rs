@@ -1,10 +1,13 @@
 use crate::play::{PlayLink, mailbox::lock};
 #[path = "layout.rs"]
 mod layout;
+#[cfg(bevy_shell)]
+pub use layout::SkillsNumbers;
 pub use layout::{SkillsLayout, SkillsLayoutState, SkillsWidget};
 
 impl PlayLink {
     pub fn skills_widget(&self) -> SkillsWidget {
+        self.refresh_skill_progress_if_due();
         let mailbox = lock(&self.mailbox);
         mailbox
             .skills_layout
@@ -30,9 +33,3 @@ impl PlayLink {
         lock(&self.mailbox).loyalty_skills.clone()
     }
 }
-
-#[cfg(windows)]
-#[path = "native.rs"]
-mod native;
-#[cfg(windows)]
-pub(in crate::play) use native::open_window;

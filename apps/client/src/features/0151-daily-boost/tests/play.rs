@@ -82,7 +82,35 @@ fn cl25j_feature_commands_cross_the_session_loop()
                     &mut self,
                     command: &FeatureCommand,
                 ) -> Result<GatedCommandResult, SessionError> {
-                    Ok(result(command.capability))
+                    let payload = match command.capability {
+                        382 => {
+                            assert_eq!(command.kind, 664);
+                            assert!(command.payload.is_empty());
+                            vec![0]
+                        }
+                        450 => {
+                            assert_eq!(command.kind, 736);
+                            assert_eq!(
+                                command.payload,
+                                oteryn_client_runtime::server_modal::QUERY_WITH_TERMINAL_REPLY
+                            );
+                            oteryn_client_runtime::server_modal::Reply::None
+                                .encode()
+                                .map_err(|_| SessionError::SessionUnusable)?
+                        }
+                        451 => {
+                            assert_eq!(command.kind, 741);
+                            assert!(command.payload.is_empty());
+                            oteryn_client_runtime::personal_map_marks::PersonalMapMarks::default()
+                                .encode()
+                                .ok_or(SessionError::SessionUnusable)?
+                        }
+                        _ => return Ok(result(command.capability)),
+                    };
+                    Ok(GatedCommandResult {
+                        payload,
+                        ..result(command.capability)
+                    })
                 }
                 async fn server_mechanic(
                     &mut self,
@@ -182,4 +210,43 @@ fn daily_boost_open_requests_potion_durations_for_the_xp_boost_lines()
     }
     assert_eq!(capabilities, [151, 381]);
     Ok(())
+}
+
+#[test]
+fn daily_boost_worker_releases_sender_when_owner_drops() {
+    use crate::play::{feature_0151_daily_boost::input::window_open, mailbox::lock, play_channel};
+    let (link, mut commands, _outbox) = play_channel();
+    let shared = link.mailbox.clone();
+    let sender = link.commands.clone();
+    lock(&shared).daily_boost.open = true;
+    assert!(window_open(&lock(&shared)));
+    drop(link);
+    assert!(!window_open(&lock(&shared)));
+    drop(sender);
+    assert!(commands.is_closed());
+    assert!(commands.try_recv().is_err());
+}
+
+#[test]
+fn open_daily_boost_refreshes_both_observations_after_refusal() {
+    use crate::{combat_input::PlayCommand, play::play_channel};
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let (link, mut incoming, outbox) = play_channel();
+    outbox.daily_boost_initialize(true);
+    outbox.potion_durations_initialize(true);
+    let event = NormalizedInputEvent::Key { code: KeyCode::KEY_B,
+        state: ButtonState::Pressed, modifiers: Modifiers::one(Modifier::Control), repeat: false };
+    assert!(link.daily_boost_input(std::slice::from_ref(&event)));
+    while incoming.try_recv().is_ok() {}
+    let refused = oteryn_session::GatedCommandResult { command_id: 1, server_sequence: 1,
+        status: oteryn_session::CommandStatus::Rejected, payload: Vec::new() };
+    outbox.daily_boost_result(&refused);
+    outbox.potion_durations_result(&refused);
+    assert!(link.daily_boost_panel().open);
+    assert!(link.daily_boost_input(&[event]));
+    let mut capabilities = Vec::new();
+    while let Ok(PlayCommand::Feature(command)) = incoming.try_recv() {
+        capabilities.push(command.capability);
+    }
+    assert_eq!(capabilities, [151, 381]);
 }

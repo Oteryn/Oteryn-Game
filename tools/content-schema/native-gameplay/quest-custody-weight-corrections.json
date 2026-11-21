@@ -21,6 +21,16 @@
         "https://www.tibiawiki.com.br/Percht_Skull",
         "OTERYN_CONSERVATIVE_RULE: preserve exact accepted weight; raw pinned XML conflict retained."
       ]
+    },
+    {
+      "item": "oteryn:item.tibia.i3023",
+      "canonical_sha256": "65827773e074ae07450757dcb11817cd4dcbb9f580005c3dbf468aa7c19f49f0",
+      "source_xml_weight": 869,
+      "weight": 870,
+      "sources": [
+        "https://tibia.fandom.com/wiki/Holy_Scarab (archive revision 2023-07-11T21:09:08Z, 8.70 oz)",
+        "Crystal 201189f871d23597b82caf88fd611454a2ddefb8 data/items/items.xml: source weight 869"
+      ]
     }
   ]
 }

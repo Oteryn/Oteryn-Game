@@ -1,7 +1,8 @@
 //! MAP-PICKUP-1 through the production command-9 dispatch, composed authority and PostgreSQL.
 //! Reuses the existing fresh-session Harness, Dependencies and activated production generation.
 
-use super::fixture::{Harness, debug, id, run};
+use super::fixture::{Harness, debug, id};
+use super::kill_reward_e2e_fixtures::scenario_thread::run_async as run;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::durability::item_mint::{
@@ -25,6 +26,7 @@ const SELECTION: ItemMoveSelection = ItemMoveSelection {
     equip_drop: true,
     container_tree: true,
     world_interaction: true,
+    manual_sort: false,
 };
 
 #[test]
@@ -49,7 +51,7 @@ fn scenario(crash: bool, full: bool, epoch: u64) -> TestResult {
     let _database_boot = DATABASE_BOOT
         .lock()
         .map_err(|_| "map pickup test gate poisoned")?;
-    run(async |admin| {
+    run(async move |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "map_pickup_dispatch", true, false).await?;
         if epoch != 0 {
@@ -70,7 +72,7 @@ fn scenario(crash: bool, full: bool, epoch: u64) -> TestResult {
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activated_pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;
@@ -373,6 +375,7 @@ fn scenario(crash: bool, full: bool, epoch: u64) -> TestResult {
                             .table()
                             .handle(&ItemKey::Instance(carried.ok_or("carried bag")?))
                             .ok_or("carried handle")?,
+                        None,
                     )
                 } else {
                     ItemMoveDestination::MainBackpack
@@ -570,7 +573,7 @@ fn scenario(crash: bool, full: bool, epoch: u64) -> TestResult {
                 .tiles
                 .iter()
                 .find(|tile| {
-                    tile.position.x == 7 && tile.position.y == 0 && tile.position.floor == -7
+                    tile.position.x == 7 && tile.position.y == 0 && tile.position.floor == 7
                 })
                 .ok_or("origin tile resent")?;
             assert_eq!(

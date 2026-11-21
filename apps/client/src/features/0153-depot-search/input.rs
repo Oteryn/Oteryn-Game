@@ -22,12 +22,7 @@ impl PlayLink {
         if !oteryn_client_ui::depot_search::open_key(events) {
             return false;
         }
-        #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
-            lock(&self.mailbox).depot_search.open = true;
-        }
+        lock(&self.mailbox).depot_search.open = true;
         true
     }
 }

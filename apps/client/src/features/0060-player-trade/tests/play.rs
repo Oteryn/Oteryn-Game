@@ -101,6 +101,7 @@ fn player_trade_controls_encode_requests_and_apply_real_wire_state() -> Result<(
             runtime.block_on(async {
                 let commands = Arc::new(Mutex::new(Vec::new()));
                 let state = player_trade::State {
+                    contents: Default::default(),
                     trade_id: Some([3; 16]),
                     partner: Some(EntityRef {
                         identity: [4; 16],
@@ -169,6 +170,7 @@ fn player_trade_inventory_push_reaches_visible_picker() -> Result<(), Error> {
         new_revision: 2,
         value: CharacterInventory {
             entries: vec![ItemEntry {
+                appearance_id: 0,
                 handle: 7.try_into()?,
                 item_definition_ref: 123.try_into()?,
                 count: 2.try_into()?,
@@ -186,6 +188,7 @@ fn player_trade_world_context_only_targets_visible_players_on_this_floor() -> Re
     use oteryn_renderer::TileCoord;
     use oteryn_session::{ActorPosition, EntityDetail, EntityKind, WorldSpatialEntity};
     let player = WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: EntityKind::Player,
         entity: EntityRef {
@@ -272,7 +275,6 @@ fn player_trade_unsolicited_incoming_and_terminal_updates_reach_panel_and_reset_
     assert!(!link.player_trade_panel().selected);
 }
 
-#[cfg(not(windows))]
 #[test]
 fn player_trade_secondary_click_uses_pointer_and_focus_loss_clears_it() -> Result<(), Error> {
     use oteryn_input_actions::{
@@ -287,6 +289,7 @@ fn player_trade_secondary_click_uses_pointer_and_focus_loss_clears_it() -> Resul
     };
     let view = crate::play::PlayView::new(TileCoord::new(0, 0), 0, &[])?.with_entities(vec![
         WorldSpatialEntity {
+            motion: None,
             display_name: None,
             kind: EntityKind::Player,
             entity: partner,
@@ -329,4 +332,21 @@ fn player_trade_secondary_click_uses_pointer_and_focus_loss_clears_it() -> Resul
     let clicks = link.player_trade_track_pointer(&[E::FocusChanged { focused: false }, click]);
     assert!(!view.player_trade_context_input(&link, &clicks));
     Ok(())
+}
+
+#[test]
+fn player_trade_choose_partner_keeps_win32_window_openable() {
+    let (link, _commands, outbox) = play_channel();
+    outbox.player_trade_initialize(true, None);
+    let partner = EntityRef {
+        identity: [4; 16],
+        generation: 2,
+    };
+    assert!(!link.uses_shared_frontend());
+    assert!(link.player_trade_choose_partner(partner));
+    assert!(!link.player_trade_panel().open);
+    assert_eq!(link.player_trade_panel().partner, Some(partner));
+    link.use_shared_frontend();
+    assert!(link.player_trade_choose_partner(partner));
+    assert!(link.player_trade_panel().open);
 }

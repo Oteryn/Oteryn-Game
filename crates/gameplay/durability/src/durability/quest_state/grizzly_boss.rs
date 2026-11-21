@@ -74,6 +74,9 @@ impl DurabilityRoot {
             None,
             None,
             None,
+            None,
+            None,
+            None,
         )
         .await
     }
@@ -246,7 +249,7 @@ impl DurabilityRoot {
                     write_sequence: position.write_sequence }, &position.record).await?;
             let position_known = match saved {
                 LastPositionWrite::Written => true,
-                LastPositionWrite::PendingObligation => false,
+                LastPositionWrite::PendingObligation | LastPositionWrite::RetainedVitals(_) => false,
                 LastPositionWrite::Superseded => positions::load_last_position(&mut tx, fence.character_id)
                     .await?.is_some_and(|stored| stored.record.world_id == position.record.world_id
                         && stored.record.cell == position.record.cell

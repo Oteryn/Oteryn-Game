@@ -66,6 +66,7 @@ fn reference(side: u8) -> entities::EntityRef {
 }
 fn actor(side: u8) -> entities::WorldSpatialEntity {
     entities::WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: entities::EntityKind::Player,
         entity: reference(side),
@@ -86,6 +87,7 @@ fn encoded<T, E: std::fmt::Debug>(result: Result<T, E>) -> Result<T, PeerError> 
 }
 fn inventory(side: u8, exchanged: bool) -> Result<item_view::CharacterInventory, PeerError> {
     let item = item_view::ItemEntry {
+        appearance_id: 0,
         handle: (70 + u64::from(side) + if exchanged { 10 } else { 0 }).try_into()?,
         item_definition_ref: (123 + u32::from(if exchanged { 1 - side } else { side }))
             .try_into()?,

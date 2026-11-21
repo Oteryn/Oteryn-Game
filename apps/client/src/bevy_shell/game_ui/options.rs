@@ -1,0 +1,292 @@
+//! Source-shaped options over the existing full preference draft and acceptance owner.
+use super::modal::ModalGuard;
+use super::{
+    super::{owner::HostOwner, ui::Skins},
+    GameModal,
+};
+use bevy::{
+    input_focus::{InputFocus, tab_navigation::TabGroup},
+    prelude::*,
+};
+use metadata::{Editor, Page, Row, Value};
+use oteryn_client_ui_bevy as source;
+
+mod audio_device;
+mod audio_feedback;
+mod bar_clear;
+mod commands;
+mod conditions;
+#[cfg(test)]
+mod frame_tests;
+mod guide;
+mod keys;
+mod language;
+mod metadata;
+mod minimap_transfer;
+#[cfg(test)]
+mod navigation_tests;
+mod order;
+mod profiles;
+mod projection;
+mod screenshots;
+mod section;
+#[cfg(test)]
+mod tests;
+mod transfer;
+mod widgets;
+
+#[derive(Resource)]
+pub(in crate::bevy_shell) struct Installed;
+
+#[derive(Resource, Default)]
+struct OptionsState {
+    page: Page,
+    advanced: bool,
+    choice: Option<&'static str>,
+    generation: Option<u64>,
+    /// Bumped by a page section's edit so the page is rebuilt from the edited draft.
+    revision: u64,
+    /// The key binding selected on the General Hotkeys page.
+    binding: Option<&'static str>,
+    /// The help topic shown on the Misc page.
+    help_topic: Option<crate::play::help::Topic>,
+}
+#[derive(Resource)]
+struct CheckSkins {
+    checked: Handle<Image>,
+    unchecked: Handle<Image>,
+}
+#[derive(Component)]
+struct OptionsDialog;
+#[derive(Component)]
+struct Navigation;
+#[derive(Component)]
+struct PageBody;
+#[derive(Component)]
+struct Feedback;
+#[derive(Component, Clone, Copy)]
+struct Indicator(Entity);
+#[derive(Component)]
+struct ChoiceCaption(&'static str);
+#[derive(Component)]
+struct NumberCaption(&'static str);
+#[derive(Component)]
+struct ChoicePopup(&'static str);
+#[derive(Component)]
+struct Thumb(Entity);
+#[derive(Component, Clone, Copy)]
+enum Control {
+    Page(Page),
+    Advanced,
+    Check(&'static str),
+    Number(&'static str),
+    Choice(&'static str),
+    Select(&'static str, usize),
+    Help,
+    Reset,
+    Apply,
+    Ok,
+    Cancel,
+}
+pub(super) fn install(app: &mut App) {
+    app.insert_resource(Installed)
+        .init_resource::<OptionsState>()
+        .add_systems(Startup, widgets::setup.after(super::super::ui::setup))
+        .add_systems(
+            Update,
+            (keyboard, projection::project, screenshots::project).chain(),
+        )
+        .add_systems(Update, audio_feedback::project.after(projection::project));
+}
+fn top_server_dialog(owner: &HostOwner) -> bool {
+    owner
+        .play
+        .as_ref()
+        .is_some_and(|play| play.link.server_modal_active())
+}
+fn keyboard(
+    mut keys: MessageReader<bevy::input::keyboard::KeyboardInput>,
+    dialogs: Query<Entity, With<OptionsDialog>>,
+    mut owner: NonSendMut<HostOwner>,
+    mut state: ResMut<OptionsState>,
+    guard: ModalGuard,
+) {
+    if !dialogs.iter().any(|entity| guard.allows(entity))
+        || owner.preferences_draft().is_none()
+        || top_server_dialog(&owner)
+    {
+        keys.clear();
+        return;
+    }
+    for key in keys.read() {
+        if key.state != bevy::input::ButtonState::Pressed || key.repeat {
+            continue;
+        }
+        if key.key_code == KeyCode::Escape {
+            if state.choice.take().is_none() {
+                owner.cancel();
+            }
+            break;
+        }
+    }
+}
+fn activate(
+    event: On<bevy::ui_widgets::Activate>,
+    controls: Query<&Control>,
+    mut owner: NonSendMut<HostOwner>,
+    mut state: ResMut<OptionsState>,
+    guard: ModalGuard,
+) {
+    if !guard.allows(event.entity)
+        || owner.preferences_draft().is_none()
+        || state.generation != Some(owner.generation())
+        || top_server_dialog(&owner)
+    {
+        return;
+    }
+    let Ok(control) = controls.get(event.entity) else {
+        return;
+    };
+    match *control {
+        Control::Page(page) => {
+            state.page = page;
+            state.choice = None;
+        }
+        Control::Choice(id) => {
+            state.choice = if state.choice == Some(id) {
+                None
+            } else {
+                Some(id)
+            }
+        }
+        Control::Select(id, index) => {
+            let generation = owner.generation();
+            commands::edit(&mut owner, generation, state.page, id, Value::Choice(index));
+            state.choice = None;
+        }
+        Control::Reset => {
+            let defaults = crate::play::ReferencePreferences::default();
+            owner.edit_preferences(|draft| {
+                reset_sections(state.page, draft, &defaults);
+                // Reset never signs this device out; the login choices change only by hand.
+                for row in metadata::rows(state.page) {
+                    if !metadata::LOGIN_CHOICES.contains(&row.id) {
+                        row.reset(draft, &defaults);
+                    }
+                }
+            });
+            // The section editors are rebuilt from the reset draft.
+            state.revision = state.revision.wrapping_add(1);
+        }
+        Control::Apply => owner.apply(false),
+        Control::Ok => owner.apply(true),
+        Control::Cancel => owner.cancel(),
+        _ => {}
+    }
+}
+/// Page Reset also restores the preferences owned by the page's section editors.
+fn reset_sections(
+    page: Page,
+    draft: &mut crate::play::ReferencePreferences,
+    defaults: &crate::play::ReferencePreferences,
+) {
+    if page == Page::Screenshots {
+        draft.screenshots.clone_from(&defaults.screenshots);
+    }
+    if page == Page::GeneralHotkeys {
+        draft.keybindings.clone_from(&defaults.keybindings);
+        draft
+            .secondary_keybindings
+            .clone_from(&defaults.secondary_keybindings);
+        draft.hotkey_contexts.clone_from(&defaults.hotkey_contexts);
+        draft.action_keys.clone_from(&defaults.action_keys);
+    }
+    if page == Page::Interface {
+        draft.language_code.clone_from(&defaults.language_code);
+        draft.english = defaults.english;
+    }
+    if page == Page::Hud {
+        draft
+            .condition_hud_hidden
+            .clone_from(&defaults.condition_hud_hidden);
+        draft
+            .condition_status_hidden
+            .clone_from(&defaults.condition_status_hidden);
+        draft.condition_order.clone_from(&defaults.condition_order);
+        draft
+            .special_condition_order
+            .clone_from(&defaults.special_condition_order);
+        draft.skill_order.clone_from(&defaults.skill_order);
+    }
+    if page == Page::Sound {
+        draft.audio_device.clone_from(&defaults.audio_device);
+    }
+}
+fn toggle(
+    event: On<bevy::ui_widgets::ValueChange<bool>>,
+    controls: Query<&Control>,
+    mut owner: NonSendMut<HostOwner>,
+    mut state: ResMut<OptionsState>,
+    guard: ModalGuard,
+) {
+    if !guard.allows(event.source)
+        || owner.preferences_draft().is_none()
+        || state.generation != Some(owner.generation())
+        || top_server_dialog(&owner)
+    {
+        return;
+    }
+    let Ok(control) = controls.get(event.source) else {
+        return;
+    };
+    match *control {
+        Control::Advanced => {
+            state.advanced = event.value;
+            state.page = if state.advanced {
+                Page::Controls
+            } else {
+                Page::Basic
+            };
+            state.choice = None;
+        }
+        Control::Check(id) => {
+            let generation = owner.generation();
+            commands::edit(
+                &mut owner,
+                generation,
+                state.page,
+                id,
+                Value::Check(event.value),
+            );
+        }
+        _ => {}
+    }
+}
+fn slide(
+    event: On<bevy::ui_widgets::ValueChange<f32>>,
+    controls: Query<&Control>,
+    mut owner: NonSendMut<HostOwner>,
+    state: Res<OptionsState>,
+    guard: ModalGuard,
+) {
+    if !guard.allows(event.source)
+        || owner.preferences_draft().is_none()
+        || state.generation != Some(owner.generation())
+        || top_server_dialog(&owner)
+        || !event.value.is_finite()
+    {
+        return;
+    }
+    let Ok(Control::Number(id)) = controls.get(event.source) else {
+        return;
+    };
+    let Some(row) = metadata::find(state.page, id) else {
+        return;
+    };
+    let Editor::Number { min, max, .. } = row.editor else {
+        return;
+    };
+    let value = event.value.round().clamp(f32::from(min), f32::from(max)) as u16;
+    let generation = owner.generation();
+    commands::edit(&mut owner, generation, state.page, id, Value::Number(value));
+}

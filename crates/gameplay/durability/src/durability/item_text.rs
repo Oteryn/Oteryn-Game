@@ -2,7 +2,7 @@
 //!
 //! The production MAIL ingress supplies carried bindings under the mutation lane
 //! and physical trade exclusion; storage independently checks Content and custody.
-//! Content-qualified write-once transforms share the text transaction; house custody stays closed.
+//! Content-qualified write-once transforms share the text transaction.
 //! Ground admission is limited to loop drops and unchanged map-MINT or
 //! native-map initialized roots, including their bounded nested trees, with
 //! owner-observed reach/open-view data and the existing map source proofs.
@@ -13,7 +13,8 @@
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::numeric_u64;
 use super::db::{
-    begin_semantic_transaction, begin_type2_transaction, commit_semantic_transaction, lock_admission_relations,
+    begin_semantic_transaction, begin_type2_transaction, commit_semantic_transaction,
+    lock_admission_relations,
 };
 use super::item_loop_move::LoopGround;
 use super::item_mint::TypedDefinitionRef;
@@ -362,8 +363,38 @@ impl DurabilityRoot {
         open_depot: Option<(u16, u8)>,
         ground: Option<LoopGround>,
     ) -> Result<ItemTextWriteOutcome> {
+        self.commit_text_rewrite(permit, recovery, node, fence, policy, request, (open_depot, ground), None).await
+    }
+
+    /// Rewrite a carried item under the current named House custody fence.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_house_item_text_rewrite(
+        &self,
+        permit: &SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        policy: MailTextPolicy,
+        request: ItemTextWriteRequest,
+        origin: crate::foundation::ChannelId,
+    ) -> Result<ItemTextWriteOutcome> {
+        self.commit_text_rewrite(permit, recovery, node, fence, policy, request, (None, None), Some(origin)).await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    async fn commit_text_rewrite(
+        &self,
+        permit: &SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        policy: MailTextPolicy,
+        request: ItemTextWriteRequest,
+        (open_depot, ground): (Option<(u16, u8)>, Option<LoopGround>),
+        house_origin: Option<crate::foundation::ChannelId>,
+    ) -> Result<ItemTextWriteOutcome> {
         let (world, channel) =
-            scope_of(&fence).map_err(|_| ItemTextWriteError::AuthorityRejected)?;
+            text_scope(&fence, house_origin)?;
         permit
             .check_channel(world, channel)
             .map_err(|_| ItemTextWriteError::AuthorityRejected)?;
@@ -393,6 +424,7 @@ impl DurabilityRoot {
                         &request,
                         open_depot,
                         ground.as_ref(),
+                        house_origin,
                     )
                     .await
                     {
@@ -409,6 +441,20 @@ impl DurabilityRoot {
     }
 }
 
+fn text_scope(
+    fence: &CurrentCharacterItemFence,
+    house_origin: Option<crate::foundation::ChannelId>,
+) -> Result<(crate::foundation::WorldId, crate::foundation::ChannelId)> {
+    match (fence.runtime_scope, house_origin) {
+        (crate::foundation::RuntimeScopeRefV1::Instance { world_id, .. }, Some(origin)) => {
+            Ok((world_id, origin))
+        }
+        (_, None) => scope_of(fence).map_err(|_| ItemTextWriteError::AuthorityRejected),
+        _ => Err(ItemTextWriteError::AuthorityRejected),
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
 async fn rewrite(
     tx: &mut super::item_mint_audit::Type2Transaction<'_>,
     node: &NodeIncarnationProof,
@@ -417,6 +463,7 @@ async fn rewrite(
     request: &ItemTextWriteRequest,
     open_depot: Option<(u16, u8)>,
     ground: Option<&LoopGround>,
+    house_origin: Option<crate::foundation::ChannelId>,
 ) -> Result<ItemTextWriteOutcome> {
     let character = fence.character_id.as_bytes();
     let binding = request.freeze_receipt_binding(fence.character_id);
@@ -424,22 +471,22 @@ async fn rewrite(
     if let Some(outcome) = load_item_text_receipt(tx, &binding).await? {
         return Ok(outcome);
     }
-    let (world, channel) = scope_of(fence).map_err(|_| ItemTextWriteError::AuthorityRejected)?;
+    let (world, channel) = text_scope(fence, house_origin)?;
     // Same lock used by game_content_record_activation and the equipment owner.
     sqlx::query("SELECT pg_advisory_xact_lock_shared(hashtextextended('oteryn:content-activation:' || encode($1::bytea,'hex')::uuid::text || ':' || encode($2::bytea,'hex')::uuid::text,0))")
         .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
         .execute(&mut ***tx).await?;
-    if !character_item_fence_is_current(
-        tx,
-        node,
-        fence,
-        request.command,
-        fence.character_id,
-        *world.as_bytes(),
-        *channel.as_bytes(),
-    )
-    .await?
-    {
+    let current = if let Some(origin) = house_origin {
+        super::house_hireling::fence::assert_house_custody_fence(
+            tx, node, fence, *origin.as_bytes(),
+        ).await?.is_some()
+    } else {
+        character_item_fence_is_current(
+            tx, node, fence, request.command, fence.character_id,
+            *world.as_bytes(), *channel.as_bytes(),
+        ).await?
+    };
+    if !current {
         return Err(ItemTextWriteError::AuthorityRejected);
     }
     let digest: Option<Vec<u8>> = sqlx::query_scalar("SELECT server_artifact_digest FROM game_content_activations WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid ORDER BY activation_sequence DESC LIMIT 1")
@@ -452,7 +499,7 @@ async fn rewrite(
     lock_carried_text_item(tx, fence, request, open_depot, ground).await?;
     let outcome = persist_rewrite(tx, character, request, text).await?;
     if let Some(target) = &policy.write_once_target {
-        write_once::apply(tx, fence, request, target).await?;
+        write_once::apply(tx, fence, channel, request, target).await?;
     }
     Ok(outcome)
 }
@@ -486,7 +533,7 @@ async fn carried_text_path(
 /// Depot transfers use the same Character root/item lock order. Only a direct
 /// box entry is admitted: the depot writer does not yet host nested containers.
 /// A loop-drop or unchanged map root retains the Ground owner lock and
-/// current scope assignment lock acquired by the Character fence. Houses remain closed.
+/// current scope assignment lock acquired by the Character fence. House edits are carried only.
 async fn lock_carried_text_item(
     tx: &mut Transaction<'_, Postgres>,
     fence: &CurrentCharacterItemFence,
@@ -494,7 +541,7 @@ async fn lock_carried_text_item(
     open_depot: Option<(u16, u8)>,
     ground: Option<&LoopGround>,
 ) -> Result<()> {
-    let (world, _) = scope_of(fence).map_err(|_| ItemTextWriteError::AuthorityRejected)?;
+    let world = fence.runtime_scope.world_id();
     let path = carried_text_path(tx, &request.item_instance_id).await?;
     if path.is_empty() || path.len() > super::item_loop_move::ITEM_LOOP_DEPTH_MAX as usize + 1 {
         return Err(ItemTextWriteError::NotReachable);

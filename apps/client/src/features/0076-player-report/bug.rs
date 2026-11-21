@@ -109,68 +109,54 @@ pub(in crate::play) fn activate(
     }
 }
 impl PlayLink {
-    pub fn bug_report_open(&self) {
-        #[cfg(windows)]
-        open_window(self);
-        #[cfg(not(windows))]
-        {
-            lock(&self.mailbox).properties.player_report.bug.open = true;
+    /// Update only the guided bug draft; the existing flow still validates and sends it.
+    pub fn bug_report_edit(&self, field: usize, value: String) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.properties.player_report;
+        if panel.pending || !panel.bug.open {
+            return false;
         }
+        if value.len() > 7996 || value.contains('\0') {
+            panel.bug.reviewed = None;
+            panel.feedback = tr!("Invalid report fields").into();
+            return false;
+        }
+        let Some(slot) = panel.bug.fields.get_mut(field) else {
+            return false;
+        };
+        if *slot != value {
+            *slot = value;
+            panel.bug.reviewed = None;
+            panel.feedback.clear();
+            panel.summary.clear();
+        }
+        true
+    }
+    pub fn bug_report_close(&self) {
+        lock(&self.mailbox).properties.player_report.bug.open = false;
+    }
+    pub fn bug_report_open(&self) {
+        lock(&self.mailbox).properties.player_report.bug.open = true;
     }
     pub fn bug_report_action(&self, action: usize) {
         activate(&mut lock(&self.mailbox), &self.commands, action);
     }
 }
-#[cfg(windows)]
-fn open_window(link: &PlayLink) {
-    use crate::play::feature_0115_mail::view::native::{Form, open};
-    open(
-        link,
-        Form {
-            title: "Bug report",
-            labels: &[
-                "Map location: x,y,floor (map reports only)",
-                "Steps, observed behavior and expected behavior",
-                "Optional build details: enter YES to include build, OS and architecture",
-            ],
-            buttons: &[
-                "Map location",
-                "Text / spelling",
-                "Client behavior",
-                "Other issue",
-                "Review report",
-                "Send reviewed report",
-            ],
-            snapshot: |mailbox| {
-                let p = &mailbox.properties.player_report;
-                (
-                    p.bug.open,
-                    p.pending || !p.selected,
-                    p.bug.fields.to_vec(),
-                    format!("{}\r\n{}\r\n{}", p.bug.preview, p.summary, p.feedback),
-                )
-            },
-            set_open: |mailbox, value| mailbox.properties.player_report.bug.open = value,
-            submit: |mailbox, commands, action, fields| {
-                if mailbox.properties.player_report.pending {
-                    return;
-                }
-                for (slot, value) in mailbox
-                    .properties
-                    .player_report
-                    .bug
-                    .fields
-                    .iter_mut()
-                    .zip(fields)
-                {
-                    *slot = value;
-                }
-                activate(mailbox, commands, action);
-            },
-        },
-    );
-}
 
 #[cfg(test)]
 #[path = "tests/e2e_n04.rs"]
 mod e2e_n04;
+
+#[cfg(all(test, bevy_shell))]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_bug_report_result(
+        &self,
+        command: &oteryn_client_runtime::raw_feature::FeatureCommand,
+        result: &oteryn_client_runtime::raw_feature::GatedCommandResult,
+    ) {
+        self.properties_result(command, result);
+    }
+    pub(crate) fn bevy_bug_report_selected(&self) {
+        lock(&self.0).properties.player_report.selected = true;
+    }
+}

@@ -71,6 +71,7 @@ fn corpse(n: u8) -> ItemKey {
 
 fn item(key: ItemKey) -> ViewItem {
     ViewItem {
+        appearance_id: 0,
         key,
         item_definition_ref: NonZeroU32::new(2854).expect("fixture"),
         count: NonZeroU32::MIN,
@@ -527,6 +528,7 @@ const CORPSE_ONLY: ItemMoveSelection = ItemMoveSelection {
     equip_drop: false,
     container_tree: false,
     world_interaction: false,
+    manual_sort: false,
 };
 
 fn into_backpack(source: ItemHandle) -> Vec<u8> {
@@ -684,6 +686,7 @@ fn a_corpse_entry_never_enters_a_slot() -> TestResult {
             equip_drop: true,
             container_tree: false,
             world_interaction: false,
+            manual_sort: false,
         };
         let to_head = encode_item_move_intent_for(
             &ItemMoveIntent {
@@ -812,6 +815,7 @@ const EQUIP: ItemMoveSelection = ItemMoveSelection {
     equip_drop: true,
     container_tree: false,
     world_interaction: false,
+    manual_sort: false,
 };
 
 /// The view after a capability 12 snapshot showing `shown`.
@@ -1104,6 +1108,10 @@ const TILE: WorldTilePosition = WorldTilePosition {
     y: 10,
     floor: 7,
 };
+const BUNDLE_TILE: WorldTilePosition = WorldTilePosition {
+    floor: -TILE.floor,
+    ..TILE
+};
 
 fn onto_ground(source: ItemHandle, selection: ItemMoveSelection) -> Vec<u8> {
     encode_item_move_intent_for(
@@ -1121,13 +1129,14 @@ const TREE: ItemMoveSelection = ItemMoveSelection {
     equip_drop: true,
     container_tree: true,
     world_interaction: false,
+    manual_sort: false,
 };
 
 fn into_container(source: ItemHandle, container: ItemHandle) -> Vec<u8> {
     encode_item_move_intent_for(
         &ItemMoveIntent {
             source,
-            destination: ItemMoveDestination::Container(container),
+            destination: ItemMoveDestination::Container(container, None),
         },
         TREE,
     )
@@ -1171,12 +1180,76 @@ fn a_ground_drop_goes_to_the_loop_owner_and_an_equipped_item_is_not_supported() 
                 LoopMove {
                     item: instance(2),
                     count: None,
-                    target: LoopTarget::Ground(TILE),
+                    target: LoopTarget::Ground(BUNDLE_TILE),
+                    slot: None,
                 }
             )]
         );
         assert!(!view.is_backpack_entry(&instance(2)));
         assert!(authority.equip_moves.borrow().is_empty());
+        Ok(())
+    })
+}
+
+/// CONTAINER-MANUAL-SORT-1 (capability 510): a slotted container move reaches the loop owner
+/// with its slot, into a nested container and into the main backpack by its own handle. Without
+/// 510 the slot field is malformed and nothing reaches the owner.
+#[test]
+fn a_slotted_container_move_carries_its_slot_only_with_capability_510() -> TestResult {
+    const SORT: ItemMoveSelection = ItemMoveSelection {
+        manual_sort: true,
+        ..TREE
+    };
+    run(async {
+        let shown = inventory(&[1, 2]);
+        for (container, target) in [
+            (2_u16, LoopTarget::Container(instance(2))),
+            (0, LoopTarget::MainBackpack),
+        ] {
+            let mut view = wearing(shown.clone());
+            let source = entry(&view, 1);
+            let slotted = |selection| {
+                encode_item_move_intent_for(
+                    &ItemMoveIntent {
+                        source,
+                        destination: ItemMoveDestination::Container(
+                            entry(&view, container),
+                            Some(3),
+                        ),
+                    },
+                    selection,
+                )
+            };
+            let payload = slotted(SORT).expect("intent");
+            assert!(slotted(TREE).is_err());
+            let authority = MoveAuthority::new(Replay::Nothing, Vec::new()).looping(
+                shown.clone(),
+                LoopMoveResult::Committed,
+                Some(inventory(&[2])),
+            );
+            assert_eq!(
+                step(&authority, &mut view, &payload, TREE).await,
+                result(ItemMoveOutcome::Rejected)
+            );
+            assert!(authority.loop_moves.borrow().is_empty());
+            let moved = step(&authority, &mut view, &payload, SORT).await;
+            assert!(
+                matches!(moved, ItemMoveStep::Result(ItemMoveOutcome::Moved, _)),
+                "{target:?}"
+            );
+            assert_eq!(
+                *authority.loop_moves.borrow(),
+                [(
+                    1,
+                    LoopMove {
+                        item: instance(1),
+                        count: None,
+                        target,
+                        slot: Some(3),
+                    }
+                )]
+            );
+        }
         Ok(())
     })
 }
@@ -1224,6 +1297,7 @@ fn a_container_move_goes_to_the_loop_owner_by_its_server_internal_keys() -> Test
                         item: instance(1),
                         count: None,
                         target,
+                        slot: None,
                     }
                 )]
             );
@@ -1829,7 +1903,7 @@ fn capabilities_12_and_14_nest_drop_and_refuse_by_command_9() -> TestResult {
                         LoopTarget::Container(instance(2)),
                     )
                 } else {
-                    (onto_ground(source, TREE), LoopTarget::Ground(TILE))
+                    (onto_ground(source, TREE), LoopTarget::Ground(BUNDLE_TILE))
                 };
                 let delta = match &after {
                     Some(after) => mirror.inventory_committed(after.clone()).map_err(fault)?,
@@ -1868,6 +1942,7 @@ fn capabilities_12_and_14_nest_drop_and_refuse_by_command_9() -> TestResult {
                             item: instance(1),
                             count: None,
                             target,
+                            slot: None,
                         }
                     )]
                 );
@@ -2032,10 +2107,14 @@ fn map_base_and_map_added_pickup_route_to_the_real_loop_owner() -> TestResult {
         for (key, target, supported) in [
             (source, LoopTarget::MainBackpack, true),
             (source, LoopTarget::Container(instance(2)), true),
-            (source, LoopTarget::Ground(TILE), false),
+            // Native map-base dragging reaches the same owner as pickup; its refusal
+            // must stay NoRoom rather than becoming a transport NotSupported result.
+            (source, LoopTarget::Ground(BUNDLE_TILE), true),
             // Crystal data/scripts/movements/trap.lua:39-42 creates caught wolf 12369;
             // data/scripts/movements/thornfire_wolf.lua leaves that created item movable.
             (ItemKey::MapAdded(1), LoopTarget::MainBackpack, true),
+            // The map-base route does not widen created map items to ground dragging.
+            (ItemKey::MapAdded(1), LoopTarget::Ground(BUNDLE_TILE), false),
         ] {
             let shown = inventory(&[2]);
             let mut view = wearing(shown.clone()).with_map_view();
@@ -2067,7 +2146,8 @@ fn map_base_and_map_added_pickup_route_to_the_real_loop_owner() -> TestResult {
                     LoopMove {
                         item: key,
                         count: None,
-                        target
+                        target,
+                        slot: None,
                     }
                 );
             }

@@ -4,7 +4,12 @@ use oteryn_client_ui::highscores::{self, Action};
 impl PlayLink {
     pub fn highscores_request(&self, action: Action) {
         let mut mailbox = lock(&self.mailbox);
-        if let Some(command) = highscores::request(&mut mailbox.highscores, action)
+        let command = if mailbox.highscores.catalogue_selected {
+            oteryn_client_ui::highscores_catalogue::request(&mut mailbox.highscores, action)
+        } else {
+            highscores::request(&mut mailbox.highscores, action)
+        };
+        if let Some(command) = command
             && self
                 .commands
                 .send(PlayCommand::ServerMechanic(command))
@@ -19,12 +24,7 @@ impl PlayLink {
             return false;
         }
         self.highscores_request(Action::Refresh);
-        #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
-            lock(&self.mailbox).highscores.open = true;
-        }
+        lock(&self.mailbox).highscores.open = true;
         true
     }
 }

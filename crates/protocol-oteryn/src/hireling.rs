@@ -16,7 +16,7 @@ impl Request {
     pub fn decode(bytes: &[u8]) -> Option<Self> {
         match bytes {
             [0] => Some(Self::Query),
-            [1, x0, x1, y0, y1, floor] => Some(Self::Summon {
+            [1, x0, x1, y0, y1, floor] if *floor <= 15 => Some(Self::Summon {
                 x: u16::from_be_bytes([*x0, *x1]),
                 y: u16::from_be_bytes([*y0, *y1]),
                 floor: i8::from_be_bytes([*floor]),
@@ -62,7 +62,7 @@ mod tests {
             Request::Summon {
                 x: 7,
                 y: 9,
-                floor: -1,
+                floor: 1,
             },
             Request::Dismiss,
         ] {

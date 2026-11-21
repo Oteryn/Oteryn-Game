@@ -12,6 +12,10 @@ use crate::content::{
 };
 use std::collections::{BTreeMap, BTreeSet};
 
+#[cfg(test)]
+#[path = "display_name_tests.rs"]
+mod display_name_tests;
+
 /// Most gold three coin stacks can hold (NPC-0 section 3.4).
 pub const NPC_SELL_PRICE_COIN_CAPACITY: u64 = 1_009_999;
 /// Largest purchase unit of a stackable item.
@@ -191,6 +195,7 @@ pub struct NpcServiceEntry {
 pub struct NpcBankDialogue {
     pub greet: Vec<String>,
     pub farewell: Vec<String>,
+    pub walkaway: Vec<String>,
     pub keywords: Vec<crate::content::ProjectV2DialogueKeyword>,
 }
 
@@ -466,6 +471,7 @@ pub fn build(
         let ProjectV2Declaration::Npc {
             dialogue,
             services: service_refs,
+            fields,
             ..
         } = declaration
         else {
@@ -479,7 +485,19 @@ pub fn build(
             held_npcs.insert(reference.clone(), NpcHeldReason::UnresolvedService);
             continue;
         }
-        let name = replies::npc_display_name(&reference.key);
+        let name = fields
+            .iter()
+            .filter(|field| field.field_path == "oteryn:source.npc.display_name")
+            .find_map(|field| match &field.value {
+                crate::content::ProjectV2CandidateValue::Text(name)
+                    if oteryn_protocol_oteryn::entity_names::EntityDisplayName::new(name)
+                        .is_ok() =>
+                {
+                    Some(name.clone())
+                }
+                _ => None,
+            })
+            .unwrap_or_else(|| replies::npc_display_name(&reference.key));
         let generated_replies = dialogue.is_none().then(|| {
             replies::generate(
                 &name,
@@ -501,6 +519,7 @@ pub fn build(
                         let ProjectV2Declaration::Dialogue {
                             greet,
                             farewell,
+                            walkaway,
                             keywords,
                             ..
                         } = declaration
@@ -510,6 +529,7 @@ pub fn build(
                         Some(NpcBankDialogue {
                             greet: greet.clone(),
                             farewell: farewell.clone(),
+                            walkaway: walkaway.clone(),
                             keywords: keywords.clone(),
                         })
                     })

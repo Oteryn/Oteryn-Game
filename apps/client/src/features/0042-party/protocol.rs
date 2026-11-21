@@ -4,8 +4,19 @@ use oteryn_client_runtime::party::PartyResponse;
 impl Outbox {
     pub(in crate::play) fn party_initialize(&self, selected: bool, chat_selected: bool) {
         let mut mailbox = lock(&self.0);
-        mailbox.party.selected = selected;
-        mailbox.party.chat_selected = chat_selected;
+        let panel = &mut mailbox.party;
+        panel.selected = selected;
+        panel.chat_selected = chat_selected;
+        panel.open = false;
+        panel.pending = None;
+        panel.state = None;
+        panel.received_at = None;
+        panel.selected_member = None;
+        panel.selected_invitation = None;
+        panel.list_order.clear();
+        panel.awaiting_shared_feedback = false;
+        panel.server_feedback = None;
+        panel.feedback = None;
     }
 
     pub(in crate::play) fn party_result(&self, response: &PartyResponse) {
@@ -57,5 +68,16 @@ impl Outbox {
         };
         self.party_result(&response);
         Ok(())
+    }
+}
+
+#[cfg(all(test, bevy_shell))]
+impl Outbox {
+    pub(crate) fn bevy_party_selected(&self, selected: bool, chat: bool, name: &str) {
+        self.party_initialize(selected, chat);
+        lock(&self.0).party.own_character_name = name.to_owned();
+    }
+    pub(crate) fn bevy_party_response(&self, response: &PartyResponse) {
+        self.party_result(response);
     }
 }

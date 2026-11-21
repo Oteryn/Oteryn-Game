@@ -14,6 +14,7 @@ fn handle(value: u64) -> ItemHandle {
 /// The largest entry: every varint at its maximum.
 fn worst(n: u64) -> ItemEntry {
     ItemEntry {
+        appearance_id: 0,
         handle: handle(u64::MAX - n),
         item_definition_ref: NonZeroU32::MAX,
         count: NonZeroU32::MAX,
@@ -23,6 +24,7 @@ fn worst(n: u64) -> ItemEntry {
 
 fn small(n: u64) -> ItemEntry {
     ItemEntry {
+        appearance_id: 0,
         handle: handle(n),
         item_definition_ref: NonZeroU32::MIN,
         count: NonZeroU32::MIN,
@@ -222,7 +224,7 @@ fn views_refuse_orphan_entries_repeated_handles_and_zero_values() {
         &[0x08, 0x07, 0x18, 0x01],                         // no definition
         &[0x08, 0x07, 0x10, 0x03],                         // no count
         &[0x08, 0x00, 0x10, 0x03, 0x18, 0x01],             // zero handle
-        &[0x08, 0x07, 0x10, 0x03, 0x18, 0x01, 0x28, 0x01], // unknown field 5
+        &[0x08, 0x07, 0x10, 0x03, 0x18, 0x01, 0x30, 0x01], // unknown field 6
         &[0x08, 0x07, 0x08, 0x08, 0x10, 0x03, 0x18, 0x01], // repeated handle
         &[0x08, 0x07, 0x10, 0x03, 0x18],                   // truncated
     ];
@@ -373,10 +375,10 @@ fn registries_bind_the_item_view_ids_and_limits() {
     let command = find("command_types", COMMAND_TYPE_ITEM_MOVE_INTENT);
     assert_eq!(command["name"], "ITEM_MOVE_INTENT");
     assert_eq!(command["capability"], CAPABILITY_ITEM_VIEW_MOVE_V1);
-    // The registered bound includes the capability 61 count; legacy bounds stay unchanged.
+    // The largest negotiated move carries both a stack count and a manual sort slot.
     assert_eq!(
         command["max_payload_bytes"].as_u64(),
-        Some(MAX_ITEM_MOVE_INTENT_STACK_COUNT_BYTES as u64)
+        Some(crate::item_view::MAX_ITEM_MOVE_INTENT_MANUAL_SORT_BYTES as u64)
     );
     assert_eq!(
         command["max_result_payload_bytes"].as_u64(),
@@ -388,7 +390,7 @@ fn registries_bind_the_item_view_ids_and_limits() {
             STATE_DOMAIN_CHARACTER_INVENTORY,
             "CHARACTER_INVENTORY",
             "CharacterInventoryV1",
-            MAX_CHARACTER_INVENTORY_EQUIP_DROP_BYTES,
+            MAX_CHARACTER_INVENTORY_EQUIP_DROP_APPEARANCE_BYTES,
             DELTA_TYPE_CHARACTER_INVENTORY_V1,
             SNAPSHOT_TYPE_CHARACTER_INVENTORY_V1,
         ),
@@ -396,7 +398,7 @@ fn registries_bind_the_item_view_ids_and_limits() {
             STATE_DOMAIN_OPEN_CONTAINER,
             "OPEN_CONTAINER",
             "OpenContainerV1",
-            MAX_OPEN_CONTAINER_BYTES,
+            MAX_OPEN_CONTAINER_APPEARANCE_BYTES,
             DELTA_TYPE_OPEN_CONTAINER_V1,
             SNAPSHOT_TYPE_OPEN_CONTAINER_V1,
         ),
@@ -697,9 +699,9 @@ fn equip_and_drop_intents_round_trip_and_fail_closed() {
     destinations.extend([
         ItemMoveDestination::MainBackpack,
         ground(0, 0, 0),
-        ground(-1, 1, -1),
-        ground(i32::MIN, i32::MAX, i16::MIN),
-        ground(i32::MAX, i32::MIN, i16::MAX),
+        ground(-1, 1, 1),
+        ground(i32::MIN, i32::MAX, 0),
+        ground(i32::MAX, i32::MIN, 15),
     ]);
     for destination in destinations {
         let intent = ItemMoveIntent {
@@ -716,12 +718,12 @@ fn equip_and_drop_intents_round_trip_and_fail_closed() {
     let worst = encode_item_move_intent_with_equip_drop(
         &ItemMoveIntent {
             source: handle(u64::MAX),
-            destination: ground(i32::MIN, i32::MIN, i16::MIN),
+            destination: ground(i32::MIN, i32::MIN, 15),
         },
         true,
     )
     .expect("worst ground");
-    assert_eq!(worst.len(), MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES);
+    assert_eq!(worst.len(), 27);
     assert_eq!(MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES, 29);
     const { assert!(MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES <= crate::MAX_COMMAND_PAYLOAD_BYTES) };
 
@@ -881,11 +883,11 @@ fn stack_quantity_count_is_explicit_bounded_and_negotiated()
     };
     for destination in [
         ItemMoveDestination::MainBackpack,
-        ItemMoveDestination::Container(std::num::NonZeroU64::MAX),
+        ItemMoveDestination::Container(std::num::NonZeroU64::MAX, None),
         ItemMoveDestination::Ground(WorldTilePosition {
             x: i32::MAX,
             y: i32::MIN,
-            floor: i16::MIN,
+            floor: 15,
         }),
     ] {
         let intent = ItemMoveIntent {
@@ -930,5 +932,202 @@ fn stack_quantity_count_is_explicit_bounded_and_negotiated()
             assert!(decode_item_move_intent_with_count_for(&payload, selection).is_err());
         }
     }
+    Ok(())
+}
+
+#[test]
+fn entry_appearance_round_trips_and_validates_wire_values() {
+    let legacy = [0x08, 1, 0x10, 1, 0x18, 1];
+    assert_eq!(decode_entry(&legacy).expect("legacy").appearance_id, 0);
+    assert_eq!(
+        decode_entry_for(&legacy, true)
+            .expect("absent appearance with 499")
+            .appearance_id,
+        0
+    );
+    let mut item = small(1);
+    item.appearance_id = u16::MAX;
+    let mut framed = Vec::new();
+    encode_entry_for(&mut framed, 1, &item, true);
+    assert_eq!(decode_entry_for(&framed[2..], true), Ok(item));
+    for suffix in [vec![0x28, 0x80, 0x80, 4], vec![0x28, 0, 0x28, 1]] {
+        let mut invalid = legacy.to_vec();
+        invalid.extend(suffix);
+        assert_eq!(
+            decode_entry_for(&invalid, true),
+            Err(ItemViewWireError::Malformed)
+        );
+    }
+}
+
+#[test]
+fn appearance_selection_preserves_exact_legacy_inventory_and_container_bytes() {
+    let mut item = small(1);
+    item.appearance_id = 3031;
+    let view = CharacterInventory {
+        main_backpack: Some(item),
+        ..CharacterInventory::default()
+    };
+    // Exact main encoding: field 1, six-byte entry containing only handle, definition, count.
+    let legacy = [0x0a, 6, 8, 1, 16, 1, 24, 1];
+    assert_eq!(
+        encode_character_inventory_with_appearances(&view, false, false).expect("legacy"),
+        legacy
+    );
+    assert_eq!(
+        decode_character_inventory(&legacy)
+            .expect("legacy")
+            .main_backpack
+            .expect("item")
+            .appearance_id,
+        0
+    );
+    let extended = encode_character_inventory_with_appearances(&view, false, true).expect("499");
+    assert_eq!(
+        decode_character_inventory_with_appearances(&extended, false, true),
+        Ok(view)
+    );
+    assert!(decode_character_inventory(&extended).is_err());
+    let container = OpenContainer {
+        container_handle: Some(handle(2)),
+        entries: vec![item],
+    };
+    let legacy = [8, 2, 18, 6, 8, 1, 16, 1, 24, 1];
+    assert_eq!(
+        encode_open_container_with_appearances(&container, false).expect("legacy container"),
+        legacy
+    );
+    assert_eq!(
+        decode_open_container(&legacy)
+            .expect("legacy container")
+            .entries[0]
+            .appearance_id,
+        0
+    );
+    let extended = encode_open_container_with_appearances(&container, true).expect("499 container");
+    assert_eq!(
+        decode_open_container_with_appearances(&extended, true),
+        Ok(container)
+    );
+    assert!(decode_open_container(&extended).is_err());
+}
+
+#[test]
+fn appearance_selection_uses_extended_inventory_bounds_only_when_negotiated() {
+    let mut view = inventory(29, worst);
+    for item in view.main_backpack.iter_mut().chain(&mut view.entries) {
+        item.appearance_id = u16::MAX;
+    }
+    let bytes =
+        encode_character_inventory_with_appearances(&view, false, true).expect("499 maximum");
+    assert_eq!(bytes.len(), MAX_CHARACTER_INVENTORY_APPEARANCE_BYTES);
+    assert_eq!(
+        decode_character_inventory_with_appearances(&bytes, false, true),
+        Ok(view.clone())
+    );
+    assert_eq!(
+        decode_character_inventory(&bytes),
+        Err(ItemViewWireError::LimitExceeded)
+    );
+    let legacy =
+        encode_character_inventory_with_appearances(&view, false, false).expect("legacy maximum");
+    assert_eq!(legacy.len(), MAX_CHARACTER_INVENTORY_BYTES);
+    assert_eq!(MAX_CHARACTER_INVENTORY_BYTES, 930);
+    assert_eq!(MAX_CHARACTER_INVENTORY_APPEARANCE_BYTES, 1050);
+    let mut view = equipped_inventory(worst);
+    for item in view
+        .main_backpack
+        .iter_mut()
+        .chain(&mut view.entries)
+        .chain(view.equipment.iter_mut().map(|slot| &mut slot.item))
+    {
+        item.appearance_id = u16::MAX;
+    }
+    let bytes = encode_character_inventory_with_appearances(&view, true, true)
+        .expect("499 equipped maximum");
+    assert_eq!(
+        bytes.len(),
+        MAX_CHARACTER_INVENTORY_EQUIP_DROP_APPEARANCE_BYTES
+    );
+    assert_eq!(
+        decode_character_inventory_with_appearances(&bytes, true, true),
+        Ok(view)
+    );
+    let mut view = container(30, worst);
+    view.container_handle = Some(handle(u64::MAX));
+    for item in &mut view.entries {
+        item.appearance_id = u16::MAX;
+    }
+    let bytes = encode_open_container_with_appearances(&view, true).expect("499 container maximum");
+    assert_eq!(bytes.len(), MAX_OPEN_CONTAINER_APPEARANCE_BYTES);
+    assert_eq!(
+        decode_open_container_with_appearances(&bytes, true),
+        Ok(view)
+    );
+}
+
+/// CONTAINER-MANUAL-SORT-1: the container destination's `slot` (field 2) exists only under
+/// capability 510; without it today's bytes are unchanged and a slot fails closed both ways.
+#[test]
+fn container_manual_sort_slot_is_negotiated_bounded_and_round_trips()
+-> Result<(), Box<dyn std::error::Error>> {
+    let tree = ItemMoveSelection {
+        equip_drop: true,
+        container_tree: true,
+        ..ItemMoveSelection::default()
+    };
+    let sort = ItemMoveSelection {
+        manual_sort: true,
+        ..tree
+    };
+    let unslotted = ItemMoveIntent {
+        source: handle(7),
+        destination: ItemMoveDestination::Container(handle(9), None),
+    };
+    let legacy = encode_item_move_intent_for(&unslotted, tree).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        encode_item_move_intent_for(&unslotted, sort),
+        Ok(legacy.clone())
+    );
+    assert_eq!(decode_item_move_intent_for(&legacy, sort), Ok(unslotted));
+
+    let slotted = ItemMoveIntent {
+        source: handle(7),
+        destination: ItemMoveDestination::Container(handle(9), Some(3)),
+    };
+    assert_eq!(
+        encode_item_move_intent_for(&slotted, tree),
+        Err(ItemViewWireError::Malformed)
+    );
+    let payload = encode_item_move_intent_for(&slotted, sort).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(payload, [0x08, 7, 0x2a, 4, 0x08, 9, 0x10, 3]);
+    assert_eq!(decode_item_move_intent_for(&payload, sort), Ok(slotted));
+    assert_eq!(
+        decode_item_move_intent_for(&payload, tree),
+        Err(ItemViewWireError::Malformed)
+    );
+    // A slot is never repeated, and the handle stays required.
+    assert_eq!(
+        decode_item_move_intent_for(&[0x08, 7, 0x2a, 6, 0x08, 9, 0x10, 3, 0x10, 4], sort),
+        Err(ItemViewWireError::Malformed)
+    );
+    assert_eq!(
+        decode_item_move_intent_for(&[0x08, 7, 0x2a, 2, 0x10, 3], sort),
+        Err(ItemViewWireError::Malformed)
+    );
+
+    // The largest slotted move with a count fits the 510 bound.
+    let worst = ItemMoveIntent {
+        source: handle(u64::MAX),
+        destination: ItemMoveDestination::Container(handle(u64::MAX), Some(u32::MAX)),
+    };
+    let mut payload = encode_item_move_intent_for(&worst, sort).map_err(|e| format!("{e:?}"))?;
+    payload.extend([0x30, 100]);
+    assert_eq!(payload.len(), MAX_ITEM_MOVE_INTENT_MANUAL_SORT_BYTES);
+    assert_eq!(
+        decode_item_move_intent_with_count_for(&payload, sort),
+        Ok((worst, Some(100)))
+    );
+    assert!(decode_item_move_intent_with_count_for(&payload, tree).is_err());
     Ok(())
 }

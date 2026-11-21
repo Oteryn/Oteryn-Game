@@ -810,41 +810,48 @@ pub(super) async fn remove_terminal_member_in_transaction(
     Ok(())
 }
 
+/// chsw: the terminal release of a voluntary Channel switch keeps the member in its Party and
+/// holds the membership until the fresh admission into the target Channel takes it back
+/// (migration 2859). Called in the same deciding transaction instead of
+/// [`remove_terminal_member_in_transaction`].
+pub(super) async fn hold_terminal_member_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    session: crate::foundation::GameSessionId,
+) -> Result<()> {
+    sqlx::query("INSERT INTO game_channel_switch_party_holds(character_id,held_until_ms) SELECT m.character_id,floor(extract(epoch FROM clock_timestamp())*1000)::bigint+game_channel_switch_party_hold_ms() FROM game_durability_reconnect_sessions s JOIN game_party_members m USING(character_id) WHERE s.game_session_id=encode($1,'hex')::uuid AND s.session_state=3 ON CONFLICT(character_id) DO UPDATE SET held_until_ms=EXCLUDED.held_until_ms")
+        .bind(session.as_bytes().as_slice()).execute(&mut **tx).await?;
+    Ok(())
+}
+
+/// chsw: one expired switch hold of `world` whose Character has no current session leaves its
+/// Party as the ordinary logout would. Returns whether a member left.
+async fn release_expired_switch_hold_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    world: [u8; 16],
+) -> Result<bool> {
+    let row = sqlx::query("SELECT h.character_id::text,m.party_id::text FROM game_channel_switch_party_holds h JOIN game_party_members m USING(character_id) JOIN game_parties p USING(party_id) WHERE p.world_id=encode($1,'hex')::uuid AND h.held_until_ms<=floor(extract(epoch FROM clock_timestamp())*1000)::bigint AND NOT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions s WHERE s.character_id=h.character_id AND s.session_state IN(1,2)) ORDER BY h.held_until_ms,h.character_id LIMIT 1 FOR UPDATE OF h,m")
+        .bind(world.as_slice()).fetch_optional(&mut **tx).await?;
+    let Some(row) = row else { return Ok(false) };
+    let character = uuid(row.try_get("character_id")?)?;
+    let party = uuid(row.try_get("party_id")?)?;
+    remove_member_with_succession(tx, party, character).await?;
+    Ok(true)
+}
+
 async fn remove_member_with_succession(
     tx: &mut Transaction<'_, Postgres>,
     party: [u8; 16],
     character: [u8; 16],
 ) -> Result<()> {
-    let row=sqlx::query("SELECT leader_character_id::text FROM game_parties WHERE party_id=encode($1,'hex')::uuid FOR UPDATE")
-        .bind(party.as_slice()).fetch_optional(&mut **tx).await?;
-    let Some(row) = row else { return Ok(()) };
-    let leader = uuid(row.try_get("leader_character_id")?)?;
-    // The exact accepted succession rule prefers current state1/2 sessions, then invitation seq.
-    if leader == character {
-        let next:Option<String>=sqlx::query_scalar("SELECT m.character_id::text FROM game_party_members m WHERE m.party_id=encode($1,'hex')::uuid AND m.character_id<>encode($2,'hex')::uuid ORDER BY EXISTS(SELECT 1 FROM game_durability_reconnect_sessions s WHERE s.character_id=m.character_id AND s.session_state IN(1,2)) DESC,m.seq LIMIT 1 FOR UPDATE OF m")
-            .bind(party.as_slice()).bind(character.as_slice()).fetch_optional(&mut **tx).await?;
-        if let Some(next) = next {
-            sqlx::query("UPDATE game_parties SET leader_character_id=$1::uuid,revision=revision+1 WHERE party_id=encode($2,'hex')::uuid").bind(next).bind(party.as_slice()).execute(&mut **tx).await?;
-        } else {
-            sqlx::query("DELETE FROM game_parties WHERE party_id=encode($1,'hex')::uuid")
-                .bind(party.as_slice())
-                .execute(&mut **tx)
-                .await?;
-            return Ok(());
-        }
-    } else {
-        sqlx::query(
-            "UPDATE game_parties SET revision=revision+1 WHERE party_id=encode($1,'hex')::uuid",
-        )
+    sqlx::query("SELECT game_party_remove_with_succession(encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
         .bind(party.as_slice())
+        .bind(character.as_slice())
         .execute(&mut **tx)
         .await?;
-    }
-    sqlx::query("DELETE FROM game_party_members WHERE party_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid").bind(party.as_slice()).bind(character.as_slice()).execute(&mut **tx).await?;
-    close_leader_only_party_without_invitations(tx, party).await?;
     Ok(())
 }
-/// At most100 oldest expired invitations, exactly one party per transaction. The current
+/// At most100 oldest expired invitations, exactly one party per transaction, after one expired
+/// Channel-switch Party hold (chsw). The current
 /// scoped owner is independently fenced; World serialization prevents cross-Channel races.
 pub async fn cleanup_expired_world_party_invitations_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
@@ -856,6 +863,9 @@ pub async fn cleanup_expired_world_party_invitations_in_transaction(
         .bind(world.iter().map(|b| format!("{b:02x}")).collect::<String>())
         .execute(&mut **tx)
         .await?;
+    if release_expired_switch_hold_in_transaction(tx, world).await? {
+        return Ok(1);
+    }
     let party:Option<String>=sqlx::query_scalar("SELECT p.party_id::text FROM game_parties p JOIN game_party_invitations i USING(party_id) WHERE p.world_id=encode($1,'hex')::uuid AND i.expires_at<=clock_timestamp() ORDER BY i.expires_at,i.party_id,i.invitee LIMIT 1 FOR UPDATE OF p")
         .bind(world.as_slice()).fetch_optional(&mut **tx).await?;
     let Some(party) = party else { return Ok(0) };
@@ -1181,4 +1191,29 @@ pub(super) async fn read_chat_membership_in_transaction(
         }
     }
     Ok(party)
+}
+
+/// Same strongly ordered membership resolver, using pre-await visible observations.
+pub async fn read_world_party_views_for_observations_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    root: &super::DurabilityRoot,
+    scope: &super::spell_item_transaction::SpellItemScopeAuthority,
+    observations: &[std::sync::Arc<
+        super::admission_journal::party_target_binding::CurrentVisibleActorObservation,
+    >],
+) -> Result<Vec<PartySnapshot>> {
+    super::spell_item_transaction::check_scope_transaction(tx, scope).await?;
+    let mut characters = std::collections::BTreeSet::new();
+    for observed in observations {
+        let character=super::admission_journal::party_target_binding::current_visible_character_for_source_read_in_transaction(tx,root,scope,observed).await?.ok_or(reject("party source observation"))?;
+        if !characters.insert(character) {
+            return Err(reject("party duplicate source Character"));
+        }
+    }
+    let world = scope.world_bytes();
+    sqlx::query("SELECT pg_advisory_xact_lock(45,hashtext($1))")
+        .bind(world.iter().map(|b| format!("{b:02x}")).collect::<String>())
+        .execute(&mut **tx)
+        .await?;
+    observe_world_party_batch(tx, world, characters.into_iter().collect()).await
 }

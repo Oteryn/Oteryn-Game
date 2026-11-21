@@ -10,6 +10,24 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
                 if after == 0 { before } else { after }
             ),
         ),
+        Case::ResidentTick
+        | Case::ResidentExpiryTick
+        | Case::ResidentLetter
+        | Case::ResidentMail
+        | Case::ResidentMount
+        | Case::ResidentAppearanceRevoked
+        | Case::ResidentQuest => (
+            "oteryn:item.tibia.i3505".into(),
+            "oteryn:item.tibia.i3505".into(),
+        ),
+        Case::ResidentTimedEquip(_) => (
+            "oteryn:item.tibia.i3051".into(),
+            "oteryn:item.tibia.i3051".into(),
+        ),
+        Case::ResidentEquip => (
+            "oteryn:item.tibia.i3375".into(),
+            "oteryn:item.tibia.i3375".into(),
+        ),
         Case::CarpetTile { .. } => (
             "oteryn:item.tibia.i22736".to_owned(),
             "oteryn:item.tibia.i22737".to_owned(),
@@ -26,7 +44,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             "oteryn:item.tibia.i10210".to_owned(),
             "oteryn:item.tibia.i10210".to_owned(),
         ),
-        Case::Container => (
+        Case::Container | Case::ContainerMove => (
             "oteryn:item.tibia.i34276".to_owned(),
             "oteryn:item.tibia.i34276".to_owned(),
         ),
@@ -53,6 +71,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             | Case::TimedNearExpiry
             | Case::TimedWrap
             | Case::Container
+            | Case::ContainerMove
             | Case::ContainerCapacity
             | Case::CarpetTile { .. }
     );
@@ -66,28 +85,66 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         .map_err(debug)?;
     let base = Dependencies::new()?;
     let world = if case == Case::StaticAqueduct {
-        super::super::house_wrap::static_timed_decoration_bundle(
+        super::super::house_wrap_fixtures::static_timed_decoration_bundle(
             base.admitted.world_id,
             base.admitted.channel_id,
         )?
     } else if matches!(case, Case::BedKit(_)) {
-        super::super::house_wrap::static_bed_decoration_bundle(
+        super::super::house_wrap_fixtures::static_bed_decoration_bundle(
+            base.admitted.world_id,
+            base.admitted.channel_id,
+        )?
+    } else if matches!(
+        case,
+        Case::ResidentMount | Case::ResidentTick | Case::ResidentAppearanceRevoked
+    ) {
+        super::super::house_wrap_fixtures::walkable_house_bundle(
             base.admitted.world_id,
             base.admitted.channel_id,
         )?
     } else if case == Case::StaticWindow {
-        super::super::house_wrap::static_decoration_bundle(
+        super::super::house_wrap_fixtures::static_decoration_bundle(
             base.admitted.world_id,
             base.admitted.channel_id,
         )?
     } else {
-        super::super::house_wrap::wrap_bundle(base.admitted.world_id, base.admitted.channel_id)?
+        super::super::house_wrap_fixtures::wrap_bundle(base.admitted.world_id, base.admitted.channel_id)?
     };
-    let (controller, native_pin) =
-        crate::content::native_gameplay::test_support::activated_with_loot_tables(
+    use crate::content::native_gameplay::test_support::cosmetics_fixture::{
+        activated_with_optional_cosmetics, cosmetics_test_packet,
+    };
+    let cosmetics = if matches!(
+        case,
+        Case::ResidentMount | Case::ResidentTick | Case::ResidentAppearanceRevoked
+    ) {
+        let mut packet = cosmetics_test_packet();
+        packet["authoring"]["document"]["content_revision"] = "content-1".into();
+        let mount = packet["authoring"]["document"]["mounts"][0]["key"].as_str().ok_or("mount key")?.to_owned();
+        packet["authoring"]["document"]["grant_mappings"] = serde_json::json!([
+            {"grant_key":"resident-mount", "target":{"kind":"Mount","mount_key":mount}, "compatible_provenance":["content-1"]}
+        ]);
+        let mut promotion = packet["authoring"]["promotions"][0].clone();
+        promotion["path"] = "/grant_mappings".into();
+        promotion["value"] = packet["authoring"]["document"]["grant_mappings"].clone();
+        packet["authoring"]["promotions"].as_array_mut().ok_or("promotions")?.push(promotion);
+        Some((serde_json::to_vec(&packet)?, mount))
+    } else {
+        None
+    };
+    let (controller, native_pin) = if matches!(
+        case,
+        Case::ResidentTimedEquip(super::super::house_resident_reads_fixtures::ClockCase::Logout)
+    ) {
+        // Terminal training commits against the seeded Character interpretation.
+        super::super::death_ml_loss_composed::production_generation_with_pin(
             base.admitted.world_id,
-            None,
-        );
+            "content-1",
+        )?
+    } else {
+        activated_with_optional_cosmetics(
+            base.admitted.world_id, None, cosmetics.as_ref().map(|(bytes, _)| bytes.as_slice()),
+        )
+    };
     // Cell collision and gameplay must use the same activated artifact. Native
     // House exit independently checks this generation before admitting a tile.
     let room = native_pin.qualified_room().clone();
@@ -121,12 +178,51 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             (&[], INVENTORY_OFFERS)
         };
     let mut owner = deps.owner(h, &authority);
+    let entry_cells = owner.movement_cells.clone();
     owner.movement_cells = (&cells).into();
     owner.evidence = &evidence.evidence;
     owner.active_generation = Some(active);
     owner.required_capabilities = crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
         required, crate::foundation::RuntimeScopeRefV1::channel(deps.admitted.world_id, deps.admitted.channel_id), 1, "policy-1", offers,
     ).map_err(debug)?;
+    if case == Case::ResidentQuest {
+        let lowered = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1").map_err(debug)?;
+        use oteryn_gameplay_quests::quest::log::{QuestLogCatalogue, QuestLogContent, QuestLogKind};
+        let journal = oteryn_gameplay_quests::quest::log::loader::load_embedded_quest_log(&lowered)?;
+        let catalogue = lowered.catalogue();
+        let mut visible = journal.content.active().quests().iter()
+            .find(|quest| quest.kind == QuestLogKind::Storyline && quest.shown_in_quest_log && quest.start.is_some())
+            .ok_or("resident quest fixture")?.clone();
+        let (track, threshold) = visible.start.as_mut().ok_or("quest start track")?;
+        *threshold = catalogue.track(track).ok_or("quest track")?.initial;
+        owner.quest_catalogue = Some(std::sync::Arc::new(catalogue.clone()));
+        owner.quest_log_content = Some(crate::gameplay_transport::quest_log::QuestLogLines::new(
+            QuestLogContent::new(QuestLogCatalogue::new(catalogue, vec![visible]).map_err(debug)?, Vec::new()),
+        ).ok_or("resident quest journal")?);
+    }
+    if matches!(
+        case,
+        Case::ResidentLetter
+            | Case::ResidentMail
+            | Case::ResidentEquip
+            | Case::ResidentTimedEquip(_)
+            | Case::ResidentMount
+            | Case::ResidentTick
+            | Case::ResidentAppearanceRevoked
+    ) {
+        super::super::tutorial_vitals_fixture::publish_native_activation(h, &native_pin).await?;
+    }
+    if matches!(
+        case,
+        Case::ResidentEquip
+            | Case::ResidentTimedEquip(_)
+            | Case::ResidentMount
+            | Case::ResidentTick
+            | Case::ResidentAppearanceRevoked
+    ) {
+        sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT DO NOTHING")
+            .bind(id(41).as_slice()).execute(&h.pool).await?;
+    }
     deps.initialize(&owner).await;
     {
         let mut runtime = owner.runtime.lock().await;
@@ -227,20 +323,37 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         | Case::TimedNearExpiry
         | Case::TimedWrap => &[4, 6, 11, 15, 18, 49, 86, 445],
         Case::Container => &[4, 6, 11, 12, 14, 15, 18, 49, 86],
+        Case::ContainerMove => &[4, 6, 11, 12, 14, 15, 18, 49, 86, 510],
         Case::ContainerCapacity => &[4, 6, 11, 12, 14, 15, 18, 49, 86, 446],
         Case::BedKit(_) => &[4, 6, 11, 15, 18, 49, 86],
         Case::Placed | Case::Decoration(_, _) | Case::StaticWindow | Case::CarpetTile { .. } => {
             &[4, 6, 11, 15, 18, 49, 86]
         }
         Case::Nested => &[4, 6, 12, 14, 15, 49, 86],
+        Case::ResidentTick => &[
+            3, 4, 6, 13, 15, 25, 49, 51, 86, 115, 165, 502, 508, 509, 511,
+        ],
+        Case::ResidentExpiryTick => &[3, 4, 6, 15, 49, 51, 86, 115, 165, 508, 509, 511],
+        Case::ResidentLetter => &[4, 6, 15, 49, 86, 115, 508, 509, 511],
+        Case::ResidentMail => &[4, 6, 86, 115],
+        Case::ResidentEquip | Case::ResidentTimedEquip(_) => &[4, 6, 12, 15, 86],
+        Case::ResidentMount | Case::ResidentAppearanceRevoked => &[6, 13, 25, 49, 86, 502],
+        Case::ResidentQuest => &[6, 49, 86, 500],
         Case::Carried | Case::Foreign => &[4, 6, 15, 49, 86],
     };
+    let offered = crate::gameplay_transport::appearance_change::offer::offered(
+        owner.offered_capabilities(),
+        matches!(
+            case,
+            Case::ResidentMount | Case::ResidentTick | Case::ResidentAppearanceRevoked
+        ),
+    );
+    let offered = crate::gameplay_transport::server_info::offered(&offered, true);
     admitted.continuity.selected_capabilities =
-        SelectedCapabilities::select(owner.offered_capabilities(), capabilities)
-            .ok_or("House USE offers")?;
+        SelectedCapabilities::select(&offered, capabilities).ok_or("House USE offers")?;
     let contents = if matches!(case, Case::CarpetTile { .. }) {
         vec![(before_key, 1), (other_key.as_str(), 1)]
-    } else if matches!(case, Case::Container | Case::ContainerCapacity) {
+    } else if matches!(case, Case::Container | Case::ContainerMove | Case::ContainerCapacity) {
         vec![(before_key, 1), (INNER, 1), ("oteryn:item.tibia.i3031", 10)]
     } else if case == Case::Nested {
         vec![(before_key, 1), (INNER, 1)]
@@ -249,7 +362,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     };
     if matches!(
         case,
-        Case::Nested | Case::Container | Case::ContainerCapacity
+        Case::Nested | Case::Container | Case::ContainerMove | Case::ContainerCapacity
     ) {
         // Capability 12 reads the existing equipment owner even with no worn items.
         // Its independent activation fact must agree with the live runtime pin.
@@ -263,7 +376,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             .bind([2_u8; 32].as_slice()).bind([3_u8; 32].as_slice())
             .execute(&h.pool).await?;
     }
-    super::super::item_look::seed_main_backpack(h, &contents).await?;
+    super::super::item_look_fixtures::seed_main_backpack(h, &contents).await?;
     let body = encode_item_use_intent(&UseIntent {
         target: UseTarget::Item(std::num::NonZeroU64::new(1).ok_or("handle")?),
         use_with: None,
@@ -274,9 +387,19 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     let before = item(h).await?;
     if !matches!(
         case,
-        Case::Decoration(_, _)
+        Case::ResidentTick
+            | Case::ResidentExpiryTick
+            | Case::ResidentLetter
+            | Case::ResidentMail
+            | Case::ResidentEquip
+            | Case::ResidentTimedEquip(_)
+            | Case::ResidentMount
+            | Case::ResidentAppearanceRevoked
+            | Case::ResidentQuest
+            | Case::Decoration(_, _)
             | Case::NativeNoop(_)
             | Case::Container
+            | Case::ContainerMove
             | Case::ContainerCapacity
             | Case::StaticAqueduct
             | Case::TimedRotation
@@ -285,7 +408,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             | Case::BedKit(_)
             | Case::CarpetTile { .. }
     ) {
-        let (next, refused, _) = super::super::rust_lottery::exchange(
+        let (next, refused, _) = super::super::rust_lottery_fixtures::exchange(
             &owner,
             admitted,
             1,
@@ -303,6 +426,23 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         assert_eq!(item(h).await?, before);
         assert_eq!(receipts(h).await?, 0);
     }
+    if let Some((_, mount_key)) = cosmetics {
+        super::super::house_resident_reads_fixtures::select_mount(h, &owner, &mut admitted, mount_key).await?;
+    }
+    if case == Case::ResidentQuest {
+        owner.admit_quest_session(&admitted).await;
+        assert!(matches!(
+            owner.quest_log_observation(deps.actor, admitted.game_session_id, None).await,
+            crate::gameplay_transport::quest_log::QuestLogObservation::Changed(source)
+                if source.titles().len() == 1
+        ));
+    }
+    if matches!(
+        case,
+        Case::ResidentTimedEquip(super::super::house_resident_reads_fixtures::ClockCase::Logout)
+    ) {
+        super::super::house_resident_reads_fixtures::prepare_logout_vocation(&owner, admitted).await?;
+    }
     let mut transfer = vec![8, 1, 18, HOUSE.len() as u8];
     transfer.extend(HOUSE.as_bytes());
     let (inside, _) = owner
@@ -314,6 +454,49 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         admitted.continuity.next_command_id, 1,
         "the actual House handoff creates a new session"
     );
+    if case == Case::ResidentMount {
+        let floor = POSITION[2];
+        let y = POSITION[1];
+        for at in [
+            [POSITION[0], y, floor],
+            [32311, y, floor],
+            [32312, y, floor],
+            [32311, y - 1, floor],
+        ] {
+            let position: Vec<u8> = at.iter().flat_map(|v| v.to_be_bytes()).collect();
+            sqlx::query("INSERT INTO game_house_tiles VALUES(encode($1,'hex')::uuid,$2,$3) ON CONFLICT DO NOTHING")
+                .bind(id(42).as_slice()).bind(HOUSE).bind(position).execute(&h.pool).await?;
+        }
+    }
+    if case == Case::ResidentAppearanceRevoked {
+        return super::super::house_resident_reads_fixtures::appearance_revoked(h, &owner, admitted).await;
+    }
+    if matches!(case, Case::ResidentQuest | Case::ResidentMount) {
+        return super::super::house_resident_reads_fixtures::presentation_exchange(&owner, admitted, case).await;
+    }
+    if matches!(
+        case,
+        Case::ResidentTimedEquip(super::super::house_resident_reads_fixtures::ClockCase::Logout
+            | super::super::house_resident_reads_fixtures::ClockCase::Writer)
+    ) {
+        // These cases exercise resident custody and lifecycle. Use the fixture's
+        // engineering collision cells to avoid unrelated bundle zone and terrain owners.
+        owner.movement_cells = entry_cells;
+    }
+    if matches!(
+        case,
+        Case::ResidentTick
+            | Case::ResidentExpiryTick
+            | Case::ResidentLetter
+            | Case::ResidentMail
+            | Case::ResidentEquip
+            | Case::ResidentTimedEquip(_)
+    ) {
+        return super::super::house_resident_reads_fixtures::exchange(
+            h, &mut owner, admitted, before_ref, case,
+        )
+        .await;
+    }
     let actor_position = {
         let runtime = owner.runtime.lock().await;
         let state = runtime
@@ -414,6 +597,9 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     }
     if let Case::BedKit(kit) = case {
         return super::super::house_base_decorations::bed_scenario(&owner, h, admitted, kit).await;
+    }
+    if case == Case::ContainerMove {
+        return super::container::wire_move(&owner, h, admitted, before_ref, inner_ref).await;
     }
     if case == Case::ContainerCapacity {
         return super::container::capacity_scenario(&owner, h, admitted).await;

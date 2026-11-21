@@ -16,12 +16,7 @@ impl PlayLink {
             return false;
         }
         self.world_event_request();
-        #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
-            lock(&self.mailbox).world_event.open = true;
-        }
+        lock(&self.mailbox).world_event.open = true;
         true
     }
 }

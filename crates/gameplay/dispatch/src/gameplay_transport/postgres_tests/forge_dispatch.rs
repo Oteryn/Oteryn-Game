@@ -15,7 +15,7 @@ use tokio::io::AsyncWriteExt;
 
 #[test]
 fn forge_dispatch_native_limit_history_replay_and_stale_generation() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("forge-dispatch", scenario)
+    super::kill_reward_e2e_fixtures::scenario_thread::run("forge-dispatch", scenario)
 }
 
 fn scenario() -> TestResult {
@@ -35,7 +35,7 @@ fn scenario() -> TestResult {
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (controller, pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
         let generation = controller.active().ok_or("active generation")?;
         let room = pin.qualified_room().clone();
         let frame_digest = pin.frame_binding().digest();
@@ -141,7 +141,7 @@ fn scenario() -> TestResult {
                     );
                     let mut history = [0; 51];
                     history[50] = 50;
-                    super::item_forge::support::cooldown_elapsed(history_harness).await?;
+                    super::item_forge_fixtures::support::cooldown_elapsed(history_harness).await?;
                     let (status, result) = send(&mut client, first_command + 2, &history).await?;
                     assert_eq!(status, CommandStatus::Accepted);
                     let rows: serde_json::Value = serde_json::from_slice(&result)?;
@@ -229,7 +229,7 @@ async fn send(
     client.write_u32(u32::try_from(frame.len())?).await?;
     client.write_all(&frame).await?;
     loop {
-        let frame = super::item_look::read_frame(client).await?;
+        let frame = super::item_look_fixtures::read_frame(client).await?;
         let envelope = protocol::decode_wire_envelope(&frame).map_err(debug)?;
         if envelope.message_type() == protocol::MessageType::CommandResult {
             let result = protocol::decode_command_result(envelope.payload()).map_err(debug)?;

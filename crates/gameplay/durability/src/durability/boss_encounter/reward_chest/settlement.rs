@@ -27,6 +27,118 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         scope: RuntimeScopeRefV1,
         generation: ScopeOwnershipGeneration,
+        death: BossRewardDeath,
+    ) -> Result<bool, DurabilityError> {
+        let mut context = (self, authority, node, Some(death));
+        self.try_issue_semantic_pass()?
+            .run_with_context(&mut context, move |holder, deadline, context| {
+                Box::pin(async move {
+                    let (root, authority, node, death) = context;
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let settled = root
+                        .settle_boss_death_atomic(
+                            &mut tx,
+                            authority,
+                            node,
+                            scope,
+                            generation,
+                            death
+                                .take()
+                                .ok_or(DurabilityError::InvalidStoredState)?
+                                .into(),
+                        )
+                        .await?;
+                    if settled {
+                        commit_semantic_transaction(tx, deadline).await?;
+                    }
+                    Ok(settled)
+                })
+            })
+            .await
+    }
+
+    /// Own the canonical boss death, including deaths whose private loot remains
+    /// unadmitted. Every descendant commits or rolls back in this same transaction.
+    pub async fn settle_boss_death_atomic(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        scope: RuntimeScopeRefV1,
+        generation: ScopeOwnershipGeneration,
+        plan: BossDeathAtomicPlan,
+    ) -> Result<bool, DurabilityError> {
+        if plan.death == [0; 16]
+            || plan.minted_at_unix_ms == 0
+            || crate::durability::item_mint_audit::check_content_key(&plan.boss_key).is_err()
+        {
+            return Ok(false);
+        }
+        if plan.rewards.as_ref().is_some_and(|reward| {
+            reward.death != plan.death
+                || reward.boss_key != plan.boss_key
+                || reward.minted_at_unix_ms != plan.minted_at_unix_ms
+        }) {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        assert_recovery_fence(tx, &recovery).await?;
+        lock_admission_relations(tx).await?;
+        let (kind, id) = match scope {
+            RuntimeScopeRefV1::Channel { channel_id, .. } => (1_i16, *channel_id.as_bytes()),
+            RuntimeScopeRefV1::Instance { instance_id, .. } => (2_i16, instance_id),
+        };
+        // A retained non-private death can be observed again at a later wall clock.
+        // Its native occurrence is the identity; minted_at remains first-commit metadata.
+        // Private rewards additionally bind their original frozen mint timestamp.
+        let intent = serde_json::to_vec(&json!({"world":scope.world_id().as_bytes(),"scope_kind":kind,"scope":id,"generation":generation.get(),"death":plan.death,"boss":plan.boss_key,"minted":plan.rewards.as_ref().map(|reward| reward.minted_at_unix_ms),"personal_rewards":plan.rewards.is_some()})).map_err(|_| DurabilityError::InvalidStoredState)?;
+        sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:boss-death-atomic:' || encode($1,'hex') || ':' || encode($2,'hex'),0))")
+            .bind(scope.world_id().as_bytes().as_slice()).bind(plan.death.as_slice()).execute(&mut **tx).await?;
+        let previous: Option<Vec<u8>> = sqlx::query_scalar("SELECT intent FROM game_boss_death_settlements WHERE world_id=encode($1,'hex')::uuid AND death_id=encode($2,'hex')::uuid")
+            .bind(scope.world_id().as_bytes().as_slice()).bind(plan.death.as_slice()).fetch_optional(&mut **tx).await?;
+        if let Some(previous) = previous {
+            if previous != intent {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+        } else {
+            if !assert_runtime_scope_fence(tx, scope, generation, node).await? {
+                return Ok(false);
+            }
+            let minted = i64::try_from(plan.minted_at_unix_ms)
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
+            let now: i64 = sqlx::query_scalar(
+                "SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint",
+            )
+            .fetch_one(&mut **tx)
+            .await?;
+            if minted > now {
+                return Ok(false);
+            }
+            sqlx::query("INSERT INTO game_boss_death_settlements(world_id,death_id,boss_key,minted_at,scope_kind,scope_id,scope_generation,personal_rewards,intent) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,$5,encode($6,'hex')::uuid,$7::text::numeric,$8,$9) ON CONFLICT(world_id,death_id) DO NOTHING")
+                .bind(scope.world_id().as_bytes().as_slice()).bind(plan.death.as_slice()).bind(&plan.boss_key).bind(minted).bind(kind).bind(id.as_slice()).bind(generation.get().to_string()).bind(plan.rewards.is_some()).bind(intent).execute(&mut **tx).await?;
+        }
+        match plan.rewards {
+            Some(rewards) => {
+                self.settle_boss_reward_chests_in_transaction(
+                    tx, authority, node, scope, generation, rewards,
+                )
+                .await
+            }
+            None => Ok(true),
+        }
+    }
+
+    /// One owner for the frozen death and its chests. Native XP and Quest owners
+    /// join this caller-owned transaction; this method never commits a prefix.
+    async fn settle_boss_reward_chests_in_transaction(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        scope: RuntimeScopeRefV1,
+        generation: ScopeOwnershipGeneration,
         mut death: BossRewardDeath,
     ) -> Result<bool, DurabilityError> {
         death
@@ -36,6 +148,31 @@ impl DurabilityRoot {
             .chests
             .sort_by_key(|chest| *chest.character_id.as_bytes());
         let Some(expires) = validate_death(&death) else {
+            if death.contributors.len() <= BOSS_REWARD_CONTRIBUTORS_MAX {
+                let eligibility =
+                    oteryn_gameplay_encounter_rules::boss::reward_eligibility_for_boss(
+                        &death.boss_key,
+                        &death
+                            .contributors
+                            .iter()
+                            .map(|participant| participant.contribution)
+                            .collect::<Vec<_>>(),
+                    );
+                if death
+                    .contributors
+                    .iter()
+                    .zip(eligibility)
+                    .any(|(participant, eligible)| {
+                        !eligible
+                            && death
+                                .chests
+                                .iter()
+                                .any(|chest| chest.character_id == participant.character_id)
+                    })
+                {
+                    return Err(DurabilityError::CommitRejected);
+                }
+            }
             return Ok(false);
         };
         let intent = intent(scope, generation, &death)?;
@@ -43,96 +180,131 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let admissions = FreshAdmissionStore::from_root(self.clone());
-        let node = node.clone();
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
-            let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            assert_recovery_fence(&mut tx, &recovery).await?;
-            lock_admission_relations(&mut tx).await?;
-            let world = scope.world_id();
-            sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:boss-reward-death:' || encode($1,'hex') || ':' || encode($2,'hex'),0))")
-                .bind(world.as_bytes().as_slice()).bind(death.death.as_slice()).execute(&mut *tx).await?;
-            let previous: Option<Vec<u8>> = sqlx::query_scalar("SELECT intent FROM game_boss_reward_deaths WHERE world_id=encode($1,'hex')::uuid AND death_id=encode($2,'hex')::uuid")
-                .bind(world.as_bytes().as_slice()).bind(death.death.as_slice()).fetch_optional(&mut *tx).await?;
-            if let Some(previous) = previous {
-                if previous != intent { return Err(DurabilityError::InvalidStoredState); }
-                commit_semantic_transaction(tx, deadline).await?;
-                return Ok(true);
+        assert_recovery_fence(tx, &recovery).await?;
+        lock_admission_relations(tx).await?;
+        let world = scope.world_id();
+        sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:boss-reward-death:' || encode($1,'hex') || ':' || encode($2,'hex'),0))")
+                .bind(world.as_bytes().as_slice()).bind(death.death.as_slice()).execute(&mut **tx).await?;
+        let previous: Option<Vec<u8>> = sqlx::query_scalar("SELECT intent FROM game_boss_reward_deaths WHERE world_id=encode($1,'hex')::uuid AND death_id=encode($2,'hex')::uuid")
+                .bind(world.as_bytes().as_slice()).bind(death.death.as_slice()).fetch_optional(&mut **tx).await?;
+        if let Some(previous) = previous {
+            if previous != intent {
+                return Err(DurabilityError::InvalidStoredState);
             }
-            if !assert_runtime_scope_fence(&mut tx, scope, generation, &node).await? { return Ok(false); }
-            // Stable Character order prevents sibling death settlements from reversing locks.
-            for participant in &death.contributors {
-                let character = crate::foundation::CharacterId::decode(participant.character_id.as_bytes())
+            return Ok(true);
+        }
+        if !assert_runtime_scope_fence(tx, scope, generation, node).await? {
+            return Ok(false);
+        }
+        // Stable Character order prevents sibling death settlements from reversing locks.
+        for participant in &death.contributors {
+            let character =
+                crate::foundation::CharacterId::decode(participant.character_id.as_bytes())
                     .map_err(|_| DurabilityError::InvalidStoredState)?;
-                if !admissions.committed_session_use(&mut tx, character, participant.session_id).await? {
-                    return Ok(false);
-                }
-                // The original session retains its issued Character lease even after
-                // reconnect or terminalization. This proves the captured tuple without
-                // requiring an offline contributor to hold the current Character lease.
-                let exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_roots r JOIN game_durability_reconnect_sessions s USING(character_id) WHERE r.character_id=encode($1,'hex')::uuid AND r.world_id=encode($2,'hex')::uuid AND s.world_id=r.world_id AND s.game_session_id=encode($3,'hex')::uuid AND s.character_lease_generation=$4::text::numeric)")
-                    .bind(participant.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice())
-                    .bind(participant.session_id.as_bytes().as_slice()).bind(participant.lease_generation.to_string()).fetch_one(&mut *tx).await?;
-                if !exists { return Ok(false); }
+            if !admissions
+                .committed_session_use(tx, character, participant.session_id)
+                .await?
+            {
+                return Ok(false);
             }
-            let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint").fetch_one(&mut *tx).await?;
-            let minted = i64::try_from(death.minted_at_unix_ms).map_err(|_| DurabilityError::InvalidStoredState)?;
-            if minted > now { return Ok(false); }
-            let (kind, channel, instance) = match scope {
-                RuntimeScopeRefV1::Channel { channel_id, .. } => (1_i16, Some(*channel_id.as_bytes()), None),
-                RuntimeScopeRefV1::Instance { instance_id, .. } => (2, None, Some(instance_id)),
-            };
-            // A permanently late death cannot remain a transient retry: return seals
-            // require this queue to drain. Record its exact census and immutable intent
-            // without a chest, then let the existing timeout writer close the room.
-            // Current authority and conflicting/future death checks still fail closed.
-            let outcome = match classify_and_record_defeat_in_transaction(
-                &mut tx, scope, generation, &death.boss_key, death.death, minted,
-            ).await? {
-                BossRoomDefeatDecision::Recorded | BossRoomDefeatDecision::Unrelated => 1_i16,
-                BossRoomDefeatDecision::Late => 2,
-                BossRoomDefeatDecision::Conflict => return Ok(false),
-            };
-            sqlx::query("INSERT INTO game_boss_reward_deaths(world_id,death_id,scope_kind,channel_id,instance_id,scope_generation,boss_key,minted_at,expires_at,participant_count,eligible_count,intent,settlement_outcome) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6::text::numeric,$7,$8,$9,$10,$11,$12,$13)")
+            // The original session retains its issued Character lease even after
+            // reconnect or terminalization. This proves the captured tuple without
+            // requiring an offline contributor to hold the current Character lease.
+            let exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_roots r JOIN game_durability_reconnect_sessions s USING(character_id) WHERE r.character_id=encode($1,'hex')::uuid AND r.world_id=encode($2,'hex')::uuid AND s.world_id=r.world_id AND s.game_session_id=encode($3,'hex')::uuid AND s.character_lease_generation=$4::text::numeric)")
+                    .bind(participant.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice())
+                    .bind(participant.session_id.as_bytes().as_slice()).bind(participant.lease_generation.to_string()).fetch_one(&mut **tx).await?;
+            if !exists {
+                return Ok(false);
+            }
+        }
+        let now: i64 =
+            sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint")
+                .fetch_one(&mut **tx)
+                .await?;
+        let minted = i64::try_from(death.minted_at_unix_ms)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        if minted > now {
+            return Ok(false);
+        }
+        let (kind, channel, instance) = match scope {
+            RuntimeScopeRefV1::Channel { channel_id, .. } => {
+                (1_i16, Some(*channel_id.as_bytes()), None)
+            }
+            RuntimeScopeRefV1::Instance { instance_id, .. } => (2, None, Some(instance_id)),
+        };
+        // A permanently late death cannot remain a transient retry: return seals
+        // require this queue to drain. Record its exact census and immutable intent
+        // without a chest, then let the existing timeout writer close the room.
+        // Current authority and conflicting/future death checks still fail closed.
+        let outcome = match classify_and_record_defeat_in_transaction(
+            tx,
+            scope,
+            generation,
+            &death.boss_key,
+            death.death,
+            minted,
+        )
+        .await?
+        {
+            BossRoomDefeatDecision::Recorded | BossRoomDefeatDecision::Unrelated => 1_i16,
+            BossRoomDefeatDecision::Late => 2,
+            BossRoomDefeatDecision::Conflict => return Ok(false),
+        };
+        sqlx::query("INSERT INTO game_boss_reward_deaths(world_id,death_id,scope_kind,channel_id,instance_id,scope_generation,boss_key,minted_at,expires_at,participant_count,eligible_count,intent,settlement_outcome) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6::text::numeric,$7,$8,$9,$10,$11,$12,$13) ON CONFLICT(world_id,death_id) DO NOTHING")
                 .bind(world.as_bytes().as_slice()).bind(death.death.as_slice()).bind(kind)
                 .bind(channel.as_ref().map(|id| id.as_slice())).bind(instance.as_ref().map(|id| id.as_slice()))
                 .bind(generation.get().to_string()).bind(&death.boss_key).bind(minted).bind(expires)
-                .bind(death.contributors.len() as i32).bind(death.chests.len() as i32).bind(&intent).bind(outcome).execute(&mut *tx).await?;
-            for participant in &death.contributors {
-                let chest = death.chests.iter().find(|chest| chest.character_id == participant.character_id);
-                sqlx::query("INSERT INTO game_boss_reward_contributors(character_id,world_id,death_id,source_game_session_id,source_lease_generation,damage_dealt,damage_received,healing_others,eligible,item_count) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6::text::numeric,$7::text::numeric,$8::text::numeric,$9,$10)")
+                .bind(death.contributors.len() as i32).bind(death.chests.len() as i32).bind(&intent).bind(outcome).execute(&mut **tx).await?;
+        for participant in &death.contributors {
+            let chest = death
+                .chests
+                .iter()
+                .find(|chest| chest.character_id == participant.character_id);
+            sqlx::query("INSERT INTO game_boss_reward_contributors(character_id,world_id,death_id,source_game_session_id,source_lease_generation,damage_dealt,damage_received,healing_others,eligible,item_count) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6::text::numeric,$7::text::numeric,$8::text::numeric,$9,$10)")
                     .bind(participant.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(death.death.as_slice())
                     .bind(participant.session_id.as_bytes().as_slice()).bind(participant.lease_generation.to_string())
                     .bind(participant.contribution.damage_dealt.to_string()).bind(participant.contribution.damage_received.to_string())
                     .bind(participant.contribution.healing_others.to_string()).bind(chest.is_some())
-                    .bind(if outcome == 2 { 0 } else { chest.map_or(0, |chest| chest.items.len()) as i32 }).execute(&mut *tx).await?;
-            }
-            if outcome == 2 {
-                commit_semantic_transaction(tx, deadline).await?;
-                return Ok(true);
-            }
-            // Capability 492: each recipient's victory moves its Moonsilver pity in this same
-            // transaction. An expired chest delivers nothing, so it is a victory without a drop.
-            let pity_key = oteryn_gameplay_encounter_rules::boss::pity::pity_boss_key(&death.boss_key);
-            let pity: Vec<([u8; 16], bool)> = death.chests.iter().map(|chest| (*chest.character_id.as_bytes(),
-                now < expires && chest.items.iter().any(|item| oteryn_gameplay_encounter_rules::boss::pity::is_pity_item(&item.definition.production_key)))).collect();
-            for chest in death.chests {
-                sqlx::query("INSERT INTO game_character_boss_reward_chests(character_id,world_id,death_id,boss_key,minted_at,expires_at,item_count) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,$5,$6,$7)")
+                    .bind(if outcome == 2 { 0 } else { chest.map_or(0, |chest| chest.items.len()) as i32 }).execute(&mut **tx).await?;
+        }
+        if outcome == 2 {
+            return Ok(true);
+        }
+        // Capability 492: each recipient's victory moves its Moonsilver pity in this same
+        // transaction. An expired chest delivers nothing, so it is a victory without a drop.
+        let pity_key = oteryn_gameplay_encounter_rules::boss::pity::pity_boss_key(&death.boss_key);
+        let pity: Vec<([u8; 16], bool)> = death
+            .chests
+            .iter()
+            .map(|chest| {
+                (
+                    *chest.character_id.as_bytes(),
+                    now < expires
+                        && chest.items.iter().any(|item| {
+                            oteryn_gameplay_encounter_rules::boss::pity::is_pity_item(
+                                &item.definition.production_key,
+                            )
+                        }),
+                )
+            })
+            .collect();
+        for chest in death.chests {
+            sqlx::query("INSERT INTO game_character_boss_reward_chests(character_id,world_id,death_id,boss_key,minted_at,expires_at,item_count) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,$5,$6,$7)")
                     .bind(chest.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(death.death.as_slice())
                     .bind(&death.boss_key).bind(minted).bind(expires).bind(if now >= expires { 0_i32 } else { chest.items.len() as i32 })
-                    .execute(&mut *tx).await?;
-                for (index, item) in chest.items.into_iter().enumerate() {
-                    sqlx::query("INSERT INTO game_boss_reward_items(character_id,world_id,death_id,item_ordinal,definition_family,definition_production_key,definition_revision_ref,quantity,expired) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,$5,$6,$7,$8,$9)")
+                    .execute(&mut **tx).await?;
+            for (index, item) in chest.items.into_iter().enumerate() {
+                sqlx::query("INSERT INTO game_boss_reward_items(character_id,world_id,death_id,item_ordinal,definition_family,definition_production_key,definition_revision_ref,quantity,expired) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,$5,$6,$7,$8,$9)")
                         .bind(chest.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(death.death.as_slice())
                         .bind((index + 1) as i32).bind(item.definition.family).bind(item.definition.production_key)
-                        .bind(item.definition.revision_ref).bind(i64::from(item.quantity)).bind(now >= expires).execute(&mut *tx).await?;
-                }
+                        .bind(item.definition.revision_ref).bind(i64::from(item.quantity)).bind(now >= expires).execute(&mut **tx).await?;
             }
-            if let Some(pity_key) = pity_key {
-                crate::durability::boss_pity::record_victories_in_transaction(&mut tx, &pity_key, &pity).await?;
-            }
-            commit_semantic_transaction(tx, deadline).await?;
-            Ok(true)
-        })).await
+        }
+        if let Some(pity_key) = pity_key {
+            crate::durability::boss_pity::record_victories_in_transaction(tx, &pity_key, &pity)
+                .await?;
+        }
+        Ok(true)
     }
 }
 
@@ -158,7 +330,8 @@ fn validate_death(death: &BossRewardDeath) -> Option<i64> {
             return None;
         }
     }
-    let eligibility = oteryn_gameplay_encounter_rules::boss::reward_eligibility(
+    let eligibility = oteryn_gameplay_encounter_rules::boss::reward_eligibility_for_boss(
+        &death.boss_key,
         &death
             .contributors
             .iter()
@@ -287,6 +460,7 @@ mod tests {
     #[test]
     fn boss_reward_settlement_retains_support_census_and_requires_exact_eligibility() {
         let mut value = death();
+        value.boss_key = "oteryn:creature.earth_overlord".into();
         let mut character = [3; 16];
         character[6] = 0x73;
         character[8] = 0x83;
@@ -299,6 +473,17 @@ mod tests {
                 damage_received: 900,
                 healing_others: 900,
             },
+        });
+        // Crystal 201189f data/scripts/systems/reward_chest.lua:54-69,156-165:
+        // The Elemental Spheres exception admits support with the exact captured tuple.
+        assert!(validate_death(&value).is_none());
+        let support = &value.contributors[1];
+        value.chests.push(BossRewardChestPlan {
+            character_id: support.character_id,
+            session_id: support.session_id,
+            lease_generation: support.lease_generation,
+            contribution: support.contribution,
+            items: value.chests[0].items.clone(),
         });
         assert!(validate_death(&value).is_some());
         let mut omitted = value.clone();

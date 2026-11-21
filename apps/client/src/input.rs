@@ -13,6 +13,17 @@ pub use oteryn_client_ui::world_interaction::{
 use oteryn_renderer::TileCoord;
 use oteryn_session::EntityRef;
 
+/// Ctrl+Shift+S opens the store only with those exact modifiers.
+pub(crate) fn store_key(events: &[oteryn_input_actions::NormalizedInputEvent]) -> bool {
+    use oteryn_input_actions::{ButtonState, Modifier, Modifiers, NormalizedInputEvent};
+    let chord = Modifiers::one(Modifier::Control).with(Modifier::Shift);
+    events.iter().any(|event| {
+        matches!(event, NormalizedInputEvent::Key {
+            code, state: ButtonState::Pressed, modifiers, repeat: false
+        } if code.get() == 22 && *modifiers == chord)
+    })
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TargetKind {
     Object,
@@ -238,7 +249,7 @@ mod tests {
                 x: 100.0,
                 y: 60.0,
                 secondary: false,
-                toggle_attack: false
+                shortcut: None
             }]
         );
         assert!(actions.route(&[primary(ButtonState::Released)]).is_empty());
@@ -290,7 +301,7 @@ mod tests {
                 x: 30.0,
                 y: 40.0,
                 secondary: false,
-                toggle_attack: false
+                shortcut: None
             }]
         );
         actions.route(&[
@@ -335,19 +346,19 @@ mod tests {
             repeat: false,
         };
         assert_eq!(
-            arrow_step(&[key(KeyCode::ARROW_LEFT, ButtonState::Pressed)]),
+            arrow_step(&[key(KeyCode::ARROW_LEFT, ButtonState::Pressed)], false),
             Some(StepDir::West)
         );
         assert_eq!(
-            arrow_step(&[key(KeyCode::ARROW_UP, ButtonState::Pressed)]),
+            arrow_step(&[key(KeyCode::ARROW_UP, ButtonState::Pressed)], false),
             Some(StepDir::North)
         );
         assert_eq!(
-            arrow_step(&[key(KeyCode::ARROW_UP, ButtonState::Released)]),
+            arrow_step(&[key(KeyCode::ARROW_UP, ButtonState::Released)], false),
             None
         );
         assert_eq!(
-            arrow_step(&[key(KeyCode::KEY_W, ButtonState::Pressed)]),
+            arrow_step(&[key(KeyCode::KEY_W, ButtonState::Pressed)], false),
             None
         );
     }

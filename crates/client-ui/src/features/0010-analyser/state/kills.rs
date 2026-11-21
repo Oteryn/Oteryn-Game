@@ -18,7 +18,11 @@ pub fn goal(panel: &mut Panel, race: &str, target: Option<&str>) -> bool {
             panel.feedback = Some(tr!("Enter a positive kill target"));
             return false;
         };
-        if !panel.kills_by_race.contains_key(&race) && !panel.kill_goals.contains_key(&race) {
+        let kills = panel
+            .reports
+            .get(super::Tool::Kills.key())
+            .map_or(&panel.kills_by_race, |report| &report.kills_by_race);
+        if !kills.contains_key(&race) && !panel.kill_goals.contains_key(&race) {
             panel.feedback = Some(tr!("Choose a creature race listed in Kill Tracker"));
             return false;
         }

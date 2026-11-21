@@ -1,0 +1,32 @@
+Monk passive self-heal from attack spells vs harmony (Invalid Monk L757, ML54, wheel +16), 2026-11-15 19:51-21:28
+Method: throne room king reset (HP ~1), walk out of PZ, cast without target (Flurry of Blows "exori mas pug" = builder, +1 harmony;
+Sweeping Takedown "exori mas nia" = spender, consumes all harmony). Harmony read from the harmony bar before each cast; heal from the
+Server Log ("You healed yourself for N hitpoints", ~1-2 s after the cast). Raw data: /tmp/ct-harm.txt.
+
+| virtue | spell | harmony before | n | min | max | mean |
+| none | builder | 0..4 | 227 | 126 | 175 | 152 (no harmony dependence) |
+| none | spender | 0 | - | - | - | NO HEAL |
+| none | spender | 1 | 15 | 126 | 170 | 151 |
+| none | spender | 2 | 16 | 194 | 242 | 223 |
+| none | spender | 3 | 16 | 261 | 305 | 288 |
+| none | spender | 4 | 16 | 334 | 377 | 351 |
+| none | spender | 5 | 14 | 396 | 444 | 422 |
+| Sustain | builder | 0..4 | 138 | 204 | 286 | 245 |
+| Sustain | spender | 1 | 9 | 204 | 270 | 234 |
+| Sustain | spender | 2 | 9 | 335 | 351 | 342 |
+| Sustain | spender | 3 | 10 | 433 | 515 | 488 |
+| Sustain | spender | 4 | 9 | 548 | 630 | 583 |
+| Sustain | spender | 5 | 9 | 671 | 745 | 708 |
+Observations: the spender heal is ~linear in harmony: none ~ 151*h^0.95 (about 73/harmony; h1 equals one builder heal, so the spender heal ~ builder heal x harmony);
+Sustain spender ~ 1.55-1.68x none; Sustain builder 245/152 = 1.61x. Builder heals on every cast.
+Not measured: target-only attack spells (need a creature), Greater Flurry / Spiritual Outburst (long cd), harmony effect on Spirit Mend (aborted: out of mana potions).
+Anomaly: great mana potions and superior mana potions were consumed to 0 by the loop (drinking after every cast); potion data from the loop
+before 20:45 is capped (mana near full) and marked INVALID in /tmp/ct-potions.txt; samples after 20:45 (drunk below 2500 mana): 150-248.
+
+Spirit Mend vs harmony (no virtue, ML54, 2026-11-15 22:50-23:15; raw /tmp/ct-harm-sm.txt):
+harm 0: n=5 741-835 mean 787 | 1: n=7 668-856 769 | 2: n=8 685-830 756 | 3: n=8 671-852 789 | 4: n=7 544-854 739 | 5: n=7 616-815 734
+=> no harmony effect on Spirit Mend (reference ML54 no-virtue 763). Two values below the usual range (544, 616) may be capped (HP near max) or noise.
+
+Greater Flurry of Blows (exori gran mas pug), no virtue, harmony 0 before, no target: n=8, 126-175, mean 150 (same as Flurry of Blows); it gives +1 harmony (the next builder was at harmony 1 every time).
+Spiritual Outburst (exori gran mas nia): no effect without a target (8/8 casts at harmony 5: no heal; earlier "You can only use it on creatures").
+The run stopped after 8 trips: mana 1175, great mana potions on the hotbar (2.01) used up.

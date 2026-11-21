@@ -5,25 +5,31 @@ use oteryn_client_runtime::raw_feature::FeatureCommand;
 use oteryn_input_actions::NormalizedInputEvent;
 impl PlayLink {
     pub fn skill_progress_request(&self) {
-        let mut mailbox = lock(&self.mailbox);
-        if let Some(payload) =
-            oteryn_client_ui::skill_progress::request(&mut mailbox.skill_progress)
-            && self
-                .commands
-                .send(PlayCommand::Feature(FeatureCommand {
-                    capability: if mailbox.skill_progress.complete_selected {
-                        370
-                    } else {
-                        279
-                    },
-                    kind: if mailbox.skill_progress.complete_selected {
-                        640
-                    } else {
-                        495
-                    },
-                    payload,
-                }))
-                .is_err()
+        self.enqueue_skill_progress(&mut lock(&self.mailbox));
+    }
+
+    fn enqueue_skill_progress(&self, mailbox: &mut crate::play::mailbox::Mailbox) {
+        let Some(payload) = oteryn_client_ui::skill_progress::request(&mut mailbox.skill_progress)
+        else {
+            return;
+        };
+        mailbox.skill_progress_last_request = Some(std::time::Instant::now());
+        if self
+            .commands
+            .send(PlayCommand::Feature(FeatureCommand {
+                capability: if mailbox.skill_progress.complete_selected {
+                    370
+                } else {
+                    279
+                },
+                kind: if mailbox.skill_progress.complete_selected {
+                    640
+                } else {
+                    495
+                },
+                payload,
+            }))
+            .is_err()
         {
             mailbox.skill_progress.pending = false;
             mailbox.skill_progress.error = Some(tr!("Session ended"));
@@ -34,19 +40,24 @@ impl PlayLink {
             return false;
         }
         self.skill_progress_request();
-        #[cfg(windows)]
-        crate::play::status_window::open_window(
-            self,
-            tr!("Skill progress — Ctrl+Alt+Shift+K"),
-            |mailbox| &mut mailbox.skill_progress,
-        );
-        #[cfg(not(windows))]
-        {
-            lock(&self.mailbox).skill_progress.open = true;
-        }
+        lock(&self.mailbox).skill_progress.open = true;
         true
     }
+    pub(in crate::play) fn refresh_skill_progress_if_due(&self) {
+        let mut mailbox = lock(&self.mailbox);
+        if mailbox.shared_frontend
+            && mailbox.skill_progress.selected
+            && !mailbox.skill_progress.pending
+            && mailbox
+                .skill_progress_last_request
+                .is_none_or(|last| last.elapsed() >= std::time::Duration::from_secs(5))
+        {
+            self.enqueue_skill_progress(&mut mailbox);
+        }
+    }
+
     pub fn skill_progress_panel(&self) -> oteryn_client_ui::skill_progress::SkillProgressPanel {
+        self.refresh_skill_progress_if_due();
         lock(&self.mailbox).skill_progress.clone()
     }
 }
@@ -68,8 +79,8 @@ impl Outbox {
             oteryn_session::CommandStatus::Accepted
                 | oteryn_session::CommandStatus::DuplicateReplay
         );
-        lock(&self.0)
-            .skill_progress
-            .finish(accepted, &result.payload);
+        let mut mailbox = lock(&self.0);
+        mailbox.skill_progress_last_request = Some(std::time::Instant::now());
+        mailbox.skill_progress.finish(accepted, &result.payload);
     }
 }

@@ -2,7 +2,7 @@
 use super::*;
 #[path = "current_appearance/house_fence.rs"]
 mod house_fence;
-use house_fence::assert_read_fence;
+use house_fence::observe_house_root;
 
 #[derive(Clone, Copy)]
 enum ReadScope {
@@ -40,7 +40,8 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         grant_keys: Vec<String>,
     ) -> Result<CurrentCharacterAppearance, AppearanceWriteError> {
-        self.read_appearance_state_in_scope(authority, node, fence, grant_keys, ReadScope::Channel).await
+        self.read_appearance_state_in_scope(authority, node, fence, grant_keys, ReadScope::Channel)
+            .await
     }
 
     /// Read-only House projection. The native named-House proof replaces only the Channel
@@ -54,7 +55,14 @@ impl DurabilityRoot {
         origin_channel: [u8; 16],
         grant_keys: Vec<String>,
     ) -> Result<CurrentCharacterAppearance, AppearanceWriteError> {
-        self.read_appearance_state_in_scope(authority, node, fence, grant_keys, ReadScope::House { origin_channel }).await
+        self.read_appearance_state_in_scope(
+            authority,
+            node,
+            fence,
+            grant_keys,
+            ReadScope::House { origin_channel },
+        )
+        .await
     }
 
     async fn read_appearance_state_in_scope(
@@ -66,9 +74,11 @@ impl DurabilityRoot {
         scope: ReadScope,
     ) -> Result<CurrentCharacterAppearance, AppearanceWriteError> {
         if fence.character_lease_generation == 0
-            || !matches!((scope, fence.runtime_scope),
+            || !matches!(
+                (scope, fence.runtime_scope),
                 (ReadScope::Channel, RuntimeScopeRefV1::Channel { .. })
-                | (ReadScope::House { .. }, RuntimeScopeRefV1::Instance { .. }))
+                    | (ReadScope::House { .. }, RuntimeScopeRefV1::Instance { .. })
+            )
         {
             return Err(AppearanceWriteError::InvalidInput);
         }
@@ -79,10 +89,20 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &recovery).await?;
-                    lock_admission_relations(&mut tx).await?;
-                    let root = match assert_read_fence(&mut tx, &fence, &node, scope).await? {
+                    let mut tx = match scope {
+                        ReadScope::Channel => super::super::db::begin_observation_transaction(holder, deadline).await?,
+                        ReadScope::House { .. } => super::super::db::begin_locking_observation_transaction(holder, deadline).await?,
+                    };
+                    super::super::character_authority::observe_recovery_fence(&mut tx, &recovery).await?;
+                    let root = match scope {
+                        ReadScope::Channel => super::super::character_progression::observe_fenced_root(
+                            &mut tx, &fence.item_fence(), Some(fence.expected_character_revision.get()), &node,
+                        ).await?,
+                        ReadScope::House { origin_channel } => {
+                            observe_house_root(&mut tx, &fence, &node, origin_channel).await?
+                        }
+                    };
+                    let root = match root {
                         Ok(root) => root,
                         Err(error) => return Ok(Err(error.into())),
                     };

@@ -1,26 +1,34 @@
 use super::*;
 
-pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
+pub(super) fn initialize<T: Stepper>(
+    session: &T,
+    outbox: &Outbox,
+) -> Result<(), oteryn_session::SessionError> {
+    outbox.diagonal_initialize(
+        session.feature_selected(oteryn_session::CAPABILITY_DIAGONAL_MOVEMENT_V1),
+    );
+    if session.feature_selected(451) {
+        outbox.personal_map_marks_initialize();
+    }
+    outbox.map_initialize(session.feature_snapshot(17), session.world_position());
     outbox.discovery_initialize(session);
     outbox.hud_stamina_initialize(session.feature_selected(199));
     outbox.properties_initialize(session);
     outbox.analyser_initialize(session.feature_selected(10));
-    if let Err(error) = outbox
-        .spell_catalog_initialize(session.feature_selected(287), session.feature_snapshot(100))
-    {
-        outbox.end(public_class(&error));
-        return false;
-    }
+    outbox
+        .spell_catalog_initialize(session.feature_selected(287), session.feature_snapshot(100))?;
     outbox.battle_metadata_initialize(session.server_mechanic_selected(17));
     outbox.spell_bar_initialize(session.feature_snapshot(20));
     outbox.bar_item_cooldowns_initialize(session.feature_selected(463));
     outbox.appearance_initialize(session);
+    outbox.actor_motion_initialize(session.feature_selected(502));
     outbox.equipment_initialize(session.equipment_selected());
     outbox.world_context_initialize(session.feature_selected(28), session.feature_selected(11));
     outbox.targeting_initialize(session.feature_selected(15));
     outbox.diagonal_movement_initialize(session.feature_selected(371));
     // Publish sources only after their equipment, movement and targeting routes are ready.
     outbox.inventory_initialize(session.inventory(), session.item_count_selected());
+    outbox.container_manual_sort_initialize(session.feature_selected(510));
     outbox.container_initialize_with_house_capacity(
         session.container_views(),
         session.feature_selected(446),
@@ -30,7 +38,6 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     outbox.channel_list_initialize(session.feature_snapshot(48));
     outbox.world_light_initialize(session.feature_snapshot(18));
     outbox.world_weather_initialize(session.feature_snapshot(22));
-    outbox.map_initialize(session.feature_snapshot(17));
     outbox.animus_initialize(session.animus_selected());
     outbox.wheel_initialize(
         session.wheel_selected(),
@@ -51,6 +58,7 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     outbox.potion_durations_initialize(session.feature_selected(381));
     outbox.death_protection_initialize(session.feature_selected(382));
     outbox.quest_initialize(session.quest_state());
+    outbox.server_info_initialize(session.feature_selected(500));
     outbox.task_board_initialize(session.task_board_selected());
     outbox.task_board_weekly_results_initialize(session.feature_selected(474));
     outbox.stash_initialize(session.stash_selected());
@@ -88,7 +96,7 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     );
     outbox.browse_field_initialize(session.server_mechanic_selected(230));
     if let Some(payload) = session.feature_snapshot(14) {
-        outbox.browse_field_views(&payload);
+        outbox.browse_field_views(&payload, session.feature_selected(499));
     }
     if let Some(inventory) = session.inventory() {
         outbox.browse_field_inventory(inventory);
@@ -97,6 +105,7 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     outbox.chat_initialize(session.feature_selected(oteryn_session::CAPABILITY_CHAT_V1));
     outbox.chat_party_room_initialize(session.feature_selected(240));
     outbox.cyclopedia_character_initialize(session.feature_selected(199));
+    outbox.blessings_details_initialize(session.feature_selected(503));
     outbox.cyclopedia_character_extensions(
         session.feature_selected(
             oteryn_session::cyclopedia_character::CAPABILITY_CYCLOPEDIA_CHARACTER_VOCATION_V1,
@@ -105,6 +114,7 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
             oteryn_session::cyclopedia_character::CAPABILITY_CYCLOPEDIA_DEATH_DETAILS_V1,
         ),
     );
+    outbox.holdings_initialize(session.feature_selected(506));
     outbox.cyclopedia_tracker_initialize(session.feature_selected(197));
     outbox.world_event_initialize(session.feature_selected(53));
     outbox.daily_boost_initialize(session.feature_selected(151));
@@ -112,6 +122,8 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
         session.server_mechanic_selected(9),
         session.feature_selected(498),
     );
+    outbox.highscores_catalogue_initialize(session.feature_selected(507));
+    outbox.tutorial_vocation_initialize(session.feature_selected(504));
     outbox.sanction_initialize(session.feature_selected(497));
     outbox.depot_search_initialize(session.server_mechanic_selected(153));
     outbox.target_move_initialize(session.feature_selected(64));
@@ -132,11 +144,15 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     );
     outbox.store_tokens_initialize(session.server_mechanic_selected(479));
     outbox.premium_game_initialize(session.feature_selected(97));
-    outbox.vip_presence_initialize(session.feature_selected(258));
+    outbox.vip_presence_initialize(session.feature_selected(258), session.feature_selected(513));
+    outbox.channel_switch_initialize(
+        session
+            .feature_selected(oteryn_client_runtime::channel_switch::CAPABILITY_CHANNEL_SWITCH_V1),
+    );
     outbox.weapon_proficiency_initialize(session.feature_selected(195));
     outbox.weapon_proficiency_state_initialize(session.feature_selected(448));
     outbox.depot_initialize(session.feature_selected(37));
     outbox.achievements_initialize();
     outbox.player_trade_items(session.player_trade_items());
-    true
+    Ok(())
 }

@@ -2,7 +2,7 @@
 use super::*;
 use sha2::{Digest, Sha256};
 
-const REFLECTION_STREAMS_MAX: usize = 1024;
+pub(super) const REFLECTION_STREAMS_MAX: usize = 1024;
 
 impl ChannelRuntimeV1 {
     /// Commit a source-qualified reflected hit. The incoming owner admits the source stream
@@ -42,6 +42,238 @@ impl ChannelRuntimeV1 {
         magnitude: u32,
         now_ms: u64,
     ) -> Result<OwnerDamageResult, CarrierError> {
+        let (index, next, result) = self.prepare_source_damage(
+            source, reflector, session, stream, sequence, magnitude, now_ms,
+        )?;
+        if let Some(next) = next {
+            let notice = self
+                .carrier
+                .native_death_notice_for_slot(source, &next, None)?;
+            self.carrier
+                .reserve_native_death_capacity(notice.as_slice())?;
+            self.carrier.slots[index] = next;
+            self.carrier.install_native_death_events(notice);
+        }
+        Ok(result)
+    }
+
+    /// Prepare the existing leaf-damage successor at `now_us` before invoking the player owner.
+    /// The callback has immutable runtime access, so a refused player commit leaves both
+    /// owners unchanged and a successful callback is followed by allocation-free publication.
+    #[allow(clippy::too_many_arguments)]
+    pub fn commit_source_damage_with_vitals<R>(
+        &mut self,
+        source: ExactActorRef,
+        reflector: ExactActorRef,
+        session: GameSessionId,
+        stream: &[u8],
+        sequence: u64,
+        magnitude: u32,
+        now_us: u64,
+        commit: impl FnOnce(&Self, OwnerDamageResult) -> Option<R>,
+    ) -> Result<Option<R>, CarrierError> {
+        let (index, next, result) = self.prepare_source_damage_with_clock(
+            source,
+            reflector,
+            session,
+            stream,
+            sequence,
+            magnitude,
+            now_us / 1_000,
+            Some(now_us),
+        )?;
+        let notice = next
+            .as_ref()
+            .map(|slot| {
+                self.carrier
+                    .native_death_notice_for_slot(source, slot, Some(now_us))
+            })
+            .transpose()?
+            .flatten();
+        if notice.is_some() {
+            self.carrier
+                .reserve_native_death_capacity(notice.as_slice())?;
+        }
+        let Some(receipt) = commit(self, result) else {
+            return Ok(None);
+        };
+        if let Some(next) = next {
+            self.carrier.slots[index] = next;
+        }
+        self.carrier.install_native_death_events(notice);
+        Ok(Some(receipt))
+    }
+
+    /// Compose ordered source health changes at `now_us` with one immutable player-owner callback.
+    /// Every receipt and attribution allocation is prepared before the player can write.
+    #[allow(clippy::too_many_arguments)]
+    pub fn commit_source_damage_batch_with_vitals<R>(
+        &mut self,
+        sources: &[(ExactActorRef, u32)],
+        reflector: ExactActorRef,
+        session: GameSessionId,
+        stream: &[u8],
+        sequence: u64,
+        now_us: u64,
+        commit: impl FnOnce(&Self, &[OwnerDamageResult]) -> Option<R>,
+    ) -> Result<Option<R>, CarrierError> {
+        if sources.len() > self.actor_slot_capacity() {
+            return Err(CarrierError::AllocationFailed);
+        }
+        let mut plans: Vec<(ExactActorRef, usize, Option<Slot>)> = Vec::new();
+        let mut results: Vec<OwnerDamageResult> = Vec::new();
+        plans
+            .try_reserve(sources.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        results
+            .try_reserve(sources.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        for (ordinal, (source, magnitude)) in sources.iter().enumerate() {
+            let previous = plans.iter().position(|(actor, _, _)| actor == source);
+            if let Some(previous) = previous {
+                if results
+                    .iter()
+                    .zip(sources)
+                    .rev()
+                    .any(|(result, (actor, _))| actor == source && result.health_after == 0)
+                {
+                    results.push(OwnerDamageResult {
+                        applied: false,
+                        health_before: 0,
+                        health_after: 0,
+                    });
+                    continue;
+                }
+                let (_, index, next) = &mut plans[previous];
+                // A later occurrence observes the preceding native successor, including
+                // Enrage. Restore the live slot before any error or player callback.
+                let staged = next.take();
+                let original =
+                    staged.map(|staged| std::mem::replace(&mut self.carrier.slots[*index], staged));
+                let mut occurrence_stream = stream.to_vec();
+                occurrence_stream.extend_from_slice(b":successor:");
+                occurrence_stream.extend_from_slice(&ordinal.to_be_bytes());
+                let prepared = self.prepare_source_damage_with_clock(
+                    *source,
+                    reflector,
+                    session,
+                    &occurrence_stream,
+                    sequence,
+                    *magnitude,
+                    now_us / 1_000,
+                    Some(now_us),
+                );
+                if let Some(original) = original {
+                    *next = Some(std::mem::replace(&mut self.carrier.slots[*index], original));
+                }
+                let (_, successor, result) = prepared?;
+                if let Some(successor) = successor {
+                    *next = Some(successor);
+                }
+                results.push(result);
+            } else {
+                let (index, next, result) = self.prepare_source_damage_with_clock(
+                    *source,
+                    reflector,
+                    session,
+                    stream,
+                    sequence,
+                    *magnitude,
+                    now_us / 1_000,
+                    Some(now_us),
+                )?;
+                plans.push((*source, index, next));
+                results.push(result);
+            }
+        }
+        let mut notices = Vec::new();
+        notices
+            .try_reserve(sources.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        for (source, _, next) in &plans {
+            if let Some(next) = next
+                && let Some(notice) =
+                    self.carrier
+                        .native_death_notice_for_slot(*source, next, Some(now_us))?
+            {
+                notices.push(notice);
+            }
+        }
+        if !notices.is_empty() {
+            self.carrier.reserve_native_death_capacity(&notices)?;
+        }
+        let Some(receipt) = commit(self, &results) else {
+            return Ok(None);
+        };
+        for (_, index, next) in plans {
+            if let Some(next) = next {
+                self.carrier.slots[index] = next;
+            }
+        }
+        self.carrier.install_native_death_events(notices);
+        Ok(Some(receipt))
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn prepare_source_damage(
+        &mut self,
+        source: ExactActorRef,
+        reflector: ExactActorRef,
+        session: GameSessionId,
+        stream: &[u8],
+        sequence: u64,
+        magnitude: u32,
+        now_ms: u64,
+    ) -> Result<(usize, Option<Slot>, OwnerDamageResult), CarrierError> {
+        self.prepare_source_damage_with_clock(
+            source, reflector, session, stream, sequence, magnitude, now_ms, None,
+        )
+    }
+    /// Actual native clock precision, independent of the source stream sequence.
+    #[allow(clippy::too_many_arguments)]
+    pub fn commit_source_damage_at_us(
+        &mut self,
+        source: ExactActorRef,
+        reflector: ExactActorRef,
+        session: GameSessionId,
+        stream: &[u8],
+        sequence: u64,
+        magnitude: u32,
+        now_us: u64,
+    ) -> Result<OwnerDamageResult, CarrierError> {
+        let (index, next, result) = self.prepare_source_damage_with_clock(
+            source,
+            reflector,
+            session,
+            stream,
+            sequence,
+            magnitude,
+            now_us / 1_000,
+            Some(now_us),
+        )?;
+        if let Some(next) = next {
+            let notice = self
+                .carrier
+                .native_death_notice_for_slot(source, &next, Some(now_us))?;
+            self.carrier
+                .reserve_native_death_capacity(notice.as_slice())?;
+            self.carrier.slots[index] = next;
+            self.carrier.install_native_death_events(notice);
+        }
+        Ok(result)
+    }
+    #[allow(clippy::too_many_arguments)]
+    fn prepare_source_damage_with_clock(
+        &mut self,
+        source: ExactActorRef,
+        reflector: ExactActorRef,
+        session: GameSessionId,
+        stream: &[u8],
+        sequence: u64,
+        magnitude: u32,
+        now_ms: u64,
+        enqueue_us: Option<u64>,
+    ) -> Result<(usize, Option<Slot>, OwnerDamageResult), CarrierError> {
         let lease = self.bound_attacker_lease(reflector, session)?;
         // The incoming owner may still hit a player held through disconnect. The bound
         // lease/session fence is required; a live client connection is not.
@@ -54,7 +286,35 @@ impl ChannelRuntimeV1 {
             .chain_update(stream)
             .finalize()
             .into();
-        let owner = self.borrow_exact_actor_commit_at(now_ms);
+        // Crystal CombatDamage defaults to ORIGIN_NONE (creatures_definitions.hpp:
+        // 1738); equipment reflection and IOBestiary charm leaves retain it.
+        // Game::combatChangeHealth skips HEALTHCHANGE at 7934 but still passes
+        // the actual reflector to PREPAREDEATH at 8283.
+        let reflector_index = self.carrier.validate_ref(&self.continuity, reflector.0)?;
+        let (command, origin) = match &self.carrier.slots[reflector_index] {
+            Slot::Occupied { spell_combat, .. } => spell_combat
+                .soul_war_player_source
+                .as_ref()
+                .map(|current| (current.command, current.facts.origin))
+                .unwrap_or((
+                    None,
+                    super::soul_war_player_source::SoulWarPlayerSourceOrigin::Reflection,
+                )),
+            _ => return Err(CarrierError::CreatureTargetMismatch),
+        };
+        let mut source_context = self.carrier.soul_war_health_context(
+            &self.continuity,
+            Some(reflector),
+            command,
+            Some(now_ms),
+            origin,
+            self.content_pin(),
+        )?;
+        source_context.invoke_health_change = false;
+        let owner = match enqueue_us {
+            Some(now) => self.borrow_exact_actor_commit_at_us(now),
+            None => self.borrow_exact_actor_commit_at(now_ms),
+        };
         let index = owner.carrier.validate_ref(owner.continuity, source.0)?;
         let Slot::CreatureOccupied {
             committed,
@@ -66,7 +326,7 @@ impl ChannelRuntimeV1 {
         };
         if let Some(mark) = committed.reflection_marks.get(&key) {
             if sequence <= *mark {
-                return committed
+                let result = committed
                     .entries
                     .iter()
                     .find(|record| record.reflection == Some((key, sequence)))
@@ -79,7 +339,8 @@ impl ChannelRuntimeV1 {
                             applied: false,
                             ..record.result
                         })
-                    });
+                    })?;
+                return Ok((index, None, result));
             }
         } else if committed.reflection_marks.len() >= REFLECTION_STREAMS_MAX {
             return Err(CarrierError::DamageReceiptCapacityExceeded);
@@ -96,7 +357,7 @@ impl ChannelRuntimeV1 {
         let mut binding = occurrence.as_bytes().to_vec();
         binding.push(0);
         binding.extend_from_slice(&magnitude.to_be_bytes());
-        let (_, next, result) = owner.carrier.prepare_creature_damage_inner_bounded(
+        let (_, next, result) = owner.carrier.prepare_creature_damage_inner_bounded_source(
             owner.continuity,
             source.0,
             OwnerDamageCommand {
@@ -110,9 +371,11 @@ impl ChannelRuntimeV1 {
             None,
             false,
             Some(now_ms),
+            Some(&source_context),
+            false,
         )?;
         let Some(mut next) = next else {
-            return Ok(result);
+            return Ok((index, None, result));
         };
         let Slot::CreatureOccupied {
             committed,
@@ -143,8 +406,18 @@ impl ChannelRuntimeV1 {
             Some(mark),
             Some(now_ms),
         );
-        owner.carrier.slots[index] = next;
-        Ok(result)
+        // ORIGIN_NONE skips HEALTHCHANGE, not the actual Player's source
+        // damage-map entry. The stream replay guard above prevents duplicates.
+        damage_contributors.record_source_player(
+            lease.character_id(),
+            result
+                .health_before
+                .saturating_sub(result.health_after)
+                .unsigned_abs(),
+            Some(&source_context),
+            Some(now_ms),
+        );
+        Ok((index, Some(next), result))
     }
 }
 
@@ -209,6 +482,90 @@ mod tests {
     }
 
     #[test]
+    fn incoming_order_reflection_refused_player_commit_preserves_source_and_receipt() {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| {
+                let (mut runtime, player, session, creature) = fixture();
+                let refused = runtime
+                    .commit_source_damage_with_vitals(
+                        creature,
+                        player,
+                        session,
+                        b"incoming-refused",
+                        1,
+                        100,
+                        0,
+                        |runtime, result| {
+                            assert_eq!(runtime.live_creature_health(creature), Some(10_000));
+                            assert_eq!(result.health_after, 9_900);
+                            None::<()>
+                        },
+                    )
+                    .expect("prepared source successor");
+                assert!(refused.is_none());
+                assert_eq!(runtime.live_creature_health(creature), Some(10_000));
+                let committed = runtime
+                    .commit_source_damage(creature, player, session, b"incoming-refused", 1, 100, 0)
+                    .expect("same occurrence retry");
+                assert!(committed.applied);
+                assert_eq!(runtime.live_creature_health(creature), Some(9_900));
+                let replay = runtime
+                    .commit_source_damage(creature, player, session, b"incoming-refused", 1, 100, 0)
+                    .expect("replay");
+                assert!(!replay.applied);
+            })
+            .expect("thread")
+            .join()
+            .expect("scenario");
+    }
+
+    #[test]
+    fn charm_gaps_sequential_reflections_refuse_atomically_and_replay() {
+        let (mut runtime, player, session, creature) = fixture();
+        let sources = [(creature, 100), (creature, 200)];
+        let refused = runtime
+            .commit_source_damage_batch_with_vitals(
+                &sources,
+                player,
+                session,
+                b"charm-gaps-sequence",
+                1,
+                0,
+                |runtime, results| {
+                    assert_eq!(runtime.live_creature_health(creature), Some(10_000));
+                    assert_eq!(results[0].health_after, 9_900);
+                    assert_eq!(results[1].health_before, 9_900);
+                    assert_eq!(results[1].health_after, 9_700);
+                    None::<()>
+                },
+            )
+            .expect("staged sequence");
+        assert!(refused.is_none());
+        assert_eq!(runtime.live_creature_health(creature), Some(10_000));
+        for replay in [false, true] {
+            runtime
+                .commit_source_damage_batch_with_vitals(
+                    &sources,
+                    player,
+                    session,
+                    b"charm-gaps-sequence",
+                    1,
+                    0,
+                    |_, results| {
+                        assert_eq!(results[0].applied, !replay);
+                        assert_eq!(results[1].applied, !replay);
+                        assert_eq!(results[1].health_after, 9_700);
+                        Some(())
+                    },
+                )
+                .expect("sequence commit or replay")
+                .expect("accepted callback");
+            assert_eq!(runtime.live_creature_health(creature), Some(9_700));
+        }
+    }
+
+    #[test]
     fn eqmod2_reflection_replays_evicted_clocks_and_normal_commands_are_independent() {
         let (mut runtime, player, session, creature) = fixture();
         for sequence in 1..=24 {
@@ -258,6 +615,38 @@ mod tests {
             .expect("shares");
         assert_eq!(shares[0].total, 25);
         assert_eq!(shares[0].session, Some(session));
+    }
+
+    #[test]
+    fn source_reflection_retry_keeps_sequence_and_original_attribution_time() {
+        let (mut runtime, player, session, creature) = fixture();
+        let stream = b"native-source:retained-reflection";
+        let first = runtime
+            .commit_source_damage_at_us(creature, player, session, stream, 17, 10, 5_000_123)
+            .expect("first source reflection");
+        assert!(first.applied);
+        assert_eq!(runtime.live_creature_health(creature), Some(9990));
+        let replay = runtime
+            .commit_source_damage_at_us(creature, player, session, stream, 17, 10, 9_000_999)
+            .expect("same source occurrence at a later actual execution time");
+        assert!(!replay.applied);
+        assert_eq!(replay.health_before, first.health_before);
+        assert_eq!(replay.health_after, first.health_after);
+        assert_eq!(runtime.live_creature_health(creature), Some(9990));
+        let shares = runtime
+            .borrow_combat_death()
+            .reward_damage_shares(creature)
+            .expect("actual damage attribution");
+        assert_eq!(shares.len(), 1);
+        assert_eq!(shares[0].total, 10);
+        assert_eq!(shares[0].session, Some(session));
+        assert_eq!(shares[0].last_damage_at_ms, Some(5_000));
+        assert!(matches!(
+            runtime
+                .commit_source_damage_at_us(creature, player, session, stream, 17, 11, 10_000_001,),
+            Err(CarrierError::PlanConflict)
+        ));
+        assert_eq!(runtime.live_creature_health(creature), Some(9990));
     }
 
     #[test]

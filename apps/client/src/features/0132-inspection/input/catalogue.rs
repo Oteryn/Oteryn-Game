@@ -8,6 +8,43 @@ use crate::{
 use oteryn_client_ui::inspection::{Request, catalogue, request};
 use tokio::sync::mpsc::UnboundedSender;
 impl PlayLink {
+    pub fn item_catalogue_set_open(&self, open: bool) {
+        lock(&self.mailbox).discovery.inspection.catalogue_open = open;
+    }
+    pub fn item_catalogue_select(&self, definition: u32) {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.discovery.inspection;
+        if panel.selected && !panel.pending && panel.catalogue.contains_key(&definition) {
+            panel.catalogue_definition = definition.to_string();
+            panel.catalogue_drop_next = None;
+            panel.catalogue_market = None;
+        }
+    }
+
+    /// Consume the displayed drop cursor without changing the selected catalogue item.
+    pub fn item_catalogue_continue_drops(&self, reference: u32, after: u16) {
+        let command = {
+            let mut mailbox = lock(&self.mailbox);
+            let panel = &mut mailbox.discovery.inspection;
+            if panel.pending
+                || !panel.selected
+                || panel.catalogue_definition.parse() != Ok(reference)
+                || panel.catalogue_drop_next != Some(after)
+                || !panel.catalogue.contains_key(&reference)
+            {
+                return;
+            }
+            panel.catalogue_drop_next = None;
+            request(
+                panel,
+                Request::CatalogueQuery(catalogue::Query::Drops { reference, after }),
+            )
+        };
+        if let Some(command) = command {
+            self.discovery_send(command);
+        }
+    }
+
     pub fn item_catalogue_filter(&self, search: &str, category: &str) {
         let mut mailbox = lock(&self.mailbox);
         let panel = &mut mailbox.discovery.inspection;
@@ -26,22 +63,18 @@ impl PlayLink {
     }
     pub fn item_catalogue_open(&self) {
         self.item_catalogue_request(0);
-        #[cfg(windows)]
-        super::super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
-            lock(&self.mailbox).discovery.inspection.catalogue_open = true;
-        }
+        lock(&self.mailbox).discovery.inspection.catalogue_open = true;
     }
     pub fn item_catalogue_input(
         &self,
         events: &[oteryn_input_actions::NormalizedInputEvent],
     ) -> bool {
-        use oteryn_input_actions::{ButtonState, Modifier, Modifiers, NormalizedInputEvent};
-        let modifiers = Modifiers::one(Modifier::Control)
-            .with(Modifier::Alt)
-            .with(Modifier::Shift);
-        if !events.iter().any(|e| matches!(e, NormalizedInputEvent::Key { code, state: ButtonState::Pressed, modifiers: actual, repeat: false } if code.get() == 12 && *actual == modifiers)) { return false; }
+        if !oteryn_client_ui::inspection::open_key(events) {
+            return false;
+        }
+        if !lock(&self.mailbox).discovery.inspection.selected {
+            return false;
+        }
         self.item_catalogue_open();
         true
     }
@@ -55,7 +88,6 @@ pub(in crate::play) fn submit(
     if !panel.selected || panel.pending {
         return;
     }
-    panel.search = panel.search.trim().into();
     panel.category = panel.category.trim().into();
     let selected = panel
         .catalogue_definition
@@ -108,15 +140,6 @@ pub(in crate::play) fn submit(
     }
     let query = match action {
         0..=3 => {
-            let after = if action == 1 {
-                let Some(next) = panel.catalogue_next else {
-                    panel.feedback = "End of item catalogue".into();
-                    return;
-                };
-                next
-            } else {
-                0
-            };
             if action == 2 || action == 3 {
                 panel.select_category(action == 2);
             }
@@ -134,6 +157,30 @@ pub(in crate::play) fn submit(
                 };
                 (index + 1) as u8
             };
+            let after = if action == 1 {
+                let same_filters = match panel.catalogue_items_query {
+                    Some(
+                        query @ catalogue::Query::Items {
+                            category: previous, ..
+                        },
+                    ) => {
+                        previous == category
+                            && catalogue::search(query).ok().as_deref() == Some(panel.search.trim())
+                    }
+                    _ => false,
+                };
+                if !same_filters {
+                    panel.feedback = "Browse again after changing catalogue filters".into();
+                    return;
+                }
+                let Some(next) = panel.catalogue_next else {
+                    panel.feedback = "End of item catalogue".into();
+                    return;
+                };
+                next
+            } else {
+                0
+            };
             let Ok(query) = catalogue::items(after, category, panel.search.trim()) else {
                 panel.feedback = "Use a shorter item name for the search".into();
                 return;
@@ -149,6 +196,10 @@ pub(in crate::play) fn submit(
                 Request::Catalogue(reference)
             } else {
                 let after = if action == 8 {
+                    if !matches!(panel.last_request, Some(Request::CatalogueQuery(catalogue::Query::Drops { reference: previous, .. })) if previous == reference) {
+                        panel.feedback = "Browse drop sources again after changing the selected item".into();
+                        return;
+                    }
                     let Some(next) = panel.catalogue_drop_next else {
                         panel.feedback = "End of drop sources".into();
                         return;
@@ -162,6 +213,13 @@ pub(in crate::play) fn submit(
         }
         _ => return,
     };
+    // A refused or malformed reply must not leave a cursor from an older query usable.
+    if matches!(query, Request::CatalogueQuery(catalogue::Query::Items { .. })) {
+        panel.catalogue_next = None;
+    }
+    if matches!(query, Request::CatalogueQuery(catalogue::Query::Drops { .. })) {
+        panel.catalogue_drop_next = None;
+    }
     if let Some(command) = request(panel, query)
         && commands.send(PlayCommand::ServerMechanic(command)).is_err()
     {

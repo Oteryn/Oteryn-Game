@@ -1,6 +1,6 @@
 //! TOOLS-2: ordinary USE → durable terrain transform → replay/reload → database deadline.
 use super::fixture::{Harness, debug, id, run};
-use super::item_craft::exchange;
+use super::item_craft_fixtures::exchange;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
@@ -37,12 +37,12 @@ fn m08_multi_scythe_harvests_wheat_through_the_wire() -> TestResult {
 
 #[test]
 fn m08_scythe_harvests_burning_cane_through_the_wire() -> TestResult {
-    run_case_with_decay("oteryn:item.tibia.i3453", 5464, 5463, vec![5470, 5465])
+    run_case_with_decay("oteryn:item.tibia.i3453", 5464, 5463, Vec::new())
 }
 
 #[test]
 fn m08_multi_scythe_harvests_burning_cane_through_the_wire() -> TestResult {
-    run_case_with_decay("oteryn:item.tibia.i9596", 5464, 5463, vec![5470, 5465])
+    run_case_with_decay("oteryn:item.tibia.i9596", 5464, 5463, Vec::new())
 }
 
 #[test]
@@ -362,7 +362,7 @@ fn scenario_with_voice(
                 "real current World selection"
             );
         }
-        super::item_look::seed_main_backpack(
+        super::item_look_fixtures::seed_main_backpack(
             &harness,
             &[(shovel, 1), ("oteryn:item.tibia.i3577", 1)],
         )

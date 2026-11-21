@@ -40,6 +40,7 @@ pub(super) fn journal() -> super::log::QuestLogQuest {
         journal: QuestJournal::Fixed(JournalText::Text(format!("You honoured the Shrine of {name}. Your shrine rewards are earned; make room in your backpack and use the shrine again if an item reward is pending."))),
     }));
     QuestLogQuest {
+        title: "The Way of the Monk Quest".into(),
         key: QUEST.into(),
         kind: QuestLogKind::Storyline,
         shown_in_quest_log: true,

@@ -34,6 +34,68 @@ const STARTER: &str = "oteryn:item.tibia.i2854";
 /// A free Ground cell of Channel 43 (x=5, y=6, floor=7); the MINT fixture uses (1, 2, 3).
 const CELL: [u8; 10] = [0, 0, 0, 5, 0, 0, 0, 6, 0, 7];
 
+#[test]
+fn item_loop_drops_nonempty_container_and_preserves_contents() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    let run = move || -> TestResult {
+        runtime()?.block_on(async move {
+            let h = Harness::create(admin, "itemloop_bag_drop").await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            equip_backpack(&h, &authority, fence()?, SESSION).await?;
+            let bag = carry(&h, &authority, 2, BAG, 1).await?;
+            let coin = carry(&h, &authority, 3, COIN, 50).await?;
+            activate_and_initialize(&h, &authority).await?;
+            let content = Content(Stone::Light);
+            moved(
+                &h,
+                &authority,
+                10,
+                &content,
+                request(coin, LoopDestination::Container(bag)),
+            )
+            .await?;
+            moved(
+                &h,
+                &authority,
+                11,
+                &content,
+                request(bag, LoopDestination::Ground(ground())),
+            )
+            .await?;
+            assert!(h.on_ground(bag).await?);
+            assert_eq!(h.item_state(coin).await?, (50, 1));
+            moved(
+                &h,
+                &authority,
+                12,
+                &content,
+                LoopMoveRequest {
+                    pickup_cell: Some(CELL.to_vec()),
+                    ..request(bag, LoopDestination::MainBackpack)
+                },
+            )
+            .await?;
+            assert_eq!(contents(&h, &authority, bag).await?, [(coin, 50)]);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await
+        })
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || run().map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "container drop test thread panicked")?
+        .map_err(Into::into)
+}
+
 /// How the test Content weighs the stone: as the transfer catalogue does, over the derived
 /// capacity, or not at all.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -634,21 +696,26 @@ fn item_loop_drops_and_picks_up_within_the_derived_capacity() -> TestResult {
             .concat()
         );
 
-        // Refusals write nothing: a non-empty container stays carried, a pickup from another
+        // Refusals write nothing: a pickup from another
         // cell is stale, a MINT Ground item is no loop pickup, and an over-capacity or unknown
         // weight never enters the Character.
         let pickup = |item: [u8; 16], cell: &[u8]| LoopMoveRequest {
             pickup_cell: Some(cell.to_vec()),
             ..request(item, LoopDestination::MainBackpack)
         };
+        moved(
+            &harness,
+            &authority,
+            12,
+            &light,
+            request(bag, LoopDestination::Ground(ground())),
+        )
+        .await?;
+        assert!(harness.on_ground(bag).await?);
+        moved(&harness, &authority, 20, &light, pickup(bag, &CELL)).await?;
+        assert_eq!(contents(&harness, &authority, bag).await?, [(coin, 50)]);
         let committed = footprint(&harness).await?;
         for (n, content, req, refusal) in [
-            (
-                12,
-                Stone::Light,
-                request(bag, LoopDestination::Ground(ground())),
-                LoopMoveRefusal::NotSupported,
-            ),
             (
                 13,
                 Stone::Light,

@@ -9,14 +9,29 @@ impl PlayLink {
             box_number: 1,
             page: 0,
         });
-        #[cfg(windows)]
-        native::open_window(self);
-        #[cfg(not(windows))]
-        {
-            lock(&self.mailbox).depot.open = true;
+        lock(&self.mailbox).depot.open = true;
+    }
+}
+
+/// Shared frontend actions are bound to the exact displayed inventory and depot page.
+#[cfg(bevy_shell)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum DepotUiAction {
+    Close,
+    Request(Intent),
+}
+#[cfg(bevy_shell)]
+impl PlayLink {
+    pub(crate) fn depot_action_bound(&self, expected: &DepotPanel, action: DepotUiAction) {
+        let mut mailbox = lock(&self.mailbox);
+        if !mailbox.depot.open || &mailbox.depot != expected {
+            return;
+        }
+        match action {
+            DepotUiAction::Close => mailbox.depot.open = false,
+            DepotUiAction::Request(intent) => {
+                super::input::enqueue(&mut mailbox, &self.commands, intent)
+            }
         }
     }
 }
-#[cfg(windows)]
-#[path = "native.rs"]
-mod native;

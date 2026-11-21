@@ -7,6 +7,7 @@ use oteryn_client_runtime::{
 pub enum Intent {
     Catalogue,
     CatalogueNext,
+    CatalogueRefresh,
     Refresh,
     Next,
     Enter,
@@ -55,18 +56,26 @@ pub fn request(panel: &mut BossEncounterPanel, intent: Intent) -> Option<Feature
             payload,
         });
     }
-    if matches!(intent, Intent::Catalogue | Intent::CatalogueNext) {
-        let query = if intent == Intent::CatalogueNext {
-            let mut query = panel.catalogue_query.clone()?;
-            query.after = panel.catalogue.as_ref()?.next?;
-            query
-        } else {
-            boss_encounter::catalogue::Query {
-                after: 0,
-                category: panel.browser_category.server_filter(),
-                search: panel.browser_search.trim().into(),
-            }
+    if matches!(
+        intent,
+        Intent::Catalogue | Intent::CatalogueNext | Intent::CatalogueRefresh
+    ) {
+        let mut query = boss_encounter::catalogue::Query {
+            after: 0,
+            category: panel.browser_category.server_filter(),
+            search: panel.browser_search.trim().into(),
         };
+        if matches!(intent, Intent::CatalogueNext | Intent::CatalogueRefresh)
+            && let Some(previous) = panel.catalogue_query.as_ref()
+            && previous.category == query.category
+            && previous.search == query.search
+        {
+            query.after = if intent == Intent::CatalogueNext {
+                panel.catalogue.as_ref()?.next?
+            } else {
+                previous.after
+            };
+        }
         let Some(payload) = query.encode() else {
             panel.feedback = Some("Search must fit 48 UTF-8 bytes");
             return None;
@@ -207,12 +216,25 @@ pub fn apply_result(panel: &mut BossEncounterPanel, result: &GatedCommandResult)
                 };
                 panel.feedback = None;
             }
-            boss_encounter::BossActivityReply::Refused(reason) => {
-                panel.summary = lfmt!("Boss request refused: {reason:?}", reason = reason);
-                panel.feedback = Some(tr!("The server refused the boss request"));
+            boss_encounter::BossActivityReply::Refused(reason) if !accepted => {
+                // Crystal boss_lever.lua:183-218 checks the whole roster; Level
+                // does not identify the lever user as the participant who failed.
+                panel.summary = match reason {
+                    boss_encounter::BossActivityRefusal::Level => {
+                        "A party member does not meet the level requirement.".into()
+                    }
+                    boss_encounter::BossActivityRefusal::PartyCount => {
+                        "The party does not meet this encounter's size requirement.".into()
+                    }
+                    boss_encounter::BossActivityRefusal::Position => {
+                        "A party member is not on a required entry tile.".into()
+                    }
+                    _ => format!("Boss request refused: {reason:?}"),
+                };
+                panel.feedback = Some("The server refused the boss request");
             }
             _ => {
-                panel.feedback = Some(tr!("The server refused the boss request"));
+                panel.feedback = Some("The server returned invalid boss activity data");
                 return false;
             }
         }
@@ -238,6 +260,14 @@ pub fn apply_result(panel: &mut BossEncounterPanel, result: &GatedCommandResult)
         panel.feedback = Some(tr!("The server returned invalid boss status"));
         return false;
     };
+    if let Some(page) = &mut panel.catalogue {
+        page.points = snapshot.points;
+        for entry in &mut page.entries {
+            if let Some((_, kills)) = snapshot.progress.iter().find(|(key, _)| key == &entry.key) {
+                entry.kills = *kills;
+            }
+        }
+    }
     panel.snapshot = Some(snapshot);
     panel.cooldown_received_at = Some(std::time::Instant::now());
     panel.feedback = None;

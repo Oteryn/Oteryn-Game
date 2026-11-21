@@ -1,8 +1,10 @@
 //! Current owner observations. Visibility supplies the exact player identities to read.
 use super::*;
+use crate::domain::carrier_values::CarrierError;
 use oteryn_gameplay_foundation::foundation::condition::TemporaryDisplayedAppearance;
 #[path = "observation/house.rs"]
 mod house;
+pub(super) use house::{current_runtime_for_read, read_state};
 
 #[derive(Debug, Clone)]
 pub struct Observation {
@@ -12,7 +14,7 @@ pub struct Observation {
     pub skipped: Vec<wire::EntityRef>,
 }
 
-/// Only a proven exhausted holder retry may defer an established observer's refresh.
+/// A busy observation can defer an established observer's refresh.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ObservationError {
     HolderBusy,
@@ -25,6 +27,7 @@ pub enum ObservationError {
 /// Why one attempt's durable read produced no value.
 pub(super) enum ReadFailure {
     Durable(crate::durability::DurabilityError),
+    HouseAccessBusy,
     RespawnPending,
 }
 
@@ -48,12 +51,14 @@ pub(in crate::gameplay_transport) async fn observe_result(
     mut entities: Vec<wire::EntityRef>,
 ) -> Result<Observation, ObservationError> {
     if entities.len() > 256 {
-        operator_event("event=appearance_observation_failed class=visibility");
+        operator_event("event=appearance_observation_failed class=visibility reason=entity_limit");
         return Err(ObservationError::Unavailable);
     }
     entities.sort_unstable();
     if entities.windows(2).any(|p| p[0] == p[1]) {
-        operator_event("event=appearance_observation_failed class=visibility");
+        operator_event(
+            "event=appearance_observation_failed class=visibility reason=duplicate_entity",
+        );
         return Err(ObservationError::Unavailable);
     }
     let _foreground = admission.root.foreground_demand().map_err(|_| {
@@ -85,6 +90,7 @@ pub(in crate::gameplay_transport) async fn observe_result(
             // acquire with try_issue_root/try_issue_semantic_pass, never a wait.
             match failure {
                 Some(ReadFailure::Durable(error)) => Err(error),
+                Some(ReadFailure::HouseAccessBusy) => Ok(Err(ObservationError::HolderBusy)),
                 Some(ReadFailure::RespawnPending) => Ok(Err(ObservationError::RespawnPending)),
                 None => Ok(observation.ok_or(ObservationError::Unavailable)),
             }
@@ -134,6 +140,32 @@ fn note_none<T>(value: Option<T>, class: &'static str) -> Option<T> {
     value
 }
 
+fn skip_entity(skipped: &mut Vec<wire::EntityRef>, entity: wire::EntityRef, reason: &'static str) {
+    let identity = entity
+        .identity
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    operator_event(&format!(
+        "event=appearance_observation_skipped class=visibility reason={reason} identity={identity} generation={}",
+        entity.generation,
+    ));
+    skipped.push(entity);
+}
+
+async fn observation_fence(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    session: GameSessionId,
+    reconnectable: bool,
+) -> Result<Option<crate::durability::character_progression::CurrentCharacterGameplayFence>, crate::durability::DurabilityError> {
+    use crate::durability::character_authority::CharacterAuthorityError;
+    match admission.root.observe_current_gameplay_fence(admission.character, session, reconnectable).await {
+        Ok(fence) => Ok(fence),
+        Err(CharacterAuthorityError::Unavailable(error)) => Err(error),
+        Err(_) => Ok(None),
+    }
+}
+
 async fn observe_once(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     observer: ExactActorRef,
@@ -144,7 +176,7 @@ async fn observe_once(
 ) -> Option<Observation> {
     let (context, content) = note_none(admission.appearance_context(), "content")?;
     let own_fence = read_result(
-        super::super::character_gameplay_fence::current_once(admission, session, false).await,
+        observation_fence(admission, session, false).await,
         failure,
         "fence",
     )?;
@@ -166,7 +198,10 @@ async fn observe_once(
         return note_none(None, "fence");
     }
     let states = admission.states.spell_states.lock().await;
-    let (census, hirelings) = note_none(house::census(&runtime, observer, session), "visibility")?;
+    let (census, hirelings) = note_none(
+        house::census(&runtime, observer, session),
+        "visibility reason=census_unavailable",
+    )?;
     let mut bindings = Vec::new();
     let mut skipped = Vec::new();
     let now = admission.owner_now().get();
@@ -192,13 +227,21 @@ async fn observe_once(
             });
             continue;
         }
-        let (actor, target_session) = note_none(
-            census.iter().find(|(actor, _)| {
-                actor.placement_identity() == entity.identity
-                    && actor.actor_local_generation() == entity.generation
-            }),
-            "visibility",
-        )?;
+        let Some((actor, target_session)) = census.iter().find(|(actor, _)| {
+            actor.placement_identity() == entity.identity
+                && actor.actor_local_generation() == entity.generation
+        }) else {
+            if entity.identity == observer.placement_identity()
+                && entity.generation == observer.actor_local_generation()
+            {
+                return note_none(None, "fence reason=observer_missing_from_census");
+            }
+            // Visibility released the runtime lock before this fresh census. A terminal
+            // retirement, creature death/despawn or House departure can remove a peer in
+            // that interval. Omit its presentation; the observer's fence was proved above.
+            skip_entity(&mut skipped, entity, "entity_left_census");
+            continue;
+        };
         if states.player_hidden_from(
             &runtime,
             observer,
@@ -208,7 +251,22 @@ async fn observe_once(
             continue;
         }
         let Some(target_session) = *target_session else {
-            let creature = note_none(runtime.companion_snapshot(*actor).ok(), "visibility")?;
+            let creature = match runtime.companion_snapshot(*actor) {
+                Ok(creature) => creature,
+                Err(error @ (CarrierError::NotCreature | CarrierError::CreatureNotActionable)) => {
+                    skip_entity(&mut skipped, entity, "companion_snapshot_unavailable");
+                    operator_event(&format!(
+                        "event=appearance_companion_unavailable error={error:?}"
+                    ));
+                    continue;
+                }
+                Err(error) => {
+                    operator_event(&format!(
+                        "event=appearance_observation_failed class=fence reason=companion_authority error={error:?}"
+                    ));
+                    return None;
+                }
+            };
             let look = if let Some(look_type) = creature.state.policy.outfit_appearance() {
                 wire::Look::Outfit {
                     look_type,
@@ -255,7 +313,7 @@ async fn observe_once(
             continue;
         };
         let fence = read_result(
-            super::super::character_gameplay_fence::current_once(admission, target_session, true)
+            observation_fence(admission, target_session, true)
                 .await,
             failure,
             "fence",
@@ -288,10 +346,13 @@ async fn observe_once(
                         *held == *actor && *held_session == target_session
                     })
                     .map(|(_, _, state)| state),
-                "visibility",
+                "visibility reason=house_player_state_missing",
             )?
         } else {
-            note_none(states.get(&runtime, *actor, target_session), "visibility")?
+            note_none(
+                states.get(&runtime, *actor, target_session),
+                "visibility reason=player_state_missing",
+            )?
         };
         let (base, selection_revision) = super::catalogue::base(&content, &current);
         let mut look = wire::Look::Outfit {
@@ -387,7 +448,14 @@ async fn observe_once(
             root_revision: fence.expected_character_revision.get(),
             condition_revision: note_none(
                 player.revision().checked_add(
-                    note_none(runtime.actor_staff_visibility(*actor).ok(), "visibility")?.2,
+                    note_none(
+                        runtime
+                            .actor_staff_visibility(*actor)
+                            .or_else(|_| runtime.house_staff_visibility(*actor, target_session))
+                            .ok(),
+                        "visibility reason=staff_visibility_missing",
+                    )?
+                    .2,
                 ),
                 "revision",
             )?,

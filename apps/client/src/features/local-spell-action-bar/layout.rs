@@ -1,4 +1,4 @@
-//! Three independently docked rows; layout edits are local and never predict a cast.
+//! Nine independently docked rows; layout edits are local and never predict a cast.
 use crate::play::{PlayLink, mailbox::lock};
 use serde::{Deserialize, Serialize};
 
@@ -32,20 +32,49 @@ impl RowLayout {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct BarLayout {
-    pub rows: [RowLayout; 3],
+    #[serde(deserialize_with = "read_rows")]
+    pub rows: [RowLayout; 9],
 }
 impl Default for BarLayout {
     fn default() -> Self {
-        Self {
-            rows: [BarDock::Bottom, BarDock::Left, BarDock::Right].map(|dock| RowLayout {
+        let mut layout = Self {
+            rows: [
+                BarDock::Bottom,
+                BarDock::Left,
+                BarDock::Right,
+                BarDock::Bottom,
+                BarDock::Bottom,
+                BarDock::Left,
+                BarDock::Left,
+                BarDock::Right,
+                BarDock::Right,
+            ]
+            .map(|dock| RowLayout {
                 dock,
-                enabled: dock == BarDock::Bottom,
+                enabled: false,
                 locked: true,
                 offset: 0,
                 count: default_count(),
             }),
-        }
+        };
+        layout.rows[0].enabled = true;
+        layout
     }
+}
+fn read_rows<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<[RowLayout; 9], D::Error> {
+    let rows = Vec::<RowLayout>::deserialize(deserializer)?;
+    if !matches!(rows.len(), 3 | 9) {
+        return Err(serde::de::Error::custom(
+            "expected three legacy or nine action bars",
+        ));
+    }
+    let mut result = BarLayout::default().rows;
+    for (target, row) in result.iter_mut().zip(rows) {
+        *target = row;
+    }
+    Ok(result)
 }
 impl BarLayout {
     pub fn valid(&self) -> bool {
@@ -118,8 +147,6 @@ impl PlayLink {
             if slot >= oteryn_client_runtime::spell::ACTION_BAR_SLOTS {
                 return false;
             }
-            #[cfg(windows)]
-            super::open_multi(self, slot);
             return true;
         }
         let mut mailbox = lock(&self.mailbox);

@@ -5,6 +5,11 @@ use oteryn_input_actions::{ButtonState, NormalizedInputEvent};
 use oteryn_renderer::TileCoord;
 
 impl PlayLink {
+    /// Whether an item is waiting for a use-with target.
+    pub fn use_with_armed(&self) -> bool {
+        lock(&self.mailbox).world_context.targeting.is_some()
+    }
+
     pub fn inventory_use_rune(&self) -> bool {
         self.inventory_use(true)
     }
@@ -61,6 +66,7 @@ impl PlayLink {
                 return false;
             }
             mailbox.world_context.pending = true;
+            mailbox.use_with_pending = true;
             mailbox.world_context.set_feedback(
                 tr!("Use with: waiting for server").into(),
                 std::time::Instant::now(),
@@ -82,16 +88,24 @@ impl PlayLink {
         }) {
             return false;
         }
-        lock(&self.mailbox).world_context.cancel_targeting()
+        let use_with = lock(&self.mailbox).world_context.cancel_targeting();
+        self.hireling_pick_cancel() || use_with
     }
 }
 impl PlayView {
+    /// Tibia Global cancels an armed crosshair (Use with, a cursor spell or the banker's
+    /// location pick) on a secondary click instead of opening the context menu or looting.
+    pub fn secondary_click_cancels_targeting(&mut self, link: &PlayLink) -> bool {
+        let use_with = lock(&link.mailbox).world_context.cancel_targeting();
+        let spell = self.cursor_spell.take().is_some();
+        link.hireling_pick_cancel() || use_with || spell
+    }
     pub fn primary_click(
         &mut self,
         tile: TileCoord,
         link: &PlayLink,
     ) -> Result<(), oteryn_renderer::BatchError> {
-        if !self.use_with_click(tile, link) {
+        if !self.hireling_pick(tile, link) && !self.use_with_click(tile, link) {
             self.click(tile)?;
         }
         Ok(())
@@ -99,7 +113,9 @@ impl PlayView {
 
     pub fn use_with_click(&self, tile: TileCoord, link: &PlayLink) -> bool {
         let mut mailbox = lock(&link.mailbox);
-        if mailbox.world_context.pending {
+        if mailbox.world_context.pending
+            && (mailbox.use_with_pending || mailbox.world_context.targeting.is_some())
+        {
             mailbox.world_context.set_feedback(
                 tr!("Use with: waiting for server").into(),
                 std::time::Instant::now(),
@@ -146,6 +162,7 @@ impl PlayView {
             .is_ok()
         {
             mailbox.world_context.pending = true;
+            mailbox.use_with_pending = true;
             mailbox.world_context.set_feedback(
                 tr!("Use with: waiting for server").into(),
                 std::time::Instant::now(),

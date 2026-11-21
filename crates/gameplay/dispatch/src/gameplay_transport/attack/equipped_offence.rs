@@ -3,9 +3,7 @@
 
 use super::*;
 use crate::gameplay_transport::actor_spell::ChannelSpellStates;
-use oteryn_gameplay_combat_rules::resolution::equipped_offence::{
-    CRITICAL_ROLL_MAX, CRITICAL_ROLL_MIN, EquippedOffence, leech_amount,
-};
+use oteryn_gameplay_combat_rules::resolution::equipped_offence::{EquippedOffence, leech_amount};
 
 /// The attacker's installed offence; zero for an actor without spell state.
 pub(super) fn attacker_offence(
@@ -21,9 +19,9 @@ pub(super) fn attacker_offence(
 }
 
 /// `Combat::applyExtensions` (`combat.cpp:2724-2742`): a drawn swing meets the critical roll
-/// before the target's defence, armor or the PvP halving. The roll is its own tagged draw, so it
-/// shifts no other draw of the swing. EQMOD2 then draws the tier/amplified fatal hit and
-/// adds its rounded 60% bonus. `None` when a required draw cannot be made (fail closed).
+/// before the target's defence, armor or the PvP halving. The caller supplies the attack's
+/// shared tagged critical draw; target-specific damage draws remain independent. EQMOD2 then
+/// draws the tier/amplified fatal hit and adds its rounded 60% bonus. `None` when a required draw cannot be made (fail closed).
 pub(super) fn critical_swing(
     offence: &EquippedOffence,
     root: &GameplayDecisionRoot,
@@ -31,23 +29,14 @@ pub(super) fn critical_swing(
     lineage: CommandRef,
     ordinal: u16,
     damage: i64,
+    critical_roll: u64,
 ) -> Option<i64> {
     if damage <= 0 || (!offence.rolls_critical() && offence.weapon_tier == 0) {
         return Some(damage);
     }
     let damage = u32::try_from(damage).ok()?;
     let damage = if offence.rolls_critical() {
-        let roll = swing_draw(
-            root,
-            attacker,
-            lineage,
-            ordinal,
-            b"critical-hit",
-            "attack.critical-hit",
-            i64::try_from(CRITICAL_ROLL_MIN).ok()?,
-            i64::try_from(CRITICAL_ROLL_MAX).ok()?,
-        )?;
-        offence.critical(damage, u64::try_from(roll).ok()?)
+        offence.critical(damage, critical_roll)
     } else {
         damage
     };
@@ -69,31 +58,25 @@ pub(super) fn critical_swing(
     Some(i64::from(damage))
 }
 
-/// `Game::applyLifeLeech` and `Game::applyManaLeech` (`game.cpp:8760-8764`, `8998-9056`): the
-/// health the hit really took heals the attacker and restores its mana, in one compare-committed
-/// vitals write. A leech that restores nothing writes nothing.
+/// Only an applied owner receipt permits leech. The admitted attack supplies
+/// its pre-Prey, pre-overkill damage; HP loss is not the leech basis. Both gains
+/// use the existing compare-committed vitals write and cannot replay.
 pub(super) fn leech_hit(
     states: &mut ChannelSpellStates,
     runtime: &ChannelRuntimeV1,
     actor: ExactActorRef,
     session: GameSessionId,
     offence: &EquippedOffence,
+    damage: u32,
     result: &crate::foundation::OwnerDamageResult,
 ) {
     if !result.applied || (offence.life_leech == 0 && offence.mana_leech == 0) {
         return;
     }
-    let real = result
-        .health_before
-        .saturating_sub(result.health_after.max(0))
-        .max(0);
-    let Ok(real) = u32::try_from(real) else {
-        return;
-    };
     let Some(next) = states.get(runtime, actor, session).and_then(|state| {
         state.after_leech(
-            leech_amount(real, offence.life_leech),
-            leech_amount(real, offence.mana_leech),
+            leech_amount(damage, offence.life_leech),
+            leech_amount(damage, offence.mana_leech),
         )
     }) else {
         return;
@@ -170,4 +153,53 @@ pub(super) fn cleave_targets(
         }
     }
     targets
+}
+
+#[cfg(test)]
+mod global_leech_tests {
+    use super::*;
+    use crate::gameplay_transport::actor_spell::tests::{FACTS, runtime_with_player};
+    use crate::spell::cast::PlayerSpellState;
+
+    #[test]
+    fn global_auto_leech_uses_calculated_damage_and_rejects_unapplied_receipt() -> Result<(), String>
+    {
+        let (runtime, actor, session) = runtime_with_player(64);
+        let mut states = ChannelSpellStates::default();
+        let mut player = PlayerSpellState::new(FACTS, 0, 0).ok_or("character invalid")?;
+        player.restore_saved_vitals(20, 20);
+        states.actors.push((actor, session, player));
+        let offence = EquippedOffence::from_sums(0, 0, 1600, 1600);
+        let mut receipt = crate::foundation::OwnerDamageResult {
+            applied: true,
+            health_before: 20,
+            health_after: 0,
+        };
+        leech_hit(
+            &mut states,
+            &runtime,
+            actor,
+            session,
+            &offence,
+            100,
+            &receipt,
+        );
+        let after = states
+            .get(&runtime, actor, session)
+            .ok_or("current caster missing")?
+            .clone();
+        assert_eq!((after.vitals().health, after.vitals().mana), (36, 36));
+        receipt.applied = false;
+        leech_hit(
+            &mut states,
+            &runtime,
+            actor,
+            session,
+            &offence,
+            100,
+            &receipt,
+        );
+        assert_eq!(states.get(&runtime, actor, session), Some(&after));
+        Ok(())
+    }
 }

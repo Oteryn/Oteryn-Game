@@ -139,6 +139,30 @@ impl CompiledWheelProfile {
                 output[i] = next[i];
             }
             if retries.is_empty() {
+                // Prove a full-parent path from a root in the completed allocation.
+                // Old allocations and disconnected cycles cannot supply that path.
+                let mut connected = [false; 36];
+                for _ in 0..36 {
+                    for (i, slot) in self.profile.slots.iter().enumerate() {
+                        if output[i] > 0
+                            && (slot.full_neighbours.is_empty()
+                                || slot.full_neighbours.iter().any(|p| {
+                                    let parent = usize::from(*p) - 1;
+                                    connected[parent]
+                                        && output[parent] == self.profile.slots[parent].capacity
+                                }))
+                        {
+                            connected[i] = true;
+                        }
+                    }
+                }
+                if output
+                    .iter()
+                    .enumerate()
+                    .any(|(i, points)| *points > 0 && !connected[i])
+                {
+                    return Err("Wheel disconnected/full-parent gate");
+                }
                 return Ok(output);
             }
             pending = retries;
@@ -279,6 +303,32 @@ mod tests {
         let stages = p.stages(&slots, Some([0; 4]), Some(0)).unwrap();
         assert_eq!(p.flat_stats(&stages).unwrap(), (0, 0));
         assert!(p.stages(&slots, None, Some(0)).is_err());
+    }
+    #[test]
+    fn reassignment_rejects_removed_full_parent_paths() -> Result<(), &'static str> {
+        let p = profile();
+        let mut current = [0; 36];
+        current[14] = 50;
+        current[8] = 75;
+        current[2] = 100;
+        assert_eq!(p.plan_assignment([0; 36], current, 225)?, current);
+        let mut next = [0; 36];
+        next[8] = 75;
+        assert_eq!(
+            p.plan_assignment(current, next, 225),
+            Err("Wheel disconnected/full-parent gate")
+        );
+        // Two full neighbours cannot keep each other connected after their root is removed.
+        next[2] = 100;
+        assert_eq!(
+            p.plan_assignment(current, next, 225),
+            Err("Wheel disconnected/full-parent gate")
+        );
+        next[2] = 0;
+        next[14] = 50;
+        assert_eq!(p.plan_assignment(current, next, 225)?, next);
+        assert_eq!(p.plan_assignment(current, [0; 36], 225)?, [0; 36]);
+        Ok(())
     }
     #[test]
     fn changed_source_bytes_and_zero_pin_refuse() {

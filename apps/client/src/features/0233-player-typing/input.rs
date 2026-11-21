@@ -17,12 +17,7 @@ impl PlayLink {
         if !oteryn_client_ui::player_typing::open_key(events) {
             return false;
         }
-        #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
-            lock(&self.mailbox).player_typing.open = true;
-        }
+        lock(&self.mailbox).player_typing.open = true;
         true
     }
 }

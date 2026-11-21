@@ -1,0 +1,361 @@
+//! Opt-in, bounded public UI observation for OS-driven acceptance checks.
+use super::{
+    login::{LoginControl, LoginField},
+    owner::{GraphicsDraft, HostOwner, Phase},
+    selection::PickerControl,
+    ui::Control,
+};
+use bevy::{prelude::*, window::PrimaryWindow};
+use serde::Serialize;
+use std::{collections::VecDeque, path::PathBuf};
+
+mod named;
+
+const MAX_PENDING_MANUAL_CAPTURES: usize = 4;
+
+pub(super) enum ManualCapture {
+    Audit(PathBuf),
+    Player(super::screenshots::PlayerCapture),
+}
+
+/// F12 captures the rendered window; explicit audit mode keeps its diagnostic PNG path.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "The input and capture systems share the F12 entry point"
+)]
+pub(super) fn capture_on_key(
+    mut commands: Commands,
+    keys: Res<ButtonInput<KeyCode>>,
+    output: Res<AuditOutput>,
+    mut owner: NonSendMut<HostOwner>,
+    viewport: Res<super::game_ui::viewport::WorldViewport>,
+    mut automatic: Local<super::screenshots::AutomaticState>,
+    mut manual_pending: Local<VecDeque<(u64, ManualCapture)>>,
+    captures: Query<Entity, With<bevy::render::view::screenshot::Screenshot>>,
+    clock: Res<Time<Real>>,
+    mut writes: NonSendMut<super::screenshots::Writes>,
+) {
+    writes.poll(&mut owner);
+    let occupied = !captures.is_empty();
+    let generation = owner.generation();
+    manual_pending.retain(|(requested, _)| *requested == generation);
+    let pressed = keys.just_pressed(KeyCode::F12);
+    let rejected =
+        pressed && (manual_pending.len() >= MAX_PENDING_MANUAL_CAPTURES || writes.is_full());
+    if pressed && !rejected {
+        let request = if let Some(path) = &output.path {
+            ManualCapture::Audit(path.with_extension("png"))
+        } else {
+            let preferences = owner.settings.preferences.screenshots.effective();
+            ManualCapture::Player(super::screenshots::PlayerCapture {
+                directory: preferences.directory,
+                game_only: preferences.game_only,
+                backlog: owner.play.is_some() && preferences.backlog_frames > 0,
+            })
+        };
+        manual_pending.push_back((generation, request));
+    }
+    let manual_batch = match manual_pending.front() {
+        Some((_, ManualCapture::Player(request)))
+            if request.backlog
+                && owner.play.is_some()
+                && request.game_only
+                    == owner.settings.preferences.screenshots.effective().game_only =>
+        {
+            Some(request)
+        }
+        _ => None,
+    };
+    let readback = super::screenshots::observe(
+        &mut commands,
+        &mut owner,
+        *viewport,
+        &mut automatic,
+        occupied,
+        &clock,
+        &writes,
+        manual_batch,
+    );
+    if !occupied && !writes.is_full() && (manual_batch.is_none() || readback.is_some()) {
+        let batch_scheduled = manual_batch.is_some();
+        match manual_pending.pop_front() {
+            Some((generation, ManualCapture::Audit(path))) => {
+                super::screenshots::request_audit(&mut commands, readback, generation, path);
+            }
+            Some((generation, ManualCapture::Player(request))) if !batch_scheduled => {
+                super::screenshots::request(
+                    &mut commands,
+                    readback,
+                    &mut owner,
+                    generation,
+                    request,
+                    *viewport,
+                );
+            }
+            _ => {}
+        }
+    }
+    if rejected {
+        owner.status = "Screenshot failed: capture queue is full".into();
+    }
+}
+#[derive(Resource)]
+pub(super) struct AuditOutput {
+    path: Option<PathBuf>,
+    last: Vec<u8>,
+    error_reported: bool,
+    update: u64,
+}
+impl AuditOutput {
+    pub fn new(path: Option<PathBuf>) -> Self {
+        Self {
+            path,
+            last: Vec::new(),
+            error_reported: false,
+            update: 0,
+        }
+    }
+}
+#[derive(Serialize)]
+struct Bounds {
+    id: String,
+    bounds_physical: [f32; 4],
+    bounds_logical: [f32; 4],
+    enabled: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    text_metrics: Option<TextMetrics>,
+}
+#[derive(Serialize)]
+struct TextMetrics {
+    focused: bool,
+    characters: usize,
+    glyphs: usize,
+    visible: bool,
+}
+#[derive(Serialize)]
+struct PlayObservation {
+    generation: u64,
+    map_center: (i32, i32, i16),
+    last_step: Option<crate::play::StepReceipt>,
+}
+#[derive(Serialize)]
+struct Snapshot<'a> {
+    schema: &'static str,
+    update: u64,
+    lifecycle: Phase,
+    generation: u64,
+    login_visible: bool,
+    login_pending: bool,
+    login_feedback: &'a str,
+    selection_pending: bool,
+    character_scoped: bool,
+    play_observation: Option<PlayObservation>,
+    accepted: GraphicsDraft,
+    draft: Option<GraphicsDraft>,
+    feedback: &'a str,
+    status: &'a str,
+    window_mode: String,
+    present_mode: String,
+    window_physical: [u32; 2],
+    scale_factor: f32,
+    controls: Vec<Bounds>,
+}
+// ECS component queries expose bounds only, never connection-field contents.
+#[allow(clippy::type_complexity)]
+pub(super) fn write(
+    owner: NonSend<HostOwner>,
+    mut output: ResMut<AuditOutput>,
+    window: Query<&Window, With<PrimaryWindow>>,
+    controls: Query<(
+        &Control,
+        &ComputedNode,
+        &UiGlobalTransform,
+        Has<bevy::ui::InteractionDisabled>,
+    )>,
+    login_controls: Query<
+        (
+            Entity,
+            Option<&LoginField>,
+            Option<&LoginControl>,
+            &ComputedNode,
+            &UiGlobalTransform,
+            Has<bevy::ui::InteractionDisabled>,
+            Option<&bevy::text::EditableText>,
+            Option<&bevy::text::TextLayoutInfo>,
+            Option<&InheritedVisibility>,
+        ),
+        Or<(With<LoginField>, With<LoginControl>)>,
+    >,
+    picker_controls: Query<(
+        &PickerControl,
+        &ComputedNode,
+        &UiGlobalTransform,
+        Has<bevy::ui::InteractionDisabled>,
+    )>,
+    named: named::NamedControls,
+) {
+    // Native drivers wait for picking/layout updates. Disabled without --ui-audit.
+    if output.path.is_some() {
+        output.update = output.update.saturating_add(1);
+    }
+    let Some(path) = &output.path else {
+        return;
+    };
+    let Ok(window) = window.single() else {
+        return;
+    };
+    let mut bounds = named.bounds(window.scale_factor());
+    for (control, node, transform, disabled) in &controls {
+        let dialog_control = matches!(
+            control,
+            Control::Fullscreen
+                | Control::Vsync
+                | Control::IntegerScaling
+                | Control::Apply
+                | Control::Ok
+                | Control::Cancel
+        );
+        if dialog_control && named.full_options() {
+            continue;
+        }
+        if dialog_control != owner.draft().is_some() || node.size().min_element() <= 0. {
+            continue;
+        }
+        let min = transform.translation - node.size() / 2.;
+        let physical = [min.x, min.y, node.size().x, node.size().y];
+        bounds.push(Bounds {
+            id: control.id().into(),
+            bounds_physical: physical,
+            bounds_logical: physical.map(|v| v / window.scale_factor()),
+            enabled: !disabled,
+            text_metrics: None,
+        });
+    }
+    if owner.login.visible && owner.selection.pending().is_none() {
+        for (entity, field, control, node, transform, disabled, editable, layout, visibility) in
+            &login_controls
+        {
+            let id = field
+                .map(LoginField::id)
+                .or_else(|| control.map(|control| control.id()));
+            if let Some(id) = id
+                && node.size().min_element() > 0.
+            {
+                let min = transform.translation - node.size() / 2.;
+                let physical = [min.x, min.y, node.size().x, node.size().y];
+                bounds.push(Bounds {
+                    id: id.into(),
+                    bounds_physical: physical,
+                    bounds_logical: physical.map(|v| v / window.scale_factor()),
+                    enabled: !disabled,
+                    // Public connection fields only: expose counts, never field contents.
+                    text_metrics: editable.map(|text| TextMetrics {
+                        focused: named.focus() == Some(entity),
+                        characters: text.value().chars().count(),
+                        glyphs: layout.map_or(0, |layout| layout.glyphs.len()),
+                        visible: visibility.is_some_and(|visibility| visibility.get()),
+                    }),
+                });
+            }
+        }
+    }
+    if let Some(request) = owner.selection.pending() {
+        for (control, node, transform, disabled) in &picker_controls {
+            if control.request_id == request.id && node.size().min_element() > 0. {
+                let min = transform.translation - node.size() / 2.;
+                let physical = [min.x, min.y, node.size().x, node.size().y];
+                bounds.push(Bounds {
+                    id: control.id.clone(),
+                    bounds_physical: physical,
+                    bounds_logical: physical.map(|v| v / window.scale_factor()),
+                    enabled: !disabled,
+                    text_metrics: None,
+                });
+            }
+        }
+    }
+    // Stable sorting keeps source-named controls ahead of any legacy duplicate.
+    bounds.sort_by(|a, b| a.id.cmp(&b.id));
+    bounds.dedup_by(|a, b| a.id == b.id);
+    let snapshot = Snapshot {
+        schema: "oteryn.bevy-ui-audit.v1",
+        update: output.update,
+        lifecycle: owner.phase,
+        generation: owner.generation(),
+        login_visible: owner.login.visible,
+        login_pending: owner.login.form.pending(),
+        login_feedback: owner.login.form.message(),
+        selection_pending: owner.selection.pending().is_some(),
+        character_scoped: owner.settings.character_scope().is_some(),
+        play_observation: owner.play.as_ref().map(|play| PlayObservation {
+            generation: owner.generation(),
+            map_center: play.view.map_center(),
+            last_step: play.view.step_receipt(),
+        }),
+        accepted: owner.accepted(),
+        draft: owner.draft(),
+        feedback: &owner.settings.feedback,
+        status: &owner.status,
+        window_mode: format!("{:?}", window.mode),
+        present_mode: format!("{:?}", window.present_mode),
+        window_physical: [window.physical_width(), window.physical_height()],
+        scale_factor: window.scale_factor(),
+        controls: bounds,
+    };
+    let Ok(bytes) = serde_json::to_vec_pretty(&snapshot) else {
+        return;
+    };
+    if bytes == output.last {
+        return;
+    }
+    let result = (|| -> std::io::Result<()> {
+        if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) {
+            std::fs::create_dir_all(parent)?;
+        }
+        let temporary = path.with_extension("audit-next");
+        std::fs::write(&temporary, &bytes)?;
+        std::fs::rename(temporary, path)
+    })();
+    match result {
+        Ok(()) => {
+            output.last = bytes;
+            output.error_reported = false;
+        }
+        Err(error) if !output.error_reported => {
+            eprintln!("UI audit could not be written: {error}");
+            output.error_reported = true;
+        }
+        Err(_) => {}
+    }
+}
+
+#[cfg(test)]
+mod tests;
+
+#[cfg(test)]
+mod screenshot_tests {
+    use super::*;
+    #[test]
+    fn ordinary_f12_requests_window_capture_without_audit() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let mut app = App::new();
+        app.insert_non_send(HostOwner::new(None)?)
+            .insert_resource(AuditOutput::new(None))
+            .init_resource::<ButtonInput<KeyCode>>()
+            .init_resource::<Time<Real>>()
+            .init_resource::<super::super::game_ui::viewport::WorldViewport>()
+            .init_non_send::<super::super::screenshots::Writes>()
+            .add_systems(Update, capture_on_key);
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .press(KeyCode::F12);
+        app.update();
+        let count = app
+            .world_mut()
+            .query::<&bevy::render::view::screenshot::Screenshot>()
+            .iter(app.world())
+            .count();
+        assert_eq!(count, 1, "ordinary F12 must capture without --ui-audit");
+        Ok(())
+    }
+}

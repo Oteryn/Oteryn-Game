@@ -3,14 +3,25 @@
 //! Magic effects and missiles resolve the verified catalog, with bounded offline placeholders.
 #[path = "actor_hud.rs"]
 mod actor_hud;
+#[cfg(bevy_shell)]
+#[path = "view/creature_bars.rs"]
+mod creature_bars;
 #[path = "icons.rs"]
 mod icons;
 #[path = "resources.rs"]
 mod resources;
 #[path = "visual.rs"]
 mod visual;
+#[path = "view/numbers.rs"]
+mod numbers;
+#[path = "view/floors.rs"]
+mod floors;
+#[cfg(bevy_shell)]
+pub(crate) use actor_hud::health_rgb;
 use super::state::{MAX_VISUAL_CUES, VISUAL_LIFETIME, VisualCue};
 use crate::play::PlayView;
+use crate::scene::HudIconCells;
+use oteryn_client_assets::tibia_graphics::{GameFont, Glyph};
 use oteryn_renderer::{AtlasImage, BatchError, QuadInstance, SpriteBatch, TileCoord, TileView};
 use oteryn_session::{PresentationColor, PresentationEventKind, PresentationValue};
 use std::time::Instant;
@@ -35,10 +46,14 @@ fn number(
     batch: &mut SpriteBatch,
     view: &TileView,
     atlas: &AtlasImage,
+    font: Option<&GameFont>,
     [center, top]: [f32; 2],
     value: PresentationValue,
 ) -> Result<(), BatchError> {
     let text = value.value.to_string();
+    if let Some(font) = font {
+        return game_text(batch, view, atlas, font, &text, [center, top], rgb(value.color));
+    }
     let left = center - (text.len() as f32 * 8.0 - 2.0) / 2.0;
     for (i, digit) in text.bytes().enumerate() {
         for (row, bits) in DIGITS[usize::from(digit - b'0')].iter().enumerate() {
@@ -55,6 +70,49 @@ fn number(
                 }
             }
         }
+    }
+    Ok(())
+}
+
+/// Tibia's game font as palette pixels centred on `center`: the fill in palette `levels`, the
+/// outline black. A character the font lacks uses the builtin glyph.
+fn game_text(
+    batch: &mut SpriteBatch,
+    view: &TileView,
+    atlas: &AtlasImage,
+    font: &GameFont,
+    text: &str,
+    [center, top]: [f32; 2],
+    levels: [u8; 3],
+) -> Result<(), BatchError> {
+    let advance = |character| font.glyph(character).map_or(6.0, |glyph| f32::from(glyph.advance));
+    let mut pen = (center - text.chars().map(advance).sum::<f32>() / 2.0).round();
+    for character in text.chars() {
+        if let Some(glyph) = font.glyph(character) {
+            for y in 0..usize::from(glyph.height) {
+                for x in 0..usize::from(glyph.width) {
+                    if let Some(pixel) = glyph.pixel(x, y) {
+                        let [r, g, b, _] = Glyph::tint(pixel, levels);
+                        let at = [
+                            pen + f32::from(glyph.x_offset) + x as f32,
+                            top + f32::from(glyph.y_offset) + y as f32,
+                        ];
+                        pixel_rgb(batch, view, atlas, at, [1.0; 2], [r, g, b])?;
+                    }
+                }
+            }
+        } else {
+            let builtin = oteryn_renderer::name_text::glyph_rgba(character);
+            for y in 0..7usize {
+                for x in 0..5usize {
+                    if builtin[(((y * 32 + 16) / 8) * 32 + (x * 32 + 16) / 6) * 4 + 3] == 255 {
+                        let at = [pen + x as f32, top + 2.0 + y as f32];
+                        pixel_rgb(batch, view, atlas, at, [1.0; 2], levels)?;
+                    }
+                }
+            }
+        }
+        pen += advance(character);
     }
     Ok(())
 }

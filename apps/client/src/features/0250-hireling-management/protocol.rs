@@ -11,7 +11,7 @@ impl Outbox {
             Some(oteryn_client_ui::hireling_management::wire::Request::List)
         );
         let state = matches!(
-            oteryn_client_ui::hireling_management::wire::Reply::decode(&result.payload),
+            oteryn_client_ui::hireling_management::wire::Reply::decode_wire(&result.payload),
             Some(oteryn_client_ui::hireling_management::wire::Reply::State(_))
         );
         if oteryn_client_ui::hireling_management::apply_result(&mut m.hireling_management, result)
@@ -20,5 +20,24 @@ impl Outbox {
         {
             m.store.purchase = None;
         }
+    }
+}
+
+#[cfg(all(test, bevy_shell))]
+impl Outbox {
+    /// Admits hireling 165 and its management 250, as a server offering both selects them.
+    pub(crate) fn bevy_hireling_management_selected(&self) {
+        self.hireling_initialize(true);
+        self.hireling_management_initialize(true);
+    }
+    pub(crate) fn bevy_hireling_result(
+        &self,
+        response: &oteryn_client_runtime::hireling::HirelingResponse,
+    ) {
+        self.hireling_result(response);
+    }
+    /// Applies a hireling management (250) reply through the production reducer.
+    pub(crate) fn bevy_hireling_management_result(&self, result: &GatedCommandResult) {
+        self.hireling_management_result(result);
     }
 }

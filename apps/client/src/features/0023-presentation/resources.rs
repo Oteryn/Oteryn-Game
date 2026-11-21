@@ -40,7 +40,7 @@ pub(super) fn draw(
     vitals: Option<&ActorVitals>,
     own: TileCoord,
     options: Options,
-) -> Result<(), BatchError> {
+) -> Result<std::ops::Range<usize>, BatchError> {
     let Options {
         combo,
         bars,
@@ -54,6 +54,10 @@ pub(super) fn draw(
         opacity,
         ui_scale,
     } = options;
+    // Bevy owns sidebar vitals and configurable circles. Keep the legacy native
+    // gauges in one range so its scene projection can omit them without hiding
+    // actor-following indicators or other presentation overlays.
+    let hud_start = batch.len();
     let ui_scale = f32::from(ui_scale) / 100.0;
     let mut hud_pixel = |position: [f32; 2], size: [f32; 2], color| {
         pixel(
@@ -165,6 +169,7 @@ pub(super) fn draw(
         let end = batch.len();
         batch.lighting.set_opacity(start..end, opacity)?;
     }
+    let native_hud_quads = hud_start..batch.len();
     // The small combo gauge repeats confirmed Harmony charges beside the actor.
     if combo && let Some(vitals) = vitals {
         let [x, y] = view.tile_to_screen(own);
@@ -187,5 +192,5 @@ pub(super) fn draw(
             )?;
         }
     }
-    Ok(())
+    Ok(native_hud_quads)
 }

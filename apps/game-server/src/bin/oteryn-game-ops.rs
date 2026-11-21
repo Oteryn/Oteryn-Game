@@ -18,8 +18,9 @@ use oteryn_game_server::durability::native_admission_source::{
 };
 use oteryn_game_server::durability::runtime_scope_assignment::{
     AssignmentCommand, AssignmentOutcome, AssignmentPredecessor, AssignmentRequest,
-    AssignmentState, BootstrapSecret, ControlActor, LaunchBinding, NodeRegistrationFact,
-    OperationKey, ReconcileOutcome, RegistrationError, RuntimeScopeAssignmentWriter,
+    AssignmentState, BootstrapSecret, ChannelPolicy, ChannelPvpType, ControlActor, LaunchBinding,
+    NodeRegistrationFact, OperationKey, ReconcileOutcome, RegistrationError,
+    RuntimeScopeAssignmentWriter,
 };
 use oteryn_game_server::foundation::{ChannelId, NodeId, RuntimeScopeRefV1, WorldId};
 use oteryn_game_server::native_admission_source::restore_notice::{
@@ -486,7 +487,10 @@ async fn record_s2_file(operator: &Operator, file: &S2AuthorizationFile) -> Outc
 }
 
 fn decode_facts(text: &str) -> Result<Vec<u8>, Failure> {
-    if !text.len().is_multiple_of(2) || text.len() > 8192 {
+    if !text.len().is_multiple_of(2)
+        || text.len() > 8192
+        || !text.bytes().all(|byte| byte.is_ascii_hexdigit())
+    {
         return Err(Failure::Input("descriptor facts".into()));
     }
     (0..text.len() / 2)
@@ -792,6 +796,25 @@ fn scope_of(world: &str, channel: &str) -> Result<RuntimeScopeRefV1, Failure> {
     ))
 }
 
+fn assignment_policy(file: &AssignmentRequestFile) -> Result<ChannelPolicy, Failure> {
+    if file.command == "revoke" && file.player_capacity.is_some() {
+        return Err(Failure::Usage("revoke has no player capacity"));
+    }
+    let pvp_type = match file.pvp_type.as_deref() {
+        None => Ok(None),
+        Some(_) if file.command == "revoke" => Err(Failure::Usage("revoke has no PvP type")),
+        Some("OPEN_PVP") => Ok(Some(ChannelPvpType::Open)),
+        Some("OPTIONAL_PVP") => Ok(Some(ChannelPvpType::Optional)),
+        Some(_) => Err(Failure::Usage(
+            "--pvp-type requires OPTIONAL_PVP or OPEN_PVP",
+        )),
+    }?;
+    Ok(ChannelPolicy {
+        pvp_type,
+        player_capacity: file.player_capacity,
+    })
+}
+
 fn request_of(file: &AssignmentRequestFile) -> Result<AssignmentRequest, Failure> {
     let invalid = || Failure::Input("assignment request".into());
     let scope = scope_of(&file.world_id, &file.channel_id)?;
@@ -960,7 +983,7 @@ fn reporter(
             .is_some_and(|leaf| scope_assignment::certificate_has_node_identity(leaf, identity))
         {
             return Err(Failure::Input(
-                "node_certificate_files: a certificate subject differs from its node identity"
+                "node_certificate_files: a certificate DNS SAN differs from its node identity"
                     .into(),
             ));
         }
@@ -1292,7 +1315,10 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
         let file = AssignmentRequestFile::decode(&operator.read_state(&name)?)
             .map_err(|_| Failure::Input("assignment request".into()))?;
         let request = request_of(&file)?;
-        return match writer.reconcile(&request).await {
+        return match writer
+            .reconcile_with_channel_policy(&request, assignment_policy(&file)?)
+            .await
+        {
             Ok(ReconcileOutcome::Committed(receipt)) => {
                 event(&format!(
                     "assignment=committed ownership_generation={} source_revision={}",
@@ -1336,6 +1362,15 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
             ));
         }
     };
+    let pvp_type = arguments.take_optional("pvp-type");
+    let player_capacity = arguments
+        .take_optional("player-capacity")
+        .map(|value| {
+            value.parse().map_err(|_| {
+                Failure::Usage("--player-capacity requires an integer from 1 through 65535")
+            })
+        })
+        .transpose()?;
     arguments.finish()?;
     // The reported node identity is validated before anything is written and
     // staged with the operation; it is bound to the target only on commit (§5).
@@ -1386,6 +1421,8 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
         command: action,
         world_id: world,
         channel_id: channel,
+        pvp_type,
+        player_capacity,
         predecessor_generation: predecessor.map(|p| p.ownership_generation),
         predecessor_source_revision: predecessor.map(|p| p.source_revision),
         predecessor_guard_publication_revision: predecessor
@@ -1394,6 +1431,7 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
         target_registration_revision,
     };
     let request = request_of(&file)?;
+    let policy = assignment_policy(&file)?;
     let bytes = file
         .encode()
         .map_err(|_| Failure::Input("assignment request".into()))?;
@@ -1401,7 +1439,7 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
         stage_identity(operator, &file.operation_key, &holder, identity)?;
     }
     operator.create_state(&name, None, &bytes)?;
-    match writer.submit(&request).await {
+    match writer.submit_with_channel_policy(&request, policy).await {
         Ok(AssignmentOutcome::Committed(receipt)) => {
             event(&format!(
                 "assignment=committed ownership_generation={} source_revision={}",
@@ -1542,7 +1580,7 @@ async fn projection(
 }
 
 const PUBLIC_PROJECTION_USAGE: &str = "public-projection resync --family \
-all|highscores|character_profile|world_online|world_totals|character_deaths|guild|house|character_online_sessions|world_daily_kills --raise-epoch true|false: re-enqueue the current \
+all|highscores|character_profile|world_online|world_totals|character_deaths|guild|house|character_online_sessions|world_daily_kills|character_skills|character_achievements|character_equipment|character_outfit --raise-epoch true|false: re-enqueue the current \
 public snapshots of the family for the Platform public read model and print the public projection \
 epoch. `true` (only with `--family all`) raises the epoch above the public epoch fence and then \
 persists the fence; it uses the [public_projection] operator credential of the ops config. After a \
@@ -1574,6 +1612,10 @@ async fn public_projection(
         "world_daily_kills",
         "guild",
         "house",
+        "character_skills",
+        "character_achievements",
+        "character_equipment",
+        "character_outfit",
     ]
     .contains(&family.as_str())
     {
@@ -1755,6 +1797,38 @@ fn main() -> ExitCode {
 mod tests {
     #![allow(clippy::unwrap_used)]
     use super::*;
+
+    #[test]
+    fn retained_s2_unicode_descriptor_facts_return_input_error() {
+        for facts in ["€a", "a€", "é", "😀", "00€a"] {
+            let bytes = serde_json::to_vec(&serde_json::json!({
+                "version": 1,
+                "namespace": "namespace",
+                "authorization": "authorization",
+                "source_authority": "source",
+                "initialized_at": 1,
+                "descriptor_revision": 1,
+                "installed_at": 1,
+                "descriptor_facts": facts,
+            }))
+            .unwrap();
+            let file = S2AuthorizationFile::decode(&bytes).unwrap();
+            assert!(matches!(
+                decode_facts(&file.descriptor_facts),
+                Err(Failure::Input(detail)) if detail == "descriptor facts"
+            ));
+        }
+    }
+
+    #[test]
+    fn descriptor_facts_keep_hexadecimal_validation_and_bounds() {
+        assert_eq!(decode_facts("").unwrap(), Vec::<u8>::new());
+        assert_eq!(decode_facts("000f80ff").unwrap(), [0, 15, 128, 255]);
+        assert_eq!(decode_facts(&"ff".repeat(4096)).unwrap(), vec![255; 4096]);
+        for facts in ["0", "gg", "FF", &"00".repeat(4097)] {
+            assert!(matches!(decode_facts(facts), Err(Failure::Input(_))));
+        }
+    }
 
     #[test]
     #[allow(clippy::expect_used)]

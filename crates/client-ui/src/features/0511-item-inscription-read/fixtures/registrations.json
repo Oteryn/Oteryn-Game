@@ -1,0 +1,22 @@
+[
+  {
+    "mechanic": "0511-item-inscription-read",
+    "kind": "handlers",
+    "id": "0511-item-inscription-read-command6246",
+    "status": "supported",
+    "commands": [
+      6246
+    ],
+    "direction": "client_to_server",
+    "capability": 511,
+    "entry": "protocol.rs::request",
+    "reducer": "protocol.rs::apply_result",
+    "test": "tests.rs::a_write_is_sent_only_for_the_read_writable_text_of_the_same_item",
+    "not_applicable": {
+      "state": "The read state is the Inscription value in mod.rs, owned by the mail panel.",
+      "view": "The mail writing window renders the text that the reply fills.",
+      "input": "The inventory item menu's Write... and the writing window key request the read.",
+      "settings": "No setting; the text is session-owned server state."
+    }
+  }
+]

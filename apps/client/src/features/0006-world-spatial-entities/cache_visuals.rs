@@ -1,5 +1,14 @@
 // Bounded, lazy, hash-verified effect frames in the scene's existing atlas.
 impl PresentationCache {
+    pub(super) fn item_multi_use(&self, id: u16) -> bool {
+        self.assets.as_ref().is_some_and(|assets| assets.lock().unwrap_or_else(PoisonError::into_inner).index.get(u32::from(id)).is_some_and(|a| a.multi_use))
+    }
+    pub(super) fn visual_light(&self, id: u32, missile: bool, elapsed_ms: u64) -> Option<(u8, u8)> {
+        let assets = self.assets.as_ref()?.lock().unwrap_or_else(PoisonError::into_inner);
+        let appearance = assets.index.visual(id, missile)?;
+        if !missile { appearance.phase_at(elapsed_ms)?; }
+        appearance.light.filter(|(level, _)| *level > 0)
+    }
     pub(super) fn visual(
         &mut self,
         id: u32,
@@ -20,7 +29,7 @@ impl PresentationCache {
             phase
         };
         let direction = if missile {
-            direction.map(i32::signum)
+            oteryn_client_assets::missile_direction(direction)
         } else {
             [0, 0]
         };

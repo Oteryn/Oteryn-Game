@@ -6,7 +6,8 @@ fn language_selection_persists_and_localizes_real_chat_view_without_changing_mes
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::play_channel;
     use oteryn_session::{ChatLine, ChatRoomSet};
-    let path = std::env::temp_dir().join(format!("o005-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("o005.json");
     let mut settings = SettingsState::new(Some(path.clone()));
     let (link, mut commands, outbox) = play_channel();
     outbox.chat_initialize(true);

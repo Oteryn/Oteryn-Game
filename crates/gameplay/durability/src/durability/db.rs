@@ -18,6 +18,8 @@ use tokio::sync::{Mutex, Notify};
 
 mod foreground;
 mod holder_queue;
+#[cfg(any(test, feature = "test-support"))]
+mod quest_clock;
 mod ready_admission;
 
 use foreground::HolderPriority;
@@ -36,6 +38,10 @@ pub const DB_PASS_DEADLINE: Duration = Duration::from_millis(DB_PASS_DEADLINE_MI
 pub const ROOT_RECOVERY_WINDOW: Duration = Duration::from_secs(5);
 const HOLDER_IDLE_TIMEOUT: Duration = Duration::from_secs(10 * 60);
 const HOLDER_MAX_LIFETIME: Duration = Duration::from_secs(30 * 60);
+// Two durability connections per node: one shared holder and one retained-receipt publisher.
+// The separately configured CHAT-2B relay can open up to four chat connections.
+const ROOT_HOLDER_CONNECTIONS: u32 = 1;
+const RETAINED_RECEIPT_PUBLISHER_CONNECTIONS: u32 = 1;
 /// How often maintenance looks again for a checked-out holder's return (NBHOG-2); a pass that
 /// drops its holder without a semantic-pass guard sends no return notification.
 const HOLDER_RETURN_POLL: Duration = Duration::from_millis(10);
@@ -674,20 +680,22 @@ fn root_i_reservation_bytes(lengths: [usize; 5]) -> Result<usize, DurabilityErro
         total = checked_charge_add(total, conservative_heap_resident_charge(requested)?)?;
     }
 
-    let pool_allocations = sqlx::pool::retained_pool_core_allocation_sizes::<Postgres>(1)
-        .ok_or(DurabilityError::RootUnavailable)?;
-    for requested in pool_allocations {
-        total = checked_charge_add(total, conservative_heap_resident_charge(requested)?)?;
-    }
-
     let maintenance = sqlx::pool::oteryn_wp3_root_maintenance_task_allocation_profile::<Postgres>();
-    for requested in [
-        maintenance.future_box_request,
-        maintenance.task_cell_request,
-    ] {
-        if requested != 0 {
+    for connections in [ROOT_HOLDER_CONNECTIONS, RETAINED_RECEIPT_PUBLISHER_CONNECTIONS] {
+        let pool_allocations = sqlx::pool::retained_pool_core_allocation_sizes::<Postgres>(
+            connections,
+        )
+        .ok_or(DurabilityError::RootUnavailable)?;
+        for requested in pool_allocations.into_iter().chain([
+            maintenance.future_box_request,
+            maintenance.task_cell_request,
+        ]) {
             total = checked_charge_add(total, conservative_heap_resident_charge(requested)?)?;
         }
+    }
+    // The publisher pool retains a copy of the root's verified endpoint options.
+    for requested in lengths.into_iter().chain([TRANSPORT_IP_TEXT_MAX_BYTES]) {
+        total = checked_charge_add(total, conservative_heap_resident_charge(requested)?)?;
     }
 
     total = checked_charge_add(
@@ -732,6 +740,7 @@ fn root_i_reservation_bytes(lengths: [usize; 5]) -> Result<usize, DurabilityErro
         arc_allocation_request::<StdMutex<HolderQueue>>()?,
         arc_allocation_request::<RootICharge>()?,
         arc_allocation_request::<RootBudgetAdapter>()?,
+        arc_allocation_request::<OnceLock<Option<PgPool>>>()?,
         arc_allocation_request::<
             std::sync::OnceLock<
                 Option<Arc<oteryn_gameplay_durability::durability::staff::StaffTrust>>,
@@ -1142,7 +1151,8 @@ impl DurabilityRootConfig {
         .statement_cache_capacity(STATEMENT_CACHE_CAPACITY);
         // The chat relay pool (CHAT-2B) takes the same verified endpoint and credentials but
         // stays outside the WP3 root budget: it is a separate pool on the node runtime and
-        // never carries durability work.
+        // never carries durability work. The retained-receipt publisher takes the budgeted
+        // options below through its own accessor.
         let relay_options = options.clone();
         let options = options.oteryn_wp3_resource_budget(resource_budget);
         (
@@ -1162,7 +1172,7 @@ impl DurabilityRootConfig {
 fn build_root_pool(config: DurabilityRootConfig) -> (PgPool, RootIReservation) {
     let (options, _relay_options, root_i_reservation, _admission) = config.into_connect_options();
     let pool = PgPoolOptions::new()
-        .max_connections(1)
+        .max_connections(ROOT_HOLDER_CONNECTIONS)
         .min_connections(0)
         .acquire_timeout(ROOT_RECOVERY_WINDOW)
         .idle_timeout(HOLDER_IDLE_TIMEOUT)
@@ -1221,7 +1231,7 @@ fn build_production_root_pool(
 ) {
     let (options, relay_options, root_i_reservation, admission) = config.into_connect_options();
     let (pool, maintenance_profile) = PgPoolOptions::new()
-        .max_connections(1)
+        .max_connections(ROOT_HOLDER_CONNECTIONS)
         .min_connections(0)
         .acquire_timeout(ROOT_RECOVERY_WINDOW)
         .idle_timeout(HOLDER_IDLE_TIMEOUT)
@@ -1246,9 +1256,14 @@ fn build_production_root_pool(
 enum RootRuntime {
     Dedicated(tokio::runtime::Handle),
     #[cfg(any(test, feature = "test-support"))]
-    OwnedTestFixture(Arc<tokio::runtime::Runtime>),
+    OwnedTestFixture {
+        runtime: Arc<tokio::runtime::Runtime>,
+        quest_clock: Arc<std::sync::atomic::AtomicI64>,
+    },
     #[cfg(any(test, feature = "test-support"))]
-    AmbientTestFixture,
+    AmbientTestFixture {
+        quest_clock: Arc<std::sync::atomic::AtomicI64>,
+    },
 }
 
 impl RootRuntime {
@@ -1256,9 +1271,9 @@ impl RootRuntime {
         match self {
             Self::Dedicated(handle) => Some(handle),
             #[cfg(any(test, feature = "test-support"))]
-            Self::OwnedTestFixture(runtime) => Some(runtime.handle()),
+            Self::OwnedTestFixture { runtime, .. } => Some(runtime.handle()),
             #[cfg(any(test, feature = "test-support"))]
-            Self::AmbientTestFixture => None,
+            Self::AmbientTestFixture { .. } => None,
         }
     }
 }
@@ -1282,6 +1297,8 @@ pub struct DurabilityRoot {
     /// Connect options for the chat relay pool (CHAT-2B): the root endpoint without the WP3
     /// budget. `None` when the root was built without them.
     relay_options: Option<Box<PgConnectOptions>>,
+    /// A separately admitted holder shared by all retained-receipt publishers for this root.
+    retained_receipt_publisher_pool: Arc<OnceLock<Option<PgPool>>>,
     _root_i_charge: Option<Arc<RootICharge>>,
     pub(super) staff_trust: Arc<
         std::sync::OnceLock<Option<Arc<oteryn_gameplay_durability::durability::staff::StaffTrust>>>,
@@ -1310,7 +1327,89 @@ impl Drop for BootPassDeadline {
     }
 }
 
+tokio::task_local! {
+    static PERIODIC_LOCK_BUDGET: ();
+}
+
 impl DurabilityRoot {
+    /// Cap each PostgreSQL lock wait while periodic equipment maintenance owns the spell lane.
+    pub fn with_periodic_lock_budget<F: Future>(&self, future: F) -> impl Future<Output = F::Output> {
+        PERIODIC_LOCK_BUDGET.scope((), Box::pin(future))
+    }
+
+    /// Classifies scheduled work, including its ordinary semantic passes, as background.
+    /// Its independent owner key survives awaits and is inherited by `spawn_task`.
+    /// Shared helpers cannot promote it to foreground or keep a retry ticket.
+    pub fn with_background_holder<F: Future>(future: F) -> impl Future<Output = F::Output> {
+        static NEXT_BACKGROUND: AtomicU64 = AtomicU64::new(0);
+        // Boxed before the async body: an async fn stores its argument in its own layout.
+        let future = Box::pin(future);
+        async move {
+            holder_queue::spawned_for(
+                holder_queue::OwnerKey::Background(NEXT_BACKGROUND.fetch_add(1, Ordering::Relaxed)),
+                future,
+            )
+            .await
+        }
+    }
+
+    /// Keeps one background fairness grant across all passes of a bounded operation.
+    /// The holder is still checked out non-blockingly for each pass; completion or
+    /// cancellation drops the grant, including when the caller is a long-lived scheduler.
+    pub fn with_background_operation<F: Future>(
+        &self,
+        future: F,
+    ) -> impl Future<Output = F::Output> {
+        // Bound layout depth when scheduler units nest task-local grant scopes. Boxed
+        // before the async body: an async fn stores its argument in its own layout.
+        let future = Box::pin(future);
+        async move {
+            if holder_queue::is_background() {
+                foreground::operation(&self.holder_priority, future).await
+            } else {
+                future.await
+            }
+        }
+    }
+
+    /// Runs one bounded scheduler unit and reports whether it consumed a grant.
+    /// Schedulers use acquisition (including empty reads) to resume past completed
+    /// units, while a refused unit retains its place. Do not wrap a sweep.
+    pub fn with_background_operation_progress<F: Future>(
+        &self,
+        future: F,
+    ) -> impl Future<Output = (F::Output, bool)> {
+        let future = Box::pin(future);
+        async move {
+            if holder_queue::is_background() {
+                foreground::operation_progress(&self.holder_priority, future).await
+            } else {
+                (future.await, true)
+            }
+        }
+    }
+
+    /// Observe progress in a sweep without granting it access. Excludes any
+    /// caller grant for this scope; each item establishes its own operation.
+    pub fn with_background_sweep_progress<F: Future>(
+        &self,
+        future: F,
+    ) -> impl Future<Output = (F::Output, bool)> {
+        let future = Box::pin(future);
+        async move {
+            if holder_queue::is_background() {
+                foreground::sweep_progress(&self.holder_priority, future).await
+            } else {
+                (future.await, true)
+            }
+        }
+    }
+
+    pub(crate) fn next_house_disposition(&self, count: usize) -> Option<usize> {
+        holder_queue::is_background().then(||
+            self.holder_priority.house_cursor.fetch_add(1, Ordering::Relaxed) % count.max(1))
+    }
+
     /// Longest semantic-pass deadline a boot step may take (NODE-BOOT-DEADLINE-1).
     pub const MAX_BOOT_PASS_DEADLINE: Duration = Duration::from_secs(60);
 
@@ -1324,7 +1423,10 @@ impl DurabilityRoot {
         } else {
             #[cfg(any(test, feature = "test-support"))]
             {
-                RootRuntime::OwnedTestFixture(Arc::new(build_wp3_runtime_owned()?))
+                RootRuntime::OwnedTestFixture {
+                    runtime: Arc::new(build_wp3_runtime_owned()?),
+                    quest_clock: quest_clock::new(),
+                }
             }
             #[cfg(not(any(test, feature = "test-support")))]
             {
@@ -1360,6 +1462,7 @@ impl DurabilityRoot {
             holder_queue: Arc::default(),
             pass_deadline_millis: Arc::new(AtomicU64::new(DB_PASS_DEADLINE_MILLIS)),
             relay_options: Some(Box::new(relay_options)),
+            retained_receipt_publisher_pool: Arc::default(),
             _root_i_charge: root_i_charge,
             staff_trust: Arc::default(),
         })
@@ -1370,6 +1473,37 @@ impl DurabilityRoot {
     /// holder and carries no durability work.
     pub fn chat_relay_connect_options(&self) -> Option<PgConnectOptions> {
         self.relay_options.as_deref().cloned()
+    }
+
+    /// The same verified endpoint and WP3 resource budget as the ordinary holder.
+    fn retained_receipt_publisher_connect_options(&self) -> PgConnectOptions {
+        self.pool.connect_options().as_ref().clone()
+    }
+
+    pub(super) fn retained_receipt_publisher_pool(&self) -> Result<&PgPool, DurabilityError> {
+        let runtime = match self.runtime.handle() {
+            Some(handle) => handle.clone(),
+            None => tokio::runtime::Handle::try_current()
+                .map_err(|_| DurabilityError::RootUnavailable)?,
+        };
+        self.retained_receipt_publisher_pool
+            .get_or_init(|| {
+                let (pool, maintenance) = PgPoolOptions::new()
+                    .max_connections(RETAINED_RECEIPT_PUBLISHER_CONNECTIONS)
+                    .min_connections(0)
+                    .acquire_timeout(DB_PASS_DEADLINE)
+                    .idle_timeout(HOLDER_IDLE_TIMEOUT)
+                    .max_lifetime(HOLDER_MAX_LIFETIME)
+                    .connect_lazy_with_oteryn_wp3_runtime(
+                        self.retained_receipt_publisher_connect_options(),
+                        &runtime,
+                    );
+                (maintenance
+                    == sqlx::pool::oteryn_wp3_root_maintenance_task_allocation_profile::<Postgres>())
+                .then_some(pool)
+            })
+            .as_ref()
+            .ok_or(DurabilityError::RootUnavailable)
     }
 
     #[cfg(any(test, feature = "test-support"))]
@@ -1385,13 +1519,15 @@ impl DurabilityRoot {
             }));
         Ok(Self {
             pool: PgPoolOptions::new()
-                .max_connections(1)
+                .max_connections(ROOT_HOLDER_CONNECTIONS)
                 .min_connections(0)
                 .acquire_timeout(ROOT_RECOVERY_WINDOW)
                 .idle_timeout(HOLDER_IDLE_TIMEOUT)
                 .max_lifetime(HOLDER_MAX_LIFETIME)
                 .connect_lazy_with(options),
-            runtime: RootRuntime::AmbientTestFixture,
+            runtime: RootRuntime::AmbientTestFixture {
+                quest_clock: quest_clock::new(),
+            },
             ready_demand: Arc::new(AtomicBool::new(true)),
             holder_owner: Arc::new(StdMutex::new(None)),
             holder_returned: Arc::new(Notify::new()),
@@ -1402,6 +1538,7 @@ impl DurabilityRoot {
             relay_options: <PgConnectOptions as std::str::FromStr>::from_str(database_url)
                 .ok()
                 .map(Box::new),
+            retained_receipt_publisher_pool: Arc::default(),
             _root_i_charge: None,
             staff_trust: Arc::default(),
         })
@@ -1423,10 +1560,10 @@ impl DurabilityRoot {
         F::Output: Send + 'static,
     {
         // Work spawned on an owner's behalf keeps that owner's place for the holder.
-        self.spawn_on_runtime(holder_queue::spawned_for(
+        self.spawn_on_runtime(foreground::inherit_operation(holder_queue::spawned_for(
             holder_queue::current_owner(),
             future,
-        ))
+        )))
     }
 
     fn spawn_on_runtime<F>(&self, future: F) -> tokio::task::JoinHandle<F::Output>
@@ -1449,9 +1586,9 @@ impl DurabilityRoot {
         match &self.runtime {
             RootRuntime::Dedicated(handle) => handle.spawn(future),
             #[cfg(any(test, feature = "test-support"))]
-            RootRuntime::OwnedTestFixture(runtime) => runtime.handle().spawn(future),
+            RootRuntime::OwnedTestFixture { runtime, .. } => runtime.handle().spawn(future),
             #[cfg(any(test, feature = "test-support"))]
-            RootRuntime::AmbientTestFixture => tokio::spawn(future),
+            RootRuntime::AmbientTestFixture { .. } => tokio::spawn(future),
         }
     }
 
@@ -1480,7 +1617,11 @@ impl DurabilityRoot {
     /// Checkout only an already-idle holder. This method never establishes a connection.
     /// While an owner refused earlier still waits, a later owner is refused too, so the idle
     /// holder goes to the oldest waiting owner (see [`HolderWaiter`]).
+    /// A scheduled owner instead observes the bounded background preference policy.
     pub fn try_acquire_ready(&self) -> Result<PoolConnection<Postgres>, DurabilityError> {
+        if holder_queue::is_background() {
+            return self.try_acquire_background_ready();
+        }
         let owner = holder_queue::current_owner();
         let now = Instant::now();
         let mut queue = self
@@ -1507,6 +1648,9 @@ impl DurabilityRoot {
     /// retries. `None` when the queue is full, or an outer retry of the same owner already
     /// holds the place.
     pub fn holder_waiter(&self) -> Option<HolderWaiter> {
+        if holder_queue::is_background() {
+            return None;
+        }
         HolderWaiter::enqueue(&self.holder_queue, &self.holder_returned)
     }
 
@@ -1576,7 +1720,7 @@ impl DurabilityRoot {
                 .await
             }
             #[cfg(any(test, feature = "test-support"))]
-            RootRuntime::OwnedTestFixture(_) => {
+            RootRuntime::OwnedTestFixture { .. } => {
                 let root = self.clone();
                 await_root_task(
                     self.spawn_task(async move { root.maintain_ready_once_inner().await }),
@@ -1584,7 +1728,7 @@ impl DurabilityRoot {
                 .await
             }
             #[cfg(any(test, feature = "test-support"))]
-            RootRuntime::AmbientTestFixture => self.maintain_ready_once_inner().await,
+            RootRuntime::AmbientTestFixture { .. } => self.maintain_ready_once_inner().await,
         }
     }
 
@@ -1763,21 +1907,9 @@ impl DurabilityRoot {
         &self,
     ) -> Result<IssuedSemanticPass, DurabilityError> {
         let caller = std::panic::Location::caller();
-        let holder = self
-            .holder_priority
-            .background(Instant::now(), ROOT_RECOVERY_WINDOW, || {
-                // Priority already granted this pass its fairness turn. The ticket
-                // queue must not reserve an idle holder against that grant.
-                let holder = self.pool.try_acquire();
-                if holder.is_none() {
-                    self.request_ready();
-                }
-                holder
-            })
-            .ok_or_else(|| {
-                record_holder_usage(Some(caller), None);
-                DurabilityError::RootUnavailable
-            })?;
+        let holder = self.try_acquire_background_ready().inspect_err(|_| {
+            record_holder_usage(Some(caller), None);
+        })?;
         let issued = Instant::now();
         Ok(IssuedSemanticPass {
             root: self.clone(),
@@ -1785,6 +1917,20 @@ impl DurabilityRoot {
             deadline: issued + self.pass_deadline(),
             owner: PassOwner::checked_out(&self.holder_owner, caller, issued),
         })
+    }
+
+    fn try_acquire_background_ready(&self) -> Result<PoolConnection<Postgres>, DurabilityError> {
+        self.holder_priority
+            .background(Instant::now(), ROOT_RECOVERY_WINDOW, || {
+                // Priority already granted this operation its fairness turn. The ticket
+                // queue must not reserve an idle holder against that grant.
+                let holder = self.pool.try_acquire();
+                if holder.is_none() {
+                    self.request_ready();
+                }
+                holder
+            })
+            .ok_or(DurabilityError::RootUnavailable)
     }
 
     #[track_caller]
@@ -1958,6 +2104,53 @@ pub async fn begin_semantic_transaction<'a>(
     holder: &'a mut PoolConnection<Postgres>,
     deadline: Instant,
 ) -> Result<Transaction<'a, Postgres>, DurabilityError> {
+    begin_transaction(holder, deadline, None).await
+}
+
+/// Advisory observations use one consistent snapshot and cannot acquire mutation locks.
+pub(super) async fn begin_observation_transaction<'a>(
+    holder: &'a mut PoolConnection<Postgres>,
+    deadline: Instant,
+) -> Result<Transaction<'a, Postgres>, DurabilityError> {
+    begin_transaction(
+        holder,
+        deadline,
+        Some("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY"),
+    )
+    .await
+}
+
+/// Repeatable observation that can call a native access function taking row locks.
+pub(super) async fn begin_locking_observation_transaction<'a>(
+    holder: &'a mut PoolConnection<Postgres>,
+    deadline: Instant,
+) -> Result<Transaction<'a, Postgres>, DurabilityError> {
+    let mut tx = begin_transaction(
+        holder,
+        deadline,
+        Some("BEGIN ISOLATION LEVEL REPEATABLE READ"),
+    )
+    .await?;
+    bound_periodic_lock_wait(&mut tx).await?;
+    Ok(tx)
+}
+
+/// PostgreSQL's smallest nonzero lock timeout also covers locks acquired inside
+/// security-definer functions and triggers, where callers cannot append NOWAIT.
+pub(super) async fn bound_periodic_lock_wait(
+    tx: &mut Transaction<'_, Postgres>,
+) -> Result<(), DurabilityError> {
+    sqlx::query("SET LOCAL lock_timeout = '1ms'")
+        .execute(&mut **tx)
+        .await?;
+    Ok(())
+}
+
+async fn begin_transaction<'a>(
+    holder: &'a mut PoolConnection<Postgres>,
+    deadline: Instant,
+    begin_sql: Option<&'static str>,
+) -> Result<Transaction<'a, Postgres>, DurabilityError> {
     let mut span = oteryn_error_codes::Span::start(
         oteryn_error_codes::Level::Debug,
         "durability",
@@ -1974,7 +2167,13 @@ pub async fn begin_semantic_transaction<'a>(
             return Err(DurabilityError::RootPassDeadlineExceeded);
         }
 
-        let mut transaction = tokio::time::timeout(remaining, holder.begin())
+        let mut transaction = tokio::time::timeout(remaining, async {
+            if let Some(sql) = begin_sql {
+                sqlx::Connection::begin_with(&mut **holder, sql).await
+            } else {
+                holder.begin().await
+            }
+        })
             .await
             .map_err(|_| DurabilityError::RootPassDeadlineExceeded)??;
 
@@ -1985,14 +2184,20 @@ pub async fn begin_semantic_transaction<'a>(
         let millis = u64::try_from(remaining.as_millis().max(1))
             .map_err(|_| DurabilityError::RootPassDeadlineExceeded)?;
         let timeout_value = format!("{millis}ms");
+        let lock_timeout = if PERIODIC_LOCK_BUDGET.try_with(|()| ()).is_ok() {
+            "1ms"
+        } else {
+            &timeout_value
+        };
         tokio::time::timeout(
             remaining,
             sqlx::query(
                 "SELECT set_config('transaction_timeout', $1, true), \
                  set_config('statement_timeout', $1, true), \
-                 set_config('lock_timeout', $1, true)",
+                 set_config('lock_timeout', $2, true)",
             )
-            .bind(timeout_value)
+            .bind(&timeout_value)
+            .bind(lock_timeout)
             .execute(&mut *transaction),
         )
         .await
@@ -2187,6 +2392,17 @@ pub(super) async fn lock_admission_relations(
     // Lexical order, complete current ledger. Immediate FK/unique/index work on
     // these relations cannot introduce a new competing writer/row lock after L.
     sqlx::query(ADMISSION_RELATIONS_LOCK)
+        .execute(&mut **transaction)
+        .await?;
+    Ok(())
+}
+
+/// The same fence for an advisory read which can be retried on the next tick.
+pub(super) async fn try_lock_admission_relations(
+    transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+) -> Result<(), DurabilityError> {
+    // Both parts are fixed SQL; no caller input enters the lock statement.
+    sqlx::query(sqlx::AssertSqlSafe(format!("{ADMISSION_RELATIONS_LOCK} NOWAIT")))
         .execute(&mut **transaction)
         .await?;
     Ok(())

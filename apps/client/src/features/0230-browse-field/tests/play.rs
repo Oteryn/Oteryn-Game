@@ -74,11 +74,9 @@ fn browse_field_selects_the_first_visible_server_window() {
     assert_eq!(link.browse_field_panel().view_id, 3);
 }
 
-#[cfg(not(windows))]
 #[path = "../native.rs"]
 mod native;
 
-#[cfg(not(windows))]
 #[test]
 fn browse_field_native_controls_and_results() {
     use oteryn_client_runtime::cui3::browse_field::{
@@ -91,11 +89,11 @@ fn browse_field_native_controls_and_results() {
         selected: true,
         ..Default::default()
     };
-    assert!(native::submit(&mut p, false, ["bad", "200", "-7", "0", "0"]).is_none());
+    assert!(native::submit(&mut p, false, ["bad", "200", "7", "0", "0"]).is_none());
     assert!(!p.pending);
-    let command = native::submit(&mut p, false, ["100", "200", "-7", "0", "0"]);
+    let command = native::submit(&mut p, false, ["100", "200", "7", "0", "0"]);
     assert!(
-        matches!(command, Some(c) if c.capability == 230 && c.command_type == 440 && decode_browse_field_intent(&c.payload) == Ok(BrowseFieldIntent::Open { position: WorldTilePosition { x: 100, y: 200, floor: -7 } }))
+        matches!(command, Some(c) if c.capability == 230 && c.command_type == 440 && decode_browse_field_intent(&c.payload) == Ok(BrowseFieldIntent::Open { position: WorldTilePosition { x: 100, y: 200, floor: 7 } }))
     );
     assert!(!native::enabled(&p));
     assert!(native::result_text(&p).contains("Waiting"));
@@ -130,7 +128,6 @@ fn browse_field_native_controls_and_results() {
     assert!(!native::enabled(&p));
 }
 
-#[cfg(not(windows))]
 #[test]
 fn browse_field_native_item_controls_preserve_move_and_up_routes()
 -> Result<(), Box<dyn std::error::Error>> {
@@ -143,6 +140,7 @@ fn browse_field_native_item_controls_preserve_move_and_up_routes()
         floor: 0,
     };
     let item = ItemEntry {
+        appearance_id: 0,
         handle: ItemHandle::MIN,
         item_definition_ref: 42.try_into()?,
         count: 1.try_into()?,
@@ -204,7 +202,7 @@ fn browse_field_native_item_controls_preserve_move_and_up_routes()
 fn browse_panel_accepts_negotiated_house_views_and_keeps_legacy_bound()
 -> Result<(), Box<dyn std::error::Error>> {
     use oteryn_session::container_tree::{
-        ContainerView, ContainerViews, encode_container_views_with_house_capacity,
+        ContainerView, ContainerViews, encode_container_views_with_appearances,
     };
     let views = ContainerViews {
         views: vec![ContainerView {
@@ -215,6 +213,7 @@ fn browse_panel_accepts_negotiated_house_views_and_keeps_legacy_bound()
             entries: (2_u64..=26)
                 .map(|id| {
                     Ok(oteryn_session::ItemEntry {
+                        appearance_id: 2854,
                         handle: id.try_into()?,
                         item_definition_ref: 2854_u32.try_into()?,
                         count: 1_u32.try_into()?,
@@ -225,13 +224,13 @@ fn browse_panel_accepts_negotiated_house_views_and_keeps_legacy_bound()
             browse: None,
         }],
     };
-    let bytes = encode_container_views_with_house_capacity(&views, true, true)
+    let bytes = encode_container_views_with_appearances(&views, true, true, true)
         .map_err(|e| format!("{e:?}"))?;
     for selected in [false, true] {
         let (link, _, outbox) = play_channel();
         outbox.container_initialize_with_house_capacity(None, selected);
         outbox.browse_field_initialize(true);
-        outbox.browse_field_views(&bytes);
+        outbox.browse_field_views(&bytes, true);
         let panel = link.browse_field_panel();
         if selected {
             assert_eq!(panel.views, views);
@@ -242,4 +241,18 @@ fn browse_panel_accepts_negotiated_house_views_and_keeps_legacy_bound()
         }
     }
     Ok(())
+}
+
+#[cfg(bevy_shell)]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_browse_field_supported(&self) {
+        crate::play::mailbox::lock(&self.0).browse_field.selected = true;
+    }
+    /// Applies a server reply through the production browse-field reducer.
+    pub(crate) fn bevy_browse_field_result(
+        &self,
+        response: &oteryn_client_runtime::server_mechanic::ServerMechanicResponse,
+    ) {
+        self.browse_field_result(response);
+    }
 }

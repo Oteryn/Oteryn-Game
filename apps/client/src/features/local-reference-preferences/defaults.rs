@@ -55,6 +55,9 @@ pub(super) fn default_panels() -> Vec<String> {
 
 pub(super) const PANEL_IDS: &[&str] = &[
     "battle",
+    "bestiary-tracker",
+    "bosstiary",
+    "bosstiary-tracker",
     "chat",
     "guild",
     "hireling",

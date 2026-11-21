@@ -45,12 +45,7 @@ impl PlayLink {
         submit(&mut lock(&self.mailbox), &self.commands, intent);
     }
     pub fn house_furniture_open(&self) {
-        #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
-            lock(&self.mailbox).properties.house_furniture_wrap.open = true;
-        }
+        lock(&self.mailbox).properties.house_furniture_wrap.open = true;
         self.house_furniture_request(Intent::Refresh);
     }
     pub fn house_furniture_input(&self, events: &[NormalizedInputEvent]) -> bool {

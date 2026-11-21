@@ -7,6 +7,7 @@ pub const COMMAND_TYPE_HIRELING_STORE_SELECTION: u32 = 6196;
 /// The empty legacy query retains the original reply vocabulary.
 pub const QUERY_WITH_TERMINAL_REPLY: &[u8] = &[1];
 pub const MAX_REPLY_BYTES: usize = crate::MAX_COMMAND_RESULT_PAYLOAD_BYTES;
+pub const CAPABILITY_SERVER_MODAL_DEFAULTS_V1: u32 = 505;
 pub const MAX_CHOICES: usize = 32;
 pub const MAX_BUTTONS: usize = 8;
 pub const MAX_IMAGE_EDGE: u16 = 96;
@@ -24,6 +25,7 @@ pub struct Dialog {
     pub message: String,
     pub choices: Vec<(u8, String)>,
     pub buttons: Vec<(u8, String)>,
+    pub default_button: Option<u8>,
     pub cancel_button: Option<u8>,
     pub image: Option<Image>,
 }
@@ -66,6 +68,9 @@ impl Dialog {
             && items(&self.choices, MAX_CHOICES)
             && !self.buttons.is_empty()
             && items(&self.buttons, MAX_BUTTONS)
+            && self
+                .default_button
+                .is_none_or(|button| self.buttons.iter().any(|(id, _)| *id == button))
             && self
                 .cancel_button
                 .is_none_or(|button| self.buttons.iter().any(|(id, _)| *id == button))
@@ -141,6 +146,7 @@ mod tests {
             message: "Select one entry".into(),
             choices: vec![(7, "First".into()), (9, "Second".into())],
             buttons: vec![(1, "Accept".into()), (2, "Cancel".into())],
+            default_button: None,
             cancel_button: Some(2),
             image: Some(Image {
                 width: 2,

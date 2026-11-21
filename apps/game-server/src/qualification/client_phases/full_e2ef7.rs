@@ -3018,7 +3018,7 @@ mod continuation_tests {
     fn party_roster_compares_members_without_cross_session_handles() {
         let mut a = parties::PartyResult::refused(parties::PartyDisposition::Ok);
         a.members = vec![
-            parties::PartyEntry {
+            parties::PartyEntry { channel: None,
                 list: Vec::new(),
                 handle: 1,
                 name: "Caster".into(),
@@ -3026,7 +3026,7 @@ mod continuation_tests {
                 expires_at: 0,
                 party_spell_remaining_ms: None,
             },
-            parties::PartyEntry {
+            parties::PartyEntry { channel: None,
                 list: Vec::new(),
                 handle: 2,
                 name: "Peer".into(),
@@ -3265,12 +3265,12 @@ mod raw_observer_tests {
 
     #[tokio::test]
     async fn raw_observer_decodes_initial_map_delta_and_floor_replacement() -> TestResult {
-        let initial = snapshot(7, 1, 0, 5, header(-7))?;
+        let initial = snapshot(7, 1, 0, 5, header(7))?;
         let (begin, body) = raw_snapshot(&mut tail(&initial).as_slice(), 7, &initial[0]).await?;
         assert_eq!(begin.target_server_sequence, 0);
         let domains = native::decode_snapshot_body(&body)?;
         let joined = raw_map_snapshot(&domains, [0x11; 32])?;
-        assert_eq!(joined, header(-7));
+        assert_eq!(joined, header(7));
         assert!(raw_map_snapshot(&domains, [0x33; 32]).is_err());
         let mut moved = joined;
         moved.origin.x += 1;
@@ -3291,7 +3291,7 @@ mod raw_observer_tests {
 
         // Split a real encoded body inside a field to exercise the same bounded
         // multi-chunk transfer used when a replacement outgrows one wire frame.
-        let frames = snapshot(7, 11, 11, 6, header(-8))?;
+        let frames = snapshot(7, 11, 11, 6, header(8))?;
         let mut begin =
             native::decode_snapshot_begin(native::decode_wire_envelope(&frames[0])?.payload())?;
         let chunk = native::decode_wire_envelope(&frames[1])?;
@@ -3303,7 +3303,7 @@ mod raw_observer_tests {
             chunk_frame(11, 1, &body[7..]),
             frames[2].clone(),
         ];
-        assert_eq!(replacement(&split).await?, (11, 6, header(-8)));
+        assert_eq!(replacement(&split).await?, (11, 6, header(8)));
         let mut reversed = split;
         reversed.swap(1, 2);
         assert!(replacement(&reversed).await.is_err());
@@ -3312,13 +3312,13 @@ mod raw_observer_tests {
 
     #[tokio::test]
     async fn raw_observer_rejects_unfenced_or_malformed_map_replacements() -> TestResult {
-        let valid = snapshot(7, 11, 11, 6, header(-8))?;
-        assert_eq!(replacement(&valid).await?, (11, 6, header(-8)));
+        let valid = snapshot(7, 11, 11, 6, header(8))?;
+        assert_eq!(replacement(&valid).await?, (11, 6, header(8)));
         for frames in [
-            snapshot(8, 11, 11, 6, header(-8))?,
-            snapshot(7, 11, 10, 6, header(-8))?,
-            snapshot(7, 11, 12, 6, header(-8))?,
-            snapshot(7, 11, 11, 5, header(-8))?,
+            snapshot(8, 11, 11, 6, header(8))?,
+            snapshot(7, 11, 10, 6, header(8))?,
+            snapshot(7, 11, 12, 6, header(8))?,
+            snapshot(7, 11, 11, 5, header(8))?,
             snapshot(
                 7,
                 11,
@@ -3326,7 +3326,7 @@ mod raw_observer_tests {
                 6,
                 MapViewHeader {
                     content_generation: [0x33; 32],
-                    ..header(-8)
+                    ..header(8)
                 },
             )?,
         ] {
@@ -3334,8 +3334,8 @@ mod raw_observer_tests {
         }
         for index in [1, 2] {
             for foreign in [
-                snapshot(8, 11, 11, 6, header(-8))?,
-                snapshot(7, 12, 11, 6, header(-8))?,
+                snapshot(8, 11, 11, 6, header(8))?,
+                snapshot(7, 12, 11, 6, header(8))?,
             ] {
                 let mut frames = valid.clone();
                 frames[index] = foreign[index].clone();
@@ -3557,25 +3557,28 @@ async fn release_when_unlocked_inner(
     }
 }
 
-async fn acquisition_step<T>(
+fn acquisition_step<T>(
     step: &str,
     work: impl std::future::Future<Output = TestResult<T>>,
-) -> TestResult<T> {
-    let started = tokio::time::Instant::now();
-    evidence(&format!("acquisition step={step} state=start elapsed_ms=0"));
-    tokio::pin!(work);
-    loop {
-        tokio::select! {
-            result = &mut work => {
-                evidence(&format!(
-                    "acquisition step={step} state={} elapsed_ms={}",
-                    if result.is_ok() { "complete" } else { "failed" },
-                    started.elapsed().as_millis(),
-                ));
-                return result;
-            }
-            () = tokio::time::sleep(Duration::from_secs(10)) => {
-                evidence(&format!("acquisition step={step} state=pending elapsed_ms={}", started.elapsed().as_millis()));
+) -> impl std::future::Future<Output = TestResult<T>> {
+    // Keep nested hunt/acquisition futures off the composed qualification frame.
+    let mut work = Box::pin(work);
+    async move {
+        let started = tokio::time::Instant::now();
+        evidence(&format!("acquisition step={step} state=start elapsed_ms=0"));
+        loop {
+            tokio::select! {
+                result = &mut work => {
+                    evidence(&format!(
+                        "acquisition step={step} state={} elapsed_ms={}",
+                        if result.is_ok() { "complete" } else { "failed" },
+                        started.elapsed().as_millis(),
+                    ));
+                    return result;
+                }
+                () = tokio::time::sleep(Duration::from_secs(10)) => {
+                    evidence(&format!("acquisition step={step} state=pending elapsed_ms={}", started.elapsed().as_millis()));
+                }
             }
         }
     }
@@ -4341,6 +4344,7 @@ async fn acquire_inner(
     key: &str,
     count: u32,
 ) -> TestResult<std::num::NonZeroU32> {
+    let basis = spatial_basis::current(client)?;
     use native::npc_service as npc;
     use oteryn_dev_client::client_runtime::npc_shop as shop;
     let revision = definitions
@@ -4430,7 +4434,7 @@ async fn acquire_inner(
                                 == ActorPosition {
                                     x: i32::from(p.x),
                                     y: i32::from(p.y),
-                                    floor: -i16::from(p.floor),
+                                    floor: basis.floor(p.floor),
                                 }
                         })
                 })
@@ -5871,7 +5875,8 @@ impl ForgeClient {
                 .payload,
         )
         .map_err(|e| format!("forge container:{e:?}"))?;
-        native::container_tree::decode_container_views(
+        let tree = selected_container_views(
+            &accepted.selected_capabilities,
             domains
                 .iter()
                 .find(|d| d.domain_id == 14)
@@ -5898,14 +5903,7 @@ impl ForgeClient {
             inventory,
             container,
             released: false,
-            tree: native::container_tree::decode_container_views(
-                domains
-                    .iter()
-                    .find(|d| d.domain_id == 14)
-                    .ok_or("forge tree absent")?
-                    .payload,
-            )
-            .map_err(|e| format!("forge tree:{e:?}"))?,
+            tree,
         })
     }
 
@@ -6015,7 +6013,7 @@ impl ForgeClient {
                     .map_err(|e| format!("forge container:{e:?}"))?
             }
             14 => {
-                self.tree = native::container_tree::decode_container_views(delta.payload)
+                self.tree = selected_container_views(&self.selected, delta.payload)
                     .map_err(|e| format!("forge tree:{e:?}"))?
             }
             21 => match delta.delta_type {

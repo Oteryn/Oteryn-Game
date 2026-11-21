@@ -7,12 +7,7 @@ impl PlayLink {
         if !oteryn_client_ui::cast_chat::open_key(events) {
             return false;
         }
-        #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
-            lock(&self.mailbox).cast_chat.open = true;
-        }
+        lock(&self.mailbox).cast_chat.open = true;
         true
     }
     pub fn cast_chat_request(&self, text: &str, subject: &str, action: u8) {

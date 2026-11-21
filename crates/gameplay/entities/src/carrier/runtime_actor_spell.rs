@@ -2,8 +2,11 @@
 //! Player vitals/conditions remain in their existing owner; its sealed preflight is joined by
 //! the gameplay composition while both owners are locked, before any physical replacement.
 
+#[path = "runtime_actor_spell/mirror.rs"]
+mod mirror;
 #[path = "runtime_actor_spell/staging.rs"]
 mod staging;
+use mirror::MirrorBatchDelta;
 
 use super::runtime_actor_spell_types::{
     AvatarState, CombatBatchReceipt, EffectReceipt, Error, MAX_BINDING_BYTES, MAX_COMMAND_RECEIPTS,
@@ -15,7 +18,7 @@ use sha2::{Digest, Sha256};
 use std::sync::Arc;
 
 /// Data in the actual actor slot, never a parallel reservation/health map.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct OwnerSpellReservation {
     caster: ExactActorRef,
     command: CommandRef,
@@ -23,7 +26,37 @@ pub struct OwnerSpellReservation {
     canonical: Arc<[u8]>,
     destination: Option<(ExactActorRef, MovementLocalPosition)>,
     deferred: Option<super::runtime_actor_spell_types::DeferredCommitAuthority>,
+    // Retain the sealed source successor while SQL outcome is unknown. A reserved
+    // native spare is no longer on the free list, so rebuilding would change birth.
+    source_successor: Option<Box<StagedSpellBatch>>,
 }
+impl OwnerSpellReservation {
+    pub(super) fn native_death_events(
+        &self,
+    ) -> &[super::native_source_death::SourceCreatureDeathNotice] {
+        self.source_successor
+            .as_ref()
+            .map_or(&[], |batch| batch.native_deaths.as_slice())
+    }
+    pub(super) fn cloak_blood_events(
+        &self,
+    ) -> &[super::soul_war_native_health_events::CommittedCloakBloodEvent] {
+        self.source_successor
+            .as_ref()
+            .map_or(&[], |batch| batch.cloak_blood.as_slice())
+    }
+}
+impl PartialEq for OwnerSpellReservation {
+    fn eq(&self, other: &Self) -> bool {
+        self.caster == other.caster
+            && self.command == other.command
+            && self.phase == other.phase
+            && self.canonical == other.canonical
+            && self.destination == other.destination
+            && self.deferred == other.deferred
+    }
+}
+impl Eq for OwnerSpellReservation {}
 impl OwnerSpellReservation {
     pub(super) fn destination(&self) -> Option<(ExactActorRef, MovementLocalPosition)> {
         self.destination
@@ -44,12 +77,25 @@ struct BatchRecord {
     command: CommandRef,
     phase: u16,
     original_batch: OwnerCombatBatch,
+    charm_children: Option<[u8; 32]>,
     receipt: CombatBatchReceipt,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ActorCombatState {
+    /// Queued native onDeath completed; SQL drop settlement may still retain this slot.
+    pub(super) source_death_completed: bool,
+    pub(super) source_death_begin: Option<Arc<super::native_source_death::SourceCreatureDeathSeal>>,
+    /// Exact pre-BEGIN Lesser restoration retains its original queued death.
+    pub(super) restored_splinter_death: Option<Arc<super::native_xml_spawns::RestoredSplinterDeath>>,
+    /// Offset into the task's copied event vector, advanced only on known completion.
+    pub(super) source_death_event_cursor: u8,
+    /// Immutable current-type registrations; the deferred phase copies them at BEGIN.
+    pub(super) native_death_events: Option<Arc<oteryn_gameplay_content::content::native_creature_death_events::QualifiedNativeDeathEvents>>,
+    pub(super) native_callback_move_locked: bool,
     pub tibiadrome: bool,
+    pub(super) tibiadrome_wave: u32,
+    pub(super) tibiadrome_modifiers: Option<super::tibiadrome_modifiers::DromeActorModifiers>,
     pub(super) tibiadrome_scale: u64,
     pub(super) tibiadrome_escalation: bool,
     pub(super) tibiadrome_origin: Option<MovementLocalPosition>,
@@ -65,6 +111,20 @@ pub struct ActorCombatState {
     pub maximum_health: i64,
     pub echo: Option<oteryn_gameplay_domain::domain::echo_warden::EchoVariant>,
     pub soulpit: Option<super::soulpit::SoulpitCreatureTag>,
+    /// Additive source reflection on the exact Soul War monster incarnation.
+    pub soul_war_reflection: u32,
+    /// Source Hatred empowerment on this exact Instance boss incarnation.
+    pub(super) soul_war_hatred_percent: u32,
+    /// Crystal Monster::m_defense; a mutable actor fact independent of native type.
+    pub(super) soul_war_defense_delta: u32,
+    /// Set only by the closed Greed/Malice source immunity stat owner.
+    pub(super) soul_war_source_immunity: bool,
+    /// Literal absent-KV state differs from an explicitly reduced zero.
+    pub(super) soul_war_cruelty_drain: Option<u64>,
+    pub(super) soul_war_player_source: Option<Arc<super::soul_war_player_source::CurrentPlayerSource>>,
+    /// Loader-sealed native event data; never an independent HP/Quest owner.
+    pub(super) soul_war_health: Option<Arc<oteryn_gameplay_content::content::native_soul_war_callbacks::QualifiedSoulWarHealthPolicy>>,
+    pub(super) mirror_births: Option<Arc<super::soul_war_health::MirrorBirthCatalogue>>,
     pub(super) echo_death_recorded: bool,
     pub forge: Option<oteryn_gameplay_domain::domain::forge_creature::ForgeCreature>,
     pub monster_ai: Option<MonsterAiState>,
@@ -108,6 +168,9 @@ pub struct StagedSpellBatch {
     originals: Vec<(usize, Slot)>,
     replacements: Vec<(usize, Slot)>,
     companion_touch_indices: Vec<usize>,
+    mirror: MirrorBatchDelta,
+    cloak_blood: Vec<super::soul_war_native_health_events::CommittedCloakBloodEvent>,
+    native_deaths: Vec<super::native_source_death::SourceCreatureDeathNotice>,
     relocation: Option<QualifiedSpellRelocation>,
     player_effects: Vec<OwnerCombatEffect>,
     player_preflight_bound: bool,
@@ -202,6 +265,115 @@ impl QualifiedCompanionTouches {
     }
 }
 
+/// Requests are immutable values; the physical condition owner supplies all state authority.
+#[derive(Debug, Clone)]
+pub enum SpellCharmChild {
+    Damage(OwnerCombatEffect),
+    Paralysis {
+        target: ExactActorRef,
+        root: [u8; 32],
+        occurrence: oteryn_simulation_determinism::DecisionOccurrenceId,
+    },
+}
+
+/// A bounded internal leaf sequence retained by the original cast. The source
+/// batch, child values and ordinals are sealed together before any owner reservation.
+#[derive(Debug, Clone)]
+pub struct QualifiedSpellChildren {
+    child_binding: [u8; 32],
+    damage_preimages: Vec<super::runtime_actor_companion::CompanionSnapshot>,
+    children: Vec<SpellCharmChild>,
+    paralysis: Vec<(
+        usize,
+        super::runtime_actor_conditions::SpellParalysisPreimage,
+    )>,
+    batch: OwnerCombatBatch,
+}
+impl QualifiedSpellChildren {
+    pub fn bind(
+        runtime: &ChannelRuntimeV1,
+        batch: &mut OwnerCombatBatch,
+        children: Vec<SpellCharmChild>,
+    ) -> Result<Self, Error> {
+        if (batch.deferred.is_some() && !runtime.qualified_deferred_batch(batch))
+            || children.len() > MAX_EFFECTS
+            || children
+                .iter()
+                .enumerate()
+                .any(|(index, child)| match child {
+                    SpellCharmChild::Damage(child) => {
+                        usize::from(child.sub_ordinal) != MAX_EFFECTS + index
+                            || !matches!(
+                                child.change,
+                                OwnerCombatChange::Damage { magnitude: 1.., .. }
+                            )
+                    }
+                    SpellCharmChild::Paralysis { .. } => false,
+                })
+        {
+            return Err(Error::InvalidBatch);
+        }
+        let mut damage_preimages = Vec::new();
+        for child in &children {
+            if let SpellCharmChild::Damage(effect) = child
+                && !damage_preimages.iter().any(
+                    |before: &super::runtime_actor_companion::CompanionSnapshot| {
+                        before.actor == effect.target
+                    },
+                )
+            {
+                damage_preimages.push(runtime.companion_snapshot(effect.target)?);
+            }
+        }
+        let mut paralysis = Vec::new();
+        let mut projection = None;
+        for (index, child) in children.iter().enumerate() {
+            if let SpellCharmChild::Paralysis {
+                target,
+                root,
+                occurrence,
+            } = child
+            {
+                let preimage = runtime
+                    .stage_spell_charm_paralysis(
+                        projection.get_or_insert_with(|| runtime.carrier.clone()),
+                        batch,
+                        *target,
+                        &oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(*root),
+                        *occurrence,
+                        None,
+                    )
+                    .map_err(|_| Error::InvalidCondition)?;
+                paralysis.push((index, preimage));
+            }
+        }
+        let mut value: serde_json::Value =
+            serde_json::from_slice(&batch.binding).map_err(|_| Error::InvalidBatch)?;
+        let object = value.as_object_mut().ok_or(Error::InvalidBatch)?;
+        if object.contains_key("source_charm_children") {
+            return Err(Error::InvalidBatch);
+        }
+        object.insert(
+            "source_charm_children".into(),
+            serde_json::Value::String(format!("spell-charm-leaves-v1:{children:?}")),
+        );
+        let binding = serde_json::to_vec(&value).map_err(|_| Error::InvalidBatch)?;
+        if binding.len() > MAX_BINDING_BYTES {
+            return Err(Error::BindingTooLarge);
+        }
+        if batch.deferred.is_none() {
+            batch.binding.clone_from(&binding);
+        }
+        Ok(Self {
+            child_binding: Sha256::digest(&binding).into(),
+            damage_preimages,
+            children,
+            paralysis,
+            batch: batch.clone(),
+        })
+    }
+}
+
 impl StagedSpellBatch {
     /// Read-only staged physical HP transitions, before the common atomic install.
     pub fn preview_effect_receipts(&self) -> &[super::runtime_actor_spell_types::EffectReceipt] {
@@ -217,6 +389,22 @@ impl StagedSpellBatch {
     }
     pub fn player_effects(&self) -> &[OwnerCombatEffect] {
         &self.player_effects
+    }
+    /// Internal source callback data, not an alternate casting or HP authority.
+    pub fn has_source_native_reaction(&self) -> bool {
+        self.mirror.changed()
+    }
+    /// Whether committing this batch must first reserve source work: a Mirror Image
+    /// reaction, a Cloak of Terror blood event or a native death. Without the
+    /// reservation a blood event keeps no owner stamp and its drain rejects it.
+    pub fn needs_source_reservation(&self) -> bool {
+        self.mirror.changed() || !self.cloak_blood.is_empty() || !self.native_deaths.is_empty()
+    }
+    pub fn check_source_native_reservations(
+        &self,
+        runtime: &ChannelRuntimeV1,
+    ) -> Result<(), Error> {
+        self.mirror.require_reserved(runtime)
     }
     pub fn will_apply(&self) -> bool {
         self.receipt.applied
@@ -511,6 +699,19 @@ fn canonical_binding(batch: &OwnerCombatBatch) -> Result<Vec<u8>, Error> {
     Ok(out.bytes)
 }
 
+/// Internal leaves extend physical replay evidence without changing the source
+/// identity captured by magnitude and timer owners. The full record still seals
+/// every child; this projection is accepted only as an unapplied historical replay.
+fn source_spell_batch(batch: &OwnerCombatBatch) -> Result<OwnerCombatBatch, Error> {
+    let mut source = batch.clone();
+    if let Ok(serde_json::Value::Object(mut binding)) = serde_json::from_slice(&source.binding)
+        && binding.remove("source_charm_children").is_some()
+    {
+        source.binding = serde_json::to_vec(&binding).map_err(|_| Error::InvalidBatch)?;
+    }
+    Ok(source)
+}
+
 fn validate_batch(batch: &OwnerCombatBatch) -> Result<(), Error> {
     if batch
         .now_us
@@ -601,6 +802,15 @@ impl ChannelRuntimeV1 {
         if !staged.will_apply() {
             return Ok(());
         }
+        self.carrier
+            .reserve_cloak_blood_capacity(&staged.cloak_blood)?;
+        self.carrier
+            .reserve_native_death_capacity(&staged.native_deaths)?;
+        for event in &mut staged.cloak_blood {
+            if event.stamp.is_none() {
+                event.stamp = Some(self.issue_owner_work()?);
+            }
+        }
         let binding = canonical_binding(&staged.batch)?;
         let reservation = match &staged.reservation {
             Some(existing) if existing.matches(&staged.batch, &binding) => existing.clone(),
@@ -616,6 +826,10 @@ impl ChannelRuntimeV1 {
                 canonical: Arc::from(binding),
                 destination: staged.relocation.as_ref().map(|r| (r.actor, r.destination)),
                 deferred: staged.batch.deferred.clone(),
+                source_successor: (staged.mirror.changed()
+                    || !staged.cloak_blood.is_empty()
+                    || !staged.native_deaths.is_empty())
+                .then(|| Box::new(staged.clone())),
             }),
         };
         for (_, original) in &staged.originals {
@@ -630,6 +844,20 @@ impl ChannelRuntimeV1 {
                 return Err(Error::SnapshotChanged);
             }
         }
+        let released = staged
+            .originals
+            .iter()
+            .map(|(index, _)| *index)
+            .collect::<Vec<_>>();
+        staged.mirror.validate(
+            self,
+            &released,
+            staged
+                .relocation
+                .as_ref()
+                .is_some_and(|r| r.expected.position() != r.destination),
+        )?;
+        staged.mirror.reserve(self);
         // All references and states were validated above. This installs reservation data
         // only, no HP/condition/payment changes and no fallible work after the first slot.
         for (index, original) in &mut staged.originals {
@@ -660,6 +888,8 @@ impl ChannelRuntimeV1 {
                 return Err(Error::SnapshotChanged);
             }
         }
+        staged.mirror.require_reserved(self)?;
+        staged.mirror.release(self);
         for (index, _) in &staged.originals {
             state_mut(&mut self.carrier.slots[*index])
                 .expect("validated reserved actor")
@@ -670,7 +900,7 @@ impl ChannelRuntimeV1 {
 
     /// Exact existing physical target identity; never infer a spawn's atom from its prototype.
     pub fn creature_spell_target_atom(&self, actor: ExactActorRef) -> Result<String, Error> {
-        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        let index = self.carrier.current_slot_index(&self.continuity, actor.0)?;
         let Slot::CreatureOccupied {
             target_identity, ..
         } = &self.carrier.slots[index]
@@ -734,7 +964,7 @@ impl ChannelRuntimeV1 {
             if record.character != character || record.lease != lease_generation {
                 return Err(Error::CommandConflict);
             }
-            return Ok(Some(record.original_batch.clone()));
+            return Ok(Some(source_spell_batch(&record.original_batch)?));
         }
         if let Some((before_character, before_lease, before_session, sequence, _)) =
             owner.high_water
@@ -1033,7 +1263,9 @@ impl ChannelRuntimeV1 {
         if staged.will_apply()
             && serde_json::from_slice::<serde_json::Value>(&batch.binding)
                 .ok()
-                .is_some_and(|v| v.get("source_relocation").is_some())
+                .is_some_and(|v| {
+                    v.get("source_relocation").is_some() || v.get("source_charm_children").is_some()
+                })
         {
             return Err(Error::InvalidBatch);
         }
@@ -1091,7 +1323,8 @@ impl ChannelRuntimeV1 {
         {
             if prior.character != batch.attacker
                 || prior.lease != batch.current_lease_generation
-                || canonical_binding(&prior.original_batch)? != binding
+                || (canonical_binding(&prior.original_batch)? != binding
+                    && canonical_binding(&source_spell_batch(&prior.original_batch)?)? != binding)
                 || prior.original_batch.deferred != batch.deferred
             {
                 return Err(Error::CommandConflict);
@@ -1104,11 +1337,27 @@ impl ChannelRuntimeV1 {
                 originals: vec![(caster_index, self.carrier.slots[caster_index].clone())],
                 replacements: vec![],
                 companion_touch_indices: vec![],
+                mirror: MirrorBatchDelta::default(),
+                cloak_blood: vec![],
+                native_deaths: vec![],
                 relocation: None,
                 player_effects: vec![],
                 player_preflight_bound: true,
                 receipt,
             });
+        }
+        if let Some(reservation) = caster_state.pending_owner.as_ref()
+            && let Some(successor) = reservation.source_successor.as_ref()
+        {
+            let mut retained = successor.as_ref().clone();
+            for (_, original) in &mut retained.originals {
+                state_mut(original)?.pending_owner = Some(reservation.clone());
+            }
+            retained.reservation = Some(reservation.clone());
+            // The existing player owner must bind its independently current seal again.
+            retained.player_preflight_bound = retained.player_effects.is_empty();
+            self.validate_staged_spell_batch(&retained)?;
+            return Ok(retained);
         }
         let deferred = if let Some(authority) = &batch.deferred {
             if authority.phase_ordinal() == 0
@@ -1145,8 +1394,15 @@ impl ChannelRuntimeV1 {
 
     pub fn commit_spell_batch(
         &mut self,
-        staged: StagedSpellBatch,
+        mut staged: StagedSpellBatch,
     ) -> Result<CombatBatchReceipt, Error> {
+        self.validate_staged_spell_batch(&staged)?;
+        if !staged.player_preflight_bound {
+            return Err(Error::PlayerVitalsOwnerRequired);
+        }
+        if staged.needs_source_reservation() {
+            self.reserve_spell_batch(&mut staged)?;
+        }
         self.check_spell_batch_commit(&staged)?;
         Ok(self.install_spell_batch(staged))
     }
@@ -1157,15 +1413,55 @@ impl ChannelRuntimeV1 {
         if !staged.player_preflight_bound {
             return Err(Error::PlayerVitalsOwnerRequired);
         }
+        staged.mirror.require_reserved(self)?;
+        if self
+            .carrier
+            .native_deaths
+            .capacity()
+            .saturating_sub(self.carrier.native_deaths.len())
+            < staged.native_deaths.len()
+        {
+            return Err(Error::AllocationFailed);
+        }
+        if staged
+            .cloak_blood
+            .iter()
+            .any(|event| !event.current_for(self))
+        {
+            return Err(Error::SnapshotChanged);
+        }
+        if self
+            .carrier
+            .cloak_blood_events
+            .capacity()
+            .saturating_sub(self.carrier.cloak_blood_events.len())
+            < staged.cloak_blood.len()
+        {
+            return Err(Error::AllocationFailed);
+        }
         Ok(())
     }
 
     /// The infallible write, only after [`Self::check_spell_batch_commit`] passed under the
     /// same held guards.
     pub fn install_spell_batch(&mut self, staged: StagedSpellBatch) -> CombatBatchReceipt {
+        // Physical tile entry bookkeeping only; casting and replay decisions remain
+        // with their existing owner. Same-cell relocations never insert again.
+        let entered = staged
+            .relocation
+            .as_ref()
+            .filter(|relocation| relocation.expected.position() != relocation.destination)
+            .map(|relocation| relocation.actor.actor_local_id() as usize - 1);
         // No fallible calculation, allocation or callbacks follow the first replacement.
         for (index, replacement) in staged.replacements {
             self.carrier.slots[index] = replacement;
+        }
+        staged.mirror.install(&mut self.carrier);
+        self.carrier.install_cloak_blood_events(staged.cloak_blood);
+        self.carrier
+            .install_native_death_events(staged.native_deaths);
+        if let Some(index) = entered {
+            self.carrier.install_next_tile_entry_order(index);
         }
         staged.receipt
     }
@@ -1185,6 +1481,26 @@ impl ChannelRuntimeV1 {
                 return Err(Error::SnapshotChanged);
             }
         }
+        let released = staged
+            .originals
+            .iter()
+            .map(|(index, _)| *index)
+            .collect::<Vec<_>>();
+        staged.mirror.validate(
+            self,
+            &released,
+            staged
+                .relocation
+                .as_ref()
+                .is_some_and(|r| r.expected.position() != r.destination),
+        )?;
+        if staged
+            .relocation
+            .as_ref()
+            .is_some_and(|relocation| relocation.expected.position() != relocation.destination)
+        {
+            self.carrier.next_tile_entry_order()?;
+        }
         Ok(())
     }
 
@@ -1193,7 +1509,7 @@ impl ChannelRuntimeV1 {
         actor: ExactActorRef,
         now_ms: u64,
     ) -> Result<CreatureCombatFacts, Error> {
-        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        let index = self.carrier.current_slot_index(&self.continuity, actor.0)?;
         let Slot::CreatureOccupied {
             health,
             spell_combat,
