@@ -46,7 +46,7 @@ fn scenario() -> TestResult {
             .map_err(debug)?;
         let room = base
             .bundle_view(
-                cells,
+                cells.clone(),
                 bundle.frame_binding_digest(world),
                 bundle.map_revision_digest(),
                 NativeEntryStart {
@@ -56,7 +56,7 @@ fn scenario() -> TestResult {
                 },
             )
             .ok_or("bundle room")?;
-        let deps = Dependencies::with_content_and_capacity(
+        let mut deps = Dependencies::with_content_and_capacity(
             ChannelContentPin::from_activation(
                 world,
                 pin.activation_sequence(),
@@ -70,10 +70,10 @@ fn scenario() -> TestResult {
             crate::spell::cast::v1_spell_book().map_err(debug)?,
             2,
         )?;
+        deps.combat_room = Some(room);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = room.movement_cells().into();
-        owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&room));
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         let catalogue = NpcDataCatalogue::load(
             std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
@@ -155,6 +155,23 @@ fn scenario() -> TestResult {
         let quote = talk(&owner, &deps, npc, command, "helheim").await?;
         let lines = quote.conversation.ok_or("Buddel quote")?.lines.join(" ");
         assert!(lines.contains("50 gold"), "Buddel quote: {lines}");
+        seed_questlines(&h, 7, 30).await?;
+        let refusal = talk(&owner, &deps, npc, command + 1, "yes").await?;
+        let lines = refusal
+            .conversation
+            .ok_or("Buddel confirmation refusal")?
+            .lines
+            .join(" ");
+        assert!(lines.contains("don't sail there"), "Buddel refusal: {lines}");
+        assert!(!refusal.inventory_changed);
+        assert_eq!(carried_gold(&h).await?, 100);
+
+        command += 2;
+        seed_questlines(&h, 8, 31).await?;
+        owner.clock_origin -= std::time::Duration::from_secs(1);
+        let quote = talk(&owner, &deps, npc, command, "helheim").await?;
+        let lines = quote.conversation.ok_or("Buddel quote")?.lines.join(" ");
+        assert!(lines.contains("50 gold"), "Buddel quote: {lines}");
         let arrival = talk(&owner, &deps, npc, command + 1, "yes").await?;
         assert!(arrival.inventory_changed);
         let position = deps
@@ -178,7 +195,7 @@ fn scenario() -> TestResult {
         drop(seal);
         h.cleanup().await?;
         eprintln!(
-            "POSTGRES_CASE_COMPLETED Buddel refused quest values (7,30), (9,30), (8,29); paid 50 gold and arrived at Helheim (32462,31174,7)"
+            "POSTGRES_CASE_COMPLETED Buddel refused quest values (7,30), (9,30), (8,29) and refused confirmation after Barbarian Test changed 8 to 7 without charging gold; admitted (8,31), paid 50 gold and arrived at Helheim (32462,31174,7)"
         );
         Ok(())
     })
