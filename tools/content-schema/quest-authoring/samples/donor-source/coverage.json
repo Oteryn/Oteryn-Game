@@ -198,11 +198,11 @@
   "outputs": [
     {
       "path": "npc.json.gz",
-      "sha256": "97128ecf432d4d83ddc7ad11a70e63f60e237b8b11bc4a1e5c2de86e52309cab"
+      "sha256": "35fd7d9da2ce0ea4fd0f17a9069a9a5b0db847ef2d74493fc12d8f360ff21d37"
     },
     {
       "path": "npc-index.json",
-      "sha256": "f83db1851b3488b9150d07431f8d4b0c72f7cf27bda3e64d813e6a795747ecda"
+      "sha256": "3d7ef9dee81c2baa0abdb10fe38a414b0a7825b136ca44af30ef119c5ce38dca"
     },
     {
       "path": "rewards.json.gz",
@@ -210,7 +210,7 @@
     },
     {
       "path": "npc-dependencies.json",
-      "sha256": "34b4702bc8f023cbeee6d78a5da3a718a0eb43d1500c00c463ac885189926751"
+      "sha256": "42b36ca40c8ee36e700a0f91c32f34fbd6e41cd4db045976aa38a89cc145131b"
     },
     {
       "path": "gap-triage.json",
@@ -310,11 +310,11 @@
     },
     {
       "path": "refinements/dialogue.json.gz",
-      "sha256": "c8b289e8e3571d9cf3035ac71d9f38685dc608edf02a6bd5f14df052ab6c8edc"
+      "sha256": "0e4145f77363c0df0c1ee052a760110aaf9fc90ce3bec64c8bf5866d8d5a2c22"
     },
     {
       "path": "refinements/summary.json",
-      "sha256": "c1167cf77ecf7d24442d5ee5aa5d8883de14d2d57bc640116dcebfce02ab7a6f"
+      "sha256": "43c846dcab62dcba41ec65f47560fd025d793899be1477758a8bcaea15a7055f"
     }
   ],
   "quest_refinements": {
@@ -900,7 +900,7 @@
       },
       {
         "path": "dialogue.json.gz",
-        "sha256": "c8b289e8e3571d9cf3035ac71d9f38685dc608edf02a6bd5f14df052ab6c8edc"
+        "sha256": "0e4145f77363c0df0c1ee052a760110aaf9fc90ce3bec64c8bf5866d8d5a2c22"
       }
     ],
     "schema": "OTERYN_QUEST_DONOR_REFINEMENT_COVERAGE/v1",
