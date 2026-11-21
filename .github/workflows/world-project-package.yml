@@ -20,6 +20,8 @@ on:
       - .github/workflows/world-project-package.yml
       - tools/content-migration/native_world_canonicalization.py
       - tools/content-migration/test_native_world_canonicalization.py
+      - tools/content-migration/prebuilt.py
+      - tools/content-migration/test_prebuilt.py
       - tools/content-migration/questpc7_thaian_authoring.py
       - tools/content-migration/questpc7_world_seal.py
       - tools/content-migration/regenerate_content.py
@@ -42,6 +44,8 @@ jobs:
   qualify:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
+    env:
+      CARGO_BUILD_JOBS: '2'
     steps:
       - name: Check out exact head
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -75,6 +79,14 @@ jobs:
       - name: Normalize source mtimes for the restored Cargo cache
         run: python3 tools/repository/normalize_cargo_mtimes.py
 
+      - name: Build compatible WorldProject tools once
+        if: ${{ hashFiles('tools/content-migration/prebuilt.py') != '' }}
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tools/content-migration -p test_prebuilt.py
+          python3 tools/content-migration/prebuilt.py build "$RUNNER_TEMP/world-project-tools"
+          printf 'OTERYN_WORLD_CANONICALIZER_MANIFEST=%s\n' "$RUNNER_TEMP/world-project-tools/manifest.json" >> "$GITHUB_ENV"
+
       - name: Check canonical completion guards
         run: |
           python3 -m unittest discover -s tools/content-migration -p test_native_world_canonicalization.py
@@ -103,8 +115,15 @@ jobs:
         id: materialize
         run: |
           set -euo pipefail
-          cargo +1.100.0 run --locked -p oteryn-game-server --example materialize_content_world_project_v2 -- --output-root "$RUNNER_TEMP/world-a" --predecessor-root "$RUNNER_TEMP/predecessor/world"
-          cargo +1.100.0 run --locked -p oteryn-game-server --example materialize_content_world_project_v2 -- --output-root "$RUNNER_TEMP/world-b" --predecessor-root "$RUNNER_TEMP/predecessor/world"
+          if [[ -n "${OTERYN_WORLD_CANONICALIZER_MANIFEST:-}" ]]; then
+            materializer="$(python3 tools/content-migration/prebuilt.py executable materializer "$OTERYN_WORLD_CANONICALIZER_MANIFEST")"
+            "$materializer" --output-root "$RUNNER_TEMP/world-a" --predecessor-root "$RUNNER_TEMP/predecessor/world"
+            "$materializer" --output-root "$RUNNER_TEMP/world-b" --predecessor-root "$RUNNER_TEMP/predecessor/world"
+          else
+            # An exact PR head predating the helper keeps the complete original path.
+            cargo +1.100.0 run --locked -p oteryn-game-server --example materialize_content_world_project_v2 -- --output-root "$RUNNER_TEMP/world-a" --predecessor-root "$RUNNER_TEMP/predecessor/world"
+            cargo +1.100.0 run --locked -p oteryn-game-server --example materialize_content_world_project_v2 -- --output-root "$RUNNER_TEMP/world-b" --predecessor-root "$RUNNER_TEMP/predecessor/world"
+          fi
           python3 tools/content-migration/native_world_canonicalization.py --repo-root "$GITHUB_WORKSPACE" --input-root "$RUNNER_TEMP/world-a"
           python3 tools/content-migration/native_world_canonicalization.py --repo-root "$GITHUB_WORKSPACE" --input-root "$RUNNER_TEMP/world-b"
           diff --brief --no-dereference --recursive "$RUNNER_TEMP/world-a" "$RUNNER_TEMP/world-b"

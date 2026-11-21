@@ -39,6 +39,79 @@ authorised; this file only says how the flow behaves.
   minutes old; otherwise the run goes hosted. The `Molehill fallback` workflow
   cancels and re-runs, every 15 minutes, runs still waiting on an offline PC.
 
+## Protected-main compilation cache
+
+The repository cache eviction limit was verified as 10GB. A successful save of
+an 11.26GB cache did not make it a durable reusable entry: the later full API
+inventory contained no Rust cache. Keep the four existing cache paths and keys,
+prepare a bounded target before recording normalized mtimes, and enforce a
+4GiB total raw-file budget including Cargo registry/git data before upload.
+Only generated target contents may be pruned; immutable source and dependency
+archives remain untouched. Missing build products must rebuild through Cargo.
+Report actual before/after bytes and preserve exact-candidate tests independently.
+A protected-main warmer finishes before the newest queued main revision starts;
+frequent merges must not continually cancel cache preparation.
+
+## Shared build artifacts and partial reruns
+
+The PR fast Rust gate builds each archive in `rust-fast-archive.yml` and starts
+that archive's five test workers as soon as its producer finishes. The parent
+collects the complete planned archive union before recording a package result.
+The reusable producer is a canonical routing control and a consumer root:
+changes to its referenced build helpers retain full qualification coverage.
+The collector resolves each role's latest actual job attempt: an unchanged
+producer may be reused after a partial rerun, but an older success cannot hide
+a newer failed, skipped or incomplete attempt. Preserve the exact run, source
+SHA, artifact ID, digest, runner identity and test inventory checks.
+GitHub may copy a completed job into a later attempt with a new API ID while
+retaining its original execution times. Resolve only an unambiguous identical
+execution record to its original producer attempt; never pick an older artifact
+merely because it exists. Qualify a collector-only partial rerun on the frozen
+head and exercise native/World consumers against the resulting copied records.
+
+The three dedicated Dispatch archives use one canonical workspace feature
+recipe for both fast tests and PostgreSQL. The PG producer checks for a verified
+same-head archive before installing build tools or restoring a Cargo target.
+If no compatible producer is available, it builds locally; an invalid selected
+artifact fails. Route-less fast results never count as PostgreSQL qualification.
+For a deliberate reuse qualification, apply `heavy-tests` to the frozen head
+once all three dedicated producers are active or their artifacts are available.
+Queued or undiscovered producers can exhaust the bounded discovery window and
+cause local fallback; report those builds separately from successful reuse.
+Waiting for producer admission can delay other PG archives, so measure the
+complete critical path as well as summed runner time.
+The exact MAX501 retirement test reserves all nextest slots on its worker via
+the generated planner config. Its production two-second transaction budget and
+501-item assertions remain intact; other cases retain ordinary parallelism.
+This isolates a hard-budget case from competing fixture processes. Qualify the
+actual PG result separately from the scheduler's own protocol tests.
+Use `check_dispatch_pg_shards.py 3 --test <full-test-name>` for the focused
+offline-death compiler shard; its workflow measures build and test separately.
+
+Node boot and Server Seam share the pinned Platform executable. The release
+World compiler is shared within its workflow run; its consumers use the actual
+producer artifact ID and verify source, features, profile and SHA256. Every
+consumer still creates its own database and keys. Keep production, spawn, clock,
+test and development feature variants separate whenever their closures differ;
+the final production smoke build still qualifies its original feature graph.
+
+WorldProject builds its compatible native tools together but still performs two
+independent materializations and the completion/idempotence checks. Content
+migration runs pinned-source contracts, the bounded pool of 40 checks, and the
+full validator plus StarterKit seals in three independent exact-head workspaces.
+The original named aggregate requires success from all three; child failure,
+cancellation or skipping cannot pass it. Native entry's common producer runs
+only when its qualification is requested; an
+unavailable compatible artifact permits a fallback build alongside real Platform
+issuance, while an invalid supplied artifact fails.
+
+After changing pinned workflow/helper bytes, run
+`python tools/repository/refresh_ci_workflow_pins.py`, inspect the complete
+generated rotation, then run it with `--check` and the repository policy and
+gate contract tests. The generator proposes hashes, not authority: the
+protected-base audit still rejects changes to its own file and requires the
+accepted owner authorization and independent review for a rotation.
+
 ## Blind spot
 
 `Node boot against the real Platform`, `Server Seam` and the

@@ -22,25 +22,26 @@ class PrebuiltTest(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name).resolve()
-        self.identity = lambda variant: {"head": "a" * 40, "workspace": str(self.root), "variant": variant}
+        self.identity = lambda variant, _platform=None: {"head": "a" * 40, "workspace": str(self.root), "variant": variant}
         identity = patch.object(prebuilt, "identity", side_effect=self.identity)
         identity.start()
         self.addCleanup(identity.stop)
 
     def test_reference_and_pr_cover_both_clocks_and_the_world_compiler(self):
-        for set_name in ("reference", "pr", "full"):
+        for set_name in ("reference", "pr"):
             with self.subTest(set_name=set_name):
-                self.assertEqual(prebuilt.plan(matrix.plan(set_name)), list(prebuilt.BUNDLES))
+                self.assertEqual(prebuilt.plan(matrix.plan(set_name)), ["qualification-spawn", "qualification-clock", "world-compiler"])
+        self.assertEqual(prebuilt.plan(matrix.plan("full")), ["default", "qualification-spawn", "qualification-clock", "world-compiler"])
         self.assertEqual(prebuilt.select(matrix.plan("reference")[0]), ("qualification-clock", True, True))
         pr = matrix.plan("pr")
-        self.assertEqual(prebuilt.select(pr[0]), ("default", False, False))
+        self.assertEqual(prebuilt.select(pr[0]), ("qualification-spawn", False, False))
         for shard in pr[1:]:
             self.assertEqual(prebuilt.select(shard), ("qualification-clock", False, True))
 
     def test_custom_spells_and_portal_use_the_ordinary_clock(self):
         spells = matrix.plan("custom", spells=True)
-        self.assertEqual(prebuilt.select(spells[0]), ("default", False, False))
-        self.assertEqual(prebuilt.plan(spells), ["default"])
+        self.assertEqual(prebuilt.select(spells[0]), ("qualification-spawn", False, False))
+        self.assertEqual(prebuilt.plan(spells), ["qualification-spawn"])
         portal = matrix.plan("custom", game_platform=True)
         self.assertFalse(portal[0]["world"])
         self.assertEqual(prebuilt.select(portal[0]), ("default", False, True))
@@ -53,13 +54,14 @@ class PrebuiltTest(unittest.TestCase):
         path.write_bytes(b"compiled executable")
         path.chmod(0o700)
         listing = ("qualification::node_boot_seam_against_running_node: test\n"
-                   "qualification::node_boot_spells_against_running_node: test\n")
+                   "qualification::node_boot_spells_against_running_node: test\n"
+                   f"{prebuilt.SPAWN_PROOF}: test\n")
         binaries = {name: path for name in prebuilt.SERVER_BINS}
         with patch.object(prebuilt, "cargo_executables", side_effect=[binaries, {"oteryn_game_server": path}]) as cargo:
             with patch.object(prebuilt.subprocess, "check_output", return_value=listing):
                 prebuilt.build(variant, self.root / "build")
         for invocation in cargo.call_args_list:
-            self.assertEqual(invocation.args[1][-2:], ("--features", "qualification-clock"))
+            self.assertEqual(invocation.args[1][-2:], ("--features", "qualification-clock,qualification-spawn"))
         bundle = self.root / "build/bundle.tar.gz"
         unpacked = self.root / "unpacked"
         with self.assertRaisesRegex(ValueError, "variant"):

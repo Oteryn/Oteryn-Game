@@ -1,6 +1,7 @@
 """Exercise completion and copyback fences; native serialization is checked by G4."""
 import hashlib
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -10,6 +11,7 @@ import unittest
 from unittest.mock import patch
 
 import native_world_canonicalization as canonical
+import prebuilt
 import questpc7_thaian_authoring as thaian
 import regenerate_content as regenerate
 
@@ -20,6 +22,10 @@ def encode(value):
 
 class NativeWorldCompletion(unittest.TestCase):
     def setUp(self):
+        environment = patch.dict(os.environ)
+        environment.start()
+        self.addCleanup(environment.stop)
+        os.environ.pop("OTERYN_WORLD_CANONICALIZER_MANIFEST", None)
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         root = Path(self.temporary.name)
@@ -217,6 +223,50 @@ class NativeWorldCompletion(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "symlink"):
                 canonical.complete_world_project(self.repo, self.world)
         native.assert_not_called()
+
+    def prebuilt_writer(self):
+        directory = self.repo / "prebuilt"
+        directory.mkdir()
+        binding = {"head": "1" * 40, "workspace": str(self.repo),
+                   "variant": prebuilt.VARIANT, "toolchain": "1.100.0", "profile": "dev"}
+        manifest = dict(binding, executables={})
+        for name, target in prebuilt.TARGETS.items():
+            path = directory / target["name"]
+            path.write_text(
+                "#!/usr/bin/env python3\n"
+                "import argparse, shutil\n"
+                "p = argparse.ArgumentParser()\n"
+                "p.add_argument('--input-root', required=True)\n"
+                "p.add_argument('--output-root', required=True)\n"
+                "args = p.parse_args()\n"
+                "shutil.copytree(args.input_root, args.output_root)\n"
+            )
+            path.chmod(0o700)
+            manifest["executables"][name] = dict(target, sha256=prebuilt.sha256(path))
+        path = directory / "manifest.json"
+        path.write_text(json.dumps(manifest))
+        return path, binding
+
+    def test_verified_prebuilt_writer_runs_on_the_explicit_staged_package(self):
+        manifest, binding = self.prebuilt_writer()
+        with patch.object(prebuilt, "identity", return_value=binding):
+            extent = canonical.complete_world_project(
+                self.repo, self.world, canonicalizer_manifest=manifest)
+        self.assertEqual(extent["creatures"], 1)
+        completed = canonical.read_documents(self.world)
+        self.assertEqual({name for name in completed if completed[name] != self.original[name]},
+                         canonical.OWNED_DOCUMENTS)
+        self.assertEqual((self.world / "unmanaged/sentinel").read_bytes(), b"retain caller sibling\n")
+
+    def test_invalid_explicit_prebuilt_writer_cannot_fall_back_to_cargo(self):
+        manifest, binding = self.prebuilt_writer()
+        (manifest.parent / prebuilt.TARGETS["canonicalizer"]["name"]).write_bytes(b"changed")
+        with patch.object(prebuilt, "identity", return_value=binding), \
+                patch.object(canonical.subprocess, "run") as native:
+            with self.assertRaisesRegex(ValueError, "checksum"):
+                canonical.complete_world_project(self.repo, self.world, canonicalizer_manifest=manifest)
+        native.assert_not_called()
+        self.assertEqual(canonical.read_documents(self.world), self.original)
 
 
 if __name__ == "__main__":
