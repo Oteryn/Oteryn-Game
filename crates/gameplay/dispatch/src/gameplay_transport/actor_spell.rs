@@ -1372,7 +1372,7 @@ impl ChannelSpellStates {
     ) -> bool {
         !self.cloak_blood_cells.is_empty()
             && field_step_ingress::destination(
-                runtime, cells, actor, session, origin, direction, blocking,
+                runtime, self, cells, actor, session, origin, direction, blocking,
             )
             .is_ok_and(|p| self.cloak_blood_cells.contains(&(p.x, p.y, p.floor)))
     }
@@ -3294,7 +3294,7 @@ impl ChannelSpellStates {
             proof.destination()
         } else {
             field_step_ingress::destination(
-                runtime, cells, actor, session, expected, direction, blocking,
+                runtime, self, cells, actor, session, expected, direction, blocking,
             )?
         };
         let stage_hit = |state: &PlayerSpellState, amount, element, now| {

@@ -615,7 +615,7 @@ fn movement_error(refusal: Refusal) -> MovementError {
 
 /// A step of a bundle World proven against its actual collision and floor table. Private
 /// construction consumes the actual cells, not a caller's target.
-pub struct BundleStepProof<'a> {
+pub struct BundleStepProof<'a, F> {
     cells: &'a NativeEntryMovementCells,
     table: &'a FloorTable,
     actor: ExactActorRef,
@@ -624,6 +624,7 @@ pub struct BundleStepProof<'a> {
     direction: CardinalStep,
     pz_blocked: bool,
     closed: &'a dyn CellBlocker,
+    protected_player: F,
     destination: MovementLocalPosition,
     starts_stairhop: bool,
 }
@@ -631,11 +632,12 @@ pub struct BundleStepProof<'a> {
 /// Proves `actor`'s step `direction` from its current position over the bundle `cells`.
 /// `pz_blocked` is the actor's current PZ block, which the teleport landing rule reads; `closed`
 /// holds the dynamically closed cells (doors), where an actor does not land either.
+/// `protected_player` reads level protection for the exact peer again when the proof commits.
 #[allow(
     clippy::too_many_arguments,
     reason = "the proof binds every independently resolved fact explicitly"
 )]
-pub fn prepare_bundle_step<'a>(
+pub fn prepare_bundle_step<'a, F>(
     runtime: &ChannelRuntimeV1,
     cells: &'a NativeEntryMovementCells,
     actor: ExactActorRef,
@@ -644,7 +646,11 @@ pub fn prepare_bundle_step<'a>(
     direction: CardinalStep,
     pz_blocked: bool,
     closed: &'a dyn CellBlocker,
-) -> Result<BundleStepProof<'a>, MovementError> {
+    protected_player: F,
+) -> Result<BundleStepProof<'a, F>, MovementError>
+where
+    F: Fn(ExactActorRef, GameSessionId) -> bool,
+{
     let table = table_of(cells).ok_or(MovementError::NotQualified)?;
     qualify_origin(runtime, cells, actor, session, expected, Some(direction))?;
     let (destination, starts_stairhop) = destination(
@@ -664,6 +670,7 @@ pub fn prepare_bundle_step<'a>(
         direction,
         pz_blocked,
         closed,
+        protected_player,
         destination,
         starts_stairhop,
     };
@@ -771,7 +778,7 @@ fn destination(
     ))
 }
 
-impl BundleStepProof<'_> {
+impl<F: Fn(ExactActorRef, GameSessionId) -> bool> BundleStepProof<'_, F> {
     /// Canary pacifies after any intermediate floor change or successful teleport.
     pub const fn starts_stairhop(&self) -> bool {
         self.starts_stairhop
@@ -806,18 +813,40 @@ impl BundleStepProof<'_> {
         if Some(self.destination.x) == origin.x.checked_add(dx)
             && Some(self.destination.y) == origin.y.checked_add(dy)
             && self.destination.floor == origin.floor
-            && runtime
-                .position_occupied_by_other(self.actor, self.destination)
-                .map_err(MovementError::Actor)?
         {
-            return Err(MovementError::Blocked);
+            let in_protection_zone = || {
+                let NativeMovementCollisionIndex::Bundle(index) = self.cells.index() else {
+                    return false;
+                };
+                pos(
+                    self.destination.x,
+                    self.destination.y,
+                    i32::from(self.destination.floor),
+                )
+                .and_then(|tile| index.map().zone_flags(tile))
+                .is_some_and(|(_, protection_zone)| protection_zone)
+            };
+            let voluntary = !runtime.forced_player_step_current(self.actor, self.session);
+            if runtime
+                .player_step_occupied(self.actor, self.destination, |peer, session| {
+                    voluntary
+                        && (in_protection_zone()
+                            || session
+                                .is_some_and(|session| (self.protected_player)(peer, session)))
+                })
+                .map_err(MovementError::Actor)?
+            {
+                return Err(MovementError::Blocked);
+            }
         }
         Ok(())
     }
 }
 
-impl crate::foundation::source_step_seal::Sealed for BundleStepProof<'_> {}
-impl crate::foundation::SourceStepCommitProof for BundleStepProof<'_> {
+impl<F> crate::foundation::source_step_seal::Sealed for BundleStepProof<'_, F> {}
+impl<F: Fn(ExactActorRef, GameSessionId) -> bool> crate::foundation::SourceStepCommitProof
+    for BundleStepProof<'_, F>
+{
     fn validate_current(&self, runtime: &ChannelRuntimeV1) -> Result<(), CarrierError> {
         self.validate(runtime).map_err(|error| match error {
             MovementError::Actor(error) => error,

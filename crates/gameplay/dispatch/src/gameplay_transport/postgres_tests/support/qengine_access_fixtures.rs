@@ -235,6 +235,7 @@ pub(super) async fn exercise(
                 crate::movement::CardinalStep::South,
                 false,
                 &closed,
+                |_, _| false,
             )
             .map_err(debug)?;
             let landed = runtime.commit_source_step(proof).map_err(debug)?;

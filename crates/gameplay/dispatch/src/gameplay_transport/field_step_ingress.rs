@@ -87,6 +87,7 @@ impl StepIngressRead<'_, '_> {
             } else {
                 destination(
                     runtime,
+                    states,
                     room.movement_cells(),
                     actor,
                     session,
@@ -315,6 +316,7 @@ impl StepIngressRead<'_, '_> {
 #[allow(clippy::too_many_arguments)]
 pub(super) fn destination(
     runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
     cells: &crate::content::NativeEntryMovementCells,
     actor: ExactActorRef,
     session: GameSessionId,
@@ -323,8 +325,8 @@ pub(super) fn destination(
     blocking: &dyn crate::map::floor::CellBlocker,
 ) -> Result<MovementLocalPosition, MovementError> {
     if crate::map::floor::table_of(cells).is_some() {
-        return Ok(crate::map::floor::prepare_bundle_step(
-            runtime, cells, actor, session, origin, direction, false, blocking,
+        return Ok(super::actor_movement::prepare_player_bundle_step(
+            runtime, states, cells, actor, session, origin, direction, blocking,
         )?
         .destination());
     }
@@ -501,7 +503,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                 }
             } else {None};
-            let destination=if let Some(prepared)=&prepared {prepared.destination()} else {match destination(runtime,owner.movement_cells(),actor,session,origin,direction,*blocking) {
+            let destination=if let Some(prepared)=&prepared {prepared.destination()} else {match destination(runtime,states,owner.movement_cells(),actor,session,origin,direction,*blocking) {
                 Ok(destination)=>destination,
                 Err(error)=>{
                     *outcome=Some(Err(error));
@@ -670,6 +672,7 @@ mod tests {
             assert_eq!(
                 destination(
                     &runtime,
+                    &ChannelSpellStates::default(),
                     room.movement_cells(),
                     actor,
                     session,

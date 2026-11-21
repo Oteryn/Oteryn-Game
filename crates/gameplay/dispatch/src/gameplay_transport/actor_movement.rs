@@ -189,6 +189,46 @@ fn spell_state_speed(
     ))
 }
 
+/// Bind the bundle proof to current character levels from the Channel owner.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the bundle proof binds independently owned movement and player facts"
+)]
+pub(super) fn prepare_player_bundle_step<'a>(
+    runtime: &ChannelRuntimeV1,
+    states: &'a ChannelSpellStates,
+    cells: &'a NativeEntryMovementCells,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    expected: MovementPositionSnapshot,
+    direction: CardinalStep,
+    blocking: &'a dyn crate::map::floor::CellBlocker,
+) -> Result<
+    crate::map::floor::BundleStepProof<'a, impl Fn(ExactActorRef, GameSessionId) -> bool + use<'a>>,
+    MovementError,
+> {
+    crate::map::floor::prepare_bundle_step(
+        runtime,
+        cells,
+        actor,
+        session,
+        expected,
+        direction,
+        false,
+        blocking,
+        move |peer, session| {
+            states
+                .actors
+                .iter()
+                .find(|(actor, held, _)| *actor == peer && *held == session)
+                .is_some_and(|(_, _, state)| {
+                    state.character_facts().level
+                        < oteryn_gameplay_combat_rules::pvp::legality::PVP_MIN_LEVEL
+                })
+        },
+    )
+}
+
 /// Read-only forecast using the same destination proof and speed calculation as
 /// the step owner. Special destinations are deliberately left to that owner.
 #[allow(
@@ -240,6 +280,7 @@ pub(in crate::gameplay_transport) fn prewalk_forecast(
     {
         return [0; 8];
     }
+    let bundle = crate::map::floor::table_of(cells).is_some();
     [
         North, East, South, West, NorthEast, SouthEast, SouthWest, NorthWest,
     ]
@@ -259,13 +300,13 @@ pub(in crate::gameplay_transport) fn prewalk_forecast(
         };
         if blocking.blocks(cell(onto))
             || crate::map::floor::is_teleport(cells, cell(onto))
-            || runtime.position_occupied_by_other(actor, onto) != Ok(false)
+            || (!bundle && runtime.position_occupied_by_other(actor, onto) != Ok(false))
         {
             return 0;
         }
-        let duration = if crate::map::floor::table_of(cells).is_some() {
-            let Ok(proof) = crate::map::floor::prepare_bundle_step(
-                runtime, cells, actor, session, expected, direction, false, blocking,
+        let duration = if bundle {
+            let Ok(proof) = prepare_player_bundle_step(
+                runtime, states, cells, actor, session, expected, direction, blocking,
             ) else {
                 return 0;
             };
@@ -356,11 +397,18 @@ pub fn step_in_channel_with_source_step(
     let expected = runtime
         .read_actor_position(actor)
         .map_err(MovementError::Actor)?;
-    let starts_stairhop = if crate::map::floor::table_of(cells).is_some() {
-        crate::map::floor::prepare_bundle_step(
-            runtime, cells, actor, session, expected, direction, false, blocking,
-        )?
-        .starts_stairhop()
+    let bundle = if crate::map::floor::table_of(cells).is_some() {
+        if prepared_source_step.is_some() {
+            return Err(MovementError::NotQualified);
+        }
+        Some(prepare_player_bundle_step(
+            runtime, states, cells, actor, session, expected, direction, blocking,
+        )?)
+    } else {
+        None
+    };
+    let starts_stairhop = if let Some(proof) = &bundle {
+        proof.starts_stairhop()
     } else if let Some(proof) = prepared_source_step.as_ref() {
         proof.destination().floor != expected.position().floor
     } else if crate::movement::source_floor_change::is_source_profile(cells) {
@@ -393,18 +441,47 @@ pub fn step_in_channel_with_source_step(
     } else {
         None
     };
-    let result = step_in_channel_inner(
-        runtime,
-        states,
-        cells,
-        actor,
-        session,
-        now_us,
-        direction,
-        blocking,
-        equipment_delta,
-        prepared_source_step,
-    )?;
+    let bundle_result = bundle.map(|proof| {
+        let speed = states.get(runtime, actor, session).map_or_else(
+            || baseline_speed(runtime, actor, session, now_us),
+            |state| {
+                spell_state_speed(
+                    runtime,
+                    state,
+                    actor,
+                    session,
+                    now_us,
+                    equipment_delta,
+                    false,
+                )
+            },
+        );
+        let onto = proof.destination();
+        if blocking.blocks(cell(onto)) {
+            return Err(MovementError::Blocked);
+        }
+        let duration = duration_onto(&EngineeringGroundSpeed, onto, speed, direction)?;
+        runtime
+            .commit_source_step(proof)
+            .map(|snapshot| (snapshot, duration))
+            .map_err(MovementError::Actor)
+    });
+    let result = if let Some(result) = bundle_result {
+        result?
+    } else {
+        step_in_channel_inner(
+            runtime,
+            states,
+            cells,
+            actor,
+            session,
+            now_us,
+            direction,
+            blocking,
+            equipment_delta,
+            prepared_source_step,
+        )?
+    };
     if let Some(cooldowns) = cooldowns
         && let Some(state) = states.get_mut(runtime, actor, session)
     {
@@ -473,24 +550,6 @@ fn step_in_channel_inner(
         || expected.context() != runtime.pinned_movement_context()
     {
         return failure(MovementError::ScopeMismatch);
-    }
-    if crate::map::floor::table_of(cells).is_some() {
-        // MAP-FLOOR-1: a bundle World resolves the step over its floor table.
-        if prepared_source_step.is_some() {
-            return failure(MovementError::NotQualified);
-        }
-        let speed = spell_state_speed(
-            runtime,
-            state,
-            actor,
-            session,
-            now_us,
-            equipment_delta,
-            false,
-        );
-        return bundle_step(
-            runtime, cells, actor, session, direction, blocking, speed, expected,
-        );
     }
     let source_step = if let Some(proof) = prepared_source_step {
         if proof.expected() != expected || proof.validate_current(runtime).is_err() {
@@ -567,42 +626,6 @@ fn step_in_channel_inner(
     }
 }
 
-/// MAP-FLOOR-1: one step of a bundle World, which may change floors. The destination is proven
-/// against the bundle collision and floor table and committed by the owner turn like a source
-/// step; the pacing is the Engineering 150 source onto the destination.
-#[allow(
-    clippy::too_many_arguments,
-    reason = "the owner turn binds every independently resolved fact explicitly"
-)]
-fn bundle_step(
-    runtime: &mut ChannelRuntimeV1,
-    cells: &NativeEntryMovementCells,
-    actor: ExactActorRef,
-    session: GameSessionId,
-    direction: CardinalStep,
-    blocking: &dyn crate::map::floor::CellBlocker,
-    speed: Option<u16>,
-    expected: MovementPositionSnapshot,
-) -> StepInChannel {
-    // WORLD-INTERACTION-0 §6.6: a teleport landing reads the actor's PZ block (PARTY-PVP-0
-    // §8.1). PVP-RT-1 owns that block (conformance case PVP-CC-03); no runtime path sets one
-    // yet, so no actor is under a PZ block here. The floor resolver already refuses a
-    // protection-zone landing to a blocked actor.
-    let pz_blocked = false;
-    let proof = crate::map::floor::prepare_bundle_step(
-        runtime, cells, actor, session, expected, direction, pz_blocked, blocking,
-    )?;
-    let onto = proof.destination();
-    if blocking.blocks(cell(onto)) {
-        return Err(MovementError::Blocked);
-    }
-    let duration = duration_onto(&EngineeringGroundSpeed, onto, speed, direction)?;
-    runtime
-        .commit_source_step(proof)
-        .map(|snapshot| (snapshot, duration))
-        .map_err(MovementError::Actor)
-}
-
 fn baseline_step(
     runtime: &mut ChannelRuntimeV1,
     cells: &NativeEntryMovementCells,
@@ -623,11 +646,6 @@ fn baseline_step(
         || expected.context() != owner_context
     {
         return Err(MovementError::ScopeMismatch);
-    }
-    if crate::map::floor::table_of(cells).is_some() {
-        return bundle_step(
-            runtime, cells, actor, session, direction, blocking, speed, expected,
-        );
     }
     if crate::movement::source_floor_change::is_source_profile(cells) {
         let proof = crate::movement::source_floor_change::prepare_source_step(
@@ -1121,6 +1139,122 @@ mod tests {
     }
 
     #[test]
+    fn bundle_walkthrough_requires_level_protection_outside_protection_zone() {
+        use oteryn_gameplay_combat_rules::pvp::legality::PVP_MIN_LEVEL;
+
+        for (level, can_walk_through) in [(PVP_MIN_LEVEL - 1, true), (PVP_MIN_LEVEL, false)] {
+            let (mut runtime, mut states, cells, actor, session) = bundle_owner();
+            let no_doors = std::collections::BTreeSet::new();
+            let east = |runtime: &mut ChannelRuntimeV1, states: &mut ChannelSpellStates| {
+                step_in_channel(
+                    runtime,
+                    states,
+                    &cells,
+                    actor,
+                    session,
+                    1,
+                    CardinalStep::East,
+                    &no_doors,
+                    None,
+                )
+            };
+            east(&mut runtime, &mut states).unwrap();
+            east(&mut runtime, &mut states).unwrap();
+            let before = runtime.read_actor_position(actor).unwrap();
+            let landing = MovementLocalPosition {
+                x: 4,
+                y: 0,
+                floor: 8,
+            };
+            let peer_session = GameSessionId::decode(&id(5)).unwrap();
+            let reservation = runtime.reserve_fresh_session(peer_session).unwrap();
+            let peer = runtime.commit_fresh_session(reservation).unwrap();
+            runtime
+                .initialize_pinned_test_position(peer, landing)
+                .unwrap();
+            states
+                .initialize(
+                    &runtime,
+                    peer,
+                    peer_session,
+                    CharacterCastFacts {
+                        vocation: crate::spell::Vocation::Knight,
+                        level,
+                        magic_level: 10,
+                        max_health: 1000,
+                        max_mana: 500,
+                        max_soul: 100,
+                    },
+                    (0, 0),
+                    SemanticTimeMicros::from_micros(0),
+                )
+                .unwrap();
+
+            let forecast = prewalk_forecast(
+                &runtime, &states, &cells, actor, session, 1, None, &no_doors,
+            );
+            let result = east(&mut runtime, &mut states);
+            if can_walk_through {
+                let (after, wait) = result.unwrap();
+                assert_eq!(after.position(), landing);
+                assert_eq!(u128::from(forecast[1]), wait.as_millis());
+            } else {
+                assert!(matches!(result, Err(MovementError::Blocked)));
+                assert_eq!(runtime.read_actor_position(actor).unwrap(), before);
+                assert_eq!(forecast[1], 0);
+            }
+        }
+    }
+
+    #[test]
+    fn bundle_walkthrough_still_blocks_monster_on_protection_zone_tile() {
+        let (mut runtime, mut states, cells, actor, session) =
+            bundle_owner_of(crate::map::boot::tests::teleport_bundle);
+        let no_doors = std::collections::BTreeSet::new();
+        for direction in [CardinalStep::South, CardinalStep::North] {
+            step_in_channel(
+                &mut runtime,
+                &mut states,
+                &cells,
+                actor,
+                session,
+                1,
+                direction,
+                &no_doors,
+                None,
+            )
+            .unwrap();
+        }
+        let before = runtime.read_actor_position(actor).unwrap();
+        runtime
+            .admit_pinned_test_creature(MovementLocalPosition {
+                x: 5,
+                y: 1,
+                floor: 8,
+            })
+            .unwrap();
+        let forecast = prewalk_forecast(
+            &runtime, &states, &cells, actor, session, 1, None, &no_doors,
+        );
+        assert!(matches!(
+            step_in_channel(
+                &mut runtime,
+                &mut states,
+                &cells,
+                actor,
+                session,
+                1,
+                CardinalStep::South,
+                &no_doors,
+                None,
+            ),
+            Err(MovementError::Blocked)
+        ));
+        assert_eq!(runtime.read_actor_position(actor).unwrap(), before);
+        assert_eq!(forecast[2], 0);
+    }
+
+    #[test]
     fn bundle_teleport_landing_can_share_a_cell_with_a_creature() {
         let (mut runtime, mut states, cells, actor, session) =
             bundle_owner_of(crate::map::boot::tests::teleport_bundle);
@@ -1165,6 +1299,7 @@ mod tests {
                 CardinalStep::South,
                 pz_blocked,
                 &std::collections::BTreeSet::new(),
+                |_, _| false,
             )
             .unwrap()
             .destination();
@@ -1228,6 +1363,7 @@ mod tests {
                 CardinalStep::South,
                 false,
                 &std::collections::BTreeSet::new(),
+                |_, _| false,
             )
             .is_err()
         );
@@ -1335,6 +1471,7 @@ mod tests {
             CardinalStep::East,
             false,
             &no_doors,
+            |_, _| false,
         )
         .unwrap();
         assert_eq!(proof.destination().floor, 7);

@@ -302,6 +302,23 @@ impl ChannelRuntimeV1 {
     ) -> Result<bool, CarrierError> {
         self.position_occupied_excluding(Some(actor), destination)
     }
+    /// Ordinary player steps can share a tile with players admitted by the walkthrough rule.
+    /// Reservations and other occupant roles still use the general occupancy checks.
+    pub fn player_step_occupied(
+        &self,
+        actor: ExactActorRef,
+        destination: MovementLocalPosition,
+        can_walk_through: impl Fn(ExactActorRef, Option<GameSessionId>) -> bool,
+    ) -> Result<bool, CarrierError> {
+        self.position_occupied_with_walkthrough(
+            Some(actor),
+            destination,
+            self.pinned_position_context(),
+            true,
+            Some(&can_walk_through),
+        )
+    }
+
     pub(super) fn position_occupied_excluding(
         &self,
         actor: Option<ExactActorRef>,
@@ -320,6 +337,17 @@ impl ChannelRuntimeV1 {
         destination: MovementLocalPosition,
         context: PreProductionPositionContext,
         require_position: bool,
+    ) -> Result<bool, CarrierError> {
+        self.position_occupied_with_walkthrough(actor, destination, context, require_position, None)
+    }
+
+    fn position_occupied_with_walkthrough(
+        &self,
+        actor: Option<ExactActorRef>,
+        destination: MovementLocalPosition,
+        context: PreProductionPositionContext,
+        require_position: bool,
+        can_walk_through: Option<&dyn Fn(ExactActorRef, Option<GameSessionId>) -> bool>,
     ) -> Result<bool, CarrierError> {
         let source_index = actor
             .map(|actor| {
@@ -407,6 +435,26 @@ impl ChannelRuntimeV1 {
                     floor: destination.floor,
                 })
             {
+                if let Some(can_walk_through) = can_walk_through
+                    && let Slot::Occupied {
+                        generation,
+                        game_session_id,
+                        ..
+                    } = slot
+                {
+                    let peer = ExactActorRef(ActorRef::from_scoped_owner_parts(
+                        self.binding.runtime_scope,
+                        self.binding.scope_generation,
+                        ActorLocalId(
+                            u32::try_from(index + 1)
+                                .map_err(|_| CarrierError::CapacityArithmeticOverflow)?,
+                        ),
+                        ActorLocalGeneration(*generation),
+                    ));
+                    if can_walk_through(peer, *game_session_id) {
+                        continue;
+                    }
+                }
                 return Ok(true);
             }
         }
