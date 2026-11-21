@@ -594,6 +594,7 @@ mod item_appearance_tests {
     #![allow(clippy::unwrap_used, clippy::panic)]
     use super::super::{
         ApplicationFacts, ConditionDefinition, ConditionSourceKind, TemporaryDisplayedAppearance,
+        TickFacts,
     };
     use super::*;
     use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
@@ -618,6 +619,7 @@ mod item_appearance_tests {
         store
             .apply(&definition, None, ConditionSourceKind::Field, &[], &facts)
             .unwrap();
+        assert!(store.take_due(2_000_000, TickFacts::default()).is_empty());
         assert!(
             matches!(store.displayed_temporary_appearance_at(u64::MAX - 1),
             Some(TemporaryDisplayedAppearance::Item(item)) if item.definition_key() == "oteryn:item.tibia.i26087")
