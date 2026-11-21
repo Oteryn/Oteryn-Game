@@ -48,6 +48,14 @@ fn scenario(tag: &str, provision_before_relog: bool) -> TestResult {
         )?;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = generation.active();
+        // Channel boot installs these in production (channel_boot.rs); familiar Login needs them.
+        use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt as _;
+        owner
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .ok_or("native policies")?
+            .install_companion_policies(&mut *owner.runtime.lock().await)
+            .map_err(debug)?;
         super::tutorial_vitals_fixture::admit(&owner, &deps, &request).await?;
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;
