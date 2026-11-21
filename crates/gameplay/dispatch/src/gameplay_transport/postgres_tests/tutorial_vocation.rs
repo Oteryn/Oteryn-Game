@@ -467,9 +467,28 @@ fn vocation_scenario(case: Case) -> TestResult {
                         return h.cleanup().await;
                     }
                     let mut slot = owner.revision_sequencer.acquire(old.character_id).await;
-                    commit_retained_npc_vocation(
-                        &mut slot, owner.root, owner.character, owner.holder, &retained, formula,
-                    ).await.map_err(debug)?;
+                    if matches!(case, Case::RetainedMovement | Case::Uninstalled) {
+                        use crate::durability::character_revision_sequencer::NewhavenBuildContext;
+                        use crate::durability::starter_grant::NewhavenKit;
+                        use crate::gameplay_transport::{
+                            item_ref_admission::NativeItemWeights, tutorial_vocation::newhaven_kit_definitions,
+                        };
+                        let native = active.native_gameplay().ok_or("native gameplay")?;
+                        let definitions = newhaven_kit_definitions(native, retained.request.after.vocation())
+                            .ok_or("kit definitions")?;
+                        slot.commit_newhaven_build(
+                            owner.root, owner.character, owner.holder, retained.fence, retained.request.clone(),
+                            NewhavenBuildContext {
+                                formula,
+                                kit: NewhavenKit { content: &NativeItemWeights(native), definitions: &definitions },
+                            },
+                        ).await.map_err(debug)?;
+                        assert_eq!(kit_grant_count(&h).await?, i64::try_from(definitions.len())?);
+                    } else {
+                        commit_retained_npc_vocation(
+                            &mut slot, owner.root, owner.character, owner.holder, &retained, formula,
+                        ).await.map_err(debug)?;
+                    }
                     drop(slot);
                     // Stop at the same state a failed post-commit read leaves behind:
                     // the refill has committed while the live actor still has 1 HP.
@@ -778,4 +797,9 @@ async fn fill_nested_fixture(h: &Harness, fill: bool) -> TestResult {
     }
     tx.commit().await?;
     Ok(())
+}
+
+async fn kit_grant_count(h: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar("SELECT count(*) FROM game_character_starter_grants WHERE character_id=encode($1,'hex')::uuid AND template_key LIKE 'oteryn:starter.newhaven.%'")
+        .bind(id(41).as_slice()).fetch_one(&h.pool).await?)
 }
