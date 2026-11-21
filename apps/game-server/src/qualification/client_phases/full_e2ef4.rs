@@ -92,18 +92,19 @@ pub(super) async fn run(
     // Each row reports even when another row has missing content or a refused command.
     // Socket waits are bounded; a timed-out session is not evidence of server absence.
     macro_rules! row {
-        // The walk to the depot locker is travel outside the journey budget, as E01's walk to
-        // Sam is; each walked tile is progress, so a stalled walk ends on the no-progress watchdog.
-        (locker $id:literal, $actions:ident, $journey:ident $(, $arg:expr)*) => {{
+        // The walk to the row's start (`locker`: the depot locker, `town`: the entry tile) is
+        // travel outside the journey budget, as E01's walk to Sam is; each walked tile is
+        // progress, so a stalled walk ends on the no-progress watchdog.
+        (travel $to:ident, $id:literal, $actions:ident, $journey:ident $(, $arg:expr)*) => {{
             let mut row = Row::new("E2EF4", $id, $actions).evidence(EVIDENCE, EVIDENCE);
             let watch = row.watch();
             let result = if let Some(active) = client.as_mut() {
                 let mut arrived = false;
                 let walked = watch
                     .travel(
-                        concat!($id, " walk to the depot locker stalled;remaining-assertions-unproven"),
+                        concat!($id, " walk to ", stringify!($to), " stalled;remaining-assertions-unproven"),
                         async {
-                            let walked = locker(active, world).await;
+                            let walked = $to(active, world).await;
                             arrived = true;
                             walked
                         },
@@ -183,9 +184,9 @@ pub(super) async fn run(
     }
     row!("E03", E03, coins);
     row!("E04", E04, trade, clients, world);
-    row!(locker "E05", E05, market);
-    row!(locker "E07", E07, storage, clients);
-    row!("S01", S01, party, clients, world);
+    row!(travel locker, "E05", E05, market);
+    row!(travel locker, "E07", E07, storage, clients);
+    row!(travel town, "S01", S01, party, clients, world);
     row!("S03", S03, guild);
     row!("S09", S09, logout, clients, world);
     row!("S18", S18, speech);
@@ -279,6 +280,15 @@ async fn locker(client: &mut DevClientSession, world: &BundleWorld) -> TestResul
         near_locker(world, at)
     })
     .ok_or("no reachable production depot locker")?;
+    walk(client, world, &path).await
+}
+
+/// Walks back to the entry tile before S01 approaches its peer from there.
+async fn town(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        at == TOWN
+    })
+    .ok_or("E2EF4 town route unavailable")?;
     walk(client, world, &path).await
 }
 
