@@ -1,5 +1,6 @@
 use super::*;
 use bevy::log::tracing;
+use std::sync::Arc;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
@@ -270,5 +271,23 @@ fn third_party_targets_stay_at_warn_unless_named() -> TestResult {
     }
     fs::remove_dir_all(&directory)?;
     assert!(!directory.with_added_extension("lock").exists());
+    Ok(())
+}
+
+#[test]
+fn a_full_log_writer_queue_does_not_block_the_formatter() -> TestResult {
+    let (sender, receiver) = mpsc::sync_channel(1);
+    let sink = Sink { file: Some(sender), synchronous_file: None, stderr: false, ring: false };
+    let (done, finished) = mpsc::channel();
+    let _worker = thread::spawn(move || {
+        for text in [b"first".as_slice(), b"second"] {
+            let mut writer = fmt::MakeWriter::make_writer(&sink);
+            writer.write_all(text)?;
+        }
+        done.send(()).map_err(io::Error::other)
+    });
+    finished.recv_timeout(std::time::Duration::from_secs(2))?;
+    assert_eq!(receiver.try_recv()?.1, "first");
+    assert!(receiver.try_recv().is_err());
     Ok(())
 }

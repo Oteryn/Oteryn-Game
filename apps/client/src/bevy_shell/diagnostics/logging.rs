@@ -12,10 +12,12 @@ use bevy::{
     },
 };
 use std::{
+    collections::BTreeMap,
     fs,
     io::{self, Write},
     path::{Path, PathBuf},
-    sync::{Arc, Mutex, OnceLock, PoisonError, TryLockError},
+    sync::{Mutex, OnceLock, PoisonError, TryLockError, mpsc},
+    thread,
     time::SystemTime,
 };
 
@@ -88,35 +90,49 @@ impl RollingFile {
     /// Removes the oldest other files beyond the count, then until the others use at most half
     /// of the cap; returns the size the others keep.
     fn prune(&self, current: &str) -> io::Result<u64> {
-        let mut others = Vec::new();
+        let mut others = BTreeMap::new();
         for entry in fs::read_dir(&self.directory)? {
             let entry = entry?;
             let Ok(name) = entry.file_name().into_string() else {
                 continue;
             };
             if name != current && name.starts_with("client-") && name.ends_with(".log") {
-                others.push((name, entry.metadata()?.len()));
+                others.insert(name, entry.metadata()?.len());
+                if others.len() >= self.keep && let Some((oldest, _)) = others.pop_first() {
+                    fs::remove_file(self.directory.join(oldest))?;
+                }
             }
         }
-        others.sort();
-        let mut total: u64 = others.iter().map(|(_, size)| size).sum();
-        let mut excess = others.len().saturating_sub(self.keep - 1);
-        for (name, size) in &others {
-            if excess == 0 && total <= self.cap / 2 {
+        let mut total = others.values().copied().fold(0_u64, u64::saturating_add);
+        for (name, size) in others {
+            if total <= self.cap / 2 {
                 break;
             }
             fs::remove_file(self.directory.join(name))?;
             total -= size;
-            excess = excess.saturating_sub(1);
         }
         Ok(total)
     }
 }
 
+type LogWrite = (SystemTime, String);
+
+fn file_writer(file: RollingFile) -> io::Result<(mpsc::SyncSender<LogWrite>, thread::JoinHandle<()>)> {
+    let (sender, receiver) = mpsc::sync_channel::<LogWrite>(256);
+    let worker = thread::Builder::new().name("client-log".into()).spawn(move || {
+        for (at, text) in receiver {
+            let _ = file.write_text(at, &text);
+        }
+    })?;
+    Ok((sender, worker))
+}
+
 /// One formatted event is redacted once, then written to every sink.
 #[derive(Clone)]
 pub(super) struct Sink {
-    file: Option<Arc<RollingFile>>,
+    file: Option<mpsc::SyncSender<LogWrite>>,
+    #[cfg(test)]
+    synchronous_file: Option<std::sync::Arc<RollingFile>>,
     stderr: bool,
     ring: bool,
 }
@@ -172,17 +188,20 @@ impl Drop for SinkWriter {
         if self.sink.stderr {
             let _ = io::stderr().write_all(text.as_bytes());
         }
-        if let Some(file) = &self.sink.file {
-            // A busy lock or failed disk write leaves the line in stderr and the crash ring.
+        if self.sink.ring {
+            let mut level = self.level;
+            for line in text.lines() {
+                record_log_line(level, line);
+                level = LineLevel::Other;
+            }
+        }
+        #[cfg(test)]
+        if let Some(file) = &self.sink.synchronous_file {
             let _ = file.write_text(SystemTime::now(), &text);
         }
-        if !self.sink.ring {
-            return;
-        }
-        let mut level = self.level;
-        for line in text.lines() {
-            record_log_line(level, line);
-            level = LineLevel::Other;
+        if let Some(file) = &self.sink.file {
+            // On saturation the line remains available in stderr and the crash ring.
+            let _ = file.try_send((SystemTime::now(), text));
         }
     }
 }
@@ -243,13 +262,14 @@ where
 /// The production filter and file formatter, for tests that read what was logged.
 #[cfg(test)]
 pub(super) fn test_subscriber(
-    file: &Arc<RollingFile>,
+    file: &std::sync::Arc<RollingFile>,
     directives: &str,
 ) -> impl bevy::log::tracing::Subscriber {
     Registry::default()
         .with(level_filter(directives))
         .with(format_layer(Sink {
-            file: Some(Arc::clone(file)),
+            file: None,
+            synchronous_file: Some(std::sync::Arc::clone(file)),
             stderr: false,
             ring: true,
         }))
@@ -304,16 +324,18 @@ fn custom_layer(_: &mut App) -> Option<BoxedLayer> {
     let directives = environment().unwrap_or_else(|| setup.level.to_owned());
     let (filter, handle) = reload::Layer::new(level_filter(&directives));
     let file = setup.base.map(|base| {
-        Arc::new(RollingFile::new(
+        RollingFile::new(
             base.join(crate::crash_report::LOG_DIRECTORY),
             KEEP_FILES,
             TOTAL_CAP,
-        ))
+        )
     });
     let directory = file.as_ref().map(|file| file.directory().to_path_buf());
     let _ = CONTROL.set(Control { handle, directory });
     let sink = Sink {
-        file,
+        file: file.and_then(|file| file_writer(file).ok().map(|(sender, _)| sender)),
+        #[cfg(test)]
+        synchronous_file: None,
         stderr: false,
         ring: true,
     };
@@ -323,6 +345,8 @@ fn custom_layer(_: &mut App) -> Option<BoxedLayer> {
 fn fmt_layer(_: &mut App) -> Option<BoxedFmtLayer> {
     Some(Box::new(format_layer(Sink {
         file: None,
+        #[cfg(test)]
+        synchronous_file: None,
         stderr: true,
         ring: false,
     })))
