@@ -53,8 +53,19 @@ impl WindowLayout {
         let _lock = crate::atomic_file::try_lock(path)?;
         let mut active = Self::load(path)?;
         for (id, &bounds) in &self.0 {
-            if before.bounds(id) != Some(bounds) {
-                active.record(id, bounds)?;
+            let previous = before.bounds(id);
+            if previous != Some(bounds) {
+                let merged = match (previous, active.bounds(id)) {
+                    (Some(previous), Some(latest)) => std::array::from_fn(|index| {
+                        if bounds[index] == previous[index] {
+                            latest[index]
+                        } else {
+                            bounds[index]
+                        }
+                    }),
+                    _ => bounds,
+                };
+                active.record(id, merged)?;
             }
         }
         active.save(path)
@@ -69,6 +80,27 @@ impl WindowLayout {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(bevy_shell)]
+    #[test]
+    fn review_3376_geometry_merges_move_and_resize() -> io::Result<()> {
+        let root = tempfile::tempdir()?;
+        let path = root.path().join("window.json");
+        let mut baseline = WindowLayout::default();
+        baseline.record("window", [10, 20, 640, 480])?;
+        baseline.save(&path)?;
+        let mut moved = baseline.clone();
+        moved.record("window", [31, 42, 640, 480])?;
+        moved.save_edits(&path, &baseline)?;
+        let mut resized = baseline.clone();
+        resized.record("window", [10, 20, 800, 600])?;
+        resized.save_edits(&path, &baseline)?;
+        assert_eq!(
+            WindowLayout::load(&path)?.bounds("window"),
+            Some([31, 42, 800, 600])
+        );
+        Ok(())
+    }
 
     #[test]
     fn layout_save_uses_its_own_staging_path() -> io::Result<()> {
