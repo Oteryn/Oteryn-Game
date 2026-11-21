@@ -4,7 +4,7 @@
     dead_code,
     reason = "spell import candidate; awaits its production owner caller"
 )]
-use super::super::ComposedFreshAdmission;
+use super::super::{AdmissionRefusal, AdmissionRetryBudget, ComposedFreshAdmission};
 use super::{ChannelSpellStates, SpellCastIntent, SpellCastOutcome};
 use crate::durability::character_familiar::{FamiliarCleanEndResolution, FamiliarStateRequest};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
@@ -456,6 +456,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(clippy::too_many_arguments)]
     pub(in crate::gameplay_transport) async fn initialize_familiar_login(
         &self,
+        budget: &AdmissionRetryBudget<'_>,
         actor: ExactActorRef,
         session: GameSessionId,
         admission: &crate::foundation::fresh_admission_durability::FreshAdmissionCommitRequestV1,
@@ -505,6 +506,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 content,
                 &owned,
                 &source,
+                Some(budget),
             )
             .await?;
         // #2199 Codex P2 4302041461: no free tile kept the stored familiar waiting; the
@@ -1988,6 +1990,17 @@ fn lifecycle_nonce(
     id[8] = (id[8] & 63) | 0x80;
     id
 }
+enum FamiliarLifecycleFinishError {
+    Refused,
+    CheckoutUnavailable,
+}
+
+impl From<()> for FamiliarLifecycleFinishError {
+    fn from((): ()) -> Self {
+        Self::Refused
+    }
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// Actual Login/XP/physical lethal callback composition. The root invokes this at those
     /// committed source sites, with its current account/config/equipment producers. Historical
@@ -2002,6 +2015,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         content: &NativeGameplayState,
         owned: &OwnedCastFacts,
         source: &impl CurrentFamiliarSourceOwner,
+        login_budget: Option<&AdmissionRetryBudget<'_>>,
     ) -> Result<crate::spell::companion_lifecycle::LifecycleFamiliarApplyReceipt, ()> {
         use crate::spell::companion_lifecycle::{
             FamiliarLifecycleBinding, prepare_lifecycle_familiar, restore_familiar_cooldown,
@@ -2055,7 +2069,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .find(|p| p.actor == actor && p.session == session)
             .cloned();
-        let prepared = if let Some(prepared) = retained {
+        let mut prepared = if let Some(prepared) = retained {
             if prepared.spell_index != index
                 || !matches_owner_event(prepared.familiar.binding(), &event)
                 || states.get(&runtime, actor, session) != Some(&prepared.before)
@@ -2318,8 +2332,55 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             states.pending_familiar_lifecycle.push(prepared.clone());
             prepared
         };
-        self.finish_familiar_lifecycle(&mut runtime, &mut states, prepared, owned.binding(), source)
+        let deadline = login_budget.map(|budget| budget.deadline.into_std());
+        let event_id = prepared.source_event_id;
+        let binding_digest = prepared.source_binding_digest;
+        loop {
+            match Box::pin(self.finish_familiar_lifecycle(
+                &mut runtime,
+                &mut states,
+                prepared,
+                owned.binding(),
+                source,
+                deadline,
+            ))
             .await
+            {
+                Err(FamiliarLifecycleFinishError::CheckoutUnavailable)
+                    if let Some(budget) = login_budget =>
+                {
+                    drop(states);
+                    drop(runtime);
+                    if !budget
+                        .retries_unavailable(AdmissionRefusal::Unavailable)
+                        .await
+                    {
+                        return Err(());
+                    }
+                    (runtime, states) = tokio::time::timeout_at(budget.deadline, async {
+                        let runtime = self.runtime.lock().await;
+                        let states = self.states.spell_states.lock().await;
+                        (runtime, states)
+                    })
+                    .await
+                    .map_err(|_| ())?;
+                    // Keep the same prepared operation and reservation. Finish rechecks the
+                    // live owner and authorization before trying its original fenced write.
+                    prepared = states
+                        .pending_familiar_lifecycle
+                        .iter()
+                        .find(|pending| {
+                            pending.actor == actor
+                                && pending.session == session
+                                && pending.source_event_id == event_id
+                                && pending.source_binding_digest == binding_digest
+                        })
+                        .cloned()
+                        .ok_or(())?;
+                }
+                result => return result.map_err(|_| ()),
+            }
+        }
     }
 
     #[allow(
@@ -2333,10 +2394,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         mut prepared: PreparedFamiliarLifecycle,
         actual_binding: &CastFactsBinding,
         source: &impl CurrentFamiliarSourceOwner,
-    ) -> Result<crate::spell::companion_lifecycle::LifecycleFamiliarApplyReceipt, ()> {
+        deadline: Option<std::time::Instant>,
+    ) -> Result<
+        crate::spell::companion_lifecycle::LifecycleFamiliarApplyReceipt,
+        FamiliarLifecycleFinishError,
+    > {
+        use crate::durability::DurabilityError;
         use crate::durability::character_familiar::FamiliarStateOutcome;
+        use crate::durability::character_progression::CharacterProgressionError;
         use crate::spell::companion_lifecycle::commit_lifecycle_familiar;
         use crate::spell::delayed_execution::LifecycleScheduleRequest;
+        use FamiliarLifecycleFinishError::{CheckoutUnavailable, Refused};
         let actor = prepared.actor;
         let session = prepared.session;
         let index = prepared.spell_index;
@@ -2344,12 +2412,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if states.get(runtime, actor, session) != Some(&prepared.before)
             || !current_owner(runtime, &prepared.fence, actor, session)
         {
-            return Err(());
+            return Err(Refused);
         }
         let mut expected_binding = prepared.facts_binding.clone();
         expected_binding.character_revision = actual_binding.character_revision;
         if actual_binding != &expected_binding {
-            return Err(());
+            return Err(Refused);
         }
         // Revalidate with the sealed original event's authority, including a lost
         // response to a fenced Login or Return write.
@@ -2370,7 +2438,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && v.authority_revision == prepared.settings.authority_revision
         });
         if prepared.request.is_none() && !allow_new_mutation {
-            return Err(());
+            return Err(Refused);
         }
         prepared
             .familiar
@@ -2422,7 +2490,51 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok_or(())?;
         *original = prepared.clone();
         let committed = if let Some(request) = &prepared.request {
-            let result = if allow_new_mutation {
+            // The earlier FirstEntry barriers cannot target this checkout: Familiar Login
+            // has several durable reads after placement. Take the actual holder only here,
+            // after preparation and source revalidation, and return it before classifying.
+            #[cfg(test)]
+            let held_for_test = if matches!(
+                prepared.familiar.binding().origin(),
+                FamiliarLifecycleOrigin::Login { .. }
+            ) && super::super::composed_admission::FAMILIAR_LOGIN_CHECKOUT
+                .try_with(|probe| {
+                    assert!(
+                        allow_new_mutation,
+                        "current fenced restore must still authorize its write"
+                    );
+                    assert_eq!(
+                        prepared.settings.value.benefit_use,
+                        FamiliarBenefitUse::RestoreDenied
+                    );
+                    assert_eq!(prepared.settings.value.premium_revision, 8);
+                    assert_eq!(prepared.familiar.owner_facts().premium, Some(false));
+                    probe.writes.set(probe.writes.get() + 1);
+                    probe.writes.get() == 1
+                })
+                .unwrap_or(false)
+            {
+                let held = self.root.try_issue_semantic_pass().map_err(|_| ())?;
+                assert!(
+                    !self.root.is_ready(),
+                    "the fixture must have exactly one holder"
+                );
+                Some(held)
+            } else {
+                None
+            };
+            let result = if let Some(deadline) = deadline {
+                self.root
+                    .write_familiar_owner_state_by(
+                        self.character,
+                        self.holder,
+                        prepared.fence,
+                        request.clone(),
+                        allow_new_mutation,
+                        deadline,
+                    )
+                    .await
+            } else if allow_new_mutation {
                 self.root
                     .commit_character_familiar_state(
                         self.character,
@@ -2441,8 +2553,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await
             };
+            #[cfg(test)]
+            if let Some(held) = held_for_test {
+                assert!(
+                    matches!(
+                        &result,
+                        Err(CharacterProgressionError::Unavailable(
+                            DurabilityError::RootUnavailable
+                        ))
+                    ),
+                    "the first real checkout must fail before BEGIN"
+                );
+                held.run(|_, _| Box::pin(async { Ok(()) }))
+                    .await
+                    .map_err(|_| ())?;
+                assert!(
+                    self.root.is_ready(),
+                    "the held connection must be idle again"
+                );
+                super::super::composed_admission::FAMILIAR_LOGIN_CHECKOUT.with(|probe| {
+                    probe.checkout_misses.set(probe.checkout_misses.get() + 1);
+                });
+            }
             let outcome = match result {
                 Ok(value) => value,
+                // The Familiar writer emits RootUnavailable only for checkout, before BEGIN.
+                // Preserve the original reservation while the admission budget waits.
+                Err(CharacterProgressionError::Unavailable(DurabilityError::RootUnavailable)) => {
+                    return Err(CheckoutUnavailable);
+                }
                 Err(error) => {
                     if definite_familiar_rejection(&error)
                         && runtime
@@ -2457,7 +2596,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             v.actor != actor || v.session != session || v.spell_index != index
                         });
                     }
-                    return Err(());
+                    return Err(Refused);
                 }
             };
             Some(match outcome {
@@ -2479,7 +2618,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || !current_owner(runtime, &fresh, actor, session)
             || states.get(runtime, actor, session) != Some(&prepared.before)
         {
-            return Err(());
+            return Err(Refused);
         }
         prepared
             .familiar

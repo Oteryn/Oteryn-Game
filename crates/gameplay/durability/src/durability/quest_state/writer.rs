@@ -1316,14 +1316,6 @@ impl DurabilityRoot {
                         Ok(root) => root,
                         Err(error) => return Ok(Err(error)),
                     };
-                    // The historical payout selects the zero-value completion under Root.
-                    if transition.quest == "oteryn:quest.sinatuki_quest"
-                        && reward_callback.as_ref().is_some_and(|callback| callback.npc == "oteryn:npc.sinatuki")
-                        && super::super::npc_trade::sinatuki_exchange::legacy_payout(&mut tx, character).await?
-                            != (request.transition_key == oteryn_gameplay_quests::quest::reward_callbacks::SINATUKI_LEGACY_COMPLETION)
-                    {
-                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
-                    }
                     if carrot {
                         let Some((permit,context,_))=context.as_ref() else {return Ok(Err(CharacterProgressionError::InvalidInput));};
                         if let Some(refusal)=super::super::quest_world_callback::carrot::eligibility(

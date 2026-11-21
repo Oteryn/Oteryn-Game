@@ -62,8 +62,7 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 use crate::qualification_spell_character as spell_character;
 
-#[path = "qualification_wild_spawn.rs"]
-mod wild_spawn;
+use crate::qualification_wild_spawn as wild_spawn;
 
 #[cfg(test)]
 #[path = "spell_book_sweep_tests.rs"]
@@ -636,7 +635,9 @@ async fn database() -> TestResult<(String, String)> {
             format!("the seam qualification requires PostgreSQL 18.6, found {version}").into(),
         );
     }
-    sqlx::migrate!("./migrations").run(&mut connection).await?;
+    oteryn_gameplay_durability::GAME_MIGRATOR
+        .run(&mut connection)
+        .await?;
     connection.close().await?;
     Ok((url, version))
 }
@@ -1465,8 +1466,13 @@ fn node_boot_seam_against_running_node() -> TestResult {
         .build()?
         .block_on(async {
             let url = required("NODE_BOOT_DATABASE_URL")?;
+            let legacy_d150 = env::var("NODE_BOOT_D150_LEGACY").as_deref() == Ok("1");
             let world_path = std::env::var_os("NODE_BOOT_WORLD_BUNDLE");
-            let packet_accounts = if world_path.is_some() {
+            if legacy_d150 && world_path.is_none() {
+                return Err("D150 requires the disposable World topology".into());
+            }
+            let core_count = if legacy_d150 { 1 } else { accounts.len() };
+            let packet_accounts = if world_path.is_some() && !legacy_d150 {
                 Some([
                     required("NODE_BOOT_PACKET_ACCOUNT_ID")?,
                     required("NODE_BOOT_PACKET_SECOND_ACCOUNT_ID")?,
@@ -1486,7 +1492,7 @@ fn node_boot_seam_against_running_node() -> TestResult {
             let mut characters = Vec::new();
             let mut account_ids = std::collections::BTreeSet::new();
             let mut character_ids = std::collections::BTreeSet::new();
-            for account in accounts.iter().chain(packet_accounts.iter().flatten()) {
+            for account in accounts[..core_count].iter().chain(packet_accounts.iter().flatten()) {
                 let account_id = crate::node::uuid_bytes(account)
                     .ok_or("invalid node-boot fixture AccountId")?;
                 if !account_ids.insert(account_id) {
@@ -1520,17 +1526,19 @@ fn node_boot_seam_against_running_node() -> TestResult {
             .fetch_one(&mut database)
             .await?;
             database.close().await?;
-            evidence(&format!(
-                "node_boot characters={} source=control_socket assignment=operator",
-                characters.len()
-            ));
+            if !legacy_d150 {
+                evidence(&format!(
+                    "node_boot characters={} source=control_socket assignment=operator",
+                    characters.len()
+                ));
+            }
             let clients = SeamClients {
                 address: required("NODE_BOOT_ADDRESS")?.parse()?,
                 certificate: &certificate,
                 signing: &signing,
                 key_id: &key_id,
                 accounts: &accounts,
-                characters: &characters[..accounts.len()],
+                characters: &characters[..core_count],
                 world,
                 channel,
                 scope_generation: scope_generation.parse()?,
@@ -1543,6 +1551,9 @@ fn node_boot_seam_against_running_node() -> TestResult {
                 runtime: None,
                 recovery: &recovery_key()?,
             };
+            if legacy_d150 {
+                return Box::pin(client_world::legacy_d150(&clients)).await;
+            }
             if let Some(path) = world_path {
                 let packet_accounts = packet_accounts
                     .as_ref()

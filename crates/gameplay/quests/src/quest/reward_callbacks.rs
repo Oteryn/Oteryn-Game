@@ -546,8 +546,6 @@ pub fn load() -> Result<Vec<RewardCallback>, String> {
     embedded_document().map(|document| document.callbacks)
 }
 
-pub const SINATUKI_LEGACY_COMPLETION: &str = "oteryn:quest-reward/qc-sinatuki-legacy-completion";
-
 fn embedded_document() -> Result<Document, String> {
     let mut document = parse_documents(DOCUMENTS)?;
     document
@@ -1150,7 +1148,6 @@ pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, Stri
         && callback.carried_target.is_none()
         && !temporal_payment::guarded(callback)
         && callback.self_target.is_none()
-        && callback.key != SINATUKI_LEGACY_COMPLETION
         && !callback
             .key
             .starts_with("oteryn:quest-reward/worldchg-m31/")
@@ -1527,6 +1524,18 @@ fn extend_callbacks(
     Ok(updated)
 }
 
+// The QB addon routes were first published after the retained Outfit definition.
+fn is_qb_outfit_extension(callback: &RewardCallback) -> bool {
+    callback
+        .key
+        .strip_prefix("oteryn:quest-reward/")
+        .is_some_and(|key| {
+            ["qb-barbarian-", "qb-citizen-", "qb-warrior-"]
+                .iter()
+                .any(|prefix| key.starts_with(prefix))
+        })
+}
+
 /// Preserve published definition hashes and absent-track values for changed quests.
 pub(super) fn retain_qc_reward_predecessors(active: &mut QuestStateCatalogue) {
     // Main at 492ca0e6ba, before Package C.
@@ -1634,18 +1643,6 @@ pub(super) fn retain_qc_reward_predecessors(active: &mut QuestStateCatalogue) {
             );
         }
     }
-}
-
-// The QB addon routes were first published after the retained Outfit definition.
-fn is_qb_outfit_extension(callback: &RewardCallback) -> bool {
-    callback
-        .key
-        .strip_prefix("oteryn:quest-reward/")
-        .is_some_and(|key| {
-            ["qb-barbarian-", "qb-citizen-", "qb-warrior-"]
-                .iter()
-                .any(|prefix| key.starts_with(prefix))
-        })
 }
 
 /// Recover the complete reward definition captured before Citizen NPC activation.
@@ -2376,7 +2373,7 @@ mod tests {
         // shared-reward-callbacks.json has 207 existing rows plus the generated
         // QB routes: 17 Barbarian, 5 Citizen and 9 Warrior.
         // The other terms are QuestPC7, other registered shards, M43 peer and Kingsday journal.
-        assert_eq!(load()?.len(), 238 + 59 + 130 + 1 + 1);
+        assert_eq!(load()?.len(), 238 + 59 + 126 + 1 + 1);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;

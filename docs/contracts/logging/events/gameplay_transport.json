@@ -312,6 +312,16 @@
       "note": "PR3056 test-only (cfg(test)): finite native profile boundary observations for actual pinned Primal/Bakragore rooms. Phase and class are static source tokens only; no identifiers, numeric clocks, payloads or raw errors. No production logging or authority is added."
     },
     {
+      "event": "party_refused",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "step"
+      ],
+      "codes": [],
+      "note": "Party command could not be served; names the failed step (node boot diagnostics)."
+    },
+    {
       "event": "player_trade_refused",
       "level": "warn",
       "span": false,
@@ -506,6 +516,16 @@
       ],
       "codes": [],
       "note": "A bounded structured replacement for legacy transport operator diagnostics."
+    },
+    {
+      "event": "visibility_refresh_refused",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "step"
+      ],
+      "codes": [],
+      "note": "Visibility refresh failed; names the refresh step that failed."
     }
   ]
 }

@@ -8,6 +8,25 @@ use oteryn_gameplay_foundation::foundation::condition::{
 };
 use sha2::{Digest, Sha256};
 
+/// Soul War mirror and fourth-taint creatures publish their condition and field
+/// sources on every pass, so the field owner never skips them.
+fn tracks_condition_sources(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    definition_key: &str,
+    definition_revision: &str,
+) -> bool {
+    native
+        .policies()
+        .soul_war_health_policy(definition_key, definition_revision)
+        .is_some_and(|policy| {
+            matches!(
+                policy.kind(),
+                crate::content::native_soul_war_callbacks::SoulWarHealthCallbackKind::MirrorImage
+                    | crate::content::native_soul_war_callbacks::SoulWarHealthCallbackKind::FourthTaint
+            )
+        })
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn tick_creature_fields(
         &self,
@@ -24,8 +43,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut plans = Vec::new();
         let mut source_players = Vec::new();
 
-        let creatures = runtime.visible_entities().creatures;
         // Passive source creatures are outside the AI table, but still own field conditions.
+        // A creature whose entry for this position is committed and whose condition store is
+        // empty has no field or periodic work; visiting it costs a snapshot, a tile read and an
+        // owner turn on every pass, which kept the durability holder busy (#3358).
+        let creatures = runtime
+            .visible_entities()
+            .creatures
+            .into_iter()
+            .filter(|visible| {
+                runtime
+                    .idle_field_creature(visible.actor)
+                    .is_none_or(|state| {
+                        tracks_condition_sources(
+                            native,
+                            &state.policy.definition_key,
+                            &state.policy.definition_revision,
+                        )
+                    })
+            })
+            .collect::<Vec<_>>();
         let positions = creatures
             .iter()
             .map(|visible| visible.position)
@@ -124,18 +161,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             // Preview only a cloned condition store. Actual due work is consumed
             // once by the existing canonical owner after all source reads finish.
-            if native
-                .policies()
-                .soul_war_health_policy(
-                    &snapshot.state.policy.definition_key,
-                    &snapshot.state.policy.definition_revision,
-                )
-                .is_some_and(|policy| {
-                    matches!(policy.kind(),
-                crate::content::native_soul_war_callbacks::SoulWarHealthCallbackKind::MirrorImage
-                | crate::content::native_soul_war_callbacks::SoulWarHealthCallbackKind::FourthTaint)
-                })
-            {
+            if tracks_condition_sources(
+                native,
+                &snapshot.state.policy.definition_key,
+                &snapshot.state.policy.definition_revision,
+            ) {
                 let mut preview = snapshot.state.conditions.clone();
                 for tick in preview.take_due(now, facts) {
                     if let Some(source) = tick.provenance.source {

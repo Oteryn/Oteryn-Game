@@ -253,7 +253,7 @@ impl Database {
             oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
             "canonical target requires PostgreSQL 18.6"
         );
-        let migrator = sqlx::migrate!("./migrations");
+        let migrator = &oteryn_gameplay_durability::GAME_MIGRATOR;
         match through {
             Some(version) => migrator.run_to(version, &mut connection).await?,
             None => migrator.run(&mut connection).await?,
@@ -2119,7 +2119,9 @@ async fn name_migration_refusal(database: &Database) -> TestResult {
     .execute(&mut connection)
     .await?;
 
-    let refused = sqlx::migrate!("./migrations").run(&mut connection).await;
+    let refused = oteryn_gameplay_durability::GAME_MIGRATOR
+        .run(&mut connection)
+        .await;
     let Err(sqlx::migrate::MigrateError::ExecuteMigration(error, 22)) = refused else {
         return Err(format!("0022 must refuse a store with a Character: {refused:?}").into());
     };
@@ -2597,7 +2599,9 @@ mod monk_state_postgres_cases {
         .execute(&mut connection)
         .await?;
 
-        sqlx::migrate!("./migrations").run(&mut connection).await?;
+        oteryn_gameplay_durability::GAME_MIGRATOR
+            .run(&mut connection)
+            .await?;
         let values: (i16, i64) = sqlx::query_as(
             "SELECT harmony, serene_forced_remaining_micros \
                FROM game_character_progression_state",

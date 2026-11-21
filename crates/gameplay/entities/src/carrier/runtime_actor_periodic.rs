@@ -145,6 +145,33 @@ impl ChannelRuntimeV1 {
         Ok(())
     }
 
+    /// The state of a creature the field owner has nothing to do for now: its
+    /// entry for the current position is already committed and its condition
+    /// store holds no instance or cleanse immunity, so neither
+    /// `commit_creature_field_entry` nor a periodic turn would change it.
+    /// `None`, any read error included, means the owner must visit it.
+    pub fn idle_field_creature(&self, actor: ExactActorRef) -> Option<&CompanionState> {
+        self.carrier
+            .validate_current_continuity(&self.continuity)
+            .ok()?;
+        let index = self.carrier.validate_ref(&self.continuity, actor.0).ok()?;
+        let Slot::CreatureOccupied {
+            committed,
+            health,
+            position: Some(position),
+            companion: Some(state),
+            ..
+        } = self.carrier.slots.get(index)?
+        else {
+            return None;
+        };
+        (*health > 0
+            && committed.field_entry_revision == Some(position.revision)
+            && state.conditions.instances().is_empty()
+            && state.conditions.next_non_ticking_expiry().is_none())
+        .then_some(state.as_ref())
+    }
+
     /// Stages only a source-qualified physical actor's existing condition store.
     /// `facts` belong to the actual world/tile owner, not the attacker or client.
     pub fn stage_creature_periodic_turn(
@@ -660,10 +687,18 @@ impl ChannelRuntimeV1 {
         if self.carrier.slots.get(index) != Some(&prepared.original_slot) {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
         }
-        self.carrier
-            .reserve_cloak_blood_capacity(&prepared.health_events.blood)?;
-        self.carrier
-            .reserve_native_death_capacity(prepared.native_death.as_slice())?;
+        // Only this turn's own events need capacity: every pending reservation
+        // reserved its own when it was staged, and neither store gives capacity
+        // back. Both helpers scan every slot, so calling them with nothing to add
+        // made a creature periodic pass quadratic in the creature count.
+        if !prepared.health_events.blood.is_empty() {
+            self.carrier
+                .reserve_cloak_blood_capacity(&prepared.health_events.blood)?;
+        }
+        if prepared.native_death.is_some() {
+            self.carrier
+                .reserve_native_death_capacity(prepared.native_death.as_slice())?;
+        }
         let Slot::CreatureOccupied {
             health,
             companion,
@@ -900,6 +935,16 @@ mod tests {
         amount: u32,
         repetitions: u32,
     ) {
+        install_dot_at(runtime, creature, amount, repetitions, 0);
+    }
+
+    fn install_dot_at(
+        runtime: &mut ChannelRuntimeV1,
+        creature: ExactActorRef,
+        amount: u32,
+        repetitions: u32,
+        now: u64,
+    ) {
         let before = runtime.companion_snapshot(creature).unwrap();
         let mut after = before.state.clone();
         let definition = ConditionDefinition::new(
@@ -924,7 +969,7 @@ mod tests {
                 ConditionSourceKind::Field,
                 &[],
                 &ApplicationFacts {
-                    now: 0,
+                    now,
                     base_speed: 220,
                     mana_shield_capacity: 0,
                     target_reentry_protected: false,
@@ -936,6 +981,93 @@ mod tests {
             )
             .unwrap();
         runtime.compare_companion_state(&before, after).unwrap();
+    }
+    #[test]
+    fn idle_field_creature_needs_committed_entry_and_empty_conditions() {
+        let (mut runtime, _, _) = owner();
+        let creature = runtime
+            .admit_pinned_monster_lab_creature(
+                MovementLocalPosition {
+                    x: 1,
+                    y: 0,
+                    floor: 0,
+                },
+                "creature:rat",
+                812,
+            )
+            .unwrap();
+        runtime
+            .install_creature_policy(creature, "creature:rat")
+            .unwrap();
+        // No entry is committed for this position yet: the owner must visit it.
+        assert!(runtime.idle_field_creature(creature).is_none());
+        runtime
+            .commit_creature_field_entry(creature, 0, None)
+            .unwrap();
+        assert!(runtime.idle_field_creature(creature).is_some());
+        // A condition in the store makes it due for periodic turns again.
+        install_dot(&mut runtime, creature, 10, 2);
+        assert!(runtime.idle_field_creature(creature).is_none());
+    }
+    #[test]
+    fn skipped_idle_creature_ticks_like_one_visited_every_pass() {
+        // The field owner skips an idle creature, so its empty store no longer
+        // advances pass_at/pass_ticks. Its first condition must tick exactly as
+        // for a creature that was visited on every pass: no burst, no lost tick.
+        let facts = || TickFacts {
+            in_protection_zone: false,
+            standing_on_field: None,
+        };
+        let run = |visit_idle: bool| {
+            let (mut runtime, _, _) = owner();
+            let creature = runtime
+                .admit_pinned_monster_lab_creature(
+                    MovementLocalPosition {
+                        x: 1,
+                        y: 0,
+                        floor: 0,
+                    },
+                    "creature:rat",
+                    812,
+                )
+                .unwrap();
+            runtime
+                .install_creature_policy(creature, "creature:rat")
+                .unwrap();
+            runtime
+                .commit_creature_field_entry(creature, 0, None)
+                .unwrap();
+            for now in (1..=5).map(|second| second * 1_000_000) {
+                assert!(runtime.idle_field_creature(creature).is_some());
+                if visit_idle {
+                    let prepared = runtime
+                        .stage_creature_periodic_turn(creature, now, facts())
+                        .unwrap();
+                    assert!(
+                        runtime
+                            .commit_creature_periodic_turn(prepared)
+                            .unwrap()
+                            .ticks
+                            .is_empty()
+                    );
+                }
+            }
+            // The field applies it at the instant of the last pass.
+            install_dot_at(&mut runtime, creature, 10, 3, 5_000_000);
+            (6..=10)
+                .map(|second| second * 1_000_000)
+                .map(|now| {
+                    let prepared = runtime
+                        .stage_creature_periodic_turn(creature, now, facts())
+                        .unwrap();
+                    let receipt = runtime.commit_creature_periodic_turn(prepared).unwrap();
+                    (now, receipt.ticks.len(), receipt.health_after)
+                })
+                .collect::<Vec<_>>()
+        };
+        let visited = run(true);
+        assert!(visited.iter().any(|(_, ticks, _)| *ticks > 0));
+        assert_eq!(visited, run(false));
     }
     fn retired_dot_source(reused: bool) {
         let (mut runtime, source, session) = owner();

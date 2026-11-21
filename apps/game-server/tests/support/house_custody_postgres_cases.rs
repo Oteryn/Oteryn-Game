@@ -54,7 +54,9 @@ impl Database {
             oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
             "canonical target is PostgreSQL 18.6"
         );
-        sqlx::migrate!("./migrations").run(&mut connection).await?;
+        oteryn_gameplay_durability::GAME_MIGRATOR
+            .run(&mut connection)
+            .await?;
         isolate_storage_from_shape_gate(&mut connection).await?;
         connection.close().await?;
         Ok(Self {

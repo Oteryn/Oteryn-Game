@@ -7,7 +7,7 @@ use super::super::{
 use super::*;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::npc_trade::{
-    NpcTradeCause, NpcTradeCoins, NpcTradeError,
+    NpcTradeCause, NpcTradeCoins, NpcTradeError, NpcTradeLineKind, NpcTradeOutcome,
     NpcTradeRequest, NpcTradeSide, sinatuki_exchange,
 };
 use crate::foundation::{CommandId, CommandRef};
@@ -52,10 +52,23 @@ const PRESENT_RECIPE: Recipe = Recipe {
     success: "THANK YOU! Here is a helmet that will serve you well.",
     cancel: None,
 };
+const FISH_RECIPE: Recipe = Recipe {
+    npc: sinatuki_exchange::NPC,
+    keyword: "nupi",
+    output: sinatuki_exchange::SHARD,
+    prompt: None,
+    success: "Jinuma, suvituka siq chuqua!! Nguraka, nguraka! <happily takes the food from you and gives you five glimmering crystals>",
+    cancel: None,
+};
+const FISH_FALLBACK: &str =
+    "Jinuma, suvituka siq chuqua!! Nguraka, nguraka! <happily takes the food from you>";
+const FISH_INSUFFICIENT: &str = "Kisavuta! <giggles>";
+
 fn recipe(npc: &str) -> Option<&'static Recipe> {
     match npc {
         "oteryn:npc.al_dee" => Some(&PICK_RECIPE),
         "oteryn:npc.seymour" => Some(&PRESENT_RECIPE),
+        sinatuki_exchange::NPC => Some(&FISH_RECIPE),
         "oteryn:npc.uzgod" => Some(&KNIFE_RECIPE),
         _ => None,
     }
@@ -84,7 +97,7 @@ pub(super) async fn talk(
     let yes = intent.text.trim().eq_ignore_ascii_case("yes");
     let nupi = oteryn_gameplay_npc::greeting::words(&intent.text)
         .iter()
-        .any(|word| word == "nupi");
+        .any(|word| word == FISH_RECIPE.keyword);
     let chat = &admission.states.chat;
     let fish_default_message = nupi
         && chat
@@ -108,8 +121,7 @@ pub(super) async fn talk(
         {
             Ok(Some(receipt))
                 if receipt.side == NpcTradeSide::Exchange
-                    && (recipe(&receipt.npc_key).is_some()
-                        || receipt.npc_key == sinatuki_exchange::NPC)
+                    && recipe(&receipt.npc_key).is_some()
                     && (receipt.npc_key == sinatuki_exchange::NPC) == nupi =>
             {
                 return Some(NpcTalkOutcome {
@@ -125,16 +137,18 @@ pub(super) async fn talk(
     let runtime = admission.runtime.lock().await;
     let npc =
         service_context::live_npc(&runtime, actor, command.game_session_id, intent.npc_actor)?;
-    // Sinatuki's live dialogue belongs to the quest callback owner. The trade
-    // receipt lookup above is only for commands committed before the cutover.
     let recipe = recipe(&npc.key);
+    let fish_exchange = npc.key == sinatuki_exchange::NPC;
+    if fish_exchange && !nupi {
+        return None;
+    }
     if recipe.is_none() && npc.key != "oteryn:npc.yasir" {
         return None;
     }
     // An NPC may also own unrelated quest dialogue. Select our exact recipe
     // before touching ordinary conversation state; unmatched text falls through.
-    let mut confirmed = false;
-    let step = if let Some(recipe) = recipe {
+    let mut confirmed = fish_exchange;
+    let step = if let Some(recipe) = recipe.filter(|_| !fish_exchange) {
         Some(quest_dialogue::prepare(
             admission,
             actor,
@@ -180,6 +194,9 @@ pub(super) async fn talk(
     } else {
         None
     };
+    let fish_callback = fish_exchange
+        && fish_default_message
+        && chat.engaged(command.game_session_id) == Some(npc.actor);
     let ordinary = admission.states.npc_conversations.talk_in(
         chat,
         &runtime,
@@ -189,7 +206,7 @@ pub(super) async fn talk(
         admission.owner_now(),
         super::super::item_ref_admission::pinned_index(&runtime, admission.active_generation),
     );
-    if ordinary.disposition != NpcIntentDisposition::Ok {
+    if ordinary.disposition != NpcIntentDisposition::Ok || (fish_exchange && !fish_callback) {
         return Some(ordinary);
     }
     let Some(recipe) = recipe else {
@@ -302,7 +319,11 @@ pub(super) async fn talk(
         command: reference,
         quantity: 1,
         unit_price: 0,
-        offer_count: 1,
+        offer_count: if fish_exchange {
+            sinatuki_exchange::REWARD
+        } else {
+            1
+        },
         item,
         transaction_id: id(b"oteryn:pick-exchange.transaction:v1"),
         event_id: id(b"oteryn:pick-exchange.event:v1"),
@@ -319,7 +340,18 @@ pub(super) async fn talk(
         },
         backpack,
     };
-    let result = if recipe.npc == "oteryn:npc.uzgod" {
+    let result = if fish_exchange {
+        admission
+            .root
+            .exchange_sinatuki_fish(
+                admission.character,
+                admission.holder,
+                fence,
+                request,
+                &NativeItemWeights(native),
+            )
+            .await
+    } else if recipe.npc == "oteryn:npc.uzgod" {
         admission
             .root
             .exchange_obsidian_knife(
@@ -353,6 +385,53 @@ pub(super) async fn talk(
             )
             .await
     };
+    if fish_exchange {
+        let (reply, inventory_changed) = match result {
+            Ok(
+                NpcTradeOutcome::Committed(receipt) | NpcTradeOutcome::AlreadyCommitted(receipt),
+            ) => {
+                let taken: u32 = receipt
+                    .lines
+                    .iter()
+                    .filter(|line| line.kind == NpcTradeLineKind::ItemBurn)
+                    .map(|line| line.quantity_before - line.quantity_after)
+                    .sum();
+                (
+                    if taken == 100 {
+                        recipe.success
+                    } else {
+                        FISH_FALLBACK
+                    },
+                    true,
+                )
+            }
+            Err(NpcTradeError::RequirementNotMet) => return Some(ordinary),
+            Err(NpcTradeError::ItemNotFound) => (FISH_INSUFFICIENT, false),
+            Err(NpcTradeError::Unavailable(_)) => return Some(unknown()),
+            Err(_) => return Some(rejected()),
+        };
+        let runtime = admission.runtime.lock().await;
+        let focused = admission
+            .states
+            .npc_conversations
+            .current_npc(
+                &admission.states.chat,
+                &runtime,
+                actor,
+                command.game_session_id,
+                intent,
+            )
+            .as_ref()
+            == Some(&context);
+        return Some(NpcTalkOutcome {
+            inventory_changed,
+            ..if focused {
+                NpcConversations::bank_reply(intent, reply.into())
+            } else {
+                NpcTalkOutcome::only(NpcIntentDisposition::Ok)
+            }
+        });
+    }
     match result {
         Ok(_) => {
             let mut outcome =

@@ -94,33 +94,9 @@
       }
     },
     {
-      "activation": {
-        "track": "oteryn:quest-progress/questpc7/goblin/signs",
-        "minimum": 0,
-        "maximum": 2
-      },
-      "experience": null,
-      "failure_message": null,
-      "item_on_target": {
-        "item": "oteryn:item.tibia.i17668",
-        "count": 1,
-        "replacement": null,
-        "target_replacement": null
-      },
       "key": "oteryn:quest-callback/questpc7-goblin-sign-1",
-      "lever": null,
-      "minimum_level": null,
-      "monk_reward": null,
-      "offerings": [],
-      "passages": [],
       "quest": "oteryn:quest.goblin_merchant_quest",
-      "requirements": {
-        "min_level": 0,
-        "premium": false,
-        "completed_quests": []
-      },
-      "return_on_failure": false,
-      "reversible": false,
+      "trigger": "use",
       "selector": {
         "position": {
           "x": 33055,
@@ -131,12 +107,10 @@
         "unique": null,
         "action": null
       },
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
-        "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
-        "content/world/placements/index.json:1:sha256:f6a1436e423ae1b3835f9decc1b4d8e84559ec6d95e38ef1207c972498643a5f",
-        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
-      ],
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
       "storage": [
         {
           "track": "oteryn:quest-progress/questpc7/goblin/programme",
@@ -159,38 +133,40 @@
           "set": 1
         }
       ],
-      "success_message": "You put up one advertisement sign for Rafzan at this marked site.",
-      "teleport": null,
-      "trigger": "use"
-    },
-    {
       "activation": {
         "track": "oteryn:quest-progress/questpc7/goblin/signs",
         "minimum": 0,
         "maximum": 2
       },
+      "minimum_level": null,
       "experience": null,
-      "failure_message": null,
+      "monk_reward": null,
+      "offerings": [],
       "item_on_target": {
         "item": "oteryn:item.tibia.i17668",
         "count": 1,
         "replacement": null,
         "target_replacement": null
       },
-      "key": "oteryn:quest-callback/questpc7-goblin-sign-2",
-      "lever": null,
-      "minimum_level": null,
-      "monk_reward": null,
-      "offerings": [],
-      "passages": [],
-      "quest": "oteryn:quest.goblin_merchant_quest",
+      "return_on_failure": false,
+      "failure_message": null,
       "requirements": {
         "min_level": 0,
         "premium": false,
         "completed_quests": []
       },
-      "return_on_failure": false,
-      "reversible": false,
+      "success_message": "You put up one advertisement sign for Rafzan at this marked site.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
+        "content/world/placements/index.json:1:sha256:42215599a78bde380c790ee79b9369756d0af55a7226a40ad2535c4974f877bd",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-goblin-sign-2",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "trigger": "use",
       "selector": {
         "position": {
           "x": 33026,
@@ -201,12 +177,10 @@
         "unique": null,
         "action": null
       },
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
-        "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
-        "content/world/placements/index.json:1:sha256:f6a1436e423ae1b3835f9decc1b4d8e84559ec6d95e38ef1207c972498643a5f",
-        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
-      ],
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
       "storage": [
         {
           "track": "oteryn:quest-progress/questpc7/goblin/programme",
@@ -229,38 +203,40 @@
           "set": 1
         }
       ],
-      "success_message": "You put up one advertisement sign for Rafzan at this marked site.",
-      "teleport": null,
-      "trigger": "use"
-    },
-    {
       "activation": {
         "track": "oteryn:quest-progress/questpc7/goblin/signs",
         "minimum": 0,
         "maximum": 2
       },
+      "minimum_level": null,
       "experience": null,
-      "failure_message": null,
+      "monk_reward": null,
+      "offerings": [],
       "item_on_target": {
         "item": "oteryn:item.tibia.i17668",
         "count": 1,
         "replacement": null,
         "target_replacement": null
       },
-      "key": "oteryn:quest-callback/questpc7-goblin-sign-3",
-      "lever": null,
-      "minimum_level": null,
-      "monk_reward": null,
-      "offerings": [],
-      "passages": [],
-      "quest": "oteryn:quest.goblin_merchant_quest",
+      "return_on_failure": false,
+      "failure_message": null,
       "requirements": {
         "min_level": 0,
         "premium": false,
         "completed_quests": []
       },
-      "return_on_failure": false,
-      "reversible": false,
+      "success_message": "You put up one advertisement sign for Rafzan at this marked site.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
+        "content/world/placements/index.json:1:sha256:42215599a78bde380c790ee79b9369756d0af55a7226a40ad2535c4974f877bd",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-goblin-sign-3",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "trigger": "use",
       "selector": {
         "position": {
           "x": 33032,
@@ -271,12 +247,10 @@
         "unique": null,
         "action": null
       },
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
-        "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
-        "content/world/placements/index.json:1:sha256:f6a1436e423ae1b3835f9decc1b4d8e84559ec6d95e38ef1207c972498643a5f",
-        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
-      ],
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
       "storage": [
         {
           "track": "oteryn:quest-progress/questpc7/goblin/programme",
@@ -299,9 +273,35 @@
           "set": 1
         }
       ],
+      "activation": {
+        "track": "oteryn:quest-progress/questpc7/goblin/signs",
+        "minimum": 0,
+        "maximum": 2
+      },
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17668",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": false,
+        "completed_quests": []
+      },
       "success_message": "You put up one advertisement sign for Rafzan at this marked site.",
-      "teleport": null,
-      "trigger": "use"
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
+        "content/world/placements/index.json:1:sha256:42215599a78bde380c790ee79b9369756d0af55a7226a40ad2535c4974f877bd",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
+      ]
     },
     {
       "key": "oteryn:quest-callback/questpc7-goblin-pond",
@@ -2169,23 +2169,9 @@
       ]
     },
     {
-      "experience": null,
-      "failure_message": null,
-      "item_on_target": null,
       "key": "oteryn:quest-callback/questpc7-grave-survey-2",
-      "lever": null,
-      "minimum_level": null,
-      "monk_reward": null,
-      "offerings": [],
-      "passages": [],
       "quest": "oteryn:quest.grave_danger_quest",
-      "requirements": {
-        "min_level": 250,
-        "premium": true,
-        "completed_quests": []
-      },
-      "return_on_failure": false,
-      "reversible": false,
+      "trigger": "use",
       "selector": {
         "position": {
           "x": 32190,
@@ -2196,11 +2182,14 @@
         "unique": null,
         "action": null
       },
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
-        "content/world/placements/region-z08-x125-y124.b3:1:sha256:b37687ad30db1d15d0ce2af67348a70d979a9b61e002123e7b6547ecaf9cfc3a",
-        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
-      ],
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33262,
+        "y": 31984,
+        "floor": -8
+      },
       "storage": [
         {
           "track": "oteryn:quest-progress/questpc7/grave/programme",
@@ -2216,13 +2205,24 @@
           "set": 3
         }
       ],
-      "success_message": "You have visited the haunted grave in Ghostlands. The spectral trail continues.",
-      "teleport": {
-        "x": 33262,
-        "y": 31984,
-        "floor": -8
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
       },
-      "trigger": "use"
+      "success_message": "You have visited the haunted grave in Ghostlands. The spectral trail continues.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "content/world/placements/region-z08-x125-y124.b3:1:sha256:b37687ad30db1d15d0ce2af67348a70d979a9b61e002123e7b6547ecaf9cfc3a",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
     },
     {
       "key": "oteryn:quest-callback/questpc7-grave-survey-3",
@@ -2617,23 +2617,9 @@
       ]
     },
     {
-      "experience": null,
-      "failure_message": null,
-      "item_on_target": null,
       "key": "oteryn:quest-callback/questpc7-grave-survey-10",
-      "lever": null,
-      "minimum_level": null,
-      "monk_reward": null,
-      "offerings": [],
-      "passages": [],
       "quest": "oteryn:quest.grave_danger_quest",
-      "requirements": {
-        "min_level": 250,
-        "premium": true,
-        "completed_quests": []
-      },
-      "return_on_failure": false,
-      "reversible": false,
+      "trigger": "use",
       "selector": {
         "position": {
           "x": 32776,
@@ -2644,11 +2630,14 @@
         "unique": null,
         "action": null
       },
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
-        "content/world/placements/region-z08-x128-y124.b3:1:sha256:56853b840ff3bd613ec2a37e75ae8dd8ac0eee96db652f6feaba5eccdd506368",
-        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
-      ],
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32011,
+        "y": 31558,
+        "floor": -7
+      },
       "storage": [
         {
           "track": "oteryn:quest-progress/questpc7/grave/programme",
@@ -2664,13 +2653,24 @@
           "set": 11
         }
       ],
-      "success_message": "You have visited the haunted grave in Orclands entrance. The spectral trail continues.",
-      "teleport": {
-        "x": 32011,
-        "y": 31558,
-        "floor": -7
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
       },
-      "trigger": "use"
+      "success_message": "You have visited the haunted grave in Orclands entrance. The spectral trail continues.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "content/world/placements/region-z08-x128-y124.b3:1:sha256:56853b840ff3bd613ec2a37e75ae8dd8ac0eee96db652f6feaba5eccdd506368",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
     },
     {
       "key": "oteryn:quest-callback/questpc7-grave-survey-11",

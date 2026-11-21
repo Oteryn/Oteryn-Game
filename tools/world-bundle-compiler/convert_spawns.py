@@ -134,8 +134,8 @@ def convert(xml: bytes) -> dict[str, str]:
     chances_bytes = BOSS_CHANCES.read_bytes()
     chances = json.loads(chances_bytes)["bosses"]
     scheduled_bosses = []
-    pharaohs = {}
     koshei_spawn = None
+    pharaohs = {}
     for ordinal, element in enumerate(ET.fromstring(xml)):
         cx, cy, cz = (int(element.get(k)) for k in ("centerx", "centery", "centerz"))
         base = f"oteryn:spawn.x{cx}_y{cy}_z{cz}"
@@ -174,7 +174,7 @@ def convert(xml: bytes) -> dict[str, str]:
                     "points": [point],
                 }}
                 continue
-            if point["creature"] in PHARAOHS:
+            elif point["creature"] in PHARAOHS:
                 creature = point["creature"]
                 x, y, z = PHARAOHS[creature]
                 if (creature in pharaohs or point["cell"] != {"floor": z, "x": x, "y": y}
@@ -225,10 +225,10 @@ def convert(xml: bytes) -> dict[str, str]:
     if pharaohs.keys() != PHARAOHS.keys():
         sys.exit("Ancient Tombs source spawns are incomplete")
     records.extend(scheduled_bosses)
-    records.extend(pharaohs[key] for key in sorted(pharaohs))
     if koshei_spawn is None:
         sys.exit("Koshei mainland spawn missing from the pinned source")
     records.append(koshei_spawn)
+    records.extend(pharaohs[key] for key in sorted(pharaohs))
     files, shards = {}, []
     for start in range(0, len(records), SHARD_SIZE):
         part = records[start : start + SHARD_SIZE]

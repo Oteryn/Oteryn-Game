@@ -111,7 +111,9 @@ async fn migrate_canonical_postgres(database_url: &str) -> Result<(), Box<dyn st
         oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
         "canonical target requires PostgreSQL 18.6"
     );
-    sqlx::migrate!("./migrations").run(&mut connection).await?;
+    oteryn_gameplay_durability::GAME_MIGRATOR
+        .run(&mut connection)
+        .await?;
     connection.close().await?;
     Ok(())
 }

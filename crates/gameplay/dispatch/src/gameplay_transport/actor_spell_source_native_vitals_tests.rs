@@ -616,3 +616,130 @@ fn pubproj_creature_dot_keeps_frozen_identity_after_source_removal_and_hides_sum
     }
     Ok(())
 }
+#[test]
+fn cloak_hit_without_mirror_reserves_and_stamps_blood_through_owner_commit()
+-> Result<(), Box<dyn std::error::Error>> {
+    trait OrFail<T> {
+        fn or_fail(self, what: &'static str) -> Result<T, String>;
+    }
+    impl<T, E: std::fmt::Debug> OrFail<T> for Result<T, E> {
+        fn or_fail(self, what: &'static str) -> Result<T, String> {
+            self.map_err(|error| format!("{what}: {error:?}"))
+        }
+    }
+    impl<T> OrFail<T> for Option<T> {
+        fn or_fail(self, what: &'static str) -> Result<T, String> {
+            self.ok_or_else(|| what.to_owned())
+        }
+    }
+    use crate::foundation::runtime_actor_spell_types::{
+        OwnerCombatBatch, OwnerCombatChange, OwnerCombatEffect, SpellOccurrenceBinding,
+    };
+    use crate::foundation::{CharacterId, CharacterLease, CommandId, CommandRef};
+    let (mut runtime, player, session) = super::tests::runtime_with_capacity(0x43, 32);
+    runtime
+        .initialize_source_pinned_lab_player_position(
+            player,
+            session,
+            MovementLocalPosition {
+                x: 90,
+                y: 90,
+                floor: 7,
+            },
+        )
+        .or_fail("qualified fixture")?;
+    let character = CharacterId::decode(&[
+        1, 0x91, 0, 0, 0, 0x43, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 0x43,
+    ])
+    .or_fail("character")?;
+    runtime
+        .bind_attacker_lease(
+            player,
+            session,
+            CharacterLease::new(character, 1).or_fail("lease")?,
+        )
+        .or_fail("bound lease")?;
+    let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../../content/spells.manifest.json");
+    let mut policies =
+        crate::content::native_gameplay::callback_native_policy_fixture_at(&manifest)
+            .or_fail("actual manifest-pinned native policy fixture")?
+            .policies()
+            .clone();
+    policies
+        .bind_qualified_outer_artifact(runtime.content_pin().server_artifact_digest())
+        .or_fail("native policies under the fixture outer pin")?;
+    runtime
+        .install_companion_policies(policies)
+        .or_fail("installed native policies")?;
+    let policy = runtime
+        .companion_policy("oteryn:creature.cloak_of_terror")
+        .or_fail("native Cloak policy")?;
+    let at = runtime
+        .read_actor_position(player)
+        .or_fail("player position")?
+        .position();
+    let cloak = runtime
+        .admit_pinned_monster_lab_creature(at, &policy.definition_key, policy.maximum_health)
+        .or_fail("native Cloak")?;
+    runtime
+        .install_creature_policy(cloak, &policy.definition_key)
+        .or_fail("sealed Cloak callback")?;
+    let mut states = ChannelSpellStates::default();
+    assert!(
+        states
+            .initialize(
+                &runtime,
+                player,
+                session,
+                super::tests::FACTS,
+                (0, 0),
+                SemanticTimeMicros::from_micros(100_000)
+            )
+            .is_some()
+    );
+    // A delayed Strike / OrdinaryCombat hit reaches commit_owner_batch through
+    // commit_due_batch with no Mirror Image in the batch.
+    let batch = OwnerCombatBatch {
+        caster: player,
+        attacker: character,
+        current_lease_generation: 1,
+        command: CommandRef::new(session, CommandId::new(1).or_fail("command")?),
+        occurrence: SpellOccurrenceBinding {
+            id: "spell-batch:cloak-due".into(),
+            revisions: ["rules:1", "content:1", "world:1", "formula:1", "sim:1"].map(str::to_owned),
+        },
+        binding: b"qualified-cloak-due".to_vec(),
+        anchor: None,
+        now_us: Some(SemanticTimeMicros::from_micros(100_999)),
+        now_ms: 100,
+        effects: vec![OwnerCombatEffect {
+            target: cloak,
+            sub_ordinal: 0,
+            change: OwnerCombatChange::Damage {
+                target_atom: "oteryn:creature.cloak_of_terror".into(),
+                magnitude: 1,
+            },
+        }],
+        deferred: None,
+    };
+    let staged = runtime.stage_spell_batch(&batch).or_fail("stage")?;
+    assert!(
+        !staged.has_source_native_reaction(),
+        "no Mirror Image in this batch"
+    );
+    let player_batch =
+        stage_player_batch(&runtime, &states, &batch, None).or_fail("player successor")?;
+    let receipt = commit_owner_batch(&mut runtime, &mut states, staged, Some(player_batch))
+        .or_fail("owner commit")?;
+    assert!(receipt.applied);
+    let blood = runtime
+        .pending_cloak_blood_events(64)
+        .or_fail("blood queue")?;
+    assert_eq!(blood.len(), 1, "the real Cloak hit mints one blood event");
+    assert!(
+        blood.iter().all(|event| event.current_for(&runtime)),
+        "an unstamped blood event is rejected by the drain and stalls the monster AI pass"
+    );
+    Ok(())
+}
