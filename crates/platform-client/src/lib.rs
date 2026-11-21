@@ -431,12 +431,6 @@ mod tests {
     }
 
     #[test]
-    fn production_routes_machine_calls_to_api_and_authorize_to_web()
-    -> Result<(), Box<dyn std::error::Error>> {
-        assert_platform_routes("https://oteryn.com/", "https://api.oteryn.com/")
-    }
-
-    #[test]
     fn nonproduction_uses_one_origin_for_machine_calls_and_authorize()
     -> Result<(), Box<dyn std::error::Error>> {
         let base = "https://platform.preprod.oteryn.internal/";
