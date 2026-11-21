@@ -37,6 +37,7 @@ pub enum PlayEvent {
 pub struct Pushed {
     /// A committed activity switch invalidates the source view's queued actions.
     pub scope_changed: bool,
+    pub scope_session: Option<[u8; 16]>,
     pub activity_scope: Option<oteryn_session::activity_scope::ActivityScopeSnapshot>,
     pub served_channel: Option<Option<oteryn_client_runtime::channel_list::ServedChannel>>,
     pub world_weather: Option<oteryn_session::world_weather::WorldWeather>,
@@ -83,6 +84,7 @@ impl Pushed {
             self.personal_map_marks = None;
         }
         self.scope_changed |= newer.scope_changed;
+        self.scope_session = newer.scope_session.or(self.scope_session);
         self.activity_scope = newer.activity_scope.or(self.activity_scope.take());
         self.motion_reset |= newer.motion_reset;
         super::feature_0023_presentation::protocol::absorb_visuals(
@@ -169,6 +171,8 @@ pub(super) struct Mailbox {
     pub(super) diagonal_movement_selected: bool,
     pub(super) own_actor_identity: Option<[u8; 16]>,
     pub(super) activity_scope: Option<oteryn_session::activity_scope::ActivityScopeSnapshot>,
+    pub(super) scope_session: Option<[u8; 16]>,
+    pub(super) scope_reset_modal: bool,
     pub(super) scope_pending: bool,
     pub(super) scope_initialize: bool,
     pub(super) command_receiver: std::sync::Weak<Mutex<UnboundedReceiver<PlayCommand>>>,
@@ -339,8 +343,11 @@ pub(super) type SharedMailbox = Arc<Mutex<Mailbox>>;
 
 impl Mailbox {
     pub(super) fn reset_scope_state(&mut self) {
+        self.server_modal.clear();
         *self = Self {
             connection: std::mem::take(&mut self.connection),
+            player_typing_shutdown: self.player_typing_shutdown,
+            server_modal: std::mem::take(&mut self.server_modal),
             ..Default::default()
         };
     }

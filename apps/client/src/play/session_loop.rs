@@ -16,7 +16,7 @@ const IDLE_SLICE: Duration = Duration::from_millis(20);
 pub use super::stepper::Stepper;
 
 mod scope_transition;
-use scope_transition::{publish_scope_transition, query_initial_returner};
+use scope_transition::{publish_scope_transition, query_initial_returner, reset_modal};
 
 fn initialize<T: Stepper>(
     session: &T,
@@ -74,6 +74,9 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
     'session: loop {
         if outbox.session_cancelled() {
             return;
+        }
+        if outbox.take_scope_modal_reset() {
+            reset_modal(&session, &outbox, &mut modal);
         }
         if outbox.scope_needs_initialize() {
             if let Err(error) = initialize(&session, &outbox) {

@@ -15,8 +15,20 @@ pub(super) fn publish_scope_transition<T: Stepper>(
     ) {
         return false;
     }
-    // Publish the destination and discard unsent source actions through the
-    // same scope barrier, whether a command or an automatic query saw it.
+    if !publish(session, outbox, held) {
+        outbox.reset_unbound_scope();
+    }
+    outbox.take_scope_modal_reset();
+    reset_modal(session, outbox, modal);
+    outbox.hud_stamina_initialize(session.feature_selected(199));
+    true
+}
+
+pub(super) fn reset_modal<T: Stepper>(
+    session: &T,
+    outbox: &Outbox,
+    modal: &mut crate::play::feature_0450_server_modal::protocol::Driver,
+) {
     // Dropping the source driver closes its answer channel, including native dialogs.
     modal.reset_scope(session.feature_selected(450));
     *modal = std::mem::replace(
@@ -28,15 +40,6 @@ pub(super) fn publish_scope_transition<T: Stepper>(
         oteryn_session::property_services::server_modal::input::CAPABILITY_SERVER_MODAL_INPUT_V1,
     ))
     .with_outbox(outbox);
-    {
-        let mut mailbox = crate::play::mailbox::lock(&outbox.0);
-        mailbox.cancel_activity_requests();
-        mailbox.reset_server_message_namespace();
-        mailbox.activity_reset_commands = true;
-    }
-    outbox.hud_stamina_initialize(session.feature_selected(199));
-    publish(session, outbox, held);
-    true
 }
 
 /// Returns true when the Returner query crossed a scope barrier.

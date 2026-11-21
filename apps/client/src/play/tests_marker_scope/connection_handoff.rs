@@ -1,11 +1,11 @@
-use super::{house_handoff, play_channel};
+use super::{publish_activity_handoff, play_channel};
 use crate::play::mailbox::lock;
 use oteryn_foundation::CancellationToken;
 use std::sync::{Arc, mpsc};
 use std::time::Duration;
 
 #[test]
-fn committed_handoff_preserves_checkout_and_channel_directory_until_end()
+fn committed_handoff_cancels_checkout_and_preserves_directory()
 -> Result<(), Box<dyn std::error::Error>> {
     const CHANNEL: &str = "01010101-0101-7101-8101-010101010101";
     const PLATFORM: &str = "invalid-platform-url";
@@ -52,7 +52,7 @@ fn committed_handoff_preserves_checkout_and_channel_directory_until_end()
     assert!(launcher.start());
     let checkout = ready_rx.recv_timeout(Duration::from_secs(5))?;
 
-    house_handoff(&outbox);
+    publish_activity_handoff(&outbox);
 
     {
         let mailbox = lock(&link.mailbox);
@@ -90,12 +90,35 @@ fn committed_handoff_preserves_checkout_and_channel_directory_until_end()
         );
     }
     assert!(probe.is_cancelled());
-    assert!(!checkout.is_cancelled());
-    outbox.end(oteryn_platform_client::native_login::PublicClass::SessionUnavailable);
     assert!(
         checkout.is_cancelled(),
-        "session end must cancel the live checkout worker"
+        "source checkout survived the committed handoff"
     );
+    assert!(launcher.can_start(), "destination checkout can start independently");
+    outbox.end(oteryn_platform_client::native_login::PublicClass::SessionUnavailable);
+    assert!(!launcher.can_start());
     release_tx.send(())?;
+    Ok(())
+}
+
+#[test]
+fn handoff_after_owner_drop_keeps_shutdown_and_releases_sender()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut commands, outbox) = play_channel();
+    let config = crate::NativeLoginConfig::from_env(|name| match name {
+        "OTERYN_PLATFORM_URL" | "OTERYN_GATEWAY_URL" | "OTERYN_OAUTH_CLIENT_ID" => {
+            Some("test".into())
+        }
+        _ => None,
+    })?
+    .ok_or("checkout config")?;
+    link.configure_coin_shop(Some(config), "character");
+    drop(link);
+    publish_activity_handoff(&outbox);
+    assert!(outbox.session_cancelled(), "handoff cleared owner shutdown");
+    assert!(matches!(
+        commands.try_recv(),
+        Err(tokio::sync::mpsc::error::TryRecvError::Disconnected)
+    ));
     Ok(())
 }

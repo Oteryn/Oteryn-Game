@@ -4,6 +4,8 @@ use oteryn_session::activity_scope::{ActivityScope, ActivityScopeSnapshot, encod
 
 #[path = "tests_marker_scope/connection_handoff.rs"]
 mod connection_handoff;
+#[path = "tests_marker_scope/wire_handoff.rs"]
+mod wire_handoff;
 
 struct AutomaticQueryHandoff {
     scope: ActivityScopeSnapshot,
@@ -478,7 +480,7 @@ fn support_delivery_activity_scope_changed_publishes_destination_and_continues()
     support_delivery_handoff_continues(true)
 }
 
-fn house_handoff(outbox: &Outbox) {
+fn publish_activity_handoff(outbox: &Outbox) {
     let mut id = [1; 16];
     id[6] = 0x71;
     id[8] = 0x81;
@@ -528,7 +530,7 @@ fn typed_handoff_resets_presented_message_namespace() -> Result<(), String> {
     let mut view = super::PlayView::new(oteryn_renderer::TileCoord::new(100, 200), 0, &[])
         .map_err(|error| error.to_string())?;
     let source_namespace = view.message_namespace;
-    house_handoff(&outbox);
+    publish_activity_handoff(&outbox);
     view.tick(&link).map_err(|error| format!("{error:?}"))?;
     assert_ne!(source_namespace, view.message_namespace);
     Ok(())
@@ -539,7 +541,7 @@ fn handoff_retains_shared_frontend_and_admitted_byte_counters() {
     let (link, _, outbox) = play_channel();
     link.use_shared_frontend();
     link.set_traffic(Arc::default());
-    house_handoff(&outbox);
+    publish_activity_handoff(&outbox);
     assert_eq!(
         (link.uses_shared_frontend(), link.traffic_bytes()),
         (true, Some((0, 0)))
@@ -554,7 +556,7 @@ fn handoff_preserves_saved_chat_mode_on_settings_tick() {
         let mut settings = super::SettingsState::new(None);
         settings.preferences.chat_mode = Some(mode);
         settings.sync_chat_context(&link);
-        house_handoff(&outbox);
+        publish_activity_handoff(&outbox);
         settings.sync_chat_context(&link);
         assert_eq!(settings.preferences.chat_mode, Some(mode));
     }
@@ -568,7 +570,7 @@ fn destination_look_uses_a_fresh_receipt() -> Result<(), &'static str> {
     let (link, _, outbox) = play_channel();
     record_look(&mut lock(&outbox.0), Action::Look, "Source");
     let source = link.look_message().ok_or("source look")?;
-    house_handoff(&outbox);
+    publish_activity_handoff(&outbox);
     assert!(link.look_message().is_none());
     record_look(&mut lock(&outbox.0), Action::Look, "Destination");
     let destination = link.look_message().ok_or("destination look")?;
@@ -591,7 +593,7 @@ fn review_scope_preserves_admission_identity() -> Result<(), Box<dyn std::error:
     link.house_edit(1, "oteryn:content.area.city.thais".into());
     link.house_request(0);
     assert!(commands.try_recv().is_err());
-    house_handoff(&outbox);
+    publish_activity_handoff(&outbox);
     assert_eq!(link.party_panel().own_character_name, "Ari");
     assert!(link.notices_panel().tutorial_selected && link.notices_panel().save_selected);
     assert_eq!(

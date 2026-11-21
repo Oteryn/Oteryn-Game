@@ -15,8 +15,13 @@ impl PlayLink {
 
     #[cfg(bevy_shell)]
     pub(crate) fn open_coin_checkout(&self) -> bool {
-        let shop = lock(&self.mailbox).connection.coin_shop.clone();
-        shop.is_some_and(|shop| shop.start())
+        let mailbox = lock(&self.mailbox);
+        !mailbox.scope_pending
+            && mailbox
+                .connection
+                .coin_shop
+                .as_ref()
+                .is_some_and(|shop| shop.start())
     }
 
     pub(crate) fn configure_coin_shop(
@@ -28,8 +33,11 @@ impl PlayLink {
             return;
         };
         let weak = Arc::downgrade(&self.mailbox);
-        let commands = self.commands.clone();
+        let commands = self.commands.downgrade();
         let after = Arc::new(move || {
+            let Some(commands) = commands.upgrade() else {
+                return;
+            };
             let command = weak.upgrade().and_then(|shared| {
                 let mut mailbox = lock(&shared);
                 if commands.is_closed() {

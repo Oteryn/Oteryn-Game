@@ -15,7 +15,7 @@ pub(super) fn publish<T: Stepper>(
     session: &mut T,
     outbox: &Outbox,
     held: &mut Vec<WorldSpatialEntity>,
-) {
+) -> bool {
     if outbox.scope_publish(session) {
         outbox.own_identity(session.own_identity());
         outbox.appearances(session.visible_appearances());
@@ -23,7 +23,7 @@ pub(super) fn publish<T: Stepper>(
             outbox.entities(entities);
         }
         held.clear();
-        return;
+        return true;
     }
     outbox.own_identity(session.own_identity());
     outbox.hotkey_equip_items(session.hotkey_equip_items());
@@ -52,6 +52,7 @@ pub(super) fn publish<T: Stepper>(
         outbox.chat_public_state(rooms, lines);
         outbox.chat_extras_publish(session);
     }
+    false
 }
 
 #[path = "session_adapter.rs"]
