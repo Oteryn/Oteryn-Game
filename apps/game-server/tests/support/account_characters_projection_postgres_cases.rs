@@ -59,7 +59,7 @@ impl Database {
             oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
             "canonical target is PostgreSQL 18.6"
         );
-        let migrator = sqlx::migrate!("./migrations");
+        let migrator = &oteryn_gameplay_durability::GAME_MIGRATOR;
         match through {
             Some(version) => migrator.run_to(version, &mut connection).await?,
             None => migrator.run(&mut connection).await?,
@@ -395,7 +395,9 @@ async fn existing_revisions(database: &Database) -> TestResult {
     let pool = sqlx::PgPool::connect(&database.url).await?;
     attempt(&pool, &root(0x21, 0xb0, "Aldric")).await?;
     let mut connection = pool.acquire().await?;
-    sqlx::migrate!("./migrations").run(&mut *connection).await?;
+    oteryn_gameplay_durability::GAME_MIGRATOR
+        .run(&mut *connection)
+        .await?;
     drop(connection);
     // The existing revision reads the migration time: after its queued row,
     // never in the future.

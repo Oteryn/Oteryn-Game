@@ -146,13 +146,13 @@ fn cyclopedia_map_bevy_browses_subareas_and_submits_poi_exploration()
     click(&mut app, Kind::Atlas(5))?;
     let geometry = receive(&mut rx)?;
     let request = wire::decode_request(&geometry.payload).map_err(|e| format!("{e:?}"))?;
-    assert_eq!((request.area, request.floor), (2, -7));
+    assert_eq!((request.area, request.floor), (2, 7));
     reply(
         &outbox,
         &geometry,
         wire::encode_reply(&wire::Reply::Geometry(wire::GeometryPage {
             area: 2,
-            floor: -7,
+            floor: 7,
             page: 0,
             next: None,
             total: 1,
@@ -181,7 +181,7 @@ fn cyclopedia_map_bevy_browses_subareas_and_submits_poi_exploration()
     reply(
         &outbox,
         &start,
-        map::encode_result(&map::MapResult {
+        map::encode_wire_result(&map::MapResult {
             code: 0,
             revision: 1,
             discovered: false,
@@ -190,7 +190,7 @@ fn cyclopedia_map_bevy_browses_subareas_and_submits_poi_exploration()
             pool: 0,
             epoch: 1,
             improved: false,
-            visible: vec![(101, 100, -7)],
+            visible: vec![(101, 100, 7)],
         })
         .map_err(|e| format!("{e:?}"))?,
     );
@@ -343,7 +343,7 @@ fn cyclopedia_map_bevy_resets_pois_donates_and_pages_the_region_atlas()
                 x: 100,
                 end: 103,
                 y: 100,
-                floor: -7,
+                floor: 7,
             }],
         })
         .map_err(|e| format!("{e:?}"))?,

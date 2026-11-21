@@ -204,8 +204,13 @@ fn login_about_shows_release_build_and_license() -> TestResult {
     app.world_mut().trigger(Activate { entity: button });
     app.update();
     let host = app.world().non_send::<HostOwner>();
-    let message = host.login.form.message();
-    assert!(message.starts_with("Oteryn Game Client\nRelease: "));
+    let (title, message) = host.login.form.alert().ok_or("missing About alert")?;
+    assert_eq!(title, "About");
+    assert!(message.starts_with(&format!(
+        "Oteryn Game Client\nRelease: {}\nBuild: {}\n",
+        crate::RELEASE_ID,
+        crate::CLIENT_BUILD,
+    )));
     assert!(message.contains("License: MPL-2.0") && !message.contains('\r'));
     Ok(())
 }

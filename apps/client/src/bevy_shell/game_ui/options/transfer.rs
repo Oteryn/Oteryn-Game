@@ -154,13 +154,13 @@ mod tests {
                 bundle: [2; 32],
                 epoch: 1,
             });
-            saved.minimap.tiles.push((100, 200, -7, 55));
+            saved.minimap.tiles.push((100, 200, 7, 55));
             PreferenceStore::export_to(&saved, &active)?;
 
             let backup = active.with_extension("backup.json");
             let portable = root.join("portable.json");
             let mut incoming = saved.clone();
-            incoming.minimap.tiles.push((101, 200, -7, 55));
+            incoming.minimap.tiles.push((101, 200, 7, 55));
             PreferenceStore::export_to(&incoming, &backup)?;
             if matches!(action, Action::Import) {
                 PreferenceStore::export_to(&incoming, &portable)?;
@@ -169,8 +169,8 @@ mod tests {
             let backup_before = std::fs::read(&backup)?;
 
             let mut app = super::super::tests::app(Page::Misc, Some(base))?;
-            let mut writer = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), -7, &[])?;
-            let mut reader = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), -7, &[])?;
+            let mut writer = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), 7, &[])?;
+            let mut reader = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), 7, &[])?;
             writer.bind_test_minimap(root.join("maps"));
             reader.bind_test_minimap(root.join("maps"));
             let (link, _, _) = play_channel();

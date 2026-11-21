@@ -7,7 +7,7 @@ use bevy::{asset::AssetPlugin, ui_widgets::Activate};
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 fn fixture() -> Result<App, Box<dyn std::error::Error>> {
     let (link, _, _) = play_channel();
-    let view = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), -7, &[])?;
+    let view = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), 7, &[])?;
     let mut owner = HostOwner::new(None)?;
     owner.play = Some(ActivePlay { view, link });
     owner.phase = Phase::Playing;
@@ -201,17 +201,17 @@ fn camera(app: &App) -> Result<CameraState, Box<dyn std::error::Error>> {
 #[test]
 fn sidebar_navigation_changes_shared_camera_and_centre_restores_following() -> TestResult {
     let mut app = fixture()?;
-    assert_eq!(camera(&app)?, (100, 200, -7, 1, true));
+    assert_eq!(camera(&app)?, (100, 200, 7, 1, true));
     activate(&mut app, "W")?;
     activate(&mut app, "N")?;
-    assert_eq!(camera(&app)?, (95, 195, -7, 1, false));
+    assert_eq!(camera(&app)?, (95, 195, 7, 1, false));
     activate(&mut app, "Zoom out")?;
     activate(&mut app, "E")?;
     activate(&mut app, "S")?;
     activate(&mut app, "Floor up")?;
-    assert_eq!(camera(&app)?, (105, 205, -6, 2, false));
+    assert_eq!(camera(&app)?, (105, 205, 6, 2, false));
     activate(&mut app, "Centre")?;
-    assert_eq!(camera(&app)?, (100, 200, -7, 2, true));
+    assert_eq!(camera(&app)?, (100, 200, 7, 2, true));
     activate(&mut app, "Zoom in")?;
     activate(&mut app, "Zoom in")?;
     assert_eq!(camera(&app)?.3, 1);
@@ -224,7 +224,7 @@ fn sidebar_navigation_changes_shared_camera_and_centre_restores_following() -> T
     for _ in 0..20 {
         activate(&mut app, "Floor down")?;
     }
-    assert_eq!(camera(&app)?.2, -15);
+    assert_eq!(camera(&app)?.2, 15);
     Ok(())
 }
 fn key(app: &mut App, key: KeyCode) {
@@ -245,14 +245,14 @@ fn alt_navigation_shortcuts_respect_modal_and_hidden_sidebar() -> TestResult {
     key(&mut app, KeyCode::ArrowLeft);
     key(&mut app, KeyCode::Home);
     key(&mut app, KeyCode::PageDown);
-    assert_eq!(camera(&app)?, (95, 200, -8, 2, false));
+    assert_eq!(camera(&app)?, (95, 200, 8, 2, false));
     let modal = app
         .world_mut()
         .spawn((Node::default(), super::super::GameModal))
         .id();
     key(&mut app, KeyCode::ArrowRight);
     activate(&mut app, "Centre")?;
-    assert_eq!(camera(&app)?, (95, 200, -8, 2, false));
+    assert_eq!(camera(&app)?, (95, 200, 8, 2, false));
     app.world_mut().despawn(modal);
     let region = app.world().resource::<GameRegions>().minimap;
     app.world_mut()
@@ -261,7 +261,7 @@ fn alt_navigation_shortcuts_respect_modal_and_hidden_sidebar() -> TestResult {
         .display = Display::None;
     key(&mut app, KeyCode::PageUp);
     activate(&mut app, "Centre")?;
-    assert_eq!(camera(&app)?, (95, 200, -8, 2, false));
+    assert_eq!(camera(&app)?, (95, 200, 8, 2, false));
     app.world_mut()
         .get_mut::<Node>(region)
         .ok_or("region")?
@@ -269,7 +269,7 @@ fn alt_navigation_shortcuts_respect_modal_and_hidden_sidebar() -> TestResult {
     activate(&mut app, "Centre")?;
     key(&mut app, KeyCode::End);
     key(&mut app, KeyCode::PageUp);
-    assert_eq!(camera(&app)?, (100, 200, -6, 1, false));
+    assert_eq!(camera(&app)?, (100, 200, 6, 1, false));
     Ok(())
 }
 mod foreground_click {
@@ -423,7 +423,7 @@ fn read_only_minimap_cannot_edit_or_remove_remembered_marks() -> TestResult {
         let root = tempfile::tempdir()?;
         let mut app = fixture()?;
         let make_read_only = root.path().join("cache");
-        let mut writer = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), -7, &[])?;
+        let mut writer = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), 7, &[])?;
         writer.bind_test_minimap(make_read_only.clone());
         {
             let mut owner = app.world_mut().non_send_mut::<HostOwner>();

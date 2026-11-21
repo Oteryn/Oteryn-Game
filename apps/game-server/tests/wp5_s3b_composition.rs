@@ -683,7 +683,9 @@ async fn database() -> TestResult<(String, String)> {
     if version != oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM {
         return Err(format!("S3-B requires PostgreSQL 18.6, found {version}").into());
     }
-    sqlx::migrate!("./migrations").run(&mut connection).await?;
+    oteryn_gameplay_durability::GAME_MIGRATOR
+        .run(&mut connection)
+        .await?;
     connection.close().await?;
     Ok((url, version))
 }

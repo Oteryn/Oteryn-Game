@@ -54,7 +54,7 @@ fn watch_window_draws_the_cast_and_sends_chat_then_leaves_on_escape()
         Message::Media {
             epoch: 1,
             sequence: 2,
-            media: PublicMedia::Camera { floor: -7 },
+            media: PublicMedia::Camera { floor: 7 },
         },
         Message::Media {
             epoch: 1,
@@ -65,7 +65,7 @@ fn watch_window_draws_the_cast_and_sends_chat_then_leaves_on_escape()
                 tiles: vec![DisplayTile {
                     x: 21,
                     y: 16,
-                    floor: -7,
+                    floor: 7,
                     appearances: vec![100],
                 }],
             },

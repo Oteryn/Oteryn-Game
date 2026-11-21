@@ -43,7 +43,7 @@ fn refused_door_read(timing: ReplyTiming) -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || {
-            house_window_action_with_map("Load door", 5, "101 110 -7", timing)
+            house_window_action_with_map("Load door", 5, "101 110 7", timing)
                 .map_err(|error| error.to_string())
         })?
         .join()
@@ -518,7 +518,7 @@ fn house_window_action_with_map(
                     selector: house::HouseAclSelector::Door {
                         x: 101,
                         y: 110,
-                        floor: -7,
+                        floor: 7,
                     },
                 })
             );

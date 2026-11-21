@@ -99,7 +99,9 @@ impl Database {
             oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
             "canonical target requires PostgreSQL 18.6"
         );
-        sqlx::migrate!("./migrations").run(&mut connection).await?;
+        oteryn_gameplay_durability::GAME_MIGRATOR
+            .run(&mut connection)
+            .await?;
         // Deployment administration (OPS-NODE-BOOT-01 D2): the owner grants
         // the test control login every operation on the fixture scopes.
         grant_fixture_scopes(&mut connection, "oteryn_test_admin").await?;

@@ -22,10 +22,10 @@ fn secondary_minimap_click_edits_the_viewed_coordinate() -> TestResult {
     ) == (
         105,
         200,
-        -6,
+        6,
         "Cave entrance"
     ))));
-    assert_eq!(play.view.satellite_player(), (100, 200, -7));
+    assert_eq!(play.view.satellite_player(), (100, 200, 7));
     Ok(())
 }
 
@@ -42,7 +42,7 @@ fn exclusive_marker_refusals_appear_in_playing_status() -> TestResult {
             "minimap-marker-status-{}-{shortcut}",
             std::process::id()
         ));
-        let mut writer = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), -7, &[])?;
+        let mut writer = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), 7, &[])?;
         writer.bind_test_minimap(root.clone());
         {
             let mut owner = app.world_mut().non_send_mut::<HostOwner>();
@@ -209,7 +209,7 @@ fn parity_a_minimap_pointer_gestures_use_pointed_camera_position() -> TestResult
     app.world_mut().trigger(scroll(pointer, -1.));
     assert_eq!(
         camera(&app)?.2,
-        floor + 1,
+        floor - 1,
         "Ctrl-wheel down must browse the floor above"
     );
     Ok(())
@@ -264,7 +264,7 @@ fn secondary_minimap_cancel_does_not_persist_a_mark() -> TestResult {
 fn create_mark_key_marks_the_player_position_through_the_router() -> TestResult {
     use oteryn_input_actions::{ButtonState, Modifier, Modifiers, NormalizedInputEvent};
     let (link, _, _) = play_channel();
-    let view = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), -7, &[])?;
+    let view = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), 7, &[])?;
     let mut owner = HostOwner::new(None)?;
     owner.play = Some(ActivePlay { view, link });
     owner.phase = Phase::Playing;
@@ -279,7 +279,7 @@ fn create_mark_key_marks_the_player_position_through_the_router() -> TestResult 
     assert!(play.view.satellite_map(|_, marks| {
         marks
             .iter()
-            .any(|mark| (mark.x, mark.y, mark.floor) == (100, 200, -7))
+            .any(|mark| (mark.x, mark.y, mark.floor) == (100, 200, 7))
     }));
     Ok(())
 }

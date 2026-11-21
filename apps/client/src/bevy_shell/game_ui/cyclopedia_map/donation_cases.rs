@@ -132,7 +132,7 @@ fn cyclopedia_map_floor_controls_reach_every_region_atlas_floor()
                 area(2, 1, "Quays"),
                 area(3, 1, "Cellars"),
             ],
-            runs: vec![run(2, -7), run(3, -6)],
+            runs: vec![run(2, 7), run(3, 6)],
         })
         .map_err(|e| format!("{e:?}"))?,
     );
@@ -236,7 +236,7 @@ fn next_floor_requests_selected_footprint() -> Result<(), Box<dyn std::error::Er
     app.update();
     let request =
         geometry::decode_request(&feature(&mut rx)?.payload).map_err(|e| format!("{e:?}"))?;
-    assert_eq!((request.area, request.floor), (1, -6));
+    assert_eq!((request.area, request.floor), (1, 6));
     Ok(())
 }
 
