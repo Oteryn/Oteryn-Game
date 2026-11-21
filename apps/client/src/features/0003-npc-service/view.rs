@@ -4,11 +4,6 @@ impl PlayLink {
         lock(&self.mailbox).dialogue.clone()
     }
 }
-#[cfg(windows)]
-#[path = "native.rs"]
-mod native;
-#[cfg(windows)]
-pub(in crate::play) use native::{context_menu, open_window};
 
 impl PlayLink {
     pub fn npc_dialogue_is_visible(&self) -> bool {

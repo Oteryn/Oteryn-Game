@@ -45,27 +45,37 @@ impl PlayView {
                 } else {
                     continue;
                 }
+            } else if crate::input::arrow_step(std::slice::from_ref(event), false).is_some() {
+                TargetMoveIntent::Stop
             } else {
                 continue;
             };
+            // Manual walking replaces autowalk without Escape's separate combat stop.
+            let manual = intent == TargetMoveIntent::Stop && *code != KeyCode::ESCAPE;
             if lock(&link.mailbox).world_input_blocked() {
                 return true;
             }
             if *repeat {
-                return true;
+                return !manual;
             }
+            oteryn_client_ui::target_move::cancel(&mut lock(&link.mailbox).target_walk);
             self.creature_drag.source = None;
 
             self.inputs.retain(|input| {
                 !matches!(
                     input,
                     crate::play::Input::Arrow(_)
-                        | crate::play::Input::Attack(_)
                         | crate::play::Input::TargetWalk(_)
-                )
+                ) && (manual || !matches!(input, crate::play::Input::Attack(_)))
             });
+            if !manual && intent == TargetMoveIntent::Stop
+                && lock(&link.mailbox).battle.combat.is_some()
+            {
+                // Domain 10 proves capability 17 is selected; its receipt clears the target.
+                link.request_combat(crate::combat_input::CombatCommand::Stop);
+            }
             if !crate::play::mailbox::lock(&link.mailbox).target_move_selected {
-                return true;
+                return !manual;
             }
             if let Ok(payload) = encode_target_move_intent(intent) {
                 let _ = link
@@ -78,7 +88,7 @@ impl PlayView {
                         },
                     ));
             }
-            return true;
+            return !manual;
         }
         false
     }
@@ -114,5 +124,23 @@ impl PlayLink {
             mailbox.target_walk.feedback = Some(tr!("Session ended"));
         }
         true
+    }
+
+    /// Arrival ends a click or minimap walk; a blocked step or a dropped walk re-requests it.
+    pub(in crate::play) fn target_walk_follow_up(&self, own: ActorPosition) {
+        let now = std::time::Instant::now();
+        let mut mailbox = lock(&self.mailbox);
+        let slowest_step =
+            oteryn_client_ui::target_move::slowest_step(mailbox.bar_actions.own_actor.as_ref());
+        oteryn_client_ui::target_move::progress(&mut mailbox.target_walk, own, slowest_step, now);
+        if mailbox.world_input_blocked() {
+            return;
+        }
+        if let Some(goal) = oteryn_client_ui::target_move::retry(&mut mailbox.target_walk, now)
+            && self.commands.send(PlayCommand::TargetWalk(goal)).is_err()
+        {
+            mailbox.target_walk.pending = false;
+            mailbox.target_walk.feedback = Some(tr!("Session ended"));
+        }
     }
 }

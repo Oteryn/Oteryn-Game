@@ -63,6 +63,14 @@ pub const CAPABILITY_ITEM_EQUIP_DROP_V1: u32 = 12;
 pub const CAPABILITY_ITEM_STACK_COUNT_V1: u32 = 61;
 /// The largest existing destination plus field 6 (count 1..=100).
 pub const MAX_ITEM_MOVE_INTENT_STACK_COUNT_BYTES: usize = MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES + 2;
+/// CONTAINER-MANUAL-SORT-1 (Tibia Global's Manual Sort Mode): the optional `slot` field 2 of the
+/// command-9 container destination. Extends command type 9 of capability 14 only.
+pub const CAPABILITY_CONTAINER_MANUAL_SORT_V1: u32 = 510;
+pub const CAPABILITY_CONTAINER_MANUAL_SORT_V1_REQUIRES: &[u32] =
+    &[crate::container_tree::CAPABILITY_CONTAINER_TREE_V1];
+/// The source handle 1 + 10, the largest destination, a slotted `container` 1 + 1 + 11 + 6 (slot
+/// tag 1 + uint32 5; `ground` is 1 + 1 + 16), and the count 2.
+pub const MAX_ITEM_MOVE_INTENT_MANUAL_SORT_BYTES: usize = 11 + 2 + MAX_ITEM_TARGET_BYTES + 6 + 2;
 pub const CAPABILITY_ITEM_EQUIP_DROP_V1_REQUIRES: &[u32] = &[
     CAPABILITY_ITEM_VIEW_MOVE_V1, // ITEM_VIEW_MOVE_V1
 ];
@@ -312,8 +320,10 @@ pub enum ItemMoveDestination {
     MainBackpack,
     Equipment(EquipmentSlot),
     Ground(WorldTilePosition),
-    /// Into the named visible container (BAGS-0 §5).
-    Container(ItemHandle),
+    /// Into the named visible container (BAGS-0 §5). Under capability 510 the optional slot is
+    /// the index the item takes in the container's view order (newest first); `None` keeps the
+    /// default placement, the first slot.
+    Container(ItemHandle, Option<u32>),
 }
 
 /// The capabilities of a session's selection that extend command type 9.
@@ -326,6 +336,8 @@ pub struct ItemMoveSelection {
     /// Capability 11 `WORLD_INTERACTION_V1` (WORLD-INTERACTION-0 §10.1): the `ground` destination
     /// for a map-item or Ground source, and the `BLOCKED` result; not the `equipment` destination.
     pub world_interaction: bool,
+    /// Capability 510 `CONTAINER_MANUAL_SORT_V1`: the `slot` of the `container` destination.
+    pub manual_sort: bool,
 }
 
 /// `ItemMoveIntentV1`.
@@ -771,6 +783,26 @@ fn decode_equipment_destination(input: &[u8]) -> WireResult<EquipmentSlot> {
     EquipmentSlot::from_wire(slot.unwrap_or(0))
 }
 
+/// `ContainerDestinationV1`: the handle is required; field 2 `slot` only under capability 510.
+fn decode_container_destination(
+    input: &[u8],
+    manual_sort: bool,
+) -> WireResult<(ItemHandle, Option<u32>)> {
+    if !manual_sort {
+        return decode_item_target(input).map(|handle| (handle, None));
+    }
+    let mut cursor = 0;
+    let (mut handle, mut slot) = (None, None);
+    while cursor < input.len() {
+        match read_varint(input, &mut cursor)? {
+            0x08 => set_once(&mut handle, read_varint(input, &mut cursor)?)?,
+            0x10 => set_once(&mut slot, read_uint32(input, &mut cursor)?)?,
+            _ => return malformed(),
+        }
+    }
+    Ok((nonzero_u64(handle.unwrap_or(0))?, slot))
+}
+
 /// `ClientCommand.payload` of command type 9, without capability 12.
 pub fn encode_item_move_intent(intent: &ItemMoveIntent) -> WireResult<Vec<u8>> {
     encode_item_move_intent_with_equip_drop(intent, false)
@@ -787,6 +819,7 @@ pub fn encode_item_move_intent_with_equip_drop(
             equip_drop,
             container_tree: false,
             world_interaction: false,
+            manual_sort: false,
         },
     )
 }
@@ -800,12 +833,16 @@ pub fn encode_item_move_intent_for(
     push_varint_field(&mut output, 1, intent.source.get());
     match intent.destination {
         ItemMoveDestination::MainBackpack => push_message_field(&mut output, 2, &[]),
-        ItemMoveDestination::Container(handle) if selection.container_tree => {
-            let mut body = Vec::with_capacity(MAX_ITEM_TARGET_BYTES);
+        ItemMoveDestination::Container(_, Some(_)) if !selection.manual_sort => return malformed(),
+        ItemMoveDestination::Container(handle, slot) if selection.container_tree => {
+            let mut body = Vec::with_capacity(MAX_ITEM_TARGET_BYTES + 6);
             push_varint_field(&mut body, 1, handle.get());
+            if let Some(slot) = slot {
+                push_varint_field(&mut body, 2, u64::from(slot));
+            }
             push_message_field(&mut output, 5, &body);
         }
-        ItemMoveDestination::Container(_) => return malformed(),
+        ItemMoveDestination::Container(..) => return malformed(),
         ItemMoveDestination::Ground(_) if !selection.equip_drop && !selection.world_interaction => {
             return malformed();
         }
@@ -843,6 +880,7 @@ pub fn decode_item_move_intent_with_equip_drop(
             equip_drop,
             container_tree: false,
             world_interaction: false,
+            manual_sort: false,
         },
     )
 }
@@ -875,8 +913,11 @@ fn decode_move_intent(
         equip_drop,
         container_tree,
         world_interaction,
+        manual_sort,
     } = selection;
-    let bound = if stack_count {
+    let bound = if manual_sort {
+        MAX_ITEM_MOVE_INTENT_MANUAL_SORT_BYTES
+    } else if stack_count {
         MAX_ITEM_MOVE_INTENT_STACK_COUNT_BYTES
     } else if equip_drop || container_tree || world_interaction {
         MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES
@@ -906,8 +947,12 @@ fn decode_move_intent(
                 set_once(&mut destination, ItemMoveDestination::Ground(position))?;
             }
             0x2a if container_tree => {
-                let handle = decode_item_target(read_bytes(payload, &mut cursor)?)?;
-                set_once(&mut destination, ItemMoveDestination::Container(handle))?;
+                let (handle, slot) =
+                    decode_container_destination(read_bytes(payload, &mut cursor)?, manual_sort)?;
+                set_once(
+                    &mut destination,
+                    ItemMoveDestination::Container(handle, slot),
+                )?;
             }
             0x30 if stack_count => {
                 let value = read_uint32(payload, &mut cursor)?;

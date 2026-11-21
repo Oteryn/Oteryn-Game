@@ -1,3 +1,4 @@
+mod browse;
 use super::*;
 use bevy::{
     input_focus::tab_navigation::{TabGroup, TabIndex},
@@ -42,7 +43,7 @@ pub(super) fn render(
     state: &State,
     snapshot: &Snapshot,
 ) -> Entity {
-    let root = column(commands, frame, Val::Auto);
+    let root = column(commands, frame, Val::Auto, 0);
     let panel = &snapshot.store;
     if let Some(quote) = &state.confirmation {
         label(commands, skin, root, "Confirm purchase");
@@ -121,6 +122,26 @@ pub(super) fn render(
         );
     }
     let ready = panel.selected && !panel.pending && panel.gift.pending.is_none();
+    if panel.confirmed_purchase.is_some() {
+        button(
+            commands,
+            skin,
+            root,
+            key,
+            Kind::RetryPurchase,
+            "Retry purchase",
+            ready && panel.gift.confirmed.is_none() && panel.hireling_modal_id.is_none(),
+        );
+    }
+    button(
+        commands,
+        skin,
+        root,
+        key,
+        Kind::CoinCheckout,
+        "Get Oteryn coins",
+        ready && snapshot.coin_checkout,
+    );
     let tabs = row(commands, root);
     for (kind, title) in [
         (Kind::Products, "Products"),
@@ -141,7 +162,7 @@ pub(super) fn render(
                     || snapshot.history.selected && !snapshot.history.pending),
         );
     }
-    let body = column(commands, root, Val::Auto);
+    let body = column(commands, root, Val::Auto, 1);
     match state.page {
         Page::Products => products(commands, skin, body, key, panel, &state.fields),
         Page::Gift | Page::Transfer => gift(commands, skin, body, key, state, panel),
@@ -236,8 +257,10 @@ fn products(
     root: Entity,
     key: Key,
     panel: &StorePanel,
-    fields: &[String; 3],
+    fields: &[String; 4],
 ) {
+    browse::controls(commands, skin, root, key, panel, fields);
+    let ready = panel.selected && !panel.pending && panel.confirmed_purchase.is_none();
     let content = row(commands, root);
     commands.entity(content).insert(Node {
         flex_grow: 1.,
@@ -245,13 +268,12 @@ fn products(
         column_gap: px(8.),
         ..default()
     });
-    let categories = column(commands, content, px(170.));
+    let categories = column(commands, content, px(170.), 2);
     label(commands, skin, categories, "Categories");
-    let list = column(commands, content, px(270.));
+    let list = column(commands, content, px(270.), 3);
     label(commands, skin, list, "Products");
-    let details = column(commands, content, Val::Auto);
+    let details = column(commands, content, Val::Auto, 4);
     label(commands, skin, details, "Description / offer details");
-    let ready = panel.selected && !panel.pending && panel.confirmed_purchase.is_none();
     if let Some(page) = &panel.browser.page {
         for (index, category) in page.categories.iter().enumerate() {
             let title = if category.parent.is_empty() {
@@ -348,26 +370,24 @@ fn products(
                 ready,
             );
         }
-        button(
-            commands,
-            skin,
-            details,
-            key,
-            Kind::Buy,
-            if panel.confirmed_purchase.is_some() {
-                "Retry purchase…"
-            } else {
-                "Buy…"
-            },
-            buy_enabled(panel),
-        );
-        if !buy_enabled(panel) && !panel.pending {
-            label(
+        if panel.confirmed_purchase.is_none() {
+            button(
                 commands,
                 skin,
                 details,
-                "Purchase unavailable: check balance and payment currency",
+                key,
+                Kind::Buy,
+                "Buy…",
+                buy_enabled(panel),
             );
+            if !buy_enabled(panel) && !panel.pending {
+                label(
+                    commands,
+                    skin,
+                    details,
+                    "Purchase unavailable: check balance and payment currency",
+                );
+            }
         }
     }
 }
@@ -446,10 +466,11 @@ fn gift(
         );
     }
 }
-fn column(commands: &mut Commands, parent: Entity, width: Val) -> Entity {
+fn column(commands: &mut Commands, parent: Entity, width: Val, role: u32) -> Entity {
     let entity = commands
         .spawn((
             ScrollArea,
+            crate::bevy_shell::game_ui::install::RememberScroll("store", role),
             Node {
                 width,
                 min_width: px(0.),
@@ -503,7 +524,7 @@ fn field(
 ) {
     label(commands, skin, parent, title);
     let mut text = EditableText::new(value);
-    text.max_characters = Some(64);
+    text.max_characters = Some(if index == 3 { 128 } else { 64 });
     let entity = commands
         .spawn((
             Field(index),

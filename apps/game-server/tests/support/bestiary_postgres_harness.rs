@@ -6,13 +6,15 @@
 use crate::character_recovery_fence::CharacterRecoveryStore;
 use crate::domain::progression::ProgressionRevisionContext;
 use crate::domain::{CharacterId, CharacterRevision};
-use crate::durability::DurabilityRoot;
 use crate::durability::admission_authority_guards::GuardPublicationDisposition;
+use crate::durability::character_authority::CharacterAuthorityError;
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::runtime_scope_assignment::{
-    AssignmentCommand, AssignmentOutcome, AssignmentRequest, BootstrapSecret, ControlActor,
-    LaunchBinding, NodeIncarnationProof, OperationKey, RuntimeScopeAssignmentWriter,
+    AssignmentCommand, AssignmentError, AssignmentOutcome, AssignmentRequest, BootstrapSecret,
+    ControlActor, LaunchBinding, NodeIncarnationProof, OperationKey, RegistrationError,
+    RuntimeScopeAssignmentWriter,
 };
+use crate::durability::{DB_PASS_DEADLINE, DurabilityError, DurabilityRoot, ROOT_RECOVERY_WINDOW};
 use crate::foundation::admission_authority_publication::{
     AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1,
     AdmissionAuthorityOwningPublisherV1, AdmissionAuthorityPublicationChangeV1,
@@ -140,29 +142,100 @@ impl Database {
 
 fn fence_parent(tag: &str) -> TestResult<std::path::PathBuf> {
     use std::os::unix::fs::PermissionsExt;
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static NEXT_RETAINED: AtomicU64 = AtomicU64::new(0);
     let parent = std::env::temp_dir().join(format!(
         "oteryn-bestiary-progress-parent-{}",
         std::process::id()
     ));
     std::fs::create_dir_all(&parent)?;
     std::fs::set_permissions(&parent, std::fs::Permissions::from_mode(0o700))?;
-    let retained = parent.join(tag);
-    let _ = std::fs::remove_dir_all(&retained);
-    std::fs::create_dir(&retained)?;
-    std::fs::set_permissions(&retained, std::fs::Permissions::from_mode(0o700))?;
-    Ok(retained)
+    loop {
+        let retained = parent.join(format!(
+            "{tag}-{}",
+            NEXT_RETAINED.fetch_add(1, Ordering::Relaxed)
+        ));
+        match std::fs::create_dir(&retained) {
+            Ok(()) => {
+                std::fs::set_permissions(&retained, std::fs::Permissions::from_mode(0o700))?;
+                return Ok(retained);
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(error) => return Err(error.into()),
+        }
+    }
+}
+
+// Only use this for setup steps whose exact request can be replayed after a lost COMMIT.
+async fn replay_setup<T, E: std::fmt::Debug>(
+    root: &DurabilityRoot,
+    step: &str,
+    transient: impl Fn(&E) -> bool,
+    mut operation: impl AsyncFnMut() -> Result<T, E>,
+) -> TestResult<T> {
+    use tokio::time::{Instant, sleep, timeout_at};
+    let deadline = Instant::now() + ROOT_RECOVERY_WINDOW;
+    loop {
+        let error = match operation().await {
+            Ok(value) => return Ok(value),
+            Err(error) => error,
+        };
+        // Leave a full ordinary pass for an exact replay. Cancelling it could
+        // lose another COMMIT acknowledgment.
+        let retry_by = deadline - DB_PASS_DEADLINE;
+        if !transient(&error)
+            || timeout_at(retry_by, async {
+                let _ = root.await_ready().await;
+                sleep(std::time::Duration::from_millis(10)).await;
+            })
+            .await
+            .is_err()
+            || Instant::now() >= retry_by
+        {
+            return Err(format!("{step}: {error:?}").into());
+        }
+    }
+}
+
+fn setup_transient(error: &DurabilityError) -> bool {
+    matches!(
+        error,
+        DurabilityError::RootUnavailable
+            | DurabilityError::RootPassDeadlineExceeded
+            | DurabilityError::CommitOutcomeUnknown
+            | DurabilityError::Database(crate::durability::SqlxFailureClass::RetryableStatement)
+    )
+}
+
+fn registration_transient(error: &RegistrationError) -> bool {
+    matches!(error, RegistrationError::Unavailable(inner) if setup_transient(inner))
+}
+
+fn assignment_transient(error: &AssignmentError) -> bool {
+    matches!(error, AssignmentError::Unavailable(inner) if setup_transient(inner))
 }
 
 pub(crate) async fn register(root: &DurabilityRoot, tag: u8) -> TestResult<NodeIncarnationProof> {
     let secret = BootstrapSecret::from_bytes([tag; 32]);
     let launch = LaunchBinding::new(&format!("bestiary-launch-{tag}")).map_err(debug)?;
     let node = crate::foundation::NodeId::decode(&id(tag)).map_err(debug)?;
-    root.issue_node_bootstrap_authorization(&secret, &launch, None)
-        .await
-        .map_err(debug)?;
-    root.register_node_incarnation(&secret, &launch, node)
-        .await
-        .map_err(|error| debug(error).into())
+    replay_setup(
+        root,
+        "bootstrap authorization",
+        registration_transient,
+        async || {
+            root.issue_node_bootstrap_authorization(&secret, &launch, None)
+                .await
+        },
+    )
+    .await?;
+    replay_setup(
+        root,
+        "node registration",
+        registration_transient,
+        async || root.register_node_incarnation(&secret, &launch, node).await,
+    )
+    .await
 }
 
 pub(crate) fn scope() -> TestResult<RuntimeScopeRefV1> {
@@ -222,15 +295,44 @@ impl Harness {
         initialized: bool,
         seed_session: bool,
     ) -> TestResult<Self> {
+        Self::create_fixture(admin, tag, initialized, seed_session, None).await
+    }
+
+    #[cfg(test)]
+    #[allow(
+        dead_code,
+        reason = "only the qualification provenance case seeds bootstrap v4"
+    )]
+    pub(crate) async fn create_with_bootstrap_vocation(
+        admin: String,
+        tag: &str,
+        vocation: &'static str,
+    ) -> TestResult<Self> {
+        Self::create_fixture(admin, tag, false, true, Some(vocation)).await
+    }
+
+    async fn create_fixture(
+        admin: String,
+        tag: &str,
+        initialized: bool,
+        seed_session: bool,
+        birth_vocation: Option<&'static str>,
+    ) -> TestResult<Self> {
         let database = Database::create(admin, tag).await?;
         let cleanup = database.clone();
         let tag = tag.to_owned();
         let setup = tokio::task::LocalSet::new()
             .run_until(async move {
                 tokio::task::spawn_local(async move {
-                    Self::create_on_database(database, &tag, initialized, seed_session)
-                        .await
-                        .map_err(|error| error.to_string())
+                    Self::create_on_database(
+                        database,
+                        &tag,
+                        initialized,
+                        seed_session,
+                        birth_vocation,
+                    )
+                    .await
+                    .map_err(|error| error.to_string())
                 })
                 .await
             })
@@ -253,6 +355,7 @@ impl Harness {
         tag: &str,
         initialized: bool,
         seed_session: bool,
+        birth_vocation: Option<&str>,
     ) -> TestResult<Self> {
         let root = DurabilityRoot::connect_test_runtime(&database.url)?;
         assert!(root.maintain_ready_once().await?);
@@ -262,12 +365,15 @@ impl Harness {
             .map_err(debug)?;
         {
             let fresh = recovery.authorize_fresh_store(id(10), 100).map_err(debug)?;
-            root.admit_fresh_character_recovery(&fresh)
-                .await
-                .map_err(debug)?;
+            replay_setup(
+                &root,
+                "fresh Character recovery",
+                |error| matches!(error, CharacterAuthorityError::Unavailable(inner) if setup_transient(inner)),
+                async || root.admit_fresh_character_recovery(&fresh).await,
+            ).await?;
         }
         let node = register(&root, 1).await?;
-        seed_character(&pool, initialized, seed_session).await?;
+        seed_character(&pool, initialized, seed_session, birth_vocation).await?;
         sqlx::query(
             "INSERT INTO game_control_scope_grants \
              (control_role, world_id, channel_id, operation) \
@@ -278,9 +384,13 @@ impl Harness {
         .bind(id(CHANNEL).as_slice())
         .execute(&pool)
         .await?;
-        let writer = RuntimeScopeAssignmentWriter::open(root.clone(), "bestiary-writer")
-            .await
-            .map_err(debug)?;
+        let writer = replay_setup(
+            &root,
+            "assignment writer",
+            assignment_transient,
+            async || RuntimeScopeAssignmentWriter::open(root.clone(), "bestiary-writer").await,
+        )
+        .await?;
         let outcome = writer
             .submit(&AssignmentRequest {
                 operation_key: OperationKey::from_bytes([7_u8; 32]),
@@ -337,8 +447,8 @@ impl Harness {
     }
 }
 
-fn bootstrap_binding() -> Vec<u8> {
-    let mut binding = vec![3];
+fn bootstrap_binding(birth_vocation: Option<&str>) -> Vec<u8> {
+    let mut binding = vec![if birth_vocation.is_some() { 4 } else { 3 }];
     binding.extend_from_slice(&id(31));
     binding.extend_from_slice(&1_i64.to_be_bytes());
     binding.extend_from_slice(&id(30));
@@ -355,6 +465,10 @@ fn bootstrap_binding() -> Vec<u8> {
     binding.extend_from_slice(&12_u16.to_be_bytes());
     binding.extend_from_slice(b"Fixture Hero");
     binding.push(2); // Authenticated creation sex: Male.
+    if let Some(vocation) = birth_vocation {
+        binding.push(u8::try_from(vocation.len()).unwrap_or(u8::MAX));
+        binding.extend_from_slice(vocation.as_bytes());
+    }
     binding
 }
 
@@ -460,17 +574,29 @@ pub(crate) async fn publish_readiness_for_scope(
         },
     };
     let publication = ground_native_readiness_enforcement::prepare(change, now)?;
-    let disposition = root
-        .publish_runtime_readiness(node, &publication)
-        .await
-        .map_err(debug)?;
-    if disposition != GuardPublicationDisposition::Applied {
+    let disposition = replay_setup(
+        root,
+        "runtime readiness",
+        assignment_transient,
+        async || root.publish_runtime_readiness(node, &publication).await,
+    )
+    .await?;
+    // Existing proves the identical publication already committed before its reply was lost.
+    if !matches!(
+        disposition,
+        GuardPublicationDisposition::Applied | GuardPublicationDisposition::Existing
+    ) {
         return Err(format!("unexpected readiness outcome: {disposition:?}").into());
     }
     Ok(())
 }
 
-async fn seed_character(pool: &sqlx::PgPool, initialized: bool, seed_session: bool) -> TestResult {
+async fn seed_character(
+    pool: &sqlx::PgPool,
+    initialized: bool,
+    seed_session: bool,
+    birth_vocation: Option<&str>,
+) -> TestResult {
     sqlx::query(
         "INSERT INTO game_character_interpretations VALUES \
          (1,'profile-1','ruleset-1','content-1','starter-1',1)",
@@ -482,15 +608,17 @@ async fn seed_character(pool: &sqlx::PgPool, initialized: bool, seed_session: bo
         .execute(pool)
         .await?;
     sqlx::query(
-        "INSERT INTO game_character_roots(character_id, account_id, world_id, lifecycle, character_revision, profile_revision, ruleset_revision, content_revision, starter_template_revision, name, sex) VALUES \
+        "INSERT INTO game_character_roots(character_id, account_id, world_id, lifecycle, character_revision, profile_revision, ruleset_revision, content_revision, starter_template_revision, name, sex, creation_vocation) VALUES \
          (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
-          1,1,'profile-1','ruleset-1','content-1','starter-1','Fixture Hero',2)",
+          1,1,'profile-1','ruleset-1','content-1','starter-1','Fixture Hero',2,$4)",
     )
     .bind(id(CHARACTER).as_slice())
     .bind(id(40).as_slice())
     .bind(id(WORLD).as_slice())
+    .bind(birth_vocation.map(str::to_ascii_lowercase))
     .execute(pool)
     .await?;
+    let binding = bootstrap_binding(birth_vocation);
     sqlx::query(
         "INSERT INTO game_character_operation_receipts(\
            operation_id,command_binding,account_id,character_id,world_id,character_revision,\
@@ -501,7 +629,7 @@ async fn seed_character(pool: &sqlx::PgPool, initialized: bool, seed_session: bo
            encode($7,'hex')::uuid,encode($8,'hex')::uuid,1,1,120)",
     )
     .bind(id(30).as_slice())
-    .bind(bootstrap_binding())
+    .bind(&binding)
     .bind(id(40).as_slice())
     .bind(id(CHARACTER).as_slice())
     .bind(id(WORLD).as_slice())
@@ -515,7 +643,7 @@ async fn seed_character(pool: &sqlx::PgPool, initialized: bool, seed_session: bo
          (1,1,encode($1,'hex')::uuid,$2)",
     )
     .bind(id(31).as_slice())
-    .bind(bootstrap_binding())
+    .bind(&binding)
     .execute(pool)
     .await?;
     if initialized {

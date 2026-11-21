@@ -6,12 +6,14 @@ use bevy::{
 };
 use std::time::{Duration, Instant};
 
-pub(super) fn track_inputs(
+pub(in crate::bevy_shell) fn track_inputs(
     mut commands: Commands,
     fields: Query<Entity, (Added<EditableText>, Without<Hovered>)>,
 ) {
     for entity in &fields {
-        commands.entity(entity).insert(Hovered::default());
+        // The field belongs to another window's projection, which may despawn it (a rebuild or
+        // a close) in the same command flush; a field that no longer exists needs no tracker.
+        commands.entity(entity).try_insert(Hovered::default());
     }
 }
 
@@ -23,6 +25,14 @@ pub(super) struct Sources<'w, 's> {
     guard: ModalGuard<'w, 's>,
     windows: Query<'w, 's, (Entity, &'static Window), With<PrimaryWindow>>,
     hovered: Query<'w, 's, (Entity, &'static Hovered, Has<EditableText>)>,
+    grips: Query<
+        'w,
+        's,
+        (
+            &'static Hovered,
+            &'static crate::bevy_shell::ui::window_layout::ResizeCursor,
+        ),
+    >,
     parents: Query<'w, 's, &'static ChildOf>,
     time: Res<'w, Time<Real>>,
 }
@@ -64,6 +74,9 @@ pub(super) fn resolve(sources: Sources, mut state: ResMut<HintState>) {
         }
         if over_text {
             state.cursor = SystemCursorIcon::Text;
+        }
+        if let Some((_, grip)) = sources.grips.iter().find(|(hovered, _)| hovered.get()) {
+            state.cursor = grip.0;
         }
         if !over_ui
             && !over_text

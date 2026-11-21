@@ -1,9 +1,19 @@
 //! Server owner clock; independent of client packets and selected capabilities.
 use super::timed_item::*;
+use crate::durability::character_equipment::EquipmentSnapshot;
 use crate::durability::item_timed_runtime::{TimedOperation, TimedRequest};
-use crate::foundation::GameSessionId;
+use crate::durability::item_transfer::CurrentCharacterItemFence;
+use crate::foundation::{ExactActorRef, GameSessionId};
 use sha2::{Digest, Sha256};
 use std::collections::HashSet;
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static RETIRED_EQUIPMENT_READ: (
+        std::sync::Arc<tokio::sync::Notify>,
+        std::sync::Arc<tokio::sync::Notify>,
+    );
+}
 
 impl super::ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn stop_timed_actor(
@@ -18,7 +28,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             .lock()
             .await
             .get(&session)
-            .is_some_and(|clock| !clock.items.is_empty());
+            .is_some_and(|clock| !clock.items.is_empty() || clock.refresh_equipment);
         let has_imbuement_clock = self
             .states
             .timed_items
@@ -44,6 +54,55 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         settled
     }
 
+    /// Both activity lanes are already held. Settle elapsed time and resolve any
+    /// pending receipts under the source session fence before that fence is retired.
+    pub(super) async fn settle_activity_equipment(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> bool {
+        let tracked_items = self
+            .states
+            .timed_items
+            .sessions
+            .lock()
+            .await
+            .get(&session)
+            .is_some_and(|clock| !clock.items.is_empty() || clock.refresh_equipment);
+        let tracked_imbuements = self
+            .states
+            .timed_items
+            .imbuements
+            .lock()
+            .await
+            .contains_key(&session);
+        if tracked_items || tracked_imbuements {
+            self.checkpoint_timed_equipment(actor, session, true).await
+        } else {
+            true
+        }
+    }
+
+    pub(super) async fn transfer_activity_equipment_clocks(
+        &self,
+        destination: &Self,
+        old: GameSessionId,
+        new: GameSessionId,
+    ) {
+        let mut source_items = self.states.timed_items.sessions.lock().await;
+        let mut destination_items = destination.states.timed_items.sessions.lock().await;
+        if let Some(clock) = source_items.remove(&old) {
+            destination_items.insert(new, clock);
+        }
+        drop(destination_items);
+        drop(source_items);
+        let mut source_imbuements = self.states.timed_items.imbuements.lock().await;
+        let mut destination_imbuements = destination.states.timed_items.imbuements.lock().await;
+        if let Some(clock) = source_imbuements.remove(&old) {
+            destination_imbuements.insert(new, clock);
+        }
+    }
+
     pub(super) async fn tick_timed_items(&self) {
         let now = u64::try_from(self.clock_origin.elapsed().as_millis()).unwrap_or(u64::MAX);
         use std::sync::atomic::Ordering;
@@ -53,18 +112,28 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         }
         next.store(now.saturating_add(1_000), Ordering::Relaxed);
 
+        // Prune against a census taken under the same lane that moves a House clock.
+        let Some(census_permit) = self.spell_lane_permit().await else {
+            return;
+        };
         let mut sessions = {
             let runtime = self.runtime.lock().await;
             let Ok(census) = runtime.positioned_melee_census() else {
                 return;
             };
+            let spells = self.states.spell_states.lock().await;
+            let residents = spells.actors.iter().filter_map(|(actor, session, _)| {
+                runtime.house_actor_state(*actor, *session).ok()?;
+                Some((*actor, *session, true))
+            });
             census
                 .into_iter()
-                .filter_map(|(actor, _, session)| session.map(|session| (actor, session)))
+                .filter_map(|(actor, _, session)| session.map(|session| (actor, session, false)))
+                .chain(residents)
                 .collect::<Vec<_>>()
         };
         let present: HashSet<GameSessionId> =
-            sessions.iter().map(|(_, session)| *session).collect();
+            sessions.iter().map(|(_, session, _)| *session).collect();
         self.states
             .timed_items
             .sessions
@@ -82,9 +151,10 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             active.retain(|session, _| present.contains(session));
             active.keys().copied().collect()
         };
+        drop(census_permit);
         // Stable order, one cursor across equipment, quests and converters as
         // well as the two scope projections. A refused unit cannot restart a prefix.
-        sessions.sort_by_key(|(_, session)| *session.as_bytes());
+        sessions.sort_by_key(|(_, session, _)| *session.as_bytes());
         let mut converters = converters;
         converters.sort_by_key(|session| *session.as_bytes());
         let count = 2 + sessions.len() * 2 + converters.len();
@@ -95,12 +165,16 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     0 => self.drain_corpse_deadlines().await,
                     1 => self.refresh_terrain_tools().await,
                     index if index < 2 + sessions.len() * 2 => {
-                        let (actor, session) = sessions[(index - 2) / 2];
+                        let (actor, session, house) = sessions[(index - 2) / 2];
+                        if house && !(index - 2).is_multiple_of(2) {
+                            return;
+                        }
                         let Some(_permit) = self.spell_lane_permit().await else {
                             return;
                         };
-                        if (index - 2) % 2 == 0 {
-                            self.checkpoint_timed_equipment(actor, session, false).await;
+                        if (index - 2).is_multiple_of(2) {
+                            let checkpoint = self.checkpoint_timed_equipment(actor, session, false);
+                            self.root.with_periodic_lock_budget(checkpoint).await;
                         } else {
                             self.drain_quest_timers(actor, session).await;
                         }
@@ -144,10 +218,12 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         let Ok(Some(fence)) = self.current_quest_fence(session).await else {
             return false;
         };
-        let native = {
+        let (native, house) = {
             let runtime = self.runtime.lock().await;
-            if runtime.owner_fence().is_err()
-                || runtime.player_control_facts(actor, session).is_err()
+            let house = runtime.house_actor_state(actor, session).is_ok();
+            if (!house
+                && (runtime.owner_fence().is_err()
+                    || runtime.player_control_facts(actor, session).is_err()))
                 || super::item_ref_admission::pinned_index(&runtime, self.active_generation)
                     .is_none()
             {
@@ -159,28 +235,17 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return false;
             };
-            native
+            (native, house)
         };
+        let house_origin = house.then(|| *self.channel_id.as_bytes());
         // A retained actor keeps its item clock during reconnect grace. The item reader
         // proves the current active/reconnectable fence independently of a client view.
         let item_fence = fence.item_fence();
-        let equipment = match self
-            .root
-            .read_movement_equipment(
-                self.character,
-                self.holder,
-                &item_fence,
-                native.source_digest(),
-            )
+        let Some(equipment) = self
+            .read_clock_equipment(actor, item_fence, native.source_digest(), house)
             .await
-        {
-            Ok(read)
-                if read.fence() == &item_fence
-                    && read.equipment().content_digest == native.source_digest() =>
-            {
-                read.equipment().clone()
-            }
-            _ => return false,
+        else {
+            return false;
         };
         if !self
             .checkpoint_imbuement_equipment(actor, session, fence)
@@ -200,9 +265,21 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 ))
             })() {
                 let runtime = self.runtime.lock().await;
-                let _ = self
-                    .install_admission_suppressions(&runtime, actor, session, Some(base))
-                    .await;
+                if house {
+                    let _ = self
+                        .install_house_admission_suppressions(
+                            &runtime,
+                            actor,
+                            session,
+                            item_fence,
+                            Some(base),
+                        )
+                        .await;
+                } else {
+                    let _ = self
+                        .install_admission_suppressions(&runtime, actor, session, Some(base))
+                        .await;
+                }
             }
             return false;
         }
@@ -224,7 +301,8 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         // An ambiguous expiry may already have burned an equipped item. Reconcile
         // its original receipt before pruning custody; absence from equipment alone
         // cannot prove whether the value-moving transaction committed.
-        let mut retired_equipment = false;
+        let mut retired_equipment =
+            clock.refresh_equipment || (house && clock.items.keys().any(|id| !held.contains(id)));
         for (id, lane) in &clock.items {
             if !held.contains(id)
                 && let Some((request, _)) = &lane.pending
@@ -234,7 +312,13 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 }
                 match self
                     .root
-                    .commit_timed_action(self.character, self.holder, fence, request.clone())
+                    .commit_timed_action_in_scope(
+                        self.character,
+                        self.holder,
+                        fence,
+                        request.clone(),
+                        house_origin,
+                    )
                     .await
                 {
                     Ok(_) | Err(crate::durability::item_timed_state::TimedWriteError::NotHeld) => {}
@@ -243,7 +327,10 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 retired_equipment = true;
             }
         }
-        clock.items.retain(|id, _| held.contains(id));
+        clock.refresh_equipment = retired_equipment;
+        if !house {
+            clock.items.retain(|id, _| held.contains(id));
+        }
         let mut proficiency_equipment = equipment.clone();
         for item in equipment.items {
             let Some((definition, target)) = facts(native, &item.definition) else {
@@ -266,7 +353,13 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 }
                 let Ok(row) = self
                     .root
-                    .read_timed_row(self.character, self.holder, fence, item.item_instance_id)
+                    .read_timed_row_in_scope(
+                        self.character,
+                        self.holder,
+                        fence,
+                        item.item_instance_id,
+                        house_origin,
+                    )
                     .await
                 else {
                     return false;
@@ -324,7 +417,13 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             };
             match self
                 .root
-                .commit_timed_action(self.character, self.holder, fence, request)
+                .commit_timed_action_in_scope(
+                    self.character,
+                    self.holder,
+                    fence,
+                    request,
+                    house_origin,
+                )
                 .await
             {
                 Ok(result)
@@ -332,6 +431,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                         == oteryn_protocol_oteryn::timed_item::TimedDisposition::Ok =>
                 {
                     retired_equipment |= result.retired;
+                    clock.refresh_equipment |= result.retired;
                     lane.at_ms = at;
                     lane.pending = None;
                 }
@@ -345,13 +445,51 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         drop(clocks);
+        if house {
+            // Expiry can change the resident's equipment and every derived effect.
+            if !retired_equipment {
+                return true;
+            }
+            if self
+                .refresh_clock_equipment_effects(actor, session, item_fence, true)
+                .await
+                != Ok(true)
+            {
+                return false;
+            }
+            // Retain a missing item's clock until publication succeeds so a
+            // transient post-expiry read failure can be repaired on a later tick.
+            if let Some(clock) = self
+                .states
+                .timed_items
+                .sessions
+                .lock()
+                .await
+                .get_mut(&session)
+            {
+                clock.items.retain(|id, _| held.contains(id));
+                clock.refresh_equipment = false;
+            }
+            return true;
+        }
         // Expiry may burn the ring without a client move. Re-read committed custody so
         // its contribution cannot outlive the timed budget. An ordinary checkpoint uses
         // its initial read, also repairing a previous expiry's failed acknowledgement/read.
         let mut retired_effects = None;
         if retired_equipment {
-            let Some(equipment) =
-                super::equipment_move::read_current_equipment(self, session).await
+            #[cfg(test)]
+            if let Ok((entered, proceed)) = RETIRED_EQUIPMENT_READ.try_with(Clone::clone) {
+                entered.notify_one();
+                proceed.notified().await;
+            }
+            let retry = super::AdmissionRetryBudget::for_command(self.root);
+            let Some(equipment) = super::equipment_move::read_equipment_within(
+                self,
+                &retry,
+                &item_fence,
+                native.source_digest(),
+            )
+            .await
             else {
                 return false;
             };
@@ -385,7 +523,10 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             return false;
         }
         let mut states = self.states.spell_states.lock().await;
-        if let Some(state) = states.get_mut(&runtime, actor, session) {
+        let Some(state) = states.get_mut(&runtime, actor, session) else {
+            return !retired_equipment;
+        };
+        {
             state.install_equipped_mana_shield(active_mana_shield);
             state.install_equipped_invisibility(invisible);
             if let Some(effects) = retired_effects {
@@ -394,6 +535,69 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 );
             }
         }
+        drop(states);
+        drop(runtime);
+        if retired_equipment
+            && let Some(clock) = self
+                .states
+                .timed_items
+                .sessions
+                .lock()
+                .await
+                .get_mut(&session)
+        {
+            clock.refresh_equipment = false;
+        }
         true
+    }
+
+    async fn read_clock_equipment(
+        &self,
+        actor: ExactActorRef,
+        fence: CurrentCharacterItemFence,
+        digest: [u8; 32],
+        house: bool,
+    ) -> Option<EquipmentSnapshot> {
+        if house {
+            return super::equipment_move::read_house_clock_equipment(
+                self,
+                actor,
+                fence.game_session_id,
+                fence,
+            )
+            .await
+            .filter(|equipment| equipment.content_digest == digest);
+        }
+        let read = self
+            .root
+            .read_movement_equipment(self.character, self.holder, &fence, digest)
+            .await
+            .ok()?;
+        (read.fence() == &fence && read.equipment().content_digest == digest)
+            .then(|| read.equipment().clone())
+    }
+
+    pub(super) async fn refresh_clock_equipment_effects(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        fence: CurrentCharacterItemFence,
+        house: bool,
+    ) -> Result<bool, ()> {
+        let effects = if house {
+            self.read_house_equipment_effects(actor, session, fence, true)
+                .await?
+        } else {
+            self.read_fenced_equipment_effects(fence).await?
+        };
+        let runtime = self.runtime.lock().await;
+        let installed = if house {
+            self.install_house_admission_suppressions(&runtime, actor, session, fence, effects)
+                .await
+        } else {
+            self.install_admission_suppressions(&runtime, actor, session, effects)
+                .await
+        };
+        Ok(installed.is_some())
     }
 }

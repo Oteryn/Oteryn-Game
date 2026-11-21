@@ -28,17 +28,17 @@ pub fn panel_text(panel: &QuestPanel) -> String {
                 lines.push(tr!("No quests started").into());
             }
             lines.extend(entries.iter().map(|q| {
-                lfmt!(
-                    "Quest {}{}",
-                    q.quest_index,
+                format!(
+                    "{}{}",
+                    panel.title(q.quest_index),
                     if q.completed { " (completed)" } else { "" }
                 )
             }));
         }
         Some(QuestLogView::Line(line)) => {
-            lines.push(lfmt!(
-                "Quest {}{}",
-                line.quest_index,
+            lines.push(format!(
+                "{}{}",
+                panel.title(line.quest_index),
                 if line.completed { " (completed)" } else { "" }
             ));
             lines.extend(
@@ -61,7 +61,7 @@ pub fn panel_text(panel: &QuestPanel) -> String {
         panel.state.log.tracked.len()
     ));
     for line in &panel.state.log.tracked {
-        lines.push(lfmt!("Quest {}", line.quest_index));
+        lines.push(panel.title(line.quest_index));
         for mission in &line.missions {
             lines.push(format!("{}: {}", mission.name, mission.text));
         }
@@ -81,9 +81,9 @@ pub fn tracker_text(panel: &QuestPanel) -> String {
         text.push_str(tr!("Quest tracking unavailable in this session\r\n"));
     }
     for line in &rows {
-        text.push_str(&lfmt!(
-            "\r\nQuest {}{}\r\n",
-            line.quest_index,
+        text.push_str(&format!(
+            "\r\n{}{}\r\n",
+            panel.title(line.quest_index),
             if line.completed { " (completed)" } else { "" }
         ));
         for mission in line

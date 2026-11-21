@@ -35,7 +35,10 @@ impl World {
         Ok(world)
     }
 
-    fn resolve_live_map(root: &Path, map: &WorldMapViewSnapshot) -> Result<Self, String> {
+    pub(crate) fn resolve_live_map(
+        root: &Path,
+        map: &WorldMapViewSnapshot,
+    ) -> Result<Self, String> {
         let store = AssetStore::open_pinned(
             &root.join("content/assets/files"),
             &root.join(MANIFEST_PATH),
@@ -50,11 +53,35 @@ impl World {
         let mut entries = Vec::new();
         #[cfg(test)]
         let mut native_resolved_items = Vec::new();
+        let mut item_lights = Vec::new();
+        let mut minimap_colors = BTreeMap::new();
         for tile in map
             .tiles
             .iter()
             .filter(|tile| in_draw_window(map, tile.position))
         {
+            let mut color = (!tile.more && !tile.items.is_empty()).then_some(0);
+            for (stack_index, item) in tile.items.iter().enumerate() {
+                if let Some(appearance) = index.get(u32::from(item.appearance_id)) {
+                    if let Some((level, color)) = appearance.light.filter(|(level, _)| *level > 0) {
+                        item_lights.push((tile.position, level, color));
+                    }
+                    // A truncated stack can hide a coloured item above the ground.
+                    if (!tile.more || stack_index != 0)
+                        && let Some(value) = appearance.minimap_color.filter(|value| *value != 0)
+                    {
+                        color = Some(value);
+                    }
+                } else {
+                    color = None;
+                }
+            }
+            if let Some(color) = color {
+                minimap_colors.insert(
+                    (tile.position.floor, tile.position.x, tile.position.y),
+                    color,
+                );
+            }
             let hook = tile
                 .items
                 .iter()
@@ -77,8 +104,9 @@ impl World {
                 placement.count = item.count;
                 placement.sub_type = item.sub_type;
                 placement.hook = hook;
-                if let Ok(resolved) =
-                    index.resolve(&sheets, u32::from(item.appearance_id), placement)
+                if let Ok(frames) =
+                    index.resolve_frames(&sheets, u32::from(item.appearance_id), placement)
+                    && let Some(resolved) = frames.first()
                 {
                     #[cfg(test)]
                     if !resolved.cells.is_empty()
@@ -98,9 +126,27 @@ impl World {
                     } else {
                         3
                     };
-                    cells += resolved.cells.len();
+                    cells += frames
+                        .iter()
+                        .map(|frame| frame.cells.len())
+                        .max()
+                        .unwrap_or(0);
                     within_draw_cap(cells)?;
-                    items.push((layer, resolved.elevation, resolved.cells));
+                    let durations = index
+                        .get(u32::from(item.appearance_id))
+                        .map(|appearance| appearance.phase_ms.as_slice())
+                        .unwrap_or_default();
+                    items.push((
+                        layer,
+                        resolved.elevation,
+                        frames
+                            .into_iter()
+                            .enumerate()
+                            .map(|(phase, frame)| {
+                                (durations.get(phase).copied().unwrap_or(100), frame.cells)
+                            })
+                            .collect::<Vec<_>>(),
+                    ));
                 }
             }
             items.sort_by_key(|(layer, _, _)| *layer);
@@ -117,7 +163,11 @@ impl World {
         let atlas = WorldAtlas::prepare(
             entries
                 .iter()
-                .flat_map(|(_, items)| items.iter().flat_map(|(_, _, cells)| cells))
+                .flat_map(|(_, items)| {
+                    items
+                        .iter()
+                        .flat_map(|(_, _, frames)| frames.iter().flat_map(|(_, cells)| cells))
+                })
                 .chain(player.iter().flatten()),
             |sprite, x, y| {
                 sheets
@@ -126,18 +176,43 @@ impl World {
             },
         )?;
         let slot = |cell: &oteryn_client_assets::DrawCell| atlas.slot(cell);
-        let tiles = entries
+        let animations: Vec<_> = entries
             .iter()
             .map(|(position, items)| {
-                let mut tile = project_tile(items, slot);
-                if tile.under.is_empty() && tile.over.is_empty() {
-                    tile.under.push(Draw {
-                        cell: MARKER_CELL,
-                        offset: [0, 0],
-                    });
+                use oteryn_client_simulation::world::{item_height, stack_lifts};
+                let (lifts, elevation) = stack_lifts(
+                    items
+                        .iter()
+                        .map(|(layer, height, _)| (*layer, item_height(*height))),
+                );
+                TileAnimation {
+                    position: *position,
+                    elevation,
+                    items: items
+                        .iter()
+                        .zip(lifts)
+                        .map(|((layer, _, frames), lift)| ItemAnimation {
+                            over: *layer == 4,
+                            frames: frames
+                                .iter()
+                                .map(|(duration, cells)| {
+                                    (
+                                        *duration,
+                                        cells
+                                            .iter()
+                                            .filter_map(|cell| project_cell(cell, lift, slot))
+                                            .collect(),
+                                    )
+                                })
+                                .collect(),
+                        })
+                        .collect(),
                 }
-                (*position, tile)
             })
+            .collect();
+        let tiles = animations
+            .iter()
+            .map(|animation| (animation.position, animation.sample(0)))
             .collect::<Vec<_>>();
         let player = player.map(|cells| {
             cells
@@ -149,18 +224,107 @@ impl World {
             effects: Default::default(),
             #[cfg(test)]
             native_resolved_items,
+            item_lights,
+            minimap_colors,
             center: (origin.x, origin.y, origin.floor),
             first_visible_floor: map.header.first_visible_floor,
             tiles: HashMap::new(),
             layers: BTreeMap::new(),
             player,
-            atlas: atlas.into_image(),
+            atlas: std::sync::Arc::new(atlas.into_image()),
+            animations: animations
+                .into_iter()
+                .filter(|tile| tile.items.iter().any(|item| item.frames.len() > 1))
+                .collect(),
         }
         .with_effect_catalog(effects);
         for (position, tile) in tiles {
             world.insert_floor_tile(position, tile);
         }
+        // Establish the shared clock before a caller captures its first sample time.
+        // Initializing it during that sample can place the epoch after the supplied time,
+        // leaving an exact full-cycle sample one millisecond short after truncation.
+        if !world.animations.is_empty() {
+            Self::animation_epoch(std::time::Instant::now());
+        }
         Ok(world)
+    }
+}
+
+// A shared monotonic epoch keeps terrain phases stable when server windows are replaced.
+static ANIMATION_EPOCH: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
+
+#[derive(Debug, Clone)]
+pub(super) struct TileAnimation {
+    position: oteryn_session::ActorPosition,
+    elevation: i32,
+    items: Vec<ItemAnimation>,
+}
+
+#[derive(Debug, Clone)]
+struct ItemAnimation {
+    over: bool,
+    frames: Vec<(u32, Vec<Draw>)>,
+}
+
+impl TileAnimation {
+    fn sample(&self, elapsed_ms: u128) -> MapTile {
+        let mut tile = MapTile {
+            elevation: self.elevation,
+            ..MapTile::default()
+        };
+        for item in &self.items {
+            let period: u128 = item.frames.iter().map(|(ms, _)| u128::from(*ms)).sum();
+            let mut phase_ms = elapsed_ms % period.max(1);
+            for (duration, draws) in &item.frames {
+                if phase_ms < u128::from(*duration) {
+                    if item.over {
+                        tile.over.extend_from_slice(draws);
+                    } else {
+                        tile.under.extend_from_slice(draws);
+                    }
+                    break;
+                }
+                phase_ms -= u128::from(*duration);
+            }
+        }
+        if self.items.is_empty() {
+            tile.under.push(Draw {
+                cell: MARKER_CELL,
+                offset: [0, 0],
+            });
+        }
+        tile
+    }
+}
+
+impl World {
+    /// The first supplied sample fixes the shared epoch, without a later wall-clock read.
+    pub(crate) fn animation_epoch(now: std::time::Instant) -> std::time::Instant {
+        *ANIMATION_EPOCH.get_or_init(|| now)
+    }
+
+    /// Sample every item's own duration sequence, skipping elapsed frames after a stall.
+    pub(crate) fn animated_at(&self, now: std::time::Instant) -> Option<Self> {
+        if self.animations.is_empty() {
+            return None;
+        }
+        let elapsed = now
+            .saturating_duration_since(Self::animation_epoch(now))
+            .as_millis();
+        let mut next = None;
+        for animation in self.animations.iter() {
+            let position = animation.position;
+            let Some((x, y)) = self.project_floor_tile(position) else {
+                continue;
+            };
+            let tile = animation.sample(elapsed);
+            if self.floor_tile(position.floor, x, y) != Some(&tile) {
+                next.get_or_insert_with(|| self.clone())
+                    .insert_floor_tile(position, tile);
+            }
+        }
+        next
     }
 }
 
@@ -172,9 +336,18 @@ fn in_draw_window(map: &WorldMapViewSnapshot, position: oteryn_session::ActorPos
 }
 
 impl World {
+    fn project_floor_tile(&self, position: oteryn_session::ActorPosition) -> Option<(i32, i32)> {
+        let shift = i32::from(self.center.2) - i32::from(position.floor);
+        Some((
+            position.x.checked_sub(shift)?,
+            position.y.checked_sub(shift)?,
+        ))
+    }
+
     fn insert_floor_tile(&mut self, position: oteryn_session::ActorPosition, tile: MapTile) {
-        let shift = i32::from(self.center.2 - position.floor);
-        let projected = (position.x - shift, position.y - shift);
+        let Some(projected) = self.project_floor_tile(position) else {
+            return;
+        };
         if position.floor == self.center.2 {
             self.tiles.insert(projected, tile);
         } else {
@@ -209,133 +382,9 @@ impl World {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use oteryn_session::ActorPosition;
-    use oteryn_session::world_map::{MapDefinition, MapItem, MapOrigin, MapTile, MapViewHeader};
-    use std::num::NonZeroU32;
+#[path = "world/tests.rs"]
+mod tests;
 
-    #[test]
-    fn dense_visible_floors_keep_deepest_draws_within_one_batch() -> Result<(), BatchError> {
-        use crate::scene::Scene;
-        use oteryn_renderer::{MAX_BATCH_QUADS, TileCoord};
-        use std::sync::Arc;
-        let mut world = World::builtin()?;
-        world.center = (100, 200, 8);
-        for floor in (8..=10).rev() {
-            let shift = i32::from(8 - floor);
-            for y in 195..=205 {
-                for x in 93..=107 {
-                    world.insert_floor_tile(
-                        ActorPosition {
-                            x: x + shift,
-                            y: y + shift,
-                            floor,
-                        },
-                        crate::map::MapTile {
-                            under: vec![
-                                Draw {
-                                    cell: if floor == 10 {
-                                        MARKER_CELL
-                                    } else {
-                                        TARGET_CELL
-                                    },
-                                    offset: [0, 0]
-                                };
-                                MAX_TILE_DRAWS
-                            ],
-                            ..crate::map::MapTile::default()
-                        },
-                    );
-                }
-            }
-        }
-        let mut scene = Scene::centered_on(
-            Arc::new(world),
-            Some(TileCoord::new(0, 0)),
-            TileCoord::new(100, 200),
-            StepDir::South,
-            &[],
-        )?;
-        assert_eq!(scene.sprites().len(), MAX_BATCH_QUADS);
-        let deep_uv = scene.atlas().uv_rect(MARKER_CELL)?;
-        assert!(
-            scene.sprites().instances()[..165 * MAX_TILE_DRAWS]
-                .iter()
-                .all(|quad| quad.uv == deep_uv)
-        );
-        scene.select_tile(TileCoord::new(100, 200))?;
-        assert_eq!(scene.sprites().len(), MAX_BATCH_QUADS);
-        assert_eq!(
-            scene.sprites().instances().last().map(|quad| quad.uv),
-            Some(scene.atlas().uv_rect(TARGET_CELL)?)
-        );
-        Ok(())
-    }
-
-    #[test]
-    fn live_appearance_uses_native_floor_and_server_placements_only() -> Result<(), String> {
-        let position = ActorPosition {
-            x: 100,
-            y: 200,
-            floor: 7,
-        };
-        let mut map = WorldMapViewSnapshot {
-            header: MapViewHeader {
-                content_generation: [0; 32],
-                bundle_digest: [0; 32],
-                reset_epoch: 1,
-                origin: position,
-                first_visible_floor: 0,
-            },
-            tiles: vec![MapTile {
-                position,
-                items: vec![MapItem {
-                    definition: MapDefinition::Item(NonZeroU32::MIN),
-                    count: 1,
-                    sub_type: 0,
-                    origin: MapOrigin::BaseOrdinal {
-                        ordinal: 0,
-                        object_revision: 0,
-                    },
-                    appearance_id: 4526,
-                }],
-                more: false,
-                ground_speed: 100,
-            }],
-        };
-        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-        let world = World::resolve_live_map(&root, &map)?;
-        assert_eq!(world.center(), (100, 200, 7));
-        assert_eq!(world.tile_count(), 1);
-        let tile = world.tile(100, 200).ok_or("live tile missing")?;
-        assert!(
-            tile.under
-                .iter()
-                .any(|draw| draw.cell >= BUILTIN_CELLS as u16)
-        );
-        assert!(world.tile(START.0, START.1).is_none());
-        let mut upper = map.tiles[0].clone();
-        upper.position = ActorPosition {
-            x: 101,
-            y: 201,
-            floor: 6,
-        };
-        map.tiles.push(upper);
-        let layered = World::resolve_live_map(&root, &map)?;
-        assert_eq!(layered.tile_count(), 2);
-        let upper = layered
-            .floor_tile(6, 100, 200)
-            .ok_or("upper floor missing")?;
-        assert!(
-            upper
-                .under
-                .iter()
-                .any(|draw| draw.cell >= BUILTIN_CELLS as u16)
-        );
-        map.tiles.clear();
-        let empty = World::resolve_live_map(&root, &map)?;
-        assert_eq!(empty.tile_count(), 0);
-        Ok(())
-    }
-}
+#[cfg(test)]
+#[path = "world_light_tests.rs"]
+mod light_tests;

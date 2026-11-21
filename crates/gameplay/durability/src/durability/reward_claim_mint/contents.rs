@@ -2,7 +2,7 @@
 //! The immutable reservation fixes every child identity and item fact. Each
 //! child has its own bounded one-item audit event, sharing the root's USE and
 //! once-claim cause; the deferred proof requires the whole reserved plan.
-use super::super::item_loop_move::{LoopError, carried_weight, pouch_weight};
+use super::super::item_loop_move::{LoopError, carried_weight};
 use super::super::item_transfer::{ItemWeightLookup, read_derived_transfer_capacity_centi_oz};
 use super::*;
 use serde_json::{Value, json};
@@ -250,13 +250,8 @@ pub(super) async fn check_capacity(
         Err(LoopError::Durability(error)) => return Err(error),
         Err(LoopError::Database(error)) => return Err(error.into()),
     };
-    let pouch = match pouch_weight(tx, character, world, weights).await? {
-        Ok(weight) => weight,
-        Err(_) => return Ok(Err(RewardClaimMintError::InvalidInput)),
-    };
     let total = carried
-        .checked_add(pouch)
-        .and_then(|weight| weight.checked_add(incoming))
+        .checked_add(incoming)
         .ok_or(DurabilityError::InvalidStoredState)?;
     if total > read_derived_transfer_capacity_centi_oz(tx, character, weights).await? {
         return Ok(Err(RewardClaimMintError::Refused(

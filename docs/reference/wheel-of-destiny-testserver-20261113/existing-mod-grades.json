@@ -1,0 +1,389 @@
+{
+  "schema": "OTERYN_WHEEL_TESTSERVER_AUDIT_EVIDENCE/v1",
+  "captured_utc_date": "2026-11-13",
+  "client_version": "15.33.dd0955",
+  "source": "CipSoft TibiaExternal/bin/client (installed official test client)",
+  "client_binary_sha256": "7f6555b19514abc34220a09f427732ea66ddfcd8d7052c733f0557d624baaf34",
+  "purpose": "Bounded additional source qualification for the three numerical repairs; static official-client display data, not measured server execution.",
+  "revelation_mastery": {
+    "qualification": "FACT: current official client category and descriptor directly use this grade-indexed integer table for every listed modifier.",
+    "supreme_ids": [
+      5,
+      21,
+      22,
+      23,
+      39,
+      40,
+      41,
+      56,
+      57,
+      58,
+      73,
+      74,
+      75,
+      91,
+      92,
+      93
+    ],
+    "category": 5,
+    "category_table_file_offset": "0x1dd5d80",
+    "category_table_length": 114,
+    "category_table_sha256": "7c9ac9b99860623bd2bf787e2a9f99ca08b97677a4d0b4015fb4e78368760a39",
+    "grade_table_file_offset": "0x1da99b0",
+    "grade_table_length": 16,
+    "grade_table_format": "4 little-endian u32 values, grade index 0..3",
+    "grade_table_sha256": "d1767e663d3a77f8d81d871dd3bec6f9b69ec276b0394591028ff53713332da4",
+    "grade_i_to_iv_points": [
+      150,
+      165,
+      180,
+      225
+    ],
+    "descriptor_translation_id": "skillwheel_gem_mod_revelation_mastery",
+    "descriptor_translation_id_file_offset": "0x1dd7b88",
+    "caller_evidence": [
+      "0xc7d16f reads category table indexed by Supreme modifier id.",
+      "0xc7d2f0 requires category 5; 0xc7d2fd selects the Revelation Mastery translation key.",
+      "0xc7d362 bounds grade index to 0..3; 0xc7d36c selects table 0x1da99b0; 0xc7d37b reads table[grade] as a 32-bit integer.",
+      "0xc7d38b passes that integer to QString::arg_impl; this descriptor does not double it."
+    ]
+  },
+  "monk_mixed_mana": {
+    "static_data_qualification": "FACT: the constructor links basic modifier keys 33..36 to the blocks below. Each block contains two 168-byte effect records; each effect contains a u32 type, 4 padding bytes, then five rows of four little-endian f64 grade values.",
+    "constructor_link_qualification": "The key write belongs to the previously constructed effect-vector result. Source-copy, constructor-call and subsequent key-write addresses are recorded separately to avoid the apparent one-block shift in pipelined initialization.",
+    "array_installation": "0x61d483 selects global basic table 0x34acde0; 0x61d527 reads each key, bounds it to 0..48, and 0x61d54d..0x61d551 selects the per-key vector.",
+    "descriptor_lookup": "0xc7d798..0xc7d7a6 selects the basic-id vector and calls 0xc6acb0. The descriptor bounds vocation index to 0..4 at 0xc6adc5 and uses the supplied grade index for its f64 selection. Records are copied as 168-byte effect structures.",
+    "vocation_row_identification": {
+      "classification": "INFERENCE_FROM_CURRENT_STATIC_DATA_AND_INDEPENDENT_OFFICIAL_UI",
+      "confidence": "high",
+      "explanation": "The official current Test planner independently displays Mana 150 at Grade IV for Monk basic modifiers 33..36. Of the five native table rows, only zero-based row 4 has Grade IV 150; the others have 75,225,450,450. This uniquely identifies the matching row. A separately named native Monk enum-to-row mapping was not extracted.",
+      "row_index_zero_based": 4,
+      "planner_url": "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner",
+      "planner_observation": "Current official Test planner Monk dropdowns: modifiers33..36 each show +150 Mana and +1.5% corresponding elemental resistance at fixed Grade IV.",
+      "grade_i_to_iv_mana": [
+        100,
+        110,
+        120,
+        150
+      ],
+      "grade_i_to_iv_resistance_percent": [
+        1,
+        1.1,
+        1.2,
+        1.5
+      ]
+    },
+    "modifiers": [
+      {
+        "source_id": 33,
+        "resistance_name_from_planner": "fire",
+        "effect_block_file_offset": "0x2110020",
+        "effect_block_length": 336,
+        "effect_block_sha256": "16ecd8908c022224a4893357543c20c9ce8790d537e83c30eae1a47dc6f25415",
+        "source_copy_instruction": "0x61d023",
+        "effect_vector_constructor_call": "0x61d076",
+        "basic_key_write_instruction": "0x61d0a9",
+        "mana_effect_type": 11,
+        "mana_rows_i_to_iv": [
+          [
+            50,
+            55,
+            60,
+            75
+          ],
+          [
+            150,
+            165,
+            180,
+            225
+          ],
+          [
+            300,
+            330,
+            360,
+            450
+          ],
+          [
+            300,
+            330,
+            360,
+            450
+          ],
+          [
+            100,
+            110,
+            120,
+            150
+          ]
+        ],
+        "resistance_effect_type": 3,
+        "resistance_rows_i_to_iv": [
+          [
+            1,
+            1.1,
+            1.2,
+            1.5
+          ],
+          [
+            1,
+            1.1,
+            1.2,
+            1.5
+          ],
+          [
+            1,
+            1.1,
+            1.2,
+            1.5
+          ],
+          [
+            1,
+            1.1,
+            1.2,
+            1.5
+          ],
+          [
+            1,
+            1.1,
+            1.2,
+            1.5
+          ]
+        ]
+      },
+      {
+        "source_id": 34,
+        "resistance_name_from_planner": "energy",
+        "effect_block_file_offset": "0x2110180",
+        "effect_block_length": 336,
+        "effect_block_sha256": "8012257eec091e5436dba81b24eb4f4979ed3682d171fcc7a13590d2e7096fc7",
+        "source_copy_instruction": "0x61d098",
+        "effect_vector_constructor_call": "0x61d0eb",
+        "basic_key_write_instruction": "0x61d11e",
+        "mana_effect_type": 11,
+        "mana_rows_i_to_iv": [
+          [
+            50,
+            55,
+            60,
+            75
+          ],
+          [
+            150,
+            165,
+            180,
+            225
+          ],
+          [
+            300,
+            330,
+            360,
+            450
+          ],
+          [
+            300,
+            330,
+            360,
+            450
+          ],
+          [
+            100,
+            110,
+            120,
+            150
+          ]
+        ],
+        "resistance_effect_type": 6,
+        "resistance_rows_i_to_iv": [
+          [
+            1,
+            1.1,
+            1.2,
+            1.5
+          ],
+          [
+            1,
+            1.1,
+            1.2,
+            1.5
+          ],
+          [
+            1,
+            1.1,
+            1.2,
+            1.5
+          ],
+          [
+            1,
+            1.1,
+            1.2,
+            1.5
+          ],
+          [
+            1,
+            1.1,
+            1.2,
+            1.5
+          ]
+        ]
+      },
+      {
+        "source_id": 35,
+        "resistance_name_from_planner": "earth",
+        "effect_block_file_offset": "0x21102e0",
+        "effect_block_length": 336,
+        "effect_block_sha256": "fb6b55ec143d5c37ca0ffb57eef622bf11b0e7e8205241edf60d9fcf6790f788",
+        "source_copy_instruction": "0x61d10d",
+        "effect_vector_constructor_call": "0x61d160",
+        "basic_key_write_instruction": "0x61d193",
+        "mana_effect_type": 11,
+        "mana_rows_i_to_iv": [
+          [
+            50,
+            55,
+            60,
+            75
+          ],
+          [
+            150,
+            165,
+            180,
+            225
+          ],
+          [
+            300,
+            330,
+            360,
+            450
+          ],
+          [
+            300,
+            330,
+            360,
+            450
+          ],
+          [
+            100,
+            110,
+            120,
+            150
+          ]
+        ],
+        "resistance_effect_type": 4,
+        "resistance_rows_i_to_iv": [
+          [
+            1,
+            1.1,
+            1.2,
+            1.5
+          ],
+          [
+            1,
+            1.1,
+            1.2,
+            1.5
+          ],
+          [
+            1,
+            1.1,
+            1.2,
+            1.5
+          ],
+          [
+            1,
+            1.1,
+            1.2,
+            1.5
+          ],
+          [
+            1,
+            1.1,
+            1.2,
+            1.5
+          ]
+        ]
+      },
+      {
+        "source_id": 36,
+        "resistance_name_from_planner": "ice",
+        "effect_block_file_offset": "0x2110440",
+        "effect_block_length": 336,
+        "effect_block_sha256": "296db34594ea5b0e5bafa28a58c96ab96f2c3f7fc604ae3b6527e21c9ace79eb",
+        "source_copy_instruction": "0x61d182",
+        "effect_vector_constructor_call": "0x61d1d5",
+        "basic_key_write_instruction": "0x61d26c",
+        "mana_effect_type": 11,
+        "mana_rows_i_to_iv": [
+          [
+            50,
+            55,
+            60,
+            75
+          ],
+          [
+            150,
+            165,
+            180,
+            225
+          ],
+          [
+            300,
+            330,
+            360,
+            450
+          ],
+          [
+            300,
+            330,
+            360,
+            450
+          ],
+          [
+            100,
+            110,
+            120,
+            150
+          ]
+        ],
+        "resistance_effect_type": 5,
+        "resistance_rows_i_to_iv": [
+          [
+            1,
+            1.1,
+            1.2,
+            1.5
+          ],
+          [
+            1,
+            1.1,
+            1.2,
+            1.5
+          ],
+          [
+            1,
+            1.1,
+            1.2,
+            1.5
+          ],
+          [
+            1,
+            1.1,
+            1.2,
+            1.5
+          ],
+          [
+            1,
+            1.1,
+            1.2,
+            1.5
+          ]
+        ]
+      }
+    ]
+  },
+  "limitations": [
+    "No client memory, credentials, login or live game-state mutation was used. Only existing installed static files were read.",
+    "Grade I-III values are now directly present in current official client tables; naming the Monk row uses the explicit independent Grade IV UI crosscheck above.",
+    "This demonstrates current client display/reference values, not independently measured authoritative game-server execution.",
+    "No tracked repository file was edited by the evidence collector."
+  ]
+}

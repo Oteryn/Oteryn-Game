@@ -7,13 +7,7 @@ impl PlayLink {
         if !oteryn_client_ui::achievement_notices::open_key(events) {
             return false;
         }
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).achievement_notices.open = true;
-        }
+        lock(&self.mailbox).achievement_notices.open = true;
         true
     }
 }

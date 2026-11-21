@@ -189,7 +189,7 @@ impl<S: SessionStream> CastViewerSession<S> {
     }
     pub async fn leave(mut self) -> Result<(), SessionError> {
         let result = self.send(Message::Leave).await;
-        let _ = self.stream.shutdown().await;
+        let _ = tokio::time::timeout(self.deadline, self.stream.shutdown()).await;
         result
     }
 }

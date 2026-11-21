@@ -83,7 +83,7 @@ Reduced lanes are derived from the exact candidate tree. Cargo metadata owns pac
 
 `docs/agents/evidence/**` is not blanket runtime material. Evidence that current Rust source/tests actually consume through paths such as `include_str!` / `include_bytes!` inherits the consuming package lane; unconsumed evidence remains auxiliary.
 
-Cross product/auxiliary renames, symlinks/submodules, special modes, malformed consumer evidence and incomplete file enumeration fail closed. The classifier itself and canonical routing controls always self-qualify through FULL.
+Cross product/auxiliary renames, symlinks/submodules, special modes, malformed consumer evidence and incomplete file enumeration fail closed. The classifier itself and canonical routing controls always self-qualify through FULL. Canonical routing controls are `merge-gate.yml`, `merge-group-gate.yml`, `rust.yml`, `.github/actions/**`, `tools/repository/**`, `docs/migration/**` and the gate workflows in `GATE_WORKFLOW_PATHS` (every reusable-workflow callee, the PostgreSQL harness and partitions, the node boot and the server seam); the merge authority audit is FULL unless it is a pin-only rotation. Any other workflow is routed by its exact-candidate consumers like any other auxiliary input, so a workflow that no gate selects runs only its own jobs and the always-required gates (owner decision 2026-11-21).
 
 ## Post-merge full gate
 
@@ -132,13 +132,13 @@ Current selected Linux evidence includes:
 
 Current selected Windows evidence includes:
 
-- exact release `oteryn-client` build and strict client Clippy;
+- exact release `oteryn-client` build (on Windows `oteryn-client.exe` is the Bevy host) and strict client Clippy;
 - smoke against that exact release artifact plus synthetic harness;
 - unsigned installer build, install/reinstall, concurrency and uninstall checks using the existing lifecycle script and hash-verified Inno Setup; release identity is derived from the exact MQ SHA before the client build;
 - `oteryn-input-platform` package tests on `x86_64-pc-windows-msvc`;
 - `oteryn-simulation-determinism` golden tests on the same target.
 
-Windows smoke exits before renderer construction; it is shell/package evidence, not renderer or gameplay E2E. Affected renderer/UI work still needs its named native fixtures/platform tests.
+Windows smoke starts the Bevy host, opens its window and exits after three frames; it is shell/package evidence, not gameplay E2E. Affected renderer/UI work still needs its named native fixtures/platform tests.
 
 ## Protected-main post-merge
 

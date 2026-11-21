@@ -42,13 +42,7 @@ impl PlayLink {
         if let Err(message) = self.console_display(display) {
             lock(&self.mailbox).chat.feedback = Some(message.into());
         }
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).chat.open = true;
-        }
+        lock(&self.mailbox).chat.open = true;
     }
 }
 pub(in crate::play) fn enqueue(
@@ -74,8 +68,25 @@ pub(in crate::play) fn enqueue(
     }
 }
 
+pub(in crate::play) fn enqueue_hotkey_text(
+    mailbox: &mut Mailbox,
+    commands: &UnboundedSender<PlayCommand>,
+    text: String,
+) {
+    use oteryn_client_ui::chat::ComposerMode;
+
+    let draft = std::mem::replace(&mut mailbox.chat.text, text);
+    let mode = mailbox.chat.console.mode;
+    if matches!(mode, ComposerMode::Off | ComposerMode::Auto) {
+        mailbox.chat.console.mode = ComposerMode::Temporary;
+    }
+    enqueue(mailbox, commands, Mode::Say, "");
+    mailbox.chat.text = draft;
+    mailbox.chat.console.mode = mode;
+}
+
 /// The native composer uses the same destination precedence as `enqueue`.
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(in crate::play) fn composer_enabled(
     panel: &oteryn_client_ui::chat::ChatPanel,
     mode: Mode,

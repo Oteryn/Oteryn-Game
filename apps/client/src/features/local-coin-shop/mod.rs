@@ -1,8 +1,6 @@
 //! Sandbox coin checkout and status. The client never verifies provider events or grants coins.
 mod controller;
 pub(crate) mod launcher;
-#[cfg(windows)]
-mod native;
 #[cfg(test)]
 mod tests;
 use oteryn_foundation::CancellationToken;
@@ -22,7 +20,7 @@ pub enum Action {
     OpenCheckout,
     Back,
 }
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct View {
     pub catalogue: Option<CoinCatalogue>,
     pub balance: Option<CoinBalance>,
@@ -125,11 +123,6 @@ pub fn price_text(price: &Price) -> String {
 pub type Presenter = Arc<dyn Fn(&View, CancellationToken) -> Action + Send + Sync>;
 pub type Browser = Arc<dyn Fn(&str) -> bool + Send + Sync>;
 pub fn present(view: &View, cancel: CancellationToken) -> Action {
-    #[cfg(windows)]
-    {
-        native::present(view, cancel)
-    }
-    #[cfg(not(windows))]
     {
         let _ = (view, cancel);
         Action::Back

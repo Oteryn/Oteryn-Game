@@ -12,11 +12,20 @@ impl Outbox {
         mailbox.inventory.apply(inventory);
     }
 
+    /// Manual Sort Mode starts off in every session; 510 makes it available.
+    pub(in crate::play) fn container_manual_sort_initialize(&self, selected: bool) {
+        lock(&self.0).container_manual_sort =
+            oteryn_client_ui::container_manual_sort::admitted(selected);
+    }
+
     pub(in crate::play) fn inventory_events(&self, events: &[SessionEvent]) {
         let mut mailbox = lock(&self.0);
         for event in events {
             if let SessionEvent::Inventory(delta) = event {
                 mailbox.inventory.apply(Some(delta.value.clone()));
+            }
+            if let SessionEvent::InventoryCapacity(delta) = event {
+                oteryn_client_ui::inventory_capacity::apply(&mut mailbox.inventory, delta.value);
             }
         }
     }
@@ -25,9 +34,11 @@ impl Outbox {
         self.equipment_initialize(false);
         let mut mailbox = lock(&self.0);
         mailbox.world_context.targeting = None;
+        mailbox.use_with_pending = false;
         mailbox.inventory = Default::default();
         mailbox.item_movement = Default::default();
         mailbox.item_count_selected = false;
+        mailbox.container_manual_sort = Default::default();
         mailbox.inventory_shutdown = true;
         // Public template references belong to this inventory session too.
         mailbox.discovery.inspection = Default::default();
@@ -67,6 +78,7 @@ macro_rules! dispatch {
         super::feature_0011_world_interaction::protocol::dispatch! {
             $command, $session, $outbox, $held, $publish;
             Ok(crate::combat_input::PlayCommand::MoveContainerContents(requests)) => {
+                $outbox.target_walk_replaced();
                 let result = async {
                     let mut last = None;
                     for request in requests {
@@ -83,6 +95,7 @@ macro_rules! dispatch {
                 }
             }
             Ok(crate::combat_input::PlayCommand::MoveItem(request)) => {
+                $outbox.target_walk_replaced();
                 match $session.move_item(request).await {
                     Ok(response) => {
                         $outbox.item_move_result(response);

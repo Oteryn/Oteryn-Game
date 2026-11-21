@@ -16,15 +16,9 @@ impl PlayLink {
         assign(&mut crate::play::mailbox::lock(&self.mailbox), slot)
     }
     pub fn magical_archive_open(&self) {
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_archive(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            crate::play::mailbox::lock(&self.mailbox)
-                .spell_catalog
-                .archive_open = true;
-        }
+        crate::play::mailbox::lock(&self.mailbox)
+            .spell_catalog
+            .archive_open = true;
     }
     /// ToggleSpellListWidget: closes the spell list (catalogue or spellbook) when shown, else opens it.
     pub fn spell_list_toggle(&self) {
@@ -39,16 +33,11 @@ impl PlayLink {
         self.spell_catalog_open();
     }
     pub fn spell_catalog_open(&self) {
+        self.server_info_catalog();
         if self.spellbook_open() {
             return;
         }
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            crate::play::mailbox::lock(&self.mailbox).spell_catalog.open = true;
-        }
+        crate::play::mailbox::lock(&self.mailbox).spell_catalog.open = true;
     }
 }
 
@@ -60,7 +49,7 @@ pub(super) fn assign(mailbox: &mut crate::play::mailbox::Mailbox, slot: usize) -
     else {
         return false;
     };
-    if !mailbox.spell_bar.bar.bind(slot, Some(spell)) {
+    if !super::view::assign_cast_index(mailbox, slot, Some(spell.get())) {
         return false;
     }
     mailbox.spell_bar.feedback = format!("Selected spell assigned to slot {}", slot + 1);

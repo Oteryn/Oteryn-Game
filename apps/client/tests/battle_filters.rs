@@ -36,7 +36,8 @@ fn confirmed_battle_cues_respect_each_source_and_class() -> Result<(), Box<dyn s
     use oteryn_session::{
         ActorPosition, AppliedDelta, PresentationEvent, PresentationEventKind, SessionEvent,
     };
-    let root = std::env::temp_dir().join(format!("oteryn-battleclass-{}", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let root = fixture.path().join("oteryn-battleclass");
     std::fs::create_dir_all(&root)?;
     let metadata = b"test metadata";
     let audio = b"test audio bytes";
@@ -109,6 +110,5 @@ fn confirmed_battle_cues_respect_each_source_and_class() -> Result<(), Box<dyn s
     let mut invalid = manifest;
     invalid["battle_classes"]["999"] = "attack".into();
     assert!(oteryn_client::play::decode_mapping(&serde_json::to_vec(&invalid)?).is_err());
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }

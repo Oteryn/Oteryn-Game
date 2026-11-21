@@ -251,3 +251,75 @@ fn reward_wall_loads_catalogue_and_refreshes() -> TestResult {
     assert!(!snapshot.details_attempted);
     Ok(())
 }
+
+#[test]
+fn reward_wall_rules_controls_explain_server_owned_rewards() -> TestResult {
+    let (mut app, mut commands, outbox) = fixture()?;
+    outbox.bevy_reward_wall(panel());
+    app.update();
+    click_caption(&mut app, "Reward rules")?;
+    let text = texts(&mut app);
+    assert!(text.contains("Rewards are fixed"));
+    assert!(text.contains("Free: 3 Cosmetic Tokens"));
+    assert!(text.contains("Premium: 2 Prey Wildcards"));
+    click_caption(&mut app, "Jokers")?;
+    let text = texts(&mut app);
+    assert!(text.contains("Available jokers: 2"));
+    assert!(text.contains("automatically"));
+    assert!(text.contains("Day 1: 1 joker(s) spent"));
+    assert!(text.contains("another account character"));
+    click_caption(&mut app, "Access")?;
+    let text = texts(&mut app);
+    assert!(text.contains("within reach of a reward shrine"));
+    assert!(text.contains("Shrine access is ready"));
+    assert!(commands.try_recv().is_err());
+    click(&mut app, Kind::Refresh)?;
+    assert!(matches!(
+        commands.try_recv()?,
+        PlayCommand::DailyReward(oteryn_client_runtime::daily_reward::DailyRewardCommand::Query)
+    ));
+    Ok(())
+}
+
+#[test]
+fn reward_wall_help_tracks_snapshot_and_closes_with_wall() -> TestResult {
+    let (mut app, mut commands, outbox) = fixture()?;
+    outbox.bevy_reward_wall(panel());
+    app.update();
+    click_caption(&mut app, "Jokers")?;
+    assert!(texts(&mut app).contains("Available jokers: 2"));
+    let mut changed = panel();
+    if let Some(wall) = &mut changed.wall {
+        wall.jokers = 0;
+    }
+    outbox.bevy_reward_wall(changed);
+    app.update();
+    assert!(texts(&mut app).contains("Available jokers: 0"));
+    assert!(!texts(&mut app).contains("Available jokers: 2"));
+    click_caption(&mut app, "Jokers")?;
+    assert!(texts(&mut app).contains("Day 7"));
+    click(&mut app, Kind::History)?;
+    assert!(!texts(&mut app).contains("Available jokers:"));
+    click_caption(&mut app, "Access")?;
+    assert!(texts(&mut app).contains("within reach of a reward shrine"));
+    click(&mut app, Kind::Close)?;
+    assert!(!texts(&mut app).contains("within reach of a reward shrine"));
+    assert!(commands.try_recv().is_err());
+    outbox.bevy_reward_wall(panel());
+    app.update();
+    assert!(!texts(&mut app).contains("within reach of a reward shrine"));
+    Ok(())
+}
+
+fn click_caption(app: &mut App, caption: &str) -> TestResult {
+    let entity = app
+        .world_mut()
+        .query::<(&Text, &ChildOf)>()
+        .iter(app.world())
+        .find_map(|(text, parent)| (text.0 == caption).then_some(parent.parent()))
+        .ok_or("reward wall caption missing")?;
+    assert!(app.world().get::<Control>(entity).is_some());
+    app.world_mut().trigger(Activate { entity });
+    app.update();
+    Ok(())
+}

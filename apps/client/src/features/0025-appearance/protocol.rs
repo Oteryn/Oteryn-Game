@@ -10,6 +10,14 @@ pub(in crate::play) fn command(panel: &Panel, _: Intent) -> Result<FeatureComman
         .catalogue
         .as_ref()
         .ok_or(tr!("Wait for the appearance catalogue"))?;
+    // Catalogue has no active content revision. Historical selection provenance
+    // cannot substitute for it, even when the selection remains compatible.
+    if panel.fields[4].trim().is_empty() {
+        return Err(tr!(
+            "Appearance changes are unavailable: the server has not supplied the required outfit data"
+        )
+        .into());
+    }
     let outfit = catalogue
         .outfits
         .iter()

@@ -180,7 +180,7 @@ async fn run(
             }
         }
         if privacy_pulse.elapsed() >= std::time::Duration::from_millis(250) || !privacy.valid() {
-            privacy_pulse = std::time::Instant::now();
+            let pulse = std::time::Instant::now();
             // Observer storage retries must reach their existing rejection boundary:
             // their caller can be holding the root until it receives that reply.
             let observer_storage = request.as_ref().is_some_and(|request| {
@@ -196,6 +196,9 @@ async fn run(
                 root.refresh_cast_consent_worker(&node, &mut privacy).await
             };
             if let Ok(batch) = batch {
+                // A refused checkout did not refresh the lease. Retry on the
+                // next worker turn instead of waiting another full pulse.
+                privacy_pulse = pulse;
                 for event in batch.events() {
                     // Unknown characters have no queued frames. A capture made
                     // before this ACK cannot publish at the new privacy version.

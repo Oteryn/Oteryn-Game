@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::num::NonZeroU32;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ItemUseMode {
+    Use,
     SelfActor,
     Target,
     Cursor,
@@ -13,6 +14,7 @@ pub enum ItemUseMode {
 impl ItemUseMode {
     pub(super) const fn label(self) -> &'static str {
         match self {
+            Self::Use => "use",
             Self::SelfActor => "self",
             Self::Target => "current target",
             Self::Cursor => "crosshair",
@@ -24,24 +26,35 @@ pub(super) fn use_item(
     mailbox: &mut Mailbox,
     commands: &tokio::sync::mpsc::UnboundedSender<crate::combat_input::PlayCommand>,
     definition: NonZeroU32,
+    sub_type: Option<u32>,
     mode: ItemUseMode,
 ) {
-    if !mailbox.world_context.use_with || mailbox.world_context.pending {
+    if (mode != ItemUseMode::Use && !mailbox.world_context.use_with)
+        || mailbox.world_context.pending
+    {
         mailbox.spell_bar.feedback = "Item use unavailable or awaiting the server".into();
         return;
     }
-    let source = item_source(mailbox, definition, None).map(|item| item.handle);
+    let source = item_source(mailbox, definition, sub_type).map(|item| item.handle);
     let Some(source) = source else {
         mailbox.spell_bar.feedback =
             "That item is not visible in inventory or an open container".into();
         return;
     };
-    if mode == ItemUseMode::Cursor {
+    if mode == ItemUseMode::Cursor
+        || (mode == ItemUseMode::Target && item_target(mailbox, mode).is_none())
+    {
         mailbox.world_context.begin_targeting(source);
         mailbox.world_context.rune_targeting = false;
         return;
     }
-    let command = if mode == ItemUseMode::CursorPosition {
+    let command = if mode == ItemUseMode::Use {
+        Command {
+            target: Target::Item(source),
+            action: Action::Use,
+            selection: None,
+        }
+    } else if mode == ItemUseMode::CursorPosition {
         let Some((target, selection)) = mailbox.bar_actions.cursor.clone() else {
             mailbox.world_context.set_feedback(
                 "Cursor is outside the game window or battle list".into(),
@@ -122,6 +135,15 @@ pub(in crate::play) fn item_target(
                     .find(|row| row.entity == target)
                     .copied()
             }),
-        ItemUseMode::Cursor | ItemUseMode::CursorPosition => None,
+        ItemUseMode::Use | ItemUseMode::Cursor | ItemUseMode::CursorPosition => None,
     }
+}
+
+#[cfg(test)]
+pub(in crate::play) fn editor_items(
+    mailbox: &Mailbox,
+) -> impl Iterator<Item = oteryn_session::ItemEntry> + '_ {
+    let mut seen = std::collections::BTreeSet::new();
+    visible_items(mailbox)
+        .filter(move |item| seen.insert((item.item_definition_ref, item.sub_type)))
 }

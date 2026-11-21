@@ -49,14 +49,11 @@ impl PlayLink {
     pub fn charm_progression_request(&self, intent: Intent) {
         submit(&mut lock(&self.mailbox), &self.commands, intent);
     }
+    pub fn bestiary_close(&self) {
+        lock(&self.mailbox).properties.charm_progression.open = false;
+    }
     pub fn charm_progression_open(&self) {
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).properties.charm_progression.open = true;
-        }
+        lock(&self.mailbox).properties.charm_progression.open = true;
     }
     pub fn charm_progression_input(&self, events: &[NormalizedInputEvent]) -> bool {
         if !oteryn_client_ui::charm_progression::open_key(events) {
@@ -82,5 +79,19 @@ pub(in crate::play) fn edit(
             return;
         }
         *slot = value;
+    }
+}
+
+#[cfg(all(test, bevy_shell))]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_bestiary_initialize(&self) {
+        lock(&self.0).properties.charm_progression.selected = true;
+    }
+    pub(crate) fn bevy_bestiary_result(
+        &self,
+        command: &oteryn_client_runtime::raw_feature::FeatureCommand,
+        result: &oteryn_client_runtime::raw_feature::GatedCommandResult,
+    ) {
+        self.properties_result(command, result);
     }
 }

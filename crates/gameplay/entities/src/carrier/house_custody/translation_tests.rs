@@ -102,6 +102,26 @@ fn house_exit_updates_translation_stamp_only_for_coordinate_or_floor_changes() -
             runtime.read_actor_position(actor).is_err(),
             "House custody removes Channel presence"
         );
+        let neighbor_session = GameSessionId::decode(&id(9)).map_err(debug)?;
+        let neighbor = runtime
+            .reserve_fresh_session(neighbor_session)
+            .map_err(debug)?;
+        let neighbor = runtime.commit_fresh_session(neighbor).map_err(debug)?;
+        runtime
+            .initialize_pinned_test_position(
+                neighbor,
+                MovementLocalPosition {
+                    x: 6,
+                    ..source_position
+                },
+            )
+            .map_err(debug)?;
+        assert_eq!(
+            runtime.position_occupied_by_other(neighbor, source_position),
+            Ok(false)
+        );
+        assert!(!runtime.current_cell_occupied_except(source_position, neighbor));
+
         runtime
             .commit_house_custody(
                 actor,

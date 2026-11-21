@@ -181,6 +181,7 @@ pub fn extended_spawn_offsets(
 #[derive(Clone, Debug, Default)]
 pub struct GoshnarsGreedRoom {
     scheduled: Vec<(u64, GreedEffect)>,
+    opening_pending: bool,
     // Crystal 201189f weak_soul.lua:92-104 (and the other soul types): the
     // counter belongs to the MonsterType's Lua closure, not an actor incarnation.
     minion_ms: BTreeMap<GreedMinion, u64>,
@@ -206,6 +207,8 @@ impl GoshnarsGreedRoom {
     /// Recovered handoff preserves the original use delays, including when the
     /// current process clock is younger than the durable handoff receipt.
     pub fn lever_pulled_with_elapsed(&mut self, now_ms: u64, elapsed_ms: u64) {
+        self.begin_fight();
+        self.opening_pending = true;
         let start = self.scheduled.len();
         for minion in [
             GreedMinion::Greedbeast,
@@ -222,6 +225,11 @@ impl GoshnarsGreedRoom {
 
     /// Goshnar's Greed spawn callback: resets room counters and makes the boss immune.
     pub fn boss_spawned(&mut self) -> Vec<GreedEffect> {
+        // The lever schedules this fight before its boss spawn callback arrives.
+        if !self.opening_pending {
+            self.begin_fight();
+        }
+        self.opening_pending = false;
         self.minion_ms.clear();
         self.sphere_clock = (0, false);
         self.latest_sphere = None;
@@ -433,6 +441,11 @@ impl GoshnarsGreedRoom {
             .drain(..ready)
             .map(|(_, effect)| effect)
             .collect()
+    }
+
+    /// A new fight drops every callback the previous fight still had queued.
+    fn begin_fight(&mut self) {
+        self.scheduled.clear();
     }
 
     fn schedule_greed_spawn(&mut self, minion: GreedMinion, now_ms: u64) {

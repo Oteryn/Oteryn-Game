@@ -163,6 +163,102 @@ impl DurabilityRoot {
             })
             .await?
     }
+
+    /// The stored text of one item in the carried tree or equipment, read in the same fenced
+    /// transaction that proves its custody (the custody `read_item_use_inventory` gives the MAIL
+    /// text writer). `Ok(None)`: the item is not carried by this character. An item without a
+    /// text row reads as empty text. It takes the session item fence the MAIL text writer
+    /// takes (the Character root lock) and may reconcile the carried death tree, as every
+    /// fenced carried read does; it never writes the item text, a revision, receipt or rate
+    /// token.
+    pub async fn read_carried_item_text(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        house_origin: Option<[u8; 16]>,
+        item: [u8; 16],
+    ) -> Result<Option<(TypedDefinitionRef, String)>> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| ItemUseError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    let (content_revision, ruleset_revision) = if let Some(origin) = house_origin {
+                        if super::super::house_hireling::fence::assert_house_custody_fence(
+                            &mut tx, &node, &fence, origin,
+                        )
+                        .await?
+                        .is_none()
+                        {
+                            return Ok(Err(ItemUseError::AuthorityRejected));
+                        }
+                        sqlx::query_as(
+                            "SELECT content_revision, ruleset_revision FROM game_character_roots \
+                             WHERE character_id = encode($1,'hex')::uuid",
+                        )
+                        .bind(fence.character_id.as_bytes().as_slice())
+                        .fetch_one(&mut *tx)
+                        .await?
+                    } else {
+                        match assert_item_only_fence(&mut tx, &fence, &node).await? {
+                            Ok(root) => (root.content_revision, root.ruleset_revision),
+                            Err(CharacterProgressionError::Unavailable(error)) => return Err(error),
+                            Err(_) => return Ok(Err(ItemUseError::AuthorityRejected)),
+                        }
+                    };
+                    reconcile_carried_death_tree(&mut tx, &fence, &node, house_origin).await?;
+                    let inventory = match read_use_inventory(
+                        &mut tx,
+                        &fence,
+                        content_revision,
+                        ruleset_revision,
+                    )
+                    .await
+                    {
+                        Ok(inventory) => inventory,
+                        Err(ItemUseError::Unavailable(error)) => return Err(error),
+                        Err(error) => return Ok(Err(error)),
+                    };
+                    let Some(definition) = carried_definition(&inventory, item) else {
+                        commit_semantic_transaction(tx, deadline).await?;
+                        return Ok(Ok(None));
+                    };
+                    let text: Option<String> = sqlx::query_scalar(
+                        "SELECT text FROM game_item_texts \
+                          WHERE item_instance_id=encode($1,'hex')::uuid",
+                    )
+                    .bind(item.as_slice())
+                    .fetch_optional(&mut *tx)
+                    .await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(Some((definition, text.unwrap_or_default()))))
+                })
+            })
+            .await?
+    }
+}
+
+/// The definition of `item` when it is equipped, a main-backpack entry or nested below one:
+/// the same custody set the MAIL text writer searches.
+fn carried_definition(inventory: &ItemUseInventory, item: [u8; 16]) -> Option<TypedDefinitionRef> {
+    inventory
+        .equipment
+        .iter()
+        .chain(
+            inventory
+                .backpack
+                .iter()
+                .flat_map(|backpack| backpack.entries.iter().map(|entry| &entry.item)),
+        )
+        .chain(inventory.nested.iter().map(|(_, entry)| &entry.item))
+        .find(|entry| entry.item_instance_id == item)
+        .map(|entry| entry.definition.clone())
 }
 
 /// Only the current fenced inventory reader performs lazy representation repair.
@@ -212,9 +308,18 @@ pub(in crate::durability) async fn read_use_inventory(
     content_revision: String,
     ruleset_revision: String,
 ) -> Result<ItemUseInventory> {
-    // The public reader proves Channel authority; the Hireling reader independently proves
-    // a named House before calling this storage-only projection.
-    let world_id = fence.runtime_scope.world_id();
+    // The public reader proves Channel authority; the Hireling reader proves its named House.
+    read_carried_inventory(connection, fence.character_id, *fence.runtime_scope.world_id().as_bytes(), content_revision, ruleset_revision).await
+}
+
+/// Storage projection shared with Character info after its own visibility check.
+pub(in crate::durability) async fn read_carried_inventory(
+    connection: &mut PgConnection,
+    character: crate::domain::CharacterId,
+    world: [u8; 16],
+    content_revision: String,
+    ruleset_revision: String,
+) -> Result<ItemUseInventory> {
     // At most 500 tree items plus nine slots. Read one overflow sentinel and one excess
     // depth level, refusing the whole read rather than silently truncating it.
     let rows = sqlx::query(
@@ -244,7 +349,7 @@ pub(in crate::durability) async fn read_use_inventory(
              LEFT JOIN game_item_fluid_states f ON f.item_instance_id = i.item_instance_id \
             ORDER BY c.slot, c.depth, c.ordinal DESC LIMIT 510",
     )
-    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(character.as_bytes().as_slice())
     .bind(ITEM_LOOP_DEPTH_MAX)
     .fetch_all(connection)
     .await?;
@@ -265,8 +370,8 @@ pub(in crate::durability) async fn read_use_inventory(
         let depth: i32 = row.try_get("depth")?;
         if !seen.insert(id)
             || row.try_get::<i16, _>("lifecycle")? != 1
-            || uuid_text(&row.try_get::<String, _>("item_world")?)? != *world_id.as_bytes()
-            || uuid_text(&row.try_get::<String, _>("custody_world")?)? != *world_id.as_bytes()
+            || uuid_text(&row.try_get::<String, _>("item_world")?)? != world
+            || uuid_text(&row.try_get::<String, _>("custody_world")?)? != world
             || depth > ITEM_LOOP_DEPTH_MAX
             || !(slot == 0 || (1..=8).contains(&slot) || slot == 10)
         {

@@ -97,6 +97,13 @@ pub fn apply_result(p: &mut ItemForgePanel, r: &ServerMechanicResponse) {
                     && attempt.operation.requires_pair()
                 {
                     super::exaltation::show_result(p, attempt, receipt.clone());
+                    p.preview.items.retain(|item| {
+                        Some(item.handle) != attempt.first_item
+                            && Some(item.handle) != attempt.second_item
+                    });
+                    p.preview.page = None;
+                    p.preview.refresh = true;
+                    p.tier_effects.clear();
                 }
                 p.retry = None;
                 p.preview.invalidate();

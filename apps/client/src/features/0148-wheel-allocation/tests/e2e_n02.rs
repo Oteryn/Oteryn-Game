@@ -4,8 +4,8 @@
 use super::submit;
 use crate::play::{mailbox::lock, play_channel};
 use oteryn_client_ui::wheel_allocation::{
-    CommandStatus, Intent, WheelPanel, WheelResponse, apply_result, atelier,
-    presets::PresetBook, request, wheel,
+    CommandStatus, Intent, WheelPanel, WheelResponse, apply_result, atelier, presets::PresetBook,
+    request, wheel,
 };
 
 type Error = Box<dyn std::error::Error>;
@@ -43,7 +43,9 @@ fn points(text: &str) -> Result<[u16; 36], Error> {
         .split(',')
         .map(str::parse)
         .collect::<Result<Vec<u16>, _>>()?;
-    values.try_into().map_err(|_| "capture needs 36 points".into())
+    values
+        .try_into()
+        .map_err(|_| "capture needs 36 points".into())
 }
 
 fn frames(revision: u64, points: [u16; 36]) -> Result<Frames, Error> {
@@ -135,21 +137,38 @@ fn e2e_n02_named_build_export_import_and_malformed_code() -> Result<(), Error> {
     assert_eq!(mailbox.wheel.points, captured.initial);
 
     // The captured accepted Save becomes the confirmed allocation.
-    assert!(mailbox.wheel.set_points(CORE_SLOT, captured.saved[CORE_SLOT]));
+    assert!(
+        mailbox
+            .wheel
+            .set_points(CORE_SLOT, captured.saved[CORE_SLOT])
+    );
     request(&mut mailbox.wheel, Intent::Save, occurrence(2)).ok_or("save was not sent")?;
     assert!(apply_result(&mut mailbox.wheel, &response(&captured.save)));
-    assert_eq!(mailbox.wheel.feedback, Some("The server confirmed the request"));
+    assert_eq!(
+        mailbox.wheel.feedback,
+        Some("The server confirmed the request")
+    );
     assert_eq!(mailbox.wheel.points, captured.saved);
     assert_eq!(
-        mailbox.wheel.confirmed_wheel.as_ref().map(|state| state.revision),
+        mailbox
+            .wheel
+            .confirmed_wheel
+            .as_ref()
+            .map(|state| state.revision),
         Some(captured.saved_revision)
     );
 
     // Save a named build and read it back from disk.
-    let path = std::env::temp_dir().join(format!("oteryn-n02-{}.json", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("oteryn-n02.json");
     let code = format!(
         "OW1:{}",
-        captured.saved.iter().map(u16::to_string).collect::<Vec<_>>().join(",")
+        captured
+            .saved
+            .iter()
+            .map(u16::to_string)
+            .collect::<Vec<_>>()
+            .join(",")
     );
     mailbox.wheel.preset_fields[0] = "Core build".into();
     submit(&mut mailbox, 0, &path);
@@ -184,7 +203,13 @@ fn e2e_n02_named_build_export_import_and_malformed_code() -> Result<(), Error> {
     let before = fresh.wheel.clone();
     let mut over = captured.saved;
     over[CORE_SLOT] = 51;
-    let over = format!("OW1:{}", over.iter().map(u16::to_string).collect::<Vec<_>>().join(","));
+    let over = format!(
+        "OW1:{}",
+        over.iter()
+            .map(u16::to_string)
+            .collect::<Vec<_>>()
+            .join(",")
+    );
     for (bad, message) in [
         ("OW1:1,2,3".to_string(), "Build needs 36 slots"),
         ("not a build".to_string(), "Use an Oteryn Wheel code or URL"),
@@ -196,5 +221,30 @@ fn e2e_n02_named_build_export_import_and_malformed_code() -> Result<(), Error> {
         assert_eq!(fresh.wheel.points, before.points);
     }
     std::fs::remove_file(path)?;
+    Ok(())
+}
+
+#[test]
+fn loading_build_clears_pending_reset_for_both_import_paths() -> Result<(), Error> {
+    let captured = captured()?;
+    let (link, _receiver, _outbox) = play_channel();
+    let mut mailbox = lock(&link.mailbox);
+    synchronised(&mut mailbox.wheel, &captured.query)?;
+    let code = mailbox.wheel.build_code();
+    mailbox.wheel.preset_fields[0] = "Saved".into();
+    mailbox.wheel.preset_fields[1] = code.clone();
+    mailbox.wheel.preset_book.0.insert("Saved".into(), code);
+    for action in [1, 5] {
+        mailbox.wheel.diagram.reset_requested = true;
+        mailbox.wheel.points = [0; 36];
+        submit(&mut mailbox, action, std::path::Path::new("unused"));
+        assert_eq!(mailbox.wheel.preset_feedback, PRESET_OK);
+        assert_eq!(mailbox.wheel.points, captured.initial);
+        assert!(!mailbox.wheel.diagram.reset_requested);
+    }
+    mailbox.wheel.diagram.reset_requested = true;
+    mailbox.wheel.preset_fields[1] = "invalid".into();
+    submit(&mut mailbox, 5, std::path::Path::new("unused"));
+    assert!(mailbox.wheel.diagram.reset_requested);
     Ok(())
 }

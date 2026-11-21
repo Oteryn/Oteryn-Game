@@ -20,6 +20,7 @@ pub struct ScopedLastPosition {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ScopedPeriodicLastPosition {
     pub write: PeriodicLastPosition,
+    pub pending_vocation_refill: Option<super::super::character_build::BuildOccurrence>,
     pub house: Option<HouseLastPosition>,
 }
 
@@ -51,11 +52,11 @@ impl DurabilityRoot {
                     let mut outcomes = Vec::with_capacity(writes.len());
                     for entry in writes {
                         let Some(house) = entry.house else {
-                            outcomes.push(write_periodic(&mut tx, &node, entry.write).await?);
+                            outcomes.push(write_periodic(&mut tx, &node, entry.write, entry.pending_vocation_refill).await?);
                             continue;
                         };
                         let write = entry.write;
-                        if write.write_sequence == 0
+                        if entry.pending_vocation_refill.is_some() || write.write_sequence == 0
                             || write.fence.character_lease_generation == 0
                             || house.house.world_id() != write.record.world_id
                             || house.house.runtime_scope()? != write.fence.runtime_scope

@@ -100,3 +100,45 @@ fn depot_decoders_reject_truncation_unknown_duplicate_and_oversized_fields() -> 
     assert!(decode_depot_reply(&[8, 10, 16, 1]).is_err());
     Ok(())
 }
+
+/// Capability 510 (Manual Sort Mode) lets a deposit name the depot box slot it takes.
+#[test]
+fn a_deposit_slot_is_negotiated_by_capability_510_and_round_trips() -> Result<(), Error> {
+    let deposit = DepotIntent {
+        town: Some(3),
+        box_number: 2,
+        page: 1,
+        action: DepotAction::Deposit(ItemHandle::new(9).ok_or(Error::Malformed)?),
+    };
+    let slotted = encode_depot_intent_at(deposit, Some(33))?;
+    assert_eq!(decode_depot_intent_at(&slotted, true)?, (deposit, Some(33)));
+    assert!(decode_depot_intent_at(&slotted, false).is_err());
+    assert!(decode_depot_intent(&slotted).is_err());
+    // An unslotted deposit keeps the earlier bytes with or without 510.
+    let plain = encode_depot_intent_at(deposit, None)?;
+    assert_eq!(plain, encode_depot_intent(deposit)?);
+    assert_eq!(decode_depot_intent_at(&plain, true)?, (deposit, None));
+    // Only a deposit has a slot; a repeated slot fails closed.
+    let withdraw = DepotIntent {
+        action: DepotAction::Withdraw(4),
+        ..deposit
+    };
+    assert!(encode_depot_intent_at(withdraw, Some(0)).is_err());
+    let mut repeated = slotted.clone();
+    repeated.extend([48, 1]);
+    assert!(decode_depot_intent_at(&repeated, true).is_err());
+    let mut withdraw_slot = encode_depot_intent(withdraw)?;
+    withdraw_slot.extend([48, 0]);
+    assert!(decode_depot_intent_at(&withdraw_slot, true).is_err());
+    let largest = encode_depot_intent_at(
+        DepotIntent {
+            town: Some(u16::MAX),
+            box_number: 17,
+            page: MAX_DEPOT_PAGE,
+            action: DepotAction::Deposit(ItemHandle::new(u64::MAX).ok_or(Error::Malformed)?),
+        },
+        Some(u32::MAX),
+    )?;
+    assert!(largest.len() <= 48);
+    Ok(())
+}

@@ -4,6 +4,7 @@ use super::*;
 fn srx3_soulpit_creature_icon_field14_requires_negotiated_native_carrier()
 -> Result<(), WorldSpatialError> {
     let entity = WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: EntityKind::Creature,
         entity: EntityRef {
@@ -48,6 +49,7 @@ fn srx3_soulpit_creature_icon_field14_requires_negotiated_native_carrier()
 fn srx3_soulpit_creature_icon_refuses_wrong_category_shape_count_and_object()
 -> Result<(), WorldSpatialError> {
     let entity = WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: EntityKind::Creature,
         entity: EntityRef {
@@ -83,6 +85,7 @@ fn srx3_soulpit_creature_icon_refuses_wrong_category_shape_count_and_object()
 fn srx3_native_creature_icons_preserve_order_duplicate_ids_and_visible_zero()
 -> Result<(), WorldSpatialError> {
     let entity = WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: EntityKind::Player,
         entity: EntityRef {
@@ -181,6 +184,7 @@ fn srx3_native_creature_icons_general_hazard_preserves_source_u16_points()
     // nonzero points as Quests/Hazard22; hazard_primal.lua1-5 admits level12.
     // Rotten's separate named rotten-hazard source setter remains capped at4.
     let entity = WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: EntityKind::Player,
         entity: EntityRef {

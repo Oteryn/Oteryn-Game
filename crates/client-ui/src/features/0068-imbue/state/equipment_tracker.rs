@@ -23,6 +23,7 @@ pub struct Timer {
 pub struct GearRecord {
     pub name: String,
     pub timers: Vec<Timer>,
+    pub empty: Vec<String>,
     pub ended: Vec<String>,
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -98,8 +99,13 @@ impl EquipmentTracker {
             return;
         }
         let mut timers = Vec::new();
+        let mut empty = Vec::new();
         for (label, value) in &item.attributes {
-            if !label.starts_with("Imbuement Slot ") || value == "empty" {
+            if !label.starts_with("Imbuement Slot ") {
+                continue;
+            }
+            if value == "empty" {
+                empty.push(label.clone());
                 continue;
             }
             let Some(timer) = parse_timer(label, value) else {
@@ -123,6 +129,7 @@ impl EquipmentTracker {
             GearRecord {
                 name: item.name.clone(),
                 timers,
+                empty,
                 ended,
             },
         );
@@ -148,7 +155,7 @@ fn parse_timer(slot: &str, value: &str) -> Option<Timer> {
         minutes: total,
     })
 }
-pub fn text(tracker: &EquipmentTracker, maximum_ms: u32) -> String {
+pub fn text(tracker: &EquipmentTracker, maximum_ms: u32, hidden: &[bool; 4]) -> String {
     let mut out = format!(
         "Equipped imbuements — {} / {} items inspected\r\nTimes are server-reported whole minutes while fighting.\r\n",
         tracker.records.len(),
@@ -160,6 +167,14 @@ pub fn text(tracker: &EquipmentTracker, maximum_ms: u32) -> String {
             continue;
         };
         for timer in &record.timers {
+            let group = match timer.minutes {
+                0..60 => 0,
+                60..=180 => 1,
+                _ => 2,
+            };
+            if hidden[group] {
+                continue;
+            }
             if maximum_ms != 0 && u64::from(timer.minutes) * 60_000 > u64::from(maximum_ms) {
                 continue;
             }
@@ -182,7 +197,14 @@ pub fn text(tracker: &EquipmentTracker, maximum_ms: u32) -> String {
                 }
             ));
         }
-        for slot in &record.ended {
+        for slot in record.empty.iter().filter(|_| !hidden[3]) {
+            shown = true;
+            out.push_str(&format!(
+                "{} — {} — {slot}: unused imbuement slot\r\n",
+                scope.label, record.name
+            ));
+        }
+        for slot in record.ended.iter().filter(|_| !hidden[3]) {
             shown = true;
             out.push_str(&format!(
                 "{} — {} — {slot}: ALERT — no longer active\r\n",

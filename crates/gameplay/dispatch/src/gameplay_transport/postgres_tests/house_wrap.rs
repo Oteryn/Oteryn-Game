@@ -130,6 +130,10 @@ async fn scenario(h: &Harness,cask:bool) -> TestResult {
             id: 207,
             requires: &[49],
         },
+        crate::gameplay_transport::capabilities::OfferedCapability {
+            id: 508,
+            requires: &[4, 6],
+        },
     ];
     owner.required_capabilities = crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
         &[],crate::foundation::RuntimeScopeRefV1::channel(deps.admitted.world_id,deps.admitted.channel_id),1,"policy-1",OFFERS,
@@ -185,9 +189,15 @@ async fn scenario(h: &Harness,cask:bool) -> TestResult {
     let mut admitted = deps.admitted;
     admitted.first_entry = FirstEntryOutcome::Positioned;
     admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
-    admitted.continuity.selected_capabilities =
-        SelectedCapabilities::select(owner.offered_capabilities(), if cask {&[4,6,15,49,86,207]} else {&[4, 6, 49, 86, 207]})
-            .ok_or("wrap offer")?;
+    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+        owner.offered_capabilities(),
+        if cask {
+            &[4, 6, 15, 49, 86, 207]
+        } else {
+            &[4, 6, 49, 86, 207, 508]
+        },
+    )
+    .ok_or("wrap offer")?;
     let request = wire::Request {
         action: wire::Action::Wrap,
         item: id(71),
@@ -409,6 +419,87 @@ async fn exchange_checked(
     )
     .map_err(debug)?;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    if expect_delta {
+        let serving = async {
+            let end = serve_admitted(&mut server, *admitted, owner, IDLE_LIVENESS).await;
+            drop(server);
+            end
+        };
+        let reading = async {
+            let mut before = None;
+            let mut reply = None;
+            let mut inventory_delta = false;
+            let fields = oteryn_protocol_oteryn::world_spatial_entities::EntityFields::selected(
+                admitted.continuity.selected_capabilities.as_slice(),
+            );
+            loop {
+                let bytes = super::item_look_fixtures::read_frame(&mut client).await?;
+                let envelope = decode_wire_envelope(&bytes)?;
+                match envelope.message_type() {
+                    MessageType::CommandResult => {
+                        let result = decode_command_result(envelope.payload()).map_err(debug)?;
+                        reply = Some((
+                            result.status,
+                            wire::Reply::decode(result.payload).ok_or("wrap result")?,
+                        ));
+                    }
+                    MessageType::StateDelta => {
+                        let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())
+                            .map_err(debug)?;
+                        inventory_delta |= delta.domain_id
+                            == oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY;
+                        if delta.domain_id != 1 || delta.delta_type != 2 {
+                            continue;
+                        }
+                        use oteryn_protocol_oteryn::world_spatial_entities::{
+                            self as spatial, DeltaSidecar,
+                        };
+                        let (_, _, Some(DeltaSidecar::InventoryCapacity(capacity))) =
+                            spatial::decode_world_spatial_entities_delta_with_sidecar(
+                                delta.payload,
+                                fields,
+                            )
+                            .map_err(debug)?
+                        else {
+                            continue;
+                        };
+                        if let Some((initial, at)) = before {
+                            let initial: oteryn_protocol_oteryn::inventory_capacity::InventoryCapacity = initial;
+                            match request.action {
+                                wire::Action::Wrap => assert!(capacity.free < initial.free),
+                                wire::Action::Unwrap => assert!(capacity.free > initial.free),
+                            }
+                            let at: std::time::Instant = at;
+                            assert!(
+                                at.elapsed() < std::time::Duration::from_secs(4),
+                                "wrap waited for periodic capacity refresh"
+                            );
+                            assert!(
+                                inventory_delta,
+                                "committed House conversion must publish inventory delta"
+                            );
+                            client.shutdown().await?;
+                            return reply.ok_or_else(|| "wrap result before capacity".into());
+                        }
+                        before = Some((capacity, std::time::Instant::now()));
+                        crate::gameplay_transport::tcp_tls::write_frame(&mut client, &frame)
+                            .await?;
+                    }
+                    _ => {}
+                }
+            }
+        };
+        let (end, result) = tokio::time::timeout(std::time::Duration::from_secs(10), async {
+            tokio::join!(serving, reading)
+        })
+        .await?;
+        if let ConnectionEnd::AdmittedThenDisconnected(current)
+        | ConnectionEnd::AdmittedThenClosed(current, _) = end
+        {
+            *admitted = current;
+        }
+        return result;
+    }
     client
         .write_all(&(frame.len() as u32).to_be_bytes())
         .await?;
@@ -425,7 +516,6 @@ async fn exchange_checked(
     }
     let mut cursor = 0;
     let mut reply = None;
-    let mut inventory_delta = false;
     while cursor < bytes.len() {
         let n = u32::from_be_bytes(bytes[cursor..cursor + 4].try_into()?) as usize;
         let envelope = decode_wire_envelope(&bytes[cursor + 4..cursor + 4 + n]).map_err(debug)?;
@@ -436,18 +526,7 @@ async fn exchange_checked(
                 result.status,
                 wire::Reply::decode(result.payload).ok_or("wrap result")?,
             ));
-        } else if envelope.message_type() == MessageType::StateDelta {
-            let delta =
-                oteryn_protocol_oteryn::decode_state_delta(envelope.payload()).map_err(debug)?;
-            inventory_delta |= delta.domain_id
-                == oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY;
         }
-    }
-    if expect_delta {
-        assert!(
-            inventory_delta,
-            "committed House conversion must publish inventory delta"
-        );
     }
     reply.ok_or_else(|| format!("wrap command {command}: {end:?}").into())
 }

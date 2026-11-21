@@ -41,6 +41,7 @@ pub(super) async fn exercise(
                             floor: -7,
                         }
                     ),
+                    slot: None,
                 }
             )
             .await,
@@ -124,7 +125,8 @@ pub(super) async fn exercise(
                             y: 0,
                             floor: -7,
                         }
-                    )
+                    ),
+                    slot: None,
                 }
             )
             .await,
@@ -183,7 +185,8 @@ pub(super) async fn exercise(
                 LoopMove {
                     item: key,
                     count: None,
-                    target: LoopTarget::MainBackpack
+                    target: LoopTarget::MainBackpack,
+                    slot: None,
                 }
             )
             .await,

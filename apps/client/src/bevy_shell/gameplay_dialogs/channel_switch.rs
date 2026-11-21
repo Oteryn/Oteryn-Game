@@ -1,5 +1,5 @@
 //! chsw (capability 512): the Change Channel window inside the gameplay dialog overlay.
-use super::{Choice, HostOwner, Request, Skin, button};
+use super::{Choice, HostOwner, Request, Skin, projection::button};
 use bevy::prelude::*;
 use oteryn_client_ui_bevy as source;
 
@@ -127,6 +127,8 @@ mod tests {
             },
             frame: default(),
             font: default(),
+            checked: default(),
+            unchecked: default(),
         };
         let panel = oteryn_client_ui::channel_switch::ChannelSwitchPanel {
             current: Some([1; 16]),
@@ -192,9 +194,12 @@ mod tests {
                 },
                 frame: default(),
                 font: default(),
+                checked: default(),
+                unchecked: default(),
             })
             .add_systems(Update, project);
-        app.world_mut().spawn((Overlay, Node::default()));
+        app.world_mut()
+            .spawn((Overlay, Node::default(), BackgroundColor::default()));
         app.update();
 
         let (row, first_text) = {

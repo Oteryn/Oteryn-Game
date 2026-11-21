@@ -16,6 +16,7 @@ fn player_context_revalidates_exact_entity_generation_floor_and_party_snapshot()
         generation: 8,
     };
     let player = WorldSpatialEntity {
+        motion: None,
         display_name: Some(EntityDisplayName::new("Visible player").map_err(|_| "name")?),
         kind: EntityKind::Player,
         entity,

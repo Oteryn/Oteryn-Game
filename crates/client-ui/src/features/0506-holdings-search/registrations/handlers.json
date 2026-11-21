@@ -1,0 +1,25 @@
+{
+  "mechanic": "0506-holdings-search",
+  "kind": "handlers",
+  "id": "0506-holdings-search-page",
+  "status": "supported",
+  "commands": [],
+  "shared_commands": [
+    388
+  ],
+  "direction": "server_to_client",
+  "capability": 506,
+  "entry": "protocol.rs::display_name",
+  "push_messages": [
+    "HoldingsPage"
+  ],
+  "reducer": "protocol.rs::display_name",
+  "test": "tests.rs::holdings_labels_use_server_names_and_retain_unknown_keys",
+  "not_applicable": {
+    "state": "The Cyclopedia item summary retains the server page and names.",
+    "protocol": "The shared filtered holdings codec decodes the page and names.",
+    "view": "The Bevy Cyclopedia renders names and server counts.",
+    "input": "The Cyclopedia builds selector 135 with the selected filter.",
+    "settings": "Holdings filters are transient."
+  }
+}

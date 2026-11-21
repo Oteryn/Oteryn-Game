@@ -1,0 +1,8 @@
+name=server_info
+commands=6241
+transport=server_info
+composed=server_info
+authority=server_info
+offer=706,server_info::offered,server_info_available
+[route]
+routing::server_info::route(authority, &session.admitted, command).await

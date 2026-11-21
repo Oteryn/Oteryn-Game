@@ -156,6 +156,7 @@ fn house_transfer_guard_busy_budget_preserves_connection_postgres() -> TestResul
                     let refusal = result(&mut client).await?;
                     assert_eq!(refusal.0, CommandStatus::Rejected);
                     assert_eq!(decode_step_result(&refusal.1), Ok(StepDisposition::Rejected));
+                    assert_eq!(refusal.1, [0x08, 0x03]);
                     assert_eq!(
                         result(&mut client).await?,
                         (CommandStatus::DuplicateReplay, refusal.1)

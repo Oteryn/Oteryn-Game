@@ -30,6 +30,7 @@ impl Stepper for ContextSession {
     async fn world_context(
         &mut self,
         command: &oteryn_client_ui::world_interaction::menu::Command,
+        _raw_wire: bool,
     ) -> Result<String, SessionError> {
         self.receipts
             .send(format!("{:?}", command.action))

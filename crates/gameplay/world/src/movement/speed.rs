@@ -429,6 +429,7 @@ impl CreatureMovementCadence {
         };
         match outcome {
             crate::movement::MovementTurnOutcome::Applied(after) => {
+                runtime.record_walk(self.actor, after, duration);
                 self.pacer.record(now, Some(duration));
                 Ok(Some(after))
             }

@@ -95,6 +95,7 @@ fn srx3_native_missile_crosses_real_session_into_play_scene()
                     bytes
                 };
                 let own = WorldSpatialEntity {
+                    motion: None,
                     display_name: None,
                     kind: EntityKind::Player,
                     entity: EntityRef {

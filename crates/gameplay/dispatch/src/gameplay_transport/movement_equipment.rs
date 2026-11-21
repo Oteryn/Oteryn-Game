@@ -64,6 +64,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> Option<MovementEquipmentRead> {
+        self.movement_equipment(actor, session, false).await
+    }
+
+    pub(in crate::gameplay_transport) async fn observe_movement_equipment(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<MovementEquipmentRead> {
+        self.movement_equipment(actor, session, true).await
+    }
+
+    async fn movement_equipment(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        observation: bool,
+    ) -> Option<MovementEquipmentRead> {
         let source = self.active_generation?.native_gameplay()?;
         let (position, before, digest, scope, generation, forced) = {
             let runtime = self.runtime.lock().await;
@@ -91,6 +108,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 runtime.forced_player_step_current(actor, session),
             )
         };
+        if observation {
+            let read = self
+                .root
+                .observe_movement_equipment(self.character, self.holder, session, digest)
+                .await
+                .ok()?;
+            let delta = equipment_delta(read.equipment(), source)?;
+            return Some(MovementEquipmentRead {
+                actor,
+                session,
+                position,
+                before,
+                read,
+                delta,
+            });
+        }
         let store = FreshAdmissionStore::from_root(self.root.clone());
         use crate::gameplay_transport::connection::AdmissionRefusal::{Rejected, Unavailable};
         // All three reads share the bounded durability holder. Retry an

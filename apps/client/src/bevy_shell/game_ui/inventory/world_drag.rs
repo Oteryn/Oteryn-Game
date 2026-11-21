@@ -149,7 +149,8 @@ pub(super) fn install(app: &mut App) {
     app.init_resource::<Gesture>()
         .init_resource::<FrameCount>()
         .add_systems(Startup, setup.after(super::super::setup))
-        .add_observer(picking::press);
+        .add_observer(picking::press)
+        .add_observer(picking::slot_drop);
 }
 fn setup(mut commands: Commands, regions: Res<GameRegions>) {
     commands.entity(regions.world).observe(picking::world_drop);
@@ -158,7 +159,20 @@ fn tile(owner: &HostOwner, viewport: WorldViewport, point: Option<Vec2>) -> Opti
     let view = &owner.play.as_ref()?.view;
     let (w, h) = view.scene().view().viewport_px();
     let local = viewport.scene_point(point?, UVec2::new(w, h))?;
-    crate::input::click_tile(view.scene().view(), f64::from(local.x), f64::from(local.y))
+    view.click_tile(f64::from(local.x), f64::from(local.y))
+}
+fn drag_button(owner: &HostOwner, world: bool) -> MouseButton {
+    let preferences = &owner.settings.preferences;
+    let button = preferences.controls.drag_button(world);
+    if world && preferences.swap_mouse_buttons {
+        if button == MouseButton::PRIMARY {
+            MouseButton::SECONDARY
+        } else {
+            MouseButton::PRIMARY
+        }
+    } else {
+        button
+    }
 }
 fn reset(ui: &mut InventoryUi, gesture: &mut Gesture, owner: &HostOwner) {
     if (gesture.active || ui.dragged.is_some())
@@ -184,16 +198,14 @@ fn after_press(
     allowed: bool,
     allowed_world_start: bool,
 ) {
-    if !matches!(
-        event,
-        NormalizedInputEvent::MouseButton {
-            button: MouseButton::PRIMARY,
-            state: ButtonState::Pressed,
-            modifiers: Modifiers::NONE
-        }
-    ) {
+    let NormalizedInputEvent::MouseButton {
+        button,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::NONE,
+    } = event
+    else {
         return;
-    }
+    };
     if !allowed
         || gesture.completed == Some(frame)
         || gesture.active
@@ -209,6 +221,9 @@ fn after_press(
     let Some(press) = gesture.picking.claim(frame, owner.generation(), point) else {
         return;
     };
+    if *button != drag_button(owner, matches!(press.source, picking::Source::World)) {
+        return;
+    }
     if let picking::Source::Carried(slot) = press.source {
         gesture.carried_token = Some((press.token, slot));
         return;
@@ -268,10 +283,10 @@ fn before(
     if matches!(
         event,
         NormalizedInputEvent::MouseButton {
-            button: MouseButton::PRIMARY,
+            button,
             state: ButtonState::Pressed,
             ..
-        }
+        } if *button == drag_button(owner, true)
     ) && !world_input_allowed(owner)
         && let Some(point) = point.filter(|point| point.is_finite())
     {
@@ -315,10 +330,10 @@ fn before(
     if matches!(
         event,
         NormalizedInputEvent::MouseButton {
-            button: MouseButton::PRIMARY,
+            button,
             state: ButtonState::Released,
             ..
-        }
+        } if *button == drag_button(owner, gesture.active || gesture.candidate.is_some())
     ) {
         let active = gesture.active || ui.dragged.is_some();
         if active {

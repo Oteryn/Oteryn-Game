@@ -1,8 +1,18 @@
 //! Session outbox delivery and command lifecycle; state remains owned by the mailbox.
 use super::*;
 impl Outbox {
-    pub(in crate::play) fn stepped(&self, outcome: StepOutcome) {
+    pub(in crate::play) fn session_cancelled(&self) -> bool {
+        // Only owner disposal sets this permanent dialog-lifetime flag. A transport end
+        // can reconnect on the same mailbox, so ordinary end state is not cancellation.
+        lock(&self.0).player_typing_shutdown
+    }
+
+    pub(in crate::play) fn stepped(&self, mut outcome: StepOutcome) {
         let mut mailbox = lock(&self.0);
+        if let Some(delta) = &mut outcome.world_spatial_delta {
+            mailbox.wire.observe_wire(delta.value.actor_position);
+            delta.value.actor_position = mailbox.wire_frame().to_native(delta.value.actor_position);
+        }
         mailbox.movement_turn = None;
         let older = std::mem::take(&mut mailbox.pushed);
         mailbox.before.absorb(older);
@@ -18,6 +28,31 @@ impl Outbox {
             .rposition(|event| matches!(event, SessionEvent::ActivityScope(_)))
         {
             events.drain(..index);
+        }
+        // A full replacement puts its snapshot events before the domain records.
+        // The join MOTD shares the replacement sequence and does not advance a revision.
+        let replacement = events.iter().enumerate().rev().find_map(|(index, event)| {
+            if let SessionEvent::GatedSnapshotReplaced(delta) = event
+                && delta.value.domain_id
+                    == oteryn_session::activity_scope::STATE_DOMAIN_ACTIVITY_SCOPE
+            {
+                Some((index, delta.server_sequence))
+            } else {
+                None
+            }
+        });
+        if let Some((index, sequence)) = replacement {
+            events
+                .extract_if(..index, |event| {
+                    if let SessionEvent::ServerMessage(delta) = event {
+                        delta.server_sequence != sequence
+                            || delta.base_revision != delta.new_revision
+                    } else {
+                        // Presentation cues are transient and never part of a join snapshot.
+                        matches!(event, SessionEvent::Presentation(_))
+                    }
+                })
+                .for_each(drop);
         }
         self.console_events(&events);
         self.activity_scope_events(&events);
@@ -40,6 +75,11 @@ impl Outbox {
         mailbox.dialogue_events(&events);
         mailbox.npc_shop_events(&events);
         for event in &events {
+            if let SessionEvent::GatedSnapshotReplaced(delta) = event
+                && delta.value.domain_id == 1
+            {
+                mailbox.pushed.motion_reset = true;
+            }
             if let SessionEvent::ContainerViews(update) = event {
                 super::super::feature_0230_browse_field::protocol::replace_views(
                     &mut mailbox.browse_field,
@@ -61,10 +101,19 @@ impl Outbox {
         super::super::feature_0287_actor_spell_catalog::protocol::reduce(&mut mailbox, &events);
         super::super::feature_0291_cast_chat::protocol::reduce(&mut mailbox, &events);
         mailbox.coalesce_events(events);
+        // A full activity handoff publishes domain 99 without a typed scope event.
+        if replacement.is_some() && mailbox.scope_pending {
+            mailbox.pushed.activity_scope = mailbox.activity_scope.clone();
+            mailbox.pushed.scope_changed = true;
+        }
         mailbox.check_server_messages();
         let notices = std::mem::take(&mut mailbox.pushed.achievements);
         mailbox.reduce_achievement_notices(notices);
         for text in std::mem::take(&mut mailbox.pushed.notices.tutorial) {
+            // The server's walk refusal (USE-AUTOWALK-1 canonical text).
+            if text == "There is no way." {
+                oteryn_client_ui::target_move::no_way(&mut mailbox.target_walk);
+            }
             mailbox
                 .notices
                 .apply(oteryn_client_runtime::tutorial_notices::Notice::Tutorial(
@@ -113,13 +162,16 @@ impl Outbox {
         }
     }
 
+    /// `entities` are as the server sent them; the shell gets them in the native frame.
     pub(in crate::play) fn entities(&self, entities: Vec<WorldSpatialEntity>) {
         let mut mailbox = lock(&self.0);
         oteryn_client_ui::player_typing::protocol::retain_visible(
             &mut mailbox.player_typing,
             &entities,
         );
-        mailbox.pushed.entities = Some(entities);
+        let native = mailbox.native_entities(&entities);
+        mailbox.pushed.entities = Some(native);
+        mailbox.entities_wire = entities;
     }
 
     pub(in crate::play) fn logout_refused(&self, result: Option<LogoutResult>) {
@@ -150,6 +202,8 @@ impl Outbox {
         mailbox.cast_chat = Default::default();
         mailbox.cast_control = Default::default();
         mailbox.spellbook_details = Default::default();
+        mailbox.server_info = Default::default();
+        mailbox.quest_info_revision = None;
         mailbox.spell_catalog = Default::default();
         mailbox.hud_resource = Default::default();
         mailbox.spell_bar = Default::default();
@@ -161,13 +215,14 @@ impl Outbox {
         mailbox.depot = Default::default();
         mailbox.depot_shutdown = true;
         mailbox.imbue_shutdown = true;
-        #[cfg(feature = "bevy-shell")]
+        #[cfg(bevy_shell)]
         mailbox.achievement_banners.clear();
         mailbox.achievement_notices = Default::default();
         mailbox.achievements = Default::default();
         mailbox.highscores = Default::default();
         mailbox.highscores_shutdown = true;
         mailbox.sanctions = Default::default();
+        mailbox.tutorial_vocation = Default::default();
         mailbox.chat.guild = Default::default();
         mailbox.chat.guild_selected = false;
         mailbox.chat.guild_open = false;
@@ -210,6 +265,8 @@ impl Outbox {
         mailbox.cast_chat = Default::default();
         mailbox.cast_control = Default::default();
         mailbox.spellbook_details = Default::default();
+        mailbox.server_info = Default::default();
+        mailbox.quest_info_revision = None;
         mailbox.spell_catalog = Default::default();
         mailbox.hud_resource = Default::default();
         mailbox.spell_bar = Default::default();
@@ -221,13 +278,14 @@ impl Outbox {
         mailbox.depot = Default::default();
         mailbox.depot_shutdown = true;
         mailbox.imbue_shutdown = true;
-        #[cfg(feature = "bevy-shell")]
+        #[cfg(bevy_shell)]
         mailbox.achievement_banners.clear();
         mailbox.achievement_notices = Default::default();
         mailbox.achievements = Default::default();
         mailbox.highscores = Default::default();
         mailbox.highscores_shutdown = true;
         mailbox.sanctions = Default::default();
+        mailbox.tutorial_vocation = Default::default();
         mailbox.chat.guild = Default::default();
         mailbox.chat.guild_selected = false;
         mailbox.chat.guild_open = false;
@@ -269,41 +327,48 @@ impl PlayLink {
         lock(&self.mailbox).shared_frontend
     }
 
+    /// Shares the admitted session's byte counters with every link of this connection.
+    pub fn set_traffic(&self, traffic: Arc<crate::traffic::Traffic>) {
+        lock(&self.mailbox).traffic = Some(traffic);
+    }
+
+    /// `(sent, received)` bytes of the admitted session, for diagnostics.
+    #[must_use]
+    pub fn traffic_bytes(&self) -> Option<(u64, u64)> {
+        lock(&self.mailbox)
+            .traffic
+            .as_ref()
+            .map(|traffic| traffic.bytes())
+    }
+
     pub fn request(&self, direction: StepDir) {
-        let mailbox = lock(&self.mailbox);
+        let mut mailbox = lock(&self.mailbox);
         if mailbox.world_input_blocked() {
             return;
         }
+        // A manual step ends a click or minimap walk.
+        oteryn_client_ui::target_move::cancel(&mut mailbox.target_walk);
         // A closed task has already reported or will report `Ended`.
         let _ = self.commands.send(PlayCommand::Step(direction));
     }
 
     pub fn request_combat(&self, command: CombatCommand) {
-        let mailbox = lock(&self.mailbox);
+        let mut mailbox = lock(&self.mailbox);
         if !mailbox.world_input_blocked() {
+            mailbox.cancel_walk_for_combat(command);
             let _ = self.commands.send(PlayCommand::Combat(command));
         }
     }
 
     pub fn request_logout(&self) {
+        let mut mailbox = lock(&self.mailbox);
+        oteryn_client_ui::target_move::cancel(&mut mailbox.target_walk);
         let _ = self.commands.send(PlayCommand::Logout);
     }
 
     /// The next event: pushes older than the step outcome, the outcome, coalesced pushes, then end.
     pub fn poll(&self) -> Option<PlayEvent> {
         self.poll_weekly_results();
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::super::feature_0148_wheel_allocation::view::poll_gems(
-                &self.mailbox,
-                &self.commands,
-            );
-            super::super::feature_0152_item_forge::view::poll_resource_dialog(
-                &self.mailbox,
-                &self.commands,
-            );
-            super::super::feature_0081_npc_shop::view::open_window(&self.mailbox, &self.commands);
-        }
         let mut mailbox = lock(&self.mailbox);
         if mailbox.before != Pushed::default() {
             return Some(PlayEvent::Pushed(Box::new(std::mem::take(
@@ -368,6 +433,8 @@ impl Drop for PlayLink {
         mailbox.cast_chat = Default::default();
         mailbox.cast_control = Default::default();
         mailbox.spellbook_details = Default::default();
+        mailbox.server_info = Default::default();
+        mailbox.quest_info_revision = None;
         mailbox.spell_catalog = Default::default();
         mailbox.hud_resource = Default::default();
         mailbox.spell_bar = Default::default();
@@ -391,6 +458,11 @@ impl Drop for PlayLink {
         mailbox.imbue_shutdown = true;
         mailbox.market_shutdown = true;
         mailbox.hireling_shutdown = true;
+        // An armed summon-location pick and its target end with the session, so the next
+        // map click is not taken as a summon location.
+        mailbox.hireling_picking = false;
+        mailbox.hireling.feedback = None;
+        mailbox.hireling.target = None;
         mailbox.cyclopedia_character_shutdown = true;
         // CL26s1
         mailbox.chat_public_shutdown = true;

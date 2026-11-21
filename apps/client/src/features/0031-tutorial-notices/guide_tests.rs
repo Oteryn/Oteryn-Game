@@ -53,7 +53,8 @@ fn play_compendium_opens_guide_recommendations_and_live_notices()
 fn compendium_caller_loads_package_updates_and_support_pages()
 -> Result<(), Box<dyn std::error::Error>> {
     use super::{compendium_page_text, compendium_updates};
-    let directory = std::env::temp_dir().join(format!("compendium-feed-{}", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let directory = fixture.path().join("compendium-feed");
     std::fs::create_dir_all(&directory)?;
     std::fs::write(
         directory.join("bulletin.json"),
@@ -83,6 +84,5 @@ fn compendium_caller_loads_package_updates_and_support_pages()
     assert!(compendium_page_text(&panel, 6, &updates).is_none());
     std::fs::write(directory.join("bulletin.json"), "invalid feed")?;
     assert!(compendium_updates(&directory).contains("Updates unavailable"));
-    std::fs::remove_dir_all(directory)?;
     Ok(())
 }

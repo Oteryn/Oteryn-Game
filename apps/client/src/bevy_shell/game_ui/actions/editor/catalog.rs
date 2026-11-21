@@ -146,19 +146,21 @@ fn choose(
                 && entry.name == choice.name
                 && entry.words == choice.words
         });
-    state.message = if same
-        && play.link.assign_bar_action(
-            choice.slot,
-            BarAction::Spell {
-                name: choice.name.clone(),
-                words: choice.words.clone(),
-                aim: crate::play::SpellAim::Target,
-            },
-        ) {
+    let spell = BarAction::Spell {
+        name: choice.name.clone(),
+        words: choice.words.clone(),
+        aim: crate::play::SpellAim::Target,
+    };
+    let message = if !same {
+        "Spell catalogue changed; choose the spell again.".into()
+    } else if let Some(draft) = state.multi.as_mut() {
+        add_to_multi(draft, spell)
+    } else if play.link.assign_bar_action(choice.slot, spell) {
         format!("Assigned {}", choice.name)
     } else {
         "Spell catalogue changed; choose the spell again.".into()
     };
+    state.message = message;
 }
 
 #[cfg(test)]

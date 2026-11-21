@@ -375,10 +375,10 @@ fn registries_bind_the_item_view_ids_and_limits() {
     let command = find("command_types", COMMAND_TYPE_ITEM_MOVE_INTENT);
     assert_eq!(command["name"], "ITEM_MOVE_INTENT");
     assert_eq!(command["capability"], CAPABILITY_ITEM_VIEW_MOVE_V1);
-    // The registered bound includes the capability 61 count; legacy bounds stay unchanged.
+    // The largest negotiated move carries both a stack count and a manual sort slot.
     assert_eq!(
         command["max_payload_bytes"].as_u64(),
-        Some(MAX_ITEM_MOVE_INTENT_STACK_COUNT_BYTES as u64)
+        Some(crate::item_view::MAX_ITEM_MOVE_INTENT_MANUAL_SORT_BYTES as u64)
     );
     assert_eq!(
         command["max_result_payload_bytes"].as_u64(),
@@ -887,7 +887,7 @@ fn stack_quantity_count_is_explicit_bounded_and_negotiated()
     };
     for destination in [
         ItemMoveDestination::MainBackpack,
-        ItemMoveDestination::Container(std::num::NonZeroU64::MAX),
+        ItemMoveDestination::Container(std::num::NonZeroU64::MAX, None),
         ItemMoveDestination::Ground(WorldTilePosition {
             x: i32::MAX,
             y: i32::MIN,
@@ -1068,6 +1068,72 @@ fn appearance_selection_uses_extended_inventory_bounds_only_when_negotiated() {
         decode_open_container_with_appearances(&bytes, true),
         Ok(view)
     );
+}
+
+/// CONTAINER-MANUAL-SORT-1: the container destination's `slot` (field 2) exists only under
+/// capability 510; without it today's bytes are unchanged and a slot fails closed both ways.
+#[test]
+fn container_manual_sort_slot_is_negotiated_bounded_and_round_trips()
+-> Result<(), Box<dyn std::error::Error>> {
+    let tree = ItemMoveSelection {
+        equip_drop: true,
+        container_tree: true,
+        ..ItemMoveSelection::default()
+    };
+    let sort = ItemMoveSelection {
+        manual_sort: true,
+        ..tree
+    };
+    let unslotted = ItemMoveIntent {
+        source: handle(7),
+        destination: ItemMoveDestination::Container(handle(9), None),
+    };
+    let legacy = encode_item_move_intent_for(&unslotted, tree).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        encode_item_move_intent_for(&unslotted, sort),
+        Ok(legacy.clone())
+    );
+    assert_eq!(decode_item_move_intent_for(&legacy, sort), Ok(unslotted));
+
+    let slotted = ItemMoveIntent {
+        source: handle(7),
+        destination: ItemMoveDestination::Container(handle(9), Some(3)),
+    };
+    assert_eq!(
+        encode_item_move_intent_for(&slotted, tree),
+        Err(ItemViewWireError::Malformed)
+    );
+    let payload = encode_item_move_intent_for(&slotted, sort).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(payload, [0x08, 7, 0x2a, 4, 0x08, 9, 0x10, 3]);
+    assert_eq!(decode_item_move_intent_for(&payload, sort), Ok(slotted));
+    assert_eq!(
+        decode_item_move_intent_for(&payload, tree),
+        Err(ItemViewWireError::Malformed)
+    );
+    // A slot is never repeated, and the handle stays required.
+    assert_eq!(
+        decode_item_move_intent_for(&[0x08, 7, 0x2a, 6, 0x08, 9, 0x10, 3, 0x10, 4], sort),
+        Err(ItemViewWireError::Malformed)
+    );
+    assert_eq!(
+        decode_item_move_intent_for(&[0x08, 7, 0x2a, 2, 0x10, 3], sort),
+        Err(ItemViewWireError::Malformed)
+    );
+
+    // The largest slotted move with a count fits the 510 bound.
+    let worst = ItemMoveIntent {
+        source: handle(u64::MAX),
+        destination: ItemMoveDestination::Container(handle(u64::MAX), Some(u32::MAX)),
+    };
+    let mut payload = encode_item_move_intent_for(&worst, sort).map_err(|e| format!("{e:?}"))?;
+    payload.extend([0x30, 100]);
+    assert_eq!(payload.len(), MAX_ITEM_MOVE_INTENT_MANUAL_SORT_BYTES);
+    assert_eq!(
+        decode_item_move_intent_with_count_for(&payload, sort),
+        Ok((worst, Some(100)))
+    );
+    assert!(decode_item_move_intent_with_count_for(&payload, tree).is_err());
+    Ok(())
 }
 
 // CORPSE48: capability 514 CORPSE_CONTAINER_48_V1.

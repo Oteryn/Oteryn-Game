@@ -1,0 +1,30 @@
+[
+  {
+    "mechanic": "0509-guild-emblem",
+    "kind": "panels",
+    "id": "0509-guild-emblem-panel",
+    "status": "supported",
+    "entry": "protocol.rs::emblem_of"
+  },
+  {
+    "mechanic": "0509-guild-emblem",
+    "kind": "handlers",
+    "id": "0509-guild-emblem-push",
+    "status": "supported",
+    "commands": [],
+    "direction": "server_to_client",
+    "capability": 509,
+    "entry": "protocol.rs::apply",
+    "push_messages": [
+      "GuildEmblems"
+    ],
+    "reducer": "protocol.rs::apply",
+    "test": "tests.rs::latest_emblems_replace_the_previous_list_and_resolve_per_entity",
+    "not_applicable": {
+      "state": "The play view retains the latest emblem list.",
+      "view": "The actor HUD draws the emblem beside skull and shield.",
+      "input": "Emblems are server-pushed; there is no command.",
+      "settings": "Emblems follow the existing creature mark preferences."
+    }
+  }
+]

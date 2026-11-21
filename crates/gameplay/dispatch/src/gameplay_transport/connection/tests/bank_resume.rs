@@ -217,3 +217,64 @@ fn fresh_session_first_command_skips_retained_bank_lookup() -> Result<(), Box<dy
         Ok(())
     })
 }
+
+/// A busy transfer fence refuses the input before the movement authority runs.
+#[test]
+fn deferred_step_reaches_session_as_typed_refusal() -> Result<(), Box<dyn Error>> {
+    use oteryn_protocol_oteryn::{ServerAcceptedValue, encode_server_accepted};
+    use oteryn_session::{Admission, Session};
+
+    run(async {
+        let admitted = positioned()?;
+        let authority = RetainedBankOutcomeFixture {
+            commands: RefCell::default(),
+            replacement_steps: RefCell::default(),
+            unknown: false,
+            closed_gate: false,
+            guard_deferred: true,
+        };
+        let (_, frames) = drive_session(
+            &authority,
+            admitted,
+            &[command(
+                ADMITTED_GENERATION,
+                1,
+                u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT),
+                StepDirection::East,
+            )],
+        )
+        .await?;
+        assert_eq!(*authority.replacement_steps.borrow(), 0);
+        let accepted = encode_server_accepted(&ServerAcceptedValue {
+            game_session_id: admitted.game_session_id,
+            world_id: admitted.world_id,
+            channel_id: admitted.channel_id,
+            connection_generation: ADMITTED_GENERATION,
+            current_server_sequence: 0,
+            next_command_id: 1,
+            schema_revision: 1,
+            selected_capabilities: admitted.continuity.selected_capabilities.as_slice(),
+        })?;
+        let (stream, mut peer) = tokio::io::duplex(65536);
+        for frame in std::iter::once(accepted).chain(frames) {
+            peer.write_all(&framed(&frame)).await?;
+        }
+        let mut session = Session::admit(
+            stream,
+            Admission {
+                appearance_items: None,
+                schema_revision: 1,
+                character_id: oteryn_protocol_oteryn::CharacterId::decode(&CHARACTER)?,
+                admission_material: b"deferred step",
+                client_build_id: "node-boot",
+                supported_capabilities: oteryn_dev_client::CLIENT_SUPPORTED_CAPABILITIES,
+                deadline: std::time::Duration::from_secs(5),
+            },
+        )
+        .await?;
+        let response = session.step(StepDirection::East).await?;
+        assert_eq!(response.status, CommandStatus::Rejected);
+        assert_eq!(response.disposition, StepDisposition::Rejected);
+        Ok(())
+    })
+}

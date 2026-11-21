@@ -133,3 +133,20 @@ mod resource_session;
 
 #[path = "exaltation_session.rs"]
 mod exaltation_session;
+
+#[test]
+fn forge_bag_selection_survives_repaint_and_clears_only_when_removed() {
+    use crate::play::feature_0152_item_forge::protocol::retained_bag;
+    let entries = [(8, "Other bag".into()), (7, "Selected bag".into())];
+    assert_eq!(retained_bag(7, &entries), 7);
+    assert_eq!(retained_bag(9, &entries), 0);
+    assert_eq!(retained_bag(7, &[]), 0);
+}
+
+#[test]
+fn forge_resource_enter_reaches_dialog_dispatch_and_escape_cancels() {
+    use crate::play::feature_0152_item_forge::protocol::resource_cancel_key;
+    assert!(!resource_cancel_key(13));
+    assert!(resource_cancel_key(27));
+    assert!(!resource_cancel_key(32));
+}

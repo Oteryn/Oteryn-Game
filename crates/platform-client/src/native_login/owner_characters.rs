@@ -30,6 +30,19 @@ struct OwnerCharacters {
     characters: Vec<OwnerCharacter>,
 }
 
+fn valid_characters(characters: &[OwnerCharacter]) -> bool {
+    let mut identities = std::collections::BTreeSet::new();
+    characters.len() <= 64
+        && characters.iter().all(|character| {
+            parse_uuid_v7(&character.character_id).is_some()
+                && parse_uuid_v7(&character.world_id).is_some()
+                && !character.name.is_empty()
+                && character.name.len() <= 96
+                && !character.name.chars().any(char::is_control)
+                && identities.insert(&character.character_id)
+        })
+}
+
 /// The Gateway login request's caller-chosen members (N4-P §3.1).
 #[derive(Debug, Clone)]
 pub struct GatewayLogin<'a> {
@@ -69,14 +82,7 @@ impl NativeLoginClient {
             let body = read_bounded(response, 16_384).await?;
             let feed: OwnerCharacters =
                 serde_json::from_slice(&body).map_err(|_| PlatformClientError::InvalidPayload)?;
-            if feed.protocol_version != 2
-                || feed.characters.len() > 64
-                || feed.characters.iter().any(|character| {
-                    parse_uuid_v7(&character.character_id).is_none()
-                        || parse_uuid_v7(&character.world_id).is_none()
-                        || character.name.is_empty()
-                })
-            {
+            if feed.protocol_version != 2 || !valid_characters(&feed.characters) {
                 return Err(PlatformClientError::InvalidPayload.into());
             }
             Ok(feed.characters)

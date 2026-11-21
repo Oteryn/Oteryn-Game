@@ -33,7 +33,9 @@ enum Kind {
     Buy,
     Cancel,
     Category(usize),
+    ClearSearch,
     Close,
+    CoinCheckout,
     Confirm,
     Gift,
     GiftControl(usize),
@@ -42,6 +44,9 @@ enum Kind {
     Page(i8),
     Product(usize),
     Products,
+    RetryPurchase,
+    Search,
+    Sort(u8),
     TokenPayment,
     Transfer,
 }
@@ -62,18 +67,20 @@ struct Field(usize);
 struct Snapshot {
     store: StorePanel,
     history: purchase_history::Panel,
+    coin_checkout: bool,
 }
 impl Snapshot {
     fn read(link: &crate::play::PlayLink) -> Self {
         Self {
             store: link.store_panel(),
             history: link.discovery_panel().history,
+            coin_checkout: link.coin_checkout_available(),
         }
     }
 }
 struct Confirmation {
     quote: StoreCataloguePage,
-    fields: [String; 3],
+    fields: [String; 4],
 }
 #[derive(Resource, Default)]
 struct State {
@@ -83,7 +90,7 @@ struct State {
     body: Option<Entity>,
     page: Page,
     confirmation: Option<Confirmation>,
-    fields: [String; 3],
+    fields: [String; 4],
     dirty: bool,
     pending: Option<(Action, Entity)>,
 }
@@ -101,6 +108,7 @@ fn setup(mut commands: Commands) {
     commands.spawn((
         Overlay,
         GameModal,
+        crate::bevy_shell::ui::window_layout::WindowLayer("store"),
         GlobalZIndex(158),
         Node {
             display: Display::None,
@@ -111,7 +119,6 @@ fn setup(mut commands: Commands) {
             justify_content: JustifyContent::Center,
             ..default()
         },
-        BackgroundColor(Color::srgba(0., 0., 0., 0.45)),
     ));
 }
 // Projection jointly owns the hierarchy, snapshot and focus invalidation.
@@ -145,6 +152,14 @@ fn project(
         return;
     };
     node.display = Display::Flex;
+    if snapshot.store.page == store::StorePage::History
+        && state
+            .seen
+            .as_ref()
+            .is_none_or(|seen| seen.store.page != store::StorePage::History)
+    {
+        state.page = Page::History;
+    }
     let generation = owner.generation();
     let same_session = state.key.is_some_and(|key| key.generation == generation);
     if same_session && state.seen.as_ref() == Some(&snapshot) && !state.dirty {
@@ -155,6 +170,7 @@ fn project(
             commands.entity(root).despawn();
         }
         *state = State::default();
+        state.fields[3] = snapshot.store.browser.search.clone();
     } else {
         // Actions already captured their input; do not overwrite a newly selected form.
         if !state.dirty {
@@ -177,6 +193,9 @@ fn project(
     }
     if focus.get().is_some_and(|id| fields.contains(id)) {
         focus.clear();
+    }
+    if !same_session && snapshot.store.page == store::StorePage::History {
+        state.page = Page::History;
     }
     let key = Key {
         generation,
@@ -244,12 +263,7 @@ fn keyboard(
             } else {
                 Kind::Close
             };
-            actions::perform(
-                &owner,
-                &mut state,
-                Action { key, kind },
-                [String::new(), String::new(), String::new()],
-            );
+            actions::perform(&owner, &mut state, Action { key, kind }, Default::default());
         }
     }
 }

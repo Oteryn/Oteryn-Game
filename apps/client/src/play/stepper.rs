@@ -22,6 +22,9 @@ super::feature_0014_container_tree::protocol::session_trait! {
     fn inventory(&self) -> Option<oteryn_session::CharacterInventory> {
         None
     }
+    fn world_position(&self) -> Option<oteryn_session::ActorPosition> {
+        None
+    }
     fn battle_floor(&self) -> Option<i16> {
         None
     }

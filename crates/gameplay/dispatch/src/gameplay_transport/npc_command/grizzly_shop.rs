@@ -92,6 +92,7 @@ impl NpcConversations {
         state.window = Some((npc, category));
         state.window_offers = sources;
         Some(NpcTradeWindow {
+            details: Vec::new(),
             open: Some((npc, book.catalogue_revision())),
             offers: shown,
         })

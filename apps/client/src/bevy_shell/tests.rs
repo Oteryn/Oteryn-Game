@@ -1,36 +1,90 @@
 use super::*;
-use std::sync::atomic::{AtomicU64, Ordering};
 type TestResult = Result<(), Box<dyn std::error::Error>>;
-static NEXT: AtomicU64 = AtomicU64::new(0);
 
+/// Tibia Global binds Ctrl+M to ToggleShowServermessagesInCurrentChannel
+/// (docs/reference/tibia-manual/controls.md:93); the Market opens from the depot locker.
 #[test]
-fn market_shortcut_opens_the_portable_owner_only_outside_blocked_input() -> TestResult {
+fn ctrl_m_toggles_server_messages_only_outside_blocked_input() -> TestResult {
     use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
     let mut host = HostOwner::new(None)?;
     let (view, link) = admitted_view([9; 16])?;
     host.install_play(view, link);
-    let shortcut = NormalizedInputEvent::Key {
+    let mut shortcut = NormalizedInputEvent::Key {
         code: KeyCode::new(16)?,
         state: ButtonState::Pressed,
         modifiers: Modifiers::one(Modifier::Control),
         repeat: false,
     };
-    let is_open = |host: &HostOwner| {
+    let shown = |host: &HostOwner| {
+        host.play
+            .as_ref()
+            .is_some_and(|play| play.link.chat_panel().console.show_server_messages)
+    };
+    let market_open = |host: &HostOwner| {
         host.play
             .as_ref()
             .is_some_and(|play| play.link.market_panel().open)
     };
-    host.route_input(std::slice::from_ref(&shortcut), true);
-    assert!(!is_open(&host));
+    let mut press = |host: &mut HostOwner, blocked: bool| {
+        if let NormalizedInputEvent::Key { state, .. } = &mut shortcut {
+            *state = ButtonState::Pressed;
+        }
+        host.route_input(std::slice::from_ref(&shortcut), blocked);
+        if let NormalizedInputEvent::Key { state, .. } = &mut shortcut {
+            *state = ButtonState::Released;
+        }
+        host.route_input(std::slice::from_ref(&shortcut), blocked);
+    };
+    let before = shown(&host);
+    press(&mut host, true);
+    assert_eq!(shown(&host), before);
     host.open_graphics();
-    host.route_input(std::slice::from_ref(&shortcut), false);
-    assert!(!is_open(&host));
+    press(&mut host, false);
+    assert_eq!(shown(&host), before);
     host.cancel();
-    host.route_input(std::slice::from_ref(&shortcut), false);
-    assert!(
-        is_open(&host),
-        "Ctrl+M must reach the portable Market owner"
+    press(&mut host, false);
+    assert_eq!(
+        shown(&host),
+        !before,
+        "Ctrl+M must toggle the server messages"
     );
+    assert!(!market_open(&host), "Global has no Market chord");
+    Ok(())
+}
+
+/// Tibia Global binds Ctrl+K to ShowOptionsHotkeys in every hotkey set of the installed client
+/// options (%LOCALAPPDATA%/Tibia/packages/Tibia/conf/clientoptions.json).
+#[test]
+fn ctrl_k_opens_the_hotkey_options_only_outside_blocked_input() -> TestResult {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let mut host = HostOwner::new(None)?;
+    let (view, link) = admitted_view([9; 16])?;
+    host.install_play(view, link);
+    let mut shortcut = NormalizedInputEvent::Key {
+        code: KeyCode::new(14)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::one(Modifier::Control),
+        repeat: false,
+    };
+    let mut press = |host: &mut HostOwner, blocked: bool| {
+        if let NormalizedInputEvent::Key { state, .. } = &mut shortcut {
+            *state = ButtonState::Pressed;
+        }
+        host.route_input(std::slice::from_ref(&shortcut), blocked);
+        if let NormalizedInputEvent::Key { state, .. } = &mut shortcut {
+            *state = ButtonState::Released;
+        }
+        host.route_input(std::slice::from_ref(&shortcut), blocked);
+    };
+    press(&mut host, true);
+    assert!(host.preferences_draft().is_none());
+    assert_eq!(host.hotkey_options, 0);
+    press(&mut host, false);
+    assert!(
+        host.preferences_draft().is_some(),
+        "Ctrl+K opens the options"
+    );
+    assert_eq!(host.hotkey_options, 1, "on the hotkey page");
     Ok(())
 }
 
@@ -65,26 +119,7 @@ fn taskboard_shortcut_opens_the_portable_owner_only_outside_blocked_input() -> T
     Ok(())
 }
 
-struct Temp(PathBuf);
-impl Temp {
-    fn new() -> std::io::Result<Self> {
-        let path = std::env::temp_dir().join(format!(
-            "oteryn-bevy-host-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, Ordering::Relaxed)
-        ));
-        std::fs::create_dir_all(&path)?;
-        Ok(Self(path))
-    }
-    fn preferences(&self) -> PathBuf {
-        self.0.join("preferences.json")
-    }
-}
-impl Drop for Temp {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
-    }
-}
+use crate::play::screenshot::TestDir as Temp;
 fn admitted_view(character: [u8; 16]) -> Result<(PlayView, PlayLink), Box<dyn std::error::Error>> {
     // Test-only fixture. Production install_play is reached solely from Reentry::poll.
     let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
@@ -95,7 +130,7 @@ fn admitted_view(character: [u8; 16]) -> Result<(PlayView, PlayLink), Box<dyn st
 #[test]
 fn apply_refreshes_accepted_draft_and_reloads_existing_store_cancel_discards() -> TestResult {
     let temp = Temp::new()?;
-    let path = temp.preferences();
+    let path = temp.join("preferences.json");
     let mut host = HostOwner::new(Some(path.clone()))?;
     let before = host.accepted();
     host.open_graphics();
@@ -126,7 +161,7 @@ fn apply_refreshes_accepted_draft_and_reloads_existing_store_cancel_discards() -
 #[test]
 fn blocked_save_accepts_live_settings_and_preserves_exact_owner_feedback() -> TestResult {
     let temp = Temp::new()?;
-    let path = temp.preferences();
+    let path = temp.join("preferences.json");
     let mut host = HostOwner::new(Some(path.clone()))?;
     // A directory at the destination reliably refuses the existing owner's atomic save.
     std::fs::create_dir(&path)?;
@@ -147,7 +182,7 @@ fn blocked_save_accepts_live_settings_and_preserves_exact_owner_feedback() -> Te
 #[test]
 fn admission_and_disconnect_discard_drafts_and_restore_actual_character_scope() -> TestResult {
     let temp = Temp::new()?;
-    let mut host = HostOwner::new(Some(temp.preferences()))?;
+    let mut host = HostOwner::new(Some(temp.join("preferences.json")))?;
     host.open_graphics();
     host.edit(|d| d.fullscreen = !d.fullscreen);
     let old = host.draft.take().ok_or("old draft")?;
@@ -192,7 +227,7 @@ fn same_character_new_admission_generation_rejects_old_draft_even_without_storag
 #[test]
 fn real_restore_projects_graphics_to_play_scene_and_actual_bevy_window() -> TestResult {
     let temp = Temp::new()?;
-    let mut host = HostOwner::new(Some(temp.preferences()))?;
+    let mut host = HostOwner::new(Some(temp.join("preferences.json")))?;
     let (view, link) = admitted_view([4; 16])?;
     host.install_play(view, link);
     let mut p = host.settings.preferences.clone();
@@ -289,8 +324,8 @@ fn native_widget_events_reach_owner_apply_cancel_and_public_audit() -> TestResul
         .init_asset::<Image>()
         .init_asset::<Font>()
         .init_resource::<InputFocus>()
-        .insert_non_send(HostOwner::new(Some(temp.preferences()))?)
-        .insert_resource(audit::AuditOutput::new(Some(temp.0.join("ui-audit.json"))))
+        .insert_non_send(HostOwner::new(Some(temp.join("preferences.json")))?)
+        .insert_resource(audit::AuditOutput::new(Some(temp.join("ui-audit.json"))))
         .add_systems(Startup, ui::setup)
         .add_systems(Update, ui::project);
     app.update();
@@ -385,7 +420,7 @@ fn existing_input_owners_turn_before_walk_and_clear_all_held_mappings_on_modal_r
 #[test]
 fn full_preferences_draft_cancels_applies_and_preserves_invalid_edits() -> TestResult {
     let temp = Temp::new()?;
-    let path = temp.preferences();
+    let path = temp.join("preferences.json");
     let mut host = HostOwner::new(Some(path.clone()))?;
     let original = host.settings.preferences.interface_scale;
     host.open_graphics();
@@ -488,6 +523,7 @@ fn failed_channel_entry_discards_pending_arrival() -> TestResult {
 
 fn exercise_failed_channel_entry() -> TestResult {
     use crate::native_entry::test_support::{Stack, channel_node};
+    use std::sync::atomic::Ordering;
     let stack = Stack::start_two_channels()?;
     let channel = channel_node::uuid(channel_node::CHANNEL_B).ok_or("Channel B")?;
     let mut host = HostOwner::new(None)?;
@@ -549,5 +585,191 @@ fn exercise_failed_channel_entry() -> TestResult {
     );
     host.close();
     stack.finish();
+    Ok(())
+}
+
+#[test]
+fn arrow_chord_observes_modal_resets_and_consumed_releases() -> TestResult {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
+    let mut host = HostOwner::new(None)?;
+    let (view, _) = admitted_view([9; 16])?;
+    let (link, _, outbox) = crate::play::play_channel();
+    crate::play::feature_0013_paced_movement::protocol::bevy_diagonal_fixture(&outbox);
+    host.install_play(view, link);
+    let key = |code, state| NormalizedInputEvent::Key {
+        code,
+        state,
+        modifiers: Modifiers::NONE,
+        repeat: false,
+    };
+    host.route_input(&[key(KeyCode::ARROW_UP, ButtonState::Pressed)], false);
+    host.open_graphics();
+    host.route_input(&[key(KeyCode::ARROW_UP, ButtonState::Released)], false);
+    host.cancel();
+    host.route_input(&[key(KeyCode::ARROW_LEFT, ButtonState::Pressed)], false);
+    let play = host.play.as_mut().ok_or("play")?;
+    assert_eq!(play.view.next_step(), Some(crate::input::StepDir::West));
+    Ok(())
+}
+
+#[test]
+fn arrow_chord_observes_releases_consumed_by_chat() -> TestResult {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
+    let mut host = HostOwner::new(None)?;
+    let (view, _) = admitted_view([9; 16])?;
+    let (link, _, outbox) = crate::play::play_channel();
+    crate::play::feature_0013_paced_movement::protocol::bevy_diagonal_fixture(&outbox);
+    host.install_play(view, link);
+    let key = |code, state| NormalizedInputEvent::Key {
+        code,
+        state,
+        modifiers: Modifiers::NONE,
+        repeat: false,
+    };
+    host.route_input(&[key(KeyCode::ARROW_UP, ButtonState::Pressed)], false);
+    host.route_input(
+        &[
+            key(KeyCode::new(88)?, ButtonState::Pressed),
+            key(KeyCode::ARROW_UP, ButtonState::Released),
+        ],
+        false,
+    );
+    host.route_input(&[key(KeyCode::ARROW_LEFT, ButtonState::Pressed)], false);
+    let play = host.play.as_mut().ok_or("play")?;
+    assert_eq!(play.view.next_step(), Some(crate::input::StepDir::West));
+    Ok(())
+}
+
+#[test]
+fn accepted_logout_restarts_admission_and_clears_character_scope() -> TestResult {
+    let mut host = HostOwner::new(None)?;
+    let (view, link) = admitted_view([9; 16])?;
+    host.install_play(view, link);
+    host.finish_play(PlayEnd::LoggedOut);
+    assert_eq!(host.phase, Phase::Entering);
+    assert!(host.entry.as_ref().is_some_and(Reentry::is_entering));
+    assert!(host.play.is_none());
+    assert_eq!(host.settings.character_scope(), None);
+    host.cancel_login();
+    Ok(())
+}
+
+#[test]
+fn admitted_bulletin_is_presented_without_losing_play() -> TestResult {
+    let mut host = HostOwner::new(None)?;
+    host.finish_admission(
+        Ok(admitted_view([9; 16])?),
+        Some(
+            r#"{"news":[{"title":"Operator notice","body":"Published announcement"}],"events":[]}"#
+                .into(),
+        ),
+    );
+    assert_eq!(host.phase, Phase::Playing);
+    assert!(host.play.is_some());
+    assert!(host.status.contains("Operator notice"));
+    assert!(host.status.contains("Published announcement"));
+    assert!(host.bulletin.news().contains("Published announcement"));
+    Ok(())
+}
+
+#[test]
+fn cardinal_keypad_routes_through_gameplay_focus_gates() -> TestResult {
+    use crate::input::StepDir;
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
+    for (code, direction) in [
+        (96, StepDir::North),
+        (94, StepDir::East),
+        (90, StepDir::South),
+        (92, StepDir::West),
+    ] {
+        let mut host = HostOwner::new(None)?;
+        let (view, _) = admitted_view([9; 16])?;
+        let (link, _, _) = crate::play::play_channel();
+        host.install_play(view, link);
+        let key = NormalizedInputEvent::Key {
+            code: KeyCode::new(code)?,
+            state: ButtonState::Pressed,
+            modifiers: Modifiers::NONE,
+            repeat: false,
+        };
+        host.open_graphics();
+        host.route_input(std::slice::from_ref(&key), false);
+        assert_eq!(host.play.as_mut().ok_or("play")?.view.next_step(), None);
+        host.cancel();
+        host.route_input(&[key], false);
+        assert_eq!(
+            host.play.as_mut().ok_or("play")?.view.next_step(),
+            Some(direction)
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn nearby_loot_shortcut_dispatches_without_opening_panel() -> TestResult {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let mut host = HostOwner::new(None)?;
+    let (view, _) = admitted_view([9; 16])?;
+    let (link, mut commands, outbox) = crate::play::play_channel();
+    link.use_shared_frontend();
+    outbox.bevy_quick_loot_selected(true);
+    host.install_play(view, link);
+    let event = NormalizedInputEvent::Key {
+        code: KeyCode::new(20)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::one(Modifier::Alt),
+        repeat: false,
+    };
+    host.open_graphics();
+    host.route_input(std::slice::from_ref(&event), false);
+    assert!(commands.try_recv().is_err());
+    host.cancel();
+    host.route_input(&[event], false);
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+        return Err("loot command missing".into());
+    };
+    assert_eq!(command.capability, 98);
+    assert!(
+        !host
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .discovery_panel()
+            .loot
+            .open
+    );
+    Ok(())
+}
+
+#[test]
+fn holding_a_spell_key_does_not_queue_unacknowledged_casts() -> TestResult {
+    use crate::combat_input::{CombatCommand, PlayCommand};
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
+
+    let mut host = HostOwner::new(None)?;
+    let (view, _) = admitted_view([9; 16])?;
+    let (link, mut commands, _) = crate::play::play_channel();
+    assert!(link.spell_bar_bind(&["71", "", "", ""].map(str::to_owned)));
+    host.install_play(view, link);
+    let key = |repeat| -> Result<_, oteryn_input_actions::InputError> {
+        Ok(NormalizedInputEvent::Key {
+            code: KeyCode::new(30)?,
+            state: ButtonState::Pressed,
+            modifiers: Modifiers::NONE,
+            repeat,
+        })
+    };
+    for repeat in std::iter::once(false).chain([true; 8]) {
+        host.route_input(&[key(repeat)?], false);
+        let play = host.play.as_mut().ok_or("play")?;
+        play.view
+            .tick(&play.link)
+            .map_err(|end| format!("{end:?}"))?;
+    }
+    assert!(
+        matches!(commands.try_recv()?, PlayCommand::Combat(CombatCommand::Cast(id)) if id.get() == 71)
+    );
+    assert!(commands.try_recv().is_err());
     Ok(())
 }

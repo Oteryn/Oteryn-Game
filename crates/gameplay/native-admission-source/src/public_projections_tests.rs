@@ -2094,3 +2094,63 @@ fn public_v2_watermark_not_past_poison_row() {
     }
     assert_eq!(p.store.lock().unwrap().v2_rows.len(), 1);
 }
+
+#[test]
+fn concurrent_database_passes_wait_for_completion_and_recheck_the_gap() {
+    // Manual polling makes both callers wait on the same initial deadline.
+    #[derive(Clone, Default)]
+    struct PassClock(Clock);
+    impl ReportClock for PassClock {
+        fn elapsed(&self) -> Duration {
+            self.0.elapsed()
+        }
+        fn unix_now(&self) -> i64 {
+            0
+        }
+        fn sleep(&self, duration: Duration) -> impl Future<Output = ()> + Send {
+            let until = self.elapsed() + duration;
+            std::future::poll_fn(move |_| {
+                if self.elapsed() >= until {
+                    Poll::Ready(())
+                } else {
+                    Poll::Pending
+                }
+            })
+        }
+    }
+    let clock = PassClock::default();
+    let p = Publisher::new(
+        clock.clone(),
+        Shared::default(),
+        Sink::with(vec![]),
+        Fence(Some(1)),
+        AUTHORITY.into(),
+        MAX_TX,
+    );
+    let mut cx = std::task::Context::from_waker(std::task::Waker::noop());
+    let initial = p.pass(|| async { Ok(()) });
+    let mut initial = std::pin::pin!(initial);
+    assert!(initial.as_mut().poll(&mut cx).is_ready());
+    let (release, wait) = tokio::sync::oneshot::channel::<()>();
+    let first = p.pass(|| async { wait.await.map_err(|_| ()) });
+    let mut first = std::pin::pin!(first);
+    let second_started = Mutex::new(None);
+    let second = p.pass(|| async {
+        *second_started.lock().unwrap() = Some(clock.elapsed());
+        Ok(())
+    });
+    let mut second = std::pin::pin!(second);
+    assert!(first.as_mut().poll(&mut cx).is_pending());
+    assert!(second.as_mut().poll(&mut cx).is_pending());
+    *clock.0.0.lock().unwrap() = STORE_PASS_GAP;
+    assert!(first.as_mut().poll(&mut cx).is_pending());
+    // Even though its original deadline passed, the second cannot overlap.
+    assert!(second.as_mut().poll(&mut cx).is_pending());
+    assert_eq!(*second_started.lock().unwrap(), None);
+    release.send(()).unwrap();
+    assert_eq!(first.as_mut().poll(&mut cx), Poll::Ready(Ok(())));
+    assert!(second.as_mut().poll(&mut cx).is_pending());
+    *clock.0.0.lock().unwrap() += STORE_PASS_GAP;
+    assert_eq!(second.as_mut().poll(&mut cx), Poll::Ready(Ok(())));
+    assert_eq!(*second_started.lock().unwrap(), Some(STORE_PASS_GAP * 2));
+}

@@ -75,3 +75,5 @@ mod gap_character_tabs;
 #[cfg(test)]
 #[path = "tests/profile.rs"]
 mod profile_tests;
+
+pub use items::filter as holdings_filter;

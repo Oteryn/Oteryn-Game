@@ -153,7 +153,8 @@ pub(super) fn bundle(trap: Option<u16>) -> TestResult<(Vec<u8>, crate::map::Bund
     ))
 }
 
-/// Sends one push and returns its disposition, reading past spatial updates.
+/// Sends one push and returns its disposition, reading past spatial updates. Like a real
+/// client it names the floor in the wire frame the visibility projection exported.
 pub(super) async fn push(
     client: &mut DuplexStream,
     id: u64,

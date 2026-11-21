@@ -107,7 +107,8 @@ impl AppearanceContent<String> for NativeCosmeticsView {
         target: EarnedCosmetic<'_>,
         sex: crate::domain::appearance::Sex,
     ) -> UnlockFact {
-        if provenance == DROME_PROVENANCE
+        if grant_key == MARRIAGE_GRANT_KEY
+            || provenance == DROME_PROVENANCE
             || provenance == crate::content::store_cosmetics::PROVENANCE
         {
             self.earned_unlock(grant_key, provenance, target)

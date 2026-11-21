@@ -34,7 +34,7 @@ fn counted_moves_use_live_selection_and_preserve_refusals_and_updates() -> Resul
                     .await?;
                     for (i, destination) in [
                         ItemMoveDestination::MainBackpack,
-                        ItemMoveDestination::Container(handle(10)),
+                        ItemMoveDestination::Container(handle(10), None),
                         ItemMoveDestination::Ground(item_view::WorldTilePosition {
                             x: 1,
                             y: 0,
@@ -54,6 +54,7 @@ fn counted_moves_use_live_selection_and_preserve_refusals_and_updates() -> Resul
                                 equip_drop: true,
                                 container_tree: true,
                                 world_interaction: false,
+                                manual_sort: false,
                             },
                         )
                         .map_err(|e| format!("{e:?}"))?;
@@ -102,7 +103,7 @@ fn counted_moves_use_live_selection_and_preserve_refusals_and_updates() -> Resul
                 let mut session = Session::admit(client, admission).await?;
                 for destination in [
                     ItemMoveDestination::MainBackpack,
-                    ItemMoveDestination::Container(handle(10)),
+                    ItemMoveDestination::Container(handle(10), None),
                     ItemMoveDestination::Ground(item_view::WorldTilePosition {
                         x: 1,
                         y: 0,

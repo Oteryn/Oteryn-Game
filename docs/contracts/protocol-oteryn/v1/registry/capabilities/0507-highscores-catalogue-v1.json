@@ -1,0 +1,16 @@
+{
+  "id": 507,
+  "name": "HIGHSCORES_CATALOGUE_V1",
+  "owner_decision": "srvcat Tibia Global World type selectors",
+  "owner": "Game current World policies and public highscore snapshots",
+  "requires": [
+    9
+  ],
+  "command_types": [
+    6244,
+    6245
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only; current independently validated World policies supply the catalogue. See highscores-catalogue-v1.md."
+}

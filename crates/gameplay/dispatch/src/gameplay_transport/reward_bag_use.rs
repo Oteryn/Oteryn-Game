@@ -5,7 +5,7 @@ use super::item_ref_admission::NativeItemWeights;
 use super::{ComposedFreshAdmission, item_view::ItemKey};
 use crate::durability::item_craft::ItemCraftRequest;
 use crate::foundation::{CommandId, CommandRef, ExactActorRef};
-use oteryn_gameplay_items::reward_bag::is_reward_bag;
+use oteryn_gameplay_items::reward_bag::{event_containers::legacy_conversion_rule, is_reward_bag};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, encode_item_use_intent};
 
 /// Existing bags retain their historical instance-tagged receipt.
@@ -58,9 +58,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .chain(inventory.nested.iter().map(|(_, entry)| entry))
                 .find(|entry| entry.item.item_instance_id == id);
             if !carried.is_some_and(|entry| {
-                oteryn_gameplay_items::event_items::is_event_reward(
-                    &entry.item.definition.production_key,
-                )
+                legacy_conversion_rule(&entry.item.definition.production_key).is_some()
             }) {
                 return Ok(None);
             }

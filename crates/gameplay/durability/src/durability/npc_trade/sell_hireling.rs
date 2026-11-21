@@ -57,7 +57,7 @@ pub(super) fn output_ids(request: &NpcTradeRequest) -> [[u8; 16]; MAX_COIN_STACK
 }
 
 pub(super) fn validate(request: &NpcTradeRequest, sell_all: bool) -> Result<Option<(u64, u32)>> {
-    let value = super::validate_sell_bound(request, sell_all, MAX_GOLD)?;
+    let value = super::validate_sell_bound(request, sell_all, MAX_GOLD, false)?;
     let ids = output_ids(request);
     if ids.iter().enumerate().any(|(index, id)| {
         ids[..index].contains(id)

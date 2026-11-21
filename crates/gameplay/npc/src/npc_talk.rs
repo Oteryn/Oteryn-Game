@@ -179,6 +179,14 @@ fn yasir_keywords() -> Vec<crate::content::ProjectV2DialogueKeyword> {
     .collect()
 }
 
+/// Every trigger phrase must match as whole words. Separate phrases can occur in any order.
+fn dialogue_triggers_match(said: &[String], triggers: &[String]) -> bool {
+    !triggers.is_empty()
+        && triggers
+            .iter()
+            .all(|trigger| contains_words(said, &words(trigger)))
+}
+
 fn literal_keyword(keyword: &crate::content::ProjectV2DialogueKeyword) -> bool {
     keyword.reply.len() == 1
         && keyword.children.is_empty()
@@ -242,7 +250,8 @@ impl NpcTalkEntry {
                 .iter()
                 .flat_map(|part| words(part))
                 .collect();
-            contains_words(&said, &trigger) && !asks_to_trade_for(npc_key, &trigger.join(" "))
+            dialogue_triggers_match(&said, &keyword.triggers)
+                && !asks_to_trade_for(npc_key, &trigger.join(" "))
         })
     }
 
@@ -250,14 +259,9 @@ impl NpcTalkEntry {
         &self,
         said: &[String],
     ) -> Option<&crate::content::ProjectV2DialogueKeyword> {
-        self.dialogue_keywords.iter().find(|keyword| {
-            let trigger: Vec<_> = keyword
-                .triggers
-                .iter()
-                .flat_map(|part| words(part))
-                .collect();
-            contains_words(said, &trigger)
-        })
+        self.dialogue_keywords
+            .iter()
+            .find(|keyword| dialogue_triggers_match(said, &keyword.triggers))
     }
 
     /// The line that ends a conversation.
@@ -1542,6 +1546,47 @@ mod tests {
 
     fn say(text: &str) -> String {
         text.to_owned()
+    }
+
+    #[test]
+    fn wayland_all_of_triggers_match_independently_after_greeting() {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .expect("catalogue");
+        let model = catalogue.service_model_for_project().expect("model");
+        let book = NpcTalkBook::from_model(&model);
+        let wayland = book.get("oteryn:npc.wayland_smythers").expect("Wayland");
+        let npcs = [TalkNpc {
+            id: 1_u8,
+            position: at(102),
+            entry: wayland,
+        }];
+        let mut engaged = None;
+        assert!(talk(at(100), "hi", &npcs, &mut engaged).is_some());
+        let expected = talk(at(100), "cult cultists", &npcs, &mut engaged)
+            .expect("canonical order")
+            .text;
+        for text in ["cultists cult", "cult and cultists", "CULTISTS and CULT"] {
+            assert_eq!(
+                talk(at(100), text, &npcs, &mut engaged)
+                    .map(|reply| reply.text)
+                    .as_deref(),
+                Some(expected.as_str()),
+                "all-of trigger set: {text}"
+            );
+        }
+        for text in ["cult", "cultists", "occult cultists", "cult cultistsx"] {
+            assert_ne!(
+                talk(at(100), text, &npcs, &mut engaged)
+                    .map(|reply| reply.text)
+                    .as_deref(),
+                Some(expected.as_str()),
+                "every whole trigger is required: {text}"
+            );
+        }
     }
 
     #[test]

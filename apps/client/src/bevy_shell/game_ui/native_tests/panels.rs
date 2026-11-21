@@ -53,6 +53,7 @@ pub(super) fn configure(
                 base_revision: 0,
                 new_revision: 1,
                 value: npc_service::NpcTradeWindow {
+                    details: Vec::new(),
                     open: Some((npc, 1)),
                     offers: vec![npc_service::NpcOffer {
                         item_definition_ref: 3,

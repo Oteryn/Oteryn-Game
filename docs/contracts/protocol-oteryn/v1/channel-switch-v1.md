@@ -57,8 +57,9 @@ The Game control operator provisions the directory PvP type with
 choice. A new Channel defaults to Optional PvP. A replacement retains the stored type unless
 the operator supplies a new one.
 
-The first fresh admission in a World establishes the baseline. Migration 2858 uses the latest
-historical admission for an existing character. A same-Channel relog preserves that baseline.
+The first fresh admission in a World establishes the baseline. Migration
+`2858_channel_switch_guard.sql` uses the latest historical admission for an existing character.
+A same-Channel relog preserves that baseline.
 A destination change checks cooldown, combat, kill and protection-zone deadlines, a saved
 House's origin Channel, and skull eligibility. The receipt and guard commit together. A
 refused admission consumes no cooldown and a replay cannot advance the guard twice.

@@ -17,14 +17,17 @@ fn definitions(mailbox: &Mailbox, action: &BarAction) -> Vec<u32> {
     actions
         .iter()
         .filter_map(|action| match action {
-            BarAction::Use { definition, .. }
-                if super::item_actions::item_source(mailbox, *definition, None).is_some()
-                    && !mailbox
-                        .spell_catalog
-                        .catalog
-                        .entries()
-                        .iter()
-                        .any(|entry| entry.rune_item == Some(definition.get())) =>
+            BarAction::Use {
+                definition,
+                sub_type,
+                ..
+            } if super::item_actions::item_source(mailbox, *definition, *sub_type).is_some()
+                && !mailbox
+                    .spell_catalog
+                    .catalog
+                    .entries()
+                    .iter()
+                    .any(|entry| entry.rune_item == Some(definition.get())) =>
             {
                 Some(definition.get())
             }

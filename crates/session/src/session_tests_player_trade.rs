@@ -53,3 +53,45 @@ fn player_trade_and_container_pushes_are_typed_revision_checked_and_selected()
         Ok::<(), BoxError>(())
     })?)?.join().map_err(|_| "trade thread panicked")?
 }
+
+#[test]
+fn player_trade_contents_follow_negotiation_and_survive_session_reduction() -> Result<(), BoxError>
+{
+    std::thread::Builder::new().stack_size(64 << 20).spawn(|| block_on(async {
+        for selected in [false,true] {
+            let capabilities: &[u32]=if selected { &[4,6,60,501] } else { &[4,6,60] };
+            let (client,mut server)=tokio::io::duplex(64*1024);
+            let initial=player_trade::encode_state(&Default::default()).map_err(|error|format!("{error:?}"))?;
+            let peer=tokio::spawn(async move {
+                join_peer_with(&mut server,capabilities,capabilities,&[],item_snapshot(vec![])?,&[(26,1,1,initial)]).await?;
+                read_frame(&mut server).await?;
+                // Proto3 omits zero subtype, root parent, false acceptance, zero reason,
+                // and empty text. Keep the surrounding messages independent of our encoder.
+                let mut payload = vec![18, 20, 10, 16];
+                payload.extend_from_slice(&[4; 16]);
+                payload.extend_from_slice(&[
+                    16, 2, 26, 4, 8, 1, 16, 1, 56, 1,
+                    90, 16, 10, 4, 8, 1, 16, 1, 26, 8,
+                ]);
+                payload.extend_from_slice(b"backpack");
+                payload.extend_from_slice(&[90, 14, 10, 4, 8, 2, 16, 7, 16, 1, 26, 4]);
+                payload.extend_from_slice(b"fish");
+                write_frame(&mut server,&encode_state_delta(1,41,26,1,2,1,&payload)?).await?;
+                write_frame(&mut server,&encode_command_result(1,42,7,CommandStatus::Accepted,&encode_step_result(StepDisposition::Blocked))?).await?;
+                Ok::<(),BoxError>(())
+            });
+            let mut session=Session::admit(client,admission_with(capabilities)?).await?;
+            let result=session.step(StepDirection::North).await;
+            peer.await??;
+            if !selected { assert!(matches!(result,Err(SessionError::SessionUnusable)));continue; }
+            result?;
+            let state=session.player_trade_state().ok_or("trade state")?;
+            assert_eq!(state.contents[0].len(),2);
+            assert_eq!(state.contents[0][1].parent,Some(0));
+            assert_eq!(state.contents[0][1].name,"fish");
+            assert_eq!(state.contents[0][1].item.count,7);
+            assert!(session.take_events().iter().any(|event|matches!(event,SessionEvent::PlayerTrade(update) if update.value==state)));
+        }
+        Ok::<(),BoxError>(())
+    })?)?.join().map_err(|_|"trade contents session thread panicked")?
+}

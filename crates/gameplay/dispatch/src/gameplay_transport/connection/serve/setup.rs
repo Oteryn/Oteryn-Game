@@ -187,8 +187,13 @@ where
                 domain_id: oteryn_protocol_oteryn::player_trade::STATE_DOMAIN_PLAYER_TRADE,
                 revision,
                 snapshot_type: 1,
-                payload: oteryn_protocol_oteryn::player_trade::encode_state(&state)
-                    .map_err(|_| ServeEnd::Disconnected)?,
+                payload: oteryn_protocol_oteryn::player_trade::encode_state_for(
+                    &state,
+                    admitted.continuity.selected_capabilities.contains(
+                        oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1,
+                    ),
+                )
+                .map_err(|_| ServeEnd::Disconnected)?,
             },
         );
     }
@@ -304,6 +309,9 @@ async fn live<A: FreshAdmissionAuthority>(
         ..
     } = initial;
     let has_vitals = vitals.is_some();
+    let vitals_max = vitals
+        .as_ref()
+        .map(|(_, value)| (value.max_health, value.max_mana));
     let snapshot::ItemSnapshot {
         party_view,
         item_view,
@@ -426,7 +434,11 @@ async fn live<A: FreshAdmissionAuthority>(
     // CHASE-1: this connection's claims on the actor's pacing clock live while it does.
     let step_holder = std::sync::Arc::new(());
     // STEP-PACE-WIRE-1: fixed for the connection; off, every step result keeps its former bytes.
-    let step_wait_receipts = authority.step_wait_receipts();
+    let step_wait_receipts = authority.step_wait_receipts()
+        || admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::actor_motion::CAPABILITY_ACTOR_MOTION_V1);
     let buffered: Option<BufferedStep> = None;
     // Each held frame carries whether it arrived behind a buffered step (SPEED-1) rather than
     // behind a running logout (LOGOUT-RL-01).
@@ -502,6 +514,10 @@ async fn live<A: FreshAdmissionAuthority>(
         achievement_notices,
         party_view,
         party_icons: Vec::new(),
+        guild_emblems: Vec::new(),
+        inventory_capacity: None,
+        inventory_capacity_refresh_at: None,
+        inventory_capacity_vitals_max: vitals_max,
         team_finder_view: Default::default(),
         market_revision: 1,
         cyclopedia_tracker_revision: 1,

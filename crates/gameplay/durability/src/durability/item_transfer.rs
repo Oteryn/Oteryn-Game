@@ -1322,22 +1322,40 @@ pub(super) async fn read_derived_transfer_capacity_centi_oz(
     character: CharacterId,
     weights: &dyn ItemWeightLookup,
 ) -> std::result::Result<u64, DurabilityError> {
+    derived_transfer_capacity(tx, character, weights, true).await
+}
+
+/// Identical derivation in a read-only snapshot, without locking durable writers' rows.
+pub(super) async fn observe_transfer_capacity_centi_oz(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: CharacterId,
+    weights: &dyn ItemWeightLookup,
+) -> std::result::Result<u64, DurabilityError> {
+    derived_transfer_capacity(tx, character, weights, false).await
+}
+
+async fn derived_transfer_capacity(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: CharacterId,
+    weights: &dyn ItemWeightLookup,
+    lock: bool,
+) -> std::result::Result<u64, DurabilityError> {
     // The native transfer fence already holds this live root. Reacquire that same row before
     // taking progression/build locks, retaining the native per-Character serialization order.
-    let account: Option<Vec<u8>> = sqlx::query_scalar(
-        "SELECT uuid_send(account_id) FROM game_character_roots \
-         WHERE character_id=encode($1,'hex')::uuid AND lifecycle=1 FOR UPDATE",
-    )
+    let sql = "SELECT uuid_send(account_id) FROM game_character_roots \
+         WHERE character_id=encode($1,'hex')::uuid AND lifecycle=1 FOR UPDATE";
+    let sql = if lock { sql } else { sql.trim_end_matches(" FOR UPDATE") };
+    let account: Option<Vec<u8>> = sqlx::query_scalar(sql)
     .bind(character.as_bytes().as_slice())
     .fetch_optional(&mut **tx)
     .await?;
     let account: [u8; 16] = account
         .and_then(|bytes| bytes.try_into().ok())
         .ok_or(DurabilityError::InvalidStoredState)?;
-    let level: Option<i64> = sqlx::query_scalar(
-        "SELECT level FROM game_character_progression_state \
-         WHERE character_id=encode($1,'hex')::uuid FOR UPDATE",
-    )
+    let sql = "SELECT level FROM game_character_progression_state \
+         WHERE character_id=encode($1,'hex')::uuid FOR UPDATE";
+    let sql = if lock { sql } else { sql.trim_end_matches(" FOR UPDATE") };
+    let level: Option<i64> = sqlx::query_scalar(sql)
     .bind(character.as_bytes().as_slice())
     .fetch_optional(&mut **tx)
     .await?;
@@ -1347,10 +1365,10 @@ pub(super) async fn read_derived_transfer_capacity_centi_oz(
         .and_then(|value| u32::try_from(value).ok())
         .filter(|value| *value > 0)
         .ok_or(DurabilityError::InvalidStoredState)?;
-    let vocation: Option<String> = sqlx::query_scalar(
-        "SELECT vocation FROM game_character_build_state \
-         WHERE character_id=encode($1,'hex')::uuid FOR UPDATE",
-    )
+    let sql = "SELECT vocation FROM game_character_build_state \
+         WHERE character_id=encode($1,'hex')::uuid FOR UPDATE";
+    let sql = if lock { sql } else { sql.trim_end_matches(" FOR UPDATE") };
+    let vocation: Option<String> = sqlx::query_scalar(sql)
     .bind(character.as_bytes().as_slice())
     .fetch_optional(&mut **tx)
     .await?;

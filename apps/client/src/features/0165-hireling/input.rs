@@ -13,11 +13,19 @@ impl PlayLink {
             return true;
         }
         self.hireling_request(Intent::Refresh);
-        #[cfg(windows)]
-        self.open_hireling_panel();
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).hireling.open = true;
+        let mut mailbox = lock(&self.mailbox);
+        mailbox.hireling.open = true;
+        mailbox.hireling_picking = false;
+        true
+    }
+
+    /// Leaves an armed summon-location pick; the banker form shows again.
+    pub(in crate::play) fn hireling_pick_cancel(&self) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        if !std::mem::take(&mut mailbox.hireling_picking) {
+            return false;
         }
+        mailbox.hireling.feedback = None;
         true
     }
 
@@ -33,5 +41,43 @@ impl PlayLink {
 
     pub fn hireling_target(&self, x: u16, y: u16, floor: i8) {
         lock(&self.mailbox).hireling.target = Some((x, y, floor));
+    }
+}
+
+impl crate::play::PlayView {
+    /// Confirm the summon by clicking the actor or a neighboring tile.
+    pub(in crate::play) fn hireling_pick(
+        &self,
+        tile: oteryn_renderer::TileCoord,
+        link: &PlayLink,
+    ) -> bool {
+        let target = {
+            let mut mailbox = lock(&link.mailbox);
+            if !mailbox.hireling_picking {
+                return false;
+            }
+            let in_reach = tile.x.abs_diff(self.own.x) <= 1
+                && tile.y.abs_diff(self.own.y) <= 1;
+            match (
+                in_reach,
+                u16::try_from(tile.x),
+                u16::try_from(tile.y),
+                i8::try_from(self.floor),
+            ) {
+                (true, Ok(x), Ok(y), Ok(floor)) => {
+                    mailbox.hireling_picking = false;
+                    mailbox.hireling.feedback = None;
+                    Some((x, y, floor))
+                }
+                _ => {
+                    mailbox.hireling.feedback = Some(tr!("Select an adjacent summon location"));
+                    None
+                }
+            }
+        };
+        if let Some((x, y, floor)) = target {
+            link.hireling_target(x, y, floor);
+        }
+        true
     }
 }

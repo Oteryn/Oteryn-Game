@@ -86,12 +86,11 @@ mod tests {
     #[test]
     fn windows_credential_manager_round_trips_only_the_synthetic_device_fixture()
     -> Result<(), Box<dyn std::error::Error>> {
-        let stamp = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)?
-            .as_nanos();
+        let fixture = tempfile::tempdir()?;
+        let name = fixture.path().file_name().ok_or("fixture name")?;
         let vault = WindowsVault(format!(
-            "Oteryn/Test/NativeDevice/{}/{stamp}",
-            std::process::id()
+            "Oteryn/Test/NativeDevice/{}",
+            name.to_string_lossy()
         ));
         let bytes = include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),

@@ -222,9 +222,9 @@ fn floor_replacement_follows_origin_and_draws_visible_floors() -> Result<(), Bat
     for floor in [10, 9, 8] {
         assert!(view.local.world().floor_tile(floor, 100, 200).is_some());
     }
-    #[cfg(not(feature = "bevy-shell"))]
+    #[cfg(not(bevy_shell))]
     assert_eq!(view.scene().sprites().len(), 4); // Three visible map glyphs and the own actor.
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     assert_eq!(view.scene().sprites().len(), 5); // The hidden floor remains available for fading.
     Ok(())
 }
@@ -277,9 +277,9 @@ fn surface_and_deep_windows_draw_every_server_visible_floor() -> Result<(), Batc
         hide_minimap(&mut view)?;
         view.set_live_map(&map)?;
         assert_eq!(view.local.world().tile_count(), count);
-        #[cfg(not(feature = "bevy-shell"))]
+        #[cfg(not(bevy_shell))]
         assert_eq!(view.scene().sprites().len(), count + 1);
-        #[cfg(feature = "bevy-shell")]
+        #[cfg(bevy_shell)]
         assert_eq!(view.scene().sprites().len(), map.tiles.len() + 1);
     }
     Ok(())
@@ -341,14 +341,18 @@ fn failed_live_map_install_preserves_position_world_scene_and_walk() -> Result<(
     assert_eq!(view.scene().sprites().instances(), sprites);
     assert_eq!(
         view.inputs.back(),
-        Some(&Input::TargetWalk(ActorPosition { x: 110, y: 200, floor: 0 }))
+        Some(&Input::TargetWalk(ActorPosition {
+            x: 110,
+            y: 200,
+            floor: 0
+        }))
     );
     Ok(())
 }
 
 #[test]
-fn floor_replacement_preserves_ground_item_targets_without_extra_glyphs()
--> Result<(), BatchError> {
+fn floor_replacement_preserves_ground_item_targets_without_extra_glyphs() -> Result<(), BatchError>
+{
     use oteryn_session::world_map::MapOrigin;
     let mut view = view()?;
     hide_minimap(&mut view)?;
@@ -373,15 +377,23 @@ fn floor_replacement_preserves_ground_item_targets_without_extra_glyphs()
     let selected = view.scene().target().and_then(|target| target.item);
     assert_eq!(selected.map(|item| item.floor()), Some(8));
     assert_eq!(selected.map(|item| item.quantity()), Some(7));
-    assert!(!view.inputs.iter().any(|input| matches!(input, Input::TargetWalk(_))));
+    assert!(
+        !view
+            .inputs
+            .iter()
+            .any(|input| matches!(input, Input::TargetWalk(_)))
+    );
     Ok(())
 }
 
 // Floor sprite assertions isolate world rendering from the package-5 minimap overlay.
 fn hide_minimap(view: &mut PlayView) -> Result<(), BatchError> {
     let mut preferences = view.preferences().clone();
-    preferences.visible_panels.retain(|panel| panel != "minimap");
-    view.set_preferences(preferences).map_err(|_| BatchError::InvalidView)
+    preferences
+        .visible_panels
+        .retain(|panel| panel != "minimap");
+    view.set_preferences(preferences)
+        .map_err(|_| BatchError::InvalidView)
 }
 
 #[test]
@@ -402,5 +414,132 @@ fn first_visible_floor_open_sky() -> Result<(), BatchError> {
     let map = live_snapshot(100);
     let world = crate::map::World::from_live_map(&map)?;
     assert_eq!(world.first_visible_floor, 0);
+    Ok(())
+}
+
+#[test]
+fn live_map_items_advance_frames_during_presentation() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_assets::world::{MANIFEST_PATH, MANIFEST_SHA256};
+    use oteryn_client_assets::{AppearanceIndex, AssetStore, Catalog};
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let store = AssetStore::open_pinned(
+        &root.join("content/assets/files"),
+        &root.join(MANIFEST_PATH),
+        MANIFEST_SHA256,
+    )?;
+    let catalog = Catalog::load(&store)?;
+    let index = AppearanceIndex::load(&store, &catalog)?;
+    let appearance = index
+        .iter()
+        .filter(|appearance| {
+            appearance.phases > 1 && appearance.sprite_ids.first() != appearance.sprite_ids.get(1)
+        })
+        .min_by_key(|appearance| appearance.id)
+        .ok_or("animated map appearance")?;
+    let mut map = live_snapshot(100);
+    map.header.origin.floor = 7;
+    map.header.first_visible_floor = 7;
+    map.tiles.truncate(1);
+    map.tiles[0].position = map.header.origin;
+    map.tiles[0].items[0].appearance_id = appearance.id.try_into()?;
+    map.tiles[0].items.truncate(1);
+    let world = Arc::new(World::resolve_live_map(&root, &map)?);
+    let mut view = view()?;
+    view.place(map.header.origin);
+    view.set_world(world)?;
+    let now = World::animation_epoch(std::time::Instant::now());
+    view.project_presentation(now)?;
+    let before = view.scene().sprites().instances().to_vec();
+    view.project_presentation(
+        now + std::time::Duration::from_millis(u64::from(appearance.phase_ms[0])),
+    )?;
+    assert_ne!(view.scene().sprites().instances(), before.as_slice());
+    let cycle: u64 = appearance
+        .phase_ms
+        .iter()
+        .map(|duration| u64::from(*duration))
+        .sum();
+    view.project_presentation(now + std::time::Duration::from_millis(cycle))?;
+    assert_eq!(view.scene().sprites().instances(), before.as_slice());
+    Ok(())
+}
+
+#[test]
+fn animated_terrain_and_items_advance_in_the_play_scene_without_server_updates()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_assets::world::{MANIFEST_PATH, MANIFEST_SHA256};
+    use oteryn_client_assets::{AppearanceIndex, AssetStore, Catalog};
+    use std::time::{Duration, Instant};
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let store = AssetStore::open_pinned(
+        &root.join("content/assets/files"),
+        &root.join(MANIFEST_PATH),
+        MANIFEST_SHA256,
+    )?;
+    let catalog = Catalog::load(&store)?;
+    let index = AppearanceIndex::load(&store, &catalog)?;
+    for ground in [true, false] {
+        let appearance = index
+            .iter()
+            .filter(|a| a.ground == ground && a.phases > 1)
+            .filter(|a| a.sprite_ids.first() != a.sprite_ids.last())
+            .min_by_key(|a| a.id)
+            .ok_or("animated appearance missing from pinned assets")?;
+        let mut map = live_snapshot(100);
+        map.tiles[0].items[0].appearance_id = u16::try_from(appearance.id)?;
+        let mut upper = map.tiles[0].clone();
+        upper.position.x += 1;
+        upper.position.y += 1;
+        upper.position.floor = 1;
+        map.tiles.push(upper);
+        let mut fixed = map.tiles[0].clone();
+        fixed.position.x += 2;
+        fixed.items[0].appearance_id = 4526;
+        map.tiles.push(fixed);
+        let world = Arc::new(World::resolve_live_map(&root, &map)?);
+        let fixed = world.tile(102, 200).ok_or("static tile missing")?.clone();
+        let mut view = view()?;
+        view.set_world(Arc::clone(&world))?;
+        let now = Instant::now();
+        view.advance_presentation(now)?;
+        let before = view.scene().sprites().instances().to_vec();
+        let upper_before = view.local.world().floor_tile(1, 102, 202).cloned();
+        let mut changed = false;
+        let mut upper_changed = false;
+        let mut elapsed = 0;
+        for duration in &appearance.phase_ms {
+            elapsed += u64::from(*duration);
+            view.advance_presentation(now + Duration::from_millis(elapsed))?;
+            changed |= before.as_slice() != view.scene().sprites().instances();
+            upper_changed |= view.local.world().floor_tile(1, 102, 202) != upper_before.as_ref();
+        }
+        assert!(
+            changed,
+            "appearance {} (ground={ground}) stayed on phase zero",
+            appearance.id
+        );
+        assert_eq!(
+            view.scene().sprites().instances(),
+            &before,
+            "full cycle must wrap"
+        );
+        let current = view.local.world();
+        assert_eq!(current.tile_count(), 3);
+        assert_eq!(current.tile(102, 200), Some(&fixed));
+        assert!(upper_changed, "upper-floor animation stayed on phase zero");
+        assert_eq!(current.floor_tile(1, 102, 202), upper_before.as_ref());
+        assert!(
+            std::ptr::eq(world.atlas(), current.atlas()),
+            "phase changes must reuse the atlas"
+        );
+        let replacement = World::resolve_live_map(&root, &map)?;
+        let at = now + Duration::from_millis(elapsed + 100);
+        let replacement = replacement.animated_at(at).unwrap_or(replacement);
+        view.advance_presentation(at)?;
+        assert_eq!(
+            view.local.world().tile(100, 200),
+            replacement.tile(100, 200)
+        );
+    }
     Ok(())
 }

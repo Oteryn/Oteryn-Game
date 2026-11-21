@@ -104,7 +104,9 @@ const LAST_POSITION_FLUSH_BUDGET: Duration = Duration::from_secs(3);
 const AUDIT_INTERVAL: Duration = Duration::from_secs(60 * 60);
 const AUDIT_BATCH: u16 = 64;
 const AUDIT_RUN_CAP: u32 = 64;
-const CONTROL_REQUEST_BYTES: usize = 64;
+/// The longest valid control line: `spawn <36-byte session> <key of at most 128 bytes>\n`
+/// (172 bytes); `qualify` and operation ids are shorter. A longer line is refused unread.
+const CONTROL_REQUEST_BYTES: usize = 6 + 36 + 1 + 128 + 1;
 const CONTROL_DEADLINE: Duration = Duration::from_secs(30);
 const MAX_GAMEPLAY_KEY_BYTES: usize = 16 * 1024;
 
@@ -747,13 +749,17 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
                 if let Some(v) = &platform.bazaar {
                     paths.push(&v.client_certificate_file);
                 }
-                if let Some(v) = &platform.public_projections {
+                if let Some(v) = platform.public_projections.as_ref().filter(|v| v.enabled) {
                     paths.push(&v.client_certificate_file);
                 }
-                if let Some(v) = &platform.world_event_outcomes {
+                if let Some(v) = platform.world_event_outcomes.as_ref().filter(|v| v.enabled) {
                     paths.push(&v.client_certificate_file);
                 }
-                if let Some(v) = &config.journal {
+                if let Some(v) = config
+                    .journal
+                    .as_ref()
+                    .filter(|_| config.game_journal_items_export_enabled)
+                {
                     paths.push(&v.client_certificate_file);
                 }
                 for path in paths {
@@ -1395,9 +1401,8 @@ async fn public_projections_loop(
 /// group role (migration 0129) and schedules from durable database time, so a restart or a second
 /// Channel of the World never publishes early. Category 10 reads the activated Achievement
 /// catalogue. Category 11 is published only with an activated per-race Charm point source; none
-/// exists yet (CHARM-6), so it is withheld and its query is `NOT_SUPPORTED`. The planned World
-/// reset notification source is not wired yet (WORLD-RESET): the sender is held, unused, for the
-/// job's lifetime.
+/// exists yet (CHARM-6), so it is withheld and its query is `NOT_SUPPORTED`. Planned reset
+/// cuts become due when the durable reset epoch activates after the drain.
 async fn highscores_loop(
     root: &DurabilityRoot,
     world: crate::foundation::WorldId,
@@ -1412,7 +1417,7 @@ async fn highscores_loop(
         return;
     };
     let job = HighscoreWorldJob::new(std::sync::Arc::new(root.clone()), world, catalogues);
-    let (_planned_resets, receiver) = tokio::sync::mpsc::channel(1);
+    let (_periodic_lifetime, receiver) = tokio::sync::mpsc::channel(1);
     event("event=highscores state=started");
     first(job.run(receiver), stop.cancelled()).await;
 }
@@ -2738,14 +2743,23 @@ impl Readiness<'_> {
                     ) => {
                         return Err(BootError::Readiness("not the current holder"));
                     }
-                    Err(_) => {
+                    Err(error) if readiness_publication_retryable(&error) => {
                         self.root.request_ready();
                         backoff_within(&mut attempt, budget).await;
                     }
+                    Err(_) => return Err(BootError::Readiness("publication")),
                 }
             }
         }
         Err(BootError::Readiness("stale or conflicting publication"))
+    }
+}
+
+fn readiness_publication_retryable(error: &AssignmentError) -> bool {
+    match error {
+        AssignmentError::Ambiguous | AssignmentError::ReconcileRequired => true,
+        AssignmentError::Unavailable(error) => boot_step_retryable(error),
+        _ => false,
     }
 }
 
@@ -2963,6 +2977,7 @@ async fn control_loop(
     intents: &ProducerDescriptor,
     config: &NodeConfig,
     native: Option<&crate::content::native_gameplay::NativeGameplayState>,
+    spawn: Option<qualification_fixture::SpawnOwners<'_>>,
     stop: &CancellationToken,
 ) {
     let capacity = TransientCapacity::new();
@@ -2990,11 +3005,27 @@ async fn control_loop(
                     "ops_diagnose",
                 ),
                 Some(request) if request.starts_with(b"qualify ") => (
-                    qualification_fixture::prepare(
+                    Box::pin(qualification_fixture::prepare(
                         root, authority, proof, config, native, &request,
-                    )
+                    ))
                     .await
                     .to_owned(),
+                    "character_bootstrap",
+                ),
+                #[cfg(any(test, feature = "qualification-spawn"))]
+                Some(request) if request.starts_with(b"inspect-damage ") => (
+                    Box::pin(qualification_fixture::inspect_damage(
+                        config, spawn, &request,
+                    ))
+                    .await
+                    .unwrap_or_else(|| "rejected reason=damage_unavailable".to_owned()),
+                    "qualification_damage",
+                ),
+                Some(request) if request.starts_with(b"spawn ") => (
+                    Box::pin(qualification_fixture::spawn(
+                        root, authority, proof, config, native, spawn, &request,
+                    ))
+                    .await,
                     "character_bootstrap",
                 ),
                 Some(request) if parse_operation_id(&request).is_some() => {
@@ -3014,6 +3045,7 @@ async fn control_loop(
             };
             match event_name {
                 "ops_health" => event_traced("event=ops_health result=served", connection),
+                "qualification_damage" => {}
                 "ops_diagnose" => {
                     event_traced("event=ops_diagnose result=served", connection);
                 }
@@ -3576,7 +3608,11 @@ fn platform_client_identities(
             &v.client_certificate_file,
         ));
     }
-    if let Some(v) = &platform.character_services {
+    if let Some(v) = platform
+        .character_services
+        .as_ref()
+        .filter(|_| platform.services_v2_enabled)
+    {
         paths.push((
             "platform.character_services.client_certificate_file",
             &v.client_certificate_file,
@@ -3588,7 +3624,7 @@ fn platform_client_identities(
             &v.client_certificate_file,
         ));
     }
-    if let Some(v) = &platform.public_projections {
+    if let Some(v) = platform.public_projections.as_ref().filter(|v| v.enabled) {
         paths.push((
             "platform.public_projections.client_certificate_file",
             &v.client_certificate_file,
@@ -3600,7 +3636,11 @@ fn platform_client_identities(
             &v.client_certificate_file,
         ));
     }
-    if let Some(v) = &config.journal {
+    if let Some(v) = config
+        .journal
+        .as_ref()
+        .filter(|_| config.game_journal_items_export_enabled)
+    {
         paths.push((
             "journal.client_certificate_file",
             &v.client_certificate_file,
@@ -3827,16 +3867,6 @@ async fn boot_and_serve(
         timed_npcs,
         required_capabilities,
     } = channel;
-    public_house_catalogue::capture(
-        root,
-        &authority,
-        &proof,
-        material,
-        &assignment,
-        reset_epoch,
-        bundle.as_ref(),
-    )
-    .await;
     if signalled.is_cancelled() {
         stopped_before_ready();
         return Ok(());
@@ -3856,10 +3886,10 @@ async fn boot_and_serve(
         )
         .map_err(|_| BootError::Bind("control socket mode"))?;
     }
-    event(&format!(
-        "event=listener_bound address={}",
-        config.listener.address
-    ));
+    let bound_address = listener
+        .local_addr()
+        .map_err(|_| BootError::Bind("gameplay listener address"))?;
+    event(&format!("event=listener_bound address={bound_address}"));
     let readiness = Readiness {
         root,
         proof: &proof,
@@ -4020,9 +4050,26 @@ async fn boot_and_serve(
         generation,
         signalled,
         timed_npcs,
+        spawn_room: combat_room.as_ref().unwrap_or(&qualified_room),
     }));
-    first(serving, enforcement_owner)
+    let catalogue = async {
+        public_house_catalogue::capture(
+            root,
+            authority,
+            proof,
+            material,
+            &assignment,
+            reset_epoch,
+            bundle.as_ref(),
+        )
+        .await;
+        // Successful capture is no reason to end serving; keep the original
+        // enforcement-owner exit authoritative while this auxiliary worker is idle.
+        std::future::pending::<()>().await;
+    };
+    first(first(serving, enforcement_owner), catalogue)
         .await
+        .flatten()
         .unwrap_or(Err(BootError::Serve))
 }
 
@@ -4034,6 +4081,160 @@ mod future_stack_tests;
 mod tests {
     #![allow(clippy::expect_used)]
     use super::*;
+
+    #[test]
+    fn identity_checks_skip_disabled_optional_transports() {
+        use super::super::config::{NodeConfig, tests::NODE};
+        use std::os::unix::fs::OpenOptionsExt;
+        let directory = std::env::temp_dir().join(format!(
+            "oteryn-identities-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("clock")
+                .as_nanos()
+        ));
+        std::fs::create_dir(&directory).expect("fixture directory");
+        let path = directory.join("identity.pem");
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(0o600)
+            .open(&path)
+            .expect("fixture file");
+        std::io::Write::write_all(&mut file, b"active identity").expect("write");
+        let document = format!(
+            r#"{NODE}
+[platform.account_characters]
+client_certificate_file = "/missing/accounts.crt"
+client_key_file = "/missing/accounts.key"
+source_authority = "accounts"
+epoch_fence_file = "/missing/services.fence"
+[platform.character_services]
+client_certificate_file = "/missing/services.crt"
+client_key_file = "/missing/services.key"
+source_authority = "services"
+epoch_fence_file = "/missing/services.fence"
+[platform.public_projections]
+enabled = false
+client_certificate_file = "/missing/public.crt"
+client_key_file = "/missing/public.key"
+source_authority = "public"
+epoch_fence_file = "/missing/public.fence"
+[journal]
+client_certificate_file = "/missing/journal.crt"
+client_key_file = "/missing/journal.key"
+source_authority = "OTERYN_GAME_JOURNAL"
+"#
+        );
+        let mut config = NodeConfig::parse(document.as_bytes()).expect("fixture config");
+        config.platform.client_certificate_file = path.clone();
+        config
+            .platform
+            .account_characters
+            .as_mut()
+            .expect("accounts")
+            .client_certificate_file = path.clone();
+        config.platform.world_event_outcomes = None;
+        let identities = platform_client_identities(&config);
+        for active in 0..3 {
+            let mut enabled = config.clone();
+            match active {
+                0 => enabled.platform.services_v2_enabled = true,
+                1 => {
+                    enabled
+                        .platform
+                        .public_projections
+                        .as_mut()
+                        .expect("public")
+                        .enabled = true
+                }
+                _ => enabled.game_journal_items_export_enabled = true,
+            }
+            assert!(
+                platform_client_identities(&enabled).is_err(),
+                "active credentials remain required"
+            );
+        }
+        std::fs::remove_dir_all(directory).expect("cleanup");
+        assert_eq!(
+            identities.expect("disabled credentials are not read"),
+            vec![
+                (
+                    "platform.client_certificate_file",
+                    b"active identity".to_vec()
+                ),
+                (
+                    "platform.account_characters.client_certificate_file",
+                    b"active identity".to_vec()
+                )
+            ]
+        );
+    }
+
+    #[test]
+    fn readiness_publication_retries_only_uncertain_or_unsubmitted_outcomes() {
+        for error in [
+            AssignmentError::Ambiguous,
+            AssignmentError::ReconcileRequired,
+            AssignmentError::Unavailable(DurabilityError::RootUnavailable),
+            AssignmentError::Unavailable(DurabilityError::RootPassDeadlineExceeded),
+            AssignmentError::Unavailable(DurabilityError::CommitOutcomeUnknown),
+        ] {
+            assert!(readiness_publication_retryable(&error), "{error:?}");
+        }
+        for error in [
+            AssignmentError::NotCurrentHolder,
+            AssignmentError::InvalidInput,
+            AssignmentError::Unsupported,
+            AssignmentError::QueueFull,
+            AssignmentError::QueueTimeout,
+            AssignmentError::Unavailable(DurabilityError::Database(
+                crate::durability::SqlxFailureClass::Database(None),
+            )),
+            AssignmentError::Unavailable(DurabilityError::CommitRejected),
+            AssignmentError::Unavailable(DurabilityError::InvalidStoredState),
+        ] {
+            assert!(!readiness_publication_retryable(&error), "{error:?}");
+        }
+    }
+
+    #[test]
+    fn readiness_publication_returns_a_definite_database_rejection()
+    -> crate::bestiary_postgres_harness::TestResult {
+        use crate::bestiary_postgres_harness::{
+            Harness, TestResult, configured_admin, debug, runtime, scope,
+        };
+        use sqlx::Executor;
+        let Some(admin) = configured_admin() else {
+            return Ok(());
+        };
+        std::thread::Builder::new().stack_size(64 << 20).spawn(move || -> Result<(), String> {
+            runtime().map_err(debug)?.block_on(async {
+                let h = Harness::create(admin, "readiness_rejection", false).await?;
+                let result: TestResult = async {
+                    let mut config = NodeConfig::parse(super::super::config::tests::NODE.as_bytes())?;
+                    config.readiness.source_authority = "game-runtime-publisher".into();
+                    let readiness = Readiness {root: &h.root, proof: &h.node, scope: scope()?, generation: 1, config: &config};
+                    h.pool.execute("REVOKE EXECUTE ON FUNCTION game_runtime_attest_readiness(BYTEA,UUID,NUMERIC,BYTEA) FROM oteryn_game_runtime").await?;
+                    h.root.await_ready().await?;
+                    let allowed = h.root.try_issue_semantic_pass()?.run(|holder, _| Box::pin(async move {
+                        sqlx::query("SET ROLE oteryn_game_runtime").execute(&mut **holder).await?;
+                        let allowed: bool = sqlx::query_scalar("SELECT has_function_privilege(current_user,'game_runtime_attest_readiness(bytea,uuid,numeric,bytea)','EXECUTE')").fetch_one(&mut **holder).await?;
+                        Ok(allowed)
+                    })).await?;
+                    assert!(!allowed, "the runtime role must reach the real permission rejection");
+                    let prepared = readiness.prepare(true, None).await.map_err(debug)?;
+                    let rejected = h.root.publish_runtime_readiness(&h.node, &prepared).await;
+                    assert!(matches!(rejected, Err(AssignmentError::Unavailable(DurabilityError::Database(_)))), "{rejected:?}");
+                    let result = tokio::time::timeout(Duration::from_secs(2), readiness.publish(true, None)).await;
+                    assert!(matches!(result, Ok(Err(BootError::Readiness("publication")))), "a definite rejection must return instead of retrying: {result:?}");
+                    Ok(())
+                }.await;
+                h.cleanup().await?;
+                result
+            }).map_err(debug)
+        })?.join().map_err(|_| "readiness rejection thread failed")?.map_err(Into::into)
+    }
 
     #[test]
     fn profile_b_flags_off_spawn_nothing_and_skip_identity_reads() {

@@ -39,12 +39,14 @@ pub(super) fn frame(commands: &mut Commands, skin: &Skins, parent: Entity) -> En
     );
     frame
 }
+#[allow(clippy::too_many_arguments)] // The session catalogue accompanies the retained panel.
 pub(super) fn body(
     commands: &mut Commands,
     skin: &Skins,
     frame: Entity,
     action: Action,
     panel: &HighscoresPanel,
+    worlds: &[(oteryn_client_runtime::highscores::wire::WorldId, String)],
     feedback: Option<&str>,
     now: i64,
 ) -> Entity {
@@ -59,8 +61,98 @@ pub(super) fn body(
         })
         .id();
     commands.entity(frame).add_child(root);
+    let choices = row(commands, root);
+    commands.entity(choices).insert((
+        ScrollArea,
+        Node {
+            width: percent(100.),
+            max_height: px(76.),
+            flex_shrink: 0.,
+            overflow: Overflow::scroll_y(),
+            flex_wrap: FlexWrap::Wrap,
+            column_gap: px(6.),
+            row_gap: px(4.),
+            ..default()
+        },
+    ));
+    if panel.catalogue_selected {
+        use oteryn_client_runtime::highscores::catalogue::WorldType;
+        for kind in std::iter::once(None).chain(
+            WorldType::ALL
+                .into_iter()
+                .filter(|kind| {
+                    panel
+                        .catalogue
+                        .iter()
+                        .any(|entry| entry.world_type == *kind)
+                })
+                .map(Some),
+        ) {
+            button(
+                commands,
+                skin,
+                choices,
+                action,
+                Kind::WorldType(kind),
+                kind.map_or("All World types", WorldType::label),
+                180.,
+                !panel.pending && panel.catalogue_loaded,
+            );
+        }
+        for entry in oteryn_client_ui::highscores_catalogue::world_choices(panel) {
+            button(
+                commands,
+                skin,
+                choices,
+                action,
+                Kind::World(Some(entry.world)),
+                &format!(
+                    "{} ({})",
+                    model::world_label(Some(entry.world), worlds),
+                    entry.world_type.label()
+                ),
+                240.,
+                !panel.pending,
+            );
+        }
+    } else {
+        for world in std::iter::once(None).chain(worlds.iter().map(|(id, _)| Some(*id))) {
+            button(
+                commands,
+                skin,
+                choices,
+                action,
+                Kind::World(world),
+                &format!("World: {}", model::world_label(world, worlds)),
+                240.,
+                request_action(panel, Kind::World(world)).is_some(),
+            );
+        }
+    }
+    label(
+        commands,
+        skin,
+        root,
+        &format!(
+            "Selected world: {}",
+            model::world_label(panel.world, worlds)
+        ),
+    );
+    let world_type = if panel.catalogue_selected {
+        format!(
+            "World type: {}",
+            panel.world_type.map_or(
+                "All World types",
+                oteryn_client_runtime::highscores::catalogue::WorldType::label
+            )
+        )
+    } else {
+        "World type unavailable for this session. Named worlds come from your character list."
+            .into()
+    };
+    label(commands, skin, root, &world_type);
     let filters = row(commands, root);
-    label(commands, skin, filters, "World ID (blank = current):");
+    label(commands, skin, filters, "Other World ID (blank = current):");
     let mut text = EditableText::new(
         panel
             .world
@@ -141,6 +233,7 @@ pub(super) fn body(
     let scroll = commands
         .spawn((
             ScrollArea,
+            crate::bevy_shell::game_ui::install::RememberScroll("highscores", 0),
             Node {
                 width: percent(100.),
                 flex_grow: 1.,
@@ -152,7 +245,7 @@ pub(super) fn body(
         ))
         .id();
     commands.entity(root).add_child(scroll);
-    table(commands, skin.font.clone(), scroll, panel);
+    table(commands, skin.font.clone(), scroll, panel, worlds);
     if !panel.selected {
         label(
             commands,
@@ -229,6 +322,7 @@ pub(super) fn table(
     font: Handle<Font>,
     parent: Entity,
     panel: &HighscoresPanel,
+    worlds: &[(oteryn_client_runtime::highscores::wire::WorldId, String)],
 ) {
     cells(
         commands,
@@ -238,7 +332,7 @@ pub(super) fn table(
         source::TEXT_COLOR,
         Color::srgb_u8(35, 35, 35),
     );
-    for row in table_rows(panel) {
+    for row in table_rows(panel, worlds) {
         cells(
             commands,
             font.clone(),

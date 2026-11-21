@@ -292,6 +292,7 @@ fn source_view(nested: bool, immovable: bool) -> TestResult {
                             item_fence: Some(fence),
                         },
                         LoopMove {
+                            slot: None,
                             item: source_key(3),
                             count: None,
                             target: LoopTarget::MainBackpack,
@@ -307,7 +308,7 @@ fn source_view(nested: bool, immovable: bool) -> TestResult {
                 assert_eq!(number, 3301);
                 let stale = owner.move_loop_item(deps.actor,
                     crate::gameplay_transport::connection::UseCommand { game_session_id: session, command_id: 701, item_fence: Some(fence) },
-                    LoopMove { item: source_key(3), count: None, target: LoopTarget::MainBackpack }).await;
+                    LoopMove { item: source_key(3), count: None, target: LoopTarget::MainBackpack, slot: None }).await;
                 assert_eq!(stale, LoopMoveResult::Refused(crate::gameplay_transport::item_move::LoopMoveRefusal::Stale));
                 let stale_epoch = ItemKey::MapBase {
                     bundle_digest: world.base().digest(),

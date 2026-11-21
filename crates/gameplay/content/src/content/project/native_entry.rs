@@ -24,6 +24,7 @@ use crate::content::{
     ReferencePlayableContentSource, SpawnRecoveryClass, TransitionBinding, TransitionKey,
     compile_first_production, link_reference_playable,
 };
+use std::sync::Arc;
 
 pub const NATIVE_ENTRY_SOURCE_PROFILE: &str =
     "OTERYN_WORLD_PROJECT_SOURCE_PROFILE/v2-native-entry-qualification-1";
@@ -539,9 +540,11 @@ impl NativeEntryProject {
         )?;
         Ok(NativeEntryMovementCells {
             house_tiles,
-            index: crate::content::native_cell_lookup::NativeMovementCollisionIndex::Entry(index),
+            index: Arc::new(
+                crate::content::native_cell_lookup::NativeMovementCollisionIndex::Entry(index),
+            ),
             scope,
-            spell_tiles,
+            spell_tiles: Arc::new(spell_tiles),
         })
     }
 
@@ -691,9 +694,9 @@ pub struct QualifiedNativeEntryRoom {
 /// cells"). The index grants no active status; the Channel's pin supplies the current scope.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NativeEntryMovementCells {
-    spell_tiles: QualifiedSpellTiles,
+    spell_tiles: Arc<QualifiedSpellTiles>,
     house_tiles: super::QualifiedHouseTiles,
-    index: crate::content::native_cell_lookup::NativeMovementCollisionIndex,
+    index: Arc<crate::content::native_cell_lookup::NativeMovementCollisionIndex>,
     scope: crate::content::static_cell_engine::EngineeringStaticCellScope,
 }
 
@@ -701,10 +704,10 @@ impl NativeEntryMovementCells {
     pub const fn house_tiles(&self) -> &super::QualifiedHouseTiles {
         &self.house_tiles
     }
-    pub const fn spell_tiles(&self) -> &QualifiedSpellTiles {
+    pub fn spell_tiles(&self) -> &QualifiedSpellTiles {
         &self.spell_tiles
     }
-    pub const fn index(&self) -> &crate::content::native_cell_lookup::NativeMovementCollisionIndex {
+    pub fn index(&self) -> &crate::content::native_cell_lookup::NativeMovementCollisionIndex {
         &self.index
     }
     pub fn source_world(&self) -> Option<&super::native_spell_world::QualifiedNativeSpellWorld> {
@@ -726,9 +729,11 @@ impl NativeEntryMovementCells {
         spell_tiles: std::sync::Arc<crate::content::bundle_spell_tiles::BundleSpellTiles>,
     ) -> Self {
         Self {
-            spell_tiles: QualifiedSpellTiles::from_bundle(scope.clone(), spell_tiles),
+            spell_tiles: Arc::new(QualifiedSpellTiles::from_bundle(scope.clone(), spell_tiles)),
             house_tiles: QualifiedHouseTiles::from_bundle(scope.clone(), &index),
-            index: crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index),
+            index: Arc::new(
+                crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index),
+            ),
             scope,
         }
     }
@@ -759,7 +764,7 @@ impl QualifiedNativeEntryRoom {
             return None;
         }
         let mut view = self.clone();
-        view.movement_cells.index = NativeMovementCollisionIndex::Bundle(index);
+        view.movement_cells.index = Arc::new(NativeMovementCollisionIndex::Bundle(index));
         view.bounded_bundle_activity_view(bounds, self.entry_start)
     }
 
@@ -800,8 +805,9 @@ impl QualifiedNativeEntryRoom {
         }
         let mut view = self.clone();
         view.entry_start = start;
-        view.movement_cells.index =
-            NativeMovementCollisionIndex::Bundle(BundleCollisionIndex(std::sync::Arc::new(index)));
+        view.movement_cells.index = Arc::new(NativeMovementCollisionIndex::Bundle(
+            BundleCollisionIndex(Arc::new(index)),
+        ));
         view.spawn_source = None;
         Some(view)
     }
@@ -837,12 +843,13 @@ impl QualifiedNativeEntryRoom {
         };
         let mut view = self.clone();
         let start_cell = [start.x, start.y, i32::from(start.floor)];
-        view.movement_cells.index =
+        view.movement_cells.index = Arc::new(
             crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(match exit {
                 Some(exit) => index.activity_region_with_exit(bounds, None, start_cell, exit)?,
                 None => index.activity_region(bounds, None, start_cell)?,
-            });
-        view.movement_cells.spell_tiles = match exit {
+            }),
+        );
+        view.movement_cells.spell_tiles = Arc::new(match exit {
             Some(exit) => self
                 .movement_cells
                 .spell_tiles
@@ -851,7 +858,7 @@ impl QualifiedNativeEntryRoom {
                 .movement_cells
                 .spell_tiles
                 .bundle_activity_region(bounds)?,
-        };
+        });
         let cell = crate::content::LogicalCell {
             x: start.x,
             y: start.y,
@@ -881,10 +888,11 @@ impl QualifiedNativeEntryRoom {
             return Some(self.clone());
         };
         let mut view = self.clone();
-        view.movement_cells.index =
+        view.movement_cells.index = Arc::new(
             crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(
                 index.for_activity_instance(instance)?,
-            );
+            ),
+        );
         Some(view)
     }
 
@@ -926,10 +934,12 @@ impl QualifiedNativeEntryRoom {
             digest: crate::content::digest::sha256(&binding),
         };
         view.movement_cells = NativeEntryMovementCells {
-            spell_tiles: map.spell_tiles(),
+            spell_tiles: Arc::new(map.spell_tiles()),
             house_tiles: super::QualifiedHouseTiles::from_source_world(&map),
             scope,
-            index: crate::content::native_cell_lookup::NativeMovementCollisionIndex::Source(map),
+            index: Arc::new(
+                crate::content::native_cell_lookup::NativeMovementCollisionIndex::Source(map),
+            ),
         };
         view.spawn_source = None;
         view.activity_source = Some(source);
@@ -956,10 +966,12 @@ impl QualifiedNativeEntryRoom {
         let mut view = self.clone();
         view.entry_start = start;
         view.movement_cells = NativeEntryMovementCells {
-            spell_tiles: source.spell_tiles(),
+            spell_tiles: Arc::new(source.spell_tiles()),
             house_tiles: self.movement_cells.house_tiles.clone(),
             scope: self.movement_cells.scope.clone(),
-            index: crate::content::native_cell_lookup::NativeMovementCollisionIndex::Source(source),
+            index: Arc::new(
+                crate::content::native_cell_lookup::NativeMovementCollisionIndex::Source(source),
+            ),
         };
         // BossLever creates a single encounter boss. The origin's ordinary
         // creature respawn schedule is never copied into the private activity.
@@ -2850,8 +2862,10 @@ pub fn qualify_native_source_spell_world_with_gameplay(
         ),
         movement_cells: NativeEntryMovementCells {
             scope,
-            index: crate::content::native_cell_lookup::NativeMovementCollisionIndex::Source(map),
-            spell_tiles,
+            index: Arc::new(
+                crate::content::native_cell_lookup::NativeMovementCollisionIndex::Source(map),
+            ),
+            spell_tiles: Arc::new(spell_tiles),
             house_tiles,
         },
         // Original definitions remain the baseline dependency. Their old physical
@@ -2862,4 +2876,21 @@ pub fn qualify_native_source_spell_world_with_gameplay(
         spawn_source: None,
         activity_source: None,
     })
+}
+
+#[cfg(test)]
+#[test]
+fn source_movement_view_clone_shares_collision_and_spell_indexes() -> Result<(), ProjectError> {
+    let room = qualify_native_entry_room(
+        oteryn_protocol_oteryn::WorldId::decode(&[
+            1, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 16,
+        ])
+        .map_err(|_| ProjectError::InvalidProject("test world"))?,
+    )?
+    .pinned_activity_source_view(super::native_spell_world::PinnedActivitySourceRoom::Vemiath)?;
+    let cells = room.movement_cells();
+    let cloned = cells.clone();
+    assert!(std::ptr::eq(cells.index(), cloned.index()));
+    assert!(std::ptr::eq(cells.spell_tiles(), cloned.spell_tiles()));
+    Ok(())
 }

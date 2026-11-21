@@ -62,12 +62,15 @@ pub struct Pushed {
     /// The latest domain-2 entry per placement, in first-pushed order of placement.
     pub markers: Vec<WorldObjectOverlayEntry>,
     pub markers_reset: bool,
+    pub motion_reset: bool,
     pub chat_reset: bool,
     pub chat_lines: Vec<oteryn_session::ChatLine>,
     pub chat_rooms: Option<oteryn_session::ChatRoomSet>,
     pub vip_presence: Option<oteryn_session::VipPresenceBatch>,
     /// N006: the own character took a hit from an attacker while attacking a target.
     pub own_hit_flash: bool,
+    /// The latest guild emblem list under capability 509.
+    pub guild_emblems: Option<Vec<oteryn_session::guild_emblem::GuildEmblem>>,
 }
 
 impl Pushed {
@@ -81,6 +84,7 @@ impl Pushed {
         }
         self.scope_changed |= newer.scope_changed;
         self.activity_scope = newer.activity_scope.or(self.activity_scope.take());
+        self.motion_reset |= newer.motion_reset;
         super::feature_0023_presentation::protocol::absorb_visuals(
             &mut self.visuals,
             newer.visuals,
@@ -112,6 +116,7 @@ impl Pushed {
         self.chat_rooms = newer.chat_rooms.or(self.chat_rooms);
         self.vip_presence = newer.vip_presence.or(self.vip_presence.take());
         self.own_hit_flash |= newer.own_hit_flash;
+        self.guild_emblems = newer.guild_emblems.or(self.guild_emblems.take());
         if newer.markers_reset {
             self.markers.clear();
             self.markers_reset = true;
@@ -129,13 +134,21 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    #[cfg(bevy_shell)]
+    pub(super) screen_look: Option<super::feature_local_text_messages::view::LookMessage>,
+    #[cfg(bevy_shell)]
+    pub(super) look_receipt: u64,
     pub(super) shared_frontend: bool,
     pub(super) command_latency: Option<(std::time::Instant, std::time::Duration)>,
+    /// The admitted session's byte counters; `None` before admission.
+    pub(super) traffic: Option<std::sync::Arc<crate::traffic::Traffic>>,
     pub(super) hud_resource: super::resource_hud::MailboxState,
     pub(super) local_preferences: crate::play::ReferencePreferences,
     pub(super) ui_sounds: Vec<super::UiSound>,
     pub(super) ui_vip_status: std::collections::BTreeMap<u64, oteryn_session::VipPresenceStatus>,
     pub(super) bar_actions: super::feature_local_spell_action_bar::view::BarActionsState,
+    /// The communication-lists form: open, and the player name being edited.
+    pub(super) chat_lists: (bool, String),
     pub(super) custom_chat_paste: Option<String>,
     pub(super) custom_hotkeys_ended: bool,
     pub(super) tracked_custom_passive: Option<crate::play::PassiveAbility>,
@@ -157,6 +170,8 @@ pub(super) struct Mailbox {
     pub(super) arena: oteryn_client_ui::arena::ArenaPanel,
     pub(super) cast_chat: oteryn_client_ui::cast_chat::Panel,
     pub(super) cast_control: oteryn_client_ui::cast_control::Panel,
+    pub(super) server_info: oteryn_client_ui::server_info::Panel,
+    pub(super) quest_info_revision: Option<u64>,
     pub(super) spellbook_details: super::feature_0287_actor_spell_catalog::view::SpellbookState,
     pub(super) spell_catalog: oteryn_client_ui::spell_catalog::Panel,
     pub(super) spell_bar: oteryn_client_ui::spell_action_bar::ActionBarPanel,
@@ -165,13 +180,14 @@ pub(super) struct Mailbox {
     pub(super) properties: super::feature_0115_mail::protocol::Panels,
     pub(super) containers: oteryn_client_ui::container_tree::ContainerPanel,
     pub(super) world_context: oteryn_client_ui::world_interaction::menu::State,
+    pub(super) use_with_pending: bool,
     pub(super) inventory: oteryn_client_ui::inventory::InventoryPanel,
     pub(super) inventory_shutdown: bool,
     pub(super) item_movement: oteryn_client_ui::inventory::movement::Movement,
     pub(super) item_count_selected: bool,
+    /// Tibia Global's Manual Sort Mode of this session (capability 510).
+    pub(super) container_manual_sort: oteryn_client_ui::container_manual_sort::ManualSort,
     pub(super) equipment_selected: bool,
-    #[cfg(windows)]
-    pub(super) item_drag_native: super::feature_0004_item_view_move::view::DragNative,
     pub(super) battle: oteryn_client_ui::battle::BattlePanel,
     pub(super) death: super::feature_local_death_respawn::protocol::DeathState,
     pub(super) death_reset_commands: bool,
@@ -180,7 +196,7 @@ pub(super) struct Mailbox {
     pub(super) depot: oteryn_client_ui::depot::DepotPanel,
     pub(super) depot_shutdown: bool,
     pub(super) target_walk: oteryn_client_ui::target_move::WalkState,
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     pub(super) achievement_banners: std::collections::VecDeque<String>,
     pub(super) achievement_notices: oteryn_client_ui::achievement_notices::AchievementNoticesPanel,
     pub(super) vitals: Option<oteryn_session::ActorVitals>,
@@ -191,6 +207,7 @@ pub(super) struct Mailbox {
     pub(super) boss_difficulty: oteryn_client_ui::boss_difficulty::BossDifficultyPanel,
     pub(super) browse_field: oteryn_client_ui::browse_field::BrowseFieldPanel,
     pub(super) chat_party_room: oteryn_client_ui::chat_party_room::ChatPartyRoomPanel,
+    pub(super) store_inbox_refresh_pending: bool,
     pub(super) cyclopedia_character:
         oteryn_client_ui::cyclopedia_character::CyclopediaCharacterPanel,
     pub(super) cyclopedia_character_shutdown: bool,
@@ -200,6 +217,7 @@ pub(super) struct Mailbox {
     pub(super) daily_boost: oteryn_client_ui::daily_boost::DailyBoostPanel,
     pub(super) highscores: oteryn_client_ui::highscores::HighscoresPanel,
     pub(super) highscores_shutdown: bool,
+    pub(super) tutorial_vocation: oteryn_client_ui::tutorial_vocation::VocationPanel,
     pub(super) sanctions: oteryn_client_ui::sanction_record::SanctionsPanel,
     pub(super) depot_search: oteryn_client_ui::depot_search::DepotSearchPanel,
     pub(super) hotkey_equip: oteryn_client_ui::hotkey_equip::HotkeyEquipPanel,
@@ -238,6 +256,7 @@ pub(super) struct Mailbox {
     pub(super) rest_status: oteryn_client_ui::rest_status::RestStatusPanel,
     pub(super) battle_instinct_status:
         oteryn_client_ui::battle_instinct_status::BattleInstinctStatusPanel,
+    pub(super) skill_progress_last_request: Option<std::time::Instant>,
     pub(super) skill_progress: oteryn_client_ui::skill_progress::SkillProgressPanel,
     pub(super) party_effects: oteryn_client_ui::party_effects::PartyEffectsPanel,
     pub(super) loyalty_skills: oteryn_client_ui::loyalty_skills::LoyaltySkillsPanel,
@@ -249,6 +268,9 @@ pub(super) struct Mailbox {
     pub(super) guild: oteryn_client_ui::guild::GuildPanel,
     /// Last published connection-local presentation, including appearance-only updates.
     pub(super) appearance_state: Vec<oteryn_session::VisibleAppearance>,
+    /// The wire frame of domain-1 positions, and the entity list as the server sent it.
+    pub(super) wire: super::wire_frame::WireTracker,
+    pub(super) entities_wire: Vec<WorldSpatialEntity>,
     /// Pushes that arrived before `stepped` was stored: older than its outcome.
     before: Pushed,
     stepped: Option<Box<StepOutcome>>,
@@ -261,15 +283,11 @@ pub(super) struct Mailbox {
     ended: Option<PlayEvent>,
     pub(super) task_board: oteryn_client_ui::task_board::TaskBoardPanel,
     pub(super) dialogue: oteryn_client_ui::npc_dialogue::DialoguePanel,
-    #[cfg(any(windows, test))]
+    #[cfg(test)]
     pub(super) dialogue_pointer: Option<(f64, f64)>,
-    #[cfg(windows)]
-    pub(super) dialogue_window: bool,
     pub(super) dialogue_shutdown: bool,
     /// Session-local shared NPC presentation dismissal; server reducers do not reopen it.
     pub(super) npc_dialog_dismissed: bool,
-    #[cfg(windows)]
-    pub(super) npc_shop_window: bool,
     pub(super) npc_shop: oteryn_client_ui::npc_shop::NpcShopPanel,
     pub(super) prey: oteryn_client_ui::prey::PreyPanel,
     pub(super) prey_shutdown: bool,
@@ -281,6 +299,11 @@ pub(super) struct Mailbox {
     pub(super) hireling: oteryn_client_ui::hireling::HirelingPanel,
     pub(super) hireling_shutdown: bool,
     pub(super) hireling_management: oteryn_client_ui::hireling_management::Panel,
+    /// The banker form waits for the player to click an adjacent summon tile.
+    pub(super) hireling_picking: bool,
+    /// The shared frontend's reviewed hireling configuration purchase, awaiting its Confirm press.
+    pub(super) hireling_review:
+        Option<crate::play::feature_0250_hireling_management::input::configuration::Review>,
     pub(super) market: oteryn_client_ui::market::MarketPanel,
     pub(super) market_shutdown: bool,
     pub(super) lens: oteryn_client_ui::lens_help::LensHelp,
@@ -288,7 +311,11 @@ pub(super) struct Mailbox {
     pub(super) chat: oteryn_client_ui::chat::ChatPanel,
     pub(super) chat_public: oteryn_client_ui::chat_public_channels::ChatPanel,
     pub(super) chat_private: oteryn_client_ui::chat_private_channel::ChatPanel,
+    /// The shared frontend's private-channel window; the native chat embeds these controls.
+    pub(super) chat_private_open: bool,
     pub(super) chat_public_shutdown: bool,
+    pub(super) motion_selected: bool,
+    pub(super) mount_pending: bool,
     // CL26s2: player-typing panel state and native-window shutdown.
     pub(super) player_typing: oteryn_client_ui::player_typing::PlayerTypingPanel,
     pub(super) player_typing_shutdown: bool,
@@ -304,6 +331,12 @@ const MAX_COMBAT_REPORTS: usize = 8;
 pub(super) type SharedMailbox = Arc<Mutex<Mailbox>>;
 
 impl Mailbox {
+    pub(super) fn reset_server_message_namespace(&mut self) {
+        self.before.server_messages = ServerMessageInbox::default();
+        self.pushed.server_messages = ServerMessageInbox::default();
+        self.pushed.scope_changed = true;
+    }
+
     pub(super) fn combat_report(&mut self, report: CombatReport) {
         if let CombatReport::Cast(disposition) = &report {
             self.spell_bar.feedback = oteryn_client_ui::localization::tr(

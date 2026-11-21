@@ -1,0 +1,13 @@
+{
+  "id": 503,
+  "name": "BLESSINGS_DIALOG_V1",
+  "owner_decision": "Native blessings dialog task",
+  "owner": "Game death and NPC purchase owners",
+  "requires": [
+    199
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Gated by BUNDLE_WORLD_OFFERED_CAPABILITIES. Bundle World only with CYCLOPEDIA_CHARACTER_V1. Selected clients query command 388 selector 134; unselected clients cannot query the new snapshot. See blessings-dialog-v1.md."
+}

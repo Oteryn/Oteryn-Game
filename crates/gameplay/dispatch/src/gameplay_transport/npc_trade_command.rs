@@ -185,7 +185,7 @@ pub(super) async fn trade(
     let (offer, coins, yasir_position) = {
         let runtime = admission.runtime.lock().await;
         let index = pinned_index(&runtime, admission.active_generation);
-        let offer = match admission.states.npc_conversations.trade_in(
+        let offer = match admission.states.npc_conversations.trade_in_extended(
             &admission.states.chat,
             &runtime,
             actor,
@@ -405,7 +405,7 @@ pub(super) async fn trade(
         && admission
             .states
             .npc_conversations
-            .trade_in(
+            .trade_in_extended(
                 &admission.states.chat,
                 runtime,
                 actor,
@@ -427,6 +427,20 @@ pub(super) async fn trade(
                 request,
                 selection,
                 sell_all,
+            )
+            .await
+    } else if request.cause.side == npc_trade::NpcTradeSide::Buy {
+        let weights = super::item_ref_admission::NativeItemWeights(native)
+            .with_wheel(admission.premium_coordinator);
+        admission
+            .root
+            .commit_npc_shop_buy(
+                admission.character,
+                admission.holder,
+                fence,
+                request,
+                &weights,
+                yasir_position,
             )
             .await
     } else if let Some(source) = yasir_position {

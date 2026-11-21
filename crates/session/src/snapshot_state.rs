@@ -228,6 +228,31 @@ impl SnapshotState {
                                 }),
                             )?;
                         }
+                        if matches!(
+                            domain_id,
+                            npc_service::STATE_DOMAIN_NPC_TRADE_WINDOW
+                                | player_trade::STATE_DOMAIN_PLAYER_TRADE
+                        ) && snapshot_type != 1
+                        {
+                            return Err(SessionError::UnregisteredSnapshotType {
+                                domain_id,
+                                snapshot_type,
+                            });
+                        }
+                        if domain_id == npc_service::STATE_DOMAIN_NPC_TRADE_WINDOW {
+                            npc_service::decode_npc_trade_window_for(
+                                domain.payload,
+                                selected_capabilities.contains(&501),
+                            )
+                            .map_err(|_| SessionError::SessionUnusable)?;
+                        }
+                        if domain_id == player_trade::STATE_DOMAIN_PLAYER_TRADE {
+                            player_trade::decode_state_for(
+                                domain.payload,
+                                selected_capabilities.contains(&501),
+                            )
+                            .map_err(|_| SessionError::SessionUnusable)?;
+                        }
                         state.gated_revisions.retain(|(id, _)| *id != domain_id);
                         state.gated_revisions.push((domain_id, domain.revision));
                         state

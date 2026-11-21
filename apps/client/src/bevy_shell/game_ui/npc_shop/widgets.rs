@@ -34,24 +34,26 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, generation: u64) -> W
             },
             GlobalZIndex(60),
             source::frame(skin.frame.clone(), [4., 17., 4., 4.]),
-            Node {
-                position_type: PositionType::Absolute,
-                right: px(20.),
-                top: px(60.),
-                width: px(600.),
-                height: px(500.),
-                max_width: percent(96.),
-                max_height: percent(90.),
-                padding: UiRect {
-                    top: px(25.),
-                    bottom: px(10.),
-                    left: px(10.),
-                    right: px(10.),
+            crate::bevy_shell::ui::window_layout::window(
+                "npc",
+                Node {
+                    position_type: PositionType::Absolute,
+                    right: px(20.),
+                    top: px(60.),
+
+                    max_width: percent(96.),
+                    max_height: percent(90.),
+                    padding: UiRect {
+                        top: px(25.),
+                        bottom: px(10.),
+                        left: px(10.),
+                        right: px(10.),
+                    },
+                    flex_direction: FlexDirection::Column,
+                    row_gap: px(5.),
+                    ..default()
                 },
-                flex_direction: FlexDirection::Column,
-                row_gap: px(5.),
-                ..default()
-            },
+            ),
         ))
         .id();
     source::dialog_caption(commands, panel, "NPC", skin.font.clone());
@@ -75,7 +77,6 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, generation: u64) -> W
         })
         .id();
     commands.entity(content).add_child(details);
-    label(commands, skin, details, "NPC response");
     let details_scroll = commands
         .spawn((
             ScrollArea,
@@ -111,7 +112,6 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, generation: u64) -> W
     commands.entity(details).add_child(shop_controls);
     for (kind, caption) in [
         (Kind::IgnoreCapacity, "Ignore capacity"),
-        (Kind::IgnoreEquipped, "Ignore equipped"),
         (Kind::OnlyOwned, "Only owned"),
     ] {
         let button = action(
@@ -130,6 +130,13 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, generation: u64) -> W
             ));
         });
     }
+    // The accepted trade intent has no backpack-purchase flag or packing price.
+    label(
+        commands,
+        skin,
+        shop_controls,
+        "Buy in backpacks: unavailable from this server. Purchases use your existing backpack.",
+    );
     action(
         commands,
         skin,
@@ -140,15 +147,22 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, generation: u64) -> W
         130.,
     );
     let trade = commands
-        .spawn(Node {
-            width: px(180.),
-            min_width: px(150.),
-            flex_shrink: 0.,
-            flex_direction: FlexDirection::Column,
-            row_gap: px(5.),
-            min_height: px(0.),
-            ..default()
-        })
+        .spawn((
+            Name::new("npc-shop.trade"),
+            crate::bevy_shell::ui::window_layout::Scaled {
+                width: Some(180.),
+                ..default()
+            },
+            Node {
+                width: px(180.),
+                min_width: px(150.),
+                flex_shrink: 0.,
+                flex_direction: FlexDirection::Column,
+                row_gap: px(5.),
+                min_height: px(0.),
+                ..default()
+            },
+        ))
         .id();
     commands.entity(content).add_child(trade);
     let tabs = row(commands, trade);
@@ -188,7 +202,7 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, generation: u64) -> W
     label(commands, skin, trade, "Search");
     field(commands, skin, trade, Field::Search, "", 80);
     label(commands, skin, trade, "Amount");
-    field(commands, skin, trade, Field::Amount, "1", 3);
+    field(commands, skin, trade, Field::Amount, "1", 10);
     label(commands, skin, trade, "Price");
     let price = label(commands, skin, trade, "");
     label(commands, skin, trade, "Gold");
@@ -236,6 +250,7 @@ pub(super) fn rows(
     parent: Entity,
     generation: u64,
     rows: &[Quote],
+    shop: &oteryn_client_ui::npc_shop::LiveShop,
     selection: Option<Quote>,
 ) {
     for quote in rows {
@@ -248,9 +263,12 @@ pub(super) fn rows(
                 },
                 TabIndex(0),
                 Name::new("npc-shop.offer"),
+                crate::bevy_shell::ui::window_layout::Scaled {
+                    min_height: Some(35.),
+                    ..default()
+                },
                 Node {
                     width: percent(100.),
-                    height: px(35.),
                     min_height: px(35.),
                     flex_shrink: 0.,
                     align_items: AlignItems::Center,
@@ -270,6 +288,7 @@ pub(super) fn rows(
             .spawn((
                 source::frame(skin.inset.clone(), [1.; 4]),
                 Name::new("Item appearance unavailable"),
+                crate::bevy_shell::ui::window_layout::Scaled::square(32.),
                 Node {
                     width: px(32.),
                     height: px(32.),
@@ -295,12 +314,22 @@ pub(super) fn rows(
                 Pickable::IGNORE,
             ))
             .id();
-        label(commands, skin, caption, "Unknown item");
         label(
             commands,
             skin,
             caption,
-            &format!("{} gold / {} items", quote.price, quote.count),
+            shop.quote_name(*quote).unwrap_or("Unknown item"),
+        );
+        label(
+            commands,
+            skin,
+            caption,
+            &format!(
+                "{} gold / {} items; limit {}",
+                quote.price,
+                quote.count,
+                shop.maximum_amount(*quote)
+            ),
         );
         commands.entity(button).add_child(caption);
     }

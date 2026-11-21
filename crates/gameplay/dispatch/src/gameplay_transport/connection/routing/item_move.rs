@@ -30,13 +30,17 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     container_tree: selected_capabilities.contains(CAPABILITY_CONTAINER_TREE_V1),
                     world_interaction: selected_capabilities
                         .contains(CAPABILITY_WORLD_INTERACTION_V1),
+                    manual_sort: selected_capabilities.contains(
+                        oteryn_protocol_oteryn::item_view::CAPABILITY_CONTAINER_MANUAL_SORT_V1,
+                    ),
                 };
                 // Foundation has already classified replay. Observe the reservation before
                 // legacy receipt reads can yield to the partner's observation cadence.
-                if let Ok(intent) = oteryn_protocol_oteryn::item_view::decode_item_move_intent_for(
-                    command.payload,
-                    selection,
-                ) && !authority
+                let stack_count = selected_capabilities.contains(
+                    oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_STACK_COUNT_V1,
+                );
+                if let Ok((intent, _)) = item_move::decode_move(command.payload, selection, stack_count)
+                    && !authority
                     .player_trade_item_available(
                         actor,
                         UseCommand {
@@ -64,9 +68,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     },
                     command.payload,
                     selection,
-                    selected_capabilities.contains(
-                        oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_STACK_COUNT_V1,
-                    ),
+                    stack_count,
                     selected_capabilities.contains(oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2),
                     view,
                 )

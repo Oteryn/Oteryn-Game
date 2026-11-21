@@ -548,6 +548,7 @@ impl ChannelActorCarrier {
             false,
             now_ms,
             source,
+            false,
         )?;
         if let Some(staged) = staged {
             let notice =
@@ -575,6 +576,7 @@ impl ChannelActorCarrier {
             Some(ABILITY01_EFFECT_PLAN_ENTRIES_MAX),
             false,
             None,
+            false,
         )
     }
     /// ATTACK-1b: refuses a swing ordinal at or below the attacker's mark for the same lineage
@@ -698,6 +700,7 @@ impl ChannelActorCarrier {
             deferred,
             now_ms,
             source,
+            false,
         )?;
         if let Some(staged) = staged {
             let notice =
@@ -719,6 +722,7 @@ impl ChannelActorCarrier {
         max_sub_ordinal: Option<u16>,
         deferred: bool,
         now_ms: Option<u64>,
+        health_change_resolved: bool,
     ) -> Result<(usize, Option<Slot>, OwnerDamageResult), CarrierError> {
         self.prepare_creature_damage_inner_bounded_source(
             continuity,
@@ -730,6 +734,7 @@ impl ChannelActorCarrier {
             deferred,
             now_ms,
             None,
+            health_change_resolved,
         )
     }
     #[allow(clippy::too_many_arguments)]
@@ -744,6 +749,7 @@ impl ChannelActorCarrier {
         deferred: bool,
         now_ms: Option<u64>,
         source: Option<&super::soul_war_health::HealthSourceContext>,
+        health_change_resolved: bool,
     ) -> Result<(usize, Option<Slot>, OwnerDamageResult), CarrierError> {
         let OwnerDamageCommand {
             target,
@@ -851,14 +857,19 @@ impl ChannelActorCarrier {
         // Resolve Crystal's onHealthChange callback after replay, from the real HP slot.
         // The receipt retains the original request: retrying at a new HP fraction cannot
         // change the already committed hit or its damage attribution.
-        let effective_damage = match &self.slots[index] {
-            Slot::CreatureOccupied { spell_combat, .. } => match spell_combat.soulpit {
-                Some(tag) => {
-                    tag.incoming_health_change(damage, *health, spell_combat.maximum_health)?
-                }
-                None => damage,
-            },
-            _ => return Err(CarrierError::NotCreature),
+        let effective_damage = if health_change_resolved {
+            // Periodic owner turns have already resolved each tick against its current HP.
+            damage
+        } else {
+            match &self.slots[index] {
+                Slot::CreatureOccupied { spell_combat, .. } => match spell_combat.soulpit {
+                    Some(tag) => {
+                        tag.incoming_health_change(damage, *health, spell_combat.maximum_health)?
+                    }
+                    None => damage,
+                },
+                _ => return Err(CarrierError::NotCreature),
+            }
         };
         let original_health = *health;
         let mut damage_phase_health = original_health;
@@ -867,7 +878,8 @@ impl ChannelActorCarrier {
         // Source prepareDeath can cancel the complete hit while healing or
         // transforming HP. This fact is independent of before/after HP deltas.
         let mut source_damage_canceled = false;
-        if let Slot::CreatureOccupied {
+        if !health_change_resolved
+            && let Slot::CreatureOccupied {
             spell_combat,
             companion: Some(companion),
             ..

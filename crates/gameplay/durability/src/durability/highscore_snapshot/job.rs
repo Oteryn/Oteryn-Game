@@ -1,17 +1,15 @@
 //! One World's HIGHSCORES0 job. The composition root owns its dedicated projection-role Root
 //! and the actual planned-reset notifications. No client command can start or force this job.
 
-use super::{DurabilityError, DurabilityRoot, SnapshotCatalogues, SnapshotError, SnapshotInfo};
+use super::{CutLimits, DurabilityError, DurabilityRoot, SnapshotCatalogues, SnapshotError, SnapshotInfo, SnapshotRefresh};
 use crate::foundation::WorldId;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::mpsc;
 use tokio::time::{Instant, timeout_at};
 
-/// The delay before a pass that found the shared Root's single holder busy
-/// (`RootUnavailable`, e.g. the audit expiry or gameplay holding it) runs again. Contention is
-/// transient, so it never waits a full interval: a fresh World is not left without snapshots,
-/// and its highscore queries rejected, for 30 minutes.
+/// Retry promptly after holder contention or a transient failure while checking or publishing
+/// a pending reset.
 const CONTENDED_RETRY: Duration = Duration::from_secs(5);
 
 pub struct HighscoreWorldJob {
@@ -44,11 +42,11 @@ impl HighscoreWorldJob {
     }
 
     /// First check is immediate. Every successful check schedules from durable database time,
-    /// including a recent snapshot skipped after restart. A failed periodic pass backs off one
-    /// interval; a failed reset preserves the pending periodic deadline. A pass that found the
-    /// holder busy retries after [`CONTENDED_RETRY`] instead, a reset still as a reset. A message on
-    /// `planned_resets` is the composition root's actual planned World reset notification and
-    /// forces one complete cut; closing the channel stops the job.
+    /// including a recent snapshot skipped after restart. A scheduled pass retries
+    /// failures promptly while a reset may still need publication.
+    /// An ordinary periodic publication failure backs off one interval. A failed forced reset
+    /// preserves the pending periodic deadline, and a contended forced reset retries as a reset.
+    /// A message on `planned_resets` forces one complete cut. Closing the channel stops the job.
     pub async fn run(&self, mut planned_resets: mpsc::Receiver<()>) {
         let interval = Duration::from_secs(30 * 60);
         let mut due = Instant::now();
@@ -63,10 +61,19 @@ impl HighscoreWorldJob {
             // Anchor before the database pass. Subtracting its elapsed time is conservative:
             // connection/lock delay can cause an early recheck, never postpone durable expiry.
             let started = Instant::now();
+            // A scheduled check can owe a reset until the locked heads establish its epoch.
+            let mut retry_schedule = !reset;
             let result = self
                 .root
-                .refresh_highscore_schedule(self.world, self.catalogues.clone(), reset)
+                .publish_highscore_cut(
+                    self.world,
+                    self.catalogues.clone(),
+                    !reset,
+                    CutLimits::REGISTERED,
+                    &mut retry_schedule,
+                )
                 .await;
+            let retry_soon = retry_soon_after_pass(&result, retry_schedule);
             match result {
                 Ok(refresh) => {
                     for snapshot in &refresh.snapshots {
@@ -75,9 +82,8 @@ impl HighscoreWorldJob {
                     due = started + refresh.next_check_after;
                 }
                 Err(error) => {
-                    let contended = contended(&error);
-                    retry_reset = reset && contended;
-                    due = next_due_after_failure(contended, reset, Instant::now(), due, interval);
+                    retry_reset = reset && contended(&error);
+                    due = next_due_after_failure(retry_soon, reset, Instant::now(), due, interval);
                     let reason = match &error {
                         SnapshotError::Unavailable(source) => format!("unavailable {source:?}"),
                         other => format!("{other:?}"),
@@ -95,6 +101,18 @@ impl HighscoreWorldJob {
     }
 }
 
+/// Retry until the pass confirms publication or observes an already published epoch.
+fn retry_soon_after_pass(
+    outcome: &Result<SnapshotRefresh, SnapshotError>,
+    reset_may_be_pending: bool,
+) -> bool {
+    match outcome {
+        Ok(_) => false,
+        Err(error) if contended(error) => true,
+        _ => reset_may_be_pending,
+    }
+}
+
 /// Whether a failed pass only found the shared Root's single holder busy.
 fn contended(error: &SnapshotError) -> bool {
     matches!(
@@ -105,9 +123,9 @@ fn contended(error: &SnapshotError) -> bool {
 
 /// The next pass after one failed at `now`. Any failure of a periodic pass, or of a reset whose
 /// periodic deadline has already passed, backs off one `interval`; a failed reset keeps the
-/// pending periodic `due`. A contended pass runs again after at most [`CONTENDED_RETRY`].
+/// pending periodic `due`. A prompt retry runs again after at most [`CONTENDED_RETRY`].
 fn next_due_after_failure(
-    contended: bool,
+    retry_soon: bool,
     reset: bool,
     now: Instant,
     due: Instant,
@@ -118,7 +136,7 @@ fn next_due_after_failure(
     } else {
         now + interval
     };
-    if contended {
+    if retry_soon {
         pending.min(now + CONTENDED_RETRY)
     } else {
         pending

@@ -50,6 +50,10 @@ mod tests {
         .map_err(|error| format!("{error:?}"))?;
         let pin = runtime.content_pin();
         let mut map = MonsterMap {
+            cells: crate::content::qualify_native_entry_room(world)
+                .map_err(|error| format!("{error:?}"))?
+                .movement_cells()
+                .clone(),
             valid: true,
             scope: runtime.binding().runtime_scope(),
             generation: runtime.binding().scope_generation(),

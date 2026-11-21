@@ -41,7 +41,8 @@ fn gameplay_mouse_loot_uses_negotiated_caller_and_saved_choices()
     let (link, mut commands, _outbox) = play_channel();
     let mut play = view()?;
     assert!(!play.gameplay_secondary_click(&link));
-    let path = std::env::temp_dir().join(format!("t069-settings-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("t069-settings.json");
     let mut state = SettingsState::new(Some(path.clone()));
     let mut preferences = state.preferences.clone();
     preferences.gameplay.secondary_click_loots_nearby = true;

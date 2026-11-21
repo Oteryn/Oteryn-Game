@@ -64,6 +64,44 @@ fn book(app: &mut App, commands: &mut CommandsReceiver, outbox: &Outbox) -> Test
     Ok(())
 }
 #[test]
+fn sell_offer_actions_fit_in_a_wrapping_row() -> TestResult {
+    let (mut app, mut commands, outbox, _) = app()?;
+    use crate::bevy_shell::game_ui::pointer_layout;
+    pointer_layout::install(&mut app, UVec2::new(800, 720));
+    book(&mut app, &mut commands, &outbox)?;
+    let buy = find(&mut app, "market.purchase.row")?;
+    let actions = app
+        .world()
+        .get::<ChildOf>(buy)
+        .ok_or("action row")?
+        .parent();
+    assert_eq!(
+        app.world().get::<Node>(actions).ok_or("row")?.flex_wrap,
+        FlexWrap::Wrap
+    );
+    assert_eq!(
+        app.world().get::<Children>(actions).ok_or("actions")?.len(),
+        2
+    );
+    app.update();
+    app.update();
+    let center = pointer_layout::center(&app, buy)?;
+    let size = app
+        .world()
+        .get::<ComputedNode>(buy)
+        .ok_or("buy layout")?
+        .size();
+    assert!(size.min_element() > 0.);
+    assert!(center.x >= size.x / 2. && center.x + size.x / 2. <= 800.);
+    if let Some(clip) = app.world().get::<bevy::ui::CalculatedClip>(buy) {
+        let inset = size / 2. - Vec2::splat(0.5);
+        assert!(clip.contains_point(center - inset) && clip.contains_point(center + inset));
+    }
+    pointer_layout::hit(&mut app, center, buy)?;
+    Ok(())
+}
+
+#[test]
 fn native_named_sell_row_quantity_confirmation_submits_original_offer_once() -> TestResult {
     let (mut app, mut commands, outbox, _) = app()?;
     book(&mut app, &mut commands, &outbox)?;
@@ -455,5 +493,28 @@ fn atomic_market_purchase_rejects_server_modal_published_after_the_ui_snapshot()
         "blocked consent must have no retained side effects"
     );
     drop(modal);
+    Ok(())
+}
+
+#[test]
+fn market_rebuild_restores_current_offset() -> TestResult {
+    use crate::bevy_shell::game_ui::install::{RememberScroll, install_scroll_memory};
+    let (mut app, mut commands, outbox, _) = app()?;
+    install_scroll_memory(&mut app);
+    super::super::offers::install(&mut app);
+    book(&mut app, &mut commands, &outbox)?;
+    let mut areas = app
+        .world_mut()
+        .query::<(&RememberScroll, &mut ScrollPosition)>();
+    for (key, mut position) in areas.iter_mut(app.world_mut()) {
+        position.y = 13. * (key.1 + 1) as f32;
+    }
+    let select = find(&mut app, "market.offer.select.0")?;
+    app.world_mut().trigger(Activate { entity: select });
+    app.update();
+    assert!(app.world().get_entity(select).is_err());
+    for (key, position) in areas.iter(app.world()) {
+        assert_eq!(position.y, 13. * (key.1 + 1) as f32);
+    }
     Ok(())
 }

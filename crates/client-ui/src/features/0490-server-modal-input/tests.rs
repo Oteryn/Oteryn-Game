@@ -10,6 +10,7 @@ fn dialog() -> Dialog {
         message: "How many?".into(),
         choices: Vec::new(),
         buttons: vec![(1, "Ok".into()), (2, "Cancel".into())],
+        default_button: None,
         cancel_button: Some(2),
         image: None,
     }

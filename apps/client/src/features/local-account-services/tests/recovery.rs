@@ -157,3 +157,93 @@ fn bazaar_resolving_one_pending_with_failed_refresh_keeps_other_mutations_fenced
         })
     })
 }
+
+#[test]
+fn refreshed_tracked_receipt_reconciles_pending_and_preserves_terminal_identity() -> TestResult {
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        mock.runtime.block_on(async {
+            let mut view = View::default();
+            controller::execute(
+                &mut view,
+                Action::Refresh(AuctionView::All),
+                &client,
+                &token,
+                CancellationToken::new(),
+            )
+            .await;
+            mock.authority.lock().map_err(|_| "lock")?.fail_after_commit = true;
+            controller::execute(
+                &mut view,
+                Action::Bid {
+                    auction_id: AUCTION.into(),
+                    coins: 50,
+                    confirmed: true,
+                },
+                &client,
+                &token,
+                CancellationToken::new(),
+            )
+            .await;
+            let request = view.pending.clone().ok_or("ambiguous request")?;
+            controller::execute(
+                &mut view,
+                Action::Refresh(AuctionView::All),
+                &client,
+                &token,
+                CancellationToken::new(),
+            )
+            .await;
+            assert!(!view.pending());
+            assert!(!view.can_retry());
+            let receipt = view.receipt.clone().ok_or("refreshed receipt")?;
+            assert_eq!(receipt.request_id, request.request_id);
+            assert_eq!(receipt.state, OperationState::Committed);
+            controller::execute(
+                &mut view,
+                Action::Quote {
+                    character_id: CHARACTER.into(),
+                    world_id: DESTINATION.into(),
+                },
+                &client,
+                &token,
+                CancellationToken::new(),
+            )
+            .await;
+            assert!(view.quote.is_some());
+            controller::execute(
+                &mut view,
+                Action::Refresh(AuctionView::All),
+                &client,
+                &token,
+                CancellationToken::new(),
+            )
+            .await;
+            assert!(
+                view.quote.is_some(),
+                "unchanged receipts must preserve a fresh quote"
+            );
+            mock.authority
+                .lock()
+                .map_err(|_| "lock")?
+                .commands
+                .get_mut(&request.request_id)
+                .ok_or("command")?
+                .1
+                .balance = 999;
+            controller::execute(
+                &mut view,
+                Action::Refresh(AuctionView::All),
+                &client,
+                &token,
+                CancellationToken::new(),
+            )
+            .await;
+            assert_eq!(view.receipt, Some(receipt));
+            assert!(view.feedback.contains("Conflicting terminal receipt"));
+            Ok::<_, Box<dyn std::error::Error>>(())
+        })
+    })
+}

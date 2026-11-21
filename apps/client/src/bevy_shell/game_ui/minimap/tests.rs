@@ -1,0 +1,475 @@
+use super::*;
+use crate::{
+    bevy_shell::owner::{ActivePlay, Phase},
+    play::{PlayView, play_channel},
+};
+use bevy::{asset::AssetPlugin, ui_widgets::Activate};
+type TestResult = Result<(), Box<dyn std::error::Error>>;
+fn fixture() -> Result<App, Box<dyn std::error::Error>> {
+    let (link, _, _) = play_channel();
+    let view = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), 7, &[])?;
+    let mut owner = HostOwner::new(None)?;
+    owner.play = Some(ActivePlay { view, link });
+    owner.phase = Phase::Playing;
+    let mut app = App::new();
+    app.add_plugins((
+        MinimalPlugins,
+        AssetPlugin::default(),
+        source::GlobalUiPlugin,
+    ))
+    .init_asset::<Font>()
+    .init_asset::<Image>()
+    .init_resource::<bevy::input_focus::InputFocus>()
+    .init_resource::<ButtonInput<KeyCode>>()
+    .insert_non_send(owner)
+    .add_systems(
+        Startup,
+        (crate::bevy_shell::ui::setup, super::super::setup).chain(),
+    );
+    app.add_systems(Update, super::super::project);
+    install(&mut app);
+    crate::bevy_shell::text_messages::install(&mut app);
+    app.update();
+    Ok(app)
+}
+fn activate(app: &mut App, label: &str) -> TestResult {
+    let name = match label {
+        "N" | "W" | "E" | "S" => format!("Rose {label}"),
+        "Centre" => "Rose centre".to_owned(),
+        "Zoom out" => "minimap-zoom-out".to_owned(),
+        "Zoom in" => "minimap-zoom-in".to_owned(),
+        "Floor up" => "minimap-floor-up".to_owned(),
+        "Floor down" => "minimap-floor-down".to_owned(),
+        // Dialog buttons keep their caption text.
+        other => {
+            let text = app
+                .world_mut()
+                .query::<(Entity, &Text)>()
+                .iter(app.world())
+                .find_map(|(e, t)| (t.0 == other).then_some(e))
+                .ok_or("missing minimap control")?;
+            let button = app
+                .world()
+                .get::<ChildOf>(text)
+                .ok_or("button parent")?
+                .parent();
+            app.world_mut().trigger(Activate { entity: button });
+            app.update();
+            return Ok(());
+        }
+    };
+    let button = app
+        .world_mut()
+        .query::<(Entity, &Name)>()
+        .iter(app.world())
+        .find_map(|(e, n)| (n.as_str() == name).then_some(e))
+        .ok_or("missing minimap control")?;
+    app.world_mut().trigger(Activate { entity: button });
+    app.update();
+    Ok(())
+}
+#[test]
+fn the_minimap_is_a_tibia_viewport_with_a_rose_and_icon_buttons() -> TestResult {
+    let mut app = fixture()?;
+    let size = |app: &mut App, wanted: &str| {
+        app.world_mut()
+            .query::<(&Name, &Node)>()
+            .iter(app.world())
+            .find(|(name, _)| name.as_str() == wanted)
+            .map(|(_, node)| (node.width, node.height))
+    };
+    assert_eq!(
+        size(&mut app, "Minimap viewport"),
+        Some((px(108.), px(111.)))
+    );
+    assert_eq!(size(&mut app, "minimap-rose"), Some((px(43.), px(43.))));
+    for key in [
+        "minimap-floor-up",
+        "minimap-floor-down",
+        "minimap-zoom-in",
+        "minimap-zoom-out",
+        "minimap-centre",
+        "minimap-full-map",
+    ] {
+        assert_eq!(size(&mut app, key), Some((px(20.), px(20.))), "{key}");
+    }
+    let centre = app
+        .world_mut()
+        .query::<(&Name, &ChildOf)>()
+        .iter(app.world())
+        .find(|(name, _)| name.as_str() == "Rose centre")
+        .ok_or("centre")?
+        .1
+        .parent();
+    let rose = app.world().get::<ChildOf>(centre).ok_or("rose")?.parent();
+    let cells = app.world().get::<Children>(centre).ok_or("grid")?;
+    let flow: Vec<_> = cells
+        .iter()
+        .filter(|id| {
+            app.world().get::<Node>(*id).is_some_and(|n| {
+                n.position_type == PositionType::Relative && n.display != Display::None
+            })
+        })
+        .collect();
+    assert_eq!(flow.len(), 9);
+    assert_eq!(
+        app.world()
+            .get::<Name>(flow[4])
+            .ok_or("centre cell")?
+            .as_str(),
+        "Rose centre"
+    );
+    let centre_button = flow[4];
+    use super::super::pointer_layout;
+    app.add_systems(Update, crate::bevy_shell::ui::toolbar::project_toolbar);
+    pointer_layout::install(&mut app, UVec2::new(1280, 720));
+    app.update();
+    app.update();
+    let point = pointer_layout::center(&app, rose)?;
+    pointer_layout::hit(&mut app, point, centre_button)?;
+    let mut names = app.world_mut().query::<(Entity, &Name)>();
+    let mut named = |name: &str| {
+        names
+            .iter(app.world())
+            .find_map(|(id, n)| (n.as_str() == name).then_some(id))
+            .ok_or("missing control")
+    };
+    let full = named("minimap-full-map")?;
+    let map = named("Minimap")?;
+    let bottom = pointer_layout::center(&app, map)?.y
+        + app
+            .world()
+            .get::<ComputedNode>(map)
+            .ok_or("map layout")?
+            .size()
+            .y
+            / 2.;
+    let point = pointer_layout::center(&app, full)?;
+    assert!(point.y + 10. <= bottom);
+    let pointers: Vec<_> = app
+        .world_mut()
+        .query_filtered::<Entity, With<bevy::picking::pointer::PointerId>>()
+        .iter(app.world())
+        .collect();
+    for entity in pointers {
+        app.world_mut().despawn(entity);
+    }
+    pointer_layout::hit(&mut app, point, full)?;
+    // No compass text buttons and no camera prose.
+    let texts: Vec<String> = app
+        .world_mut()
+        .query_filtered::<&Text, Without<art::ArtFallback>>()
+        .iter(app.world())
+        .map(|text| text.0.clone())
+        .collect();
+    for prose in ["N", "W", "E", "S", "Centre", "Zoom in"] {
+        assert!(!texts.iter().any(|text| text == prose), "{prose}");
+    }
+    assert!(!texts.iter().any(|text| text.starts_with("Floor")));
+    Ok(())
+}
+#[test]
+fn sidebar_exposes_all_navigation_controls() -> TestResult {
+    let mut app = fixture()?;
+    for label in [
+        "N",
+        "W",
+        "Centre",
+        "E",
+        "S",
+        "Zoom out",
+        "Zoom in",
+        "Floor up",
+        "Floor down",
+    ] {
+        activate(&mut app, label)?;
+    }
+    Ok(())
+}
+
+type CameraState = (i32, i32, i16, i32, bool);
+fn camera(app: &App) -> Result<CameraState, Box<dyn std::error::Error>> {
+    Ok(app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .view
+        .minimap_camera())
+}
+#[test]
+fn sidebar_navigation_changes_shared_camera_and_centre_restores_following() -> TestResult {
+    let mut app = fixture()?;
+    assert_eq!(camera(&app)?, (100, 200, 7, 1, true));
+    activate(&mut app, "W")?;
+    activate(&mut app, "N")?;
+    assert_eq!(camera(&app)?, (95, 195, 7, 1, false));
+    activate(&mut app, "Zoom out")?;
+    activate(&mut app, "E")?;
+    activate(&mut app, "S")?;
+    activate(&mut app, "Floor up")?;
+    assert_eq!(camera(&app)?, (105, 205, 6, 2, false));
+    activate(&mut app, "Centre")?;
+    assert_eq!(camera(&app)?, (100, 200, 7, 2, true));
+    activate(&mut app, "Zoom in")?;
+    activate(&mut app, "Zoom in")?;
+    assert_eq!(camera(&app)?.3, 1);
+    for _ in 0..20 {
+        activate(&mut app, "Zoom out")?;
+        activate(&mut app, "Floor up")?;
+    }
+    assert_eq!(camera(&app)?.2, 0);
+    assert_eq!(camera(&app)?.3, 8);
+    for _ in 0..20 {
+        activate(&mut app, "Floor down")?;
+    }
+    assert_eq!(camera(&app)?.2, 15);
+    Ok(())
+}
+fn key(app: &mut App, key: KeyCode) {
+    {
+        let mut keys = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
+        keys.reset_all();
+        keys.press(KeyCode::AltLeft);
+        keys.press(key);
+    }
+    app.update();
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .reset_all();
+}
+#[test]
+fn alt_navigation_shortcuts_respect_modal_and_hidden_sidebar() -> TestResult {
+    let mut app = fixture()?;
+    key(&mut app, KeyCode::ArrowLeft);
+    key(&mut app, KeyCode::Home);
+    key(&mut app, KeyCode::PageDown);
+    assert_eq!(camera(&app)?, (95, 200, 8, 2, false));
+    let modal = app
+        .world_mut()
+        .spawn((Node::default(), super::super::GameModal))
+        .id();
+    key(&mut app, KeyCode::ArrowRight);
+    activate(&mut app, "Centre")?;
+    assert_eq!(camera(&app)?, (95, 200, 8, 2, false));
+    app.world_mut().despawn(modal);
+    let region = app.world().resource::<GameRegions>().minimap;
+    app.world_mut()
+        .get_mut::<Node>(region)
+        .ok_or("region")?
+        .display = Display::None;
+    key(&mut app, KeyCode::PageUp);
+    activate(&mut app, "Centre")?;
+    assert_eq!(camera(&app)?, (95, 200, 8, 2, false));
+    app.world_mut()
+        .get_mut::<Node>(region)
+        .ok_or("region")?
+        .display = Display::Flex;
+    activate(&mut app, "Centre")?;
+    key(&mut app, KeyCode::End);
+    key(&mut app, KeyCode::PageUp);
+    assert_eq!(camera(&app)?, (100, 200, 6, 1, false));
+    Ok(())
+}
+mod foreground_click {
+    use super::*;
+    use bevy::{
+        input_focus::{FocusCause, InputFocus},
+        picking::{
+            backend::HitData,
+            events::Pointer,
+            pointer::{Location, PointerButton, PointerId},
+        },
+    };
+    #[test]
+    fn minimap_click_respects_foreground_modal() -> Result<(), Box<dyn std::error::Error>> {
+        let mut host = HostOwner::new(None)?;
+        use oteryn_session::{
+            ActorPosition,
+            world_map::{MapTile, MapViewHeader, WorldMapViewSnapshot},
+        };
+        let (link, mut commands, outbox) = crate::play::play_channel();
+        outbox.bevy_target_walk_selected();
+        let position = ActorPosition {
+            x: 100,
+            y: 100,
+            floor: -7,
+        };
+        let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), -7, &[])?;
+        view.set_live_map(&WorldMapViewSnapshot {
+            header: MapViewHeader {
+                content_generation: [0; 32],
+                bundle_digest: [0; 32],
+                reset_epoch: 1,
+                origin: position,
+                first_visible_floor: -7,
+            },
+            tiles: vec![MapTile {
+                position,
+                items: vec![],
+                more: false,
+                ground_speed: 0,
+            }],
+        })?;
+        host.phase = Phase::Playing;
+        host.play = Some(ActivePlay { view, link });
+        let generation = host.generation();
+        let mut app = App::new();
+        app.insert_non_send(host).init_resource::<InputFocus>();
+        let image = app
+            .world_mut()
+            .spawn((
+                MiniImage(generation),
+                mouse::DragState::default(),
+                RelativeCursorPosition {
+                    normalized: Some(Vec2::new(0.25, -0.25)),
+                    ..default()
+                },
+                Node::default(),
+            ))
+            .observe(click)
+            .id();
+        let focused = app.world_mut().spawn_empty().id();
+        app.world_mut()
+            .resource_mut::<InputFocus>()
+            .set(focused, FocusCause::Navigated);
+        let modal = app
+            .world_mut()
+            .spawn((
+                super::super::super::GameModal,
+                Node::default(),
+                GlobalZIndex(999),
+            ))
+            .id();
+        let click = || PointerClick {
+            entity: image,
+            pointer: Pointer::new(
+                PointerId::Mouse,
+                Location {
+                    target: bevy::camera::NormalizedRenderTarget::None {
+                        width: 100,
+                        height: 100,
+                    },
+                    position: Vec2::ZERO,
+                },
+            ),
+            button: PointerButton::Primary,
+            hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+            duration: std::time::Duration::ZERO,
+            count: 1,
+        };
+        app.world_mut().trigger(click());
+        assert_eq!(app.world().resource::<InputFocus>().get(), Some(focused));
+        app.world_mut().despawn(modal);
+        app.world_mut().trigger(click());
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        let play = owner.play.as_mut().ok_or("play")?;
+        play.view.tick(&play.link).map_err(|e| format!("{e:?}"))?;
+        assert_eq!(
+            commands.try_recv()?,
+            crate::combat_input::PlayCommand::TargetWalk(ActorPosition {
+                x: 108,
+                y: 94,
+                floor: -7
+            })
+        );
+        Ok(())
+    }
+}
+
+fn open_marker_editor(app: &mut App) -> TestResult {
+    use bevy::picking::{
+        backend::HitData,
+        events::Pointer,
+        pointer::{Location, PointerButton, PointerId},
+    };
+    let image = app
+        .world_mut()
+        .query_filtered::<Entity, With<MiniImage>>()
+        .single(app.world())?;
+    app.world_mut()
+        .entity_mut(image)
+        .insert(RelativeCursorPosition {
+            normalized: Some(Vec2::ZERO),
+            ..default()
+        });
+    app.world_mut().trigger(PointerClick {
+        entity: image,
+        pointer: Pointer::new(
+            PointerId::Mouse,
+            Location {
+                target: bevy::camera::NormalizedRenderTarget::None {
+                    width: 124,
+                    height: 100,
+                },
+                position: Vec2::ZERO,
+            },
+        ),
+        button: PointerButton::Secondary,
+        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        duration: std::time::Duration::ZERO,
+        count: 1,
+    });
+    app.update();
+    Ok(())
+}
+
+include!("marker_editor_tests.rs");
+
+#[test]
+fn read_only_minimap_cannot_edit_or_remove_remembered_marks() -> TestResult {
+    for action in ["Save mark", "Remove mark"] {
+        let root = tempfile::tempdir()?;
+        let mut app = fixture()?;
+        let make_read_only = root.path().join("cache");
+        let mut writer = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), 7, &[])?;
+        writer.bind_test_minimap(make_read_only.clone());
+        {
+            let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+            let play = owner.play.as_mut().ok_or("play")?;
+            let (x, y, floor) = play.view.satellite_player();
+            play.view
+                .set_live_map(&oteryn_session::world_map::WorldMapViewSnapshot {
+                    header: oteryn_session::world_map::MapViewHeader {
+                        content_generation: [1; 32],
+                        bundle_digest: [2; 32],
+                        reset_epoch: 1,
+                        origin: oteryn_session::ActorPosition { x, y, floor },
+                        first_visible_floor: floor,
+                    },
+                    tiles: vec![],
+                })?;
+            play.view.bind_test_minimap(make_read_only);
+            assert!(play.view.require_minimap_preferences_writer().is_err());
+            let mut preferences = play.view.preferences().clone();
+            preferences.minimap.add_mark(crate::play::MinimapMark {
+                x,
+                y,
+                floor,
+                label: "Imported camp".into(),
+            })?;
+            play.view.set_preferences(preferences.clone())?;
+            owner.settings.apply(preferences);
+        }
+        open_marker_editor(&mut app)?;
+        *app.world_mut()
+            .query::<&mut bevy::text::EditableText>()
+            .single_mut(app.world_mut())? = bevy::text::EditableText::new("Renamed camp");
+        activate(&mut app, action)?;
+        let owner = app.world().non_send::<HostOwner>();
+        assert_eq!(
+            owner
+                .settings
+                .preferences
+                .minimap
+                .marks
+                .iter()
+                .map(|mark| mark.label.as_str())
+                .collect::<Vec<_>>(),
+            ["Imported camp"],
+            "{action}"
+        );
+    }
+    Ok(())
+}

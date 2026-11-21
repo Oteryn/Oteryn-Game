@@ -472,7 +472,11 @@ fn each_broken_invariant_is_rejected() {
             "a per-player spawn owned by the death master",
             "v2 spawn_per_player owner is none or subject",
             |draft| {
-                encounter_mut(draft).rules[0].actions[0] =
+                // Keep the ability-cast rule valid and isolate the forbidden owner.
+                encounter_mut(draft).rules[1].trigger = ProjectV2EncounterTrigger::CreatureDied {
+                    role: "the_hunger".into(),
+                };
+                encounter_mut(draft).rules[1].actions[0] =
                     ProjectV2EncounterAction::SpawnPerPlayer {
                         players_in: "arena".into(),
                         by_base_vocation: ProjectV2SpawnByVocation {

@@ -288,15 +288,24 @@ mod tests {
                 bundle.entry_start(),
             )
             .ok_or("generic view")?;
+        let legacy = WirePositionFrame::from_pin(
+            Some(&generic),
+            generic.movement_cells(),
+            &pin,
+            generic.map_revision_digest(),
+        )
+        .ok_or("legacy wire frame")?;
         assert_eq!(
-            WirePositionFrame::from_pin(
-                Some(&generic),
-                generic.movement_cells(),
-                &pin,
-                generic.map_revision_digest()
-            )
-            .ok_or("ordinary Bundle wire frame")?
-            .project(physical),
+            legacy.unproject(ActorPosition {
+                x: 32373,
+                y: 31151,
+                floor: 8
+            }),
+            Some(physical),
+            "an ordinary Bundle reads its raw +z wire floor back unchanged"
+        );
+        assert_eq!(
+            legacy.project(physical),
             Some(ActorPosition {
                 x: 32373,
                 y: 31151,
@@ -369,6 +378,7 @@ mod tests {
                 .map(|(index, &kind)| {
                     frame.project_entity(ChannelEntity {
                         source_icons: Default::default(),
+                        motion: None,
                         display_name: None,
                         health_percent: 100,
                         direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,

@@ -13,7 +13,7 @@ use oteryn_client_runtime::{
 use oteryn_renderer::TileCoord;
 use oteryn_session::{CommandStatus, GatedCommandResult};
 type Result = std::result::Result<(), Box<dyn std::error::Error>>;
-fn quest_state() -> QuestState {
+pub(super) fn quest_state() -> QuestState {
     QuestState {
         selected: true,
         revision: Some(1),
@@ -554,6 +554,7 @@ fn journal_builds_both_source_shaped_windows_with_real_text_controls() -> Result
     Ok(())
 }
 
+mod audit_filters;
 mod text_input;
 
 #[test]

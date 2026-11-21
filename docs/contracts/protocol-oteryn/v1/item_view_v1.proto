@@ -120,10 +120,14 @@ message WorldTilePositionV1 {
 // view, or an entry of a view). The handle is required.
 message ContainerDestinationV1 {
   uint64 handle = 1;
+  // Capability 510 CONTAINER_MANUAL_SORT_V1 only: the index the moved item takes in the
+  // container's view order (newest first); past the last entry is last. Absent is the first slot.
+  // See container-manual-sort-v1.md.
+  optional uint32 slot = 2;
 }
 
 // ClientCommand.payload of command type 9. At most 13 bytes, 29 under capability 12,
-// or 31 under capability 61 ITEM_STACK_COUNT_V1. Without count the whole item moves.
+// 31 under capability 61 ITEM_STACK_COUNT_V1, or 32 under capability 510. Without count the whole item moves.
 message ItemMoveIntentV1 {
   uint64 source_handle = 1;
   oneof destination {

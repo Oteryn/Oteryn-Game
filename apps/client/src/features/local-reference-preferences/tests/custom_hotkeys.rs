@@ -123,6 +123,7 @@ fn hotkey_use_with_crosshair_arms_mode()
         .pending = false;
     outbox.inventory_initialize(Some(inventory(item(99)?)), false);
     let own = oteryn_session::WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: oteryn_session::EntityKind::Player,
         entity: oteryn_session::EntityRef {

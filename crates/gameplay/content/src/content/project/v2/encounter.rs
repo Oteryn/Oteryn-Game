@@ -2,7 +2,7 @@
 //!
 //! The profile mirrors the encounter authoring format v1 (triggers, conditions, actions,
 //! positions and anchors). It is candidate-only: no runtime path interprets it. Rust checks the
-//! structure: ranges, exact references, and that every role, anchor, counter, flag, timer, phase,
+//! structure and required rule context: ranges, exact references, and that every role, anchor, counter, flag, timer, phase,
 //! outcome and encounter ability a rule names is declared. `validate_encounter.py` stays the
 //! semantic source. Percentages are exact parts per million (`ppm = percent * 10_000`).
 
@@ -1332,6 +1332,11 @@ pub(super) fn validate_encounter_details(
         "v2 encounter rules are not unique",
     )?;
     for rule in &details.rules {
+        RuleContext {
+            rule,
+            timers: &details.state.timers,
+        }
+        .validate()?;
         if let Some(delay) = rule.delay_ms {
             amount(delay, 1)?;
         }
@@ -2163,4 +2168,362 @@ fn actions(
         }
     }
     Ok(())
+}
+
+/// Source-validator context requirements, in addition to structural validation.
+struct RuleContext<'a> {
+    rule: &'a ProjectV2EncounterRule,
+    timers: &'a [ProjectV2EncounterTimer],
+}
+
+impl RuleContext<'_> {
+    fn death(&self) -> bool {
+        matches!(
+            self.rule.trigger,
+            ProjectV2EncounterTrigger::CreatureDied { .. }
+                | ProjectV2EncounterTrigger::LethalDamage { .. }
+        )
+    }
+
+    fn killer(&self) -> bool {
+        self.death()
+            || matches!(
+                self.rule.trigger,
+                ProjectV2EncounterTrigger::DamageTaken { .. }
+            )
+    }
+
+    fn subject(
+        &self,
+        subject: &ProjectV2EncounterSubject,
+        spawned: bool,
+        heal: bool,
+    ) -> Result<(), ProjectError> {
+        match subject {
+            ProjectV2EncounterSubject::Killer
+                if !(self.killer()
+                    || heal
+                        && matches!(
+                            self.rule.trigger,
+                            ProjectV2EncounterTrigger::HealReceived { .. }
+                        )) =>
+            {
+                invalid("v2 killer subject needs a killer trigger")
+            }
+            ProjectV2EncounterSubject::Spawned if !spawned => {
+                invalid("v2 spawned subject needs an earlier spawn of one creature")
+            }
+            _ => Ok(()),
+        }
+    }
+
+    fn position(&self, at: &ProjectV2EncounterPosition) -> Result<(), ProjectError> {
+        use ProjectV2EncounterPosition as P;
+        match at {
+            P::DeathPosition if !self.death() => invalid("v2 death position needs a death trigger"),
+            P::SubjectPosition
+            | P::ClosestFreeTile
+            | P::OffsetTiles { .. }
+            | P::Relative { .. }
+                if !one_creature(&self.rule.trigger) =>
+            {
+                invalid("v2 subject position needs a single creature trigger")
+            }
+            P::RolePosition {
+                role,
+                otherwise_death_position,
+            } => {
+                let present = self.rule.conditions.iter().any(|condition| matches!(condition,
+                    ProjectV2EncounterCondition::CreaturePresent { role: Some(present_role), present: true, .. } if present_role == role));
+                if *otherwise_death_position && !self.death() {
+                    return invalid("v2 role position fallback needs a death trigger");
+                }
+                if !otherwise_death_position && !present {
+                    return invalid("v2 role position needs presence or a fallback");
+                }
+                Ok(())
+            }
+            _ => Ok(()),
+        }
+    }
+
+    fn condition(&self, condition: &ProjectV2EncounterCondition) -> Result<(), ProjectError> {
+        use ProjectV2EncounterCondition as C;
+        use ProjectV2EncounterTrigger as T;
+        match condition {
+            C::ChanceFromAmount { .. }
+                if !matches!(
+                    self.rule.trigger,
+                    T::DamageTaken { .. } | T::HealReceived { .. }
+                ) =>
+            {
+                invalid("v2 amount chance needs a damage or heal trigger")
+            }
+            C::AttackerWears { .. }
+                if !matches!(
+                    self.rule.trigger,
+                    T::DamageTaken { .. }
+                        | T::DamageAccumulated { .. }
+                        | T::LethalDamage { .. }
+                        | T::HealReceived { .. }
+                ) =>
+            {
+                invalid("v2 attacker equipment needs a damage or heal trigger")
+            }
+            C::KillerProgress {
+                subject: Some(subject),
+                ..
+            } => self.subject(subject, false, true),
+            C::InAnchor {
+                subject: ProjectV2InAnchorSubject::Killer,
+                ..
+            } if !self.killer() => invalid("v2 killer anchor needs a killer trigger"),
+            C::InAnchor {
+                subject: ProjectV2InAnchorSubject::Spawned,
+                ..
+            } => invalid("v2 spawned anchor has no preceding spawn in conditions"),
+            C::CreaturePresent {
+                where_conditions, ..
+            } => {
+                for condition in where_conditions {
+                    self.condition(condition)?;
+                }
+                Ok(())
+            }
+            _ => Ok(()),
+        }
+    }
+
+    fn actions(&self, actions: &[ProjectV2EncounterAction]) -> Result<(), ProjectError> {
+        use ProjectV2EncounterAction as A;
+        let mut spawned = false;
+        for action in actions {
+            match action {
+                A::Heal { subject, .. } | A::Damage { subject, .. } | A::Say { subject, .. } => {
+                    self.subject(subject, spawned, false)?
+                }
+                A::Spawn { at, owner, .. } | A::SpawnPerPlayer { at, owner, .. } => {
+                    self.position(at)?;
+                    if *owner == ProjectV2SpawnOwner::DeathMaster && !self.death() {
+                        return invalid("v2 death master needs a death trigger");
+                    }
+                }
+                A::Cast { at, .. } | A::DropItem { at, .. } => self.position(at)?,
+                A::PreventDeath { role } => {
+                    if !matches!(&self.rule.trigger, ProjectV2EncounterTrigger::LethalDamage { role: fired_role, .. } if fired_role == role)
+                    {
+                        return invalid("v2 prevent death needs lethal damage for the same role");
+                    }
+                }
+                A::DamageModifier {
+                    multiplier: ProjectV2DamageMultiplier::TimerRemaining { timer, .. },
+                    ..
+                } => {
+                    if self
+                        .timers
+                        .iter()
+                        .any(|value| value.name == *timer && value.repeat)
+                    {
+                        return invalid("v2 timer remaining needs a nonrepeating timer");
+                    }
+                }
+                A::EmitOutcome {
+                    credited: ProjectV2OutcomeCredit::Killer,
+                    ..
+                } if !self.killer() => return invalid("v2 killer credit needs a killer trigger"),
+                A::EmitOutcome {
+                    credited: ProjectV2OutcomeCredit::Party,
+                    ..
+                } if !self.death() => return invalid("v2 party credit needs a death trigger"),
+                A::OneOf { branches } => {
+                    for branch in branches {
+                        self.actions(&branch.actions)?;
+                    }
+                }
+                _ => continue,
+            }
+            if matches!(
+                action,
+                A::Spawn {
+                    count: ProjectV2Amount { min: 1, max: 1 },
+                    ..
+                }
+            ) {
+                spawned = true;
+            }
+        }
+        Ok(())
+    }
+
+    fn validate(&self) -> Result<(), ProjectError> {
+        for condition in &self.rule.conditions {
+            self.condition(condition)?;
+        }
+        self.actions(&self.rule.actions)
+    }
+}
+
+#[cfg(test)]
+mod context_regressions {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn encounter_context_preconditions_are_enforced() -> Result<(), Box<dyn std::error::Error>> {
+        let limits = ProjectEvidenceLimits {
+            max_documents: 10000,
+            max_document_bytes: 1000000,
+            max_total_bytes: 10000000,
+            max_json_depth: 64,
+            max_decoded_fields: 100000,
+            max_string_bytes: 10000,
+            max_locator_bytes: 10000,
+            max_locator_segments: 100,
+            max_reference_records: 10000,
+            max_import_records: 10000,
+            max_reimport_states: 10000,
+        };
+        let creature = json!({"family":"Creature","key":"creature/test","revision":"r1"});
+        let item = json!({"family":"Item","key":"item/test","revision":"r1"});
+        let heal =
+            json!({"kind":"heal","subject":{"kind":"role","role":"boss"},"amount":{"kind":"full"}});
+        let mut accepted = Vec::new();
+        for (label, conditions, action) in [
+            (
+                "killer subject",
+                json!([]),
+                json!({"kind":"heal","subject":{"kind":"killer"},"amount":{"kind":"full"}}),
+            ),
+            (
+                "spawned subject",
+                json!([]),
+                json!({"kind":"heal","subject":{"kind":"spawned"},"amount":{"kind":"full"}}),
+            ),
+            (
+                "killer anchor",
+                json!([{"kind":"in_anchor","subject":{"kind":"killer"},"anchor":"arena"}]),
+                heal.clone(),
+            ),
+            (
+                "spawned anchor",
+                json!([{"kind":"in_anchor","subject":{"kind":"spawned"},"anchor":"arena"}]),
+                heal.clone(),
+            ),
+            (
+                "amount chance",
+                json!([{"kind":"chance_from_amount","per":1}]),
+                heal.clone(),
+            ),
+            (
+                "attacker equipment",
+                json!([{"kind":"attacker_wears","item":item,"wears":true}]),
+                heal.clone(),
+            ),
+            (
+                "subject position",
+                json!([]),
+                json!({"kind":"drop_item","item":item,"at":{"kind":"subject_position"}}),
+            ),
+            (
+                "death position",
+                json!([]),
+                json!({"kind":"drop_item","item":item,"at":{"kind":"death_position"}}),
+            ),
+            (
+                "role position",
+                json!([]),
+                json!({"kind":"drop_item","item":item,"at":{"kind":"role_position","role":"boss"}}),
+            ),
+            (
+                "role fallback",
+                json!([]),
+                json!({"kind":"drop_item","item":item,"at":{"kind":"role_position","role":"boss","otherwise_death_position":true}}),
+            ),
+            (
+                "death master",
+                json!([]),
+                json!({"kind":"spawn","creature":creature,"count":{"min":1,"max":1},"at":{"kind":"anchor","anchor":"arena"},"owner":"death_master","health":{"kind":"full"}}),
+            ),
+            (
+                "prevent death",
+                json!([]),
+                json!({"kind":"prevent_death","role":"boss"}),
+            ),
+            (
+                "killer credit",
+                json!([]),
+                json!({"kind":"emit_outcome","outcome":"win","credited":"killer"}),
+            ),
+            (
+                "repeating timer",
+                json!([]),
+                json!({"kind":"damage_modifier","role":"boss","multiplier":{"kind":"timer_remaining","timer":"clock","floor_percent":0},"sources":"any","until":"reset"}),
+            ),
+            (
+                "party credit",
+                json!([]),
+                json!({"kind":"emit_outcome","outcome":"win","credited":"party"}),
+            ),
+        ] {
+            let details: ProjectV2EncounterDetails = serde_json::from_value(json!({
+                "display_name":"Test", "participants":[{"role":"boss","creatures":[creature]}],
+                "anchors":[{"key":"arena","description":"Arena","location":{"kind":"area","boxes":[{"x":[0,1],"y":[0,1],"floor":0}]}}],
+                "state":{"timers":[{"name":"clock","duration_ms":{"min":100,"max":100},"repeat":true}]},"outcomes":["win"],
+                "rules":[{"key":"test","trigger":{"kind":"encounter_started"},"conditions":conditions,"actions":[action]}]
+            }))?;
+            if validate_encounter_details(&details, &|_| Ok(()), limits).is_ok() {
+                accepted.push(label);
+            }
+            if label == "spawned anchor" {
+                continue;
+            }
+            let mut valid = details;
+            valid.rules[0].trigger = if label == "amount chance" {
+                ProjectV2EncounterTrigger::DamageTaken {
+                    role: "boss".into(),
+                    source: ProjectV2HitSource::Any,
+                    base_vocation: None,
+                }
+            } else {
+                ProjectV2EncounterTrigger::LethalDamage {
+                    role: "boss".into(),
+                }
+            };
+            valid.state.timers[0].repeat = false;
+            if label == "role position"
+                && let ProjectV2EncounterAction::DropItem {
+                    at:
+                        ProjectV2EncounterPosition::RolePosition {
+                            otherwise_death_position,
+                            ..
+                        },
+                    ..
+                } = &mut valid.rules[0].actions[0]
+            {
+                *otherwise_death_position = true;
+            }
+            if label == "spawned subject" {
+                let spawn = ProjectV2EncounterAction::Spawn {
+                    creature: valid.participants[0].creatures[0].clone(),
+                    role: None,
+                    count: ProjectV2Amount { min: 1, max: 1 },
+                    at: ProjectV2EncounterPosition::Anchor {
+                        anchor: "arena".into(),
+                    },
+                    owner: ProjectV2SpawnOwner::None,
+                    health: ProjectV2EncounterHealth::Full,
+                };
+                valid.rules[0].actions.insert(0, spawn);
+            }
+            assert!(
+                validate_encounter_details(&valid, &|_| Ok(()), limits).is_ok(),
+                "valid context rejected: {label}"
+            );
+        }
+        assert!(
+            accepted.is_empty(),
+            "accepted invalid contexts: {accepted:?}"
+        );
+        Ok(())
+    }
 }
