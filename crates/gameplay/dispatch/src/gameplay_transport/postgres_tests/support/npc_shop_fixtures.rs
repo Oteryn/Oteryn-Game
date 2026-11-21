@@ -265,13 +265,19 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
             use oteryn_protocol_oteryn::npc_service::{NpcOffer, NpcTradeWindow};
             let native = active.native_gameplay().ok_or("native gameplay")?;
             let index = native.item_index().ok_or("item index")?;
-            let key = "oteryn:item.tibia.i2863";
-            let revision = index.revision(key).ok_or("golden bag revision")?;
+            let (reference, key, revision) = (1..=u32::MAX)
+                .filter_map(std::num::NonZeroU32::new)
+                .map_while(|reference| {
+                    let (key, revision) = index.definition_at(reference)?;
+                    Some((reference, key, revision))
+                })
+                .find(|(_, key, revision)| native.item_policy(key, revision).is_none())
+                .ok_or("fixture requires an indexed item without a native item policy")?;
             assert!(native.item_policy(key, revision).is_none());
             let window = NpcTradeWindow {
                 open: Some((EntityRef { identity: [7; 16], generation: 1 }, 1)),
                 offers: vec![NpcOffer {
-                    item_definition_ref: index.definition_ref("Item", key, revision).ok_or("golden bag reference")?.get(),
+                    item_definition_ref: reference.get(),
                     side: NpcTradeSide::Buy,
                     count: 1,
                     unit_price: 10,

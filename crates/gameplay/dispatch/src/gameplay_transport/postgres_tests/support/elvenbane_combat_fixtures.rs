@@ -46,7 +46,15 @@ pub(super) async fn scenario(
     } else {
         KNIGHT_POTION
     };
-    fight(owner, member, target.actor, target.generation, potion).await?;
+    fight(
+        owner,
+        member,
+        target.actor,
+        target.generation,
+        potion,
+        ChaseMode::Chase,
+    )
+    .await?;
     let fence = owner
         .current_quest_fence(member.game_session_id)
         .await
@@ -107,6 +115,7 @@ async fn fight(
     target: crate::foundation::ExactActorRef,
     generation: u64,
     potion: &str,
+    chase: ChaseMode,
 ) -> TestResult {
     let player = member.runtime_actor.ok_or("player")?;
     let initial = owner
@@ -125,7 +134,7 @@ async fn fight(
         COMMAND_TYPE_FIGHT_MODES_INTENT,
         encode_fight_modes_intent(&FightModes {
             fight_mode: FightMode::Offensive,
-            chase: ChaseMode::Chase,
+            chase,
             ..FightModes::DEFAULT
         }),
     )
@@ -289,13 +298,12 @@ async fn upper_defenders(
                 .visible_entities()
                 .creatures
                 .into_iter()
-                .filter(|row| {
-                    runtime
-                        .creature_spawn_cell(row.actor)
-                        .is_some_and(|origin| origin.floor == floor)
+                .filter_map(|row| {
+                    let origin = runtime.creature_spawn_cell(row.actor)?;
+                    (origin.floor == floor).then_some((row, origin))
                 })
                 .collect();
-            targets.sort_by_key(|row| row.actor.placement_identity());
+            targets.sort_by_key(|(row, _)| row.actor.placement_identity());
             assert_eq!(
                 targets.len(),
                 if floor == 4 { 2 } else { 3 },
@@ -303,8 +311,44 @@ async fn upper_defenders(
             );
             targets
         };
-        for target in targets {
-            fight(owner, member, target.actor, target.generation, PALADIN_POTION).await?;
+        for (target, origin) in targets {
+            let at = owner
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(target.actor)
+                .map_err(debug)?
+                .position();
+            let chase = if (origin.x, origin.y, origin.floor) == (32590, 31647, 4)
+                && at.y == 31647
+                && (32590..=32592).contains(&at.x)
+            {
+                // The Orc Shaman retreats behind projectile blockers on this floor.
+                // Walk around the pillars to the open tile immediately west of it.
+                super::desert_earned_route_fixtures::walk_to(
+                    owner,
+                    member,
+                    Position {
+                        x: u16::try_from(at.x - 1)?,
+                        y: 31647,
+                        floor: -4,
+                    },
+                )
+                .await
+                .map_err(|error| format!("approaching the Orc Shaman at {at:?}: {error}"))?;
+                ChaseMode::Stand
+            } else {
+                ChaseMode::Chase
+            };
+            fight(
+                owner,
+                member,
+                target.actor,
+                target.generation,
+                PALADIN_POTION,
+                chase,
+            )
+            .await?;
         }
     }
     Ok(())
