@@ -24,6 +24,19 @@ use std::collections::BTreeMap;
 
 mod pillars;
 
+#[cfg(test)]
+tokio::task_local! {
+    static WAVE_TEST_SEED: [u8; 32];
+}
+
+#[cfg(test)]
+pub(in crate::gameplay_transport) async fn with_wave_seed_for_test<T>(
+    seed: [u8; 32],
+    wave: impl std::future::Future<Output = T>,
+) -> T {
+    WAVE_TEST_SEED.scope(seed, wave).await
+}
+
 #[derive(Default)]
 pub(in crate::gameplay_transport) struct RoomWaveStates {
     owners: BTreeMap<[u8; 16], RoomWave>,
@@ -379,7 +392,10 @@ impl RoomWaveStates {
                 position: *position,
             })
             .collect::<Vec<_>>();
-        let root = GameplayDecisionRoot::from_bytes(native.source_digest());
+        let seed = native.source_digest();
+        #[cfg(test)]
+        let seed = WAVE_TEST_SEED.try_with(|seed| *seed).unwrap_or(seed);
+        let root = GameplayDecisionRoot::from_bytes(seed);
         let digest = Sha256::digest(
             [
                 actor.placement_identity().as_slice(),

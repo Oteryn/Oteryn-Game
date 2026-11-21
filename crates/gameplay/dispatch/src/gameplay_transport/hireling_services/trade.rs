@@ -113,7 +113,7 @@ pub(super) async fn open(
         return rejected();
     }
     hireling.trade = Some(window);
-    state.window = Some(intent.npc_actor);
+    state.window = Some((intent.npc_actor, None));
     outcome
 }
 

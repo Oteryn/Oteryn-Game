@@ -432,6 +432,8 @@ fn check_ordinary_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError>
     if side == SIDE_EXCHANGE {
         if cause.npc_key == "oteryn:npc.uzgod" {
             obsidian_knife::check(value)?;
+        } else if cause.npc_key == super::npc_trade::sinatuki_exchange::NPC {
+            super::npc_trade::sinatuki_exchange::audit(value)?;
         } else if cause.npc_key == "oteryn:npc.seymour" {
             pick_exchange::check_recipe(
                 value,
