@@ -1065,6 +1065,46 @@ mod e2ef1 {
             pump(client).await?;
         }
     }
+    /// The row's ordinary logout. A creature that followed the actor (M04's rats
+    /// chase it back to town) keeps refreshing the 60 s PvE fight lock outside a
+    /// protection zone, so an `InFight` refusal there first walks to the nearest
+    /// protection-zone tile, where the server admits the logout. Returns the cell
+    /// the accepted logout saved.
+    async fn logout_resting(
+        client: &mut DevClientSession,
+        world: &BundleWorld,
+    ) -> TestResult<ActorPosition> {
+        use oteryn_protocol_oteryn::logout::LogoutResult;
+        let protection_zone = |at: TilePos| {
+            world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|tile| tile.protection_zone())
+        };
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
+        loop {
+            let at = client.world_spatial().actor_position;
+            let logout = client.session_mut().logout().await?;
+            match logout.result {
+                Some(LogoutResult::Accepted) => return Ok(at),
+                Some(LogoutResult::InFight { .. }) if !protection_zone(tile(at)?) => {
+                    let path = route(world, tile(at)?, protection_zone)
+                        .ok_or("no reachable protection zone to leave the fight")?;
+                    evidence(&format!(
+                        "E2EF1_LEAVE_FIGHT from={at:?} steps={} reply={logout:?}",
+                        path.len()
+                    ));
+                    walk(client, world, &path).await?;
+                    continue;
+                }
+                _ => {}
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!("movement logout lock did not settle: {logout:?}").into());
+            }
+            pump(client).await?;
+        }
+    }
     pub(super) async fn run(
         client: DevClientSession,
         clients: &SeamClients<'_>,
@@ -1131,7 +1171,6 @@ mod e2ef1 {
             }
             // Every position-changing row saves its actual landing via ordinary
             // logout, gets a fresh Platform admission and compares the saved cell.
-            let saved = client.world_spatial().actor_position;
             let inventory = inventory_signature(&client)?;
             let old_session = client.join_snapshot().game_session_id;
             let mut peer_durable = true;
@@ -1150,7 +1189,7 @@ mod e2ef1 {
                 walk(&mut peer, world, &back).await?;
                 logout(&mut peer).await?;
             }
-            logout(&mut client).await?;
+            let saved = logout_resting(&mut client, world).await?;
             drop(client);
             client = connect_world(clients, 0xb0 + u8::try_from(ordinal)?).await?;
             let durable = client.world_spatial().actor_position == saved
