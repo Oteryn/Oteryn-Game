@@ -64,7 +64,14 @@ class WorldCompilerArtifact(unittest.TestCase):
         job = {"id": 301, "name": ("Integration shards / World compiler"
                                   if self.run["event"] == "workflow_dispatch" else "Merge Queue / World bundle"),
                "run_id": 101, "run_attempt": 2, "head_sha": self.run["head_sha"],
-               "status": "completed", "conclusion": "success"}
+               "status": "completed", "conclusion": "success",
+               "created_at": "2026-11-21T20:16:47Z", "started_at": "2026-11-21T20:16:49Z",
+               "completed_at": "2026-11-21T20:28:00Z", "runner_id": 1000366763,
+               "runner_name": "GitHub Actions 1000366763", "runner_group_id": 0,
+               "runner_group_name": "GitHub Actions", "labels": ["ubuntu-24.04"],
+               "steps": [{"name": "Set up job", "status": "completed", "conclusion": "success",
+                          "number": 1, "started_at": "2026-11-21T20:16:51Z",
+                          "completed_at": "2026-11-21T20:16:54Z"}]}
 
         class API:
             artifacts = [artifact]
@@ -155,7 +162,7 @@ class WorldCompilerArtifact(unittest.TestCase):
         api, _ = self.api()
         api.artifacts = []
         job = api.jobs[0]
-        job["status"] = "in_progress"
+        job.update(status="in_progress", conclusion=None, completed_at=None)
         elapsed = 0
         waits = []
 
@@ -170,7 +177,7 @@ class WorldCompilerArtifact(unittest.TestCase):
             compiler.restore(self.root / "restored", repo_root=self.root, env=self.env, api=api,
                              timeout=31, clock=lambda: elapsed, sleep=sleep)
         self.assertEqual(waits, [15, 15, 1])
-        job["status"] = "completed"
+        job.update(status="completed", conclusion="failure", completed_at="2026-11-21T20:28:00Z")
         waits.clear()
         with self.assertRaisesRegex(RuntimeError, "wait bound"):
             compiler.restore(self.root / "restored", repo_root=self.root, env=self.env, api=api,
@@ -180,7 +187,7 @@ class WorldCompilerArtifact(unittest.TestCase):
     def test_run_attempt_change_while_waiting_is_not_rebound(self):
         api, _ = self.api()
         api.artifacts = []
-        api.jobs[0]["status"] = "in_progress"
+        api.jobs[0].update(status="in_progress", conclusion=None, completed_at=None)
 
         def change_attempt(seconds):
             self.run["run_attempt"] = 3
@@ -198,6 +205,53 @@ class WorldCompilerArtifact(unittest.TestCase):
         self.assertTrue(path.is_file())
         self.assertEqual(api.downloaded, [artifact["id"]])
         self.assertTrue(any("jobs?filter=all" in path for path in api.calls))
+
+    def copied_jobs(self, api):
+        # Replay the observed PR #3367 API copy chronology with this fixture's
+        # World producer name/source, including the hosted runner's 0 -> null.
+        original = copy.deepcopy(api.jobs[0])
+        original.update(id=136971564220, run_attempt=1)
+        alias = copy.deepcopy(original)
+        alias.update(id=136978455148, run_attempt=2, created_at="2026-11-21T20:42:10Z",
+                     runner_group_id=None)
+        api.jobs = [original, alias]
+
+    def test_copied_success_alias_keeps_the_original_artifact_and_execution(self):
+        api, artifact = self.api()
+        self.copied_jobs(api)
+        artifact["name"] = "world-compiler-1"
+        self.assertTrue(self.restore(api).is_file())
+        self.assertEqual(api.downloaded, [artifact["id"]])
+
+    def test_unproved_copy_cannot_select_an_older_world_compiler(self):
+        for mutation in ("missing-original", "changed-runner"):
+            with self.subTest(mutation=mutation):
+                api, artifact = self.api()
+                self.copied_jobs(api)
+                artifact["name"] = "world-compiler-1"
+                if mutation == "missing-original":
+                    api.jobs = api.jobs[1:]
+                else:
+                    api.jobs[-1]["runner_name"] = "different-runner"
+                with self.assertRaises(ValueError):
+                    self.restore(api)
+                self.assertEqual(api.downloaded, [])
+                self.assertFalse((self.root / "restored").exists())
+
+    def test_new_real_incomplete_producer_cannot_reuse_an_older_world_compiler(self):
+        for status in ("queued", "in_progress"):
+            with self.subTest(status=status):
+                api, artifact = self.api()
+                old = dict(api.jobs[0], id=300, run_attempt=1)
+                latest = dict(api.jobs[0], status=status, conclusion=None,
+                              created_at="2026-11-21T20:42:10Z", completed_at=None,
+                              started_at=None if status == "queued" else "2026-11-21T20:42:13Z")
+                api.jobs = [old, latest]
+                artifact["name"] = "world-compiler-1"
+                with self.assertRaisesRegex(RuntimeError, "wait bound"):
+                    self.restore(api)
+                self.assertEqual(api.downloaded, [])
+                self.assertFalse((self.root / "restored").exists())
 
     def test_manual_partial_rerun_preserves_both_source_identities_and_producer_attempt(self):
         self.env["GITHUB_SHA"] = "2" * 40

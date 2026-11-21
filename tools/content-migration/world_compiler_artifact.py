@@ -107,19 +107,10 @@ def latest_producer(jobs, expected):
     name = ("Merge Queue / World bundle" if expected["workflow"] == "merge-group-gate.yml"
             else "Integration shards / World compiler")
     producers = [job for job in jobs if job.get("name") == name]
-    for job in producers:
-        if (job.get("run_id") != expected["run"] or type(job.get("run_attempt")) is not int
-                or not 1 <= job["run_attempt"] <= expected["attempt"]
-                or job.get("head_sha") != expected["workflow_head"]
-                or job.get("status") not in {"queued", "in_progress", "completed"}):
-            raise ValueError("World compiler producer job identity mismatch")
-    if not producers:
-        return None
-    attempt = max(job["run_attempt"] for job in producers)
-    selected = [job for job in producers if job["run_attempt"] == attempt]
-    if len(selected) != 1:
-        raise ValueError("ambiguous World compiler producer job in one attempt")
-    return selected[0]
+    shared, _ = dependencies()
+    return shared.select_actual_execution(producers, run_id=expected["run"],
+                                          head_sha=expected["workflow_head"],
+                                          max_attempt=expected["attempt"])
 
 
 def validate_artifact(artifact, run, expected, producer_attempt):

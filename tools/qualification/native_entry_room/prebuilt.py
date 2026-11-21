@@ -186,6 +186,13 @@ def transport():
     return shared_dispatch_archive
 
 
+def latest_producer(jobs, run_id, head_sha, max_attempt):
+    selected = [job for job in jobs
+                if re.search(r"Build unit-test archive \((lib|all|lib-1)\)$", job.get("name", ""))]
+    return transport().select_actual_execution(selected, run_id=run_id, head_sha=head_sha,
+                                               max_attempt=max_attempt)
+
+
 def restore(output, *, repo_root=ROOT, env=None, api=None, clock=time.monotonic,
             sleep=time.sleep, timeout=600):
     env = os.environ if env is None else env
@@ -210,14 +217,21 @@ def restore(output, *, repo_root=ROOT, env=None, api=None, clock=time.monotonic,
         shared.validate_run(run, source)
     run = max(candidates, key=lambda item: item["id"])
     run_id, attempt = run["id"], run["run_attempt"]
+    jobs_path = f"{base}/runs/{run_id}/jobs?filter=all"
     started = clock()
     deadline = started + timeout
     while True:
         shared.validate_run(run, source)
         if (run["id"], run["run_attempt"]) != (run_id, attempt):
             raise ValueError("native-entry producer run or attempt changed")
-        artifacts = api.json(f"{base}/runs/{run_id}/artifacts?per_page=100").get("artifacts", [])
-        matches = [item for item in artifacts if item.get("name") == f"native-entry-room-{attempt}"]
+        job = latest_producer(shared.github_items(api, jobs_path, "jobs"), run_id, binding["head"], attempt)
+        producer_attempt = job["run_attempt"] if job else None
+        ready = job is not None and (job["status"] == "in_progress" or (
+            job["status"] == "completed" and job.get("conclusion") == "success"))
+        if job is not None and job["status"] == "completed" and not ready:
+            raise shared.Unavailable("native-entry producer is not running or successful")
+        artifacts = shared.github_items(api, f"{base}/runs/{run_id}/artifacts", "artifacts") if ready else []
+        matches = [item for item in artifacts if item.get("name") == f"native-entry-room-{producer_attempt}"]
         if len(matches) > 1:
             raise ValueError("ambiguous native-entry producer artifact")
         if matches:
@@ -244,17 +258,25 @@ def restore(output, *, repo_root=ROOT, env=None, api=None, clock=time.monotonic,
                 if json.loads((staged / "manifest.json").read_text()).get("libraries") is not True:
                     raise ValueError("native-entry producer did not preserve the common-lib recipe")
                 executable(staged, repo_root)
+                current = api.json(f"{base}/runs/{run_id}")
+                shared.validate_run(current, source)
+                if (current["id"], current["run_attempt"]) != (run_id, attempt):
+                    raise ValueError("native-entry producer run or attempt changed during restore")
+                latest = latest_producer(shared.github_items(api, jobs_path, "jobs"),
+                                         run_id, binding["head"], attempt)
+                if latest is None or (latest["id"], latest["run_attempt"]) != (job["id"], producer_attempt):
+                    raise ValueError("native-entry producer changed during restore")
+                if latest["status"] != "in_progress" and not (
+                        latest["status"] == "completed" and latest.get("conclusion") == "success"):
+                    raise ValueError("native-entry producer is no longer running or successful")
                 staged.rename(output)
-            print(f"NATIVE_ENTRY_PREBUILT_REUSED run={run_id} attempt={attempt} artifact={artifact['id']}")
+            print(f"NATIVE_ENTRY_PREBUILT_REUSED run={run_id} attempt={producer_attempt} "
+                  f"producer_job={job['id']} artifact={artifact['id']}")
             return
-        jobs = api.json(f"{base}/runs/{run_id}/attempts/{attempt}/jobs?per_page=100").get("jobs", [])
-        selected = [job for job in jobs if re.search(r"Build unit-test archive \((lib|all|lib-1)\)$", job.get("name", ""))]
-        running = (len(selected) == 1 and selected[0].get("run_id") == run_id
-                   and selected[0].get("run_attempt") == attempt
-                   and selected[0].get("status") in {"queued", "in_progress"})
+        running = job is not None and job["status"] in {"queued", "in_progress"}
         # Allow a short initial matrix-discovery window; never wait for another
         # source revision, an unrelated role, or beyond the explicit time budget.
-        discovering = not selected and clock() - started < min(60, timeout)
+        discovering = job is None and clock() - started < min(60, timeout)
         if run.get("status") not in {"queued", "in_progress"} or not (running or discovering) or clock() >= deadline:
             raise shared.Unavailable("no compatible native-entry producer within the wait bound")
         print(f"NATIVE_ENTRY_PREBUILT_WAIT run={run_id} attempt={attempt} "

@@ -162,17 +162,10 @@ def download_reports(reports, env, *, api=None):
         suffix = f"Unit-test archive ({role}, {expected['shard']})"
         matches = [job for job in jobs if job.get("name") == suffix
                    or job.get("name", "").endswith(" / " + suffix)]
-        if not matches:
+        job = shared.select_actual_execution(matches, run_id=run["id"],
+                                             head_sha=expected["head"], max_attempt=run["run_attempt"])
+        if job is None:
             raise ValueError("missing actual archive-shard job")
-        if any(type(job.get("id")) is not int or job["id"] <= 0
-               or job.get("run_id") != run["id"] or type(job.get("run_attempt")) is not int
-               or not 1 <= job["run_attempt"] <= run["run_attempt"] for job in matches):
-            raise ValueError("invalid actual archive-shard job identity")
-        latest = max(job["run_attempt"] for job in matches)
-        current = [job for job in matches if job["run_attempt"] == latest]
-        if len(current) != 1:
-            raise ValueError("ambiguous latest archive-shard job")
-        job = current[0]
         if job.get("status") != "completed" or job.get("conclusion") not in ("success", "failure"):
             raise ValueError("latest archive-shard job is not a completed test result")
         selected[role] = job

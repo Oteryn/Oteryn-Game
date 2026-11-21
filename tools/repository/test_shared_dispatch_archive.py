@@ -17,10 +17,148 @@ shared = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(shared)
 
 
+class GitHubExecutionSelectionTests(unittest.TestCase):
+    @staticmethod
+    def actual_worker_pair():
+        # Exact execution fields from GitHub run44945072128: the second API
+        # job is a copy created after the first had already finished. URLs and
+        # node IDs are omitted; all execution/runner fields are retained.
+        rows = (
+            (1, "Set up job", "success", "20:28:03", "20:28:06"),
+            (2, "Check out exact head", "success", "20:28:06", "20:28:47"),
+            (3, "Verify checked-out SHA", "success", "20:28:47", "20:28:47"),
+            (4, "Load worker helper for an older candidate", "skipped", "20:28:47", "20:28:47"),
+            (5, "Select the exact-source worker helper", "success", "20:28:47", "20:28:47"),
+            (6, "Select crates without a passed result", "success", "20:28:47", "20:28:47"),
+            (7, "Install Rust toolchain", "success", "20:28:47", "20:28:57"),
+            (8, "Free hosted runner disk for archived artifacts", "success", "20:28:57", "20:28:57"),
+            (9, "Download this unit-test archive by immutable ID", "success", "20:28:57", "20:29:08"),
+            (10, "Verify canonical Dispatch archive", "success", "20:29:08", "20:29:09"),
+            (11, "Run this archive and record its current result", "success", "20:29:09", "20:30:22"),
+            (12, "Upload current archive-shard result", "success", "20:30:22", "20:30:24"),
+            (24, "Post Check out exact head", "success", "20:30:24", "20:30:24"),
+            (25, "Complete job", "success", "20:30:24", "20:30:24"),
+        )
+        original = {
+            "id": 136974618869, "run_id": 44945072128, "run_attempt": 1,
+            "head_sha": "cbdd2e2e3f5c0e9c85994009325ee24007c970bc",
+            "name": "Merge gate / Changed-crate archive (dispatch-1) / Unit-test archive (dispatch-1, 1/5)",
+            "status": "completed", "conclusion": "success",
+            "created_at": "2026-11-21T20:28:00Z", "started_at": "2026-11-21T20:28:02Z",
+            "completed_at": "2026-11-21T20:30:28Z", "runner_id": 1000366837,
+            "runner_name": "GitHub Actions 1000366837", "runner_group_id": 0,
+            "runner_group_name": "GitHub Actions", "labels": ["ubuntu-24.04"],
+            "steps": [{"number": number, "name": name, "status": "completed", "conclusion": conclusion,
+                       "started_at": f"2026-11-21T{start}Z", "completed_at": f"2026-11-21T{end}Z"}
+                      for number, name, conclusion, start, end in rows],
+        }
+        copied = {**copy.deepcopy(original), "id": 136978455906, "run_attempt": 2,
+                  "created_at": "2026-11-21T20:42:11Z", "runner_group_id": None}
+        return original, copied
+
+    def select(self, jobs):
+        return shared.select_actual_execution(jobs, run_id=44945072128,
+                    head_sha="cbdd2e2e3f5c0e9c85994009325ee24007c970bc", max_attempt=3)
+
+    def test_real_api_copy_resolves_to_original_job_and_attempt(self):
+        original, copied = self.actual_worker_pair()
+        self.assertEqual(self.select([copied, original]), original)
+        third = {**copy.deepcopy(copied), "id": 136978455907, "run_attempt": 3,
+                 "created_at": "2026-11-21T20:50:00Z"}
+        self.assertEqual(self.select([original, copied, third]), original)
+
+    def test_latest_actual_execution_always_wins(self):
+        for status, conclusion in (("completed", "success"), ("completed", "failure"),
+                                   ("completed", "skipped"), ("completed", "cancelled"),
+                                   ("in_progress", None), ("queued", None)):
+            with self.subTest(status=status, conclusion=conclusion):
+                original, latest = self.actual_worker_pair()
+                latest.update(created_at="2026-11-21T20:42:11Z", started_at="2026-11-21T20:42:12Z",
+                              completed_at="2026-11-21T20:43:00Z", status=status, conclusion=conclusion)
+                for step in latest["steps"]:
+                    step.update(started_at=latest["started_at"], completed_at=latest["completed_at"])
+                self.assertEqual(self.select([original, latest]), latest)
+
+    def test_copy_cannot_jump_over_new_failure_incomplete_skipped_or_execution(self):
+        for status, conclusion in (("completed", "failure"), ("in_progress", None),
+                                   ("completed", "skipped"), ("completed", "success")):
+            with self.subTest(status=status, conclusion=conclusion):
+                original, newer = self.actual_worker_pair()
+                newer.update(status=status, conclusion=conclusion, started_at="2026-11-21T20:42:12Z",
+                             completed_at="2026-11-21T20:43:00Z")
+                stale_copy = {**copy.deepcopy(original), "id": 136978455907, "run_attempt": 3,
+                              "created_at": "2026-11-21T20:50:00Z"}
+                with self.assertRaises(ValueError):
+                    self.select([original, newer, stale_copy])
+
+    def test_copies_require_complete_matching_execution_and_runner_evidence(self):
+        for field, value in (("head_sha", "a" * 40), ("run_id", 1), ("name", "different"),
+                             ("runner_id", 123), ("runner_name", "different"),
+                             ("runner_group_id", 7), ("runner_group_name", "different"),
+                             ("labels", ["self-hosted"]), ("conclusion", "failure"),
+                             ("started_at", "2026-11-21T20:28:04Z")):
+            with self.subTest(field=field):
+                original, copied = self.actual_worker_pair()
+                copied[field] = value
+                with self.assertRaises(ValueError):
+                    self.select([original, copied])
+        for field in ("created_at", "started_at", "completed_at", "steps", "runner_id",
+                      "runner_name", "runner_group_id", "runner_group_name", "labels"):
+            for index in (0, 1):
+                with self.subTest(missing=field, record=index):
+                    jobs = list(self.actual_worker_pair())
+                    del jobs[index][field]
+                    with self.assertRaises(ValueError):
+                        self.select(jobs)
+        for change in ("remove", "change", "duplicate-number"):
+            original, copied = self.actual_worker_pair()
+            if change == "remove": del copied["steps"][0]["started_at"]
+            if change == "change": copied["steps"][0]["conclusion"] = "failure"
+            if change == "duplicate-number": copied["steps"][1]["number"] = 1
+            with self.subTest(step_change=change), self.assertRaises(ValueError):
+                self.select([original, copied])
+
+    def test_ambiguous_or_unproven_copy_history_is_rejected(self):
+        original, copied = self.actual_worker_pair()
+        for jobs in ([copied], [original, copied, copy.deepcopy(copied)],
+                     [original, copied, {**copied, "id": 99}],
+                     [original, {**copied, "run_attempt": 3}],
+                     [original, {**copied, "created_at": copied["completed_at"]}]):
+            with self.subTest(jobs=[job["id"] for job in jobs]), self.assertRaises(ValueError):
+                self.select(jobs)
+        self.assertIsNone(self.select([]))
+
+    def test_positive_and_self_hosted_runner_groups_are_not_normalized(self):
+        original, copied = self.actual_worker_pair()
+        original["runner_group_id"] = copied["runner_group_id"] = 7
+        self.assertEqual(self.select([original, copied]), original)
+        copied["runner_group_id"] = 8
+        with self.assertRaises(ValueError): self.select([original, copied])
+        for job in (original, copied):
+            job.update(runner_group_id=0, labels=["self-hosted"], runner_name="Molehill")
+        with self.assertRaises(ValueError): self.select([original, copied])
+
+    def test_real_completed_execution_also_requires_complete_terminal_steps(self):
+        for field in ("runner_id", "runner_name", "steps"):
+            original, _ = self.actual_worker_pair()
+            del original[field]
+            with self.subTest(missing=field), self.assertRaises(ValueError):
+                self.select([original])
+        for update in ({"started_at": "not-a-date"}, {"status": "in_progress", "conclusion": None},
+                       {"completed_at": "2026-11-21T20:28:02Z"},
+                       {"started_at": "2026-11-21T20:27:00Z"},
+                       {"completed_at": "2026-11-21T20:31:00Z"}):
+            for copies in (False, True):
+                original, copied = self.actual_worker_pair()
+                original["steps"][0].update(update)
+                copied["steps"][0].update(update)
+                with self.subTest(update=update, copies=copies), self.assertRaises(ValueError):
+                    self.select([original, copied] if copies else [original])
 class FakeGitHub:
     def __init__(self, run, artifact, payload):
         self.run, self.artifact, self.payload = run, artifact, payload
         self.jobs = [{"id": 91, "run_id": run["id"], "run_attempt": run["run_attempt"],
+                      "head_sha": run["head_sha"],
                       "name": "caller / Build unit-test archive (dispatch-2)", "status": "in_progress"}]
         self.downloads = 0
 
@@ -28,9 +166,10 @@ class FakeGitHub:
         if "/workflows/merge-gate.yml/runs?" in path:
             return {"workflow_runs": [copy.deepcopy(self.run)]}
         if "/artifacts?" in path:
-            return {"artifacts": [] if self.artifact is None else [copy.deepcopy(self.artifact)]}
+            artifacts = [] if self.artifact is None else [copy.deepcopy(self.artifact)]
+            return {"total_count": len(artifacts), "artifacts": artifacts}
         if "/jobs?" in path:
-            return {"jobs": copy.deepcopy(self.jobs)}
+            return {"total_count": len(self.jobs), "jobs": copy.deepcopy(self.jobs)}
         return copy.deepcopy(self.run)
 
     def download(self, artifact_id, destination):
@@ -225,6 +364,7 @@ class SharedDispatchArchiveTests(unittest.TestCase):
         api = self.api()
         api.artifact = None
         api.jobs = [{"id": 91, "run_id": 71, "run_attempt": 2,
+                     "head_sha": "a" * 40,
                      "name": "caller / Build unit-test archive (dispatch-2)", "status": "queued"}]
         with self.assertRaises(shared.Unavailable):
             self.restore(api, discovery_grace=0, sleep=lambda _: self.fail("no grace requested"))
@@ -267,6 +407,66 @@ class SharedDispatchArchiveTests(unittest.TestCase):
         self.env["GITHUB_RUN_ID"] = "72"
         with self.assertRaises(ValueError):
             shared.verify(self.directory, self.role, root=self.root, env=self.env, producer_attempt=2)
+
+    def copied_producer_api(self):
+        self.manifest["producer"]["run_attempt"] = 1
+        self.write_manifest()
+        api = self.api()
+        # Adapt only the role/run/head of the captured worker execution to this
+        # isolated producer fixture; preserve its exact copy chronology/steps.
+        api.jobs = list(GitHubExecutionSelectionTests.actual_worker_pair())
+        for job in api.jobs:
+            job.update(name=f"caller / Build unit-test archive ({self.role})", run_id=71, head_sha="a" * 40)
+        api.artifact["name"] = shared.artifact_name(self.role, 1)
+        return api
+
+    def test_restore_binds_a_copied_success_to_its_actual_producer_attempt(self):
+        api = self.copied_producer_api()
+        output = self.restore(api)
+        self.assertEqual(api.downloads, 1)
+        self.assertEqual(json.loads((output / shared.MANIFEST).read_text())["producer"]["run_attempt"], 1)
+
+    def test_restore_never_uses_old_archive_after_real_newer_failure_or_incomplete(self):
+        for status, conclusion in (("completed", "failure"), ("completed", "skipped"),
+                                   ("in_progress", None), ("queued", None)):
+            with self.subTest(status=status, conclusion=conclusion):
+                api = self.copied_producer_api()
+                job = api.jobs[-1]
+                job.update(status=status, conclusion=conclusion, started_at="2026-11-21T20:42:12Z",
+                           completed_at="2026-11-21T20:43:00Z")
+                for step in job["steps"]:
+                    step.update(started_at=job["started_at"], completed_at=job["completed_at"])
+                with self.assertRaises(shared.Unavailable):
+                    self.restore(api, discovery_grace=0, timeout=0)
+                self.assertEqual(api.downloads, 0)
+                self.assertFalse((self.root / "restored").exists())
+
+    def test_restore_rechecks_the_actual_producer_before_exposing_download(self):
+        api = self.copied_producer_api()
+        download = api.download
+        def changed(*args):
+            download(*args)
+            api.jobs[-1].update(status="completed", conclusion="failure")
+        api.download = changed
+        with self.assertRaises(ValueError):
+            self.restore(api)
+        self.assertEqual(api.downloads, 1)
+        self.assertFalse((self.root / "restored").exists())
+
+    def test_complete_job_history_pagination_rejects_truncation_and_duplicates(self):
+        class Pages:
+            def json(self, path):
+                page = int(path.rsplit("page=", 1)[-1])
+                return {"total_count": 101, "jobs": [{"id": n + 1} for n in
+                    range((page - 1) * 100, min(page * 100, 101))]}
+        self.assertEqual(len(shared.github_items(Pages(), "/jobs?filter=all", "jobs")), 101)
+        for document in ({"total_count": 101, "jobs": [{"id": 1}]},
+                         {"total_count": 2, "jobs": [{"id": 1}, {"id": 1}]},
+                         {"total_count": 1001, "jobs": []}):
+            class Invalid:
+                def json(self, path): return document
+            with self.subTest(document=document), self.assertRaises(ValueError):
+                shared.github_items(Invalid(), "/jobs?filter=all", "jobs")
 
     def test_conflicting_compile_flags_or_wrappers_are_rejected(self):
         for name in ("RUSTFLAGS", "CARGO_ENCODED_RUSTFLAGS", "RUSTC_WRAPPER",

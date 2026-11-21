@@ -6,6 +6,7 @@ Invalid selected-producer evidence is an error, never a cache miss.
 """
 
 import argparse
+from datetime import datetime
 import hashlib
 import json
 import os
@@ -338,6 +339,126 @@ def artifact_name(role, attempt):
     return f"rust-fast-unit-tests-{attempt}-{role}"
 
 
+def github_items(api, path, key):
+    """Read one complete bounded inventory; never select from a partial page."""
+    items, seen, total = [], set(), None
+    separator = "&" if "?" in path else "?"
+    for page in range(1, 11):
+        document = api.json(f"{path}{separator}per_page=100&page={page}")
+        count, batch = document.get("total_count"), document.get(key)
+        if (type(count) is not int or not 0 <= count <= 1000 or not isinstance(batch, list)
+                or len(batch) > 100 or (total is not None and total != count)):
+            raise ValueError("invalid, oversized or changing GitHub inventory")
+        total = count
+        for item in batch:
+            if (not isinstance(item, dict) or type(item.get("id")) is not int
+                    or item["id"] <= 0 or item["id"] in seen):
+                raise ValueError("invalid or duplicate GitHub inventory identity")
+            seen.add(item["id"])
+            items.append(item)
+        if len(items) == total:
+            return items
+        if len(items) > total or len(batch) < 100:
+            raise ValueError("incomplete GitHub inventory")
+    raise ValueError("GitHub inventory exceeded the page bound")
+
+
+def _job_time(job, key):
+    value = job.get(key)
+    if not isinstance(value, str) or not re.fullmatch(
+            r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]+)?Z", value):
+        raise ValueError("missing or invalid GitHub execution timestamp")
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def _execution_fingerprint(job):
+    """Fields GitHub preserves when it copies a completed job into a rerun."""
+    fields = ("run_id", "head_sha", "name", "status", "conclusion", "started_at", "completed_at",
+              "runner_id", "runner_name", "runner_group_id", "runner_group_name", "labels", "steps")
+    if (any(field not in job for field in fields) or job["status"] != "completed"
+            or job["conclusion"] not in {"success", "failure"}
+            or type(job["runner_id"]) is not int or job["runner_id"] <= 0
+            or not isinstance(job["runner_name"], str) or not job["runner_name"]
+            or (job["runner_group_id"] is not None and (
+                type(job["runner_group_id"]) is not int or job["runner_group_id"] < 0))
+            or (job["runner_group_name"] is not None and not isinstance(job["runner_group_name"], str))
+            or not isinstance(job["labels"], list) or not job["labels"]
+            or any(not isinstance(label, str) or not label for label in job["labels"])
+            or not isinstance(job["steps"], list) or not job["steps"]):
+        raise ValueError("incomplete copied GitHub execution evidence")
+    numbers = set()
+    execution_start, execution_end = (_job_time(job, key) for key in ("started_at", "completed_at"))
+    for step in job["steps"]:
+        if (not isinstance(step, dict)
+                or not {"number", "name", "status", "conclusion", "started_at", "completed_at"} <= step.keys()
+                or type(step["number"]) is not int or step["number"] <= 0 or step["number"] in numbers
+                or not isinstance(step["name"], str) or not step["name"]
+                or step["status"] != "completed"
+                or step["conclusion"] not in {"success", "failure", "skipped", "cancelled", "timed_out", "neutral"}):
+            raise ValueError("incomplete copied GitHub step evidence")
+        start, end = (_job_time(step, key) for key in ("started_at", "completed_at"))
+        if not execution_start <= start <= end <= execution_end:
+            raise ValueError("invalid GitHub step execution chronology")
+        numbers.add(step["number"])
+    fingerprint = {key: job[key] for key in fields}
+    if job["runner_group_id"] == 0:
+        # GitHub's retained hosted execution uses group 0, while its copied
+        # record uses null (observed on run44945072128, both producer/worker).
+        # Positive group IDs and self-hosted identities are never normalized.
+        if (job["runner_group_name"] != "GitHub Actions"
+                or job["runner_name"] != f"GitHub Actions {job['runner_id']}"
+                or "self-hosted" in job["labels"]):
+            raise ValueError("unrecognized zero GitHub runner group")
+        fingerprint["runner_group_id"] = None
+    return fingerprint
+
+
+def select_actual_execution(jobs, *, run_id, head_sha, max_attempt):
+    """Resolve the latest logical job through proven copies, never older results.
+
+    Callers first filter by their exact logical job name. GitHub partial reruns
+    can create a new ID/attempt *after* a retained execution already finished.
+    Such a record is usable only through an unbroken, identical execution chain
+    ending at the original job. A newer real execution always takes precedence.
+    """
+    if (type(run_id) is not int or run_id <= 0 or type(max_attempt) is not int or max_attempt <= 0
+            or not isinstance(head_sha, str) or not re.fullmatch(r"[0-9a-f]{40}", head_sha)
+            or not isinstance(jobs, list)):
+        raise ValueError("invalid expected GitHub execution identity")
+    ids, attempts, names = set(), set(), set()
+    for job in jobs:
+        if (not isinstance(job, dict) or type(job.get("id")) is not int or job["id"] <= 0
+                or job["id"] in ids or job.get("run_id") != run_id or job.get("head_sha") != head_sha
+                or type(job.get("run_attempt")) is not int or not 1 <= job["run_attempt"] <= max_attempt
+                or job["run_attempt"] in attempts or not isinstance(job.get("name"), str) or not job["name"]
+                or job.get("status") not in {"queued", "in_progress", "completed"}):
+            raise ValueError("invalid or ambiguous GitHub execution identity")
+        ids.add(job["id"])
+        attempts.add(job["run_attempt"])
+        names.add(job["name"])
+    if len(names) > 1:
+        raise ValueError("ambiguous GitHub logical job name")
+    ordered = sorted(jobs, key=lambda job: job["run_attempt"])
+    if not ordered:
+        return None
+    latest = ordered[-1]
+    if latest["status"] != "completed" or latest.get("conclusion") not in {"success", "failure"}:
+        return latest
+    for index in range(len(ordered) - 1, -1, -1):
+        job = ordered[index]
+        created, started, completed = (_job_time(job, key) for key in
+                                        ("created_at", "started_at", "completed_at"))
+        fingerprint = _execution_fingerprint(job)
+        if created <= started <= completed:
+            return job
+        if (not started <= completed < created or index == 0
+                or ordered[index - 1]["run_attempt"] != job["run_attempt"] - 1):
+            raise ValueError("unproven copied GitHub execution chronology")
+        if fingerprint != _execution_fingerprint(ordered[index - 1]):
+            raise ValueError("copied GitHub execution differs from its latest predecessor")
+    raise ValueError("missing original GitHub execution")
+
+
 def validate_run(run, identity):
     repository = identity["source"]["repository"]
     if (run.get("head_sha") != identity["source"]["head"] or run.get("event") != "pull_request"
@@ -350,9 +471,12 @@ def validate_run(run, identity):
         raise ValueError("selected producer run identity mismatch")
 
 
-def validate_artifact(artifact, run, role):
+def validate_artifact(artifact, run, role, *, producer_attempt=None):
+    attempt = run["run_attempt"] if producer_attempt is None else producer_attempt
+    if type(attempt) is not int or not 1 <= attempt <= run["run_attempt"]:
+        raise ValueError("invalid actual producer attempt")
     source = artifact.get("workflow_run", {})
-    if (artifact.get("name") != artifact_name(role, run["run_attempt"])
+    if (artifact.get("name") != artifact_name(role, attempt)
             or artifact.get("expired") is not False
             or type(artifact.get("id")) is not int or artifact["id"] <= 0
             or type(artifact.get("size_in_bytes")) is not int
@@ -406,30 +530,30 @@ def restore(role, output, *, root=ROOT, env=None, api=None, clock=time.monotonic
         validate_run(run, identity)
         if (run["id"], run["run_attempt"]) != (run_id, attempt):
             raise ValueError("producer run or attempt changed during discovery")
-        jobs = api.json(f"{base}/runs/{run_id}/attempts/{attempt}/jobs?per_page=100").get("jobs", [])
+        jobs_path = f"{base}/runs/{run_id}/jobs?filter=all"
+        jobs = github_items(api, jobs_path, "jobs")
         label = f"Build unit-test archive ({role})"
         selected = [job for job in jobs if job.get("name", "") == label
                     or job.get("name", "").endswith(" / " + label)]
-        if selected and (len(selected) != 1 or selected[0].get("run_id") != run_id
-                         or selected[0].get("run_attempt") != attempt):
-            raise ValueError("canonical producer job identity mismatch")
-        if not selected or selected[0].get("status") == "queued":
+        job = select_actual_execution(selected, run_id=run_id,
+                                      head_sha=identity["source"]["head"], max_attempt=attempt)
+        if job is None or job.get("status") == "queued":
             if run.get("status") in ("queued", "in_progress") and clock() < discovery_deadline:
                 sleep(max(0, min(5, discovery_deadline - clock())))
                 run = api.json(f"{base}/runs/{run_id}")
                 continue
             raise Unavailable("canonical build not discovered within its short grace period")
-        job = selected[0]
         if job.get("status") != "in_progress" and not (
                 job.get("status") == "completed" and job.get("conclusion") == "success"):
             raise Unavailable("canonical archive build is not running or successful")
-        artifacts = api.json(f"{base}/runs/{run_id}/artifacts?per_page=100").get("artifacts", [])
-        matches = [item for item in artifacts if item.get("name") == artifact_name(role, attempt)]
+        producer_attempt = job["run_attempt"]
+        artifacts = github_items(api, f"{base}/runs/{run_id}/artifacts", "artifacts")
+        matches = [item for item in artifacts if item.get("name") == artifact_name(role, producer_attempt)]
         if len(matches) > 1:
             raise ValueError("ambiguous producer artifact")
         if matches:
             artifact = matches[0]
-            validate_artifact(artifact, run, role)
+            validate_artifact(artifact, run, role, producer_attempt=producer_attempt)
             output.parent.mkdir(parents=True, exist_ok=True)
             with tempfile.TemporaryDirectory(prefix="shared-dispatch-", dir=output.parent) as temporary:
                 temporary = Path(temporary)
@@ -442,9 +566,21 @@ def restore(role, output, *, root=ROOT, env=None, api=None, clock=time.monotonic
                 document = json.loads((staged / MANIFEST).read_text())
                 producer_identity = {**identity, "runtime": {**identity["runtime"],
                     "image": document.get("runtime", {}).get("image")}}
-                verify_manifest(staged, document, producer_identity, run_id, attempt)
+                verify_manifest(staged, document, producer_identity, run_id, producer_attempt)
                 if producer_identity["runtime"]["image"] != identity["runtime"]["image"]:
                     raise Unavailable("verified producer uses a different runner image")
+                observed = api.json(f"{base}/runs/{run_id}")
+                validate_run(observed, identity)
+                if (observed["id"], observed["run_attempt"]) != (run_id, attempt):
+                    raise ValueError("producer run or attempt changed during download")
+                current_jobs = github_items(api, jobs_path, "jobs")
+                current = select_actual_execution(
+                    [item for item in current_jobs if item.get("name") == job["name"]],
+                    run_id=run_id, head_sha=identity["source"]["head"], max_attempt=attempt)
+                if (current is None or (current["id"], current["run_attempt"]) != (job["id"], producer_attempt)
+                        or current.get("status") not in {"in_progress", "completed"}
+                        or (current["status"] == "completed" and current.get("conclusion") != "success")):
+                    raise ValueError("actual producer changed during download")
                 if output.exists():
                     output.rmdir()
                 staged.rename(output)

@@ -12,6 +12,7 @@ import tarfile
 import textwrap
 import unittest
 from unittest.mock import patch
+from urllib.parse import parse_qs, urlparse
 import zipfile
 
 import prebuilt
@@ -188,24 +189,40 @@ class NativeEntryPrebuilt(unittest.TestCase):
                     "digest": "sha256:" + prebuilt.sha256(bundle),
                     "workflow_run": {"id": 101, "head_sha": self.binding["head"],
                                      "repository_id": 51, "head_repository_id": 51}}
+        job = {"id": 301, "name": "Build unit-test archive (lib)", "run_id": 101,
+               "run_attempt": 2, "head_sha": self.binding["head"],
+               "status": "completed", "conclusion": "success",
+               "created_at": "2026-11-21T20:16:47Z", "started_at": "2026-11-21T20:16:49Z",
+               "completed_at": "2026-11-21T20:28:00Z", "runner_id": 1000366763,
+               "runner_name": "GitHub Actions 1000366763", "runner_group_id": 0,
+               "runner_group_name": "GitHub Actions", "labels": ["ubuntu-24.04"],
+               "steps": [{"name": "Set up job", "status": "completed", "conclusion": "success",
+                          "number": 1, "started_at": "2026-11-21T20:16:51Z",
+                          "completed_at": "2026-11-21T20:16:54Z"}]}
 
         class API:
             runs = [run]
             artifacts = [artifact]
-            jobs = []
+            jobs = [job]
+            calls = []
+            downloaded = []
 
             def json(self, path):
+                self.calls.append(path)
+                page = int(parse_qs(urlparse(path).query).get("page", ["1"])[0])
+                start = 100 * (page - 1)
                 if "/workflows/" in path:
                     return {"workflow_runs": self.runs}
                 if "/artifacts?" in path:
-                    return {"artifacts": self.artifacts}
+                    return {"total_count": len(self.artifacts), "artifacts": self.artifacts[start:start + 100]}
                 if "/jobs?" in path:
-                    return {"jobs": self.jobs}
+                    return {"total_count": len(self.jobs), "jobs": self.jobs[start:start + 100]}
                 return run
 
             def download(self, artifact_id, target):
                 if artifact_id != artifact["id"]:
                     raise AssertionError("wrong immutable artifact requested")
+                self.downloaded.append(artifact_id)
                 target.write_bytes(bundle.read_bytes())
 
         return API(), run, artifact
@@ -229,6 +246,7 @@ class NativeEntryPrebuilt(unittest.TestCase):
                     artifact["workflow_run"]["head_sha"] = "2" * 40
                 elif mutation == "attempt":
                     run["run_attempt"] = 3
+                    api.jobs[0]["run_attempt"] = 3
                     artifact["name"] = "native-entry-room-3"
                     artifact["workflow_run"]["id"] = 999
                 elif mutation == "digest":
@@ -257,8 +275,7 @@ class NativeEntryPrebuilt(unittest.TestCase):
         api, run, _ = self.artifact_api()
         api.artifacts = []
         run["status"] = "in_progress"
-        api.jobs = [{"name": "Build unit-test archive (lib)", "run_id": 101,
-                     "run_attempt": 2, "status": "in_progress"}]
+        api.jobs[0].update(status="in_progress", conclusion=None, completed_at=None)
         original = api.json
         api.json = lambda path: dict(run, run_attempt=3) if path.endswith("/runs/101") else original(path)
         with self.assertRaisesRegex(ValueError, "attempt changed"):
@@ -267,6 +284,108 @@ class NativeEntryPrebuilt(unittest.TestCase):
                              env={"GITHUB_REPOSITORY": "Oteryn/Oteryn-Game",
                                   "EXPECTED_SHA": self.binding["head"]})
         self.assertFalse((self.root / "restored").exists())
+
+    def copied_jobs(self, api):
+        # PR #3367's observed partial-rerun chronology and hosted runner sentinel;
+        # the logical role/source stay scoped to this isolated executable fixture.
+        original = copy.deepcopy(api.jobs[0])
+        original.update(id=136971564220, run_attempt=1)
+        alias = copy.deepcopy(original)
+        alias.update(id=136978455148, run_attempt=2, created_at="2026-11-21T20:42:10Z",
+                     runner_group_id=None)
+        api.jobs = [original, alias]
+
+    def test_copied_success_uses_the_original_producer_attempt_and_immutable_artifact(self):
+        api, _, artifact = self.artifact_api()
+        self.copied_jobs(api)
+        artifact["name"] = "native-entry-room-1"
+        output = self.restore(api)
+        self.assertEqual(prebuilt.executable(output, self.root), output / prebuilt.TARGET)
+        self.assertEqual(api.downloaded, [artifact["id"]])
+        self.assertTrue(any("jobs?filter=all" in path for path in api.calls))
+
+    def test_copied_producer_history_is_resolved_beyond_the_first_job_page(self):
+        api, _, artifact = self.artifact_api()
+        self.copied_jobs(api)
+        original, alias = api.jobs
+        api.jobs = [original, *[dict(original, id=400 + i, name=f"Other job {i}")
+                                for i in range(99)], alias]
+        artifact["name"] = "native-entry-room-1"
+        self.assertTrue((self.restore(api) / prebuilt.TARGET).is_file())
+        self.assertTrue(any("jobs?filter=all&per_page=100&page=2" in path for path in api.calls))
+
+    def test_new_attempt_during_download_cannot_expose_the_prior_artifact(self):
+        api, run, _ = self.artifact_api()
+        download = api.download
+
+        def changed(artifact_id, path):
+            download(artifact_id, path)
+            run["run_attempt"] = 3
+
+        api.download = changed
+        with self.assertRaisesRegex(ValueError, "attempt changed during restore"):
+            self.restore(api)
+        self.assertFalse((self.root / "restored").exists())
+
+    def test_failed_current_producer_cannot_reuse_its_own_published_artifact(self):
+        api, _, _ = self.artifact_api()
+        api.jobs[0]["conclusion"] = "failure"
+        api.jobs[0]["steps"][0]["conclusion"] = "failure"
+        with self.assertRaisesRegex(prebuilt.transport().Unavailable, "not running or successful"):
+            self.restore(api)
+        self.assertFalse(any("/artifacts?" in path for path in api.calls))
+        self.assertEqual(api.downloaded, [])
+        self.assertFalse((self.root / "restored").exists())
+
+    def test_failure_of_the_same_producer_during_download_cannot_expose_the_artifact(self):
+        api, _, artifact = self.artifact_api()
+        download = api.download
+
+        def failed(artifact_id, path):
+            download(artifact_id, path)
+            api.jobs[0]["conclusion"] = "failure"
+            api.jobs[0]["steps"][0]["conclusion"] = "failure"
+
+        api.download = failed
+        with self.assertRaisesRegex(ValueError, "no longer running or successful"):
+            self.restore(api)
+        self.assertEqual(api.downloaded, [artifact["id"]])
+        self.assertFalse((self.root / "restored").exists())
+
+    def test_unproved_copy_is_rejected_instead_of_reusing_or_silently_falling_back(self):
+        for mutation in ("missing-original", "changed-runner"):
+            with self.subTest(mutation=mutation):
+                api, _, artifact = self.artifact_api()
+                self.copied_jobs(api)
+                artifact["name"] = "native-entry-room-1"
+                if mutation == "missing-original":
+                    api.jobs = api.jobs[1:]
+                else:
+                    api.jobs[-1]["runner_name"] = "different-runner"
+                with self.assertRaises(ValueError):
+                    self.restore(api)
+                self.assertEqual(api.downloaded, [])
+                self.assertFalse((self.root / "restored").exists())
+
+    def test_new_real_failed_or_incomplete_producer_never_reuses_an_older_archive(self):
+        for status in ("completed", "in_progress", "queued"):
+            with self.subTest(status=status):
+                api, run, artifact = self.artifact_api()
+                old = dict(api.jobs[0], id=300, run_attempt=1)
+                latest = dict(api.jobs[0], status=status, created_at="2026-11-21T20:42:10Z",
+                              started_at=None if status == "queued" else "2026-11-21T20:42:13Z",
+                              completed_at="2026-11-21T20:43:00Z" if status == "completed" else None,
+                              conclusion="failure" if status == "completed" else None)
+                latest["steps"] = [dict(step, started_at=latest["started_at"],
+                                        completed_at=latest["completed_at"], conclusion="failure")
+                                   for step in latest["steps"]] if status == "completed" else []
+                api.jobs = [old, latest]
+                run["status"] = "in_progress"
+                artifact["name"] = "native-entry-room-1"
+                with self.assertRaises(prebuilt.transport().Unavailable):
+                    self.restore(api)
+                self.assertEqual(api.downloaded, [])
+                self.assertFalse((self.root / "restored").exists())
 
 
 class NativeEntryProcessControl(unittest.TestCase):

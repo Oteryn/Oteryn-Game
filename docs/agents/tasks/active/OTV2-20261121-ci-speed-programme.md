@@ -16,7 +16,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT standalone CI programme coordinator, issue 3352
 created_at: 2026-11-21T09:29:01Z
-updated_at: 2026-11-21T20:00:58Z
+updated_at: 2026-11-21T21:07:00Z
 execution_policy: continuous_progress
 owned_paths:
   - .github/workflows/
@@ -53,11 +53,14 @@ checks and protected-main integration. No achieved latency target is claimed.
   not quest automation or a change to that programme's control plane.
 - Integrated main: `5695f7b8af567086efa11bdeb47a2fd609f24c2c`; sole writer:
   `chatgpt/ci-bottlenecks-single-pr-20261121`, PR #3367. State: **AUTHORING**
-  for a successor of `448efc0582425c22bd5b5daab7b64cee45475d7c`.
-  Root ended the freeze at 20:00:58 UTC after an actual-workflow reproduction
-  showed three new exact references defeating #3365's auxiliary narrowing.
-  The repair recognizes only those complete fixed-reference lines. Exact-file
-  consumers, unknown literals, globs and dynamic references remain FULL.
+  for a successor of `cbdd2e2e3f5c0e9c85994009325ee24007c970bc`.
+  Root ended the freeze at 20:48:28 UTC after a real partial rerun exposed a P1:
+  GitHub copied old executions to new job IDs/attempts, so consumers requested
+  nonexistent new-attempt artifacts. A owns collector/Dispatch selection; B
+  wires native/World; C verifies the contract and unchanged Node mechanism.
+  Resolve only proven identical execution aliases, retaining the latest real
+  failure and every source/attempt/digest/inventory guard. The earlier exact-line
+  auxiliary-routing repair remains, with unknown/dynamic references still FULL.
   Integrated #3366's field-cursor revert, #3362's two-job limit, canonical
   fast-producer registration and all five earlier CI repairs remain intact.
 - Publication: native Git dry-run returned `fatal: unable to get password from
@@ -88,12 +91,13 @@ is claimed until the integrated head has run; compare both critical-path time
 and summed runner time, including artifact transfer and fallback builds.
 
 Acceptance pending: successor qualification and post-merge observation. On 448,
-fast 44941494744 passed all 25 workers/collectors in 19m16; content 44941494805
-took 7m50, retained PG 44941494715 took 13m02, WorldProject 44941495199 took 24m15.
-Native 44941494679 passed 3 tests; manual 44941617744 passed 2043+38 tests.
-PG 44942645764 reused 2/3 eligible archives and all 14 reused workers passed;
-other PG/Node workers were still running. These results qualify only 448.
-QuestPC8 varied from 19m36 on b75 to 11m12.6 on 448; neither is a fixed floor.
+fast passed in 19m16 and all 36 PG partitions/heavy-gate passed in 26m11.
+On cbdd, all 12 content/World/native/regression/manual jobs passed: content7m53,
+retained PG13m03, World22m46, native3/3, manual2043+38. Fast attempt1 was stopped
+after cache download6.75GB completed in3m44 but tar/unzstd stalled for18m;
+34 successes remained and one job rerun exposed the copied-record P1.
+These results do not qualify the next head. QuestPC8 varied from19m36 to11m12.6;
+neither is a fixed floor. No whole-machine RAM or financial saving is claimed.
 
 Prior main `44920758625` failed Node admission contention and MAX501; the first
 PR run repeated MAX501 with three competing tests. On b75, PG job136951451690
@@ -103,10 +107,9 @@ successor needs its own qualification; no SQL or Node runtime repair is claimed.
 
 ### Second-wave local validation on the integrated tree
 
-- Repository-tool suite: 283/283 tests, zero failures/errors/skips.
-  The earlier integrated run had 278 tests. The old heavy-gate fixtures were
-  updated for the actual canonical producer and new dependencies; all prior
-  failure/skip cases remain and the focused 26-test suite passes.
+- Execution-alias repair: 296 repository tests, 24 native and 18 World tests
+  pass. The earlier heavy-gate fixture repair retains all negative cases;
+  its focused 26-test suite passes.
 - Governance: 135 tests and validation pass; repository policy passes for
   23 files and 78 workflows.
 - World/native helpers: 51 tests pass. Node prebuilt: 15; repaired Platform: 16;
@@ -192,17 +195,17 @@ before publication. Worker summaries do not replace source inspection.
 ## Independent review
 
 Root is the sole dispatcher under OWNER_FUNDED_AI_POLICY.md. Both authorized
-reviews completed clean: first 7533 (comment 7066802278), then 448
-(comment 7068364491, 19:54:29 UTC). The new bounded routing repair is outside
-those exact heads; it receives direct source review and behavioral validation.
-No third paid review is authorized or dispatched. The bound META review policy
-requires re-review only for a material risk-bearing delta; any such outstanding
-requirement must be reported rather than inventing review coverage.
-Coordinator assessment: this exact-line parser correction restores the existing
-auxiliary route without changing canonical dependencies, selected test inventories,
-permissions, gates or artifact custody. Actual-workflow RED/GREEN tests preserve
-FULL for exact consumers, unknown literals, globs and dynamic paths; the previous
-material review remains representative. No new material review is required.
+reviews completed clean: 7533 (comment7066802278), then448 (comment7068364491).
+Neither is represented as a review of later heads. The cbdd routing repair was
+assessed as non-material with actual-workflow RED/GREEN and negative cases.
+The execution-alias repair materially changes CI job selection. It has direct
+coordinator source review and independent peer verification with real API pairs,
+an actual result ZIP, all 30 logical job histories and negative identity cases.
+The two native reviews do not cover this later code. No third paid review is
+dispatched. Current-session owner instructions authorize implementing and
+force-merging this bounded single-PR batch; retain that explicit authorization
+instead of claiming prior review coverage. Current-head required gates and a
+real collector/consumer partial rerun remain qualification conditions.
 
 ## PR and closeout
 

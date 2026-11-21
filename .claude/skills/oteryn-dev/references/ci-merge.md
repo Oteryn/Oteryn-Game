@@ -50,6 +50,11 @@ The collector resolves each role's latest actual job attempt: an unchanged
 producer may be reused after a partial rerun, but an older success cannot hide
 a newer failed, skipped or incomplete attempt. Preserve the exact run, source
 SHA, artifact ID, digest, runner identity and test inventory checks.
+GitHub may copy a completed job into a later attempt with a new API ID while
+retaining its original execution times. Resolve only an unambiguous identical
+execution record to its original producer attempt; never pick an older artifact
+merely because it exists. Qualify a collector-only partial rerun on the frozen
+head and exercise native/World consumers against the resulting copied records.
 
 The three dedicated Dispatch archives use one canonical workspace feature
 recipe for both fast tests and PostgreSQL. The PG producer checks for a verified

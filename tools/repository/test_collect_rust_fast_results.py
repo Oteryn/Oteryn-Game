@@ -204,6 +204,16 @@ class CollectRustFastResultsTests(unittest.TestCase):
         for index, (role, attempt) in enumerate(attempts.items(), 1):
             jobs.append({"id": 100 + index, "name": f"caller / Unit-test archive ({role}, 2/5)",
                          "run_id": 71, "run_attempt": attempt, "status": "completed",
+                         "head_sha": self.env["EXPECTED_SHA"],
+                         "created_at": f"2026-11-21T20:{attempt}0:00Z",
+                         "started_at": f"2026-11-21T20:{attempt}0:01Z",
+                         "completed_at": f"2026-11-21T20:{attempt}1:00Z",
+                         "runner_id": 123, "runner_name": "GitHub Actions 123",
+                         "runner_group_id": None, "runner_group_name": "GitHub Actions",
+                         "labels": ["ubuntu-24.04"],
+                         "steps": [{"name": "Run tests", "number": 1, "status": "completed",
+                                    "conclusion": "success", "started_at": f"2026-11-21T20:{attempt}0:01Z",
+                                    "completed_at": f"2026-11-21T20:{attempt}1:00Z"}],
                          "conclusion": "failure" if role in failed else "success"})
             result = json.loads(self.results[role].read_text())
             result["run_attempt"] = str(attempt)
@@ -260,6 +270,16 @@ class CollectRustFastResultsTests(unittest.TestCase):
         self.assertEqual((code, cacheable), (100, True))
         self.assertEqual(api.downloads, [201, 202])
         self.assertTrue((self.extract / "lib/junit.xml").is_file())
+
+    def test_copied_success_record_uses_the_actual_original_artifact_attempt(self):
+        # GitHub partial reruns create new job IDs/run_attempt values while
+        # retaining the original execution, including all step timestamps.
+        api = self.api()
+        original = api.jobs[0]
+        api.jobs.append({**copy.deepcopy(original), "id": 103, "run_attempt": 2,
+                         "created_at": "2026-11-21T20:22:00Z"})
+        self.assertEqual(self.downloaded(api), (0, True))
+        self.assertEqual(api.downloads, [201, 202])
 
     def test_newest_failed_job_without_result_never_falls_back_to_prior_success(self):
         api = self.api()
