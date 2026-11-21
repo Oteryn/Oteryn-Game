@@ -3,10 +3,11 @@
 /// `GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX` (D3 §4.2): a corpse container
 /// holds at most this many entries; a loot entry's `placement_ordinal` is
 /// `1..=` this.
-pub const CORPSE_CONTAINER_ENTRIES_MAX: u32 = 30;
+pub const CORPSE_CONTAINER_ENTRIES_MAX: u32 = 48;
 
 /// `GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX` (D3 §4.2): a corpse container
-/// holds at most 30 entries (SUMMER owner decision 20). The independent
+/// holds at most 48 entries (CORPSE48 owner decision 2026-11-17, Tibia
+/// Global; it superseded SUMMER owner decision 20's 30). The independent
 /// `COMBAT01-LOOT-PLAN-ITEMS` ceiling still bounds generated loot plans. Checked against the whole plan,
 /// before the corpse or any entry is frozen.
 pub const GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX: usize = CORPSE_CONTAINER_ENTRIES_MAX as usize;

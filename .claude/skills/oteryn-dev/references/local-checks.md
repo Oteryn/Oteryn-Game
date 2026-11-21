@@ -50,6 +50,13 @@ run all of it, and fix every failure of one run in one push.
     change went red more than once before. Run each one it lists, or report it
     as not run with the reason.
 
+For shared CI artifacts, run the changed helpers' provenance and partial-rerun
+tests as well as the parent gate contract tests. Workflow syntax alone cannot
+prove the complete archive union or prevent an older success from masking a
+newer failed attempt. Check generated CI pins with
+`python3 tools/repository/refresh_ci_workflow_pins.py --check`; see
+`ci-merge.md`, *Shared build artifacts and partial reruns*.
+
 ## Jobs that only run after the merge
 
 The PR gate does not run these (`ci-merge.md`, *Blind spot*). Run the

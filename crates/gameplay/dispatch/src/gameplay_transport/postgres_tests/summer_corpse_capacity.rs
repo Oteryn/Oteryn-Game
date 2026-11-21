@@ -1,4 +1,5 @@
-//! SUMMER decision 20: shared corpse owner capacity, mint replay and full drain.
+//! SUMMER decision 20: shared corpse owner capacity, mint replay and full drain. CORPSE48
+//! (owner 2026-11-17) raised the capacity from 30 to 48; the full corpse is now 48 entries.
 use super::TestResult;
 
 use super::kill_reward_e2e_fixtures::{scenario_thread, scenario_with_capacity};

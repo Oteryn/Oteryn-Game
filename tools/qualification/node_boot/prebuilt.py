@@ -12,18 +12,27 @@ import subprocess
 import tarfile
 import tempfile
 
-from matrix import ROOT, validate_shard
+from matrix import ROOT, pinned_sha, validate_shard
 
 
 CARGO = ("cargo", "+1.100.0")
 SERVER_BINS = ("oteryn-game-server", "oteryn-game-ops", "oteryn-game-migrate")
 LIBTEST = "node-boot-libtest"
 COMPILER = "oteryn-world-bundle-compiler"
+PORTAL = "oteryn-portal"
+SPAWN_PROOF = "node::serve::qualification_fixture::tests::qualification_spawn_transaction_returns_pool_and_bounds_backend"
 MANIFEST = "manifest.json"
 BUNDLES = {
     "default": (*SERVER_BINS, LIBTEST),
+    "qualification-spawn": (*SERVER_BINS, LIBTEST),
     "qualification-clock": (*SERVER_BINS, LIBTEST),
     "world-compiler": (COMPILER,),
+    "server-seam": (LIBTEST,),
+    "platform": (PORTAL,),
+}
+FEATURES = {
+    "qualification-spawn": ("qualification-spawn",),
+    "qualification-clock": ("qualification-clock", "qualification-spawn"),
 }
 
 
@@ -37,7 +46,7 @@ def select(shard):
     env = shard["env"]
     world = env.get("NODE_BOOT_WORLD", "1") == "1" and env.get("NODE_BOOT_SPELLS") != "1"
     if not world:
-        return "default", False, False
+        return "qualification-spawn", False, False
     return "qualification-clock", env.get("NODE_BOOT_SKIP_BASIC") != "1", True
 
 
@@ -49,7 +58,7 @@ def plan(shards):
         variant, needs_default, needs_world = select(shard)
         needed.add(variant)
         if needs_default:
-            needed.add("default")
+            needed.add("qualification-spawn")
         if needs_world:
             needed.add("world-compiler")
     return [variant for variant in BUNDLES if variant in needed]
@@ -80,14 +89,27 @@ def cargo_executables(package, args, kind, names, *, test=False):
     return paths
 
 
-def identity(variant):
+def identity(variant, platform_source=None):
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
     workspace = subprocess.check_output(
         ["git", "rev-parse", "--show-toplevel"], cwd=ROOT, text=True,
     ).strip()
     if not re.fullmatch(r"[a-f0-9]{40}", head) or Path(workspace) != ROOT:
         raise ValueError("invalid Node boot checkout identity")
-    return {"head": head, "workspace": workspace, "variant": variant}
+    manifest = {
+        "head": head, "workspace": workspace, "variant": variant,
+        "toolchain": "1.100.0", "features": list(FEATURES.get(variant, ())),
+        "profile": {"world-compiler": "release", "server-seam": "test", "platform": "dev"}.get(variant, "dev+test"),
+    }
+    if variant == "platform":
+        source = canonical(platform_source or ROOT / "_platform")
+        expected = pinned_sha(ROOT, Path("tools/qualification/game_platform/lifecycle.sh"), "GAME_PLATFORM_SHA")
+        actual = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=source, text=True).strip()
+        dirty = subprocess.check_output(["git", "diff", "--name-only", "HEAD", "--"], cwd=source, text=True).strip()
+        if actual != expected or dirty:
+            raise ValueError("Platform checkout must match the clean pinned producer")
+        manifest.update(platform_head=actual, platform_workspace=str(source))
+    return manifest
 
 
 def sha256(path):
@@ -95,26 +117,42 @@ def sha256(path):
         return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
-def build(variant, output_dir):
-    manifest = identity(variant)
+def build(variant, output_dir, platform_source=None, *, server_seam_source=None):
+    if server_seam_source is not None:
+        if variant != "default":
+            raise ValueError("only the shipping default variant can reuse Server Seam's library")
+        verify("server-seam", server_seam_source)
+    manifest = identity(variant, platform_source)
     if variant == "world-compiler":
         paths = cargo_executables(COMPILER, ("build", "--release", "--bin", COMPILER), "bin", (COMPILER,))
+    elif variant == "platform":
+        source = Path(manifest["platform_workspace"])
+        paths = cargo_executables(PORTAL, ("build", "--manifest-path", str(source / "portal-rs/Cargo.toml"), "--bin", PORTAL), "bin", (PORTAL,))
     else:
-        features = ("--features", "qualification-clock") if variant == "qualification-clock" else ()
-        paths = cargo_executables("oteryn-game-server", ("build", "--bins", *features), "bin", SERVER_BINS)
-        tests = cargo_executables(
-            "oteryn-game-server", ("test", "--lib", "--no-run", *features), "lib", ("oteryn_game_server",), test=True,
+        features = ("--features", ",".join(FEATURES[variant])) if variant in FEATURES else ()
+        paths = {} if variant == "server-seam" else cargo_executables(
+            "oteryn-game-server", ("build", "--bins", *features), "bin", SERVER_BINS,
         )
-        paths[LIBTEST] = tests["oteryn_game_server"]
-        listed = subprocess.check_output([paths[LIBTEST], "--list", "--ignored"], cwd=ROOT / "apps/game-server", text=True)
-        expected = {
+        if server_seam_source is not None:
+            paths[LIBTEST] = canonical(server_seam_source / "server-seam" / LIBTEST)
+        else:
+            tests = cargo_executables(
+                "oteryn-game-server", ("test", "--lib", "--no-run", *features), "lib", ("oteryn_game_server",), test=True,
+            )
+            paths[LIBTEST] = tests["oteryn_game_server"]
+        listed = subprocess.check_output([paths[LIBTEST], "--list"], cwd=ROOT / "apps/game-server", text=True)
+        expected = {"qualification::server_seam_real_owners_over_tcp_tls: test"} if variant == "server-seam" else {
             "qualification::node_boot_seam_against_running_node: test",
             "qualification::node_boot_spells_against_running_node: test",
         }
+        if "qualification-spawn" in FEATURES.get(variant, ()):
+            expected.add(f"{SPAWN_PROOF}: test")
         if not expected.issubset(listed.splitlines()):
-            raise ValueError("Game library test executable lacks the Node boot tests")
-    if identity(variant) != manifest:
+            raise ValueError("Game library test executable lacks required qualification/spawn tests")
+    if identity(variant, platform_source) != manifest:
         raise ValueError("checkout changed during the Node boot build")
+    if server_seam_source is not None:
+        verify("server-seam", server_seam_source)
     output_dir.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=output_dir) as work:
         work = Path(work)
@@ -132,8 +170,8 @@ def build(variant, output_dir):
         bundle.replace(output_dir / bundle.name)
 
 
-def verify_manifest(manifest, variant):
-    expected = identity(variant)
+def verify_manifest(manifest, variant, platform_source=None):
+    expected = identity(variant, platform_source)
     if not isinstance(manifest, dict) or manifest.keys() != {*expected, "sha256"}:
         raise ValueError("invalid Node boot manifest")
     if any(manifest[key] != value for key, value in expected.items()):
@@ -152,19 +190,19 @@ def canonical(path):
     return path.absolute()
 
 
-def verify(variant, root):
+def verify(variant, root, platform_source=None):
     directory = canonical(root / variant)
     manifest = canonical(directory / MANIFEST)
     if not manifest.is_file() or not 0 < manifest.stat().st_size <= 4096:
         raise ValueError("invalid Node boot manifest file")
-    digests = verify_manifest(json.loads(manifest.read_text(encoding="utf-8")), variant)
+    digests = verify_manifest(json.loads(manifest.read_text(encoding="utf-8")), variant, platform_source)
     for name, expected in digests.items():
         executable = canonical(directory / name)
         if not executable.is_file() or not os.access(executable, os.X_OK) or sha256(executable) != expected:
             raise ValueError(f"Node boot executable does not match the manifest: {name}")
 
 
-def unpack(variant, archive_path, output_root):
+def unpack(variant, archive_path, output_root, platform_source=None):
     archive_path = canonical(archive_path)
     output_root = canonical(output_root)
     destination = output_root / variant
@@ -179,7 +217,7 @@ def unpack(variant, archive_path, output_root):
                     or not 0 < header.size <= 4096):
                 raise ValueError("invalid Node boot archive manifest member")
             manifest = json.load(archive.extractfile(header))
-            digests = verify_manifest(manifest, variant)
+            digests = verify_manifest(manifest, variant, platform_source)
             (staging / MANIFEST).write_text(json.dumps(manifest) + "\n", encoding="utf-8")
             seen = set()
             while (member := archive.next()) is not None:
@@ -208,6 +246,9 @@ def main():
         if command == "unpack":
             subparser.add_argument("archive", type=Path)
         subparser.add_argument("directory", type=Path)
+        subparser.add_argument("--platform-source", type=Path)
+        if command == "build":
+            subparser.add_argument("--server-seam-source", type=Path)
     subcommands.add_parser("plan").add_argument("shards_json", type=Path)
     subcommands.add_parser("select").add_argument("shard_json", type=json.loads)
     args = parser.parse_args()
@@ -219,13 +260,14 @@ def main():
             variant, needs_default, needs_world = select(args.shard_json)
             print(f"main_variant={variant}")
             print(f"needs_default={str(needs_default).lower()}")
+            print("default_variant=qualification-spawn")
             print(f"needs_world={str(needs_world).lower()}")
         elif args.command == "build":
-            build(args.variant, args.directory)
+            build(args.variant, args.directory, args.platform_source, server_seam_source=args.server_seam_source)
         elif args.command == "unpack":
-            unpack(args.variant, args.archive, args.directory)
+            unpack(args.variant, args.archive, args.directory, args.platform_source)
         else:
-            verify(args.variant, args.directory)
+            verify(args.variant, args.directory, args.platform_source)
     except (OSError, ValueError, subprocess.SubprocessError, tarfile.TarError) as error:
         parser.exit(1, f"Node boot prebuilt {args.command}: {error}\n")
 

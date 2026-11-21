@@ -83,6 +83,8 @@ fn death_tree_retirement_adds_private_source_proofs_without_replacing_authority_
 fn death_tree_retirement_preserves_the_existing_corpse_capacity()
 -> Result<(), Box<dyn std::error::Error>> {
     let corpse_max = crate::foundation::loot_data::CORPSE_CONTAINER_ENTRIES_MAX;
+    // Migrations 0242 and 2805 are history at the earlier 30-entry bound; CORPSE48
+    // (owner 2026-11-17) migration 2970 installs the current bound in both places.
     let corpse_capacity = oteryn_gameplay_durability::GAME_MIGRATOR
         .iter()
         .find(|migration| migration.version == 242)
@@ -91,19 +93,29 @@ fn death_tree_retirement_preserves_the_existing_corpse_capacity()
         corpse_capacity
             .sql
             .as_str()
-            .matches(&format!(
-                "CHECK (placement_ordinal BETWEEN 1 AND {corpse_max})"
-            ))
+            .matches("CHECK (placement_ordinal BETWEEN 1 AND 30)")
             .count(),
-        2,
-        "the reservation and receipt ceilings must match the admitted corpse capacity"
+        2
     );
     let retirement = oteryn_gameplay_durability::GAME_MIGRATOR
         .iter()
         .find(|migration| migration.version == 2805)
         .ok_or("death tree retirement migration")?;
-    assert!(retirement.sql.as_str().contains(&format!(
-        "AND (cause_kind<>''CORPSE_DECAY'' OR placement_ordinal<={corpse_max})"
+    assert!(
+        retirement
+            .sql
+            .as_str()
+            .contains("AND (cause_kind<>''CORPSE_DECAY'' OR placement_ordinal<=30))")
+    );
+    let current = oteryn_gameplay_durability::GAME_MIGRATOR
+        .iter()
+        .find(|migration| migration.version == 2970)
+        .ok_or("corpse 48 migration")?;
+    assert!(current.sql.as_str().contains(&format!(
+        "AND (cause_kind<>''CORPSE_DECAY'' OR placement_ordinal<={corpse_max}))"
+    )));
+    assert!(current.sql.as_str().contains(&format!(
+        "'NEW.parent_item_instance_id) > {corpse_max} THEN'"
     )));
     assert!(
         retirement
