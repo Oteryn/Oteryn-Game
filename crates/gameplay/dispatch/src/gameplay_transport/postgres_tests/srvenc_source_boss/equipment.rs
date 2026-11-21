@@ -71,6 +71,7 @@ pub(super) async fn settle_lost_expiry(
 
 fn scenario_thread(case: Case) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        eprintln!("POSTGRES_CASE_SKIPPED {}: OTERYN_TEST_POSTGRES_ADMIN_URL is absent", module_path!());
         return Ok(());
     }
     std::thread::Builder::new()

@@ -48,6 +48,7 @@ fn character_services_v2_review_tombstones_do_not_occupy_portfolio() -> TestResu
 }
 fn scenario(race: bool, tag: &'static str, projection_only: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        eprintln!("POSTGRES_CASE_SKIPPED {}: OTERYN_TEST_POSTGRES_ADMIN_URL is absent", module_path!());
         return Ok(());
     }
     super::journal_watchdog::run("character-services-v2", move |stage| {

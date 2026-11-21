@@ -48,6 +48,7 @@ async fn war(h: &Harness, n: u32, declaring: u32, opposing: u32, state: i16) -> 
 #[test]
 fn guild_emblem_relations_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        eprintln!("POSTGRES_CASE_SKIPPED {}: OTERYN_TEST_POSTGRES_ADMIN_URL is absent", module_path!());
         return Ok(());
     }
     std::thread::Builder::new()

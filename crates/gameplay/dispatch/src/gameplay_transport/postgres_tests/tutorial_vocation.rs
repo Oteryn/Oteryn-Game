@@ -122,6 +122,7 @@ fn vocation_scenario(case: Case) -> TestResult {
     let post_commit = matches!(case, Case::Uninstalled | Case::RetainedMovement | Case::RetainedBusy | Case::RetainedBacktrack | Case::RetainedStationary | Case::RetainedCleared | Case::RetainedResumed | Case::UncommittedPools | Case::FailedInitialProjection | Case::RetainedGone | Case::UncommittedStationaryCache | Case::TrialRefillBeforeInstall);
     let retained = case == Case::Retained || post_commit;
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        eprintln!("POSTGRES_CASE_SKIPPED {}: OTERYN_TEST_POSTGRES_ADMIN_URL is absent", module_path!());
         return Ok(());
     }
     super::kill_reward_e2e_fixtures::scenario_thread::run("tutorial-vocation", move || {

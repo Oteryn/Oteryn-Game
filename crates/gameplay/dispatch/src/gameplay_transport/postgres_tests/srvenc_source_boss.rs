@@ -49,6 +49,7 @@ const EXIT: MovementLocalPosition = MovementLocalPosition {
 fn srvenc_source_sugar_daddy_template_creates_instance_and_settles_personal_rewards_postgres()
 -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        eprintln!("POSTGRES_CASE_SKIPPED {}: OTERYN_TEST_POSTGRES_ADMIN_URL is absent", module_path!());
         return Ok(());
     }
     std::thread::Builder::new()
@@ -62,6 +63,7 @@ fn srvenc_source_sugar_daddy_template_creates_instance_and_settles_personal_rewa
 #[test]
 fn activity_equipment_clocks_charge_worn_items_and_imbuements_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        eprintln!("POSTGRES_CASE_SKIPPED {}: OTERYN_TEST_POSTGRES_ADMIN_URL is absent", module_path!());
         return Ok(());
     }
     std::thread::Builder::new()
