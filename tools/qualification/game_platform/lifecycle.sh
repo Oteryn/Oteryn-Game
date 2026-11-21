@@ -58,8 +58,26 @@ game_platform_cleanup() {
   fi
   [[ -z "$GP_PG_CONTAINER" ]] || docker rm --force --volumes "$GP_PG_CONTAINER" >/dev/null 2>&1 || true
 }
+game_platform_binary() {
+  if [[ -n "${GAME_PLATFORM_PREBUILT_DIR:-}" ]]; then
+    python3 "$GAME_SOURCE/tools/qualification/node_boot/prebuilt.py" verify platform \
+      "$GAME_PLATFORM_PREBUILT_DIR" --platform-source "$PLATFORM_SOURCE" \
+      || game_platform_fail preflight invalid_prebuilt_platform
+    python3 - "$GAME_PLATFORM_PREBUILT_DIR/platform/oteryn-portal" > "$WORK/portal-meta.json" <<'PY'
+import json, pathlib, sys
+print(json.dumps({"executable": str(pathlib.Path(sys.argv[1]).resolve(strict=True))}))
+PY
+  else
+    cargo +1.100.0 build --locked --manifest-path "$PLATFORM_SOURCE/portal-rs/Cargo.toml" -p oteryn-portal > "$WORK/portal-build.log" 2>&1 \
+      || game_platform_fail platform binary_build_failed
+    cargo +1.100.0 metadata --manifest-path "$PLATFORM_SOURCE/portal-rs/Cargo.toml" --no-deps --format-version 1 > "$WORK/portal-meta.json"
+  fi
+}
 game_platform_start() {
   local password port deadline ready=0
+  # A shared producer supplies bytes only; every consumer still starts and seeds
+  # its own PostgreSQL, identities, roles, services and ephemeral keys below.
+  game_platform_binary
   password="$(openssl rand -hex 32)"
   port="${GAME_PLATFORM_PLATFORM_PG_PORT:-15436}"
   [[ "$port" =~ ^[1-9][0-9]{3,4}$ && "$port" -le 65535 && "$port" != "$PG_PORT" ]] \
@@ -80,9 +98,6 @@ game_platform_start() {
   # The harness intentionally forwards only test.env names. A private exec-only
   # launcher supplies identity/OAuth configuration absent from that whitelist;
   # every migrate/seed/serve/worker/gateway invocation is the real built binary.
-  cargo build --locked --manifest-path "$PLATFORM_SOURCE/portal-rs/Cargo.toml" -p oteryn-portal > "$WORK/portal-build.log" 2>&1 \
-    || game_platform_fail platform binary_build_failed
-  cargo metadata --manifest-path "$PLATFORM_SOURCE/portal-rs/Cargo.toml" --no-deps --format-version 1 > "$WORK/portal-meta.json"
   local prepare_code=0
   local -a reference_accounts=()
   if [[ "${NODE_BOOT_LIFECYCLE:-}" == native_reference && "$NODE_BOOT_WORLD" == 1 ]]; then

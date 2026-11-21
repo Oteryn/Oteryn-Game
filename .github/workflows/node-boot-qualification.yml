@@ -69,10 +69,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "7135b31f6acc0ebc2626b80823f0a67c7afed41ef509900ad3b14437dce1c373  .github/workflows/node-boot-build.yml" | sha256sum -c -
-          echo "56029b4b5706f4983c262d65982abcbe029eaff9c30c408bd583561639722ed7  tools/qualification/node_boot/prebuilt.py" | sha256sum -c -
+          echo "fe1f1df027a012e269fba8e8088b433ffdaff2a939be4a1a05d7827537455cb0  .github/workflows/node-boot-build.yml" | sha256sum -c -
+          echo "288a79b279ca36544338daf3834bdaec8be9f00e39072f6e8d1770e814e4daa0  tools/qualification/node_boot/prebuilt.py" | sha256sum -c -
           python3 tools/qualification/node_boot/test_matrix.py
           python3 tools/qualification/node_boot/test_prebuilt.py
+          python3 tools/qualification/node_boot/test_shared_prebuilt.py
 
       - name: Plan shards
         id: plan
@@ -104,9 +105,19 @@ jobs:
       revision: ${{ github.sha }}
       variants: ${{ needs.plan.outputs.build_variants }}
 
+  node_boot_platform_build:
+    name: Node boot / shared Platform build
+    needs: plan
+    uses: ./.github/workflows/node-boot-build.yml
+    permissions:
+      contents: read
+    with:
+      revision: ${{ github.sha }}
+      variants: '["platform"]'
+
   node-boot:
     name: Node boot / ${{ matrix.shard.name }}
-    needs: [plan, node_boot_build]
+    needs: [plan, node_boot_build, node_boot_platform_build]
     runs-on: ubuntu-24.04
     # W20a's natural day and W20b's light decay run serially for almost two hours.
     # Include build, the basic seam, World setup and the remaining journeys.
@@ -194,8 +205,8 @@ jobs:
         if: steps.build_inputs.outputs.needs_default == 'true'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: node-boot-build-default
-          path: ${{ runner.temp }}/node-boot-download/default
+          name: node-boot-build-${{ steps.build_inputs.outputs.default_variant }}
+          path: ${{ runner.temp }}/node-boot-download/${{ steps.build_inputs.outputs.default_variant }}
 
       - name: Download the shared World compiler
         if: steps.build_inputs.outputs.needs_world == 'true'
@@ -204,13 +215,21 @@ jobs:
           name: node-boot-build-world-compiler
           path: ${{ runner.temp }}/node-boot-download/world-compiler
 
+      - name: Download the shared Platform binary
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: node-boot-build-platform
+          path: ${{ runner.temp }}/node-boot-download/platform
+
       - name: Verify and unpack exact-candidate inputs
         env:
           MAIN_VARIANT: ${{ steps.build_inputs.outputs.main_variant }}
           NEEDS_DEFAULT: ${{ steps.build_inputs.outputs.needs_default }}
           NEEDS_WORLD: ${{ steps.build_inputs.outputs.needs_world }}
           MAIN_SHA256: ${{ needs.node_boot_build.outputs[steps.build_inputs.outputs.main_variant] }}
-          DEFAULT_SHA256: ${{ needs.node_boot_build.outputs.default }}
+          DEFAULT_VARIANT: ${{ steps.build_inputs.outputs.default_variant }}
+          DEFAULT_SHA256: ${{ needs.node_boot_build.outputs[steps.build_inputs.outputs.default_variant] }}
+          PLATFORM_SHA256: ${{ needs.node_boot_platform_build.outputs.platform }}
           WORLD_SHA256: ${{ needs.node_boot_build.outputs.world-compiler }}
         run: |
           set -euo pipefail
@@ -222,13 +241,15 @@ jobs:
             python3 tools/qualification/node_boot/prebuilt.py unpack "$variant" "$archive" "$RUNNER_TEMP/node-boot-prebuilt"
           }
           unpack "$MAIN_VARIANT" "$MAIN_SHA256"
-          if [[ "$NEEDS_DEFAULT" == true ]]; then unpack default "$DEFAULT_SHA256"; fi
+          if [[ "$NEEDS_DEFAULT" == true ]]; then unpack "$DEFAULT_VARIANT" "$DEFAULT_SHA256"; fi
+          unpack platform "$PLATFORM_SHA256"
           if [[ "$NEEDS_WORLD" == true ]]; then unpack world-compiler "$WORLD_SHA256"; fi
 
       - name: Run node boot shard
         env:
           PLATFORM_SOURCE: ${{ github.workspace }}/_platform
           NODE_BOOT_PREBUILT_DIR: ${{ runner.temp }}/node-boot-prebuilt
+          GAME_PLATFORM_PREBUILT_DIR: ${{ runner.temp }}/node-boot-prebuilt
         run: |
           # A failing shard still writes result.json, so no errexit here.
           set +e
@@ -275,7 +296,7 @@ jobs:
 
   summary:
     name: Node boot / shard summary
-    needs: [plan, node_boot_build, node-boot]
+    needs: [plan, node_boot_build, node_boot_platform_build, node-boot]
     if: always() && needs.plan.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -286,7 +307,7 @@ jobs:
           persist-credentials: false
 
       - name: Download shard evidence
-        if: needs.node_boot_build.result == 'success'
+        if: needs.node_boot_build.result == 'success' && needs.node_boot_platform_build.result == 'success'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: node-boot-${{ github.run_id }}-*
@@ -295,12 +316,14 @@ jobs:
       - name: Summarise shards
         env:
           BUILD_RESULT: ${{ needs.node_boot_build.result }}
+          PLATFORM_RESULT: ${{ needs.node_boot_platform_build.result }}
           SHARD_RESULT: ${{ needs.node-boot.result }}
           SHARDS: ${{ needs.plan.outputs.shards }}
           PREFIX: node-boot-${{ github.run_id }}-
         run: |
           set -euo pipefail
           test "$BUILD_RESULT" = success
+          test "$PLATFORM_RESULT" = success
           printf '%s' "$SHARDS" > "$RUNNER_TEMP/shards.json"
           python3 tools/qualification/node_boot/matrix.py summarize "$RUNNER_TEMP/shards.json" "$RUNNER_TEMP/shards" \
             --prefix "$PREFIX" | tee -a "$GITHUB_STEP_SUMMARY"

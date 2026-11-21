@@ -45,14 +45,32 @@ class PostgresLibraryArchiveTests(unittest.TestCase):
         dispatch = "oteryn-gameplay-dispatch"
         server = "oteryn-game-server"
         durability = "oteryn-gameplay-durability"
-        for split in (False, True):
+        for mode in ("unsharded", "legacy-shards", "canonical"):
+            split = mode != "unsharded"
             for packages in ([dispatch], [durability], [server, dispatch, durability]):
-                with self.subTest(split=split, packages=packages), tempfile.TemporaryDirectory() as directory:
+                with self.subTest(mode=mode, packages=packages), tempfile.TemporaryDirectory() as directory:
                     root = Path(directory)
                     if split:
                         checker = root / "tools/repository/check_dispatch_pg_shards.py"
                         checker.parent.mkdir(parents=True)
                         checker.touch()
+                    if mode == "canonical":
+                        helper = root / "tools/ci/shared_dispatch_archive.py"
+                        helper.parent.mkdir(parents=True)
+                        helper.write_text(textwrap.dedent('''\
+                            import json, os, sys
+                            from pathlib import Path
+                            assert sys.argv[1] == 'build'
+                            directory, role = Path(sys.argv[2]), sys.argv[3]
+                            assert role in ('dispatch-1', 'dispatch-2', 'dispatch-3')
+                            with Path(os.environ['RUNNER_TEMP'], 'helper-calls.jsonl').open('a') as calls:
+                                print(json.dumps(dict(directory=str(directory), role=role)), file=calls)
+                            if os.environ.get('REJECT_CANONICAL') == '1':
+                                raise SystemExit(17)
+                            directory.mkdir(parents=True)
+                            for name in ('unit-tests.tar.zst', 'inventory.json', 'shared-dispatch.json'):
+                                (directory / name).write_text(role + ':' + name)
+                            '''))
                     output = root / "outputs"
                     subprocess.run(
                         ["bash", "-c", select], cwd=root, check=True, capture_output=True, text=True,
@@ -73,19 +91,38 @@ class PostgresLibraryArchiveTests(unittest.TestCase):
                             os.environ, RUNNER_TEMP=directory, ARCHIVE=archive, LIB_PACKAGES=outputs["library"],
                             OTERYN_DISPATCH_PG_SHARD="2/3", CARGO_BUILD_JOBS="2",
                         )
-                        actual = subprocess.check_output(["bash", "-c", cargo + build], env=env, text=True)
+                        if mode == "canonical" and archive != "lib":
+                            env.pop("OTERYN_DISPATCH_PG_SHARD")
+                        actual = subprocess.check_output(["bash", "-c", cargo + build], cwd=root, env=env, text=True)
+                        if mode == "canonical" and archive != "lib":
+                            role = "dispatch-" + archive[-1]
+                            self.assertEqual(actual, "", "canonical archives must not invoke the legacy Cargo path")
+                            call = json.loads((root / "helper-calls.jsonl").read_text().splitlines()[-1])
+                            self.assertEqual(call, {"directory": str(root / "shared-dispatch-local" / role), "role": role})
+                            for source, target in (("unit-tests.tar.zst", f"pg-{archive}.tar.zst"),
+                                                   ("inventory.json", f"pg-{archive}.json"),
+                                                   ("shared-dispatch.json", f"shared-dispatch-{archive}.json")):
+                                self.assertEqual((root / "pg-archives" / target).read_text(), role + ":" + source)
+                            rejected = subprocess.run(["bash", "-c", cargo + build], cwd=root,
+                                                      env=dict(env, REJECT_CANONICAL="1"), capture_output=True, text=True)
+                            self.assertEqual(rejected.returncode, 17, "a rejected canonical build must not fall back")
+                            continue
                         if archive == "lib":
                             shard = "unset"
                             jobs = "1" if dispatch in library else "2"
-                            args = [arg for package in library for arg in ("-p", package)]
+                            selected = library
                         else:
                             shard = f"{archive[-1]}/3"
                             jobs = "2"
-                            args = ["-p", dispatch]
-                        self.assertEqual(actual.splitlines(), [
-                            shard, jobs, "+1.100.0", "nextest", "archive", "--locked", *args, "--lib",
-                            "--archive-file", f"{directory}/pg-archives/pg-{archive}.tar.zst",
-                        ])
+                            selected = [dispatch]
+                        actual_shard, actual_jobs, *args = actual.splitlines()
+                        self.assertEqual((actual_shard, actual_jobs), (shard, jobs))
+                        self.assertEqual(args[:3], ["+1.100.0", "nextest", "archive"])
+                        self.assertEqual([args[i + 1] for i, arg in enumerate(args) if arg == "-p"], selected)
+                        for flag in ("--locked", "--lib", "--config", "--archive-file"):
+                            self.assertEqual(args.count(flag), 1)
+                        self.assertEqual(args[args.index("--config") + 1], "profile.dev.package.oteryn-gameplay-dispatch.debug=0")
+                        self.assertEqual(args[args.index("--archive-file") + 1], f"{directory}/pg-archives/pg-{archive}.tar.zst")
 
     def worker_outputs(self, archives, calibrated=True):
         with tempfile.TemporaryDirectory() as directory:
@@ -536,7 +573,8 @@ class HeavyGateTests(unittest.TestCase):
                 self.assertIn("    needs: node_boot_plan\n", build)
                 self.assertIn("    uses: ./.github/workflows/node-boot-build.yml\n", build)
                 self.assertIn(f"      revision: ${{{{ {ref} }}}}\n", build)
-                self.assertIn("      variants: ${{ needs.node_boot_plan.outputs.build_variants }}\n", build)
+                variants = "parallel_variants" if needs else "build_variants"
+                self.assertIn(f"      variants: ${{{{ needs.node_boot_plan.outputs.{variants} }}}}\n", build)
                 self.assert_artifact_pin_order(plan)
                 for job in (plan, shard, aggregate):
                     self.assertIsNotNone(job)
@@ -552,16 +590,19 @@ class HeavyGateTests(unittest.TestCase):
                 self.assertIn("        shard: ${{ fromJSON(needs.node_boot_plan.outputs.shards) }}\n", shard)
                 if needs:
                     self.assertIn(f"    needs: {needs}\n", plan)
-                    self.assertIn(f"    needs: [{needs}, node_boot_plan, node_boot_build]\n", shard)
-                    self.assertIn(f"    needs: [{needs}, node_boot_plan, node_boot_build, node_boot_shard]\n", aggregate)
+                    dependencies = [needs, "node_boot_plan", "node_boot_build", "node_boot_default_build",
+                                    "node_boot_platform_build", "world_bundle"]
+                    for job, required in ((shard, dependencies), (aggregate, [*dependencies, "node_boot_shard"])):
+                        actual_needs = re.search(r"^    needs: \[([^\]]+)\]$", job, re.M)[1].split(", ")
+                        self.assertCountEqual(actual_needs, required)
                     guard = "needs.candidate.outputs.server_qualification != 'false'"
-                    for job in (plan, shard):
-                        self.assertIn(f"    if: {guard}\n", job)
+                    self.assertIn(f"    if: {guard}\n", plan)
+                    self.assert_main_node_worker_eligibility(shard.split("    if: >-\n", 1)[1].split("    runs-on:", 1)[0])
                     self.assertIn(f"    if: always() && {guard}\n", aggregate)
                 else:
                     self.assertNotIn("    needs:", plan)
-                    self.assertIn("    needs: [node_boot_plan, node_boot_build]\n", shard)
-                    self.assertIn("    needs: [node_boot_plan, node_boot_build, node_boot_shard]\n", aggregate)
+                    self.assertIn("    needs: [node_boot_plan, node_boot_build, node_boot_platform_build]\n", shard)
+                    self.assertIn("    needs: [node_boot_plan, node_boot_build, node_boot_platform_build, node_boot_shard]\n", aggregate)
                     self.assertIn("      artifact_mode: ${{ steps.artifact_support.outputs.mode }}\n", plan)
                     self.assertIn(f"    if: needs.node_boot_plan.result == 'success' && {shared}\n", build)
                     # PR node boot is opt-in through its own `node-boot` label (owner 2026-11-18).
@@ -588,16 +629,35 @@ class HeavyGateTests(unittest.TestCase):
                     for marker in (
                         "        id: build_inputs\n",
                         "      - name: Download Game qualification binaries\n",
+                        "      - name: Download the shared Platform binary\n",
                         "      - name: Verify and unpack exact-candidate inputs\n",
                     ):
                         expected = expected.replace(marker, f"{marker}        if: {shared}\n")
                     expected = expected.replace("        if: steps.build_inputs.outputs.", f"        if: {shared} && steps.build_inputs.outputs.")
+                    for variable in ("NODE_BOOT_PREBUILT_DIR", "GAME_PLATFORM_PREBUILT_DIR"):
+                        expected = expected.replace(
+                            f"          {variable}: ${{{{ runner.temp }}}}/node-boot-prebuilt\n",
+                            f"          {variable}: ${{{{ {shared} && format('{{0}}/node-boot-prebuilt', runner.temp) || '' }}}}\n",
+                        )
+                else:
                     expected = expected.replace(
-                        "          NODE_BOOT_PREBUILT_DIR: ${{ runner.temp }}/node-boot-prebuilt\n",
-                        f"          NODE_BOOT_PREBUILT_DIR: ${{{{ {shared} && format('{{0}}/node-boot-prebuilt', runner.temp) || '' }}}}\n",
+                        "          name: node-boot-build-world-compiler\n",
+                        "          artifact-ids: ${{ needs.world_bundle.outputs.world_compiler_artifact_id }}\n",
+                    ).replace(
+                        "          MAIN_SHA256: ${{ needs.node_boot_build.outputs[steps.build_inputs.outputs.main_variant] }}\n",
+                        "          MAIN_SHA256: ${{ steps.build_inputs.outputs.main_variant == 'default' && needs.node_boot_default_build.outputs.default || needs.node_boot_build.outputs[steps.build_inputs.outputs.main_variant] }}\n",
+                    ).replace(
+                        "          WORLD_SHA256: ${{ needs.node_boot_build.outputs.world-compiler }}\n",
+                        "          WORLD_SHA256: ${{ needs.world_bundle.outputs.world_compiler_sha256 }}\n",
                     )
                 # The extracted block runs on to the next job's leading comment.
                 actual = shard.split("    steps:\n", 1)[1].split("\n  #", 1)[0]
+                if needs:
+                    marker = "      - name: Verify the shared World compiler producer identity\n"
+                    before, remainder = actual.split(marker, 1)
+                    guard_step, after = remainder.split("\n      - name:", 1)
+                    self.assert_world_compiler_identity_guard(guard_step)
+                    actual = before + "      - name:" + after
                 self.assertEqual(actual.rstrip(), expected.rstrip())
                 for job in (plan, aggregate):
                     self.assertIn(f"          ref: ${{{{ {ref} }}}}\n", job)
@@ -609,6 +669,22 @@ class HeavyGateTests(unittest.TestCase):
         self.assertEqual(plan[:test].count("| sha256sum -c -"), 2)
         self.assertLess(test, plan.index("python3 tools/qualification/node_boot/prebuilt.py plan"))
 
+    def assert_world_compiler_identity_guard(self, step):
+        self.assertIn("        if: steps.build_inputs.outputs.needs_world == 'true'\n", step)
+        self.assertIn("COMPILER_ARTIFACT_ID: ${{ needs.world_bundle.outputs.world_compiler_artifact_id }}", step)
+        self.assertIn("COMPILER_PRODUCER_ATTEMPT: ${{ needs.world_bundle.outputs.world_compiler_producer_attempt }}", step)
+        script = textwrap.dedent(step.split("        run: |\n", 1)[1])
+        for artifact, producer, consumer, valid in (
+            ("201", "1", "2", True), ("201", "2", "2", True),
+            ("201", "3", "2", False), ("201", "0", "2", False),
+            ("201", "", "2", False), ("invalid", "1", "2", False), ("0", "1", "2", False),
+        ):
+            with tempfile.TemporaryDirectory() as temporary:
+                env = dict(os.environ, COMPILER_ARTIFACT_ID=artifact, COMPILER_PRODUCER_ATTEMPT=producer,
+                           GITHUB_RUN_ATTEMPT=consumer, GITHUB_STEP_SUMMARY=str(Path(temporary) / "summary"))
+                result = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True)
+                self.assertEqual(result.returncode == 0, valid, (artifact, producer, consumer, result.stderr))
+
     def assert_node_worker_eligibility(self, eligibility):
         expression = eligibility.replace("labels.*.name", "labels.map(label=>label.name)")
         script = (
@@ -617,20 +693,51 @@ class HeavyGateTests(unittest.TestCase):
             "const github={event:{action:'synchronize',pull_request:{draft:false,user:{login:'owner'},labels:[{name:'node-boot'}]}}};"
             "process.stdout.write(JSON.stringify(" + expression + "));"
         )
-        for plan, mode, build, cancelled, expected in (
-            ("success", "shared", "success", False, True),
-            ("success", "legacy", "skipped", False, True),
-            ("success", "legacy", "success", False, False),
-            ("success", "shared", "skipped", False, False),
-            ("success", "shared", "failure", False, False),
-            ("success", "", "skipped", False, False),
-            ("failure", "legacy", "skipped", False, False),
-            ("success", "legacy", "skipped", True, False),
+        for plan, mode, build, platform, cancelled, expected in (
+            ("success", "shared", "success", "success", False, True),
+            ("success", "legacy", "skipped", "skipped", False, True),
+            ("success", "legacy", "success", "skipped", False, False),
+            ("success", "shared", "skipped", "success", False, False),
+            ("success", "shared", "failure", "success", False, False),
+            ("success", "", "skipped", "skipped", False, False),
+            ("failure", "legacy", "skipped", "skipped", False, False),
+            ("success", "legacy", "skipped", "skipped", True, False),
+            *(("success", "shared", "success", status, False, False) for status in ("failure", "cancelled", "skipped", "")),
+            *(("success", "legacy", "skipped", status, False, False) for status in ("success", "failure", "cancelled", "")),
         ):
             context = {"node_boot_plan": {"result": plan, "outputs": {"artifact_mode": mode}},
-                       "node_boot_build": {"result": build}}
+                       "node_boot_build": {"result": build}, "node_boot_platform_build": {"result": platform}}
             output = subprocess.check_output(["node", "-e", script, json.dumps([context, cancelled])], text=True)
-            self.assertEqual(json.loads(output), expected, (plan, mode, build, cancelled))
+            self.assertEqual(json.loads(output), expected, (plan, mode, build, platform, cancelled))
+
+    def assert_main_node_worker_eligibility(self, expression):
+        script = (
+            "const [needs,isCancelled]=JSON.parse(process.argv[1]);"
+            "const cancelled=()=>isCancelled,contains=(a,b)=>a.includes(b),fromJSON=JSON.parse;"
+            "process.stdout.write(JSON.stringify(" + expression + "));"
+        )
+        baseline = {"candidate": {"outputs": {"server_qualification": "true"}},
+                    "node_boot_plan": {"result": "success", "outputs": {"build_variants": '[]'}},
+                    "node_boot_build": {"result": "success"}, "node_boot_platform_build": {"result": "success"},
+                    "world_bundle": {"result": "success"}, "node_boot_default_build": {"result": "skipped"}}
+        cases = [(baseline, False, True), (baseline, True, False)]
+        for dependency in ("node_boot_plan", "node_boot_build", "node_boot_platform_build", "world_bundle"):
+            for status in ("failure", "cancelled", "skipped", ""):
+                changed = json.loads(json.dumps(baseline))
+                changed[dependency]["result"] = status
+                cases.append((changed, False, False))
+        for required in (False, True):
+            for status in ("success", "failure", "cancelled", "skipped", ""):
+                changed = json.loads(json.dumps(baseline))
+                changed["node_boot_plan"]["outputs"]["build_variants"] = '["default"]' if required else '[]'
+                changed["node_boot_default_build"]["result"] = status
+                cases.append((changed, False, status == "success" or (not required and status == "skipped")))
+        changed = json.loads(json.dumps(baseline))
+        changed["candidate"]["outputs"]["server_qualification"] = "false"
+        cases.append((changed, False, False))
+        for needs, cancelled, expected in cases:
+            output = subprocess.check_output(["node", "-e", script, json.dumps([needs, cancelled])], text=True)
+            self.assertEqual(json.loads(output), expected, (needs, cancelled))
 
     def test_pr_node_boot_accepts_only_complete_artifact_support_or_legacy(self):
         job = indented_yaml_mapping_block(self.text, "node_boot_plan", 2)
@@ -667,7 +774,9 @@ class HeavyGateTests(unittest.TestCase):
                     self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                     self.assertEqual(outputs.read_text(), f"mode={expected}\n")
 
-    def run_aggregate(self, filename, *, plan="success", mode="shared", build="success", shards="success", status="PASS", scenarios=True):
+    def run_aggregate(self, filename, *, plan="success", mode="shared", build="success", shards="success",
+                      status="PASS", scenarios=True, platform=None, world="success", default_required=False,
+                      default="skipped"):
         sys.path.insert(0, str(ROOT / "tools/qualification/node_boot"))
         import matrix
         aggregate = indented_yaml_mapping_block((ROOT / ".github/workflows" / filename).read_text(), "node_boot", 2)
@@ -686,6 +795,8 @@ class HeavyGateTests(unittest.TestCase):
                     "result": "NODE_BOOT_PASS", "incomplete": False, "scenarios": rows}))
             env = dict(os.environ, RUNNER_TEMP=str(temp), GITHUB_STEP_SUMMARY=str(temp / "summary"),
                        PLAN_RESULT=plan, ARTIFACT_MODE=mode, BUILD_RESULT=build, SHARD_RESULT=shards,
+                       PLATFORM_RESULT=("skipped" if mode == "legacy" else "success") if platform is None else platform,
+                       WORLD_RESULT=world, DEFAULT_REQUIRED=str(default_required).lower(), DEFAULT_RESULT=default,
                        SHARDS=json.dumps(planned), PREFIX=prefix)
             return subprocess.run(["bash", "-c", script], cwd=ROOT, env=env, capture_output=True, text=True)
 
@@ -695,10 +806,24 @@ class HeavyGateTests(unittest.TestCase):
                 self.assertEqual(self.run_aggregate(filename).returncode, 0)
                 for build in ("failure", "cancelled", "skipped", ""):
                     self.assertNotEqual(self.run_aggregate(filename, build=build).returncode, 0, build)
+                for platform in ("failure", "cancelled", "skipped", ""):
+                    self.assertNotEqual(self.run_aggregate(filename, platform=platform).returncode, 0, platform)
                 if filename == "pr-postgres-harness.yml":
                     self.assertEqual(self.run_aggregate(filename, mode="legacy", build="skipped").returncode, 0)
+                    for platform in ("success", "failure", "cancelled", ""):
+                        self.assertNotEqual(self.run_aggregate(filename, mode="legacy", build="skipped",
+                                                               platform=platform).returncode, 0, platform)
                     for mode, build in (("legacy", "success"), ("legacy", "failure"), ("legacy", "cancelled"), ("", "skipped")):
                         self.assertNotEqual(self.run_aggregate(filename, mode=mode, build=build).returncode, 0, (mode, build))
+                else:
+                    for world in ("failure", "cancelled", "skipped", ""):
+                        self.assertNotEqual(self.run_aggregate(filename, world=world).returncode, 0, world)
+                    self.assertEqual(self.run_aggregate(filename, default_required=True, default="success").returncode, 0)
+                    for required, statuses in ((True, ("failure", "cancelled", "skipped", "")),
+                                               (False, ("success", "failure", "cancelled", ""))):
+                        for default in statuses:
+                            self.assertNotEqual(self.run_aggregate(filename, default_required=required,
+                                                                   default=default).returncode, 0, (required, default))
                 for plan, shards in (("skipped", "skipped"), ("failure", "skipped"), ("success", "failure"),
                                      ("success", "cancelled"), ("success", "skipped"), ("", "")):
                     self.assertNotEqual(self.run_aggregate(filename, plan=plan, shards=shards).returncode, 0,

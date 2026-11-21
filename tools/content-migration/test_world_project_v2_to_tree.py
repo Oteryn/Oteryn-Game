@@ -1,34 +1,16 @@
 #!/usr/bin/env python3
-import concurrent.futures
+import argparse
 import copy
 import importlib.util
 import json
 import re
-import subprocess
 import sys
 from pathlib import Path
 from unittest.mock import patch
 
+from parallel_checks import Check, run_checks
+
 ROOT = Path(__file__).resolve().parents[2]
-
-# These offline checks read committed inputs and isolate mutations in temporary
-# directories. Overlap their independent replays with the parent assertions;
-# the source overlay replay alone otherwise holds up every remaining check.
-check_pool = concurrent.futures.ThreadPoolExecutor(max_workers=2)
-check_futures = []
-
-
-def schedule_check(command, *, cwd=None, check=True):
-    def run():
-        result = subprocess.run(command, cwd=cwd, check=False)
-        print(
-            f"Independent check exit={result.returncode}: {' '.join(map(str, command))}",
-            flush=True,
-        )
-        if check:
-            result.check_returncode()
-
-    check_futures.append(check_pool.submit(run))
 
 
 def test_relation_rows_route_by_owner():
@@ -209,398 +191,6 @@ def test_closed_weapon_metadata_admission():
     print("ok test_closed_weapon_metadata_admission")
 
 
-source_claim_count = len(
-    json.loads(
-        (
-            ROOT / "tools/content-schema/quest-authoring/samples/chests/claims.json"
-        ).read_text()
-    )["claims"]
-)
-sys.path.insert(0, str(ROOT / "tools/content-schema/reward-claim-authoring"))
-import engclaim_native
-
-source_claim_count += len(engclaim_native.CASES)
-project = json.loads((ROOT / "content/project.json").read_text(encoding="utf-8"))
-manifest = json.loads((ROOT / "content/manifest.json").read_text(encoding="utf-8"))
-lock = json.loads((ROOT / "content/content.lock.json").read_text(encoding="utf-8"))
-
-assert project["runtime_source"] == "legacy_until_separately_qualified"
-assert manifest["compatibility"] == {
-    "legacy_mutated": False,
-    "legacy_root": "content/world",
-    "runtime_switch_authorized": False,
-}
-from world_project_v2_to_tree import retained_quest_registration
-
-quest_families, quest_paths = retained_quest_registration(ROOT)
-if quest_families:
-    assert (
-        "Quest" in project["migrated_families"]
-        and "Quest" not in project["next_population_families"]
-    )
-    assert set(quest_paths).issubset({row["path"] for row in manifest["managed_files"]})
-
-reference = json.loads((ROOT / "content/world/definitions/reference.json").read_text())
-from validate_world_project_v2_to_tree import source_qualified_item_references
-
-expected_items = source_qualified_item_references(reference, ROOT)
-legacy_items = [
-    row for row in reference["records"] if row["identity"]["family"] == "Item"
-]
-assert len(legacy_items) == 34111, "legacy package count remains unchanged"
-assert [row["identity"]["key"] for row in expected_items[len(legacy_items) :]] == [
-    f"oteryn:item.tibia.i{item}"
-    for item in (
-        43860,
-        43589,
-        43590,
-        42851,
-        42853,
-        43625,
-        40016,
-        40598,
-        40601,
-        40603,
-        48227,
-    )
-], "only the exact source-qualified reference extensions are admitted"
-# Replaying an extension with a changed semantic fact must refuse, not normalize it.
-tampered = copy.deepcopy(reference)
-tampered["records"].extend(copy.deepcopy(expected_items[len(legacy_items) :]))
-next(
-    row
-    for row in tampered["records"]
-    if row["identity"]["key"] == "oteryn:item.tibia.i43625"
-)["materializable"] = True
-try:
-    source_qualified_item_references(tampered, ROOT)
-except ValueError as error:
-    assert str(error) == "BOSS_MOVEMENT_REFERENCE_CHANGED", error
-else:
-    raise AssertionError("changed source-qualified reference accepted")
-# Official Cradle references retain UNKNOWN semantics and reject changed custody.
-for item in (40016, 40598, 40601, 40603):
-    tampered = copy.deepcopy(reference)
-    tampered["records"].extend(copy.deepcopy(expected_items[len(legacy_items) :]))
-    next(
-        row
-        for row in tampered["records"]
-        if row["identity"]["key"] == f"oteryn:item.tibia.i{item}"
-    )["materializable"] = True
-    try:
-        source_qualified_item_references(tampered, ROOT)
-    except ValueError as error:
-        assert (
-            str(error) == f"QREADY1_CRADLE_REFERENCE_CHANGED:oteryn:item.tibia.i{item}"
-        ), error
-    else:
-        raise AssertionError("changed Cradle reference accepted")
-# Match the materializer's source-proven, exact Primal empty-loot admission.
-# Its witness rejects changed identities and every nonempty or unrelated Loot.
-from primal_reference_overlay import apply_reference
-
-apply_reference(reference["records"], ROOT)
-creature_families = [
-    "Creature",
-    "Presentation",
-    "Behavior",
-    "Loot",
-    "Ability",
-    "Effect",
-    "Formula",
-]
-family_counts = {
-    family: sum(row["identity"]["family"] == family for row in reference["records"])
-    for family in creature_families
-}
-assert family_counts['Creature'] == 1_865
-# One Crystal 201189f8 star-herb handler extends the frozen129 conversion cohort.
-# The alternate tainted-antler key was a duplicate of the same whole-stack transform.
-conversion_keys = {
-    row["identity"]["key"]
-    for row in json.loads((ROOT / "content/craft/recipes.json").read_bytes())["records"]
-}
-assert "oteryn:item-conversion.tainted-souls-antler-talisman" in conversion_keys
-assert "oteryn:item-conversion.tainted-antler-talisman" not in conversion_keys
-assert lock["family_counts"] == {
-    "Item": len(expected_items),
-    "Mount": 252,  # Exact source-qualified extensions above.
-    **family_counts,
-    "Document": 1609,
-    "Encounter.Raid": json.loads(
-        (ROOT / "content/encounters/raids/index.json").read_text()
-    )["record_count"],
-    "NPC": 1282,
-    "Dialogue": 836,
-    "Service.Trade": 324,
-    "Service.Travel": 56,
-    "Service.Bank": 2,
-    "Service.Promotion": 7,
-    "Service.Blessing": 10,
-    "Encounter": 108,
-    "Charm": 25,
-    "Proficiency": 443,
-    "RewardClaim": source_claim_count,
-    "StarterKit": 1,
-    "item_conversion": 130,
-    **{family: value["records"] for family, value in quest_families.items()},
-}
-assert lock["source_binding_counts"] == {"Item": 476, "Mount": 252, "Creature": 1_865, "Encounter": 108, "NPC": 2747}
-assert lock["editor_entry_counts"] == {"Item": 165, "Mount": 252}
-
-paths = [row["path"] for row in manifest["managed_files"]]
-assert len(paths) == len(set(paths))
-shard_name = re.compile(r"-\d{5}-\d{5}\.json$")
-for directory in {(ROOT / path).parent for path in paths if shard_name.search(path)}:
-    stale = sorted(
-        file.relative_to(ROOT).as_posix()
-        for file in directory.glob("*.json")
-        if shard_name.search(file.name)
-        and file.relative_to(ROOT).as_posix() not in paths
-    )
-    assert not stale, stale
-assert sum(path.startswith("content/items/definitions/items-") for path in paths) == 69
-assert any(path.startswith("content/cosmetics/mounts/mounts-") for path in paths)
-assert any(
-    path.startswith("content/creatures/definitions/creatures-") for path in paths
-)
-assert any(path.startswith("content/npcs/definitions/npcs-") for path in paths)
-assert any(
-    path.startswith("content/dialogues/definitions/dialogues-") for path in paths
-)
-assert any(
-    path.startswith("content/encounters/definitions/encounters-") for path in paths
-)
-assert any(path.startswith("content/services/trade/trade-") for path in paths)
-assert any(path.startswith("content/services/travel/travel-") for path in paths)
-assert "imports/canary/bindings/creatures.json" in paths
-assert "imports/tibiawiki/bindings/creatures.json" in paths
-assert all(not path.startswith("content/world/") for path in paths)
-
-assert manifest["families"]["NPC"] == {
-    "records": 1282,
-    "index": "content/npcs/definitions/index.json",
-}
-assert manifest["families"]["Dialogue"] == {
-    "records": 836,
-    "index": "content/dialogues/definitions/index.json",
-}
-assert manifest["families"]["Service.Trade"] == {
-    "records": 324,
-    "index": "content/services/trade/index.json",
-}
-assert manifest["families"]["Service.Travel"] == {
-    "records": 56,
-    "index": "content/services/travel/index.json",
-}
-assert manifest["families"]["Service.Bank"] == {
-    "records": 2,
-    "index": "content/services/bank/index.json",
-}
-assert manifest["families"]["Service.Promotion"] == {
-    "records": 7,
-    "index": "content/services/promotion/index.json",
-}
-assert manifest["families"]["Service.Blessing"] == {
-    "records": 10,
-    "index": "content/services/blessings/index.json",
-}
-assert any(path.startswith("content/services/bank/bank-") for path in paths)
-assert manifest["families"]["Charm"] == {
-    "records": 25,
-    "index": "content/charms/index.json",
-}
-assert (
-    "Charm" in project["migrated_families"]
-    and "Charm" not in project["next_population_families"]
-)
-assert (
-    any(path.startswith("content/charms/charms-") for path in paths)
-    and "content/charms/index.json" in paths
-)
-assert manifest["families"]["Proficiency"] == {
-    "records": 443,
-    "index": "content/proficiencies/index.json",
-}
-assert (
-    "Proficiency" in project["migrated_families"]
-    and "Proficiency" not in project["next_population_families"]
-)
-assert (
-    sum(path.startswith("content/proficiencies/proficiencies-") for path in paths) == 3
-)
-assert (
-    "content/proficiencies/index.json" in paths
-    and "content/proficiencies/bindings.json" in paths
-)
-assert manifest["families"]["RewardClaim"] == {
-    "records": source_claim_count,
-    "index": "content/interactions/reward_claims/index.json",
-}
-assert "RewardClaim" in project["migrated_families"]
-assert (
-    sum(
-        path.startswith("content/interactions/reward_claims/reward-claims-")
-        for path in paths
-    )
-    == 3
-)
-assert "content/interactions/reward_claims/index.json" in paths
-assert manifest["families"]["StarterKit"] == {
-    "records": 1,
-    "index": "content/starter/index.json",
-}
-assert "StarterKit" in project["migrated_families"]
-assert (
-    "content/starter/starter-kits-00000-00000.json" in paths
-    and "content/starter/index.json" in paths
-)
-assert (
-    "NPC" in project["migrated_families"]
-    and "Dialogue" in project["migrated_families"]
-    and "Service" in project["migrated_families"]
-)
-assert (
-    "NPC" not in project["next_population_families"]
-    and "Dialogue" not in project["next_population_families"]
-    and "Service" not in project["next_population_families"]
-)
-
-# The admitted native successor must reproduce exact bytes over immutable r25.
-schedule_check(
-    [
-        sys.executable,
-        str(ROOT / "tools/content-migration/test_monster_seven_spell_overlay.py"),
-    ],
-    check=True,
-)
-
-# Keep the standalone Quest preservation guards on the migration workflow's test path.
-schedule_check(
-    [
-        sys.executable,
-        str(ROOT / "tools/content-migration/test_quest_registration_preservation.py"),
-    ],
-    check=True,
-)
-
-# Run complete custody modules and retained QN3/Feaster source contracts.
-schedule_check(
-    [
-        sys.executable,
-        "-m",
-        "unittest",
-        "-v",
-        "test_boss_corpse_profiles",
-        "test_authored_npc_item_profiles",
-        "test_quest_corpse_profiles",
-        "test_boss_reward_yield_profiles",
-        "test_equipment_source_overlaps",
-        "test_equipment_known_speed_pin",
-        "test_refresh_equipment_profile_pin",
-        "test_refresh_season_creature_inventory",
-        "test_m42_cooking_canonical",
-        "test_quest_batch3_item_profiles",
-        "test_questpc7_merge_audit_callbacks",
-    ],
-    cwd=ROOT / "tools/content-migration",
-    check=True,
-)
-
-# Verify the fixed Boss corpse source cohort on the native gameplay test path.
-schedule_check(
-    [
-        sys.executable,
-        "-m",
-        "unittest",
-        "-v",
-        "test_full_spell_artifact.CorpseSourceCohortTests",
-    ],
-    cwd=ROOT / "tools/content-schema/native-gameplay",
-    check=True,
-)
-
-# Check both committed Rotten custody and composition with earlier loot owners.
-schedule_check(
-    [
-        sys.executable,
-        "-m",
-        "unittest",
-        "-v",
-        "test_questpc2_rotten_loot_items",
-    ],
-    cwd=ROOT / "tools/content-schema/native-gameplay",
-    check=True,
-)
-
-# Core Item admission is a separate accepted data overlay, retained by every regeneration.
-schedule_check(
-    [
-        sys.executable,
-        str(ROOT / "tools/content-schema/native-gameplay/summer_corpse_items.py"),
-        "--check",
-    ],
-    check=True,
-)
-schedule_check(
-    [
-        sys.executable,
-        str(ROOT / "tools/content-migration/test_quest_reward_item_semantics.py"),
-    ],
-    check=True,
-)
-schedule_check(
-    [
-        sys.executable,
-        str(ROOT / "tools/content-migration/test_amber_item_semantics.py"),
-    ],
-    check=True,
-)
-# Exercise the closed Lion Item composition and refusals on the migration gate.
-schedule_check(
-    [
-        sys.executable,
-        str(ROOT / "tools/content-migration/test_lion_trial_item_profiles.py"),
-    ],
-    check=True,
-)
-# Exercise the closed M04 diary promotion, replay and refusal contract.
-schedule_check(
-    [
-        sys.executable,
-        str(ROOT / "tools/content-migration/test_engnpc_m04_item_profiles.py"),
-    ],
-    check=True,
-)
-# Preserve qualified earlier World Change owners and verify the source packet.
-schedule_check(
-    [
-        sys.executable,
-        str(ROOT / "tools/content-schema/native-gameplay/test_world_change_item_profiles.py"),
-    ],
-    check=True,
-)
-schedule_check(
-    [
-        sys.executable,
-        str(ROOT / "tools/content-migration/quest_reward_item_semantics.py"),
-        "--check",
-    ],
-    check=True,
-)
-
-assert manifest["families"]["Document"] == {
-    "records": 1609,
-    "index": "content/documents/index.json",
-}
-assert "Document" in project["migrated_families"]
-assert sum(path.startswith("content/documents/documents-") for path in paths) == 4
-assert (
-    "content/documents/index.json" in paths
-    and "Document" not in lock["source_binding_counts"]
-)
-
-
 def test_document_roundtrip_negatives(declarations, sources):
     import validate_world_project_v2_to_tree as validator
 
@@ -638,39 +228,6 @@ def test_document_roundtrip_negatives(declarations, sources):
             raise AssertionError(
                 "Dropped/rewritten Document, dangling ref or fabricated binding was accepted"
             )
-
-
-test_document_roundtrip_negatives(
-    json.loads((ROOT / "content/world/definitions/declarations.json").read_text()),
-    json.loads((ROOT / "content/world/provenance/sources.json").read_text()),
-)
-
-# The RewardClaim family has no legacy source: its own authoring tool must reproduce it exactly.
-reward_claim_tool = ROOT / "tools" / "content-schema" / "reward-claim-authoring"
-for script in (
-    "test_reward_claim_authoring.py",
-    "test_reward_claim_variant_authoring.py",
-):
-    schedule_check([sys.executable, script], cwd=reward_claim_tool, check=True)
-# StarterKit likewise.
-starter_kit_tool = ROOT / "tools" / "content-schema" / "starter-kit-authoring"
-schedule_check(
-    [sys.executable, "test_starter_kit_authoring.py"], cwd=starter_kit_tool, check=True
-)
-
-test_closed_weapon_metadata_admission()
-test_relation_rows_route_by_owner()
-schedule_check(
-    [sys.executable, str(ROOT / "tools/content-migration/test_item_taxonomy.py")],
-    check=True,
-)
-schedule_check(
-    [
-        sys.executable,
-        str(ROOT / "tools/content-migration/test_item_official_navigation.py"),
-    ],
-    check=True,
-)
 
 
 def test_closed_bank_admission():
@@ -778,10 +335,491 @@ def test_closed_bank_admission():
     print("ok test_closed_bank_admission positive +12 closed negatives")
 
 
-test_closed_bank_admission()
+def test_package_tree_contract():
+    source_claim_count = len(
+        json.loads(
+            (
+                ROOT / "tools/content-schema/quest-authoring/samples/chests/claims.json"
+            ).read_text()
+        )["claims"]
+    )
+    sys.path.insert(0, str(ROOT / "tools/content-schema/reward-claim-authoring"))
+    import engclaim_native
 
-check_pool.shutdown(wait=True)
-for future in concurrent.futures.as_completed(check_futures):
-    future.result()
+    source_claim_count += len(engclaim_native.CASES)
+    project = json.loads((ROOT / "content/project.json").read_text(encoding="utf-8"))
+    manifest = json.loads((ROOT / "content/manifest.json").read_text(encoding="utf-8"))
+    lock = json.loads((ROOT / "content/content.lock.json").read_text(encoding="utf-8"))
 
-print(f"PASS managed_files={len(paths)} item_shards=69")
+    assert project["runtime_source"] == "legacy_until_separately_qualified"
+    assert manifest["compatibility"] == {
+        "legacy_mutated": False,
+        "legacy_root": "content/world",
+        "runtime_switch_authorized": False,
+    }
+    from world_project_v2_to_tree import retained_quest_registration
+
+    quest_families, quest_paths = retained_quest_registration(ROOT)
+    if quest_families:
+        assert (
+            "Quest" in project["migrated_families"]
+            and "Quest" not in project["next_population_families"]
+        )
+        assert set(quest_paths).issubset({row["path"] for row in manifest["managed_files"]})
+
+    reference = json.loads((ROOT / "content/world/definitions/reference.json").read_text())
+    from validate_world_project_v2_to_tree import source_qualified_item_references
+
+    expected_items = source_qualified_item_references(reference, ROOT)
+    legacy_items = [
+        row for row in reference["records"] if row["identity"]["family"] == "Item"
+    ]
+    assert len(legacy_items) == 34111, "legacy package count remains unchanged"
+    assert [row["identity"]["key"] for row in expected_items[len(legacy_items) :]] == [
+        f"oteryn:item.tibia.i{item}"
+        for item in (
+            43860,
+            43589,
+            43590,
+            42851,
+            42853,
+            43625,
+            40016,
+            40598,
+            40601,
+            40603,
+            48227,
+        )
+    ], "only the exact source-qualified reference extensions are admitted"
+    # Replaying an extension with a changed semantic fact must refuse, not normalize it.
+    tampered = copy.deepcopy(reference)
+    tampered["records"].extend(copy.deepcopy(expected_items[len(legacy_items) :]))
+    next(
+        row
+        for row in tampered["records"]
+        if row["identity"]["key"] == "oteryn:item.tibia.i43625"
+    )["materializable"] = True
+    try:
+        source_qualified_item_references(tampered, ROOT)
+    except ValueError as error:
+        assert str(error) == "BOSS_MOVEMENT_REFERENCE_CHANGED", error
+    else:
+        raise AssertionError("changed source-qualified reference accepted")
+    # Official Cradle references retain UNKNOWN semantics and reject changed custody.
+    for item in (40016, 40598, 40601, 40603):
+        tampered = copy.deepcopy(reference)
+        tampered["records"].extend(copy.deepcopy(expected_items[len(legacy_items) :]))
+        next(
+            row
+            for row in tampered["records"]
+            if row["identity"]["key"] == f"oteryn:item.tibia.i{item}"
+        )["materializable"] = True
+        try:
+            source_qualified_item_references(tampered, ROOT)
+        except ValueError as error:
+            assert (
+                str(error) == f"QREADY1_CRADLE_REFERENCE_CHANGED:oteryn:item.tibia.i{item}"
+            ), error
+        else:
+            raise AssertionError("changed Cradle reference accepted")
+    # Match the materializer's source-proven, exact Primal empty-loot admission.
+    # Its witness rejects changed identities and every nonempty or unrelated Loot.
+    from primal_reference_overlay import apply_reference
+
+    apply_reference(reference["records"], ROOT)
+    creature_families = [
+        "Creature",
+        "Presentation",
+        "Behavior",
+        "Loot",
+        "Ability",
+        "Effect",
+        "Formula",
+    ]
+    family_counts = {
+        family: sum(row["identity"]["family"] == family for row in reference["records"])
+        for family in creature_families
+    }
+    assert family_counts['Creature'] == 1_865
+    # One Crystal 201189f8 star-herb handler extends the frozen129 conversion cohort.
+    # The alternate tainted-antler key was a duplicate of the same whole-stack transform.
+    conversion_keys = {
+        row["identity"]["key"]
+        for row in json.loads((ROOT / "content/craft/recipes.json").read_bytes())["records"]
+    }
+    assert "oteryn:item-conversion.tainted-souls-antler-talisman" in conversion_keys
+    assert "oteryn:item-conversion.tainted-antler-talisman" not in conversion_keys
+    assert lock["family_counts"] == {
+        "Item": len(expected_items),
+        "Mount": 252,  # Exact source-qualified extensions above.
+        **family_counts,
+        "Document": 1609,
+        "Encounter.Raid": json.loads(
+            (ROOT / "content/encounters/raids/index.json").read_text()
+        )["record_count"],
+        "NPC": 1282,
+        "Dialogue": 836,
+        "Service.Trade": 324,
+        "Service.Travel": 56,
+        "Service.Bank": 2,
+        "Service.Promotion": 7,
+        "Service.Blessing": 10,
+        "Encounter": 108,
+        "Charm": 25,
+        "Proficiency": 443,
+        "RewardClaim": source_claim_count,
+        "StarterKit": 1,
+        "item_conversion": 130,
+        **{family: value["records"] for family, value in quest_families.items()},
+    }
+    assert lock["source_binding_counts"] == {"Item": 476, "Mount": 252, "Creature": 1_865, "Encounter": 108, "NPC": 2747}
+    assert lock["editor_entry_counts"] == {"Item": 165, "Mount": 252}
+
+    paths = [row["path"] for row in manifest["managed_files"]]
+    assert len(paths) == len(set(paths))
+    shard_name = re.compile(r"-\d{5}-\d{5}\.json$")
+    for directory in {(ROOT / path).parent for path in paths if shard_name.search(path)}:
+        stale = sorted(
+            file.relative_to(ROOT).as_posix()
+            for file in directory.glob("*.json")
+            if shard_name.search(file.name)
+            and file.relative_to(ROOT).as_posix() not in paths
+        )
+        assert not stale, stale
+    assert sum(path.startswith("content/items/definitions/items-") for path in paths) == 69
+    assert any(path.startswith("content/cosmetics/mounts/mounts-") for path in paths)
+    assert any(
+        path.startswith("content/creatures/definitions/creatures-") for path in paths
+    )
+    assert any(path.startswith("content/npcs/definitions/npcs-") for path in paths)
+    assert any(
+        path.startswith("content/dialogues/definitions/dialogues-") for path in paths
+    )
+    assert any(
+        path.startswith("content/encounters/definitions/encounters-") for path in paths
+    )
+    assert any(path.startswith("content/services/trade/trade-") for path in paths)
+    assert any(path.startswith("content/services/travel/travel-") for path in paths)
+    assert "imports/canary/bindings/creatures.json" in paths
+    assert "imports/tibiawiki/bindings/creatures.json" in paths
+    assert all(not path.startswith("content/world/") for path in paths)
+
+    assert manifest["families"]["NPC"] == {
+        "records": 1282,
+        "index": "content/npcs/definitions/index.json",
+    }
+    assert manifest["families"]["Dialogue"] == {
+        "records": 836,
+        "index": "content/dialogues/definitions/index.json",
+    }
+    assert manifest["families"]["Service.Trade"] == {
+        "records": 324,
+        "index": "content/services/trade/index.json",
+    }
+    assert manifest["families"]["Service.Travel"] == {
+        "records": 56,
+        "index": "content/services/travel/index.json",
+    }
+    assert manifest["families"]["Service.Bank"] == {
+        "records": 2,
+        "index": "content/services/bank/index.json",
+    }
+    assert manifest["families"]["Service.Promotion"] == {
+        "records": 7,
+        "index": "content/services/promotion/index.json",
+    }
+    assert manifest["families"]["Service.Blessing"] == {
+        "records": 10,
+        "index": "content/services/blessings/index.json",
+    }
+    assert any(path.startswith("content/services/bank/bank-") for path in paths)
+    assert manifest["families"]["Charm"] == {
+        "records": 25,
+        "index": "content/charms/index.json",
+    }
+    assert (
+        "Charm" in project["migrated_families"]
+        and "Charm" not in project["next_population_families"]
+    )
+    assert (
+        any(path.startswith("content/charms/charms-") for path in paths)
+        and "content/charms/index.json" in paths
+    )
+    assert manifest["families"]["Proficiency"] == {
+        "records": 443,
+        "index": "content/proficiencies/index.json",
+    }
+    assert (
+        "Proficiency" in project["migrated_families"]
+        and "Proficiency" not in project["next_population_families"]
+    )
+    assert (
+        sum(path.startswith("content/proficiencies/proficiencies-") for path in paths) == 3
+    )
+    assert (
+        "content/proficiencies/index.json" in paths
+        and "content/proficiencies/bindings.json" in paths
+    )
+    assert manifest["families"]["RewardClaim"] == {
+        "records": source_claim_count,
+        "index": "content/interactions/reward_claims/index.json",
+    }
+    assert "RewardClaim" in project["migrated_families"]
+    assert (
+        sum(
+            path.startswith("content/interactions/reward_claims/reward-claims-")
+            for path in paths
+        )
+        == 3
+    )
+    assert "content/interactions/reward_claims/index.json" in paths
+    assert manifest["families"]["StarterKit"] == {
+        "records": 1,
+        "index": "content/starter/index.json",
+    }
+    assert "StarterKit" in project["migrated_families"]
+    assert (
+        "content/starter/starter-kits-00000-00000.json" in paths
+        and "content/starter/index.json" in paths
+    )
+    assert (
+        "NPC" in project["migrated_families"]
+        and "Dialogue" in project["migrated_families"]
+        and "Service" in project["migrated_families"]
+    )
+    assert (
+        "NPC" not in project["next_population_families"]
+        and "Dialogue" not in project["next_population_families"]
+        and "Service" not in project["next_population_families"]
+    )
+
+    assert manifest["families"]["Document"] == {
+        "records": 1609,
+        "index": "content/documents/index.json",
+    }
+    assert "Document" in project["migrated_families"]
+    assert sum(path.startswith("content/documents/documents-") for path in paths) == 4
+    assert (
+        "content/documents/index.json" in paths
+        and "Document" not in lock["source_binding_counts"]
+    )
+
+    print(f"PASS managed_files={len(paths)} item_shards=69")
+
+
+def test_document_contract():
+    test_document_roundtrip_negatives(
+        json.loads((ROOT / "content/world/definitions/declarations.json").read_text()),
+        json.loads((ROOT / "content/world/provenance/sources.json").read_text()),
+    )
+
+
+INTERNAL_CHECKS = {
+    "package-tree-contract": test_package_tree_contract,
+    "document-roundtrip-negatives": test_document_contract,
+    "closed-weapon-metadata": test_closed_weapon_metadata_admission,
+    "relation-row-ownership": test_relation_rows_route_by_owner,
+    "closed-bank-admission": test_closed_bank_admission,
+}
+
+
+def check_inventory(*, workflow_checks=False):
+    checks = [Check(name, (sys.executable, str(Path(__file__).resolve()), "--case", name))
+              for name in INTERNAL_CHECKS]
+
+    def schedule_check(command, *, cwd=None, check=True):
+        if not check:
+            raise ValueError("every migration check must propagate failures")
+        if command[1:4] == ["-m", "unittest", "-v"]:
+            # The previous single unittest invocation named these exact modules/classes.
+            # Keep each complete module, with its own interpreter and fixture lifetime.
+            checks.extend(Check(name, tuple(command[:4] + [name]), cwd)
+                          for name in command[4:])
+        else:
+            checks.append(Check(Path(command[1]).name, tuple(command), cwd))
+
+    # The admitted native successor must reproduce exact bytes over immutable r25.
+    schedule_check(
+        [
+            sys.executable,
+            str(ROOT / "tools/content-migration/test_monster_seven_spell_overlay.py"),
+        ],
+        check=True,
+    )
+
+    # Keep the standalone Quest preservation guards on the migration workflow's test path.
+    schedule_check(
+        [
+            sys.executable,
+            str(ROOT / "tools/content-migration/test_quest_registration_preservation.py"),
+        ],
+        check=True,
+    )
+
+    # Run complete custody modules and retained QN3/Feaster source contracts.
+    schedule_check(
+        [
+            sys.executable,
+            "-m",
+            "unittest",
+            "-v",
+            "test_boss_corpse_profiles",
+            "test_authored_npc_item_profiles",
+            "test_quest_corpse_profiles",
+            "test_boss_reward_yield_profiles",
+            "test_equipment_source_overlaps",
+            "test_equipment_known_speed_pin",
+            "test_refresh_equipment_profile_pin",
+            "test_refresh_season_creature_inventory",
+            "test_m42_cooking_canonical",
+            "test_quest_batch3_item_profiles",
+            "test_questpc7_merge_audit_callbacks",
+        ],
+        cwd=ROOT / "tools/content-migration",
+        check=True,
+    )
+
+    # Verify the fixed Boss corpse source cohort on the native gameplay test path.
+    schedule_check(
+        [
+            sys.executable,
+            "-m",
+            "unittest",
+            "-v",
+            "test_full_spell_artifact.CorpseSourceCohortTests",
+        ],
+        cwd=ROOT / "tools/content-schema/native-gameplay",
+        check=True,
+    )
+
+    # Check both committed Rotten custody and composition with earlier loot owners.
+    schedule_check(
+        [
+            sys.executable,
+            "-m",
+            "unittest",
+            "-v",
+            "test_questpc2_rotten_loot_items",
+        ],
+        cwd=ROOT / "tools/content-schema/native-gameplay",
+        check=True,
+    )
+
+    # Core Item admission is a separate accepted data overlay, retained by every regeneration.
+    schedule_check(
+        [
+            sys.executable,
+            str(ROOT / "tools/content-schema/native-gameplay/summer_corpse_items.py"),
+            "--check",
+        ],
+        check=True,
+    )
+    schedule_check(
+        [
+            sys.executable,
+            str(ROOT / "tools/content-migration/test_quest_reward_item_semantics.py"),
+        ],
+        check=True,
+    )
+    schedule_check(
+        [
+            sys.executable,
+            str(ROOT / "tools/content-migration/test_amber_item_semantics.py"),
+        ],
+        check=True,
+    )
+    # Exercise the closed Lion Item composition and refusals on the migration gate.
+    schedule_check(
+        [
+            sys.executable,
+            str(ROOT / "tools/content-migration/test_lion_trial_item_profiles.py"),
+        ],
+        check=True,
+    )
+    # Exercise the closed M04 diary promotion, replay and refusal contract.
+    schedule_check(
+        [
+            sys.executable,
+            str(ROOT / "tools/content-migration/test_engnpc_m04_item_profiles.py"),
+        ],
+        check=True,
+    )
+    # Preserve qualified earlier World Change owners and verify the source packet.
+    schedule_check(
+        [
+            sys.executable,
+            str(ROOT / "tools/content-schema/native-gameplay/test_world_change_item_profiles.py"),
+        ],
+        check=True,
+    )
+    schedule_check(
+        [
+            sys.executable,
+            str(ROOT / "tools/content-migration/quest_reward_item_semantics.py"),
+            "--check",
+        ],
+        check=True,
+    )
+
+    # The RewardClaim family has no legacy source: its own authoring tool must reproduce it exactly.
+    reward_claim_tool = ROOT / "tools" / "content-schema" / "reward-claim-authoring"
+    for script in (
+        "test_reward_claim_authoring.py",
+        "test_reward_claim_variant_authoring.py",
+    ):
+        schedule_check([sys.executable, script], cwd=reward_claim_tool, check=True)
+    # StarterKit likewise.
+    starter_kit_tool = ROOT / "tools" / "content-schema" / "starter-kit-authoring"
+    schedule_check(
+        [sys.executable, "test_starter_kit_authoring.py"], cwd=starter_kit_tool, check=True
+    )
+
+    schedule_check(
+        [sys.executable, str(ROOT / "tools/content-migration/test_item_taxonomy.py")],
+        check=True,
+    )
+    schedule_check(
+        [
+            sys.executable,
+            str(ROOT / "tools/content-migration/test_item_official_navigation.py"),
+        ],
+        check=True,
+    )
+
+    if workflow_checks:
+        # Flatten the workflow's independent outer scripts into this SAME pool.
+        # Item taxonomy is already in the inventory above; execute it exactly once.
+        for relative in (
+            "tools/content-migration/test_source_relocations.py",
+            "tools/content-migration/test_regenerate_content.py",
+            "tools/merge-driver/test_oteryn_additive_driver.py",
+            "tools/content-migration/test_npc_presence_stage.py",
+            "tools/content-migration/test_item_navigation_source_supplement.py",
+            "tools/content-migration/test_item_engine_navigation.py",
+            "tools/content-migration/test_item_external_family_refinement.py",
+            "tools/content-migration/test_item_bounded7_navigation.py",
+        ):
+            checks.append(Check(Path(relative).name, (sys.executable, str(ROOT / relative))))
+    return checks
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Run every content migration equivalence check.")
+    parser.add_argument("--jobs", type=int, choices=range(1, 5), default=2)
+    parser.add_argument("--case", choices=INTERNAL_CHECKS, help=argparse.SUPPRESS)
+    parser.add_argument("--list-checks", action="store_true")
+    parser.add_argument("--workflow-checks", action="store_true",
+                        help="include the independent outer migration workflow checks in this pool")
+    args = parser.parse_args()
+    if not __debug__:
+        parser.error("migration assertions require Python without -O")
+    if args.case:
+        INTERNAL_CHECKS[args.case]()
+    elif args.list_checks:
+        print("\n".join(check.name for check in check_inventory(workflow_checks=args.workflow_checks)))
+    else:
+        run_checks(check_inventory(workflow_checks=args.workflow_checks), jobs=args.jobs)
+
+
+if __name__ == "__main__":
+    main()
