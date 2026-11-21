@@ -111,14 +111,15 @@ fn preview_entry_and_due(
                 &facts,
             )
         };
-        match result {
-            Ok(_)
-            | Err(
+        if let Err(refusal) = result
+            && !matches!(
+                refusal,
                 ConditionRefusal::Immune
-                | ConditionRefusal::KeptCurrent
-                | ConditionRefusal::ReentryProtected,
-            ) => {}
-            Err(_) => return Err(CarrierError::PlanConflict),
+                    | ConditionRefusal::KeptCurrent
+                    | ConditionRefusal::ReentryProtected
+            )
+        {
+            return Err(CarrierError::PlanConflict);
         }
     }
     Ok(facts.map_or_else(Vec::new, |facts| state.conditions.take_due(now_us, facts)))
