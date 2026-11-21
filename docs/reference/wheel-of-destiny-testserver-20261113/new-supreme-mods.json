@@ -1,0 +1,803 @@
+{
+  "captured_utc_date": "2026-11-13",
+  "client_version": "15.33.dd0955",
+  "sha256": "7f6555b19514abc34220a09f427732ea66ddfcd8d7052c733f0557d624baaf34",
+  "supreme_id_count": 114,
+  "id_bound_evidence": "cmp id,0x71 at static VA0xc7ca81 and0xc7d161; invalidSupremeMod path at0x5683b9 and0x56841e",
+  "category_table": {
+    "file_offset_hex": "0x1dd5d80",
+    "length": 114,
+    "sha256": "7c9ac9b99860623bd2bf787e2a9f99ca08b97677a4d0b4015fb4e78368760a39"
+  },
+  "augment_table": {
+    "file_offset_hex": "0x1dd5e00",
+    "record_stride": 48,
+    "record_count": 114,
+    "sha256": "d0ce7345807469ca93f65936ae7f4e9bdad3c232d60435aa3d2d1b2634296a2b",
+    "schema": "little-endian u32 spell_id at0,u32 effect_type at4,f64 gradeI..IV at8/16/24/32,u8 enabled at40;remaining7bytespadding",
+    "caller_evidence": [
+      "0xc7cac0..0xc7cafb loads source_id*48 record for descriptor",
+      "0xc6a7e8..0xc6a807 indexes same table for spell effect formatting"
+    ],
+    "interpretation": "Effect types crosschecked against established mod IDs and native tooltips; percentages are raw multipliers times100, cooldown raw seconds."
+  },
+  "crosschecks": [
+    {
+      "source_id": 4,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd5ec0",
+      "client_spell_id": 3,
+      "client_effect_type": 3,
+      "grade_values_raw": [
+        0.05,
+        0.055,
+        0.06,
+        0.075
+      ],
+      "record_enabled": 1,
+      "effect": "base_healing_bonus",
+      "unit": "percent_points",
+      "grade_values": [
+        5,
+        5.5,
+        6,
+        7.5
+      ]
+    },
+    {
+      "source_id": 6,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd5f20",
+      "client_spell_id": 264,
+      "client_effect_type": 6,
+      "grade_values_raw": [
+        -900,
+        -900,
+        -900,
+        -900
+      ],
+      "record_enabled": 1,
+      "effect": "cooldown_reduction",
+      "unit": "seconds",
+      "grade_values": [
+        -900,
+        -900,
+        -900,
+        -900
+      ]
+    },
+    {
+      "source_id": 8,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd5f80",
+      "client_spell_id": 261,
+      "client_effect_type": 2,
+      "grade_values_raw": [
+        0.06,
+        0.066,
+        0.072,
+        0.09
+      ],
+      "record_enabled": 1,
+      "effect": "base_damage_bonus",
+      "unit": "percent_points",
+      "grade_values": [
+        6,
+        6.6,
+        7.2,
+        9
+      ]
+    },
+    {
+      "source_id": 9,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd5fb0",
+      "client_spell_id": 261,
+      "client_effect_type": 16,
+      "grade_values_raw": [
+        0.12,
+        0.132,
+        0.144,
+        0.18
+      ],
+      "record_enabled": 1,
+      "effect": "critical_extra_damage",
+      "unit": "percent_points",
+      "grade_values": [
+        12,
+        13.2,
+        14.4,
+        18
+      ]
+    },
+    {
+      "source_id": 77,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd6c70",
+      "client_spell_id": 273,
+      "client_effect_type": 3,
+      "grade_values_raw": [
+        0.06,
+        0.066,
+        0.072,
+        0.09
+      ],
+      "record_enabled": 1,
+      "effect": "base_healing_bonus",
+      "unit": "percent_points",
+      "grade_values": [
+        6,
+        6.6,
+        7.2,
+        9
+      ]
+    },
+    {
+      "source_id": 82,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd6d60",
+      "client_spell_id": 287,
+      "client_effect_type": 2,
+      "grade_values_raw": [
+        0.065,
+        0.072,
+        0.079,
+        0.0975
+      ],
+      "record_enabled": 1,
+      "effect": "base_damage_bonus",
+      "unit": "percent_points",
+      "grade_values": [
+        6.5,
+        7.2,
+        7.9,
+        9.75
+      ]
+    },
+    {
+      "source_id": 83,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd6d90",
+      "client_spell_id": 287,
+      "client_effect_type": 16,
+      "grade_values_raw": [
+        0.08,
+        0.088,
+        0.096,
+        0.12
+      ],
+      "record_enabled": 1,
+      "effect": "critical_extra_damage",
+      "unit": "percent_points",
+      "grade_values": [
+        8,
+        8.8,
+        9.6,
+        12
+      ]
+    },
+    {
+      "source_id": 84,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd6dc0",
+      "client_spell_id": 289,
+      "client_effect_type": 2,
+      "grade_values_raw": [
+        0.05,
+        0.055,
+        0.06,
+        0.075
+      ],
+      "record_enabled": 1,
+      "effect": "base_damage_bonus",
+      "unit": "percent_points",
+      "grade_values": [
+        5,
+        5.5,
+        6,
+        7.5
+      ]
+    },
+    {
+      "source_id": 85,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd6df0",
+      "client_spell_id": 289,
+      "client_effect_type": 16,
+      "grade_values_raw": [
+        0.08,
+        0.088,
+        0.096,
+        0.12
+      ],
+      "record_enabled": 1,
+      "effect": "critical_extra_damage",
+      "unit": "percent_points",
+      "grade_values": [
+        8,
+        8.8,
+        9.6,
+        12
+      ]
+    },
+    {
+      "source_id": 90,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd6ee0",
+      "client_spell_id": 296,
+      "client_effect_type": 3,
+      "grade_values_raw": [
+        0.05,
+        0.055,
+        0.06,
+        0.075
+      ],
+      "record_enabled": 1,
+      "effect": "base_healing_bonus",
+      "unit": "percent_points",
+      "grade_values": [
+        5,
+        5.5,
+        6,
+        7.5
+      ]
+    }
+  ],
+  "limitations": [
+    "Static client tables establish displayed reference values, not measured game-server combat results.",
+    "All four grade values come from static client tables. Independently observed current Test planner UI crosschecks spell names and Grade IV values only.",
+    "Cooldown mods can add grade-dependent Momentum through separate logic; the static augment table stores only the cooldown component. Grade IV modifier97 additionally shows+1%Momentum in Test planner."
+  ],
+  "source": "CipSoft TibiaExternal/bin/client (installed official test client)",
+  "schema": "OTERYN_WHEEL_TESTSERVER_AUDIT_EVIDENCE/v1",
+  "purpose": "Reference evidence only; this file does not admit or modify the runtime catalogue.",
+  "new_mods": [
+    {
+      "source_id": 94,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd6fa0",
+      "client_spell_id": 316,
+      "client_effect_type": 2,
+      "record_enabled": 1,
+      "effect": "base_damage_bonus",
+      "unit": "percent_points",
+      "grade_values": [
+        8,
+        8.8,
+        9.6,
+        12
+      ],
+      "vocation": "knight",
+      "spell_name": "Shield Slam",
+      "grade_i_to_iv_evidence": "Static official client table",
+      "planner_grade_iv_crosscheck": {
+        "source": "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner",
+        "observed_utc_date": "2026-11-13",
+        "value": 12,
+        "unit": "percent_points",
+        "spell_name": "Shield Slam",
+        "evidence": "Current official Test planner visible dropdown option/DOM at Grade IV; does not independently check lower grades."
+      }
+    },
+    {
+      "source_id": 95,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd6fd0",
+      "client_spell_id": 316,
+      "client_effect_type": 16,
+      "record_enabled": 1,
+      "effect": "critical_extra_damage",
+      "unit": "percent_points",
+      "grade_values": [
+        12,
+        13.2,
+        14.4,
+        18
+      ],
+      "vocation": "knight",
+      "spell_name": "Shield Slam",
+      "grade_i_to_iv_evidence": "Static official client table",
+      "planner_grade_iv_crosscheck": {
+        "source": "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner",
+        "observed_utc_date": "2026-11-13",
+        "value": 18,
+        "unit": "percent_points",
+        "spell_name": "Shield Slam",
+        "evidence": "Current official Test planner visible dropdown option/DOM at Grade IV; does not independently check lower grades."
+      }
+    },
+    {
+      "source_id": 96,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd7000",
+      "client_spell_id": 158,
+      "client_effect_type": 3,
+      "record_enabled": 1,
+      "effect": "base_healing_bonus",
+      "unit": "percent_points",
+      "grade_values": [
+        20,
+        22,
+        24,
+        30
+      ],
+      "vocation": "knight",
+      "spell_name": "Intense Wound Cleansing",
+      "grade_i_to_iv_evidence": "Static official client table",
+      "planner_grade_iv_crosscheck": {
+        "source": "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner",
+        "observed_utc_date": "2026-11-13",
+        "value": 30,
+        "unit": "percent_points",
+        "spell_name": "Intense Wound Cleansing",
+        "evidence": "Current official Test planner visible dropdown option/DOM at Grade IV; does not independently check lower grades."
+      }
+    },
+    {
+      "source_id": 97,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd7030",
+      "client_spell_id": 158,
+      "client_effect_type": 6,
+      "record_enabled": 1,
+      "effect": "cooldown_reduction",
+      "unit": "seconds",
+      "grade_values": [
+        -20,
+        -20,
+        -20,
+        -20
+      ],
+      "vocation": "knight",
+      "spell_name": "Intense Wound Cleansing",
+      "grade_i_to_iv_evidence": "Static official client table",
+      "planner_grade_iv_crosscheck": {
+        "source": "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner",
+        "observed_utc_date": "2026-11-13",
+        "value": -20,
+        "unit": "seconds",
+        "spell_name": "Intense Wound Cleansing",
+        "evidence": "Current official Test planner visible dropdown option/DOM at Grade IV; does not independently check lower grades.",
+        "additional_effects": [
+          {
+            "effect": "momentum_chance",
+            "value": 1,
+            "unit": "percent_points"
+          }
+        ]
+      }
+    },
+    {
+      "source_id": 98,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd7060",
+      "client_spell_id": 302,
+      "client_effect_type": 2,
+      "record_enabled": 1,
+      "effect": "base_damage_bonus",
+      "unit": "percent_points",
+      "grade_values": [
+        5,
+        5.5,
+        6,
+        7.5
+      ],
+      "vocation": "paladin",
+      "spell_name": "Divine Barrage",
+      "grade_i_to_iv_evidence": "Static official client table",
+      "planner_grade_iv_crosscheck": {
+        "source": "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner",
+        "observed_utc_date": "2026-11-13",
+        "value": 7.5,
+        "unit": "percent_points",
+        "spell_name": "Divine Barrage",
+        "evidence": "Current official Test planner visible dropdown option/DOM at Grade IV; does not independently check lower grades."
+      }
+    },
+    {
+      "source_id": 99,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd7090",
+      "client_spell_id": 302,
+      "client_effect_type": 16,
+      "record_enabled": 1,
+      "effect": "critical_extra_damage",
+      "unit": "percent_points",
+      "grade_values": [
+        12,
+        13.2,
+        14.4,
+        18
+      ],
+      "vocation": "paladin",
+      "spell_name": "Divine Barrage",
+      "grade_i_to_iv_evidence": "Static official client table",
+      "planner_grade_iv_crosscheck": {
+        "source": "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner",
+        "observed_utc_date": "2026-11-13",
+        "value": 18,
+        "unit": "percent_points",
+        "spell_name": "Divine Barrage",
+        "evidence": "Current official Test planner visible dropdown option/DOM at Grade IV; does not independently check lower grades."
+      }
+    },
+    {
+      "source_id": 100,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd70c0",
+      "client_spell_id": 303,
+      "client_effect_type": 2,
+      "record_enabled": 1,
+      "effect": "base_damage_bonus",
+      "unit": "percent_points",
+      "grade_values": [
+        5,
+        5.5,
+        6,
+        7.5
+      ],
+      "vocation": "paladin",
+      "spell_name": "Ethereal Barrage",
+      "grade_i_to_iv_evidence": "Static official client table",
+      "planner_grade_iv_crosscheck": {
+        "source": "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner",
+        "observed_utc_date": "2026-11-13",
+        "value": 7.5,
+        "unit": "percent_points",
+        "spell_name": "Ethereal Barrage",
+        "evidence": "Current official Test planner visible dropdown option/DOM at Grade IV; does not independently check lower grades."
+      }
+    },
+    {
+      "source_id": 101,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd70f0",
+      "client_spell_id": 303,
+      "client_effect_type": 16,
+      "record_enabled": 1,
+      "effect": "critical_extra_damage",
+      "unit": "percent_points",
+      "grade_values": [
+        12,
+        13.2,
+        14.4,
+        18
+      ],
+      "vocation": "paladin",
+      "spell_name": "Ethereal Barrage",
+      "grade_i_to_iv_evidence": "Static official client table",
+      "planner_grade_iv_crosscheck": {
+        "source": "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner",
+        "observed_utc_date": "2026-11-13",
+        "value": 18,
+        "unit": "percent_points",
+        "spell_name": "Ethereal Barrage",
+        "evidence": "Current official Test planner visible dropdown option/DOM at Grade IV; does not independently check lower grades."
+      }
+    },
+    {
+      "source_id": 102,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd7120",
+      "client_spell_id": 310,
+      "client_effect_type": 2,
+      "record_enabled": 1,
+      "effect": "base_damage_bonus",
+      "unit": "percent_points",
+      "grade_values": [
+        5,
+        5.5,
+        6,
+        7.5
+      ],
+      "vocation": "sorcerer",
+      "spell_name": "Death Echo",
+      "grade_i_to_iv_evidence": "Static official client table",
+      "planner_grade_iv_crosscheck": {
+        "source": "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner",
+        "observed_utc_date": "2026-11-13",
+        "value": 7.5,
+        "unit": "percent_points",
+        "spell_name": "Death Echo",
+        "evidence": "Current official Test planner visible dropdown option/DOM at Grade IV; does not independently check lower grades."
+      }
+    },
+    {
+      "source_id": 103,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd7150",
+      "client_spell_id": 310,
+      "client_effect_type": 16,
+      "record_enabled": 1,
+      "effect": "critical_extra_damage",
+      "unit": "percent_points",
+      "grade_values": [
+        12,
+        13.2,
+        14.4,
+        18
+      ],
+      "vocation": "sorcerer",
+      "spell_name": "Death Echo",
+      "grade_i_to_iv_evidence": "Static official client table",
+      "planner_grade_iv_crosscheck": {
+        "source": "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner",
+        "observed_utc_date": "2026-11-13",
+        "value": 18,
+        "unit": "percent_points",
+        "spell_name": "Death Echo",
+        "evidence": "Current official Test planner visible dropdown option/DOM at Grade IV; does not independently check lower grades."
+      }
+    },
+    {
+      "source_id": 104,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd7180",
+      "client_spell_id": 149,
+      "client_effect_type": 2,
+      "record_enabled": 1,
+      "effect": "base_damage_bonus",
+      "unit": "percent_points",
+      "grade_values": [
+        10,
+        11,
+        12,
+        15
+      ],
+      "vocation": "sorcerer",
+      "spell_name": "Lightning",
+      "grade_i_to_iv_evidence": "Static official client table",
+      "planner_grade_iv_crosscheck": {
+        "source": "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner",
+        "observed_utc_date": "2026-11-13",
+        "value": 15,
+        "unit": "percent_points",
+        "spell_name": "Lightning",
+        "evidence": "Current official Test planner visible dropdown option/DOM at Grade IV; does not independently check lower grades."
+      }
+    },
+    {
+      "source_id": 105,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd71b0",
+      "client_spell_id": 149,
+      "client_effect_type": 16,
+      "record_enabled": 1,
+      "effect": "critical_extra_damage",
+      "unit": "percent_points",
+      "grade_values": [
+        15,
+        16.5,
+        18,
+        22.5
+      ],
+      "vocation": "sorcerer",
+      "spell_name": "Lightning",
+      "grade_i_to_iv_evidence": "Static official client table",
+      "planner_grade_iv_crosscheck": {
+        "source": "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner",
+        "observed_utc_date": "2026-11-13",
+        "value": 22.5,
+        "unit": "percent_points",
+        "spell_name": "Lightning",
+        "evidence": "Current official Test planner visible dropdown option/DOM at Grade IV; does not independently check lower grades."
+      }
+    },
+    {
+      "source_id": 106,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd71e0",
+      "client_spell_id": 317,
+      "client_effect_type": 2,
+      "record_enabled": 1,
+      "effect": "base_damage_bonus",
+      "unit": "percent_points",
+      "grade_values": [
+        5,
+        5.5,
+        6,
+        7.5
+      ],
+      "vocation": "druid",
+      "spell_name": "Forked Glacier",
+      "grade_i_to_iv_evidence": "Static official client table",
+      "planner_grade_iv_crosscheck": {
+        "source": "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner",
+        "observed_utc_date": "2026-11-13",
+        "value": 7.5,
+        "unit": "percent_points",
+        "spell_name": "Forked Glacier",
+        "evidence": "Current official Test planner visible dropdown option/DOM at Grade IV; does not independently check lower grades."
+      }
+    },
+    {
+      "source_id": 107,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd7210",
+      "client_spell_id": 317,
+      "client_effect_type": 16,
+      "record_enabled": 1,
+      "effect": "critical_extra_damage",
+      "unit": "percent_points",
+      "grade_values": [
+        12,
+        13.2,
+        14.4,
+        18
+      ],
+      "vocation": "druid",
+      "spell_name": "Forked Glacier",
+      "grade_i_to_iv_evidence": "Static official client table",
+      "planner_grade_iv_crosscheck": {
+        "source": "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner",
+        "observed_utc_date": "2026-11-13",
+        "value": 18,
+        "unit": "percent_points",
+        "spell_name": "Forked Glacier",
+        "evidence": "Current official Test planner visible dropdown option/DOM at Grade IV; does not independently check lower grades."
+      }
+    },
+    {
+      "source_id": 108,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd7240",
+      "client_spell_id": 318,
+      "client_effect_type": 2,
+      "record_enabled": 1,
+      "effect": "base_damage_bonus",
+      "unit": "percent_points",
+      "grade_values": [
+        5,
+        5.5,
+        6,
+        7.5
+      ],
+      "vocation": "druid",
+      "spell_name": "Forked Thorns",
+      "grade_i_to_iv_evidence": "Static official client table",
+      "planner_grade_iv_crosscheck": {
+        "source": "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner",
+        "observed_utc_date": "2026-11-13",
+        "value": 7.5,
+        "unit": "percent_points",
+        "spell_name": "Forked Thorns",
+        "evidence": "Current official Test planner visible dropdown option/DOM at Grade IV; does not independently check lower grades."
+      }
+    },
+    {
+      "source_id": 109,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd7270",
+      "client_spell_id": 318,
+      "client_effect_type": 16,
+      "record_enabled": 1,
+      "effect": "critical_extra_damage",
+      "unit": "percent_points",
+      "grade_values": [
+        12,
+        13.2,
+        14.4,
+        18
+      ],
+      "vocation": "druid",
+      "spell_name": "Forked Thorns",
+      "grade_i_to_iv_evidence": "Static official client table",
+      "planner_grade_iv_crosscheck": {
+        "source": "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner",
+        "observed_utc_date": "2026-11-13",
+        "value": 18,
+        "unit": "percent_points",
+        "spell_name": "Forked Thorns",
+        "evidence": "Current official Test planner visible dropdown option/DOM at Grade IV; does not independently check lower grades."
+      }
+    },
+    {
+      "source_id": 110,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd72a0",
+      "client_spell_id": 288,
+      "client_effect_type": 2,
+      "record_enabled": 1,
+      "effect": "base_damage_bonus",
+      "unit": "percent_points",
+      "grade_values": [
+        5,
+        5.5,
+        6,
+        7.5
+      ],
+      "vocation": "monk",
+      "spell_name": "Chained Penance",
+      "grade_i_to_iv_evidence": "Static official client table",
+      "planner_grade_iv_crosscheck": {
+        "source": "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner",
+        "observed_utc_date": "2026-11-13",
+        "value": 7.5,
+        "unit": "percent_points",
+        "spell_name": "Chained Penance",
+        "evidence": "Current official Test planner visible dropdown option/DOM at Grade IV; does not independently check lower grades."
+      }
+    },
+    {
+      "source_id": 111,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd72d0",
+      "client_spell_id": 288,
+      "client_effect_type": 16,
+      "record_enabled": 1,
+      "effect": "critical_extra_damage",
+      "unit": "percent_points",
+      "grade_values": [
+        12,
+        13.2,
+        14.4,
+        18
+      ],
+      "vocation": "monk",
+      "spell_name": "Chained Penance",
+      "grade_i_to_iv_evidence": "Static official client table",
+      "planner_grade_iv_crosscheck": {
+        "source": "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner",
+        "observed_utc_date": "2026-11-13",
+        "value": 18,
+        "unit": "percent_points",
+        "spell_name": "Chained Penance",
+        "evidence": "Current official Test planner visible dropdown option/DOM at Grade IV; does not independently check lower grades."
+      }
+    },
+    {
+      "source_id": 112,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd7300",
+      "client_spell_id": 301,
+      "client_effect_type": 2,
+      "record_enabled": 1,
+      "effect": "base_damage_bonus",
+      "unit": "percent_points",
+      "grade_values": [
+        5,
+        5.5,
+        6,
+        7.5
+      ],
+      "vocation": "monk",
+      "spell_name": "Thousand Fist Blows",
+      "grade_i_to_iv_evidence": "Static official client table",
+      "planner_grade_iv_crosscheck": {
+        "source": "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner",
+        "observed_utc_date": "2026-11-13",
+        "value": 7.5,
+        "unit": "percent_points",
+        "spell_name": "Thousand Fist Blows",
+        "evidence": "Current official Test planner visible dropdown option/DOM at Grade IV; does not independently check lower grades."
+      }
+    },
+    {
+      "source_id": 113,
+      "category": 4,
+      "record_file_offset_hex": "0x1dd7330",
+      "client_spell_id": 301,
+      "client_effect_type": 16,
+      "record_enabled": 1,
+      "effect": "critical_extra_damage",
+      "unit": "percent_points",
+      "grade_values": [
+        12,
+        13.2,
+        14.4,
+        18
+      ],
+      "vocation": "monk",
+      "spell_name": "Thousand Fist Blows",
+      "grade_i_to_iv_evidence": "Static official client table",
+      "planner_grade_iv_crosscheck": {
+        "source": "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner",
+        "observed_utc_date": "2026-11-13",
+        "value": 18,
+        "unit": "percent_points",
+        "spell_name": "Thousand Fist Blows",
+        "evidence": "Current official Test planner visible dropdown option/DOM at Grade IV; does not independently check lower grades."
+      }
+    }
+  ]
+}

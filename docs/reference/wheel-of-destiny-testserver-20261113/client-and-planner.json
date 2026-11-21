@@ -1,0 +1,106 @@
+{
+  "schema": "OTERYN_WHEEL_TESTSERVER_AUDIT_EVIDENCE/v1",
+  "captured_utc_date": "2026-11-13",
+  "client_version": "15.33.dd0955",
+  "client_binary_sha256": "7f6555b19514abc34220a09f427732ea66ddfcd8d7052c733f0557d624baaf34",
+  "translation_file": "CipSoft TibiaExternal/bin/client.en.qm",
+  "translation_file_sha256": "f627f7e51feaa25cc29f485efdcbe7d262206c3591c01bc980a8a6edd5016a62",
+  "evidence_class": "STATIC_CLIENT_TEXT_AND_SEPARATE_UI_OBSERVATIONS",
+  "static_rules": [
+    {
+      "translation_id": "skill_wheel_fragment_workshop_bonus_summary_info",
+      "offset": 628287,
+      "rule": "Each completed modifier upgrade adds 5 Health, 5 Mana and 5 Capacity. A fully enhanced modifier grants one promotion point.",
+      "qualification": "Confirmed active Workshop QML binding; upgrade-vitals gameplay not measured."
+    },
+    {
+      "translation_id": "skill_wheel_cooldown_limit_info",
+      "offset": 614496,
+      "rule": "Individual spell cooldown is at least half its base cooldown."
+    },
+    {
+      "translation_id": "skill_wheel_dialog_momentum_mod_grade_bonus_information",
+      "offset": 620430,
+      "rule": "Higher cooldown-modifier grades add Momentum chance instead of further cooldown reduction."
+    },
+    {
+      "translation_id": "skill_wheel_dialog_no_premim_info",
+      "offset": 622595,
+      "rule": "Premium is required for Wheel and gem effects; free players can inspect a build."
+    },
+    {
+      "translation_id": "skillwheel_gem_mod_revelation_mastery_info",
+      "offset": 636888,
+      "rule": "Revelation Mastery contributes points to the associated Revelation domain."
+    }
+  ],
+  "native_observation": {
+    "level": 757,
+    "available_promotion_points": 42,
+    "total_promotion_points": 742,
+    "conviction": {
+      "gem_vessel": 3,
+      "rm_ascetic": 125
+    },
+    "vessels": {
+      "damage_healing": 3,
+      "rm_spiritual_outburst": 225,
+      "hit_points": 100,
+      "mana": 150,
+      "energy_resistance_percent": 1,
+      "fire_resistance_percent": 1.5,
+      "life_drain_resistance_percent": 4.5
+    },
+    "revelation": {
+      "damage_healing": 13,
+      "ascetic_stage": 2,
+      "spiritual_outburst_stage": 1,
+      "avatar_of_balance": "locked",
+      "gift_of_life": "locked"
+    },
+    "evidence": "Fresh scrot screenshot displayed in tool output before server closed connection. Initial source PNG was overwritten by later screenshot and is not present in retained files.",
+    "limitation": "Gem identities, grades, placement and per-domain invested points were not yet inspected; this alone does not prove how gem mastery was calculated."
+  },
+  "native_session_limitation": "Remote host closed connection; character selection returned to empty-password login form. Needs user re-login for further interactive observation.",
+  "asset_retention": "No client binaries, images, credentials or login screenshot are committed. The initial Wheel screenshot was observed but its source file was overwritten; it is not a reproducible retained image.",
+  "planner_comparison": {
+    "url": "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner&code=M1Y2CAAm8waQQnUkACJ6aBmOr_QUBRJuY_KgAA",
+    "code": "M1Y2CAAm8waQQnUkACJ6aBmOr_QUBRJuY_KgAA",
+    "allocation_points": 700,
+    "nonzero_allocation_one_based": {
+      "10": 75,
+      "16": 50,
+      "21": 50,
+      "26": 100,
+      "27": 75,
+      "31": 200,
+      "32": 150
+    },
+    "gem_ids_by_zero_based_slot": {
+      "0": [
+        39
+      ],
+      "2": [
+        33,
+        28,
+        92
+      ]
+    },
+    "grade_state": "Planner comparison uses Grade IV for the four selected modifiers. The exported preset does not encode the native character Workshop grades; native HP/Energy readings therefore differ.",
+    "observed": {
+      "gem_vessel_nodes": 3,
+      "conviction_revelation_mastery_ascetic": 125,
+      "revelation_stages": {
+        "ascetic": 2,
+        "spiritual_outburst": 1
+      },
+      "vessel_hit_points": 150,
+      "vessel_mana": 150,
+      "vessel_energy_resistance_percent": 1.5,
+      "vessel_fire_resistance_percent": 1.5,
+      "vessel_life_drain_resistance_percent": 4.5,
+      "vessel_revelation_mastery_spiritual_outburst": 225
+    },
+    "qualification": "Official planner UI reference, not a controlled native combat measurement."
+  }
+}

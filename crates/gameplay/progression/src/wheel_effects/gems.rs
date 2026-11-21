@@ -1,6 +1,6 @@
-//! Executed Crystal gem values at 201189f. The imported catalogue also carries client
-//! descriptions; source integer assignments and the differences below are applied once,
-//! before contributions from separate gems are added.
+//! Gem values in thousandths, normalized before separate contributions are added.
+//! Retained integer-field rules come from Crystal at 201189f; Revelation Mastery and
+//! Monk mixed Mana use catalogue values corroborated by official test client 15.33.dd0955.
 
 use super::WheelRuntimeEffects;
 use serde_json::Value;
@@ -75,9 +75,6 @@ pub fn basic_milli(id: u16, grade: u8, vocation: &str, effect: &Value) -> Option
     let name = effect["name"].as_str()?;
     let value = catalogue_milli(&effect["values_by_vocation"][vocation][usize::from(grade)])?;
     match name {
-        // Crystal wheel_gems.cpp:741-800,817-824: the four mixed Mana maps have no
-        // Monk entry and return zero; their independently added resistance remains active.
-        "Mana" if vocation == "monk" && (33..=36).contains(&id) => Some(0),
         // wheel_gems.cpp:861-869: Monk capacity is 500 * 1.5 at Grade IV;
         // the imported description's 700 is not the executed value.
         "Capacity" if id == 48 && vocation == "monk" && grade == 3 => Some(750_000),
@@ -151,10 +148,8 @@ pub fn supreme_effect(id: u16, grade: u8, effect: &Value) -> Option<SupremeEffec
             value
         }
         "revelation_mastery_points" => {
-            // Primary-source behavior: each case adds the points immediately, then
-            // processActiveGems executes the same strategy once (wheel_gems.cpp:261-263,
-            // 271-320,633-643; player_wheel.cpp:2757). Preserve both additions explicitly.
-            (value / 1_000).checked_mul(2)?.checked_mul(1_000)?
+            // A Revelation Mastery modifier contributes its displayed points once.
+            value / 1_000 * 1_000
         }
         _ => return None,
     };
@@ -301,16 +296,23 @@ mod tests {
     }
 
     #[test]
-    fn mastery_preserves_both_source_additions_and_momentum_is_global() -> Result<(), Error> {
+    fn mastery_contributes_once_for_every_perk_and_momentum_is_global() -> Result<(), Error> {
         let data = WheelGemData::embedded()?;
-        for grade in 0..4_u8 {
-            let row = effect(&data, 5, grade, "revelation_mastery_points")?;
-            let actual = supreme_effect(5, grade, &row).ok_or("mastery")?;
-            assert_eq!(actual.target, "Gift of Life");
-            assert_eq!(
-                actual.value_milli,
-                [300_000, 330_000, 360_000, 450_000][usize::from(grade)]
-            );
+        // The catalogue records 150/165/180/225 points. The current official test
+        // planner independently shows 225 for every Mastery ID at Grade IV.
+        for id in [
+            5, 21, 22, 23, 39, 40, 41, 56, 57, 58, 73, 74, 75, 91, 92, 93,
+        ] {
+            for grade in 0..4_u8 {
+                let row = effect(&data, id, grade, "revelation_mastery_points")?;
+                let actual = supreme_effect(id, grade, &row).ok_or("mastery")?;
+                assert_eq!(Some(actual.target), row["target"].as_str());
+                assert_eq!(
+                    actual.value_milli,
+                    [150_000, 165_000, 180_000, 225_000][usize::from(grade)],
+                    "mastery mod {id}, grade {grade}",
+                );
+            }
         }
         let row = effect(&data, 6, 1, "momentum_chance")?;
         let actual = supreme_effect(6, 1, &row).ok_or("momentum")?;
@@ -322,8 +324,7 @@ mod tests {
     }
 
     #[test]
-    fn monk_mana_and_capacity_follow_source_tables_without_dropping_resistance() -> Result<(), Error>
-    {
+    fn monk_mixed_mana_is_preserved_alongside_resistance_and_capacity() -> Result<(), Error> {
         let data = WheelGemData::embedded()?;
         for id in 33..=36_u16 {
             let row = data.gems()["catalogue"]["basic_mods"]
@@ -336,7 +337,11 @@ mod tests {
                 for value in row["effects"].as_array().ok_or("effects")? {
                     let actual = basic_milli(id, grade, "monk", value).ok_or("projection")?;
                     if value["name"] == "Mana" {
-                        assert_eq!(actual, 0);
+                        assert_eq!(
+                            actual,
+                            [100_000, 110_000, 120_000, 150_000][usize::from(grade)],
+                            "Monk mixed Mana mod {id}, grade {grade}",
+                        );
                     } else {
                         assert!(actual > 0);
                     }
