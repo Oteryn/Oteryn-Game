@@ -68,7 +68,9 @@ pub(super) async fn check_profile(bot: &mut Bot<'_, '_>, birth: Option<&str>) ->
     Ok(())
 }
 
-async fn legacy_general_stats(bot: &mut Bot<'_, '_>) -> TestResult<panel::CyclopediaCharacterPanel> {
+async fn legacy_general_stats(
+    bot: &mut Bot<'_, '_>,
+) -> TestResult<panel::CyclopediaCharacterPanel> {
     let client = bot.client()?;
     let mut view = panel::CyclopediaCharacterPanel {
         selected: true,

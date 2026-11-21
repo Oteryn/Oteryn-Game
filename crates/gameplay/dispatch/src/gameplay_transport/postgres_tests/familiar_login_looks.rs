@@ -1,10 +1,12 @@
 //! First entry reconciles vocation looks even when no familiar needs restoration.
 use super::*;
+use crate::durability::character_build::{
+    BuildCause, BuildChangeRequest, BuildCommitOutcome, BuildOccurrence, convert_vocation,
+};
 use crate::durability::character_familiar::{
     DurableFamiliarState, FamiliarLifecycleV2, FamiliarLifecycleWriter, FamiliarStateOccurrence,
     FamiliarStateRequest,
 };
-use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::premium_fence::EntitlementState;
 use crate::gameplay_transport::spell_premium_coordinator::{
     SpellPremiumCoordinator, purchase_fixture,
@@ -46,31 +48,6 @@ fn scenario(name: &'static str, premium_current: bool) -> TestResult {
             let (channel_pin, _, _, _) = pin.into_channel_parts();
             let deps = Dependencies::with_content(channel_pin, room, native.spell_book().clone())?;
             let session = deps.admitted.game_session_id;
-            let current = FreshAdmissionStore::from_root(h.root.clone())
-                .current_session(session)
-                .await
-                .map_err(debug)?;
-            let policy = active
-                .progression()
-                .ok_or("progression")?
-                .policy_for("profile-1", "ruleset-1", "content-1")
-                .map_err(debug)?;
-            qualification_fixture_relog::provision::prepare_character_with_policy(
-                &h.root,
-                &authority,
-                &h.node,
-                &current,
-                qualification_fixture_relog::provision::QualificationBuildSpec {
-                    vocation: "knight",
-                    level: 200,
-                    context: policy.context.clone(),
-                    xp_occurrence: id(181),
-                    build_occurrence: id(182),
-                },
-                policy,
-            )
-            .await?;
-
             let (consumer, clock, activation, mut evidence) = purchase_fixture::current(id(40));
             h.root
                 .latch_premium_activation(
@@ -101,6 +78,42 @@ fn scenario(name: &'static str, premium_current: bool) -> TestResult {
             );
             let mut owner = deps.owner(&h, &authority);
             owner.active_generation = Some(active);
+            let mut admitted = deps.admitted;
+            owner.admit_progression_session(&mut admitted).await;
+            qengine_outfit_stories_fixtures::earn_level(&owner, &admitted, &authority, 200)
+                .await?;
+
+            let formula = native.training_formula().ok_or("training formula")?;
+            let build_fence = death_ml_loss_composed_fixtures::current_fence(&owner, session).await?;
+            let before = h
+                .root
+                .read_character_build_state(&authority, build_fence.character_id)
+                .await
+                .map_err(debug)?;
+            let after = convert_vocation(formula, &before, "knight").map_err(debug)?;
+            let build = h
+                .root
+                .commit_character_build(
+                    &authority,
+                    &h.node,
+                    build_fence,
+                    BuildChangeRequest {
+                        occurrence: BuildOccurrence::from_bytes(id(182)).map_err(debug)?,
+                        cause: if before.vocation() == "none" {
+                            BuildCause::VocationChoice
+                        } else {
+                            BuildCause::VocationTrial
+                        },
+                        before,
+                        after,
+                        pruned_stance: None,
+                    },
+                    formula,
+                )
+                .await
+                .map_err(debug)?;
+            assert!(matches!(build, BuildCommitOutcome::Committed(_)));
+
             owner.premium_coordinator = Some(&premium);
             let index = owner
                 .active_familiar_index("knight")
@@ -127,15 +140,8 @@ fn scenario(name: &'static str, premium_current: bool) -> TestResult {
                 .map_err(debug)?
                 .ok_or("level-200 progression")?;
             assert_eq!(progression.level, 200);
-            let gameplay_fence = CurrentCharacterGameplayFence {
-                character_id: character,
-                game_session_id: session,
-                connection_generation: current.current_connection_generation(),
-                character_lease_generation: current.current_character_lease().generation(),
-                runtime_scope: current.current_runtime_scope(),
-                scope_ownership_generation: current.current_scope_generation(),
-                expected_character_revision: progression.character_revision,
-            };
+            let gameplay_fence =
+                death_ml_loss_composed_fixtures::current_fence(&owner, session).await?;
             let before = DurableFamiliarState::default();
             let mut checkpoint = DurableFamiliarState {
                 lifecycle: Some(FamiliarLifecycleV2 {

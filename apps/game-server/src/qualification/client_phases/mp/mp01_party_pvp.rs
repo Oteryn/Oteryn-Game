@@ -38,7 +38,11 @@ pub(super) async fn run(
     let started = std::time::Instant::now();
     let mut failures = Vec::new();
     let profile = std::env::var("NODE_BOOT_PROFILE").unwrap_or_else(|_| "sorcerer".into());
-    let birth = if profile == "explorer" { "knight" } else { &profile };
+    let birth = if profile == "explorer" {
+        "knight"
+    } else {
+        &profile
+    };
     let (mut bots, setup) = tokio::time::timeout(
         Duration::from_secs(180),
         bots::connect_bots(&[
@@ -213,10 +217,7 @@ async fn profiles(bots: &mut [Bot<'_, '_>], vocations: &[&str]) -> TestResult {
         let expected =
             character::vocation_id(vocation).ok_or("MP01 vocation has no protocol id")?;
         if view.vocation_id != Some(expected)
-            || view
-                .general
-                .as_ref()
-                .is_none_or(|stats| stats.level != 100)
+            || view.general.as_ref().is_none_or(|stats| stats.level != 100)
         {
             return Err(format!(
                 "MP01 role={} expected={vocation} vocation_id={:?} stats={:?}",
