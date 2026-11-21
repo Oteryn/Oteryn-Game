@@ -51,6 +51,9 @@ impl View {
         self.pending() && !self.post_rejected
     }
     pub fn can_purchase(&self, id: &str) -> bool {
+        self.can_purchase_at(id, Instant::now())
+    }
+    pub(crate) fn can_purchase_at(&self, id: &str, now: Instant) -> bool {
         !self.unavailable
             && !self.pending()
             && self.balance.as_ref().is_some_and(|b| !b.review_required)
@@ -60,7 +63,7 @@ impl View {
                         && self
                             .quote_until
                             .get(&p.quote_id)
-                            .is_some_and(|until| *until > Instant::now())
+                            .is_some_and(|until| *until > now)
                 })
             })
     }

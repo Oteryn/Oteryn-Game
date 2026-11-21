@@ -4,8 +4,10 @@ use super::{
     *,
 };
 use crate::{account_services::Action as Account, coin_shop::Action as Coin};
+use bevy::ui::InteractionDisabled;
 use bevy::{input_focus::tab_navigation::TabIndex, text::EditableText, ui_widgets::TextInput};
 use oteryn_platform_client::native_login::bazaar::{AuctionState, AuctionView};
+use std::time::Instant;
 
 #[derive(Component)]
 struct Form {
@@ -316,6 +318,22 @@ fn queue(event: On<Activate>, guard: ModalGuard, mut pending: ResMut<Pending>) {
     }
 }
 
+fn eligible(action: &Action, screen: &Screen, now: Instant) -> bool {
+    match (action, screen) {
+        (
+            Action::Prepare(_, Reply::Coin(Coin::Purchase { package_id, .. }))
+            | Action::Confirm(Reply::Coin(Coin::Purchase { package_id, .. })),
+            Screen::Coin(view),
+        ) => view.can_purchase_at(package_id, now),
+        (
+            Action::Prepare(_, Reply::Account(Account::Transfer { .. }))
+            | Action::Confirm(Reply::Account(Account::Transfer { .. })),
+            Screen::Account(view),
+        ) => view.can_transfer_at(now),
+        _ => true,
+    }
+}
+
 #[allow(
     clippy::too_many_arguments,
     reason = "The active request, editor and confirmation controls are scoped independently"
@@ -326,20 +344,40 @@ fn finish(
     skin: Res<Skins>,
     guard: ModalGuard,
     mut pending: ResMut<Pending>,
-    buttons: Query<&Button>,
+    buttons: Query<(Entity, &Button), Without<InteractionDisabled>>,
+    clock: Option<Res<Time<Real>>>,
     mut forms: Query<(&mut Form, &ChildOf)>,
     fields: Query<(&Field, &EditableText)>,
     mut statuses: Query<&mut Text>,
 ) {
+    let now = Instant::now();
+    let now = clock
+        .and_then(|clock| clock.last_update())
+        .map_or(now, |frame| now.max(frame));
+    if let Some(request) = owner.services.pending() {
+        for (entity, button) in &buttons {
+            if button.request != request.id || eligible(&button.action, &request.screen, now) {
+                continue;
+            }
+            if matches!(button.action, Action::Confirm(_)) {
+                if let Ok((mut form, _)) = forms.get_mut(button.form) {
+                    commands.entity(form.confirmation).despawn_children();
+                    form.confirming = None;
+                }
+            } else {
+                commands.entity(entity).insert(InteractionDisabled);
+            }
+        }
+    }
     while let Some(entity) = pending.0.pop_front() {
-        let Ok(button) = buttons.get(entity) else {
+        let Ok((_, button)) = buttons.get(entity) else {
             continue;
         };
         if !guard.allows(entity)
             || !owner
                 .services
                 .pending()
-                .is_some_and(|r| r.id == button.request)
+                .is_some_and(|r| r.id == button.request && eligible(&button.action, &r.screen, now))
         {
             continue;
         }

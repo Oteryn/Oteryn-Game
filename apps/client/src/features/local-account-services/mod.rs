@@ -106,9 +106,12 @@ impl View {
         self.page = Some(page);
     }
     pub fn can_transfer(&self) -> bool {
+        self.can_transfer_at(Instant::now())
+    }
+    pub(crate) fn can_transfer_at(&self, now: Instant) -> bool {
         !self.pending()
             && self.quote.as_ref().is_some_and(|q| q.blockers.is_empty())
-            && self.quote_until.is_some_and(|until| until > Instant::now())
+            && self.quote_until.is_some_and(|until| until > now)
     }
     pub fn transfer_description(&self, quote: &TransferQuote) -> String {
         let character = self

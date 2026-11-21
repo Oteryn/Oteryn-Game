@@ -734,3 +734,27 @@ fn rejected_expired_order_can_refresh_and_confirm_again() -> TestResult {
         Ok(())
     })
 }
+
+#[test]
+fn expired_coin_offer_disables_review_and_closes_confirmation() -> TestResult {
+    with_coin_offer(false, |app, _, _| {
+        use crate::account_services::test_server::coins::PACKAGE;
+        let offer = format!("coin.package.{PACKAGE}");
+        let controls = |world: &mut World| {
+            let mut names = world.query_filtered::<&Name, Without<bevy::ui::InteractionDisabled>>();
+            let mut present = |wanted| names.iter(world).any(|name| name.as_str() == wanted);
+            (present(offer.as_str()), present("commerce.confirm"))
+        };
+        assert_eq!(controls(app.world_mut()), (true, true));
+        app.insert_resource(bevy::time::TimeUpdateStrategy::ManualInstant(
+            Instant::now() + Duration::from_secs(121),
+        ));
+        app.update();
+        assert_eq!(
+            controls(app.world_mut()),
+            (false, false),
+            "expired offer and confirmation must be disabled"
+        );
+        Ok(())
+    })
+}

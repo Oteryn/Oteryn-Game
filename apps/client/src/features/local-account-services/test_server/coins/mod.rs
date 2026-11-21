@@ -57,6 +57,7 @@ impl CoinAuthority {
             tamper_checkout: None,
         })
     }
+    #[cfg(bevy_shell)]
     pub fn expire_quotes(&mut self) {
         self.quotes.clear();
     }
