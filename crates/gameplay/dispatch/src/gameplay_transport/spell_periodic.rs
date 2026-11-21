@@ -335,18 +335,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> Option<(u64, ActorVitals)> {
-        self.tick_spell_periodic_at(actor, session, self.owner_now())
+        self.tick_spell_periodic_with_clock(actor, session, || self.owner_now())
             .await
     }
 
-    // The transport samples wall time once; tests can drive the same owner at an
-    // exact condition deadline without changing the Channel's clock origin.
+    // Tests can drive the same owner at an exact condition deadline.
+    #[cfg(test)]
     pub(in crate::gameplay_transport) async fn tick_spell_periodic_at(
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
         now: oteryn_simulation_determinism::SemanticTimeMicros,
     ) -> Option<(u64, ActorVitals)> {
+        self.tick_spell_periodic_with_clock(actor, session, || now)
+            .await
+    }
+
+    async fn tick_spell_periodic_with_clock(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        clock: impl FnOnce() -> oteryn_simulation_determinism::SemanticTimeMicros,
+    ) -> Option<(u64, ActorVitals)> {
+        let cake_deadline = self.cake_regeneration_deadline().await;
         // Lock order (§1.2): the lane before any Channel guard.
         let mut permit = self.spell_lane_permit().await?;
         let mut runtime = self.runtime.lock().await;
@@ -354,10 +365,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if states.has_pending_spell_commit(actor, session) {
             return None;
         }
+        // Keep the condition timestamp and remaining world window on the same turn.
+        let now = clock();
         states
             .get_mut(&runtime, actor, session)?
             .expire_owner_premium(now.get())
             .ok()?;
+        if let Some(deadline) = cake_deadline
+            && runtime.owner_fence().is_ok()
+            && runtime
+                .player_control_facts(actor, session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+        {
+            let state = states.get_mut(&runtime, actor, session)?;
+            let _ = crate::gameplay_transport::cake_event::apply_world_cake_regeneration(
+                state,
+                deadline,
+                now.get(),
+                runtime.content_pin().server_artifact_digest(),
+                session,
+            );
+        }
         let state = states.get(&runtime, actor, session)?;
         if !crate::spell::actor_conditions::has_periodic_damage(state) {
             return states.tick_in_environment(

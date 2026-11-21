@@ -1,7 +1,7 @@
 //! Source parties are the players standing on the exact staging tiles, not a social-party id.
 use super::*;
 use crate::content::{CollisionClass, LogicalCell};
-use crate::map::view::EntryFacts;
+use crate::map::{facts::QuestCallbackProjection, view::EntryFacts};
 
 pub(in crate::gameplay_transport) fn room_contains(
     encounter: &oteryn_gameplay_quests::quest::world_callbacks::Encounter,
@@ -75,6 +75,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         preflight: bool,
         cause: QuestCause,
         reservation: Option<&mut personal_encounter::Reservation<'_>>,
+        projection: Option<&QuestCallbackProjection>,
     ) -> UseDisposition {
         self.quest_encounter(
             runtime,
@@ -89,6 +90,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             preflight,
             cause,
             reservation,
+            projection,
         )
     }
 
@@ -105,6 +107,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         expected_revision: u64,
         after: EntryFacts,
         cause: QuestCause,
+        projection: Option<&QuestCallbackProjection>,
     ) -> UseDisposition {
         self.quest_encounter(
             runtime,
@@ -119,6 +122,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             true,
             cause,
             None,
+            projection,
         )
     }
 
@@ -137,6 +141,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         preflight: bool,
         cause: QuestCause,
         reservation: Option<&mut personal_encounter::Reservation<'_>>,
+        projection: Option<&QuestCallbackProjection>,
     ) -> UseDisposition {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
@@ -150,7 +155,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // Preflight checks the same guards without reserving a timer.
                 let ready = oteryn_gameplay_quests::quest::world_callbacks::personal_trial::admitted(
                     callback,
-                ) && encounter.players.is_empty()
+                )
+                    || (callback.starts_merchant_wave() && projection.is_some());
+                let ready = ready
+                    && encounter.players.is_empty()
                     && states.get(runtime, actor, session).is_some_and(|state| {
                         state.character_facts().level >= encounter.minimum_level
                     })
@@ -176,6 +184,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 key,
                 expected_revision,
                 after,
+                projection,
             );
         }
         let Ok(census) = runtime.positioned_melee_census() else {
@@ -199,7 +208,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .iter()
                 .filter(|(_, pos, _)| pos.position() == local(member.from));
             let Some(&(who, expected, Some(member_session))) = occupants.next() else {
-                // Cults collects whoever stands on the five source staging tiles.
+                // Crystal party levers collect whoever stands on their staging tiles.
                 if encounter.phase.is_some() {
                     continue;
                 }
@@ -247,9 +256,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let blocked =
                 super::super::pvp_live::pz_blocked(states, who, member_session, self.owner_now());
-            // Preserve voluntary-entry control and protection-zone admission checks.
-            // The runtime remains locked through the shared landing commit below.
-            if crate::map::floor::prepare_quest_callback_teleport(
+            // Court Warlock requires a clear centre before the party relocates.
+            if encounter.phase
+                == Some(
+                    oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::CourtWarlock,
+                )
+                && crate::map::floor::prepare_quest_callback_teleport(
+                    runtime,
+                    &self.movement_cells,
+                    who,
+                    member_session,
+                    expected,
+                    local(member.to),
+                    blocked,
+                    &closed,
+                )
+                .is_err()
+            {
+                return UseDisposition::NotPossible;
+            }
+            // Source phase parties can share an arrival tile while still
+            // qualifying voluntary movement and protection-zone access.
+            let Ok(proof) = crate::map::floor::prepare_quest_encounter_member(
                 runtime,
                 &self.movement_cells,
                 who,
@@ -258,20 +286,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 local(member.to),
                 blocked,
                 &closed,
-            )
-            .is_err()
-            {
-                return UseDisposition::NotPossible;
-            }
-            // Court Warlock and Cults gather the staged party on one centre tile.
-            let Ok(proof) = crate::map::floor::prepare_quest_encounter_ejection(
-                runtime,
-                &self.movement_cells,
-                who,
-                member_session,
-                expected,
-                local(member.to),
-                &closed,
+                encounter.phase.is_some(),
             ) else {
                 return UseDisposition::NotPossible;
             };
@@ -404,7 +419,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .map(|credits| {
                         super::super::encounter_phases::bind(
                             runtime,
-                            callback,
+                            encounter,
                             key,
                             actors,
                             &party,

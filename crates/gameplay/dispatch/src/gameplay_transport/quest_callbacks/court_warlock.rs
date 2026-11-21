@@ -24,7 +24,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseDisposition::Rejected;
         };
         let ready = self.execute_quest_encounter(
-            runtime, states, actor, session, map, callback, key, revision, after, true, cause, None,
+            runtime, states, actor, session, map, callback, key, revision, after, true, cause,
+            None, None,
         );
         if ready != UseDisposition::Committed {
             return ready;
@@ -106,7 +107,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let disposition = self.execute_quest_encounter(
             runtime, states, actor, session, map, callback, key, revision, after, false, cause,
-            None,
+            None, None,
         );
         if disposition != UseDisposition::Committed
             && let Err(error) = self

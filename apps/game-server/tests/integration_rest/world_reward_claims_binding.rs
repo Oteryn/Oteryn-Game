@@ -732,11 +732,13 @@ fn world_reward_claims_the_embedded_shards_decode() -> TestResult {
                 "oteryn:reward-claim.authored.mystery_of_the_valley.fragment2",
                 "oteryn:reward-claim.authored.mystery_of_the_valley.fragment3",
                 "oteryn:reward-claim.authored.mystery_of_the_valley.guardian",
+                "oteryn:reward-claim.nrwicked-forgemaster",
             ]
             .map(str::to_owned)
         )
     );
-    // The five retained shards contain 336 records; ENGCLAIM adds the nine exact native keys.
+    // The five retained shards contain 336 records; ENGCLAIM adds nine exact native keys and
+    // NRWICKED adds the Forgemaster claim.
     assert_eq!(source_keys.len(), 336 + native_keys.len());
     let candidates = report.unbound_claims_by_reason().values().sum::<usize>();
     assert_eq!(candidates, 328 + native_keys.len());

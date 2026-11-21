@@ -79,6 +79,7 @@ mod published_quest_pins;
 mod quests_2_focus;
 pub mod reward_callbacks;
 pub mod rotten_blood;
+pub mod rottin_walls;
 pub mod schrodinger_island;
 pub mod shared_switches;
 pub mod shared_world_progress;
@@ -685,6 +686,31 @@ impl QuestStateCatalogue {
         updated.authored_bindings = self.authored_bindings.clone();
         updated.native_recipe_evidence = self.native_recipe_evidence.clone();
         Ok(updated)
+    }
+
+    /// Model a later content activation that declares an exact previous definition compatible.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn with_fixture_predecessor(
+        mut self,
+        previous: &Self,
+        quest: &str,
+    ) -> Result<Self, QuestCatalogueError> {
+        let hash = previous
+            .definition_hash(quest)
+            .ok_or_else(|| QuestCatalogueError::InvalidKey(quest.to_owned()))?;
+        self.predecessors
+            .entry(quest.to_owned())
+            .or_default()
+            .push(NpcDefinitionPredecessor {
+                hash,
+                defaults: previous
+                    .tracks
+                    .values()
+                    .filter(|track| track.quest == quest)
+                    .map(|track| (track.key.clone(), track.initial))
+                    .collect(),
+            });
+        Ok(self)
     }
 
     /// A catalogue with no quest: every transition request is unknown.

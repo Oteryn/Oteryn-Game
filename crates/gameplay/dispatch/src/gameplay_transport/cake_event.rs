@@ -32,6 +32,145 @@ type CachedCakeMapSources = ([u8; 32], [u8; 32], Vec<CakeMapSource>);
 #[derive(Default)]
 pub(super) struct SourceCache(std::sync::Mutex<Option<CachedCakeMapSources>>);
 
+pub(super) const CAKE_REGENERATION_KEY: &str = "world.cake.regeneration";
+
+/// Cache the durable world window across player ticks in this Channel.
+#[derive(Default)]
+pub(super) struct BonusCache(tokio::sync::Mutex<Option<BonusSample>>);
+
+struct BonusSample {
+    checked_at: std::time::Instant,
+    expires_at: Option<std::time::Instant>,
+}
+
+impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn cake_regeneration_deadline(&self) -> Option<std::time::Instant> {
+        use std::time::{Duration, Instant};
+        const REFRESH_INTERVAL: Duration = Duration::from_secs(5);
+        // A concurrent refresh must not hold up other players' condition ticks.
+        // Those ticks can install the bonus on their next turn.
+        let mut cache = self.states.cake_bonus.0.try_lock().ok()?;
+        if cache
+            .as_ref()
+            .is_none_or(|sample| sample.checked_at.elapsed() >= REFRESH_INTERVAL)
+        {
+            let checked_at = Instant::now();
+            let expires_at = match self.root.cake_world_bonus(self.world_id).await {
+                Ok(bonus) => bonus.and_then(|bonus| {
+                    checked_at.checked_add(Duration::from_millis(bonus.remaining_ms))
+                }),
+                // A failed poll cannot extend the durable window. Rate-limit retries
+                // during a database outage so each player tick does not poll again.
+                Err(_) => cache.as_ref().and_then(|sample| sample.expires_at),
+            };
+            *cache = Some(BonusSample {
+                checked_at,
+                expires_at,
+            });
+        }
+        cache.as_ref()?.expires_at
+    }
+}
+
+pub(super) fn tick_house_regeneration(
+    state: &mut crate::spell::cast::PlayerSpellState,
+    deadline: Option<std::time::Instant>,
+    now_us: u64,
+    content_digest: [u8; 32],
+    session: crate::foundation::GameSessionId,
+) {
+    if let Some(deadline) = deadline {
+        let _ = apply_world_cake_regeneration(state, deadline, now_us, content_digest, session);
+    }
+    use oteryn_gameplay_domain::domain::condition::ConflictKey;
+    if state
+        .owned_conditions()
+        .get(ConflictKey::Recovery)
+        .is_some_and(|effect| effect.definition().key() == CAKE_REGENERATION_KEY)
+    {
+        let _ = crate::spell::actor_conditions::tick_spell_regeneration(
+            state,
+            now_us,
+            CAKE_REGENERATION_KEY,
+        );
+    }
+}
+
+pub(super) fn apply_world_cake_regeneration(
+    state: &mut crate::spell::cast::PlayerSpellState,
+    deadline: std::time::Instant,
+    now_us: u64,
+    content_digest: [u8; 32],
+    session: crate::foundation::GameSessionId,
+) -> Option<()> {
+    use crate::spell::Vocation;
+    use oteryn_gameplay_domain::domain::condition::{ConditionValues, ConflictKey};
+    use oteryn_gameplay_foundation::foundation::condition::{
+        ApplicationFacts, ConditionDefinition, ConditionSourceKind,
+    };
+    use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+
+    // The native condition tick samples time in whole milliseconds.
+    let now_us = now_us / 1_000 * 1_000;
+    let before = state.owned_conditions();
+    if state.vitals().health == 0
+        || before
+            .active_at(ConflictKey::Recovery, now_us)
+            .is_some_and(|condition| condition.definition().key() == CAKE_REGENERATION_KEY)
+    {
+        return Some(());
+    }
+    let remaining_ms = u32::try_from(
+        deadline
+            .saturating_duration_since(std::time::Instant::now())
+            .as_millis(),
+    )
+    .ok()
+    .filter(|remaining| *remaining > 0)?;
+    // Crystal world_bonus.lua:26-48 adds a separate COMBAT/sub0 regeneration
+    // condition. Nonzero vocation gains yield at least one additional point.
+    let vocation = state.source_party_vocation();
+    let rate = crate::spell::food_regeneration::rate(vocation);
+    // Crystal data/XML/vocations.xml:139,151 supplies the Cake condition's Monk intervals.
+    let health_interval_ms = match vocation {
+        Vocation::Monk => 7_000,
+        Vocation::ExaltedMonk => 5_000,
+        _ => rate.health_period_ms,
+    };
+    let extra = |gain: u32| if gain == 0 { 0 } else { (gain / 4).max(1) };
+    let definition = ConditionDefinition::new(
+        CAKE_REGENERATION_KEY,
+        1,
+        ConditionValues::SpellRegeneration {
+            sub_id: 0,
+            duration_ms: remaining_ms,
+            health_gain: extra(rate.health_amount),
+            health_interval_ms,
+            mana_gain: extra(rate.mana_amount),
+            mana_interval_ms: rate.mana_period_ms,
+        },
+    )?;
+    let root = GameplayDecisionRoot::from_bytes(content_digest);
+    let facts = ApplicationFacts {
+        now: now_us,
+        base_speed: u16::try_from(state.owned_base_speed()).ok()?,
+        mana_shield_capacity: 0,
+        target_reentry_protected: false,
+        source_reentry_protected: false,
+        target_is_player: true,
+        decision_root: &root,
+        occurrence: DecisionOccurrenceId::from_bytes(*session.as_bytes()),
+    };
+    let mut next = before.clone();
+    next.apply(&definition, None, ConditionSourceKind::SelfUse, &[], &facts)
+        .ok()?;
+    let revision = state.revision().checked_add(1)?;
+    let expected = state.owned_conditions().clone();
+    state.apply_batch_conditions(&expected, &next).ok()?;
+    state.source_set_batch_revision(revision);
+    Some(())
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     fn immutable_cake_candidate(&self, target: &WorldObjectTarget) -> bool {
         let Some(map) = self.bundle_map() else {

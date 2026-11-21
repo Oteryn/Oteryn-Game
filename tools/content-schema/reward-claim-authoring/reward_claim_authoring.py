@@ -558,8 +558,9 @@ def committed_errors() -> list[str]:
     variants = [r for r in records if r['definition'].get('definition_profile') == PROFILE]
     items = load_items()
     import engclaim_native
+    import nrwicked_native
     native = [r for r in records if r['definition'].get('definition_profile') == 'native_authored_v1']
-    errors = [] if native == engclaim_native.records()[0] else ['M34 authored allocation drift']
+    errors = [] if native == engclaim_native.records()[0] + nrwicked_native.records()[0] else ['native authored allocation drift']
     errors += validate(plain, items, index["source_checks"], source_claims)
     errors += validate_variants(variants, ROOT, items, stack_problem)
     if index.get('variant_source_checks') != legacy_uid_checks(records) + stack_normalization_checks():
@@ -598,7 +599,9 @@ def generate() -> dict[str, str]:
     family_index['variant_source_checks'] = legacy_uid_checks(records) + stack_normalization_checks()
     outputs[INDEX_PATH] = compact(family_index)
     import engclaim_native
+    import nrwicked_native
     records += engclaim_native.extend_outputs(outputs, compact)
+    records += nrwicked_native.extend_outputs(outputs, compact)
     names = ("project", "manifest", "content.lock")
     docs = [load_json(ROOT / f"content/{name}.json") for name in names]
     for name, doc in zip(

@@ -196,11 +196,171 @@ fn documents() -> Result<Vec<Document>, String> {
     });
     Ok(documents)
 }
+pub const ARBAZILOTH_ENRAGED: &str = "oteryn:creature.enraged_arbaziloth";
+const ARBAZILOTH_QUEST: &str = "oteryn:quest.no_rest_for_the_wicked_quest";
+const HARD_KILLS: &str =
+    "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/hard_kills";
+const DOOR: &str = "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/forgemaster_door/questline";
+const HARD_UNLOCK: &str = "oteryn:quest-transition/native/no_rest_for_the_wicked/hard_unlock";
+const HARD_INCREMENT: &str = "oteryn:quest-transition/native/no_rest_for_the_wicked/hard_increment";
+const HARD_FIRST_CLEAR: &str =
+    "oteryn:quest-transition/native/no_rest_for_the_wicked/hard_first_clear";
+const HARD_FIRST_CLEAR_WITH_DOOR_PROGRESS: &str =
+    "oteryn:quest-transition/native/no_rest_for_the_wicked/hard_first_clear_with_door_progress";
+
+const ARBAZILOTH_FIRST_CLEAR: &str =
+    "oteryn:quest-transition/native/no_rest_for_the_wicked/first_clear";
+const ARBAZILOTH_FIRST_CLEAR_WITH_DOOR_PROGRESS: &str =
+    "oteryn:quest-transition/native/no_rest_for_the_wicked/first_clear_with_door_progress";
+
+pub fn is_arbaziloth_first_clear(transition: &str) -> bool {
+    matches!(
+        transition,
+        ARBAZILOTH_FIRST_CLEAR
+            | ARBAZILOTH_FIRST_CLEAR_WITH_DOOR_PROGRESS
+            | HARD_FIRST_CLEAR
+            | HARD_FIRST_CLEAR_WITH_DOOR_PROGRESS
+    )
+}
+
+// Crystal 201189f8 arbaziloth_death.lua:27-39. The first kill raises the
+// door stage only when it is still below one, including for imported saves.
+fn arbaziloth_first_clear_rules() -> [Rule; 3] {
+    const TRACK: &str = "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked";
+    let effect = |track, kind: &str, value, set| Effect {
+        track: format!("{TRACK}/{track}"),
+        default: 0,
+        from: Comparison {
+            kind: kind.into(),
+            value,
+        },
+        set: Some(set),
+        add: None,
+    };
+    let rule = |name, effects| Rule {
+        creature: "oteryn:creature.arbaziloth".into(),
+        transition: String::from(name),
+        effects,
+        room: None,
+        top_damage_only: false,
+        define_transition: true,
+        epoch_tracks: None,
+        quest: ARBAZILOTH_QUEST.into(),
+    };
+    [
+        rule(
+            ARBAZILOTH_FIRST_CLEAR,
+            vec![
+                effect("kill_arbaziloth/questline", "lt", 2, 2),
+                effect("forgemaster_door/questline", "lt", 1, 1),
+            ],
+        ),
+        rule(
+            ARBAZILOTH_FIRST_CLEAR_WITH_DOOR_PROGRESS,
+            vec![
+                effect("kill_arbaziloth/questline", "lt", 2, 2),
+                Effect {
+                    set: None,
+                    add: Some(0),
+                    ..effect("forgemaster_door/questline", "ge", 1, 0)
+                },
+            ],
+        ),
+        rule(
+            "oteryn:quest-transition/native/no_rest_for_the_wicked/start_questlog",
+            vec![effect("questlog", "lt", 1, 1)],
+        ),
+    ]
+}
+
+fn arbaziloth_hard_rules() -> Vec<Rule> {
+    let effect = |track: &str, kind: &str, value, set, add| Effect {
+        track: track.into(),
+        default: 0,
+        from: Comparison {
+            kind: kind.into(),
+            value,
+        },
+        set,
+        add,
+    };
+    let hard_rule = |suffix: &str, effects| Rule {
+        creature: ARBAZILOTH_ENRAGED.into(),
+        transition: format!("oteryn:quest-transition/native/no_rest_for_the_wicked/{suffix}"),
+        effects,
+        room: None,
+        top_damage_only: false,
+        define_transition: true,
+        epoch_tracks: Some(vec![DOOR.into()]),
+        quest: ARBAZILOTH_QUEST.into(),
+    };
+    // Crystal 201189f8 arbaziloth_death.lua:45-55. Try the tenth-win
+    // transition before the increment so a ninth win cannot advance both.
+    let mut rules = vec![
+        hard_rule(
+            "hard_unlock",
+            vec![
+                effect(HARD_KILLS, "eq", 9, Some(10), None),
+                effect(DOOR, "lt", 2, Some(2), None),
+            ],
+        ),
+        hard_rule(
+            "hard_increment",
+            vec![
+                effect(HARD_KILLS, "lt", 9, None, Some(1)),
+                effect(DOOR, "lt", 2, None, Some(0)),
+            ],
+        ),
+    ];
+    let first = arbaziloth_first_clear_rules();
+    rules.extend(
+        first
+            .into_iter()
+            .zip([
+                HARD_FIRST_CLEAR,
+                HARD_FIRST_CLEAR_WITH_DOOR_PROGRESS,
+                "oteryn:quest-transition/native/no_rest_for_the_wicked/hard_start_questlog",
+            ])
+            .map(|(mut rule, key)| {
+                rule.creature = ARBAZILOTH_ENRAGED.into();
+                rule.transition = key.into();
+                rule
+            }),
+    );
+    // Apply first-clear changes after the hard count, using the durable stage
+    // from the same death. Door progress never regresses.
+    for rule in &mut rules[2..4] {
+        rule.epoch_tracks = Some(vec![rule.effects[0].track.clone()]);
+    }
+    rules
+}
+
+pub fn arbaziloth_hard_transitions() -> impl Iterator<Item = &'static str> {
+    rules()
+        .into_iter()
+        .flatten()
+        .filter(|rule| rule.creature == ARBAZILOTH_ENRAGED)
+        .map(|rule| rule.transition.as_str())
+}
+
+/// Freeze one counter operation at admission so replay cannot turn an
+/// already counted ninth kill into the tenth kill.
+pub fn arbaziloth_hard_counter(tracks: &BTreeMap<String, i64>) -> Option<&'static str> {
+    [HARD_UNLOCK, HARD_INCREMENT]
+        .into_iter()
+        .find(|key| rule(key).is_some_and(|rule| rule.active(tracks)))
+}
+
+pub fn is_arbaziloth_hard_counter(key: &str) -> bool {
+    matches!(key, HARD_UNLOCK | HARD_INCREMENT)
+}
+
 pub fn rules() -> Result<&'static [Rule], &'static str> {
     static RULES: OnceLock<Result<Vec<Rule>, String>> = OnceLock::new();
     RULES
         .get_or_init(|| {
-            let mut rules = Vec::new();
+            let mut rules = Vec::from(arbaziloth_first_clear_rules());
+            rules.extend(arbaziloth_hard_rules());
             for doc in documents()? {
                 for mut rule in doc.rules {
                     // Already owned atomically by character_hazard/primal.rs; never issue it twice.
@@ -242,7 +402,7 @@ pub fn active(tracks: &BTreeMap<String, i64>) -> Vec<&'static str> {
         |rules| {
             rules
                 .iter()
-                .filter(|r| r.active(tracks))
+                .filter(|r| r.creature != ARBAZILOTH_ENRAGED && r.active(tracks))
                 .map(|r| r.transition.as_str())
                 .collect()
         },
@@ -251,6 +411,16 @@ pub fn active(tracks: &BTreeMap<String, i64>) -> Vec<&'static str> {
 pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
     let mut tracks = catalogue.tracks;
     let mut transitions = catalogue.transitions;
+    tracks.insert(
+        HARD_KILLS.into(),
+        QuestTrack {
+            key: HARD_KILLS.into(),
+            quest: ARBAZILOTH_QUEST.into(),
+            initial: 0,
+            min: 0,
+            max: 10,
+        },
+    );
     for doc in documents()? {
         for track in doc.tracks {
             let candidate = QuestTrack {
@@ -363,4 +533,22 @@ pub(super) fn retain_overlord_predecessor(
         predecessors.push(super::NpcDefinitionPredecessor { hash, defaults });
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn arbaziloth_hard_win_selects_one_counter_operation() {
+        let mut tracks = BTreeMap::from([(HARD_KILLS.into(), 8), (DOOR.into(), 1)]);
+        assert_eq!(arbaziloth_hard_counter(&tracks), Some(HARD_INCREMENT));
+        tracks.insert(HARD_KILLS.into(), 9);
+        assert_eq!(arbaziloth_hard_counter(&tracks), Some(HARD_UNLOCK));
+        assert!(!active(&tracks).contains(&HARD_UNLOCK));
+        tracks.insert(DOOR.into(), 2);
+        assert_eq!(arbaziloth_hard_counter(&tracks), None);
+        tracks.insert(HARD_KILLS.into(), 10);
+        assert_eq!(arbaziloth_hard_counter(&tracks), None);
+    }
 }

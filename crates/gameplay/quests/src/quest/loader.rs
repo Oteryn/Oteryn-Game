@@ -267,6 +267,8 @@ pub(super) fn lower_embedded_quest_state(
         super::last_creep_native::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::elvenbane::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::classic_dialogue::extend_rottin(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue = super::world_callbacks::extend(
         super::reward_callbacks::declare_tracks(lowered.catalogue).map_err(QuestLoadError::Json)?,
     )
@@ -378,6 +380,8 @@ pub(super) fn lower_embedded_quest_state(
     // The additive death callback owns this predecessor independently of
     // whether native bindings are imported by the caller.
     super::source_deaths::retain_overlord_predecessor(&mut lowered.catalogue)
+        .map_err(QuestLoadError::Json)?;
+    super::rottin_walls::retain_predecessor(&mut lowered.catalogue)
         .map_err(QuestLoadError::Json)?;
     let mut lowered = restrict_runtime_scope(lowered, content_revision)?;
     super::published_quest_pins::retain_predecessors(&mut lowered.catalogue);
@@ -793,6 +797,7 @@ mod tests {
             "m44-lions-flower-3",
             "m44-lions-flower-4",
             "m44-lions-flower-5",
+            "nrwicked/arbaziloth",
             "qn1-children-lever-0/ordinary",
             "qn1-children-lever-0/solved",
             "qn1-children-lever-1/ordinary",
@@ -807,6 +812,15 @@ mod tests {
             "rotten-blood/prepare-ichgahal",
             "rotten-blood/prepare-murcion",
             "rotten-blood/prepare-vemiath",
+            "rottin-repair-42501",
+            "rottin-repair-42502",
+            "rottin-repair-42503",
+            "rottin-repair-42504",
+            "rottin-repair-42505",
+            "rottin-repair-42506",
+            "rottin-wood/final-net",
+            "rottin-wood/loot-merchant",
+            "rottin-wood/place-net",
             "srv7-reliable-ram",
             "uneasy-alliance-crystal",
             "worldchg-m31/fire_from_the_earth/volcano",
@@ -823,7 +837,7 @@ mod tests {
         ] {
             assert!(expected.insert(format!("oteryn:quest-callback/{suffix}")));
         }
-        assert_eq!(expected.len() - before_qmech_native, 69);
+        assert_eq!(expected.len() - before_qmech_native, 79);
         assert_eq!(
             callbacks
                 .into_iter()

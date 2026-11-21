@@ -4,10 +4,11 @@ use crate::foundation::{
     CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition,
 };
 use oteryn_gameplay_encounters::bosses::phase_controller::{
+    arbaziloth::{self, ArbazilothEncounter},
     court_warlock::CourtWarlock,
     cults::{self, CultsEncounter},
 };
-use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase};
+use oteryn_gameplay_quests::quest::world_callbacks::{Encounter, EncounterPhase};
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
 use std::sync::Mutex;
 
@@ -17,54 +18,66 @@ const MAX_ENCOUNTERS: usize = 64;
 pub(super) struct ActivePhase {
     key: u64,
     fight: Fight,
-    room: oteryn_gameplay_quests::quest::world_callbacks::Encounter,
+    room: Encounter,
     participants: Vec<(ExactActorRef, GameSessionId)>,
     credits: Vec<grizzly_kills::EncounterCredit>,
     frozen: Option<(ExactActorRef, Vec<super::quest_kills::Recipient>)>,
     cells: crate::content::NativeEntryMovementCells,
+    fire: Option<crate::map::overlay::TilePos>,
 }
 
 #[derive(Debug)]
 enum Fight {
+    Arbaziloth(Box<ArbazilothEncounter>),
     CourtWarlock(Box<CourtWarlock>),
     Cults(Box<CultsEncounter>),
 }
+
 impl Fight {
     fn is_current(&self, runtime: &ChannelRuntimeV1) -> bool {
         match self {
-            Self::Cults(f) => f.is_current(runtime),
-            Self::CourtWarlock(f) => f.is_current(runtime),
+            Self::Arbaziloth(fight) => fight.is_current(runtime),
+            Self::CourtWarlock(fight) => fight.is_current(runtime),
+            Self::Cults(fight) => fight.is_current(runtime),
         }
     }
+
     fn contains(&self, actor: ExactActorRef) -> bool {
         match self {
-            Self::Cults(f) => f.contains(actor),
-            Self::CourtWarlock(f) => f.contains(actor),
+            Self::Arbaziloth(fight) => fight.contains_terminal(actor),
+            Self::CourtWarlock(fight) => fight.contains(actor),
+            Self::Cults(fight) => fight.contains(actor),
         }
     }
+
     fn contains_terminal(&self, actor: ExactActorRef) -> bool {
         match self {
-            Self::Cults(f) => f.contains_terminal(actor),
-            Self::CourtWarlock(f) => f.contains_terminal(actor),
+            Self::Arbaziloth(fight) => fight.contains_terminal(actor),
+            Self::CourtWarlock(fight) => fight.contains_terminal(actor),
+            Self::Cults(fight) => fight.contains_terminal(actor),
         }
     }
+
     fn projected_death(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         actor: ExactActorRef,
     ) -> Result<bool, CarrierError> {
         match self {
-            Self::Cults(f) => f.projected_death(runtime, actor),
-            Self::CourtWarlock(f) => f.projected_death(runtime, actor),
+            Self::Arbaziloth(fight) => fight.projected_death(runtime, actor),
+            Self::CourtWarlock(fight) => fight.projected_death(runtime, actor),
+            Self::Cults(fight) => fight.projected_death(runtime, actor),
         }
     }
-    fn victors(
-        &self,
+
+    fn victors<'a>(
+        &'a self,
         runtime: &ChannelRuntimeV1,
-    ) -> Result<Option<&[(ExactActorRef, GameSessionId)]>, CarrierError> {
+    ) -> Result<Option<&'a [(ExactActorRef, GameSessionId)]>, CarrierError> {
         match self {
-            Self::Cults(f) => f.victors(runtime),
-            Self::CourtWarlock(f) => f.victors(runtime),
+            Self::Arbaziloth(fight) => fight.victors(runtime),
+            Self::CourtWarlock(fight) => fight.victors(runtime),
+            Self::Cults(fight) => fight.victors(runtime),
         }
     }
 }
@@ -103,7 +116,7 @@ impl Registry {
         let mut active = self.active.lock().map_err(|_| CarrierError::PlanConflict)?;
         active.retain_mut(|phase| {
             if !phase.fight.is_current(runtime) {
-                return false;
+                return !phase.clear_fire();
             }
             if matches!(phase.fight, Fight::CourtWarlock(_)) {
                 return true;
@@ -113,7 +126,7 @@ impl Registry {
                     // Credit was captured in the lethal turn. Release the lever
                     // only after exact terminal decorations retire; tick retries failures.
                     let Fight::Cults(fight) = &mut phase.fight else {
-                        return true;
+                        return !phase.clear_fire();
                     };
                     fight
                         .advance(runtime, |runtime, at| placement(&phase.cells, runtime, at))
@@ -198,6 +211,7 @@ impl Registry {
                         &entry.creature,
                         &phase.credits,
                         &entry.damage_shares,
+                        matches!(phase.fight, Fight::Arbaziloth(_)).then_some(entry.facts.death),
                     ),
                 )
             });
@@ -212,19 +226,50 @@ impl Registry {
 )]
 pub(super) fn bind(
     runtime: &mut ChannelRuntimeV1,
-    callback: &Callback,
+    encounter: &Encounter,
     key: u64,
     actors: &[ExactActorRef],
     players: &[(ExactActorRef, GameSessionId)],
     credits: Vec<grizzly_kills::EncounterCredit>,
     cells: crate::content::NativeEntryMovementCells,
-    now: u64,
+    now_us: u64,
 ) -> Result<ActivePhase, CarrierError> {
-    let encounter = callback
-        .effects
-        .encounter
-        .as_ref()
-        .ok_or(CarrierError::PlanConflict)?;
+    if encounter.phase == Some(EncounterPhase::Arbaziloth) {
+        let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+            cells.index()
+        else {
+            return Err(CarrierError::PlanConflict);
+        };
+        if index
+            .map()
+            .facts
+            .movement_item_facts(49362)
+            .is_none_or(|fire| fire.pickupable)
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+
+        let find_actor = |key: &str| {
+            actors
+                .iter()
+                .copied()
+                .find(|actor| runtime.matches_live_creature_identity(*actor, key.as_bytes()))
+                .ok_or(CarrierError::CreatureTargetMismatch)
+        };
+        let boss = find_actor(arbaziloth::BOSS)?;
+        let forgemaster = find_actor(arbaziloth::FORGEMASTER)?;
+        let fight = ArbazilothEncounter::bind(runtime, players, boss, forgemaster)?;
+        return Ok(ActivePhase {
+            key,
+            fight: Fight::Arbaziloth(Box::new(fight)),
+            room: encounter.clone(),
+            participants: players.to_vec(),
+            credits,
+            frozen: None,
+            cells,
+            fire: None,
+        });
+    }
     if encounter.phase == Some(EncounterPhase::CourtWarlock) {
         let local =
             |p: oteryn_gameplay_quests::quest::world_callbacks::Position| MovementLocalPosition {
@@ -260,7 +305,7 @@ pub(super) fn bind(
             fight: Fight::CourtWarlock(Box::new(CourtWarlock::bind(
                 runtime,
                 players,
-                now,
+                now_us,
                 local(encounter.room_min),
                 local(encounter.room_max),
                 local(center),
@@ -270,6 +315,7 @@ pub(super) fn bind(
             credits,
             frozen: None,
             cells,
+            fire: None,
         });
     }
     if encounter.phase != Some(EncounterPhase::Cults) || actors.len() != 10 {
@@ -329,6 +375,7 @@ pub(super) fn bind(
         credits,
         frozen: None,
         cells,
+        fire: None,
     })
 }
 
@@ -370,40 +417,135 @@ fn placement(
         )
 }
 
-pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates, now: u64) {
+impl ActivePhase {
+    fn clear_fire(&mut self) -> bool {
+        let Some(fire) = self.fire else { return true };
+        let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+            self.cells.index()
+        else {
+            return false;
+        };
+        if !index
+            .map()
+            .facts
+            .project_arbaziloth_fire(self.key, fire, true)
+        {
+            return false;
+        }
+        self.fire = None;
+        true
+    }
+
+    fn tick_fire(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        now_ms: u64,
+    ) -> Result<(), CarrierError> {
+        use crate::map::overlay::TilePos;
+        let Fight::Arbaziloth(fight) = &self.fight else {
+            return Ok(());
+        };
+        let Some(boss) = fight.normal_boss() else {
+            return Ok(());
+        };
+        if !runtime
+            .arbaziloth_shields(boss)
+            .is_some_and(|shields| shields.needs_fire())
+        {
+            return Ok(());
+        }
+        let position = runtime.read_actor_position(boss)?.position();
+        if let Some(fire) = self.fire {
+            let on_fire = position.x == i32::from(fire.x)
+                && position.y == i32::from(fire.y)
+                && position.floor == -i16::from(fire.floor);
+            if on_fire
+                && let Some(shields) = runtime.arbaziloth_shields_mut(boss)
+                && self.clear_fire()
+            {
+                shields.step_on_fire();
+            }
+            return Ok(());
+        }
+
+        let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+            self.cells.index()
+        else {
+            return Err(CarrierError::PlanConflict);
+        };
+        let map = index.map();
+        // Crystal 201189f8 arbaziloth_fight.lua: bounded random search of walkable arena tiles.
+        let candidates: Vec<_> = (34026..=34040)
+            .flat_map(|x| (32324..=32340).map(move |y| TilePos { x, y, floor: -14 }))
+            .filter(|at| {
+                let candidate = MovementLocalPosition {
+                    x: i32::from(at.x),
+                    y: i32::from(at.y),
+                    floor: 14,
+                };
+                candidate != position
+                    && placement(&self.cells, runtime, candidate)
+                    && map.floors.teleport(*at).is_none()
+            })
+            .collect();
+        let count = i64::try_from(candidates.len()).map_err(|_| CarrierError::PlanConflict)?;
+        if count == 0 {
+            return Err(CarrierError::PlanConflict);
+        }
+        use oteryn_simulation_determinism::{
+            DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
+        };
+        let mut occurrence = [0; 16];
+        occurrence[..8].copy_from_slice(&self.key.to_be_bytes());
+        occurrence[8..].copy_from_slice(&now_ms.to_be_bytes());
+        let draw = deterministic_decision_u64(
+            &GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest()),
+            DecisionOccurrenceId::from_bytes(occurrence),
+            "arbaziloth.arena_fire",
+            0,
+        )
+        .map_err(|_| CarrierError::PlanConflict)?;
+        let selected = crate::spell::uniform_draw(draw, 0, count - 1);
+        let fire = candidates[usize::try_from(selected).map_err(|_| CarrierError::PlanConflict)?];
+        if !map.facts.project_arbaziloth_fire(self.key, fire, false) {
+            return Err(CarrierError::PlanConflict);
+        }
+        self.fire = Some(fire);
+        Ok(())
+    }
+}
+
+pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates, now_us: u64) {
     let Ok(mut active) = states.encounter_phases.active.lock() else {
         return;
     };
-    active.retain(|phase| phase.fight.is_current(runtime));
     active.retain_mut(|phase| {
+        if !phase.fight.is_current(runtime) {
+            return !phase.clear_fire();
+        }
+        let now_ms = now_us / 1_000;
+        if let Err(error) = phase.tick_fire(runtime, now_ms) {
+            super::operator_event(&format!(
+                "encounter_phase_fire_deferred key={} reason={error:?}",
+                phase.key
+            ));
+        }
         let ActivePhase {
             key, fight, cells, ..
         } = phase;
-        if let Fight::CourtWarlock(fight) = fight {
-            let result = (|| {
-                let census = runtime.positioned_melee_census()?;
-                let players: Vec<_> = census.into_iter().filter(|(_,at,s)| s.is_some() && fight.in_room(at.position())).collect();
-                if !players.is_empty() && !fight.exit_due(now) {
-                    fight.advance(runtime, now, |runtime, at| placement(cells, runtime, at))?;
-                    return Ok(true);
-                }
-                let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) = cells.index() else { return Err(CarrierError::PlanConflict); };
-                let closed = crate::map::floor::BundleDoors(&index.map().facts);
-                let exit = oteryn_gameplay_quests::quest::world_callbacks::court_warlock::EXIT;
-                let mut proofs = Vec::new();
-                for (actor, expected, session) in players {
-                    let session = session.ok_or(CarrierError::PlanConflict)?;
-                    proofs.push(crate::map::floor::prepare_quest_encounter_ejection(runtime, cells, actor, session, expected,
-                        MovementLocalPosition { x:i32::from(exit.x), y:i32::from(exit.y), floor:-i16::from(exit.floor) }, &closed).map_err(|_| CarrierError::PlanConflict)?);
-                }
-                runtime.commit_quest_relocation(proofs, || true)?;
-                fight.retire(runtime)?;
-                Ok(false)
-            })();
-            return match result { Ok(keep) => keep, Err(error) => { super::operator_event(&format!("encounter_phase_deferred key={key} reason={error:?}")); true } };
-        }
-        let Fight::Cults(fight) = fight else { return false; };
-        if let Err(error) = fight.advance(runtime, |runtime, at| placement(cells, runtime, at)) {
+        let advance = match fight {
+            Fight::Arbaziloth(fight) => fight
+                .advance(runtime, now_ms, |runtime, at| placement(cells, runtime, at))
+                .map(|_| ()),
+            Fight::CourtWarlock(fight) => match tick_court_warlock(runtime, fight, cells, now_us) {
+                Ok(keep) => return keep,
+                Err(error) => Err(error),
+            },
+            Fight::Cults(fight) => {
+                fight.advance(runtime, |runtime, at| placement(cells, runtime, at))
+            }
+        };
+        if let Err(error) = advance {
             super::operator_event(&format!(
                 "encounter_phase_deferred key={key} reason={error:?}"
             ));
@@ -413,4 +555,53 @@ pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates, 
             .victors(runtime)
             .is_ok_and(|victors| victors.is_none())
     });
+}
+
+fn tick_court_warlock(
+    runtime: &mut ChannelRuntimeV1,
+    fight: &mut CourtWarlock,
+    cells: &crate::content::NativeEntryMovementCells,
+    now_us: u64,
+) -> Result<bool, CarrierError> {
+    let players: Vec<_> = runtime
+        .positioned_melee_census()?
+        .into_iter()
+        .filter(|(_, at, session)| session.is_some() && fight.in_room(at.position()))
+        .collect();
+    if !players.is_empty() && !fight.exit_due(now_us) {
+        fight.advance(runtime, now_us, |runtime, at| placement(cells, runtime, at))?;
+        return Ok(true);
+    }
+
+    let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+        cells.index()
+    else {
+        return Err(CarrierError::PlanConflict);
+    };
+    let closed = crate::map::floor::BundleDoors(&index.map().facts);
+    let exit = oteryn_gameplay_quests::quest::world_callbacks::court_warlock::EXIT;
+    let destination = MovementLocalPosition {
+        x: i32::from(exit.x),
+        y: i32::from(exit.y),
+        floor: -i16::from(exit.floor),
+    };
+    let mut proofs = Vec::new();
+    for (actor, expected, session) in players {
+        let session = session.ok_or(CarrierError::PlanConflict)?;
+        proofs.push(
+            crate::map::floor::prepare_quest_encounter_ejection(
+                runtime,
+                cells,
+                actor,
+                session,
+                expected,
+                destination,
+                &closed,
+            )
+            .map_err(|_| CarrierError::PlanConflict)?,
+        );
+    }
+    runtime.commit_quest_relocation(proofs, || true)?;
+    fight.retire(runtime)?;
+    Ok(false)
 }

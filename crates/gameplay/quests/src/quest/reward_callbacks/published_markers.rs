@@ -19,6 +19,7 @@ pub(super) fn keys() -> Result<BTreeSet<String>, String> {
 pub(super) fn needs_marker(callback: &RewardCallback, published: &BTreeSet<String>) -> bool {
     !published.contains(&callback.key)
         || !callback.required_receipts.is_empty()
+        || !callback.weighted_rewards.is_empty()
         || callback.per_occurrence_mint
         || callback.carried_exchange
         || callback

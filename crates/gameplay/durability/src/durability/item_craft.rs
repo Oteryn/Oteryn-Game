@@ -32,7 +32,7 @@ mod skinning;
 pub mod soulpit;
 pub use enchanting::EnchantingCraft;
 pub use harvest::{MapHarvestOperand, MapHarvestRequest, MapHarvestResult};
-pub use skinning::SkinningRequest;
+pub use skinning::{SkinningOutcome, SkinningRequest};
 
 #[derive(Debug, Clone)]
 pub struct ItemCraftRequest {
@@ -192,6 +192,25 @@ async fn write<C: ItemLoopContent>(
     write_with_skinning(tx, permit, fence, request, native, content, None).await
 }
 
+// Crystal lucky_charm.lua:8-16 and actions_corpse.lua share the active hunt gate.
+async fn rottin_charm_hunt_active(
+    tx: &mut super::item_mint_audit::Type2Transaction<'_>,
+    fence: CurrentCharacterItemFence,
+) -> Result<bool, DurabilityError> {
+    let active: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks
+         WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2
+           AND track_key IN ($3,$4) AND value=1)",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(oteryn_gameplay_quests::quest::rottin_walls::QUEST)
+    .bind("oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission01")
+    .bind("oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/task01")
+    .fetch_one(&mut ***tx)
+    .await?;
+    Ok(active)
+}
+
 #[allow(
     clippy::too_many_lines,
     reason = "existing craft writer retains its single atomic inventory and audit owner"
@@ -203,16 +222,13 @@ async fn write_with_skinning<C: ItemLoopContent>(
     request: &ItemCraftRequest,
     native: &NativeGameplayState,
     content: &C,
-    skinning: Option<(
-        &SkinningRequest,
-        &oteryn_gameplay_content::content::charm_source::CanonicalCharmCatalogue,
-    )>,
+    skinning: Option<&mut skinning::Attempt<'_>>,
 ) -> Result<UseDisposition, DurabilityError> {
     if request.enchanting.is_some() {
         return enchanting::write(tx, fence, request, native, content).await;
     }
     let (world, _) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
-    // Root serialization precedes all item locks. Basic cooking accepts main-backpack leaves.
+    // Root serialization precedes all item locks. Only opted-in actions accept nested leaves.
     let source = sqlx::query("SELECT to_jsonb(i) AS before_item,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,uuid_send(e.parent_item_instance_id) AS parent,e.placement_ordinal::text AS ordinal,NULL::jsonb AS nested_source FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND e.world_id=i.world_id AND b.world_id=i.world_id FOR UPDATE OF i")
         .bind(request.source.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
     let source = match source {
@@ -235,6 +251,7 @@ async fn write_with_skinning<C: ItemLoopContent>(
         revision_ref: source.try_get("definition_revision_ref")?,
     };
     if nested_source.is_some()
+        && skinning.is_none()
         && oteryn_gameplay_items::reward_bag::event_containers::event_container_rule(
             &definition.production_key,
         )
@@ -242,12 +259,23 @@ async fn write_with_skinning<C: ItemLoopContent>(
     {
         return Ok(UseDisposition::NothingToUse);
     }
-    let skinning = if let Some((operand, catalogue)) = skinning {
-        let Some(prepared) =
-            skinning::prepare(tx, fence, operand, &definition, native, catalogue).await?
+    let skinning = if let Some(attempt) = skinning {
+        let Some(prepared) = skinning::prepare(
+            tx,
+            fence,
+            attempt.request,
+            &definition,
+            native,
+            attempt.catalogue,
+        )
+        .await?
         else {
             return Ok(UseDisposition::NothingToUse);
         };
+        if nested_source.is_some() && prepared.rabbit_feet.is_none() {
+            return Ok(UseDisposition::NothingToUse);
+        }
+        attempt.rabbit_feet = prepared.rabbit_feet;
         Some(prepared)
     } else {
         None
@@ -443,6 +471,11 @@ async fn write_with_skinning<C: ItemLoopContent>(
     let Some(conversion) = conversion else {
         return Ok(UseDisposition::NothingToUse);
     };
+    if conversion.recipe == "oteryn:quest-craft/rottin-wood/lucky-charm"
+        && !rottin_charm_hunt_active(tx, fence).await?
+    {
+        return Ok(UseDisposition::NothingToUse);
+    }
     if conversion.recipe == "oteryn:elemental_energy_soil.crystal"
         && !elemental_energy::has_room(
             tx,

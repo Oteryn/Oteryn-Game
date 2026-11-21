@@ -38,6 +38,8 @@ pub struct PartyKillXpRequest<const N: usize> {
     pub base_xp: i64,
     pub death_at_ms: u64,
     pub death_at_us: u64,
+    /// Wall-clock time captured by the lethal publication, independent of the simulation clock.
+    pub died_at_unix_ms: u64,
     pub shared: bool,
     pub party_id: Option<[u8; 16]>,
     pub party_revision: Option<u64>,
@@ -294,6 +296,13 @@ pub async fn commit_in_transaction<const N: usize>(
         .execute(&mut **tx).await.map_err(DurabilityError::from)?;
     super::world_event_outcomes::capture_kill(tx, &input).await?;
     super::world_event::capture_kill(tx, &input).await?;
+    let cake_bonus = input.members.iter().any(|member| member.premium)
+        && super::cake_event::world_bonus_at_kill_in_transaction(
+            tx,
+            scope.runtime_scope().world_id(),
+            input.died_at_unix_ms,
+        )
+        .await?;
     let mut awards = Vec::with_capacity(input.members.len());
     for member in input.members {
         let bounty = super::task_board::read_talisman_in_transaction(tx, member.fence).await?;
@@ -366,8 +375,17 @@ pub async fn commit_in_transaction<const N: usize>(
             modifiers.stamina_minutes = modifiers.stamina_minutes.min(i32::from(live));
         }
         let raw = member.request.amount.get();
+        // Crystal world_bonus.lua:5-9 rounds the bonus on the incoming share.
+        // Player::addExperience invokes this callback before the hunting modifiers.
+        let cake_applied = cake_bonus && member.premium;
+        let share = if cake_applied {
+            raw.checked_add(raw / 2)
+                .ok_or(CharacterProgressionError::InvalidInput)?
+        } else {
+            raw
+        };
         let amount = oteryn_gameplay_characters::hunting_experience::hunting_experience(
-            raw,
+            share,
             modifiers.prey_percent,
             modifiers.xp_boost_percent,
             modifiers.stamina_minutes,
@@ -391,6 +409,7 @@ pub async fn commit_in_transaction<const N: usize>(
                     member.party_id,
                     member.party_revision,
                     member.shared,
+                    cake_applied,
                 )),
             )
             .await??;
@@ -423,6 +442,7 @@ fn hunting_binding(
     party_id: Option<[u8; 16]>,
     party_revision: Option<u64>,
     shared: bool,
+    cake_applied: bool,
 ) -> [u8; 32] {
     let mut binding = Vec::new();
     binding.extend_from_slice(death);
@@ -439,6 +459,9 @@ fn hunting_binding(
     // Appended only while the bonus applies, so level-50+ bindings stay as before PAR-C14.
     if modifiers.level < 50 {
         binding.extend_from_slice(&modifiers.level.to_be_bytes());
+    }
+    if cake_applied {
+        binding.extend_from_slice(b"cake-world-bonus");
     }
     Sha256::digest(binding).into()
 }

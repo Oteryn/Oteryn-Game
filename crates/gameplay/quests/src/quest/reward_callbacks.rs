@@ -77,6 +77,13 @@ pub struct ItemReward {
     pub additional: Vec<ItemAmount>,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct WeightedReward {
+    pub chance: u8,
+    pub reward: ItemReward,
+}
+
 impl ItemReward {
     /// Validate all initial text before constructing a durable MINT plan.
     pub fn valid_literal_text(&self) -> bool {
@@ -334,6 +341,10 @@ pub struct RewardCallback {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub inventory: Vec<InventoryRequirement>,
     pub give: Option<ItemReward>,
+    /// Alternative bundles selected by a uniform percentile. The ordinary
+    /// bundle receives the probability not assigned to alternatives.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub weighted_rewards: Vec<WeightedReward>,
     #[serde(default, skip_serializing_if = "is_false")]
     pub per_occurrence_mint: bool,
     pub outfit: Option<OutfitReward>,
@@ -355,6 +366,47 @@ pub struct RewardCallback {
 }
 
 impl RewardCallback {
+    /// Select the entire bundle using a zero-based percentile. The ordinary
+    /// bundle comes first, followed by the alternatives in authored order.
+    pub fn reward_for_percentile(&self, percentile: u8) -> Option<&ItemReward> {
+        if percentile >= 100 {
+            return None;
+        }
+        let ordinary_chance = self
+            .weighted_rewards
+            .iter()
+            .try_fold(100_u8, |left, entry| left.checked_sub(entry.chance))?;
+        let Some(mut percentile) = percentile.checked_sub(ordinary_chance) else {
+            return self.give.as_ref();
+        };
+        for alternative in &self.weighted_rewards {
+            if let Some(remaining) = percentile.checked_sub(alternative.chance) {
+                percentile = remaining;
+            } else {
+                return Some(&alternative.reward);
+            }
+        }
+        None
+    }
+
+    fn valid_weighted_rewards(&self) -> bool {
+        self.weighted_rewards.is_empty()
+            || (self.give.is_some()
+                && self.world_claim.is_none()
+                && self.carried_item.is_none()
+                && self.counter.is_none()
+                && self.weighted_rewards.len() <= 8
+                && self.weighted_rewards.iter().all(|entry| {
+                    entry.chance > 0 && entry.reward.valid() && entry.reward.key_number.is_none()
+                })
+                && self
+                    .weighted_rewards
+                    .iter()
+                    .map(|entry| u16::from(entry.chance))
+                    .sum::<u16>()
+                    < 100)
+    }
+
     /// Syntax-only reset shape. Current save authority is resolved by the writer;
     /// the catalogue separately validates owned tracks and their initial values.
     pub(crate) fn is_save_restart_only(&self) -> bool {
@@ -444,6 +496,11 @@ impl RewardCallback {
         // Repeatable source trades spend exact admitted inputs and produce a
         // native backpack MINT in the same fenced transaction.
         temporal_payment::guarded(self)
+            || (self.per_occurrence_mint
+                && self.state_ops.iter().any(|operation| {
+                    matches!(&operation.from, StateCondition::ElapsedAtLeast { seconds } if *seconds > 0)
+                        && matches!(operation.effect, StateMutation::SetNow)
+                }))
             || (self.repeatable
                 && (!self.take.is_empty() || self.fee.is_some())
                 && (self.give.is_some() || self.experience.is_some()))
@@ -511,7 +568,9 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/qd-sams-old-backpack.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-steal-from-thieves.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/rottin-wood.json"),
     include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),
+    include_str!("../../../../../content/quests/native-reward-callbacks/nrwicked.json"),
 ];
 
 /// The current immutable catalogue's explicit authored callbacks plus the retained source owners.
@@ -760,6 +819,7 @@ fn validate_document_with_capacity(
     for c in &document.callbacks {
         if c.requirements.as_ref().is_some_and(|r| !r.valid())
             || c.give.as_ref().is_some_and(|g| !g.valid())
+            || !c.valid_weighted_rewards()
         {
             return Err(format!("invalid lane reward extension {}", c.key));
         }
@@ -769,6 +829,7 @@ fn validate_document_with_capacity(
             || (c.per_occurrence_mint
                 && (c.give.is_none()
                     || c.cosmetic_targets().next().is_some()
+                    // The PostgreSQL occurrence receipt requires an item-only mint.
                     || c.achievement.is_some()
                     || !c.achievement_progress.is_empty()))
             || c.experience
@@ -1143,6 +1204,7 @@ pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, Stri
         && callback.peer_requires.is_none()
         && callback.creature_target.is_none()
         && callback.map_mark.is_none()
+        && callback.weighted_rewards.is_empty()
         && !(callback.repeatable && callback.is_paid_exchange() && !callback.storage.is_empty())
         && callback.carried_target.is_none()
         && !temporal_payment::guarded(callback)
@@ -1218,6 +1280,16 @@ fn value_plan(callback: &RewardCallback) -> Result<Vec<u8>, String> {
             "oteryn:quest-reward-completed-parents-v1",
             current,
             &callback.requires_completed_quests,
+        ))
+        .map_err(|error| error.to_string())?
+    };
+    let current = if callback.weighted_rewards.is_empty() {
+        current
+    } else {
+        serde_json::to_vec(&(
+            "oteryn:quest-reward-weighted-v1",
+            current,
+            &callback.weighted_rewards,
         ))
         .map_err(|error| error.to_string())?
     };
@@ -2260,10 +2332,9 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // shared-reward-callbacks.json has 207 existing rows plus the generated
-        // QB routes: 17 Barbarian, 5 Citizen and 9 Warrior.
-        // The other terms are QuestPC7, other registered shards, M43 peer and Kingsday journal.
-        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1);
+        // Shared covers 207 existing and 31 QB routes. The final two terms are
+        // Rottin Wood and the Forgemaster's access and claim routes.
+        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1 + 13 + 12);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -2913,6 +2984,71 @@ mod lane_counter_tests {
         );
         Ok(())
     }
+    #[test]
+    fn rottin_lucky_loop_weighted_bundles_bind_the_value_plan() -> Result<(), String> {
+        let mut callback = parse(DOCUMENTS[0])?
+            .into_iter()
+            .find(|callback| !callback.storage.is_empty() && callback.give.is_some())
+            .ok_or("published item callback")?;
+        let bundle = |item: &str, count, additional| ItemReward {
+            premium: false,
+            item: item.into(),
+            count,
+            contents: Vec::new(),
+            key_number: None,
+            backpack_outputs: Vec::new(),
+            text: None,
+            additional,
+        };
+        let platinum = "oteryn:item.tibia.i3035";
+        callback.give = Some(bundle(platinum, 5, vec![]));
+        let baseline = value_plan(&callback)?;
+        let fixed_transition = primary_transition(&callback)?;
+        callback.weighted_rewards = vec![
+            WeightedReward {
+                chance: 9,
+                reward: bundle(
+                    platinum,
+                    3,
+                    vec![ItemAmount {
+                        item: "oteryn:item.tibia.i3053".into(),
+                        count: 1,
+                        fluid_subtype: None,
+                    }],
+                ),
+            },
+            WeightedReward {
+                chance: 1,
+                reward: bundle("oteryn:item.tibia.i12260", 1, vec![]),
+            },
+        ];
+        assert!(callback.valid_weighted_rewards());
+        assert_ne!(value_plan(&callback)?, baseline);
+        assert_ne!(primary_transition(&callback)?, fixed_transition);
+        assert!(published_markers::needs_marker(
+            &callback,
+            &published_markers::keys()?
+        ));
+        for percentile in 0..100 {
+            let reward = callback.reward_for_percentile(percentile).ok_or("bundle")?;
+            match percentile {
+                90..=98 => {
+                    assert_eq!((&*reward.item, reward.count), (platinum, 3));
+                    assert_eq!(&reward.additional[0].item, "oteryn:item.tibia.i3053");
+                }
+                99 => assert_eq!(&reward.item, "oteryn:item.tibia.i12260"),
+                _ => assert_eq!((&*reward.item, reward.count), (platinum, 5)),
+            }
+        }
+        assert!(callback.reward_for_percentile(100).is_none());
+        let weighted_transition = primary_transition(&callback)?;
+        callback.weighted_rewards[0].chance = 8;
+        assert_ne!(primary_transition(&callback)?, weighted_transition);
+        callback.weighted_rewards[0].chance = 99;
+        assert!(!callback.valid_weighted_rewards());
+        Ok(())
+    }
+
     #[test]
     fn published_marker_compatibility_keeps_new_value_terms_bound() -> Result<(), String> {
         let published = published_markers::keys()?;

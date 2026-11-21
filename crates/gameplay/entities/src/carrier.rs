@@ -113,6 +113,8 @@ mod w01_prepare_death_native_tests;
 
 pub mod house_custody;
 
+#[path = "carrier/arbaziloth.rs"]
+pub mod arbaziloth;
 #[path = "carrier/encounter_access.rs"]
 pub mod encounter_access;
 
@@ -1014,6 +1016,7 @@ pub struct ChannelActorCarrier {
     native_summon_deaths: [Option<NativeSummonDeath>; 64],
     native_summon_death_cursor: usize,
     encounter_hooks: Option<Box<dyn encounter_access::EncounterHooks>>,
+    arbaziloth_victory: Option<CreatureDeathOccurrenceKey>,
     soulpit: Option<Box<soulpit::SoulpitPhysicalState>>,
     /// The last write-fence transition id this carrier minted (CHARM-DESC-FENCE-LEASE §3 item 2).
     fence_transitions: u64,
@@ -1810,6 +1813,7 @@ impl ChannelActorCarrier {
             native_summon_deaths: [None; 64],
             native_summon_death_cursor: 0,
             encounter_hooks: None,
+            arbaziloth_victory: None,
             fence_transitions: 0,
             attackers: Vec::new(),
             occupied,

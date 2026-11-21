@@ -766,6 +766,58 @@ pub(crate) mod tests {
         Ok(())
     }
 
+    #[test]
+    fn rottin_wood_boots_from_repository_npc_placement() -> Result<(), Box<dyn std::error::Error>> {
+        use crate::content::{
+            NpcDataCatalogue, capture_world_project, npc_catalogue_preproduction_limits,
+        };
+        use oteryn_world_bundle_compiler::{compile, project, source};
+        use std::ffi::OsStr;
+
+        let root = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."));
+        let key = "oteryn:npc.rottin_wood";
+        let (x, y) = (32_652, 32_201);
+        let project = source::project_regions(root, &[(x / 256, y / 256)])?;
+        let (registry, palette) = source::registry(root, &project)?;
+        let identity = serde_json::from_slice(&source::read(
+            &root.join("content/world/pins/oteryn.identity.json"),
+        )?)?;
+        let compiled = compile::compile(
+            &compile::Input {
+                regions: &project.regions,
+                palette: &palette,
+                identity,
+                world: source::world_extent(root)?,
+                build_class: bundle::BuildClass::NonProduction,
+                draft_areas: project::draft_areas(&project.index)?,
+                families: &project.families,
+            },
+            &registry,
+        )?;
+        let content = root.join("content");
+        let limits = npc_catalogue_preproduction_limits();
+        let snapshot = capture_world_project(&content, OsStr::new("world"), limits)?;
+        let catalogue = NpcDataCatalogue::from_project(snapshot, limits.project)?;
+        let frame = read(&compiled.bytes).map_err(|error| error.to_string())?;
+        let boot = prepare(
+            Some(frame),
+            Some((&catalogue, &content.join("world"))),
+            false,
+        )
+        .map_err(|error| error.to_string())?;
+        let mut runtime = channel_runtime_with(128);
+        place(&mut runtime, boot.as_ref()).map_err(|error| error.to_string())?;
+        let visible = runtime.visible_entities();
+        let positions: Vec<_> = visible
+            .npcs
+            .iter()
+            .filter(|entry| runtime.npc_key(entry.actor) == Some(key))
+            .map(|entry| (entry.position.x, entry.position.y, entry.position.floor))
+            .collect();
+        assert_eq!(positions, [(i32::from(x), i32::from(y), 7)]);
+        Ok(())
+    }
+
     fn timed_boot(keys: &[&str]) -> NpcBoot {
         NpcBoot::Place {
             table: NpcPlacementTable::default(),

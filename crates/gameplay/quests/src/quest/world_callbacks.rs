@@ -38,6 +38,7 @@ pub enum Trigger {
 
 #[cfg(test)]
 mod admission_tests;
+mod arbaziloth;
 mod asura_authored;
 mod character_requirements;
 pub use character_requirements::CharacterRequirements;
@@ -560,10 +561,12 @@ impl Callback {
         !self.storage.is_empty() || self.operation_count() != 0
     }
     pub fn has_state_writes(&self) -> bool {
-        self.storage
-            .iter()
-            .any(|state| !state.preserve && !state.read_only)
-            || self.operations().any(state_operations::mutates)
+        !self.is_read_only()
+            && (self
+                .storage
+                .iter()
+                .any(|state| !state.preserve && !state.read_only)
+                || self.operations().any(state_operations::mutates))
     }
     /// Each accepted use has its own ordinary MINT occurrence, guarded by an
     /// elapsed-time predicate and timestamp write in that same transaction.
@@ -593,7 +596,28 @@ impl Callback {
     pub fn is_read_only(&self) -> bool {
         !self.storage.is_empty()
             && self.operation_count() == 0
-            && self.storage.iter().all(|storage| storage.read_only)
+            && (self.storage.iter().all(|storage| storage.read_only)
+                || self.legacy_phantom_army_passage())
+    }
+
+    // Crystal movements_teleport.lua:8-25 only reads the access flag. Main-era
+    // content encoded the equality check as a write back to the same value.
+    fn legacy_phantom_army_passage(&self) -> bool {
+        matches!(
+            self.key.as_str(),
+            "oteryn:quest-callback/children-of-the-revolution-battle-passage-1"
+                | "oteryn:quest-callback/children-of-the-revolution-battle-passage-2"
+        ) && self.quest == "oteryn:quest.children_of_the_revolution_quest"
+            && self.trigger == Trigger::StepIn
+            && matches!(self.storage.as_slice(), [storage]
+                if storage.track == "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/teleport_access"
+                    && (storage.minimum, storage.maximum, storage.set) == (1, 1, 1)
+                    && !storage.read_only
+                    && !storage.preserve
+                    && !storage.increment
+                    && !storage.at_least
+                    && storage.set_if.is_none()
+                    && storage.add.is_none())
     }
 }
 
@@ -748,6 +772,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/m07-too-hot-columns.json"
     ))?);
+    callbacks.extend(parse(arbaziloth::DOCUMENT)?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/oramond-native-roots.json"
     ))?);
@@ -763,6 +788,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/feaster-phase-routes.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/rottin-wood.json"
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/threatened-dreams-mosaic-treasure.json"
@@ -794,6 +822,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     native_callbacks.extend(super::ice_seal_paint::callbacks()?);
     native_callbacks.push(super::source_world_objects::uneasy_crystal());
     native_callbacks.extend(super::rotten_blood::flames::callbacks());
+    native_callbacks.extend(super::rottin_walls::callbacks());
     native_callbacks.extend(super::source_world_objects::lions_amphora());
     native_callbacks.extend(super::source_world_objects::lions_flowers());
     if callbacks.len() > MAX_RUNTIME_CALLBACKS.saturating_sub(native_callbacks.len()) {
@@ -947,7 +976,9 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || (selector.position.is_none()
                 && selector.unique.is_none()
                 && selector.action.is_none()
-                && selector.native.is_none())
+                && selector.native.is_none()
+                && callback.effects.place_item.is_none()
+                && !callback.effects.loot_merchant)
             || selector.position.is_some_and(|p| !valid_pos(p))
             || selector
                 .native
@@ -1105,7 +1136,8 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                         })
                 })
             })
-            || (callback.storage.iter().any(|storage| storage.read_only)
+            || ((callback.legacy_phantom_army_passage()
+                || callback.storage.iter().any(|storage| storage.read_only))
                 && (!callback.is_read_only()
                     || callback.teleport.is_none()
                     || (callback.trigger == Trigger::StepIn && !callback.return_on_failure)
@@ -1496,8 +1528,9 @@ fn extend_callbacks(
         }
         state_operations::extend_tracks(callback, &mut tracks)?;
         // Pure gates must not acquire a generic transition: even ADD(0)
-        // creates a Character revision, quest state and receipt.
-        if callback.is_read_only() {
+        // creates a Character revision, quest state and receipt. Retain the two
+        // legacy passage entries for definition hashing and historical receipts.
+        if callback.is_read_only() && !callback.legacy_phantom_army_passage() {
             continue;
         }
         if published_markers::needs_marker(callback, &published) {

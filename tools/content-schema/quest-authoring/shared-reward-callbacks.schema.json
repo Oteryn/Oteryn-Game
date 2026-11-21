@@ -783,6 +783,22 @@
           "minimum": 1,
           "maximum": 100000000
         },
+        "per_occurrence_mint": {
+          "type": "boolean"
+        },
+        "weighted_rewards": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["chance", "reward"],
+            "properties": {
+              "chance": {"type": "integer", "minimum": 1, "maximum": 99},
+              "reward": {"$ref": "#/$defs/give"}
+            }
+          }
+        },
         "repeatable": {
           "type": "boolean"
         },

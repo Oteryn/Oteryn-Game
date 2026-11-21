@@ -72,5 +72,20 @@
     ],
     "world_station": true,
     "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_Misc.lua:36-40"
+  },
+  {
+    "key": "oteryn:quest-craft/rottin-wood/lucky-charm",
+    "ingredients": [
+      12171,
+      12172
+    ],
+    "outputs": [
+      [
+        12173,
+        1
+      ]
+    ],
+    "ordered": true,
+    "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/tools/lucky_charm.lua:3-21"
   }
 ]

@@ -67,6 +67,10 @@ def validate_inventory(root, rows, native, schedules):
     elemental_native, elemental_schedules = elemental_inventory(native)
     extra_native += elemental_native
     extra_schedules += elemental_schedules
+    from nrwicked_profiles import inventory_extension as nrwicked_inventory
+    nrwicked_native, nrwicked_schedules = nrwicked_inventory(root, native)
+    extra_native += nrwicked_native
+    extra_schedules += nrwicked_schedules
     if (len(rows) - 1 != 1863 + 1 or len(native) != len(rows) + extra_native
             or schedules - 1 != 7201 + 4 + extra_schedules):
         raise ValueError('Non-seasonal canonical inventory changed; review its source first')

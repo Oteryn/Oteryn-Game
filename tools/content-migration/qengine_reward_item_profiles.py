@@ -27,6 +27,10 @@ IDS |= {22731, 22775}
 CUSTODY_PROMOTIONS = {5805, 5806}
 # Closed source qualification admits zero speed only for these three native Items.
 SOURCE_KNOWN_SPEED_IDS = frozenset({2833, 5805, 5806})
+# Rottin Wood: carried hammer, handcrafted ribbon and rabbit's foot lucky charm.
+IDS |= {3460, 12171, 12173}
+# The merchant nets are carried; the rare Lucky Loop reward is a hunting horn.
+IDS |= {12186, 12260}
 # M12 selected daily harvest: existing Juicy Roots identity, exact portable facts.
 IDS |= {21291}
 # M13: source-pinned carried Guardcatcher and each Perfume Gatherer stage.
@@ -84,7 +88,9 @@ PREVIOUSLY_COUNTED_IDS = {3029, 3035, 3205, 3212, 3234, 3607}
 SIDE_IDS = {133, 139, 875, 3244, 9041, 10198, 10199, 11700, 11701,
        12599, 12601, 12803, 19083, 19151, 21897, 22074, 22082, 22516, 22721, 23986, 27565, 28792, 28793, 3560, 5941, 5886} | set(range(11545, 11553)) | {768, 769, 770, 16128, 16129, 133, 4867, 12803, 37002, 37003, 3723, 139, 5903, 5921, 5924, 16165, 16167, 3244, 5937, 5938, 20275, 20276, 11700, 11701, 5939, 5940, 5945, 12599, 5947, 12601, 22721, 9041, 15698, 6099, 6100, 6101, 10198, 10199, 30168, 30169, 6102, 6107, 28793, 12517, 16103, 875, 6126, 16242, 22516, 28792, 7289, 12413, 5886}
 SIDE_IDS |= {17668, 17669, 17670, 17671, 17672, 17673, 17674, 17675, 17676, 3120}  # Rafzan's five source-priced portable tools.
-STATIC_IDS = {8995, 8996, 9527, 17677, 17679, 17681, 21573, 23163, 32173, 32537}
+# Bushwhacking scenery is Ground-only; the wave owner schedules removal.
+MERCHANT_SCENERY = {12187, 12189}
+STATIC_IDS = MERCHANT_SCENERY | {8995, 8996, 9527, 17677, 17679, 17681, 21573, 23163, 32173, 32537}
 SIDE_IDS |= STATIC_IDS | {3114, 3456, 3661, 32197, 32225, 32226, 32227, 32228, 32582, 32583, 32584, 32585, 32602, 32757}
 SIDE_IDS |= {3537, 3543, 3587, 3589, 3590, 3593, 11544}
 
@@ -194,7 +200,7 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
     for item_id in sorted(selected):
         node=xml[item_id]
         flower = lion_flower.admitted(item_id, source.attrs(node))
-        if not flower and item_id not in CORPSE_IDS and {'charges','duration','decayto','stopduration'} & source.attrs(node).keys():
+        if not flower and item_id not in (CORPSE_IDS | MERCHANT_SCENERY) and {'charges','duration','decayto','stopduration'} & source.attrs(node).keys():
             raise ValueError('QENGINE_REWARD_ITEM_INSTANCE_OWNER_REQUIRED')
         flags=objects[item_id]['flags']
         if flags.get('flags.liquidcontainer') or flags.get('flags.liquidpool'):

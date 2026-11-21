@@ -218,8 +218,10 @@ source_claim_count = len(
 )
 sys.path.insert(0, str(ROOT / "tools/content-schema/reward-claim-authoring"))
 import engclaim_native
+import nrwicked_native
 
 source_claim_count += len(engclaim_native.CASES)
+source_claim_count += len(nrwicked_native.records()[0])
 project = json.loads((ROOT / "content/project.json").read_text(encoding="utf-8"))
 manifest = json.loads((ROOT / "content/manifest.json").read_text(encoding="utf-8"))
 lock = json.loads((ROOT / "content/content.lock.json").read_text(encoding="utf-8"))
@@ -262,6 +264,7 @@ assert [row["identity"]["key"] for row in expected_items[len(legacy_items) :]] =
         40601,
         40603,
         48227,
+        49362,
     )
 ], "only the exact source-qualified reference extensions are admitted"
 # Replaying an extension with a changed semantic fact must refuse, not normalize it.
