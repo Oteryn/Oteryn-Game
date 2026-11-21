@@ -315,6 +315,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 else {
                     return (FirstEntryOutcome::RefusedUnavailable, None, None);
                 };
+                #[cfg(test)]
+                let _ = FAMILIAR_LOGIN_CHECKOUT.try_with(|probe| {
+                    probe.backpack.set(probe.backpack.get() + 1);
+                });
                 let backpack_result = self
                     .root
                     .grant_newhaven_backpack(
@@ -338,6 +342,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return (FirstEntryOutcome::RefusedUnavailable, None, None);
                 }
                 phase.set("starter_kit");
+                #[cfg(test)]
+                let _ = FAMILIAR_LOGIN_CHECKOUT.try_with(|probe| {
+                    probe.kit.set(probe.kit.get() + 1);
+                });
                 let kit_result = if facts.vocation != crate::spell::Vocation::None {
                     Some(self.grant_newhaven_starter(fence).await)
                 } else {
@@ -549,6 +557,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // CHAR-POSITION-0 §3.3: initialized and placed at the durable position in this one
         // owner step, before the lock is released and any owner reads the actor's position.
+        #[cfg(test)]
+        let _ = FAMILIAR_LOGIN_CHECKOUT.try_with(|probe| {
+            probe.placement.set(probe.placement.get() + 1);
+        });
         let outcome = match self
             .initialize_admitted_position(&mut runtime, actor, game_session_id, placement)
             .await
@@ -738,15 +750,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             && let Some(config) = native.familiar_config()
         {
             phase.set("familiar_login");
+            // The test seeds its durable Familiar checkpoint with the positioned fence.
+            #[cfg(test)]
+            if let Ok(Some(barrier)) = FAMILIAR_LOGIN_CHECKOUT.try_with(|probe| {
+                (!probe.seed_started.replace(true)).then(|| probe.seed_barrier.clone())
+            }) {
+                barrier.0.notify_one();
+                barrier.1.notified().await;
+            }
             let access = self
                 .refresh_and_apply_spell_access(actor, game_session_id)
                 .await;
             // #2199: a familiar Login that did not complete restored neither the stored familiar
             // nor its cooldowns, so the entry fails closed like the other post-position owners.
-            let initialized = self
-                .initialize_familiar_login(actor, game_session_id, request, native, &access, config)
-                .await
-                .is_ok();
+            let initialized = Box::pin(self.initialize_familiar_login(
+                budget,
+                actor,
+                game_session_id,
+                request,
+                native,
+                &access,
+                config,
+            ))
+            .await
+            .is_ok();
             let outcome = familiar_login_first_entry(outcome, initialized);
             if outcome == FirstEntryOutcome::RefusedByChannel {
                 return (outcome, None, None);

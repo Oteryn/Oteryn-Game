@@ -513,8 +513,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     original,
                     owned.binding(),
                     &source,
+                    None,
                 )
-                .await;
+                .await
+                .map_err(|_| ());
         }
         let config = content.familiar_config().ok_or(())?;
         let (spell, true) = self.spells.source_indexed(original.spell_index).ok_or(())? else {
@@ -565,8 +567,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             original,
             owned.binding(),
             &source,
+            None,
         )
         .await
+        .map_err(|_| ())
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -764,7 +768,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 digest: content.source_digest(),
             };
             return self
-                .apply_familiar_owner_event(actor, session, index, event, content, &owned, &source)
+                .apply_familiar_owner_event(
+                    actor, session, index, event, content, &owned, &source, None,
+                )
                 .await
                 .map(Some);
         }
@@ -797,9 +803,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             premium: access,
             administrative: &administrative,
         };
-        self.apply_familiar_owner_event(actor, session, index, event, content, &owned, &source)
-            .await
-            .map(Some)
+        self.apply_familiar_owner_event(
+            actor, session, index, event, content, &owned, &source, None,
+        )
+        .await
+        .map(Some)
     }
 
     /// #2199 Codex P2 4302041461: the owner-cadence return of a familiar this session's Login
