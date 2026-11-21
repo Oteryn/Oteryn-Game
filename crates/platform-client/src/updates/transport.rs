@@ -152,7 +152,11 @@ mod tests {
         );
         let metadata = Url::parse("https://api.oteryn.com/updates/stable/metadata/timestamp.json")?;
         assert_eq!(route(metadata.clone())?, (metadata, true, false));
-        for host in ["account.oteryn.com", "evil.invalid"] {
+        for host in [
+            "account.oteryn.com",
+            "api.oteryn.com.example.invalid",
+            "evil.invalid",
+        ] {
             assert!(
                 route(Url::parse(&format!(
                     "https://{host}/updates/stable/metadata/timestamp.json"
