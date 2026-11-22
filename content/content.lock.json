@@ -25,14 +25,14 @@
     "Encounter": 108,
     "Encounter.Raid": 240,
     "Formula": 6129,
-    "Item": 34124,
+    "Item": 34125,
     "Loot": 1292,
     "Mount": 252,
     "NPC": 1282,
     "Presentation": 3147,
     "Proficiency": 443,
     "Quest": 352,
-    "RewardClaim": 345,
+    "RewardClaim": 346,
     "Service.Bank": 2,
     "Service.Blessing": 10,
     "Service.Promotion": 7,
@@ -155,7 +155,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/creatures/definitions/spell-native-profiles.json",
-          "record_count": 1875,
+          "record_count": 1877,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_CREATURE_PROFILES/v1",
@@ -163,7 +163,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "dec575367fafd34ee688628a678ce4f8d73eb791047db60b02377bb53ab94baf"
+          "sha256": "d64e78139821efa7d093914bac20be02d7c59a3315e20bf484c2cb6ea171b1bd"
         },
         {
           "creates_canonical_identities": false,
@@ -234,7 +234,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 6800,
+          "record_count": 6828,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -242,7 +242,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "715c28fb5cf385058d5ad6535fe47b62b23090926fda5665005080172fbadf92"
+          "sha256": "474e3d41cd02d9003a3cff5ca6396c6bb8fe3aa2fd1b83bba6a56864328eadc9"
         },
         {
           "creates_canonical_identities": false,
@@ -262,7 +262,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/presentations/definitions/spell-native-profiles.json",
-          "record_count": 1873,
+          "record_count": 1875,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_PRESENTATION_PROFILES/v1",
@@ -270,7 +270,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#PresentationProfilesDocument"
           },
-          "sha256": "1277964c2242c40d86a5b9648e423daa8212c6fc1819f2cacf82d14a2b0b57db"
+          "sha256": "b1fadd23d9641b7d437eb4e8da7cfc39638beec83b8e87b98ff4d79ef866315e"
         },
         {
           "creates_canonical_identities": false,
