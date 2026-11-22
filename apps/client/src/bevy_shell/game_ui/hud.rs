@@ -82,9 +82,9 @@ pub(super) fn install(app: &mut App) {
         (
             project,
             battle::project,
-            battle::portrait::project,
             battle::marks::captions,
             battle::marks::hover,
+            battle::portrait::project,
             status_icons::project,
             top_bar::layout,
             top_bar::project,
@@ -205,9 +205,8 @@ fn activate(
             },
         ),
         Command::BattleCycle(previous) => {
-            let rows = play
-                .link
-                .filtered_battle_rows(play.link.active_battle_list());
+            // Target cycling follows the primary list even while editing another list.
+            let rows = play.link.filtered_battle_rows(0);
             let targets: Vec<_> = rows
                 .iter()
                 .filter(|row| row.kind != oteryn_session::EntityKind::Npc)

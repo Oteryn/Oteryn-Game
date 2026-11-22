@@ -73,6 +73,10 @@ pub(in crate::bevy_shell::game_ui::hud) fn hover(
             .map_or(clip, |v| v.size.as_vec2());
         let at = Vec2::from(scene.view().tile_to_screen(tile))
             + Vec2::from(scene.actor_offset(target))
+            + play
+                .view
+                .camera_offset(std::time::Instant::now())
+                .map_or(Vec2::ZERO, Vec2::from)
             + ((size - clip) * 0.5).floor()
             - size * 0.5;
         Some((at, scene.view().tile_px() as f32))

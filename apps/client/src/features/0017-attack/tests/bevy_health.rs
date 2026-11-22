@@ -101,6 +101,22 @@ fn battle_menu_cycles_targets_and_collapses_filters() -> Result<(), Box<dyn std:
             .find_map(|(id, a)| matches!(a.command, Command::BattleMenu).then_some(id))
             .ok_or("menu")?;
         app.world_mut().trigger(Activate { entity: menu });
+        {
+            let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+            let mut lists = owner.settings.preferences.battle_lists.clone();
+            let mut secondary = lists[0].clone();
+            secondary.name = "Players".into();
+            secondary.creatures = false;
+            lists.push(secondary);
+            owner.settings.preferences.battle_lists.clone_from(&lists);
+            let mut active = 1;
+            owner
+                .play
+                .as_ref()
+                .ok_or("play")?
+                .link
+                .sync_battle_list_state(&mut lists, &mut active, 0);
+        }
         outbox.bevy_hud_fixture(&[first, last], None);
         if let Some(current) = current {
             outbox.bevy_hud_target(current);
@@ -189,6 +205,54 @@ fn battle_rows_show_skull_and_emblem_and_hover_marks_the_actor()
             .filter(|n| n.as_str() == "Battle hover border")
             .count(),
         4
+    );
+    let border_x = |app: &mut App| {
+        app.world_mut()
+            .query::<(&Name, &Transform)>()
+            .iter(app.world())
+            .filter(|(n, _)| n.as_str() == "Battle hover border")
+            .map(|(_, transform)| transform.translation.x)
+            .reduce(f32::min)
+            .ok_or("border")
+    };
+    let before = border_x(&mut app)?;
+    {
+        use oteryn_session::{
+            AppliedDelta, CommandStatus, StepDisposition, StepOutcome, WorldSpatialObservation,
+        };
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner
+            .play
+            .as_mut()
+            .ok_or("play")?
+            .view
+            .apply(&StepOutcome {
+                step_wait_ms: 10000,
+                command_id: 1,
+                status: CommandStatus::Accepted,
+                disposition: StepDisposition::Moved,
+                result_server_sequence: 1,
+                world_spatial_delta: Some(AppliedDelta {
+                    server_sequence: 1,
+                    base_revision: 0,
+                    new_revision: 1,
+                    value: WorldSpatialObservation {
+                        content_generation: [0; 32],
+                        actor_position: ActorPosition {
+                            x: 101,
+                            y: 100,
+                            floor: 7,
+                        },
+                    },
+                }),
+                world_object_overlay_delta: None,
+                gate_message_id: None,
+            })?;
+    }
+    app.update();
+    assert!(
+        (border_x(&mut app)? - before).abs() < 5.,
+        "world and border glide together"
     );
     Ok(())
 }
