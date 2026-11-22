@@ -183,7 +183,7 @@ fn unique_eligible<'a>(
     eligible.next().is_none().then_some(selected)
 }
 
-fn tile(p: Position) -> TilePos {
+pub(super) fn tile(p: Position) -> TilePos {
     TilePos {
         x: p.x,
         y: p.y,
@@ -197,7 +197,7 @@ fn local(p: Position) -> MovementLocalPosition {
         floor: -i16::from(p.floor),
     }
 }
-fn native(p: MovementLocalPosition) -> Option<TilePos> {
+pub(super) fn native(p: MovementLocalPosition) -> Option<TilePos> {
     Some(TilePos {
         x: p.x.try_into().ok()?,
         y: p.y.try_into().ok()?,
@@ -957,7 +957,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         map: &BundleMap,
         target: &WorldObjectTarget,
     ) -> Option<UseOutcome> {
-        self.use_quest_callback_with_tool(actor, command, map, target, None)
+        self.use_quest_callback_with_tool(actor, command, map, target, false, None)
             .await
     }
 
@@ -967,6 +967,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         map: &BundleMap,
         target: &WorldObjectTarget,
+        direct: bool,
         selected_tool: Option<([u8; 16], Vec<u8>)>,
     ) -> Option<UseOutcome> {
         if let Some(outcome) = self.use_rafzane_elevator(actor, command, map, target).await {
@@ -1014,6 +1015,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .filter(|c| {
                 c.actor_kind == world_callbacks::ActorKind::Player
                     && c.trigger == Trigger::Use
+                    && (!direct || c.effects.direct_use_area.is_some())
                     && !oteryn_gameplay_quests::quest::ice_seal_paint::historical_only(&c.key)
                     && matches(map, c, resolved.placement_key)
                     && c.activation.as_ref().is_none_or(|activation| {
@@ -1235,7 +1237,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(at) = native(expected.position()) else {
                 return UseDisposition::Rejected;
             };
-            if !callback.reaches(Position { x: at.x, y: at.y, floor: at.floor }, Position { x: resolved.pos.x, y: resolved.pos.y, floor: resolved.pos.floor }) {
+            let actor_position = Position { x: at.x, y: at.y, floor: at.floor };
+            let reaches = if callback.effects.direct_use_area.is_some() {
+                callback.admits_direct_use(actor_position)
+            } else {
+                callback.reaches(actor_position, Position { x: resolved.pos.x, y: resolved.pos.y, floor: resolved.pos.floor })
+            };
+            if !reaches {
                 return UseDisposition::TooFar;
             }
             if !callback.is_read_only() && !self

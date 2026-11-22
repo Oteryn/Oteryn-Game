@@ -56,7 +56,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 32977,
@@ -122,7 +122,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 32981,
@@ -188,7 +188,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 32985,
@@ -254,7 +254,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 32988,
@@ -320,7 +320,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 32993,
@@ -386,7 +386,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 32995,
@@ -452,7 +452,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 32995,
@@ -518,7 +518,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 32997,
@@ -584,7 +584,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 32997,
@@ -650,7 +650,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 32999,
@@ -716,7 +716,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 32999,
@@ -782,7 +782,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 32999,
@@ -848,7 +848,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 33000,
@@ -914,7 +914,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 33002,
@@ -980,7 +980,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 33005,
@@ -1046,7 +1046,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 33005,
@@ -1112,7 +1112,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 33008,
@@ -1178,7 +1178,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 33008,
@@ -1244,7 +1244,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 33008,
@@ -1310,7 +1310,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 33009,
@@ -1376,7 +1376,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 33010,
@@ -1442,7 +1442,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 33015,
@@ -1508,7 +1508,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 33017,
@@ -1574,7 +1574,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 33018,
@@ -1640,7 +1640,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 33018,
@@ -1706,7 +1706,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 33020,
@@ -1772,7 +1772,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 33021,
@@ -1838,7 +1838,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 33023,
@@ -1904,7 +1904,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 33026,
@@ -1970,7 +1970,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 33029,
@@ -2036,7 +2036,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 33030,
@@ -2102,7 +2102,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 33032,
@@ -2168,7 +2168,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 33035,
@@ -2234,7 +2234,7 @@
       ],
       "effects": {
         "transform": 15800,
-        "reset_after_ms": 60000,
+        "random_reset_seconds": [50, 140],
         "magic": {
           "position": {
             "x": 33035,
@@ -2787,6 +2787,18 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm:33932,31990,14"
       ],
       "effects": {
+        "direct_use_area": [
+          {
+            "x": 33923,
+            "y": 31983,
+            "floor": -14
+          },
+          {
+            "x": 33942,
+            "y": 31998,
+            "floor": -14
+          }
+        ],
         "magic": {
           "position": {
             "x": 33932,
@@ -2856,6 +2868,18 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm:33863,32360,14"
       ],
       "effects": {
+        "direct_use_area": [
+          {
+            "x": 33859,
+            "y": 32358,
+            "floor": -14
+          },
+          {
+            "x": 33867,
+            "y": 32363,
+            "floor": -14
+          }
+        ],
         "magic": {
           "position": {
             "x": 33863,
@@ -2925,6 +2949,18 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm:33948,32162,14"
       ],
       "effects": {
+        "direct_use_area": [
+          {
+            "x": 33946,
+            "y": 32161,
+            "floor": -14
+          },
+          {
+            "x": 33951,
+            "y": 32163,
+            "floor": -14
+          }
+        ],
         "magic": {
           "position": {
             "x": 33948,
@@ -2994,6 +3030,18 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm:33980,32177,14"
       ],
       "effects": {
+        "direct_use_area": [
+          {
+            "x": 33978,
+            "y": 32177,
+            "floor": -14
+          },
+          {
+            "x": 33982,
+            "y": 32177,
+            "floor": -14
+          }
+        ],
         "magic": {
           "position": {
             "x": 33980,
@@ -3063,6 +3111,18 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm:33870,32014,14"
       ],
       "effects": {
+        "direct_use_area": [
+          {
+            "x": 33865,
+            "y": 32008,
+            "floor": -14
+          },
+          {
+            "x": 33875,
+            "y": 32021,
+            "floor": -14
+          }
+        ],
         "magic": {
           "position": {
             "x": 33870,
@@ -3132,6 +3192,18 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm:33969,32143,14"
       ],
       "effects": {
+        "direct_use_area": [
+          {
+            "x": 33962,
+            "y": 32139,
+            "floor": -14
+          },
+          {
+            "x": 33976,
+            "y": 32148,
+            "floor": -14
+          }
+        ],
         "magic": {
           "position": {
             "x": 33969,
@@ -3264,6 +3336,18 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm:33923,32143,14"
       ],
       "effects": {
+        "direct_use_area": [
+          {
+            "x": 33921,
+            "y": 32141,
+            "floor": -14
+          },
+          {
+            "x": 33926,
+            "y": 32146,
+            "floor": -14
+          }
+        ],
         "magic": {
           "position": {
             "x": 33923,
@@ -3333,6 +3417,18 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm:33970,32144,14"
       ],
       "effects": {
+        "direct_use_area": [
+          {
+            "x": 33965,
+            "y": 32139,
+            "floor": -14
+          },
+          {
+            "x": 33975,
+            "y": 32149,
+            "floor": -14
+          }
+        ],
         "magic": {
           "position": {
             "x": 33970,
@@ -3402,6 +3498,18 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm:33912,32178,14"
       ],
       "effects": {
+        "direct_use_area": [
+          {
+            "x": 33911,
+            "y": 32176,
+            "floor": -14
+          },
+          {
+            "x": 33914,
+            "y": 32180,
+            "floor": -14
+          }
+        ],
         "magic": {
           "position": {
             "x": 33912,
@@ -3471,6 +3579,18 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm:33949,32207,14"
       ],
       "effects": {
+        "direct_use_area": [
+          {
+            "x": 33947,
+            "y": 32206,
+            "floor": -14
+          },
+          {
+            "x": 33952,
+            "y": 32209,
+            "floor": -14
+          }
+        ],
         "magic": {
           "position": {
             "x": 33949,
@@ -3540,6 +3660,18 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm:33879,32176,14"
       ],
       "effects": {
+        "direct_use_area": [
+          {
+            "x": 33877,
+            "y": 32173,
+            "floor": -14
+          },
+          {
+            "x": 33881,
+            "y": 32179,
+            "floor": -14
+          }
+        ],
         "magic": {
           "position": {
             "x": 33879,
@@ -3658,6 +3790,20 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm:32147,32618,12"
       ],
       "effects": {
+        "random_relocation": {
+          "minimum": {
+            "x": 32152,
+            "y": 32502,
+            "floor": -12
+          },
+          "maximum": {
+            "x": 32365,
+            "y": 32725,
+            "floor": -11
+          },
+          "chance_percent": 40,
+          "attempts": 20
+        },
         "transform": 19379,
         "reset_after_ms": 120000,
         "magic": {
@@ -3715,6 +3861,20 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm:32147,32618,12"
       ],
       "effects": {
+        "random_relocation": {
+          "minimum": {
+            "x": 32152,
+            "y": 32502,
+            "floor": -12
+          },
+          "maximum": {
+            "x": 32365,
+            "y": 32725,
+            "floor": -11
+          },
+          "chance_percent": 40,
+          "attempts": 20
+        },
         "transform": 19379,
         "reset_after_ms": 120000,
         "magic": {
@@ -3821,6 +3981,20 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm:32158,32568,11"
       ],
       "effects": {
+        "random_relocation": {
+          "minimum": {
+            "x": 32152,
+            "y": 32502,
+            "floor": -12
+          },
+          "maximum": {
+            "x": 32365,
+            "y": 32725,
+            "floor": -11
+          },
+          "chance_percent": 40,
+          "attempts": 20
+        },
         "transform": 19379,
         "reset_after_ms": 120000,
         "magic": {
@@ -3878,6 +4052,20 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm:32158,32568,11"
       ],
       "effects": {
+        "random_relocation": {
+          "minimum": {
+            "x": 32152,
+            "y": 32502,
+            "floor": -12
+          },
+          "maximum": {
+            "x": 32365,
+            "y": 32725,
+            "floor": -11
+          },
+          "chance_percent": 40,
+          "attempts": 20
+        },
         "transform": 19379,
         "reset_after_ms": 120000,
         "magic": {
@@ -3984,6 +4172,20 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm:32271,32685,11"
       ],
       "effects": {
+        "random_relocation": {
+          "minimum": {
+            "x": 32152,
+            "y": 32502,
+            "floor": -12
+          },
+          "maximum": {
+            "x": 32365,
+            "y": 32725,
+            "floor": -11
+          },
+          "chance_percent": 40,
+          "attempts": 20
+        },
         "transform": 19379,
         "reset_after_ms": 120000,
         "magic": {
@@ -4041,6 +4243,20 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm:32271,32685,11"
       ],
       "effects": {
+        "random_relocation": {
+          "minimum": {
+            "x": 32152,
+            "y": 32502,
+            "floor": -12
+          },
+          "maximum": {
+            "x": 32365,
+            "y": 32725,
+            "floor": -11
+          },
+          "chance_percent": 40,
+          "attempts": 20
+        },
         "transform": 19379,
         "reset_after_ms": 120000,
         "magic": {
@@ -4147,6 +4363,20 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm:32277,32707,12"
       ],
       "effects": {
+        "random_relocation": {
+          "minimum": {
+            "x": 32152,
+            "y": 32502,
+            "floor": -12
+          },
+          "maximum": {
+            "x": 32365,
+            "y": 32725,
+            "floor": -11
+          },
+          "chance_percent": 40,
+          "attempts": 20
+        },
         "transform": 19379,
         "reset_after_ms": 120000,
         "magic": {
@@ -4204,6 +4434,20 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm:32277,32707,12"
       ],
       "effects": {
+        "random_relocation": {
+          "minimum": {
+            "x": 32152,
+            "y": 32502,
+            "floor": -12
+          },
+          "maximum": {
+            "x": 32365,
+            "y": 32725,
+            "floor": -11
+          },
+          "chance_percent": 40,
+          "attempts": 20
+        },
         "transform": 19379,
         "reset_after_ms": 120000,
         "magic": {
@@ -4310,6 +4554,20 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm:32280,32520,11"
       ],
       "effects": {
+        "random_relocation": {
+          "minimum": {
+            "x": 32152,
+            "y": 32502,
+            "floor": -12
+          },
+          "maximum": {
+            "x": 32365,
+            "y": 32725,
+            "floor": -11
+          },
+          "chance_percent": 40,
+          "attempts": 20
+        },
         "transform": 19379,
         "reset_after_ms": 120000,
         "magic": {
@@ -4367,6 +4625,20 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm:32280,32520,11"
       ],
       "effects": {
+        "random_relocation": {
+          "minimum": {
+            "x": 32152,
+            "y": 32502,
+            "floor": -12
+          },
+          "maximum": {
+            "x": 32365,
+            "y": 32725,
+            "floor": -11
+          },
+          "chance_percent": 40,
+          "attempts": 20
+        },
         "transform": 19379,
         "reset_after_ms": 120000,
         "magic": {
@@ -4473,6 +4745,20 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm:32317,32501,12"
       ],
       "effects": {
+        "random_relocation": {
+          "minimum": {
+            "x": 32152,
+            "y": 32502,
+            "floor": -12
+          },
+          "maximum": {
+            "x": 32365,
+            "y": 32725,
+            "floor": -11
+          },
+          "chance_percent": 40,
+          "attempts": 20
+        },
         "transform": 19379,
         "reset_after_ms": 120000,
         "magic": {
@@ -4530,6 +4816,20 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm:32317,32501,12"
       ],
       "effects": {
+        "random_relocation": {
+          "minimum": {
+            "x": 32152,
+            "y": 32502,
+            "floor": -12
+          },
+          "maximum": {
+            "x": 32365,
+            "y": 32725,
+            "floor": -11
+          },
+          "chance_percent": 40,
+          "attempts": 20
+        },
         "transform": 19379,
         "reset_after_ms": 120000,
         "magic": {

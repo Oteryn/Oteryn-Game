@@ -3,11 +3,21 @@
 PIN = "201189f871d23597b82caf88fd611454a2ddefb8"
 SHARD = "content/quests/npc-callbacks/token-exchanges.json"
 SOURCES = {
-    "cledwyn": "crystal:" + PIN + ":data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431",
-    "gnomally": "crystal:" + PIN + ":data-global/npc/gnomally.lua:75-169:sha256:e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1",
-    "jorge": "crystal:" + PIN + ":data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0",
-    "ruprecht": "crystal:" + PIN + ":data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f",
-    "storkus": "crystal:" + PIN + ":data-global/npc/storkus.lua:100-197:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd",
+    "cledwyn": "crystal:"
+    + PIN
+    + ":data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431",
+    "gnomally": "crystal:"
+    + PIN
+    + ":data-global/npc/gnomally.lua:75-169:sha256:e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1",
+    "jorge": "crystal:"
+    + PIN
+    + ":data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0",
+    "ruprecht": "crystal:"
+    + PIN
+    + ":data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f",
+    "storkus": "crystal:"
+    + PIN
+    + ":data-global/npc/storkus.lua:100-197:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd",
 }
 
 CLEDWYN = (
@@ -113,53 +123,144 @@ RANKS = ((1, 1000), (4, 5000), (5, 10000), (10, 20000), (30, 50000), (50, 100000
 
 
 def append(add, storage, callbacks, offers):
-    def offer(npc, word, topic, next_topic, reply, **predicates):
-        offers.append({"npc": "oteryn:npc." + npc, "keywords": [word],
-                       "topic": topic, "next_topic": next_topic, "storage": [],
-                       "reply": [reply], **predicates})
+    def offer(npc, word, topic, next_topic, reply, *, msg_contains=False, **predicates):
+        offers.append(
+            {
+                "npc": "oteryn:npc." + npc,
+                "keywords": [word],
+                "topic": topic,
+                "next_topic": next_topic,
+                "storage": [],
+                "reply": [reply],
+                **predicates,
+            }
+        )
+        if msg_contains:
+            offers[-1]["msg_contains"] = True
 
     def recipe(npc, quest, output, topic, take, reply, failure, keyword="yes"):
-        add(f"{npc}-exchange-{output}", quest, npc, [keyword], [], take=take,
-            give=(output, 1), topic=topic, source=SOURCES[npc])
-        callbacks[-1].update(reply=[reply], failure_reply=[failure])
+        add(
+            f"{npc}-exchange-{output}",
+            quest,
+            npc,
+            [keyword],
+            [],
+            take=take,
+            give=(output, 1),
+            topic=topic,
+            source=SOURCES[npc],
+        )
+        callbacks[-1].update(
+            reply=[reply],
+            failure_reply=[failure],
+            msg_contains=True,
+            clear_topic_on_refusal=True,
+        )
 
     def choices(rows):
         return ", ".join("{" + name + "}" for name, *_ in rows)
 
-    offer("cledwyn", "enchant", 0, 1, "I can enchant " + choices(CLEDWYN) + ". Which item?")
+    offer(
+        "cledwyn",
+        "enchant",
+        0,
+        1,
+        "I can enchant " + choices(CLEDWYN) + ". Which item?",
+        msg_contains=True,
+    )
     for topic, (name, discharged, cost, charged) in enumerate(CLEDWYN, 101):
-        offer("cledwyn", name, 1, topic, f"Should I enchant the {name} for {cost} silver tokens?")
-        recipe("cledwyn", "rift_warrior_outfits_quest", charged, topic,
-               [(discharged, 1), (22516, cost)], f"Ah, excellent. Here is your {name}.",
-               f"Bring an unenchanted {name} and {cost} silver tokens.")
+        offer(
+            "cledwyn",
+            name,
+            1,
+            topic,
+            f"Should I enchant the {name} for {cost} silver tokens?",
+        )
+        recipe(
+            "cledwyn",
+            "rift_warrior_outfits_quest",
+            charged,
+            topic,
+            [(discharged, 1), (22516, cost)],
+            f"Ah, excellent. Here is your {name}.",
+            f"Bring an unenchanted {name} and {cost} silver tokens.",
+        )
 
-    offer("gnomally", "equipment", 0, 0, "Ask me about {minor} or {major} crystal token goods.")
+    offer(
+        "gnomally",
+        "equipment",
+        0,
+        0,
+        "Ask me about {minor} or {major} crystal token goods.",
+        msg_contains=True,
+    )
     for token, currency in ((16128, "minor"), (16129, "major")):
         rows = [row for row in GNOMALLY if row[1] == token]
-        existing = ("{supply}, {addition to the soil guardian outfit}, {addition to the crystal warlord armor outfit}"
-                    if token == 16128 else "{basic soil guardian outfit}, {basic crystal warlord outfit}")
-        offer("gnomally", currency, 0, 0,
-              f"For {currency} crystal tokens I offer {choices(rows)}, {existing}.")
+        existing = (
+            "{supply}, {addition to the soil guardian outfit}, {addition to the crystal warlord armor outfit}"
+            if token == 16128
+            else "{basic soil guardian outfit}, {basic crystal warlord outfit}"
+        )
+        offer(
+            "gnomally",
+            currency,
+            0,
+            0,
+            f"For {currency} crystal tokens I offer {choices(rows)}, {existing}.",
+            msg_contains=True,
+        )
     for topic, (name, token, cost, output) in enumerate(GNOMALLY, 106):
         currency = "minor" if token == 16128 else "major"
-        offer("gnomally", name, 0, topic, f"Trade {cost} {currency} crystal tokens for {name}?")
-        recipe("gnomally", "bigfoot_s_burden_quest", output, topic, [(token, cost)],
-               "Thank you for your help.", f"You don't have enough {currency} crystal tokens.")
+        offer(
+            "gnomally",
+            name,
+            0,
+            topic,
+            f"Trade {cost} {currency} crystal tokens for {name}?",
+        )
+        recipe(
+            "gnomally",
+            "bigfoot_s_burden_quest",
+            output,
+            topic,
+            [(token, cost)],
+            "Thank you for your help.",
+            f"You don't have enough {currency} crystal tokens.",
+        )
 
     # The donor charges immediately on the named selection after "souvenir".
     # The existing Abacus commission owns a distinct conversation and state.
-    catalogue = [JORGE[start:start + 9] for start in range(0, len(JORGE), 9)]
-    offer("jorge", "souvenir", 0, 101, "Souvenirs cost 20 silver raid tokens each. Which one do you want?")
+    catalogue = [JORGE[start : start + 9] for start in range(0, len(JORGE), 9)]
+    offer(
+        "jorge",
+        "souvenir",
+        0,
+        101,
+        "Souvenirs cost 20 silver raid tokens each. Which one do you want?",
+    )
     offers[-1]["reply"].extend(choices(rows) for rows in catalogue)
     for name, token, cost, output in JORGE:
-        recipe("jorge", "hunting_for_tokens", output, 101, [(token, cost)],
-               f"You just swapped 20 silver raid tokens for 1 {name}.",
-               "I need at least 20 silver raid tokens for that.", keyword=name)
+        recipe(
+            "jorge",
+            "hunting_for_tokens",
+            output,
+            101,
+            [(token, cost)],
+            f"You just swapped 20 silver raid tokens for 1 {name}.",
+            "I need at least 20 silver raid tokens for that.",
+            keyword=name,
+        )
 
-    catalogue = [RUPRECHT[start:start + 8] for start in range(0, len(RUPRECHT), 8)]
-    offer("ruprecht", "offers", 0, 0, "I have these offers:")
+    catalogue = [RUPRECHT[start : start + 8] for start in range(0, len(RUPRECHT), 8)]
+    offer("ruprecht", "offers", 0, 0, "I have these offers:", msg_contains=True)
     offers[-1]["reply"].extend(choices(rows) for rows in catalogue)
-    offer("ruprecht", "token", 0, 0, "Ask me for {offers} to spend Christmas tokens or bring me a {present bag}.")
+    offer(
+        "ruprecht",
+        "token",
+        0,
+        0,
+        "Ask me for {offers} to spend Christmas tokens or bring me a {present bag}.",
+    )
     for topic, (name, payment, cost, output) in enumerate(RUPRECHT, 101):
         if payment == 6496:
             prompt = "Would you exchange a present bag for one Christmas token?"
@@ -171,12 +272,26 @@ def append(add, storage, callbacks, offers):
             reply = f"Thank you, here is your {name}."
             failure = "You don't have enough Christmas tokens."
         offer("ruprecht", name, 0, topic, prompt)
-        recipe("ruprecht", "present_quest", output, topic, [(payment, cost)], reply, failure)
+        recipe(
+            "ruprecht",
+            "present_quest",
+            output,
+            topic,
+            [(payment, cost)],
+            reply,
+            failure,
+        )
 
     tracks = [
-        {"key": VAMPIRE_HUNTER + name, "quest": "oteryn:quest.vampire_hunter_quest",
-         "initial": -1, "min": -1, "max": maximum, "writable": True,
-         "sources": [SOURCES["storkus"]]}
+        {
+            "key": VAMPIRE_HUNTER + name,
+            "quest": "oteryn:quest.vampire_hunter_quest",
+            "initial": -1,
+            "min": -1,
+            "max": maximum,
+            "writable": True,
+            "sources": [SOURCES["storkus"]],
+        }
         for name, maximum in (("rank", 6), ("door", 1))
     ]
     next_rank = [{"track": INQUISITION, "minimum": 11, "maximum": 2147483647}]
@@ -188,14 +303,37 @@ def append(add, storage, callbacks, offers):
         final = rank == len(RANKS)
         if final:
             states.append(storage(VAMPIRE_HUNTER + "door", -1, 1, 1))
-        offer("storkus", "vampire lord token", 0, topic,
-              f"Would ye' give me {cost} Vampire Lord Token{'s' if cost != 1 else ''} for rank {rank}?",
-              storage=[storage(VAMPIRE_HUNTER + "rank", before, previous, previous, preserve=True)],
-              requires=next_rank)
-        add(f"storkus-rank-{rank}", "vampire_hunter_quest", "storkus", ["yes"], states,
-            take=[(8192, cost)], give=(8191, 1) if final else None, topic=topic,
-            requires=next_rank, source=SOURCES["storkus"])
-        callbacks[-1].update(experience=xp,
+        offer(
+            "storkus",
+            "vampire lord token",
+            0,
+            topic,
+            f"Would ye' give me {cost} Vampire Lord Token{'s' if cost != 1 else ''} for rank {rank}?",
+            storage=[
+                storage(
+                    VAMPIRE_HUNTER + "rank", before, previous, previous, preserve=True
+                )
+            ],
+            requires=next_rank,
+            msg_contains=True,
+        )
+        add(
+            f"storkus-rank-{rank}",
+            "vampire_hunter_quest",
+            "storkus",
+            ["yes"],
+            states,
+            take=[(8192, cost)],
+            give=(8191, 1) if final else None,
+            topic=topic,
+            requires=next_rank,
+            source=SOURCES["storkus"],
+        )
+        callbacks[-1].update(
+            experience=xp,
+            msg_contains=True,
+            clear_topic_on_refusal=True,
             reply=[f"Ye' brought the tokens needed for vampire hunter rank {rank}."],
-            failure_reply=["Ye' don't have enough tokens."])
+            failure_reply=["Ye' don't have enough tokens."],
+        )
     return tracks

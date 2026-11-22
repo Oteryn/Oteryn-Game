@@ -600,14 +600,16 @@ fn resolve_with_wheel(
     let members = match (&spell.execution, facts) {
         (Execution::PartyBuff(buff), Facts::Party(world)) => {
             let members = buff.affected(world).map_err(party_rejection)?;
-            // The initial check used the registered base. The party script's
-            // adjustment plus the base debit pays exactly the computed total.
-            mana = buff
+            let scaled = buff
                 .mana_cost(members.len())
                 .map_err(|_| CastRejection::PartyCostOverflow)?;
-            if caster.mana < mana {
-                return Err(CastRejection::NotEnoughMana { required: mana });
+            if caster.mana < scaled {
+                return Err(CastRejection::NotEnoughMana { required: scaled });
             }
+            // Crystal applies the party refund before the base debit, so
+            // only the part that fits under max mana reduces the net debit.
+            let headroom = caster.max_mana.saturating_sub(caster.mana);
+            mana = scaled.max(mana.saturating_sub(headroom));
             members
         }
         (Execution::PartyBuff(_), _) => return Err(CastRejection::PartyWorldRequired),

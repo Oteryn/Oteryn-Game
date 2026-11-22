@@ -60,7 +60,9 @@
       ],
       "failure_reply": [
         "Bring an unenchanted sleep shawl and 2 silver tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/cledwyn-exchange-30344",
@@ -97,7 +99,9 @@
       ],
       "failure_reply": [
         "Bring an unenchanted pendulet and 2 silver tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/cledwyn-exchange-30403",
@@ -134,7 +138,9 @@
       ],
       "failure_reply": [
         "Bring an unenchanted theurgic amulet and 2 silver tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/cledwyn-exchange-31557",
@@ -171,7 +177,9 @@
       ],
       "failure_reply": [
         "Bring an unenchanted blister ring and 2 silver tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/cledwyn-exchange-32621",
@@ -208,7 +216,9 @@
       ],
       "failure_reply": [
         "Bring an unenchanted ring of souls and 2 silver tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/cledwyn-exchange-39177",
@@ -245,7 +255,9 @@
       ],
       "failure_reply": [
         "Bring an unenchanted spiritthorn ring and 5 silver tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/cledwyn-exchange-39180",
@@ -282,7 +294,9 @@
       ],
       "failure_reply": [
         "Bring an unenchanted alicorn ring and 5 silver tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/cledwyn-exchange-39183",
@@ -319,7 +333,9 @@
       ],
       "failure_reply": [
         "Bring an unenchanted arcanomancer sigil and 5 silver tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/cledwyn-exchange-39187",
@@ -356,7 +372,9 @@
       ],
       "failure_reply": [
         "Bring an unenchanted arboreal ring and 5 silver tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/cledwyn-exchange-39233",
@@ -393,7 +411,9 @@
       ],
       "failure_reply": [
         "Bring an unenchanted turtle amulet and 2 silver tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-19150",
@@ -426,7 +446,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-19151",
@@ -459,7 +481,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-19152",
@@ -492,7 +516,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-19153",
@@ -525,7 +551,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-19154",
@@ -558,7 +586,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-19155",
@@ -591,7 +621,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-19156",
@@ -624,7 +656,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-22026",
@@ -657,7 +691,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-22027",
@@ -690,7 +726,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-22028",
@@ -723,7 +761,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-23676",
@@ -756,7 +796,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-23677",
@@ -789,7 +831,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-23678",
@@ -822,7 +866,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-23679",
@@ -855,7 +901,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-23680",
@@ -888,7 +936,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-23681",
@@ -921,7 +971,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-23682",
@@ -954,7 +1006,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-23683",
@@ -987,7 +1041,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-25979",
@@ -1020,7 +1076,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-25980",
@@ -1053,7 +1111,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-25981",
@@ -1086,7 +1146,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-25982",
@@ -1119,7 +1181,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-28894",
@@ -1152,7 +1216,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-28895",
@@ -1185,7 +1251,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-28896",
@@ -1218,7 +1286,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-28897",
@@ -1251,7 +1321,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-31265",
@@ -1284,7 +1356,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-31266",
@@ -1317,7 +1391,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-31267",
@@ -1350,7 +1426,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-31268",
@@ -1383,7 +1461,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-34210",
@@ -1416,7 +1496,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-37058",
@@ -1449,7 +1531,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-37059",
@@ -1482,7 +1566,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-37060",
@@ -1515,7 +1601,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-43510",
@@ -1548,7 +1636,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-43511",
@@ -1581,7 +1671,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/jorge-exchange-43517",
@@ -1614,7 +1706,9 @@
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/ruprecht-exchange-10338",
@@ -1647,7 +1741,9 @@
       ],
       "failure_reply": [
         "You don't have enough Christmas tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/ruprecht-exchange-10339",
@@ -1680,7 +1776,9 @@
       ],
       "failure_reply": [
         "You don't have enough Christmas tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/ruprecht-exchange-10346",
@@ -1713,7 +1811,9 @@
       ],
       "failure_reply": [
         "You don't have enough Christmas tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/ruprecht-exchange-174",
@@ -1746,7 +1846,9 @@
       ],
       "failure_reply": [
         "You don't have enough Christmas tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/ruprecht-exchange-20308",
@@ -1779,7 +1881,9 @@
       ],
       "failure_reply": [
         "You don't have enough Christmas tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/ruprecht-exchange-20309",
@@ -1812,7 +1916,9 @@
       ],
       "failure_reply": [
         "You don't have enough Christmas tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/ruprecht-exchange-20310",
@@ -1845,7 +1951,9 @@
       ],
       "failure_reply": [
         "You don't have enough Christmas tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/ruprecht-exchange-20311",
@@ -1878,7 +1986,9 @@
       ],
       "failure_reply": [
         "You don't have enough Christmas tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/ruprecht-exchange-20313",
@@ -1911,7 +2021,9 @@
       ],
       "failure_reply": [
         "You don't have enough Christmas tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/ruprecht-exchange-20315",
@@ -1944,7 +2056,9 @@
       ],
       "failure_reply": [
         "You don't have enough Christmas tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/ruprecht-exchange-21952",
@@ -1977,7 +2091,9 @@
       ],
       "failure_reply": [
         "You don't have enough Christmas tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/ruprecht-exchange-22879",
@@ -2010,7 +2126,9 @@
       ],
       "failure_reply": [
         "You don't have enough Christmas tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/ruprecht-exchange-24394",
@@ -2043,7 +2161,9 @@
       ],
       "failure_reply": [
         "You don't have enough Christmas tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/ruprecht-exchange-27591",
@@ -2076,7 +2196,9 @@
       ],
       "failure_reply": [
         "You don't have enough Christmas tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/ruprecht-exchange-29947",
@@ -2109,7 +2231,9 @@
       ],
       "failure_reply": [
         "You don't have enough Christmas tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/ruprecht-exchange-32746",
@@ -2142,7 +2266,9 @@
       ],
       "failure_reply": [
         "You don't have enough Christmas tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/ruprecht-exchange-35692",
@@ -2175,7 +2301,9 @@
       ],
       "failure_reply": [
         "You don't have enough Christmas tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/ruprecht-exchange-6500",
@@ -2208,7 +2336,9 @@
       ],
       "failure_reply": [
         "You don't have enough Christmas tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/ruprecht-exchange-6511",
@@ -2241,7 +2371,9 @@
       ],
       "failure_reply": [
         "You don't have enough Christmas tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/ruprecht-exchange-6526",
@@ -2274,7 +2406,9 @@
       ],
       "failure_reply": [
         "You don't have a present bag."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/ruprecht-exchange-6531",
@@ -2307,7 +2441,9 @@
       ],
       "failure_reply": [
         "You don't have enough Christmas tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/ruprecht-exchange-7527",
@@ -2340,7 +2476,9 @@
       ],
       "failure_reply": [
         "You don't have enough Christmas tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/storkus-rank-1",
@@ -2382,6 +2520,8 @@
         }
       ],
       "experience": 1000,
+      "msg_contains": true,
+      "clear_topic_on_refusal": true,
       "failure_reply": [
         "Ye' don't have enough tokens."
       ]
@@ -2426,6 +2566,8 @@
         }
       ],
       "experience": 5000,
+      "msg_contains": true,
+      "clear_topic_on_refusal": true,
       "failure_reply": [
         "Ye' don't have enough tokens."
       ]
@@ -2470,6 +2612,8 @@
         }
       ],
       "experience": 10000,
+      "msg_contains": true,
+      "clear_topic_on_refusal": true,
       "failure_reply": [
         "Ye' don't have enough tokens."
       ]
@@ -2514,6 +2658,8 @@
         }
       ],
       "experience": 20000,
+      "msg_contains": true,
+      "clear_topic_on_refusal": true,
       "failure_reply": [
         "Ye' don't have enough tokens."
       ]
@@ -2558,6 +2704,8 @@
         }
       ],
       "experience": 50000,
+      "msg_contains": true,
+      "clear_topic_on_refusal": true,
       "failure_reply": [
         "Ye' don't have enough tokens."
       ]
@@ -2612,6 +2760,8 @@
         }
       ],
       "experience": 100000,
+      "msg_contains": true,
+      "clear_topic_on_refusal": true,
       "failure_reply": [
         "Ye' don't have enough tokens."
       ]

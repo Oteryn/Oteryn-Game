@@ -358,6 +358,12 @@
           "type": "string",
           "maxLength": 128
         },
+        "clear_topic_on_refusal": {
+          "type": "boolean"
+        },
+        "msg_contains": {
+          "type": "boolean"
+        },
         "keywords": {
           "type": "array",
           "minItems": 0,

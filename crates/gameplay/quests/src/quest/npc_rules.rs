@@ -12,6 +12,11 @@ mod evaluate;
 mod hidden_threats;
 mod item_exchange;
 mod keyword;
+
+/// Crystal's literal conversation matcher, shared by source reward dialogue.
+pub fn msg_contains(message: &str, keyword: &str) -> bool {
+    keyword::matches(message, keyword, NpcKeywordMode::MsgContains).unwrap_or(false)
+}
 mod marlin_trophy;
 mod player_name;
 mod questpc2_albinius_source;

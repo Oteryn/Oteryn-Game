@@ -161,7 +161,26 @@ pub(super) fn retain_hunt_and_wrath_predecessors(catalogue: &mut QuestStateCatal
         ),
     ];
     retain(catalogue, PINS);
+    retain(catalogue, TOKEN_EXCHANGE_PREDECESSORS);
 }
+
+// Generated with quest_definition_hashes on main and the reviewed exchange catalogue.
+const TOKEN_EXCHANGE_PREDECESSORS: &[PredecessorPin] = &[
+    (
+        "oteryn:quest.hunting_for_tokens",
+        hash(b"48caf0d645e2b8d2763906efe45fb95363aaa5115f2e8a918f57c05417e7a979"),
+        &[hash(
+            b"f68593b143c5de45970b3a2375e9264d9781bc7968f59cc67c218b4e66cd05b3",
+        )],
+    ),
+    (
+        "oteryn:quest.rift_warrior_outfits_quest",
+        hash(b"2bea7fe1165bfca2838ecf0913dee9dbbe253b05e001f367ae19944a020abc49"),
+        &[hash(
+            b"c78651384e378afe5e740ecccbbd20354a80c4baf1abf6190fae1d21247c1a94",
+        )],
+    ),
+];
 
 fn retain(catalogue: &mut QuestStateCatalogue, pins: &[PredecessorPin]) {
     for &(quest, current, previous) in pins {
@@ -183,6 +202,30 @@ mod tests {
     use super::*;
     use crate::quest::{loader, npc_rules};
 
+    #[test]
+    fn token_exchanges_keep_unfinished_published_saves_readable() -> Result<(), String> {
+        let loaded =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        let mut rejected = Vec::new();
+        for (quest, published) in [
+            (
+                "oteryn:quest.hunting_for_tokens",
+                hash(b"f68593b143c5de45970b3a2375e9264d9781bc7968f59cc67c218b4e66cd05b3"),
+            ),
+            (
+                "oteryn:quest.rift_warrior_outfits_quest",
+                hash(b"c78651384e378afe5e740ecccbbd20354a80c4baf1abf6190fae1d21247c1a94"),
+            ),
+        ] {
+            assert_ne!(catalogue.definition_hash(quest), Some(published));
+            if npc_rules::legacy_defaults(catalogue, quest, &published).is_none() {
+                rejected.push(quest);
+            }
+        }
+        assert!(rejected.is_empty(), "published saves refused: {rejected:?}");
+        Ok(())
+    }
     #[test]
     fn hunting_and_wrath_loaders_accept_published_saves() -> Result<(), String> {
         let loaded =

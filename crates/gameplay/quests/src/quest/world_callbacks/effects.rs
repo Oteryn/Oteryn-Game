@@ -42,9 +42,21 @@ pub struct ItemDisguiseRequirement {
     pub condition: String,
 }
 
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct RandomRelocation {
+    pub minimum: Position,
+    pub maximum: Position,
+    pub chance_percent: u8,
+    pub attempts: u8,
+}
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
+    /// Survey tools credit the current player tile inside this inclusive rectangle.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub direct_use_area: Option<[Position; 2]>,
     /// Distinct carried definitions consumed atomically by the Quest receipt owner.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub carried_inputs: Vec<super::super::reward_callbacks::ItemAmount>,
@@ -88,6 +100,11 @@ pub struct CallbackEffects {
     /// Restore the exact pre-transform source revision after this delay.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reset_after_ms: Option<u32>,
+    /// Draw an inclusive whole-second lockout for each committed Crystal Keeper repair.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub random_reset_seconds: Option<[u16; 2]>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub random_relocation: Option<RandomRelocation>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub target_transform: Option<TargetTransform>,
     /// Restore remote passage objects independently of the source object.
@@ -666,6 +683,48 @@ pub(super) fn valid(callback: &Callback) -> bool {
                                 .bytes()
                                 .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
                     })
+        })
+        || effects.random_relocation.is_some_and(|rule| {
+            !callback
+                .key
+                .starts_with("oteryn:quest-callback/spike-daily/middle-charge-")
+                || callback.trigger != Trigger::Use
+                || callback.actor_kind != ActorKind::Player
+                || !callback.requires_world_admission
+                || callback.teleport.is_some()
+                || callback.remote_teleport.is_some()
+                || !callback.item_on_target.as_ref().is_some_and(|tool| {
+                    tool.selected_instance
+                        && (tool.replacement.as_deref() == Some("oteryn:item.tibia.i19216")
+                            || (tool.reusable && tool.item == "oteryn:item.tibia.i19216"))
+                })
+                || rule.minimum.x > rule.maximum.x
+                || rule.minimum.y > rule.maximum.y
+                || rule.minimum.floor > rule.maximum.floor
+                || rule.minimum.floor < -15
+                || rule.maximum.floor > 0
+                || !(1..=100).contains(&rule.chance_percent)
+                || !(1..=20).contains(&rule.attempts)
+        })
+        || effects.random_reset_seconds.is_some_and(|[min, max]| {
+            !callback
+                .key
+                .starts_with("oteryn:quest-callback/bigfoot-daily/crystal-keeper-")
+                || min == 0
+                || min >= max
+                || max > 3600
+                || callback.actor_kind != ActorKind::Player
+                || callback.trigger != Trigger::Use
+                || callback.reversible
+                || callback.lever.is_some()
+                || effects.transform.is_none()
+                || effects.reset_after_ms.is_some()
+                || effects.target_transform.is_some()
+                || effects.portals.is_some()
+                || effects.item_presence.is_some()
+                || effects.item_cycle.is_some()
+                || effects.encounter.is_some()
+                || !callback.passages.is_empty()
         })
         || effects.reset_after_ms.is_some_and(|delay| {
             !(1..=3_600_000).contains(&delay)

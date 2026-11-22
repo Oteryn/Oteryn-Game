@@ -555,7 +555,7 @@ fn cancel_magic_shield_removes_the_shield_condition() {
 }
 
 #[test]
-fn party_base_mana_gates_forty_members_but_debits_only_scaled_cost() {
+fn party_base_mana_gates_forty_members_and_caps_the_refund() {
     for (name, base, expected) in [
         ("Heal Party", 120, 79),
         ("Enchant Party", 120, 79),
@@ -575,5 +575,12 @@ fn party_base_mana_gates_forty_members_but_debits_only_scaled_cost() {
             cast(&spell, base, &cooldowns, at_ms(0), &party).expect("affordable forty-member cast");
         assert_eq!(result.mana_spent, expected);
         assert_eq!(result.party.len(), 40);
+        for (headroom, debit) in [(0, base), (1, base - 1), (base - expected, expected)] {
+            let caster = druid(5000 - headroom);
+            let result =
+                resolve_party_cast(&spell, &caster, &cooldowns, at_ms(0), &party, &mut lowest)
+                    .expect("affordable forty-member cast near maximum mana");
+            assert_eq!(result.mana_spent, debit, "{name}, headroom {headroom}");
+        }
     }
 }

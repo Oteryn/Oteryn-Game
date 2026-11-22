@@ -760,7 +760,12 @@
         {
           "kind": "give_item",
           "item": "oteryn:item.tibia.i27654",
-          "count": 2
+          "count": 1
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i27654",
+          "count": 1
         },
         {
           "kind": "add",

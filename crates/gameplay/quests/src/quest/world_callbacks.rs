@@ -583,6 +583,17 @@ fn is_default_use_range(value: &u8) -> bool {
 }
 
 impl Callback {
+    #[must_use]
+    pub fn admits_direct_use(&self, actor: Position) -> bool {
+        self.effects
+            .direct_use_area
+            .is_some_and(|[minimum, maximum]| {
+                actor.floor == minimum.floor
+                    && (minimum.x..=maximum.x).contains(&actor.x)
+                    && (minimum.y..=maximum.y).contains(&actor.y)
+            })
+    }
+
     /// Uses the same-floor Chebyshev rule; legacy callbacks retain one-cell reach.
     #[must_use]
     pub fn reaches(&self, actor: Position, target: Position) -> bool {
@@ -952,7 +963,26 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
         let unique_storage: BTreeSet<_> = callback.storage.iter().map(|s| &s.track).collect();
         let operation_tracks: BTreeSet<_> = callback.operations().map(|s| &s.track).collect();
         let alias_positions: BTreeSet<_> = selector.position_aliases.iter().copied().collect();
-        if !completed_quests::valid(callback)
+        if callback.effects.direct_use_area.is_some_and(|[minimum, maximum]| {
+            callback.quest != "oteryn:quest.dangerous_depths_quest"
+                || !callback.key.starts_with("oteryn:quest-callback/dangerous-depths-daily/")
+                || callback.trigger != Trigger::Use
+                || callback.actor_kind != ActorKind::Player
+                || !callback.requires_world_admission
+                || !callback.item_on_target.as_ref().is_some_and(|tool| {
+                    tool.reusable
+                        && tool.selected_instance
+                        && matches!(tool.item.as_str(), "oteryn:item.tibia.i27307" | "oteryn:item.tibia.i27308")
+                })
+                || !valid_pos(minimum)
+                || minimum.floor != maximum.floor
+                || minimum.x > maximum.x
+                || minimum.y > maximum.y
+                || minimum.x.abs_diff(maximum.x) >= 64
+                || minimum.y.abs_diff(maximum.y) >= 64
+                || !selector.position.is_some_and(|pos| callback.admits_direct_use(pos))
+                || !selector.ordinal.is_some_and(|ordinal| u8::try_from(ordinal).is_ok())
+        }) || !completed_quests::valid(callback)
             || (callback.key == super::dreamer_fire_bug::IGNITE
                 && !super::dreamer_fire_bug::callbacks().contains(callback))
             || (matches!(
@@ -3403,13 +3433,26 @@ mod daily_tests {
             })
             .collect();
         assert_eq!(repairs.len(), 34);
+        let captured = include_str!(
+            "../../../../../tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json"
+        );
+        let (_, range) = captured
+            .split_once("reset po random")
+            .ok_or("repair source")?;
+        let (range, _) = range.split_once("s;").ok_or("repair delay")?;
+        let (minimum, maximum) = range.split_once("..").ok_or("repair range")?;
+        let source_delay = [
+            minimum.parse::<u16>().map_err(|error| error.to_string())?,
+            maximum.parse::<u16>().map_err(|error| error.to_string())?,
+        ];
         for repair in repairs {
             let tool = repair.item_on_target.as_ref().ok_or("repair tool")?;
             assert_eq!(tool.item, "oteryn:item.tibia.i15703");
             assert!(tool.selected_instance && tool.reusable);
             assert!(matches!(repair.selector.appearance, Some(15712 | 15796)));
             assert_eq!(repair.effects.transform, Some(15800));
-            assert_eq!(repair.effects.reset_after_ms, Some(60_000));
+            assert_eq!(repair.effects.reset_after_ms, None);
+            assert_eq!(repair.effects.random_reset_seconds, Some(source_delay));
             assert!(repair.storage.iter().any(|entry| {
                 entry.track.ends_with("/repaired_crystal_count")
                     && entry.minimum == 0
@@ -3474,6 +3517,9 @@ mod spike_daily_tests {
                     && tool.replacement.as_deref() == Some("oteryn:item.tibia.i19218")
                 {
                     assert!(callback.effects.magic.is_none());
+                    assert!(callback.effects.random_relocation.is_none());
+                } else if task == "middle-charge" {
+                    assert!(callback.effects.random_relocation.is_some());
                 }
             }
         }
@@ -3519,6 +3565,18 @@ mod depths_survey_tests {
             let mut unique_flags = BTreeSet::new();
             for site in sites {
                 assert!(positions.insert(site.selector.position.ok_or("survey position")?));
+                let [minimum, maximum] =
+                    site.effects.direct_use_area.ok_or("direct survey area")?;
+                assert!(site.admits_direct_use(minimum));
+                assert!(site.admits_direct_use(maximum));
+                assert!(!site.admits_direct_use(Position {
+                    floor: minimum.floor + 1,
+                    ..minimum
+                }));
+                assert!(!site.admits_direct_use(Position {
+                    x: maximum.x + 1,
+                    ..maximum
+                }));
                 assert!(
                     site.item_on_target
                         .as_ref()

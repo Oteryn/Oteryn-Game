@@ -371,7 +371,9 @@
       ],
       "failure_reply": [
         "You don't have enough minor crystal tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/gnomally-exchange-16099",
@@ -404,7 +406,9 @@
       ],
       "failure_reply": [
         "You don't have enough minor crystal tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/gnomally-exchange-16101",
@@ -437,7 +441,9 @@
       ],
       "failure_reply": [
         "You don't have enough minor crystal tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/gnomally-exchange-16104",
@@ -470,7 +476,9 @@
       ],
       "failure_reply": [
         "You don't have enough major crystal tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/gnomally-exchange-16105",
@@ -503,7 +511,9 @@
       ],
       "failure_reply": [
         "You don't have enough major crystal tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/gnomally-exchange-16106",
@@ -536,7 +546,9 @@
       ],
       "failure_reply": [
         "You don't have enough major crystal tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/gnomally-exchange-16107",
@@ -569,7 +581,9 @@
       ],
       "failure_reply": [
         "You don't have enough major crystal tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/gnomally-exchange-16109",
@@ -602,7 +616,9 @@
       ],
       "failure_reply": [
         "You don't have enough major crystal tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/gnomally-exchange-16110",
@@ -635,7 +651,9 @@
       ],
       "failure_reply": [
         "You don't have enough major crystal tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/gnomally-exchange-16111",
@@ -668,7 +686,9 @@
       ],
       "failure_reply": [
         "You don't have enough major crystal tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/gnomally-exchange-16112",
@@ -701,7 +721,9 @@
       ],
       "failure_reply": [
         "You don't have enough major crystal tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/gnomally-exchange-16116",
@@ -734,7 +756,9 @@
       ],
       "failure_reply": [
         "You don't have enough major crystal tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/gnomally-exchange-16153",
@@ -767,7 +791,9 @@
       ],
       "failure_reply": [
         "You don't have enough major crystal tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/gnomally-exchange-16154",
@@ -800,7 +826,9 @@
       ],
       "failure_reply": [
         "You don't have enough major crystal tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/gnomally-exchange-16242",
@@ -833,7 +861,9 @@
       ],
       "failure_reply": [
         "You don't have enough minor crystal tokens."
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/hallowed-holy-water",

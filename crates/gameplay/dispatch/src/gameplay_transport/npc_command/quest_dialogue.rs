@@ -124,11 +124,16 @@ pub(super) struct Step {
     reply: Vec<String>,
     failure_reply: Vec<String>,
     refused: bool,
+    clear_topic_on_refusal: bool,
 }
 
 impl Step {
     pub(super) fn with_failure_reply(mut self, lines: Vec<String>) -> Self {
         self.failure_reply = lines;
+        self
+    }
+    pub(super) fn with_quote_retirement(mut self, clear_on_refusal: bool) -> Self {
+        self.clear_topic_on_refusal = clear_on_refusal;
         self
     }
     pub(super) fn with_refusal(mut self, refused: bool) -> Self {
@@ -145,6 +150,7 @@ struct Pending {
     intent: NpcTalkIntent,
     context: Context,
     next_topic: Option<Topic>,
+    clear_topic_on_refusal: bool,
     reply: Vec<String>,
 }
 
@@ -188,6 +194,7 @@ pub(super) fn prepare(
         reply: choice.reply,
         failure_reply: Vec::new(),
         refused: false,
+        clear_topic_on_refusal: false,
     })
 }
 
@@ -257,11 +264,15 @@ fn finish(admission: &ComposedFreshAdmission<'_, '_, '_>, session: GameSessionId
     if let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
         && let Some(state) = sessions.get_mut(&session)
         && let Some(pending) = state.quest_dialogue.pending.take()
-        && committed
     {
-        state
-            .quest_dialogue
-            .apply_topic(pending.context, pending.next_topic);
+        let topic = if committed {
+            pending.next_topic
+        } else if pending.clear_topic_on_refusal {
+            Some(Topic::default())
+        } else {
+            return;
+        };
+        state.quest_dialogue.apply_topic(pending.context, topic);
     }
 }
 
@@ -412,6 +423,7 @@ pub(super) async fn apply(
             intent: intent.clone(),
             context: step.context.clone(),
             next_topic: step.next_topic,
+            clear_topic_on_refusal: step.clear_topic_on_refusal,
             reply: step.reply.clone(),
         });
     }

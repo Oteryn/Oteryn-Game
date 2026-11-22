@@ -299,6 +299,10 @@ pub struct RewardCallback {
     #[serde(default, skip_serializing_if = "is_false")]
     pub fresh_corpse: bool,
     pub keywords: Vec<String>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub msg_contains: bool,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub clear_topic_on_refusal: bool,
     pub topic: u16,
     pub next_topic: u16,
     /// Complete this owning quest in the same receipt as its final dialogue.
@@ -452,6 +456,16 @@ impl OutfitReward {
     }
 }
 impl RewardCallback {
+    pub fn matches_keyword(&self, text: &str) -> bool {
+        self.keywords.iter().any(|word| {
+            if self.msg_contains {
+                super::npc_rules::msg_contains(text, word)
+            } else {
+                word == text
+            }
+        })
+    }
+
     fn valid_carried_inputs(&self) -> bool {
         let selected = |key: &str| {
             self.take

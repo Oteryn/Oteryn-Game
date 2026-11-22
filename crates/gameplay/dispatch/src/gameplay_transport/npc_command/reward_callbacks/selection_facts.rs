@@ -31,13 +31,11 @@ pub(in crate::gameplay_transport::npc_command) fn needs_facts(
         .unwrap_or(&callbacks);
     callbacks.iter().any(|callback| {
         callback.npc == context.2
-            && callback.keywords.contains(&text)
+            && callback.matches_keyword(&text)
             && (!callback.inventory.is_empty() || callback.minimum_level.is_some())
     }) || offers::load(admission).is_some_and(|document| {
         document.offers.iter().any(|offer| {
-            offer.npc == context.2
-                && offer.keywords.contains(&text)
-                && offer.minimum_level.is_some()
+            offer.npc == context.2 && offer.matches_keyword(&text) && offer.minimum_level.is_some()
         })
     })
 }

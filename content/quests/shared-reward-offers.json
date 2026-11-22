@@ -1757,7 +1757,8 @@
       "storage": [],
       "reply": [
         "I can enchant {pendulet}, {sleep shawl}, {blister ring}, {theurgic amulet}, {ring of souls}, {spiritthorn ring}, {alicorn ring}, {arcanomancer sigil}, {arboreal ring}, {turtle amulet}. Which item?"
-      ]
+      ],
+      "msg_contains": true
     },
     {
       "npc": "oteryn:npc.cledwyn",
@@ -2792,7 +2793,8 @@
       "storage": [],
       "reply": [
         "Ask me about {minor} or {major} crystal token goods."
-      ]
+      ],
+      "msg_contains": true
     },
     {
       "npc": "oteryn:npc.gnomally",
@@ -2876,7 +2878,8 @@
       "storage": [],
       "reply": [
         "For major crystal tokens I offer {gill gugel}, {gill coat}, {gill legs}, {spellbook}, {prismatic helmet}, {prismatic armor}, {prismatic legs}, {prismatic boots}, {prismatic shield}, {iron loadstone}, {glow wine}, {basic soil guardian outfit}, {basic crystal warlord outfit}."
-      ]
+      ],
+      "msg_contains": true
     },
     {
       "npc": "oteryn:npc.gnomally",
@@ -2888,7 +2891,8 @@
       "storage": [],
       "reply": [
         "For minor crystal tokens I offer {muck}, {mission}, {lamp}, {backpack}, {supply}, {addition to the soil guardian outfit}, {addition to the crystal warlord armor outfit}."
-      ]
+      ],
+      "msg_contains": true
     },
     {
       "npc": "oteryn:npc.gnomally",
@@ -5854,7 +5858,8 @@
         "{gingerbreadman}, {christmas cookie tray}, {gingerbread recipe}, {jewel case}, {santa hat}, {santa backpack}, {snow flake tapestry}, {santa doll}",
         "{snowman doll}, {snow globe}, {frazzlemaw santa}, {leaf golem santa}, {santa music box}, {santa teddy}, {maxxen santa}, {present bag}",
         "{ferumbras' teddy santa}, {nightmare beast santa}, {orclops santa}, {raccoon santa}, {santa fox}, {santa leech}"
-      ]
+      ],
+      "msg_contains": true
     },
     {
       "npc": "oteryn:npc.ruprecht",
@@ -6306,7 +6311,8 @@
           "minimum": 11,
           "maximum": 2147483647
         }
-      ]
+      ],
+      "msg_contains": true
     },
     {
       "npc": "oteryn:npc.storkus",
@@ -6333,7 +6339,8 @@
           "minimum": 11,
           "maximum": 2147483647
         }
-      ]
+      ],
+      "msg_contains": true
     },
     {
       "npc": "oteryn:npc.storkus",
@@ -6360,7 +6367,8 @@
           "minimum": 11,
           "maximum": 2147483647
         }
-      ]
+      ],
+      "msg_contains": true
     },
     {
       "npc": "oteryn:npc.storkus",
@@ -6387,7 +6395,8 @@
           "minimum": 11,
           "maximum": 2147483647
         }
-      ]
+      ],
+      "msg_contains": true
     },
     {
       "npc": "oteryn:npc.storkus",
@@ -6414,7 +6423,8 @@
           "minimum": 11,
           "maximum": 2147483647
         }
-      ]
+      ],
+      "msg_contains": true
     },
     {
       "npc": "oteryn:npc.storkus",
@@ -6441,7 +6451,8 @@
           "minimum": 11,
           "maximum": 2147483647
         }
-      ]
+      ],
+      "msg_contains": true
     },
     {
       "npc": "oteryn:npc.the_bone_master",

@@ -1969,3 +1969,25 @@ fn dangerous_depths_offers_reset_the_distinct_survey_flags() -> Result<(), NpcRu
     }
     Ok(())
 }
+
+#[test]
+fn gnomus_charting_bonus_plans_two_separate_jar_outputs() -> Result<(), NpcRuleError> {
+    let catalogue = NpcRuleCatalog::runtime()?;
+    let mut facts = Facts::empty();
+    let prefix = "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/";
+    facts.tracks.insert(format!("{prefix}charting"), 1);
+    facts.tracks.insert(format!("{prefix}charting_count"), 6);
+    let report = catalogue
+        .plan(&facts.input("oteryn:npc.gnomus", "charting", 0))?
+        .ok_or_else(|| NpcRuleError::Invalid("missing charting report".into()))?;
+    let gifts: Vec<_> = report
+        .effects
+        .iter()
+        .filter_map(|effect| match effect {
+            NpcRuleEffect::GiveItem { item, count, .. } => Some((item.as_str(), *count)),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(gifts, [("oteryn:item.tibia.i27654", 1); 2]);
+    Ok(())
+}

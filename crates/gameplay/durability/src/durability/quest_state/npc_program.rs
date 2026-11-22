@@ -4,6 +4,8 @@ use oteryn_gameplay_quests::quest::npc_rules::{
     NpcInventorySnapshot, NpcRuleCatalog, NpcRuleInput, NpcRulePlan, NpcRuleTrigger,
 };
 mod achievements;
+#[cfg(test)]
+mod daily_mint_tests;
 mod equipped;
 mod fathers_burden;
 pub(in crate::durability) mod hot_cuisine_m42;

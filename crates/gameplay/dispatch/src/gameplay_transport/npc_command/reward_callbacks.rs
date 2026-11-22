@@ -27,6 +27,8 @@ struct Offers {
 pub(super) struct Offer {
     npc: String,
     keywords: Vec<String>,
+    #[serde(default)]
+    msg_contains: bool,
     topic: u16,
     #[serde(default)]
     any_topic: bool,
@@ -92,7 +94,7 @@ pub(super) fn prepare(
             && offers
                 .offers
                 .iter()
-                .any(|offer| offer.npc == context.2 && offer.keywords.contains(&text)))
+                .any(|offer| offer.npc == context.2 && offer.matches_keyword(&text)))
     {
         let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
         sessions
@@ -103,6 +105,10 @@ pub(super) fn prepare(
     let catalogue = admission.quest_catalogue.as_deref()?;
     let mut failure_reply = Vec::new();
     let mut refused = false;
+    let mut clear_topic_on_refusal = false;
+    let refusal_topic = |callback: &reward_callbacks::RewardCallback| {
+        callback.clear_topic_on_refusal.then(Topic::default)
+    };
     let step = quest_dialogue::prepare(
         admission,
         actor,
@@ -143,7 +149,7 @@ pub(super) fn prepare(
                     c.carried_item.is_none()
                         && c.npc == context.2
                         && c.topic == topic
-                        && c.keywords.contains(&text)
+                        && c.matches_keyword(&text)
                         && eligible(&c.storage)
                         && c.state_ops
                             .iter()
@@ -166,14 +172,16 @@ pub(super) fn prepare(
                         return None;
                     }
                     if !meets_level(callback.minimum_level)
-                        && let Some(choice) = refusal(&callback.failure_reply)
+                        && let Some(mut choice) = refusal(&callback.failure_reply)
                     {
+                        choice.next_topic = refusal_topic(callback);
                         return Some(choice);
                     }
                     // Without a source refusal line, keep the exact selected
                     // transition: its locked owner must reject the level gate.
                     // Falling through would return the ordinary dialogue's Ok.
                     failure_reply = callback.failure_reply.clone();
+                    clear_topic_on_refusal = callback.clear_topic_on_refusal;
                     return Some(Choice {
                         transition: Some(callback.key.clone()),
                         next_topic: Some(Topic::from(callback.next_topic)),
@@ -185,8 +193,9 @@ pub(super) fn prepare(
                 let mut blocked = matching_stage;
                 if let Some(callback) = blocked.next()
                     && blocked.next().is_none()
-                    && let Some(choice) = refusal(&callback.failure_reply)
+                    && let Some(mut choice) = refusal(&callback.failure_reply)
                 {
+                    choice.next_topic = refusal_topic(callback);
                     return Some(choice);
                 }
                 return None;
@@ -229,7 +238,7 @@ pub(super) fn prepare(
             let mut blocked = offers.offers.iter().filter(|offer| {
                 offer.npc == context.2
                     && offer.matches_topic(topic.number)
-                    && offer.keywords.contains(&text)
+                    && offer.matches_keyword(&text)
                     && eligible(&offer.storage)
                     && !offer.requires.iter().all(|r| r.holds(catalogue, tracks))
             });
@@ -246,7 +255,7 @@ pub(super) fn prepare(
                 c.carried_item.is_none()
                     && c.npc == context.2
                     && c.topic == topic.number
-                    && c.keywords.contains(&text)
+                    && c.matches_keyword(&text)
             });
             let callback = matching.next()?;
             if matching.next().is_some() {
@@ -257,11 +266,13 @@ pub(super) fn prepare(
                     .inventory
                     .iter()
                     .all(|rule| inventory.is_some_and(|facts| rule.holds(&facts.quantities))))
-                && let Some(choice) = refusal(&callback.failure_reply)
+                && let Some(mut choice) = refusal(&callback.failure_reply)
             {
+                choice.next_topic = refusal_topic(callback);
                 return Some(choice);
             }
             failure_reply = callback.failure_reply.clone();
+            clear_topic_on_refusal = callback.clear_topic_on_refusal;
             Some(Choice {
                 transition: Some(callback.key.clone()),
                 next_topic: Some(Topic::from(callback.next_topic)),
@@ -269,7 +280,11 @@ pub(super) fn prepare(
             })
         },
     );
-    step.map(|step| step.with_failure_reply(failure_reply).with_refusal(refused))
+    step.map(|step| {
+        step.with_failure_reply(failure_reply)
+            .with_refusal(refused)
+            .with_quote_retirement(clear_topic_on_refusal)
+    })
 }
 
 #[cfg(test)]
@@ -361,7 +376,7 @@ pub(super) fn unhandled_confirmation(
                     || requested
                     // The forge requires a specific offer before it accepts yes.
                     || callback.key == "oteryn:quest-reward/qc-obsidian-draconian-steel")
-                && callback.keywords.contains(&text)
+                && callback.matches_keyword(&text)
         })
     })
 }

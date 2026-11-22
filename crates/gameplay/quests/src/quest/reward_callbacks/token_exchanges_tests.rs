@@ -213,3 +213,18 @@ fn storkus_rank_hand_ins() -> Result<(), String> {
     }
     Ok(())
 }
+
+#[test]
+fn jorge_matches_a_souvenir_inside_the_live_request() -> Result<(), String> {
+    let callbacks = load()?;
+    let music_box = callbacks
+        .iter()
+        .find(|callback| {
+            callback.npc == "oteryn:npc.jorge"
+                && callback.keywords.iter().any(|word| word == "music box")
+        })
+        .ok_or("music box souvenir")?;
+    assert!(music_box.matches_keyword("I'd like a music box"));
+    assert!(!music_box.matches_keyword("I'd like an xmusic box"));
+    Ok(())
+}
