@@ -1,6 +1,8 @@
 //! Owner qualification, spatial facts, preview and live native combat phases.
 use super::*;
 
+use equipment_attacks::EquipmentCast;
+
 struct SpatialPhase {
     position: TilePosition,
     bindings: Vec<LiveActorBinding>,
@@ -24,6 +26,7 @@ struct PaidPreparation {
     timers: Option<ValidatedTimerInstall>,
     magnitude: Option<PreparedMagnitudeOwner>,
     presentation: crate::gameplay_transport::spell_presentations::PreparedPresentation,
+    field: Option<crate::spell::native_delayed::NativeDelayedPlan>,
 }
 
 /// WU26-14: the TARGET or CURSOR option of a native wave or beam, by the ordinary path's rule. A
@@ -75,7 +78,9 @@ pub async fn prepare_from_owners(
         .as_str()
         .ok_or(SpellCastDisposition::Rejected)?;
     let aim = native_aim(key, spell, intent)?;
-    if aim.is_none()
+    let targeted_equipment = key == "equipment_attack" && equipment_attacks::is_targeted(spell);
+    if !targeted_equipment
+        && aim.is_none()
         && matches!(intent.target, SpellTarget::Position(_))
         && !spell
             .authored
@@ -92,7 +97,10 @@ pub async fn prepare_from_owners(
             | "mass_spirit_mend"
             | "mana_shield_capacity"
             | "delayed_strike"
-    ) || (key != "delayed_strike"
+            | "equipment_attack"
+            | "owned_field_buff"
+    ) || (!targeted_equipment
+        && key != "delayed_strike"
         && aim.is_none()
         && (intent.aim_at_target || intent.target != SpellTarget::None))
         || book.indexed(intent.spell) != Some(spell)
@@ -148,7 +156,7 @@ pub async fn prepare_from_owners(
     let training_formula = content
         .training_formula()
         .ok_or(SpellCastDisposition::Rejected)?;
-    let stage = if key == "delayed_strike"
+    let stage = if matches!(key, "delayed_strike" | "owned_field_buff")
         && spell
             .authored
             .as_ref()
@@ -177,6 +185,13 @@ pub async fn prepare_from_owners(
     } else {
         ElementalStance::None
     }; // unconsumed for these recipes
+    let equipment = (key == "equipment_attack")
+        .then(|| equipment_attacks::inputs(parameters, owned, content, spell, &caster, now))
+        .transpose()?;
+    let equipment_plan = equipment
+        .as_ref()
+        .map(|inputs| equipment_attacks::planned(parameters, inputs, owned, before, now))
+        .transpose()?;
     let roster = runtime
         .positioned_actor_census()
         .map_err(|_| SpellCastDisposition::Rejected)?;
@@ -213,6 +228,7 @@ pub async fn prepare_from_owners(
         intent,
         aim,
         parameters,
+        equipment_plan.as_ref(),
         actor,
         stage,
         elemental,
@@ -255,6 +271,7 @@ pub async fn prepare_from_owners(
         &operational,
         &facts,
         delayed.as_ref(),
+        equipment_plan.as_ref(),
         &bindings,
         &players,
         training_formula,
@@ -268,6 +285,7 @@ pub async fn prepare_from_owners(
         timers,
         magnitude,
         presentation,
+        field,
     } = prepare_payment(
         runtime,
         states,
@@ -288,6 +306,7 @@ pub async fn prepare_from_owners(
         &operational,
         &facts,
         delayed.as_ref(),
+        equipment_plan.as_ref(),
         &bindings,
         &players,
         training_formula,
@@ -298,6 +317,11 @@ pub async fn prepare_from_owners(
         stamp,
         draw,
     )?;
+    let item_operations = field
+        .as_ref()
+        .map(|field| empowerment::operations(room, runtime, content, &lowered.batch, field))
+        .transpose()?
+        .unwrap_or_default();
     Ok(PreparedNativeCombatCast {
         outgoing_charms: None,
         leech_inputs: Vec::new(),
@@ -306,7 +330,7 @@ pub async fn prepare_from_owners(
         direct_companion: None,
         field_policy_revision: None,
         carried_target: None,
-        item_operations: Vec::new(),
+        item_operations,
         item_creations: Vec::new(),
         party,
         before: before.clone(),
@@ -338,6 +362,7 @@ async fn prepare_spatial(
     intent: &SpellCastIntent,
     aim: Option<super::ordinary_combat::Aim>,
     parameters: &Value,
+    equipment: Option<&EquipmentCast>,
     actor: ExactActorRef,
     stage: u8,
     elemental: ElementalStance,
@@ -389,10 +414,41 @@ async fn prepare_spatial(
         None => facing.map(direction).unwrap_or(Direction::North), // unused by symmetric/self recipes
     };
     let is_delayed = parameters.get("delay_ms").is_some();
+    let is_owned_field = parameters.get("field_item").is_some();
     let held = is_delayed
         .then(|| delayed_strikes::held_target(runtime, attack_target))
         .flatten();
-    let origin = if let Some(saved) = saved {
+    let targeted_equipment = equipment.is_some() && equipment_attacks::is_targeted(spell);
+    let targeted_held = if targeted_equipment {
+        delayed_strikes::held_target(runtime, attack_target)
+    } else {
+        None
+    };
+    let origin = if targeted_equipment {
+        let target = match intent.target {
+            SpellTarget::Position(p) => TilePosition {
+                x: p.x,
+                y: p.y,
+                floor: p.floor,
+            },
+            SpellTarget::None | SpellTarget::AttackTarget => targeted_held
+                .map(|(_, p)| p)
+                .ok_or(SpellCastDisposition::TargetRequired)?,
+        };
+        // Crystal shield_bash.lua: adjacent target and wall check.
+        if target.floor != position.floor
+            || target
+                .x
+                .abs_diff(position.x)
+                .max(target.y.abs_diff(position.y))
+                != 1
+        {
+            return Err(SpellCastDisposition::TargetIllegal);
+        }
+        target
+    } else if equipment.is_some() {
+        position
+    } else if let Some(saved) = saved {
         saved.scheduled.position
     } else if let Some((origin, _)) = aimed {
         origin
@@ -425,14 +481,15 @@ async fn prepare_spatial(
     if origin.floor != position.floor && saved.is_none() {
         return reject();
     }
-    let sight_origin = if saved.is_some() && parameters.get("chain").is_some() {
-        position
-    } else if needs_direction && origin != position {
-        let (dx, dy) = delta(facing_direction);
-        offset(origin, -dx, -dy)?
-    } else {
-        origin
-    };
+    let sight_origin =
+        if equipment.is_some() || (saved.is_some() && parameters.get("chain").is_some()) {
+            position
+        } else if needs_direction && origin != position {
+            let (dx, dy) = delta(facing_direction);
+            offset(origin, -dx, -dy)?
+        } else {
+            origin
+        };
     let area_parameters;
     let geometry_parameters = if parameters["area"].is_array() {
         area_parameters = json!({"area":{"directional":false,"orthogonal":parameters["area"]}});
@@ -440,7 +497,25 @@ async fn prepare_spatial(
     } else {
         parameters
     };
-    let mut candidates = area_candidates(geometry_parameters, origin, facing_direction)?;
+    let mut candidates = BTreeSet::new();
+    if let Some(equipment) = equipment {
+        for component in &equipment.plan.components {
+            candidates.extend(equipment_attacks::footprint(
+                &component.area,
+                origin,
+                facing_direction,
+            )?);
+        }
+    } else {
+        candidates = area_candidates(geometry_parameters, origin, facing_direction)?;
+    }
+    if is_owned_field {
+        for y in -1..=1 {
+            for x in -1..=1 {
+                candidates.insert(offset(position, x, y)?);
+            }
+        }
+    }
     candidates.insert(position);
     candidates.insert(origin);
     let TargetPhase {
@@ -534,7 +609,34 @@ async fn prepare_spatial(
             attackable.contains(&target.id),
         );
     }
+    let explicit_target = if targeted_equipment {
+        let held = (!matches!(intent.target, SpellTarget::Position(_)))
+            .then_some(targeted_held)
+            .flatten()
+            .map(|(a, _)| u64::from(a.actor_local_id()));
+        let target = targets
+            .iter()
+            .find(|target| {
+                target.position == origin && target.legal && held.is_none_or(|id| target.id == id)
+            })
+            .filter(|_| clear_sight.contains(&(position, origin)))
+            .ok_or(SpellCastDisposition::TargetIllegal)?;
+        Some(crate::spell::target::CastTarget {
+            caster: caster_id,
+            creature: target.id,
+            actor: bindings
+                .iter()
+                .find(|binding| binding.source_id == target.id)
+                .ok_or(SpellCastDisposition::Rejected)?
+                .target_atom
+                .clone(),
+            master: None,
+        })
+    } else {
+        None
+    };
     let target_position = match intent.target {
+        _ if targeted_equipment => Some(origin),
         _ if aimed.is_some() => None,
         _ if is_delayed
             && spell
@@ -550,7 +652,7 @@ async fn prepare_spatial(
     let operational = OperationalCastFacts {
         caster_position: position,
         target_position,
-        target: None,
+        target: explicit_target.clone(),
         line_of_sight_clear: target_position
             .map(|p| p == position || clear_sight.contains(&(position, p))),
         direction_available: facing.is_some() || aimed.is_some(),
@@ -587,7 +689,7 @@ async fn prepare_spatial(
         area_origin: origin,
         area_sight_origin: sight_origin,
         direction: facing_direction,
-        explicit_target: None,
+        explicit_target: explicit_target.map(|target| target.creature),
         attacked_target: None,
         targets,
         clear_sight,
@@ -612,7 +714,7 @@ async fn prepare_spatial(
         parameters["element"].as_str(),
     )
     .map_err(|_| SpellCastDisposition::Rejected)?;
-    let delayed = if is_delayed {
+    let mut delayed = if is_delayed || is_owned_field {
         Some(delayed_strikes::facts(
             runtime,
             owned,
@@ -627,6 +729,22 @@ async fn prepare_spatial(
     } else {
         None
     };
+    if is_owned_field && let Some(field) = delayed.as_mut() {
+        for y in -1..=1 {
+            for x in -1..=1 {
+                let position = offset(position, x, y)?;
+                let tile = tiles.get(&position).ok_or(SpellCastDisposition::Rejected)?;
+                field
+                    .field_tiles
+                    .push(crate::spell::native_delayed::FieldTileSnapshot {
+                        position,
+                        exists: tile.present,
+                        immovable_block_solid: tile.solid,
+                        floor_change: tile.floor_change,
+                    });
+            }
+        }
+    }
     Ok(SpatialPhase {
         position,
         bindings,
@@ -755,6 +873,7 @@ fn prepare_preview(
     operational: &OperationalCastFacts,
     facts: &NativeCombatFacts,
     delayed: Option<&crate::spell::native_delayed::NativeDelayedFacts>,
+    equipment: Option<&EquipmentCast>,
     bindings: &[LiveActorBinding],
     players: &[(ExactActorRef, &PlayerSpellState)],
     training_formula: &crate::content::training_formula::CompiledTrainingFormula,
@@ -771,8 +890,11 @@ fn prepare_preview(
         before,
         spell,
         operational,
-        facts,
-        delayed,
+        delayed_strikes::PlanFacts {
+            combat: facts,
+            delayed,
+            equipment,
+        },
         now,
         &mut |minimum, _| minimum,
         caster,
@@ -786,7 +908,10 @@ fn prepare_preview(
     {
         return reject();
     }
-    let needs_magnitude = matches!(
+    let needs_magnitude = !matches!(
+        delayed_plan,
+        Some(crate::spell::native_delayed::NativeDelayedPlan::CreateField { .. })
+    ) && matches!(
         preview_plan.as_ref(),
         NativeCombatPlan::Combat(_) | NativeCombatPlan::MassSpiritMend { .. }
     );
@@ -903,6 +1028,16 @@ fn prepare_preview(
     {
         return reject();
     }
+    if let Some(equipment) = equipment {
+        equipment_attacks::append_shield_conditions(
+            runtime,
+            &mut preview_lowered,
+            &equipment.plan,
+            &preview_plan,
+            bindings,
+            now,
+        )?;
+    }
     let preview_cues = delayed_strikes::cues(
         room,
         runtime,
@@ -1005,6 +1140,7 @@ fn prepare_payment(
     operational: &OperationalCastFacts,
     facts: &NativeCombatFacts,
     delayed: Option<&crate::spell::native_delayed::NativeDelayedFacts>,
+    equipment: Option<&EquipmentCast>,
     bindings: &[LiveActorBinding],
     players: &[(ExactActorRef, &PlayerSpellState)],
     training_formula: &crate::content::training_formula::CompiledTrainingFormula,
@@ -1023,12 +1159,40 @@ fn prepare_payment(
         before,
         spell,
         operational,
-        facts,
-        delayed,
+        delayed_strikes::PlanFacts {
+            combat: facts,
+            delayed,
+            equipment,
+        },
         now,
         draw,
         caster,
     )?;
+    if let Some(crate::spell::native_delayed::NativeDelayedPlan::CreateField {
+        positions,
+        expires_ms,
+        bonus_percent,
+        evaluation_interval_ms,
+        ..
+    }) = delayed_plan.as_ref()
+    {
+        let expiry = expires_ms
+            .checked_sub(facts.now_ms)
+            .and_then(|lifetime| lifetime.checked_mul(1000))
+            .and_then(|lifetime| now.get().checked_add(lifetime))
+            .ok_or(SpellCastDisposition::Rejected)?;
+        let interval = evaluation_interval_ms
+            .checked_mul(1000)
+            .ok_or(SpellCastDisposition::Rejected)?;
+        paid.next.install_divine_empowerment(
+            positions.clone(),
+            position,
+            expiry,
+            interval,
+            *bonus_percent,
+            now.get(),
+        );
+    }
     let Plan::Combat(plan) = &paid.plan else {
         return reject();
     };
@@ -1095,6 +1259,16 @@ fn prepare_payment(
         },
     )
     .map_err(|_| SpellCastDisposition::Rejected)?;
+    if let Some(equipment) = equipment {
+        equipment_attacks::append_shield_conditions(
+            runtime,
+            &mut lowered,
+            &equipment.plan,
+            plan,
+            bindings,
+            now,
+        )?;
+    }
     if let Some(owner) = magnitude.as_mut() {
         owner
             .append_wheel_healing_echo(&mut lowered)
@@ -1193,6 +1367,12 @@ fn prepare_payment(
         timers,
         magnitude,
         presentation,
+        field: delayed_plan.filter(|plan| {
+            matches!(
+                plan,
+                crate::spell::native_delayed::NativeDelayedPlan::CreateField { .. }
+            )
+        }),
     })
 }
 
@@ -1279,6 +1459,7 @@ pub(in crate::gameplay_transport) async fn prepare_strike_due(
         &intent,
         None,
         parameters,
+        None,
         saved.binding.caster,
         stage,
         ElementalStance::None,

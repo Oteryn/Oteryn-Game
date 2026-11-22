@@ -218,6 +218,28 @@ pub enum Error {
     UnqualifiedSource,
     InvalidBatch,
 }
+/// Crystal 201189f8 equipment attack impact effects, indexed physical, energy, earth.
+pub fn equipment_effects(profile: &CompiledNativeSpell) -> Option<[&'static str; 3]> {
+    let behavior = &profile.spell()["execution"]["native_behavior"];
+    if behavior["key"] != "equipment_attack" {
+        return None;
+    }
+    match behavior["parameters"]["spell"].as_str()? {
+        "shield_bash" | "shield_slam" => Some(["canary.appearance:effect/bash"; 3]),
+        "flurry_of_blows" => Some([
+            "canary.appearance:effect/white_flurryofblows",
+            "canary.appearance:effect/pink_flurryofblows",
+            "canary.appearance:effect/green_flurryofblows",
+        ]),
+        "sweeping_takedown" => Some([
+            "canary.appearance:effect/white_explosionhit",
+            "canary.appearance:effect/pink_explosionhit",
+            "canary.appearance:effect/green_explosionhit",
+        ]),
+        _ => None,
+    }
+}
+
 impl SpellPresentationOwner {
     pub fn new(runtime: &ChannelRuntimeV1) -> Self {
         let binding = runtime.binding();
@@ -314,6 +336,9 @@ impl SpellPresentationOwner {
         let mut allowed = BTreeSet::new();
         collect_bindings(profile.spell(), &mut allowed);
         collect_bindings(profile.dependencies(), &mut allowed);
+        if let Some(effects) = equipment_effects(profile) {
+            allowed.extend(effects);
+        }
         if profile.spell()["execution"]["native_behavior"]["key"] == "companion_haste"
             && profile.spell()["execution"]["native_behavior"]["parameters"]["caster_effect"]
                 == "magic_green"

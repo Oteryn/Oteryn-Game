@@ -13,6 +13,12 @@ pub fn native_key(spell: &SpellDefinition) -> &str {
     }
 }
 
+pub fn is_find_fiend(spell: &SpellDefinition) -> bool {
+    matches!(&spell.execution, Execution::NativeProfile(profile)
+        if profile.spell()["execution"]["native_behavior"]["key"] == "locate_message"
+        && profile.spell()["execution"]["native_behavior"]["parameters"]["source"] == "nearest_fiendish")
+}
+
 pub fn named_player_spell(spell: &SpellDefinition) -> bool {
     matches!(
         spell.name.as_str(),
@@ -41,6 +47,7 @@ pub fn source_feedback(
             "The character you are trying to find with Exiva is currently protected from your spell."
         }
         "name_is_ambiguous" => "Player name is ambiguous.",
+        "no_creatures_around" => "No creatures around",
         "not_possible" => "Sorry, not possible.",
         "not_enough_room" => "There is not enough room.",
         _ => return Err(PlanRejected),

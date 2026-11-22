@@ -371,6 +371,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .get_mut(&runtime, actor, session)?
             .expire_owner_premium(now.get())
             .ok()?;
+        if let Ok(position) = runtime.read_actor_position(actor) {
+            states
+                .get_mut(&runtime, actor, session)?
+                .poll_divine_empowerment(position.position(), now.get());
+        }
         if let Some(deadline) = cake_deadline
             && runtime.owner_fence().is_ok()
             && runtime

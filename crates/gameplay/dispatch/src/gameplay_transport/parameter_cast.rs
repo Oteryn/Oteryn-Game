@@ -38,7 +38,9 @@ use sqlx::{Postgres, Transaction};
 
 const MAX_PENDING_PARAMETERS: usize = 256;
 
-pub use oteryn_gameplay_spell_rules::parameter_cast::{named_player_spell, native_key};
+pub use oteryn_gameplay_spell_rules::parameter_cast::{
+    is_find_fiend, named_player_spell, native_key,
+};
 #[allow(
     clippy::large_enum_variant,
     reason = "transient owner result; boxing would add an allocation to the owner turn"
@@ -310,6 +312,60 @@ pub(super) fn source_feedback(
         },
     }))
 }
+async fn prepare_find_fiend(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &items::SpellItemAuthority,
+    runtime: &ChannelRuntimeV1,
+    position: crate::foundation::MovementLocalPosition,
+    parameters: &serde_json::Value,
+    now: SemanticTimeMicros,
+) -> Result<HouseMovementPlan, SpellCastDisposition> {
+    use crate::spell::native_house_movement::{Fiend, HouseMovementFacts, Position, plan};
+    let to_position = |p: crate::foundation::MovementLocalPosition| Position {
+        x: p.x,
+        y: p.y,
+        z: i32::from(p.floor.unsigned_abs()),
+    };
+    let mut fiends = Vec::new();
+    if let Some((target, deadline)) = runtime.nearest_live_fiend(position, now.get()) {
+        let policy = &target.state.policy;
+        let race =
+            crate::gameplay_transport::charm_progression::canonical_races().and_then(|races| {
+                races.iter().find(|race| {
+                    race.key() == policy.definition_key
+                        && race.definition_revision() == policy.definition_revision
+                })
+            });
+        let (bestiary_completed, bestiary_required_kills) = if let Some(race) = race {
+            let threshold = race.final_kill_threshold();
+            let kills = crate::durability::bestiary_progress::spell_caster_bestiary_kills(
+                tx, authority, race,
+            )
+            .await
+            .map_err(|_| SpellCastDisposition::NotAvailable)?;
+            (kills >= threshold, threshold)
+        } else {
+            (false, 0)
+        };
+        fiends.push(Fiend {
+            position: to_position(target.position),
+            live_fiendish: true,
+            bestiary_completed,
+            bestiary_required_kills,
+            reverts_at_seconds: (deadline / 1_000_000) as i64,
+        });
+    }
+    plan(
+        parameters,
+        &HouseMovementFacts::FindFiend {
+            caster: to_position(position),
+            fiends,
+            now_seconds: (now.get() / 1_000_000) as i64,
+        },
+    )
+    .map_err(|_| SpellCastDisposition::Rejected)
+}
+
 #[allow(clippy::too_many_arguments)]
 async fn prepare_parameter(
     tx: &mut Transaction<'_, Postgres>,
@@ -465,6 +521,27 @@ async fn prepare_parameter(
     };
     match behavior["key"].as_str() {
         Some("creature_appearance") => (),
+        Some("locate_message") if is_find_fiend(spell) => {
+            if intent.parameter.is_some() {
+                return Err(SpellCastDisposition::Rejected);
+            }
+            match prepare_find_fiend(tx, authority, runtime, p, params, now).await? {
+                HouseMovementPlan::Message {
+                    text,
+                    effect: "magic_blue",
+                } => {
+                    result.feedback = Some(PrivateSpellFeedback {
+                        text,
+                        effect: PrivateSpellEffect::MagicBlue,
+                    });
+                }
+                HouseMovementPlan::Refused { reason, effect, .. } => {
+                    result.disposition = SpellCastDisposition::Rejected;
+                    result.feedback = source_feedback(reason, effect)?;
+                }
+                _ => return Err(SpellCastDisposition::Rejected),
+            }
+        }
         Some("locate_message") if params["source"].as_str() == Some("online_player") => {
             let plan = crate::spell::find_person_execution::plan_find_person_in_transaction(
                 tx,
