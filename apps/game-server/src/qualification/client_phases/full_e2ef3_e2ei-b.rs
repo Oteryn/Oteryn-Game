@@ -117,8 +117,14 @@ async fn approach(
     goal: impl Fn(TilePos) -> bool,
 ) -> TestResult {
     let from = tile(client.world_spatial().actor_position)?;
-    let path = route_avoiding(world, from, goal, |at| at != WOLF_STEP_DESTINATION)
-        .ok_or_else(|| format!("no served walk route from {from:?} to {target:?} avoiding {WOLF_STEP_DESTINATION:?}"))?;
+    let path = route_avoiding(world, from, goal, |at| {
+        route_available(at) && at != WOLF_STEP_DESTINATION
+    })
+    .ok_or_else(|| {
+        format!(
+            "no served walk route from {from:?} to {target:?} avoiding {WOLF_STEP_DESTINATION:?}"
+        )
+    })?;
     walk(client, world, &path).await
 }
 
@@ -398,14 +404,40 @@ async fn read(
 
 const REVISED: &str = "Second inscription: żółw 🐢";
 
+async fn acquire_document(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    index: &crate::content::item_ref::ItemDefinitionIndex,
+    at: TilePos,
+    appearance: u16,
+    definition: NonZeroU32,
+    obstacle: &str,
+) -> TestResult<NonZeroU64> {
+    if let Ok(handle) = carried(client, definition) {
+        return Ok(handle);
+    }
+    match pick_up(client, world, at, appearance, definition, obstacle).await {
+        Ok(handle) => Ok(handle),
+        Err(ground) => {
+            let key = format!("oteryn:item.tibia.i{appearance}");
+            full_e2ef7::acquire(client, world, index, &key, 1)
+                .await
+                .map_err(|trade| format!("ground source={ground}; ordinary NPC trade={trade}"))?;
+            carried(client, definition)
+        }
+    }
+}
+
 async fn rewrite_parchment(
     client: &mut DevClientSession,
     world: &BundleWorld,
+    index: &crate::content::item_ref::ItemDefinitionIndex,
     rewritable: NonZeroU32,
 ) -> TestResult {
-    let handle = pick_up(
+    let handle = acquire_document(
         client,
         world,
+        index,
         REWRITABLE,
         2814,
         rewritable,
@@ -430,21 +462,29 @@ async fn rewrite_parchment(
     Ok(())
 }
 
-async fn documents(
+const SEALED: &str = "Sealed inscription: żółw 🐢";
+
+async fn write_document(
     client: &mut DevClientSession,
-    clients: &SeamClients<'_>,
     world: &BundleWorld,
     action: &mut &'static str,
-    logged_out: &mut bool,
+    definitions: &crate::content::item_ref::ItemDefinitionIndex,
+    once: NonZeroU32,
+    sealed: NonZeroU32,
 ) -> TestResult {
-    const SEALED: &str = "Sealed inscription: żółw 🐢";
-    let definitions = provisioning::item_index()?;
-    let rewritable = provisioning::item_reference(&definitions, 2814)?;
-    let once = provisioning::item_reference(&definitions, 2818)?;
-    let sealed = provisioning::item_reference(&definitions, 2834)?;
-
     *action = "write-once-transform";
-    let handle = pick_up(client, world, WRITE_ONCE, 2818, once, DOCUMENT_OBSTACLE).await?;
+
+    let handle = acquire_document(
+        client,
+        world,
+        definitions,
+        WRITE_ONCE,
+        2818,
+        once,
+        DOCUMENT_OBSTACLE,
+    )
+    .await?;
+
     read(client, handle, "", true).await?;
     *action = "text-limit";
     write(
@@ -488,28 +528,52 @@ async fn documents(
     .await?;
     read(client, transformed, SEALED, false).await?;
 
-    // Keep the independent write-once durability assertion when the parchment
-    // cannot be acquired or its text assertion fails.
+    Ok(())
+}
+
+async fn documents(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    action: &mut &'static str,
+    logged_out: &mut bool,
+) -> TestResult {
+    let definitions = provisioning::item_index()?;
+    let rewritable = provisioning::item_reference(&definitions, 2814)?;
+    let once = provisioning::item_reference(&definitions, 2818)?;
+    let sealed = provisioning::item_reference(&definitions, 2834)?;
+
+    let write_once = write_document(client, world, action, &definitions, once, sealed).await;
+    let once_step = *action;
+
     *action = "write-read-rewritable";
-    approach(client, world, TOWN, |at| at == TOWN).await?;
-    let rewrite = rewrite_parchment(client, world, rewritable).await;
-    *action = "relogin-text-transform";
-    let relogin = async {
+    let rewrite = async {
         approach(client, world, TOWN, |at| at == TOWN).await?;
-        let session = client.join_snapshot().game_session_id;
-        let (outcome, detail, attempts, busy) = super::logout_retrying_busy(client).await?;
-        if outcome != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-            return Err(format!(
-                "logout observed {outcome:?} {detail}; attempts={attempts}, busy={busy}"
-            )
-            .into());
-        }
-        *logged_out = true;
-        *client = connect_world(clients, 0xb5).await?;
-        *logged_out = false;
-        if client.join_snapshot().game_session_id == session {
-            return Err(format!("fresh admission reused session {session:?}").into());
-        }
+        rewrite_parchment(client, world, &definitions, rewritable).await
+    }
+    .await;
+    if let (Err(once), Err(rewrite)) = (&write_once, &rewrite) {
+        *action = once_step;
+        return Err(format!("write-once: {once}; rewritable: {rewrite}").into());
+    }
+
+    *action = "relogin-text-transform";
+    approach(client, world, TOWN, |at| at == TOWN).await?;
+    let session = client.join_snapshot().game_session_id;
+    let (outcome, detail, attempts, busy) = super::logout_retrying_busy(client).await?;
+    if outcome != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!(
+            "logout observed {outcome:?} {detail}; attempts={attempts}, busy={busy}"
+        )
+        .into());
+    }
+    *logged_out = true;
+    *client = connect_world(clients, 0xb5).await?;
+    *logged_out = false;
+    if client.join_snapshot().game_session_id == session {
+        return Err(format!("fresh admission reused session {session:?}").into());
+    }
+    if write_once.is_ok() {
         let entries = &client.inventory().ok_or("fresh inventory absent")?.entries;
         if entries.iter().any(|item| item.item_definition_ref == once) {
             return Err(
@@ -517,15 +581,18 @@ async fn documents(
             );
         }
         read(client, carried(client, sealed)?, SEALED, false).await?;
-        Ok::<_, Box<dyn std::error::Error>>(())
     }
-    .await;
-    if rewrite.is_err() {
+    if rewrite.is_ok() {
+        read(client, carried(client, rewritable)?, REVISED, true).await?;
+    }
+    if let Err(error) = write_once {
+        *action = once_step;
+        return Err(error);
+    }
+    if let Err(error) = rewrite {
         *action = "write-read-rewritable";
-        return rewrite;
+        return Err(error);
     }
-    relogin?;
-    read(client, carried(client, rewritable)?, REVISED, true).await?;
-    *action = "ground-pickups-rewrite-limit-transform-refusal-fresh-admission";
+    *action = "rewrite-limit-transform-refusal-fresh-admission";
     Ok(())
 }

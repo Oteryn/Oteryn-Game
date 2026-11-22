@@ -27,7 +27,7 @@ fn world(clients: &SeamClients<'_>) -> TestResult<&'static BundleWorld> {
 
 async fn return_to_town(client: &mut DevClientSession, world: &BundleWorld) -> TestResult<()> {
     let from = tile(client.world_spatial().actor_position)?;
-    let path = route(world, from, |at| at == TOWN)
+    let path = route_avoiding(world, from, |at| at == TOWN, route_available)
         .ok_or_else(|| format!("no return route from {from:?} to {TOWN:?}"))?;
     walk(client, world, &path).await
 }
@@ -119,7 +119,7 @@ pub(super) async fn run(
     };
     report(I01, step, started, &result);
 
-    let mut step = "inspect-applied-imbuement";
+    let mut step = "reach-imbuement-shrine";
     let started = std::time::Instant::now();
     let result = match &world {
         Ok(world) => imbuement_journey(&mut client, clients, world, &mut step).await,
@@ -353,7 +353,10 @@ async fn inventory_journey(
     *step = "nested-move";
     // Lubo sells a five-slot present for six gold. Six empty presents let us
     // fill one without needing five distinct definitions.
-    let bags = full_e2ef7::acquire(client, world, &index, "oteryn:item.tibia.i2855", 6).await?;
+    let bags = provisioning::item_reference(&index, 2855)?;
+    let coins = provisioning::item_reference(&index, 3031)?;
+    full_e2ef7::earn_gold(client, world, 38).await?;
+    full_e2ef3_e2ei_d::buy_from_lubo(client, world, bags, coins, 6, 6).await?;
     assert_counts(entries(client)?, bags, &[1; 6])?;
     let bag = matching(entries(client)?, bags)?;
     let view = open_container(client, bag.handle).await?;
@@ -367,7 +370,6 @@ async fn inventory_journey(
             format!("expected empty five-slot present under root; observed={view:?}").into(),
         );
     }
-    let coins = provisioning::item_reference(&index, 3031)?;
     let coin = matching(entries(client)?, coins)?;
     let total = coin.count.get();
     if total < 2 {
@@ -540,6 +542,7 @@ async fn imbuement_journey(
     let index = provisioning::item_index()?;
     // Check the physical shrine route before asking the starter to gather loot and gold.
     full_e2ef7::shrine(client, world).await?;
+    *step = "obtain-basic-strike-materials";
     let recipe = oteryn_gameplay_items::imbuement::imbuement_recipe(1, 1)
         .ok_or("Basic Strike recipe absent")?;
     for &(item, count) in recipe.materials {
@@ -550,8 +553,10 @@ async fn imbuement_journey(
                 recipe.apply_gold,
             ))?;
     }
+    *step = "obtain-sword-and-fee";
     let sword = full_e2ef7::acquire(client, world, &index, "oteryn:item.tibia.i3264", 1).await?;
     full_e2ef7::earn_gold(client, world, recipe.apply_gold).await?;
+    *step = "inspect-applied-imbuement";
     full_e2ef7::shrine(client, world).await?;
     assert_counts(entries(client)?, sword, &[1])?;
     let target = matching(entries(client)?, sword)?;
