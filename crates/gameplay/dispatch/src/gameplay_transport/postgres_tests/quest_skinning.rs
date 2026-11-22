@@ -3,7 +3,7 @@ use super::fixture::{Harness, debug, id, run};
 use super::quest_world_callbacks_fixtures::{wire, world_with_objects};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
-use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
 use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue, authored_bindings::Bindings, world_callbacks::Position,
@@ -13,6 +13,7 @@ use oteryn_protocol_oteryn::world_object::{
     encode_item_use_intent,
 };
 use serde_json::json;
+use sha2::{Digest, Sha256};
 use std::sync::Arc;
 
 const AT: Position = Position {
@@ -98,7 +99,7 @@ fn scenario(transform: bool) -> TestResult {
             "schema": 1,
             "quests": [{
                 "quest": QUEST,
-                "recipe_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+                "recipe_sha256": format!("{:x}", Sha256::digest(serde_json::to_vec(&[&first,&second])?)),
                 "sources": [DONOR],
                 "tracks": [{"key": TRACK, "initial": 1, "minimum": 0, "maximum": 3}],
                 "stages": [
@@ -164,7 +165,6 @@ fn scenario(transform: bool) -> TestResult {
         owner.movement_cells = (&cells).into();
         owner.rooms = crate::gameplay_transport::SeamRooms::new(Some(&room), Some(&room));
         owner.quest_catalogue = Some(Arc::new(catalogue));
-        deps.initialize(&owner).await;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
@@ -172,15 +172,40 @@ fn scenario(transform: bool) -> TestResult {
             .bind(generation.identity().client_artifact_digest().as_slice()).bind(frame.as_slice()).execute(&h.pool).await?;
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
-        admitted.first_entry = super::FirstEntryOutcome::Positioned;
-        admitted.item_fence = Some(
-            owner
-                .current_quest_fence(admitted.game_session_id)
-                .await
-                .map_err(debug)?
-                .ok_or("quest fence")?
-                .item_fence(),
-        );
+        admitted.first_entry = FirstEntryOutcome::Positioned;
+        let fence = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|()| "read quest fence")?
+            .ok_or("quest fence")?;
+        owner
+            .runtime
+            .lock()
+            .await
+            .bind_attacker_lease(
+                deps.actor,
+                admitted.game_session_id,
+                crate::foundation::CharacterLease::new(
+                    crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                        .map_err(debug)?,
+                    fence.character_lease_generation,
+                )
+                .map_err(debug)?,
+            )
+            .map_err(debug)?;
+        admitted.item_fence = Some(fence.item_fence());
+        let fresh = super::fresh_fixture::fresh::Source::new(0)?.request()?;
+        h.root
+            .initialize_admission_equipment(
+                &authority,
+                &h.node,
+                &fence.item_fence(),
+                generation.identity().server_artifact_digest(),
+                fresh.operation(),
+            )
+            .await
+            .map_err(debug)?;
+        deps.initialize(&owner).await;
         admitted.continuity.selected_capabilities =
             super::SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18])
                 .ok_or("map use capabilities")?;
@@ -246,7 +271,7 @@ fn scenario(transform: bool) -> TestResult {
             UseDisposition::Committed
         );
         let replacement: Option<(i64, bool)> = sqlx::query_as(
-            "SELECT t.state_item_id, r.xmin=q.created_xact_id::text::xid FROM game_terrain_tool_transforms t
+            "SELECT t.state_item_id, r.xmin=q.created_xact_id::xid FROM game_terrain_tool_transforms t
              JOIN game_terrain_tool_receipts r USING (world_id,channel_id,placement,reset_epoch)
              JOIN game_character_quest_receipts q ON q.cause_id=r.game_session_id AND q.cause_ordinal=r.command_id"
         ).fetch_optional(&h.pool).await?;
@@ -286,14 +311,14 @@ fn callback(
     before: i64,
 ) -> TestResult<oteryn_gameplay_quests::quest::world_callbacks::Callback> {
     Ok(serde_json::from_value(json!({
-        "key": format!("oteryn:quest-callback/botany-engine-{stage}"), "quest": QUEST,
+        "key": format!("oteryn:quest-callback/authored-botany-engine-{stage}"), "quest": QUEST,
         "trigger": "use",
         "selector":{"position":position,"ordinal":1,"appearance":appearance},
         "reversible":false, "requires_world_admission":true, "passages":[],
         "storage":[{"track":TRACK,"minimum":before,"maximum":before,"set":before+1}],
         "offerings":[], "present":[{"item":BOOK,"count":1}],
         "item_on_target":{"item":KNIFE,"count":1,"selected_instance":true,"reusable":true},
-        "return_on_failure":false, "sources":[DONOR]
+        "return_on_failure":false, "sources":["oteryn-authored:quest-skinning-wire-fixture", DONOR]
     }))?)
 }
 
