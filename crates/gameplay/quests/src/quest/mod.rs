@@ -80,6 +80,7 @@ mod quests_2_focus;
 pub mod reward_callbacks;
 pub mod rotten_blood;
 pub mod schrodinger_island;
+pub mod sea_serpent;
 pub mod shared_switches;
 pub mod shared_world_progress;
 pub mod soul_war;

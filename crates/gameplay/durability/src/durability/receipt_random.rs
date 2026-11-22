@@ -5,7 +5,7 @@ use oteryn_simulation_determinism::{
 use sha2::{Digest, Sha256};
 
 use super::DurabilityError;
-use crate::foundation::CharacterId;
+use crate::domain::CharacterId;
 
 pub(super) fn draw(
     character: CharacterId,

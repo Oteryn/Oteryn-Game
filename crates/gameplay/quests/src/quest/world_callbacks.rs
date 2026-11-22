@@ -761,6 +761,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/qm48-mammoth.json"
     ))?);
     callbacks.push(super::barbarian_mead::callback()?);
+    callbacks.push(super::sea_serpent::callback()?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/qready1-clocks.json"
     ))?);
@@ -1468,17 +1469,16 @@ fn extend_callbacks(
                     track.max = track.max.max(maximum);
                 }
             } else {
-                if callback.native_rule.is_some()
-                    && !(mead && storage.track == super::barbarian_mead::DRAW)
-                {
+                let native_draw = (mead && storage.track == super::barbarian_mead::DRAW)
+                    || (callback.native_rule == Some(NativeRule::SeaSerpentTelescope)
+                        && storage.track == super::sea_serpent::DRAW);
+                if callback.native_rule.is_some() && !native_draw {
                     return Err(format!(
                         "native callback {} requires an existing track {}",
                         callback.key, storage.track
                     ));
                 }
-                let initial = if (mead && storage.track == super::barbarian_mead::DRAW)
-                    || callback.craft_reward_epoch(&storage.track)
-                {
+                let initial = if native_draw || callback.craft_reward_epoch(&storage.track) {
                     0
                 } else {
                     callback
