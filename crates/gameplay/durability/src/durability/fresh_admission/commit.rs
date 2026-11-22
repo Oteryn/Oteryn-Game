@@ -204,6 +204,16 @@ impl FreshAdmissionStore {
             self.maximum_operation_bytes,
         )?;
         let mirrors: serde_json::Value = row.try_get("mirrors")?;
+        if operation.authorization.facts.replay_key().to_bytes().as_slice() != replay {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        Self::restore_receipt(operation, mirrors).map(Some)
+    }
+
+    fn restore_receipt(
+        operation: FreshAdmissionOperationV1,
+        mirrors: serde_json::Value,
+    ) -> Result<FreshAdmissionCommitReceiptV1> {
         let decided_at = mirrors
             .get("authorization_decided_at")
             .and_then(serde_json::Value::as_i64)
@@ -224,12 +234,10 @@ impl FreshAdmissionStore {
             "semantic_version": 1,
             "authorization_decided_at": decided_at,
         });
-        if mirrors != expected || b.facts.replay_key().to_bytes().as_slice() != replay {
+        if mirrors != expected {
             return Err(DurabilityError::InvalidStoredState);
         }
-        Ok(Some(checked(FreshAdmissionCommitReceiptV1::restore(
-            operation, decided_at,
-        ))?))
+        checked(FreshAdmissionCommitReceiptV1::restore(operation, decided_at))
     }
 
     /// Fixture-only raw write. Production enters through the composed owner,

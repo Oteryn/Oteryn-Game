@@ -258,19 +258,35 @@ impl FreshAdmissionStore {
         if activity_origin != Some(true) {
             return Err(DurabilityError::Unavailable);
         }
-        let payload: Option<String> = sqlx::query_scalar("SELECT CASE WHEN octet_length(r.operation_json) <= 65536 THEN r.operation_json END FROM game_durability_reconnect_sessions s JOIN game_durability_fresh_admission_receipts r ON r.replay_key = COALESCE(s.fresh_replay_key,s.initial_fresh_replay_key) WHERE s.game_session_id = encode($1,'hex')::uuid")
-            .bind(session.as_bytes().as_slice()).fetch_optional(&mut **tx).await?.flatten();
+        use sqlx::Row;
+        // The current and initial keys select the same immutable origin used
+        // for replay. Read its bounded mirrors with the payload in this snapshot.
+        let row = sqlx::query(
+            "SELECT CASE WHEN octet_length(r.operation_json) <= $2 THEN r.operation_json END AS payload, \
+                    CASE WHEN octet_length(to_jsonb(r)::text) <= $3 THEN to_jsonb(r) - 'operation_json' END AS mirrors \
+             FROM game_durability_reconnect_sessions s \
+             JOIN game_durability_fresh_admission_receipts r \
+               ON r.replay_key = COALESCE(s.fresh_replay_key,s.initial_fresh_replay_key) \
+             WHERE s.game_session_id = encode($1,'hex')::uuid",
+        )
+        .bind(session.as_bytes().as_slice())
+        .bind(checked(i64::try_from(self.maximum_operation_bytes))?)
+        .bind(super::MAX_ADMISSION_ROW_BYTES)
+        .fetch_optional(&mut **tx)
+        .await?
+        .ok_or(DurabilityError::Unavailable)?;
+        let payload: Option<String> = row.try_get("payload")?;
         let original = decode_operation(
             &payload.ok_or(DurabilityError::Unavailable)?,
             self.maximum_operation_bytes,
         )?;
-        match self
-            .reconcile_session_locked(tx, &original, session)
+        let mirrors: Option<serde_json::Value> = row.try_get("mirrors")?;
+        let receipt =
+            Self::restore_receipt(original, mirrors.ok_or(DurabilityError::InvalidStoredState)?)?;
+        Ok(self
+            .read_reconciled_session(tx, receipt, session)
             .await?
-        {
-            FreshReconciliation::Committed(snapshot) => Ok(snapshot.current_session),
-            _ => Err(DurabilityError::InvalidStoredState),
-        }
+            .current_session)
     }
 
     pub async fn current_session(
