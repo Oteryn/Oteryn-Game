@@ -399,8 +399,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("SEASON-W18-HOUSE", 1959),
     // Merged main1ae39c7fb adds53 distinct QENGINE reward identities from
     // QENGINE2 captures 178 source-qualified Items (qengine_reward_item_profiles.IDS).
-    // The exact packet carries known speed_bonus=0 except the pick i3456,
-    // whose existing UNKNOWN speed is preserved and checked below.
+    // The exact speed facts, including preserved unknowns, are checked below.
     ("QENGINE-REWARDS", 53),
     // W05d:48 canonical seasonal profiles;35 further keys are new after the
     // House cohort above. Source: seasonal-item-profiles.json (Santa, Ruprecht,
@@ -451,10 +450,12 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             .find(|row| row.production_definition.production_key == key)
             .ok_or_else(|| format!("missing QENGINE2 source profile {key}"))?;
         assert!(profile.admission.materializable, "{key}");
-        let expected = if key == "oteryn:item.tibia.i3456" {
-            None
-        } else {
-            Some(0)
+        let expected = match key {
+            "oteryn:item.tibia.i3456" | "oteryn:item.tibia.i31266" | "oteryn:item.tibia.i31268" => {
+                None
+            }
+            "oteryn:item.tibia.i16110" | "oteryn:item.tibia.i16112" => Some(15),
+            _ => Some(0),
         };
         assert_eq!(profile.attributes.speed_bonus, expected, "{key}");
     }
@@ -505,12 +506,26 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i14023",
             "oteryn:item.tibia.i14682",
             "oteryn:item.tibia.i15698",
+            "oteryn:item.tibia.i16094",
+            "oteryn:item.tibia.i16099",
+            "oteryn:item.tibia.i16101",
             "oteryn:item.tibia.i15703",
             "oteryn:item.tibia.i15801",
             "oteryn:item.tibia.i15802",
             "oteryn:item.tibia.i16103",
+            "oteryn:item.tibia.i16104",
+            "oteryn:item.tibia.i16105",
+            "oteryn:item.tibia.i16106",
+            "oteryn:item.tibia.i16107",
+            "oteryn:item.tibia.i16109",
+            "oteryn:item.tibia.i16110",
+            "oteryn:item.tibia.i16111",
+            "oteryn:item.tibia.i16112",
+            "oteryn:item.tibia.i16116",
             "oteryn:item.tibia.i16128",
             "oteryn:item.tibia.i16129",
+            "oteryn:item.tibia.i16153",
+            "oteryn:item.tibia.i16154",
             "oteryn:item.tibia.i16165",
             "oteryn:item.tibia.i16167",
             "oteryn:item.tibia.i16242",
@@ -527,7 +542,13 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i17679",
             "oteryn:item.tibia.i17681",
             "oteryn:item.tibia.i19083",
+            "oteryn:item.tibia.i19150",
             "oteryn:item.tibia.i19151",
+            "oteryn:item.tibia.i19152",
+            "oteryn:item.tibia.i19153",
+            "oteryn:item.tibia.i19154",
+            "oteryn:item.tibia.i19155",
+            "oteryn:item.tibia.i19156",
             "oteryn:item.tibia.i19204",
             "oteryn:item.tibia.i19207",
             "oteryn:item.tibia.i19214",
@@ -551,6 +572,9 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i21905",
             "oteryn:item.tibia.i21906",
             "oteryn:item.tibia.i22008",
+            "oteryn:item.tibia.i22026",
+            "oteryn:item.tibia.i22027",
+            "oteryn:item.tibia.i22028",
             "oteryn:item.tibia.i22074",
             "oteryn:item.tibia.i22082",
             "oteryn:item.tibia.i22516",
@@ -558,20 +582,48 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i22731",
             "oteryn:item.tibia.i22775",
             "oteryn:item.tibia.i23163",
+            "oteryn:item.tibia.i23676",
+            "oteryn:item.tibia.i23677",
+            "oteryn:item.tibia.i23678",
+            "oteryn:item.tibia.i23679",
+            "oteryn:item.tibia.i23680",
+            "oteryn:item.tibia.i23681",
+            "oteryn:item.tibia.i23682",
+            "oteryn:item.tibia.i23683",
             "oteryn:item.tibia.i23986",
+            "oteryn:item.tibia.i25979",
+            "oteryn:item.tibia.i25980",
+            "oteryn:item.tibia.i25981",
+            "oteryn:item.tibia.i25982",
             "oteryn:item.tibia.i27307",
             "oteryn:item.tibia.i27308",
             "oteryn:item.tibia.i27565",
             "oteryn:item.tibia.i27654",
             "oteryn:item.tibia.i28792",
             "oteryn:item.tibia.i28793",
+            "oteryn:item.tibia.i28894",
+            "oteryn:item.tibia.i28895",
+            "oteryn:item.tibia.i28896",
+            "oteryn:item.tibia.i28897",
+            "oteryn:item.tibia.i29428",
+            "oteryn:item.tibia.i29429",
             "oteryn:item.tibia.i2973",
             "oteryn:item.tibia.i30168",
             "oteryn:item.tibia.i30169",
             "oteryn:item.tibia.i3029",
+            "oteryn:item.tibia.i30342",
+            "oteryn:item.tibia.i30344",
             "oteryn:item.tibia.i3035",
+            "oteryn:item.tibia.i30401",
+            "oteryn:item.tibia.i30403",
             "oteryn:item.tibia.i3114",
             "oteryn:item.tibia.i3120",
+            "oteryn:item.tibia.i31265",
+            "oteryn:item.tibia.i31266",
+            "oteryn:item.tibia.i31267",
+            "oteryn:item.tibia.i31268",
+            "oteryn:item.tibia.i31557",
+            "oteryn:item.tibia.i31621",
             "oteryn:item.tibia.i3205",
             "oteryn:item.tibia.i3212",
             "oteryn:item.tibia.i3214",
@@ -593,9 +645,12 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i32584",
             "oteryn:item.tibia.i32585",
             "oteryn:item.tibia.i32602",
+            "oteryn:item.tibia.i32621",
+            "oteryn:item.tibia.i32636",
             "oteryn:item.tibia.i32757",
             "oteryn:item.tibia.i3348",
             "oteryn:item.tibia.i3403",
+            "oteryn:item.tibia.i34210",
             "oteryn:item.tibia.i3443",
             "oteryn:item.tibia.i3456",
             "oteryn:item.tibia.i3460",
@@ -613,7 +668,20 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i3661",
             "oteryn:item.tibia.i37002",
             "oteryn:item.tibia.i37003",
+            "oteryn:item.tibia.i37058",
+            "oteryn:item.tibia.i37059",
+            "oteryn:item.tibia.i37060",
             "oteryn:item.tibia.i3723",
+            "oteryn:item.tibia.i39179",
+            "oteryn:item.tibia.i39182",
+            "oteryn:item.tibia.i39185",
+            "oteryn:item.tibia.i39187",
+            "oteryn:item.tibia.i39188",
+            "oteryn:item.tibia.i39233",
+            "oteryn:item.tibia.i39235",
+            "oteryn:item.tibia.i43510",
+            "oteryn:item.tibia.i43511",
+            "oteryn:item.tibia.i43517",
             "oteryn:item.tibia.i4852",
             "oteryn:item.tibia.i4867",
             "oteryn:item.tibia.i5467",
@@ -640,6 +708,8 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i769",
             "oteryn:item.tibia.i770",
             "oteryn:item.tibia.i7785",
+            "oteryn:item.tibia.i8191",
+            "oteryn:item.tibia.i8192",
             "oteryn:item.tibia.i875",
             "oteryn:item.tibia.i8995",
             "oteryn:item.tibia.i8996",
@@ -904,12 +974,28 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
                 .iter()
                 .find(|row| row.production_definition.production_key == key)
                 .ok_or_else(|| format!("missing source-qualified SEASON profile {key}"))?;
-            if path == "qengine-reward-item-profiles.json" && key == "oteryn:item.tibia.i3456" {
+            if path == "qengine-reward-item-profiles.json"
+                && matches!(
+                    key,
+                    "oteryn:item.tibia.i3456"
+                        | "oteryn:item.tibia.i31266"
+                        | "oteryn:item.tibia.i31268"
+                )
+            {
                 assert!(
                     source["attributes"]["speed_bonus"].is_null(),
                     "source speed {path}:{key}"
                 );
                 assert_eq!(actual.attributes.speed_bonus, None, "{path}:{key}");
+            } else if path == "qengine-reward-item-profiles.json"
+                && matches!(key, "oteryn:item.tibia.i16110" | "oteryn:item.tibia.i16112")
+            {
+                assert_eq!(
+                    source["attributes"]["speed_bonus"],
+                    serde_json::json!(15),
+                    "source speed {path}:{key}"
+                );
+                assert_eq!(actual.attributes.speed_bonus, Some(15), "{path}:{key}");
             } else {
                 assert_eq!(
                     source["attributes"]["speed_bonus"],
@@ -1030,13 +1116,19 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
                 record.production_definition.production_key
             );
         } else {
-            if matches!(
+            if record.production_definition.production_key == "oteryn:item.tibia.i31268" {
+                // Jorge's Jade Amulet keeps its equipment facts and unknown speed.
+                assert!(matches!(
+                    record.semantics.equipment,
+                    ReferenceItemField::Known(_)
+                ));
+                assert!(record.admission.materializable);
+            } else if matches!(
                 record.production_definition.production_key.as_str(),
                 "oteryn:item.tibia.i9215"
                     | "oteryn:item.tibia.i9216"
                     | "oteryn:item.tibia.i9217"
                     | "oteryn:item.tibia.i9221"
-                    | "oteryn:item.tibia.i31268"
             ) {
                 // WRITE-CONTENT-1 preserves these source equipment facts but
                 // grants no mint/equip admission or speed qualification.

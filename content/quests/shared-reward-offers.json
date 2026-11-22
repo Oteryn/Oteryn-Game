@@ -1748,6 +1748,138 @@
       ]
     },
     {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "enchant"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "reply": [
+        "I can enchant {pendulet}, {sleep shawl}, {blister ring}, {theurgic amulet}, {ring of souls}, {spiritthorn ring}, {alicorn ring}, {arcanomancer sigil}, {arboreal ring}, {turtle amulet}. Which item?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "alicorn ring"
+      ],
+      "topic": 1,
+      "next_topic": 107,
+      "storage": [],
+      "reply": [
+        "Should I enchant the alicorn ring for 5 silver tokens?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "arboreal ring"
+      ],
+      "topic": 1,
+      "next_topic": 109,
+      "storage": [],
+      "reply": [
+        "Should I enchant the arboreal ring for 5 silver tokens?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "arcanomancer sigil"
+      ],
+      "topic": 1,
+      "next_topic": 108,
+      "storage": [],
+      "reply": [
+        "Should I enchant the arcanomancer sigil for 5 silver tokens?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "blister ring"
+      ],
+      "topic": 1,
+      "next_topic": 103,
+      "storage": [],
+      "reply": [
+        "Should I enchant the blister ring for 2 silver tokens?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "pendulet"
+      ],
+      "topic": 1,
+      "next_topic": 101,
+      "storage": [],
+      "reply": [
+        "Should I enchant the pendulet for 2 silver tokens?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "ring of souls"
+      ],
+      "topic": 1,
+      "next_topic": 105,
+      "storage": [],
+      "reply": [
+        "Should I enchant the ring of souls for 2 silver tokens?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "sleep shawl"
+      ],
+      "topic": 1,
+      "next_topic": 102,
+      "storage": [],
+      "reply": [
+        "Should I enchant the sleep shawl for 2 silver tokens?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "spiritthorn ring"
+      ],
+      "topic": 1,
+      "next_topic": 106,
+      "storage": [],
+      "reply": [
+        "Should I enchant the spiritthorn ring for 5 silver tokens?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "theurgic amulet"
+      ],
+      "topic": 1,
+      "next_topic": 104,
+      "storage": [],
+      "reply": [
+        "Should I enchant the theurgic amulet for 2 silver tokens?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "turtle amulet"
+      ],
+      "topic": 1,
+      "next_topic": 110,
+      "storage": [],
+      "reply": [
+        "Should I enchant the turtle amulet for 2 silver tokens?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.costello",
       "keywords": [
         "diary"
@@ -2617,6 +2749,18 @@
     {
       "npc": "oteryn:npc.gnomally",
       "keywords": [
+        "backpack"
+      ],
+      "topic": 0,
+      "next_topic": 109,
+      "storage": [],
+      "reply": [
+        "Trade 15 minor crystal tokens for backpack?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
         "basic crystal warlord outfit"
       ],
       "topic": 0,
@@ -2636,6 +2780,210 @@
       "storage": [],
       "reply": [
         "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "equipment"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Ask me about {minor} or {major} crystal token goods."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "gill coat"
+      ],
+      "topic": 0,
+      "next_topic": 111,
+      "storage": [],
+      "reply": [
+        "Trade 10 major crystal tokens for gill coat?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "gill gugel"
+      ],
+      "topic": 0,
+      "next_topic": 110,
+      "storage": [],
+      "reply": [
+        "Trade 10 major crystal tokens for gill gugel?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "gill legs"
+      ],
+      "topic": 0,
+      "next_topic": 112,
+      "storage": [],
+      "reply": [
+        "Trade 10 major crystal tokens for gill legs?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "glow wine"
+      ],
+      "topic": 0,
+      "next_topic": 120,
+      "storage": [],
+      "reply": [
+        "Trade 20 major crystal tokens for glow wine?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "iron loadstone"
+      ],
+      "topic": 0,
+      "next_topic": 119,
+      "storage": [],
+      "reply": [
+        "Trade 20 major crystal tokens for iron loadstone?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "lamp"
+      ],
+      "topic": 0,
+      "next_topic": 108,
+      "storage": [],
+      "reply": [
+        "Trade 15 minor crystal tokens for lamp?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "major"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "For major crystal tokens I offer {gill gugel}, {gill coat}, {gill legs}, {spellbook}, {prismatic helmet}, {prismatic armor}, {prismatic legs}, {prismatic boots}, {prismatic shield}, {iron loadstone}, {glow wine}, {basic soil guardian outfit}, {basic crystal warlord outfit}."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "minor"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "For minor crystal tokens I offer {muck}, {mission}, {lamp}, {backpack}, {supply}, {addition to the soil guardian outfit}, {addition to the crystal warlord armor outfit}."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 107,
+      "storage": [],
+      "reply": [
+        "Trade 10 minor crystal tokens for mission?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "muck"
+      ],
+      "topic": 0,
+      "next_topic": 106,
+      "storage": [],
+      "reply": [
+        "Trade 8 minor crystal tokens for muck?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "prismatic armor"
+      ],
+      "topic": 0,
+      "next_topic": 115,
+      "storage": [],
+      "reply": [
+        "Trade 10 major crystal tokens for prismatic armor?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "prismatic boots"
+      ],
+      "topic": 0,
+      "next_topic": 117,
+      "storage": [],
+      "reply": [
+        "Trade 10 major crystal tokens for prismatic boots?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "prismatic helmet"
+      ],
+      "topic": 0,
+      "next_topic": 114,
+      "storage": [],
+      "reply": [
+        "Trade 10 major crystal tokens for prismatic helmet?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "prismatic legs"
+      ],
+      "topic": 0,
+      "next_topic": 116,
+      "storage": [],
+      "reply": [
+        "Trade 10 major crystal tokens for prismatic legs?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "prismatic shield"
+      ],
+      "topic": 0,
+      "next_topic": 118,
+      "storage": [],
+      "reply": [
+        "Trade 10 major crystal tokens for prismatic shield?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "spellbook"
+      ],
+      "topic": 0,
+      "next_topic": 113,
+      "storage": [],
+      "reply": [
+        "Trade 10 major crystal tokens for spellbook?"
       ]
     },
     {
@@ -3607,6 +3955,23 @@
       ],
       "reply": [
         "Follow the selected prayer order and keep your wooden stake."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "souvenir"
+      ],
+      "topic": 0,
+      "next_topic": 101,
+      "storage": [],
+      "reply": [
+        "Souvenirs cost 20 silver raid tokens each. Which one do you want?",
+        "{abacus}, {assassin doll}, {bag of oriental spices}, {bookworm doll}, {citizen doll}, {crimson doll}, {doll of durin the almighty}, {dragon eye}, {dragon goblet}",
+        "{draken doll}, {emblem}, {encyclopedia}, {friendship amulet}, {frozen heart}, {golden falcon}, {golden newspaper}, {goromaphone}, {hand puppets}",
+        "{imortus}, {jade amulet}, {key of numerous locks}, {little adventurer doll}, {loremaster doll}, {lucky clover amulet}, {mathmaster shield}, {medusa skull}, {music box}",
+        "{noble sword}, {norseman doll}, {old radio}, {orc's jaw shredder}, {phoenix statue}, {pigeon trophy}, {shield of destiny}, {shield of endless search}, {the mexcalibur}",
+        "{tibiora's box}"
       ]
     },
     {
@@ -5369,6 +5734,297 @@
       ]
     },
     {
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "christmas cookie tray"
+      ],
+      "topic": 0,
+      "next_topic": 102,
+      "storage": [],
+      "reply": [
+        "Would you exchange 1 Christmas token for christmas cookie tray?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "ferumbras' teddy santa"
+      ],
+      "topic": 0,
+      "next_topic": 117,
+      "storage": [],
+      "reply": [
+        "Would you exchange 250 Christmas tokens for ferumbras' teddy santa?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "frazzlemaw santa"
+      ],
+      "topic": 0,
+      "next_topic": 111,
+      "storage": [],
+      "reply": [
+        "Would you exchange 250 Christmas tokens for frazzlemaw santa?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "gingerbread recipe"
+      ],
+      "topic": 0,
+      "next_topic": 103,
+      "storage": [],
+      "reply": [
+        "Would you exchange 10 Christmas tokens for gingerbread recipe?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "gingerbreadman"
+      ],
+      "topic": 0,
+      "next_topic": 101,
+      "storage": [],
+      "reply": [
+        "Would you exchange 1 Christmas token for gingerbreadman?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "jewel case"
+      ],
+      "topic": 0,
+      "next_topic": 104,
+      "storage": [],
+      "reply": [
+        "Would you exchange 25 Christmas tokens for jewel case?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "leaf golem santa"
+      ],
+      "topic": 0,
+      "next_topic": 112,
+      "storage": [],
+      "reply": [
+        "Would you exchange 250 Christmas tokens for leaf golem santa?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "maxxen santa"
+      ],
+      "topic": 0,
+      "next_topic": 115,
+      "storage": [],
+      "reply": [
+        "Would you exchange 250 Christmas tokens for maxxen santa?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "nightmare beast santa"
+      ],
+      "topic": 0,
+      "next_topic": 118,
+      "storage": [],
+      "reply": [
+        "Would you exchange 250 Christmas tokens for nightmare beast santa?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "offers"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "I have these offers:",
+        "{gingerbreadman}, {christmas cookie tray}, {gingerbread recipe}, {jewel case}, {santa hat}, {santa backpack}, {snow flake tapestry}, {santa doll}",
+        "{snowman doll}, {snow globe}, {frazzlemaw santa}, {leaf golem santa}, {santa music box}, {santa teddy}, {maxxen santa}, {present bag}",
+        "{ferumbras' teddy santa}, {nightmare beast santa}, {orclops santa}, {raccoon santa}, {santa fox}, {santa leech}"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "orclops santa"
+      ],
+      "topic": 0,
+      "next_topic": 119,
+      "storage": [],
+      "reply": [
+        "Would you exchange 250 Christmas tokens for orclops santa?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "present bag"
+      ],
+      "topic": 0,
+      "next_topic": 116,
+      "storage": [],
+      "reply": [
+        "Would you exchange a present bag for one Christmas token?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "raccoon santa"
+      ],
+      "topic": 0,
+      "next_topic": 120,
+      "storage": [],
+      "reply": [
+        "Would you exchange 250 Christmas tokens for raccoon santa?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "santa backpack"
+      ],
+      "topic": 0,
+      "next_topic": 106,
+      "storage": [],
+      "reply": [
+        "Would you exchange 75 Christmas tokens for santa backpack?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "santa doll"
+      ],
+      "topic": 0,
+      "next_topic": 108,
+      "storage": [],
+      "reply": [
+        "Would you exchange 100 Christmas tokens for santa doll?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "santa fox"
+      ],
+      "topic": 0,
+      "next_topic": 121,
+      "storage": [],
+      "reply": [
+        "Would you exchange 250 Christmas tokens for santa fox?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "santa hat"
+      ],
+      "topic": 0,
+      "next_topic": 105,
+      "storage": [],
+      "reply": [
+        "Would you exchange 50 Christmas tokens for santa hat?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "santa leech"
+      ],
+      "topic": 0,
+      "next_topic": 122,
+      "storage": [],
+      "reply": [
+        "Would you exchange 250 Christmas tokens for santa leech?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "santa music box"
+      ],
+      "topic": 0,
+      "next_topic": 113,
+      "storage": [],
+      "reply": [
+        "Would you exchange 250 Christmas tokens for santa music box?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "santa teddy"
+      ],
+      "topic": 0,
+      "next_topic": 114,
+      "storage": [],
+      "reply": [
+        "Would you exchange 500 Christmas tokens for santa teddy?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "snow flake tapestry"
+      ],
+      "topic": 0,
+      "next_topic": 107,
+      "storage": [],
+      "reply": [
+        "Would you exchange 75 Christmas tokens for snow flake tapestry?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "snow globe"
+      ],
+      "topic": 0,
+      "next_topic": 110,
+      "storage": [],
+      "reply": [
+        "Would you exchange 150 Christmas tokens for snow globe?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "snowman doll"
+      ],
+      "topic": 0,
+      "next_topic": 109,
+      "storage": [],
+      "reply": [
+        "Would you exchange 150 Christmas tokens for snowman doll?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "token"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Ask me for {offers} to spend Christmas tokens or bring me a {present bag}."
+      ]
+    },
+    {
       "npc": "oteryn:npc.sam",
       "keywords": [
         "old backpack",
@@ -5623,6 +6279,168 @@
       ],
       "reply": [
         "Will you retrieve my favourite staff?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "vampire lord token"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/rank",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Would ye' give me 1 Vampire Lord Token for rank 1?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 11,
+          "maximum": 2147483647
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "vampire lord token"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/rank",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Would ye' give me 4 Vampire Lord Tokens for rank 2?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 11,
+          "maximum": 2147483647
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "vampire lord token"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/rank",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Would ye' give me 5 Vampire Lord Tokens for rank 3?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 11,
+          "maximum": 2147483647
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "vampire lord token"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/rank",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Would ye' give me 10 Vampire Lord Tokens for rank 4?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 11,
+          "maximum": 2147483647
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "vampire lord token"
+      ],
+      "topic": 0,
+      "next_topic": 7,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/rank",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Would ye' give me 30 Vampire Lord Tokens for rank 5?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 11,
+          "maximum": 2147483647
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "vampire lord token"
+      ],
+      "topic": 0,
+      "next_topic": 8,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/rank",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Would ye' give me 50 Vampire Lord Tokens for rank 6?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 11,
+          "maximum": 2147483647
+        }
       ]
     },
     {

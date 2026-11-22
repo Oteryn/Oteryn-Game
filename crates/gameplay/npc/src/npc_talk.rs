@@ -36,6 +36,7 @@ const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../content/quests/npc-callbacks/wrath-city.json"),
     include_str!("../../../../content/quests/npc-callbacks/questpc7-programmes.json"),
+    include_str!("../../../../content/quests/npc-callbacks/token-exchanges.json"),
     include_str!("../../../../content/quests/npc-callbacks/fibula.json"),
     include_str!("../../../../content/quests/npc-callbacks/hunting-tasks.json"),
     include_str!("../../../../content/quests/npc-callbacks/l2-ready-stories.json"),

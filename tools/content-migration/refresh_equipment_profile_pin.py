@@ -325,15 +325,58 @@ def source_speed_pin(source, qengine):
     marker = '("qengine-reward-item-profiles.json",'
     if marker not in source:
         return source
-    pick = 'oteryn:item.tibia.i3456'
-    unknown = {row['production_definition']['production_key']
-               for row in qengine['records']
-               if row['attributes'].get('speed_bonus') is None}
-    if unknown != {pick} or any(row['attributes'].get('speed_bonus') not in (None, 0)
-                               for row in qengine['records']):
-        raise ValueError('QENGINE speed proof must retain only the existing unknown-speed pick')
+    speeds = {
+        'oteryn:item.tibia.i3456': None,
+        'oteryn:item.tibia.i16110': 15,
+        'oteryn:item.tibia.i16112': 15,
+        'oteryn:item.tibia.i31266': None,
+        'oteryn:item.tibia.i31268': None,
+    }
+    if 'oteryn:item.tibia.i3456' not in keys(qengine) or any(
+        row['attributes'].get('speed_bonus') != speeds.get(row['production_definition']['production_key'], 0)
+        for row in qengine['records']
+    ):
+        raise ValueError('QENGINE speed proof disagrees with the unknown-speed pick or exact token exchange values')
     source = re.sub(r'\("qengine-reward-item-profiles.json", [\d_]+\)',
                     f'("qengine-reward-item-profiles.json", {len(keys(qengine))})', source)
+    source = source.replace(
+        "    // The exact packet carries known speed_bonus=0 except the pick i3456,\n"
+        "    // whose existing UNKNOWN speed is preserved and checked below.",
+        "    // The exact speed facts, including preserved unknowns, are checked below.",
+    )
+    source = source.replace(
+        '''        let expected = if key == "oteryn:item.tibia.i3456" {
+            None
+        } else {
+            Some(0)
+        };''',
+        '''        let expected = match key {
+            "oteryn:item.tibia.i3456" | "oteryn:item.tibia.i31266" | "oteryn:item.tibia.i31268" => None,
+            "oteryn:item.tibia.i16110" | "oteryn:item.tibia.i16112" => Some(15),
+            _ => Some(0),
+        };''',
+    )
+    source = source.replace(
+        '''            if matches!(
+                record.production_definition.production_key.as_str(),
+                "oteryn:item.tibia.i9215"
+                    | "oteryn:item.tibia.i9216"
+                    | "oteryn:item.tibia.i9217"
+                    | "oteryn:item.tibia.i9221"
+                    | "oteryn:item.tibia.i31268"
+            ) {''',
+        '''            if record.production_definition.production_key == "oteryn:item.tibia.i31268" {
+                // Jorge's Jade Amulet keeps its equipment facts and unknown speed.
+                assert!(matches!(record.semantics.equipment, ReferenceItemField::Known(_)));
+                assert!(record.admission.materializable);
+            } else if matches!(
+                record.production_definition.production_key.as_str(),
+                "oteryn:item.tibia.i9215"
+                    | "oteryn:item.tibia.i9216"
+                    | "oteryn:item.tibia.i9217"
+                    | "oteryn:item.tibia.i9221"
+            ) {''',
+    )
     start = source.index('        for source in records {', source.index(marker))
     end = source.index('\n    for id in [2949,', start)
     source = source[:start] + '''        for source in records {
@@ -345,9 +388,16 @@ def source_speed_pin(source, qengine):
                 .iter()
                 .find(|row| row.production_definition.production_key == key)
                 .ok_or_else(|| format!("missing source-qualified SEASON profile {key}"))?;
-            if path == "qengine-reward-item-profiles.json" && key == "oteryn:item.tibia.i3456" {
+            if path == "qengine-reward-item-profiles.json"
+                && matches!(key, "oteryn:item.tibia.i3456" | "oteryn:item.tibia.i31266" | "oteryn:item.tibia.i31268")
+            {
                 assert!(source["attributes"]["speed_bonus"].is_null(), "source speed {path}:{key}");
                 assert_eq!(actual.attributes.speed_bonus, None, "{path}:{key}");
+            } else if path == "qengine-reward-item-profiles.json"
+                && matches!(key, "oteryn:item.tibia.i16110" | "oteryn:item.tibia.i16112")
+            {
+                assert_eq!(source["attributes"]["speed_bonus"], serde_json::json!(15), "source speed {path}:{key}");
+                assert_eq!(actual.attributes.speed_bonus, Some(15), "{path}:{key}");
             } else {
                 assert_eq!(source["attributes"]["speed_bonus"], serde_json::json!(0), "source speed {path}:{key}");
                 assert_eq!(actual.attributes.speed_bonus, Some(0), "{path}:{key}");

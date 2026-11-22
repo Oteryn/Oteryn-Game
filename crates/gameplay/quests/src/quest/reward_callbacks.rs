@@ -433,6 +433,8 @@ impl RewardCallback {
 mod fresh_corpse_tests;
 #[cfg(test)]
 mod ice_paint_tests;
+#[cfg(test)]
+mod token_exchanges_tests;
 
 impl OutfitReward {
     pub fn grant_key(&self, addon: u8) -> String {
@@ -554,6 +556,7 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/l13-outfits.json"),
     include_str!("../../../../../content/quests/npc-callbacks/wrath-city.json"),
     include_str!("../../../../../content/quests/npc-callbacks/questpc7-programmes.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/token-exchanges.json"),
     include_str!("../../../../../content/quests/chosen-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-guardcatcher.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m09-rookie.json"),
@@ -2389,9 +2392,9 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Shared covers 207 existing and 31 QB routes. Additional shards include
-        // Rottin Wood, the Forgemaster, Matchmaker, nine hunting reports and four Wrath routes.
-        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1 + 13 + 12 + 1 + 9 + 4);
+        // Shared covers 207 existing, 31 QB and 15 Gnomally routes. Additional shards include
+        // Rottin Wood, the Forgemaster, Matchmaker, nine hunting reports, four Wrath routes, and 75 token exchange routes.
+        assert_eq!(load()?.len(), 253 + 59 + 125 + 1 + 1 + 13 + 12 + 1 + 9 + 4 + 75);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
