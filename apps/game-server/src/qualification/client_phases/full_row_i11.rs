@@ -1,16 +1,7 @@
 //! I11 full-row player scenario, derived from the matrix/audit and the production craft owner:
-//! 1. Admit the provisioned character and walk beside a compiled-world oven.
-//! 2. Acquire dough through ordinary play (loot or an NPC purchase), then send native USE-with
-//!    dough -> oven; expect an accepted/Committed reply and inventory deltas consuming one dough
-//!    and adding one bread.
-//! 3. Send native USE-with using an unsupported carried item -> the same oven; expect a rejected
-//!    NothingToUse reply and no inventory delta (the refusal path).
-//! 4. Logout, freshly admit the same character, and re-check the durable dough/bread quantities.
-//!
-//! The node-boot provisioning deliberately supplies only normal tools, not recipe inputs. This
-//! journey therefore still sends the station-conversion command with a legitimately carried item
-//! when no dough can be acquired, records the observed server refusal, and reports the missing
-//! ordinary acquisition surface rather than manufacturing a PASS.
+//! Buy and mill wheat, fill a carried bucket with water, and mix flour into dough.
+//! Bake one dough at an authored oven, verify a rope is refused without mutation,
+//! and check the exact bake quantities after fresh admission.
 use super::*;
 use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, decode_use_result,
@@ -21,6 +12,16 @@ const DOUGH: u32 = 3604;
 const BREAD: u32 = 3600;
 const WHEAT: u32 = 3605;
 const FLOUR: u32 = 3603;
+const BUCKET: u32 = 2874;
+const ROPE: u32 = 3003;
+const WATER_SOURCES: [&str; 6] = [
+    "oteryn:item.tibia.i1922",
+    "oteryn:item.tibia.i1923",
+    "oteryn:item.tibia.i1924",
+    "oteryn:item.tibia.i1925",
+    "oteryn:item.tibia.i1926",
+    "oteryn:item.tibia.i1927",
+];
 const MILLSTONES: [&str; 4] = [
     "oteryn:item.tibia.i1943",
     "oteryn:item.tibia.i1944",
@@ -141,6 +142,105 @@ async fn mill_wheat(
     Ok(())
 }
 
+fn dough_created(before: u64, after: u64) -> bool {
+    before.checked_add(1) == Some(after)
+}
+
+fn oven_refusal_source(definition: u32, rope: u32) -> bool {
+    definition == rope
+}
+
+async fn mix_dough(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    bytes: &[u8],
+    index: &crate::content::item_ref::ItemDefinitionIndex,
+    dough: std::num::NonZeroU32,
+) -> TestResult {
+    let flour = provisioning::item_reference(index, FLOUR)?;
+    let bucket = provisioning::item_reference(index, BUCKET)?;
+    let carried_bucket = |client: &oteryn_dev_client::DevClientSession, subtype| {
+        client.inventory()?.entries.iter()
+            .find(|item| item.item_definition_ref == bucket && item.sub_type == subtype)
+            .map(|item| item.handle)
+    };
+    if carried_bucket(client, 1).is_none() {
+        if carried_bucket(client, 0).is_none() {
+            super::full_row_i14::acquire(client, world, BUCKET, 1).await.map_err(|error|
+                verdict::context(format!("step=dough-water-bucket observed={error}"), error)
+            )?;
+        }
+        let here = tile(client.world_spatial().actor_position)?;
+        let (water, ordinal) = reach_station(client, world, bytes, here, &WATER_SOURCES, "dough-water").await?;
+        let key = crate::map::view::placement_key(water, ordinal)
+            .ok_or("step=dough-water missing=placement-key")?;
+        let mut placement = world.base().digest().to_vec();
+        placement.extend_from_slice(&key.to_be_bytes());
+        let empty = carried_bucket(client, 0).ok_or("step=dough-water missing=empty-bucket")?;
+        use_for_mixing(client, empty, MapUseTarget::Object(WorldObjectTarget {
+            placement, expected_revision: 0,
+        }), "dough-water").await?;
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        while carried_bucket(client, 1).is_none() {
+            if tokio::time::Instant::now() >= deadline {
+                return Err("step=dough-water missing=filled-bucket-inventory-delta".into());
+            }
+            client.service_liveness(Duration::from_millis(50)).await?;
+        }
+    }
+    let water = carried_bucket(client, 1).ok_or("step=dough-mix missing=water-bucket")?;
+    let source = client.inventory().and_then(|inventory| inventory.entries.iter()
+        .find(|item| item.item_definition_ref == flour))
+        .ok_or("step=dough-mix missing=milled-flour")?.handle;
+    let bucket_units = |client: &oteryn_dev_client::DevClientSession, subtype| -> TestResult<u64> {
+        Ok(client.inventory().ok_or("step=dough-mix missing=inventory")?.entries.iter()
+            .filter(|item| item.item_definition_ref == bucket && item.sub_type == subtype)
+            .map(|item| u64::from(item.count.get()))
+            .sum())
+    };
+    let before_water = bucket_units(client, 1)?;
+    let before_empty = bucket_units(client, 0)?;
+    let before_flour = quantity(client, flour)?;
+    let before_dough = quantity(client, dough)?;
+    use_for_mixing(client, source, MapUseTarget::Item(water), "dough-mix").await?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        if dough_created(before_dough, quantity(client, dough)?)
+            && quantity(client, flour)?.checked_add(1) == Some(before_flour)
+            && bucket_units(client, 1)?.checked_add(1) == Some(before_water)
+            && before_empty.checked_add(1) == Some(bucket_units(client, 0)?)
+        {
+            break;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("step=dough-mix missing=flour-debit-dough-credit-and-empty-bucket".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
+    evidence("I11_CHECK flour-and-water-to-dough PASS");
+    Ok(())
+}
+
+async fn use_for_mixing(
+    client: &mut oteryn_dev_client::DevClientSession,
+    source: oteryn_protocol_oteryn::item_view::ItemHandle,
+    target: MapUseTarget,
+    step: &str,
+) -> TestResult {
+    let payload = encode_item_use_intent(&UseIntent {
+        target: UseTarget::Item(source),
+        use_with: None,
+        use_with_map_item: Some(target),
+        use_with_position: None,
+    }).map_err(|error| format!("step={step} encode={error:?}"))?;
+    let reply = client.session_mut().world_context_use(&payload).await?;
+    let disposition = decode_use_result(&reply.payload).map_err(|error| format!("step={step} decode={error:?}"))?;
+    if reply.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
+        return Err(format!("step={step} status={:?} disposition={disposition:?}", reply.status).into());
+    }
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -151,13 +251,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_character(clients, 0xb8, 0).await?;
-    let milling = mill_wheat(&mut client, world, &bytes).await;
-    let here = tile(client.world_spatial().actor_position)?;
-    let (oven, ordinal) = reach_station(&mut client, world, &bytes, here, &OVENS, "oven").await?;
-
+    mill_wheat(&mut client, world, &bytes).await?;
     let index = provisioning::item_index()?;
     let dough = provisioning::item_reference(&index, DOUGH)?;
     let bread = provisioning::item_reference(&index, BREAD)?;
+    let rope = provisioning::item_reference(&index, ROPE)?;
+    mix_dough(&mut client, world, &bytes, &index, dough).await?;
+    let here = tile(client.world_spatial().actor_position)?;
+    let (oven, ordinal) = reach_station(&mut client, world, &bytes, here, &OVENS, "oven").await?;
     let before_dough = quantity(&client, dough)?;
     let before_bread = quantity(&client, bread)?;
     let source = client
@@ -167,7 +268,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 .entries
                 .iter()
                 .find(|entry| entry.item_definition_ref == dough)
-                .or_else(|| inventory.entries.first())
         })
         .ok_or("step-2_observed=no-carried-item-for-real-use")?
         .handle;
@@ -195,27 +295,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let disposition = decode_use_result(&reply.payload)
         .map_err(|error| format!("step-2_observed=reply-decode-{error:?}"))?;
 
-    if before_dough == 0 {
-        if reply.status != CommandStatus::Accepted || disposition != UseDisposition::NothingToUse {
-            return Err(format!(
-                "step-2_observed=status-{:?}-disposition-{disposition:?}-need=ordinary-dough-acquisition",
-                reply.status
-            )
-            .into());
-        }
-        let snapshot = client.inventory().cloned();
-        client.service_liveness(Duration::from_millis(100)).await?;
-        if client.inventory() != snapshot.as_ref() {
-            return Err("step-3_observed=unsupported-use-mutated-inventory".into());
-        }
-        logout(&mut client).await?;
-        let reloaded = connect_character(clients, 0xb9, 0).await?;
-        if quantity(&reloaded, dough)? != 0 || quantity(&reloaded, bread)? != before_bread {
-            return Err("step-4_observed=refused-use-changed-durable-quantities".into());
-        }
-        milling?;
-        return Err("step=dough-acquisition observed=NothingToUse missing=flour-with-water-or-milk owner=crates/gameplay/dispatch/src/gameplay_transport/item_craft.rs:187".into());
-    }
     if reply.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
         return Err(format!(
             "step-2_observed=status-{:?}-disposition-{disposition:?}",
@@ -230,7 +309,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             inventory
                 .entries
                 .iter()
-                .find(|entry| entry.item_definition_ref != bread)
+                .find(|entry| oven_refusal_source(entry.item_definition_ref.get(), rope.get()))
         })
         .ok_or("step-3_observed=no-unsupported-carried-item")?
         .handle;
@@ -277,7 +356,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("step-4_observed=baked-quantities-not-durable".into());
     }
-    milling
+    Ok(())
 }
 
 fn quantity(
@@ -326,6 +405,19 @@ async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn review_repair_existing_dough_cannot_prove_mixing() {
+        assert!(!dough_created(3, 3));
+        assert!(dough_created(3, 4));
+    }
+
+    #[test]
+    fn review_repair_oven_refusal_selects_only_rope() {
+        assert!(!oven_refusal_source(DOUGH, 3003));
+        assert!(!oven_refusal_source(6276, 3003));
+        assert!(oven_refusal_source(3003, 3003));
+    }
+
 
     #[test]
     fn oven_planning_uses_diagonal_reach_but_never_another_floor() {

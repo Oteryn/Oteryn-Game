@@ -25,6 +25,7 @@
 use super::*;
 use crate::map::view::MapFacts;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
+use oteryn_protocol_oteryn::world_map::MapOrigin;
 use std::collections::BTreeSet;
 
 const UNDERWATER: [u16; 12] = [
@@ -56,26 +57,22 @@ impl Row {
 
     fn finish(self) {
         let gap = gap_detail(self.step, self.error.as_deref());
-        if let Some(detail) = &gap {
-            evidence(&format!("M10_GAP {detail}"));
-        }
-        let (status, detail) = if gap.is_none() {
-            ("PASS", "drowning-swimming-trap-and-pressure-tile-observed")
-        } else {
-            ("FAIL", "see-M10_GAP")
-        };
+        evidence(&format!("M10_GAP {gap}"));
         evidence(&format!(
-            "SEAM_EVIDENCE e2e_all scenario=M10.full status={status} seconds={:.3} evidence={detail}",
+            "SEAM_EVIDENCE e2e_all scenario=M10.full status=FAIL seconds={:.3} evidence=see-M10_GAP",
             self.started.elapsed().as_secs_f64(),
         ));
     }
 }
 
-fn gap_detail(step: usize, error: Option<&str>) -> Option<String> {
+fn gap_detail(step: usize, error: Option<&str>) -> String {
     if let Some(error) = error {
-        return Some(format!("step={} observed={error}", step + 1));
+        return format!("step={} observed={error}", step + 1);
     }
-    (step != 8).then(|| format!("step={} observed=incomplete-journey", step + 1))
+    if step != 8 {
+        return format!("step={} observed=incomplete-journey", step + 1);
+    }
+    "step=swimming-look-type missing=served-look-type-267 condition-status exposes outfit icon and duration only owner=crates/gameplay/dispatch/src/gameplay_transport/world_spatial.rs:174".to_owned()
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -151,9 +148,14 @@ async fn surface_swimming(client: &mut DevClientSession, world: &BundleWorld) ->
     Ok(())
 }
 
+fn placement_matches(origin: MapOrigin, ordinal: u8, actual: u16, expected: u16) -> bool {
+    actual == expected && matches!(origin, MapOrigin::BaseOrdinal { ordinal: base, .. } if base == ordinal)
+}
+
 async fn visible_appearance(
     client: &mut DevClientSession,
     at: TilePos,
+    ordinal: u8,
     expected: u16,
 ) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
@@ -161,12 +163,12 @@ async fn visible_appearance(
         let snapshot = client.session_mut().world_map_snapshot();
         if snapshot.is_some_and(|snapshot| snapshot.tiles.iter().any(|entry| {
             tile(entry.position).ok() == Some(at)
-                && entry.items.iter().any(|item| item.appearance_id == expected)
+                && entry.items.iter().any(|item| placement_matches(item.origin, ordinal, item.appearance_id, expected))
         })) {
             return Ok(());
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("step=movement-tile-map-update position={at:?} missing=appearance-{expected}").into());
+            return Err(format!("step=movement-tile-map-update position={at:?} ordinal={ordinal} missing=appearance-{expected}").into());
         }
         client.service_liveness(Duration::from_millis(50)).await?;
     }
@@ -213,15 +215,17 @@ async fn observe_step_tile(
                 continue;
             }
             let at = TilePos { x: placement.x, y: placement.y, floor: sector.floor };
-            for item in placement.items.iter().filter(|item| item.depth == 0) {
+            for (ordinal, item) in placement.items.iter().filter(|item| item.depth == 0).enumerate() {
                 let Some(id) = crate::map::palette_appearance(&manifest.palette[item.palette as usize].key) else {
                     continue;
                 };
                 if SPIKES.iter().any(|rule| rule.idle == id) {
                     spikes.insert(at);
                 }
-                if let Some(rule) = rules.iter().find(|rule| rule.idle == id) {
-                    placements.insert(at, *rule);
+                if let Some(rule) = rules.iter().find(|rule| rule.idle == id)
+                    && let Ok(ordinal) = u8::try_from(ordinal)
+                {
+                    placements.insert(at, (*rule, ordinal));
                 }
             }
         }
@@ -231,7 +235,7 @@ async fn observe_step_tile(
     let safe_exit = |at, direction| destination(world, at, direction)
         .is_some_and(|next| dry(next) && !placements.contains_key(&next) && !spikes.contains(&next));
     let goal = |at: TilePos| {
-        placements.get(&at).is_some_and(|rule| {
+        placements.get(&at).is_some_and(|(rule, _)| {
             rule.damage.is_none() || world.base().tile(at.x, at.y, at.floor)
                 .is_some_and(|tile| !tile.protection_zone())
         }) && DIRECTIONS.iter().any(|direction| safe_exit(at, *direction))
@@ -244,13 +248,13 @@ async fn observe_step_tile(
     let health = client.actor_vitals().ok_or("step=tile-entry missing=pre-entry-vitals")?.health;
     let landing = destination(world, tile(client.world_spatial().actor_position)?, enter)
         .ok_or("step=tile-entry missing=resolved-landing")?;
-    let rule = placements.get(&landing).ok_or("step=tile-entry observed=wrong-landing")?;
+    let &(rule, ordinal) = placements.get(&landing).ok_or("step=tile-entry observed=wrong-landing")?;
     if let Some((_, maximum)) = rule.damage
         && health <= maximum
     {
         return Err(format!("step={name}-entry missing=health-above-{maximum} observed={health}").into());
     }
-    visible_appearance(client, landing, rule.idle).await?;
+    visible_appearance(client, landing, ordinal, rule.idle).await?;
     client.take_events();
     let moved = client.step_retrying(enter).await?;
     if moved.disposition != StepDisposition::Moved
@@ -265,11 +269,11 @@ async fn observe_step_tile(
             return Err(format!("step={name}-entry observed=damage-{damage} expected={minimum}..={maximum}").into());
         }
     }
-    visible_appearance(client, landing, rule.occupied).await?;
+    visible_appearance(client, landing, ordinal, rule.occupied).await?;
     let exit = DIRECTIONS.into_iter().find(|direction| safe_exit(landing, *direction))
         .ok_or_else(|| format!("step={name}-exit missing=safe-exit"))?;
     walk(client, world, &[exit]).await?;
-    visible_appearance(client, landing, rule.idle).await
+    visible_appearance(client, landing, ordinal, rule.idle).await
 }
 
 async fn wait_damage(client: &mut DevClientSession, before: u32) -> TestResult<u32> {
@@ -387,7 +391,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass(5, "fresh admission retained dry position and damaged health");
     surface_swimming(&mut client, world).await?;
-    row.pass(6, "native surface-swimming STEP installed and removed permanent outfit");
+    row.pass(6, "surface-swimming STEP installed and removed a permanent outfit condition");
     observe_step_tile(&mut client, world, &bytes, &SPIKES, "spike").await?;
     row.pass(7, "spike STEP damaged actor and closed trap; exit reopened trap");
     observe_step_tile(&mut client, world, &bytes, &PRESSURE, "pressure-tile").await?;
@@ -401,11 +405,24 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn review_repair_category_only_swimming_evidence_cannot_pass() {
+        assert!(gap_detail(8, None).contains("look-type-267"));
+    }
+
+    #[test]
+    fn review_repair_appearance_on_another_ordinal_is_not_evidence() {
+        let other = MapOrigin::BaseOrdinal { ordinal: 2, object_revision: 1 };
+        assert!(!placement_matches(other, 1, 420, 420));
+        assert!(placement_matches(other, 2, 420, 420));
+        assert!(!placement_matches(other, 2, 419, 420));
+    }
+
 
     #[test]
     fn verdict_requires_pressure_tile_after_the_trap_and_names_runtime_failure() {
-        assert_eq!(gap_detail(7, None).as_deref(), Some("step=8 observed=incomplete-journey"));
-        assert_eq!(gap_detail(5, Some("missing outfit")).as_deref(), Some("step=6 observed=missing outfit"));
-        assert_eq!(gap_detail(8, None), None);
+        assert_eq!(gap_detail(7, None), "step=8 observed=incomplete-journey");
+        assert_eq!(gap_detail(5, Some("missing outfit")), "step=6 observed=missing outfit");
+
     }
 }

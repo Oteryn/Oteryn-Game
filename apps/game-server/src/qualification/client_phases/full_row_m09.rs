@@ -346,6 +346,8 @@ async fn buy(
     Err(format!("step 1 no reachable served NPC offer for {key}").into())
 }
 
+fn needs_bait_purchase(held: u64) -> bool { held == 0 }
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -358,7 +360,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let index = provisioning::item_index()?;
     let mut client = connect_world(clients, 0xb9).await?;
     let rod_ref = buy(&mut client, world, &index, "oteryn:item.tibia.i3483", 1).await?;
-    let worm_ref = buy(&mut client, world, &index, "oteryn:item.tibia.i3492", 1).await?;
+    let worm_ref = reference(&index, 3492)?;
+    if needs_bait_purchase(units(&client, worm_ref)) {
+        buy(&mut client, world, &index, "oteryn:item.tibia.i3492", 1).await?;
+    }
     let fish_ref = reference(&index, 3578)?;
     row.pass(
         "player-acquired-rod-and-bait",
@@ -415,8 +420,28 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("fishing-replies-and-deltas", committed);
 
+    // Retain the first-catch proof even if the character arrived with spare bait
+    // or the vendor sold a bundle. Put the remainder on the ground through ITEM_MOVE.
+    while let Some(bait) = carried(&client, worm_ref) {
+        let before = units(&client, worm_ref);
+        let at = client.world_spatial().actor_position;
+        let moved = client.move_item(&oteryn_dev_client::ItemMoveIntent {
+            source: bait.handle,
+            destination: oteryn_dev_client::ItemMoveDestination::Ground(
+                oteryn_protocol_oteryn::item_view::WorldTilePosition {
+                    x: at.x, y: at.y, floor: at.floor,
+                },
+            ),
+        }).await?;
+        settle(&mut client).await?;
+        if moved.outcome != oteryn_dev_client::ItemMoveOutcome::Moved
+            || units(&client, worm_ref) != before - u64::from(bait.count.get())
+        {
+            return Err(format!("step=clear-spare-bait observed={moved:?} before={before} after={}", units(&client, worm_ref)).into());
+        }
+    }
     if units(&client, worm_ref) != 0 {
-        return Err("step 3 no-bait refusal requires the single purchased worm to be consumed".into());
+        return Err("step=clear-spare-bait observed=remaining-bait-outside-backpack".into());
     }
     let fish = units(&client, fish_ref);
     let refusal = use_on(
@@ -669,6 +694,12 @@ async fn hunt_corpse(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn review_repair_held_bait_does_not_require_a_purchase() {
+        assert!(!needs_bait_purchase(1));
+        assert!(needs_bait_purchase(0));
+    }
+
     #[test]
     fn minotaur_corpse_has_the_obsidian_knife_recipe() {
         use oteryn_gameplay_items::fishing::{GatheringTarget, gathering_rule};

@@ -12,8 +12,8 @@
 //!    Moved plus an inventory delta whose equipped view is transformed to active
 //!    energy ring 3088.
 //! 4. Send TIMED_ITEM Inspect for the equipped handle; expect Ok, revision zero and
-//!    a positive remaining budget no greater than 600,000 ms. Send another Inspect
-//!    with a deliberately wrong expected revision; expect Stale and no equipment
+//!    a positive remaining budget no greater than 600,000 ms. Send Use
+//!    with an impossible expected revision; expect Stale and no equipment
 //!    delta, then inspect with the reported revision and expect Ok.
 //! 5. Log out, obtain a fresh admission, and re-check durable equipped custody: the
 //!    active 3088 view remains in the ring slot and its inspected remaining budget
@@ -229,6 +229,8 @@ fn equipped_ring(client: &oteryn_dev_client::DevClientSession, active: NonZeroU3
     })).map(|entry| entry.item.handle).ok_or("active-energy-ring-equipment-delta-missing".into())
 }
 
+const STALE_PROBE_ACTION: timed::TimedAction = timed::TimedAction::Use;
+
 fn has_paused_budget(
     first: &timed::TimedItemResult,
     later: &timed::TimedItemResult,
@@ -284,7 +286,7 @@ async fn journey(row: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
             return Err(format!("equipped-inspect-invalid:reply={inspected:?}").into());
         }
         let equipment = client.inventory().map(|view| view.equipment.clone()).ok_or("stale-equipment-missing")?;
-        let stale = timed_command(&mut client, timed::TimedAction::Inspect, handle, inspected.revision.saturating_add(1)).await?;
+        let stale = timed_command(&mut client, STALE_PROBE_ACTION, handle, u64::MAX).await?;
         if stale.disposition != timed::TimedDisposition::Stale
             || client.inventory().is_none_or(|view| view.equipment != equipment) {
             return Err(format!("wrong-revision-not-stale-or-mutated:reply={stale:?}").into());
@@ -340,6 +342,11 @@ async fn journey(row: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn review_repair_stale_probe_uses_revision_checked_operation() {
+        assert_eq!(STALE_PROBE_ACTION, timed::TimedAction::Use);
+    }
+
     #[test]
     fn paused_ring_rejects_countdown_and_reset() {
         let paused = timed::TimedItemResult {
