@@ -321,6 +321,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }).await;
         match outcome {
             Ok((receipt, source, refused, shared_hunt)) => {
+                if let Some(plan) = &shared_hunt {
+                    plan.apply(&self.states.analyser)?;
+                }
                 if runtime
                     .project_world_party(actor, admitted.game_session_id, source.source.clone())
                     .is_err()
@@ -394,7 +397,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 if let Some(index) = hunt_index {
                     view.hunt_reply = match shared_hunt {
-                        Some(plan) => plan.finish(&self.states.analyser, &projected, index),
+                        Some(plan) => plan.finish(&projected, index),
                         None => match &view.hunt_request {
                             Some(HuntRequest::Legacy(prices)) => super::analyser_party::project(
                                 &runtime,

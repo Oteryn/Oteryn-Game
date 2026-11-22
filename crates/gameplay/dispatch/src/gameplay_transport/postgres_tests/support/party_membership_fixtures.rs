@@ -48,8 +48,8 @@ pub(super) enum HuntCase {
     NpcPrices,
 }
 
-pub(super) fn run_hunt(case: HuntCase) -> TestResult {
-    run_case(false, false, false, false, Some(case))
+pub(super) fn run_hunt(admin: String, case: HuntCase) -> TestResult {
+    run_with_admin(admin, false, false, false, false, Some(case))
 }
 
 fn run_case(
@@ -62,6 +62,17 @@ fn run_case(
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
     };
+    run_with_admin(admin, partyskull, reference_level, chat, busy, hunt)
+}
+
+fn run_with_admin(
+    admin: String,
+    partyskull: bool,
+    reference_level: bool,
+    chat: bool,
+    busy: bool,
+    hunt: Option<HuntCase>,
+) -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || {

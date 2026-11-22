@@ -6,9 +6,7 @@ use crate::durability::{
     spell_item_transaction::SpellItemAuthority,
     world_party::ingress::{self, HuntChange, HuntPrice, HuntSettings},
 };
-use crate::foundation::{
-    ChannelRuntimeV1, ExactActorRef, GameSessionId, PartyPresence, PartySnapshot,
-};
+use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, PartySnapshot};
 use crate::gameplay_transport::analyser::AnalyserStreams;
 use oteryn_protocol_oteryn::{
     analyser_party::{HuntInterval, HuntRequest, Member, Price, ValuationSource},
@@ -42,7 +40,7 @@ pub(in crate::gameplay_transport) struct Context<'a> {
     pub request: &'a HuntRequest,
 }
 
-type Measurement = (Totals, Option<Arc<ItemDefinitionIndex>>);
+pub(in crate::gameplay_transport) type Measurement = (Totals, Option<Arc<ItemDefinitionIndex>>);
 
 pub(in crate::gameplay_transport) struct Plan {
     settings: HuntSettings,
@@ -81,15 +79,7 @@ pub(in crate::gameplay_transport) async fn prepare(
         .collect();
     let reset = matches!(context.request, HuntRequest::Reset);
     let change = match context.request {
-        HuntRequest::Reset => {
-            if party.members.iter().any(|member| {
-                member.presence != PartyPresence::Offline
-                    && !local_by_character.contains_key(&member.character)
-            }) {
-                return Err(reject());
-            }
-            Some(HuntChange::Reset)
-        }
+        HuntRequest::Reset => Some(HuntChange::Reset),
         HuntRequest::Valuation(ValuationSource::Market, _) => Some(HuntChange::Market),
         HuntRequest::Valuation(ValuationSource::Leader, prices) => Some(HuntChange::Leader(
             prices
@@ -202,9 +192,15 @@ pub(in crate::gameplay_transport) async fn prepare(
 }
 
 impl Plan {
+    pub(in crate::gameplay_transport) fn apply(&self, streams: &AnalyserStreams) -> Option<()> {
+        if self.settings.interval > 0 {
+            streams.set_hunt_boundaries(&self.local, self.reset)?;
+        }
+        Some(())
+    }
+
     pub(in crate::gameplay_transport) fn finish(
         self,
-        streams: &AnalyserStreams,
         projected: &PartyResult,
         index: &ItemDefinitionIndex,
     ) -> Option<Vec<u8>> {
@@ -237,17 +233,13 @@ impl Plan {
                 },
             })
             .collect();
-        let reply = HuntInterval {
+        HuntInterval {
             number: self.settings.interval,
             elapsed_seconds: elapsed,
             source,
             members,
         }
         .encode()
-        .ok()?;
-        if self.settings.interval > 0 {
-            streams.set_hunt_boundaries(&self.local, self.reset)?;
-        }
-        Some(reply)
+        .ok()
     }
 }

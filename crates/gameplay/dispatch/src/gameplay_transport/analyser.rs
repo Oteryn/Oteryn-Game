@@ -173,10 +173,7 @@ impl AnalyserStreams {
         &self,
         member: super::analyser_party::shared::LocalMember,
         interval: u64,
-    ) -> Option<(
-        super::analyser_party::Totals,
-        Option<Arc<crate::content::item_ref::ItemDefinitionIndex>>,
-    )> {
+    ) -> Option<super::analyser_party::shared::Measurement> {
         let streams = self.0.lock().ok()?;
         let held = streams
             .get(&member.session)

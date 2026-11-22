@@ -17,9 +17,9 @@ Unknown flags, invalid UTF-8/control characters, duplicate references, truncatio
 Commands 6357 (reset) and 6358 (read) require capability 597, which depends on
 10 and 42. Both requests are empty. Only the current durable party leader
 can reset. A successful reset advances the shared interval and clears its
-measurements together on the active Channel runtime. A party with connected
-members outside that runtime must regroup before resetting. Offline and
-unselected members remain unavailable. Command 735 retains its original
+measurements together on the active Channel runtime. The interval number is
+World-scoped. Members outside the observing runtime and unselected members
+are reported as unavailable. Command 735 retains its original
 connection-interval scope and caller prices.
 
 ## Valuation request
@@ -29,7 +29,7 @@ Market and has no remainder. Byte 1 selects Leader and is followed by the
 command 735 price-list format, replacing the leader's full list. Only the
 current durable leader can change the source or list. The server binds that
 list to the leader and exact item definitions in the pinned generation.
-The list becomes inapplicable when leadership changes. Market mode uses
+The list applies only while its author is the current leader. Market mode uses
 the floored mean of settled World execution prices over the last 30 days
 for the exact definition, counting each trade once. Missing prices stay
 unpriced. Currency retains its original accounting. Changing the source

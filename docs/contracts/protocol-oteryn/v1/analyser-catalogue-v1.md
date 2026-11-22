@@ -36,8 +36,9 @@ The server resolves each reference against the same pinned Item index as 734.
 
 A u8 count followed by that many pairs of little-endian u32 Item reference and
 u64 mean NPC buy price in whole gold, in request order. Zero indicates no
-admitted NPC buy quote for that exact definition and revision. Each admitted
+positive whole-gold mean for that exact definition and revision. Each admitted
 positive gold BuyFromPlayer quote in the Channel service catalogue contributes
-one sample. The arithmetic mean is rounded down. Held offers and prices NPCs
+one sample. Divide a stack quote by its unit count and round down before
+averaging the samples. Round the arithmetic mean down. Held offers and prices NPCs
 charge players are excluded. This metric is advisory and independent of
 character-specific shop access. Legacy command 734 retains its original reply.

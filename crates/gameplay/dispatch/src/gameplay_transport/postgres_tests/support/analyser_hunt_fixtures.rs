@@ -49,7 +49,7 @@ pub(super) async fn check(
     for player in players.iter_mut() {
         player.continuity.selected_capabilities = SelectedCapabilities::select(
             BUNDLE_WORLD_OFFERED_CAPABILITIES,
-            &[10, 42, 597, 598, 599],
+            &[6, 10, 42, 597, 598, 599],
         )
         .ok_or("analyser selection")?;
         owner
@@ -128,6 +128,16 @@ pub(super) async fn check(
             }),
         );
     }
+    // Stale generation cannot change the party interval or the selected valuation.
+    let mut stale = players[0];
+    stale.continuity.connection_generation += 1;
+    let (command, payload): (_, &[u8]) = if matches!(case, HuntCase::Reset) {
+        (wire::COMMAND_TYPE_ANALYSER_PARTY_RESET, &[])
+    } else {
+        (wire::COMMAND_TYPE_ANALYSER_PARTY_VALUATION, &[1, 0, 0])
+    };
+    assert!(request(owner, &mut stale, command, payload).await.is_none());
+
     let initial = request(
         owner,
         &mut players[1],
@@ -138,6 +148,7 @@ pub(super) async fn check(
     .ok_or("initial interval")?;
     let initial = wire::HuntInterval::decode(&initial)?;
     assert_eq!(initial.number, 0);
+    assert_eq!(initial.source, wire::ValuationSource::Market);
     assert!(
         initial
             .members
@@ -188,6 +199,30 @@ pub(super) async fn check(
         let current = wire::HuntInterval::decode(&reply)?;
         assert_eq!(current.number, reset.number);
         assert_eq!(current.members.iter().map(|row| row.kills).sum::<u64>(), 1);
+        // A durably connected member can be absent from this runtime's census.
+        // Reset still advances the World interval for the available measurements.
+        let remote = players[2];
+        owner
+            .runtime
+            .lock()
+            .await
+            .remove_terminal_session(
+                remote.game_session_id,
+                remote.runtime_actor.ok_or("remote actor")?,
+            )
+            .map_err(super::debug)?;
+        let reply = request(
+            owner,
+            &mut players[0],
+            wire::COMMAND_TYPE_ANALYSER_PARTY_RESET,
+            &[],
+        )
+        .await
+        .ok_or("reset with a member outside this runtime")?;
+        let next = wire::HuntInterval::decode(&reply)?;
+        assert_eq!(next.number, 2);
+        assert_eq!(next.members.iter().filter(|row| row.available).count(), 2);
+        assert!(next.members.iter().all(|row| row.kills == 0));
         return Ok(());
     }
 
@@ -226,7 +261,12 @@ pub(super) async fn check(
     );
 
     // The existing market owner stores execution observations separately from current asking prices.
-    // Seed two observations for one actual settlement to exercise definition and World projection.
+    // Retained projection data, following the market-details fixture. The
+    // current settlement owner would require the corresponding value/item lines.
+    let mut retained = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *retained)
+        .await?;
     let world = players[0].world_id;
     let ids = [
         crate::bestiary_postgres_harness::id(60),
@@ -236,13 +276,14 @@ pub(super) async fn check(
     ];
     sqlx::query("INSERT INTO game_market_offers(offer_id,world_id,definition_key,definition_revision,side,account_id,character_id,piece_price,amount,remaining,created_at_us,expires_at_us,state,escrow_gold,held_credit_gold)
         VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,'definition-r1',1,encode($4,'hex')::uuid,encode($5,'hex')::uuid,90,2,2,1,2592000000001,1,180,0)")
-        .bind(ids[2].as_slice()).bind(world.as_bytes().as_slice()).bind(key).bind(ids[1].as_slice()).bind(ids[0].as_slice()).execute(&h.pool).await?;
+        .bind(ids[2].as_slice()).bind(world.as_bytes().as_slice()).bind(key).bind(ids[1].as_slice()).bind(ids[0].as_slice()).execute(&mut *retained).await?;
     sqlx::query("INSERT INTO game_market_settlements(transaction_id,offer_id,world_id,actor,account_id,kind,fee,escrow_delta,moved_units,occurred_at_us)
         VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,2,0,0,1,floor(extract(epoch FROM clock_timestamp())*1000000)::bigint)")
-        .bind(ids[3].as_slice()).bind(ids[2].as_slice()).bind(world.as_bytes().as_slice()).bind(ids[0].as_slice()).bind(ids[1].as_slice()).execute(&h.pool).await?;
+        .bind(ids[3].as_slice()).bind(ids[2].as_slice()).bind(world.as_bytes().as_slice()).bind(ids[0].as_slice()).bind(ids[1].as_slice()).execute(&mut *retained).await?;
     sqlx::query("INSERT INTO game_market_history(transaction_id,character_id,offer_id,amount,price,occurred_at_us)
         SELECT transaction_id,actor,offer_id,1,40,occurred_at_us FROM game_market_settlements WHERE transaction_id=encode($1,'hex')::uuid")
-        .bind(ids[3].as_slice()).execute(&h.pool).await?;
+        .bind(ids[3].as_slice()).execute(&mut *retained).await?;
+    retained.commit().await?;
     let reply = request(
         owner,
         &mut players[0],

@@ -349,16 +349,21 @@ fn mean_buy_prices(model: &NpcServiceModel) -> HashMap<(String, String), u64> {
             if offer.direction != BuyFromPlayer || offer.unit_price == 0 {
                 continue;
             }
-            let (sum, samples) = sums.entry(&offer.item).or_default();
-            *sum += u128::from(offer.unit_price);
+            let (sum, samples) = sums
+                .entry((&offer.item.key, &offer.item.revision))
+                .or_default();
+            // Admitted multi-unit rows are stackable. Charged/fluid rows
+            // admitted by the service model already quote a single item.
+            *sum += u128::from(offer.unit_price / u64::from(offer.count.unwrap_or(1)));
             *samples += 1;
         }
     }
     sums.into_iter()
-        .filter_map(|(item, (sum, samples))| {
+        .filter_map(|((key, revision), (sum, samples))| {
             u64::try_from(sum / samples)
                 .ok()
-                .map(|price| ((item.key.clone(), item.revision.clone()), price))
+                .filter(|price| *price > 0)
+                .map(|price| ((key.clone(), revision.clone()), price))
         })
         .collect()
 }
