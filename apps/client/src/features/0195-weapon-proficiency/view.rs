@@ -22,7 +22,7 @@ pub enum ProficiencyAction {
     Close,
     Refresh,
     Weapon(usize),
-    Perk(usize, usize),
+    Perk(usize, Option<usize>),
     /// Shaping slot 1 or 2 of the selected weapon.
     Slot(u8),
     /// One of the server's current reshape offers for the selected slot.

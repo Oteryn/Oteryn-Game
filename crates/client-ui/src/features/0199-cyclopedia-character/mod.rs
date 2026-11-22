@@ -28,6 +28,7 @@ mod profile;
 mod protocol;
 mod state;
 mod view;
+pub use crate::cyclopedia_character_vocation::vocation_title;
 pub use achievements::{next_request as achievement_next_request, request as achievement_request};
 pub use input::{blessings_key, open_key, set_target};
 pub use profile::{ProfileRow, profile_heading, profile_rows};

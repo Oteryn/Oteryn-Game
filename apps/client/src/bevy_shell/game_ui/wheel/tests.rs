@@ -547,3 +547,217 @@ fn atelier_reveal_uses_review_cancel_and_one_shot_confirm_through_bevy() -> Test
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn wheel_renders_confirmed_and_draft_perk_summary() -> TestResult {
+    let mut p = model();
+    let reply = p.diagram.reply.as_mut().ok_or("diagram")?;
+    reply.current = vec!["Max health +5".into()];
+    reply.draft = vec!["Max health +10".into()];
+    let (mut app, _, _) = fixture(p)?;
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text
+                .0
+                .contains("Current allocation configured effects:\nMax health +5")
+                && text.0.contains("Draft configured effects:\nMax health +10"))
+    );
+    Ok(())
+}
+
+fn activate_caption(app: &mut App, caption: &str) -> TestResult {
+    let entity = app
+        .world_mut()
+        .query::<(Entity, &Text)>()
+        .iter(app.world())
+        .find_map(|(entity, text)| (text.0 == caption).then_some(entity))
+        .ok_or_else(|| format!("missing {caption}"))?;
+    let entity = app.world().get::<ChildOf>(entity).ok_or("button")?.parent();
+    app.world_mut().trigger(Activate { entity });
+    app.update();
+    Ok(())
+}
+
+#[test]
+fn wheel_inspect_then_fill_and_empty_slice() -> TestResult {
+    let mut initial = model();
+    initial.slot = 0;
+    let (mut app, _commands, outbox) = fixture(initial)?;
+    activate_caption(&mut app, "Inspect Perk 15")?;
+    let inspected = panel(&app)?;
+    assert_eq!(inspected.slot, 14);
+    assert_eq!(inspected.points, [0; 36]);
+    activate_caption(&mut app, "Fill selected slice")?;
+    assert_eq!(panel(&app)?.points[14], 50);
+    let mut full = model();
+    full.slot = 14;
+    full.points[14] = 50;
+    publish(&outbox, full);
+    app.update();
+    activate_caption(&mut app, "Empty selected slice")?;
+    assert_eq!(panel(&app)?.points, [0; 36]);
+    Ok(())
+}
+
+#[test]
+fn atelier_filters_quality_and_locked_gems_through_buttons() -> TestResult {
+    let mut p = model();
+    let gems = &mut p.confirmed_atelier.as_mut().ok_or("atelier")?.gems;
+    let mut labels = Vec::new();
+    for (i, (quality, locked)) in [(0, true), (1, true), (0, false)].into_iter().enumerate() {
+        let gem = atelier::GemView {
+            id: [i as u8 + 1; 16],
+            quality,
+            domain: 0,
+            locked,
+            vessel: false,
+            modifiers: vec![1],
+        };
+        labels.push(oteryn_client_ui::wheel_allocation::gem_label(&gem));
+        gems.push(gem);
+    }
+    let (mut app, _commands, _) = fixture(p)?;
+    activate_caption(&mut app, "Gem Atelier / Workshop")?;
+    activate_caption(&mut app, "Quality filter: All")?;
+    activate_caption(&mut app, "Show only locked gems")?;
+    let shown = app
+        .world_mut()
+        .query::<&Text>()
+        .iter(app.world())
+        .map(|text| &text.0)
+        .collect::<Vec<_>>();
+    assert!(shown.contains(&&labels[0]));
+    assert!(!shown.contains(&&labels[1]));
+    assert!(!shown.contains(&&labels[2]));
+    Ok(())
+}
+
+#[test]
+fn wheel_opens_installed_gem_and_its_workshop_modifier() -> TestResult {
+    use oteryn_client_runtime::gem_presentation as wire;
+    let mut p = model();
+    p.confirmed_atelier
+        .as_mut()
+        .ok_or("atelier")?
+        .gems
+        .push(atelier::GemView {
+            id: [1; 16],
+            quality: 0,
+            domain: 1,
+            locked: false,
+            vessel: true,
+            modifiers: vec![9],
+        });
+    p.gems.reply = Some(wire::Reply {
+        request: wire::Request {
+            nonce: 4,
+            revision: 3,
+        },
+        catalogue: "fixture".into(),
+        vocation: "knight".into(),
+        grades_current: true,
+        qualified_gems: vec![[1; 16]],
+        modifiers: vec![wire::Modifier {
+            kind: 0,
+            id: 9,
+            name: "Fire Resistance".into(),
+            effects: vec![wire::Effect {
+                name: "Resistance".into(),
+                target: "Fire".into(),
+                unit: 0,
+                values: [1000, 2000, 3000, 4000],
+            }],
+        }],
+    });
+    let (mut app, _commands, _) = fixture(p)?;
+    activate_caption(&mut app, "Inspect gem in vessel 2")?;
+    assert_eq!(panel(&app)?.gem, Some([1; 16]));
+    activate_caption(&mut app, "Workshop: Fire Resistance")?;
+    assert_eq!(panel(&app)?.modifier, Some((0, 9)));
+    activate_caption(&mut app, "Show only in-vessel modifiers")?;
+    activate_caption(&mut app, "Workshop kind: All")?;
+    activate_caption(&mut app, "Fire Resistance")?;
+    activate_caption(&mut app, "Workshop kind: Basic")?;
+    assert!(
+        !app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|t| t.0 == "Fire Resistance")
+    );
+    let mut fields = app
+        .world_mut()
+        .query_filtered::<&mut bevy::text::EditableText, With<super::atelier::ModifierSearch>>();
+    fields
+        .single_mut(app.world_mut())?
+        .editor_mut()
+        .set_text("unknown modifier");
+    activate_caption(&mut app, "Apply modifier search")?;
+    assert!(
+        !app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|t| t.0 == "Lock / unlock gem")
+    );
+    Ok(())
+}
+
+#[test]
+fn wheel_vessel_preset_restores_numbered_slot_through_replace_command() -> TestResult {
+    let mut p = model();
+    p.atelier_v2 = true;
+    let gem = atelier::GemView {
+        id: [8; 16],
+        quality: 0,
+        domain: 6,
+        locked: false,
+        vessel: true,
+        modifiers: vec![],
+    };
+    p.confirmed_atelier
+        .as_mut()
+        .ok_or("atelier")?
+        .gems
+        .push(gem);
+    let mut slots = vec![
+        atelier::v2::VesselSlotView {
+            quality: 0,
+            open: true,
+            gem: None
+        };
+        12
+    ];
+    slots[6].gem = Some([8; 16]);
+    p.vessel_board = Some(oteryn_client_ui::gem_atelier::VesselBoard {
+        slots,
+        wheel_revision: 2,
+        ..Default::default()
+    });
+    let saved = p.named_build_code();
+    p.vessel_board.as_mut().ok_or("board")?.slots[6].gem = None;
+    p.confirmed_atelier.as_mut().ok_or("atelier")?.gems[0].vessel = false;
+    p.preset_book.insert("Raid", &saved)?;
+    let (mut app, mut commands, _) = fixture(p)?;
+    activate_caption(&mut app, "Raid")?;
+    activate_caption(&mut app, "Apply preset to vessel 7")?;
+    let PlayCommand::Wheel(cmd) = commands.try_recv()? else {
+        return Err("replace command".into());
+    };
+    assert_eq!(cmd.kind, 6213);
+    Ok(())
+}
+
+#[test]
+fn wheel_reports_gem_points_separately_from_ring_unlock_points() -> TestResult {
+    let mut p = model();
+    p.diagram.reply.as_mut().ok_or("reply")?.available = 105;
+    let (mut app, _, _) = fixture(p)?;
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|t| t.0.contains("Gem grade bonuses: 5"))
+    );
+    Ok(())
+}

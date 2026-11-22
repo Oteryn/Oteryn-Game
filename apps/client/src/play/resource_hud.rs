@@ -4,6 +4,10 @@ use crate::combat_input::PlayCommand;
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
 
+#[path = "skills_stats.rs"]
+mod skills_stats;
+pub(crate) use skills_stats::GROUPS;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct ResourceHudOptions {
@@ -31,6 +35,10 @@ pub(super) struct MailboxState {
     selected: bool,
     pending: bool,
     stamina: Option<u16>,
+    level: Option<u32>,
+    vocation: Option<u8>,
+    combat: [Option<String>; 3],
+    combat_pending: [bool; 3],
 }
 impl MailboxState {
     pub(super) fn new(selected: bool) -> Self {
@@ -86,6 +94,9 @@ impl PlayLink {
                 ..Default::default()
             });
     }
+    pub(crate) fn refresh_skills_character(&self) {
+        self.request_hud_stamina();
+    }
     fn request_hud_stamina(&self) -> bool {
         let mut mailbox = lock(&self.mailbox);
         let state = &mut mailbox.hud_resource;
@@ -117,7 +128,10 @@ impl Outbox {
             extensions: mailbox.cyclopedia_character.extensions,
             ..Default::default()
         };
-        let stamina = apply_result(&mut panel, result)
+        let accepted = apply_result(&mut panel, result);
+        mailbox.hud_resource.level = panel.general.map(|g| g.level);
+        mailbox.hud_resource.vocation = panel.vocation_id;
+        let stamina = accepted
             .then_some(panel.general)
             .flatten()
             .map(|stats| stats.stamina_minutes);

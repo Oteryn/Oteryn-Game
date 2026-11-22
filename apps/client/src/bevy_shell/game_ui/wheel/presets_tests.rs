@@ -106,3 +106,22 @@ fn wheel_preset_edits_survive_preview_and_stale_actions_are_fenced() -> TestResu
     assert!(panel(&app)?.preset_fields[1].is_empty());
     Ok(())
 }
+
+#[test]
+fn tibia_wheel_code_round_trips_through_preset_controls() -> TestResult {
+    let mut p = model();
+    p.points[14] = 7;
+    let (mut app, _commands, outbox) = fixture(p)?;
+    activate_caption(&mut app, "Export Tibia code")?;
+    let code = panel(&app)?.preset_fields[1].clone();
+    assert_eq!(
+        code,
+        "K0ZAAHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/////"
+    );
+    publish(&outbox, model());
+    app.update();
+    preset_field(&mut app, 1, &code);
+    preset_action(&mut app, 5)?;
+    assert_eq!(panel(&app)?.points[14], 7);
+    Ok(())
+}

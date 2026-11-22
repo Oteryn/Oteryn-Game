@@ -7,14 +7,44 @@ use std::sync::Arc;
 #[derive(Resource, Default)]
 struct State {
     open: bool,
+    query: String,
+    workshop_kind: Option<u8>,
+    in_vessel: bool,
+    quality: Option<u8>,
+    locked: bool,
     generation: u64,
     seen: Option<Arc<WheelPanel>>,
     root: Option<Entity>,
 }
+impl State {
+    fn shows_gem(&self, panel: &WheelPanel, gem: &model::atelier::GemView, search: &str) -> bool {
+        self.quality.is_none_or(|q| gem.quality == q)
+            && (!self.locked || gem.locked)
+            && (search.is_empty()
+                || gem.modifiers.iter().enumerate().any(|(index, id)| {
+                    let kind = u8::from(index == 2);
+                    gems::current(panel)
+                        .and_then(|r| r.modifiers.iter().find(|m| m.kind == kind && m.id == *id))
+                        .is_some_and(|m| {
+                            m.name.to_lowercase().contains(search)
+                                || m.effects.iter().any(|e| {
+                                    e.name.to_lowercase().contains(search)
+                                        || e.target.to_lowercase().contains(search)
+                                })
+                        })
+                }))
+    }
+}
 #[derive(Clone, Copy)]
 enum Kind {
     Open,
+    OpenGem { revision: u64, id: [u8; 16] },
     Close,
+    FilterText,
+    WorkshopFilter,
+    FilterEquipped,
+    FilterQuality,
+    FilterLocked,
     Action(GemControl),
 }
 #[derive(Component)]
@@ -23,6 +53,8 @@ struct Action {
     expected: Arc<WheelPanel>,
     kind: Kind,
 }
+#[derive(Component)]
+pub(super) struct ModifierSearch;
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>().add_systems(Update, project);
 }
@@ -33,12 +65,29 @@ pub(super) fn entry(
     key: Key,
     panel: &WheelPanel,
 ) {
+    let shared = Arc::new(panel.clone());
+    if let Some(atelier) = &panel.confirmed_atelier {
+        for gem in atelier.gems.iter().filter(|gem| gem.vessel) {
+            button(
+                commands,
+                skin,
+                parent,
+                key.generation,
+                &shared,
+                Kind::OpenGem {
+                    revision: atelier.revision,
+                    id: gem.id,
+                },
+                &format!("Inspect gem in vessel {}", u16::from(gem.domain) + 1),
+            );
+        }
+    }
     button(
         commands,
         skin,
         parent,
         key.generation,
-        &Arc::new(panel.clone()),
+        &shared,
         Kind::Open,
         "Gem Atelier / Workshop",
     );
@@ -75,6 +124,7 @@ fn button(
 fn activate(
     event: On<Activate>,
     actions: Query<&Action>,
+    fields: Query<&bevy::text::EditableText, With<ModifierSearch>>,
     owner: NonSend<HostOwner>,
     guard: ModalGuard,
     mut state: ResMut<State>,
@@ -95,9 +145,49 @@ fn activate(
         return;
     }
     match action.kind {
-        Kind::Open => {
+        Kind::Open | Kind::OpenGem { .. } => {
+            if let Kind::OpenGem { revision, id } = action.kind {
+                play.link
+                    .gem_control_bound(&action.expected, Some(GemControl::Gem { revision, id }));
+            }
             state.open = true;
+            state.query.clear();
+            state.workshop_kind = None;
+            state.in_vessel = false;
+            state.quality = None;
+            state.locked = false;
             state.generation = action.generation;
+            state.seen = None;
+        }
+        Kind::FilterText if state.open => {
+            if let Ok(field) = fields.single() {
+                state.query = field.value().to_string().trim().to_string();
+                state.seen = None;
+            }
+        }
+        Kind::WorkshopFilter if state.open => {
+            state.workshop_kind = match state.workshop_kind {
+                None => Some(0),
+                Some(0) => Some(1),
+                Some(_) => None,
+            };
+            state.seen = None;
+        }
+        Kind::FilterEquipped if state.open => {
+            state.in_vessel = !state.in_vessel;
+            state.seen = None;
+        }
+        Kind::FilterQuality if state.open => {
+            state.quality = match state.quality {
+                None => Some(0),
+                Some(0) => Some(1),
+                Some(1) => Some(2),
+                Some(_) => None,
+            };
+            state.seen = None;
+        }
+        Kind::FilterLocked if state.open => {
+            state.locked = !state.locked;
             state.seen = None;
         }
         Kind::Close => {
@@ -172,6 +262,33 @@ fn project(
     );
     text(&mut commands, &skin, root, gems::view::details(&panel));
     let panel = Arc::new(panel);
+    let search = state.query.to_lowercase();
+    if panel.gems.review.is_none() {
+        text(
+            &mut commands,
+            &skin,
+            root,
+            "Search gems and workshop by modifier",
+        );
+        let field = commands
+            .spawn((
+                ModifierSearch,
+                bevy::ui_widgets::TextInput,
+                bevy::text::EditableText::new(&state.query),
+                source::font(skin.font.clone(), false),
+                TextColor(source::TEXT_COLOR),
+                bevy::text::TextCursorStyle::default(),
+                bevy::input_focus::tab_navigation::TabIndex(0),
+                Node {
+                    min_height: px(26.),
+                    ..default()
+                },
+                BackgroundColor(Color::srgb(0.1, 0.1, 0.1)),
+            ))
+            .id();
+        commands.entity(root).add_child(field);
+    }
+    let mut visible_modifier = panel.modifier.is_none();
     let mut add = |kind, label: &str| {
         button(
             &mut commands,
@@ -194,8 +311,28 @@ fn project(
         && panel.gems.pending.is_none()
         && panel.diagram.pending.is_none()
     {
+        add(Kind::FilterText, "Apply modifier search");
         if let Some(atelier) = &panel.confirmed_atelier {
-            for gem in &atelier.gems {
+            let quality = match state.quality {
+                Some(0) => "Lesser",
+                Some(1) => "Regular",
+                Some(2) => "Greater",
+                _ => "All",
+            };
+            add(Kind::FilterQuality, &format!("Quality filter: {quality}"));
+            add(
+                Kind::FilterLocked,
+                if state.locked {
+                    "Show locked and unlocked gems"
+                } else {
+                    "Show only locked gems"
+                },
+            );
+            for gem in atelier
+                .gems
+                .iter()
+                .filter(|gem| state.shows_gem(&panel, gem, &search))
+            {
                 add(
                     Kind::Action(GemControl::Gem {
                         revision: atelier.revision,
@@ -222,7 +359,57 @@ fn project(
             );
         }
         if let Some(current) = gems::current(&panel) {
-            for modifier in &current.modifiers {
+            if let Some(gem) = panel
+                .selected_gem()
+                .filter(|gem| state.shows_gem(&panel, gem, &search))
+            {
+                for (position, id) in gem.modifiers.iter().enumerate() {
+                    let kind = u8::from(position == 2);
+                    if let Some(modifier) = current
+                        .modifiers
+                        .iter()
+                        .find(|m| m.kind == kind && m.id == *id)
+                    {
+                        add(
+                            Kind::Action(GemControl::Modifier {
+                                nonce: current.request.nonce,
+                                kind,
+                                id: *id,
+                            }),
+                            &format!("Workshop: {}", modifier.name),
+                        );
+                    }
+                }
+            }
+            let kind = match state.workshop_kind {
+                Some(0) => "Basic",
+                Some(1) => "Supreme",
+                _ => "All",
+            };
+            add(Kind::WorkshopFilter, &format!("Workshop kind: {kind}"));
+            add(
+                Kind::FilterEquipped,
+                if state.in_vessel {
+                    "Show all workshop modifiers"
+                } else {
+                    "Show only in-vessel modifiers"
+                },
+            );
+            for modifier in current.modifiers.iter().filter(|m| {
+                state.workshop_kind.is_none_or(|kind| m.kind == kind)
+                    && m.name.to_lowercase().contains(&search)
+                    && (!state.in_vessel
+                        || panel.confirmed_atelier.as_ref().is_some_and(|a| {
+                            a.gems.iter().any(|g| {
+                                g.vessel
+                                    && g.modifiers
+                                        .iter()
+                                        .enumerate()
+                                        .any(|(i, id)| u8::from(i == 2) == m.kind && *id == m.id)
+                            })
+                        }))
+            }) {
+                visible_modifier |= panel.modifier == Some((modifier.kind, modifier.id));
                 add(
                     Kind::Action(GemControl::Modifier {
                         nonce: current.request.nonce,
@@ -248,6 +435,20 @@ fn project(
             (GemControl::Retry, "Retry unresolved operation"),
             (GemControl::Refresh, "Refresh"),
         ] {
+            if matches!(
+                action,
+                GemControl::Stage(Intent::Dismantle | Intent::Reshape)
+                    | GemControl::Lock
+                    | GemControl::Socket
+            ) && panel
+                .selected_gem()
+                .is_some_and(|gem| !state.shows_gem(&panel, gem, &search))
+            {
+                continue;
+            }
+            if matches!(action, GemControl::Stage(Intent::GradeUp)) && !visible_modifier {
+                continue;
+            }
             add(Kind::Action(action), label);
         }
     }

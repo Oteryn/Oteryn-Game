@@ -45,6 +45,36 @@ impl PlayLink {
         lock(&self.mailbox).weapon_proficiency.open = true;
         self.weapon_proficiency_request(Intent::State);
     }
+    pub(crate) fn open_equipped_proficiency(&self, definition: u32) {
+        use oteryn_client_runtime::equipment::EquipmentSlot;
+        let mut mailbox = lock(&self.mailbox);
+        if !mailbox.equipment_selected
+            || !mailbox
+                .inventory
+                .inventory
+                .as_ref()
+                .is_some_and(|inventory| {
+                    inventory.equipment.iter().any(|entry| {
+                        matches!(
+                            entry.slot,
+                            EquipmentSlot::LeftHand | EquipmentSlot::RightHand
+                        ) && entry.item.item_definition_ref.get() == definition
+                    })
+                })
+        {
+            return;
+        }
+        let panel = &mut mailbox.weapon_proficiency;
+        let row = panel
+            .catalogue
+            .as_ref()
+            .and_then(|page| page.entries.iter().position(|e| e.definition == definition));
+        if panel.selected && row.is_some_and(|r| panel.select_weapon(r)) {
+            panel.open = true;
+            drop(mailbox);
+            self.weapon_proficiency_request(Intent::State);
+        }
+    }
     pub fn weapon_proficiency_select_weapon(&self, row: usize) {
         let mut mailbox = lock(&self.mailbox);
         if mailbox.weapon_proficiency.select_weapon(row)
@@ -188,7 +218,8 @@ impl PlayLink {
                 let Some(data) = entry.levels.get(level) else {
                     return false;
                 };
-                let (Ok(level_index), Ok(perk_index)) = (u8::try_from(level), u8::try_from(perk))
+                let (Ok(level_index), Ok(perk_index)) =
+                    (u8::try_from(level), u8::try_from(perk.unwrap_or(0)))
                 else {
                     return false;
                 };
@@ -196,14 +227,14 @@ impl PlayLink {
                     .thresholds
                     .get(level)
                     .is_none_or(|xp| entry.experience < *xp)
-                    || perk >= data.perks.len()
-                    || data.selected == Some(perk_index)
+                    || perk.is_some_and(|index| index >= data.perks.len())
+                    || data.selected == perk.map(|_| perk_index)
                 {
                     return false;
                 }
                 p.level = level_index;
                 p.perk = perk_index;
-                p.clear_perk = false;
+                p.clear_perk = perk.is_none();
                 Intent::SelectPerk
             }
         };

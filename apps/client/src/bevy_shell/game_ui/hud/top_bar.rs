@@ -2,7 +2,6 @@
 //! mana side by side with "cur/max" centred, then the level, a red XP bar with tick marks and
 //! the XP Boost button, then the centred row of condition icons.
 use super::{HostOwner, ModalGuard, Skins, source};
-use crate::bevy_shell::ui::{Control, toolbar::open_toolbar};
 use bevy::{prelude::*, ui_widgets::Activate};
 
 /// The value text of the health (false) or mana (true) bar.
@@ -176,9 +175,12 @@ pub(super) fn setup(commands: &mut Commands, skins: &Skins, parent: Entity) -> E
 }
 
 /// XP Boost opens the store, where Tibia sells the boost.
-fn xp_boost(event: On<Activate>, mut owner: NonSendMut<HostOwner>, modal: ModalGuard) {
-    if modal.allows(event.entity) && owner.play.is_some() {
-        open_toolbar(&mut owner, Control::Shortcut("store"));
+fn xp_boost(event: On<Activate>, owner: NonSend<HostOwner>, modal: ModalGuard) {
+    if modal.allows(event.entity)
+        && !owner.modal_active()
+        && let Some(play) = &owner.play
+    {
+        play.link.store_open_xp_boost();
     }
 }
 
