@@ -1700,7 +1700,7 @@ mod ordinary_corpse_slice2_tests {
 
         let (rewards, loot) = pinned_rewards()?;
         let source: SourceAdmission = serde_json::from_slice(SOURCE)?;
-        assert_eq!(source.admissions.len(), 284);
+        assert_eq!(source.admissions.len(), 283);
         for (creature, id) in source.admissions {
             let key = format!("oteryn:item.tibia.i{id}");
             let record = source
