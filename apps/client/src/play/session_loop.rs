@@ -228,7 +228,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 Ok(result) => {
                     outbox.performance_command_result(started.elapsed());
                     match command.capability {
-                        502 => outbox.mount_result(),
+                        502 => outbox.mount_result(result.status),
                         7 => outbox.console_result(&result),
                         10 => outbox.analyser_result(&command, &result),
                         63 => outbox.market_details_result(&command, &result),
