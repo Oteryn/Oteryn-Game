@@ -392,6 +392,12 @@ def test_package_tree_contract():
             40603,
             48227,
             49362,
+            39934,
+            39935,
+            39936,
+            39937,
+            39938,
+            39939,
         )
     ], "only the exact source-qualified reference extensions are admitted"
     # Replaying an extension with a changed semantic fact must refuse, not normalize it.
@@ -425,6 +431,19 @@ def test_package_tree_contract():
             ), error
         else:
             raise AssertionError("changed Cradle reference accepted")
+    tampered = copy.deepcopy(reference)
+    tampered["records"].extend(copy.deepcopy(expected_items[len(legacy_items) :]))
+    next(
+        row
+        for row in tampered["records"]
+        if row["identity"]["key"] == "oteryn:item.tibia.i39934"
+    )["materializable"] = True
+    try:
+        source_qualified_item_references(tampered, ROOT)
+    except ValueError as error:
+        assert str(error) == "CRYSTAL_ORDINARY_DOOR_REFERENCE_CHANGED:oteryn:item.tibia.i39934"
+    else:
+        raise AssertionError("changed Crystal door reference accepted")
     # Match the materializer's source-proven, exact Primal empty-loot admission.
     # Its witness rejects changed identities and every nonempty or unrelated Loot.
     from primal_reference_overlay import apply_reference

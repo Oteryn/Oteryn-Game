@@ -34,6 +34,14 @@ fn at(x: i32, y: i32, floor: i16) -> MovementLocalPosition {
 }
 
 pub(super) async fn scenario(admin: String, case: u8, use_bundle: bool) -> TestResult {
+    run(admin, case, use_bundle, None).await
+}
+
+pub(super) async fn physical_rope(admin: String, tool: &str, appearance: u32) -> TestResult {
+    run(admin, 3, true, Some((tool, appearance))).await
+}
+
+async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32)>) -> TestResult {
     let h =
         Harness::create_with_admission_seed(admin, &format!("vertical_move_{case}"), false, false)
             .await?;
@@ -55,10 +63,12 @@ pub(super) async fn scenario(admin: String, case: u8, use_bundle: bool) -> TestR
     let active = controller.active().ok_or("active")?;
     let native = active.native_gameplay().ok_or("native")?;
     let bundle = use_bundle.then(|| {
-        crate::map::spell_tiles::tests::vertical_movement::world(
-            world,
-            crate::foundation::ChannelId::decode(&id(43)).expect("fixture channel"),
-        )
+        use crate::map::spell_tiles::tests::vertical_movement;
+        let channel = crate::foundation::ChannelId::decode(&id(43)).expect("fixture channel");
+        match tool {
+            Some((_, appearance)) => vertical_movement::world_with_rope_spot(world, channel, appearance),
+            None => vertical_movement::world(world, channel),
+        }
     });
     let bundle_room = bundle.as_ref().map(|bundle| {
         pin.qualified_room()
@@ -234,6 +244,52 @@ pub(super) async fn scenario(admin: String, case: u8, use_bundle: bool) -> TestR
         .bind(id(42).as_slice()).bind(id(43).as_slice())
         .bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice())
         .bind(room.frame_binding().digest().as_slice()).execute(&h.pool).await?;
+    if let (Some((tool, _)), Some(bundle)) = (tool, &bundle) {
+        use crate::gameplay_transport::connection::UseCommand;
+        use oteryn_protocol_oteryn::world_object::{
+            MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
+        };
+
+        super::item_look_fixtures::seed_main_backpack(&h, &[(tool, 1)]).await?;
+        let index = native.item_index().ok_or("item index")?;
+        let definition = index
+            .definition_ref("Item", tool, "definition-r1")
+            .ok_or("tool reference")?;
+        let mut placement = bundle.base().digest().to_vec();
+        let spot = oteryn_world_bundle::bundle::placement_key(-8, 10, 10, 0)
+            .ok_or("rope spot placement")?;
+        placement.extend_from_slice(&spot.to_be_bytes());
+        let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
+            .current_session_at(session).await?.0;
+        let outcome = crate::gameplay_transport::item_craft::dispatch(
+            &owner,
+            actor,
+            UseCommand {
+                game_session_id: session,
+                command_id: 1,
+                item_fence: crate::gameplay_transport::item_fence_of(current),
+            },
+            UseIntent {
+                target: UseTarget::ItemByDefinition(definition),
+                use_with: None,
+                use_with_position: None,
+                use_with_map_item: Some(MapUseTarget::Object(WorldObjectTarget {
+                    placement,
+                    expected_revision: 0,
+                })),
+            },
+            None,
+        )
+        .await
+        .ok_or("rope dispatch")?;
+        assert_eq!(outcome.disposition, UseDisposition::Committed, "{tool}");
+        assert_eq!(deps.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(),
+                   at(10, 11, 7));
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        return h.cleanup().await;
+    }
     if case >= 3 && !use_bundle {
         seed_rope_blockers(&h, &deps, room, native, case == 4).await?;
     }

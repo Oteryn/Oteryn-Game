@@ -1254,6 +1254,24 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                     Ok((binding.external_id.clone(), binding))
                 })
                 .collect::<Result<_, ContentError>>()?;
+        let crystal_doors: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../imports/crystalserver/bindings/ordinary-doors.json"
+        ))
+        .map_err(|_| invalid("Crystal door item binding table"))?;
+        for value in crystal_doors["bindings"]
+            .as_array()
+            .ok_or_else(|| invalid("Crystal door item bindings"))?
+        {
+            let binding: super::project::ProjectV2SourceIdentityBinding =
+                serde_json::from_value(value.clone())
+                    .map_err(|_| invalid("Crystal door item binding"))?;
+            if admitted
+                .insert(binding.external_id.clone(), binding)
+                .is_some()
+            {
+                return Err(invalid("Crystal door item binding conflict"));
+            }
+        }
         // ITEMHOLD-Q: this existing canonical identity has no Crystal row. Its
         // own Wiki itemid/revision and admitted 15.30 appearance bind it exactly;
         // never fabricate a Crystal identity or admit a numeric-id fallback.

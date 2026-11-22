@@ -153,6 +153,7 @@ struct PaletteFacts {
     facts: EntryFacts,
     solid: bool,
     door: PaletteDoor,
+    plain_door: Option<PaletteDoor>,
 }
 
 /// The per-placement facts that differ from the palette entry's.
@@ -491,7 +492,8 @@ impl BundleFacts {
             let mut blocks = false;
             for (ordinal, item) in top.enumerate() {
                 let mut item = item.clone();
-                if let Some(entry) = self.palette.get(item.palette as usize)
+                let palette = self.palette.get(item.palette as usize);
+                if let Some(entry) = palette
                     && tile
                         .items
                         .iter()
@@ -506,27 +508,24 @@ impl BundleFacts {
                         &mut item.attrs,
                     );
                 }
-                let door = self
-                    .palette
-                    .get(item.palette as usize)
-                    .map_or(PaletteDoor::No, |entry| entry.door);
-                let required_level = self.palette.get(item.palette as usize).and_then(|entry| {
-                    super::door_registry::level_door_of(
-                        super::door_registry::closed_of(u32::from(entry.facts.appearance_id))
-                            .unwrap_or(u32::from(entry.facts.appearance_id)),
+                let plain_door = palette
+                    .filter(|_| !bound(&item.attrs))
+                    .and_then(|entry| entry.plain_door);
+                let door = plain_door
+                    .unwrap_or_else(|| palette.map_or(PaletteDoor::No, |entry| entry.door));
+                let (level, quest) = palette.map_or((None, None), |entry| {
+                    let appearance = u32::from(entry.facts.appearance_id);
+                    let closed = super::door_registry::closed_of(appearance).unwrap_or(appearance);
+                    (
+                        super::door_registry::level_door_of(closed),
+                        super::door_registry::quest_door_of(closed),
                     )
-                    .and(item.attrs.action)
-                    .filter(|action| *action > 0)
-                    .map(|action| u32::from(action).saturating_sub(1000))
                 });
-                let required_storage = self.palette.get(item.palette as usize).and_then(|entry| {
-                    super::door_registry::quest_door_of(
-                        super::door_registry::closed_of(u32::from(entry.facts.appearance_id))
-                            .unwrap_or(u32::from(entry.facts.appearance_id)),
-                    )
-                    .and(item.attrs.action)
-                    .filter(|action| *action > 0)
-                });
+                let action = item.attrs.action.filter(|action| *action > 0);
+                let required_level = level
+                    .and(action)
+                    .map(|action| u32::from(action).saturating_sub(1000));
+                let required_storage = quest.and(action);
                 // Preserve the source House and door numbers before ordinary Channel door
                 // classification deliberately seals House doors.
                 if tile.house != 0
@@ -552,19 +551,9 @@ impl BundleFacts {
                 let quest_action = required_storage.is_some()
                     && item.attrs.unique.is_none()
                     && item.attrs.door.is_none();
-                let missing_predicate =
-                    self.palette
-                        .get(item.palette as usize)
-                        .is_some_and(|entry| {
-                            let appearance = super::door_registry::closed_of(u32::from(
-                                entry.facts.appearance_id,
-                            ))
-                            .unwrap_or(u32::from(entry.facts.appearance_id));
-                            (super::door_registry::level_door_of(appearance).is_some()
-                                && required_level.is_none())
-                                || (super::door_registry::quest_door_of(appearance).is_some()
-                                    && required_storage.is_none())
-                        });
+                let missing_predicate = plain_door.is_none()
+                    && (level.is_some() || quest.is_some())
+                    && action.is_none();
                 let door = if dropped
                     || missing_predicate
                     || (bound(&item.attrs) && !key_action && !level_action && !quest_action)
@@ -586,6 +575,7 @@ impl BundleFacts {
                 match door {
                     PaletteDoor::Pair {
                         open,
+                        closed_solid,
                         open_solid,
                         locked,
                         key_forms,
@@ -1159,6 +1149,7 @@ fn palette_facts(
         .as_ref()
         .is_some_and(|terrain| terrain.walkable == Some(false));
     let mut door = PaletteDoor::No;
+    let mut plain_door = None;
     let static_surface = crate::content::qualified_static_surface(&entry.key);
     if let Some(surface) = static_surface {
         let terrain = match surface.ground {
@@ -1202,7 +1193,15 @@ fn palette_facts(
         solid = definition
             .solid
             .unwrap_or_else(|| !walkable_floor_change(&entry.key) && !terrain_floor(entry));
-        door = palette_door(&entry.key, item);
+        let appearance = u32::from(facts.appearance_id);
+        let closed = super::door_registry::closed_of(appearance).unwrap_or(appearance);
+        door = palette_door(&entry.key, appearance, closed, item);
+        // These four open appearances belong to both an ordinary and a level door.
+        // The placed action selects the level door. An unbound open pose is ordinary.
+        if matches!(appearance, 30035 | 30036 | 30039 | 30040) {
+            plain_door = super::door_registry::plain_closed_of(appearance)
+                .map(|plain_closed| palette_door(&entry.key, appearance, plain_closed, item));
+        }
     }
     Ok(PaletteFacts {
         static_surface: static_surface.is_some(),
@@ -1211,20 +1210,22 @@ fn palette_facts(
         facts,
         solid,
         door,
+        plain_door,
     })
 }
 
 /// Whether the Item palette key `key` is a qualified closed/locked door, and the facts of its
 /// open counterpart, which `item` must serve. The content profile decides doorhood
 /// (`item_type` Door); the Game-owned registry only pairs a door with its open item.
-fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> PaletteDoor {
+fn palette_door(
+    key: &str,
+    authored: u32,
+    closed: u32,
+    item: &impl Fn(&str) -> Option<ItemDefinition>,
+) -> PaletteDoor {
     if !item(key).is_some_and(|definition| definition.door) {
         return PaletteDoor::No;
     }
-    let Some(authored) = palette_appearance(key).map(u32::from) else {
-        return PaletteDoor::Sealed;
-    };
-    let closed = super::door_registry::closed_of(authored).unwrap_or(authored);
     let Some(closed_key) = door::open_key(key, authored, closed) else {
         return PaletteDoor::Sealed;
     };
@@ -1241,11 +1242,13 @@ fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> Pa
     let Some(open_key) = door::open_key(key, closed, open) else {
         return PaletteDoor::Sealed;
     };
-    // The closed state must itself block movement and projectiles.
-    match item(key) {
-        Some(closed_def) if closed_def.solid != Some(false) && closed_def.blocks_projectile => {}
-        _ => return PaletteDoor::Sealed,
-    }
+    let (closed_solid, closed_projectile) = super::door_registry::closed_collision(closed);
+    let Some(closed_def) = item(key).filter(|definition| {
+        definition.solid.unwrap_or(true) == closed_solid
+            && definition.blocks_projectile == closed_projectile
+    }) else {
+        return PaletteDoor::Sealed;
+    };
     let Some(definition) = item(&open_key) else {
         return PaletteDoor::Sealed;
     };
@@ -1259,13 +1262,14 @@ fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> Pa
             let face = |appearance| {
                 let key = door::open_key(key, closed, appearance)?;
                 let definition = item(&key)?;
-                if definition.solid != Some(true) || !definition.blocks_projectile {
+                let (solid, projectile) = super::door_registry::closed_collision(appearance);
+                if definition.solid != Some(solid) || definition.blocks_projectile != projectile {
                     return None;
                 }
                 Some(EntryFacts {
                     definition: MapDefinition::Item(definition.reference),
                     appearance_id: u16::try_from(appearance).ok()?,
-                    blocks_projectile: true,
+                    blocks_projectile: projectile,
                     terrain_kind: None,
                     pickupable: false,
                     bound: false,
@@ -1275,21 +1279,19 @@ fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> Pa
             };
             Some([face(unlocked)?, face(locked)?])
         });
-    let authored_closed = (authored != closed)
-        .then(|| item(key))
-        .flatten()
-        .map(|definition| EntryFacts {
-            definition: MapDefinition::Item(definition.reference),
-            appearance_id: closed as u16,
-            blocks_projectile: definition.blocks_projectile,
-            terrain_kind: None,
-            pickupable: false,
-            bound: false,
-            count: 1,
-            sub_type: 0,
-        });
+    let authored_closed = (authored != closed).then_some(EntryFacts {
+        definition: MapDefinition::Item(closed_def.reference),
+        appearance_id: closed as u16,
+        blocks_projectile: closed_def.blocks_projectile,
+        terrain_kind: None,
+        pickupable: false,
+        bound: false,
+        count: 1,
+        sub_type: 0,
+    });
     PaletteDoor::Pair {
         authored_closed,
+        closed_solid,
         key_door: key_door.is_some(),
         key_forms,
         locked: key_door.is_some_and(|(_, locked)| locked),
@@ -1856,6 +1858,7 @@ mod tests {
                 facts: before,
                 solid: false,
                 door: PaletteDoor::No,
+                plain_door: None,
             });
             facts.placements.push((
                 key,

@@ -99,6 +99,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
+/// Crystal 201189f8 Secret Agent tools try rope before shovel, pick and machete.
+pub(super) fn secret_agent_rope(key: &str) -> bool {
+    matches!(
+        key,
+        "oteryn:item.tibia.i9594" | "oteryn:item.tibia.i9596" | "oteryn:item.tibia.i9598"
+    )
+}
+
 fn carried_rope<'a>(
     inventory: &'a crate::durability::item_use::ItemUseInventory,
     index: &crate::content::item_ref::ItemDefinitionIndex,
@@ -134,16 +142,17 @@ fn carried_rope<'a>(
         .find(|entry| entry.item.item_instance_id == tool && entry.item.quantity > 0)
         .map(|entry| &entry.item.definition)
         .filter(|definition| {
-            matches!(
+            (matches!(
                 definition.production_key.as_str(),
                 "oteryn:item.tibia.i3003" | "oteryn:item.tibia.i646"
-            ) && index
-                .definition_ref(
-                    &definition.family,
-                    &definition.production_key,
-                    &definition.revision_ref,
-                )
-                .is_some()
+            ) || secret_agent_rope(&definition.production_key))
+                && index
+                    .definition_ref(
+                        &definition.family,
+                        &definition.production_key,
+                        &definition.revision_ref,
+                    )
+                    .is_some()
         })
 }
 

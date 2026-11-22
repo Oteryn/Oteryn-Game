@@ -640,7 +640,27 @@ pub(super) async fn exercise(
     super::grizzly_npc_fixtures::wire::talk(owner, admitted, miraia, &[(replay, "yes")]).await?;
     assert_eq!(gold(h).await?, 1900);
     assert_eq!(fee_count(h).await?, 1);
-    // Canonical recipe adaptation explicitly omits cheese decay. No deadline or paid refresh is part of this programme.
+    // Eating the quest food uses its normal debit. Miraia can sell a replacement without
+    // advancing the route or bypassing the original price.
+    let cheese = owner.active_generation
+        .and_then(|active| active.native_gameplay())
+        .and_then(|native| native.item_index())
+        .and_then(|index| index.definition_ref("Item", "oteryn:item.tibia.i169", "definition-r1"))
+        .ok_or("cheese definition")?;
+    let eaten = owner.use_item_by_definition(
+        admitted.runtime_actor.ok_or("actor")?,
+        command(owner, admitted, side_next).await?,
+        cheese,
+    ).await;
+    side_next += 1;
+    assert_eq!(eaten.disposition, UseDisposition::Committed);
+    assert_eq!(quantity(h, 169).await?, 0);
+    say(owner, admitted, miraia, &mut next, &["hi", "scarab cheese", "yes"]).await?;
+    assert_eq!(stage(h).await?, 6);
+    assert_eq!(quantity(h, 169).await?, 1);
+    assert_eq!(gold(h).await?, 1800);
+    assert_eq!(fee_count(h).await?, 2);
+    // The canonical recipe continues to omit inventory decay.
     // Leave room for source subsidy and later fee change; use the ordinary item-loop owner.
     drop_goldfish(owner, admitted, h, &mut side_next).await?;
     drop_goldfish(owner, admitted, h, &mut side_next).await?;
@@ -648,7 +668,7 @@ pub(super) async fn exercise(
     say(owner, admitted, rashid, &mut next, &["hi", "cheese"]).await?;
     assert_eq!(stage(h).await?, 7);
     assert_eq!(quantity(h, 169).await?, 0);
-    assert_eq!(gold(h).await?, 2900);
+    assert_eq!(gold(h).await?, 2800);
     let briasol = visit(owner, admitted, "oteryn:npc.briasol").await?;
     say(
         owner,
@@ -660,7 +680,7 @@ pub(super) async fn exercise(
     .await?;
     assert_eq!(stage(h).await?, 8);
     assert_eq!(quantity(h, 227).await?, 1);
-    assert_eq!(gold(h).await?, 1900);
+    assert_eq!(gold(h).await?, 1800);
     let rashid = visit(owner, admitted, "oteryn:npc.rashid").await?;
     say(owner, admitted, rashid, &mut next, &["hi", "vase"]).await?;
     assert_eq!(stage(h).await?, 9);
@@ -677,7 +697,7 @@ pub(super) async fn exercise(
     assert_eq!(stage(h).await?, 10);
     assert_eq!(quantity(h, 5880).await?, 0);
     assert_eq!(quantity(h, 7385).await?, 1);
-    assert_eq!(gold(h).await?, 1650);
+    assert_eq!(gold(h).await?, 1550);
     let rashid = visit(owner, admitted, "oteryn:npc.rashid").await?;
     say(owner, admitted, rashid, &mut next, &["hi", "sword"]).await?;
     assert_eq!(stage(h).await?, 11);
@@ -698,24 +718,24 @@ pub(super) async fn exercise(
     assert!(done);
     let achievement:i64=sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/recognised_trader'").fetch_one(&h.pool).await?;
     assert_eq!(achievement, 1);
-    assert_eq!(fee_count(h).await?, 3);
+    assert_eq!(fee_count(h).await?, 4);
     let exact: Vec<i64> = sqlx::query_scalar(
         "SELECT fee_gold_units FROM game_quest_reward_fees ORDER BY fee_gold_units",
     )
     .fetch_all(&h.pool)
     .await?;
-    assert_eq!(exact, [100, 250, 1000]);
+    assert_eq!(exact, [100, 100, 250, 1000]);
     say(owner, admitted, rashid, &mut next, &["hi", "trade"]).await?;
     let sale = sell_intent(owner, rashid).await?;
     let sale_command = side_next;
     side_next += 1;
     sell(owner, admitted, sale, sale_command, true).await?;
     assert_eq!(quantity(h, 3364).await?, 1);
-    assert_eq!(gold(h).await?, 31650);
+    assert_eq!(gold(h).await?, 31550);
     sell(owner, admitted, sale, sale_command, true).await?;
     assert_eq!(
         gold(h).await?,
-        31650,
+        31550,
         "replayed SELL cannot mint payout twice"
     );
     let trades: i64 = sqlx::query_scalar("SELECT count(*) FROM game_npc_trades")
@@ -732,8 +752,8 @@ pub(super) async fn exercise(
     // Reload again after the first sale: trading eligibility is durable rather
     // than a remembered dialogue or shop window.
     assert_eq!(stage(h).await?, 13);
-    assert_eq!(gold(h).await?, 31650);
-    assert_eq!(fee_count(h).await?, 3);
+    assert_eq!(gold(h).await?, 31550);
+    assert_eq!(fee_count(h).await?, 4);
     say(owner, admitted, rashid, &mut next, &["hi", "trade"]).await?;
     sell(
         owner,
@@ -744,7 +764,7 @@ pub(super) async fn exercise(
     )
     .await?;
     assert_eq!(quantity(h, 3364).await?, 0);
-    assert_eq!(gold(h).await?, 61650);
+    assert_eq!(gold(h).await?, 61550);
     let trades: i64 = sqlx::query_scalar("SELECT count(*) FROM game_npc_trades")
         .fetch_one(&h.pool)
         .await?;

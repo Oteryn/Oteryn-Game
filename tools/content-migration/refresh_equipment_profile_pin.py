@@ -46,7 +46,7 @@ SRX3_SOURCES = (
 
 
 def registered_source_document(root, document):
-    """Replay the later guarded House stage, retaining only this owner's keys."""
+    """Replay later source policies, retaining only this owner's keys."""
     proven = keys(document)
     generated = {"profiles": json.dumps(document).encode(),
                  "manifest": b'{"item_profiles":{}}'}
@@ -60,6 +60,13 @@ def registered_source_document(root, document):
                           if row["production_definition"]["production_key"] in proven]}
     if keys(result) != proven:
         raise ValueError("source registration changed the qualified identity set")
+    # For example, boss loot already admits 23545. The food action adds only
+    # consumption, and the cohort still checks the complete composed row.
+    import crystal_ordinary_items
+    crystal_ordinary_items.apply_food_policies(
+        {row['production_definition']['production_key']: row for row in result['records']},
+        crystal_ordinary_items.source_records(root),
+    )
     return result
 
 

@@ -32,7 +32,7 @@
         {
           "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
           "minimum": 5,
-          "maximum": 5,
+          "maximum": 6,
           "set": 5,
           "preserve": true
         }
