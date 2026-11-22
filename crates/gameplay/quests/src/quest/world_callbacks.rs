@@ -629,6 +629,33 @@ pub fn world_change_requirement(key: &str) -> Option<(&'static str, Option<u8>)>
 }
 
 impl Callback {
+    /// Exact map placement sampled with a retained obsidian knife.
+    #[must_use]
+    pub fn skinning_target(&self) -> Option<NativeSelector> {
+        let tool = self.item_on_target.as_ref()?;
+        if self.trigger != Trigger::Use
+            || self.actor_kind != ActorKind::Player
+            || !self.requires_world_admission
+            || !self.has_personal_state()
+            || !tool.selected_instance
+            || !tool.reusable
+            || tool.count != 1
+            || tool.item != "oteryn:item.tibia.i5908"
+            || !tool.alternatives.is_empty()
+            || tool.target_remove
+        {
+            return None;
+        }
+        if let Some(native) = &self.selector.native {
+            return Some(native.clone());
+        }
+        Some(NativeSelector {
+            position: self.selector.position?,
+            ordinal: u8::try_from(self.selector.ordinal?).ok()?,
+            appearance: self.selector.appearance?,
+        })
+    }
+
     /// A fenced single-player STEP may stage inside its own bounded room.
     /// Runtime admission still rejects every other player in that room.
     #[must_use]
