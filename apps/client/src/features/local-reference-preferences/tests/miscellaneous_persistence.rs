@@ -247,3 +247,21 @@ fn review_3376_malformed_session_options_recover_on_apply() -> TestResult {
     );
     Ok(())
 }
+
+#[cfg(bevy_shell)]
+#[test]
+fn c2d_sign_out_queues_session_options_without_contention() -> TestResult {
+    let temp = Temp::new()?;
+    let mut state = SettingsState::new(Some(temp.preferences()));
+    state.use_background_preferences();
+    state.disable_remember_device();
+    assert!(state.local_preference_writes_pending());
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+    while state.local_preference_writes_pending() {
+        assert!(std::time::Instant::now() < deadline);
+        assert!(state.poll_background_save().error.is_none());
+        std::thread::yield_now();
+    }
+    assert!(!MiscellaneousPreferences::read(&temp.sidecar())?.remember_device);
+    Ok(())
+}

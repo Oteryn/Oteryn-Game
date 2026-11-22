@@ -47,6 +47,12 @@ pub(crate) fn try_lock(path: &Path) -> io::Result<File> {
     Ok(file)
 }
 
+pub(crate) fn wait_for_lock(path: &Path) -> io::Result<File> {
+    let file = open_lock(path)?;
+    file.lock()?;
+    Ok(file)
+}
+
 fn open_lock(path: &Path) -> io::Result<File> {
     if let Some(parent) = path
         .parent()

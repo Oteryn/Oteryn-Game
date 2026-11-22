@@ -75,10 +75,12 @@ pub(super) fn activate(
         Choice::Refresh => Some(SelectionAction::Refresh),
         Choice::Cancel => Some(SelectionAction::Cancel),
     };
-    if let Some(action) = action
-        && (!matches!(action, SelectionAction::Cancel) || owner.prepare_picker_cancel())
-    {
-        owner.selection.respond(target.request, action);
+    if let Some(action) = action {
+        if matches!(action, SelectionAction::Cancel) {
+            owner.cancel_picker(target.request);
+        } else {
+            owner.selection.respond(target.request, action);
+        }
     }
     state.revision = state.revision.wrapping_add(1);
 }
@@ -108,9 +110,7 @@ pub(in crate::bevy_shell) fn keyboard(
         };
         if key.key_code == KeyCode::Escape {
             let id = request.id;
-            if owner.prepare_picker_cancel() {
-                owner.selection.respond(id, SelectionAction::Cancel);
-            }
+            owner.cancel_picker(id);
             continue;
         }
         let forward = match key.key_code {

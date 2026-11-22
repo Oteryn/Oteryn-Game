@@ -150,7 +150,7 @@ impl SidebarWidgets {
     }
     /// Writes beside the target and renames, so a crash never leaves half a file.
     pub(in crate::bevy_shell) fn save(&mut self, path: &Path) -> io::Result<()> {
-        let _lock = crate::atomic_file::try_lock(path)?;
+        let _lock = crate::atomic_file::lock(path)?;
         let mut active = Self::load_for_write(path)?;
         let before = self
             .saved_revision
@@ -262,10 +262,11 @@ impl SidebarWidgets {
         Ok(())
     }
     /// Reset window layout: the Global default dock, saved at once.
+    #[cfg(test)]
     pub(in crate::bevy_shell) fn reset(&mut self, path: Option<&Path>) -> io::Result<()> {
         let mut reset = Self::default();
         if let Some(path) = path {
-            let _lock = crate::atomic_file::try_lock(path)?;
+            let _lock = crate::atomic_file::lock(path)?;
             let _active = Self::load_for_write(path)?;
             reset.publish(path)?;
         }
@@ -291,98 +292,174 @@ fn install_snapshot(widgets: &mut ResMut<SidebarWidgets>, snapshot: SidebarWidge
 /// How long the dock must stay unchanged before it is written, so a drag writes once.
 const SAVE_DELAY: Duration = Duration::from_secs(1);
 
-#[derive(Default)]
+#[derive(Resource, Default)]
 pub(super) struct Persistence {
     path: Option<PathBuf>,
-    pending: Option<Duration>,
-    unsaved: std::collections::BTreeMap<PathBuf, (SidebarWidgets, Duration)>,
+    dirty: Option<Duration>,
+    writes: std::collections::BTreeMap<PathBuf, DockWrite>,
 }
 
-/// Loads the character's dock when the character changes (saving the previous one first),
-/// then writes it after each settled change.
+struct DockWrite {
+    snapshot: SidebarWidgets,
+    reset: bool,
+    due: Duration,
+    task: Option<bevy_tasks::Task<io::Result<SidebarWidgets>>>,
+    submitted: SidebarWidgets,
+    submitted_reset: bool,
+    changed: bool,
+}
+
+impl SidebarWidgets {
+    fn write_snapshot(&mut self, path: &Path, reset: bool) -> io::Result<()> {
+        if reset {
+            let _lock = crate::atomic_file::lock(path)?;
+            Self::load_for_write(path)?;
+            self.publish(path)
+        } else {
+            self.save(path)
+        }
+    }
+}
+
+impl Drop for Persistence {
+    fn drop(&mut self) {
+        for (path, write) in &mut self.writes {
+            if let Some(task) = write.task.take() {
+                match bevy_tasks::block_on(task) {
+                    Ok(mut saved) => {
+                        if !write.changed {
+                            continue;
+                        }
+                        if !write.reset {
+                            saved.apply_edits(&write.submitted, &write.snapshot);
+                            write.snapshot = saved;
+                        }
+                    }
+                    Err(error) => {
+                        eprintln!("Could not save dock: {error}");
+                        write.reset |= write.submitted_reset;
+                    }
+                }
+            }
+            if let Err(error) = write.snapshot.write_snapshot(path, write.reset) {
+                eprintln!("Could not flush dock: {error}");
+            }
+        }
+    }
+}
+
+impl Persistence {
+    #[cfg(test)]
+    pub(super) fn writing(&self) -> bool {
+        !self.writes.is_empty()
+    }
+
+    fn queue(&mut self, path: PathBuf, snapshot: SidebarWidgets, reset: bool, now: Duration) {
+        let write = self.writes.entry(path).or_insert_with(|| DockWrite {
+            submitted: snapshot.clone(),
+            submitted_reset: false,
+            snapshot: snapshot.clone(),
+            reset: false,
+            due: now,
+            task: None,
+            changed: false,
+        });
+        write.snapshot = snapshot;
+        write.reset |= reset;
+        write.changed = true;
+        write.due = now;
+    }
+}
+
 pub(super) fn persist(
     owner: NonSend<HostOwner>,
     time: Res<Time<Real>>,
     mut widgets: ResMut<SidebarWidgets>,
-    mut state: Local<Persistence>,
+    mut state: ResMut<Persistence>,
 ) {
-    let path = owner.dock_layout_path();
     let now = time.elapsed();
-    // Keep the previous character's edits separate while a different dock is active.
+    let path = owner.dock_layout_path();
     let closing = owner.phase == crate::bevy_shell::owner::Phase::Closed;
-    state.unsaved.retain(|previous, (snapshot, attempted)| {
-        if Some(previous) == path.as_ref()
-            || (!closing && now.saturating_sub(*attempted) < SAVE_DELAY)
-        {
-            return true;
+    if widgets.is_changed() {
+        state.dirty = Some(now);
+    }
+    if state.dirty.is_some_and(|since| {
+        closing || path != state.path || now.saturating_sub(since) >= SAVE_DELAY
+    }) {
+        if let Some(previous) = state.path.clone() {
+            state.queue(previous, widgets.clone(), false, now);
         }
-        *attempted = now;
-        match snapshot.save(previous) {
-            Ok(()) => false,
-            Err(error) => {
-                if closing {
-                    leprintln!("Could not save window layout: {error}", error = error);
-                }
-                true
-            }
-        }
-    });
+        state.dirty = None;
+    }
     if path != state.path {
-        if let Some(previous) = state.path.as_deref()
-            && (state.pending.is_some() || widgets.is_changed())
-            && let Err(error) = widgets.bypass_change_detection().save(previous)
-        {
-            leprintln!("Could not save window layout: {error}", error = error);
-            let previous = previous.to_owned();
-            state.unsaved.insert(previous, (widgets.clone(), now));
-        }
-        if let Some((snapshot, _)) = path.as_ref().and_then(|path| state.unsaved.remove(path)) {
-            install_snapshot(&mut widgets, snapshot);
-            state.path = path;
-            state.pending = Some(now);
-            return;
-        }
-        let next = match path.as_deref().map(SidebarWidgets::load) {
-            Some(Ok(saved)) => saved,
-            Some(Err(error)) => {
+        let next = path.as_ref().map_or_else(SidebarWidgets::default, |p| {
+            if let Some(write) = state.writes.get(p) {
+                return write.snapshot.clone();
+            }
+            SidebarWidgets::load(p).unwrap_or_else(|error| {
                 eprintln!("Could not load window layouts: {error}");
                 SidebarWidgets::default()
-            }
-            None => SidebarWidgets::default(),
-        };
+            })
+        });
         install_snapshot(&mut widgets, next);
-        state.path = path;
-        state.pending = None;
-        return;
+        state.path.clone_from(&path);
+        state.dirty = None;
     }
-    let Persistence { path, pending, .. } = &mut *state;
-    let Some(path) = path.as_deref() else {
-        return;
-    };
-    if widgets.is_changed() {
-        *pending = Some(now);
-    }
-    if pending.is_some_and(|since| closing || now.saturating_sub(since) >= SAVE_DELAY) {
-        let mut snapshot = widgets.clone();
-        if let Err(error) = snapshot.save(path) {
-            *pending = Some(now);
-            leprintln!("Could not save window layout: {error}", error = error);
-        } else {
-            install_snapshot(&mut widgets, snapshot);
-            *pending = None;
+    state.writes.retain(|target, write| {
+        if let Some(result) = write
+            .task
+            .as_mut()
+            .and_then(bevy_tasks::futures::check_ready)
+        {
+            write.task = None;
+            match result {
+                Ok(mut saved) => {
+                    if !write.reset {
+                        saved.apply_edits(&write.submitted, &write.snapshot);
+                        if path.as_ref() == Some(target) {
+                            saved.apply_edits(&write.snapshot, &widgets);
+                            install_snapshot(&mut widgets, saved.clone());
+                        }
+                        write.snapshot = saved;
+                    }
+                    if !write.changed {
+                        return false;
+                    }
+                }
+                Err(error) => {
+                    leprintln!("Could not save window layout: {error}", error = error);
+                    write.reset |= write.submitted_reset;
+                    write.due = now + SAVE_DELAY;
+                }
+            }
         }
-    }
+        if write.task.is_none() && (closing || now >= write.due) {
+            let mut edited = write.snapshot.clone();
+            let target = target.clone();
+            let reset = write.reset;
+            write.submitted_reset = reset;
+            write.submitted = edited.clone();
+            write.changed = false;
+            write.task = Some(bevy_tasks::IoTaskPool::get().spawn(async move {
+                edited.write_snapshot(&target, reset)?;
+                Ok(edited)
+            }));
+            write.reset = false;
+        }
+        true
+    });
 }
 
-/// The window menu's Reset window layout also restores the character's default dock.
 pub(super) fn reset(
     _: On<LayoutReset>,
     owner: NonSend<HostOwner>,
     mut widgets: ResMut<SidebarWidgets>,
+    mut state: ResMut<Persistence>,
+    time: Res<Time<Real>>,
 ) {
-    let path = owner.dock_layout_path();
-    if let Err(error) = widgets.reset(path.as_deref()) {
-        leprintln!("Could not save window layout: {error}", error = error);
+    *widgets = SidebarWidgets::default();
+    if let Some(path) = owner.dock_layout_path() {
+        state.queue(path, widgets.clone(), true, time.elapsed());
     }
 }
 

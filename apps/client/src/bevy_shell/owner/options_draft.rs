@@ -48,12 +48,15 @@ impl HostOwner {
         self.settings.open = false;
     }
     pub fn apply(&mut self, close: bool) {
+        if self.forget_intent.is_some() {
+            return;
+        }
         if self.settings.preference_transfer_pending() {
             self.settings.feedback =
                 "Wait for the options transfer to finish before applying edits.".into();
             return;
         }
-        let Some(mut draft) = self.draft.take() else {
+        let Some(draft) = self.draft.take() else {
             return;
         };
         if draft.scope != self.scope || self.phase == Phase::Closed {
@@ -67,12 +70,13 @@ impl HostOwner {
         let forget = before.stay_logged_in && !after.stay_logged_in
             || before.remember_device && !after.remember_device;
         if forget && draft.values.validate().is_ok() {
-            if !self.forget_device() {
-                self.draft = Some(draft);
-                return;
-            }
-            draft.values.miscellaneous.remember_device = false;
+            self.forget_for_options(draft, close);
+            return;
         }
+        self.apply_draft(draft, close);
+    }
+
+    pub(super) fn apply_draft(&mut self, draft: Draft, close: bool) {
         self.settings.apply(draft.values.clone());
         if self.settings.preferences != draft.values {
             self.draft = Some(draft);

@@ -89,7 +89,7 @@ impl MiscellaneousPreferences {
     }
 
     pub(crate) fn disable_remember_device_at(path: &std::path::Path) -> std::io::Result<()> {
-        let _lock = crate::atomic_file::lock(path)?;
+        let _lock = crate::atomic_file::wait_for_lock(path)?;
         let before = Self {
             remember_device: true,
             ..Self::default()

@@ -241,14 +241,12 @@ pub(super) async fn authorize(
                     .device_sessions
                     .block_remembered()
                     .map_err(login_rejected)?;
-                if let Some(path) = &config.preference_path
-                    && let Err(error) =
-                        crate::play::MiscellaneousPreferences::disable_remember_device_at(
-                            &path.with_extension("session-options.json"),
-                        )
-                {
-                    eprintln!("Could not save the remember-device choice: {error}");
-                }
+                let opt_out = config.preference_path.as_ref().map(|path| {
+                    let path = path.with_extension("session-options.json");
+                    tokio::task::spawn_blocking(move || {
+                        crate::play::MiscellaneousPreferences::disable_remember_device_at(&path)
+                    })
+                });
                 if let Some(attempt) = &mut device {
                     config
                         .device_sessions
@@ -261,6 +259,14 @@ pub(super) async fn authorize(
                         .finish_sign_out(client)
                         .await
                         .map_err(login_rejected)?;
+                }
+                if let Some(write) = opt_out
+                    && let Err(error) = write
+                        .await
+                        .map_err(std::io::Error::other)
+                        .and_then(std::convert::identity)
+                {
+                    eprintln!("Could not save the remember-device choice: {error}");
                 }
                 return Err(rejected(PublicClass::RetryLogin));
             }

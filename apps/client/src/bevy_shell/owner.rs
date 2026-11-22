@@ -62,6 +62,7 @@ pub(super) struct HostOwner {
     pub settings: SettingsState,
     preferences_path: Option<PathBuf>,
     draft: Option<Draft>,
+    forget_intent: Option<device_sign_out::PendingIntent>,
     device_sign_out: Option<tokio::sync::watch::Receiver<Option<bool>>>,
     scope: Scope,
     pub phase: Phase,
@@ -107,6 +108,7 @@ impl HostOwner {
             settings: SettingsState::new(path.clone()),
             preferences_path: path,
             draft: None,
+            forget_intent: None,
             device_sign_out: None,
             scope: Scope {
                 character: None,
@@ -188,6 +190,7 @@ impl HostOwner {
     }
     pub fn modal_active(&self) -> bool {
         self.draft.is_some()
+            || self.forget_intent.is_some()
             || self.login.visible
             || self.login.bulletin.visible
             || self.selection.pending().is_some()
@@ -212,15 +215,14 @@ impl HostOwner {
         &mut self,
         lookup: impl FnOnce() -> Option<std::ffi::OsString>,
     ) {
-        if self.phase != Phase::Offline || !self.login.visible {
+        if self.phase != Phase::Offline || !self.login.visible || self.forget_intent.is_some() {
             return;
         }
         if self.login.save_pending() {
             return;
         }
-        if let Some(config) = self.login.start_save() {
-            self.start_saved_login(config, lookup());
-        } else if self.login.save_pending() {
+        self.login.start_save();
+        if self.login.save_pending() {
             self.login.set_pending_assets(lookup());
         }
     }
@@ -281,6 +283,9 @@ impl HostOwner {
     }
     pub fn poll(&mut self, viewport: [u32; 2]) {
         if self.phase == Phase::Closed {
+            if self.entry.is_some() && !self.forget_worker_running() {
+                self.finish_close();
+            }
             return;
         }
         if self.phase == Phase::Offline
@@ -465,18 +470,28 @@ impl HostOwner {
         self.dialogs.clear();
         self.login.visible = false;
         self.login.bulletin.visible = false;
+        self.phase = Phase::Closed;
+        if !self.forget_worker_running() {
+            self.finish_close();
+        }
+    }
+
+    fn finish_close(&mut self) {
+        self.finish_forget_intent();
         self.flush_local_saves();
         // An explicit device revocation has already recorded its intent on disk.
         if let Some(mut entry) = self.entry.take() {
             entry.cancel_entry();
             entry.shutdown();
         }
-        self.phase = Phase::Closed;
     }
 }
 impl Drop for HostOwner {
     fn drop(&mut self) {
         self.close();
+        if self.forget_intent.is_some() {
+            self.finish_close();
+        }
     }
 }
 fn offline_message() -> &'static str {

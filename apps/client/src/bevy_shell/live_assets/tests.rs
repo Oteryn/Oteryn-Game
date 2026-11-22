@@ -47,6 +47,11 @@ fn valid_login_without_explicit_live_metadata_never_requests_admission() -> Test
             calls.set(calls.get() + 1);
             asset_root
         });
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+        while host.login.save_pending() {
+            assert!(std::time::Instant::now() < deadline);
+            host.poll([1024, 720]);
+        }
         assert!(
             !host.entry.as_ref().is_some_and(Reentry::is_entering),
             "bad assets must not spawn native entry"

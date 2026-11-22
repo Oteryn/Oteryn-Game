@@ -485,3 +485,40 @@ fn missing_gameplay_root_does_not_preempt_gateway_refusal() -> TestResult {
     stack.finish();
     Ok(())
 }
+
+#[test]
+fn c2d_picker_cancel_persists_opt_out_after_lock_timeout() -> TestResult {
+    use crate::{character_selection::SelectionAction, play::MiscellaneousPreferences};
+    use std::{sync::Arc, time::Duration};
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("preferences.json");
+    let sidecar = path.with_extension("session-options.json");
+    MiscellaneousPreferences {
+        remember_device: true,
+        ..Default::default()
+    }
+    .save(&sidecar)?;
+    let stack = Stack::start_with_account(vec![], vec![], true)?;
+    let mut config = stack.config();
+    config.preference_path = Some(path);
+    let held = crate::atomic_file::lock(&sidecar)?;
+    let (cancel, release) = std::sync::mpsc::channel();
+    let unlock = std::thread::spawn(move || {
+        if release.recv_timeout(Duration::from_secs(5)).is_ok() {
+            std::thread::sleep(Duration::from_millis(1300));
+        }
+        drop(held);
+    });
+    config.select_character = Arc::new(move |_, _, _| {
+        assert!(cancel.send(()).is_ok());
+        SelectionAction::Cancel
+    });
+    assert_eq!(
+        stack.entry(config)?,
+        GameplayEntryError::Rejected(PublicClass::RetryLogin)
+    );
+    unlock.join().map_err(|_| "lock holder panicked")?;
+    assert!(!MiscellaneousPreferences::read(&sidecar)?.remember_device);
+    stack.finish();
+    Ok(())
+}

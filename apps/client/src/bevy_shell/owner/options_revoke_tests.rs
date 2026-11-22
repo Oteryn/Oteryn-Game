@@ -34,6 +34,7 @@ fn turning_remember_device_off_forgets_the_device_and_logs_the_character_out() -
     host.open_graphics();
     host.edit_preferences(|preferences| preferences.miscellaneous.remember_device = false);
     host.apply(true);
+    host.finish_forget_intent();
     assert!(!host.settings.preferences.miscellaneous.remember_device);
     assert_eq!(
         Arc::strong_count(&device),

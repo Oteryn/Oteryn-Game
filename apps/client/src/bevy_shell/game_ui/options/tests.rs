@@ -335,6 +335,14 @@ fn remember_device_checkbox_keeps_the_session_and_persists_the_login_choices() -
     set(&mut app, "misc.stay_logged_in", false);
     let ok = app.world_mut().spawn(Control::Ok).observe(activate).id();
     app.world_mut().trigger(Activate { entity: ok });
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(3);
+    let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+    while owner.settings.preferences.miscellaneous.remember_device
+        || owner.settings.preference_save_pending()
+    {
+        assert!(std::time::Instant::now() < deadline);
+        owner.poll([800, 600]);
+    }
     let saved = crate::play::SettingsState::new(Some(path))
         .preferences
         .miscellaneous;

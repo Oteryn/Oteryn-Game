@@ -244,3 +244,28 @@ impl vault::Vault for JournalEntry {
         Ok(())
     }
 }
+
+#[cfg(bevy_shell)]
+impl DeviceLogin {
+    pub(crate) fn observe_process_forget(
+        &mut self,
+        observed: std::sync::mpsc::Sender<std::thread::ThreadId>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let entry = Arc::new(JournalEntry::default());
+        self.journal = Arc::new(revocation_journal::Journal::with_vault(
+            self.folder.clone(),
+            Arc::new(move |_| {
+                let _ = observed.send(std::thread::current().id());
+                entry.clone()
+            }),
+        ));
+        let response: serde_json::Value = serde_json::from_slice(&enrollment_response()?)?;
+        self.journal
+            .observe_process_credential(Some(&DeviceCredential::parse(
+                response["device_credential"]
+                    .as_str()
+                    .ok_or("enrollment credential")?,
+            )?))?;
+        Ok(())
+    }
+}
