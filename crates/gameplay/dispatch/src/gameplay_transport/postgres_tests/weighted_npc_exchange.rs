@@ -18,11 +18,11 @@ const QUEST: &str = "oteryn:quest.fixture.wyda_exchange";
 const TRANSITION: &str = "oteryn:quest-reward/weighted-wyda";
 const TRACK: &str = "oteryn:quest-progress/fixture/wyda-exchange";
 const HERB: &str = "oteryn:item.tibia.i3734";
-const BROOM: &str = "oteryn:item.tibia.i3454";
-const TEDDY: &str = "oteryn:item.tibia.i12617";
-const BROOM_REPLY: &str =
+const SHOVEL: &str = "oteryn:item.tibia.i3457";
+const ROPE: &str = "oteryn:item.tibia.i3003";
+const SHOVEL_REPLY: &str =
     "Thank you -SOOO- much! No, I really mean it! Really! Here, let me give you a reward...";
-const TEDDY_REPLY: &str = "Thank you -SOOO- much! No, I really mean it! Really! Ah, you know what, you can have this old thing...";
+const ROPE_REPLY: &str = "Thank you -SOOO- much! No, I really mean it! Really! Ah, you know what, you can have this old thing...";
 
 #[test]
 fn weighted_npc_exchange_replays_committed_item_and_reply_after_lost_ack() -> TestResult {
@@ -43,8 +43,9 @@ fn weighted_npc_exchange_refuses_inactive_event_and_grants_once_per_active_epoch
 }
 
 fn authored(event: bool) -> TestResult<QuestStateCatalogue> {
-    // Wyda's Blood Herb branches and weights come from Crystal 201189f8, wyda.lua:104–115.
-    // Grimvale's live gate exercises generic occurrence scoping without enabling Bored's schedule.
+    // Wyda's weights and reply branches come from Crystal 201189f8, wyda.lua:104–115.
+    // Use two inventory-admitted items while the donor reward custody data is authored.
+    // Grimvale supplies an existing live gate for the generic occurrence rule.
     let stages = json!([{"key":"exchange","completes":false,"trigger":{
         "kind":"npc_dialogue","callback":{
             "key":TRANSITION,"quest":QUEST,"npc":NPC,"keywords":["blood herb"],"topic":0,"next_topic":0,
@@ -55,13 +56,16 @@ fn authored(event: bool) -> TestResult<QuestStateCatalogue> {
             "weighted_exchange":{
                 "world_change":event.then_some("grimvale"),
                 "outcomes":[
-                    {"weight":70,"give":{"item":BROOM,"count":1},"reply":[BROOM_REPLY]},
-                    {"weight":30,"give":{"item":TEDDY,"count":1},"reply":[TEDDY_REPLY]}
+                    {"weight":70,"give":{"item":SHOVEL,"count":1},"reply":[SHOVEL_REPLY]},
+                    {"weight":30,"give":{"item":ROPE,"count":1},"reply":[ROPE_REPLY]}
                 ]
             }
         }
     }}]);
-    let digest = format!("{:x}", Sha256::digest(serde_json::to_vec(&stages)?));
+    let digest = Sha256::digest(serde_json::to_vec(&stages)?)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
     let bindings = Bindings::parse(&serde_json::to_vec(&json!({
         "schema":1,"quests":[{"quest":QUEST,"recipe_sha256":digest,"stages":stages,
         "tracks":[{"key":TRACK,"initial":1,"minimum":1,"maximum":2}],
@@ -133,7 +137,7 @@ fn scenario(event: bool) -> TestResult {
              _room,
              _pin,
              _deps,
-             _actor,
+             actor,
              session,
              owner,
              fence,
@@ -204,8 +208,8 @@ async fn exercise(
         .as_i64()
         .ok_or("persisted draw")?;
     let (chosen, unchosen, reply) = match roll {
-        1..=70 => (BROOM, TEDDY, BROOM_REPLY),
-        71..=100 => (TEDDY, BROOM, TEDDY_REPLY),
+        1..=70 => (SHOVEL, ROPE, SHOVEL_REPLY),
+        71..=100 => (ROPE, SHOVEL, ROPE_REPLY),
         _ => return Err("draw bounds".into()),
     };
     assert_eq!(plan["give"]["item"], chosen);
@@ -249,7 +253,7 @@ async fn exercise(
         );
         assert_eq!(plans(h).await?.len(), 2);
         assert_eq!(quantity(h, HERB).await?, 0);
-        assert_eq!(quantity(h, BROOM).await? + quantity(h, TEDDY).await?, 2);
+        assert_eq!(quantity(h, SHOVEL).await? + quantity(h, ROPE).await?, 2);
     }
     Ok(())
 }
