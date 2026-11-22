@@ -778,10 +778,20 @@ fn source_questpc7_corpse_capacity(creature: &str, corpse: &SectionRef) -> Optio
     }
 }
 
+fn crystal_plain_corpses() -> &'static [(String, u32)] {
+    static CORPSES: LazyLock<Vec<(String, u32)>> = LazyLock::new(|| {
+        serde_json::from_str(include_str!(
+            "../../../../../imports/crystalserver/ordinary-corpses/plain.json"
+        ))
+        .unwrap_or_default()
+    });
+    &CORPSES
+}
+
 fn source_plain_corpse_pair(creature: &str, corpse: &SectionRef) -> bool {
     corpse.family == "Item"
         && corpse.revision == "definition-r1"
-        && matches!(
+        && (matches!(
             (creature, corpse.key.as_str()),
             (
                 "oteryn:creature.symbol_of_hatred",
@@ -797,7 +807,19 @@ fn source_plain_corpse_pair(creature: &str, corpse: &SectionRef) -> bool {
                     "oteryn:creature.necromantic_focus",
                     "oteryn:item.tibia.i33984"
                 )
-        )
+        ) || creature
+            .strip_prefix("oteryn:creature.")
+            .is_some_and(|name| {
+                corpse
+                    .key
+                    .strip_prefix("oteryn:item.tibia.i")
+                    .and_then(|id| id.parse::<u32>().ok())
+                    .is_some_and(|id| {
+                        crystal_plain_corpses()
+                            .iter()
+                            .any(|(creature, body)| creature == name && *body == id)
+                    })
+            }))
 }
 
 fn verified_soul_war_corpses(
@@ -831,9 +853,12 @@ fn verified_soul_war_corpses(
             && matches!(&record.semantics.physical, F::Known(value)
                 if value.weight == F::Known(0) && value.movable == F::Known(false) && value.pickupable == F::Known(false))
             && matches!(&record.semantics.container, F::Known(value) if value.capacity == F::Known(48));
-        let source_plain = matches!(definition.production_key.as_str(),
+        let ordinary_plain = definition.production_key.strip_prefix("oteryn:item.tibia.i")
+            .and_then(|id| id.parse::<u32>().ok())
+            .is_some_and(|id| crystal_plain_corpses().iter().any(|(_, body)| *body == id));
+        let source_plain = (ordinary_plain || matches!(definition.production_key.as_str(),
             "oteryn:item.tibia.i33792" | "oteryn:item.tibia.i33793" | "oteryn:item.tibia.i33876"
-            | "oteryn:item.tibia.i33891" | "oteryn:item.tibia.i33949" | "oteryn:item.tibia.i33984")
+            | "oteryn:item.tibia.i33891" | "oteryn:item.tibia.i33949" | "oteryn:item.tibia.i33984"))
             && matches!(&record.semantics.classification, F::Known(value) if value.item_type == F::NotApplicable)
             && record.semantics.container == F::NotApplicable;
         let questpc7_capacity = match definition.production_key.as_str() {
@@ -1645,6 +1670,45 @@ mod protected_loot_sweep {
             }
         }
         assert!(missing.is_empty(), "protected loot pruned: {missing:?}");
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod crystal_corpse_tests {
+    #[test]
+    fn crystal_corpse_admissions_reach_the_native_reward_loader()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let world = super::super::production::test_source(1)?.world_id;
+        let (controller, _) =
+            super::super::native_gameplay::test_support::activated_with_loot_tables(world, None);
+        let generation = controller.active().ok_or("active Crystal corpse fixture")?;
+        let native = generation
+            .native_gameplay()
+            .ok_or("native Crystal corpse fixture")?;
+        let expected: Vec<(String, u32)> = serde_json::from_str(include_str!(
+            "../../../../../imports/crystalserver/ordinary-corpses/admissions.json"
+        ))?;
+        assert_eq!(expected.len(), 299);
+        let mut failures = Vec::new();
+        for (name, item) in expected {
+            let creature = format!("oteryn:creature.{name}");
+            let body = format!("oteryn:item.tibia.i{item}");
+            let row = native.reward_table().row(&creature).or_else(|reason| {
+                native
+                    .reward_table()
+                    .reward_boss_corpse(&creature)
+                    .ok_or(reason)
+            });
+            match row {
+                Ok(row)
+                    if row.corpse_item.as_ref().is_some_and(|corpse| {
+                        corpse.production_key == body && corpse.revision_ref == "definition-r1"
+                    }) && native.item_policy(&body, "definition-r1").is_some() => {}
+                other => failures.push(format!("{creature} / {body}: {other:?}")),
+            }
+        }
+        assert!(failures.is_empty(), "{}", failures.join("\n"));
         Ok(())
     }
 }

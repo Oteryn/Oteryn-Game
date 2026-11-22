@@ -1,0 +1,193 @@
+"""Lower the scoped Crystal corpse capture through the existing native Item owner."""
+import copy
+import hashlib
+import json
+
+from boss_conditional_item_reference import definition
+from boss_corpse_profiles import complete_source_top_order
+import qengine_reward_item_profiles as items
+
+CAPTURE = 'imports/crystalserver/ordinary-corpses'
+PIN = '201189f871d23597b82caf88fd611454a2ddefb8'
+
+
+def read(root, name):
+    return json.loads((root / CAPTURE / f'{name}.json').read_bytes())
+
+
+def item_ref(item):
+    return {'family': 'Item', 'key': f'oteryn:item.tibia.i{item}', 'revision': 'definition-r1'}
+
+
+def extend_definitions(root, definitions):
+    present = {row['identity']['key']: row for row in definitions}
+    for row in read(root, 'creature-bindings'):
+        key = item_ref(row['item'])['key']
+        expected = definition(key)
+        prior = present.get(key)
+        if prior is None:
+            definitions.append(expected)
+            present[key] = expected
+        elif prior != expected:
+            raise ValueError(f'Crystal corpse reference differs from the captured identity: {key}')
+
+
+def bind_creatures(root, creatures):
+    by_name = {row['profile']['target']['key']: row['profile']['data']['profile']['details']
+               for row in creatures['records']}
+    for row in read(root, 'creature-bindings'):
+        details = by_name['oteryn:creature.' + row['creature']]
+        body = item_ref(row['item'])
+        if details.get('corpse_item') not in (None, body):
+            raise ValueError(f"Crystal corpse conflicts with {row['creature']}")
+        details['corpse_item'] = body
+
+
+def admit(root, generated, path, manifest_path, order, canonical):
+    source = items.source
+    raw = (root / CAPTURE / 'items.xml').read_bytes()
+    appearances = (root / items.CLIENT).read_bytes()
+    if hashlib.sha256(appearances).hexdigest() != items.CLIENT_SHA:
+        raise ValueError('Crystal corpse appearance bank differs from the checked client bank')
+    xml = source.xml_index(raw)
+    objects = source.engine_items.load_appearance_objects(appearances)
+    ids = read(root, 'item-ids')
+    if ids != sorted(set(ids)) or not ids:
+        raise ValueError('Crystal corpse Item cohort must be nonempty, unique and ordered')
+    definitions = {row['definition']['identity']['key']: row['definition']
+                   for shard in (root / 'content/items/definitions').glob('items-*.json')
+                   for row in json.loads(shard.read_bytes())['records']}
+    bindings = source.binding_index((root / 'imports/crystalserver/bindings/items.json').read_bytes())
+    for binding in read(root, 'bindings'):
+        external = binding['external_id']
+        if (external in bindings or binding['source_key'] != 'oteryn:source.crystalserver'
+                or binding['source_revision'] != PIN or binding['target'] != item_ref(int(external))
+                or binding['disposition'] != 'EXACT'):
+            raise ValueError(f'Invalid exact Crystal corpse binding {external}')
+        bindings[external] = binding
+    # A physical-only admission can reference an existing terminal Item even
+    # when the latter has no active factory binding. No custody is added to it.
+    targets = dict(bindings)
+    for key, definition_row in definitions.items():
+        prefix = 'oteryn:item.tibia.i'
+        external = key.removeprefix(prefix)
+        if key.startswith(prefix) and external.isdecimal():
+            targets.setdefault(external, {'target': definition_row['identity']})
+    physical = {row['server_item_id']: row for row in source.policies(appearances, raw, set(ids))}
+    mandatory_yields = {item for loot in read(root, 'scope')['mandatory_loot'].values()
+                        for item in loot}
+    current = {record['production_binding']['external_id']: record
+               for record in json.loads(generated[path])['records']}
+    records = []
+    for item in ids:
+        identity = item_ref(item)
+        binding = bindings[str(item)]
+        if binding['target'] != identity or definitions[identity['key']]['identity'] != identity:
+            raise ValueError(f'Crystal corpse Item identity drift: {item}')
+        node = xml.get(item)
+        target = source.attrs(node).get('decayto', '0') if node is not None else '0'
+        unresolved = target != '0' and target not in targets
+        if unresolved:
+            node = copy.deepcopy(node)
+            for child in list(node):
+                if child.get('key', '').lower() in ('duration', 'decayto'):
+                    node.remove(child)
+        record = source.profile(item, node, objects[item], physical[item], targets, None)
+        complete_source_top_order(record, objects[item])
+        if item not in mandatory_yields and record['admission']['stack_class'] != 'NonStackable':
+            raise ValueError(f'Crystal corpse is not a single Item: {item}')
+        if unresolved:
+            record['semantics']['temporal'] = source.U
+        record['production_binding'] = binding
+        record['production_binding_qualification'] = None
+        record['production_definition'] = {
+            'family': 'Item', 'production_key': identity['key'], 'revision_ref': identity['revision'],
+        }
+        if item in mandatory_yields and str(item) in current:
+            prior = copy.deepcopy(current[str(item)])
+            if prior['admission'] != record['admission'] or prior['production_binding'] != binding:
+                raise ValueError(f'Crystal required yield custody differs from the active owner: {item}')
+            # Waterskin and twig arms already have carried custody. Fill the
+            # missing classification/charge facts needed by the loot producer.
+            for field in ('classification', 'charges'):
+                if prior['semantics'][field] == source.U:
+                    prior['semantics'][field] = record['semantics'][field]
+            record = prior
+        records.append(record)
+    items.admit_records(root, generated, path, manifest_path, order, canonical, records)
+
+
+MIGRATION = 'apps/game-server/migrations/2977_crystal_ordinary_corpse_registry.sql'
+
+
+def migration(root):
+    chains = read(root, 'decay')
+    chain_cases = '\n'.join(
+        f" WHEN 'oteryn:item.tibia.i{chain[0]}' THEN ARRAY[{','.join(map(str, chain))}]"
+        for chain, _ in chains
+    )
+    duration_cases = '\n'.join(
+        f" WHEN p_key='oteryn:item.tibia.i{chain[0]}' THEN ARRAY[{','.join(map(str, times))}]::BIGINT[]"
+        for chain, times in chains
+    )
+    roots = ','.join(str(chain[0]) for chain, _ in chains)
+    plain = ','.join(f"'oteryn:item.tibia.i{item}'"
+                     for item in sorted({item for _, item in read(root, 'plain')}))
+    return f"""-- Generated by ordinary_corpse_profiles.py from Crystal 201189f8.
+-- Extend the installed corpse registries. The existing scheduler owns the
+-- original mint proof, stage transforms and final retirement.
+DO $ordinary_crystal_corpses$
+DECLARE
+    body TEXT;
+    anchor TEXT;
+    root INTEGER;
+BEGIN
+    FOREACH root IN ARRAY ARRAY[{roots}] LOOP
+        IF game_summer_corpse_chain('oteryn:item.tibia.i'||root) IS NOT NULL THEN
+            RAISE EXCEPTION 'Crystal corpse already has a lifecycle owner: %', root;
+        END IF;
+    END LOOP;
+    body := pg_get_functiondef('game_summer_corpse_chain(text)'::regprocedure);
+    anchor := 'WHEN ''oteryn:item.tibia.i54678'' THEN';
+    IF (length(body)-length(replace(body,anchor,'')))/length(anchor) <> 1 THEN
+        RAISE EXCEPTION 'Crystal corpse chain dispatcher changed';
+    END IF;
+    EXECUTE replace(body, anchor, $cases$
+{chain_cases}
+ $cases$ || anchor);
+
+    body := pg_get_functiondef('game_source_corpse_durations_v1(text)'::regprocedure);
+    anchor := 'WHEN game_summer_corpse_chain(p_key) IS NOT NULL THEN';
+    IF (length(body)-length(replace(body,anchor,'')))/length(anchor) <> 1 THEN
+        RAISE EXCEPTION 'Crystal corpse duration dispatcher changed';
+    END IF;
+    EXECUTE replace(body, anchor, $cases$
+{duration_cases}
+ $cases$ || anchor);
+
+    body := pg_get_functiondef('game_item_plain_corpse_source(uuid)'::regprocedure);
+    anchor := 'i.definition_production_key IN (';
+    IF (length(body)-length(replace(body,anchor,'')))/length(anchor) <> 1 THEN
+        RAISE EXCEPTION 'Crystal plain corpse custody dispatcher changed';
+    END IF;
+    EXECUTE replace(body, anchor, anchor || $cases$ {plain}, $cases$);
+END
+$ordinary_crystal_corpses$;
+"""
+
+
+if __name__ == '__main__':
+    import argparse
+    from pathlib import Path
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--check', action='store_true')
+    args = parser.parse_args()
+    root = Path(__file__).resolve().parents[2]
+    path = root / MIGRATION
+    expected = migration(root)
+    if args.check:
+        if path.read_text() != expected:
+            raise SystemExit('Crystal ordinary corpse migration differs from its source capture')
+    else:
+        path.write_text(expected)

@@ -391,6 +391,7 @@ def test_package_tree_contract():
             40601,
             40603,
             48227,
+            48340,
             49362,
         )
     ], "only the exact source-qualified reference extensions are admitted"
