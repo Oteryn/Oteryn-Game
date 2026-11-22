@@ -325,8 +325,8 @@ fn format_uuid(bytes: &[u8; 16]) -> String {
     text
 }
 
-/// A Platform OAuth access token for scope `game:ticket`. Consumed by ticket issuance, which
-/// revokes it on the Platform side.
+/// An opaque Platform OAuth bearer for the authorized native scope.
+/// Issuing a game ticket consumes the game-scoped bearer.
 #[derive(Debug)]
 pub struct AccessToken(SecretText);
 
