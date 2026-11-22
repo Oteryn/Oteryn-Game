@@ -1656,6 +1656,10 @@ mod tests;
 #[cfg(test)]
 #[allow(clippy::expect_used, clippy::panic)]
 mod visibility_tests;
+#[cfg(test)]
+pub(in crate::gameplay_transport) use visibility_tests::{
+    prime_player_status_clock, regression_player_status,
+};
 
 #[cfg(test)]
 #[path = "item_look_dispatch_tests.rs"]

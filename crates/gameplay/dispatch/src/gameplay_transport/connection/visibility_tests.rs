@@ -344,3 +344,29 @@ fn player_status_dispatch_requires_negotiation_and_visible_incarnation()
         .map_err(|_| "player status dispatch thread")??;
     Ok(())
 }
+
+/// Keep the published cut fixed across a visibility change while using the real command route.
+pub(in crate::gameplay_transport) async fn regression_player_status(
+    authority: &impl FreshAdmissionAuthority,
+    admitted: AdmittedSession,
+    target: EntityRef,
+    visibility: &SessionVisibility,
+) -> Option<Vec<u8>> {
+    let mut payload = target.identity.to_vec();
+    payload.extend_from_slice(&target.generation.to_be_bytes());
+    match routing::player_status::route(authority, admitted, &payload, Some(visibility)).await {
+        Dispatch::Reply(CommandStatus::Accepted, payload) => Some(payload),
+        _ => None,
+    }
+}
+
+pub(in crate::gameplay_transport) fn prime_player_status_clock(
+    authority: &impl FreshAdmissionAuthority,
+    mut admitted: AdmittedSession,
+) {
+    admitted
+        .continuity
+        .gameplay_idle
+        .activity(authority.gameplay_idle_now());
+    authority.observe_gameplay_idle(admitted);
+}

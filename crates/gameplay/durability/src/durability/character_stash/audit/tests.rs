@@ -48,7 +48,7 @@ fn maximum_stash_outputs_and_named_house_fit_existing_audit_rows() {
         access_refusal: None,
     };
     let plan=Plan {definition:TypedDefinitionRef {family:"Item".into(),production_key:"k".repeat(512),revision_ref:"r".repeat(512)},
-        entry:text(6),amount:MAX_STASH_OUTPUTS*100,before:i64::from(MAX_STASH_UNITS),previous:Some(text(7)),parent:id(8).to_vec(),
+        entry:text(6),amount:MAX_STASH_OUTPUTS*100,before:i64::from(MAX_STASH_UNITS),previous:Some(text(7)),parent:id(8).to_vec(),nested:false,
         lines:(0..MAX_STASH_OUTPUTS).map(|index|json!({"item":text(index as u8+20),"count":100,"ordinal":u64::MAX-u64::from(index)})).collect()};
     let bytes = encode(
         fence,

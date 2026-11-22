@@ -54,6 +54,13 @@ pub(super) async fn observe(
     else {
         return None;
     };
+    let states = owner.states.spell_states.try_lock().ok()?;
+    let (ghost, _, _) = runtime.actor_staff_visibility(actor).ok()?;
+    if (ghost && owner.states.staff_world.group(observer) < 4)
+        || states.player_hidden_from(&runtime, observer, actor, owner.owner_now())
+    {
+        return None;
+    }
     let facts = runtime.player_control_facts(actor, session).ok()?;
     let away = if facts.control_loss.is_some() {
         true
@@ -65,12 +72,21 @@ pub(super) async fn observe(
         let last = idle.last_activity()?;
         last.elapsed().as_millis() >= u128::from(owner.states.gameplay_idle_policy.warning_after_ms)
     };
+    let position = runtime.read_actor_position(actor).ok()?.position();
+    let zones = owner.logout_zones_for_cell(
+        &runtime,
+        crate::content::LogicalCell {
+            x: position.x,
+            y: position.y,
+            z: i32::from(position.floor),
+        },
+    )?;
     Some(PlayerStatus {
         presence: if away {
             PlayerPresence::Away
         } else {
             PlayerPresence::Online
         },
-        no_logout: owner.no_logout_tile(&mut runtime, actor)?,
+        no_logout: zones.no_logout,
     })
 }

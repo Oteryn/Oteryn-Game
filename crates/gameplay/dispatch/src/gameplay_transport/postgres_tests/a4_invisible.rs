@@ -75,7 +75,19 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
                     bytes,
                 };
                 supplied.cosmetics = pinned(serde_json::to_vec(&cosmetics)?);
-                supplied.source_world = Some(pinned(source.to_vec()));
+                // Qualify the same source fixture with NOLOGOUT on the caster's entry tile.
+                let mut source: serde_json::Value = serde_json::from_slice(source)?;
+                let tile = source["tiles"]
+                    .as_array_mut()
+                    .and_then(|tiles| {
+                        tiles.iter_mut().find(|tile| {
+                            tile["native_position"] == serde_json::json!([2, 11, -7])
+                        })
+                    })
+                    .ok_or("caster source tile")?;
+                let flags = tile["otbm_flags"].as_u64().ok_or("source tile flags")?;
+                tile["otbm_flags"] = serde_json::json!(flags | 8);
+                supplied.source_world = Some(pinned(serde_json::to_vec(&source)?));
                 supplied
                     .build_training
                     .as_mut()
@@ -234,6 +246,41 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
             } else {
                 None
             };
+            let status_view = if let Some(observer) = observer {
+                use crate::gameplay_transport::{
+                    capabilities::{BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities},
+                    connection::{prime_player_status_clock, regression_player_status},
+                    world_spatial::{EntityRef, SessionVisibility},
+                };
+                use oteryn_protocol_oteryn::zones_nologout::{PlayerPresence, PlayerStatus};
+
+                prime_player_status_clock(&owner, deps.admitted);
+                let mut reader = deps.admitted;
+                reader.runtime_actor = Some(observer);
+                reader.game_session_id = GameSessionId::decode(&id(110)).map_err(debug)?;
+                reader.continuity.selected_capabilities =
+                    SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &[6, 600])
+                        .ok_or("player status capability")?;
+                let target = EntityRef {
+                    identity: actor.placement_identity(),
+                    generation: actor.actor_local_generation(),
+                };
+                let channel = owner
+                    .observe_visible_entities(observer)
+                    .await
+                    .ok_or("visible caster")?;
+                let mut view = SessionVisibility::default();
+                view.snapshot(&channel, &mut |_| Ok(())).map_err(debug)?;
+                let visible = regression_player_status(&owner, reader, target, &view)
+                    .await
+                    .and_then(|bytes| PlayerStatus::decode(&bytes))
+                    .ok_or("visible player status")?;
+                assert_eq!(visible.presence, PlayerPresence::Online);
+                assert!(visible.no_logout);
+                Some((reader, target, view))
+            } else {
+                None
+            };
             let outcome = owner
                 .cast_spell_completion(
                     actor,
@@ -266,6 +313,16 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
             assert!(!conditions.invisible_at(start + 200_000_000));
             drop(states);
             drop(runtime);
+            if let Some((reader, target, view)) = status_view {
+                assert!(
+                    crate::gameplay_transport::connection::regression_player_status(
+                        &owner, reader, target, &view,
+                    )
+                    .await
+                    .is_none(),
+                    "a published incarnation cannot reveal a newly invisible player's status",
+                );
+            }
             if let Some(observer) = observer {
                 // SRV6 owner difference: unlike Crystal player.cpp:1383-1396,
                 // another player must receive no invisible player entity.
