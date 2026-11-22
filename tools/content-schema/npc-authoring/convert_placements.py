@@ -71,12 +71,12 @@ def cell_of(position: dict) -> tuple[int, int, int]:
     return x, y, z
 
 
-def apply_placement_overrides(candidates: dict, scope: dict) -> dict:
-    """Explicit pinned schedules supersede migration placement hypotheses, not definitions."""
+def apply_placement_overrides(candidates: dict, scope: dict, admitted: frozenset[str] = frozenset()) -> dict:
+    """Apply pinned donor placements to scoped candidates or already admitted NPCs."""
     result = copy.deepcopy(candidates)
     for key, override in scope.get("placement_overrides", {}).items():
-        if key not in scope["npcs"] or key not in result:
-            raise ValueError("placement override requires a scoped candidate")
+        if key not in scope["npcs"] or (key not in result and key not in admitted):
+            raise ValueError("placement override requires a scoped candidate or admitted NPC")
         source, placements = override["source"], override["placements"]
         if (source.get("origin") not in SOURCES
                 or not re.fullmatch(r"[0-9a-f]{40}", source.get("revision", ""))
@@ -99,6 +99,7 @@ def apply_placement_overrides(candidates: dict, scope: dict) -> dict:
                 raise ValueError("ambiguous native placement override")
             cells.add(cell)
         repository, _, source_key = SOURCES[source["origin"]]
+        result.setdefault(key, {"identity": {"key": key}})
         result[key]["placements"] = copy.deepcopy(placements)
         result[key]["placement_override_provenance"] = [{
             "origin": source["origin"], "repository": repository,
@@ -209,8 +210,8 @@ def convert() -> dict[str, str]:
     if not set(native) <= set(scope["npcs"]):
         raise ValueError("native_contacts names an unscoped NPC")
     candidates.update(native)
-    candidates = apply_placement_overrides(candidates, scope)
     admitted = admitted_keys()
+    candidates = apply_placement_overrides(candidates, scope, frozenset(admitted))
     candidates = apply_authored_placements(candidates, scope, admitted)
     npcs = sorted(scope["npcs"])
     if len(set(npcs)) != len(npcs):

@@ -1,5 +1,5 @@
-use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use super::fixture::{Harness, debug, id};
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 use super::questpc8_authored_programmes_fixtures::{object_target, step, use_target};
 
@@ -50,9 +50,9 @@ impl Route {
                 floor: -11,
             },
             Self::Kormarak => Position {
-                x: 32340,
-                y: 32125,
-                floor: -10,
+                x: 32357,
+                y: 32171,
+                floor: -7,
             },
         }
     }
@@ -77,8 +77,14 @@ pub(super) async fn exercise(
     admitted: &mut AdmittedSession,
     h: &Harness,
 ) -> TestResult {
-    if matches!(route, Route::Mastermind) {
-        return super::questpc8_mastermind_fixtures::exercise(owner, admitted, h).await;
+    match route {
+        Route::Mastermind => {
+            return super::questpc8_mastermind_fixtures::exercise(owner, admitted, h).await;
+        }
+        Route::Kormarak => {
+            return super::questpc8_kormarak_fixtures::exercise(owner, admitted, h).await;
+        }
+        Route::Voodoo => {}
     }
     let native = owner
         .active_generation
@@ -87,94 +93,43 @@ pub(super) async fn exercise(
     native
         .install_companion_policies(&mut *owner.runtime.lock().await)
         .map_err(debug)?;
-    let mut command = 1;
-    if matches!(route, Route::Mastermind) {
-        let premium = owner.premium_coordinator.take();
-        step(owner, admitted, command, StepDirection::East).await?;
-        command += 1;
-        assert_eq!(progress(h, route, "stage").await?, -1);
-        owner.premium_coordinator = premium;
-        owner.admit_premium(id(40), admitted.game_session_id);
-        step(owner, admitted, command, StepDirection::West).await?;
-        command += 1;
-    }
-    if !matches!(route, Route::Kormarak) {
-        step(owner, admitted, command, StepDirection::East).await?;
-        command += 1;
-        assert_eq!(progress(h, route, "stage").await?, 1);
-    }
-    match route {
-        Route::Voodoo => {
-            walk(owner, admitted, &mut command, 32755, 31954).await?;
-            let north = TilePos {
-                x: 32757,
-                y: 31953,
-                floor: -9,
-            };
-            walk(owner, admitted, &mut command, 32756, 31953).await?;
-            assert_eq!(
-                claim(owner, admitted, &mut command, north, 1).await?,
-                UseDisposition::Rejected
-            );
-            walk(owner, admitted, &mut command, 32755, 31954).await?;
-            hunt(owner, admitted, "oteryn:creature.witch", 3, command).await?;
-            assert_eq!(progress(h, route, "kills").await?, 3);
-            walk(owner, admitted, &mut command, 32756, 31953).await?;
-            assert_eq!(
-                claim(owner, admitted, &mut command, north, 1).await?,
-                UseDisposition::Committed
-            );
-            assert_eq!(progress(h, route, "stage").await?, 2);
-            assert_eq!(quantity(h, "oteryn:item.tibia.i3209").await?, 1);
-            assert_eq!(
-                claim(owner, admitted, &mut command, north, 1).await?,
-                UseDisposition::Rejected
-            );
-            walk(owner, admitted, &mut command, 32756, 31957).await?;
-            let south = TilePos {
-                x: 32757,
-                y: 31957,
-                floor: -9,
-            };
-            finish(owner, admitted, h, &mut command, south, 1).await?;
-            assert_eq!(quantity(h, "oteryn:item.tibia.i3209").await?, 1);
-            assert_eq!(quantity(h, "oteryn:item.tibia.i3046").await?, 1);
-        }
-        Route::Mastermind => {
-            let first = TilePos {
-                x: 32027,
-                y: 31104,
-                floor: -11,
-            };
-            assert_eq!(
-                claim(owner, admitted, &mut command, first, 2).await?,
-                UseDisposition::Committed
-            );
-            assert_eq!(progress(h, route, "stage").await?, 2);
-            assert_eq!(quantity(h, "oteryn:item.tibia.i7440").await?, 1);
-            assert_eq!(
-                claim(owner, admitted, &mut command, first, 2).await?,
-                UseDisposition::Rejected
-            );
-            walk(owner, admitted, &mut command, 32215, 31169).await?;
-            assert_eq!(progress(h, route, "stage").await?, 3);
-            let second = TilePos {
-                x: 32216,
-                y: 31168,
-                floor: -11,
-            };
-            finish(owner, admitted, h, &mut command, second, 1).await?;
-            for (item, count) in [(7440, 2), (3031, 201), (7159, 1), (7158, 2)] {
-                assert_eq!(
-                    quantity(h, &format!("oteryn:item.tibia.i{item}")).await?,
-                    count
-                );
-            }
-        }
-        Route::Kormarak => {
-            return super::questpc8_kormarak_fixtures::exercise(owner, admitted, h).await;
-        }
-    }
+    step(owner, admitted, 1, StepDirection::East).await?;
+    let mut command = 2;
+    assert_eq!(progress(h, route, "stage").await?, 1);
+    walk(owner, admitted, &mut command, 32755, 31954).await?;
+    let north = TilePos {
+        x: 32757,
+        y: 31953,
+        floor: -9,
+    };
+    walk(owner, admitted, &mut command, 32756, 31953).await?;
+    assert_eq!(
+        claim(owner, admitted, &mut command, north, 1).await?,
+        UseDisposition::Rejected
+    );
+    walk(owner, admitted, &mut command, 32755, 31954).await?;
+    hunt(owner, admitted, "oteryn:creature.witch", 3, command).await?;
+    assert_eq!(progress(h, route, "kills").await?, 3);
+    walk(owner, admitted, &mut command, 32756, 31953).await?;
+    assert_eq!(
+        claim(owner, admitted, &mut command, north, 1).await?,
+        UseDisposition::Committed
+    );
+    assert_eq!(progress(h, route, "stage").await?, 2);
+    assert_eq!(quantity(h, "oteryn:item.tibia.i3209").await?, 1);
+    assert_eq!(
+        claim(owner, admitted, &mut command, north, 1).await?,
+        UseDisposition::Rejected
+    );
+    walk(owner, admitted, &mut command, 32756, 31957).await?;
+    let south = TilePos {
+        x: 32757,
+        y: 31957,
+        floor: -9,
+    };
+    finish(owner, admitted, h, &mut command, south, 1).await?;
+    assert_eq!(quantity(h, "oteryn:item.tibia.i3209").await?, 1);
+    assert_eq!(quantity(h, "oteryn:item.tibia.i3046").await?, 1);
     assert_eq!(progress(h, route, "stage").await?, 4);
     let complete:bool=sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(id(41).as_slice()).bind(route.quest()).fetch_one(&h.pool).await?;
     assert!(complete);
@@ -208,7 +163,8 @@ async fn hunt(
             .map_err(debug)?,
         )
         .map_err(debug)?;
-    super::grizzly_npc_fixtures::questpc8_campaign::hunt(owner, admitted, creature, count, command).await
+    super::grizzly_npc_fixtures::questpc8_campaign::hunt(owner, admitted, creature, count, command)
+        .await
 }
 
 async fn progress(h: &Harness, route: Route, suffix: &str) -> TestResult<i64> {
@@ -316,6 +272,48 @@ type FixtureObjects = Vec<(u16, u16, Vec<u16>)>;
 
 pub(super) fn world(route: Route) -> TestResult<crate::map::boot::BundleWorld> {
     let a = route.anchor();
+    if !matches!(route, Route::Voodoo) {
+        let world_id = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
+        let (controller, _) =
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
+                world_id,
+                "content-1",
+            )?;
+        let native = controller
+            .active()
+            .and_then(|g| g.native_gameplay())
+            .ok_or("native")?;
+        let (patches, start): (&[_], _) = match route {
+            Route::Mastermind => (
+                &[
+                    (32214, 31167, 32218, 31173, -11),
+                    (32082, 31061, 32086, 31065, -10),
+                    (32145, 31119, 32147, 31121, -9),
+                ],
+                TilePos {
+                    x: 32215,
+                    y: 31170,
+                    floor: -11,
+                },
+            ),
+            Route::Kormarak => (
+                &[
+                    (32354, 32168, 32358, 32173, -7),
+                    (32354, 32168, 32358, 32173, -8),
+                    (32523, 32152, 32528, 32158, -12),
+                    (32494, 32215, 32498, 32216, -12),
+                    (32548, 32197, 32557, 32214, -11),
+                ],
+                TilePos {
+                    x: 32356,
+                    y: 32171,
+                    floor: -7,
+                },
+            ),
+            Route::Voodoo => return Err("expected a native retrieval route".into()),
+        };
+        return super::questpc8_native_slice::world(native, patches, &[], start);
+    }
     let (min_x, max_x, min_y, max_y, objects): (u16, u16, u16, u16, FixtureObjects) = match route {
         Route::Voodoo => (
             32741,
@@ -324,20 +322,7 @@ pub(super) fn world(route: Route) -> TestResult<crate::map::boot::BundleWorld> {
             31959,
             vec![(32757, 31953, vec![2473]), (32757, 31957, vec![2473])],
         ),
-        Route::Mastermind => (
-            32212,
-            32218,
-            31168,
-            31174,
-            vec![(32216, 31168, vec![2473]), (32216, 31172, vec![2001])],
-        ),
-        Route::Kormarak => (
-            32332,
-            32356,
-            32122,
-            32140,
-            vec![(32342, 32125, vec![1854, 4240])],
-        ),
+        Route::Mastermind | Route::Kormarak => return Err("expected the Voodoo fixture".into()),
     };
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
