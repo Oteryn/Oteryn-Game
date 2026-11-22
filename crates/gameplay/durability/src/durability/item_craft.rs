@@ -738,7 +738,12 @@ async fn write_with_skinning<C: ItemLoopContent>(
     // Exact replay returned before this writer, so a retry never advances the counter.
     use oteryn_gameplay_progression::achievement_granters;
     let achievement = if let Some(gathering) = &request.gathering {
-        achievement_granters::gathering(&gathering.mutation.tool_key, gathering.attempt.yield_item)
+        // The baitless dirty-water table is a loot conversion, with no fishing progress.
+        if gathering.mutation.before == 12560 && !gathering.attempt.consumes_bait {
+            None
+        } else {
+            achievement_granters::gathering(&gathering.mutation.tool_key, gathering.attempt.yield_item)
+        }
     } else {
         (conversion.recipe == "oteryn:fishing.global.standard")
             .then_some(achievement_granters::HERE_FISHY_FISHY)

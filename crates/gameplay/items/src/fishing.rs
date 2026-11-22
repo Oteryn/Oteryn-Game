@@ -100,13 +100,13 @@ pub fn water_fishing(
         (9306, 13989) => MechanicalDesert,
         (3483, 12560) => DirtyLoot,
         (3483, 13989) | (9306, 13988 | 622 | 12558..=12560) => Spent,
-        (3483 | 9306, 4609..=4614 | 4809..=4814 | 21314) => Spent,
+        (9306, 4609..=4614 | 4809..=4814 | 21314) => Spent,
         (9306, target) if in_sewers && has_nail && MECHANICAL_FISHING_WATER.contains(&target) => {
             MechanicalSewer
         }
         (9306, 12561..=12563) => Dirty,
         (9306, 629..=634 | 4597..=4602 | 21312) => MechanicalWater,
-        (3483, 629..=634 | 4597..=4602 | 12561..=12563 | 21414) => Ordinary,
+        (3483, 629..=634 | 4597..=4602 | 4609..=4614 | 12561..=12563 | 21414) => Ordinary,
         _ => return None,
     })
 }
@@ -468,12 +468,19 @@ pub fn catches(skill: u16, roll: u32) -> bool {
     (1..=100_000).contains(&roll) && roll.div_ceil(1_000) * 1_000 <= catch_threshold(skill)
 }
 
-/// Rod admission used before dispatch trains fishing or consumes bait.
-/// Crystal data-global/scripts/actions/other/mechanical_fishing.lua:334-346,378.
-/// Only its ice-hole gathering slice is admitted for the mechanical rod here.
+/// Rod admission for a target with no sewer bait or location context.
 pub fn accepts_fishing_rod(tool_key: &str, water_key: &str) -> bool {
-    (tool_key == FISHING_ROD && is_water(water_key))
-        || (tool_key == "oteryn:item.tibia.i9306" && water_key == "oteryn:item.tibia.i7236")
+    let source_id = |key: &str| {
+        key.strip_prefix("oteryn:item.tibia.i")
+            .and_then(|id| id.parse::<u16>().ok())
+    };
+    source_id(tool_key)
+        .zip(source_id(water_key))
+        .is_some_and(|(tool, target)| {
+            is_fishing_corpse(tool, target)
+                || water_fishing(tool, target, false, false)
+                    .is_some_and(|mode| mode != WaterFishing::Spent)
+        })
 }
 
 pub fn is_water(production_key: &str) -> bool {
@@ -486,6 +493,47 @@ pub fn is_water(production_key: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn fishing_sources_corpse_rolls_match_each_rods_donor_tiers() {
+        for (rod, total, expected) in [
+            (
+                3483,
+                6_000,
+                &[
+                    (None, 0),
+                    (Some(281), 15),
+                    (Some(12557), 15),
+                    (Some(7158), 24),
+                    (Some(3052), 70),
+                    (Some(3578), 1_080),
+                ][..],
+            ),
+            (
+                9306,
+                10_000,
+                &[
+                    (None, 8_885),
+                    (Some(3026), 500),
+                    (Some(3029), 301),
+                    (Some(3032), 201),
+                    (Some(281), 51),
+                    (Some(282), 51),
+                    (Some(9303), 11),
+                ][..],
+            ),
+        ] {
+            for &(item, count) in expected {
+                assert_eq!(
+                    (0..total)
+                        .filter(|&draw| corpse_fishing_yield(rod, draw) == item)
+                        .count(),
+                    count,
+                    "rod {rod} item {item:?}"
+                );
+            }
+        }
+    }
 
     #[test]
     fn catches_uses_the_craft1_integer_percent_draw() {
@@ -504,12 +552,12 @@ mod tests {
     }
 
     #[test]
-    fn m09_mechanical_rod_is_admitted_on_ice_holes() {
+    fn mechanical_rod_is_admitted_on_ice_holes_and_open_water() {
         assert!(accepts_fishing_rod(
             "oteryn:item.tibia.i9306",
             "oteryn:item.tibia.i7236"
         ));
-        assert!(!accepts_fishing_rod(
+        assert!(accepts_fishing_rod(
             "oteryn:item.tibia.i9306",
             "oteryn:item.tibia.i629"
         ));

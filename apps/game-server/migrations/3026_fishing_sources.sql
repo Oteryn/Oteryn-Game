@@ -55,6 +55,7 @@ BEGIN
           AND (s.before_item->>'world_id')::uuid=NEW.world_id
           AND s.before_item->>'definition_production_key'='oteryn:item.tibia.i9582'
           AND s.spent_key='oteryn:item.tibia.i9583'
+          AND m.transaction_id=(s.before_item->>'minted_transaction_id')::uuid
           AND m.loot_purpose_key='CORPSE_MATERIALIZATION' AND m.draw_ordinal=0
           AND (m.corpse_top_damage_character_id IS NULL OR m.corpse_top_damage_character_id=NEW.character_id)))
     THEN RAISE EXCEPTION 'corpse fishing requires an exact owned elemental corpse' USING ERRCODE='23514'; END IF;
@@ -99,4 +100,20 @@ $new$);
             EXECUTE replace(body,anchor,$new$c.recipe IN ('oteryn:skinning.crystal','oteryn:fishing.corpse')$new$);
         END IF;
     END LOOP;
+    -- A no-change dirty-water payout must not cancel a live regeneration schedule.
+    body := pg_get_functiondef('game_apply_terrain_tool_transform(uuid,numeric,uuid,uuid,bytea,uuid,uuid,bytea,text,bytea,bigint,bigint,bigint,bigint,bigint[],bigint[])'::regprocedure);
+    anchor := 'UPDATE game_terrain_tool_transforms SET state_item_id=p_after_item_id,';
+    IF strpos(body,anchor)=0 THEN RAISE EXCEPTION 'missing terrain CAS write'; END IF;
+    body := replace(body,anchor,$new$
+        IF p_before_item_id=12560 AND p_after_item_id=12560 AND cardinality(p_decay_states)=0 THEN
+            UPDATE game_terrain_tool_transforms SET object_revision=object_revision+1
+            WHERE world_id=p_world_id AND channel_id=p_channel_id AND placement=p_placement AND reset_epoch=p_reset_epoch;
+        ELSE
+        UPDATE game_terrain_tool_transforms SET state_item_id=p_after_item_id,$new$);
+    anchor := $old$decay_step=0, decay_at_unix_ms=CASE WHEN cardinality(p_decay_delays)>0 THEN now_ms+p_decay_delays[1] END
+            WHERE world_id=p_world_id AND channel_id=p_channel_id AND placement=p_placement AND reset_epoch=p_reset_epoch;$old$;
+    IF strpos(body,anchor)=0 THEN RAISE EXCEPTION 'missing terrain CAS decay write'; END IF;
+    EXECUTE replace(body,anchor,$new$decay_step=0, decay_at_unix_ms=CASE WHEN cardinality(p_decay_delays)>0 THEN now_ms+p_decay_delays[1] END
+            WHERE world_id=p_world_id AND channel_id=p_channel_id AND placement=p_placement AND reset_epoch=p_reset_epoch;
+        END IF;$new$);
 END $migration$;

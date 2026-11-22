@@ -1,9 +1,7 @@
 //! Source fishing branches through framed USE, terrain and the durable item writer.
-#[path = "support/fishing_wire.rs"]
-mod fishing_wire;
 
 use super::TestResult;
-use fishing_wire::{GatheringCase, gathering_scenario};
+use super::fishing_wire::{GatheringCase, gathering_scenario};
 
 fn run(case: GatheringCase) -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
@@ -56,6 +54,34 @@ fn fishing_sources_dirty_water_can_spend_a_worm_and_yield_nothing() -> TestResul
         committed: true,
         in_sewers: false,
         select_roll: Some(|catch, loot| catch <= 10_000 && loot > 30_000),
+        consumes_bait: true,
+    })
+}
+
+#[test]
+fn fishing_sources_dirty_loot_uses_the_weighted_table_without_bait() -> TestResult {
+    run(GatheringCase {
+        tool: 3483,
+        target_id: 12560,
+        after: Some(12560),
+        yield_item: Some(3578),
+        committed: true,
+        in_sewers: false,
+        select_roll: Some(|_, loot| (493..=600).contains(&loot)),
+        consumes_bait: false,
+    })
+}
+
+#[test]
+fn fishing_sources_sewer_drain_uses_the_exact_spent_appearance() -> TestResult {
+    run(GatheringCase {
+        tool: 9306,
+        target_id: 21312,
+        after: Some(21314),
+        yield_item: Some(9307),
+        committed: true,
+        in_sewers: true,
+        select_roll: Some(|catch, _| catch <= 10_000),
         consumes_bait: true,
     })
 }

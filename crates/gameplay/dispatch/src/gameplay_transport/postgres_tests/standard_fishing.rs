@@ -1,7 +1,5 @@
 //! M09: ordinary rod and bait reach the production wire and durable consume/mint owner.
-#[path = "support/fishing_wire.rs"]
-mod fishing_wire;
-use fishing_wire::{GatheringCase, gathering_scenario};
+use super::fishing_wire::{GatheringCase, gathering_scenario};
 
 use super::fixture::{Harness, debug, id, run};
 use super::item_craft_fixtures::exchange;

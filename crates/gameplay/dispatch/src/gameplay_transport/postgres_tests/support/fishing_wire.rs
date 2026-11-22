@@ -1,7 +1,7 @@
 //! Shared framed-use fishing and gathering scenario.
-use super::super::fixture::{Harness, debug, id, run};
-use super::super::item_craft_fixtures::exchange;
-use super::super::{Dependencies, TestResult, prepare_current_session};
+use super::fixture::{Harness, debug, id, run};
+use super::item_craft_fixtures::exchange;
+use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
@@ -9,7 +9,7 @@ use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
 };
 
-pub(in super::super) struct GatheringCase {
+pub(super) struct GatheringCase {
     pub tool: u16,
     pub target_id: u16,
     pub after: Option<u16>,
@@ -20,12 +20,12 @@ pub(in super::super) struct GatheringCase {
     pub consumes_bait: bool,
 }
 
-pub(in super::super) fn gathering_scenario(case: GatheringCase) -> TestResult {
+pub(super) fn gathering_scenario(case: GatheringCase) -> TestResult {
     let GatheringCase { tool, target_id, after, yield_item, committed, in_sewers, select_roll, consumes_bait } = case;
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "m09_gathering", true, false).await?;
-        super::super::reset();
+        super::reset();
         prepare_current_session(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
@@ -184,10 +184,15 @@ pub(in super::super) fn gathering_scenario(case: GatheringCase) -> TestResult {
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-        super::super::item_look_fixtures::seed_main_backpack(&harness, &[(rod, 1), (bait_key, 3)]).await?;
-        super::super::achievement_granters::seed_gathering(&harness).await?;
+        let mut carried = vec![(rod, 1)];
+        let bait_count = if matches!(target_id, 12560 | 9582) { 0 } else { 3 };
+        if bait_count != 0 {
+            carried.push((bait_key, bait_count));
+        }
+        super::item_look_fixtures::seed_main_backpack(&harness, &carried).await?;
+        super::achievement_granters::seed_gathering(&harness).await?;
         if target_id == 9582 {
-            return fish_corpse(&owner, &harness, deps.actor, fence).await;
+            return fish_corpse(&owner, &harness, deps.actor, fence, yield_item.ok_or("corpse payout")?).await;
         }
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
@@ -305,13 +310,28 @@ pub(in super::super) fn gathering_scenario(case: GatheringCase) -> TestResult {
                         u32::try_from(crate::spell::uniform_draw(draw, 1, 100_000)).unwrap_or(0)
                     })
                     .unwrap_or(0);
-                let roll = crate::gameplay_transport::item_craft::gathering_roll(
-                    native.source_digest(),
-                    session,
-                    1,
-                    &actual,
-                )
-                .unwrap_or(0);
+                let roll = if target_id == 12560 {
+                    let digest = Sha256::new()
+                        .chain_update(b"oteryn.gathering.yield.v1")
+                        .chain_update(session.as_bytes())
+                        .chain_update(1_u64.to_be_bytes())
+                        .chain_update(&actual)
+                        .chain_update(native.source_digest())
+                        .finalize();
+                    occurrence.copy_from_slice(&digest[..16]);
+                    oteryn_simulation_determinism::deterministic_decision_u64(
+                        &oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(digest.into()),
+                        oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(occurrence),
+                        "gathering.yield",
+                        0,
+                    )
+                    .map_or(0, |draw| u32::try_from(draw % 600 + 1).unwrap_or(0))
+                } else {
+                    crate::gameplay_transport::item_craft::gathering_roll(
+                        native.source_digest(), session, 1, &actual,
+                    )
+                    .unwrap_or(0)
+                };
                 if let Some(select_roll) = select_roll {
                     return select_roll(catch_roll, roll);
                 }
@@ -373,29 +393,22 @@ pub(in super::super) fn gathering_scenario(case: GatheringCase) -> TestResult {
         let tool_quantity: i64 = sqlx::query_scalar("SELECT sum(quantity)::bigint FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1").bind(rod).fetch_one(&harness.pool).await?;
         assert_eq!(tool_quantity, 1);
         let bait: i64 = sqlx::query_scalar(
-            "SELECT quantity FROM game_item_instances WHERE definition_production_key=$1",
+            "SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key=$1",
         )
         .bind(bait_key)
         .fetch_one(&harness.pool)
         .await?;
-        assert_eq!(
-            bait,
-            if consumes_bait {
-                2
-            } else {
-                3
-            }
-        );
+        assert_eq!(bait, bait_count - i64::from(consumes_bait));
         let earned = match (tool, target_id, yield_item) {
             (5908, 5969, Some(5878)) => Some("oteryn:achievement/skin_deep"),
             (5942, 5995, Some(5906)) => Some("oteryn:achievement/ashes_to_dust"),
             (3483 | 9306, 7236, Some(7158 | 3580 | 7159)) => {
                 Some("oteryn:achievement/exquisite_taste")
             }
-            (3483 | 9306, _, Some(3578)) => Some("oteryn:achievement/here_fishy_fishy"),
+            (3483 | 9306, 7236 | 4597 | 13988, Some(3578)) => Some("oteryn:achievement/here_fishy_fishy"),
             _ => None,
         };
-        let achievement = super::super::achievement_granters::assert_gathering(&harness, earned).await?;
+        let achievement = super::achievement_granters::assert_gathering(&harness, earned).await?;
         if committed {
             let (_, replay, _) = exchange(&owner, next, command_id, &actual, None).await?;
             assert_eq!(replay, UseDisposition::Committed);
@@ -409,7 +422,7 @@ pub(in super::super) fn gathering_scenario(case: GatheringCase) -> TestResult {
         }
         assert_eq!(
             achievement,
-            super::super::achievement_granters::assert_gathering(&harness, earned).await?
+            super::achievement_granters::assert_gathering(&harness, earned).await?
         );
         if let Some(candidate) = &mut stale_pickup {
             let permit = owner.spell_lane_permit().await.ok_or("pickup lane")?;
@@ -485,7 +498,7 @@ pub(in super::super) fn gathering_scenario(case: GatheringCase) -> TestResult {
             assert_eq!(schedule, (vec![4597], vec![1_200_000]));
             // Receipt replay preserves the rod and consumes exactly one nail.
             let bait: i64 = sqlx::query_scalar(
-                "SELECT quantity FROM game_item_instances WHERE definition_production_key=$1",
+                "SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key=$1",
             )
             .bind(bait_key)
             .fetch_one(&harness.pool)
@@ -539,6 +552,7 @@ async fn fish_corpse(
     harness: &Harness,
     actor: crate::foundation::ExactActorRef,
     fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    expected_yield: u16,
 ) -> TestResult {
     use crate::durability::item_mint::{
         CORPSE_MATERIALIZATION_PURPOSE_KEY, GroundPlacement, ItemMintCause, ItemMintOutcome,
@@ -548,7 +562,7 @@ async fn fish_corpse(
     use crate::gameplay_transport::item_view::ItemKey;
     use std::num::NonZeroU64;
 
-    super::super::maintain_ready(owner.root).await?;
+    super::maintain_ready(owner.root).await?;
     let inventory = owner.root.read_item_use_inventory(owner.character, owner.holder, fence).await?;
     let rod = inventory.backpack.iter().flat_map(|bag| &bag.entries)
         .find(|entry| entry.item.definition.production_key == "oteryn:item.tibia.i3483")
@@ -595,9 +609,30 @@ async fn fish_corpse(
         use_with_map_item: Some(MapUseTarget::Item(NonZeroU64::new(2).ok_or("target handle")?)),
         use_with_position: None,
     };
+    use oteryn_simulation_determinism::{
+        DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
+    };
+    use sha2::{Digest, Sha256};
+    let command_id = (940_u64..4_000)
+        .find(|candidate| {
+            let digest = Sha256::new()
+                .chain_update(fence.game_session_id.as_bytes())
+                .chain_update(candidate.to_be_bytes())
+                .chain_update(corpse)
+                .finalize();
+            let mut occurrence = [0; 16];
+            occurrence.copy_from_slice(&digest[..16]);
+            // Last of the five ordinary trash outcomes: 90% / 5 of all draws.
+            deterministic_decision_u64(
+                &GameplayDecisionRoot::from_bytes(native.source_digest()),
+                DecisionOccurrenceId::from_bytes(occurrence),
+                "oteryn.corpse-fishing.v1",
+                0,
+            ).is_ok_and(|roll| roll % 6000 >= 4920)
+        }).ok_or("deterministic trash-tier corpse draw")?;
     let command = UseCommand {
         game_session_id: fence.game_session_id,
-        command_id: 940,
+        command_id,
         item_fence: Some(fence),
     };
     let first = owner.use_cooking_conversion(
@@ -616,9 +651,10 @@ async fn fish_corpse(
         "SELECT count(*) FROM game_item_craft_records WHERE NOT consume_source",
     ).fetch_one(&harness.pool).await?;
     assert_eq!(craft_count, 1);
-    let output_count: i32 = sqlx::query_scalar(
-        "SELECT jsonb_array_length(outputs) FROM game_item_craft_records WHERE recipe='oteryn:fishing.corpse'",
+    let outputs: serde_json::Value = sqlx::query_scalar(
+        "SELECT outputs FROM game_item_craft_records WHERE recipe='oteryn:fishing.corpse'",
     ).fetch_one(&harness.pool).await?;
-    assert_eq!(output_count, 1);
+    assert_eq!(outputs.as_array().ok_or("corpse craft outputs")?.len(), 1);
+    assert_eq!(outputs[0]["key"], format!("oteryn:item.tibia.i{expected_yield}"));
     Ok(())
 }
