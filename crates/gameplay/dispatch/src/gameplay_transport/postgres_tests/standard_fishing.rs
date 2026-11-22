@@ -262,6 +262,22 @@ fn m09_gathering_wire_marble_tier_removes_rock_and_grants_figurine() -> TestResu
     run_gathering(5908, 10426, None, Some(10428), true)
 }
 #[test]
+fn cach1_final_marble_sculpture_grants_marblelous_and_marble_madness() -> TestResult {
+    run_gathering(5908, 10426, None, Some(10429), true)
+}
+#[test]
+fn cach1_final_ice_sculpture_grants_ice_sculptor_and_cold_as_ice() -> TestResult {
+    run_gathering(5908, 7445, Some(7446), None, true)
+}
+#[test]
+fn cach1_ice_sculpture_admits_the_third_stage_without_an_award() -> TestResult {
+    run_gathering(5908, 7442, Some(7444), None, true)
+}
+#[test]
+fn cach1_ice_sculpture_admits_the_fourth_stage_without_an_award() -> TestResult {
+    run_gathering(5908, 7444, Some(7445), None, true)
+}
+#[test]
 fn m09_gathering_wire_dusting_grants_demon_dust() -> TestResult {
     run_gathering(5942, 5995, Some(4098), Some(5906), true)
 }
@@ -521,6 +537,19 @@ fn gathering_scenario(
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
         super::item_look_fixtures::seed_main_backpack(&harness, &[(rod, 1), (bait_key, 3)]).await?;
         super::achievement_granters::seed_gathering(&harness).await?;
+        let sculpture = match target_id {
+            10426 => Some(("marblelous", "marble_madness", 5, yield_item == Some(10429))),
+            7441 | 7442 | 7444 | 7445 => Some(("ice_sculptor", "cold_as_ice", 10, after == Some(7446))),
+            _ => None,
+        };
+        if let Some((_, counted, total, _)) = sculpture {
+            super::achievement_granters::seed_progress(
+                &harness,
+                &format!("oteryn:achievement/{counted}"),
+                total - 1,
+            )
+            .await?;
+        }
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -736,6 +765,43 @@ fn gathering_scenario(
             achievement,
             super::achievement_granters::assert_gathering(&harness, earned).await?
         );
+        if let Some((first, counted, total, granted)) = sculpture {
+            let receipt: String =
+                sqlx::query_scalar("SELECT event_id::text FROM game_item_craft_records")
+                    .fetch_one(&harness.pool)
+                    .await?;
+            let first = format!("oteryn:achievement/{first}");
+            let first_event: Option<Vec<u8>> = sqlx::query_scalar(
+                "SELECT source_event_id FROM game_account_achievement_grant_requests WHERE achievement_key=$1 AND source_kind='oteryn:item-craft'",
+            )
+            .bind(&first)
+            .fetch_optional(&harness.pool)
+            .await?;
+            assert_eq!(
+                first_event.as_deref(),
+                granted.then_some(receipt.as_bytes()),
+                "{first}"
+            );
+            let facts: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_account_achievements WHERE achievement_key=$1",
+            )
+            .bind(&first)
+            .fetch_one(&harness.pool)
+            .await?;
+            assert_eq!(facts, i64::from(granted), "{first}");
+            let progress = super::achievement_granters::assert_progress(
+                &harness,
+                &format!("oteryn:achievement/{counted}"),
+                total - i64::from(!granted),
+                granted,
+                "oteryn:item-craft",
+            )
+            .await?;
+            assert_eq!(
+                progress.as_ref().map(|(_, event, _)| event.as_slice()),
+                granted.then_some(receipt.as_bytes())
+            );
+        }
         if let Some(candidate) = &mut stale_pickup {
             let permit = owner.spell_lane_permit().await.ok_or("pickup lane")?;
             let outcome = owner

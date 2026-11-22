@@ -96,6 +96,10 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
         prepare_current_session(&h).await?;
         let achievement_key = "oteryn:achievement/ship_s_kobold";
         super::achievement_granters::seed_progress(&h, achievement_key, 1248).await?;
+        let high_flyer = "oteryn:achievement/high_flyer";
+        super::achievement_granters::seed_progress(&h, high_flyer, 999).await?;
+        let steampunked = "oteryn:achievement/steampunked";
+        super::achievement_granters::seed_progress(&h, steampunked, 99).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -129,7 +133,7 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
             base_room,
             crate::spell::cast::v1_spell_book().map_err(debug)?,
         )?;
-        // One player, the original three NPCs and ten S10T captains.
+        // One player, the original three NPCs and the additional travel operators.
         let mut runtime = crate::foundation::ChannelRuntimeV1::from_committed_assignment(
             world,
             dependencies.admitted.channel_id,
@@ -138,7 +142,7 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
             1,
             1,
             "runtime-scope-assignment:1",
-            14,
+            15,
             channel_pin,
         )
         .map_err(debug)?;
@@ -669,6 +673,19 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
             first_achievement.as_ref().map(|fact| fact.1.as_slice()),
             Some(occurrence.as_slice())
         );
+        let carpet_award = super::achievement_granters::assert_progress(
+            &h,
+            high_flyer,
+            1000,
+            true,
+            "oteryn:npc-travel",
+        )
+        .await?;
+        assert_eq!(
+            carpet_award.as_ref().map(|fact| fact.1.as_slice()),
+            Some(occurrence.as_slice()),
+            "only the placed carpet arrival qualifies"
+        );
         // Arrival consumption releases the travel hold back to the ordinary Movement owner.
         // Exercise that production handoff rather than only inspecting the relocated snapshot.
         // Movement uses the owner clock; travel exhaustion uses PostgreSQL time.
@@ -978,6 +995,7 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
                 .await
                 .map_err(|_| "S10T replay fence")?
                 .ok_or("S10T replay session")?;
+            let request_occurrence = request.arrival.occurrence.as_bytes();
             assert_eq!(owner.revision_sequencer.acquire(current.character_id).await.commit_npc_travel(
                 &h.root, &authority, &h.node, current, request, &coordinator,
             ).await.map_err(debug)?.map_err(debug)?,None);
@@ -987,6 +1005,21 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
                     .fetch_one(&h.pool)
                     .await?;
             assert_eq!(after, receipts + 1);
+            if *captain == "gurbasch" {
+                let award = super::achievement_granters::assert_progress(
+                    &h,
+                    steampunked,
+                    100,
+                    true,
+                    "oteryn:npc-travel",
+                )
+                .await?;
+                assert_eq!(
+                    award.as_ref().map(|fact| fact.1.as_slice()),
+                    Some(request_occurrence.as_slice()),
+                    "only the placed steamship arrival qualifies"
+                );
+            }
             eprintln!(
                 "POSTGRES_EXECUTED S10T {captain} {destination} fare={fare} arrival={tile:?} replay charged once"
             );
@@ -1108,7 +1141,7 @@ pub(super) fn travel_world(
             min_y: 0,
             max_x: 65535,
             max_y: 65535,
-            floors: vec![-7, -6, -5],
+            floors: vec![-15, -7, -6, -5],
         },
         palette: vec![PaletteEntry {
             key: "terrain:grass".into(),
@@ -1218,6 +1251,7 @@ const S10T_CAPTAINS: &[&str] = &[
     "captain_sinbeard",
     "captain_waverider",
     "charles",
+    "gurbasch",
     "jack_fate",
     "karith",
 ];
@@ -1237,6 +1271,7 @@ const S10T_PASSAGES: &[Passage] = &[
     ("captain_waverider", "peg leg", 50, (32346, 32625, 7)),
     ("captain_waverider", "passage", 200, (32131, 32913, 7)),
     ("captain_jack_rat", "safe", 0, (33839, 31222, 5)),
+    ("gurbasch", "kazordoon", 160, (32660, 31957, 15)),
 ];
 
 async fn gold(h: &Harness) -> TestResult<i64> {

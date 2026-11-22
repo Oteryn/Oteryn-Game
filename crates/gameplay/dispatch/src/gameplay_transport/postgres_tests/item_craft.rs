@@ -15,18 +15,44 @@ use oteryn_protocol_oteryn::world_object::{
 
 #[test]
 fn item_craft_cooking_wire_atomic_replay_restart_and_refusals() -> TestResult {
+    run_scenario(None)
+}
+
+#[test]
+fn cach1_baking_cookies_counts_one_tray() -> TestResult {
+    run_scenario(Some((
+        "oteryn:item.tibia.i8020",
+        "oteryn:item.tibia.i3464",
+        "oteryn:achievement/cookie_monster",
+        20,
+    )))
+}
+
+#[test]
+fn cach1_baking_plain_cake_counts_one_cake() -> TestResult {
+    run_scenario(Some((
+        "oteryn:item.tibia.i6276",
+        "oteryn:item.tibia.i6277",
+        "oteryn:achievement/the_cake_s_the_truth",
+        30,
+    )))
+}
+
+type BakingAward = (&'static str, &'static str, &'static str, i64);
+
+fn run_scenario(award: Option<BakingAward>) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|e| e.to_string()))?
+        .spawn(move || scenario(award).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "craft e2e panic")??;
     Ok(())
 }
 
-fn scenario() -> TestResult {
+fn scenario(award: Option<BakingAward>) -> TestResult {
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "item_craft", true, false).await?;
         super::reset();
@@ -48,8 +74,10 @@ fn scenario() -> TestResult {
         let index = native.item_index().ok_or("index")?;
         let oven = "oteryn:item.tibia.i2535";
         let bag = "oteryn:item.tibia.i2854";
-        let dough = "oteryn:item.tibia.i3604";
-        let bread = "oteryn:item.tibia.i3600";
+        let (dough, bread) = award.map_or(
+            ("oteryn:item.tibia.i3604", "oteryn:item.tibia.i3600"),
+            |(dough, baked, _, _)| (dough, baked),
+        );
         let reference = |key: &str| index.definition_ref("Item", key, "definition-r1");
         let (bytes, pins) = crate::map::boot::tests::bundle_with_item_ids(
             (bag, reference(bag).ok_or("bag")?.get() - 1),
@@ -137,9 +165,12 @@ fn scenario() -> TestResult {
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
         super::item_look_fixtures::seed_main_backpack(
             &harness,
-            &[(dough, 3), ("oteryn:item.tibia.i3577", 1)],
+            &[(dough, if award.is_some() { 1 } else { 3 }), ("oteryn:item.tibia.i3577", 1)],
         )
         .await?;
+        if let Some((_, _, key, total)) = award {
+            super::achievement_granters::seed_progress(&harness, key, total - 1).await?;
+        }
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -187,6 +218,45 @@ fn scenario() -> TestResult {
         let (end, result, payload) = exchange(&owner, admitted, 1, &payload, reference(dough)).await?;
         assert_eq!(result, UseDisposition::Committed);
         assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_craft_records").fetch_one(&harness.pool).await?, 1);
+        if let Some((_, _, key, total)) = award {
+            let recorded: (String, serde_json::Value) =
+                sqlx::query_as("SELECT event_id::text,outputs FROM game_item_craft_records")
+                    .fetch_one(&harness.pool)
+                    .await?;
+            assert_eq!(recorded.1[0]["key"], bread);
+            let granted = super::achievement_granters::assert_progress(
+                &harness, key, total, true, "oteryn:item-craft",
+            )
+            .await?;
+            assert_eq!(
+                granted.as_ref().map(|(_, event, _)| event.as_slice()),
+                Some(recorded.0.as_bytes())
+            );
+            drop(owner);
+            let mut restarted = deps.owner(&harness, &authority);
+            restarted.active_generation = Some(active);
+            restarted.movement_cells = (&cells).into();
+            deps.initialize(&restarted).await;
+            let (_, replayed, _) = exchange(&restarted, admitted, 1, &payload, None).await?;
+            assert_eq!(replayed, UseDisposition::Committed);
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_craft_records")
+                    .fetch_one(&harness.pool)
+                    .await?,
+                1
+            );
+            assert_eq!(
+                super::achievement_granters::assert_progress(
+                    &harness, key, total, true, "oteryn:item-craft",
+                )
+                .await?,
+                granted
+            );
+            drop(restarted);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         let quantity:i64=sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(71).as_slice()).fetch_one(&harness.pool).await?;
         assert_eq!(quantity, 2);
         let durable = harness

@@ -59,16 +59,35 @@ pub(super) async fn scenario(
     } else {
         body.to_vec()
     };
+    let command = if source_id == 2976 {
+        (1..=10_000)
+            .find(|&command| {
+                oteryn_gameplay_items::reward_bag::reward_bag_bounded_draw(
+                    *admitted.game_session_id.as_bytes(),
+                    command,
+                    id(71),
+                    0xd9,
+                    100,
+                ) == Some(0)
+            })
+            .ok_or("deterministic empty cage")?
+    } else {
+        1
+    };
     let request = crate::durability::consume_transform::ConsumeTransformRequest {
         command: crate::foundation::CommandRef::new(
             admitted.game_session_id,
-            crate::foundation::CommandId::new(1).map_err(debug)?,
+            crate::foundation::CommandId::new(command).map_err(debug)?,
         ),
         source: id(71),
         target: None,
         intent,
     };
     let old_custody = custody(h).await?;
+    let vanity = "oteryn:achievement/vanity";
+    if source_id == 2603 {
+        super::super::achievement_granters::seed_progress(h, vanity, 299).await?;
+    }
     let result = owner
         .root
         .consume_transform_in_house(owner.holder, context.clone(), request.clone(), native)
@@ -156,10 +175,7 @@ pub(super) async fn scenario(
         let selected = result.effects["house_after"]["key"]
             .as_str()
             .ok_or("bird result")?;
-        assert!(matches!(
-            selected,
-            "oteryn:item.tibia.i2975" | "oteryn:item.tibia.i2976"
-        ));
+        assert_eq!(selected, "oteryn:item.tibia.i2975");
         assert_eq!(
             result.effects["cues"].as_array().ok_or("bird cues")?.len(),
             usize::from(selected.ends_with("2976"))
@@ -211,6 +227,7 @@ pub(super) async fn scenario(
         assert_eq!(sqlx::query_scalar::<_,i64>("SELECT until_ms FROM game_house_decoration_cooldowns WHERE character_id=encode($1,'hex')::uuid AND cooldown_key='wall-mirror'")
                 .bind(id(41).as_slice()).fetch_one(&h.pool).await?, cooldown_before, "exhausted use never extends the source cooldown");
         assert_eq!(item(h).await?, *before);
+        assert_eq!(exhausted.effects["achievement_progress"], serde_json::json!([]));
         expected_receipts = 2;
     }
     let replay = owner
@@ -221,6 +238,24 @@ pub(super) async fn scenario(
     assert!(!replay.fresh);
     assert_eq!(replay.effects, result.effects);
     assert_eq!(receipts(h).await?, expected_receipts);
+    if source_id == 2603 {
+        super::super::achievement_granters::assert_progress(
+            h,
+            vanity,
+            300,
+            true,
+            "oteryn:item-use",
+        )
+        .await?;
+    }
+    if source_id == 2976 {
+        let award: (i64, i64) = sqlx::query_as(
+            "SELECT (SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/oops'), (SELECT count(*) FROM game_account_achievement_grant_requests g JOIN game_item_consume_transform_records r ON g.source_event_id=uuid_send(r.event_id) WHERE g.achievement_key='oteryn:achievement/oops' AND g.source_kind='oteryn:item-use')",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(award, (1, 1));
+    }
     assert_eq!(item(h).await?["state_revision"], expected_revision);
     eprintln!(
         "W18 POSTGRES_CASE_COMPLETED source={source_id} native_owner_custody_cooldown_replay"

@@ -72,14 +72,24 @@ pub fn revision_material() -> &'static str {
     include_str!("travel_routes.json")
 }
 
+fn corrections() -> &'static [Correction] {
+    static CORRECTIONS: OnceLock<Vec<Correction>> = OnceLock::new();
+    CORRECTIONS.get_or_init(|| serde_json::from_str(revision_material()).unwrap_or_default())
+}
+
+/// The complete service and route key persisted by the paid travel owner.
+pub fn is_carpet_route(key: &str) -> bool {
+    corrections()
+        .iter()
+        .any(|route| route.key == key && route.carpet && !route.held)
+}
+
 pub fn resolve(
     model: &NpcServiceModel,
     npc_key: &str,
     services: &[ProjectV2DefinitionRef],
 ) -> Vec<TravelRoute> {
-    static CORRECTIONS: OnceLock<Vec<Correction>> = OnceLock::new();
-    let corrections =
-        CORRECTIONS.get_or_init(|| serde_json::from_str(revision_material()).unwrap_or_default());
+    let corrections = corrections();
     let native_service = format!(
         "oteryn:service.travel.{}",
         npc_key.trim_start_matches("oteryn:npc.")
