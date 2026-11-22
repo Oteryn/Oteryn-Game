@@ -388,16 +388,22 @@ async fn reach_coffin(
             &[4, 6, 11, 15, 18],
         )
         .ok_or("movement and use capabilities")?;
-    // Cross the committed rope bridge, take the aft hatch, then walk below deck.
-    for (direction, count) in [
-        (South, 8),
-        (West, 4),
-        (South, 3),
-        (West, 1),
-        (East, 7),
-        (North, 2),
+    // Cross the rope bridge and approach the aft hatch over bare deck tiles.
+    // Below deck, go around the bloodstains and use the coffin from the east.
+    for (direction, count, destination) in [
+        (South, 9, (33324, 32182, 6)),
+        (West, 3, (33321, 32182, 6)),
+        (South, 2, (33321, 32184, 6)),
+        (West, 1, (33320, 32184, 6)),
+        (West, 1, (33319, 32184, 7)),
+        (South, 1, (33319, 32185, 7)),
+        (East, 2, (33321, 32185, 7)),
+        (North, 1, (33321, 32184, 7)),
+        (East, 7, (33328, 32184, 7)),
+        (North, 2, (33328, 32182, 7)),
     ] {
         for _ in 0..count {
+            let from = position(deps).await?;
             let command = admitted.continuity.next_command_id;
             let reply = wire(
                 owner,
@@ -409,11 +415,12 @@ async fn reach_coffin(
             .await?;
             assert_eq!(
                 decode_step_result(&reply).map_err(debug)?,
-                StepDisposition::Moved
+                StepDisposition::Moved,
+                "Ghostship command {command}: {direction:?} from {from:?} toward {destination:?}"
             );
         }
+        assert_eq!(position(deps).await?, destination);
     }
-    assert_eq!(position(deps).await?, (33326, 32182, 7));
     let map = owner.bundle_map().ok_or("Ghostship map")?;
     let key = oteryn_world_bundle::bundle::placement_key(-7, 33327, 32182, 1)
         .ok_or("Plate Armor coffin placement")?;
