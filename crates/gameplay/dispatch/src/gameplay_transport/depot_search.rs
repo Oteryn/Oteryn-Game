@@ -67,7 +67,7 @@ pub(super) use composed_methods;
 
 #[cfg(test)]
 tokio::task_local! {
-    pub(super) static LOSE_DEPOT_SEARCH_ACK: std::cell::Cell<bool>;
+    pub(super) static LOSE_DEPOT_SEARCH_ACK: std::cell::Cell<Option<DurabilityError>>;
 }
 
 pub(super) fn rejected_reply() -> Reply {
@@ -190,16 +190,20 @@ pub(super) async fn execute(
             )
             .await;
         #[cfg(test)]
-        let retrieval = if retrieval.is_ok()
-            && LOSE_DEPOT_SEARCH_ACK.try_with(|lose| lose.replace(false)) == Ok(true)
-        {
-            Err(DurabilityError::CommitOutcomeUnknown)
-        } else {
-            retrieval
-        };
+        let retrieval = retrieval.and_then(|result| {
+            if let Ok(Some(error)) = LOSE_DEPOT_SEARCH_ACK.try_with(std::cell::Cell::take) {
+                Err(error)
+            } else {
+                Ok(result)
+            }
+        });
         return match retrieval {
             Ok(result) => Some(retrieval_reply(result)),
-            Err(DurabilityError::CommitOutcomeUnknown) => None,
+            // The semantic pass can hit its outer deadline while COMMIT is in flight.
+            // Resolve the retained request on resume before acknowledging either outcome.
+            Err(
+                DurabilityError::CommitOutcomeUnknown | DurabilityError::RootPassDeadlineExceeded,
+            ) => None,
             Err(_) => rejected(),
         };
     }

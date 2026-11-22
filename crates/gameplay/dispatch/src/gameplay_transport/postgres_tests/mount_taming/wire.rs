@@ -207,8 +207,9 @@ async fn spawn_speaking_creature(
     oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
     String,
 )> {
-    let (target, entity) = spawn(owner, actor, species, 1).await?;
     let mut runtime = owner.runtime.lock().await;
+    let policy = runtime.companion_policy(species).map_err(debug)?;
+    let (target, entity) = spawn_at_health(&mut runtime, actor, species, 1, policy.maximum_health)?;
     runtime
         .install_creature_policy(target, species)
         .map_err(debug)?;

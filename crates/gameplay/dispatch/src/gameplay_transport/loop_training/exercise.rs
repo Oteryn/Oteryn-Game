@@ -5,7 +5,7 @@ use crate::durability::exercise_training::{
     ExerciseCheckpoint, ExerciseCommitted, ExerciseDummyKey, TrainingWeapon,
 };
 use crate::durability::item_timed_state::TimedDefinitionFacts;
-use oteryn_gameplay_foundation::scheduled_events::current_rates;
+use oteryn_gameplay_foundation::scheduled_events::rates_ago;
 use oteryn_protocol_oteryn::loop_training::ExerciseIntent;
 
 pub(super) struct Run {
@@ -180,7 +180,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if current.is_none() && run.pending.is_none() {
             return Some(false);
         }
-        let now = self.owner_now().get();
+        let mut now = self.owner_now().get();
         if qualified && run.pending.is_none() {
             let fence = current?;
             let live = self
@@ -207,18 +207,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 build.skills()[run.family - 1].0
             };
-            // Crystal 201189f8 exercise_training_weapons.lua:133-142 halves the delay
-            // when scheduling the next charge after a tick.
-            let interval = if current_rates().fast_exercise {
-                EXERCISE_INTERVAL_US / 2
-            } else {
-                EXERCISE_INTERVAL_US
-            };
-            // LOOPTRAIN1-RL-CATCHUP-TICKS applies at either cadence.
+            now = self.owner_now().get();
+            // Crystal 201189f8 exercise_training_weapons.lua:133-142 uses the
+            // event flag when a charge schedules its successor. Apply that rule
+            // at each due tick, even when one pass crosses the window boundary.
             for _ in 0..EXERCISE_CATCHUP_TICKS_MAX {
                 if now < run.next_tick || run.spent >= run.durable.charges {
                     break;
                 }
+                let age = std::time::Duration::from_micros(now - run.next_tick);
+                let interval = if rates_ago(age).fast_exercise {
+                    EXERCISE_INTERVAL_US / 2
+                } else {
+                    EXERCISE_INTERVAL_US
+                };
                 run.spent += 1;
                 run.next_tick = run.next_tick.checked_add(interval)?;
                 let gain = run.gain_per_charge.checked_mul(u64::from(run.spent))?;

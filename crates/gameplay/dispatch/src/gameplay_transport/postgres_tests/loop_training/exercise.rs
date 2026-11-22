@@ -42,6 +42,27 @@ fn fast_exercise_live_cadence_spends_twice_as_many_charges_without_changing_gain
 }
 
 #[test]
+fn fast_exercise_catchup_uses_each_ticks_utc_window() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            for scenario_at_edge in [
+                ExerciseScenario::FastExerciseCatchupAtStart,
+                ExerciseScenario::FastExerciseCatchupAtEnd,
+            ] {
+                scenario(scenario_at_edge).map_err(|error| error.to_string())?;
+            }
+            Ok::<_, String>(())
+        })?
+        .join()
+        .map_err(|_| "fast exercise boundary catch-up PG panic")??;
+    Ok(())
+}
+
+#[test]
 fn fast_exercise_catchup_keeps_the_thirty_tick_limit() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -310,6 +331,8 @@ enum ExerciseScenario {
     NodeBoot,
     FastExercise,
     FastExerciseCatchup,
+    FastExerciseCatchupAtStart,
+    FastExerciseCatchupAtEnd,
 }
 
 fn scenario(scenario: ExerciseScenario) -> TestResult {
@@ -318,7 +341,10 @@ fn scenario(scenario: ExerciseScenario) -> TestResult {
         let terminal_readback = scenario == ExerciseScenario::TerminalReadback;
         let tag = match scenario {
             ExerciseScenario::TerminalReadback => "loop_training_terminal_readback",
-            ExerciseScenario::FastExercise | ExerciseScenario::FastExerciseCatchup => {
+            ExerciseScenario::FastExercise
+            | ExerciseScenario::FastExerciseCatchup
+            | ExerciseScenario::FastExerciseCatchupAtStart
+            | ExerciseScenario::FastExerciseCatchupAtEnd => {
                 "loop_training_fast_exercise"
             }
             ExerciseScenario::Replay | ExerciseScenario::NodeBoot => "loop_training_exercise",
@@ -738,12 +764,21 @@ fn scenario(scenario: ExerciseScenario) -> TestResult {
         );
         use oteryn_gameplay_foundation::scheduled_events::{content_schedule, test_clock};
 
-        // Place the first tick two seconds before the end of the pinned UTC window.
+        // Start four seconds before the selected boundary of the pinned UTC window.
+        const FAST_EXERCISE_START: i64 = 1_731_369_600;
         const FAST_EXERCISE_END: i64 = 1_731_887_999;
+        let catchup_edge = match scenario {
+            ExerciseScenario::FastExerciseCatchupAtStart => Some(FAST_EXERCISE_START),
+            ExerciseScenario::FastExerciseCatchupAtEnd => Some(FAST_EXERCISE_END),
+            _ => None,
+        };
         let started_at = owner.owner_now().get();
         let result = {
-            let _schedule_clock = (scenario == ExerciseScenario::FastExercise)
-                .then(|| test_clock::set(content_schedule().clone(), FAST_EXERCISE_END - 4));
+            let edge = catchup_edge.or_else(|| {
+                (scenario == ExerciseScenario::FastExercise).then_some(FAST_EXERCISE_END)
+            });
+            let _schedule_clock =
+                edge.map(|edge| test_clock::set(content_schedule().clone(), edge - 4));
             crate::gameplay_transport::loop_training::wire::dispatch(
                 &owner,
                 admitted,
@@ -757,6 +792,32 @@ fn scenario(scenario: ExerciseScenario) -> TestResult {
         };
         assert_eq!(result.disposition, 1, "{result:?}");
         assert_eq!(result.charges, 500);
+        if let Some(edge) = catchup_edge {
+            owner.states.test_owner_time.store(
+                started_at + 7_000_000 + 1,
+                std::sync::atomic::Ordering::Relaxed,
+            );
+            let _schedule_clock = test_clock::set(content_schedule().clone(), edge + 3);
+            let status = crate::gameplay_transport::loop_training::wire::dispatch(
+                &owner,
+                admitted,
+                UseCommand { command_id: 2, ..command },
+                67,
+                &[8, 3],
+                Some(&items),
+            )
+            .await
+            .ok_or("boundary catch-up stop")?;
+            assert_eq!((status.disposition, status.charges), (2, 495));
+            let tries: i64 = sqlx::query_scalar("SELECT sword_tries FROM game_character_build_state")
+                .fetch_one(&h.pool)
+                .await?;
+            assert_eq!(tries, 5 * 7);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         if scenario == ExerciseScenario::FastExerciseCatchup {
             owner.states.test_owner_time.store(
                 started_at + 65_000_000,

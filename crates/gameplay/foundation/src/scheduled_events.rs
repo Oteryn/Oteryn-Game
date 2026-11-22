@@ -269,16 +269,20 @@ pub fn content_schedule() -> &'static Schedule {
 
 /// The rates in force now: the content schedule at the current UTC second.
 pub fn current_rates() -> EventRates {
+    rates_ago(std::time::Duration::ZERO)
+}
+
+/// Evaluate a due tick at its UTC time, using its monotonic age relative to now.
+pub fn rates_ago(age: std::time::Duration) -> EventRates {
     #[cfg(any(test, feature = "test-support"))]
-    if let Some(rates) = test_clock::rates() {
+    if let Some(rates) = test_clock::rates_ago(age) {
         return rates;
     }
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .ok()
-        .and_then(|elapsed| i64::try_from(elapsed.as_secs()).ok())
-        .unwrap_or(0);
-    content_schedule().rates_at(now)
+        .unwrap_or_default();
+    let tick = now.saturating_sub(age);
+    content_schedule().rates_at(i64::try_from(tick.as_secs()).unwrap_or(i64::MAX))
 }
 
 /// Experience, a loot chance or skill tries under `percent` (floor).
@@ -372,12 +376,18 @@ pub mod test_clock {
         Guard(CLOCK.with(|clock| clock.borrow_mut().replace((schedule, unix_seconds))))
     }
 
-    pub(super) fn rates() -> Option<EventRates> {
+    pub(super) fn rates_ago(age: std::time::Duration) -> Option<EventRates> {
+        // The supplied instant is on a whole second. Going back by a fractional
+        // second falls in the preceding second for the inclusive window check.
+        let seconds = age
+            .as_secs()
+            .saturating_add(u64::from(age.subsec_nanos() != 0));
+        let seconds = i64::try_from(seconds).unwrap_or(i64::MAX);
         CLOCK.with(|clock| {
             clock
                 .borrow()
                 .as_ref()
-                .map(|(schedule, now)| schedule.rates_at(*now))
+                .map(|(schedule, now)| schedule.rates_at(now.saturating_sub(seconds)))
         })
     }
 }

@@ -1,5 +1,6 @@
 use super::full_world_support::{TestResult, world_scenario};
 use super::kill_reward_e2e_fixtures::scenario_thread;
+use crate::durability::DurabilityError;
 use oteryn_protocol_oteryn::depot_search::{Outcome, Request};
 use oteryn_protocol_oteryn::stash::{StashAction, StashIntent, StashOutcome};
 
@@ -13,7 +14,7 @@ fn depot_search_retrieve_all_replays_stash_result_after_balance_reaches_zero() -
         return Ok(());
     };
     drop(admin);
-    scenario_thread::run("depot-search-stash-replay", || scenario(false, false))
+    scenario_thread::run("depot-search-stash-replay", || scenario(false, None))
 }
 
 #[test]
@@ -22,7 +23,7 @@ fn depot_search_retrieve_rejects_changed_request_under_same_command() -> TestRes
         return Ok(());
     };
     drop(admin);
-    scenario_thread::run("depot-search-changed-request", || scenario(true, false))
+    scenario_thread::run("depot-search-changed-request", || scenario(true, None))
 }
 
 #[test]
@@ -31,10 +32,20 @@ fn depot_search_unknown_withdrawal_resumes_the_original_wire_command() -> TestRe
         return Ok(());
     };
     drop(admin);
-    scenario_thread::run("depot-search-unknown-ack", || scenario(false, true))
+    scenario_thread::run("depot-search-unknown-ack", || scenario(false, Some(DurabilityError::CommitOutcomeUnknown)))
 }
 
-fn scenario(change_request: bool, lose_ack: bool) -> TestResult {
+#[test]
+fn depot_search_deadline_with_committed_withdrawal_replays_retrieved() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario_thread::run("depot-search-deadline-ack", || {
+        scenario(false, Some(DurabilityError::RootPassDeadlineExceeded))
+    })
+}
+
+fn scenario(change_request: bool, lost_ack: Option<DurabilityError>) -> TestResult {
     world_scenario!(
         "depot_search_stash_replay",
         |h,
@@ -106,8 +117,8 @@ fn scenario(change_request: bool, lose_ack: bool) -> TestResult {
                     Request::Retrieve { client_id, all },
                 )
             };
-            if lose_ack {
-                reconcile_wire_withdrawal(&owner, admitted).await?;
+            if let Some(lost_ack) = lost_ack {
+                reconcile_wire_withdrawal(&owner, admitted, lost_ack).await?;
                 assert_eq!(balances(&h.pool).await?, (0, 37, 20));
                 return Ok(());
             }
@@ -148,16 +159,17 @@ fn scenario(change_request: bool, lose_ack: bool) -> TestResult {
 async fn reconcile_wire_withdrawal(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     mut admitted: crate::gameplay_transport::connection::AdmittedSession,
+    lost_ack: DurabilityError,
 ) -> TestResult {
     use super::wave2_replay_wire::exchange;
     use crate::foundation::CommandStatus;
-    use crate::gameplay_transport::capabilities::{OfferedCapability, SelectedCapabilities};
+    use crate::gameplay_transport::capabilities::SelectedCapabilities;
     use crate::gameplay_transport::connection::FreshAdmissionAuthority;
     use oteryn_protocol_oteryn::depot_search as wire;
 
-    let id = wire::CAPABILITY_DEPOT_SEARCH_V1;
     admitted.continuity.selected_capabilities =
-        SelectedCapabilities::select(&[OfferedCapability { id, requires: &[] }], &[id])
+        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 18, 37, 62, 153])
+            .filter(|selected| selected.contains(wire::CAPABILITY_DEPOT_SEARCH_V1))
             .ok_or("depot search capability")?;
     let payload = wire::encode_request(Request::Retrieve {
         client_id: CLIENT_ID,
@@ -168,7 +180,7 @@ async fn reconcile_wire_withdrawal(
     let kind = wire::COMMAND_TYPE_DEPOT_SEARCH;
     let lost = crate::gameplay_transport::depot_search::LOSE_DEPOT_SEARCH_ACK
         .scope(
-            std::cell::Cell::new(true),
+            std::cell::Cell::new(Some(lost_ack)),
             exchange(owner, admitted, command, kind, &payload, None),
         )
         .await?;
