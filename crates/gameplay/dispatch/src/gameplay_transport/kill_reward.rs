@@ -97,13 +97,19 @@ struct PreparedKillExperience {
     amount: oteryn_simulation_determinism::ExactI64,
 }
 
+#[derive(Debug, Clone)]
+pub(super) enum WorldChangeDeath {
+    Counter(
+        u64,
+        crate::durability::world_event::changes::counters::CreditEvent,
+    ),
+    Spider(crate::durability::world_event::changes::variants::SpiderDeath),
+}
+
 /// One captured kill awaiting its settle.
 #[derive(Debug, Clone)]
 pub struct PendingKillSettlement {
-    pub(super) world_change: Option<(
-        u64,
-        crate::durability::world_event::changes::counters::CreditEvent,
-    )>,
+    pub(super) world_change: Option<WorldChangeDeath>,
     pub facts: ProjectedCreatureDeathFacts,
     pub creature: String,
     pub row: Option<Arc<CreatureRewardRow>>,
@@ -2073,7 +2079,25 @@ pub fn record_creature_kill(
             receipts.kill = true;
         }
     }
-    let world_change = if wild {
+    let spider_death =
+        if wild && creature == crate::durability::world_event::changes::variants::SPIDER_BOSS {
+            let epoch = runtime.world_change_cycles().map(|(epoch, _)| *epoch);
+            epoch
+                .and_then(|epoch| {
+                    crate::durability::world_event::changes::variants::SpiderDeath::capture(
+                        runtime,
+                        target,
+                        principal.character,
+                        epoch,
+                    )
+                })
+                .map(WorldChangeDeath::Spider)
+        } else {
+            None
+        };
+    let world_change = if spider_death.is_some() {
+        spider_death
+    } else if wild {
         runtime.world_change_cycles().and_then(|(epoch, cycles)| {
             let mut credits = world_change_credits(&creature, facts.corpse);
             let cohort = runtime.world_spawn_cohort(target);
@@ -2113,7 +2137,7 @@ pub fn record_creature_kill(
                     generations[kind.index()] = generation;
                 }
             }
-            Some((
+            Some(WorldChangeDeath::Counter(
                 *epoch,
                 crate::durability::world_event::changes::counters::CreditEvent {
                     source_kind: 1,
@@ -3620,7 +3644,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         inflight_before: usize,
     ) -> SettleReport {
         let admission = self.admission;
-        if let Some((epoch, event)) = &entry.world_change {
+        if let Some(event) = &entry.world_change {
             let current = {
                 let runtime = admission.runtime.lock().await;
                 let digest = runtime.content_pin().server_artifact_digest();
@@ -3646,13 +3670,23 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                     no_progression: false,
                 };
             };
-            match admission.root.credit_world_change_event(admission.character, admission.holder, scope, generation, *epoch, event.clone()).await {
-                Ok(crate::durability::world_event::changes::counters::CreditOutcome::Applied { .. } |
-                   crate::durability::world_event::changes::counters::CreditOutcome::AlreadyApplied) => {},
-                Ok(crate::durability::world_event::changes::counters::CreditOutcome::Refused) => {
-                    operator_event("world_change_credit_refused reason=stale_source_or_cycle");
-                },
-                Err(_) => return SettleReport { verdict: SettleVerdict::Retry, no_progression: false },
+            let result = match event {
+                WorldChangeDeath::Counter(epoch, event) => admission.root
+                    .credit_world_change_event(admission.character, admission.holder, scope, generation, *epoch, event.clone())
+                    .await.map(|outcome| {
+                        if outcome == crate::durability::world_event::changes::counters::CreditOutcome::Refused {
+                            operator_event("world_change_credit_refused reason=stale_source_or_cycle");
+                        }
+                    }),
+                WorldChangeDeath::Spider(death) => admission.root
+                    .record_spider_nest_death(admission.character, admission.holder, scope, generation, *death)
+                    .await,
+            };
+            if result.is_err() {
+                return SettleReport {
+                    verdict: SettleVerdict::Retry,
+                    no_progression: false,
+                };
             }
         }
         if entry.soulpit_experience.is_some() {

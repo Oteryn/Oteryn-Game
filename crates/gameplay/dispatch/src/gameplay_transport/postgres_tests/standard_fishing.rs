@@ -349,7 +349,7 @@ fn run_gathering_at(
     Ok(())
 }
 
-fn gathering_scenario(
+pub(super) fn gathering_scenario(
     tool: u16,
     target_id: u16,
     after: Option<u16>,
@@ -402,32 +402,59 @@ fn gathering_scenario(
         } else {
             oteryn_gameplay_items::fishing::WORM
         };
-        let start = crate::map::overlay::TilePos {
+        let desert = target_id == oteryn_gameplay_items::fishing::DESERT_FISHING_WATER;
+        let epoch = if desert {
+            river_reset(&harness, deps.admitted.world_id).await?
+        } else {
+            0
+        };
+        let start = if desert {
+            crate::map::overlay::TilePos { x: 33431, y: 31523, floor: -11 }
+        } else { crate::map::overlay::TilePos {
             x: if sewer { 32742 } else { 6 },
             y: if sewer { 31168 } else { 0 },
             floor: if sewer { -8 } else { -7 },
-        };
+        }};
         let (mut bytes, mut pins) = crate::map::boot::tests::bundle_with_item_ids(
             (bag, reference(bag).ok_or("bag")?.get() - 1),
             (water, reference(water).ok_or("water")?.get() - 1),
         );
-        if sewer {
-            // Place the fixture inside Crystal's Yalahar sewer rectangle. The original
-            // room at (7, 0, -7) cannot reach the location-qualified mechanical branch.
+        if sewer || desert {
+            // Re-anchor the verified fixture at the exact gathering source.
             let mut data = oteryn_world_bundle::bundle::read(&bytes)?;
-            data.manifest.world.min_x += 32736;
-            data.manifest.world.max_x += 32736;
-            data.manifest.world.min_y += 31168;
-            data.manifest.world.max_y += 31168;
-            data.manifest.world.floors = vec![-8];
+            let dx = start.x - 6;
+            let dy = start.y;
+            data.manifest.world.min_x += dx;
+            data.manifest.world.max_x += dx;
+            data.manifest.world.min_y += dy;
+            data.manifest.world.max_y += dy;
+            data.manifest.world.floors = vec![start.floor];
             for sector in &mut data.sectors {
-                sector.floor = -8;
-                sector.sx += 32736 / 32;
-                sector.sy += 31168 / 32;
+                sector.floor = start.floor;
+                sector.sx = (sector.sx * 32 + dx) / 32;
+                sector.sy = (sector.sy * 32 + dy) / 32;
                 for tile in &mut sector.tiles {
-                    tile.x += 32736;
-                    tile.y += 31168;
+                    tile.x += dx;
+                    tile.y += dy;
                 }
+            }
+            if desert {
+                use oteryn_world_bundle::bundle::{Family, PaletteEntry, Terrain, TerrainKind};
+                let projected_water = data.manifest.palette.iter_mut().find(|entry| entry.key == water)
+                    .ok_or("desert fixture water")?;
+                projected_water.key = "oteryn:terrain.tibia.i13989".into();
+                projected_water.family = Family::Terrain;
+                let terrain = Terrain {
+                    kind: TerrainKind::Ground, walkable: Some(true), ground_speed: Some(200),
+                    blocks_projectile: None,
+                };
+                projected_water.terrain = Some(terrain);
+                data.manifest.palette.push(PaletteEntry {
+                    key: "oteryn:terrain.tibia.i13988".into(),
+                    family: Family::Terrain,
+                    id: reference("oteryn:item.tibia.i13988").ok_or("spent desert water")?.get()-1,
+                    terrain: Some(terrain),
+                });
             }
             bytes = oteryn_world_bundle_compiler::bundle::write_with_npcs(
                 &data.manifest,
@@ -454,14 +481,14 @@ fn gathering_scenario(
                 door: false,
             })
         };
-        let map = crate::map::boot::boot(
-            &bytes,
-            &boot_pins,
-            deps.admitted.world_id,
-            deps.admitted.channel_id,
-            definitions,
-        )
-        .map_err(debug)?;
+        let checked = crate::map::boot::check(bytes, boot_pins).map_err(debug)?;
+        let checked = if desert {
+            checked.compose_epoch_admitted_layers(epoch, &[], &[]).map_err(debug)?
+        } else {
+            checked
+        };
+        let map = checked.boot(deps.admitted.world_id, deps.admitted.channel_id, definitions)
+            .map_err(debug)?;
         let cells = map
             .movement_cells(deps.room.movement_cells())
             .map_err(debug)?;
@@ -507,6 +534,7 @@ fn gathering_scenario(
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
+        owner.reset_epoch = epoch;
         owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
@@ -720,6 +748,11 @@ fn gathering_scenario(
             (3483 | 9306, 7236, Some(3578)) => Some("oteryn:achievement/here_fishy_fishy"),
             _ => None,
         };
+        let desert_grant = if desert && yield_item == Some(13992) {
+            super::achievement_granters::assert_progress(&harness, "oteryn:achievement/desert_fisher", 1, true, "oteryn:item-craft").await?
+        } else {
+            None
+        };
         let achievement = super::achievement_granters::assert_gathering(&harness, earned).await?;
         if committed {
             let (_, replay, _) = exchange(&owner, next, command_id, &actual, None).await?;
@@ -736,6 +769,9 @@ fn gathering_scenario(
             achievement,
             super::achievement_granters::assert_gathering(&harness, earned).await?
         );
+        if desert_grant.is_some() {
+            assert_eq!(desert_grant, super::achievement_granters::assert_progress(&harness, "oteryn:achievement/desert_fisher", 1, true, "oteryn:item-craft").await?);
+        }
         if let Some(candidate) = &mut stale_pickup {
             let permit = owner.spell_lane_permit().await.ok_or("pickup lane")?;
             let outcome = owner
@@ -857,4 +893,20 @@ fn gathering_scenario(
         drop(seal);
         harness.cleanup().await
     })
+}
+
+
+async fn river_reset(h: &Harness, world: crate::foundation::WorldId) -> TestResult<u64> {
+    use oteryn_gameplay_world_change::variants::Selected;
+    let epoch = (1..1_000).find(|epoch| Selected::roll(world.as_bytes(), *epoch)
+        .is_ok_and(|selected| selected.active().any(|(definition, _)| definition.key == "river_runs_deep")))
+        .ok_or("flowing Zao river epoch")?;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,'map-1',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,'1970-01-01T06:00:00Z','1970-01')")
+        .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind([7_u8;32].as_slice()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,$2::text::numeric) ON CONFLICT(world_id) DO UPDATE SET reset_epoch=excluded.reset_epoch")
+        .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).execute(&mut *tx).await?;
+    crate::durability::world_event::changes::finalize_reset_for_test(&mut tx, world, epoch).await?;
+    tx.commit().await?;
+    Ok(epoch)
 }

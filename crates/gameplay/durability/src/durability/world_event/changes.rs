@@ -14,6 +14,7 @@ use sha2::{Digest, Sha256};
 mod bindings;
 pub mod callbacks;
 pub mod counters;
+pub mod variants;
 
 /// The day after the reset `reset_epoch` of `world`, on the UTC calendar at `unix_ms`.
 pub fn roll(
@@ -177,13 +178,14 @@ pub(super) async fn record(
     tx: &mut Transaction<'_, Postgres>,
     world: WorldId,
     epoch: u64,
+    new_reset: bool,
 ) -> Result<DailyWorldChanges, DurabilityError> {
     let existing: Option<(serde_json::Value, bool)> = sqlx::query_as("SELECT decision,native_binding_required FROM game_world_change_days WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric")
         .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_optional(&mut **tx).await?;
     if let Some((existing, required)) = existing {
         let mut day: DailyWorldChanges =
             serde_json::from_value(existing).map_err(|_| DurabilityError::InvalidStoredState)?;
-        if day.reset_epoch != epoch {
+        if day.reset_epoch != epoch || !day.variants.validate() {
             return Err(DurabilityError::InvalidStoredState);
         }
         bindings::verify(tx, world, &day, required).await?;
@@ -193,6 +195,10 @@ pub(super) async fn record(
     let timestamp: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM activated_at)*1000)::bigint FROM game_world_reset_epochs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric")
         .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_one(&mut **tx).await?;
     let mut selected = roll(world, epoch, timestamp)?;
+    if new_reset {
+        selected.variants = oteryn_gameplay_world_change::variants::Selected::roll(world.as_bytes(), epoch)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+    }
     counters::at_reset(
         tx,
         world,
@@ -228,7 +234,18 @@ pub async fn load(
     if current.as_deref() != Some(epoch.to_string().as_str()) {
         return Ok(None);
     }
-    record(tx, world, epoch).await.map(Some)
+    record(tx, world, epoch, false).await.map(Some)
+}
+
+/// Drive the production reset finalization with an already inserted test epoch.
+#[cfg(feature = "test-support")]
+pub async fn finalize_reset_for_test(
+    tx: &mut Transaction<'_, Postgres>,
+    world: WorldId,
+    epoch: u64,
+) -> Result<(), DurabilityError> {
+    let catalogue = super::prepare_catalogue()?;
+    super::record_reset(tx, world, epoch, true, &catalogue).await
 }
 
 impl DurabilityRoot {

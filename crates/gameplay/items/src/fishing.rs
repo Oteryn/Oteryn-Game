@@ -5,6 +5,12 @@ pub const WORM: &str = "oteryn:item.tibia.i3492";
 pub const FISH: &str = "oteryn:item.tibia.i3578";
 pub const NAIL: &str = "oteryn:item.tibia.i953";
 
+pub const DESERT_FISHING_WATER: u16 = 13989;
+pub const DESERT_FISHING_SPENT: u16 = 13988;
+pub const SANDFISH: u16 = 13992;
+/// Crystal 201189f data/items/items.xml:32065–32070.
+pub const DESERT_FISHING_RECOVERY_MS: u32 = 1_200_000;
+
 pub const MECHANICAL_FISHING_WATER: [u16; 13] = [
     4597, 4598, 4599, 4600, 4601, 4602, 629, 630, 631, 632, 633, 634, 21312,
 ];
@@ -260,6 +266,16 @@ pub fn gathering_attempt(
     catch_roll: u32,
     yield_roll: u32,
 ) -> Option<GatheringAttempt> {
+    // Crystal 201189f data-global/scripts/actions/other/fishing.lua:148–175.
+    if tool == 3483 && target == DESERT_FISHING_WATER {
+        return ((1..=100_000).contains(&yield_roll) && catches(skill, catch_roll)).then_some(
+            GatheringAttempt {
+                after: Some(DESERT_FISHING_SPENT),
+                yield_item: (yield_roll <= 1000).then_some(SANDFISH),
+                consumes_bait: true,
+            },
+        );
+    }
     if tool == 9306 && MECHANICAL_FISHING_WATER.contains(&target) {
         if !(1..=100_000).contains(&yield_roll) || !catches(skill, catch_roll) {
             return None;
@@ -343,7 +359,7 @@ pub fn catches(skill: u16, roll: u32) -> bool {
 /// Crystal data-global/scripts/actions/other/mechanical_fishing.lua:334-346,378.
 /// Only its ice-hole gathering slice is admitted for the mechanical rod here.
 pub fn accepts_fishing_rod(tool_key: &str, water_key: &str) -> bool {
-    (tool_key == FISHING_ROD && is_water(water_key))
+    (tool_key == FISHING_ROD && is_water(water_key) && water_key != "oteryn:item.tibia.i13988")
         || (tool_key == "oteryn:item.tibia.i9306" && water_key == "oteryn:item.tibia.i7236")
 }
 

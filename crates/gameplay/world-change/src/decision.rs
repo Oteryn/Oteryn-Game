@@ -63,6 +63,7 @@ impl NativeDecision {
         };
         Ok(DailyWorldChanges {
             reset_epoch: self.epoch,
+            variants: Default::default(),
             fury_gates: self.fury_gates.as_ref().map(|_| fury_exit),
             fury_exit,
             nightmare_isles,

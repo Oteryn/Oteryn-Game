@@ -50,10 +50,13 @@ fn map_changes(world: WorldId, changes: &DailyWorldChanges) -> crate::map::daily
         grimvale_full_moon: changes.grimvale_full_moon,
         items: changes.items().collect(),
         trader: changes.oriental_trader.map(|town| town.layer()),
+        variants: changes.variants,
+        unavailable_variants: Vec::new(),
     }
 }
 
-pub(super) fn prepare_map(
+#[cfg(test)]
+pub(crate) fn prepare_map(
     checked: crate::map::boot::CheckedBundle,
     world: WorldId,
     changes: &DailyWorldChanges,
@@ -62,6 +65,34 @@ pub(super) fn prepare_map(
         return checked;
     }
     checked.with_daily_map(map_changes(world, changes))
+}
+
+/// Qualify active recipe creature identities against the exact activated server content.
+pub(super) fn prepare_content_map(
+    checked: crate::map::boot::CheckedBundle,
+    world: WorldId,
+    changes: &DailyWorldChanges,
+    gameplay: Option<&crate::content::native_gameplay::NativeGameplayState>,
+) -> crate::map::boot::CheckedBundle {
+    if changes.reset_epoch == 0 {
+        return checked;
+    }
+    let mut daily = map_changes(world, changes);
+    daily.unavailable_variants = changes
+        .variants
+        .active()
+        .filter(|(_, variant)| {
+            variant.spawns.iter().any(|spawn| {
+                gameplay.is_none_or(|gameplay| {
+                    gameplay
+                        .creature_profile_fingerprint(&spawn.creature)
+                        .is_none()
+                })
+            })
+        })
+        .map(|(definition, _)| definition.key.as_str())
+        .collect();
+    checked.with_daily_map(daily)
 }
 
 /// Places the day's NPCs the loaded catalogue admits; one that cannot stand is logged.
@@ -102,7 +133,21 @@ pub(super) fn apply(
     .into_iter()
     .filter(|(kind, _, _)| changes.world_counters && counter_admitted(*kind))
     .map(|(_, key, at)| (key, at));
-    for (key, (x, y, z)) in changes.npcs().chain(trader).chain(shared_npcs) {
+    let variant_npcs = map.into_iter().flat_map(|world| {
+        world.daily_variant_npcs().filter(|(_, (x, y, z))| {
+            world.enterable(TilePos {
+                x: *x,
+                y: *y,
+                floor: -*z,
+            })
+        })
+    });
+    for (key, (x, y, z)) in changes
+        .npcs()
+        .chain(trader)
+        .chain(shared_npcs)
+        .chain(variant_npcs)
+    {
         if !npc_boot.is_some_and(|boot| boot.admits(key)) {
             continue;
         }
@@ -120,6 +165,62 @@ pub(super) fn apply(
         }
     }
     placed
+}
+
+/// Append admitted cohorts to the ordinary paced spawn activation.
+pub(super) fn append_variant_spawns<'a>(
+    runtime: &ChannelRuntimeV1,
+    world: &'a crate::map::boot::BundleWorld,
+    sources: &mut Vec<crate::map::boot::BundleSpawnFacts>,
+) -> Result<VariantSpawnBindings<'a>, crate::foundation::CarrierError> {
+    use crate::foundation::CarrierError;
+    let mut bindings = VariantSpawnBindings::default();
+    for (key, cohort) in world.daily_variant_spawns() {
+        for spawn in cohort {
+            let (x, y, z) = spawn.position;
+            let local = (i32::from(x), i32::from(y), i16::from(z));
+            if !world.enterable(TilePos { x, y, floor: -z }) {
+                return Err(CarrierError::InvalidSpawnDefinition);
+            }
+            let policy = runtime.companion_policy(&spawn.creature)?;
+            let health = u64::try_from(policy.maximum_health)
+                .map_err(|_| CarrierError::InvalidSpawnDefinition)?;
+            let index = u16::try_from(sources.len()).map_err(|_| CarrierError::CapacityExceeded)?;
+            bindings.cohorts.push((index, key));
+            if let Some(count) = spawn.after_kills {
+                let guards = cohort[..count]
+                    .iter()
+                    .map(|guard| {
+                        let (x, y, z) = guard.position;
+                        (
+                            (i32::from(x), i32::from(y), i16::from(z)),
+                            guard.creature.clone(),
+                        )
+                    })
+                    .collect();
+                bindings.guards.insert(index, guards);
+            }
+            sources.push((
+                vec![(
+                    local,
+                    u64::from(spawn.respawn_ms),
+                    spawn.creature.clone(),
+                    health,
+                    policy.blocked_by_nearby_players,
+                )],
+                crate::map::boot::BUNDLE_OCCUPANCY_RETRY_MS,
+            ));
+        }
+    }
+    Ok(bindings)
+}
+
+pub(super) type GuardHome = ((i32, i32, i16), String);
+
+#[derive(Default)]
+pub(super) struct VariantSpawnBindings<'a> {
+    pub(super) cohorts: Vec<(u16, &'a str)>,
+    pub(super) guards: std::collections::BTreeMap<u16, Vec<GuardHome>>,
 }
 
 /// Counts the reset day's Items projected into the base map before its owners were built.
@@ -170,7 +271,7 @@ pub(crate) mod tests {
             .expect("authored daily candidates")
     }
 
-    fn world() -> WorldId {
+    pub(crate) fn world() -> WorldId {
         WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1]).expect("world")
     }
 
@@ -326,7 +427,7 @@ pub(crate) mod tests {
         assert!(npc_keys(&runtime).is_empty());
     }
 
-    fn physical_bundle() -> crate::map::boot::CheckedBundle {
+    fn physical_bundle(variant_fixtures: bool) -> crate::map::boot::CheckedBundle {
         use oteryn_world_bundle::sector::{Attrs, Item, Tile};
         use oteryn_world_bundle::writer::{
             self as bundle, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector,
@@ -338,7 +439,12 @@ pub(crate) mod tests {
         ))
         .expect("layers");
         let mut appearances: BTreeSet<u16> = (12059..=12065).chain([432, 486]).collect();
-        let grounds: BTreeSet<u16> = (12059..=12065).chain([408, 432, 464, 486, 494]).collect();
+        let mut grounds: BTreeSet<u16> = (12059..=12065).chain([408, 432, 464, 486, 494]).collect();
+        if variant_fixtures {
+            let variant_ground = [231, 352, 4402, 4515, 9524, 9527, 9529];
+            appearances.extend(variant_ground);
+            grounds.extend(variant_ground);
+        }
         for layer in layers["layers"].as_array().expect("layer array") {
             if !layer["key"]
                 .as_str()
@@ -378,6 +484,8 @@ pub(crate) mod tests {
             (33305, 33305, 31847, 31847, -9, 12065),
             (33370, 33370, 31847, 31847, -9, 12065),
             (33306, 33306, 31847, 31847, -8, 12065),
+            // Bibby's authored home keeps its base tile through the daily overlay.
+            (32622, 32622, 31826, 31826, -7, 432),
         ] {
             let index = palette
                 .iter()
@@ -455,7 +563,7 @@ pub(crate) mod tests {
                 min_y: 31000,
                 max_x: 34000,
                 max_y: 33000,
-                floors: (-9..=-1).collect(),
+                floors: (-15..=-1).collect(),
             },
             palette,
             draft_areas: Vec::new(),
@@ -499,8 +607,16 @@ pub(crate) mod tests {
         .expect("checked")
     }
 
-    fn boot_physical(changes: &DailyWorldChanges) -> crate::map::boot::BundleWorld {
-        prepare_map(physical_bundle(), world(), changes)
+    pub(crate) fn boot_physical(changes: &DailyWorldChanges) -> crate::map::boot::BundleWorld {
+        let bundle = physical_bundle(changes.variants.installed());
+        let bundle = if changes.variants.installed() {
+            bundle
+                .compose_epoch_admitted_layers(changes.reset_epoch, &[], &[])
+                .expect("variant epoch")
+        } else {
+            bundle
+        };
+        prepare_map(bundle, world(), changes)
             .boot(
                 world(),
                 ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])

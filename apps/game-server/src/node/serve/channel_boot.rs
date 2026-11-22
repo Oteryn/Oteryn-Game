@@ -93,7 +93,8 @@ pub(super) async fn prepare_channel(
         .map(|checked| {
             let checked = daily_world_changes::bind_layers(checked, &daily)
                 .map_err(BootError::WorldBundle)?;
-            let checked = daily_world_changes::prepare_map(checked, material.world, &daily);
+            let checked =
+                daily_world_changes::prepare_content_map(checked, material.world, &daily, gameplay);
             boot_bundle_world(checked, material.world, material.channel, gameplay)
         })
         .transpose()?;
@@ -300,7 +301,7 @@ pub(super) async fn prepare_channel(
             .map_err(|_| BootError::Readiness("boss spawn configuration"))?;
     }
     // NPC-LOAD-1: the bundle's NPC actors take their cells at Channel start, before any creature.
-    bundle_npcs::place(&mut channel_runtime, npc_boot)?;
+    bundle_npcs::place_with_daily_variants(&mut channel_runtime, npc_boot, bundle.as_ref())?;
     if daily.world_counters {
         let cycles = oteryn_gameplay_world_change::counter::CounterKind::ALL
             .into_iter()
@@ -445,6 +446,7 @@ pub(super) async fn prepare_channel(
 fn bootstrap_world_changes() -> oteryn_gameplay_world_change::daily::DailyWorldChanges {
     oteryn_gameplay_world_change::daily::DailyWorldChanges {
         reset_epoch: 0,
+        variants: Default::default(),
         fury_gates: None,
         fury_exit: "fury_gates/abdendriel",
         nightmare_isles: "nightmare_isle/ankrahmun-north",

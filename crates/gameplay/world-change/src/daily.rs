@@ -163,6 +163,8 @@ pub type DailyLayer = &'static str;
 #[serde(deny_unknown_fields)]
 pub struct DailyWorldChanges {
     pub reset_epoch: u64,
+    #[serde(default)]
+    pub variants: crate::variants::Selected,
     #[serde(default, deserialize_with = "deserialize_fury_gate")]
     pub fury_gates: Option<DailyLayer>,
     #[serde(default = "default_fury_exit", deserialize_with = "deserialize_layer")]
@@ -253,6 +255,7 @@ impl DailyWorldChanges {
         let fury_gates = fury_active.then_some(fury_exit);
         let nightmare_isles = NIGHTMARE_LAYERS[choice(draw(nightmare), 3) as usize];
         Self {
+            variants: Default::default(),
             stampede,
             fire_from_the_earth,
             world_counters: true,

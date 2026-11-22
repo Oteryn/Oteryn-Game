@@ -93,6 +93,14 @@ pub fn is_active(day: &DailyWorldChanges, key: &str) -> bool {
             _ => (1..=3).contains(&day.counter_stages[kind.index()]),
         };
     }
+    if day.variants.active().any(|(definition, variant)| {
+        key == definition.key && !matches!(variant.key.as_str(), "open_water" | "sealed")
+            || key
+                .split_once('/')
+                .is_some_and(|(family, choice)| family == definition.key && choice == variant.key)
+    }) {
+        return true;
+    }
     match key {
         "thawing" => day.thawing,
         "their_masters_voice" => day.their_masters_voice,
