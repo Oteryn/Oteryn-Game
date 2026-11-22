@@ -16,6 +16,7 @@ use sqlx::{Postgres, Row, Transaction};
 
 #[path = "world_event/occurrence.rs"]
 mod occurrence;
+mod seasonal;
 
 pub(super) fn prepare_catalogue()
 -> Result<oteryn_gameplay_world_change::rules::Catalogue, DurabilityError> {
@@ -82,6 +83,7 @@ pub(super) async fn record_reset(
         sqlx::query("INSERT INTO game_world_event_epochs(world_id,reset_epoch,active,announcement,seasonal_calendar_revision,seasonal_event_keys) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,$4,1,$5) ON CONFLICT DO NOTHING")
         .bind(world.as_bytes().as_slice()).bind(epoch.to_string())
         .bind(!announcement.is_empty()).bind(announcement).bind(seasonal).execute(&mut **tx).await?;
+        seasonal::record(tx, world, epoch).await?;
     }
     let stored: (bool, String, i16, Vec<String>) = sqlx::query_as("SELECT active,announcement,seasonal_calendar_revision,seasonal_event_keys FROM game_world_event_epochs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric")
         .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_one(&mut **tx).await?;
@@ -406,6 +408,9 @@ pub(super) async fn change_active(
     key: &str,
 ) -> Result<bool, DurabilityError> {
     lock_admission_relations(tx).await?;
+    if oteryn_gameplay_world_change::seasonal::KEYS.contains(&key) {
+        return seasonal::active(tx, world, key, None).await;
+    }
     let row: Option<(String,bool)> = sqlx::query_as("SELECT s.reset_epoch::text,s.active FROM game_world_change_states s JOIN game_world_reset_active a USING(world_id,reset_epoch) WHERE s.world_id=encode($1,'hex')::uuid AND s.change_key=$2 FOR SHARE OF s")
         .bind(world.as_bytes().as_slice()).bind(key).fetch_optional(&mut **tx).await?;
     if let Some((epoch, active)) = row {

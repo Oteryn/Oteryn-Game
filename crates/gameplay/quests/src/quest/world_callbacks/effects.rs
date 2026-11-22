@@ -315,6 +315,9 @@ pub struct Encounter {
     /// A value-free source switch schedules native monsters without moving a party.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub timing: Option<EncounterTiming>,
+    /// Eject the admitted STEP participant if still in the room at the deadline.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub personal_exit: Option<PersonalEncounterExit>,
     /// Source phases run on the shared encounter owner after atomic party admission.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub phase: Option<EncounterPhase>,
@@ -335,6 +338,13 @@ pub enum EncounterPhase {
 pub struct EncounterTiming {
     pub spawn_after_ms: u32,
     pub reset_after_ms: u32,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct PersonalEncounterExit {
+    pub after_ms: u32,
+    pub destination: Position,
 }
 
 /// A source rite transports the exact players on bounded stations. The initiator
@@ -988,6 +998,14 @@ pub(super) fn valid(callback: &Callback) -> bool {
             }
             || !(usize::from(!delayed)..=if encounter.phase.is_some() { 16 } else { 8 })
                 .contains(&encounter.monsters.len())
+            || encounter.personal_exit.is_some_and(|exit| {
+                callback.personal_room_entry().is_none()
+                    || !personal_encounter
+                    || encounter.phase.is_some()
+                    || !(1..=3_600_000).contains(&exit.after_ms)
+                    || !pos(exit.destination)
+                    || in_room(exit.destination)
+            })
             || (encounter.phase.is_some() && encounter.timing.is_some())
             || (callback.reversible && !source_party)
             || unique_from.len() != encounter.players.len()

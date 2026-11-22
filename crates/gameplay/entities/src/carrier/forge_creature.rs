@@ -3,8 +3,10 @@ use super::*;
 use oteryn_gameplay_domain::domain::echo_warden::EchoVariant;
 use oteryn_gameplay_domain::domain::forge_creature::{
     FIENDISH_RESPAWN_MICROS, FIENDISH_SIMULTANEOUS_MAX, ForgeCreature, ForgeSpawnCandidate,
-    INFLUENCED_SIMULTANEOUS_MAX, plan_fiendish_tick,
+    INFLUENCED_SIMULTANEOUS_MAX, OVERLOAD_FIENDISH_MAX, OVERLOAD_FIENDISH_RESPAWN_MICROS,
+    plan_fiendish_tick,
 };
+use oteryn_gameplay_foundation::scheduled_events::current_rates;
 use sha2::{Digest, Sha256};
 
 // Canary's Game::updateForgeableMonsters maintenance cadence, in owner semantic time.
@@ -81,23 +83,29 @@ impl ChannelRuntimeV1 {
     }
 
     pub(super) fn drive_forge_population(&mut self, now: u64) -> Result<(), CarrierError> {
-        // Observe only the three retained incarnations on ordinary owner turns. A dead
-        // fiend holds its population slot until its own replacement deadline.
+        let overload = current_rates().exaltation_overload.is_some();
+        let (limit, delay) = if overload {
+            (OVERLOAD_FIENDISH_MAX, OVERLOAD_FIENDISH_RESPAWN_MICROS)
+        } else {
+            (FIENDISH_SIMULTANEOUS_MAX, FIENDISH_RESPAWN_MICROS)
+        };
         for index in 0..self.forge_fiends.len() {
-            let (actor, due) = self.forge_fiends[index];
-            if due.is_none() && self.companion_snapshot(actor).is_err() {
-                let due = now.saturating_add(FIENDISH_RESPAWN_MICROS);
-                self.forge_fiends[index].1 = Some(due);
-                self.forge_next_tick_micros = self.forge_next_tick_micros.min(due);
+            let (actor, deadline) = self.forge_fiends[index];
+            if deadline.is_none() && self.companion_snapshot(actor).is_err() {
+                self.forge_fiends[index].1 = Some(now.saturating_add(delay));
             }
         }
-        if now < self.forge_next_tick_micros {
+        let population_due = now >= self.forge_next_tick_micros;
+        let due = self
+            .forge_fiends
+            .iter()
+            .any(|(_, due)| due.is_some_and(|due| now >= due));
+        if !population_due && !due {
             return Ok(());
         }
         self.forge_fiends
             .retain(|(_, due)| due.is_none_or(|due| now < due));
-        let available =
-            usize::from(FIENDISH_SIMULTANEOUS_MAX).saturating_sub(self.forge_fiends.len());
+        let available = usize::from(limit).saturating_sub(self.forge_fiends.len());
         let mut candidates = Vec::new();
         let mut actors = Vec::new();
         let mut existing = Vec::new();
@@ -129,7 +137,7 @@ impl ChannelRuntimeV1 {
                 .try_into()
                 .unwrap_or_default(),
         );
-        let plan = plan_fiendish_tick(now, seed, &existing, &candidates);
+        let plan = plan_fiendish_tick(now, seed, &existing, &candidates, limit, delay);
         let mut selected = 0;
         for identity in &plan.selected {
             if selected < available
@@ -140,6 +148,9 @@ impl ChannelRuntimeV1 {
                 self.forge_fiends.push((*actor, None));
                 selected += 1;
             }
+        }
+        if !population_due {
+            return Ok(());
         }
         // The pinned engines add one influenced creature per maintenance interval until the
         // configured population ceiling, rather than converting a fraction of every spawn set.
@@ -165,20 +176,13 @@ impl ChannelRuntimeV1 {
         for (roll, actor) in influenced.into_iter().take(
             usize::from(INFLUENCED_SIMULTANEOUS_MAX)
                 .saturating_sub(influenced_count)
-                .min(1),
+                .min(1 + usize::from(overload)),
         ) {
             if let Some(kind) = ForgeCreature::new_influenced(1 + (roll % 5) as u8) {
                 self.apply_forge_classification(actor, kind)?;
             }
         }
-        let next_scan = now.saturating_add(POPULATION_TICK_MICROS);
-        self.forge_next_tick_micros = self
-            .forge_fiends
-            .iter()
-            .filter_map(|(_, due)| *due)
-            .min()
-            .unwrap_or(next_scan)
-            .min(next_scan);
+        self.forge_next_tick_micros = now.saturating_add(POPULATION_TICK_MICROS);
         Ok(())
     }
 }

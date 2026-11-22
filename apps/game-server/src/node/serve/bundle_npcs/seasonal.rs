@@ -1,9 +1,20 @@
 //! W05d seasonal actors are selected by the committed reset calendar.
 use super::*;
 use crate::map::overlay::TilePos;
+use oteryn_gameplay_entities::ConditionalNpcActor;
+use oteryn_gameplay_world_change::seasonal::LAST_CREEP;
 
 const BRUTUS: &str = "oteryn:npc.brutus_the_baker";
 const BRUTUS_POSITION: (u16, u16, i8) = (33303, 32064, 7);
+
+pub(super) const CASPER: &str = "oteryn:npc.casper";
+// TibiaWiki BR Casper revision 401880, retained in the NPC definition and
+// docs/reference/content-prep/m23-last-creep/README.md.
+const CASPER_POSITION: TilePos = TilePos {
+    x: 33261,
+    y: 32363,
+    floor: -7,
+};
 
 const SANTA: &str = "oteryn:npc.santa_claus";
 
@@ -52,8 +63,9 @@ fn key(index: usize) -> &'static str {
     }
 }
 
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Default)]
 pub(super) struct SeasonalNpcSpawns {
+    casper: Option<ConditionalNpcActor>,
     brutus_admitted: bool,
     brutus_present: bool,
     brutus_actor: Option<crate::foundation::ExactActorRef>,
@@ -79,7 +91,26 @@ impl SeasonalNpcSpawns {
                 && enterable(TilePos { x, y, floor: -z })
         });
         let (x, y, z) = BRUTUS_POSITION;
+        let needs_casper_placement = matches!(boot, Some(NpcBoot::Place { table, admitted, .. })
+            if admitted.contains(CASPER) && !table.npcs.iter().any(|entry| entry.key == CASPER));
+        let casper = (seasonal.iter().any(|event| event == LAST_CREEP)
+            && needs_casper_placement
+            && enterable(CASPER_POSITION))
+        .then(|| {
+            ConditionalNpcActor::new(
+                CASPER.into(),
+                NpcPlacement {
+                    x: CASPER_POSITION.x,
+                    y: CASPER_POSITION.y,
+                    floor: CASPER_POSITION.floor,
+                    direction: MovementFacing::South,
+                },
+            )
+            .ok()
+        })
+        .flatten();
         Self {
+            casper,
             brutus_admitted: boot.is_some_and(|boot| boot.admits(BRUTUS))
                 && enterable(TilePos { x, y, floor: -z }),
             brutus_present: false,
@@ -89,8 +120,10 @@ impl SeasonalNpcSpawns {
         }
     }
 
-    pub(super) fn is_empty(self) -> bool {
-        !self.brutus_admitted && !self.positions.iter().any(|admitted| *admitted)
+    pub(super) fn is_empty(&self) -> bool {
+        self.casper.is_none()
+            && !self.brutus_admitted
+            && !self.positions.iter().any(|admitted| *admitted)
     }
 
     /// Crystal data-global/scripts/lib/a_piece_of_cake_config.lua:456-483 and cake_server_save.lua:8-10: the persisted
@@ -142,6 +175,9 @@ impl SeasonalNpcSpawns {
             .map(|npc| (npc.actor, npc.position))
             .collect();
         let mut outcome = self.reconcile_brutus(runtime);
+        if let Some(casper) = &mut self.casper {
+            outcome = outcome.and(casper.reconcile_or_defer(runtime, true).map(|_| ()));
+        }
         for (index, (x, y, z)) in SANTA_POSITIONS.into_iter().enumerate() {
             let floor = -z;
             let key = key(index);

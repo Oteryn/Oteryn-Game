@@ -1003,6 +1003,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        if callback.personal_room_entry().is_some()
+            && !fence.is_some_and(|fence| {
+                runtime.encounter_owner_scope()
+                    == (fence.runtime_scope, fence.scope_ownership_generation)
+                    && runtime
+                        .bound_attacker_lease(actor, session)
+                        .is_ok_and(|lease| {
+                            lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                                && lease.generation() == fence.character_lease_generation
+                        })
+            })
+        {
+            return UseDisposition::Rejected;
+        }
         if durable && callback.effects.encounter.is_some() {
             let preflight = self.execute_quest_encounter(
                 runtime,

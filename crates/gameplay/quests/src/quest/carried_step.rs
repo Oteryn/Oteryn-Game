@@ -238,3 +238,67 @@ pub fn native_binding(key: &str) -> Option<NativeBinding> {
         raw_destination,
     })
 }
+
+/// A coal basin's retained source tile, occupied blue flame and inner landing.
+/// Crystal 201189f8, startup/tables/item.lua:4500-4531 and
+/// the_ancient_tombs/movements_all_teleports_tombs_coal_basin.lua:1-25.
+#[derive(Clone, Copy)]
+pub struct CoalBasin {
+    pub unique: u16,
+    pub basin: (u16, u16, i8),
+    pub flame: (i32, i32, i16),
+    pub landing: (i32, i32, i16),
+}
+
+pub const COAL_BASINS: &[CoalBasin] = &[
+    CoalBasin {
+        unique: 9033,
+        basin: (33098, 32816, -13),
+        flame: (33097, 32816, 13),
+        landing: (33093, 32824, 13),
+    },
+    CoalBasin {
+        unique: 9034,
+        basin: (33293, 32741, -13),
+        flame: (33293, 32742, 13),
+        landing: (33299, 32742, 13),
+    },
+    CoalBasin {
+        unique: 9035,
+        basin: (33073, 32589, -13),
+        flame: (33073, 32590, 13),
+        landing: (33080, 32588, 13),
+    },
+    CoalBasin {
+        unique: 9036,
+        basin: (33240, 32855, -13),
+        flame: (33240, 32856, 13),
+        landing: (33246, 32850, 13),
+    },
+    CoalBasin {
+        unique: 9037,
+        basin: (33276, 32552, -14),
+        flame: (33276, 32553, 14),
+        landing: (33271, 32553, 14),
+    },
+    CoalBasin {
+        unique: 9038,
+        basin: (33233, 32692, -13),
+        flame: (33234, 32692, 13),
+        landing: (33234, 32687, 13),
+    },
+    CoalBasin {
+        unique: 9039,
+        basin: (33135, 32682, -12),
+        flame: (33135, 32683, 12),
+        landing: (33130, 32683, 12),
+    },
+    CoalBasin {
+        unique: 9040,
+        basin: (33161, 32831, -10),
+        flame: (33162, 32831, 10),
+        landing: (33158, 32832, 10),
+    },
+];
+
+pub const SCARAB_COIN: &str = "oteryn:item.tibia.i3042";

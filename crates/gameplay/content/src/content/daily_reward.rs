@@ -37,6 +37,21 @@ pub struct DailyRewardTier {
     pub xp_boost_minutes: u8,
     pub bounty_reroll_tokens: u8,
 }
+impl DailyRewardTier {
+    /// Double Daily Rewards (Tibia news 8683) doubles amounts and duration.
+    pub fn with_promotion(self, double: bool) -> Self {
+        let multiplier = 1 + u8::from(double);
+        Self {
+            cosmetic_tokens: self.cosmetic_tokens.saturating_mul(multiplier),
+            prey_wildcards: self.prey_wildcards.saturating_mul(multiplier),
+            temple_teleport_scrolls: self.temple_teleport_scrolls.saturating_mul(multiplier),
+            xp_boost_percent: self.xp_boost_percent,
+            xp_boost_minutes: self.xp_boost_minutes.saturating_mul(multiplier),
+            bounty_reroll_tokens: self.bounty_reroll_tokens.saturating_mul(multiplier),
+        }
+    }
+}
+
 impl DailyRewardContent {
     /// The authored table is the runtime reward authority.
     pub fn catalogue() -> Option<&'static Self> {

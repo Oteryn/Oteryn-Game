@@ -1,10 +1,13 @@
 //! Source parties are the players standing on the exact staging tiles, not a social-party id.
+use super::timed_encounter::{MAX_TIMED_ENCOUNTERS, TimedEncounter};
 use super::*;
 use crate::content::{CollisionClass, LogicalCell};
 use crate::map::{facts::QuestCallbackProjection, view::EntryFacts};
 use oteryn_gameplay_entities::carrier::encounter_access::{
     EncounterDefenders, StagedQuestEncounter,
 };
+
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 struct PreparedPhase {
     phase: Option<super::super::encounter_phases::ActivePhase>,
@@ -273,6 +276,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseDisposition::Rejected;
         };
         let personal_entry = callback.personal_room_entry().map(local);
+        // The first STEP can arrive before any combat owner installs creature policies.
+        if personal_entry.is_some()
+            && self
+                .active_generation
+                .and_then(|active| active.native_gameplay())
+                .is_none_or(|native| native.install_companion_policies(runtime).is_err())
+        {
+            return UseDisposition::Rejected;
+        }
         if census.iter().any(|(who, pos, occupant_session)| {
             occupant_session.is_some()
                 && room_contains(encounter, pos.position())
@@ -406,6 +418,53 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             monsters.push((monster.creature.as_str(), policy.maximum_health, at));
         }
+        let mut exit_timer = if let Some(exit) = encounter.personal_exit {
+            let Some((who, member_session, expected)) = players.first().copied() else {
+                return UseDisposition::Rejected;
+            };
+            if crate::map::floor::prepare_quest_encounter_ejection(
+                runtime,
+                &self.movement_cells,
+                who,
+                member_session,
+                expected,
+                local(exit.destination),
+                &closed,
+            )
+            .is_err()
+            {
+                return UseDisposition::NotPossible;
+            }
+            let Ok(lease) = runtime.bound_attacker_lease(who, member_session) else {
+                return UseDisposition::Rejected;
+            };
+            let Some(deadline) = self
+                .owner_now()
+                .get()
+                .checked_add(u64::from(exit.after_ms) * 1000)
+            else {
+                return UseDisposition::Exhausted;
+            };
+            let Ok(mut timers) = self.states.quest_callbacks.timed.lock() else {
+                return UseDisposition::Rejected;
+            };
+            if !timers.iter().any(|timer| timer.source_key() == key)
+                && (timers.len() >= MAX_TIMED_ENCOUNTERS || timers.try_reserve(1).is_err())
+            {
+                return UseDisposition::Exhausted;
+            }
+            let timer = TimedEncounter::personal_exit(
+                runtime,
+                map,
+                callback,
+                key,
+                (who, member_session, lease),
+                deadline,
+            );
+            Some((timers, timer))
+        } else {
+            None
+        };
         if preflight {
             let result = if encounter.phase.is_some() {
                 runtime.preflight_quest_encounter_with_phase(proofs, &monsters)
@@ -425,7 +484,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let scoped_hash = self.quest_catalogue.as_deref().and_then(|catalogue| {
             let bindings = catalogue.authored_bindings()?;
             bindings.quests.iter().find(|quest| quest.stages.iter().any(|stage|
-                matches!(&stage.trigger, oteryn_gameplay_quests::quest::authored_bindings::Trigger::MapUse { callback: source }
+                matches!(&stage.trigger,
+                    oteryn_gameplay_quests::quest::authored_bindings::Trigger::MapUse { callback: source }
+                    | oteryn_gameplay_quests::quest::authored_bindings::Trigger::StepIn { callback: source }
                     if source.as_ref() == callback))
                 && quest.stages.iter().any(|stage|
                     matches!(&stage.trigger, oteryn_gameplay_quests::quest::authored_bindings::Trigger::Kill { counter }
@@ -569,10 +630,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             });
         }
         drop(visits);
+        if let Some((_, timer)) = &mut exit_timer {
+            timer.set_spawned(actors.clone());
+        }
         if let Some(reservation) = reservation
             && let Err(disposition) = reservation.publish(runtime, actors)
         {
             return disposition;
+        }
+        if let Some((mut timers, timer)) = exit_timer {
+            timers.retain(|old| old.source_key() != key);
+            timers.push(timer);
+            states.owner_wake.notify_one();
         }
         self.project_encounter_movements(runtime, states, map, players, snapshots);
         UseDisposition::Committed

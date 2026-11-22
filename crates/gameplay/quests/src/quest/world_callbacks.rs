@@ -74,6 +74,7 @@ pub mod phase;
 mod questpc7_compat;
 #[cfg(test)]
 mod scripted_teleport_tests;
+mod seasonal;
 #[cfg(test)]
 mod selected_tool_tests;
 #[cfg(test)]
@@ -635,6 +636,14 @@ pub fn world_change_requirement(key: &str) -> Option<(&'static str, Option<u8>)>
         return Some(("hive_born", None));
     }
     match key {
+        "oteryn:quest-callback/authored-tinder-box"
+        | "oteryn:quest-callback/authored-tinder-box-bones"
+        | "oteryn:quest-callback/tinder-box-summit-entry" => Some(("tinder_box", None)),
+        "oteryn:quest-callback/last-creep-native-return"
+        | "oteryn:quest-callback/last-creep-native-exit" => None,
+        key if key.starts_with("oteryn:quest-callback/last-creep-native-") => {
+            Some(("last_creep_standing", None))
+        }
         "oteryn:quest-callback/fire-feathered-native-darkness"
         | "oteryn:quest-callback/fire-feathered-native-life"
         | "oteryn:quest-callback/fire-feathered-native-light" => {
@@ -811,6 +820,11 @@ pub fn load() -> Result<Vec<Callback>, String> {
     )?);
     callbacks.retain(|callback| super::in_runtime_scope(&callback.quest));
     bindings::apply(&mut callbacks)?;
+    let tinder_entry = callbacks
+        .iter()
+        .find(|callback| callback.key == "oteryn:quest-callback/authored-tinder-box")
+        .map(seasonal::tinder_box_entry);
+    callbacks.extend(tinder_entry);
     let mut native_callbacks = vec![
         super::rotten_blood::altar_callback(),
         super::schrodinger_island::callback(),

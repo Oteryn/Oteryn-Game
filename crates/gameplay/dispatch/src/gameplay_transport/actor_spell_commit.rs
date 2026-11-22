@@ -736,9 +736,27 @@ fn stage_player_batch_inner(
         let before = states
             .get(runtime, batch.caster, session)
             .ok_or(SpellCastDisposition::Rejected)?;
-        let next = caster_successor.ok_or(SpellCastDisposition::Rejected)?;
+        let mut next = caster_successor.ok_or(SpellCastDisposition::Rejected)?;
         if !next.paid_successor_of(before, anchor) {
             return Err(SpellCastDisposition::Rejected);
+        }
+        if let Some(now) = batch
+            .now_us
+            .map(|time| time.get())
+            .or_else(|| batch.now_ms.checked_mul(1_000))
+            && oteryn_gameplay_foundation::scheduled_events::current_rates()
+                .exaltation_overload
+                .is_some()
+            && batch.effects.iter().any(|effect| {
+                effect.target != batch.caster
+                    && matches!(
+                        effect.change,
+                        OwnerCombatChange::Damage { .. }
+                            | OwnerCombatChange::DamageWithHealing { .. }
+                    )
+            })
+        {
+            next.record_forge_spell_attack(now);
         }
         replacements.push(Replacement {
             index: states
@@ -799,6 +817,15 @@ fn stage_player_batch_inner(
                     .map(|time| time.get())
                     .or_else(|| batch.now_ms.checked_mul(1_000))
                     .ok_or(SpellCastDisposition::Rejected)?;
+                let magnitude = if batch.anchor.is_some()
+                    && attack.is_none()
+                    && magnitude > 0
+                    && spell_target_ruse(runtime, &replacement.next, batch, effect.sub_ordinal)
+                {
+                    0
+                } else {
+                    magnitude
+                };
                 let shielding = replacement
                     .next
                     .wheel_battle_instinct(runtime, *actor, now)
@@ -906,6 +933,27 @@ fn stage_player_batch_inner(
     };
     preflight.validate_current(runtime, states)?;
     Ok(preflight)
+}
+
+fn spell_target_ruse(
+    runtime: &ChannelRuntimeV1,
+    target: &PlayerSpellState,
+    batch: &OwnerCombatBatch,
+    ordinal: u16,
+) -> bool {
+    let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(
+        runtime.content_pin().server_artifact_digest(),
+    );
+    let occurrence = oteryn_gameplay_combat_rules::resolution::swing_occurrence(
+        batch.caster.placement_identity(),
+        (
+            *batch.command.game_session_id().as_bytes(),
+            batch.command.command_id().get(),
+        ),
+        ordinal,
+        b"spell-ruse",
+    );
+    crate::gameplay_transport::attack::equipped_offence::ruse(target, &root, occurrence)
 }
 
 /// Proof that [`check_owner_batch`] passed for one staged batch and preflight under the held

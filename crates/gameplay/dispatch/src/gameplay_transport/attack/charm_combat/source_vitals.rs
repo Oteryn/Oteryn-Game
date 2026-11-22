@@ -381,18 +381,28 @@ impl PlayerLethalVitals for CharmSourceVitals<'_> {
         {
             return false;
         }
-        let Ok(creature) = runtime.companion_snapshot(source) else {
-            return false;
-        };
-        if creature.state.master.is_some() || creature.state.policy.is_familiar {
-            return false;
-        }
         let digest = Sha256::new()
             .chain_update(b"oteryn.charm.source.v1")
             .chain_update(occurrence.as_bytes())
             .finalize();
         let mut identity = [0; 16];
         identity.copy_from_slice(&digest[..16]);
+        let occurrence = DecisionOccurrenceId::from_bytes(identity);
+        if self
+            .states
+            .get(runtime, target, session)
+            .is_some_and(|state| {
+                super::super::equipped_offence::ruse(state, &self.root, occurrence)
+            })
+        {
+            return true;
+        }
+        let Ok(creature) = runtime.companion_snapshot(source) else {
+            return false;
+        };
+        if creature.state.master.is_some() || creature.state.policy.is_familiar {
+            return false;
+        }
         evaluate(
             self.states,
             runtime,
@@ -401,7 +411,7 @@ impl PlayerLethalVitals for CharmSourceVitals<'_> {
             session,
             &creature.state.policy.definition_key,
             &self.root,
-            DecisionOccurrenceId::from_bytes(identity),
+            occurrence,
             CharmHookEvent::IncomingCreatureAttack,
         )
         .iter()

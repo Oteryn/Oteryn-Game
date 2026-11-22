@@ -80,6 +80,11 @@ impl KillCounter {
                     super::Trigger::MapUse { callback } if callback.key == *source => {
                         callback.effects.encounter.as_ref()
                     }
+                    super::Trigger::StepIn { callback }
+                        if callback.key == *source && callback.personal_room_entry().is_some() =>
+                    {
+                        callback.effects.encounter.as_ref()
+                    }
                     _ => None,
                 })
                 .ok_or("authored encounter counter source")?;

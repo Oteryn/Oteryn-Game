@@ -69,6 +69,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| ())?
         {
+            if matches {
+                self.resume_carried_quest_creature(command_ref, actor)
+                    .await?;
+            }
             return Ok(Some(outcome(if matches {
                 UseDisposition::Committed
             } else {
@@ -190,9 +194,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(permit) = self.spell_lane_permit().await else {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         };
-        // A queued duplicate may have probed before the first capture committed.
+        // A queued duplicate may have probed before the first use committed.
         // Reconcile again after serialization, while its former target can be absent.
-        if callback.capture_creature
+        if (callback.capture_creature || callback.temporary_creature.is_some())
             && let Some(matches) = self
                 .root
                 .reconcile_quest_carried_use(
@@ -204,6 +208,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await
                 .map_err(|_| ())?
         {
+            if matches && callback.temporary_creature.is_some() {
+                self.settle_carried_quest_creature(command_ref, actor, true)
+                    .await;
+            }
             return Ok(Some(outcome(if matches {
                 UseDisposition::Committed
             } else {
@@ -269,6 +277,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .filter(|_| callback.capture_creature)
             .and_then(|proof| proof.target_actor());
         let capture_key = callback.creature_target.clone();
+        let temporary_creature = if let Some(effect) = callback.temporary_creature {
+            let Some(new) =
+                self.reserve_carried_quest_creature(actor, command_ref, item_fence, effect)
+            else {
+                return Ok(Some(outcome(UseDisposition::Exhausted)));
+            };
+            Some(new)
+        } else {
+            None
+        };
         if callback.capture_creature
             && let Some(turn) = &creature_runtime
         {
@@ -309,6 +327,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             turn.uncertain.store(false, Ordering::Relaxed);
         }
         drop(creature_runtime);
+        if let Some(new) = temporary_creature {
+            #[cfg(test)]
+            if matches!(result, QuestTransitionOutcome::Committed(_))
+                && self
+                    .states
+                    .quest_callbacks
+                    .interrupt_after_commit
+                    .swap(false, Ordering::AcqRel)
+            {
+                return Err(());
+            }
+            let publish = matches!(result, QuestTransitionOutcome::Committed(_))
+                || (!new && matches!(result, QuestTransitionOutcome::AlreadyCommitted(_)));
+            self.settle_carried_quest_creature(command_ref, actor, publish)
+                .await;
+        }
         drop(revision);
         drop(permit);
         let disposition = if matches!(

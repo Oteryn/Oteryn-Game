@@ -185,6 +185,7 @@ pub(super) async fn exercise_tinder_box(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
+    in_season: bool,
 ) -> TestResult {
     let target = object_target(
         owner,
@@ -207,6 +208,14 @@ pub(super) async fn exercise_tinder_box(
     assert_eq!(stage, -1);
     step(owner, admitted, 3, StepDirection::West).await?;
     step(owner, admitted, 4, StepDirection::East).await?;
+    if !in_season {
+        assert_eq!(use_target(owner, admitted, 5, &target).await?, UseDisposition::Rejected);
+        let progress: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/chosen/tinder-box/stage'")
+            .fetch_one(&h.pool).await?;
+        assert_eq!(progress, 0);
+        return Ok(());
+    }
+
     assert_eq!(
         use_target(owner, admitted, 5, &target).await?,
         UseDisposition::Committed

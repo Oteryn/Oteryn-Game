@@ -19,6 +19,9 @@ pub async fn require(
     let Some((key, stage)) = world_change_requirement(callback) else {
         return Ok(true);
     };
+    if oteryn_gameplay_world_change::seasonal::KEYS.contains(&key) {
+        return super::super::seasonal::active(tx, world, key, Some(epoch)).await;
+    }
     let Some(day) = super::load(tx, world, epoch).await? else {
         return Ok(false);
     };

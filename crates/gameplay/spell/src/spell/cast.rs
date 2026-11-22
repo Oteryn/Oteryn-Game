@@ -100,6 +100,7 @@ pub struct PlayerSpellState {
     pub(super) stored_promotion: bool,
     pub(super) premium_valid_until_micros: Option<u64>,
     pub health: u32,
+    pub(super) last_forge_spell_micros: Option<u64>,
     pub(super) field_attack_history: super::field_history::FieldAttackHistory,
     pub(super) mana: u32,
     /// FOOD-REGEN-1: milliseconds of fed time accumulated toward the next health and mana credit.
@@ -256,6 +257,7 @@ impl PlayerSpellState {
                 equipped_offence: Default::default(),
                 training: None,
                 training_payment: None,
+                last_forge_spell_micros: None,
                 field_attack_history: super::field_history::FieldAttackHistory::default(),
                 training_checkpoint: None,
             })

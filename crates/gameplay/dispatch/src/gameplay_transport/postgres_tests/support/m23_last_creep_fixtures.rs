@@ -429,6 +429,7 @@ pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
+    in_season: bool,
 ) -> TestResult {
     let d = data()?;
     let forms = d["forms"].as_array().ok_or("forms")?;
@@ -549,10 +550,15 @@ pub(super) async fn exercise(
     assert_eq!(position(owner, admitted).await?, start());
     assert_eq!(journal(h).await?, before_journal);
     assert_eq!(item(h).await?, before);
-    assert_eq!(
-        use_marker(owner, admitted, pos(&d["start"])?).await?,
-        UseDisposition::Committed
-    );
+    let entrance = use_marker(owner, admitted, pos(&d["start"])?).await?;
+    if !in_season {
+        assert_eq!(entrance, UseDisposition::Rejected);
+        assert_eq!(position(owner, admitted).await?, start());
+        assert_eq!(journal(h).await?, before_journal);
+        assert_eq!(item(h).await?, before);
+        return Ok(());
+    }
+    assert_eq!(entrance, UseDisposition::Committed);
     let central = pos(&d["central"])?;
     assert_eq!(position(owner, admitted).await?, central);
     let normal = owner

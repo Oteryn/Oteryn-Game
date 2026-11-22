@@ -395,12 +395,24 @@ impl PlayerSpellState {
             && self.equipped_defence == before.equipped_defence
             && self.equipped_offence == before.equipped_offence
             && self.base_speed == before.base_speed
+            && self.last_forge_spell_micros == before.last_forge_spell_micros
             && anchor.expected_revision == before.revision
             && before.revision.checked_add(1) == Some(anchor.next_revision)
             && self.revision == anchor.next_revision
             && before.mana.checked_sub(anchor.paid_mana) == Some(self.mana)
             && before.soul.checked_sub(anchor.paid_soul) == Some(self.soul)
             && self.cooldowns.canonical_deadlines() == anchor.cooldown_deadlines
+    }
+
+    /// Stage the aggression marker on a paid, damaging cast's successor.
+    pub fn record_forge_spell_attack(&mut self, now_micros: u64) {
+        self.last_forge_spell_micros = Some(now_micros);
+    }
+
+    pub fn forge_spell_attack_within(&self, now_micros: u64, interval_micros: u64) -> bool {
+        self.last_forge_spell_micros
+            .and_then(|at| now_micros.checked_sub(at))
+            .is_some_and(|elapsed| elapsed < interval_micros)
     }
 
     /// Restore spell leech within the already revisioned, paid batch successor.

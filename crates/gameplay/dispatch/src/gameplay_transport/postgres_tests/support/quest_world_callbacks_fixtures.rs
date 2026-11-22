@@ -1182,6 +1182,8 @@ pub(super) async fn wire(
     result
 }
 
+#[allow(unused_imports, reason = "the caller tests are mounted in only their PostgreSQL shard")]
+pub(super) use scenario::npc_scenario;
 pub(super) use scenario::scenario;
 
 #[allow(

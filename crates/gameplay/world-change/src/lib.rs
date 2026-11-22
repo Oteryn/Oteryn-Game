@@ -7,4 +7,5 @@ pub mod decision;
 pub mod owner;
 pub mod rules;
 pub mod scheduled;
+pub mod seasonal;
 pub mod variants;

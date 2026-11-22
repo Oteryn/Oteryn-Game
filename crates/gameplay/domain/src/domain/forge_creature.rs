@@ -9,6 +9,9 @@ pub enum ForgeCreature {
 
 pub const FIENDISH_RESPAWN_SECONDS: u16 = 270;
 pub const FIENDISH_SIMULTANEOUS_MAX: u8 = 3;
+// Tibia news 8634 and 8947: double the simultaneous population, refill after five seconds.
+pub const OVERLOAD_FIENDISH_MAX: u8 = 2 * FIENDISH_SIMULTANEOUS_MAX;
+pub const OVERLOAD_FIENDISH_RESPAWN_MICROS: u64 = 5_000_000;
 pub const INFLUENCED_SIMULTANEOUS_MAX: u16 = 300;
 pub const SHARED_XP_RANGE_XY: u16 = 30;
 pub const FIENDISH_RESPAWN_MICROS: u64 = FIENDISH_RESPAWN_SECONDS as u64 * 1_000_000;
@@ -31,7 +34,7 @@ pub struct FiendishTickPlan {
     pub next_tick_micros: u64,
 }
 
-/// Select enough eligible live spawns to restore the pinned three-fiend population. Existing
+/// Select enough eligible live spawns to restore the active fiendish population limit. Existing
 /// fiends are retained first and candidates are then ordered by a deterministic per-tick draw, so
 /// replicas produce the same plan without random or wall-clock authority.
 #[must_use]
@@ -40,6 +43,8 @@ pub fn plan_fiendish_tick(
     world_seed: u64,
     existing: &[u64],
     candidates: &[ForgeSpawnCandidate],
+    limit: u8,
+    respawn_micros: u64,
 ) -> FiendishTickPlan {
     let mut selected: Vec<u64> = existing
         .iter()
@@ -52,7 +57,7 @@ pub fn plan_fiendish_tick(
         .collect();
     selected.sort_unstable();
     selected.dedup();
-    selected.truncate(usize::from(FIENDISH_SIMULTANEOUS_MAX));
+    selected.truncate(usize::from(limit));
 
     let mut eligible: Vec<u64> = candidates
         .iter()
@@ -69,11 +74,11 @@ pub fn plan_fiendish_tick(
             .into();
         (draw, *id)
     });
-    let missing = usize::from(FIENDISH_SIMULTANEOUS_MAX).saturating_sub(selected.len());
+    let missing = usize::from(limit).saturating_sub(selected.len());
     selected.extend(eligible.into_iter().take(missing));
     FiendishTickPlan {
         selected,
-        next_tick_micros: now_micros.saturating_add(FIENDISH_RESPAWN_MICROS),
+        next_tick_micros: now_micros.saturating_add(respawn_micros),
     }
 }
 
@@ -134,6 +139,13 @@ impl ForgeCreature {
     #[must_use]
     pub fn experience(self, base: i64) -> Option<i64> {
         base.checked_mul(self.experience_multiplier() as i64)
+    }
+
+    /// News 8634 and 8947 award +50% of base XP per Sinister Embrace stack.
+    #[must_use]
+    pub fn overload_experience(self, base: i64) -> Option<i64> {
+        let factor = 2 + i128::from(self.reward_stacks());
+        i64::try_from(i128::from(base) * factor / 2).ok()
     }
 
     /// One through three dust per reward stack; randomness belongs to the simulation owner.
@@ -215,7 +227,7 @@ mod tests {
 
     #[test]
     fn tick_retains_live_fiends_and_refills_to_three() {
-        use super::{FIENDISH_RESPAWN_MICROS, ForgeSpawnCandidate};
+        use super::{FIENDISH_RESPAWN_MICROS, FIENDISH_SIMULTANEOUS_MAX, ForgeSpawnCandidate};
         let candidates: Vec<_> = (1..=7)
             .map(|spawn_identity| ForgeSpawnCandidate {
                 spawn_identity,
@@ -223,14 +235,36 @@ mod tests {
                 alive: spawn_identity != 7,
             })
             .collect();
-        let plan = super::plan_fiendish_tick(9, 3, &[2, 7, 99], &candidates);
+        let plan = super::plan_fiendish_tick(
+            9,
+            3,
+            &[2, 7, 99],
+            &candidates,
+            FIENDISH_SIMULTANEOUS_MAX,
+            FIENDISH_RESPAWN_MICROS,
+        );
         assert_eq!(plan.selected, vec![2, 4, 1]);
         assert_eq!(
             plan,
-            super::plan_fiendish_tick(9, 3, &[2, 7, 99], &candidates)
+            super::plan_fiendish_tick(
+                9,
+                3,
+                &[2, 7, 99],
+                &candidates,
+                FIENDISH_SIMULTANEOUS_MAX,
+                FIENDISH_RESPAWN_MICROS
+            )
         );
         assert_eq!(
-            super::plan_fiendish_tick(10, 3, &[2, 7, 99], &candidates).selected,
+            super::plan_fiendish_tick(
+                10,
+                3,
+                &[2, 7, 99],
+                &candidates,
+                FIENDISH_SIMULTANEOUS_MAX,
+                FIENDISH_RESPAWN_MICROS
+            )
+            .selected,
             vec![2, 5, 4]
         );
         assert_eq!(plan.next_tick_micros, 9 + FIENDISH_RESPAWN_MICROS);
@@ -238,18 +272,34 @@ mod tests {
 
     #[test]
     fn tick_never_exceeds_available_or_global_cap() {
-        use super::ForgeSpawnCandidate;
+        use super::{FIENDISH_RESPAWN_MICROS, FIENDISH_SIMULTANEOUS_MAX, ForgeSpawnCandidate};
         let candidates = [ForgeSpawnCandidate {
             spawn_identity: 8,
             eligible: true,
             alive: true,
         }];
         assert_eq!(
-            super::plan_fiendish_tick(u64::MAX, 0, &[], &candidates).selected,
+            super::plan_fiendish_tick(
+                u64::MAX,
+                0,
+                &[],
+                &candidates,
+                FIENDISH_SIMULTANEOUS_MAX,
+                FIENDISH_RESPAWN_MICROS
+            )
+            .selected,
             [8]
         );
         assert_eq!(
-            super::plan_fiendish_tick(u64::MAX, 0, &[], &candidates).next_tick_micros,
+            super::plan_fiendish_tick(
+                u64::MAX,
+                0,
+                &[],
+                &candidates,
+                FIENDISH_SIMULTANEOUS_MAX,
+                FIENDISH_RESPAWN_MICROS
+            )
+            .next_tick_micros,
             u64::MAX
         );
     }

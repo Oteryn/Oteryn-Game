@@ -6,7 +6,10 @@ use super::bundle_npcs::NpcBoot;
 use super::event;
 use crate::foundation::{ChannelRuntimeV1, MovementFacing, NpcPlacement, WorldId};
 use crate::map::overlay::TilePos;
-use oteryn_gameplay_world_change::daily::DailyWorldChanges;
+use oteryn_gameplay_world_change::{
+    daily::DailyWorldChanges,
+    seasonal::{KINGSDAY, Occurrence, SPRING},
+};
 use sha2::{Digest, Sha256};
 
 #[cfg(test)]
@@ -23,19 +26,26 @@ pub(super) fn roll_calendar(
 }
 
 /// Qualify the boot's optional composition against its resolved reset epoch.
-pub(super) fn bind_layers(
+pub(crate) fn bind_layers(
     checked: crate::map::boot::CheckedBundle,
     changes: &DailyWorldChanges,
+    seasonal: &[Occurrence],
 ) -> Result<crate::map::boot::CheckedBundle, crate::map::boot::BootRefusal> {
     // A fresh World without an admitted reset retains its ordinary base only.
     if changes.reset_epoch == 0 {
         return Ok(checked);
     }
-    checked.compose_epoch_admitted_layers(
-        changes.reset_epoch,
-        &changes.layers(),
-        &changes.exit_layers(),
-    )
+    let mut layers = changes.layers();
+    layers.extend(
+        seasonal
+            .iter()
+            .filter_map(|event| match event.key.as_str() {
+                KINGSDAY => Some(KINGSDAY),
+                SPRING => Some(SPRING),
+                _ => None,
+            }),
+    );
+    checked.compose_epoch_admitted_layers(changes.reset_epoch, &layers, &changes.exit_layers())
 }
 
 /// The physical draws bind World and committed epoch, never Channel or process lifetime.
@@ -339,7 +349,11 @@ pub(crate) mod tests {
         };
         let checked = crate::map::boot::check(bytes.clone(), boot_pins.clone())?;
         let unqualified = roll(world(), 0, JUNE_13);
-        let bound = prepare_map(bind_layers(checked, &unqualified)?, world(), &unqualified);
+        let bound = prepare_map(
+            bind_layers(checked, &unqualified, &[])?,
+            world(),
+            &unqualified,
+        );
         let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])?;
         let booted = bound.boot(world(), channel, crate::map::boot::tests::items)?;
         assert!(booted.base().active_layers().is_empty());
@@ -1020,7 +1034,7 @@ pub(crate) mod tests {
                 start: TilePos { x, y, floor },
             },
         )?;
-        let projected = bind_layers(checked, &changes)?.boot(
+        let projected = bind_layers(checked, &changes, &[])?.boot(
             world(),
             crate::foundation::ChannelId::decode(&[
                 1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2,

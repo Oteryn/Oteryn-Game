@@ -46,6 +46,7 @@ mod coin_exchange;
 mod dark_trails;
 mod endgame;
 mod fire_feathered;
+mod greeting_encounter;
 mod grizzly;
 mod grizzly_shop;
 mod healing;

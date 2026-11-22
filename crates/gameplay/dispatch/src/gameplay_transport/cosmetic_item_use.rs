@@ -433,6 +433,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| ())?
         {
+            if matches {
+                self.resume_carried_quest_creature(command_ref, actor)
+                    .await?;
+            }
             return Ok(Some(outcome(if matches {
                 UseDisposition::Committed
             } else {

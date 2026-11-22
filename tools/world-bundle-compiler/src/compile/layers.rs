@@ -5,7 +5,7 @@ use crate::{
     bundle::{Family, PaletteEntry, Sector},
     sector::{Attrs, Item, Tile},
 };
-use oteryn_world_bundle::layers::Layer;
+use oteryn_world_bundle::layers::{Layer, MAX_LAYERS};
 use serde::Deserialize;
 use std::{collections::BTreeMap, path::Path};
 
@@ -40,7 +40,7 @@ impl Source {
             serde_json::from_slice(&bytes).map_err(|e| Error::Format(e.to_string()))?;
         if source.schema != "OTERYN_WORLD_CHANGE_LAYERS/v1"
             || source.source_revision != "201189f871d23597b82caf88fd611454a2ddefb8"
-            || source.layers.len() > 16
+            || source.layers.len() > MAX_LAYERS
             || source.layers.iter().any(|layer| {
                 layer.tiles.is_empty()
                     || layer.tiles.len() > 4096

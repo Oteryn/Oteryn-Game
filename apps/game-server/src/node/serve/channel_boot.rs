@@ -89,9 +89,21 @@ pub(super) async fn prepare_channel(
         daily.grimvale_full_moon = occurrence.grimvale_full_moon;
         daily.their_masters_voice = occurrence.their_masters_voice;
     }
+    // W05d: only the reset owner's immutable annual decision activates actors.
+    // A later process restart cannot move the holiday or substitute a new clock.
+    let seasonal = root
+        .active_world_seasonal_events(material.world, reset_epoch)
+        .await
+        .map_err(|_| BootError::Readiness("seasonal calendar binding"))?;
+    let occurrences = root
+        .active_world_seasonal_occurrences(material.world, reset_epoch)
+        .await
+        .map_err(|_| BootError::Readiness("seasonal occurrence binding"))?;
+    let mut seasonal = seasonal;
+    seasonal.extend(occurrences.iter().map(|occurrence| occurrence.key.clone()));
     let bundle = bundle
         .map(|checked| {
-            let checked = daily_world_changes::bind_layers(checked, &daily)
+            let checked = daily_world_changes::bind_layers(checked, &daily, &occurrences)
                 .map_err(BootError::WorldBundle)?;
             let checked =
                 daily_world_changes::prepare_content_map(checked, material.world, &daily, gameplay);
@@ -301,7 +313,7 @@ pub(super) async fn prepare_channel(
             .map_err(|_| BootError::Readiness("boss spawn configuration"))?;
     }
     // NPC-LOAD-1: the bundle's NPC actors take their cells at Channel start, before any creature.
-    bundle_npcs::place_with_daily_variants(&mut channel_runtime, npc_boot, bundle.as_ref())?;
+    bundle_npcs::place(&mut channel_runtime, npc_boot, &seasonal, bundle.as_ref())?;
     if daily.world_counters {
         let cycles = oteryn_gameplay_world_change::counter::CounterKind::ALL
             .into_iter()
@@ -316,12 +328,6 @@ pub(super) async fn prepare_channel(
             .install_world_change_cycles(daily.reset_epoch, cycles)
             .map_err(|_| BootError::Readiness("world change counter projection"))?;
     }
-    // W05d: only the reset owner's immutable annual decision activates actors.
-    // A later process restart cannot move the holiday or substitute a new clock.
-    let seasonal = root
-        .active_world_seasonal_events(material.world, reset_epoch)
-        .await
-        .map_err(|_| BootError::Readiness("seasonal calendar binding"))?;
     event(&format!(
         "event=seasonal_calendar reset_epoch={reset_epoch} active={seasonal:?}"
     ));

@@ -5,7 +5,7 @@ use crate::content::native_gameplay::NativeGameplayState;
 use crate::durability::character_equipment::RawCastDurableFacts;
 use crate::foundation::CharacterId;
 use crate::spell::magnitude_owner::{
-    MagnitudeOwnedAttributes, MagnitudeOwnerBinding, MagnitudePolicy,
+    ExactRatio, MagnitudeOwnedAttributes, MagnitudeOwnerBinding, MagnitudePolicy,
 };
 use crate::spell::owned_cast_facts::{CastFactsBinding, CurrentProjection};
 use std::collections::BTreeMap;
@@ -128,6 +128,18 @@ pub fn project(
         oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence::default()
             .player_critical();
     let (total_chance, total_extra) = offence.player_critical();
+    let onslaught = oteryn_gameplay_foundation::scheduled_events::current_rates()
+        .exaltation_overload
+        .map_or(0, |event| event.onslaught_permyriad());
+    let fatal_chance_permyriad = if onslaught > 0 {
+        Some(ExactRatio {
+            numerator: i64::try_from(offence.fatal_chance(onslaught))
+                .map_err(|_| AccessFactsError::Unavailable("magnitude onslaught chance"))?,
+            denominator: 10_000,
+        })
+    } else {
+        None
+    };
     let attributes = MagnitudeOwnedAttributes {
         policy: native.magnitude_policy(),
         item_augments: equipment
@@ -159,7 +171,7 @@ pub fn project(
         base_critical_extra_permyriad: Some(i32::from(base_extra)),
         equipment_critical_chance_permyriad: Some(total_chance - base_chance),
         equipment_critical_extra_permyriad: Some(i32::from(total_extra - base_extra)),
-        fatal_chance_permyriad: None,
+        fatal_chance_permyriad,
         armor_penetration_permyriad: None,
         elemental_pierce_permyriad: None,
         wheel_effects: None,

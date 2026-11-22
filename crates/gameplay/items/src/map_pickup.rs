@@ -1,5 +1,9 @@
 //! Pure map-authored item pickup eligibility.
 
+// Crystal 201189f8, parchment_room/parchment.lua. The retained B3 seal is ordinal 2.
+pub const PARCHMENT_SEAL_PLACEMENT: u64 = (33063 << 32) | (31624 << 16) | (15 << 8) | 2;
+pub const PARCHMENT_SEAL_ITEM: &str = "oteryn:item.tibia.i2819";
+
 /// Why an entry stays in place.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Ineligible {

@@ -31,6 +31,7 @@ pub struct DailyRewardDeliveryPlan {
 #[derive(Debug, Clone)]
 pub struct DailyRewardView {
     pub epoch: u64,
+    pub double_rewards: bool,
     pub history: Vec<oteryn_protocol_oteryn::daily_reward::details::Receipt>,
     pub lane_day: u8,
     pub streak: u32,
@@ -90,9 +91,9 @@ impl DurabilityRoot {
             if !current(&mut tx, &node, fence, command).await? {
                 return Ok(Err(DailyRewardClaimError::AuthorityRejected));
             }
-            let epoch: Option<String> = sqlx::query_scalar("SELECT h.reset_epoch::text FROM public.game_world_reset_history h WHERE h.world_id=encode($1,'hex')::uuid ORDER BY h.reset_epoch DESC LIMIT 1")
+            let reset: Option<(String, i64)> = sqlx::query_as("SELECT h.reset_epoch::text,h.reset_at_unix_ms FROM public.game_world_reset_history h WHERE h.world_id=encode($1,'hex')::uuid ORDER BY h.reset_epoch DESC LIMIT 1")
                 .bind(fence.runtime_scope.world_id().as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
-            let Some(epoch) = epoch else { return Ok(Err(DailyRewardClaimError::ResetWindowUnavailable)); };
+            let Some((epoch, reset_at_unix_ms)) = reset else { return Ok(Err(DailyRewardClaimError::ResetWindowUnavailable)); };
             let epoch = epoch.parse().map_err(|_| DurabilityError::InvalidStoredState)?;
             let state = load_state(&mut tx, fence.character_id.as_bytes(), fence.runtime_scope.world_id().as_bytes()).await?;
             let receipt = load_receipt(&mut tx, fence.character_id.as_bytes(), fence.runtime_scope.world_id().as_bytes(), epoch).await?;
@@ -110,7 +111,7 @@ impl DurabilityRoot {
             let instant_access = super::store::reward_access::available(
                 &mut tx, fence.character_id.as_bytes(), fence.runtime_scope.world_id().as_bytes(),
             ).await? > 0;
-            Ok(Ok(DailyRewardView { epoch, lane_day, streak, jokers, receipt, settled, history, instant_access }))
+            Ok(Ok(DailyRewardView { epoch, double_rewards: oteryn_gameplay_foundation::scheduled_events::double_daily_rewards_at(reset_at_unix_ms), lane_day, streak, jokers, receipt, settled, history, instant_access }))
         })).await?
     }
 
@@ -255,8 +256,8 @@ async fn apply<G: DailyRewardPremiumGate>(
         .current(tx, super::item_mint::uuid_text(&account)?)
         .await?;
     let joker = super::daily_reward_jokers::grant(tx, fence, request).await?;
-    let outcome = write_claim(tx, fence, request, joker.balance, premium).await?;
-    let DailyRewardClaimOutcome::Committed(receipt) = &outcome else {
+    let (outcome, reward) = write_claim(tx, fence, request, joker.balance, premium).await?;
+    let (DailyRewardClaimOutcome::Committed(receipt), Some(reward)) = (&outcome, reward) else {
         return Err(DailyRewardClaimError::InvalidRequest);
     };
     super::daily_reward_jokers::spend(tx, fence, request, joker, receipt.jokers_spent).await?;
@@ -274,7 +275,7 @@ async fn apply<G: DailyRewardPremiumGate>(
     {
         return Err(DailyRewardClaimError::InvalidRequest);
     }
-    super::daily_reward_effects::grant(tx, fence, request, receipt.lane_day, premium).await?;
+    super::daily_reward_effects::grant(tx, fence, request, receipt.lane_day, reward).await?;
     Ok(outcome)
 }
 
