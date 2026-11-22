@@ -121,33 +121,14 @@ pub(super) struct Entry {
 }
 /// The open set, order, dock, minimised state and content height of every widget, and the
 /// optional sidebars.
-#[derive(Resource, Clone, PartialEq, Debug)]
+#[derive(Resource, Clone, Debug)]
 pub(in crate::bevy_shell) struct SidebarWidgets {
     pub(super) entries: Vec<Entry>,
     pub(super) left: bool,
     pub(super) extra: bool,
     /// The regions (minimap, chat) floating in their own window.
     pub(super) floating: Vec<&'static str>,
-}
-impl Default for SidebarWidgets {
-    fn default() -> Self {
-        Self {
-            entries: Widget::ALL
-                .into_iter()
-                .map(|widget| Entry {
-                    widget,
-                    dock: Dock::Right,
-                    open: widget.open_by_default(),
-                    minimised: false,
-                    height: widget.content_height(),
-                    floating: false,
-                })
-                .collect(),
-            left: false,
-            extra: false,
-            floating: Vec::new(),
-        }
-    }
+    saved_revision: Option<std::sync::Arc<[u8]>>,
 }
 impl SidebarWidgets {
     pub(super) fn entry(&self, widget: Widget) -> Option<&Entry> {
