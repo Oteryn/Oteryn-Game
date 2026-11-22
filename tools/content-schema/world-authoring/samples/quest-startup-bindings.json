@@ -92,6 +92,18 @@
     },
     {
       "position": [
+        33152,
+        32866,
+        8
+      ],
+      "item": 2772,
+      "attribute": "action",
+      "action": 5633,
+      "source": "data-global/startup/tables/lever.lua",
+      "line": 80
+    },
+    {
+      "position": [
         33190,
         31684,
         14

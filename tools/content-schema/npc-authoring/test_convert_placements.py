@@ -27,6 +27,28 @@ class ConvertPlacementsTest(unittest.TestCase):
             self.assertEqual((cp.OUT / name).read_text(), text, name)
         self.assertEqual({p.name for p in cp.OUT.glob("*.json")}, set(self.files))
 
+    def test_shadows_errand_contacts_use_pinned_crystal_cells(self):
+        expected = {
+            ("boveas", 32431, 32090, 15),
+            ("cerdras", 32301, 31815, 6),
+            ("dreadeye", 32800, 31572, 14),
+            ("milos", 33258, 31823, 3),
+            ("scutty", 32574, 31915, 12),
+            ("telas", 33273, 31788, 11),
+            ("telas", 33276, 31800, 6),
+        }
+        contacts = {name for name, *_ in expected}
+        placements = [r["declaration"] for r in self.records
+                      if cp.local_name(r["declaration"]["npc"]) in contacts]
+        self.assertEqual({
+            (cp.local_name(row["npc"]), row["cell"]["x"], row["cell"]["y"], row["cell"]["floor"])
+            for row in placements
+        }, expected)
+        for row in placements:
+            source, = row["provenance"]
+            self.assertEqual(source["revision"], "201189f871d23597b82caf88fd611454a2ddefb8")
+            self.assertEqual(source["source_row"], "data-global/world/world-npc.xml")
+
     def test_l1_reward_npcs_use_only_the_global_source_cells(self):
         expected = {
             'oteryn:npc.cael': {'x':33028,'y':31513,'floor':10},

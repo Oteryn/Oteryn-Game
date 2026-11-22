@@ -24,3 +24,4 @@ native_case!(srvenc_m24_postgres_vashresamun_stage, "vashresamun");
 native_case!(srvenc_m24_postgres_morguthis_stage, "morguthis");
 native_case!(srvenc_m24_postgres_rahemos_stage, "rahemos");
 native_case!(srvenc_m24_postgres_herald_top_damage, "herald_of_fire");
+native_case!(cq16_black_knight_advances_active_avin_mission, "black_knight");
