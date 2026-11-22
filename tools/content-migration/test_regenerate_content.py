@@ -450,7 +450,7 @@ def test_source_cohort_includes_installed_successors() -> None:
         pass
 
     def measure():
-        assert installed == [rc.ROOT], "measure only the complete installed World"
+        assert installed == [rc.ROOT, (rc.ROOT, rc.WORLD)], "measure only the complete installed World"
         raise Measured
 
     with patch.object(sys, "argv", ["regenerate_content.py"]), \
@@ -458,6 +458,8 @@ def test_source_cohort_includes_installed_successors() -> None:
             patch.object(rc, "refresh_quest_callback_proof"), \
             patch.object(rc, "materialize_world"), \
             patch("questpc7_thaian_authoring.install", side_effect=installed.append), \
+            patch("crystal_creature_parity.install_documents", side_effect=lambda *args: installed.append(args)), \
+            patch.object(rc, "refresh_source_catalogue_limits"), \
             patch.object(rc, "canonicalize_world"), \
             patch.object(rc, "refresh_source_cohort_extent", side_effect=measure):
         try:
@@ -521,6 +523,8 @@ def full_generation_trace(events, inspect_command, *, prepare=None, checks=False
                 patch.object(rc, "materialize_world", side_effect=lambda: events.append(("materialize-world",))), \
                 patch("questpc7_thaian_authoring.install", side_effect=lambda _: record(("install-thaian",))), \
                 patch("buddel_travel.install_buddel", side_effect=lambda *_: record(("install-buddel",))), \
+                patch("crystal_creature_parity.install_documents", side_effect=lambda *_: record(("install-crystal-creatures",))), \
+                patch.object(rc, "refresh_source_catalogue_limits", side_effect=lambda: record(("size-writer",))), \
                 patch.object(rc, "canonicalize_world", side_effect=lambda: record(("canonicalize-world",))), \
                 patch.object(rc, "refresh_source_cohort_extent", side_effect=lambda: record(("source-cohort",))), \
                 patch.object(rc, "repin_rust_inventory", side_effect=lambda: record(("repin-world",))), \
@@ -537,7 +541,7 @@ def full_generation_trace(events, inspect_command, *, prepare=None, checks=False
 def test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them() -> None:
     ordered = [
         ("materialize-world",), ("install-thaian",), ("install-buddel",),
-        ("canonicalize-world",), ("source-cohort",), ("repin-world",),
+        ("install-crystal-creatures",), ("size-writer",), ("canonicalize-world",), ("source-cohort",), ("repin-world",),
         ("python3", "tools/content-migration/world_project_v2_to_tree.py"),
     ]
     events = []
@@ -557,7 +561,7 @@ def test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them(
         assert error.cmd == ["canonicalize-world"]
     else:
         raise AssertionError("canonical rewrite refusal must stop generation")
-    assert not any(command in refused for command in ordered[4:]), refused
+    assert not any(command in refused for command in ordered[ordered.index(("source-cohort",)):]), refused
 
 
 def test_world_canonicalizer_copies_only_a_complete_document_inventory() -> None:
@@ -572,11 +576,11 @@ def test_world_canonicalizer_copies_only_a_complete_document_inventory() -> None
 
             def generate(command):
                 assert command[:8] == [
-                    "cargo", "run", "--locked", "-p", "oteryn-game-server", "--example",
-                    "materialize_content_world_project_v2", "--",
+                    "cargo", "run", "--locked", "-p", "oteryn-gameplay-content", "--bin",
+                    "oteryn-world-project-canonicalize", "--",
                 ]
                 assert command[8] == "--output-root"
-                assert command[10:] == ["--canonicalize-root", str(world)]
+                assert command[10:] == ["--input-root", str(world)]
                 output = Path(command[9])
                 assert not output.exists()
                 if scenario == "refused":

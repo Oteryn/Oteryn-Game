@@ -48,7 +48,7 @@ def read_canonical(path):
 
 
 def union_profiles(active, presentations, canonical_rows, declarations, *,
-                   preserve_existing_display_aliases=False):
+                   preserve_existing_display_aliases=False, source_display_aliases=None):
     if active.get('schema') != 'OTERYN_NATIVE_CREATURE_PROFILES/v1' or presentations.get('schema') != 'OTERYN_NATIVE_PRESENTATION_PROFILES/v1':
         raise ValueError('native profile schema required')
     result = copy.deepcopy(active)
@@ -62,9 +62,10 @@ def union_profiles(active, presentations, canonical_rows, declarations, *,
     names = {fold_name(r['profile']['data']['profile']['details']['display_name']): r['profile']['target']
              for r in result['records']}
     # A source-attested immutable successor may already retain donor variants
-    # with equal names. Preserve those rows exactly; new names still cannot alias.
+    # with equal names. Preserve those rows exactly.
     if len(names) != len(result['records']) and not preserve_existing_display_aliases:
         raise ValueError('duplicate active Creature display name')
+    source_display_aliases = source_display_aliases or {}
     appended = []
     for row in canonical_rows:
         definition = row['definition']
@@ -72,9 +73,8 @@ def union_profiles(active, presentations, canonical_rows, declarations, *,
         if target['key'] in keys:
             continue
         name = fold_name(row['authoring']['profile']['details']['display_name'])
-        if name in names:
-            # Native name resolution forbids aliases. Keep the serving actor's
-            # exact identity/name; retain the excluded source row in proof.
+        if name in names and source_display_aliases.get(target['key']) != names[name]['key']:
+            # A new shared display name needs an explicit source registration.
             continue
         behavior = profiles[identity(definition['behavior'])]
         presentation = profiles[identity(definition['presentation'])]
@@ -89,7 +89,7 @@ def union_profiles(active, presentations, canonical_rows, declarations, *,
             output_presentations['records'].append(copy.deepcopy(presentation))
             present[pref] = presentation
         keys.add(target['key'])
-        names[name] = target
+        names.setdefault(name, target)
         appended.append(target)
     if len(result['records']) > MAX_RECORDS or len(present) > MAX_RECORDS:
         raise ValueError('native record bound exceeded')

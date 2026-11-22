@@ -18,17 +18,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         418,
-        "f531f82a5f7352a12ef6070c5e1c1c16acb0259d0d432e68864ce948ecbcd15b",
+        "927c4b31ef0ed1e278ab7da5166a0c80aa370e58920a26917587e6786fbdb92f",
     ),
     (
         "definitions/declarations.json",
-        27_760_785,
-        "7e290b771aa69d2d7f4ae70a2b7e40a7ebbff06f8afa3cab1e3e6d6e62c96b47",
+        28_022_740,
+        "7212aeb154f866f29d2d9bdb31eaaa265667e66d093ac71cc881e4d590f14c30",
     ),
     (
         "definitions/reference.json",
-        27_390_893,
-        "a375a7c94187351a674a9e5b6eeca22ffd2a40a420167f0757f8a92b8b7dd83a",
+        27_550_535,
+        "97408d99b6c9f7fdc67303dec268d6743369ff3b282d4b22d67808def85e9ef6",
     ),
     (
         "editor/author.json",
@@ -38,7 +38,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1957,
-        "13b5b70d473b1be794045234dabcf60cbf78974dd9f1c9527b69133621a654bc",
+        "419d5cf94f93a82bd06bf88cba46cbd68caaad815c9fa5288addea260514b9b0",
     ),
     (
         "presentations/bindings.json",
@@ -48,17 +48,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         408,
-        "9025eb3943522af3380c32524eb19d76e8257527755304a3e101096d61fe99c4",
+        "09585b22b39ef0834eb35ca22570c3b6df7fa77ca3fd76358acdb0786f23884b",
     ),
     (
         "provenance/imports.json",
-        6_774_564,
-        "96adebd34de3ccddc1563569c26528c9fe21c2c302774daeda5977feb4697c5c",
+        6_775_204,
+        "847d2710f211ee3b89801f14ab3ed1d6b3708ea0ece46c924626090e5ab41313",
     ),
     (
         "provenance/sources.json",
-        1_668_021,
-        "58d8ce37b1c537184c990fd091c16908bd7c69dd5435ef3da0c553466019feab",
+        1_678_556,
+        "e2cd6cfe2c5f6b14d17f0a29b7e7c009b95bcee0e58cb163f2404fa9f1487744",
     ),
     (
         "worlds/world.json",
@@ -143,7 +143,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "c9c082fe0655d425a53391448a11ac167e4d38997e7579550059825711af4ce6";
+const TREE_SHA256: &str = "380e6288f71afe13a7e098bbb67914ab0d5f6e2e7c7b346d34b293f46cfcc0e3";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450),
 /// plus the 68 client-only Crystal market Items minted by E06.
@@ -153,9 +153,9 @@ const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_400_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
 /// Full generated population, including qualified source proxies and Wiki metadata.
-const CREATURES: usize = 1_865;
-const CREATURE_RECORDS: usize = 26_211;
-const CREATURE_PROFILES: usize = 25_068;
+const CREATURES: usize = 1_892;
+const CREATURE_RECORDS: usize = 26_797;
+const CREATURE_PROFILES: usize = 25_645;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
 const NPCS: usize = 1282;
 const NPC_RECORDS: usize = 2_564;
@@ -189,7 +189,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
-        max_import_records: 31,
+        max_import_records: 32,
         max_reimport_states: 404,
     }
 }
@@ -407,7 +407,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         "seasonal-cake-creature-20261107-r1"
     );
     // Thaian adds the 37th separately qualified batch; the historical cohort remains 25.
-    assert_eq!(project.imports().len(), 37);
+    assert_eq!(project.imports().len(), 38);
     let legacy_imports: Vec<_> = project
         .imports()
         .iter()
@@ -421,6 +421,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 && b.batch_id != "item-client-market-mint-2dfa943b"
                 && b.batch_id != "seasonal-cake-creature-crystal-201189f-r1"
                 && b.batch_id != "questpc7-thaian-wiki-chosen-r1"
+                && b.batch_id != "creature-parity-crystal-201189f-r1"
         })
         .collect();
     assert_eq!(legacy_imports.len(), 25);
@@ -1236,7 +1237,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert!(v2.placements.is_empty());
     assert!(v2.appearance_bindings.is_empty());
     assert!(v2.assets.is_empty());
-    assert_eq!(v2.sources.len(), 31);
+    assert_eq!(v2.sources.len(), 32);
     let source_for = |batch: &str| {
         v2.sources
             .iter()
@@ -1631,6 +1632,20 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         "crystalserver-creature-1530:201189f871d23597b82caf88fd611454a2ddefb8"
     );
     assert_eq!(cake_source.sha256, world_project_sha256(cake_bytes));
+    let parity_bytes =
+        include_bytes!("../../../imports/crystalserver/creature-parity-201189f.json");
+    let parity: serde_json::Value =
+        serde_json::from_slice(parity_bytes).expect("Crystal parity source receipt");
+    let parity_bindings: Vec<ProjectV2SourceIdentityBinding> = parity["definitions"]
+        .as_array()
+        .expect("Crystal parity definitions")
+        .iter()
+        .map(|row| serde_json::from_value(row["binding"].clone()).expect("Crystal bound Creature"))
+        .collect();
+    let parity_source = source_for("creature-parity-crystal-201189f-r1");
+    assert_eq!(parity_source.key, "oteryn:source.crystalserver");
+    assert_eq!(parity_source.sha256, world_project_sha256(parity_bytes));
+    let mut parity_seen = 0;
     let mut creature_files = BTreeSet::new();
     let mut d44_wiki_bindings = 0;
     let mut thaian_wiki_bindings = 0;
@@ -1682,6 +1697,14 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 ProjectV2SourceIdentityDisposition::Exact
             );
             thaian_wiki_bindings += 1;
+            continue;
+        }
+        if binding.source_key == parity_source.key
+            && binding.source_revision == parity_source.revision
+        {
+            assert!(parity_bindings.contains(binding));
+            assert!(creature_files.insert(&binding.external_id));
+            parity_seen += 1;
             continue;
         }
         if cake_bindings.contains(binding) {
@@ -1841,6 +1864,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert_eq!(crystal_encounter_count, 4);
     assert_eq!(extra_item_count, 22);
     assert_eq!(crystal_creatures, 196);
+    assert_eq!(parity_seen, parity_bindings.len());
     assert_eq!(item_ids.len(), 165);
     assert_eq!(outfit_ids.len(), 133);
     assert!(outfit_ids.iter().all(|id| id.as_str() != "68724"));

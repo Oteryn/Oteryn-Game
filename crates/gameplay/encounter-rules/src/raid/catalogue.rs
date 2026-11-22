@@ -559,7 +559,7 @@ mod tests {
         // plus Crystal a_piece_of_cake_config.lua:394-400's seasonal raid.
         // Regenerate pins: tools/content-migration/refresh_season_creature_inventory.py.
         assert_eq!(catalogue.records().len(), 240);
-        assert_eq!(catalogue.active().count(), 137);
+        assert_eq!(catalogue.active().count(), 138);
         for record in catalogue.records() {
             if record.active {
                 record.select([7; 32], [9; 16])?.definition.validate()?;
@@ -568,6 +568,21 @@ mod tests {
                 assert!(record.select([7; 32], [9; 16]).is_err());
             }
         }
+        Ok(())
+    }
+
+    #[test]
+    fn gorga_source_spawn_is_admitted_by_the_raid_loader() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let catalogue = RaidCatalogue::embedded()?;
+        let raid = catalogue
+            .get(&ProductionKey::new("raid:porthope.gorga")?)
+            .ok_or("Gorga raid")?;
+        let selected = raid.select([1; 32], [1; 16])?;
+        let entries = &selected.definition.waves[0].entries;
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].creature.as_str(), "oteryn:creature.gorga");
+        assert_eq!(entries[0].count, 1);
         Ok(())
     }
 

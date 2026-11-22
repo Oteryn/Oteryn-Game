@@ -575,9 +575,9 @@ def canonicalize_world() -> None:
     with tempfile.TemporaryDirectory() as temp:
         output = Path(temp) / "world"
         run([
-            "cargo", "run", "--locked", "-p", "oteryn-game-server", "--example",
-            "materialize_content_world_project_v2", "--", "--output-root", str(output),
-            "--canonicalize-root", str(WORLD),
+            "cargo", "run", "--locked", "-p", "oteryn-gameplay-content", "--bin",
+            "oteryn-world-project-canonicalize", "--", "--output-root", str(output),
+            "--input-root", str(WORLD),
         ])
         produced = sorted(
             p.relative_to(output).as_posix() for p in output.rglob("*") if p.is_file()
@@ -696,28 +696,36 @@ def source_cohort_extent(world: Path) -> dict[str, int | str]:
     }
 
 
-def refresh_source_cohort_extent() -> None:
-    """Keep strict native source bounds and repository fixtures at the exact cohort."""
+def rewrite_source_cohort_field(path: Path, pattern: str, replacement: str) -> None:
+    text, count = re.subn(pattern, replacement, path.read_text(encoding="utf-8"))
+    if count != 1:
+        raise SystemExit(f"{path.name}: expected one source-cohort field, found {count}")
+    path.write_text(text, encoding="utf-8", newline="\n")
+
+
+def refresh_source_catalogue_limits() -> dict[str, int | str]:
+    """Size the typed writer for the exact staged cohort."""
     measured = source_cohort_extent(WORLD)
-    def rewrite(path: Path, pattern: str, replacement: str) -> None:
-        text, count = re.subn(pattern, replacement, path.read_text(encoding="utf-8"))
-        if count != 1:
-            raise SystemExit(f"{path.name}: expected one source-cohort field, found {count}")
-        path.write_text(text, encoding="utf-8", newline="\n")
     catalogue = ROOT / "crates/gameplay/content/src/content/npc_catalogue.rs"
     catalogue_text = catalogue.read_text(encoding="utf-8")
     catalogue_text = re.sub(r"\bCW2_B1_FULL_ITEM_FAMILY_COUNT,\s*", "", catalogue_text, count=1)
     catalogue_text = re.sub(r"            // #1807 monster source mechanics.*?            max_import_records: [^\n]+", "            // Generated source-cohort bounds: regenerate_content.py measures the\n            // already admitted normal World package; limit+1 remains rejected.\n            max_reference_records: " + f'{measured["references"]:_},' + "\n            max_import_records: " + f'{measured["sources"]:_},', catalogue_text, count=1, flags=re.S)
     catalogue.write_text(catalogue_text, encoding="utf-8", newline="\n")
-    rewrite(catalogue, r"max_reference_records: [^,\n]+,", f'max_reference_records: {measured["references"]:_},')
-    rewrite(catalogue, r"max_import_records: [^,\n]+,", f'max_import_records: {measured["sources"]:_},')
+    rewrite_source_cohort_field(catalogue, r"max_reference_records: [^,\n]+,", f'max_reference_records: {measured["references"]:_},')
+    rewrite_source_cohort_field(catalogue, r"max_import_records: [^,\n]+,", f'max_import_records: {measured["sources"]:_},')
+    return measured
+
+
+def refresh_source_cohort_extent() -> None:
+    """Keep the repository fixtures at the canonicalized source cohort."""
+    measured = refresh_source_catalogue_limits()
     for name, key in (("CREATURES", "creatures"), ("CREATURE_RECORDS", "creature_records"), ("CREATURE_PROFILES", "creature_profiles"), ("NPC_RECORDS", "npc_records")):
-        rewrite(PIN_TEST, rf"const {name}: usize = [\d_]+;", f'const {name}: usize = {measured[key]:_};')
-    rewrite(PIN_TEST, r"max_import_records: [^,\n]+,", f'max_import_records: {measured["sources"]:_},')
-    rewrite(PIN_TEST, r"assert_eq!\(project\.imports\(\)\.len\(\), [\d_]+\);", f'assert_eq!(project.imports().len(), {measured["imports"]});')
-    rewrite(PIN_TEST, r"assert_eq!\(v2\.sources\.len\(\), [\d_]+\);", f'assert_eq!(v2.sources.len(), {measured["sources"]});')
+        rewrite_source_cohort_field(PIN_TEST, rf"const {name}: usize = [\d_]+;", f'const {name}: usize = {measured[key]:_};')
+    rewrite_source_cohort_field(PIN_TEST, r"max_import_records: [^,\n]+,", f'max_import_records: {measured["sources"]:_},')
+    rewrite_source_cohort_field(PIN_TEST, r"assert_eq!\(project\.imports\(\)\.len\(\), [\d_]+\);", f'assert_eq!(project.imports().len(), {measured["imports"]});')
+    rewrite_source_cohort_field(PIN_TEST, r"assert_eq!\(v2\.sources\.len\(\), [\d_]+\);", f'assert_eq!(v2.sources.len(), {measured["sources"]});')
     for path, receiver in ((PIN_TEST, "project"), (ROOT / "apps/game-server/tests/content_npc_catalogue.rs", "catalogue")):
-        rewrite(path, rf'({receiver}\.project_revision\(\),\s*")[^"]+("\s*\))', rf'\g<1>{measured["project_revision"]}\g<2>')
+        rewrite_source_cohort_field(path, rf'({receiver}\.project_revision\(\),\s*")[^"]+("\s*\))', rf'\g<1>{measured["project_revision"]}\g<2>')
 
 def unresolved_worktree_paths() -> list[str]:
     """Workers resolve files without staging the coordinator's pending merge."""
@@ -834,6 +842,9 @@ def main() -> int:
     questpc7_thaian_authoring.install(ROOT)
     from buddel_travel import install_buddel
     install_buddel(ROOT, WORLD)
+    from crystal_creature_parity import install_documents
+    install_documents(ROOT, WORLD)
+    refresh_source_catalogue_limits()
     canonicalize_world()
     run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
     refresh_source_cohort_extent()
