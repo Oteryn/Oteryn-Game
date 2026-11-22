@@ -49,21 +49,127 @@ pub fn mechanical_sewer_attempt(
             MechanicalSewerAttempt::Miss
         };
     }
-    let after = match target {
-        4597..=4602 => target + 12,
-        629..=634 => target + 4_180,
-        21312 => 21314,
-        _ => return MechanicalSewerAttempt::NotHandled,
+    let Some(after) = spent_water(target) else {
+        return MechanicalSewerAttempt::NotHandled;
     };
     MechanicalSewerAttempt::Caught { after }
 }
 
+fn spent_water(target: u16) -> Option<u16> {
+    Some(match target {
+        4597..=4602 => target + 12,
+        629..=634 => target + 4_180,
+        21312 => 21314,
+        _ => return None,
+    })
+}
+
 /// Crystal mechanical_fishing.lua:85-97,203-248.
 pub fn is_yalahar_sewer_water(target: u16, x: u16, y: u16, floor: i8) -> bool {
-    MECHANICAL_FISHING_WATER.contains(&target)
-        && (32736..=32854).contains(&x)
-        && (31142..=31260).contains(&y)
-        && floor == -8
+    MECHANICAL_FISHING_WATER.contains(&target) && in_yalahar_sewers(x, y, floor)
+}
+
+pub fn in_yalahar_sewers(x: u16, y: u16, floor: i8) -> bool {
+    (32736..=32854).contains(&x) && (31142..=31260).contains(&y) && floor == -8
+}
+
+/// Bait and outcome are selected by the rod, the exact tile and Yalahar's sewer condition.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WaterFishing {
+    Ordinary,
+    MechanicalSewer,
+    MechanicalWater,
+    Ice,
+    Dirty,
+    DirtyLoot,
+    Desert,
+    MechanicalDesert,
+    Spent,
+}
+
+pub fn water_fishing(
+    tool: u16,
+    target: u16,
+    in_sewers: bool,
+    has_nail: bool,
+) -> Option<WaterFishing> {
+    use WaterFishing::*;
+    Some(match (tool, target) {
+        (3483 | 9306, 7236) => Ice,
+        (3483, 13988) => Desert,
+        (9306, 13989) => MechanicalDesert,
+        (3483, 12560) => DirtyLoot,
+        (3483, 13989) | (9306, 13988 | 622 | 12558..=12560) => Spent,
+        (3483 | 9306, 4609..=4614 | 4809..=4814 | 21314) => Spent,
+        (9306, target) if in_sewers && has_nail && MECHANICAL_FISHING_WATER.contains(&target) => {
+            MechanicalSewer
+        }
+        (9306, 12561..=12563) => Dirty,
+        (9306, 629..=634 | 4597..=4602 | 21312) => MechanicalWater,
+        (3483, 629..=634 | 4597..=4602 | 12561..=12563 | 21414) => Ordinary,
+        _ => return None,
+    })
+}
+
+impl WaterFishing {
+    pub fn bait(self) -> &'static str {
+        if self == Self::MechanicalSewer {
+            NAIL
+        } else {
+            WORM
+        }
+    }
+
+    /// Called only after a skill-scaled catch. These buckets are out of 100,000.
+    pub fn special_catch(self, target: u16, loot_roll: u32) -> Option<GatheringAttempt> {
+        use WaterFishing::*;
+        let (after, yield_item) = match self {
+            Ordinary | Spent => return None,
+            // CRAFT-1 C4b records the nested donor draw as weights out of 600.
+            DirtyLoot => (12560, Some(dirty_water_loot(loot_roll)?)),
+            Ice => (
+                7237,
+                Some(match loot_roll {
+                    1..=1_000 => 7158,
+                    1_001..=4_000 => 3580,
+                    4_001..=10_000 => 7159,
+                    _ => 3578,
+                }),
+            ),
+            MechanicalSewer => (spent_water(target)?, Some(9307)),
+            MechanicalWater => (spent_water(target)?, Some(3578)),
+            // Crystal fishing.lua:57-68. The upper four integers of math.random(100).
+            Desert => (13989, Some(if loot_roll > 96_000 { 13992 } else { 3578 })),
+            // Crystal mechanical_fishing.lua:170-195. The spent form has a 20-minute decay.
+            MechanicalDesert => (13988, (loot_roll <= 1_000).then_some(13992)),
+            // Crystal mechanical_fishing.lua:108-166. A 30% loot branch, with a 1% rare
+            // draw inside it, is 300 swimmer and 29,700 trash outcomes per 100,000.
+            Dirty => (
+                target.checked_sub(3)?,
+                match loot_roll {
+                    1..=300 => Some(12557),
+                    301..=30_000 => Some(3111),
+                    _ => None,
+                },
+            ),
+        };
+        Some(GatheringAttempt {
+            after: Some(after),
+            yield_item,
+            consumes_bait: self != DirtyLoot,
+        })
+    }
+
+    pub fn decay(self, target: u16) -> Vec<(u32, i64)> {
+        match self {
+            Self::Ice => vec![(7200, 900_000)],
+            Self::MechanicalSewer
+            | Self::MechanicalWater
+            | Self::Dirty
+            | Self::MechanicalDesert => vec![(u32::from(target), 1_200_000)],
+            _ => Vec::new(),
+        }
+    }
 }
 
 /// The donor target kind determines when a target is spent and where its yield belongs.
@@ -291,23 +397,64 @@ pub fn gathering_attempt(
             if !catches(skill, catch_roll) {
                 return None;
             }
-            GatheringAttempt {
-                after: Some(spent_item),
-                yield_item: Some(match yield_roll {
-                    1..=1_000 => 7158,
-                    1_001..=4_000 => 3580,
-                    4_001..=10_000 => 7159,
-                    _ => 3578,
-                }),
-                consumes_bait: true,
-            }
+            debug_assert_eq!(spent_item, 7237);
+            WaterFishing::Ice.special_catch(target, yield_roll)?
         }
     })
 }
 
-pub const WATER: [u16; 26] = [
+pub fn is_fishing_corpse(tool: u16, target: u16) -> bool {
+    matches!((tool, target), (3483 | 9306, 9582))
+}
+
+/// Crystal data-crystal/scripts/actions/tools/fishing.lua:3-7,17-38 and
+/// data-global/scripts/actions/other/mechanical_fishing.lua:62-71,272-295.
+pub fn corpse_fishing_yield(tool: u16, draw: u64) -> Option<u16> {
+    match tool {
+        3483 => {
+            // The donor first chooses a rarity, then an equiprobable item from that tier.
+            // Each tier is represented exactly on a common 6,000-outcome denominator.
+            let roll = usize::try_from(draw % 6000).ok()?;
+            Some(match roll {
+                0..=59 => [281, 282, 9303, 12557][roll / 15],
+                60..=179 => [3026, 3029, 3032, 7158, 7159][(roll - 60) / 24],
+                180..=599 => [3035, 3051, 3052, 3580, 236, 237][(roll - 180) / 70],
+                _ => [3119, 3123, 3264, 3409, 3578][(roll - 600) / 1080],
+            })
+        }
+        9306 => match draw % 10_000 + 1 {
+            1..=500 => Some(3026),
+            501..=801 => Some(3029),
+            802..=1002 => Some(3032),
+            1003..=1053 => Some(281),
+            1054..=1104 => Some(282),
+            1105..=1115 => Some(9303),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
+/// CRAFT-1 C4b, exact nested 1/2/7/90 draw for a dirty-water conversion.
+fn dirty_water_loot(roll: u32) -> Option<u16> {
+    Some(match roll {
+        1..=3 => 281,
+        4..=26 => 12557,
+        27..=32 => 3026,
+        33..=46 => 3035,
+        47..=60 => 237,
+        61..=168 => 3119,
+        169..=276 => 3123,
+        277..=384 => 3264,
+        385..=492 => 3409,
+        493..=600 => 3578,
+        _ => return None,
+    })
+}
+
+pub const WATER: [u16; 27] = [
     629, 630, 631, 632, 633, 634, 4597, 4598, 4599, 4600, 4601, 4602, 4609, 4610, 4611, 4612, 4613,
-    4614, 7236, 9582, 12560, 12562, 12561, 12563, 13988, 13989,
+    4614, 7236, 9582, 12560, 12562, 12561, 12563, 13988, 13989, 21414,
 ];
 
 /// Global's chance, represented in thousandths of one percent to avoid floats.

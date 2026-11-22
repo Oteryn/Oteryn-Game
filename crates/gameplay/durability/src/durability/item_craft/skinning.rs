@@ -136,20 +136,27 @@ pub(super) async fn prepare(
     {
         return Ok(None);
     }
-    let Some((target, yield_rule)) = source_id(&tool.production_key)
-        .zip(source_id(&corpse_key))
-        .and_then(|(tool, corpse)| oteryn_gameplay_items::fishing::gathering_rule(tool, corpse))
-    else {
+    let Some((tool_id, corpse_id)) = source_id(&tool.production_key).zip(source_id(&corpse_key)) else {
         return Ok(None);
     };
-    let oteryn_gameplay_items::fishing::GatheringTarget::Corpse { spent_item } = target else {
-        return Ok(None);
+    let fishing = oteryn_gameplay_items::fishing::is_fishing_corpse(tool_id, corpse_id);
+    let skinning_rule = oteryn_gameplay_items::fishing::gathering_rule(tool_id, corpse_id);
+    let spent_item = match skinning_rule {
+        Some((oteryn_gameplay_items::fishing::GatheringTarget::Corpse { spent_item }, _)) if spent_item != 0 => spent_item,
+        _ if fishing => {
+            let owner: Option<Vec<u8>> = sqlx::query_scalar(
+                "SELECT uuid_send(corpse_top_damage_character_id) FROM game_item_mint_receipts
+                 WHERE item_instance_id=encode($1,'hex')::uuid
+                   AND loot_purpose_key='CORPSE_MATERIALIZATION' AND draw_ordinal=0",
+            ).bind(request.corpse.as_slice()).fetch_one(&mut ***tx).await?;
+            if owner.as_deref().is_some_and(|owner| owner != fence.character_id.as_bytes()) {
+                return Ok(None);
+            }
+            9583
+        }
+        _ => return Ok(None),
     };
-    if spent_item == 0
-        || native
-            .item_policy(&tool.production_key, &tool.revision_ref)
-            .is_none()
-    {
+    if native.item_policy(&tool.production_key, &tool.revision_ref).is_none() {
         return Ok(None);
     }
     // This transforms an existing source corpse, not a new materialization grant.
@@ -180,8 +187,12 @@ pub(super) async fn prepare(
         revision_ref: spent_revision.to_owned(),
     };
     let race: String = row.try_get("race_key")?;
-    let stage:Option<i16>=sqlx::query_scalar("SELECT u.unlocked_stage FROM game_character_charm_assignments a JOIN game_character_charm_unlocks u USING(character_id,charm_key) WHERE a.character_id=encode($1,'hex')::uuid AND a.race_key=$2 AND a.charm_key='oteryn:charm.scavenge'")
-        .bind(fence.character_id.as_bytes().as_slice()).bind(&race).fetch_optional(&mut ***tx).await?;
+    let stage: Option<i16> = if fishing {
+        None
+    } else {
+        sqlx::query_scalar("SELECT u.unlocked_stage FROM game_character_charm_assignments a JOIN game_character_charm_unlocks u USING(character_id,charm_key) WHERE a.character_id=encode($1,'hex')::uuid AND a.race_key=$2 AND a.charm_key='oteryn:charm.scavenge'")
+            .bind(fence.character_id.as_bytes().as_slice()).bind(&race).fetch_optional(&mut ***tx).await?
+    };
     let bonus = stage
         .and_then(|s| u8::try_from(s).ok())
         .and_then(|s| {
@@ -201,15 +212,23 @@ pub(super) async fn prepare(
     let draw = deterministic_decision_u64(
         &GameplayDecisionRoot::from_bytes(native.source_digest()),
         DecisionOccurrenceId::from_bytes(occurrence),
-        "oteryn.skinning.v1",
+        if fishing { "oteryn.corpse-fishing.v1" } else { "oteryn.skinning.v1" },
         0,
     )
     .map_err(|_| DurabilityError::InvalidStoredState)?;
-    let success = u128::from(draw) * 1_000_000_000
-        < (u128::from(chance_numerator(yield_rule.threshold, bonus)) << 64);
+    let threshold = skinning_rule.map(|(_, rule)| rule.threshold);
+    let yield_item = if fishing {
+        oteryn_gameplay_items::fishing::corpse_fishing_yield(tool_id, draw)
+    } else {
+        skinning_rule.and_then(|(_, rule)| {
+            (u128::from(draw) * 1_000_000_000
+                < (u128::from(chance_numerator(rule.threshold, bonus)) << 64))
+                .then_some(rule.item)
+        })
+    };
     let mut outputs = Vec::new();
-    if success {
-        let key = format!("oteryn:item.tibia.i{}", yield_rule.item);
+    if let Some(yield_item) = yield_item {
+        let key = format!("oteryn:item.tibia.i{yield_item}");
         let Some(revision) = native.item_index().and_then(|index| index.revision(&key)) else {
             return Ok(None);
         };
@@ -229,14 +248,14 @@ pub(super) async fn prepare(
         corpse: request.corpse,
         before,
         proof: json!({"source_race":race,"source_race_revision":row.try_get::<String,_>("race_definition_revision")?,
-            "stage":stage,"bonus_hundredths":bonus,"base_threshold":yield_rule.threshold,"draw":draw}),
+            "stage":stage,"bonus_hundredths":bonus,"base_threshold":threshold,"draw":draw}),
         spent: TypedDefinitionRef {
             family: spent.family,
             production_key: spent.production_key,
             revision_ref: spent.revision_ref,
         },
         conversion: oteryn_gameplay_items::item_craft::CookingConversion {
-            recipe: "oteryn:skinning.crystal".into(),
+            recipe: if fishing { "oteryn:fishing.corpse" } else { "oteryn:skinning.crystal" }.into(),
             outputs,
         },
     }))

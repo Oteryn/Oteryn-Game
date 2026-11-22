@@ -7,6 +7,7 @@ use crate::durability::item_craft::ItemCraftRequest;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use crate::map::view::{self, MapEntryKey, MapFacts};
+use oteryn_gameplay_items::fishing::{self, WaterFishing};
 use oteryn_gameplay_progression::hit_training::{FISHING_TRIES_PER_USE, SkillFamily};
 use oteryn_protocol_oteryn::world_map::MapDefinition;
 use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseDisposition, UseIntent, UseTarget};
@@ -288,123 +289,60 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         request.station = Some(station);
-        let mut catch_roll = 1;
-        let mut fishing_skill = 10;
-        // Fishing is the same durable consume/mint owner as cooking, but keeps the rod and
-        // consumes a worm only after the skill-scaled catch succeeds.
-        if request
-            .station
-            .as_ref()
-            .is_some_and(|s| oteryn_gameplay_items::fishing::is_water(&s.production_key))
-        {
-            let inventory = self
-                .root
-                .read_item_use_inventory(self.character, self.holder, fence)
-                .await
-                .ok()?;
-            let entries = inventory
-                .backpack
-                .iter()
-                .flat_map(|b| &b.entries)
-                .chain(inventory.nested.iter().map(|(_, entry)| entry));
-            let water_key = &request.station.as_ref()?.production_key;
-            let target_id = item_id(water_key)?;
-            let target_pos = map_target.3;
-            let mechanical_sewer = oteryn_gameplay_items::fishing::is_yalahar_sewer_water(
-                target_id,
-                target_pos.x,
-                target_pos.y,
-                target_pos.floor,
-            );
-            let rod = entries.clone().find(|entry| {
-                entry.item.item_instance_id == source
-                    && oteryn_gameplay_items::fishing::accepts_fishing_rod(
-                        &entry.item.definition.production_key,
-                        water_key,
-                    )
-                    || (entry.item.item_instance_id == source
-                        && mechanical_sewer
-                        && entry.item.definition.production_key == "oteryn:item.tibia.i9306")
-            });
-            let Some(rod) = rod else {
-                return disposition(UseDisposition::NothingToUse);
-            };
-            let rod = rod.item.item_instance_id;
-            let worm = entries
-                .clone()
-                .find(|entry| {
-                    entry.item.definition.production_key == oteryn_gameplay_items::fishing::WORM
-                })
-                .map(|entry| entry.item.item_instance_id);
-            let nail = entries
-                .clone()
-                .find(|entry| {
-                    entry.item.definition.production_key == oteryn_gameplay_items::fishing::NAIL
-                })
-                .map(|entry| entry.item.item_instance_id);
-            let now = u64::try_from(self.clock_origin.elapsed().as_micros()).unwrap_or(u64::MAX);
-            let skill = {
-                let runtime = self.runtime.lock().await;
-                let states = self.states.spell_states.lock().await;
-                states
-                    .get(&runtime, actor, command.game_session_id)
-                    .and_then(|state| state.live_skill(SkillFamily::Fishing.index(), now))
-                    .and_then(|value| u16::try_from(value).ok())
-                    .unwrap_or(10)
-            };
-            let digest = Sha256::new()
-                .chain_update(b"oteryn.fishing.catch.v1")
-                .chain_update(command.game_session_id.as_bytes())
-                .chain_update(command.command_id.to_be_bytes())
-                .chain_update(&request.intent)
-                .finalize();
-            let mut occurrence = [0; 16];
-            occurrence.copy_from_slice(&digest[..16]);
-            let draw = deterministic_decision_u64(
-                &GameplayDecisionRoot::from_bytes(native.source_digest()),
-                DecisionOccurrenceId::from_bytes(occurrence),
-                "fishing.catch",
-                0,
-            )
-            .ok()?;
-            let roll = u32::try_from(crate::spell::uniform_draw(draw, 1, 100_000)).ok()?;
-            catch_roll = roll;
-            fishing_skill = skill;
-            let mut due = Vec::new();
-            {
-                let runtime = self.runtime.lock().await;
-                let mut states = self.states.spell_states.lock().await;
-                super::attack::skill_training::train_hit(
-                    &mut states,
-                    &runtime,
-                    native.training_formula(),
-                    actor,
-                    command.game_session_id,
-                    SkillFamily::Fishing,
-                    now,
-                    |_| FISHING_TRIES_PER_USE,
-                    &mut due,
-                );
-            }
-            self.save_trained_levels(due).await;
-            let consumable = if mechanical_sewer { nail } else { worm };
-            if !oteryn_gameplay_items::fishing::catches(skill, roll) || consumable.is_none() {
-                return disposition(UseDisposition::NothingToUse);
-            }
-            request.tool = Some(rod);
-            request.source = consumable?;
-        }
         let inventory = self
             .root
             .read_item_use_inventory(self.character, self.holder, fence)
             .await
             .ok()?;
-        let tool = inventory
-            .backpack
-            .iter()
-            .flat_map(|b| &b.entries)
-            .chain(inventory.nested.iter().map(|(_, entry)| entry))
-            .find(|entry| entry.item.item_instance_id == source);
+        let entries = inventory.backpack.iter().flat_map(|bag| &bag.entries);
+        let tool = entries
+            .clone()
+            .find(|entry| entry.item.item_instance_id == source)
+            .or_else(|| {
+                inventory
+                    .nested
+                    .iter()
+                    .map(|(_, entry)| entry)
+                    .find(|entry| entry.item.item_instance_id == source)
+            });
+        let mut water_fishing = None;
+        if request.ingredient.is_none()
+            && let Some(rod) = tool
+            && let Some(tool_id) = item_id(&rod.item.definition.production_key)
+            && let Some(target_id) = request
+                .station
+                .as_ref()
+                .and_then(|s| item_id(&s.production_key))
+        {
+            let target_pos = map_target.3;
+            let in_sewers =
+                fishing::in_yalahar_sewers(target_pos.x, target_pos.y, target_pos.floor);
+            let has_nail = entries
+                .clone()
+                .any(|entry| entry.item.definition.production_key == fishing::NAIL);
+            if let Some(mode) = fishing::water_fishing(tool_id, target_id, in_sewers, has_nail) {
+                if mode == WaterFishing::Spent || map_target.2 {
+                    return disposition(UseDisposition::NothingToUse);
+                }
+                if mode != WaterFishing::DirtyLoot {
+                    let Some(bait) = entries
+                        .clone()
+                        .find(|entry| entry.item.definition.production_key == mode.bait())
+                    else {
+                        return disposition(UseDisposition::NothingToUse);
+                    };
+                    if !self
+                        .fishing_catch(actor, command, native, &request.intent)
+                        .await?
+                    {
+                        return disposition(UseDisposition::NothingToUse);
+                    }
+                    request.tool = Some(source);
+                    request.source = bait.item.item_instance_id;
+                }
+                water_fishing = Some(mode);
+            }
+        }
         let target_id = request
             .station
             .as_ref()
@@ -415,18 +353,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 tool_id, target_id,
             )
             .or_else(|| {
-                oteryn_gameplay_items::fishing::gathering_attempt(
-                    tool_id,
-                    target_id,
-                    fishing_skill,
-                    catch_roll,
-                    gathering_roll(
-                        native.source_digest(),
-                        command.game_session_id,
-                        command.command_id,
-                        &request.intent,
-                    )?,
-                )
+                let maximum = if water_fishing == Some(WaterFishing::DirtyLoot) {
+                    600
+                } else {
+                    100_000
+                };
+                let roll = bounded_gathering_roll(
+                    native.source_digest(),
+                    command.game_session_id,
+                    command.command_id,
+                    &request.intent,
+                    maximum,
+                )?;
+                if let Some(mode) = water_fishing {
+                    mode.special_catch(target_id, roll)
+                } else if !matches!(tool_id, 3483 | 9306) {
+                    fishing::gathering_attempt(tool_id, target_id, 10, 1, roll)
+                } else {
+                    None
+                }
             })
         {
             let seed_attempt =
@@ -477,13 +422,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     expected_revision: i64::try_from(revision).ok()?,
                     before: u32::from(target_id),
                     after: attempt.after.map_or(0, u32::from),
-                    // Crystal items.xml:18875-18881: only spent hole 7237 decays;
-                    // the open 7236 made by a pick has no duration/decayTo.
-                    decay: if attempt.after == Some(7237) {
-                        vec![(7200, 900_000)]
-                    } else if tool_id == 9306 && attempt.after == Some(4609) {
-                        // Crystal items.xml:13998-14005: spent sewer water recovers in 20 min.
-                        vec![(4597, 1_200_000)]
+                    decay: if let Some(mode) = water_fishing {
+                        mode.decay(target_id)
                     } else if seed_attempt.is_some() {
                         oteryn_gameplay_items::event_planting::planting_decays(attempt.after?)
                     } else {
@@ -520,6 +460,60 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         disposition(result)
     }
+
+    async fn fishing_catch(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        native: &crate::content::native_gameplay::NativeGameplayState,
+        intent: &[u8],
+    ) -> Option<bool> {
+        let digest = Sha256::new()
+            .chain_update(b"oteryn.fishing.catch.v1")
+            .chain_update(command.game_session_id.as_bytes())
+            .chain_update(command.command_id.to_be_bytes())
+            .chain_update(intent)
+            .finalize();
+        let mut occurrence = [0; 16];
+        occurrence.copy_from_slice(&digest[..16]);
+        let draw = deterministic_decision_u64(
+            &GameplayDecisionRoot::from_bytes(native.source_digest()),
+            DecisionOccurrenceId::from_bytes(occurrence),
+            "fishing.catch",
+            0,
+        )
+        .ok()?;
+        let roll = u32::try_from(crate::spell::uniform_draw(draw, 1, 100_000)).ok()?;
+        let now = u64::try_from(self.clock_origin.elapsed().as_micros()).unwrap_or(u64::MAX);
+        let mut due = Vec::new();
+        let skill = {
+            let runtime = self.runtime.lock().await;
+            let mut states = self.states.spell_states.lock().await;
+            if states.is_dead(actor) || !states.spell_idle(&runtime, actor, command.game_session_id)
+            {
+                return None;
+            }
+            let skill = states
+                .get(&runtime, actor, command.game_session_id)
+                .and_then(|state| state.live_skill(SkillFamily::Fishing.index(), now))
+                .and_then(|value| u16::try_from(value).ok())
+                .unwrap_or(10);
+            super::attack::skill_training::train_hit(
+                &mut states,
+                &runtime,
+                native.training_formula(),
+                actor,
+                command.game_session_id,
+                SkillFamily::Fishing,
+                now,
+                |_| FISHING_TRIES_PER_USE,
+                &mut due,
+            );
+            skill
+        };
+        self.save_trained_levels(due).await;
+        Some(fishing::catches(skill, roll))
+    }
 }
 
 /// Decision used by the real I11 two-carried-item baking handler.
@@ -531,11 +525,22 @@ fn item_id(key: &str) -> Option<u16> {
     key.strip_prefix("oteryn:item.tibia.i")?.parse().ok()
 }
 
+#[cfg(test)]
 pub(in crate::gameplay_transport) fn gathering_roll(
     digest: [u8; 32],
     session: crate::foundation::GameSessionId,
     command_id: u64,
     intent: &[u8],
+) -> Option<u32> {
+    bounded_gathering_roll(digest, session, command_id, intent, 100_000)
+}
+
+fn bounded_gathering_roll(
+    digest: [u8; 32],
+    session: crate::foundation::GameSessionId,
+    command_id: u64,
+    intent: &[u8],
+    maximum: i64,
 ) -> Option<u32> {
     let digest = Sha256::new()
         .chain_update(b"oteryn.gathering.yield.v1")
@@ -553,7 +558,7 @@ pub(in crate::gameplay_transport) fn gathering_roll(
         0,
     )
     .ok()?;
-    u32::try_from(crate::spell::uniform_draw(draw, 1, 100_000)).ok()
+    u32::try_from(crate::spell::uniform_draw(draw, 1, maximum)).ok()
 }
 
 #[cfg(test)]

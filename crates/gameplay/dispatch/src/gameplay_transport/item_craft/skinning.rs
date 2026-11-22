@@ -87,7 +87,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !entry.is_some_and(|entry| {
             matches!(
                 entry.item.definition.production_key.as_str(),
-                "oteryn:item.tibia.i5908" | "oteryn:item.tibia.i5942"
+                "oteryn:item.tibia.i3483"
+                    | "oteryn:item.tibia.i5908"
+                    | "oteryn:item.tibia.i5942"
+                    | "oteryn:item.tibia.i9306"
             )
         }) {
             return Ok(None);
@@ -118,16 +121,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .and_then(|id| id.parse::<u16>().ok())
         };
         let tool_id = entry.and_then(|entry| source_id(&entry.item.definition.production_key));
-        if !tool_id
-            .zip(source_id(&ground.definition().production_key))
+        let pair = tool_id.zip(source_id(&ground.definition().production_key));
+        let fishing = pair.is_some_and(|(tool, target)| {
+            oteryn_gameplay_items::fishing::is_fishing_corpse(tool, target)
+        });
+        let skinning = pair
             .and_then(|(tool, target)| oteryn_gameplay_items::fishing::gathering_rule(tool, target))
             .is_some_and(|(target, _)| {
                 matches!(
                     target,
                     oteryn_gameplay_items::fishing::GatheringTarget::Corpse { spent_item: 1.. }
                 )
-            })
-        {
+            });
+        if !fishing && !skinning {
             return Ok(None);
         }
 
