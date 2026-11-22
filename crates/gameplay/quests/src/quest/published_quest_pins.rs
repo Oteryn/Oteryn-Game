@@ -131,6 +131,20 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
             hash(b"8a188b5b0b564e34830783f89b5b1a24cc00eb29a1639495bdfb8a7124b584af"),
         ],
     ),
+    (
+        "oteryn:quest.the_new_frontier_quest",
+        hash(b"61034f9e3365c8817d659f8ffa59a0f21e404d2a41dfc6099a48a5cedd71018f"),
+        &[hash(
+            b"e947f2485cdf2c3094ba301e71369a208d98b017d08aef8e727705a992b6f0be",
+        )],
+    ),
+    (
+        "oteryn:quest.wayfarer_outfits_quest",
+        hash(b"04f1928fb6d02943927358fc1e3947695680bc704e44afcbbbe5ac6548de194e"),
+        &[hash(
+            b"68a6045ea88cf241d8ec6f881245131a9076d8d423722544573e9c3b45dae42c",
+        )],
+    ),
     // Captured from the complete loader at 3e09916423181c795c829eca5e5414dde3f29a3e.
     (
         "oteryn:quest.the_paradox_tower_quest",

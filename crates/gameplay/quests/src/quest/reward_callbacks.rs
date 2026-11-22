@@ -2412,7 +2412,8 @@ mod tests {
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
         // Shared covers 207 existing and 31 QB routes. Rottin Wood contributes 13,
         // the Forgemaster contributes 12, the chosen routes add 18, A Prisoner adds 2, and classic quest contacts add 5.
-        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1 + 13 + 12 + 18 + 2 + 5);
+        // The shared shard also adds four outfit completion routes.
+        assert_eq!(load()?.len(), (238 + 4) + 59 + 125 + 1 + 1 + 13 + 12 + 18 + 2 + 5);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;

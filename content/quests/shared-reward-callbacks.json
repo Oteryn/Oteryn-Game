@@ -538,9 +538,6 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cranky_lizard_crone.lua:sha256:8ac41cc1e41785f8b3bf0d2d4b965673e73428511b5290fc327a2b2ea1ddaa3f"
-      ],
-      "requires_completed_quests": [
-        "oteryn:quest.the_spirit_will_get_you_quest"
       ]
     },
     {
@@ -577,9 +574,6 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cranky_lizard_crone.lua:sha256:8ac41cc1e41785f8b3bf0d2d4b965673e73428511b5290fc327a2b2ea1ddaa3f"
-      ],
-      "requires_completed_quests": [
-        "oteryn:quest.the_spirit_will_get_you_quest"
       ]
     },
     {
