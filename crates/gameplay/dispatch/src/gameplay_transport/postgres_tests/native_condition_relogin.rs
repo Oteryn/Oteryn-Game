@@ -15,7 +15,8 @@ use oteryn_gameplay_foundation::foundation::condition::{
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
 use std::time::Duration;
 
-const REGENERATION: ConflictKey = ConflictKey::SpellRegeneration(0);
+// Sub-ID 0 shares the Recovery slot.
+const REGENERATION: ConflictKey = ConflictKey::Recovery;
 const DURATION_US: u64 = 60_000_000;
 const FIRST_TICK_US: u64 = 2_000_000;
 
