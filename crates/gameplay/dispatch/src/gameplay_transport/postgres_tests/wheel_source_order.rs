@@ -63,7 +63,7 @@ fn wheel_save_mixed_refund_and_spend_respects_source_slot_retry_order() -> TestR
         let current = fence(5)?;
         let save = async |request, at_temple| -> TestResult<WheelCommitOutcome> {
             maintain_ready(&h.root).await?;
-            Ok(sequencer
+            sequencer
                 .acquire(current.character_id)
                 .await
                 .commit_wheel(
@@ -77,7 +77,7 @@ fn wheel_save_mixed_refund_and_spend_respects_source_slot_retry_order() -> TestR
                     &gate,
                 )
                 .await
-                .map_err(debug)?)
+                .map_err(debug)
         };
 
         // Fill the unaffected blue and purple paths except the purple tip. This leaves

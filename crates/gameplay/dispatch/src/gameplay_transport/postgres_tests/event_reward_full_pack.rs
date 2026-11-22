@@ -13,6 +13,9 @@ use oteryn_protocol_oteryn::world_object::{
     UseDisposition, UseIntent, UseTarget, encode_item_use_intent,
 };
 
+/// Minted item key, quantity, ground position, channel and audit count.
+type PlacementRow = (String, i64, Vec<u8>, Vec<u8>, i64);
+
 const BLUE_PRESENT: &str = "oteryn:item.tibia.i6570";
 
 #[test]
@@ -238,7 +241,7 @@ fn scenario(admin: String) -> TestResult {
             .await?;
             assert_eq!(source_state, (1, 1, true));
 
-            let placements: Vec<(String, i64, Vec<u8>, Vec<u8>, i64)> = sqlx::query_as(
+            let placements: Vec<PlacementRow> = sqlx::query_as(
                 "SELECT i.definition_production_key,i.quantity,g.spatial_position,uuid_send(g.channel_id),
                  (SELECT count(*) FROM game_item_audit_outbox a WHERE a.transaction_id=r.transaction_id)
                  FROM game_item_craft_records r JOIN game_item_instances i ON i.minted_transaction_id=r.transaction_id
