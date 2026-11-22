@@ -211,6 +211,10 @@ pub(super) fn meaningful(
         .is_ok(),
         98 => oteryn_protocol_oteryn::creature_push::decode_creature_push_intent(command.payload)
             .is_ok(),
+        oteryn_protocol_oteryn::actor_spell_v2::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_PARAMETERS_V2 => {
+            oteryn_protocol_oteryn::actor_spell_v2::decode_parameter_spell_cast_intent(command.payload)
+                .is_ok()
+        }
         _ => false,
     }
 }

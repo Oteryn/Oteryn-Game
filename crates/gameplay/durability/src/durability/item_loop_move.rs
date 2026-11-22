@@ -94,7 +94,7 @@ const KIND_INBOX: i16 = 6;
 const KIND_CUSTODY_NESTED: i16 = 7;
 #[path = "item_quick_loot.rs"]
 mod quick_loot;
-pub use quick_loot::{QuickLootCommand, is_loot_coin};
+pub use quick_loot::{QuickLootCommand, QuickLootInput, is_loot_coin};
 pub(super) use quick_loot::pouch_weight;
 #[path = "depot_move.rs"]
 mod depot_move;
@@ -232,6 +232,13 @@ pub trait ItemLoopContent: ItemWeightLookup {
     fn is_ammunition(&self, _definition: &TypedDefinitionRef) -> bool {
         false
     }
+    fn managed_item_category(
+        &self,
+        _definition: &TypedDefinitionRef,
+    ) -> Option<oteryn_gameplay_items::quick_loot::LootCategory> {
+        None
+    }
+
     fn loot_category(
         &self,
         _definition: &TypedDefinitionRef,
@@ -1056,7 +1063,7 @@ async fn plan_loop_destination<C: ItemLoopContent>(
 
 #[derive(Clone, Copy)]
 enum MoveBatch {
-    Corpse(quick_loot::MoveContext),
+    QuickLoot(quick_loot::MoveContext),
     Managed(i16),
 }
 
@@ -1115,7 +1122,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
         return refuse(LoopMoveRefusal::Stale);
     };
     let row = sqlx::query(
-        "SELECT e.character_id::text AS entry_character, \
+        "SELECT e.character_id::text AS entry_character, e.parent_item_instance_id::text AS entry_parent, \
                 d.character_id::text AS depot_character, d.town_id, d.box_number, \
                 x.character_id::text AS inbox_character, \
                 n.parent_item_instance_id::text AS nested_parent, \
@@ -1151,8 +1158,19 @@ async fn apply_loop_move<C: ItemLoopContent>(
     }
     let depot_character = optional_uuid(row.try_get("depot_character")?)?;
     let inbox_character = optional_uuid(row.try_get("inbox_character")?)?;
-    let source = if let Some(MoveBatch::Corpse(context)) = batch {
-        quick_loot::assert_corpse_source(tx, fence, request.item, context).await?;
+    let quick_source = match batch {
+        Some(MoveBatch::QuickLoot(context)) => Some(context.source),
+        _ => None,
+    };
+    if let Some(quick_loot::MoveSource::Carried(expected)) = quick_source {
+        let main = entry_character == Some(*character.as_bytes())
+            && optional_uuid(row.try_get("entry_parent")?)? == Some(expected);
+        if !main && nested_parent != Some(expected) {
+            return refuse(LoopMoveRefusal::Stale);
+        }
+    }
+    let source = if let Some(quick_loot::MoveSource::Corpse { id, cell }) = quick_source {
+        quick_loot::assert_corpse_source(tx, fence, request.item, id, cell).await?;
         SourceKind::Corpse
     } else if search.is_some() && depot_character.is_none() {
         // Depot search: an Inbox root, or an entry nested under a depot or Inbox root.
@@ -1495,7 +1513,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
     .bind(depot.map(|access| i32::from(access.town)))
     .bind(depot.map(|access| i16::from(access.box_number)))
     .bind(match batch {
-        Some(MoveBatch::Corpse(context)) => context.ordinal,
+        Some(MoveBatch::QuickLoot(context)) => context.ordinal,
         Some(MoveBatch::Managed(ordinal)) => ordinal,
         None => search.unwrap_or(0),
     })

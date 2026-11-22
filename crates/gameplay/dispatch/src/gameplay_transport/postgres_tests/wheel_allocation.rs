@@ -480,6 +480,13 @@ fn scenario(transition: Option<WheelExtensionCase>, combat: Option<WheelCombatCa
                 expected(true, 1, vessels)?, "free accounts cannot change vessels");
             owner.premium_coordinator = Some(&gate);
             let gift_remaining = if matches!(transition, WheelExtensionCase::Gift) {
+                h.seed_pvp_target().await?;
+                for target in [id(101), id(199)] {
+                    assert_eq!(
+                        send_kind(&owner, &mut admitted, 6378, &target).await?,
+                        (CommandStatus::Rejected, b"Sorry, not possible.".to_vec())
+                    );
+                }
                 let legacy_selection = admitted.continuity.selected_capabilities;
                 let (status, _) = send_kind(&owner, &mut admitted, wire::COMMAND_TYPE_WHEEL_GIFT_ACTIVATION, &[]).await?;
                 assert_eq!(status, CommandStatus::Rejected);
@@ -513,6 +520,12 @@ fn scenario(transition: Option<WheelExtensionCase>, combat: Option<WheelCombatCa
                     assert_eq!(next.wheel_gift_save(now, false), Some((1, 10 * 60 * 60 * 1_000_000)));
                     *state = next;
                 }
+                let (status, payload) = send_kind(&owner, &mut admitted, 6379, &[]).await?;
+                assert_eq!(status, CommandStatus::Accepted);
+                assert_eq!(payload.len(), 9);
+                assert_eq!(payload[0], 3);
+                let observed = u64::from_le_bytes(payload[1..].try_into()?);
+                assert!(observed > 0 && observed <= 36_000_000);
                 let (status, reply) = send_kind(&owner, &mut admitted, wire::COMMAND_TYPE_WHEEL_GIFT_ACTIVATION, &[]).await?;
                 assert_eq!(status, CommandStatus::Accepted);
                 let activation = wire::GiftActivationReply::decode(&reply).and_then(|reply| reply.0)

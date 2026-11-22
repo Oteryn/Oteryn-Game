@@ -205,7 +205,7 @@ where
         Dispatch::Use(outcome) => {
             use_effects::use_effects(stream, authority, session, command, outcome).await?;
         }
-        Dispatch::Spell(outcome) => {
+        Dispatch::Spell(outcome) | Dispatch::ParameterSpell(outcome, _) => {
             effects::spell(stream, authority, session, outcome).await?;
         }
         Dispatch::Timed(_, deltas) | Dispatch::ContainerSort(deltas) => {
@@ -222,7 +222,9 @@ where
                 }
             }
         }
-        Dispatch::UseItem(_, Some(delta)) | Dispatch::ContainerView(_, Some(delta)) => {
+        Dispatch::UseItem(_, Some(delta))
+        | Dispatch::ContainerView(_, Some(delta))
+        | Dispatch::ContainerPage(_, delta) => {
             let Some((delta_sequence, frame)) =
                 item_view_delta(session.generation, session.sequence, &delta)
             else {
@@ -368,7 +370,12 @@ where
                 return Err(ServeEnd::Disconnected);
             }
         }
-        Dispatch::Reply(CommandStatus::Accepted, _) if forge::changes_inventory(command) => {
+        Dispatch::Reply(CommandStatus::Accepted, _)
+            if forge::changes_inventory(command)
+                || command.command_type
+                    == oteryn_protocol_oteryn::quick_loot::COMMAND_TYPE_QUICK_LOOT_DISTRIBUTE =>
+        {
+            session.inventory_capacity_refresh_at = None;
             forge::refresh(stream, authority, session).await?;
         }
         Dispatch::ItemMove(outcome, deltas, _) => {
