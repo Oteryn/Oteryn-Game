@@ -238,12 +238,14 @@ pub(super) async fn exercise(
     assert!(same_tx);
     let final_counts = counts(h).await?;
     super::classic_quests_fixtures::talk(owner, admitted, npc, 9200, "hi").await?;
-    for (command, word, item) in [(9201, "cape", "old cape"), (9202, "hat", "sedge hat")] {
+    for (command, word, item) in [(9201, "cape", "old cape"), (9204, "hat", "sedge hat")] {
         let offer = super::classic_quests_fixtures::talk(owner, admitted, npc, command, word).await?;
         assert!(offer.iter().any(|line| line.contains(item)), "{word}: {offer:?}");
+        super::classic_quests_fixtures::talk(owner, admitted, npc, command + 1, "bye").await?;
+        super::classic_quests_fixtures::talk(owner, admitted, npc, command + 2, "hi").await?;
     }
 
-    let lines = super::classic_quests_fixtures::talk(owner, admitted, npc, 9203, "confession").await?;
+    let lines = super::classic_quests_fixtures::talk(owner, admitted, npc, 9207, "confession").await?;
     assert!(
         lines
             .iter()
