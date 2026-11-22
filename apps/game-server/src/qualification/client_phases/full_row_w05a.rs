@@ -19,7 +19,7 @@
 //!    re-check the same durable state, and report the reached missing server path rather than
 //!    claiming the reset lifecycle passed.
 use super::*;
-use oteryn_dev_client::{DevClientError, DevClientSession, SessionEvent};
+use oteryn_dev_client::{AppliedDelta, DevClientError, DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::server_save_countdown::{
     CAPABILITY_SERVER_SAVE_COUNTDOWN_V1, SERVER_SAVE_COUNTDOWN_MAX_MINUTES, SERVER_SAVE_COUNTDOWN_SNAPSHOT,
     STATE_DOMAIN_SERVER_SAVE_COUNTDOWN, ServerSaveCountdown,
@@ -50,6 +50,15 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 enum Outcome {
     ResetObserved,
     ResetNotScheduled,
+}
+
+fn countdowns(
+    events: Vec<SessionEvent>,
+) -> impl Iterator<Item = AppliedDelta<ServerSaveCountdown>> {
+    events.into_iter().filter_map(|event| match event {
+        SessionEvent::ServerSaveCountdown(delta) => Some(delta),
+        _ => None,
+    })
 }
 
 fn follows(previous: Option<ServerSaveCountdown>, notice: ServerSaveCountdown) -> bool {
@@ -132,16 +141,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         "W05a_CHECK step=player-reset-boundary observed=local-ownership-refusal wire_submission=false command-and-sequence=unchanged countdown-and-position=unchanged",
     );
 
-    client.take_events();
+    let noticed = tokio::time::Instant::now();
     client.service_liveness(Duration::from_secs(7)).await?;
-    let notice = client
-        .take_events()
-        .into_iter()
-        .find_map(|event| match event {
-            SessionEvent::ServerSaveCountdown(delta) => Some(delta),
-            _ => None,
-        });
-    if let Some(delta) = notice {
+    let mut notices = countdowns(client.take_events());
+    if let Some(delta) = notices.next() {
         if delta.base_revision.checked_add(1) != Some(delta.new_revision)
             || !follows(None, delta.value)
         {
@@ -151,36 +154,26 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         // The notice says the reset lands within its minute: `minutes_remaining` minutes at most
         // and more than one minute fewer at least. Only a close inside that window is the reset;
         // an earlier disconnect is some other failure.
-        let noticed = tokio::time::Instant::now();
         let minutes = u64::from(delta.value.minutes_remaining);
         let earliest =
             Duration::from_secs((minutes - 1) * 60).saturating_sub(Duration::from_secs(5));
         let latest = Duration::from_secs(minutes * 60 + 30);
-        verdict::Harness::global().bounded_wait(tokio::time::Instant::now() + latest, "reset-countdown");
+        verdict::Harness::global().bounded_wait(noticed + latest, "reset-countdown");
         let mut revision = delta.new_revision;
         let mut prior = delta.value;
         let deadline = noticed + latest;
+        let mut outcome = Ok(());
         let close = loop {
-            let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
-            if remaining.is_zero() {
-                return Err(format!(
-                    "step=reset-close observed=session-still-live-{}s-after-{minutes}-minute-notice",
-                    latest.as_secs()
-                ).into());
-            }
-            let outcome = client.service_liveness(remaining.min(Duration::from_secs(1))).await;
-            for event in client.take_events() {
-                if let SessionEvent::ServerSaveCountdown(delta) = event {
-                    if delta.base_revision != revision
-                        || revision.checked_add(1) != Some(delta.new_revision)
-                        || !follows(Some(prior), delta.value)
-                    {
-                        return Err(format!("step=countdown observed=invalid-next-delta-{delta:?} previous={prior:?}").into());
-                    }
-                    revision = delta.new_revision;
-                    prior = delta.value;
-                    evidence(&format!("W05a_CHECK step=countdown delta={delta:?}"));
+            for delta in notices {
+                if delta.base_revision != revision
+                    || revision.checked_add(1) != Some(delta.new_revision)
+                    || !follows(Some(prior), delta.value)
+                {
+                    return Err(format!("step=countdown observed=invalid-next-delta-{delta:?} previous={prior:?}").into());
                 }
+                revision = delta.new_revision;
+                prior = delta.value;
+                evidence(&format!("W05a_CHECK step=countdown delta={delta:?}"));
             }
             if let Err(error) = outcome {
                 if prior.minutes_remaining != 1 || !closed_transport(&error) {
@@ -188,6 +181,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
                 }
                 break error;
             }
+            let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+            if remaining.is_zero() {
+                return Err(format!(
+                    "step=reset-close observed=session-still-live-{}s-after-{minutes}-minute-notice",
+                    latest.as_secs()
+                ).into());
+            }
+            outcome = client.service_liveness(remaining.min(Duration::from_secs(1))).await;
+            notices = countdowns(client.take_events());
         };
         let elapsed = noticed.elapsed();
         if elapsed < earliest {
@@ -268,6 +270,20 @@ async fn relog_and_check(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn initial_read_retains_each_countdown_in_sequence() {
+        let frame = |base_revision, minutes_remaining| SessionEvent::ServerSaveCountdown(AppliedDelta {
+            server_sequence: base_revision + 10,
+            base_revision,
+            new_revision: base_revision + 1,
+            value: ServerSaveCountdown { ending_epoch: 7, minutes_remaining },
+        });
+        let mut buffered = countdowns(vec![frame(0, 5), frame(1, 4)]);
+        assert_eq!(buffered.next().map(|frame| frame.value.minutes_remaining), Some(5));
+        assert_eq!(buffered.next().map(|frame| frame.value.minutes_remaining), Some(4));
+        assert_eq!(buffered.next(), None);
+    }
 
     #[test]
     fn countdown_requires_every_minute_of_the_same_epoch() {
