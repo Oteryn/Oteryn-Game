@@ -251,7 +251,7 @@ async fn exercise(h: &Harness, passage: Passage) -> TestResult {
             assert!(!refused.inventory_changed);
             assert_eq!(travel_writes(h).await?, (0, 0, 0));
             assert_eq!(cheese_quantity(h).await?, 3);
-            move_cheese_bag_to_inbox(h).await?;
+            move_cheese_to_inbox(h).await?;
         }
         Passage::Meluna => {
             assert_eq!(line(&opening), "Sorry, not possible.");
@@ -337,15 +337,15 @@ async fn seed_cheese(h: &Harness) -> TestResult {
     Ok(())
 }
 
-async fn move_cheese_bag_to_inbox(h: &Harness) -> TestResult {
+async fn move_cheese_to_inbox(h: &Harness) -> TestResult {
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
-    sqlx::query("WITH bag AS (DELETE FROM game_item_container_entries WHERE item_instance_id=$1 RETURNING *)
+    sqlx::query("WITH cheese AS (DELETE FROM game_item_nested_entries WHERE item_instance_id=$1 RETURNING *)
         INSERT INTO game_item_character_inbox_locations(character_id,item_instance_id,world_id,ordinal)
-        SELECT character_id,item_instance_id,world_id,1 FROM bag")
-        .bind(Uuid::from_bytes(id(72))).execute(&mut *tx).await?;
+        SELECT $2,item_instance_id,world_id,1 FROM cheese")
+        .bind(Uuid::from_bytes(id(73))).bind(Uuid::from_bytes(id(41))).execute(&mut *tx).await?;
     tx.commit().await?;
     Ok(())
 }

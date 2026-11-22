@@ -35,6 +35,11 @@ fn refusal(intent: &NpcTalkIntent, cause: TravelRefusal) -> npc_command::NpcTalk
             "The offer has expired. Please ask for your destination again."
         }
         TravelRefusal::InsufficientFunds => "You don't have enough money.",
+        TravelRefusal::SinbeardScarabCheese => {
+            "Scarab cheese? You smell like dragon breath! Get off my boat at once!"
+        }
+        TravelRefusal::PetrosScarabCheese => "That cheese of yours stinks! Please leave!",
+        TravelRefusal::HoneymoonIneligible => "Sorry, not possible.",
     };
     npc_command::NpcConversations::bank_reply(intent, line.into())
 }
