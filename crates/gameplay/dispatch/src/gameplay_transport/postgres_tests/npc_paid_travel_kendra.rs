@@ -232,16 +232,15 @@ fn kendra_placement() -> TestResult<NpcPlacementTable> {
 
 async fn seed_grand_postman_rank(h: &Harness) -> TestResult {
     let mut tx = h.pool.begin().await?;
-    // Existing saved quest progress, in the same fixture path used by the paid-travel matrix.
+    // Match the paid-travel matrix's saved quest progress at revision 2.
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
     sqlx::query(
         "INSERT INTO game_character_quest_tracks
          (character_id,track_key,quest_key,value,committed_character_revision)
-         SELECT character_id,'oteryn:quest-progress/quest/u7_24/the_postman_missions/rank',
-                'oteryn:quest.the_postman_missions_quest',3,character_revision
-         FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+         VALUES(encode($1,'hex')::uuid,'oteryn:quest-progress/quest/u7_24/the_postman_missions/rank',
+                'oteryn:quest.the_postman_missions_quest',3,2)",
     )
     .bind(id(41).as_slice())
     .execute(&mut *tx)
