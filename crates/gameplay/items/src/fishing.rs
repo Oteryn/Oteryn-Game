@@ -120,7 +120,7 @@ impl WaterFishing {
         }
     }
 
-    /// Called only after a skill-scaled catch. These buckets are out of 100,000.
+    /// Skill catches draw out of 100,000. The baitless dirty-water table draws out of 600.
     pub fn special_catch(self, target: u16, loot_roll: u32) -> Option<GatheringAttempt> {
         use WaterFishing::*;
         let (after, yield_item) = match self {

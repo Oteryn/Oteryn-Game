@@ -324,7 +324,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if mode == WaterFishing::Spent || map_target.2 {
                     return disposition(UseDisposition::NothingToUse);
                 }
-                if mode != WaterFishing::DirtyLoot {
+                if !self
+                    .states
+                    .player_trades
+                    .physical(command.game_session_id, Some(source))
+                {
+                    return disposition(UseDisposition::Rejected);
+                }
+                let bait = if mode == WaterFishing::DirtyLoot {
+                    None
+                } else {
                     let Some(bait) = entries
                         .clone()
                         .find(|entry| entry.item.definition.production_key == mode.bait())
@@ -332,13 +341,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         return disposition(UseDisposition::NothingToUse);
                     };
                     if !self
-                        .fishing_catch(actor, command, native, &request.intent)
-                        .await?
+                        .states
+                        .player_trades
+                        .physical(command.game_session_id, Some(bait.item.item_instance_id))
                     {
-                        return disposition(UseDisposition::NothingToUse);
+                        return disposition(UseDisposition::Rejected);
                     }
+                    Some(bait.item.item_instance_id)
+                };
+                if !self
+                    .fishing_catch(actor, command, native, &request.intent, bait.is_some())
+                    .await?
+                {
+                    return disposition(UseDisposition::NothingToUse);
+                }
+                if let Some(bait) = bait {
                     request.tool = Some(source);
-                    request.source = bait.item.item_instance_id;
+                    request.source = bait;
                 }
                 water_fishing = Some(mode);
             }
@@ -467,31 +486,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         native: &crate::content::native_gameplay::NativeGameplayState,
         intent: &[u8],
+        cast_with_bait: bool,
     ) -> Option<bool> {
-        let digest = Sha256::new()
-            .chain_update(b"oteryn.fishing.catch.v1")
-            .chain_update(command.game_session_id.as_bytes())
-            .chain_update(command.command_id.to_be_bytes())
-            .chain_update(intent)
-            .finalize();
-        let mut occurrence = [0; 16];
-        occurrence.copy_from_slice(&digest[..16]);
-        let draw = deterministic_decision_u64(
-            &GameplayDecisionRoot::from_bytes(native.source_digest()),
-            DecisionOccurrenceId::from_bytes(occurrence),
-            "fishing.catch",
-            0,
-        )
-        .ok()?;
-        let roll = u32::try_from(crate::spell::uniform_draw(draw, 1, 100_000)).ok()?;
         let now = u64::try_from(self.clock_origin.elapsed().as_micros()).unwrap_or(u64::MAX);
         let mut due = Vec::new();
         let skill = {
             let runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
-            if states.is_dead(actor) || !states.spell_idle(&runtime, actor, command.game_session_id)
+            if !runtime
+                .player_control_facts(actor, command.game_session_id)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+                || states.is_dead(actor)
+                || !states.spell_idle(&runtime, actor, command.game_session_id)
             {
                 return None;
+            }
+            if !cast_with_bait {
+                return Some(true);
             }
             let skill = states
                 .get(&runtime, actor, command.game_session_id)
@@ -512,6 +523,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             skill
         };
         self.save_trained_levels(due).await;
+        let digest = Sha256::new()
+            .chain_update(b"oteryn.fishing.catch.v1")
+            .chain_update(command.game_session_id.as_bytes())
+            .chain_update(command.command_id.to_be_bytes())
+            .chain_update(intent)
+            .finalize();
+        let mut occurrence = [0; 16];
+        occurrence.copy_from_slice(&digest[..16]);
+        let draw = deterministic_decision_u64(
+            &GameplayDecisionRoot::from_bytes(native.source_digest()),
+            DecisionOccurrenceId::from_bytes(occurrence),
+            "fishing.catch",
+            0,
+        )
+        .ok()?;
+        let roll = u32::try_from(crate::spell::uniform_draw(draw, 1, 100_000)).ok()?;
         Some(fishing::catches(skill, roll))
     }
 }
