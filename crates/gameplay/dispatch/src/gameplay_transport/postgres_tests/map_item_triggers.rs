@@ -547,6 +547,32 @@ async fn exercise_basin(
         sqlx::query("DROP TRIGGER reject_test_coal_basin ON game_dreamer_ring_offerings")
             .execute(&h.pool)
             .await?;
+    } else {
+        let ordinary = UseCommand {
+            command_id: 3,
+            ..command
+        };
+        let ordinary_drop = LoopMove {
+            target: LoopTarget::Ground(oteryn_protocol_oteryn::item_view::WorldTilePosition {
+                x: 33097,
+                y: 32815,
+                floor: -13,
+            }),
+            count: None,
+            ..request
+        };
+        assert_eq!(
+            owner.move_loop_item(deps.actor, ordinary, ordinary_drop).await,
+            LoopMoveResult::Committed
+        );
+        let permit = owner.spell_lane_permit().await.ok_or("spell lane")?;
+        let replay = tokio::time::timeout(
+            std::time::Duration::from_secs(5),
+            owner.committed_loop_move(deps.actor, ordinary),
+        )
+        .await?;
+        drop(permit);
+        assert_eq!(replay, Some(LoopMoveReplay::Moved));
     }
     Ok(())
 }

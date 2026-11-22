@@ -765,9 +765,13 @@ pub(super) async fn committed_loop_move(
     };
     let command_id = CommandId::new(command.command_id).ok()?;
     let command = CommandRef::new(command.game_session_id, command_id);
-    let replay = admission
+    let (replay, map_trigger) = admission
         .root
-        .read_item_loop_move_receipt(admission.character, fence.character_id, command)
+        .read_item_loop_move_receipt_with_map_trigger(
+            admission.character,
+            fence.character_id,
+            command,
+        )
         .await
         .ok()?;
     // A committed Dreamer offering whose acknowledgement was lost publishes before the replay.
@@ -776,7 +780,7 @@ pub(super) async fn committed_loop_move(
     {
         return None;
     }
-    if replay == LoopMoveReplay::Moved
+    if map_trigger
         && matches!(
             fence.runtime_scope,
             crate::foundation::RuntimeScopeRefV1::Channel { .. }

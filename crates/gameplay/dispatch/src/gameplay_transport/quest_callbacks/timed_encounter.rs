@@ -88,7 +88,12 @@ impl TimedEncounter {
         self.spawned = spawned;
     }
 
-    fn is_current(&self, runtime: &ChannelRuntimeV1, map: &BundleMap, allow_changed_merchant: bool) -> bool {
+    fn is_current(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        map: &BundleMap,
+        allow_changed_merchant: bool,
+    ) -> bool {
         self.scope == runtime.encounter_owner_scope()
             && self.content == runtime.content_pin().server_artifact_digest()
             && self.map == map.overlay.base().digest()
@@ -135,7 +140,9 @@ impl TimedEncounter {
     }
 
     pub(super) fn next_due_us(&self) -> u64 {
-        self.merchant_loot.as_ref().map_or(self.wake_at, |(due, _)| *due)
+        self.merchant_loot
+            .as_ref()
+            .map_or(self.wake_at, |(due, _)| *due)
     }
 }
 

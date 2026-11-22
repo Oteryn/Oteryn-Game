@@ -1990,6 +1990,18 @@ impl DurabilityRoot {
         character_id: CharacterId,
         command: CommandRef,
     ) -> std::result::Result<LoopMoveReplay, DurabilityError> {
+        self.read_item_loop_move_receipt_with_map_trigger(recovery, character_id, command)
+            .await
+            .map(|(replay, _)| replay)
+    }
+
+    /// Read the receipt and whether replay can publish a Parchment or basin effect.
+    pub async fn read_item_loop_move_receipt_with_map_trigger(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        character_id: CharacterId,
+        command: CommandRef,
+    ) -> std::result::Result<(LoopMoveReplay, bool), DurabilityError> {
         let record = recovery
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -2001,22 +2013,29 @@ impl DurabilityRoot {
                     // An attempt in flight holds this lock, so `Absent` proves none is.
                     lock_loop_command(&mut tx, command).await?;
                     let row = sqlx::query(
-                        "SELECT character_id::text FROM game_item_loop_move_receipts \
-                          WHERE quick_loot_ordinal = 0 AND game_session_id = encode($1,'hex')::uuid \
-                            AND command_id = $2::text::numeric(20,0)",
+                        "SELECT r.character_id::text, (
+                            EXISTS(SELECT 1 FROM game_parchment_removals p
+                                   WHERE p.move_transaction_id=r.transaction_id
+                                     AND p.reset_at>statement_timestamp())
+                            OR EXISTS(SELECT 1 FROM game_dreamer_ring_offerings o
+                                      WHERE o.move_transaction_id=r.transaction_id AND o.basin_uid IS NOT NULL)
+                         ) AS map_trigger
+                         FROM game_item_loop_move_receipts r
+                         WHERE r.quick_loot_ordinal=0 AND r.game_session_id=encode($1,'hex')::uuid
+                           AND r.command_id=$2::text::numeric(20,0)",
                     )
                     .bind(command.game_session_id().as_bytes().as_slice())
                     .bind(command.command_id().get().to_string())
                     .fetch_optional(&mut *tx)
                     .await?;
                     let replay = match row {
-                        None => LoopMoveReplay::Absent,
+                        None => (LoopMoveReplay::Absent, false),
                         Some(row) => {
                             if uuid_text(row.try_get("character_id")?)? == *character_id.as_bytes()
                             {
-                                LoopMoveReplay::Moved
+                                (LoopMoveReplay::Moved, row.try_get("map_trigger")?)
                             } else {
-                                LoopMoveReplay::Conflicting
+                                (LoopMoveReplay::Conflicting, false)
                             }
                         }
                     };
