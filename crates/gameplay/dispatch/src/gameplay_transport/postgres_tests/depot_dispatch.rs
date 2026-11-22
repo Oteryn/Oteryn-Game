@@ -1,4 +1,6 @@
 //! Real admitted connection -> depot/stash dispatch -> fenced item owner -> PostgreSQL.
+#[path = "depot_dispatch/container_batch_cases.rs"]
+mod container_batch_cases;
 #[path = "depot_dispatch/depot_list.rs"]
 mod depot_list;
 #[path = "depot_dispatch/mail_capacity.rs"]
@@ -248,6 +250,8 @@ fn write_text_ground_real_dispatch_movement_closes_external_views() -> TestResul
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Mode {
     Plain,
+    ManagedContainerMove,
+    StashContainer,
     List,
     Mail,
     MailCapacity,
@@ -315,6 +319,7 @@ fn scenario_with_premium(
         Mode::Mail | Mode::MailCapacity | Mode::MailPostCapacity | Mode::List
     );
     let retrieve = mode == Mode::Retrieve;
+    let batch = matches!(mode, Mode::StashContainer | Mode::ManagedContainerMove);
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "depot_dispatch", true, false)
             .await
@@ -575,6 +580,7 @@ fn scenario_with_premium(
         // Seed only the carried target, using the existing MINT/TRANSFER owners. The behavior
         // under test starts below at the real dispatch, with a map handle issued by domain 17.
         let mut carried = None;
+        let mut main_bag = None;
         let mut stacks = Vec::new();
         let mut ground = Vec::new();
         // Retrieval: 20 carried stacks fill the main backpack; two more are carried later.
@@ -617,7 +623,9 @@ fn scenario_with_premium(
             None
         };
         let mut first_page_item = None;
-        let seeded: u32 = if mode == Mode::List {
+        let seeded: u32 = if mode == Mode::ManagedContainerMove {
+            4
+        } else if mode == Mode::List {
             5
         } else if retrieve {
             22
@@ -634,8 +642,11 @@ fn scenario_with_premium(
             let special_item = ordinal.checked_sub(1)
                 .and_then(|n| mail_items.get(usize::try_from(n).ok()?))
                 .or_else(|| if ordinal == 3 {sapphire.as_ref()} else {None});
-            let bag = ordinal == 0 || ((ground_container || contents) && ordinal == 2)
-                || (ground_container && ordinal == 1);
+            let bag = ordinal == 0
+                || (ground_container && ordinal <= 2)
+                || (contents && ordinal == 2)
+                || (batch && ordinal == 1)
+                || (mode == Mode::ManagedContainerMove && ordinal == 2);
             let mut seed = harness
                 .root
                 .freeze_item_mint(
@@ -665,6 +676,8 @@ fn scenario_with_premium(
                         },
                         quantity: if bag || (mail && special_item.is_some()) {
                             1
+                        } else if mode == Mode::ManagedContainerMove {
+                            40
                         } else {
                             100
                         },
@@ -771,9 +784,18 @@ fn scenario_with_premium(
             } else if ordinal > 0 {
                 stacks.push(backpack);
             }
+            if ordinal == 0 {
+                main_bag = Some(backpack);
+            }
             if ordinal == 1 {
                 carried = Some(backpack);
             }
+        }
+        if batch {
+            let [source, .., nested] = stacks.as_slice() else {
+                return Err("missing batch fixture items".into());
+            };
+            container_batch_cases::nest_fixture(&harness.pool, *source, *nested).await?;
         }
         if contents {
             stash_cases::nest_contents(&harness.pool, &stacks).await?;
@@ -969,6 +991,15 @@ fn scenario_with_premium(
                 owner.session_premium_gate(session).await.premium_current(),
                 stash_premium == Some(EntitlementState::Active)
             );
+            if batch {
+                let main = main_bag.ok_or("batch fixture main bag")?;
+                let handle = view.table().handle(&ItemKey::Instance(main)).ok_or("main bag handle")?;
+                container_batch_cases::exercise(&owner, admitted, &harness.pool, handle, &stacks, mode).await?;
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return harness.cleanup().await;
+            }
             let other_handles = stacks
                 .iter()
                 .skip(1)

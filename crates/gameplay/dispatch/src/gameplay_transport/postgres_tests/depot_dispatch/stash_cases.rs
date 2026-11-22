@@ -635,7 +635,7 @@ pub(super) async fn exercise(
 }
 
 /// Run the root's only connection as `oteryn_game_runtime`, as the node does.
-async fn runtime_role(root: &crate::durability::DurabilityRoot) -> TestResult {
+pub(super) async fn runtime_role(root: &crate::durability::DurabilityRoot) -> TestResult {
     let mut connection = root.try_acquire_ready()?;
     sqlx::query("SET ROLE oteryn_game_runtime")
         .execute(&mut *connection)

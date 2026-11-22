@@ -117,3 +117,50 @@ pub fn decode_server_notification(bytes: &[u8]) -> WireResult<ServerNotification
 #[cfg(test)]
 #[path = "zones_nologout_tests.rs"]
 mod tests;
+
+pub const CAPABILITY_PLAYER_STATUS_V1: u32 = 600;
+pub const COMMAND_TYPE_PLAYER_STATUS_QUERY: u32 = 6363;
+
+pub fn decode_player_status_query(
+    bytes: &[u8],
+) -> Option<crate::world_spatial_entities::EntityRef> {
+    let (&identity, generation) = bytes.split_first_chunk::<16>()?;
+    let generation = u64::from_be_bytes(generation.try_into().ok()?);
+    (identity != [0; 16] && generation != 0).then_some(crate::world_spatial_entities::EntityRef {
+        identity,
+        generation,
+    })
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+pub enum PlayerPresence {
+    Online = 1,
+    Away = 2,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PlayerStatus {
+    pub presence: PlayerPresence,
+    pub no_logout: bool,
+}
+
+impl PlayerStatus {
+    pub fn encode(self) -> [u8; 2] {
+        [self.presence as u8, u8::from(self.no_logout)]
+    }
+
+    pub fn decode(bytes: &[u8]) -> Option<Self> {
+        let [presence, no_logout @ 0..=1] = *bytes else {
+            return None;
+        };
+        Some(Self {
+            presence: match presence {
+                1 => PlayerPresence::Online,
+                2 => PlayerPresence::Away,
+                _ => return None,
+            },
+            no_logout: no_logout == 1,
+        })
+    }
+}

@@ -287,6 +287,30 @@ where
                 }
             }
         }
+        Dispatch::CarriedBatch(reply) => {
+            if matches!(
+                reply,
+                oteryn_protocol_oteryn::container_batch::Reply::Committed(_)
+            ) {
+                let Some(view) = session.item_view.as_mut() else {
+                    return Err(ServeEnd::Disconnected);
+                };
+                if item_use_view_refresh::refresh(
+                    stream,
+                    authority,
+                    session.actor,
+                    &mut session.admitted,
+                    view,
+                    session.container_views.as_mut(),
+                    &mut session.sequence,
+                )
+                .await
+                .is_none()
+                {
+                    return Err(ServeEnd::Disconnected);
+                }
+            }
+        }
         Dispatch::Depot(reply) => {
             if reply.outcome == oteryn_protocol_oteryn::depot::DepotOutcome::Moved {
                 let Some(view) = session.item_view.as_mut() else {

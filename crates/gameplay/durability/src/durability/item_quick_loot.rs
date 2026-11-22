@@ -66,7 +66,7 @@ pub(super) async fn assert_corpse_source(
     }
 }
 
-async fn recipient<C: ItemLoopContent>(
+pub(super) async fn recipient<C: ItemLoopContent>(
     tx: &mut Transaction<'_, Postgres>,
     character: CharacterId,
     world: [u8; 16],
@@ -302,7 +302,7 @@ async fn attempt_move<C: ItemLoopContent>(
                 &request,
                 &intent,
                 None,
-                Some(context),
+                Some(MoveBatch::Corpse(context)),
                 None,
                 None,
             )

@@ -341,11 +341,13 @@ async fn scenario(
         initialize.await
     };
     assert!(initialized, "real source-map initialization");
+    let check_container_preview =
+        !contents && !check_capacity && !inspection && !offer_contention && !read_priority;
     for a in &mut admitted {
         owner.admit_loop_training(a).await;
         assert_eq!(a.first_entry, FirstEntryOutcome::Positioned);
         a.continuity.selected_capabilities = SelectedCapabilities::select(
-            if contents || check_capacity {
+            if contents || check_capacity || check_container_preview {
                 crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES
             } else {
                 owner.offered_capabilities()
@@ -356,6 +358,8 @@ async fn scenario(
                 &[4, 6, 21, 60, 508]
             } else if inspection {
                 &[4, 6, 21, 60, 132]
+            } else if check_container_preview {
+                &[4, 6, 21, 37, 60, 62, 601]
             } else {
                 &[4, 6, 21, 60]
             },
@@ -438,6 +442,21 @@ async fn scenario(
             a.trade(offer_a).await?
         };
         assert_eq!(offered, ResultCode::Offered.payload());
+        if check_container_preview {
+            use oteryn_protocol_oteryn::container_batch::{COMMAND_TYPE_STASH_CONTAINER, Request};
+            let payload = Request::Preview {
+                source: std::num::NonZeroU64::MIN,
+                recursive: true,
+            }
+            .encode();
+            let reply = a.send(a.next, COMMAND_TYPE_STASH_CONTAINER, &payload).await?;
+            a.next += 1;
+            assert_eq!(reply, (CommandStatus::Rejected, Vec::new()));
+            assert!(
+                owner.states.player_trades.open(admitted[0].game_session_id),
+                "a rejected container preview must leave the live trade open"
+            );
+        }
         let (_, first, _) = owner
             .trade_observation(admitted[1].game_session_id)
             .await
