@@ -19,7 +19,7 @@ fn s10_blessings_postgres_nonpremium_and_phoenix_stages() -> TestResult {
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(2, false).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(2, false, "quentin").map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "S10 blessings PostgreSQL thread panicked")??;
     eprintln!(
@@ -37,7 +37,7 @@ fn s10_blessings_enforced_pvp_postgres_refuses_purchase() -> TestResult {
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(3, false).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(3, false, "quentin").map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "S10 enforced PvP PostgreSQL thread panicked")??;
     eprintln!(
@@ -55,7 +55,7 @@ fn s10_twist_postgres_accepts_amulet_carried_in_backpack() -> TestResult {
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(2, true).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(2, true, "quentin").map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "S10 amulet PostgreSQL thread panicked")??;
     eprintln!(
@@ -65,7 +65,23 @@ fn s10_twist_postgres_accepts_amulet_carried_in_backpack() -> TestResult {
     Ok(())
 }
 
-fn scenario(world_type: i16, amulet: bool) -> TestResult {
+#[test]
+fn crystal_twist_givers_use_the_same_postgres_eligibility_and_purchase() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    for stem in ["isimov", "rahkem", "rock_with_a_soft_spot", "tyrias"] {
+        std::thread::Builder::new()
+            .stack_size(256 << 20)
+            .spawn(move || scenario(2, false, stem).map_err(|error| error.to_string()))?
+            .join()
+            .map_err(|_| "Crystal Twist PostgreSQL thread panicked")??;
+        eprintln!("POSTGRES_CASE_COMPLETED twist_of_fate {stem}");
+    }
+    Ok(())
+}
+
+fn scenario(world_type: i16, amulet: bool, twist_npc: &'static str) -> TestResult {
     run(async move |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "s10_blessings", true, false).await?;
@@ -163,7 +179,8 @@ fn scenario(world_type: i16, amulet: bool) -> TestResult {
                 .read_actor_position(deps.actor)
                 .map_err(debug)?
                 .position();
-            let rows = ["kawill", "norf", "pydar", "quentin"]
+            let stems = ["kawill", "norf", "pydar", twist_npc];
+            let mut rows = stems
                 .iter()
                 .enumerate()
                 .map(|(i, key)| NpcPlacements {
@@ -175,11 +192,23 @@ fn scenario(world_type: i16, amulet: bool) -> TestResult {
                         direction: MovementFacing::South,
                     }],
                 })
-                .collect();
+                .collect::<Vec<_>>();
+            rows.sort_by(|left, right| left.key.cmp(&right.key));
             runtime
                 .place_npcs(&NpcPlacementTable { npcs: rows }, |_| true, true)
-                .map_err(debug)?
-                .actors
+                .map_err(debug)?;
+            let visible = runtime.visible_entities().npcs;
+            stems
+                .iter()
+                .map(|stem| {
+                    let key = format!("oteryn:npc.{stem}");
+                    visible
+                        .iter()
+                        .find(|actor| runtime.npc_key(actor.actor) == Some(key.as_str()))
+                        .map(|actor| actor.actor)
+                        .ok_or("placed blessing NPC")
+                })
+                .collect::<Result<Vec<_>, _>>()?
         };
         let mut items = vec![("oteryn:item.tibia.i3043", 3)];
         if amulet {
@@ -273,7 +302,8 @@ fn scenario(world_type: i16, amulet: bool) -> TestResult {
             };
             for text in ["hi", "blessing", "yes", "bye"] {
                 let response =
-                    super::npc_paid_travel_fixtures::talk(&owner, &deps, kawill, command, text).await?;
+                    super::npc_paid_travel_fixtures::talk(&owner, &deps, kawill, command, text)
+                        .await?;
                 assert!(
                     !response.inventory_changed,
                     "free preparation cannot move inventory"
@@ -313,8 +343,14 @@ fn scenario(world_type: i16, amulet: bool) -> TestResult {
                     .await?
                     .0;
             admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
-            let (status, bytes) =
-                super::cyclopedia_fixtures::support::exchange(&owner, &mut admitted, 1, 388, &[134]).await?;
+            let (status, bytes) = super::cyclopedia_fixtures::support::exchange(
+                &owner,
+                &mut admitted,
+                1,
+                388,
+                &[134],
+            )
+            .await?;
             assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
             let snapshot =
                 oteryn_protocol_oteryn::cyclopedia_character::blessings_dialog::Snapshot::decode(
@@ -346,8 +382,14 @@ fn scenario(world_type: i16, amulet: bool) -> TestResult {
                 .settle_source_player_death(fence, death, None, None)
                 .await
                 .map_err(debug)?;
-            let (status, bytes) =
-                super::cyclopedia_fixtures::support::exchange(&owner, &mut admitted, 2, 388, &[134]).await?;
+            let (status, bytes) = super::cyclopedia_fixtures::support::exchange(
+                &owner,
+                &mut admitted,
+                2,
+                388,
+                &[134],
+            )
+            .await?;
             assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
             let after =
                 oteryn_protocol_oteryn::cyclopedia_character::blessings_dialog::Snapshot::decode(

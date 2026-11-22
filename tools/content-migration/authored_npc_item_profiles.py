@@ -1,4 +1,4 @@
-"""Physical custody for explicit, pinned first-party NPC recipe inputs and rewards."""
+"""Physical custody for explicit, pinned NPC trades, recipes and rewards."""
 import hashlib
 import json
 
@@ -24,8 +24,11 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         if hashlib.sha256(raw).hexdigest() != entry['sha256']:
             raise ValueError('AUTHORED_NPC_CUSTODY_AUTHORING_PIN')
         document = json.loads(raw)
-        if document.get('quest') != entry['quest']:
-            raise ValueError('AUTHORED_NPC_CUSTODY_QUEST')
+        if 'quest' in entry:
+            if document.get('quest') != entry['quest']:
+                raise ValueError('AUTHORED_NPC_CUSTODY_QUEST')
+        elif document.get('schema') != 'OTERYN_AUTHORED_NPC_SHOP_ITEMS/v1':
+            raise ValueError('AUTHORED_NPC_CUSTODY_SHOP_SCHEMA')
         keys.update(key for key, _, _ in references.item_references(document))
     if not 1 <= len(keys) <= 128:
         raise ValueError('AUTHORED_NPC_CUSTODY_BOUNDS')

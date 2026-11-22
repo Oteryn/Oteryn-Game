@@ -407,7 +407,11 @@ impl NpcTalkBook {
                 format_args!("{}\0{}", REWARD_CALLBACKS.join("\0"), source),
                 REWARD_GREETINGS.join("\0"),
                 crate::content::npc_catalogue::healing::DATA,
-                crate::content::npc_catalogue::travel::revision_material(),
+                format_args!(
+                    "{}\0{}",
+                    crate::content::npc_catalogue::travel::revision_material(),
+                    crate::content::npc_catalogue::travel::CRYSTAL_HELPERS,
+                ),
                 YASIR_SOURCE,
                 YASIR_GREET,
                 YASIR_FAREWELL,
@@ -465,6 +469,23 @@ impl NpcTalkBook {
                 .iter()
                 .filter_map(|reference| model.services().get(reference))
                 .any(|service| service.bank);
+            let literal_shop_focus = matches!(
+                reference.key.as_str(),
+                "oteryn:npc.alexander"
+                    | "oteryn:npc.asima"
+                    | "oteryn:npc.aurelia"
+                    | "oteryn:npc.billy"
+                    | "oteryn:npc.carlos"
+                    | "oteryn:npc.dixi"
+                    | "oteryn:npc.frodo"
+                    | "oteryn:npc.hyacinth"
+                    | "oteryn:npc.lily"
+                    | MORDECAI
+                    | "oteryn:npc.obi"
+                    | "oteryn:npc.sinatuki"
+                    | "oteryn:npc.willie"
+                    | "oteryn:npc.zethra"
+            );
             let mut journal_fallback = false;
             let (greeting_reply, farewell_reply, topic_reply, dialogue_keywords) = if native_quest
                 && matches!(
@@ -610,12 +631,9 @@ impl NpcTalkBook {
                     None,
                     Vec::new(),
                 )
-            } else if matches!(
-                reference.key.as_str(),
-                "oteryn:npc.frodo" | MORDECAI | "oteryn:npc.sinatuki"
-            ) {
-                // Use the pinned focus messages where supplied, with Crystal's defaults
-                // for Sinatuki. Only literal, single-line keywords are supported here.
+            } else if literal_shop_focus {
+                // Use source focus messages and Crystal's handler defaults.
+                // Only literal, single-line keywords are supported here.
                 let Some(dialogue) = &npc.bank_dialogue else {
                     continue;
                 };
@@ -774,6 +792,13 @@ impl NpcTalkBook {
                     None,
                     Vec::new(),
                 )
+            } else if native_quest && reference.key == "oteryn:npc.kevin" {
+                (
+                    YASIR_GREET.into(),
+                    "Good bye, |PLAYERNAME|.".into(),
+                    None,
+                    Vec::new(),
+                )
             } else if native_quest && npc.dialogue.is_some() {
                 // Conditional native greeting rules own the text. An absent literal
                 // greeting still admits focus so that their reply or dismissal runs.
@@ -832,13 +857,9 @@ impl NpcTalkBook {
                         || reward_callback_npc(&reference.key)
                         || matches!(
                             reference.key.as_str(),
-                            "oteryn:npc.al_dee"
-                                | "oteryn:npc.frodo"
-                                | MORDECAI
-                                | "oteryn:npc.seymour"
-                                | "oteryn:npc.sinatuki"
-                                | "oteryn:npc.uzgod"
+                            "oteryn:npc.al_dee" | "oteryn:npc.seymour" | "oteryn:npc.uzgod"
                         )
+                        || literal_shop_focus
                         || quest_merchant::contains(&reference.key)
                         || native_npcs.contains(&reference.key.as_str())
                         || journal_fallback,
@@ -1329,6 +1350,218 @@ mod tests {
         assert!(!asks_to_trade("ariki"));
         assert!(asks_to_trade_for("oteryn:npc.sam", "trade"));
         assert!(!asks_to_trade_for(YASIR, "marikina"));
+        Ok(())
+    }
+
+    #[test]
+    fn crystal_trade_prices_and_variants_reach_the_shop() -> Result<(), String> {
+        #[derive(serde::Deserialize)]
+        struct Source {
+            shops: Vec<Shop>,
+        }
+        #[derive(serde::Deserialize)]
+        struct Shop {
+            npc: String,
+            offers: Vec<Offer>,
+        }
+        #[derive(serde::Deserialize)]
+        struct Offer {
+            item: u32,
+            direction: crate::content::ProjectV2ServiceOfferDirection,
+            unit_price: u64,
+            sub_type: Option<u16>,
+        }
+        let source: Source = serde_json::from_str(include_str!(
+            "../../../../content/services/trade/crystal-npc-trade.authoring.json"
+        ))
+        .map_err(|error| error.to_string())?;
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|error| format!("{error:?}"))?;
+        let book = NpcTalkBook::from_model(&model);
+        let mut missing = Vec::new();
+        for shop in source.shops {
+            let npc = format!("oteryn:npc.{}", shop.npc);
+            for expected in shop.offers {
+                let item = format!("oteryn:item.tibia.i{}", expected.item);
+                if !book.get(&npc).is_some_and(|entry| {
+                    entry.offers().iter().any(|offer| {
+                        offer.item.key == item
+                            && offer.direction == expected.direction
+                            && offer.unit_price == expected.unit_price
+                            && offer.sub_type == expected.sub_type
+                    })
+                }) {
+                    missing.push(format!(
+                        "{npc}/{item}/{:?}/{}",
+                        expected.direction, expected.unit_price
+                    ));
+                }
+            }
+        }
+        let cael = book
+            .get("oteryn:npc.cael")
+            .ok_or("Cael has no focus entry")?;
+        use crate::content::npc_catalogue::quest_shops;
+        let shops = quest_shops::shops()?;
+        for (item, price, tome_count) in [
+            (2965, 5000, 6),
+            (2966, 1000, 6),
+            (10216, 2500, 11),
+            (10288, 5000, 12),
+        ] {
+            let item = format!("oteryn:item.tibia.i{item}");
+            let Some(offer) = cael
+                .offers()
+                .iter()
+                .find(|offer| offer.item.key == item && offer.unit_price == price)
+            else {
+                missing.push(format!("Cael/{item}/{price}"));
+                continue;
+            };
+            let guarded = quest_shops::required(
+                shops,
+                "oteryn:npc.cael",
+                &offer.item,
+                offer.direction,
+                price,
+                1,
+            )?
+            .ok_or("Cael's offer lacks a tome requirement")?;
+            assert!(!quest_shops::eligible(guarded, |_| None));
+            assert!(!quest_shops::eligible(guarded, |_| Some(tome_count - 1)));
+            assert!(quest_shops::eligible(guarded, |requirement| {
+                assert!(requirement.track.ends_with("/tomeof_knowledge"));
+                Some(tome_count)
+            }));
+        }
+        assert!(missing.is_empty(), "{missing:?}");
+        Ok(())
+    }
+
+    #[test]
+    fn crystal_npc_services_reach_production_talk_book() -> Result<(), String> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|error| format!("{error:?}"))?;
+        let book = NpcTalkBook::from_model(&model);
+        let mut missing = Vec::new();
+        for stem in ["adrian", "flavius"] {
+            let key = format!("oteryn:npc.{stem}");
+            if !book.get(&key).is_some_and(NpcTalkEntry::bank) {
+                missing.push(key);
+            }
+        }
+        for stem in ["isimov", "rahkem", "rock_with_a_soft_spot", "tyrias"] {
+            let key = format!("oteryn:npc.{stem}");
+            if !book.get(&key).is_some_and(|entry| entry.premium_services.iter().any(|service|
+                matches!(service, crate::content::npc_catalogue::premium_services::PremiumNpcService::Blessing(blessing)
+                    if blessing.service == "oteryn:service.blessing.twist_of_fate")
+            )) {
+                missing.push(key);
+            }
+        }
+        for stem in [
+            "alexander",
+            "asima",
+            "aurelia",
+            "billy",
+            "carlos",
+            "dixi",
+            "hyacinth",
+            "lily",
+            "obi",
+            "willie",
+            "zethra",
+        ] {
+            let key = format!("oteryn:npc.{stem}");
+            if !book
+                .get(&key)
+                .is_some_and(|entry| !entry.offers().is_empty())
+            {
+                missing.push(key);
+            }
+        }
+        for (stem, keyword, fare, premium, arrival, gate) in [
+            ("captain_jack", "tibia", 0, false, (32204, 31756, 6), None),
+            ("eremo", "cormaya", 0, false, (33288, 31956, 6), None),
+            (
+                "ferryman_kamil",
+                "meluna",
+                0,
+                false,
+                (32088, 32470, 7),
+                None,
+            ),
+            (
+                "ferryman_kamil_meluna",
+                "fibula",
+                0,
+                false,
+                (32153, 32457, 7),
+                None,
+            ),
+            (
+                "harlow_vengoth",
+                "yalahar",
+                0,
+                false,
+                (32837, 31366, 7),
+                None,
+            ),
+            ("hawkhurst", "passage", 400, false, (33710, 32602, 6), None),
+            (
+                "hawkhurst_ingol",
+                "passage",
+                400,
+                false,
+                (33356, 31983, 7),
+                None,
+            ),
+            ("kendra", "thais", 180, true, (32259, 32262, 7), None),
+            ("tonar", "passage", 0, false, (33070, 32916, 7), None),
+        ] {
+            let key = format!("oteryn:npc.{stem}");
+            let route = book.get(&key).and_then(|entry| {
+                entry
+                    .travel_routes
+                    .iter()
+                    .find(|route| route.keyword == keyword && !route.held)
+            });
+            if let Some(binding) = route {
+                let route = &binding.route;
+                assert_eq!(
+                    (route.price, route.premium, binding.quest_gate.as_deref()),
+                    (fare, premium, gate),
+                    "{key}"
+                );
+                assert_eq!(
+                    (
+                        route.destination.x,
+                        route.destination.y,
+                        route.destination.floor
+                    ),
+                    arrival,
+                    "{key}"
+                );
+                assert_eq!(binding.postman, matches!(stem, "kendra" | "tonar"), "{key}");
+            } else {
+                missing.push(format!("{key}/{keyword}"));
+            }
+        }
+        assert!(missing.is_empty(), "{missing:?}");
         Ok(())
     }
 

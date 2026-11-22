@@ -553,7 +553,7 @@ def validate_native_bank_admission(declarations: Any) -> None:
     s10 = load(ROOT / "content/npcs/s10-nonquest.json")
     keys = {row["key"] for row in s10["bankers"]}
     expected_keys = {"oteryn:npc." + key for key in (
-        "atur ebenizer eighty elgar eva ferks finarfin gnomillion jefrey jessica kaya kepar lokur murim "
+        "adrian atur ebenizer eighty elgar eva ferks finarfin flavius gnomillion jefrey jessica kaya kepar lokur murim "
         "muzir naji raffael rokyn siestaar sissek suzy tesha virgil znozel wentworth").split()}
     require(keys == expected_keys and len(s10["bankers"]) == len(keys), "S10_BANK_CLOSED_SOURCE_SET")
     standard_ref = {"family": "Service", **standard["identity"]}

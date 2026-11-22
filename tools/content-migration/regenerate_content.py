@@ -834,6 +834,8 @@ def main() -> int:
     questpc7_thaian_authoring.install(ROOT)
     from buddel_travel import install_buddel
     install_buddel(ROOT, WORLD)
+    from crystal_npc_trade import install_crystal_npc_trade
+    install_crystal_npc_trade(ROOT, WORLD)
     canonicalize_world()
     run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
     refresh_source_cohort_extent()
