@@ -165,9 +165,15 @@ pub(super) fn quests(panel: &QuestPanel, page: usize, hide_completed: bool) -> P
             .to_owned()
     } else {
         format!(
-            "{} quests · {} completed · {} tracked / 10 · Page {} / {}",
+            "{} quests · {} completed · {} hidden · {} tracked / 10 · Page {} / {}",
             visible.len(),
             panel.state.list.iter().filter(|q| q.completed).count(),
+            panel
+                .state
+                .list
+                .iter()
+                .filter(|q| panel.hidden.contains(&q.quest_index))
+                .count(),
             panel.state.log.tracked.len(),
             page + 1,
             pages
