@@ -31,7 +31,7 @@ impl State {
             self.body = if self.calendar {
                 browser.month()
             } else {
-                browser.news()
+                browser.admission_news()
             };
         }
     }
@@ -52,6 +52,56 @@ enum Action {
 pub(super) fn install(app: &mut App) {
     app.add_message::<bevy::input::keyboard::KeyboardInput>();
     app.add_systems(Update, (keyboard, project).chain().after(super::project));
+}
+pub(super) fn featured_hint(commands: &mut Commands, skins: &Skins) -> Entity {
+    use std::hash::{BuildHasher, RandomState};
+    let hints = [
+        (
+            "control-battle",
+            "Battle",
+            "Use the Battle List filters to find a nearby creature, then select it to attack.",
+        ),
+        (
+            "control-spellbook",
+            "Spells",
+            "Open Spellbook to browse spells and check their requirements.",
+        ),
+    ];
+    let index = RandomState::new().hash_one("login hint") as usize % hints.len();
+    let (key, fallback, message) = hints[index];
+    let hint = commands
+        .spawn((
+            Name::new("login.featured_hint"),
+            source::frame(skins.inset.clone(), [4.; 4]),
+            Node {
+                position_type: PositionType::Absolute,
+                bottom: px(4.),
+                width: px(420.),
+                max_width: percent(95.),
+                padding: UiRect::all(px(6.)),
+                column_gap: px(8.),
+                align_items: AlignItems::Center,
+                ..default()
+            },
+            bevy::picking::Pickable::IGNORE,
+        ))
+        .id();
+    let icon = crate::bevy_shell::game_ui::art::spawn(
+        commands,
+        &skins.font,
+        key,
+        fallback,
+        Vec2::splat(32.),
+    );
+    let caption = commands
+        .spawn(source::text(
+            message,
+            source::font(skins.font.clone(), false),
+        ))
+        .insert(TextLayout::default())
+        .id();
+    commands.entity(hint).add_children(&[icon, caption]);
+    hint
 }
 pub(super) fn setup(commands: &mut Commands, skins: &Skins) {
     let modal = commands

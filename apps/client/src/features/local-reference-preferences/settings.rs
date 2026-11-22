@@ -115,6 +115,8 @@ pub struct ReferencePreferences {
     pub performance: PerformanceSettings,
     #[serde(default)]
     pub stash_stock_order: bool,
+    #[serde(default)]
+    pub outfit_presets: std::collections::BTreeMap<String, [String; 4]>,
     #[serde(skip)]
     pub miscellaneous: MiscellaneousPreferences,
     #[serde(default)]
@@ -301,6 +303,7 @@ impl Default for ReferencePreferences {
             schema_version: custom_actions::PREFERENCES_SCHEMA_VERSION,
             performance: PerformanceSettings::default(),
             stash_stock_order: false,
+            outfit_presets: Default::default(),
             miscellaneous: Default::default(),
             boss_area_opacity: default_boss_opacity(),
             graphics: GraphicsPreferences::default(),

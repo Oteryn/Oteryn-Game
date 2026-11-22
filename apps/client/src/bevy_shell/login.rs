@@ -245,9 +245,10 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
             },
         ))
         .id();
+    let hint = bulletin::featured_hint(&mut commands, &skins);
     commands
         .entity(modal)
-        .add_children(&[background, top_bar, panel]);
+        .add_children(&[background, hint, top_bar, panel]);
     source::dialog_caption(&mut commands, panel, "Login", skins.font.clone());
     let advanced = commands
         .spawn((

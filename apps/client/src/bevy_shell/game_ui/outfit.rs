@@ -8,6 +8,8 @@ use bevy::{prelude::*, ui_widgets::Activate};
 use oteryn_client_ui::appearance::{Intent, Panel};
 use oteryn_client_ui_bevy as source;
 mod animation;
+mod gallery;
+mod presets;
 mod search;
 const PARTS: [&str; 4] = ["Head", "Primary", "Secondary", "Detail"];
 #[derive(Component)]
@@ -19,6 +21,8 @@ struct Action {
 }
 #[derive(Clone)]
 enum Kind {
+    Gallery(gallery::Action),
+    Preset(presets::Control),
     Preview(animation::Control),
     Outfit(String),
     Addon(u8),
@@ -31,7 +35,9 @@ enum Kind {
 #[derive(Resource, Default)]
 struct State {
     rendered: Option<(u64, Panel)>,
+    gallery: gallery::Gallery,
     riding: Option<bool>,
+    preset: Option<String>,
     search: String,
     dirty: bool,
     playback: animation::Playback,
@@ -103,13 +109,19 @@ fn edit(panel: &mut Panel, kind: &Kind) -> bool {
             panel.fields[3] = colours.join(",");
             true
         }
-        Kind::Preview(_) | Kind::Ok | Kind::Close | Kind::Riding => false,
+        Kind::Gallery(_)
+        | Kind::Preset(_)
+        | Kind::Preview(_)
+        | Kind::Ok
+        | Kind::Close
+        | Kind::Riding => false,
     }
 }
 fn activate(
     event: On<Activate>,
     actions: Query<&Action>,
-    owner: NonSend<HostOwner>,
+    mut owner: NonSendMut<HostOwner>,
+    names: Query<&bevy::text::EditableText, With<presets::NameField>>,
     guard: ModalGuard,
     mut state: ResMut<State>,
 ) {
@@ -129,8 +141,29 @@ fn activate(
         cancel(&play.link);
         return;
     }
+    if let Kind::Gallery(action) = &action.kind {
+        gallery::activate(action, &play.link, &mut state);
+        return;
+    }
+    if let Kind::Preset(control) = &action.kind {
+        presets::activate(
+            &mut owner,
+            &mut state,
+            control,
+            names
+                .single()
+                .ok()
+                .map(|field| field.value().to_string())
+                .unwrap_or_default(),
+        );
+        return;
+    }
     if let Kind::Preview(control) = &action.kind {
         state.playback.edit(control);
+        state.dirty |= matches!(
+            control,
+            animation::Control::Floor | animation::Control::Character | animation::Control::Mount
+        );
         return;
     }
     send(&play.link, &action.kind);
@@ -235,6 +268,8 @@ fn project(
         for entity in &windows {
             commands.entity(entity).despawn();
         }
+        state.gallery = Default::default();
+        state.preset = None;
         state.rendered = None;
         return;
     };
@@ -252,10 +287,13 @@ fn project(
         for entity in &windows {
             commands.entity(entity).despawn();
         }
+        state.gallery = Default::default();
+        state.preset = None;
         state.rendered = None;
         return;
     }
     let generation = owner.generation();
+    state.dirty |= state.gallery.refresh(&play.link);
     let riding = play.link.riding();
     state.dirty |= state.riding != riding;
     state.riding = riding;
@@ -305,6 +343,14 @@ fn project(
     } else {
         search::build(&mut commands, &skin, root, &state.search);
     }
+    presets::build(
+        &mut commands,
+        &skin,
+        root,
+        generation,
+        &owner,
+        state.preset.as_deref(),
+    );
     for key in outfits(&panel)
         .into_iter()
         .filter(|key| search::matches(key, &state.search))
@@ -404,11 +450,13 @@ fn project(
         state.artwork = std::env::var_os(crate::map::ASSET_DIR_ENV)
             .and_then(|root| preview::Assets::load(std::path::Path::new(&root)).ok());
     }
+    gallery::build(&mut commands, &skin, root, generation, &state, &panel);
     if panel.preview().is_some() {
+        let layers = state.playback.layers;
         let pixels = state
             .artwork
             .as_mut()
-            .map(|assets| assets.draw_panel(&panel, 2, 0, false));
+            .map(|assets| assets.draw_layers(&panel, 2, 0, false, layers));
         match pixels {
             Some(Ok(pixels)) => {
                 let image = animation::image(pixels);
@@ -452,6 +500,30 @@ fn project(
         }
     }
     for (control, label) in [
+        (
+            animation::Control::Floor,
+            if state.playback.layers.floor {
+                "Hide floor"
+            } else {
+                "Show floor"
+            },
+        ),
+        (
+            animation::Control::Character,
+            if state.playback.layers.character {
+                "Hide character"
+            } else {
+                "Show character"
+            },
+        ),
+        (
+            animation::Control::Mount,
+            if state.playback.layers.mount {
+                "Hide mount"
+            } else {
+                "Show mount"
+            },
+        ),
         (animation::Control::Left, "Turn left"),
         (animation::Control::Right, "Turn right"),
         (animation::Control::Movement(true), "Movement on"),

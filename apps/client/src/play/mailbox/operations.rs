@@ -85,6 +85,14 @@ impl Mailbox {
         self.dialogue_events(&events);
         self.npc_shop_events(&events);
         for event in &events {
+            if let SessionEvent::ServerSaveCountdown(delta) = event {
+                let duration =
+                    std::time::Duration::from_secs(u64::from(delta.value.minutes_remaining) * 60);
+                self.reward_reset = received_at
+                    .into_std()
+                    .checked_add(duration)
+                    .map(|deadline| (delta.value.ending_epoch, deadline));
+            }
             if let SessionEvent::GatedSnapshotReplaced(delta) = event
                 && delta.value.domain_id == 1
             {

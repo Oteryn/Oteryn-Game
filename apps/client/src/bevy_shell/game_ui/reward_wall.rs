@@ -14,12 +14,33 @@ use bevy::{input_focus::InputFocus, prelude::*, ui_widgets::Activate};
 use oteryn_client_ui::daily_reward::{DailyRewardPanel, Intent};
 #[derive(Component)]
 struct DayCell;
+#[derive(Component)]
+struct ResetClock;
+
+fn update_clock(owner: NonSend<HostOwner>, mut clocks: Query<&mut Text, With<ResetClock>>) {
+    for mut clock in &mut clocks {
+        let label = owner
+            .play
+            .as_ref()
+            .and_then(|play| play.link.reward_reset_deadline())
+            .and_then(|deadline| deadline.checked_duration_since(std::time::Instant::now()))
+            .map(|duration| {
+                let seconds = duration.as_millis().div_ceil(1000);
+                format!("Reward resets in {}:{:02}", seconds / 60, seconds % 60)
+            })
+            .unwrap_or_default();
+        if clock.0 != label {
+            clock.0 = label;
+        }
+    }
+}
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Kind {
     Close,
     Collect,
     History,
     Help(Help),
+    Offers(&'static str),
     Refresh,
     Wall,
 }
@@ -49,7 +70,7 @@ struct State {
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
         .add_message::<bevy::input::keyboard::KeyboardInput>()
-        .add_systems(Update, (keyboard, project).chain());
+        .add_systems(Update, (keyboard, project, update_clock).chain());
 }
 fn collectable(panel: &DailyRewardPanel) -> bool {
     panel.selected
@@ -152,6 +173,11 @@ fn perform(owner: &HostOwner, state: &mut State, control: Control) {
         Kind::Help(help) => {
             state.history = false;
             state.help = (state.help != Some(help)).then_some(help);
+        }
+        Kind::Offers(search) => {
+            if play.link.open_reward_store_offers(search) {
+                play.link.daily_reward_close();
+            }
         }
         Kind::Refresh | Kind::Collect => {
             if play.view.gameplay_input_blocked(&play.link) {

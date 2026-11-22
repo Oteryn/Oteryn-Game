@@ -334,6 +334,7 @@ pub(super) struct Mailbox {
     pub(super) player_typing_shutdown: bool,
     // CL26s3
     pub(super) daily_reward: oteryn_client_ui::daily_reward::DailyRewardPanel,
+    pub(super) reward_reset: Option<(u64, std::time::Instant)>,
     pub(super) daily_reward_shutdown: bool,
     // CL26s4
     pub(super) boss_rewards: oteryn_client_ui::boss_rewards::BossRewardsPanel,
