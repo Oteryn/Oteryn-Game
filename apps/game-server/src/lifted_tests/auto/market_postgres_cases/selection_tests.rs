@@ -148,7 +148,7 @@ fn market_expiry_postgres_drains_unlocked_book_behind_locked_candidate_window() 
         }
         let mut later = offer(101, Side::Buy, 70, time + 101);
         later.definition = definition("oteryn:content.item.bowl", "r1")?;
-        seed(h, &later).await?;
+        seed_expiry_owner(h, &later).await?;
 
         let mut blocker = h.pool.begin().await?;
         let _book = lock_book(&mut blocker, first.book()).await?;
@@ -173,8 +173,8 @@ fn market_expiry_postgres_rechecks_offer_and_refunds_once() -> TestResult {
         let live = offer(61, Side::Buy, 70, time - 1_000);
         let taken = offer(62, Side::Buy, 80, time - LIFETIME_US - 2);
         seed(h, &due).await?;
-        seed(h, &live).await?;
-        seed(h, &taken).await?;
+        seed_expiry_owner(h, &live).await?;
+        seed_expiry_owner(h, &taken).await?;
 
         let runtime_url = format!("{}?options=-c%20role%3Doteryn_game_runtime", h.database.url);
         let runtime = crate::durability::DurabilityRoot::connect_test_runtime(&runtime_url)?;
@@ -206,6 +206,46 @@ fn market_expiry_postgres_rechecks_offer_and_refunds_once() -> TestResult {
     })
 }
 
+async fn seed_expiry_owner(h: &Harness, offer: &Offer) -> TestResult {
+    seed(h, offer).await?;
+    // The storage fixture inserts a legacy root without a creation receipt.
+    // Retain the matching v2 receipt and advance the issuer floor before opening authority.
+    let result = sqlx::query(
+        "WITH receipt AS (
+            INSERT INTO game_character_operation_receipts(
+                operation_id,command_binding,account_id,character_id,world_id,character_revision,
+                event_id,occurred_at,server_build_id,transaction_id,issuer_decision_id,
+                intent_source_revision,issued_at_source,expires_at_source)
+            SELECT ids.operation_id,
+                decode('02','hex') || uuid_send(ids.decision_id) || int8send(f.source_revision + 1)
+                || uuid_send(ids.operation_id) || uuid_send(r.account_id) || uuid_send(r.world_id)
+                || int8send(1) || int8send(120)
+                || int2send(octet_length(r.profile_revision)::smallint) || convert_to(r.profile_revision,'UTF8')
+                || int2send(octet_length(r.ruleset_revision)::smallint) || convert_to(r.ruleset_revision,'UTF8')
+                || int2send(octet_length(r.content_revision)::smallint) || convert_to(r.content_revision,'UTF8')
+                || int2send(octet_length(r.starter_template_revision)::smallint) || convert_to(r.starter_template_revision,'UTF8')
+                || int2send(octet_length(r.name)::smallint) || convert_to(r.name,'UTF8'),
+                r.account_id,r.character_id,r.world_id,1,game_character_uuid_v7(),1,'test/1',
+                game_character_uuid_v7(),ids.decision_id,f.source_revision + 1,1,120
+            FROM game_character_roots r
+            CROSS JOIN game_character_bootstrap_intent_floors f
+            CROSS JOIN (SELECT game_character_uuid_v7() AS operation_id,
+                               game_character_uuid_v7() AS decision_id) ids
+            WHERE r.character_id=encode($1,'hex')::uuid AND f.issuer_scope=1
+            RETURNING intent_source_revision,issuer_decision_id,command_binding
+         )
+         UPDATE game_character_bootstrap_intent_floors f
+         SET source_revision=receipt.intent_source_revision,
+             issuer_decision_id=receipt.issuer_decision_id,intent_binding=receipt.command_binding
+         FROM receipt WHERE f.issuer_scope=1",
+    )
+    .bind(offer.character.as_bytes().as_slice())
+    .execute(&h.pool)
+    .await?;
+    assert_eq!(result.rows_affected(), 1, "expiry fixture creation receipt");
+    Ok(())
+}
+
 fn run_expiry_case<F>(admin: String, tag: &'static str, body: F) -> TestResult
 where
     F: AsyncFnOnce(&Harness) -> TestResult + Send + 'static,
@@ -232,7 +272,10 @@ where
 async fn advance_market(h: &Harness, root: &crate::durability::DurabilityRoot) -> TestResult<bool> {
     root.await_ready().await?;
     let seal = h.recovery.seal_current().map_err(harness::debug)?;
-    let authority = root.open_character_authority(&seal).await.map_err(harness::debug)?;
+    let authority = root
+        .open_character_authority(&seal)
+        .await
+        .map_err(|error| format!("open Market expiry Character authority: {error:?}"))?;
     root.await_ready().await?;
     let world = crate::foundation::WorldId::decode(&id(WORLD))?;
     Ok(root.advance_market(&authority, &h.node, world).await?)
