@@ -798,21 +798,29 @@ impl ChannelRuntimeV1 {
         &self,
         point: spawn::SpawnPoint,
     ) -> Result<spawn::PointTiming, CarrierError> {
+        use oteryn_gameplay_foundation::scheduled_events::{
+            NEUTRAL_RATE, current_rates, scale_respawn_delay_micros,
+        };
+
         let definition = &self.spawn_realization(point)?.definition;
         let ordinal = usize::from(point.ordinal);
         let mut timing = definition.timing(ordinal)?;
-        if self.daily_boost.as_ref().is_some_and(|choice| {
+        let event_rate = current_rates().spawn;
+        let boosted = self.daily_boost.as_ref().is_some_and(|choice| {
             choice.creature == definition.points[ordinal].creature_target_identity
-        }) {
-            // Canary spawn_monster.cpp:26,381-389 @47dfd51f: boost rate 2,
-            // with the same one-second minimum after applying rates.
-            timing.respawn_delay_micros = (timing.respawn_delay_micros / 2).max(1_000_000);
-        }
-        timing.respawn_delay_micros =
-            oteryn_gameplay_foundation::scheduled_events::scale_respawn_delay_micros(
-                timing.respawn_delay_micros,
-                oteryn_gameplay_foundation::scheduled_events::current_rates().spawn,
-            );
+        });
+        timing.respawn_delay_micros = if boosted {
+            // Crystal 201189f8 spawn_monster.cpp:443-458 combines both rates before
+            // imposing the one-second minimum and one-day maximum.
+            let combined_rate = (2 * u128::from(event_rate)).max(1);
+            let scaled =
+                u128::from(timing.respawn_delay_micros) * u128::from(NEUTRAL_RATE) / combined_rate;
+            u64::try_from(scaled)
+                .unwrap_or(u64::MAX)
+                .clamp(1_000_000, 86_400_000_000)
+        } else {
+            scale_respawn_delay_micros(timing.respawn_delay_micros, event_rate)
+        };
         Ok(timing)
     }
     pub(super) fn spawn_cell(
