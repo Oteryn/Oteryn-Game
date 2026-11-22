@@ -409,11 +409,10 @@ impl SettingsState {
             self.preferences.impact_records = records;
             if let Some(store) = &mut self.store {
                 #[cfg(bevy_shell)]
-                let result = if self.background_preferences {
-                    store.apply_in_background(self.preferences.clone())
-                } else {
-                    store.apply(self.preferences.clone())
-                };
+                let result = store.save_impact_records(
+                    self.preferences.clone(),
+                    self.background_preferences,
+                );
                 #[cfg(not(bevy_shell))]
                 let result = store.apply(self.preferences.clone());
                 if let Err(error) = result {

@@ -1,6 +1,36 @@
 use super::*;
 
 impl PreferenceStore {
+    pub(in super::super) fn save_impact_records(
+        &mut self,
+        preferences: ReferencePreferences,
+        background: bool,
+    ) -> io::Result<()> {
+        let records = preferences.impact_records;
+        let result = if background {
+            self.apply_in_background(preferences)
+        } else {
+            self.apply(preferences)
+        };
+        match result {
+            Err(error) if self.saving() && error.kind() == io::ErrorKind::WouldBlock => {
+                self.deferred_impact_records = Some(records);
+                self.preferences.impact_records = records;
+                Ok(())
+            }
+            other => other,
+        }
+    }
+
+    pub(super) fn flush_impact_records(&mut self) -> io::Result<()> {
+        if let Some(records) = self.deferred_impact_records.take() {
+            let mut preferences = self.preferences.clone();
+            preferences.impact_records = records;
+            self.apply_in_background(preferences)?;
+        }
+        Ok(())
+    }
+
     pub(in super::super) fn apply_in_background(
         &mut self,
         preferences: ReferencePreferences,
@@ -122,7 +152,7 @@ impl PreferenceStore {
     }
 
     pub(in super::super) fn poll_background_save(&mut self) -> Option<Vec<SaveResult>> {
-        let results = bevy_tasks::futures::check_ready(self.save_task.as_mut()?)?;
+        let mut results = bevy_tasks::futures::check_ready(self.save_task.as_mut()?)?;
         self.save_task = None;
         self.queued = 0;
         self.replacing = false;
@@ -137,6 +167,9 @@ impl PreferenceStore {
             .find_map(|item| item.as_ref().ok()?.as_ref())
         {
             self.preferences = restored.clone();
+        }
+        if let Err(error) = self.flush_impact_records() {
+            results.push(Err(error));
         }
         Some(results)
     }

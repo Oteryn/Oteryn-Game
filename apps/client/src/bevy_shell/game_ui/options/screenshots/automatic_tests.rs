@@ -288,3 +288,46 @@ fn character_impact_records_survive_restart_and_master_cancels_queued_automatic_
     }
     Ok(())
 }
+
+#[test]
+fn burst_of_impact_records_saves_the_last_record_for_the_outgoing_character()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::analyser_transport::{AnalyserFact, AnalyserImpact};
+    let root = tempfile::tempdir()?;
+    let base = root.path().join("prefs.json");
+    let mut state = crate::play::SettingsState::new(Some(base.clone()));
+    state.select_character(Some([1; 16]));
+    bevy_tasks::IoTaskPool::get_or_init(|| {
+        bevy_tasks::TaskPoolBuilder::new().num_threads(1).build()
+    });
+    state.use_background_preferences();
+    let (link, _commands, outbox) = crate::play::play_channel();
+    let now = std::time::Instant::now();
+    for value in 1_u32..=12 {
+        outbox.push(vec![oteryn_session::SessionEvent::AnalyserFacts(
+            oteryn_session::AppliedDelta {
+                server_sequence: value.into(),
+                base_revision: (value - 1).into(),
+                new_revision: value.into(),
+                value: vec![AnalyserFact::Impact(AnalyserImpact::Healing(
+                    value.try_into()?,
+                ))],
+            },
+        )]);
+        state.prepare_screenshots(now, Some(&link));
+    }
+    state.select_character(Some([2; 16]));
+    let deadline = now + std::time::Duration::from_secs(10);
+    while state.local_preference_writes_pending() {
+        state.poll_background_save();
+        if std::time::Instant::now() >= deadline {
+            return Err("character preference writer stalled".into());
+        }
+        std::thread::yield_now();
+    }
+    assert_eq!(state.preferences.impact_records, [0, 0]);
+    let mut reopened = crate::play::SettingsState::new(Some(base));
+    reopened.select_character(Some([1; 16]));
+    assert_eq!(reopened.preferences.impact_records, [0, 12]);
+    Ok(())
+}

@@ -31,6 +31,8 @@ pub struct PreferenceStore {
     #[cfg(bevy_shell)]
     queued: usize,
     #[cfg(bevy_shell)]
+    deferred_impact_records: Option<[u32; 2]>,
+    #[cfg(bevy_shell)]
     io_baseline: Option<std::sync::Arc<std::sync::Mutex<ReferencePreferences>>>,
 }
 
@@ -153,6 +155,8 @@ impl PreferenceStore {
             #[cfg(bevy_shell)]
             queued: 0,
             #[cfg(bevy_shell)]
+            deferred_impact_records: None,
+            #[cfg(bevy_shell)]
             io_baseline: None,
         }
     }
@@ -174,6 +178,8 @@ impl PreferenceStore {
             replacing: false,
             #[cfg(bevy_shell)]
             queued: 0,
+            #[cfg(bevy_shell)]
+            deferred_impact_records: None,
             #[cfg(bevy_shell)]
             io_baseline: None,
         })
@@ -211,6 +217,11 @@ impl PreferenceStore {
 #[cfg(bevy_shell)]
 impl Drop for PreferenceStore {
     fn drop(&mut self) {
+        // No further submissions can arrive. Chain the one coalesced save before detaching.
+        self.queued = 0;
+        if let Err(error) = self.flush_impact_records() {
+            eprintln!("Could not save impact records: {error}");
+        }
         if let Some(task) = self.save_task.take() {
             bevy_tasks::IoTaskPool::get()
                 .spawn(async move {

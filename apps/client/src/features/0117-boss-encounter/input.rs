@@ -14,28 +14,34 @@ impl PlayLink {
         if !panel.selected || panel.pending {
             return false;
         }
-        panel.hidden_stages = 0;
-        panel.hidden_rarities = 0;
+        let mut candidate = panel.clone();
+        candidate.hidden_stages = 0;
+        candidate.hidden_rarities = 0;
         let known = panel
             .boss_names
             .get(key)
             .filter(|name| name.len() <= 48)
             .cloned()
             .unwrap_or_default();
-        browse(panel, &known, BossCategory::All, false);
-        enqueue(&mut mailbox, &self.commands, Intent::Catalogue);
-        let panel = &mut mailbox.boss_encounter;
-        panel.tracker_target = panel.pending.then(|| key.to_owned());
-        panel.pending
+        browse(&mut candidate, &known, BossCategory::All, false);
+        enqueue_panel(&mut candidate, &self.commands, Intent::Catalogue);
+        if !candidate.pending {
+            panel.feedback = candidate.feedback;
+            panel.tracker_target = None;
+            return false;
+        }
+        candidate.tracker_target = Some(key.to_owned());
+        *panel = candidate;
+        true
     }
     #[cfg(bevy_shell)]
     pub(crate) fn tracked_boss_continue(&self) {
         let mut mailbox = lock(&self.mailbox);
         let panel = &mut mailbox.boss_encounter;
         if panel.tracker_target.is_some() && !panel.pending {
-            enqueue(&mut mailbox, &self.commands, Intent::CatalogueNext);
-            if !mailbox.boss_encounter.pending {
-                mailbox.boss_encounter.tracker_target = None;
+            enqueue_panel(panel, &self.commands, Intent::CatalogueNext);
+            if !panel.pending {
+                panel.tracker_target = None;
             }
         }
     }
@@ -106,7 +112,14 @@ pub(in crate::play) fn enqueue(
     commands: &UnboundedSender<PlayCommand>,
     intent: Intent,
 ) {
-    let panel = &mut mailbox.boss_encounter;
+    enqueue_panel(&mut mailbox.boss_encounter, commands, intent);
+}
+
+fn enqueue_panel(
+    panel: &mut BossEncounterPanel,
+    commands: &UnboundedSender<PlayCommand>,
+    intent: Intent,
+) {
     if panel
         .fields
         .iter()
@@ -128,8 +141,8 @@ pub(in crate::play) fn enqueue(
     if let Some(command) = request(panel, intent)
         && commands.send(PlayCommand::Feature(command)).is_err()
     {
-        mailbox.boss_encounter.pending = false;
-        mailbox.boss_encounter.feedback = Some(tr!("The session has ended"));
+        panel.pending = false;
+        panel.feedback = Some(tr!("The session has ended"));
     }
 }
 
