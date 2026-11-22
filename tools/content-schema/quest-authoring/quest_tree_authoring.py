@@ -338,6 +338,40 @@ def tree_validator():
     return jsonschema.Draft202012Validator(schema, registry=registry)
 
 
+
+def reconcile_alawar_key_claim(root, records, claims):
+    """Clear the live key-delivery hold after preserving the historical recipe witness."""
+    quest_key = 'oteryn:quest.alawar_s_vault_quest'
+    claim_key = 'oteryn:reward-claim.quest.key.id4502'
+    claim = next(c for c in claims if c['identity']['key'] == claim_key)
+    native = claim.get('native_contents', {})
+    placements = native.get('placements', [])
+    definition = next(row['definition'] for row in records if row['definition']['identity']['key'] == quest_key)
+    variant = claim.get('source_variant', {})
+    capture = 'tools/content-schema/world-authoring/samples/quest-chest-bindings/qa-batch2.json'
+    index = read(root, 'content/world/placements/index.json')
+    bindings = index['source'].get('quest_chests', {}).get('captures', [])
+    exact_placement = {'claim': claim_key, 'position': [32201, 31571, 10],
+                       'appearance': 2472, 'unique': 5008, 'source_line': 435}
+    if not (
+        claim['quest'] == definition['source_refs']['quest']
+        and claim['definition_profile'] == 'authored_variant_v1'
+        and claim['data_holds'] == []
+        and variant.get('source_data', {}).get('status') == 'COMPLETE'
+        and native.get('schema') == 'OTERYN_NATIVE_CONTAINER_REWARD/v1'
+        and native.get('revision') == '201189f871d23597b82caf88fd611454a2ddefb8'
+        and native.get('source_sha256') == digest(root, 'tools/content-schema/reward-claim-authoring/container_native_source.json')
+        and len(placements) == 1
+        and placements[0]['unique_id'] == exact_placement['unique']
+        and placements[0]['contents'][0].get('key_number') == 4502
+        and placements[0]['contents'][0]['item']['key'] == 'oteryn:item.tibia.i2970'
+        and {'path': capture, 'sha256': digest(root, capture)} in bindings
+        and exact_placement in read(root, capture)['bindings']
+    ):
+        raise ValueError('Alawar key 4502 lost its native claim or World placement evidence')
+    hold = {'code': 'claim_native_lowering_missing', 'source_key': claim['provenance']['pilot_key']}
+    definition['missing_data'].remove(hold)
+
 def expected_files(root, include_registration=False):
     quests = read(root, SOURCE)['quests']
     claims = claim_catalogue(root)
@@ -378,6 +412,7 @@ def expected_files(root, include_registration=False):
     records = attach_donor_data(root, records)
     from quest_soul_war_followup import apply as apply_soul_war_followup
     records, _ = apply_soul_war_followup(root, records)
+    reconcile_alawar_key_claim(root, records, claims)
     from quest_item_keys import catalogue, enrich, item_definitions, validate_references
     items = item_definitions(root)
     recipes = [row['definition'].get('recipe') or

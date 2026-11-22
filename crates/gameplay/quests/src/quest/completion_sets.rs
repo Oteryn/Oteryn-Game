@@ -20,6 +20,16 @@ pub struct CompletionSet {
     /// These members can advance only from their own durable once-claim MINT.
     #[serde(default, skip_serializing_if = "is_false")]
     pub mint_only: bool,
+    /// Optional final interaction and personal progress to settle alongside the claims.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    finish: Option<Finish>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+struct Finish {
+    transition: String,
+    minimum_tracks: BTreeMap<String, i64>,
 }
 
 impl QuestStateCatalogue {
@@ -32,17 +42,24 @@ impl QuestStateCatalogue {
         self.completion_sets.get(&transition.quest).map_or(
             self.completes_after(transition, changes),
             |rule| {
-                rule.groups.iter().all(|group| {
-                    group.iter().any(|key| {
-                        changes
+                let value = |key: &str| {
+                    changes
+                        .iter()
+                        .find(|change| change.track == key)
+                        .map(|change| change.after)
+                        .or_else(|| stored.get(key).copied())
+                        .unwrap_or(0)
+                };
+                rule.finish.as_ref().is_none_or(|finish| {
+                    finish.transition == transition.key
+                        && finish
+                            .minimum_tracks
                             .iter()
-                            .find(|change| &change.track == key)
-                            .map(|change| change.after)
-                            .or_else(|| stored.get(key).copied())
-                            .unwrap_or(0)
-                            >= 1
-                    })
-                })
+                            .all(|(key, minimum)| value(key) >= *minimum)
+                }) && rule
+                    .groups
+                    .iter()
+                    .all(|group| group.iter().any(|key| value(key) >= 1))
             },
         )
     }
@@ -63,6 +80,17 @@ fn parse(text: &str) -> Result<BTreeMap<String, CompletionSet>, String> {
     for (quest, rule) in &rules {
         if !super::valid_quest_key(quest) || rule.groups.is_empty() || rule.groups.len() > 32 {
             return Err("completion set bounds".into());
+        }
+        if rule.finish.as_ref().is_some_and(|finish| {
+            !super::valid_quest_key(&finish.transition)
+                || finish.minimum_tracks.is_empty()
+                || finish.minimum_tracks.len() > 16
+                || finish
+                    .minimum_tracks
+                    .iter()
+                    .any(|(key, minimum)| !super::valid_quest_key(key) || *minimum <= 0)
+        }) {
+            return Err("completion finish bounds".into());
         }
         for group in &rule.groups {
             if group.is_empty() || group.len() > 32 {
@@ -180,6 +208,22 @@ pub fn extend(base: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> 
         if declaration.groups.is_empty() || declaration.groups.len() > 32 {
             return Err("completion set bounds".into());
         }
+        if let Some(finish) = &declaration.finish {
+            if base
+                .transition(&finish.transition)
+                .is_none_or(|transition| transition.quest != *quest)
+                || finish.minimum_tracks.iter().any(|(key, minimum)| {
+                    base.track(key).map_or_else(
+                        || base.authored_bindings.is_some(),
+                        |track| track.quest != *quest || !(track.min..=track.max).contains(minimum),
+                    )
+                })
+            {
+                return Err(
+                    "completion finish requires its exact quest tracks and transition".into(),
+                );
+            }
+        }
         let mut seen = BTreeSet::new();
         let mut groups = Vec::new();
         for group in &declaration.groups {
@@ -209,6 +253,7 @@ pub fn extend(base: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> 
             CompletionSet {
                 groups,
                 mint_only: declaration.mint_only,
+                finish: declaration.finish.clone(),
             },
         );
     }
@@ -241,7 +286,17 @@ impl QuestStateCatalogue {
         self.completion_sets
             .get(quest)
             .into_iter()
-            .flat_map(|rule| rule.groups.iter().flatten().map(String::as_str))
+            .flat_map(|rule| {
+                rule.groups
+                    .iter()
+                    .flatten()
+                    .chain(
+                        rule.finish
+                            .iter()
+                            .flat_map(|finish| finish.minimum_tracks.keys()),
+                    )
+                    .map(String::as_str)
+            })
     }
 }
 
@@ -262,6 +317,7 @@ mod tests {
             quest.into(),
             CompletionSet {
                 mint_only: false,
+                finish: None,
                 groups: vec![
                     vec![keys[0].clone(), keys[1].clone()],
                     vec![keys[2].clone()],
@@ -397,6 +453,7 @@ mod mint_authority_tests {
         let mut rule = CompletionSet {
             groups: vec![vec!["kv/a".into()], vec!["kv/b".into()]],
             mint_only: false,
+            finish: None,
         };
         assert_eq!(
             serde_json::to_string(&rule).map_err(|e| e.to_string())?,
