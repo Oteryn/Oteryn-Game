@@ -19,6 +19,7 @@ import qb_barbarian
 import qb_citizen_warrior
 import wizard_cosmetics
 import engoutfit_m36
+import qengine_mounts
 import qmech_m39
 from jsonschema import Draft202012Validator
 
@@ -123,6 +124,7 @@ def donor_inputs():
             if sha(raw) != row['sha256']:
                 raise ValueError('donor blob changed: ' + path)
             result[path] = raw
+        result[qengine_mounts.CATALOGUE_INPUT] = qengine_mounts.read_catalogue_xml(corpus, manifest)
     return result
 
 
@@ -135,6 +137,8 @@ def load_module(name, path):
 
 
 def build():
+    rottin = ROOT/'content/quests/npc-callbacks/rottin-wood.json'
+    validate_callbacks(json.loads(rottin.read_bytes()))
     inputs = donor_inputs()
     gameplay=json.loads((ROOT/'content/spells.manifest.json').read_bytes())
     source = {'reference': 'crystal:data/XML/outfits.xml', 'revision': PIN,
@@ -228,8 +232,7 @@ def build():
                         'sex':sex,'compatible_provenance':[PROVENANCE]})
     mount_source = {'reference': 'crystal:data/XML/mounts.xml', 'revision': PIN,
                     'sha256': sha(inputs['data/XML/mounts.xml'])}
-    mount_population = load_module('qengine_mount_population', 'tools/content-schema/quest-authoring/qengine_mounts.py')
-    mounts, mount_mappings = mount_population.populate(ROOT, inputs, looks, mount_source, item_packet)
+    mounts, mount_mappings = qengine_mounts.populate(ROOT, inputs, looks, mount_source, item_packet)
     mappings.extend(mount_mappings)
     lane_programmes=load_module('questpc7_costume_sources','tools/content-schema/quest-authoring/questpc7_outfit_programmes.py')
     lane_programmes.consumptive_mappings(ROOT,outfits,mappings)
@@ -1220,6 +1223,16 @@ def validate_callbacks(document):
             or any(rule['minimum']>rule['maximum'] for rule in inventory)):
             raise ValueError('invalid inventory range '+callback['key'])
         reward=callback.get('give')
+        weighted = callback.get('weighted_rewards', [])
+        if weighted and (not reward or callback.get('world_claim') is not None
+                or callback.get('carried_item') is not None or callback.get('counter') is not None
+                or sum(variant['chance'] for variant in weighted) >= 100
+                or any(variant['reward'].get('key_number') is not None for variant in weighted)):
+            raise ValueError('invalid weighted reward '+callback['key'])
+        if callback.get('per_occurrence_mint', False) and (
+                not reward or callback.get('outfit') is not None or callback.get('outfits')
+                or callback.get('achievement') is not None or callback.get('achievement_progress')):
+            raise ValueError('invalid occurrence mint '+callback['key'])
         if reward and reward.get('text') is not None and len(reward['text'].encode('utf-8'))>7996:
             raise ValueError('literal reward text exceeds UTF-8 byte bound')
         if callback['quest'] in callback.get('requires_completed_quests',[]):
@@ -1242,6 +1255,9 @@ def validate_callbacks(document):
             for t in targets for g in callback.get('forbids_addons',[]))
         value_guard = value_guard or any(t['addons']==0 and t.get('sex') is None and t['outfit'] in callback.get('forbids_outfits',[]) for t in targets)
         value_guard = value_guard or (bool(callback['take']) and callback.get('give') is not None)
+        value_guard = value_guard or (callback.get('per_occurrence_mint', False) and any(
+            op['from']['kind']=='elapsed_at_least' and op['from']['seconds'] > 0
+            and op['effect']['kind']=='set_now' for op in callback.get('state_ops',[])))
         value_guard = value_guard or (callback.get('repeatable', False)
             and bool(callback['take']) and 1 <= callback.get('experience', 0) <= 100000000)
         if callback.get('outfits') and callback.get('outfit') is not None:
@@ -1256,6 +1272,7 @@ def validate_callbacks(document):
                 or callback.get('completes',False) or counter['track'] in all_keys
                 or counter['track'] in {r['track'] for r in callback.get('requires',[])}):
             raise ValueError('invalid owned reward counter '+callback['key'])
+        value_guard = value_guard or (counter is not None and bool(storage or operations))
         if (len(all_keys)+int(counter is not None)>16 or len(all_keys)!=len(set(all_keys))
             or any(len(p['storage'])+len(p.get('state_ops',[]))>8 for p in participants)
             or len({p['quest'] for p in participants})!=len(participants)
@@ -1275,7 +1292,8 @@ def validate_callbacks(document):
             or {r['track'] for r in requires}&{s['track'] for s in storage}
             or any(r['minimum']>r['maximum'] for r in requires)
             or any(s['minimum']>s['maximum'] for s in storage)
-            or (not value_guard and not callback.get('repeatable',False) and all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage))
+            or (not value_guard and not callback.get('repeatable',False)
+                and all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage))
             or (callback.get('repeatable',False) and (
                 not ((callback.get('fee') and callback.get('give'))
                      or (bool(callback['take']) and (callback.get('give')

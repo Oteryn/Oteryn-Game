@@ -13,6 +13,68 @@ use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use oteryn_protocol_oteryn::hotkey_equip::Request;
 use oteryn_protocol_oteryn::item_view::{EquipmentSlot, ItemMoveOutcome, wire_slot};
 
+/// The dispatch stage that produced the existing wire rejection.
+#[derive(Clone, Copy)]
+pub(super) enum RejectionStage {
+    Payload,
+    ItemView,
+    AuthorityUnavailable,
+    TierRequiresCarried,
+    EquipmentReplayConflict,
+    ContainerReplayConflict,
+    ItemFence,
+    Condition,
+    ActionGate,
+    AmmunitionCondition,
+    AmmunitionTrade,
+    AmmunitionCommit,
+    EquipmentItemFence,
+    EquipmentHouse,
+    EquipmentTrade,
+    EquipmentCondition,
+    EquipmentAvailability,
+    EquipmentHouseDigest,
+    EquipmentCommandId,
+    EquipmentRequest,
+    EquipmentCommit,
+}
+
+impl RejectionStage {
+    pub(super) fn log(self, command_id: u64) {
+        let stage = match self {
+            Self::Payload => "payload",
+            Self::ItemView => "item_view",
+            Self::AuthorityUnavailable => "authority_unavailable",
+            Self::TierRequiresCarried => "tier_requires_carried",
+            Self::EquipmentReplayConflict => "equipment_replay_conflict",
+            Self::ContainerReplayConflict => "container_replay_conflict",
+            Self::ItemFence => "item_fence",
+            Self::Condition => "condition",
+            Self::ActionGate => "action_gate",
+            Self::AmmunitionCondition => "ammunition_condition",
+            Self::AmmunitionTrade => "ammunition_trade",
+            Self::AmmunitionCommit => "ammunition_commit",
+            Self::EquipmentItemFence => "equipment_item_fence",
+            Self::EquipmentHouse => "equipment_house",
+            Self::EquipmentTrade => "equipment_trade",
+            Self::EquipmentCondition => "equipment_condition",
+            Self::EquipmentAvailability => "equipment_availability",
+            Self::EquipmentHouseDigest => "equipment_house_digest",
+            Self::EquipmentCommandId => "equipment_command_id",
+            Self::EquipmentRequest => "equipment_request",
+            Self::EquipmentCommit => "equipment_commit",
+        };
+        super::operator_event(&format!(
+            "event=hotkey_equip_rejected stage={stage} command_id={command_id}"
+        ));
+    }
+
+    pub(super) fn outcome(self, command: UseCommand) -> ItemMoveOutcome {
+        self.log(command.command_id);
+        ItemMoveOutcome::Rejected
+    }
+}
+
 macro_rules! authority_methods {
     () => {
         /// Read-only ordinary-slot readiness for transport coalescing. Jewelry and invalid
@@ -29,28 +91,43 @@ macro_rules! authority_methods {
         fn hotkey_equip_carried(
             &self,
             _actor: $crate::foundation::ExactActorRef,
-            _command: $crate::gameplay_transport::connection::UseCommand,
+            command: $crate::gameplay_transport::connection::UseCommand,
             _request: oteryn_protocol_oteryn::hotkey_equip::Request,
         ) -> impl std::future::Future<Output = Option<oteryn_protocol_oteryn::item_view::ItemMoveOutcome>> {
-            async { Some(oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Rejected) }
+            async move {
+                Some(
+                    $crate::gameplay_transport::hotkey_equip::RejectionStage::AuthorityUnavailable
+                        .outcome(command),
+                )
+            }
         }
         /// Capability 485: the carried selection narrowed to one exact upgrade tier.
         fn hotkey_equip_tiered(
             &self,
             _actor: $crate::foundation::ExactActorRef,
-            _command: $crate::gameplay_transport::connection::UseCommand,
+            command: $crate::gameplay_transport::connection::UseCommand,
             _request: oteryn_protocol_oteryn::hotkey_equip::Request,
             _upgrade_tier: u8,
         ) -> impl std::future::Future<Output = Option<oteryn_protocol_oteryn::item_view::ItemMoveOutcome>> {
-            async { Some(oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Rejected) }
+            async move {
+                Some(
+                    $crate::gameplay_transport::hotkey_equip::RejectionStage::AuthorityUnavailable
+                        .outcome(command),
+                )
+            }
         }
         fn hotkey_equip(
             &self,
             _actor: $crate::foundation::ExactActorRef,
-            _command: $crate::gameplay_transport::connection::UseCommand,
+            command: $crate::gameplay_transport::connection::UseCommand,
             _request: oteryn_protocol_oteryn::hotkey_equip::Request,
         ) -> impl std::future::Future<Output = Option<oteryn_protocol_oteryn::item_view::ItemMoveOutcome>> {
-            async { Some(oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Rejected) }
+            async move {
+                Some(
+                    $crate::gameplay_transport::hotkey_equip::RejectionStage::AuthorityUnavailable
+                        .outcome(command),
+                )
+            }
         }
     };
 }
@@ -202,22 +279,22 @@ pub(super) async fn execute(
 ) -> Option<ItemMoveOutcome> {
     // Capability 485 requires the carried owner; the direct legacy path has no tier filter.
     if upgrade_tier.is_some() && !carried {
-        return Some(ItemMoveOutcome::Rejected);
+        return Some(RejectionStage::TierRequiresCarried.outcome(command));
     }
     // Foundation binds command id, type and payload before this route. Replay must precede
     // lookup: the selected item has already left its original location after a commit.
     match equipment_move::committed_equipment_move(owner, command).await? {
         EquipmentMoveReplay::Moved => return Some(ItemMoveOutcome::Moved),
-        EquipmentMoveReplay::Conflicting => return Some(ItemMoveOutcome::Rejected),
+        EquipmentMoveReplay::Conflicting => return Some(RejectionStage::EquipmentReplayConflict.outcome(command)),
         EquipmentMoveReplay::Absent => {}
     }
     match super::loop_move::committed_loop_move(owner, command).await? {
         LoopMoveReplay::Moved => return Some(ItemMoveOutcome::Moved),
-        LoopMoveReplay::Conflicting => return Some(ItemMoveOutcome::Rejected),
+        LoopMoveReplay::Conflicting => return Some(RejectionStage::ContainerReplayConflict.outcome(command)),
         LoopMoveReplay::Absent => {}
     }
     let Some(fence) = command.item_fence else {
-        return Some(ItemMoveOutcome::Rejected);
+        return Some(RejectionStage::ItemFence.outcome(command));
     };
     let (definition, slot, ammunition) = {
         let runtime = owner.runtime.lock().await;
@@ -237,7 +314,7 @@ pub(super) async fn execute(
             command.game_session_id,
             owner.owner_now().get(),
         ) {
-            return Some(ItemMoveOutcome::Rejected);
+            return Some(RejectionStage::Condition.outcome(command));
         }
         let index = pinned_index(&runtime, owner.active_generation)?;
         let Some((key, revision)) = index.definition_at(request.definition) else {
@@ -270,7 +347,7 @@ pub(super) async fn execute(
         return Some(ItemMoveOutcome::SlotMismatch);
     };
     if !action_ready(owner, actor, command, slot).await? {
-        return Some(ItemMoveOutcome::Rejected);
+        return Some(RejectionStage::ActionGate.outcome(command));
     }
     if ammunition {
         // Ammunition is never classified, so only an unforged tier can name it.
@@ -358,7 +435,7 @@ async fn equip_ammunition(
             command.game_session_id,
             owner.owner_now().get(),
         ) {
-            return Some(ItemMoveOutcome::Rejected);
+            return Some(RejectionStage::AmmunitionCondition.outcome(command));
         }
         equipment_move::native_for_move(
             &runtime,
@@ -403,7 +480,7 @@ async fn equip_ammunition(
         .player_trades
         .physical(command.game_session_id, Some(source))
     {
-        return Some(ItemMoveOutcome::Rejected);
+        return Some(RejectionStage::AmmunitionTrade.outcome(command));
     }
     let committed = owner
         .root
@@ -434,7 +511,13 @@ async fn equip_ammunition(
         .forget_weapon(actor, command.game_session_id);
     match committed {
         Ok(Ok(_)) => finish(owner, actor, 6, EquipmentMoveResult::Committed),
-        Ok(Err(refusal)) => Some(super::item_move::loop_outcome(refusal)),
+        Ok(Err(refusal)) => {
+            let outcome = super::item_move::loop_outcome(refusal);
+            if outcome == ItemMoveOutcome::Rejected {
+                RejectionStage::AmmunitionCommit.log(command.command_id);
+            }
+            Some(outcome)
+        }
         Err(_) => None,
     }
 }

@@ -4,8 +4,10 @@ use super::{
     *,
 };
 use crate::{account_services::Action as Account, coin_shop::Action as Coin};
+use bevy::ui::InteractionDisabled;
 use bevy::{input_focus::tab_navigation::TabIndex, text::EditableText, ui_widgets::TextInput};
-use oteryn_platform_client::native_login::bazaar::{AuctionState, AuctionView};
+use oteryn_platform_client::native_login::bazaar::{AuctionState, AuctionView, MAX_COINS};
+use std::time::Instant;
 
 #[derive(Component)]
 struct Form {
@@ -190,7 +192,7 @@ fn coins(ui: &mut Builder<'_, '_, '_>, view: &crate::coin_shop::View) {
     if !view.unavailable {
         ui.coin("coin.refresh", "Refresh prices and balance", Coin::Refresh);
     }
-    if view.pending() {
+    if view.can_retry() {
         ui.coin("coin.retry", "Retry same request", Coin::Retry);
     }
     if view.pending() || view.order.is_some() {
@@ -316,6 +318,22 @@ fn queue(event: On<Activate>, guard: ModalGuard, mut pending: ResMut<Pending>) {
     }
 }
 
+fn eligible(action: &Action, screen: &Screen, now: Instant) -> bool {
+    match (action, screen) {
+        (
+            Action::Prepare(_, Reply::Coin(Coin::Purchase { package_id, .. }))
+            | Action::Confirm(Reply::Coin(Coin::Purchase { package_id, .. })),
+            Screen::Coin(view),
+        ) => view.can_purchase_at(package_id, now),
+        (
+            Action::Prepare(_, Reply::Account(Account::Transfer { .. }))
+            | Action::Confirm(Reply::Account(Account::Transfer { .. })),
+            Screen::Account(view),
+        ) => view.can_transfer_at(now),
+        _ => true,
+    }
+}
+
 #[allow(
     clippy::too_many_arguments,
     reason = "The active request, editor and confirmation controls are scoped independently"
@@ -326,20 +344,43 @@ fn finish(
     skin: Res<Skins>,
     guard: ModalGuard,
     mut pending: ResMut<Pending>,
-    buttons: Query<&Button>,
+    buttons: Query<(Entity, &Button, Has<bevy::ui::InteractionDisabled>)>,
+    clock: Option<Res<Time<Real>>>,
     mut forms: Query<(&mut Form, &ChildOf)>,
     fields: Query<(&Field, &EditableText)>,
     mut statuses: Query<&mut Text>,
 ) {
+    let now = Instant::now();
+    let now = clock
+        .and_then(|clock| clock.last_update())
+        .map_or(now, |frame| now.max(frame));
+    if let Some(request) = owner.services.pending() {
+        for (entity, button, disabled) in &buttons {
+            if disabled
+                || button.request != request.id
+                || eligible(&button.action, &request.screen, now)
+            {
+                continue;
+            }
+            commands.entity(entity).insert(InteractionDisabled);
+            if matches!(button.action, Action::Confirm(_)) {
+                if let Ok((mut form, _)) = forms.get_mut(button.form) {
+                    commands.entity(form.confirmation).despawn_children();
+                    form.confirming = None;
+                }
+            }
+        }
+    }
     while let Some(entity) = pending.0.pop_front() {
-        let Ok(button) = buttons.get(entity) else {
+        let Ok((_, button, disabled)) = buttons.get(entity) else {
             continue;
         };
-        if !guard.allows(entity)
+        if disabled
+            || !guard.allows(entity)
             || !owner
                 .services
                 .pending()
-                .is_some_and(|r| r.id == button.request)
+                .is_some_and(|r| r.id == button.request && eligible(&button.action, &r.screen, now))
         {
             continue;
         }
@@ -413,9 +454,11 @@ fn finish(
                             text.parse::<u64>().ok()
                         }
                     })
-                    .filter(|coins| coins >= minimum)
+                    .filter(|coins| (*minimum..=MAX_COINS).contains(coins))
                 else {
-                    status(format!("Enter a bid of at least {minimum} coins"));
+                    status(format!(
+                        "Enter a bid between {minimum} and {MAX_COINS} coins"
+                    ));
                     continue;
                 };
                 (
@@ -432,17 +475,16 @@ fn finish(
             Action::Sell => {
                 let minimum = value(FieldKind::MinimumBid)
                     .and_then(|text| text.parse::<u64>().ok())
-                    .filter(|n| *n > 0);
+                    .filter(|n| (1..=MAX_COINS).contains(n));
                 let hours = value(FieldKind::Duration)
                     .and_then(|text| text.parse::<u32>().ok())
                     .filter(|n| (1..=168).contains(n));
                 let (Some(character_id), Some(minimum_bid), Some(duration_hours)) =
                     (&form.character, minimum, hours)
                 else {
-                    status(
-                        "Select a character and enter a minimum bid and a duration of 1–168 hours"
-                            .into(),
-                    );
+                    status(format!(
+                        "Select a character and enter a minimum bid of 1–{MAX_COINS} coins and a duration of 1–168 hours"
+                    ));
                     continue;
                 };
                 let name = owner
@@ -493,4 +535,53 @@ fn finish(
         let cancel = ui.button("commerce.cancel", "Cancel", Action::Cancel);
         form.confirming = Some((confirm, cancel));
     }
+}
+
+#[cfg(test)]
+pub(super) fn assert_expired_transfer_controls(
+    app: &mut App,
+    request: u64,
+) -> crate::account_services::test_server::TestResult {
+    // Simulate controls rendered while the quote was valid, now paired with an expired view.
+    let world = app.world_mut();
+    let form = world.query_filtered::<Entity, With<Form>>().single(world)?;
+    let reply = Reply::Account(Account::Transfer { confirmed: true });
+    let review = world
+        .spawn(Button {
+            request,
+            form,
+            action: Action::Prepare("transfer".into(), reply.clone()),
+        })
+        .observe(queue)
+        .id();
+    let confirm = world
+        .spawn(Button {
+            request,
+            form,
+            action: Action::Confirm(reply),
+        })
+        .observe(queue)
+        .id();
+    world
+        .get_mut::<Form>(form)
+        .ok_or("transfer form")?
+        .confirming = Some((confirm, review));
+    world.entity_mut(form).add_children(&[review, confirm]);
+    world.trigger(Activate { entity: confirm });
+    app.update();
+    for entity in [review, confirm] {
+        assert!(
+            app.world()
+                .get::<bevy::ui::InteractionDisabled>(entity)
+                .is_some()
+        );
+    }
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .services
+            .pending()
+            .is_some_and(|r| r.id == request)
+    );
+    Ok(())
 }

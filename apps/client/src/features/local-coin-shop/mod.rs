@@ -1,5 +1,7 @@
 //! Sandbox coin checkout and status. The client never verifies provider events or grants coins.
 mod controller;
+#[cfg(test)]
+pub(crate) mod delivery_tests;
 pub(crate) mod launcher;
 #[cfg(test)]
 mod tests;
@@ -29,6 +31,8 @@ pub struct View {
     pub unavailable: bool,
     character_id: Option<String>,
     pending: Option<CoinOrderRequest>,
+    post_refusal_status: Option<u16>,
+    checkout_unverified: bool,
     confirmed: Option<CoinPackage>,
     quote_until: BTreeMap<String, Instant>,
 }
@@ -46,7 +50,13 @@ impl View {
     pub fn pending(&self) -> bool {
         self.pending.is_some()
     }
+    pub fn can_retry(&self) -> bool {
+        self.pending() && self.post_refusal_status.is_none()
+    }
     pub fn can_purchase(&self, id: &str) -> bool {
+        self.can_purchase_at(id, Instant::now())
+    }
+    pub(crate) fn can_purchase_at(&self, id: &str, now: Instant) -> bool {
         !self.unavailable
             && !self.pending()
             && self.balance.as_ref().is_some_and(|b| !b.review_required)
@@ -56,14 +66,15 @@ impl View {
                         && self
                             .quote_until
                             .get(&p.quote_id)
-                            .is_some_and(|until| *until > Instant::now())
+                            .is_some_and(|until| *until > now)
                 })
             })
     }
     pub fn can_checkout(&self) -> bool {
-        self.order
-            .as_ref()
-            .is_some_and(|o| o.state == PurchaseState::AwaitingPayment && o.checkout_url.is_some())
+        !self.checkout_unverified
+            && self.order.as_ref().is_some_and(|order| {
+                order.state == PurchaseState::AwaitingPayment && order.checkout_url.is_some()
+            })
     }
     pub fn status_text(&self) -> String {
         let mut text = self.feedback.clone();
@@ -133,12 +144,12 @@ pub(crate) async fn run(
     token: &AccessToken,
     presenter: &Presenter,
     browser: &Browser,
-    character_id: Option<String>,
+    view: &mut View,
     cancel: CancellationToken,
 ) -> Result<(), crate::GameplayEntryError> {
-    let mut view = View::new(character_id);
+    view.catalogue = None;
     controller::execute(
-        &mut view,
+        view,
         Action::Refresh,
         client,
         token,
@@ -146,23 +157,21 @@ pub(crate) async fn run(
         cancel.clone(),
     )
     .await;
-    loop {
+    while !cancel.is_cancelled() {
         let present = presenter.clone();
         let cancellation = cancel.clone();
-        let (returned, action) = tokio::task::spawn_blocking(move || {
-            let action = present(&view, cancellation);
-            (view, action)
-        })
-        .await
-        .map_err(|_| {
-            crate::GameplayEntryError::Rejected(
-                oteryn_platform_client::native_login::PublicClass::TemporarilyUnavailable,
-            )
-        })?;
-        view = returned;
+        let snapshot = view.clone();
+        let action = tokio::task::spawn_blocking(move || present(&snapshot, cancellation))
+            .await
+            .map_err(|_| {
+                crate::GameplayEntryError::Rejected(
+                    oteryn_platform_client::native_login::PublicClass::TemporarilyUnavailable,
+                )
+            })?;
         if matches!(action, Action::Back) || cancel.is_cancelled() {
             return Ok(());
         }
-        controller::execute(&mut view, action, client, token, browser, cancel.clone()).await;
+        controller::execute(view, action, client, token, browser, cancel.clone()).await;
     }
+    Ok(())
 }

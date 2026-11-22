@@ -3568,7 +3568,7 @@
     }
   ],
   "schema": "OTERYN_W01_PREPARE_DEATH/v1",
-  "source_definitions_sha256": "ea69f2d20442443bfa0d7cef82756afb44b7ba5ee35150f8b14c27605c0d1a99",
+  "source_definitions_sha256": "0ada2a068209bedfe2e3b06970f746834eed1a38d654f93d598c3cc6978b00bb",
   "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
   "sources": {
     "data-otservbr-global/monster/raids/hirintror.lua": "9aa9aa3b82f03a0318d068e664ade1993a9e83940dd0cea25459d0179be5b1ea",

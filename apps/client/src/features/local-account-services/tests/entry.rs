@@ -71,3 +71,165 @@ fn account_services_selection_uses_separate_scope_and_returns_to_fresh_game_logi
         Ok(())
     })
 }
+
+#[test]
+fn entry_cancel_waits_for_account_services_browser_delivery() -> TestResult {
+    use std::sync::mpsc;
+    use std::time::Duration;
+    test_thread(|| {
+        let stack = test_support::Stack::start(Vec::new())?;
+        let mock = MockPlatform::start()?;
+        let mut config = stack.config();
+        config.platform_url = mock.base.clone();
+        config.select_character =
+            Arc::new(|_, _, _| crate::character_selection::SelectionAction::AccountServices);
+        let (entered, ready) = mpsc::channel();
+        let (release, released) = mpsc::channel();
+        let released = Mutex::new(released);
+        let original = config.open_browser.clone();
+        config.open_browser = Arc::new(move |url| {
+            if !url.contains("scope=game%3Aaccount-services") {
+                return original(url);
+            }
+            let _ = entered.send(());
+            assert!(
+                released
+                    .lock()
+                    .is_ok_and(|rx| rx.recv_timeout(Duration::from_secs(5)).is_ok())
+            );
+            false
+        });
+        let mut entry =
+            crate::reentry::Reentry::new(crate::ClientBootstrap::new()?.with_native_login(config));
+        assert!(entry.request());
+        ready.recv_timeout(Duration::from_secs(5))?;
+        let (started, starting) = mpsc::channel();
+        let (finished, done) = mpsc::channel();
+        let closer = std::thread::spawn(move || {
+            let _ = started.send(());
+            let _ = finished.send(entry.cancel_entry());
+            entry.shutdown();
+        });
+        starting.recv_timeout(Duration::from_secs(5))?;
+        let early = done.recv_timeout(Duration::from_millis(100));
+        release.send(())?;
+        closer.join().map_err(|_| "entry cancellation thread")?;
+        assert_eq!(
+            early,
+            Err(mpsc::RecvTimeoutError::Timeout),
+            "entry cancellation passed an Account Services browser delivery still in progress"
+        );
+        assert!(done.try_recv()?);
+        stack.finish();
+        Ok(())
+    })
+}
+
+#[test]
+fn fresh_services_oauth_discards_bazaar_state() -> TestResult {
+    fresh_services_oauth(false)
+}
+
+#[test]
+fn fresh_services_oauth_discards_prelogin_coin_state() -> TestResult {
+    fresh_services_oauth(true)
+}
+
+fn fresh_services_oauth(coins: bool) -> TestResult {
+    use crate::character_selection::SelectionAction;
+    use crate::coin_shop::Action as CoinAction;
+    test_thread(move || {
+        let stack = test_support::Stack::start(Vec::new())?;
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let mut config = stack.config();
+        config.platform_url = mock.base.clone();
+        let selections = AtomicUsize::new(0);
+        config.select_character = Arc::new(move |_, _, _| {
+            if selections.fetch_add(1, Ordering::SeqCst) < 2 {
+                SelectionAction::AccountServices
+            } else {
+                SelectionAction::Play {
+                    character_id: CHARACTER.into(),
+                    channel_id: None,
+                }
+            }
+        });
+        let account = AtomicUsize::new(0);
+        config.account_services = Arc::new(move |view, _| {
+            let step = account.fetch_add(1, Ordering::SeqCst);
+            assert!(!format!("{view:?}").contains("services-test-token-"));
+            match (coins, step) {
+                (true, 0 | 2) => Action::CoinShop,
+                (false, 0) => Action::Bid {
+                    auction_id: AUCTION.into(),
+                    coins: 50,
+                    confirmed: true,
+                },
+                (false, 1) => {
+                    assert!(view.pending());
+                    Action::Back
+                }
+                (false, 2) => {
+                    assert!(!view.pending(), "new OAuth inherited the Bazaar request");
+                    Action::Back
+                }
+                _ => Action::Back,
+            }
+        });
+        let coin = AtomicUsize::new(0);
+        config.coin_shop = Arc::new(move |view, _| {
+            assert!(!format!("{view:?}").contains("services-test-token-"));
+            match coin.fetch_add(1, Ordering::SeqCst) {
+                0 => CoinAction::Purchase {
+                    package_id: crate::account_services::test_server::coins::PACKAGE.into(),
+                    confirmed: true,
+                },
+                1 => {
+                    assert!(view.pending());
+                    CoinAction::Back
+                }
+                _ => {
+                    assert!(!view.pending(), "new OAuth inherited the coin request");
+                    CoinAction::Back
+                }
+            }
+        });
+        {
+            let mut authority = mock.authority.lock().map_err(|_| "lock")?;
+            authority.coin_post_failure = Some(0);
+            authority.bazaar_post_failure = Some(0);
+        }
+        mock.runtime.block_on(authorize::authorize(
+            &client,
+            &config,
+            CancellationToken::new(),
+        ))?;
+        let state = mock.authority.lock().map_err(|_| "lock")?;
+        assert_eq!(state.oauth_exchanges, 5);
+        Ok(())
+    })
+}
+
+#[test]
+fn commerce_oauth_bearer_is_absent_from_debug_and_log_output() -> TestResult {
+    let output = std::process::Command::new(std::env::current_exe()?)
+        .args([
+            "fresh_services_oauth_discards_",
+            "store_launcher_fresh_oauth",
+            "--nocapture",
+        ])
+        .env("OTERYN_LOG", "info")
+        .output()?;
+    assert!(output.status.success(), "commerce test subprocess failed");
+    let stdout = String::from_utf8(output.stdout)?;
+    let stderr = String::from_utf8(output.stderr)?;
+    assert!(stdout.contains("3 passed"));
+    assert!(
+        stderr.contains("endpoint=directory"),
+        "native logs must be captured"
+    );
+    assert!(!stdout.contains("services-test-token-"));
+    assert!(!stderr.contains("services-test-token-"));
+    Ok(())
+}

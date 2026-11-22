@@ -138,7 +138,9 @@ async fn ready(link: &PlayLink, text: &str) -> Result<(), Error> {
     tokio::time::timeout(Duration::from_secs(3), async {
         loop {
             let p = link.guild_panel();
-            if p.selected && !p.pending && panel_text(&p).contains(text) {
+            // Session initialization publishes the guild panel before the chat
+            // room state and chat selection; wait for both before asserting.
+            if p.selected && !p.pending && panel_text(&p).contains(text) && link.chat_panel().selected {
                 break;
             }
             tokio::task::yield_now().await;

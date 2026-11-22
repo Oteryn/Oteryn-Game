@@ -13,12 +13,26 @@ pub(crate) struct CoinAuthority {
     pub orders: BTreeMap<String, (CoinOrderRequest, CoinOrder)>,
     pub events: BTreeMap<String, (Vec<u8>, Result<(), ProviderError>)>,
     quotes: BTreeMap<String, (CoinPackage, Option<String>, Instant, bool)>,
+    pub drop_after_create: bool,
     pub fail_after_create: bool,
+    pub fail_balance: bool,
+    pub fail_catalogue: bool,
+    pub hide_recent_orders: bool,
     pub creations: u32,
     pub credits: u32,
     pub reversals: u32,
     pub tamper_checkout: Option<String>,
 }
+impl MockPlatform {
+    pub fn with_coins<T>(
+        &self,
+        f: impl FnOnce(&mut CoinAuthority) -> T,
+    ) -> Result<T, &'static str> {
+        let mut authority = self.authority.lock().map_err(|_| "lock")?;
+        Ok(f(authority.coins.as_mut().ok_or("coins")?))
+    }
+}
+
 impl CoinAuthority {
     pub fn new(origin: String) -> TestResultWith<Self> {
         Ok(Self {
@@ -34,16 +48,27 @@ impl CoinAuthority {
             orders: BTreeMap::new(),
             events: BTreeMap::new(),
             quotes: BTreeMap::new(),
+            drop_after_create: false,
             fail_after_create: false,
+            fail_balance: false,
+            fail_catalogue: false,
+            hide_recent_orders: false,
             creations: 0,
             credits: 0,
             reversals: 0,
             tamper_checkout: None,
         })
     }
+    #[cfg(bevy_shell)]
+    pub fn expire_quotes(&mut self) {
+        self.quotes.clear();
+    }
     pub fn route(&mut self, method: &str, target: &str, body: &str) -> Option<(u16, String)> {
         if method == "GET" && target.starts_with("/api/v1/native-account/coin-purchases/catalogue")
         {
+            if self.fail_catalogue {
+                return Some((503, String::new()));
+            }
             let character = target
                 .split_once("?character_id=")
                 .map(|(_, id)| id.to_owned());
@@ -75,13 +100,16 @@ impl CoinAuthority {
                 recent_orders: self
                     .orders
                     .values()
-                    .take(20)
+                    .take(if self.hide_recent_orders { 0 } else { 20 })
                     .map(|(_, o)| o.clone())
                     .collect(),
             };
             return Some((200, serde_json::to_string(&catalogue).unwrap_or_default()));
         }
         if method == "GET" && target == "/api/v1/native-account/coin-purchases/balance" {
+            if self.fail_balance {
+                return Some((503, String::new()));
+            }
             return Some((
                 200,
                 serde_json::to_string(&self.balance).unwrap_or_default(),
@@ -141,6 +169,9 @@ impl CoinAuthority {
             self.orders
                 .insert(request.request_id.clone(), (request, order.clone()));
             self.creations += 1;
+            if std::mem::take(&mut self.drop_after_create) {
+                return Some((0, String::new()));
+            }
             if self.fail_after_create {
                 self.fail_after_create = false;
                 return Some((503, String::new()));

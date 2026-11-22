@@ -413,3 +413,16 @@ fn concurrent_market_resizes_and_moves_merge_each_axis() -> TestResult {
     );
     Ok(())
 }
+
+#[test]
+fn oversized_window_layout_is_rejected() -> TestResult {
+    let root = tempfile::tempdir()?;
+    let path = root.path().join("layout.json");
+    let mut bytes = b"{}".to_vec();
+    bytes.resize(256 * 1024 + 1, b' ');
+    std::fs::write(&path, bytes)?;
+    assert!(
+        matches!(WindowLayouts::load(&path), Err(error) if error.kind() == std::io::ErrorKind::InvalidData)
+    );
+    Ok(())
+}

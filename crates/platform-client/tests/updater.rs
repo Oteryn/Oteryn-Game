@@ -66,7 +66,8 @@ fn signed_origin_checks_versions_downloads_and_refuses_corruption()
     let requests = requests.lock().map_err(|_| "update fixture requests lock")?;
     let base = "https://api.oteryn.com/updates/stable/";
     assert!(requests.iter().any(|url| url == &format!("{base}metadata/timestamp.json")));
-    assert!(requests.iter().any(|url| url.starts_with(&format!("{base}targets/")) && url.ends_with("channels/stable/policy-v1.json")));
+    let policy_hash = "54d913bfb4f8142b535c6819be421d70141687e73f7e8f14925fe58c97069e1b";
+    assert!(requests.iter().any(|url| url == &format!("{base}targets/{policy_hash}.channels/stable/policy-v1.json")));
   }
   assert_eq!(client.policy.current_release_id,"rel-a");assert_eq!(client.length,7);
   assert_eq!(client.require_minimum(Some(2)), Err(oteryn_platform_client::updates::UpdateError::Unavailable));

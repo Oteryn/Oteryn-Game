@@ -509,6 +509,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     qengine_reward_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import quest_finish_newhaven_items
     quest_finish_newhaven_items.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import nrwicked_profiles
+    nrwicked_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'],
+                            NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import podium_item_profiles
     podium_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import quick_loot_item_profiles
@@ -562,6 +565,13 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     qengine_reward_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import elephant_corpse_profiles
     elephant_corpse_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    # Arbaziloth owns corpse 50029. The retained Item source closes its
+    # Ground-only decay chain (Canary items.xml:82814-82829).
+    arbaziloth_corpses = elephant_corpse_profiles.capture_chain(
+        root, {50029: (300, 50028, 15), 50028: (300, 50027, 15), 50027: (60, 0, None)})
+    qengine_reward_item_profiles.admit_records(
+        root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'],
+        NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes, arbaziloth_corpses)
     import questpc7_hot_corpse_profiles
     questpc7_hot_corpse_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import questpc7_hot_fishburger_profile
@@ -695,6 +705,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     creature_path = spell_import.PROVIDER_DESTINATIONS["creature_profiles"]
     creatures = json.loads(generated[creature_path])
     engenc_elemental_profiles.apply(creatures)
+    nrwicked_profiles.admit_creatures(
+        root, creatures, generated, spell_import.PROVIDER_DESTINATIONS['presentation_profiles'],
+        NATIVE_MANIFEST, spell_import.canonical_bytes)
     generated[creature_path] = spell_import.canonical_bytes(creatures)
 
     # PKG1R2 owner decision (2026-10-30), Energy_Field_(Field) rev 1011133:
@@ -710,6 +723,12 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     admit_dream_courts_supplies(root, items)
     import protected_loot_yields
     protected_loot_yields.admit(root, items, provider_order)
+    # These late Item admissions belong to the base provider. Apply their
+    # verified top-order facts before deriving the separate SRX-1 supplement.
+    hard_items = [row for row in items["records"]
+                  if row["production_definition"]["production_key"] in protected_loot_yields.ARBAZILOTH_HARD_ITEMS]
+    house_top_order = json.loads((root / house_decoration_actions.PROFILES).read_bytes())
+    house_decoration_actions.apply_top_order(hard_items, house_top_order)
     item_detail_source_facts.apply(root, items, item_detail_weights)
     # The complete source closure must fit native_gameplay's existing 8 MiB
     # Item-profile input bound. Only the final active serialization is compact;

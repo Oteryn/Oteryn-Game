@@ -106,7 +106,7 @@ async fn play_entry_queries_returner_entitlement_without_opening_daily_wall() ->
     assert!(!panel.open);
     assert_eq!(panel.returner_notified, Some(id));
     drop(link);
-    task.await?;
+    tokio::time::timeout(Duration::from_secs(2), task).await??;
     Ok(())
 }
 
@@ -140,7 +140,7 @@ async fn review_recovered_play_entry_queries_returner_after_scope_presentation()
     })
     .map_err(|_| "invalid recovery receipt")?;
     let (link, incoming, outbox) = play_channel();
-    let task = tokio::spawn(run_session(
+    let mut task = tokio::spawn(run_session(
         Peer {
             commands: Arc::new(Mutex::new(vec![])),
             claimed: false,
@@ -164,6 +164,12 @@ async fn review_recovered_play_entry_queries_returner_after_scope_presentation()
     })
     .await?;
     drop(link);
-    task.await?;
+    match tokio::time::timeout(Duration::from_secs(2), &mut task).await {
+        Ok(result) => result?,
+        Err(_) => {
+            task.abort();
+            return Err("Returner session shutdown timed out".into());
+        }
+    }
     Ok(())
 }

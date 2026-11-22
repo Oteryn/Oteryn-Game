@@ -140,65 +140,159 @@ fn store_inbox_opens_with_an_unfiltered_holdings_query() -> Result<(), Box<dyn s
 }
 
 #[test]
-fn store_inbox_discards_an_in_flight_stash_reply_and_requests_all_locations()
--> Result<(), Box<dyn std::error::Error>> {
-    use oteryn_client_runtime::cyclopedia_character::items::filtered;
+fn store_inbox_discards_an_in_flight_stash_reply_and_requests_all_locations() -> InboxResult {
+    inbox_receives_superseded_stash_reply(true)
+}
 
-    let (link, mut commands, outbox) = play_channel();
-    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(10, 10), -7, &[])?;
-    outbox.cyclopedia_character_initialize(true);
-    outbox.holdings_initialize(true);
-    assert!(link.cyclopedia_holdings_filter("sword", Some(Location::Stash)));
-    assert!(matches!(commands.try_recv()?, PlayCommand::Feature(_)));
-    link.store_inbox_set_open(true);
-    let result = |command_id, rows: Vec<Row>| {
-        let names = rows.iter().map(|row| row.definition.clone()).collect();
-        Ok::<_, String>(GatedCommandResult {
-            command_id,
-            server_sequence: command_id,
-            status: CommandStatus::Accepted,
-            payload: filtered::Page {
-                holdings: Page {
-                    offset: 0,
-                    total: rows.len() as u16,
-                    rows,
-                },
-                names,
-            }
-            .encode()
-            .map_err(|error| format!("{error:?}"))?,
-        })
+#[test]
+fn closing_store_inbox_still_discards_the_in_flight_stash_reply() -> InboxResult {
+    inbox_receives_superseded_stash_reply(false)
+}
+
+type InboxResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
+
+fn inbox_receives_superseded_stash_reply(keep_open: bool) -> InboxResult {
+    use crate::combat_input::{CombatCommand, CombatReport};
+    use crate::play::{PlayView, Stepper, run_session};
+    use oteryn_client_runtime::{
+        cyclopedia_character::items::filtered, raw_feature::FeatureCommand,
     };
-    outbox.cyclopedia_character_result(&result(
-        1,
-        vec![Row {
-            definition: "oteryn:item/sword".into(),
-            quantities: [0, 0, 2, 0],
-        }],
-    )?);
-    assert!(link.cyclopedia_character_panel().items.page.is_none());
-    view.tick(&link).map_err(|error| format!("{error:?}"))?;
-    let PlayCommand::Feature(command) = commands.try_recv()? else {
-        return Err("missing Store Inbox query".into());
-    };
-    assert_eq!(
-        filtered::Query::decode(&command.payload).map_err(|error| format!("{error:?}"))?,
-        filtered::Query {
-            offset: 0,
-            location: None,
-            search: String::new(),
+    use oteryn_session::{LogoutResult, SessionError, SessionEvent, StepDirection, StepOutcome};
+    use std::time::Duration;
+    use tokio::sync::mpsc;
+
+    const WAIT: Duration = Duration::from_secs(2);
+    struct Peer {
+        seen: mpsc::UnboundedSender<FeatureCommand>,
+        replies: mpsc::UnboundedReceiver<GatedCommandResult>,
+    }
+    impl Stepper for Peer {
+        fn feature_selected(&self, capability: u32) -> bool {
+            matches!(capability, 199 | 506)
         }
-    );
-    outbox.cyclopedia_character_result(&result(
-        2,
-        vec![Row {
-            definition: "oteryn:item/arrow".into(),
-            quantities: [0, 0, 0, 4],
-        }],
-    )?);
-    assert_eq!(
-        link.cyclopedia_character_panel().items.rows()[0].quantities[3],
-        4
-    );
-    Ok(())
+        async fn feature(
+            &mut self,
+            command: &FeatureCommand,
+        ) -> Result<GatedCommandResult, SessionError> {
+            self.seen
+                .send(command.clone())
+                .map_err(|_| SessionError::SessionUnusable)?;
+            self.replies
+                .recv()
+                .await
+                .ok_or(SessionError::SessionUnusable)
+        }
+        async fn step(&mut self, _: StepDirection) -> Result<StepOutcome, SessionError> {
+            Err(SessionError::SessionUnusable)
+        }
+        async fn serve(&mut self, duration: Duration) -> Result<(), SessionError> {
+            tokio::time::sleep(duration).await;
+            Ok(())
+        }
+        fn drain(&mut self) -> Vec<SessionEvent> {
+            vec![]
+        }
+        async fn combat(&mut self, _: CombatCommand) -> Result<CombatReport, SessionError> {
+            Err(SessionError::SessionUnusable)
+        }
+        async fn logout(&mut self) -> Result<Option<LogoutResult>, SessionError> {
+            Ok(None)
+        }
+    }
+
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || {
+            let runtime = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()?;
+            runtime.block_on(async {
+                let (link, commands, outbox) = play_channel();
+                let (seen, mut received) = mpsc::unbounded_channel();
+                let (reply, replies) = mpsc::unbounded_channel();
+                let task = tokio::spawn(run_session(Peer { seen, replies }, commands, outbox));
+                let mut view = PlayView::new(oteryn_renderer::TileCoord::new(10, 10), -7, &[])?;
+                tokio::time::timeout(WAIT, async {
+                    while !link.cyclopedia_character_panel().holdings_selected {
+                        tokio::task::yield_now().await;
+                    }
+                })
+                .await?;
+                let send = |id, definition: &str, quantities| -> InboxResult {
+                    reply.send(GatedCommandResult {
+                        command_id: id,
+                        server_sequence: id,
+                        status: CommandStatus::Accepted,
+                        payload: filtered::Page {
+                            holdings: Page {
+                                offset: 0,
+                                total: 1,
+                                rows: vec![Row {
+                                    definition: definition.into(),
+                                    quantities,
+                                }],
+                            },
+                            names: vec![definition.into()],
+                        }
+                        .encode()
+                        .map_err(|error| format!("{error:?}"))?,
+                    })?;
+                    Ok(())
+                };
+                assert!(link.cyclopedia_holdings_filter("sword", Some(Location::Stash)));
+                let stash = tokio::time::timeout(WAIT, received.recv())
+                    .await?
+                    .ok_or("Stash query")?;
+                assert_eq!((stash.capability, stash.kind), (199, 388));
+                link.store_inbox_set_open(true);
+                if !keep_open {
+                    link.store_inbox_set_open(false);
+                }
+                send(1, "oteryn:item/sword", [0, 0, 2, 0])?;
+                let wait_for_reply = || async {
+                    tokio::time::timeout(WAIT, async {
+                        while link.cyclopedia_character_panel().pending {
+                            tokio::task::yield_now().await;
+                        }
+                    })
+                    .await
+                };
+                wait_for_reply().await?;
+                let items = link.cyclopedia_character_panel().items;
+                assert!(items.page.is_none());
+                assert!(items.location.is_none());
+                assert!(items.search.is_empty());
+                view.tick(&link).map_err(|error| format!("{error:?}"))?;
+                if keep_open {
+                    let refresh = tokio::time::timeout(WAIT, received.recv())
+                        .await?
+                        .ok_or("Store Inbox query")?;
+                    assert_eq!((refresh.capability, refresh.kind), (199, 388));
+                    let query = filtered::Query::decode(&refresh.payload)
+                        .map_err(|error| format!("{error:?}"))?;
+                    assert_eq!(
+                        query,
+                        filtered::Query {
+                            offset: 0,
+                            location: None,
+                            search: String::new()
+                        }
+                    );
+                    send(2, "oteryn:item/arrow", [0, 0, 0, 4])?;
+                    wait_for_reply().await?;
+                    assert_eq!(
+                        link.cyclopedia_character_panel().items.rows()[0].quantities[3],
+                        4
+                    );
+                } else {
+                    assert!(!link.cyclopedia_character_panel().pending);
+                    assert!(received.try_recv().is_err());
+                }
+                drop(link);
+                tokio::time::timeout(WAIT, task).await??;
+                Ok(())
+            })
+        })?
+        .join()
+        .map_err(|_| "Store Inbox session panicked")?
 }

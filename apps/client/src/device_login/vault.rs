@@ -37,3 +37,18 @@ impl Vault for Unavailable {
         Ok(())
     }
 }
+
+pub(super) fn revocations(target: String) -> Arc<dyn Vault> {
+    #[cfg(target_os = "linux")]
+    {
+        Arc::new(secret_service::SecretService(target))
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        system(target)
+    }
+}
+
+#[cfg(target_os = "linux")]
+#[path = "vault_secret_service.rs"]
+mod secret_service;

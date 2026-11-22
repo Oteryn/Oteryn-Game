@@ -9,7 +9,7 @@ use oteryn_protocol_oteryn::{
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-pub(super) async fn while_servicing_liveness<T>(
+pub(in super::super) async fn while_servicing_liveness<T>(
     step: impl std::future::Future<Output = T>,
     mut pump: impl AsyncFnMut() -> TestResult,
 ) -> TestResult<T> {

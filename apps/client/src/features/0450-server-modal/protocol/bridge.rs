@@ -21,6 +21,13 @@ pub(in crate::play) struct SharedModal {
     queued: bool,
 }
 impl SharedModal {
+    pub(in crate::play) fn clear(&mut self) {
+        self.panel = Panel::default();
+        self.sender = None;
+        self.entry = None;
+        self.queued = false;
+    }
+
     pub(in crate::play) fn is_active(&self) -> bool {
         self.panel.active.is_some()
     }
@@ -68,12 +75,7 @@ impl Driver {
 impl Drop for Driver {
     fn drop(&mut self) {
         if let Some(shared) = &self.shared {
-            let mut mailbox = lock(shared);
-            let state = &mut mailbox.server_modal;
-            state.panel = Panel::default();
-            state.sender = None;
-            state.entry = None;
-            state.queued = false;
+            lock(shared).server_modal.clear();
         }
     }
 }

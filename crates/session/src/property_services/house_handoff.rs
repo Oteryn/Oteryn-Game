@@ -36,6 +36,8 @@ impl<S: SessionStream> Session<S> {
         self.first_command_id = 1;
         self.last_probe_id = 0;
         self.duplicates.clear();
+        // Deltas received while waiting for the ACK belong to the source.
+        self.events.clear();
         self.join_snapshot.game_session_id = GameSessionId::decode(&ack.session)?;
         self.gated_snapshots
             .retain(|domain| domain.domain_id != wire::STATE_DOMAIN_HOUSE_SCOPE);

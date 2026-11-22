@@ -116,6 +116,12 @@ fn picker_training_returns_server_channel_through_existing_callback()
 
     app.world_mut().trigger(Activate { entity: play });
     app.update();
+    while !worker.is_finished() {
+        if Instant::now() >= deadline {
+            return Err("selection action did not reach the picker callback".into());
+        }
+        std::thread::yield_now();
+    }
     assert_eq!(
         worker.join().map_err(|_| "selector worker")?,
         SelectionAction::Train {
@@ -213,6 +219,12 @@ fn picker_marks_several_characters_and_trains_them_through_existing_callback()
     press(&mut app, &|choice| matches!(choice, Choice::Row(1)))?;
     press(&mut app, &|choice| matches!(choice, Choice::Mark))?;
     press(&mut app, &|choice| matches!(choice, Choice::TrainMarked))?;
+    while !worker.is_finished() {
+        if Instant::now() >= deadline {
+            return Err("selection action did not reach the picker callback".into());
+        }
+        std::thread::yield_now();
+    }
     assert_eq!(
         worker.join().map_err(|_| "selector worker")?,
         SelectionAction::TrainMany {

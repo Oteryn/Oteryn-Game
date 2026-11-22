@@ -176,7 +176,9 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                             let checkpoint = self.checkpoint_timed_equipment(actor, session, false);
                             self.root.with_periodic_lock_budget(checkpoint).await;
                         } else {
-                            self.drain_quest_timers(actor, session).await;
+                            self.root
+                                .with_periodic_lock_budget(self.drain_quest_timers(actor, session))
+                                .await;
                         }
                     }
                     index => {
