@@ -74,10 +74,6 @@ fn timed_npc_period_swap_emits_departure_and_arrival_at_committed_positions() {
         ),
         (33_504, 32_222, 7)
     );
-    timed
-        .tick(&mut runtime, at_minute(361))
-        .expect("clock")
-        .expect("steady day");
     assert_eq!(
         world.facts().movement_effects_since(cursor),
         [
@@ -92,6 +88,11 @@ fn timed_npc_period_swap_emits_departure_and_arrival_at_committed_positions() {
             (cursor + 2, SHARED_TILE, 11),
         ]
     );
+    timed
+        .tick(&mut runtime, at_minute(361))
+        .expect("clock")
+        .expect("steady day");
+    assert!(world.facts().movement_effects_since(cursor + 2).is_empty());
 }
 
 #[test]
@@ -128,12 +129,13 @@ fn timed_npc_blocked_arrival_emits_only_on_successful_retry() {
     let visible = runtime.visible_entities();
     assert_eq!(visible.npcs.len(), 1);
     assert_eq!(runtime.npc_key(visible.npcs[0].actor), Some(VALINDARA));
-    timed
-        .tick(&mut runtime, at_minute(362))
-        .expect("clock")
-        .expect("steady day");
     assert_eq!(
         world.facts().movement_effects_since(0),
         [(1, SHARED_TILE, 11)]
     );
+    timed
+        .tick(&mut runtime, at_minute(362))
+        .expect("clock")
+        .expect("steady day");
+    assert!(world.facts().movement_effects_since(1).is_empty());
 }
