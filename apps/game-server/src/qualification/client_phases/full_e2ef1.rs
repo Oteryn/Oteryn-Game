@@ -34,6 +34,8 @@ pub(super) async fn provision_fixture(
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     original::provision_at_level(client, clients, index, expected_level).await
 }
+pub(super) use original::provision_profile;
+
 pub(super) async fn provision(
     mut client: oteryn_dev_client::DevClientSession,
     clients: &SeamClients<'_>,

@@ -10,6 +10,7 @@ use oteryn_protocol_oteryn::world_spatial_entities::{
     encode_world_spatial_entities_delta_with_fields,
 };
 
+pub(super) const LIGHT_CHARACTER: usize = 2;
 const WORDS: &str = "utevo lux";
 
 fn capture(name: &str, bytes: &[u8]) {
@@ -29,8 +30,28 @@ fn hex_bytes(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
+pub(super) async fn connect_caster(
+    clients: &SeamClients<'_>,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
+    let client = connect_character(clients, 0x97, LIGHT_CHARACTER).await?;
+    let (_, max_mana, _) = oteryn_gameplay_characters::vitals::maxima(
+        "sorcerer",
+        100,
+        oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
+        oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
+    )
+    .ok_or("light fixture maxima unavailable")?;
+    if client
+        .actor_vitals()
+        .is_some_and(|vitals| vitals.max_mana == max_mana)
+    {
+        return Ok(client);
+    }
+    provisioning::provision_profile(client, clients, LIGHT_CHARACTER, 100, "sorcerer").await
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
-    let mut client = connect_world(clients, 0x97).await?;
+    let mut client = connect_caster(clients).await?;
     let own = *client.world_entities().ok_or("step=entities absent")?.own_identity();
     let before = client
         .session_mut()
@@ -62,7 +83,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             break (entry.entity, light);
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err("step=light the Character's own light did not appear after the cast; the ordinary starter lacks the level (full_e2ef7 W20b)".into());
+            return Err("step=light the Character's own light did not appear after the cast".into());
         }
     };
     let position = client.world_spatial().actor_position;
