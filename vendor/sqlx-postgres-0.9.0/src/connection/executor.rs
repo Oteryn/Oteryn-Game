@@ -203,6 +203,7 @@ impl PgConnection {
         persistent: bool,
         metadata_opt: Option<Arc<PgStatementMetadata>>,
     ) -> Result<impl Stream<Item = Result<Either<PgQueryResult, PgRow>, Error>> + 'e, Error> {
+        let profile = crate::oteryn_query_profile::StatementProfile::start();
         let mut logger = QueryLogger::new(query, self.inner.log_settings.clone());
         let sql = logger.sql().as_str();
 
@@ -308,6 +309,7 @@ impl PgConnection {
         self.inner.stream.flush().await?;
 
         Ok(try_stream! {
+            let _profile = profile;
             loop {
                 let message = self.inner.stream.recv().await?;
 

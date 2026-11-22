@@ -3230,6 +3230,7 @@ pub async fn run_with_npc_data_project(
     let result = boot_and_serve(&root, &material, bundle, npc_boot, &signalled).await;
     stop_maintenance.cancel();
     let _ = maintenance.await;
+    crate::durability::report_holder_tag_summary();
     watcher.abort();
     drop(npc_catalogue);
     result

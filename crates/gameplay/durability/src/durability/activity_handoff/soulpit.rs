@@ -1,5 +1,6 @@
 //! Soulpit composes its debit and encounter with the shared session handoff.
 use super::*;
+pub use crate::durability::db::holder_metrics::SoulpitHolderRetry;
 use crate::durability::soulpit::{SOULPIT_ACTIVITY_KEY, SoulpitEntryRequest};
 use crate::durability::spell_owner_commit::SpellLanePermit;
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
@@ -108,11 +109,28 @@ impl ActivityHandoffOwner {
         world: crate::foundation::WorldId,
         after: Option<[u8; 16]>,
     ) -> Result<Vec<SoulpitBinding>> {
+        self.active_soulpits_with_retry(
+            authority, node, world, after, &mut SoulpitHolderRetry::new("direct"),
+        ).await
+    }
+
+    /// Same discovery pass, with measurements attached to its existing caller retry scope.
+    pub async fn active_soulpits_with_retry(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        world: crate::foundation::WorldId,
+        after: Option<[u8; 16]>,
+        retry: &mut SoulpitHolderRetry,
+    ) -> Result<Vec<SoulpitBinding>> {
         let recovery = authority
             .record_for(&self.root)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
-        self.root.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+        retry.attempt();
+        let issued = self.root.try_issue_tagged_semantic_pass(retry.tag());
+        retry.outcome(issued.is_ok());
+        issued?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_admission_relations(&mut tx).await?;

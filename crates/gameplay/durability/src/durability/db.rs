@@ -18,6 +18,7 @@ use tokio::sync::{Mutex, Notify};
 
 mod foreground;
 mod holder_queue;
+pub(super) mod holder_metrics;
 #[cfg(any(test, feature = "test-support"))]
 mod quest_clock;
 mod ready_admission;
@@ -25,6 +26,7 @@ mod ready_admission;
 use foreground::HolderPriority;
 pub use holder_queue::HolderWaiter;
 use holder_queue::{HolderQueue, Turn};
+use holder_metrics::{Hold, Refusal, Tag};
 
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
 const DB_TRANSACTION_FAILED: oteryn_error_codes::ErrorCode = oteryn_error_codes::ErrorCode::new(
@@ -379,6 +381,11 @@ fn record_holder_use(
     *usage = None;
 }
 
+/// Flushes the final partial diagnostic window and reports process totals.
+pub fn report_holder_tag_summary() {
+    holder_metrics::summarize();
+}
+
 /// Process name on the durability diagnostic lines (NBDIAG-4).
 const DIAGNOSTIC_PROCESS: &str = "oteryn-game-server";
 
@@ -395,6 +402,7 @@ struct PassOwner {
     caller: &'static std::panic::Location<'static>,
     issued: Instant,
     finished: bool,
+    measurement: Option<Hold>,
     /// The connection trace of the issuing task, when it has one (LOGDBG-C).
     trace: Option<[u8; 16]>,
 }
@@ -415,6 +423,7 @@ impl PassOwner {
             caller,
             issued,
             finished: false,
+            measurement: None,
             trace,
         }
     }
@@ -432,7 +441,8 @@ impl PassOwner {
 
 impl Drop for PassOwner {
     fn drop(&mut self) {
-        record_holder_usage(Some(self.caller), Some(self.issued.elapsed()));
+        let elapsed = self.issued.elapsed();
+        record_holder_usage(Some(self.caller), Some(elapsed));
         if !self.finished {
             self.emit(
                 oteryn_error_codes::Line::new(
@@ -453,6 +463,9 @@ impl Drop for PassOwner {
             })
         {
             *owner = None;
+        }
+        if let Some(measurement) = &self.measurement {
+            holder_metrics::released(measurement, elapsed);
         }
     }
 }
@@ -1619,16 +1632,25 @@ impl DurabilityRoot {
     /// holder goes to the oldest waiting owner (see [`HolderWaiter`]).
     /// A scheduled owner instead observes the bounded background preference policy.
     pub fn try_acquire_ready(&self) -> Result<PoolConnection<Postgres>, DurabilityError> {
+        self.try_acquire_ready_classified(false)
+            .map_err(|_| DurabilityError::RootUnavailable)
+    }
+
+    fn try_acquire_ready_classified(
+        &self,
+        diagnose: bool,
+    ) -> Result<PoolConnection<Postgres>, Refusal> {
         if holder_queue::is_background() {
-            return self.try_acquire_background_ready();
+            return self.try_acquire_background_ready_classified(diagnose);
         }
         let owner = holder_queue::current_owner();
         let now = Instant::now();
         let mut queue = self
             .holder_queue
             .lock()
-            .map_err(|_| DurabilityError::RootUnavailable)?;
-        if queue.turn(owner, now) != Turn::Kept
+            .map_err(|_| Refusal::QueueLock)?;
+        let turn = queue.turn(owner, now);
+        if turn != Turn::Kept
             && let Some(holder) = self.pool.try_acquire()
         {
             queue.served(owner);
@@ -1641,7 +1663,11 @@ impl DurabilityRoot {
         if !kept {
             self.request_ready();
         }
-        Err(DurabilityError::RootUnavailable)
+        Err(if turn == Turn::Kept {
+            Refusal::OlderTicket
+        } else {
+            self.pool_miss(diagnose)
+        })
     }
 
     /// Takes the current owner's place in the holder queue after a refused checkout that it
@@ -1920,17 +1946,62 @@ impl DurabilityRoot {
     }
 
     fn try_acquire_background_ready(&self) -> Result<PoolConnection<Postgres>, DurabilityError> {
+        self.try_acquire_background_ready_classified(false)
+            .map_err(|_| DurabilityError::RootUnavailable)
+    }
+
+    fn try_acquire_background_ready_classified(
+        &self,
+        diagnose: bool,
+    ) -> Result<PoolConnection<Postgres>, Refusal> {
         self.holder_priority
-            .background(Instant::now(), ROOT_RECOVERY_WINDOW, || {
+            .background_classified(Instant::now(), ROOT_RECOVERY_WINDOW, || {
                 // Priority already granted this operation its fairness turn. The ticket
                 // queue must not reserve an idle holder against that grant.
-                let holder = self.pool.try_acquire();
-                if holder.is_none() {
+                self.pool.try_acquire().ok_or_else(|| {
+                    let reason = self.pool_miss(diagnose);
                     self.request_ready();
-                }
-                holder
+                    reason
+                })
             })
-            .ok_or(DurabilityError::RootUnavailable)
+    }
+
+    fn pool_miss(&self, diagnose: bool) -> Refusal {
+        if diagnose && (self.pool.size() == 0 || self.pool.is_closed()) {
+            Refusal::NoLiveHolder
+        } else {
+            Refusal::HolderBusy
+        }
+    }
+
+    #[track_caller]
+    pub(super) fn try_issue_tagged_semantic_pass(
+        &self,
+        tag: Tag,
+    ) -> Result<IssuedSemanticPass, DurabilityError> {
+        self.issue_tagged_semantic_pass(tag, std::panic::Location::caller())
+    }
+
+    pub(super) fn issue_tagged_semantic_pass(
+        &self,
+        tag: Tag,
+        caller: Site,
+    ) -> Result<IssuedSemanticPass, DurabilityError> {
+        let started = Instant::now();
+        let holder = self.try_acquire_ready_classified(true).map_err(|reason| {
+            holder_metrics::refused(tag, started.elapsed(), reason);
+            record_refused_checkout(&self.holder_owner, caller);
+            DurabilityError::RootUnavailable
+        })?;
+        let issued = Instant::now();
+        let mut owner = PassOwner::checked_out(&self.holder_owner, caller, issued);
+        owner.measurement = Some(Hold::new(tag, issued.duration_since(started)));
+        Ok(IssuedSemanticPass {
+            root: self.clone(),
+            holder,
+            deadline: issued + self.pass_deadline(),
+            owner,
+        })
     }
 
     #[track_caller]
@@ -2038,12 +2109,17 @@ impl IssuedSemanticPass {
             + Send,
     {
         let remaining = self.deadline.saturating_duration_since(Instant::now());
-        let result = match tokio::time::timeout(
+        let future = tokio::time::timeout(
             remaining,
             operation(&mut self.holder, self.deadline, context),
-        )
-        .await
-        {
+        );
+        let completed = if let Some(measurement) = &mut self.owner.measurement {
+            measurement.dispatch = self.owner.issued.elapsed();
+            measurement.observe(future).await
+        } else {
+            future.await
+        };
+        let result = match completed {
             Ok(result) => result,
             Err(_) => Err(DurabilityError::RootPassDeadlineExceeded),
         };
@@ -2072,11 +2148,16 @@ impl IssuedSemanticPass {
             return result;
         }
 
-        match self
-            .holder
-            .return_to_pool_observed_until(self.deadline)
-            .await
-        {
+        let returned = self.holder.return_to_pool_observed_until(self.deadline);
+        let disposition = if let Some(measurement) = &mut self.owner.measurement {
+            let started = Instant::now();
+            let disposition = returned.await;
+            measurement.return_time = started.elapsed();
+            disposition
+        } else {
+            returned.await
+        };
+        match disposition {
             PoolConnectionReturnDisposition::ReturnedToIdle => {
                 self.root.holder_returned.notify_waiters();
                 result

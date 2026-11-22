@@ -7,7 +7,14 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         global: bool,
     ) -> Result<Option<u64>, ()> {
         super::handoff_owner::NativeSoulpitHandoff
-            .drive_soulpit(self, now, global)
+            .drive_soulpit(
+                self,
+                now,
+                global,
+                &mut crate::durability::activity_handoff::soulpit::SoulpitHolderRetry::new(
+                    "source_fixture",
+                ),
+            )
             .await
     }
     pub(in crate::gameplay_transport) async fn drive_one_soulpit(

@@ -6,6 +6,7 @@ use super::super::native_activity::NativeActivityOutcome;
 use super::super::{AdmissionRetryBudget, ComposedFreshAdmission, SecureIdentifiers};
 use super::{SoulpitEntryIntent, outcome};
 use crate::durability::DurabilityError;
+use crate::durability::activity_handoff::soulpit::SoulpitHolderRetry;
 use crate::durability::activity_handoff::{
     ActivityContentPin, ActivityEnterRequest, ActivityHandoffOwner, ActivityParticipant,
     ActivityReturnReason,
@@ -76,6 +77,7 @@ impl NativeSoulpitHandoff {
         admission: &ComposedFreshAdmission<'_, '_, '_>,
         now_micros: u64,
         global_tick: bool,
+        retry: &mut SoulpitHolderRetry,
     ) -> Result<Option<u64>, ()> {
         let (_cycle, now_micros) = lock_owner_cycle(
             &admission.activity_runtimes.soulpit_transitions,
@@ -105,7 +107,13 @@ impl NativeSoulpitHandoff {
                 .with_background_operation(async {
                     let Some(bindings) = owner_read(
                         owner
-                            .active_soulpits(admission.character, admission.holder, world, after)
+                            .active_soulpits_with_retry(
+                                admission.character,
+                                admission.holder,
+                                world,
+                                after,
+                                retry,
+                            )
                             .await,
                     )?
                     else {
@@ -261,13 +269,15 @@ async fn return_shared_soulpit<'a, 'f, 's>(
     let retry = AdmissionRetryBudget::for_command(admission.root);
     let mut after = None;
     let binding = loop {
+        let mut holder_retry = SoulpitHolderRetry::new("return_command");
         let bindings = read_with_budget(&retry, async || {
             owner
-                .active_soulpits(
+                .active_soulpits_with_retry(
                     admission.character,
                     admission.holder,
                     admitted.world_id,
                     after,
+                    &mut holder_retry,
                 )
                 .await
         })

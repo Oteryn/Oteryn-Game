@@ -117,15 +117,26 @@ impl HolderPriority {
         })
     }
 
-    /// Check priority and take an already-idle holder in one short critical section.
-    /// A continuous foreground stream still permits one background operation per window.
+    #[cfg(test)]
     pub(super) fn background<T>(
         &self,
         now: Instant,
         window: Duration,
         acquire: impl FnOnce() -> Option<T>,
     ) -> Option<T> {
-        let mut state = self.state.lock().ok()?;
+        self.background_classified(now, window, || acquire().ok_or(super::Refusal::HolderBusy))
+            .ok()
+    }
+
+    /// Check priority and take an already-idle holder in one short critical section.
+    /// A continuous foreground stream still permits one background operation per window.
+    pub(super) fn background_classified<T>(
+        &self,
+        now: Instant,
+        window: Duration,
+        acquire: impl FnOnce() -> Result<T, super::Refusal>,
+    ) -> Result<T, super::Refusal> {
+        let mut state = self.state.lock().map_err(|_| super::Refusal::PriorityLock)?;
         let grant = BACKGROUND_OPERATION
             .try_with(|operation| {
                 operation.as_ref().and_then(|(priority, granted)| {
@@ -138,7 +149,7 @@ impl HolderPriority {
             .as_ref()
             .is_some_and(|grant| grant.load(Ordering::Relaxed));
         if !granted && state.foreground > 0 && state.until.is_some_and(|until| now < until) {
-            return None;
+            return Err(super::Refusal::ForegroundPriority);
         }
         let holder = acquire()?;
         if !granted {
@@ -150,7 +161,7 @@ impl HolderPriority {
                 grant.store(true, Ordering::Relaxed);
             }
         }
-        Some(holder)
+        Ok(holder)
     }
 }
 

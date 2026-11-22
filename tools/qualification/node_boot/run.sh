@@ -393,6 +393,34 @@ interrupted() {
   evidence "interrupted signal=$1 stage=$ACTIVE_STAGE world_bundle=$NODE_BOOT_WORLD"
   exit "$2"
 }
+report_holder_tag_summary() {
+  # Prefer the node's exact totals. A live failure snapshot can use completed windows.
+  [[ -r $1 ]] || return 0
+  awk '
+    / event=holder_tag_(summary|window) tag=/ {
+      for (i = 1; i <= NF; i++) {
+        if ($i ~ /^event=holder_tag_/) break
+      }
+      tag = substr($(i + 1), 5)
+      if ($i == "event=holder_tag_summary") {
+        summary[tag] = $(i + 1) " " $(i + 2) " " $(i + 3) " " $(i + 4) " " $(i + 5)
+      } else {
+        passes[tag] += substr($(i + 2), 8)
+        refused[tag] += substr($(i + 3), 9)
+        held[tag] += substr($(i + 4), 9)
+        top = substr($(i + 5), 8) + 0
+        if (top > max[tag]) max[tag] = top
+      }
+    }
+    END {
+      for (tag in summary) print "HOLDER_TAG_SUMMARY " summary[tag]
+      for (tag in passes) {
+        if (!(tag in summary))
+          printf "HOLDER_TAG_SUMMARY tag=%s passes=%d refused=%d held_ms=%d max_ms=%d source=completed_windows\n", tag, passes[tag], refused[tag], held[tag], max[tag]
+      }
+    }
+  ' "$1" | sort
+}
 cleanup() {
   local rc=$?
   trap - EXIT INT TERM
@@ -413,6 +441,9 @@ cleanup() {
     docker rm --force --volumes "$PG_CONTAINER" >/dev/null 2>&1 || true
     sudo rm -rf "$BASE" || true
     [[ -z "${REUSE_STATE:-}" ]] || rm -f -- "$REUSE_STATE"
+  fi
+  if [[ -r "$node_log" && ${STATUS[graceful_shutdown]:-} != PASS ]]; then
+    report_holder_tag_summary "$node_log"
   fi
   if [[ $rc != 0 && -n "${NODE_BOOT_FAILURE_LOG_DIR:-}" ]]; then
     mkdir -p "$NODE_BOOT_FAILURE_LOG_DIR"
@@ -1020,6 +1051,12 @@ stage() { # name prerequisite... -- function
   ( set -Eeuo pipefail; source "$VARS"; "$@" ) 2>&1 | tee "$WORK/stage-$name.log"
   local rc=${PIPESTATUS[0]}
   stop_runtime_diagnostics
+  case "$name" in
+    seam_stages|spell_scenarios)
+      echo "--- holder phases and Soulpit retries by tag"
+      grep -oE 'event=holder_tag_window .*' "$node_log" 2>/dev/null || true
+      ;;
+  esac
   pg_observability_dump "$name" "$rc"
   set -e
   evidence "stage=$name state=finish world_bundle=$NODE_BOOT_WORLD exit=$rc"
@@ -1400,6 +1437,7 @@ graceful_shutdown() { # ready=false first, socket removed
   grep -q "event=shutdown .*state=complete" "$node_log" || fail "no clean shutdown"
   [[ ! -e "$BASE/run/control.sock" ]] || fail "socket left after graceful shutdown"
   [[ "$(echo 'SELECT ready FROM game_durability_admission_runtime_guards' | psql_admin oteryn_node_boot)" == f ]] || fail "guard still ready"
+  report_holder_tag_summary "$node_log"
   evidence "shutdown ready=false socket=removed"
 }
 
@@ -1584,6 +1622,7 @@ pvp_world_shutdown() { # the Open PvP World's node ends cleanly before the lifec
   for _ in $(seq 1 30); do sudo kill -0 "$PVP_NODE_PID" 2>/dev/null || break; sleep 1; done
   grep -q "event=shutdown .*state=complete" "$WORK/pvp-node.log" || pvp_fail "PvP node did not shut down cleanly"
   [[ ! -e "$PVP_BASE/run/control.sock" ]] || fail "PvP socket left after graceful shutdown"
+  report_holder_tag_summary "$WORK/pvp-node.log"
   evidence "pvp_world shutdown=complete socket=removed"
 }
 

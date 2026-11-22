@@ -1,5 +1,6 @@
 //! Soulpit uses the existing world owner, independently of connected player loops.
 use super::super::{ComposedFreshAdmission, world_respawns::stopping_first};
+use crate::durability::activity_handoff::soulpit::SoulpitHolderRetry;
 use crate::monster_owner_cycle::respawn_job::RespawnExit;
 use oteryn_foundation::CancellationToken;
 
@@ -10,6 +11,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> RespawnExit {
         // Crystal's global encounter tick is independent of addEvent's exact deadlines.
         let mut global_due = self.owner_now().get().saturating_add(1_000_000);
+        let mut retry = SoulpitHolderRetry::new("world_owner");
         loop {
             let now = self.owner_now().get();
             let global_tick = now >= global_due;
@@ -17,7 +19,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 global_due = now.saturating_add(1_000_000);
             }
             let deadline = if let Some(owner) = self.states.boss_activity_handoff.get() {
-                match stopping_first(owner.drive_soulpit(self, now, global_tick), shutdown).await {
+                match stopping_first(
+                    owner.drive_soulpit(self, now, global_tick, &mut retry),
+                    shutdown,
+                )
+                .await
+                {
                     None => return RespawnExit::Shutdown,
                     Some(Ok(deadline)) if deadline.is_none_or(|due| due > now) => deadline,
                     Some(Ok(_)) | Some(Err(())) => {

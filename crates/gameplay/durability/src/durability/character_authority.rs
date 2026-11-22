@@ -2,6 +2,7 @@
 mod bootstrap_character;
 mod creation_integrity;
 
+use super::character_progression::CurrentCharacterGameplayFence;
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation};
 use super::{DurabilityError, DurabilityRoot};
@@ -171,22 +172,24 @@ impl DurabilityRoot {
     /// Read a live session and its current Character revision in one fenced pass.
     /// Periodic gameplay consumers need both, so they must not return and reacquire
     /// the single holder between the admission journal and Character reads.
-    pub async fn read_current_gameplay_fence(
+    #[track_caller]
+    pub fn read_current_gameplay_fence(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         session: crate::foundation::GameSessionId,
-    ) -> Result<Option<super::character_progression::CurrentCharacterGameplayFence>> {
-        self.read_gameplay_fence(authority, session, false, true).await
+    ) -> impl Future<Output = Result<Option<CurrentCharacterGameplayFence>>> + Send {
+        self.read_gameplay_fence(authority, session, false, true, std::panic::Location::caller())
     }
 
     /// Current session and Character revision for advisory projections.
-    pub async fn observe_current_gameplay_fence(
+    #[track_caller]
+    pub fn observe_current_gameplay_fence(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         session: crate::foundation::GameSessionId,
         reconnectable: bool,
-    ) -> Result<Option<super::character_progression::CurrentCharacterGameplayFence>> {
-        self.read_gameplay_fence(authority, session, true, reconnectable).await
+    ) -> impl Future<Output = Result<Option<CurrentCharacterGameplayFence>>> + Send {
+        self.read_gameplay_fence(authority, session, true, reconnectable, std::panic::Location::caller())
     }
 
     async fn read_gameplay_fence(
@@ -195,10 +198,15 @@ impl DurabilityRoot {
         session: crate::foundation::GameSessionId,
         observation: bool,
         reconnectable: bool,
-    ) -> Result<Option<super::character_progression::CurrentCharacterGameplayFence>> {
+        caller: &'static std::panic::Location<'static>,
+    ) -> Result<Option<CurrentCharacterGameplayFence>> {
         let recovery = authority.record_for(self)?;
         let store = super::fresh_admission::FreshAdmissionStore::from_root(self.clone());
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+        let tag = super::db::holder_metrics::Tag::CharacterFence {
+            operation: if observation { "observe_current_gameplay_fence" } else { "read_current_gameplay_fence" },
+            caller,
+        };
+        self.try_issue_tagged_semantic_pass(tag)?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = if observation {
                 let mut tx = super::db::begin_observation_transaction(holder, deadline).await?;
                 observe_recovery_fence(&mut tx, &recovery).await?;
@@ -235,7 +243,7 @@ impl DurabilityRoot {
                 return Ok(Err(CharacterAuthorityError::Rejected));
             };
             commit_semantic_transaction(tx, deadline).await?;
-            Ok(Ok(Some(super::character_progression::CurrentCharacterGameplayFence {
+            Ok(Ok(Some(CurrentCharacterGameplayFence {
                 character_id,
                 game_session_id: session,
                 connection_generation: current.current_connection_generation(),

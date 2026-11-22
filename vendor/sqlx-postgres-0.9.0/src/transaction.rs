@@ -25,6 +25,7 @@ impl TransactionManager for PgTransactionManager {
             None => begin_ansi_transaction_sql(depth),
         };
 
+        let _profile = crate::oteryn_query_profile::StatementProfile::start();
         let rollback = Rollback::new(conn);
         rollback.conn.queue_simple_query(statement.as_str())?;
         rollback.conn.wait_until_ready().await?;
@@ -61,6 +62,8 @@ impl TransactionManager for PgTransactionManager {
 
     fn start_rollback(conn: &mut PgConnection) {
         if conn.inner.transaction_depth > 0 {
+            // The queued rollback is drained during pool return.
+            let _profile = crate::oteryn_query_profile::StatementProfile::start();
             conn.queue_simple_query(
                 rollback_ansi_transaction_sql(conn.inner.transaction_depth).as_str(),
             )

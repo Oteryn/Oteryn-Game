@@ -79,12 +79,20 @@ pub(super) enum JournalBackend {
     Root(DurabilityRoot),
 }
 
+const JOURNAL_HOLDER_SITE: &std::panic::Location<'static> = std::panic::Location::caller();
+
 impl JournalBackend {
+    #[track_caller]
     pub(super) fn try_issue_root(&self) -> Result<Option<db::IssuedSemanticPass>, DurabilityError> {
         match self {
             #[cfg(any(test, feature = "test-support"))]
             Self::Legacy(_) => Ok(None),
-            Self::Root(root) => root.try_issue_semantic_pass().map(Some),
+            Self::Root(root) => root
+                .issue_tagged_semantic_pass(
+                    db::holder_metrics::Tag::Admission(std::panic::Location::caller()),
+                    JOURNAL_HOLDER_SITE,
+                )
+                .map(Some),
         }
     }
 
@@ -176,6 +184,7 @@ impl AdmissionReconnectJournal {
         }
     }
 
+    #[track_caller]
     pub(super) fn try_issue_root_pass(
         &self,
     ) -> Result<Option<db::IssuedSemanticPass>, DurabilityError> {

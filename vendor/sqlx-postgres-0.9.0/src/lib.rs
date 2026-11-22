@@ -51,6 +51,8 @@ pub use arguments::{PgArgumentBuffer, PgArguments};
 pub use bind_iter::PgBindIterExt;
 pub use column::PgColumn;
 pub use connection::PgConnection;
+mod oteryn_query_profile;
+pub use oteryn_query_profile::PgQueryProfile;
 pub use copy::{PgCopyIn, PgPoolCopyExt};
 pub use database::Postgres;
 pub use error::{PgDatabaseError, PgErrorPosition};
