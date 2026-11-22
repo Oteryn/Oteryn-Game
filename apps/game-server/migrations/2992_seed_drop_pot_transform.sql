@@ -57,13 +57,19 @@ DECLARE body TEXT; anchor TEXT;
 BEGIN
     body:=pg_get_functiondef('game_map_seed_drop_admit()'::regprocedure);
     anchor:='AND g.spatial_position=int4send';
-    IF strpos(body,anchor)=0 THEN RAISE EXCEPTION 'missing seed move cell proof'; END IF;
+    IF (length(body)-length(replace(body,anchor,'')))/length(anchor)<>1 THEN
+        RAISE EXCEPTION 'unexpected seed move cell proof';
+    END IF;
     body:=replace(body,anchor,'AND (NEW.pot_item_instance_id IS NOT NULL OR g.spatial_position=int4send');
     anchor:='||int2send((-get_byte(NEW.placement,38))::smallint)';
-    IF strpos(body,anchor)=0 THEN RAISE EXCEPTION 'missing seed move cell proof ending'; END IF;
+    IF (length(body)-length(replace(body,anchor,'')))/length(anchor)<>1 THEN
+        RAISE EXCEPTION 'unexpected seed move cell proof ending';
+    END IF;
     body:=replace(body,anchor,anchor||')');
     anchor:='RETURN NEW;';
-    IF strpos(body,anchor)=0 THEN RAISE EXCEPTION 'missing seed receipt admission ending'; END IF;
+    IF (length(body)-length(replace(body,anchor,'')))/length(anchor)<>1 THEN
+        RAISE EXCEPTION 'unexpected seed receipt admission ending';
+    END IF;
     EXECUTE replace(body,anchor,$arm$
     IF NEW.pot_item_instance_id IS NOT NULL AND NOT EXISTS(
         SELECT 1 FROM game_item_instances i
@@ -97,25 +103,34 @@ $arm$);
 
     body:=pg_get_functiondef('game_map_seed_drop_complete(uuid)'::regprocedure);
     anchor:='(SELECT count(*) FROM game_item_instances WHERE last_transaction_id=r.transaction_id)<>1';
-    IF strpos(body,anchor)=0 THEN RAISE EXCEPTION 'missing seed receipt mutation count'; END IF;
+    IF (length(body)-length(replace(body,anchor,'')))/length(anchor)<>1 THEN
+        RAISE EXCEPTION 'unexpected seed receipt mutation count';
+    END IF;
+    -- Parentheses keep the CASE's THEN inside the surrounding PL/pgSQL IF expression.
     body:=replace(body,anchor,'(SELECT count(*) FROM game_item_instances WHERE last_transaction_id=r.transaction_id)'
-        ||'<>CASE WHEN r.pot_item_instance_id IS NULL THEN 1 ELSE 2 END');
+        ||'<>(CASE WHEN r.pot_item_instance_id IS NULL THEN 1 ELSE 2 END)');
     anchor:='OR NOT EXISTS(SELECT 1 FROM game_terrain_tool_receipts t';
-    IF strpos(body,anchor)=0 THEN RAISE EXCEPTION 'missing seed receipt terrain proof'; END IF;
+    IF (length(body)-length(replace(body,anchor,'')))/length(anchor)<>1 THEN
+        RAISE EXCEPTION 'unexpected seed receipt terrain proof';
+    END IF;
     body:=replace(body,anchor,'OR (r.pot_item_instance_id IS NOT NULL AND NOT game_seed_drop_pot_complete(r))'
         ||E'\n        OR (r.pot_item_instance_id IS NULL AND NOT EXISTS(SELECT 1 FROM game_terrain_tool_receipts t');
     anchor:='AND s.decay_delays=ARRAY[72000000,72000000]::bigint[])';
-    IF strpos(body,anchor)=0 THEN RAISE EXCEPTION 'missing seed receipt terrain proof ending'; END IF;
+    IF (length(body)-length(replace(body,anchor,'')))/length(anchor)<>1 THEN
+        RAISE EXCEPTION 'unexpected seed receipt terrain proof ending';
+    END IF;
     EXECUTE replace(body,anchor,anchor||')');
 END $migration$;
 
 DO $migration$
-DECLARE body TEXT; begin_at INTEGER;
+DECLARE body TEXT;
+    entry CONSTANT TEXT:=E'\nBEGIN\n';
 BEGIN
     body:=pg_get_functiondef('game_item_instance_guard()'::regprocedure);
-    begin_at:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');
-    IF begin_at=0 THEN RAISE EXCEPTION 'missing Item mutation guard'; END IF;
-    EXECUTE overlay(body placing E'BEGIN\n'||$arm$
+    IF (length(body)-length(replace(body,entry,'')))/length(entry)<>1 THEN
+        RAISE EXCEPTION 'unexpected Item mutation guard entry';
+    END IF;
+    EXECUTE replace(body,entry,entry||$arm$
     IF TG_OP='UPDATE' AND EXISTS(
         SELECT 1 FROM game_map_seed_drop_records r
         WHERE r.transaction_id=NEW.last_transaction_id AND r.pot_item_instance_id=OLD.item_instance_id
@@ -127,24 +142,26 @@ BEGIN
         NEW.state_revision:=OLD.state_revision+1;
         RETURN NEW;
     END IF;
-$arm$ from begin_at for 5);
+$arm$);
 
     body:=pg_get_functiondef('game_item_instance_change_proven()'::regprocedure);
-    begin_at:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');
-    IF begin_at=0 THEN RAISE EXCEPTION 'missing Item deferred mutation proof'; END IF;
-    EXECUTE overlay(body placing E'BEGIN\n'||$arm$
+    IF (length(body)-length(replace(body,entry,'')))/length(entry)<>1 THEN
+        RAISE EXCEPTION 'unexpected Item deferred mutation proof entry';
+    END IF;
+    EXECUTE replace(body,entry,entry||$arm$
     IF EXISTS(SELECT 1 FROM game_map_seed_drop_records r
               WHERE r.transaction_id=NEW.last_transaction_id AND r.pot_item_instance_id=NEW.item_instance_id
                 AND r.pot_before=to_jsonb(OLD) AND r.created_xact_id=pg_current_xact_id()) THEN
         PERFORM game_map_seed_drop_complete(NEW.last_transaction_id);
         RETURN NULL;
     END IF;
-$arm$ from begin_at for 5);
+$arm$);
 
     body:=pg_get_functiondef('game_spell_field_temporal_schedule_proven()'::regprocedure);
-    begin_at:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');
-    IF begin_at=0 THEN RAISE EXCEPTION 'missing Item schedule proof'; END IF;
-    EXECUTE overlay(body placing E'BEGIN\n'||$arm$
+    IF (length(body)-length(replace(body,entry,'')))/length(entry)<>1 THEN
+        RAISE EXCEPTION 'unexpected Item schedule proof entry';
+    END IF;
+    EXECUTE replace(body,entry,entry||$arm$
     IF NEW.seed_drop_source_transaction_id IS NOT NULL THEN
         IF NOT EXISTS(
             SELECT 1 FROM game_map_seed_drop_records r
@@ -168,22 +185,27 @@ $arm$ from begin_at for 5);
         END IF;
         RETURN NULL;
     END IF;
-$arm$ from begin_at for 5);
+$arm$);
 END $migration$;
 
 DO $migration$
 DECLARE body TEXT; name TEXT;
     anchor CONSTANT TEXT:='p.event_source_transaction_id IS NOT NULL OR p.map_source_transaction_id IS NOT NULL';
     first_stage CONSTANT TEXT:='IF r.source_stage>1 AND NOT EXISTS';
+    map_mint_tail CONSTANT TEXT:='AND g.native_room_placement_context=m.base_bundle_digest AND g.stack_ordinal>0)';
 BEGIN
     -- Extend the existing move/decay custody policy to carry the same absolute dates.
     FOREACH name IN ARRAY ARRAY['game_item_loop_line_admit()','game_spell_field_temporal_capture()',
                                 'game_event_item_timer_ground_current(uuid,uuid,uuid,numeric,bigint)'] LOOP
         body:=pg_get_functiondef(name::regprocedure);
-        IF strpos(body,anchor)=0 THEN RAISE EXCEPTION 'missing hosted timer custody proof in %',name; END IF;
+        IF (length(body)-length(replace(body,anchor,'')))/length(anchor)<>1 THEN
+            RAISE EXCEPTION 'unexpected hosted timer custody proof in %',name;
+        END IF;
         body:=replace(body,anchor,anchor||' OR p.seed_drop_source_transaction_id IS NOT NULL');
         IF name='game_spell_field_temporal_capture()' THEN
-            IF strpos(body,first_stage)=0 THEN RAISE EXCEPTION 'missing Item schedule predecessor proof'; END IF;
+            IF (length(body)-length(replace(body,first_stage,'')))/length(first_stage)<>1 THEN
+                RAISE EXCEPTION 'unexpected Item schedule predecessor proof';
+            END IF;
             body:=replace(body,first_stage,$arm$IF r.source_stage>1 AND NOT EXISTS(
                 SELECT 1 FROM game_map_seed_drop_records s
                 WHERE s.transaction_id=p.seed_drop_source_transaction_id AND s.pot_first_stage=r.source_stage
@@ -196,9 +218,11 @@ BEGIN
 
     -- An emptied base placement is still taken. Only its original minted Item
     -- and exact unchanged Ground row can use this additional pickup arm.
-    SELECT prosrc INTO STRICT body FROM pg_proc WHERE oid='game_item_loop_map_mint_source(uuid)'::regprocedure;
-    IF strpos(body,'game_map_item_mint_receipts')=0 THEN RAISE EXCEPTION 'missing map-mint pickup proof'; END IF;
-    body:=rtrim(body,E' \n\r\t;')||$arm$
+    body:=pg_get_functiondef('game_item_loop_map_mint_source(uuid)'::regprocedure);
+    IF (length(body)-length(replace(body,map_mint_tail,'')))/length(map_mint_tail)<>1 THEN
+        RAISE EXCEPTION 'unexpected map-mint pickup proof ending';
+    END IF;
+    EXECUTE replace(body,map_mint_tail,map_mint_tail||$arm$
     OR EXISTS(
         SELECT 1 FROM game_map_item_mint_receipts m
         JOIN game_item_instances i USING(item_instance_id)
@@ -217,8 +241,7 @@ BEGIN
                   AND (i.definition_family,i.definition_production_key,i.definition_revision_ref)
                      =(p.target_family,p.target_production_key,p.target_revision)))
     )
-$arm$;
-    EXECUTE format('CREATE OR REPLACE FUNCTION game_item_loop_map_mint_source(p_item uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,%I,pg_temp AS %L',current_schema(),body);
+$arm$);
 
     EXECUTE format('ALTER FUNCTION game_seed_drop_pot_complete(game_map_seed_drop_records) SET search_path=pg_catalog,%I,pg_temp',current_schema());
 END $migration$;
