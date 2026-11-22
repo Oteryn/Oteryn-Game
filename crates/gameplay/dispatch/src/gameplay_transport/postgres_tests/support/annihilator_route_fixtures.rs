@@ -380,7 +380,7 @@ pub(super) fn run(route: Route) -> TestResult {
                 _ => return Err("durable cast facts unavailable".into()),
             };
             assert_eq!(facts.level, source_level);
-            if combat {
+            if combat || (route == Route::ClaimedStation && index == 3) {
                 let native = generation.native_gameplay().ok_or("native")?;
                 owner
                     .root
@@ -574,7 +574,7 @@ pub(super) fn run(route: Route) -> TestResult {
         let lever = target(map, 33226, 31671)?;
         if route == Route::ClaimedStation {
             let result = super::plate_predicates_fixtures::claimed_station(
-                &mut owner, &mut admitted, &lever, &h.pool,
+                &mut owner, &mut admitted, &lever, map,
             )
             .await;
             drop(owner);

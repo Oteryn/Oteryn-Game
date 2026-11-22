@@ -1,4 +1,4 @@
-use super::annihilator_route_fixtures::{step, use_target};
+use super::annihilator_route_fixtures::{step, target, use_target};
 use super::fixture::debug;
 use super::quest_world_callbacks_fixtures::local;
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
@@ -48,31 +48,18 @@ pub(super) async fn claimed_station(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     members: &mut [AdmittedSession],
     lever: &WorldObjectTarget,
-    pool: &sqlx::PgPool,
+    map: &BundleMap,
 ) -> TestResult {
-    let fence = owner
-        .current_quest_fence(members[3].game_session_id)
-        .await
-        .map_err(|()| "station character fence")?
-        .ok_or("station character")?;
-    // Seed the persisted once-claim in the isolated fixture. Admission must read
-    // that actual owner row, independently of the approach door and its state.
-    let mut tx = pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role=replica")
-        .execute(&mut *tx)
-        .await?;
-    sqlx::query(
-        "INSERT INTO game_reward_claims (character_id, claim_family, claim_production_key, \
-         claim_revision_ref, claimed_transaction_id, claimed_at) \
-         VALUES (encode($1,'hex')::uuid, 'RewardClaim', \
-         'oteryn:reward-claim.quest.u7_24.the_annihilator.reward', 'reward-claim-r1', \
-         encode($2,'hex')::uuid, floor(extract(epoch FROM clock_timestamp()))::bigint)",
-    )
-    .bind(fence.character_id.as_bytes().as_slice())
-    .bind(super::fixture::id(249).as_slice())
-    .execute(&mut *tx)
-    .await?;
-    tx.commit().await?;
+    // Earn the actual shared claim through the chest USE. Reposition directly
+    // to the station afterwards so the sealed approach door cannot mask the
+    // lever regression.
+    relocate(owner, map, &members[3], 33227, 31657).await?;
+    assert_eq!(
+        use_target(owner, &mut members[3], &target(map, 33227, 31656)?).await?,
+        UseDisposition::Committed,
+        "earn the native armor chest before testing lever eligibility"
+    );
+    relocate(owner, map, &members[3], 33222, 31671).await?;
     assert_eq!(
         use_target(owner, &mut members[0], lever).await?,
         UseDisposition::NotPossible
@@ -80,9 +67,8 @@ pub(super) async fn claimed_station(
     for (member, x) in members.iter().zip([33225, 33224, 33223, 33222]) {
         assert_position(owner, member, x, 31671).await?;
     }
-    let map = owner.bundle_map().ok_or("source map")?;
     assert_eq!(
-        super::annihilator_route_fixtures::target(map, 33226, 31671)?.expected_revision,
+        target(map, 33226, 31671)?.expected_revision,
         lever.expected_revision
     );
     assert!(
@@ -105,24 +91,8 @@ pub(super) async fn arena_deadline(
     let admitted_at = owner.owner_now().get();
     // One member has passed the reward door and a different session now occupies
     // their vacated cell. Neither should move when this run expires.
-    let closed = crate::map::floor::BundleDoors(&map.facts);
-    {
-        let mut runtime = owner.runtime.lock().await;
-        for (member, (x, y)) in [(&members[0], (33227, 31657)), (&members[4], (33222, 31659))] {
-            let actor = member.runtime_actor.ok_or("actor")?;
-            let proof = crate::map::floor::prepare_quest_encounter_ejection(
-                &runtime,
-                &owner.movement_cells,
-                actor,
-                member.game_session_id,
-                runtime.read_actor_position(actor).map_err(debug)?,
-                local(Position { x, y, floor: -13 }),
-                &closed,
-            )
-            .map_err(debug)?;
-            runtime.commit_source_step(proof).map_err(debug)?;
-        }
-    }
+    relocate(owner, map, &members[0], 33227, 31657).await?;
+    relocate(owner, map, &members[4], 33222, 31659).await?;
 
     owner
         .states
@@ -157,6 +127,30 @@ pub(super) async fn arena_deadline(
     for member in &members[1..4] {
         assert_position(owner, member, 33227, 31659).await?;
     }
+    Ok(())
+}
+
+async fn relocate(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    map: &BundleMap,
+    member: &AdmittedSession,
+    x: u16,
+    y: u16,
+) -> TestResult {
+    let actor = member.runtime_actor.ok_or("actor")?;
+    let mut runtime = owner.runtime.lock().await;
+    let closed = crate::map::floor::BundleDoors(&map.facts);
+    let proof = crate::map::floor::prepare_quest_encounter_ejection(
+        &runtime,
+        &owner.movement_cells,
+        actor,
+        member.game_session_id,
+        runtime.read_actor_position(actor).map_err(debug)?,
+        local(Position { x, y, floor: -13 }),
+        &closed,
+    )
+    .map_err(debug)?;
+    runtime.commit_source_step(proof).map_err(debug)?;
     Ok(())
 }
 
