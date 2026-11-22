@@ -2,6 +2,7 @@
 use super::*;
 use crate::content::{CollisionClass, LogicalCell};
 use crate::map::view::EntryFacts;
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 pub(in crate::gameplay_transport) fn room_contains(
     encounter: &oteryn_gameplay_quests::quest::world_callbacks::Encounter,
@@ -141,6 +142,60 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
         };
+        if callback.key == oteryn_gameplay_quests::quest::world_callbacks::TBI_TECHNOMANCER_LEVER {
+            let Some(native) = self
+                .active_generation
+                .and_then(|active| active.native_gameplay())
+            else {
+                return UseDisposition::Rejected;
+            };
+            if native.install_companion_policies(runtime).is_err()
+                || !map.facts.apply_quest_callback(
+                    key,
+                    expected_revision,
+                    after,
+                    &[],
+                    &[],
+                    false,
+                    None,
+                )
+            {
+                return UseDisposition::Rejected;
+            }
+            for monster in &encounter.monsters {
+                let at = local(monster.position);
+                if self.movement_cells.index().lookup(
+                    self.movement_cells.scope(),
+                    LogicalCell {
+                        x: at.x,
+                        y: at.y,
+                        z: i32::from(at.floor),
+                    },
+                ) != Ok(CollisionClass::Walkable)
+                    || map.facts.quest_callback_blocked(
+                        map.overlay.base(),
+                        tile(monster.position),
+                        false,
+                    )
+                    || runtime.positioned_melee_census().map_or(true, |census| {
+                        census
+                            .iter()
+                            .any(|(_, position, _)| position.position() == at)
+                    })
+                {
+                    continue;
+                }
+                if let Ok(policy) = runtime.companion_policy(&monster.creature) {
+                    // Crystal attempts each authored spawn in order, even when a peer cell is occupied.
+                    let _ = runtime.commit_quest_creature_spawn(&[(
+                        monster.creature.as_str(),
+                        policy.maximum_health,
+                        at,
+                    )]);
+                }
+            }
+            return UseDisposition::Committed;
+        }
         if preflight && callback.has_personal_state() {
             if !callback.requires_world_admission {
                 return UseDisposition::Rejected;

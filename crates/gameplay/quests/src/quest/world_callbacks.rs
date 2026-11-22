@@ -82,6 +82,7 @@ mod state_operations;
 mod treasure_source;
 #[cfg(test)]
 mod treasure_source_tests;
+pub use effects::TBI_TECHNOMANCER_LEVER;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPhase,
     EncounterPlayer, EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement, ItemPresence,

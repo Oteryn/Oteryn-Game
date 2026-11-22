@@ -107,6 +107,39 @@ def source_identity(ref):
     return ref['key'], ref['revision']
 
 
+def reconcile_tbi_lottery_ticket(records, claims):
+    """Admit the already-lowered UID 6250 without changing the frozen SOURCE witness."""
+    quest_key = 'oteryn:quest.secret_service_quest'
+    claim_key = 'oteryn:reward-claim.quest.u8_1.secret_service.lottery_ticket'
+    quest = next((row['definition'] for row in records
+                  if row['definition']['identity']['key'] == quest_key), None)
+    if quest is None:
+        return
+    claim = next(claim for claim in claims if claim['identity']['key'] == claim_key)
+    native = claim['native_contents']
+    projection, = native['placements']
+    placement, = claim['placements']
+    reward = placement['reward']
+    item = {'family': 'Item', 'key': 'oteryn:item.tibia.i5956', 'revision': 'definition-r1'}
+    source = claim['source_variant']['source_claim']
+    if (claim['data_holds'] or claim['quest'] != quest['source_refs']['quest']
+            or claim['quest'] != source['quest']
+            or source['identity']['key'] != claim['provenance']['pilot_key']
+            or source['identity']['revision'] != claim['provenance']['pilot_revision']
+            or native['schema'] != 'OTERYN_NATIVE_CONTAINER_REWARD/v1'
+            or native['revision'] != '201189f871d23597b82caf88fd611454a2ddefb8'
+            or native['source_sha256'] != 'b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757'
+            or projection['unique_id'] != 6250 or projection['contents']
+            or projection['completion'] != {'kind': 'storage', 'key': 'Storage.Quest.U8_1.SecretService.LotteryTicket'}
+            or projection['root'] != item or reward['items'] != [{'count': 1, 'item': item}]
+            or reward['written_text']['item'] != item
+            or hashlib.sha256(projection['root_text'].encode()).hexdigest() != reward['written_text']['text_ref']['sha256']
+            or {'server': 'crystalserver', 'unique_id': 6250} not in placement['source_binding']['legacy_unique_ids']):
+        raise ValueError('TBI lottery ticket native claim evidence differs')
+    quest['missing_data'].remove({'code': 'claim_native_lowering_missing',
+                                  'source_key': source['identity']['key']})
+
+
 def build_records(quests, claims, readiness_reports=None, gates=None, gate_checks=None, source_data=None):
     """No guessed identity joins, missing requirements, quantities or readiness."""
     bindings = {}
@@ -401,6 +434,7 @@ def expected_files(root, include_registration=False):
                                 'target_items' not in original.get(stage['key'], {}))
     resolution = enrich([*recipes, {'stages': extra_stages}], index)
     validate_references(records, items)
+    reconcile_tbi_lottery_ticket(records, claims)
     files, shards = {'content/quests/item-key-resolution.json': compact(resolution)}, []
     for number, start in enumerate(range(0, len(records), SHARD_SIZE)):
         chunk = records[start:start + SHARD_SIZE]

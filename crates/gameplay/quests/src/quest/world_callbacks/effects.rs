@@ -313,6 +313,10 @@ pub struct Encounter {
     pub phase: Option<EncounterPhase>,
 }
 
+/// Crystal's Secret Service lever toggles manually and attempts the roster on opening.
+pub const TBI_TECHNOMANCER_LEVER: &str =
+    "oteryn:quest-callback/secret-service-tbi-technomancer-lever";
+
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub enum EncounterPhase {
     #[serde(rename = "court_warlock")]
@@ -835,6 +839,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
         return false;
     }
     if let Some(encounter) = &effects.encounter {
+        let tbi_lever = callback.key == TBI_TECHNOMANCER_LEVER;
         let in_room = |p: Position| {
             p.floor == encounter.room_min.floor
                 && (encounter.room_min.x..=encounter.room_max.x).contains(&p.x)
@@ -863,17 +868,38 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     || (u64::from(encounter.room_max.x.saturating_sub(encounter.room_min.x)) + 1)
                         * (u64::from(encounter.room_max.y.saturating_sub(encounter.room_min.y)) + 1)
                         > 4096
+            } else if tbi_lever {
+                !encounter.players.is_empty()
+                    || callback.quest != "oteryn:quest.secret_service_quest"
+                    || callback.selector.position
+                        != Some(Position {
+                            x: 32576,
+                            y: 31862,
+                            floor: -14,
+                        })
+                    || callback.has_personal_state()
+                    || callback.lever != Some([2772, 2773])
+                    || !callback.reversible
+                    || callback.trigger != Trigger::Use
+                    || encounter.phase.is_some()
+                    || encounter.monsters.len() != 19
             } else {
                 !(1..=if encounter.phase.is_some() { 16 } else { 8 })
                     .contains(&encounter.players.len())
             }
-            || !(usize::from(!delayed)..=if encounter.phase.is_some() { 16 } else { 8 })
+            || !(usize::from(!delayed)..=if tbi_lever {
+                19
+            } else if encounter.phase.is_some() {
+                16
+            } else {
+                8
+            })
                 .contains(&encounter.monsters.len())
             || (encounter.phase.is_some() && encounter.timing.is_some())
-            || (callback.reversible && !source_party)
+            || (callback.reversible && !source_party && !tbi_lever)
             || unique_from.len() != encounter.players.len()
             || (unique_to.len() != encounter.players.len() && !source_party)
-            || unique_monsters.len() != encounter.monsters.len()
+            || (!tbi_lever && unique_monsters.len() != encounter.monsters.len())
             || !unique_to.is_disjoint(&unique_monsters)
             || !pos(encounter.room_min)
             || !pos(encounter.room_max)

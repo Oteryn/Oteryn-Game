@@ -74,7 +74,7 @@ def encounter_bosses() -> set[str]:
     # These quest bosses have a generic bosses/ donor path. Their scripted entry/kill
     # conditions are not a world-reset scheduling policy.
     keys.update(f"oteryn:creature.{name}" for name in (
-        "black_knight", "koshei_the_deathless", "energized_raging_mage",
+        "koshei_the_deathless", "energized_raging_mage",
         "the_flaming_orchid", "bibby_bloodbath", "renegade_orc",
         "thawing_dragon_lord", "dazed_leaf_golem",
     ))
@@ -174,6 +174,18 @@ def convert(xml: bytes) -> dict[str, str]:
                     "identity": {"key": f"{key}.pharaoh", "revision": "definition-r1"},
                     "points": [scheduled],
                 }}
+            elif point["creature"] == "oteryn:creature.black_knight":
+                # Crystal 201189f8 world-monster.xml:139458-139459 gives this
+                # public room boss a fixed 80-second schedule.
+                if point["cell"] != {"floor": 11, "x": 32874, "y": 31946} or point["respawn_ms"] != 80_000:
+                    sys.exit("Black Knight spawn differs from its source")
+                scheduled = {key: value for key, value in point.items() if key != "respawn_ms"}
+                scheduled["boss_policy"] = {"respawn": {"min_s": 80, "max_s": 80}}
+                scheduled_bosses.append({"declaration": {
+                    "centre": {"floor": cz, "x": cx, "y": cy},
+                    "identity": {"key": f"{key}.black_knight", "revision": "definition-r1"},
+                    "points": [scheduled],
+                }})
             elif point["creature"] in boss_keys:
                 if point["creature"] in encounter_bound:
                     held_bosses.append({"source": key, "point": point,
