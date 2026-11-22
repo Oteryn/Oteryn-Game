@@ -27,6 +27,7 @@ pub enum HouseManagementAction {
         list: HouseManagementList,
         expected_revision: u64,
         members: Vec<[u8; 16]>,
+        guild_selectors: Option<Vec<String>>,
     },
     ReplaceGuildAcl {
         list: HouseManagementList,

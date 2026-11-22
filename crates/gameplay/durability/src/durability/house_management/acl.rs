@@ -2,16 +2,12 @@ use super::*;
 use oteryn_gameplay_housing::house_management::{HOUSE_ACL_MEMBERS_MAX, HouseManagementList};
 use std::collections::BTreeSet;
 
-#[allow(clippy::too_many_arguments)]
 pub(super) async fn replace(
     tx: &mut Tx<'_>,
     fence: &CurrentCharacterItemFence,
     request: &HouseManagementRequest,
-    _ownership: u64,
     owner: bool,
-    revision: u64,
-    list: HouseManagementList,
-    expected: u64,
+    (list, expected, revision): (HouseManagementList, u64, u64),
     members: &[[u8; 16]],
 ) -> Result<u64> {
     let key = list.key().ok_or(HouseManagementError::Rejected)?;
@@ -42,7 +38,7 @@ pub(super) async fn replace(
     Ok(next)
 }
 
-async fn next_revision(
+pub(super) async fn next_revision(
     tx: &mut Tx<'_>,
     fence: &CurrentCharacterItemFence,
     request: &HouseManagementRequest,
@@ -74,22 +70,14 @@ async fn next_revision(
         .ok_or(HouseManagementError::Conflict)
 }
 
-pub(super) async fn replace_guild(
+pub(super) async fn qualify_guild_selectors(
     tx: &mut Tx<'_>,
-    fence: &CurrentCharacterItemFence,
     request: &HouseManagementRequest,
-    owner: bool,
-    (list, expected, revision, rules): (HouseManagementList, u64, u64, &[String]),
-    ownership: u64,
-) -> Result<u64> {
-    if !matches!(
-        list,
-        HouseManagementList::Guest | HouseManagementList::Subowner
-    ) || rules.len() > 100
-    {
+    rules: &[String],
+) -> Result<serde_json::Value> {
+    if rules.len() > 100 {
         return Err(HouseManagementError::Rejected);
     }
-    let next = next_revision(tx, fence, request, owner, list, expected, revision).await?;
     let mut guilds = Vec::with_capacity(rules.len());
     let mut ranks = Vec::with_capacity(rules.len());
     for line in rules {
@@ -98,7 +86,7 @@ pub(super) async fn replace_guild(
             .split_once('@')
             .ok_or(HouseManagementError::Rejected)?;
         let (rank, guild) = (rank.trim(), guild.trim());
-        if line.len() > 100 || guild.is_empty() || guild.contains('@') {
+        if line.len() > 100 || line.contains('\0') || guild.is_empty() || guild.contains('@') {
             return Err(HouseManagementError::Rejected);
         }
         guilds.push(guild);
@@ -106,7 +94,7 @@ pub(super) async fn replace_guild(
     }
     let world = request.house.world_id();
     let qualified: serde_json::Value = sqlx::query_scalar(
-        "SELECT COALESCE(jsonb_agg(DISTINCT jsonb_build_object('guild', g.guild_id, 'rank', r.level, 'name', r.name_key)), '[]'::jsonb)
+        "SELECT COALESCE(jsonb_agg(DISTINCT jsonb_build_object('guild', g.guild_id, 'rank', r.level, 'identity', r.house_acl_identity)), '[]'::jsonb)
          FROM unnest($2::text[], $3::text[]) AS rule(guild, rank)
          JOIN game_guilds g ON g.world_id=encode($1,'hex')::uuid
            AND g.name_key=game_character_name_key(rule.guild) AND g.state IN(1,2)
@@ -118,14 +106,5 @@ pub(super) async fn replace_guild(
     if qualified.as_array().map(Vec::len) != Some(rules.len()) {
         return Err(HouseManagementError::Rejected);
     }
-    sqlx::query(
-        "INSERT INTO game_house_guild_acl(world_id,house_key,list_key,ownership_generation,rules,last_session_id,last_command_id)
-         VALUES(encode($1,'hex')::uuid,$2,$3,$4::text::numeric,$5,encode($6,'hex')::uuid,$7::text::numeric)
-         ON CONFLICT(world_id,house_key,list_key) DO UPDATE SET ownership_generation=excluded.ownership_generation,
-           rules=excluded.rules,last_session_id=excluded.last_session_id,last_command_id=excluded.last_command_id",
-    )
-    .bind(world.as_bytes().as_slice()).bind(request.house.house_key()).bind(list.key())
-    .bind(ownership.to_string()).bind(qualified).bind(fence.game_session_id.as_bytes().as_slice())
-    .bind(request.command.command_id().get().to_string()).execute(&mut **tx).await?;
-    Ok(next)
+    Ok(qualified)
 }

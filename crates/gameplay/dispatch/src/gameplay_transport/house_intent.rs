@@ -16,11 +16,12 @@ pub(super) async fn dispatch(
     body: &[u8],
     query: bool,
     include_kind: bool,
+    include_guild_acl: bool,
 ) -> Option<Vec<u8>> {
     if query {
         return super::house_query::dispatch(authority, actor, command, body, include_kind).await;
     }
-    let Ok(intent) = wire::decode_house_intent(body) else {
+    let Ok(intent) = wire::decode_house_intent_selected(body, include_guild_acl) else {
         return Some(wire::encode_house_result(D::Rejected, 0));
     };
     authority.house_intent(actor, command, intent).await
@@ -98,7 +99,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await
             {
                 Ok(_) => Some(wire::encode_house_result(D::Ok, 0)),
-                Err(crate::durability::house_ownership::HouseOwnershipError::Unavailable(error)) => {
+                Err(crate::durability::house_ownership::HouseOwnershipError::Unavailable(
+                    error,
+                )) => {
                     #[cfg(test)]
                     eprintln!("House bid unavailable: {error:?}");
                     #[cfg(not(test))]
@@ -127,13 +130,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
         }
         let action = match intent.action {
-            wire::HouseAction::GuildAcl { subowners, revision, rules } => {
-                HouseManagementAction::ReplaceGuildAcl {
-                    list: if subowners { HouseManagementList::Subowner } else { HouseManagementList::Guest },
-                    expected_revision: revision,
-                    rules,
-                }
-            }
+            wire::HouseAction::GuildAcl {
+                subowners,
+                revision,
+                rules,
+            } => HouseManagementAction::ReplaceGuildAcl {
+                list: if subowners {
+                    HouseManagementList::Subowner
+                } else {
+                    HouseManagementList::Guest
+                },
+                expected_revision: revision,
+                rules,
+            },
             wire::HouseAction::Acl {
                 subowners,
                 revision,
@@ -146,6 +155,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
                 expected_revision: revision,
                 members,
+                guild_selectors: None,
             },
             wire::HouseAction::Door {
                 x,
@@ -153,6 +163,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 floor,
                 revision,
                 members,
+                guild_selectors,
             } => {
                 let floor = floor.checked_neg()?;
                 let cell = crate::content::LogicalCell {
@@ -171,7 +182,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         return refuse();
                     };
                 } else {
-                    let Some(placement) = self.movement_cells()
+                    let Some(placement) = self
+                        .movement_cells()
                         .house_tiles()
                         .house_at(self.movement_cells().scope(), cell)
                         .ok()
@@ -190,6 +202,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     list: HouseManagementList::Door { x, y, floor },
                     expected_revision: revision,
                     members,
+                    guild_selectors,
                 }
             }
             wire::HouseAction::MoveOut(due_at_unix_ms) => {
@@ -229,10 +242,22 @@ pub(super) fn offer_guild_acl(
 ) -> Vec<super::capabilities::OfferedCapability> {
     use super::capabilities::OfferedCapability;
     let mut offers = base.to_vec();
-    if !available || !offers.iter().any(|offer| offer.id == wire::CAPABILITY_HOUSE_V1) {
+    if !available
+        || !offers
+            .iter()
+            .any(|offer| offer.id == wire::CAPABILITY_HOUSE_V1)
+    {
         offers.retain(|offer| offer.id != wire::CAPABILITY_HOUSE_GUILD_ACL_V1);
-    } else if let Err(at) = offers.binary_search_by_key(&wire::CAPABILITY_HOUSE_GUILD_ACL_V1, |offer| offer.id) {
-        offers.insert(at, OfferedCapability { id: wire::CAPABILITY_HOUSE_GUILD_ACL_V1, requires: &[wire::CAPABILITY_HOUSE_V1] });
+    } else if let Err(at) =
+        offers.binary_search_by_key(&wire::CAPABILITY_HOUSE_GUILD_ACL_V1, |offer| offer.id)
+    {
+        offers.insert(
+            at,
+            OfferedCapability {
+                id: wire::CAPABILITY_HOUSE_GUILD_ACL_V1,
+                requires: &[wire::CAPABILITY_HOUSE_V1],
+            },
+        );
     }
     offers
 }

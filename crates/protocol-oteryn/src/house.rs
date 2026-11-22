@@ -89,6 +89,7 @@ pub enum HouseAction {
         floor: i8,
         revision: u64,
         members: Vec<[u8; 16]>,
+        guild_selectors: Option<Vec<String>>,
     },
     GuildAcl {
         subowners: bool,
@@ -191,8 +192,21 @@ fn single(body: &[u8]) -> Result<u64> {
     Ok(n)
 }
 fn list(body: &[u8], door: bool) -> Result<HouseAction> {
+    list_selected(body, door, false)
+}
+
+fn guild_selector(rules: &mut Vec<String>, raw: &[u8]) -> Result<()> {
+    if rules.len() >= 100 || raw.len() > 100 {
+        return Err(Error::LimitExceeded);
+    }
+    rules.push(text(raw)?);
+    Ok(())
+}
+
+fn list_selected(body: &[u8], door: bool, allow_guild: bool) -> Result<HouseAction> {
     let (mut c, mut kind, mut revision, mut position) = (0, None, None, None);
     let mut members = Vec::new();
+    let mut guild_selectors = None;
     while c < body.len() {
         match read_varint(body, &mut c)? {
             8 if !door => set_once(&mut kind, read_varint(body, &mut c)?)?,
@@ -233,6 +247,18 @@ fn list(body: &[u8], door: bool) -> Result<HouseAction> {
                 }
                 members.push(id);
             }
+            34 if door && allow_guild => {
+                let selectors = read_bytes(body, &mut c)?;
+                let mut cursor = 0;
+                let mut rules = Vec::new();
+                while cursor < selectors.len() {
+                    if read_varint(selectors, &mut cursor)? != 10 {
+                        return Err(Error::Malformed);
+                    }
+                    guild_selector(&mut rules, read_bytes(selectors, &mut cursor)?)?;
+                }
+                set_once(&mut guild_selectors, rules)?;
+            }
             _ => return Err(Error::Malformed),
         }
     }
@@ -245,6 +271,7 @@ fn list(body: &[u8], door: bool) -> Result<HouseAction> {
             floor,
             revision,
             members,
+            guild_selectors,
         })
     } else {
         let subowners = match kind {
@@ -260,6 +287,10 @@ fn list(body: &[u8], door: bool) -> Result<HouseAction> {
     }
 }
 pub fn decode_house_intent(body: &[u8]) -> Result<HouseIntent> {
+    decode_house_intent_selected(body, false)
+}
+
+pub fn decode_house_intent_selected(body: &[u8], allow_guild: bool) -> Result<HouseIntent> {
     if body.len() > MAX_INTENT_BYTES {
         return Err(Error::LimitExceeded);
     }
@@ -276,7 +307,7 @@ pub fn decode_house_intent(body: &[u8]) -> Result<HouseIntent> {
             18 => HouseAction::MoveOut(single(nested)?),
             26 if nested.is_empty() => HouseAction::CancelMoveOut,
             34 => list(nested, false)?,
-            42 => list(nested, true)?,
+            42 => list_selected(nested, true, allow_guild)?,
             50 => {
                 let mut at = 0;
                 if read_varint(nested, &mut at)? != 10 {
@@ -318,13 +349,7 @@ pub fn decode_house_guild_acl(body: &[u8]) -> Result<HouseIntent> {
                 match read_varint(nested, &mut cursor)? {
                     8 => set_once(&mut kind, read_varint(nested, &mut cursor)?)?,
                     16 => set_once(&mut revision, read_varint(nested, &mut cursor)?)?,
-                    26 if rules.len() < 100 => {
-                        let line = text(read_bytes(nested, &mut cursor)?)?;
-                        if line.len() > 100 {
-                            return Err(Error::LimitExceeded);
-                        }
-                        rules.push(line);
-                    }
+                    26 => guild_selector(&mut rules, read_bytes(nested, &mut cursor)?)?,
                     _ => return Err(Error::Malformed),
                 }
             }
