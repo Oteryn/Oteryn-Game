@@ -23,7 +23,7 @@
 //! observed wall as a failed step rather than manufacturing coverage.
 use super::*;
 use oteryn_dev_client::DevClientSession;
-use oteryn_protocol_oteryn::{daily_reward as wire, logout::LogoutResult};
+use oteryn_protocol_oteryn::daily_reward as wire;
 
 type Wall = wire::DailyRewardWall;
 
@@ -116,15 +116,29 @@ fn shrine_tile(world: &BundleWorld, start: TilePos) -> TestResult<TilePos> {
     Err("step-3 no reachable production daily shrine in town window".into())
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    match client.session_mut().logout().await?.result {
-        Some(LogoutResult::Accepted) => Ok(()),
-        observed => Err(format!("step-7 logout observed={observed:?}").into()),
+async fn experience(client: &mut DevClientSession) -> TestResult<u64> {
+    use oteryn_protocol_oteryn::character_info as info;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            info::CAPABILITY_CHARACTER_INFO_V1,
+            info::COMMAND_TYPE_CHARACTER_INFO,
+            &[0, 0, 0, 1], // QuerySelf, offset 0, limit 1.
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted || reply.payload.first() != Some(&0) {
+        return Err(format!("step=boost-xp-query reply={reply:?}").into());
     }
+    let bytes = reply
+        .payload
+        .get(9..17)
+        .ok_or("step=boost-xp-query experience missing")?;
+    Ok(u64::try_from(i64::from_le_bytes(bytes.try_into()?))?)
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
         bytes,
@@ -137,12 +151,30 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if initial.claimed || initial.claim_enabled {
         return Err(format!("step-1 needs fresh unopened day observed={initial:?}").into());
     }
-    claim(&mut client, 4)
-        .await
-        .map_err(|e| { verdict::record_error(verdict::IndexedError::as_error(&e)); verdict::context(format!("step-2 unopened refusal: {e}"), e) })?;
+    claim(&mut client, 4).await.map_err(|e| {
+        verdict::record_error(verdict::IndexedError::as_error(&e));
+        verdict::context(format!("step-2 unopened refusal: {e}"), e)
+    })?;
     if wall(&mut client).await? != initial {
         return Err("step-2 refusal changed daily wall".into());
     }
+    let reward = crate::content::daily_reward::DailyRewardContent::catalogue()
+        .and_then(|content| content.reward(initial.lane_day, false))
+        .ok_or("step-5 authored reward absent")?;
+    let baseline_xp = if reward.xp_boost_percent > 0 {
+        travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+        let before = experience(&mut client).await?;
+        client_hunt::hunt(&mut client).await?;
+        Some(
+            experience(&mut client)
+                .await?
+                .checked_sub(before)
+                .filter(|xp| *xp > 0)
+                .ok_or("step=boost-baseline rat kill did not award XP")?,
+        )
+    } else {
+        None
+    };
     let shrine = shrine_tile(world, tile(client.world_spatial().actor_position)?)?;
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         at.floor == shrine.floor && at.x.abs_diff(shrine.x).max(at.y.abs_diff(shrine.y)) <= 1
@@ -161,14 +193,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step-3 opened wall observed={ready:?}").into());
     }
     let before_cards = wildcards(&mut client).await?;
-    claim(&mut client, 1)
-        .await
-        .map_err(|e| { verdict::record_error(verdict::IndexedError::as_error(&e)); verdict::context(format!("step-4 claim: {e}"), e) })?;
+    claim(&mut client, 1).await.map_err(|e| {
+        verdict::record_error(verdict::IndexedError::as_error(&e));
+        verdict::context(format!("step-4 claim: {e}"), e)
+    })?;
     let claimed = wall(&mut client).await?;
     let after_cards = wildcards(&mut client).await?;
-    let reward = crate::content::daily_reward::DailyRewardContent::catalogue()
-        .and_then(|content| content.reward(initial.lane_day, false))
-        .ok_or("step-5 authored reward absent")?;
     if !claimed.claimed
         || claimed.claim_enabled
         || claimed.streak != initial.streak + 1
@@ -176,26 +206,37 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("step-5 deltas wall={initial:?}->{claimed:?} cards={before_cards}->{after_cards} expected_reward={reward:?}").into());
     }
-    claim(&mut client, 2)
-        .await
-        .map_err(|e| { verdict::record_error(verdict::IndexedError::as_error(&e)); verdict::context(format!("step-6 duplicate refusal: {e}"), e) })?;
+    claim(&mut client, 2).await.map_err(|e| {
+        verdict::record_error(verdict::IndexedError::as_error(&e));
+        verdict::context(format!("step-6 duplicate refusal: {e}"), e)
+    })?;
     if wall(&mut client).await? != claimed || wildcards(&mut client).await? != after_cards {
         return Err("step-6 duplicate changed wall or reward cards".into());
     }
-    logout(&mut client).await?;
+    if let Some(baseline) = baseline_xp {
+        travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+        let before = experience(&mut client).await?;
+        client_hunt::hunt(&mut client).await?;
+        let gained = experience(&mut client).await?.checked_sub(before);
+        if !gained.is_some_and(|gained| gained > baseline) {
+            return Err(
+                format!("step=boost-combat-xp unboosted={baseline} boosted={gained:?}").into(),
+            );
+        }
+        evidence(&format!(
+            "P09_CHECK step=boost-combat-xp unboosted={baseline} boosted={gained:?}"
+        ));
+    }
+    full_row_p05::logout_after_combat(&mut client).await?;
     client = connect_world(clients, 0xca).await?;
     if wall(&mut client).await? != claimed || wildcards(&mut client).await? != after_cards {
         return Err("step-7 fresh admission lost durable wall or reward cards".into());
     }
-    logout(&mut client).await?;
+    full_row_p05::logout_after_combat(&mut client).await?;
     if reward.xp_boost_percent == 0 {
         return Err(format!("step-5 timed XP boost not present on observed authored lane day {}; wall={claimed:?}; need a later real reset epoch whose reward has an XP boost", initial.lane_day).into());
     }
-    Err(format!(
-        "step-5 timed XP boost awarded {}%/{}m but native combat XP comparison remains unobserved",
-        reward.xp_boost_percent, reward.xp_boost_minutes
-    )
-    .into())
+    Err("step=reset-calendar need=missed-day-joker-consumption-and-monthly-grant-across-real-reset-epochs;source=crates/gameplay/durability/src/durability/daily_reward_claim.rs:192".into())
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -204,11 +245,26 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         .await
         .unwrap_or_else(|_| Err("step timeout observed=no-reply-frame".into()));
     if let Err(error) = &result {
-        evidence(&format!("P09_GAP {error}"));
+        evidence(&format!(
+            "P09_GAP status=FAIL observed={}",
+            error.to_string().replace(char::is_whitespace, "_")
+        ));
+    } else {
+        evidence("P09_GAP status=PASS");
     }
     evidence(&format!(
         "e2e_all scenario=P09.full status={} seconds={:.3}",
         if result.is_ok() { "PASS" } else { "FAIL" },
         started.elapsed().as_secs_f64()
     ));
+}
+
+#[cfg(test)]
+#[test]
+fn row_09_publishes_a_gap_for_an_unproven_journey() {
+    assert!(
+        include_str!("full_row_p09.rs")
+            .split_once("#[cfg(test)]")
+            .is_some_and(|(production, _)| production.contains("P09_GAP status="))
+    );
 }

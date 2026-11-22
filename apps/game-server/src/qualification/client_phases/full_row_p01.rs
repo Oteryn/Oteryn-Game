@@ -13,7 +13,7 @@
 //!    one-stage increase, and exactly the advertised charm-point debit.
 //! 5. Send ASSIGN for that unlocked charm and the completed race; expect
 //!    `Assigned`, the race assignment delta, and `effect_active=true`.
-//! 6. Walk back to a live creature, send ATTACK, and require a second credited
+//! 6. Walk back to a live creature, send ATTACK, and require a second real
 //!    kill while the assignment is active, proving the production combat hook
 //!    is traversed without losing the assignment.
 //! 7. Send LOGOUT, obtain a fresh admission, then send QUERY; expect the kill
@@ -48,6 +48,14 @@ impl Row {
     }
 
     fn finish(self, result: TestResult) {
+        match &result {
+            Ok(()) => evidence("P01_GAP status=PASS"),
+            Err(error) => evidence(&format!(
+                "P01_GAP status=FAIL step={} observed={}",
+                self.step,
+                compact(&error.to_string())
+            )),
+        }
         match result {
             Ok(()) => evidence(&format!(
                 "SEAM_EVIDENCE e2e_all scenario=P01.full status=PASS seconds={:.3}",
@@ -79,7 +87,8 @@ fn compact(value: &str) -> String {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = verdict::indexed_timeout(DEADLINE, verdict::observe(journey(&mut row, clients))).await;
+    let result =
+        verdict::indexed_timeout(DEADLINE, verdict::observe(journey(&mut row, clients))).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err(format!("deadline while executing {}", row.step).into()),
@@ -307,12 +316,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     evidence("P01_CHECK locked-assignment-refusal PASS disposition=CharmLocked");
 
     row.at("earn-unlock-currency");
-    while current.charms.charm_points_available < cost || !race_complete(&current, race) {
+    while !race_complete(&current, race) {
         hunt_once(&mut client, world, &metadata.spawns).await?;
         let next = query(&mut client).await?;
-        if count(&next, race) <= count(&current, race) {
+        if count(&current, race).checked_add(1) != Some(count(&next, race)) {
             return Err(format!(
-                "credited hunt produced no increasing QUERY delta: {} -> {}",
+                "credited hunt failed to advance the selected race by one: {} -> {}",
                 count(&current, race),
                 count(&next, race)
             )
@@ -320,8 +329,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         }
         current = next;
     }
-    if !race_complete(&current, race) {
-        return Err("hunted race did not reach its final threshold".into());
+    if current.charms.charm_points_available < cost {
+        return Err(format!(
+            "race={race} reached mastery with {} charm points; need={} and a reachable second Bestiary race; source=crates/gameplay/dispatch/src/gameplay_transport/charm_native.rs:158",
+            current.charms.charm_points_available, cost
+        ).into());
     }
 
     row.at("unlock-stage");
@@ -359,10 +371,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     row.at("assigned-combat-hook");
     let before_hook = count(&assigned, race);
-    hunt_once(&mut client, world, &metadata.spawns).await?;
+    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+    client_hunt::hunt(&mut client).await?;
     let after_hook = query(&mut client).await?;
     let after_state = &after_hook.charms.charms[usize::try_from(charm.get() - 1)?];
-    if count(&after_hook, race) != before_hook.checked_add(1).ok_or("kill count overflow")?
+    if count(&after_hook, race) != before_hook
         || after_state.assigned_race != Some(race)
         || !after_state.effect_active
     {
@@ -372,11 +385,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     row.at("logout-fresh-admission");
     let old_session = client.join_snapshot().game_session_id;
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("LOGOUT refused after charm combat".into());
-    }
+    full_row_p05::logout_after_combat(&mut client).await?;
     drop(client);
     let mut fresh = connect_world(clients, 0xa3).await?;
     if fresh.join_snapshot().game_session_id == old_session {
@@ -387,7 +396,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("fresh QUERY lost durable state: {durable:?}").into());
     }
     evidence("P01_CHECK logout-fresh-admission PASS exact-durable-views");
-    Ok(())
+    Err("step=charm-proc need=observed-effect-attributed-to-the-assigned-charm;source=crates/gameplay/dispatch/src/gameplay_transport/charm_native.rs:158".into())
 }
 
 #[cfg(test)]
@@ -400,4 +409,14 @@ mod tests {
         assert!(!token.contains([' ', '\n']));
         assert!(token.len() <= 180);
     }
+}
+
+#[cfg(test)]
+#[test]
+fn row_01_publishes_a_gap_for_an_unproven_journey() {
+    assert!(
+        include_str!("full_row_p01.rs")
+            .split_once("#[cfg(test)]")
+            .is_some_and(|(production, _)| production.contains("P01_GAP status="))
+    );
 }

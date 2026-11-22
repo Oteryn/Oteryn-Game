@@ -37,9 +37,6 @@ impl Row {
         }
     }
     fn finish(self, r: TestResult) {
-        if let Err(e) = &r {
-            evidence(&format!("P02_GAP status=FAIL observed={e}"));
-        }
         for s in REQUIRED {
             if !self.passed.contains(s) {
                 evidence(&format!(
@@ -48,6 +45,16 @@ impl Row {
             }
         }
         let ok = r.is_ok() && REQUIRED.iter().all(|s| self.passed.contains(s));
+        match &r {
+            Err(error) => evidence(&format!(
+                "P02_GAP status=FAIL observed={}",
+                error.to_string().replace(char::is_whitespace, "_")
+            )),
+            Ok(()) if !ok => {
+                evidence("P02_GAP status=FAIL observed=required-lifecycle-step-missing")
+            }
+            Ok(()) => evidence("P02_GAP status=PASS"),
+        }
         evidence(&format!(
             "e2e_all scenario=P02.full status={} seconds={:.3} evidence={}",
             if ok { "PASS" } else { "FAIL" },
@@ -62,7 +69,11 @@ impl Row {
 }
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let r = verdict::indexed_timeout(Duration::from_secs(600), verdict::observe(journey(&mut row, clients))).await;
+    let r = verdict::indexed_timeout(
+        Duration::from_secs(600),
+        verdict::observe(journey(&mut row, clients)),
+    )
+    .await;
     row.finish(match r {
         Ok(v) => v,
         Err(_) => Err("step deadline: no server reply within 600s".into()),
@@ -121,9 +132,10 @@ async fn kill(
     s: &oteryn_world_bundle::spawn::Table,
     key: &str,
 ) -> TestResult {
-    travel_to_spawn(c, w, s, key)
-        .await
-        .map_err(|e| { verdict::record_error(verdict::IndexedError::as_error(&e)); verdict::context(format!("step boss-kill {key}: walking/spawn reply={e}"), e) })?;
+    travel_to_spawn(c, w, s, key).await.map_err(|e| {
+        verdict::record_error(verdict::IndexedError::as_error(&e));
+        verdict::context(format!("step boss-kill {key}: walking/spawn reply={e}"), e)
+    })?;
     let here = c.world_spatial().actor_position;
     let target = c
         .world_entities()
@@ -188,19 +200,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         (&before.progress, before.points, &initial_slot),
     );
     let catalog = bosses()?;
-    let spawned: Vec<_> = catalog
+    let from = tile(c.world_spatial().actor_position)?;
+    let spawned = catalog
         .iter()
-        .filter(|b| {
-            meta.spawns.sources.iter().any(|src| {
-                src.points.iter().any(|p| {
-                    meta.spawns
-                        .creatures
-                        .get(p.creature as usize)
-                        .is_some_and(|x| x.key == b.key)
-                })
-            })
-        })
-        .collect();
+        .filter(|boss| full_row_p05::has_reachable_spawn(world, from, &meta.spawns, &boss.key));
     let mut ordinary = None;
     let mut boosted = None;
     for b in spawned {
@@ -212,7 +215,17 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             .unwrap_or(0)
             .saturating_sub(counts(&before).get(&b.key).copied().unwrap_or(0));
         match d {
-            1 => ordinary = Some((b.key.clone(), b.category.clone(), after.clone())),
+            1 => {
+                let prowess = crate::domain::bosstiary::kill_thresholds(&b.category)
+                    .ok_or_else(|| format!("step=prowess unknown boss category={}", b.category))?
+                    [0];
+                if ordinary
+                    .as_ref()
+                    .is_none_or(|(_, _, _, goal)| prowess < *goal)
+                {
+                    ordinary = Some((b.key.clone(), b.category.clone(), after.clone(), prowess));
+                }
+            }
             3 => boosted = Some((b.key.clone(), after.clone())),
             _ => {
                 return Err(format!(
@@ -227,14 +240,26 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             break;
         }
     }
-    let (boss, category, after) =
+    let (boss, _, credited, prowess) =
         ordinary.ok_or("step boss-kill: no reachable compiled Bosstiary boss produced delta=1")?;
-    row.pass("boss-kill-progress", (&boss, &after.progress, after.points));
-    if category != "nemesis" {
-        return Err(format!(
-            "step slot-equip: boss={boss} category={category} has not earned prowess"
-        )
-        .into());
+    row.pass(
+        "boss-kill-progress",
+        (&boss, &credited.progress, credited.points),
+    );
+    while counts(&before).get(&boss).copied().unwrap_or(0) < prowess {
+        let previous = counts(&before).get(&boss).copied().unwrap_or(0);
+        kill(&mut c, world, &meta.spawns, &boss).await.map_err(|error| {
+            verdict::record_error(error.as_ref());
+            verdict::context(format!("step=prowess boss={boss} kills={previous}/{prowess} need=another-live-boss {error}"), error)
+        })?;
+        before = snapshot(&mut c).await?;
+        let current = counts(&before).get(&boss).copied().unwrap_or(0);
+        if previous.checked_add(1) != Some(current) {
+            return Err(format!(
+                "step=prowess boss={boss} observed={previous}->{current} need={prowess}"
+            )
+            .into());
+        }
     }
     let equipped = slot(
         &mut c,
@@ -274,11 +299,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step boosted-kill: slot accepted reply={br:?}").into());
     }
     row.pass("boosted-kill", (&boosted_key, &boosted_state.progress, &br));
-    if c.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("step fresh-admission: logout refused".into());
-    }
+    full_row_p05::logout_after_combat(&mut c).await?;
     drop(c);
     let mut c = connect_world(clients, 0xb3).await?;
     let durable = snapshot(&mut c).await?;
@@ -300,4 +321,14 @@ mod tests {
         assert_eq!(REQUIRED.len(), 6);
         assert!(Row::new().passed.is_empty());
     }
+}
+
+#[cfg(test)]
+#[test]
+fn row_02_publishes_a_gap_for_an_unproven_journey() {
+    assert!(
+        include_str!("full_row_p02.rs")
+            .split_once("#[cfg(test)]")
+            .is_some_and(|(production, _)| production.contains("P02_GAP status=PASS"))
+    );
 }

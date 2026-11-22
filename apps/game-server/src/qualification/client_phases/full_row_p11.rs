@@ -5,16 +5,8 @@
 //!    internally consistent page and an achievement-notice watermark snapshot.
 //! 2. Refuse malformed query bytes at the local codec boundary without submission, then
 //!    re-query unchanged state. The typed core API cannot submit a malformed wire query.
-//! 3. Perform an ordinary player item-use action, the first reachable event/granter-shaped action
-//!    available to the node-boot starter (its genuinely granted backpack); expect the command's
-//!    real reply and, if it grants, an AchievementEarned delta plus a changed query result.
-//! 4. Repeat the same player action; expect the refusal/idempotent path to add neither another
-//!    fact nor another AchievementEarned delta.
-//! 5. Log out, obtain a fresh admission, and query again; expect the exact earned facts, point
-//!    total, and fact count from step 3 to survive. A server that does not connect this legitimate
-//!    player action to a source granter is reported FAIL from the observed reply/missing delta;
-//!    the remaining quest/event granters and malformed wire refusal remain unproven, so the
-//!    full row stays FAIL even if this bounded lifecycle succeeds.
+//! 3. Check page boundaries and re-admit the same character to verify the query
+//!    remains stable. A grant requires a reachable authored source and its notice.
 use super::*;
 use oteryn_dev_client::client_runtime::account_achievements::{
     AccountAchievementsResult, Response,
@@ -24,7 +16,8 @@ use oteryn_protocol_oteryn::account_achievements as wire;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err("step deadline: achievement lifecycle timed out".into()),
@@ -36,6 +29,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         ),
         Err(error) => ("FAIL", sanitize(&error.to_string())),
     };
+    evidence(&format!("P11_GAP status={status} observed={evidence_text}"));
     evidence(&format!(
         "SEAM_EVIDENCE e2e_all scenario=P11.full status={status} seconds={:.3} evidence={evidence_text}",
         started.elapsed().as_secs_f64()
@@ -104,61 +98,26 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         "P11_CHECK step=malformed-query boundary=local-codec-refusal wire_submission=false command-and-sequence=unchanged reread=unchanged",
     );
 
-    let backpack = client
-        .inventory()
-        .and_then(|inventory| inventory.main_backpack)
-        .ok_or("step=granter no legitimately granted starter item")?;
-    client.take_events();
-    let use_reply = client.session_mut().use_item(backpack.handle).await?;
-    client.service_liveness(Duration::from_millis(250)).await?;
-    let earned = client
-        .take_events()
-        .into_iter()
-        .find_map(|event| match event {
-            SessionEvent::AchievementEarned(delta) => Some(delta.value),
-            _ => None,
-        });
-    let Some(earned) = earned else {
-        // Still complete the durable lifecycle so this is runtime evidence, not a source probe.
-        let unchanged = page(&mut client, 0).await?;
-        logout(&mut client).await?;
-        let mut fresh = connect_world(clients, 0xc2).await?;
-        let persisted = page(&mut fresh, 0).await?;
-        logout(&mut fresh).await?;
-        return Err(format!(
-            "step=granter observed_reply={use_reply:?},missing_delta=AchievementEarned,query_unchanged={},relogin_unchanged={};need=reachable_quest_or_event_source_granter",
-            unchanged == before,
-            persisted == before
-        )
-        .into());
-    };
-    let granted = page(&mut client, 0).await?;
-    if granted.fact_count != before.fact_count.saturating_add(1)
-        || !granted.rows.iter().any(|row| row.key == earned.key)
+    let beyond = before
+        .fact_count
+        .div_ceil(wire::ACCOUNT_ACHIEVEMENTS_PAGE_ROWS as u32)
+        .max(1);
+    let empty = page(&mut client, beyond).await?;
+    if empty.has_more
+        || !empty.rows.is_empty()
+        || empty.fact_count != before.fact_count
+        || empty.total_points != before.total_points
     {
-        return Err(format!("step=granter delta/query mismatch: {earned:?} {granted:?}").into());
-    }
-
-    client.take_events();
-    let duplicate_reply = client.session_mut().use_item(backpack.handle).await?;
-    client.service_liveness(Duration::from_millis(250)).await?;
-    if client
-        .take_events()
-        .iter()
-        .any(|event| matches!(event, SessionEvent::AchievementEarned(_)))
-        || page(&mut client, 0).await? != granted
-    {
-        return Err(
-            format!("step=duplicate observed_reply={duplicate_reply:?},duplicate-grant").into(),
-        );
+        return Err(format!("step=pagination page={beyond} observed={empty:?}").into());
     }
     logout(&mut client).await?;
+    drop(client);
     let mut fresh = connect_world(clients, 0xc2).await?;
-    if page(&mut fresh, 0).await? != granted {
+    if page(&mut fresh, 0).await? != before {
         return Err("step=relogin durable achievement page changed".into());
     }
     logout(&mut fresh).await?;
-    Err("step=coverage observed=bounded-grant-relogin-validated;unproven=malformed-wire-query-refusal,remaining-quest-event-granters".into())
+    Err("step=granter need=reachable-Yasir-committed-trade-or-other-authored-grant-and-AchievementEarned;source=crates/gameplay/durability/src/durability/npc_trade.rs:566;unproven=malformed-wire-query-refusal;source=crates/session/src/account_achievements.rs:18".into())
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
@@ -179,4 +138,14 @@ mod tests {
             "step_failed__reply_"
         );
     }
+}
+
+#[cfg(test)]
+#[test]
+fn row_11_publishes_a_gap_for_an_unproven_journey() {
+    assert!(
+        include_str!("full_row_p11.rs")
+            .split_once("#[cfg(test)]")
+            .is_some_and(|(production, _)| production.contains("P11_GAP status="))
+    );
 }

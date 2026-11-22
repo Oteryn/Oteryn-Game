@@ -35,7 +35,9 @@ impl Journey {
     }
 
     fn check(&mut self, step: u8, condition: bool, observed: impl std::fmt::Debug) {
-        if !condition { verdict::record_assertion("task-board-check"); }
+        if !condition {
+            verdict::record_assertion("task-board-check");
+        }
         let observed = format!("{observed:?}").replace('\n', " ");
         if condition {
             evidence(&format!(
@@ -55,6 +57,13 @@ impl Journey {
         } else {
             "FAIL"
         };
+        match self.failures.first() {
+            Some(failure) => evidence(&format!(
+                "P04_GAP status=FAIL observed={}",
+                failure.replace(char::is_whitespace, "_")
+            )),
+            None => evidence("P04_GAP status=PASS"),
+        }
         let suffix = self.failures.first().map_or(String::new(), |failure| {
             format!(" evidence={}", failure.replace(' ', "_"))
         });
@@ -80,27 +89,32 @@ async fn send(
 ) -> TestResult<Reply> {
     task_board::send_full(client.session_mut(), &request(action, selection))
         .await
-        .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("task-board action={action} selection={selection}: {error:?}"), error) })
+        .map_err(|error| {
+            verdict::record_error(verdict::IndexedError::as_error(&error));
+            verdict::context(
+                format!("task-board action={action} selection={selection}: {error:?}"),
+                error,
+            )
+        })
 }
 
 async fn query(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<Reply> {
     send(client, 4, 0).await
 }
 
-async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
-    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("P04 logout refused: {reply:?}").into());
-    }
-    Ok(())
-}
-
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut journey = Journey::new();
-    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(run(&mut journey, clients))).await;
+    let result = verdict::indexed_timeout(
+        Duration::from_secs(240),
+        verdict::observe(run(&mut journey, clients)),
+    )
+    .await;
     match result {
         Ok(Ok(())) => {}
-        Ok(Err(error)) => { verdict::record_error(error.as_ref()); journey.check(0, false, format!("journey-error:{error}")) },
+        Ok(Err(error)) => {
+            verdict::record_error(error.as_ref());
+            journey.check(0, false, format!("journey-error:{error}"))
+        }
         Err(_) => journey.check(0, false, "journey-timeout"),
     }
     journey.finish();
@@ -124,11 +138,22 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
 
     // The node-boot character is never advanced by a fixture. Repeated ordinary
     // hunts provide XP, loot and any delivery goods used below.
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    let world = load_world(
+        bytes,
+        &pin,
+        WorldId::decode(&clients.world)?,
+        ChannelId::decode(&clients.channel)?,
+    )?;
     let mut started = send(&mut client, 5, 0).await?;
     for _ in 0..96 {
-        if started.refusal == 0 {
+        if started.refusal != 3 {
+            // LevelTooLow is the only refusal hunting can resolve.
             break;
         }
+        travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
         client_hunt::hunt(&mut client).await?;
         started = send(&mut client, 5, 0).await?;
     }
@@ -141,17 +166,66 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         (&started.refusal, &started.weekly),
     );
 
-    let delivered = send(&mut client, 6, 0).await?;
-    journey.check(
-        4,
-        delivered.refusal == 0
-            && delivered
-                .weekly
-                .deliveries
-                .first()
-                .is_some_and(|task| task.delivered),
-        (&delivered.refusal, delivered.weekly.deliveries.first()),
-    );
+    let mut weekly = started.weekly;
+    for index in 0..weekly.kills.len() {
+        while let Some(task) = weekly
+            .kills
+            .get(index)
+            .filter(|task| task.current < task.required)
+        {
+            let race = if task.race.is_empty() {
+                "oteryn:creature.rat"
+            } else {
+                &task.race
+            };
+            let from = tile(client.world_spatial().actor_position)?;
+            if !full_row_p05::has_reachable_spawn(world, from, &metadata.spawns, race) {
+                journey.check(
+                    4,
+                    false,
+                    format!("weekly-kill needs reachable spawn: {task:?}"),
+                );
+                break;
+            }
+            travel_to_spawn(&mut client, world, &metadata.spawns, race).await?;
+            client_hunt::hunt(&mut client).await?;
+            let next = query(&mut client).await?.weekly;
+            if !next.kills.get(index).is_some_and(|next| {
+                next.race == task.race && task.current.checked_add(1) == Some(next.current)
+            }) {
+                journey.check(
+                    4,
+                    false,
+                    format!(
+                        "weekly-kill credit missing: {task:?} -> {:?}",
+                        next.kills.get(index)
+                    ),
+                );
+                break;
+            }
+            weekly = next;
+        }
+    }
+    let delivery_index = weekly
+        .deliveries
+        .iter()
+        .position(|task| !task.delivered && task.current >= task.required)
+        .or_else(|| weekly.deliveries.iter().position(|task| !task.delivered));
+    if let Some(index) = delivery_index {
+        let delivered = send(&mut client, 6, u16::try_from(index)?).await?;
+        journey.check(
+            4,
+            delivered.refusal == 0
+                && delivered
+                    .weekly
+                    .deliveries
+                    .get(index)
+                    .is_some_and(|task| task.delivered),
+            (&delivered.refusal, delivered.weekly.deliveries.get(index)),
+        );
+    } else {
+        journey.check(4, false, "weekly-delivery needs an undelivered assignment");
+    }
 
     let opened = send(&mut client, 7, 0).await?;
     journey.check(
@@ -159,35 +233,29 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         opened.refusal == 0 && opened.bounty.state == 1 && opened.bounty.offers.len() == 3,
         (&opened.refusal, &opened.bounty),
     );
-    let selected = send(&mut client, 8, 0).await?;
-    journey.check(
-        5,
-        selected.refusal == 0 && selected.bounty.state == 2 && selected.bounty.active.is_some(),
-        (&selected.refusal, &selected.bounty),
-    );
+    let claimed = full_row_p05::complete_bounty(&mut client, clients, &opened).await?;
     let rerolled = send(&mut client, 11, 0).await?;
     journey.check(
         5,
-        rerolled.refusal == 0 && rerolled.bounty.state == 1 && rerolled.bounty.offers.len() == 3,
+        rerolled.refusal == 0
+            && rerolled.bounty.state == 1
+            && rerolled.bounty.offers.len() == 3
+            && rerolled.bounty_points == claimed.bounty_points,
         (&rerolled.refusal, &rerolled.bounty),
     );
-    let claimed = send(&mut client, 9, 0).await?;
-    journey.check(
-        5,
-        claimed.refusal == 0 && claimed.bounty_points > rerolled.bounty_points,
-        (&claimed.refusal, claimed.bounty_points),
-    );
 
-    let bought = send(
-        &mut client,
-        16,
-        initial.shop.first().map_or(0, |offer| offer.index),
-    )
-    .await?;
+    let offer = rerolled
+        .shop
+        .iter()
+        .filter(|offer| !offer.bought && offer.price > 0)
+        .min_by_key(|offer| offer.price)
+        .ok_or("step=shop need=unbought-authored-offer")?;
+    let bought = send(&mut client, 16, offer.index).await?;
     journey.check(
         6,
-        bought.refusal == 0 && bought.points < initial.points,
-        (&bought.refusal, bought.points),
+        bought.refusal == 0
+            && rerolled.points.checked_sub(u64::from(offer.price)) == Some(bought.points),
+        (&bought.refusal, rerolled.points, bought.points, offer),
     );
     let talisman = send(&mut client, 17, 0).await?;
     journey.check(
@@ -211,14 +279,15 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
             reset.period,
             initial.soulseals,
             reset.soulseals,
+            "need=completed-weekly-tasks-and-next-real-reset-period",
         ),
     );
-    logout(&mut client).await?;
+    full_row_p05::logout_after_combat(&mut client).await?;
     drop(client);
     let mut fresh = connect_world(clients, 0x9b).await?;
     let persisted = query(&mut fresh).await?;
     journey.check(8, persisted == reset, (&reset, &persisted));
-    logout(&mut fresh).await?;
+    full_row_p05::logout_after_combat(&mut fresh).await?;
     Ok(())
 }
 
@@ -248,4 +317,14 @@ mod tests {
             );
         }
     }
+}
+
+#[cfg(test)]
+#[test]
+fn row_04_publishes_a_gap_for_an_unproven_journey() {
+    assert!(
+        include_str!("full_row_p04.rs")
+            .split_once("#[cfg(test)]")
+            .is_some_and(|(production, _)| production.contains("P04_GAP status="))
+    );
 }

@@ -26,7 +26,7 @@ struct Observations {
 impl Observations {
     fn fail(&mut self, step: &str, observed: impl std::fmt::Debug) {
         verdict::record_assertion(step);
-        let detail = format!("step={step};observed={observed:?}").replace(' ', "_");
+        let detail = format!("step={step};observed={observed:?}").replace(char::is_whitespace, "_");
         evidence(&format!("P07_CHECK status=FAIL {detail}"));
         self.failures.push(detail);
     }
@@ -343,11 +343,23 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
         && wheel::decode_wheel_reply(&response.payload)
             .is_ok_and(|reply| !reply.refused && reply.vessels.is_some_and(|v| v[0] == Some(gem)))
     {
-        seen.pass("5-socket-vessel-resonance");
+        seen.pass("5-socket-vessel");
+        seen.fail(
+            "5-resonance-effect",
+            "WheelAllocationReply exposes vessel identity only; need measured modifier effect after socket (crates/protocol-oteryn/src/wheel.rs:25)",
+        );
     } else {
-        seen.fail("5-socket-vessel-resonance", &response);
+        seen.fail("5-socket-vessel", &response);
     }
 
+    let before_stale = query(&mut client).await?;
+    if before_stale.0.revision == initial.revision {
+        return Err(format!(
+            "step=stale-refusal need=committed-Atelier-revision;observed={}",
+            initial.revision
+        )
+        .into());
+    }
     let stale = atelier::MutateRequest {
         occurrence: occurrence(session, 9),
         expected_revision: initial.revision,
@@ -361,6 +373,7 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
     .await?;
     if response.status == CommandStatus::Accepted
         && atelier_reply(&response).is_ok_and(|reply| reply.refused)
+        && query(&mut client).await? == before_stale
     {
         seen.pass("6-stale-refusal");
     } else {
@@ -391,12 +404,20 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
     let mut seen = Observations::default();
-    let result = verdict::indexed_timeout(Duration::from_secs(360), verdict::observe(journey(clients, &mut seen))).await;
+    let result = verdict::indexed_timeout(
+        Duration::from_secs(360),
+        verdict::observe(journey(clients, &mut seen)),
+    )
+    .await;
     if let Err(error) = &result {
         seen.fail("journey-deadline", error);
     }
     if let Ok(Err(error)) = &result {
         seen.fail("journey", error);
+    }
+    match seen.failures.first() {
+        Some(failure) => evidence(&format!("P07_GAP status=FAIL {failure}")),
+        None => evidence("P07_GAP status=PASS"),
     }
     evidence(&format!(
         "e2e_all scenario=P07.full status={} seconds={:.3}",
@@ -419,4 +440,14 @@ mod tests {
         assert_ne!(occurrence(session, 1), occurrence(session, 2));
         Ok(())
     }
+}
+
+#[cfg(test)]
+#[test]
+fn row_07_publishes_a_gap_for_an_unproven_journey() {
+    assert!(
+        include_str!("full_row_p07.rs")
+            .split_once("#[cfg(test)]")
+            .is_some_and(|(production, _)| production.contains("P07_GAP status="))
+    );
 }
