@@ -538,6 +538,9 @@ pub(super) fn place(
             ..
         }) => {
             let mut table = table.clone();
+            table
+                .npcs
+                .retain(|npc| !conditional::seasonal_merchant(&npc.key));
             let unix_ms = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .ok()
@@ -773,6 +776,80 @@ pub(crate) mod tests {
             admitted: keys.iter().map(|key| (*key).to_owned()).collect(),
             production: true,
             talk: Arc::new(NpcTalkBook::default()),
+        }
+    }
+
+    #[test]
+    fn lumberjack_contact_requires_the_admitted_chip_and_source_tile() {
+        let boot = timed_boot(&["oteryn:npc.chip"]);
+        let checked = std::cell::Cell::new(None);
+        let contacts = event_contacts::EventContacts::admit(Some(&boot), |tile| {
+            checked.set(Some(tile));
+            true
+        });
+        assert!(!contacts.is_empty());
+        assert_eq!(
+            checked.get(),
+            Some(crate::map::overlay::TilePos {
+                x: 32418,
+                y: 31702,
+                floor: -7
+            })
+        );
+        assert!(event_contacts::EventContacts::admit(Some(&boot), |_| false).is_empty());
+        assert!(event_contacts::EventContacts::admit(None, |_| true).is_empty());
+    }
+
+    #[test]
+    fn seasonal_shops_use_the_reset_calendar_and_donor_anchors() {
+        let stan = "oteryn:npc.stan";
+        let valentina = "oteryn:npc.valentina";
+        let mut boot = timed_boot(&[stan, valentina]);
+        if let NpcBoot::Place { table, .. } = &mut boot {
+            table.npcs = vec![NpcPlacements {
+                key: stan.into(),
+                placements: vec![NpcPlacement {
+                    x: 32944,
+                    y: 32110,
+                    floor: -6,
+                    direction: MovementFacing::South,
+                }],
+            }];
+        }
+        for (month, day, expected) in [
+            (1, 31, &[][..]),
+            (2, 1, &[(stan, 32944, 32110, 6)][..]),
+            (
+                2,
+                14,
+                &[(stan, 32944, 32110, 6), (valentina, 32271, 32052, 7)][..],
+            ),
+            (2, 15, &[(stan, 32944, 32110, 6)][..]),
+            (3, 1, &[][..]),
+        ] {
+            let mut runtime = channel_runtime_with(8);
+            place(&mut runtime, Some(&boot)).expect("load bundle placements");
+            assert!(runtime.visible_entities().npcs.is_empty());
+            let mut timed = TimedNpcSpawns::from_boot(Some(&boot))
+                .with_seasonal(Some(&boot), &[], |_| true)
+                .with_calendar(Some((month, day)));
+            timed.reconcile(&mut runtime, 720).expect("first placement");
+            timed.reconcile(&mut runtime, 0).expect("idempotent retry");
+            let mut actual = runtime
+                .visible_entities()
+                .npcs
+                .into_iter()
+                .map(|npc| {
+                    (
+                        runtime.npc_key(npc.actor).expect("source actor"),
+                        npc.position.x,
+                        npc.position.y,
+                        npc.position.floor,
+                    )
+                })
+                .collect::<Vec<_>>();
+            actual.sort_unstable();
+            assert_eq!(actual, expected, "calendar date {month}/{day}");
         }
     }
 
