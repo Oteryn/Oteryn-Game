@@ -14,23 +14,34 @@ pub(super) async fn blank_scroll_available(
     command: super::super::connection::UseCommand,
     intent: &NpcTalkIntent,
 ) -> bool {
-    let Some(fence) = command
-        .item_fence
-        .filter(|_| ChatText::parse(&intent.text).is_ok_and(|text| asks_to_trade(&text)))
-    else {
+    let (Some(fence), Ok(text)) = (command.item_fence, ChatText::parse(&intent.text)) else {
         return false;
     };
+    let key = quest_shops::ALBINIUS;
+    if !asks_to_trade_for(key, text.as_str()) {
+        return false;
+    }
     let session = command.game_session_id;
-    let is_albinius = {
+    let chat = &admission.states.chat;
+    {
         let runtime = admission.runtime.lock().await;
-        admission
-            .states
-            .npc_conversations
-            .current_npc(&admission.states.chat, &runtime, actor, session, intent)
-            .is_some_and(|(_, _, key)| key == quest_shops::ALBINIUS)
-    };
-    if !is_albinius {
-        return false;
+        let Some(npc) =
+            service_context::npc_in_talk_range(&runtime, actor, session, intent.npc_actor)
+                .filter(|npc| npc.key == key)
+        else {
+            return false;
+        };
+        let Some(entry) = chat.npc_talk().and_then(|book| book.get(key)) else {
+            return false;
+        };
+        // A greeting can open focus and request the quote in the same intent.
+        if chat.engaged(session) == Some(npc.actor) {
+            if entry.dialogue_keyword_preempts_trade(key, text.as_str()) {
+                return false;
+            }
+        } else if !entry.matches_greeting(text.as_str()) {
+            return false;
+        }
     }
     let completed = admission
         .states

@@ -20,7 +20,7 @@ mod world_change_journals;
 use crate::content::{NpcServiceModel, ProjectV2ServiceOffer};
 use crate::foundation::speech::ChatPosition;
 use crate::greeting::{DEFAULT_TALK_RANGE, contains_words, words};
-use crate::greeting::{GreetingNpc, greeted_npc};
+use crate::greeting::{GreetingNpc, greeted_npc, matches_greeting};
 
 /// Words that start a conversation, until an NPC carries its own.
 const GREETINGS: [&str; 3] = ["hi", "hello", "hail"];
@@ -231,12 +231,15 @@ impl NpcTalkEntry {
         &self.offers
     }
 
+    /// Whether the message contains a greeting authored for this NPC.
+    pub fn matches_greeting(&self, text: &str) -> bool {
+        matches_greeting(&words(text), &self.greetings)
+    }
+
     /// Whether a focus message or an admitted dialogue keyword takes precedence over a default callback.
     pub fn matches_focus_or_dialogue(&self, text: &str) -> bool {
         let said = words(text);
-        self.greetings
-            .iter()
-            .any(|greeting| contains_words(&said, &words(greeting)))
+        matches_greeting(&said, &self.greetings)
             || says_any(&said, &FAREWELLS)
             || says_any(&said, &TRADE_WORDS)
             || self.dialogue_keyword(&said).is_some()
@@ -1065,7 +1068,13 @@ pub fn asks_to_trade(text: &str) -> bool {
 
 /// Source-specific shop keyword; ordinary merchants retain the standard trade words.
 pub fn asks_to_trade_for(npc_key: &str, text: &str) -> bool {
-    asks_to_trade(text) || (npc_key == YASIR && says_any(&words(text), &["ariki"]))
+    let source_keyword = match npc_key {
+        YASIR => "ariki",
+        crate::content::npc_catalogue::quest_shops::ALBINIUS => "buy",
+        _ => return asks_to_trade(text),
+    };
+    let said = words(text);
+    says_any(&said, &TRADE_WORDS) || says_any(&said, &[source_keyword])
 }
 
 fn says_any(said: &[String], list: &[&str]) -> bool {

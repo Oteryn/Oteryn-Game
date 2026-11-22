@@ -3,6 +3,7 @@
 import hashlib
 import importlib.util
 import json
+import sys
 from functools import lru_cache
 from pathlib import Path
 
@@ -83,6 +84,33 @@ def original_soulpit(root):
     return predecessor
 
 
+def remove_regional_npc_note(root, marker):
+    # Replay the appearance-only shard before removing its annotation. The
+    # historical marker digest below still proves the remaining bytes.
+    tools = Path(__file__).resolve().parents[1] / "world-object-authoring"
+    sys.path.insert(0, str(tools))
+    try:
+        import regional_npc_ground
+    finally:
+        sys.path.remove(str(tools))
+    shard = root / regional_npc_ground.SHARD
+    if not shard.exists():
+        return
+    expected = (
+        json.dumps(
+            {"family": "Terrain", "records": regional_npc_ground.records(root)},
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        + "\n"
+    )
+    if shard.read_bytes() != expected.encode() or not marker["notes"].endswith(
+        regional_npc_ground.NOTE
+    ):
+        raise ValueError("source digest drift: regional NPC ground witness")
+    marker["notes"] = marker["notes"].removesuffix(regional_npc_ground.NOTE)
+
+
 def original_marker(root):
     """Recover the exact old marker after independently qualified owner additions."""
     root = Path(root)
@@ -93,6 +121,7 @@ def original_marker(root):
     marker = json.loads(raw)
     if (json.dumps(marker, indent=2, ensure_ascii=False) + "\n").encode() != raw:
         raise ValueError("source digest drift: terrain marker serialization")
+    remove_regional_npc_note(root, marker)
     for note in (
         " Additionally M49 Earth altar ground7748 retains its canonical Item identity.",
         " Additionally one source-qualified Rafzan elevator ground; total 8694 Terrain records.",
