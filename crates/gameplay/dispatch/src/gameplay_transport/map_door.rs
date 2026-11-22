@@ -30,6 +30,8 @@ fn outcome(disposition: UseDisposition) -> UseOutcome {
 
 /// `WORLDINT0-RL-02`: the per-actor `world_action` cooldown.
 const WORLD_ACTION_COOLDOWN: std::time::Duration = std::time::Duration::from_millis(200);
+/// The per-actor cooldown for a fresh World USE-WITH action.
+pub(super) const WORLD_USE_WITH_COOLDOWN: std::time::Duration = std::time::Duration::from_secs(1);
 /// `WORLDINT0-RL-08`: world interactions admitted per Channel per owner turn.
 const WORLD_ACTIONS_PER_TURN: u32 = 512;
 /// Crystal 201189f config.lua.dist:469 and game.cpp:11325-11396: 500 - 10 ms.
@@ -128,7 +130,7 @@ impl WorldActionGate {
         now: std::time::Duration,
     ) -> bool {
         self.use_with_started
-            .retain(|(_, at)| now.saturating_sub(*at) < std::time::Duration::from_secs(1));
+            .retain(|(_, at)| now.saturating_sub(*at) < WORLD_USE_WITH_COOLDOWN);
         if self.use_with_started.iter().any(|(who, _)| *who == actor)
             || self.admitted >= WORLD_ACTIONS_PER_TURN
         {

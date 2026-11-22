@@ -18,7 +18,7 @@ def callback_schema():
     return Draft202012Validator(schema)
 
 
-def verify_talk_binding(root, definition, stage_key, reference):
+def verify_talk_binding(root, definition, stage_key, reference, *, recipe_stage_key=None):
     """Verify an exact registered callback; a runtime flag grants no authority."""
     require(isinstance(reference, dict) and set(reference) in (
             {"kind", "document", "stage", "callback"},
@@ -59,7 +59,8 @@ def verify_talk_binding(root, definition, stage_key, reference):
     quests = [q for q in document.get("quests", []) if q.get("quest") == owner]
     require(len(quests) == 1 and quests[0].get("recipe_sha256") == digest,
             "TALK registry owner or recipe digest")
-    chosen_stages = [s for s in recipe.get("stages", []) if s.get("key") == stage_key]
+    recipe_stage_key = recipe_stage_key or stage_key
+    chosen_stages = [s for s in recipe.get("stages", []) if s.get("key") == recipe_stage_key]
     require(len(chosen_stages) == 1 and chosen_stages[0].get("kind") == "talk",
             "TALK stage is absent from the selected recipe")
     stages = [s for s in quests[0].get("stages", []) if s.get("key") == stage_key]
@@ -129,11 +130,24 @@ def canonical_definitions(root):
             for row in json.loads((root / path).read_text())["records"]}
 
 
+def registered_recipe_talk_bindings(root, definitions):
+    """Verify the authored recovery route while projecting only canonical recipe stages."""
+    bindings = registered_talk_bindings(root)
+    quest = "oteryn:quest.authored.top_of_the_city_quest"
+    stage = "restart-pursuit"
+    recovery = bindings.pop((quest, stage), None)
+    if recovery is not None:
+        require(quest in definitions and (quest, "s1") in bindings,
+                "Top of the City recovery has no canonical start dialogue")
+        verify_talk_binding(root, definitions[quest], stage, recovery, recipe_stage_key="s1")
+    return bindings
+
+
 def apply_native_talk_bindings(root, plan, definitions):
     stages = {(record["quest"], stage["stage_key"]): stage
               for record in plan["records"] for stage in record["stages"]}
     paths = set()
-    for (quest, key), reference in registered_talk_bindings(root).items():
+    for (quest, key), reference in registered_recipe_talk_bindings(root, definitions).items():
         stage = stages.get((quest, key))
         require(stage is not None and quest in definitions, "Registered TALK stage has no canonical plan owner")
         if stage["event_identity_associations"]["kind"] != "talk":

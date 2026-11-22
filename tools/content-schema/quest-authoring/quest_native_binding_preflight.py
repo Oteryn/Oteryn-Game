@@ -11,7 +11,7 @@ from collections import Counter, defaultdict
 import json
 from pathlib import Path
 
-from native_talk_binding_evidence import verify_talk_binding, registered_talk_bindings
+from native_talk_binding_evidence import verify_talk_binding, registered_recipe_talk_bindings
 
 DEFINITIONS = "content/quests/definitions/index.json"
 CANDIDATE = "content/quests/missions/quest-state-completion-candidate.json"
@@ -136,7 +136,7 @@ def collect(root: Path):
     reward_holds = Counter()
     source_lane_totals = Counter()
     records = []
-    registered = registered_talk_bindings(root)
+    registered = registered_recipe_talk_bindings(root, definitions)
     plan_stage_keys = {(row["quest"], stage["stage_key"]) for row in plan["records"] for stage in row["stages"]}
     check(set(registered) <= plan_stage_keys, "Registered NPC binding has no stage plan")
 
