@@ -30,12 +30,20 @@ SPECS = (
 )
 
 
-def capture(source):
+TIBIA_TALES_SPECS = (
+    *(("item.lua", "ItemAction", action, "action") for action in range(4207, 4224)),
+    ("item.lua", "ItemAction", 25018, "action"),
+    ("chest.lua", "ChestUnique", 6257, "unique"),
+)
+
+
+def capture(source, *, include_tibia_tales=False):
     sys.path.insert(0, str(ROOT / "tools/content-schema/quest-authoring"))
     import lua_tables
 
     rows, sources = [], []
-    for filename, table, selector, attribute in SPECS:
+    specs = SPECS + TIBIA_TALES_SPECS if include_tibia_tales else SPECS
+    for filename, table, selector, attribute in specs:
         path = "data-global/startup/tables/" + filename
         raw = (source / path).read_bytes()
         source_row = {"path": path, "sha256": hashlib.sha256(raw).hexdigest()}
@@ -45,12 +53,17 @@ def capture(source):
         (field,) = [f for f in fields if f["key"] == selector]
         value = lua_tables.as_python(field["value"])
         for group in value if isinstance(value, list) else [value]:
+            if table == "ItemAction" and selector == 25018 and group["itemId"] is not False:
+                # The same action also names an unrelated surface object.
+                continue
             positions = group["itemPos"]
             for position in positions if isinstance(positions, list) else [positions]:
                 # LevelDoorAction's false means the door at this exact position.
                 # Both native placements are 5102, a closed expertise door:
                 # Crystal data/libs/tables/doors.lua:273 (5102 -> 5103).
-                item = group["itemId"] or 5102
+                # The four stair tiles and two inscription tiles use the
+                # source map's 104 ground. They all carry the same action.
+                item = group["itemId"] or (104 if selector == 25018 else 5102)
                 rows.append(
                     {
                         "position": [position[k] for k in "xyz"],
@@ -217,7 +230,7 @@ def main():
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
     if args.crystal_root:
-        data = (json.dumps(capture(args.crystal_root), indent=2) + "\n").encode()
+        data = (json.dumps(capture(args.crystal_root, include_tibia_tales=True), indent=2) + "\n").encode()
         if args.check:
             if (ROOT / CAPTURE).read_bytes() != data:
                 raise ValueError("startup source capture changed")

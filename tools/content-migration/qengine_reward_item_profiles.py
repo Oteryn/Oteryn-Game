@@ -42,6 +42,8 @@ IDS |= {14021, 14022, 14023}
 IDS |= {12785}
 # QN4 Cursed Crystal actions_MedusaOil.lua:2-4 uses these plain carried ingredients.
 IDS |= {21504, 21505, 21506, 21507, 9106}
+# Padreia's vermin poison and Boozer's empty and filled quest bottles.
+IDS |= {135, 136, 138}
 # M56: exact carried Molten Wax consumption through the existing quest input owner.
 IDS |= {9106}
 # QN3 Gnomus measurement report (Crystal 201189f gnomus.lua:88-97) grants this jar.

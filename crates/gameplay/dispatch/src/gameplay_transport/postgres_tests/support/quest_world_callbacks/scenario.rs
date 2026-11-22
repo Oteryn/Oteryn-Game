@@ -79,7 +79,8 @@ fn scenario_case(
     let last_creep = name == "qengine-rewards-m23-last-creep";
     let pinned_qc_world = name.starts_with("m09-treasure-")
         || super::super::qc_lizard_sanctuary_fixtures::matches_world(name);
-    let native_crop = pinned_qc_world
+    let tibia_tales_hallowed = name == "qengine-rewards-tibia-tales-hallowed";
+    let native_crop = tibia_tales_hallowed || pinned_qc_world
         || m03_use
         || qd_world
         || engenc_asura
@@ -116,7 +117,9 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if name == "qengine-rewards-smith-story" {
+    let start = if tibia_tales_hallowed {
+        super::super::tibia_tales_fixtures::HALLOWED_START
+    } else if name == "qengine-rewards-smith-story" {
         Position {
             x: 32775,
             y: 32254,
@@ -369,6 +372,14 @@ fn scenario_case(
         callback(super::super::qengine_m02_use_fixtures::NAME)?
     } else if name == "unnatural-selection-dance-native" {
         callback("unnatural-selection-dance-2")?
+    } else if tibia_tales_hallowed {
+        callback("tibia-tales/sanctify-grave-4208")?
+    } else if name == "qengine-rewards-tibia-tales-booze" {
+        callback("tibia-tales/fill-ale-bottle")?
+    } else if name == "qengine-rewards-tibia-tales-exterminator" {
+        callback("tibia-tales/poison-slime-pool-31821")?
+    } else if name == "qengine-rewards-tibia-tales-outfox" {
+        callback("tibia-tales/outfox-helmet")?
     } else if name.starts_with("qengine-rewards-m39-bone") {
         callback("bone-pit-collect")?
     } else if last_creep {
@@ -1289,7 +1300,11 @@ fn scenario_case(
         } else {
             world
         };
-        let world = if name == "qengine-rewards-smith-story" {
+        let world = if tibia_tales_hallowed {
+            super::super::tibia_tales_fixtures::hallowed_world(
+                generation.native_gameplay().ok_or("native")?,
+            )?
+        } else if name == "qengine-rewards-smith-story" {
             world_with_native_items(
                 &callback,
                 trigger,
@@ -2733,6 +2748,10 @@ fn scenario_case(
                 trigger,
             ))
             .await?;
+        } else if name.starts_with("qengine-rewards-tibia-tales-") {
+            Box::pin(super::super::tibia_tales_fixtures::exercise(
+                name, &mut owner, &mut admitted, &h, trigger,
+            )).await?;
         } else if qengine_reward || shared_rewards {
             Box::pin(super::super::qengine_rewards_fixtures::exercise(
                 &mut owner,
