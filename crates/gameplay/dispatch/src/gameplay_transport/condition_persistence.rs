@@ -106,7 +106,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if !valid {
                 return true;
             }
-            let states = self.states.spell_states.lock().await;
+            let Ok(states) = self.states.spell_states.try_lock() else {
+                return false;
+            };
             let Some((_, _, state)) = states
                 .actors
                 .iter()
@@ -114,9 +116,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return true;
             };
+            let now = self.owner_now().get();
+            let native = if states.is_dead(actor) {
+                // The spell owner has settled death. The native slot may still
+                // hold pre-death conditions until its respawn step clears them.
+                None
+            } else {
+                let native = match fence.runtime_scope {
+                    RuntimeScopeRefV1::Channel { .. } => {
+                        runtime.actor_conditions_at(actor, Some(session), now)
+                    }
+                    RuntimeScopeRefV1::Instance { .. } => {
+                        runtime.house_actor_conditions_at(actor, session, now)
+                    }
+                };
+                let Ok(native) = native else {
+                    return false;
+                };
+                Some(native)
+            };
             let Ok(conditions) = state
                 .owned_conditions()
-                .persistent_snapshot(self.owner_now().get())
+                .persistent_snapshot_with_native(native, now)
             else {
                 return false;
             };
