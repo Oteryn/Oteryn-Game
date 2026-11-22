@@ -30,6 +30,35 @@ fn drome_drunk(state: &crate::spell::cast::PlayerSpellState, now_us: u64) -> boo
 }
 
 impl ChannelSpellStates {
+    fn drome_step_state(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<&crate::spell::cast::PlayerSpellState> {
+        if !runtime.is_tibiadrome(actor) {
+            return None;
+        }
+        self.get(runtime, actor, session)
+            .filter(|state| state.drome_practice)
+    }
+
+    pub(in crate::gameplay_transport) fn native_drunk_steers(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now_us: u64,
+    ) -> bool {
+        use oteryn_gameplay_domain::domain::condition::StatusKind;
+        self.get(runtime, actor, session).is_some_and(|state| {
+            state
+                .owned_conditions()
+                .has_status(StatusKind::Drunk, now_us)
+                && !drome_drunk(state, now_us)
+        })
+    }
+
     /// Resolve Drome control before field/floor preflight. The common movement owner
     /// repeats this pure decision with the same frozen time/position, so a prepared
     /// destination cannot diverge after SQL and a command replay consumes no new RNG.
@@ -41,13 +70,7 @@ impl ChannelSpellStates {
         now_us: u64,
         requested: CardinalStep,
     ) -> Result<CardinalStep, MovementError> {
-        if !runtime.is_tibiadrome(actor) {
-            return Ok(requested);
-        }
-        let Some(state) = self
-            .get(runtime, actor, session)
-            .filter(|state| state.drome_practice)
-        else {
+        let Some(state) = self.drome_step_state(runtime, actor, session) else {
             return Ok(requested);
         };
         // Crystal 201189f creature.cpp:286-291: ROOTED/FEARED refuse walking.
@@ -206,6 +229,29 @@ pub(in crate::gameplay_transport) fn prewalk_forecast(
     blocking: &dyn crate::map::floor::CellBlocker,
 ) -> [u32; 8] {
     use CardinalStep::*;
+    let Some(expected) = runtime.read_actor_position(actor).ok() else {
+        return [0; 8];
+    };
+    let forced = runtime.forced_player_step_current(actor, session);
+    // Drunk steering can redirect the next owner turn. The client must wait
+    // for the server's actual translation while either Drunk owner applies.
+    if states.is_dead(actor)
+        || states.has_pending_spell_commit(actor, session)
+        || (!forced
+            && (states.native_drunk_steers(runtime, actor, session, now_us)
+                || states
+                    .drome_step_state(runtime, actor, session)
+                    .is_some_and(|state| drome_drunk(state, now_us))))
+        || (states.get(runtime, actor, session).is_some()
+            && !states.native_condition_movement_allowed(
+                runtime,
+                actor,
+                session,
+                SemanticTimeMicros::from_micros(now_us),
+            ))
+    {
+        return [0; 8];
+    }
     let source = crate::movement::source_floor_change::is_source_profile(cells);
     let speed = states.get(runtime, actor, session).map_or_else(
         || baseline_speed(runtime, actor, session, now_us),
@@ -221,30 +267,20 @@ pub(in crate::gameplay_transport) fn prewalk_forecast(
             )
         },
     );
-    let Some(expected) = runtime.read_actor_position(actor).ok() else {
-        return [0; 8];
-    };
-    if states.is_dead(actor)
-        || (runtime.is_tibiadrome(actor)
-            && states
-                .get(runtime, actor, session)
-                .is_some_and(|state| state.drome_practice && drome_drunk(state, now_us)))
-        || runtime.player_control_facts(actor, session).is_err()
-        || (states.get(runtime, actor, session).is_some()
-            && !states.native_condition_movement_allowed(
-                runtime,
-                actor,
-                session,
-                SemanticTimeMicros::from_micros(now_us),
-            ))
-    {
-        return [0; 8];
-    }
     let bundle = crate::map::floor::table_of(cells).is_some();
     [
         North, East, South, West, NorthEast, SouthEast, SouthWest, NorthWest,
     ]
     .map(|direction| {
+        if !forced
+            && states.drome_step_direction(runtime, actor, session, now_us, direction)
+                != Ok(direction)
+        {
+            return 0;
+        }
+        if !runtime.player_step_allowed(actor, session, direction.delta()) {
+            return 0;
+        }
         let from = expected.position();
         let (dx, dy) = direction.delta();
         let Some(x) = from.x.checked_add(dx) else {
@@ -1494,6 +1530,147 @@ mod tests {
         );
         runtime.set_riding(actor, session, 0, 0).unwrap();
         assert_eq!(runtime.actor_motion(actor).unwrap().2, 0);
+    }
+
+    #[test]
+    fn prewalk_forecast_is_zero_while_pending_spell_commit() {
+        let (mut runtime, mut states, room, actor, session) = owner();
+        let empty = std::collections::BTreeSet::new();
+        let forecast = |runtime: &ChannelRuntimeV1, states: &ChannelSpellStates| {
+            prewalk_forecast(
+                runtime,
+                states,
+                room.movement_cells(),
+                actor,
+                session,
+                1,
+                None,
+                &empty,
+            )
+        };
+        assert!(forecast(&runtime, &states)[1] > 0);
+        states.enchanting_pending.push((actor, session));
+        assert_eq!(forecast(&runtime, &states), [0; 8]);
+        assert!(matches!(
+            states.step_with_non_player_field_contact(
+                &mut runtime,
+                room.movement_cells(),
+                actor,
+                session,
+                1,
+                CardinalStep::East,
+                &empty,
+                None,
+                None,
+                None,
+            ),
+            Err(MovementError::NotQualified)
+        ));
+        assert_eq!(at(&mut runtime, actor), (0, 0, 0));
+    }
+
+    #[test]
+    fn prewalk_forecast_matches_drunk_step_owner() {
+        use oteryn_gameplay_domain::domain::condition::{ConditionValues, StatusKind};
+        use oteryn_gameplay_foundation::foundation::condition::{
+            ApplicationFacts, ConditionDefinition, ConditionSourceKind,
+        };
+        use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+        let (mut runtime, mut states, room, actor, session) = owner();
+        states
+            .initialize(
+                &runtime,
+                actor,
+                session,
+                CharacterCastFacts {
+                    vocation: crate::spell::Vocation::Knight,
+                    level: 8,
+                    magic_level: 0,
+                    max_health: 150,
+                    max_mana: 50,
+                    max_soul: 100,
+                },
+                (0, 0),
+                SemanticTimeMicros::from_micros(0),
+            )
+            .unwrap();
+        let definition = ConditionDefinition::new(
+            "fixture.drunk",
+            1,
+            ConditionValues::TimedStatus {
+                kind: StatusKind::Drunk,
+                duration_ms: 1000,
+            },
+        )
+        .unwrap();
+        let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+        states
+            .get_mut(&runtime, actor, session)
+            .unwrap()
+            .conditions
+            .apply(
+                &definition,
+                Some("fixture:drunk".into()),
+                ConditionSourceKind::Field,
+                &[],
+                &ApplicationFacts {
+                    now: 1,
+                    base_speed: 100,
+                    mana_shield_capacity: 0,
+                    target_reentry_protected: false,
+                    source_reentry_protected: false,
+                    target_is_player: true,
+                    decision_root: &root,
+                    occurrence: DecisionOccurrenceId::from_bytes([77; 16]),
+                },
+            )
+            .unwrap();
+        let empty = std::collections::BTreeSet::new();
+        assert_eq!(
+            prewalk_forecast(
+                &runtime,
+                &states,
+                room.movement_cells(),
+                actor,
+                session,
+                1,
+                None,
+                &empty
+            ),
+            [0; 8],
+        );
+
+        use crate::gameplay_transport::paced_movement::drunk::admitted_direction;
+        use oteryn_protocol_oteryn::world_spatial::StepDirection;
+        let redirected = (0..128).any(|_| {
+            admitted_direction(
+                &mut runtime,
+                &states,
+                actor,
+                session,
+                StepDirection::West,
+                1,
+            ) == (StepDirection::East, true)
+        });
+        assert!(
+            redirected,
+            "the ordinary Drunk owner must steer a request east"
+        );
+        states
+            .step_with_non_player_field_contact(
+                &mut runtime,
+                room.movement_cells(),
+                actor,
+                session,
+                1,
+                CardinalStep::East,
+                &empty,
+                None,
+                None,
+                None,
+            )
+            .unwrap();
+        assert_eq!(at(&mut runtime, actor), (1, 0, 0));
     }
 
     #[test]

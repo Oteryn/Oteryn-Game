@@ -143,7 +143,8 @@ impl Harness {
         if let Some(watch) = self
             .active()
             .as_ref()
-            .filter(|watch| watch.scenario.is_some())
+            // Legacy rows share the same bounded fixture release before admission.
+            .filter(|watch| watch.scenario.is_some() || phase == "fixture-release")
         {
             let mut state = watch.state();
             state.phase = phase;

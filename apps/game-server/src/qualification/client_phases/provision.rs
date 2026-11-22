@@ -10,17 +10,27 @@ pub(super) async fn provision(
 }
 
 pub(super) async fn provision_at_level(
-    mut client: oteryn_dev_client::DevClientSession,
+    client: oteryn_dev_client::DevClientSession,
     clients: &SeamClients<'_>,
     index: usize,
     expected_level: u32,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
-    let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
     let profile = std::env::var("NODE_BOOT_PROFILE").unwrap_or_else(|_| "sorcerer".into());
+    provision_profile(client, clients, index, expected_level, &profile).await
+}
+
+pub(in crate::qualification) async fn provision_profile(
+    mut client: oteryn_dev_client::DevClientSession,
+    clients: &SeamClients<'_>,
+    index: usize,
+    expected_level: u32,
+    profile: &str,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
+    let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
     let vocation = if profile == "explorer" {
         "knight"
     } else {
-        &profile
+        profile
     };
     let (max_health, max_mana, _) = oteryn_gameplay_characters::vitals::maxima(
         vocation,
@@ -32,6 +42,7 @@ pub(super) async fn provision_at_level(
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
+    let profile = profile.to_owned();
     let status = tokio::task::spawn_blocking(move || {
         std::process::Command::new("sudo")
             .args(["-n", "python3"])

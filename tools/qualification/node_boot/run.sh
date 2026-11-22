@@ -17,14 +17,15 @@ readonly ACCOUNT_ID=01934f10-7c00-7000-8000-000000000001
 readonly SECOND_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000002
 readonly PACKET_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000003
 readonly SECOND_PACKET_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000004
+readonly LIGHT_ACCOUNT_ID=01934f10-7c00-7000-8000-00000000000d
 readonly EXTRA_WORLD_ACCOUNTS=(01934f10-7c00-7000-8000-000000000007 01934f10-7c00-7000-8000-000000000008 01934f10-7c00-7000-8000-000000000009 01934f10-7c00-7000-8000-00000000000a 01934f10-7c00-7000-8000-00000000000b 01934f10-7c00-7000-8000-00000000000c)
 readonly FRESH_KEY_ID=node-boot-fresh-key-1
 readonly RECOVERY_KEY_ID=node-boot-recovery-key-1
 readonly WORLD_ID=01934f10-7c02-7001-805b-3b1122334401
 readonly CHANNEL_ID=01934f10-7c03-7001-805b-3b1122334401
-readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402 01934f10-7c04-7003-805b-3b1122334403 01934f10-7c04-7004-805b-3b1122334404 01934f10-7c04-7007-805b-3b1122334407 01934f10-7c04-7008-805b-3b1122334408 01934f10-7c04-7009-805b-3b1122334409 01934f10-7c04-700a-805b-3b112233440a 01934f10-7c04-700b-805b-3b112233440b 01934f10-7c04-700c-805b-3b112233440c)
+readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402 01934f10-7c04-7003-805b-3b1122334403 01934f10-7c04-7004-805b-3b1122334404 01934f10-7c04-7007-805b-3b1122334407 01934f10-7c04-7008-805b-3b1122334408 01934f10-7c04-7009-805b-3b1122334409 01934f10-7c04-700a-805b-3b112233440a 01934f10-7c04-700b-805b-3b112233440b 01934f10-7c04-700c-805b-3b112233440c 01934f10-7c04-700d-805b-3b112233440d)
 # The v4 bootstrap intent explicitly binds name, sex and vocation.
-readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Packet Two" "Party One" "Party Two" "Party Three" "Party Four" "Sweep One" "Sweep Two")
+readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Packet Two" "Party One" "Party Two" "Party Three" "Party Four" "Sweep One" "Sweep Two" "Light Caster")
 # Runtime build writers bind to the shipped training formula's content revision,
 # just as the S3-B seam does; progression is initialized from this interpretation.
 # The served readiness.content_revision is this same revision: the quest and Task Board
@@ -155,7 +156,7 @@ if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then NODE_BOOT_WORLD=0; fi
 BOOTSTRAP_ACCOUNTS=("$ACCOUNT_ID" "$SECOND_ACCOUNT_ID")
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   # Packet journeys may move, loot or kill their Characters before the required core runs.
-  BOOTSTRAP_ACCOUNTS+=("$PACKET_ACCOUNT_ID" "$SECOND_PACKET_ACCOUNT_ID" "${EXTRA_WORLD_ACCOUNTS[@]}")
+  BOOTSTRAP_ACCOUNTS+=("$PACKET_ACCOUNT_ID" "$SECOND_PACKET_ACCOUNT_ID" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID")
 fi
 readonly BOOTSTRAP_ACCOUNTS
 source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"
@@ -303,7 +304,7 @@ fi
 # Seed only this run's extra synthetic accounts through the same portal binary
 # and disposable environment as the upstream harness and composition.py.
 seed_mp_accounts() {
-  python3 - "$WORK" "$PVP_WORLD_ID" "${PVP_ACCOUNT_IDS[@]}" "${EXTRA_WORLD_ACCOUNTS[@]}" <<'PY_MP_SEED'
+  python3 - "$WORK" "$PVP_WORLD_ID" "${PVP_ACCOUNT_IDS[@]}" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" <<'PY_MP_SEED'
 import json
 from pathlib import Path
 import secrets
@@ -1255,14 +1256,16 @@ PY
 }
 
 character_bootstrap() { # §4.5 Characters from real Platform intents
-  local index=0 account operation name failed=0 vocation="${NODE_BOOT_PROFILE^}"
+  local index=0 account operation name requested_vocation failed=0 vocation="${NODE_BOOT_PROFILE^}"
   [[ "$NODE_BOOT_PROFILE" != explorer ]] || vocation=Knight
   for account in "${BOOTSTRAP_ACCOUNTS[@]}"; do
     operation="${INTENT_OPERATIONS[$index]}"
     name="${INTENT_NAMES[$index]}"
     index=$((index + 1))
+    requested_vocation="$vocation"
+    [[ "$account" != "$LIGHT_ACCOUNT_ID" ]] || requested_vocation=Sorcerer
     if ! python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" bootstrap \
-      "$WORK" "$account" "$WORLD_ID" "$operation" "${INTERPRETATION[@]}" "$name" "$vocation"; then
+      "$WORK" "$account" "$WORLD_ID" "$operation" "${INTERPRETATION[@]}" "$name" "$requested_vocation"; then
       echo "platform intent issue failed for operation $operation"
       failed=1
       continue
@@ -1346,7 +1349,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
     local extra_accounts
     extra_accounts="$(IFS=,; echo "${EXTRA_WORLD_ACCOUNTS[*]}")"
     test_env+=("NODE_BOOT_EXTRA_WORLD_ACCOUNTS=$extra_accounts")
-    test_env+=("NODE_BOOT_PACKET_ACCOUNT_ID=$PACKET_ACCOUNT_ID" "NODE_BOOT_PACKET_SECOND_ACCOUNT_ID=$SECOND_PACKET_ACCOUNT_ID")
+    test_env+=("NODE_BOOT_PACKET_ACCOUNT_ID=$PACKET_ACCOUNT_ID" "NODE_BOOT_PACKET_SECOND_ACCOUNT_ID=$SECOND_PACKET_ACCOUNT_ID" "NODE_BOOT_LIGHT_ACCOUNT_ID=$LIGHT_ACCOUNT_ID")
   fi
   if [[ "$NODE_BOOT_WORLD" == 1 && ${STATUS[pvp_character_bootstrap]:-} == PASS ]]; then
     # MP01's PvP rows run against the Open PvP World's own node and database.
