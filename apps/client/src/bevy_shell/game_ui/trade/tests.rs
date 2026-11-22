@@ -20,11 +20,13 @@ fn panel() -> PlayerTradePanel {
                 generation: 1,
             }),
             own: Some(player_trade::Offer {
+                appearance_id: None,
                 definition: 981234,
                 count: 2,
                 sub_type: 0,
             }),
             counter: Some(player_trade::Offer {
+                appearance_id: None,
                 definition: 997654,
                 count: 4,
                 sub_type: 0,
@@ -511,6 +513,7 @@ fn trade_contents_decode_render_and_indexed_inspection_use_the_retained_snapshot
         },
         player_trade::ContentsItem {
             item: player_trade::Offer {
+                appearance_id: None,
                 definition: 42,
                 count: 7,
                 sub_type: 0,

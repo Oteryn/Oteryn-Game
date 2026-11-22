@@ -43,3 +43,14 @@ items/custody lines/participants and 106 work units on BUY; SELL uses the existi
 23-line/66-work-unit aggregate bounds. Legacy single-stack price and audit-check entry points retain their original
 shape. Native event encoding and decoding qualify the bounded multi-stack form;
 all existing envelope byte ceilings remain unchanged.
+
+Capability 590 `PLAYER_TRADE_ARTWORK_V1` requires 4 and 60. It adds field 4
+to the offer projections in domain 26, including each disclosed contents node
+when 501 is also selected. The server derives this nonzero u16 object
+appearance ID from the frozen leaf's activated Item definition and revision.
+The binding applies to the client artifact of the admitted generation and
+uses the offer's existing subtype. An unqualified binding is omitted.
+Legacy peers receive the original offers. Decoders reject field 4 without
+selection, duplicate values and IDs outside 1–65535. The trade command,
+counter-offer disclosure and state bounds retain their original semantics.
+[Crystal protocolgame.cpp, 201189f8](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/src/server/network/protocol/protocolgame.cpp#L7558-L7594)

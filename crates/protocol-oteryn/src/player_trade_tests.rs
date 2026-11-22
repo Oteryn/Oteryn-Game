@@ -36,11 +36,13 @@ fn player_trade_wire_roundtrip_and_bounds() -> Result<(), Error> {
         trade_id: Some([3; 16]),
         partner: Some(partner),
         own: Some(Offer {
+            appearance_id: None,
             definition: 1,
             count: 100,
             sub_type: 0,
         }),
         counter: Some(Offer {
+            appearance_id: None,
             definition: 2,
             count: 1,
             sub_type: 7,
@@ -100,6 +102,7 @@ fn player_trade_wire_roundtrip_and_bounds() -> Result<(), Error> {
 #[test]
 fn trade_contents_are_negotiated_bounded_and_parent_indexed() -> Result<(), Error> {
     let root = Offer {
+        appearance_id: None,
         definition: 1,
         count: 1,
         sub_type: 0,
@@ -122,6 +125,7 @@ fn trade_contents_are_negotiated_bounded_and_parent_indexed() -> Result<(), Erro
         },
         ContentsItem {
             item: Offer {
+                appearance_id: None,
                 definition: 2,
                 count: 9,
                 sub_type: 0,
