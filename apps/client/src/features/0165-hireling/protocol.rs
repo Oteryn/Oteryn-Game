@@ -12,10 +12,10 @@ impl Outbox {
             && let (Ok(x), Ok(y), Ok(floor)) = (
                 u16::try_from(own.x),
                 u16::try_from(own.y),
-                i8::try_from(own.floor),
+                i8::try_from(own.floor.unsigned_abs()),
             )
         {
-            // Command 220 uses the native floor convention and requires the actor's own tile.
+            // Command 220 uses the runtime floor (0–15) and requires the actor's own tile.
             return HirelingCommand(Request::Summon { x, y, floor });
         }
         request

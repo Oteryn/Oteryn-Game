@@ -47,7 +47,18 @@ const fn release_sequence(value: &str) -> u64 {
     sequence
 }
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(crate) static LOGIN_RELEASE_FIXTURE: (String, ReleaseIdentity);
+}
+
 pub(crate) fn login_release(gateway: &str) -> Option<ReleaseIdentity> {
+    #[cfg(test)]
+    if let Ok(release) = LOGIN_RELEASE_FIXTURE.try_with(|(confirmed, release)| {
+        release_for_gateway(gateway, Some(confirmed), Some(*release))
+    }) {
+        return release;
+    }
     release_for_gateway(gateway, BUILD_GATE_GATEWAY, UPDATE_RELEASE)
 }
 

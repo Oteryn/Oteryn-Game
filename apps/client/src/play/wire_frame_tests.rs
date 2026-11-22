@@ -1,5 +1,5 @@
 use super::*;
-use crate::combat_input::{CombatCommand, CombatReport};
+use crate::combat_input::{CombatCommand, CombatReport, PlayCommand};
 use crate::play::{Stepper, play_channel};
 use oteryn_client_runtime::world_interaction::{
     Action, Command as WorldCommand, Selection, Target,
@@ -11,6 +11,7 @@ use oteryn_session::{
 };
 use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex, PoisonError};
+use tokio::sync::mpsc::{UnboundedReceiver, unbounded_channel};
 
 fn at(x: i32, y: i32, floor: i16) -> ActorPosition {
     ActorPosition { x, y, floor }
@@ -156,12 +157,17 @@ fn a_native_bundle_and_a_fixture_world_stay_in_the_wire_frame() {
 }
 
 struct Recorder {
+    battle_state: Option<oteryn_session::ActorCombatState>,
     walks: Arc<Mutex<Vec<ActorPosition>>>,
     combats: Arc<Mutex<Vec<CombatCommand>>>,
     contexts: Arc<Mutex<Vec<(WorldCommand, bool)>>>,
 }
 
 impl Stepper for Recorder {
+    fn battle_state(&self) -> Option<oteryn_session::ActorCombatState> {
+        self.battle_state
+    }
+
     fn world_position(&self) -> Option<ActorPosition> {
         Some(at(100, 200, 7))
     }
@@ -234,6 +240,7 @@ fn a_target_walk_and_a_cursor_cast_on_an_ordinary_bundle_send_the_wire_floor()
     let walks = Arc::new(Mutex::new(Vec::new()));
     let combats = Arc::new(Mutex::new(Vec::new()));
     let mut session = Recorder {
+        battle_state: None,
         walks: Arc::clone(&walks),
         combats: Arc::clone(&combats),
         contexts: Arc::default(),
@@ -282,6 +289,7 @@ fn a_world_context_command_keeps_its_native_selection_and_carries_the_raw_frame(
     ]);
     let contexts = Arc::new(Mutex::new(Vec::new()));
     let mut session = Recorder {
+        battle_state: None,
         walks: Arc::default(),
         combats: Arc::default(),
         contexts: Arc::clone(&contexts),
@@ -425,6 +433,7 @@ fn picked_ground_item_look_reaches_dispatch_with_its_native_tile_and_raw_frame()
     };
     let contexts = Arc::new(Mutex::new(Vec::new()));
     let mut session = Recorder {
+        battle_state: None,
         walks: Arc::default(),
         combats: Arc::default(),
         contexts: Arc::clone(&contexts),
@@ -448,6 +457,7 @@ fn review_ordinary_admission_seeds_target_walk_and_entity_floor()
     let walks = Arc::new(Mutex::new(Vec::new()));
     let combats = Arc::new(Mutex::new(Vec::new()));
     let mut peer = Recorder {
+        battle_state: None,
         walks: Arc::clone(&walks),
         combats: Arc::clone(&combats),
         contexts: Default::default(),
@@ -529,50 +539,62 @@ fn queued_context_stop_does_not_stop_the_new_attack_target()
     };
     outbox.battle_publish(state(first), None, &[]);
     assert!(link.request_context_combat(first, true));
-    let stop = commands.try_recv()?;
     outbox.battle_result(
         crate::combat_input::CombatReport::Attack(oteryn_session::AttackIntentDisposition::Ok),
         state(second),
         None,
     );
-
-    let combats = Arc::new(Mutex::new(Vec::new()));
-    let mut session = Recorder {
-        walks: Arc::default(),
-        combats: Arc::clone(&combats),
-        contexts: Arc::default(),
-    };
-    let runtime = tokio::runtime::Builder::new_current_thread().build()?;
-    let result = runtime.block_on(outbox.battle_run(&mut session, stop));
-    assert!(combats.lock().map_err(|_| "combats")?.is_empty());
-    result?;
+    assert_eq!(commands.len(), 1);
+    let follow_up = CombatCommand::Attack(second);
+    link.request_combat(follow_up);
+    let mut wire = outbox.record_queued_combat_wire_for_test(&mut commands)?;
+    assert_eq!(wire.try_recv()?, PlayCommand::Combat(follow_up));
+    assert!(wire.try_recv().is_err());
     Ok(())
 }
 
 impl crate::play::Outbox {
-    // Validate the original wire-level Stop assertions through the real dispatcher
-    // now that the UI queue also carries the opponent's identity.
     pub(in crate::play) fn record_queued_combat_wire_for_test(
         &self,
-        commands: &mut tokio::sync::mpsc::UnboundedReceiver<crate::combat_input::PlayCommand>,
-    ) -> Result<
-        tokio::sync::mpsc::UnboundedReceiver<crate::combat_input::PlayCommand>,
-        Box<dyn std::error::Error>,
-    > {
-        let command = commands.try_recv()?;
-        let combats = Arc::new(Mutex::new(Vec::new()));
-        let mut session = Recorder {
-            walks: Arc::default(),
-            combats: Arc::clone(&combats),
-            contexts: Arc::default(),
-        };
-        let runtime = tokio::runtime::Builder::new_current_thread().build()?;
-        // Recorder records the wire command and then refuses the synthetic peer.
-        let _ = runtime.block_on(self.battle_run(&mut session, command));
-        let (sender, receiver) = tokio::sync::mpsc::unbounded_channel();
-        for &command in &*combats.lock().map_err(|_| "combat wire recorder")? {
-            sender.send(crate::combat_input::PlayCommand::Combat(command))?;
+        commands: &mut UnboundedReceiver<PlayCommand>,
+    ) -> Result<UnboundedReceiver<PlayCommand>, Box<dyn std::error::Error>> {
+        let (sender, queued) = unbounded_channel();
+        while let Ok(command) = commands.try_recv() {
+            sender.send(command)?;
         }
-        Ok(receiver)
+        drop(sender);
+        let battle_state = crate::play::mailbox::lock(&self.0).battle.combat;
+        let outbox = self.clone();
+        let thread = std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(move || {
+                let combats = Arc::new(Mutex::new(Vec::new()));
+                let session = Recorder {
+                    battle_state,
+                    walks: Arc::default(),
+                    combats: Arc::clone(&combats),
+                    contexts: Arc::default(),
+                };
+                let runtime = tokio::runtime::Builder::new_current_thread()
+                    .enable_all()
+                    .build()?;
+                runtime
+                    .block_on(async {
+                        let session = crate::play::run_session(session, queued, outbox);
+                        tokio::time::timeout(std::time::Duration::from_secs(2), session).await
+                    })
+                    .map_err(std::io::Error::other)?;
+                let (sender, receiver) = unbounded_channel();
+                let recorded = combats
+                    .lock()
+                    .map_err(|_| std::io::Error::other("combat recorder poisoned"))?;
+                for &command in recorded.iter() {
+                    sender
+                        .send(PlayCommand::Combat(command))
+                        .map_err(std::io::Error::other)?;
+                }
+                Ok::<_, std::io::Error>(receiver)
+            })?;
+        Ok(thread.join().map_err(|_| "combat session panicked")??)
     }
 }

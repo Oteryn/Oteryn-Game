@@ -81,9 +81,21 @@ impl Server {
                         }
                     }
                 }
+                let request_text = String::from_utf8_lossy(&request);
+                let (headers, payload) =
+                    request_text.split_once("\r\n\r\n").ok_or("request body")?;
+                let headers = headers
+                    .lines()
+                    .filter(|line| {
+                        !line
+                            .to_ascii_lowercase()
+                            .starts_with("authorization: bearer ")
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\r\n");
                 log.lock()
                     .map_err(|_| "log")?
-                    .push(String::from_utf8_lossy(&request).into_owned());
+                    .push(format!("{headers}\r\n\r\n{payload}"));
                 if delayed_ticket
                     && request.starts_with(b"POST /api/v1/game-auth/device-sessions/tickets ")
                 {
@@ -95,6 +107,18 @@ impl Server {
                 }
                 if let Some(blocked) = blocked_ack.take() {
                     blocked.await.map_err(|_| "reply gate closed")?;
+                }
+                if request.starts_with(b"POST /v1/login ")
+                    && body.windows(13).any(|w| w == b"__ATTEMPTID__")
+                {
+                    let request = String::from_utf8_lossy(&request);
+                    let (_, payload) = request.split_once("\r\n\r\n").ok_or("gateway body")?;
+                    let payload: serde_json::Value =
+                        serde_json::from_str(payload).map_err(|_| "gateway request")?;
+                    let attempt = payload["attempt_ref"].as_str().ok_or("gateway attempt")?;
+                    body = String::from_utf8_lossy(&body)
+                        .replace("__ATTEMPTID__", attempt)
+                        .into_bytes();
                 }
                 let header = format!(
                     "HTTP/1.1 {status} fixture\r\nContent-Type: application/json\r\nContent-Length: {}\r\nCache-Control: no-store, private\r\nPragma: no-cache\r\nConnection: close\r\n\r\n",

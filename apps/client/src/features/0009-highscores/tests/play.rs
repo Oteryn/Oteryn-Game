@@ -306,7 +306,7 @@ fn review_shared_highscores_caller_continues_catalogue_with_exactly_one_query() 
             let peer = HighscoresPeer { catalogue: true, ..Default::default() };
             let seen = std::sync::Arc::clone(&peer.commands);
             let (link, commands, outbox) = play_channel();
-            let task = tokio::spawn(run_session(peer, commands, outbox));
+            let mut task = tokio::spawn(run_session(peer, commands, outbox));
             tokio::time::timeout(Duration::from_secs(5), async {
                 while !link.highscores_panel().catalogue_selected {
                     tokio::task::yield_now().await;
@@ -319,7 +319,13 @@ fn review_shared_highscores_caller_continues_catalogue_with_exactly_one_query() 
                 }
             }).await;
             drop(link);
-            task.await.map_err(|e| e.to_string())?;
+            match tokio::time::timeout(Duration::from_secs(5), &mut task).await {
+                Ok(result) => result.map_err(|error| error.to_string())?,
+                Err(_) => {
+                    task.abort();
+                    return Err("Highscores session shutdown timed out".into());
+                }
+            }
             assert_eq!(*seen.lock().map_err(|_| "command log poisoned".to_string())?, [6244, 6245]);
             complete.map_err(|e| e.to_string())?;
             Ok::<_, String>(())

@@ -99,8 +99,10 @@ impl Mailbox {
         wire: Option<ActorPosition>,
         origin: Option<ActorPosition>,
     ) {
-        if let (Some(wire), Some(origin)) = (wire, origin) {
+        if let Some(wire) = wire {
             self.wire.observe_wire(wire);
+        }
+        if let Some(origin) = origin {
             self.wire.observe_origin(origin);
         }
     }

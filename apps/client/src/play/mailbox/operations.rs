@@ -110,6 +110,7 @@ impl Mailbox {
         );
         super::super::feature_0287_actor_spell_catalog::protocol::reduce(self, &events);
         super::super::feature_0291_cast_chat::protocol::reduce(self, &events);
+        self.mount_actor_published(&events);
         self.coalesce_events(events);
         self.check_server_messages();
         let notices = std::mem::take(&mut self.pushed.achievements);
@@ -181,6 +182,8 @@ impl Outbox {
         self.performance_reset();
         self.inventory_end();
         self.container_end();
+        let delivery = lock(&self.0).connection.browser_delivery.clone();
+        let _delivery = delivery.lock().unwrap_or_else(PoisonError::into_inner);
         let mut mailbox = lock(&self.0);
         mailbox.end_custom_hotkeys();
         if let Some(launcher) = &mailbox.connection.coin_shop {
@@ -245,6 +248,8 @@ impl Outbox {
         self.performance_reset();
         self.inventory_end();
         self.container_end();
+        let delivery = lock(&self.0).connection.browser_delivery.clone();
+        let _delivery = delivery.lock().unwrap_or_else(PoisonError::into_inner);
         let mut mailbox = lock(&self.0);
         mailbox.end_custom_hotkeys();
         if let Some(launcher) = &mailbox.connection.coin_shop {
@@ -414,6 +419,8 @@ impl Drop for PlayLink {
             return;
         }
         self.channel_switch_close();
+        let delivery = lock(&self.mailbox).connection.browser_delivery.clone();
+        let _delivery = delivery.lock().unwrap_or_else(PoisonError::into_inner);
         let mut mailbox = lock(&self.mailbox);
         mailbox.end_custom_hotkeys();
         if let Some(launcher) = &mailbox.connection.coin_shop {

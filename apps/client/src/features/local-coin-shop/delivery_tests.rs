@@ -83,7 +83,7 @@ fn cancelled_oauth_does_not_deliver_browser_launch() -> TestResult {
         cancel_at(Point::OAuth, &cancel, || {
             let _ = mock.runtime.block_on(crate::native_entry::open_coin_shop(
                 &config,
-                Some(CHARACTER.into()),
+                CHARACTER,
                 cancel.clone(),
             ));
         })?;

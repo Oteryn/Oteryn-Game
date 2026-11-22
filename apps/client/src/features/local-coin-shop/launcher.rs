@@ -100,7 +100,7 @@ impl Launcher {
                 {
                     Ok(runtime) => runtime.block_on(crate::native_entry::open_coin_shop(
                         &config,
-                        Some(launcher.character_id.clone()),
+                        &launcher.character_id,
                         cancel.clone(),
                     )),
                     Err(_) => Err(crate::GameplayEntryError::Rejected(
