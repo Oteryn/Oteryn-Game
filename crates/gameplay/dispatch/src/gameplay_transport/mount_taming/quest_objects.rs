@@ -2,6 +2,7 @@
 use oteryn_gameplay_quests::quest::{
     rottin_walls, targuna_ram,
     world_callbacks::{Callback, ItemOnTarget},
+    world_contributions,
 };
 
 /// Authored Top of the City pick-on-dirt step; the pick is the fenced selected tool.
@@ -12,6 +13,7 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
         && (callback.key == targuna_ram::KEY
             || callback.key == TOP_OF_THE_CITY_DIG
             || callback.skinning_target().is_some()
+            || world_contributions::pump_coal(callback).is_some()
             || (callback
                 .item_on_target
                 .as_ref()
