@@ -1,8 +1,8 @@
 pub mod party_target_binding;
 mod prepare;
 pub mod spell_reconnect;
-#[cfg(any(test, feature = "test-support"))]
 use crate::durability::monster_profile_metrics::query as profile_query;
+#[cfg(any(test, feature = "test-support"))]
 use crate::durability::schema;
 use crate::durability::{DurabilityError, DurabilityRoot, db};
 use crate::foundation::{

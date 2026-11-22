@@ -1077,7 +1077,7 @@ stage() { # name prerequisite... -- function
         | sort -rn | head -n 30 || true
     echo "--- monster profile pass phases over the run"
     # Snapshots are cumulative and can reach stderr out of order across channels.
-    # Print every *_ns/*_count pair, including nested AI timings and SQL query counts.
+    # Print timed phases and count-only totals, including field-pass visits and due ticks.
     grep -oE 'module=durability event=monster_profile_pass_phases .*' "$node_log" 2>/dev/null \
         | awk '{
             for (i = 3; i <= NF; i++) {
@@ -1087,8 +1087,11 @@ stage() { # name prerequisite... -- function
                 if (sub(/_ns$/, "", phase) && (!(phase in NS) || value > NS[phase])) NS[phase] = value
                 if (sub(/_count$/, "", phase) && value > C[phase]) C[phase] = value
             }
-        } END {for (phase in NS) printf "total_ms=%.0f count=%.0f phase=%s\n", int(NS[phase] / 1000000), C[phase], phase}' \
-        | sort -t= -k2,2nr || true
+        } END {
+            for (phase in NS) printf "total_ms=%.0f count=%.0f phase=%s\n", int(NS[phase] / 1000000), C[phase], phase
+            for (phase in C) if (!(phase in NS)) printf "count=%.0f counter=%s\n", C[phase], phase
+        }' \
+        | sort -t= -k1,1r -k2,2nr || true
     echo "--- node message kinds"
     sed -E 's/ts=[0-9]+ //; s/trace=[0-9a-f-]+ //; s/[0-9]+/N/g' "$node_log" 2>/dev/null | cut -c1-140 | sort | uniq -c | sort -rn | head -n 40 || true
     echo "--- node admission and session events"

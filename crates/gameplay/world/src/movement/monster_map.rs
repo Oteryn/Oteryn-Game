@@ -26,6 +26,7 @@ use super::*;
 use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::content::{NativeEntryMovementCells, QualifiedNativeEntryRoom};
+use crate::durability::monster_profile_metrics as metrics;
 use crate::durability::spell_item_transaction::{
     SpellItemError, SpellItemScopeAuthority, read_creature_empty_tiles_in_transaction,
     read_creature_scope_tile_in_transaction,
@@ -454,6 +455,7 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
             .await
             .is_ok();
         if !valid {
+            let _cache_write = metrics::start_field_work(&metrics::FIELD_TILE_CACHE_WRITE);
             self.view.valid = false;
             self.view.tiles.clear();
             self.empty_tiles.clear();
@@ -655,9 +657,10 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
             .into_iter()
             .collect::<Vec<_>>();
         for batch in pending.chunks(256) {
-            self.empty_tiles.extend(
-                read_creature_empty_tiles_in_transaction(self.tx, self.authority, batch).await?,
-            );
+            let empty =
+                read_creature_empty_tiles_in_transaction(self.tx, self.authority, batch).await?;
+            let _cache_write = metrics::start_field_work(&metrics::FIELD_TILE_CACHE_WRITE);
+            self.empty_tiles.extend(empty);
         }
         Ok(())
     }
@@ -676,10 +679,13 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
         {
             return Err(SpellItemError::Rejected("current Monster Map authority"));
         }
-        let target = crate::native_world_items::SpellGroundTarget::for_native_tile_read(
-            self.room, runtime, at,
-        )
-        .map_err(SpellItemError::Rejected)?;
+        let target = {
+            let _address = metrics::start_field_work(&metrics::FIELD_TILE_ADDRESS);
+            crate::native_world_items::SpellGroundTarget::for_native_tile_read(
+                self.room, runtime, at,
+            )
+            .map_err(SpellItemError::Rejected)?
+        };
         let chunk = (at.x.div_euclid(16), at.y.div_euclid(16), at.floor);
         if !self.empty_tiles.contains(&target.spatial_position)
             && !self.read_chunks.contains(&chunk)
@@ -694,10 +700,11 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
                     positions.push(position);
                 }
             }
-            self.empty_tiles.extend(
+            let empty =
                 read_creature_empty_tiles_in_transaction(self.tx, self.authority, &positions)
-                    .await?,
-            );
+                    .await?;
+            let _cache_write = metrics::start_field_work(&metrics::FIELD_TILE_CACHE_WRITE);
+            self.empty_tiles.extend(empty);
             self.read_chunks.insert(chunk);
         }
         if self.empty_tiles.contains(&target.spatial_position) {

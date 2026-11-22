@@ -76,6 +76,86 @@ fn report_profile_phases() {
         ),
         (&AI_FIELD_TICKS, "ai_field_ticks_ns", "ai_field_ticks_count"),
         (
+            &monster_profile_metrics::FIELD_CENSUS,
+            "field_census_ns",
+            "field_census_count",
+        ),
+        (
+            &monster_profile_metrics::FIELD_ITERATION,
+            "field_iteration_ns",
+            "field_iteration_count",
+        ),
+        (
+            &monster_profile_metrics::FIELD_CREATURE_SNAPSHOT,
+            "field_creature_snapshot_ns",
+            "field_creature_snapshot_count",
+        ),
+        (
+            &monster_profile_metrics::FIELD_TILE_PREFETCH,
+            "field_tile_prefetch_ns",
+            "field_tile_prefetch_count",
+        ),
+        (
+            &monster_profile_metrics::FIELD_TILE_READ,
+            "field_tile_read_ns",
+            "field_tile_read_count",
+        ),
+        (
+            &monster_profile_metrics::FIELD_TILE_ADDRESS,
+            "field_tile_address_ns",
+            "field_tile_address_count",
+        ),
+        (
+            &monster_profile_metrics::FIELD_TILE_CACHE_WRITE,
+            "field_tile_cache_write_ns",
+            "field_tile_cache_write_count",
+        ),
+        (
+            &monster_profile_metrics::FIELD_ZONE_LOOKUP,
+            "field_zone_lookup_ns",
+            "field_zone_lookup_count",
+        ),
+        (
+            &monster_profile_metrics::FIELD_CONTENT_LOOKUP,
+            "field_content_lookup_ns",
+            "field_content_lookup_count",
+        ),
+        (
+            &monster_profile_metrics::FIELD_CONDITION_PREVIEW,
+            "field_condition_preview_ns",
+            "field_condition_preview_count",
+        ),
+        (
+            &monster_profile_metrics::FIELD_SOURCE_PUBLISH,
+            "field_source_publish_ns",
+            "field_source_publish_count",
+        ),
+        (
+            &monster_profile_metrics::FIELD_MAP_VALIDATION,
+            "field_map_validation_ns",
+            "field_map_validation_count",
+        ),
+        (
+            &monster_profile_metrics::FIELD_ENTRY_COMMIT,
+            "field_entry_commit_ns",
+            "field_entry_commit_count",
+        ),
+        (
+            &monster_profile_metrics::FIELD_HEALTH_NAMES,
+            "field_health_names_ns",
+            "field_health_names_count",
+        ),
+        (
+            &monster_profile_metrics::FIELD_DAMAGE_CONDITIONS,
+            "field_damage_conditions_ns",
+            "field_damage_conditions_count",
+        ),
+        (
+            &monster_profile_metrics::FIELD_POSTGRES,
+            "field_postgres_ns",
+            "field_postgres_count",
+        ),
+        (
             &AI_THINK_MOVEMENT,
             "ai_think_movement_ns",
             "ai_think_movement_count",
@@ -100,6 +180,9 @@ fn report_profile_phases() {
         line = line
             .field(elapsed_field, FieldValue::U64(elapsed_ns))
             .field(count_field, FieldValue::U64(count));
+    }
+    for (field, count) in monster_profile_metrics::field_visit_counts() {
+        line = line.field(field, FieldValue::U64(count));
     }
     emit("oteryn-game-server", &line);
 }
@@ -848,7 +931,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 if !pending.fields_known() {
                 AI_FIELD_TICKS.measure(
-                    owner.tick_creature_fields(&mut map, runtime, states, native, now, native_health_names)
+                    monster_profile_metrics::field_tick_scope(
+                        owner.tick_creature_fields(&mut map, runtime, states, native, now, native_health_names)
+                    )
                 ).await?;
                 pending.finish_fields();
                 }
