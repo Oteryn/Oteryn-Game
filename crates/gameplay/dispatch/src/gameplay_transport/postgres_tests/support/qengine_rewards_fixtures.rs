@@ -25,6 +25,10 @@ use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
 use std::sync::Arc;
 
+const SPIRIT_QUEST: &str = "oteryn:quest.the_spirit_will_get_you_quest";
+const SPIRIT_STAGE: &str = "oteryn:quest-progress/l6/spirit/stage";
+const SPIRIT_COMPLETED_STAGE: i64 = 2;
+
 pub(super) fn scenario(name: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -696,21 +700,23 @@ pub(super) async fn seed(
             .cloned()
             .ok_or("reward transition")?,
     );
-    let spirit = "oteryn:quest.the_spirit_will_get_you_quest";
     let spirit_completion = "oteryn:quest-transition/qengine-rewards-fixture-spirit";
     let mut setup_steps = vec![setup];
-    if callback.requires_completed_quests.iter().any(|quest| quest == spirit) {
+    if callback
+        .requires_completed_quests
+        .iter()
+        .any(|quest| quest == SPIRIT_QUEST)
+    {
         // The hand-in cases start after the separately qualified Crone quest.
-        let stage = "oteryn:quest-progress/l6/spirit/stage";
-        tracks.push(canonical.track(stage).cloned().ok_or("Spirit stage")?);
+        tracks.push(canonical.track(SPIRIT_STAGE).cloned().ok_or("Spirit stage")?);
         transitions.push(QuestTransition {
             world_change: None,
             key: spirit_completion.into(),
-            quest: spirit.into(),
+            quest: SPIRIT_QUEST.into(),
             effects: vec![QuestEffect {
-                track: stage.into(),
+                track: SPIRIT_STAGE.into(),
                 from: QuestComparison::Any,
-                effect: QuestEffectKind::Set(2),
+                effect: QuestEffectKind::Set(SPIRIT_COMPLETED_STAGE),
             }],
             completes: true,
             experience: None,
@@ -1253,11 +1259,19 @@ pub(super) async fn exercise(
     if key.starts_with("l1-warmaster-") || key.starts_with("l1-wayfarer-") {
         // Keep the production catalogue so either addon and its completion branch
         // can be reached after the first exchange.
-        let prerequisites = setup
+        let mut prerequisites = setup
             .storage
             .iter()
             .map(|state| (state.track.clone(), state.minimum))
             .collect::<Vec<_>>();
+        if setup
+            .requires_completed_quests
+            .iter()
+            .any(|quest| quest == SPIRIT_QUEST)
+        {
+            // The Crone's offer reads the stage written with the completion.
+            prerequisites.push((SPIRIT_STAGE.into(), SPIRIT_COMPLETED_STAGE));
+        }
         super::qengine_outfit_stories_fixtures::seed_quest_prerequisites_and_completions(
             h,
             owner,
