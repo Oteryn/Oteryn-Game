@@ -340,7 +340,9 @@ def source_loot_stack_promotions(root: Path) -> dict[str, int]:
 def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, batches: list[Any],
                              migrated_authoring: dict[tuple[str, str, str], dict[str, Any]]) -> tuple[int, int, int, int]:
     """Round-trip Item authoring/taxonomy/relations and prove per-fact provenance."""
+    from crystal_equipment_profiles import source_profiles
     from quest_reward_item_semantics import load_admissions
+    crystal_equipment = source_profiles(ROOT)
     reward_admissions = load_admissions(ROOT)
     loot_stack_promotions = source_loot_stack_promotions(ROOT)
     staged = load(ROOT / "docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-staged.json")
@@ -468,11 +470,13 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
                 reward_proof = admitted is not None and admitted[0]["stackable"] and known[blocked] == 100
                 loot_proof = key[1] in loot_stack_promotions and known[blocked] == loot_stack_promotions[key[1]]
                 require(reward_proof or loot_proof, f"BLOCKED_FIELD_PROMOTED:{blocked}")
-        equipment = superseding.get((key, "equipment.patterns"))
+        # Crystal's qualified weapon registrations supersede the Wiki equipment facts.
+        crystal_facts = known_paths(crystal_equipment.get(key[1], {}))
+        equipment = crystal_facts.get("equipment.patterns", superseding.get((key, "equipment.patterns")))
         if equipment is None:
             require(definitions[key].get("semantics", {}).get("equipment", {}).get("state", "UNKNOWN") == "UNKNOWN", "BLOCKED_EQUIPMENT_PROMOTED")
         else:
-            require(known.get("equipment.patterns") == equipment, "EQUIPMENT_WITHOUT_QUALIFIED_WIKI_PATTERN")
+            require(known.get("equipment.patterns") == equipment, "EQUIPMENT_WITHOUT_QUALIFIED_SOURCE_PATTERN")
     require(fact_count == staged["counts"]["definition_facts"] + staged["counts"]["authoring_facts"], "PROVENANCE_FACT_COUNT")
     return len(legacy_authoring), len(taxonomy["records"]), relation_count, fact_count
 
@@ -853,6 +857,8 @@ def _main() -> int:
     # HEALPAR: replay the producer's Global healing potion facts.
     from healing_global_overrides import apply_definitions as apply_global_potions
     apply_global_potions(legacy_items)
+    from crystal_equipment_profiles import apply_admissions as apply_crystal_equipment
+    apply_crystal_equipment(legacy_items, ROOT)
     require(migrated_items == legacy_items and expected_start == expected_item_count, "ITEM_DEFINITION_ROUNDTRIP")
 
     require(isinstance(mount_index["shards"][0], str), "MOUNT_SHARD_REF")
