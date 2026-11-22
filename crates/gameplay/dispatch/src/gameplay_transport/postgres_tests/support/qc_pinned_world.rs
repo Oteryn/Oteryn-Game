@@ -17,8 +17,18 @@ pub(super) fn artifact() -> TestResult<(Vec<u8>, serde_json::Value)> {
         None => {
             static BUILD: Mutex<()> = Mutex::new(());
             let _publish = BUILD.lock().map_err(|_| "world pin build lock poisoned")?;
-            let path = std::env::temp_dir().join(format!("qc-pin-{}", std::process::id()));
+            // Nextest runs every case in its own process. Serialize the build across
+            // processes so concurrent cases neither race the toolchain install nor run
+            // parallel release builds; later cases reuse this digest's artifact.
+            let path = std::env::temp_dir().join(format!("qc-pin-{digest}"));
+            std::fs::create_dir_all(&path)?;
+            let build_lock = std::fs::File::create(path.join(".build.lock"))?;
+            build_lock.lock()?;
             if !path.join(&filename).is_file() {
+                // Build into a private directory and publish by rename, so an
+                // interrupted build never leaves a partial artifact at the shared path.
+                let staging =
+                    std::env::temp_dir().join(format!("qc-pin-{digest}-{}", std::process::id()));
                 let status = std::process::Command::new("cargo")
                     .current_dir(root)
                     .args([
@@ -31,11 +41,13 @@ pub(super) fn artifact() -> TestResult<(Vec<u8>, serde_json::Value)> {
                         "pin-check",
                         ".",
                     ])
-                    .arg(&path)
+                    .arg(&staging)
                     .status()?;
                 if !status.success() {
                     return Err("world pin-check failed".into());
                 }
+                std::fs::rename(staging.join(&filename), path.join(&filename))?;
+                let _ = std::fs::remove_dir_all(&staging);
             }
             path
         }
