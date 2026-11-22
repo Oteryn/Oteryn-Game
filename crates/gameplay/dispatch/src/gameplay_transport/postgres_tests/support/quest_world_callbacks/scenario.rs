@@ -1567,7 +1567,9 @@ fn scenario_case(
                 3
             } else if name.starts_with("qengine-rewards-l2-djinn-") {
                 13
-            } else if twenty_miles || classic_npc || qd_world {
+            } else if twenty_miles {
+                6 // One player, three quest contacts, and two event contacts.
+            } else if classic_npc || qd_world {
                 5
             } else if monk {
                 4

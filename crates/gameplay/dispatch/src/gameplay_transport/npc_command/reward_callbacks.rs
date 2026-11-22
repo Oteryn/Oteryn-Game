@@ -53,6 +53,23 @@ impl NpcConversations {
     }
 }
 
+const TWENTY_MILES: &str = "oteryn:quest.twenty_miles_beneath_the_sea_quest";
+
+fn twenty_miles_placement(
+    npc: &str,
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    named: EntityRef,
+) -> bool {
+    let at = match npc {
+        "oteryn:npc.guardian_of_the_deep_seas" => (33547, 31632, -14),
+        "oteryn:npc.yeo" => (33660, 31989, -7),
+        _ => return true,
+    };
+    service_context::at_placement(runtime, actor, session, named, at)
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum Phase {
     Rewards,
@@ -85,10 +102,18 @@ pub(super) fn prepare(
         command.game_session_id,
         intent,
     )?;
+    let placement = twenty_miles_placement(
+        &context.2,
+        runtime,
+        actor,
+        command.game_session_id,
+        intent.npc_actor,
+    );
     let text = intent.text.trim().to_ascii_lowercase();
     if text == "no"
         || (phase == Phase::Offers
             && !matches!(text.as_str(), "yes" | "hi" | "hello" | "bye" | "farewell")
+            && placement
             && offers
                 .offers
                 .iter()
@@ -132,8 +157,12 @@ pub(super) fn prepare(
                 })
             };
             if phase == Phase::Rewards {
+                let meets_requirements = |c: &reward_callbacks::RewardCallback| {
+                    c.requires.iter().all(|r| r.holds(catalogue, tracks))
+                };
                 let matching_stage = callbacks.iter().filter(|c| {
                     c.carried_item.is_none()
+                        && (c.quest != TWENTY_MILES || placement)
                         && c.npc == context.2
                         && c.topic == topic.number
                         && c.keywords.contains(&text)
@@ -147,12 +176,13 @@ pub(super) fn prepare(
                                     .iter()
                                     .all(|op| op.advisory_holds(catalogue, tracks))
                         })
-                        && c.requires.iter().all(|r| r.holds(catalogue, tracks))
+                        && (c.quest == TWENTY_MILES || meets_requirements(c))
                 });
                 let mut selected = matching_stage.clone().filter(|c| {
-                    c.inventory
-                        .iter()
-                        .all(|rule| inventory.is_some_and(|facts| rule.holds(&facts.quantities)))
+                    (c.quest != TWENTY_MILES || meets_requirements(c))
+                        && c.inventory.iter().all(|rule| {
+                            inventory.is_some_and(|facts| rule.holds(&facts.quantities))
+                        })
                 });
                 if let Some(callback) = selected.next() {
                     if selected.next().is_some() {
@@ -174,7 +204,7 @@ pub(super) fn prepare(
                     });
                 }
                 // A later stage with the same keyword cannot hide this stage's
-                // explicit inventory refusal. Successful branches retain priority.
+                // explicit refusal. Successful branches retain priority.
                 let mut blocked = matching_stage;
                 if let Some(callback) = blocked.next()
                     && blocked.next().is_none()
@@ -182,6 +212,9 @@ pub(super) fn prepare(
                 {
                     return Some(choice);
                 }
+                return None;
+            }
+            if !placement {
                 return None;
             }
             if let Some(offer) = offers
@@ -344,9 +377,17 @@ pub(super) fn unhandled_confirmation(
     let Some(catalogue) = admission.quest_catalogue.as_deref() else {
         return false;
     };
+    let placement = twenty_miles_placement(
+        &context.2,
+        runtime,
+        actor,
+        command.game_session_id,
+        intent.npc_actor,
+    );
     reward_callbacks::offered_for(catalogue).is_ok_and(|callbacks| {
         callbacks.iter().any(|callback| {
             callback.npc == context.2
+                && (callback.quest != TWENTY_MILES || placement)
                 && (callback.topic == topic
                     || requested
                     // The forge requires a specific offer before it accepts yes.

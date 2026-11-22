@@ -874,6 +874,7 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
             || peers.iter().any(|peer| {
                 !phase::exclusive(peer, callback)
                     && !phase::disjoint(peer, callback)
+                    && !phase::hoard_reentry_pair(peer, callback)
                     && !guarded_routes::disjoint(callback, peer)
                     && !(selector_gates::disjoint(peer, callback)
                         && selector_partitions::disjoint(peer, callback))

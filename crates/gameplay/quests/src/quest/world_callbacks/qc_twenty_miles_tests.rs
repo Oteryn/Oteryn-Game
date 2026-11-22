@@ -10,7 +10,7 @@ fn twenty_miles_world_steps_are_bound_to_distinct_placements() -> Result<(), Str
         .filter(|c| c.key.starts_with("oteryn:quest-callback/qc-twenty-miles-"))
         .collect();
     // 5 skull piles, 9 nacre altars, 4 hoard tiles, 3 chests, 3 broken altars, 1 sundial.
-    assert_eq!(steps.len(), 44);
+    assert_eq!(steps.len(), 74);
     let mut uses = BTreeSet::new();
     for step in &steps {
         assert_eq!(step.quest, QUEST);
@@ -23,8 +23,17 @@ fn twenty_miles_world_steps_are_bound_to_distinct_placements() -> Result<(), Str
             .position
             .or_else(|| step.selector.native.as_ref().map(|native| native.position))
             .ok_or("placement")?;
-        if step.trigger == Trigger::Use {
+        if step.trigger == Trigger::Use && !step.is_read_only() {
             assert!(uses.insert((at.x, at.y, at.floor)), "{}", step.key);
+        }
+        if step.trigger == Trigger::Use && step.is_read_only() {
+            assert_eq!(
+                steps
+                    .iter()
+                    .filter(|peer| phase::hoard_reentry_pair(step, peer))
+                    .count(),
+                1
+            );
         }
         if let Some(tool) = &step.item_on_target {
             assert!(tool.selected_instance, "{}", step.key);
@@ -40,7 +49,7 @@ fn twenty_miles_npc_chain_has_one_completing_turn() -> Result<(), String> {
         .into_iter()
         .filter(|c| c.key.starts_with("oteryn:quest-reward/qc-twenty-miles-"))
         .collect();
-    assert_eq!(turns.len(), 18);
+    assert_eq!(turns.len(), 29);
     let completing: Vec<_> = turns.iter().filter(|c| c.completes).collect();
     assert_eq!(completing.len(), 1);
     assert_eq!(

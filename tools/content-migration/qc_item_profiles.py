@@ -16,6 +16,9 @@ import quest_batch3_item_profiles as batch
 
 PATH = 'tools/content-schema/native-gameplay/qc-item-profiles.json'
 SCHEMA = 'OTERYN_QC_ITEM_PROFILES/v1'
+# The nine source-qualified records are frozen, including nested record shape.
+# Authoring-use pointers can change independently when new placements use them.
+RECORDS_SHA256 = '4907e22b4cc1754ea6d297618d1370f2550b5679a3da554e8fe89baa7264b4f2'
 INPUTS = (
     'content/quests/npc-callbacks/qc-twenty-miles.json',
     'content/quests/world-callbacks/qc-lizard-sanctuary.json',
@@ -94,6 +97,9 @@ def capture(source_root):
 def admit(root, generated, profile_path, manifest_path, order, canonical):
     packet = json.loads((root / PATH).read_bytes())
     records = packet['records']
+    encoded_records = json.dumps(records, sort_keys=True, separators=(',', ':'), ensure_ascii=False)
+    if hashlib.sha256(encoded_records.encode()).hexdigest() != RECORDS_SHA256:
+        raise ValueError('QC_ITEM_RECORD_QUALIFICATION')
     if (packet['schema'] != SCHEMA or len(records) != len(KEYS)
             or {r['production_definition']['production_key'] for r in records} != KEYS
             or len(packet['classification']) != len(KEYS)

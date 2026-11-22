@@ -12,23 +12,34 @@ glass. The bundle selector test checks all three coordinates.
 The west and east entrances, the Sea Ear diversion and the song follow the
 walkthrough. [TibiaWiki](https://tibia.fandom.com/index.php?curid=69583&oldid=1149608)
 
-The corresponding objects and floors are retained in the shipped Crystal
-00ce02a5 map export. The native routes use the western forcefield at
-(33552, 31628, 13) and eastern forcefield at (33558, 31628, 13), gated by
-their respective access tracks. The surface vortex diverts to the shell cave
-until the player retrieves the Sea Ear. One retained shell carries the ear
-and five retained statues each contribute a different line. A northwest step
-enters the shrine and lands beside the chest. These routes use fixed landings
-and objectives. The cave landing uses the swimming outfit qualified from
-Crystal's movement script and appearance data.
+The retained Crystal 00ce02a5 map export supplies the forcefields, shrines,
+and whirlpools. The western and eastern portals check their personal access
+tracks. The northern forcefield at (33555, 31624, 13) checks `access_birthing`
+and lands at (33426, 31740, 13), one step north of the retained return portal.
+That return portal at (33426, 31741, 13) targets the northern side of the
+Seacrest hub. [Seacrest Grounds](https://tibia.fandom.com/wiki/Seacrest_Grounds#Birthing_Grounds)
 
-Birthing Grounds remains unreachable through the northern forcefield at
-(33555, 31624, 13). The map export carries appearance 1949 at that position
-without a teleport destination. Crystal 201189f8 supplies no matching
-movement action, and the walkthrough identifies the entrance direction only.
-The Guardian still records `access_birthing` at completion.
+The surface vortex uses the character's quest stage and, during stage 19–21,
+current Sea Ear custody. The cave stays reachable after dropping the ear.
+The route uses the swimming outfit qualified from the pinned Crystal movement
+script and appearance data. The walkthrough documents public entry to the
+main grounds without quest progress or diving headgear. Underwater movement
+retains its normal drowning rules.
 
-The pinned world scan verifies each callback's physical selector and floor,
-plus the routes' destination cells. The PostgreSQL chain exercises actual
-stepping at the access gates and selected-item USE on the retained objects.
-It relocates the test character between distant witnesses.
+The Secret Shrine entrance lands at the south side of the retained whirlpool
+maze. Three retained whirlpools lead to the chest, and the exit returns to
+the approach. The map export does not carry their original destinations.
+Each statue asks the player to return after two minutes before awarding its
+line. The three repaired
+altars show their restored appearance for one minute.
+
+A bare USE on any paid hoard returns the character to the ring chamber
+during stages 4–5. The Guardian's lost-item dialogue recovers an outstanding
+quest item after its previous issuance is gone. The writer checks carried
+items and surviving issued instances, including those in Ground or another
+character's custody.
+
+The pinned world scan verifies physical selectors, destination cells, and the
+three permanent contacts. The PostgreSQL fixtures drive STEP, USE, selected
+tools, and NPC dialogue through framed commands. Distant witnesses are
+reached with fixture relocation.

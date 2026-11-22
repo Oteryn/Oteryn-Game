@@ -71,6 +71,20 @@ pub(super) fn speaker_position(
         })
 }
 
+pub(super) fn at_placement(
+    runtime: &ChannelRuntimeV1,
+    observer: ExactActorRef,
+    session: GameSessionId,
+    named: EntityRef,
+    (x, y, floor): (u16, u16, i8),
+) -> bool {
+    // Placements use native -z and live cells use runtime z.
+    live_npc(runtime, observer, session, named).is_some_and(|npc| {
+        (npc.position.x, npc.position.y, npc.position.floor)
+            == (i32::from(x), i32::from(y), -i16::from(floor))
+    })
+}
+
 /// A House observer sees only its scoped native NPC slots. Channel keys cannot opt into House.
 pub(super) fn live_npc(
     runtime: &ChannelRuntimeV1,

@@ -214,7 +214,7 @@
     },
     {
       "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
-      "sha256": "666e5dd73ff9ced1c75db3bc9dd3f1424969c1251b15b47279d44c71133a9730"
+      "sha256": "041fe6213aa0e92caf650d7cb7a69090f0c217a84e803a5005d6c1d1a5186f8d"
     },
     {
       "path": "content/quests/world-callbacks/qc-lizard-sanctuary.json",
@@ -222,7 +222,7 @@
     },
     {
       "path": "content/quests/world-callbacks/qc-twenty-miles.json",
-      "sha256": "ca7acc6646ce6652a43c71abe109abd372a66bdc6e6889b9c92317a2446d1cff"
+      "sha256": "d07af5065e09f18a395dbc3f2057cd4f8f6cb165190f5c3ee44f4d60671036db"
     }
   ],
   "canonical_inputs": [
@@ -1780,8 +1780,24 @@
           ]
         },
         {
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/20/give/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/20/inventory/0/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
           "path": "content/quests/world-callbacks/qc-twenty-miles.json",
-          "pointer": "/callbacks/18/effects/item_reward/item",
+          "pointer": "/callbacks/43/effects/item_reward/item",
           "sources": [
             "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
             "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
@@ -1818,8 +1834,16 @@
           ]
         },
         {
-          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
-          "pointer": "/callbacks/14/item_on_target/item",
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/19/give/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/19/inventory/0/item",
           "sources": [
             "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
             "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
@@ -1827,7 +1851,7 @@
         },
         {
           "path": "content/quests/world-callbacks/qc-twenty-miles.json",
-          "pointer": "/callbacks/15/item_on_target/item",
+          "pointer": "/callbacks/35/item_on_target/item",
           "sources": [
             "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
             "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
@@ -1835,7 +1859,7 @@
         },
         {
           "path": "content/quests/world-callbacks/qc-twenty-miles.json",
-          "pointer": "/callbacks/16/item_on_target/item",
+          "pointer": "/callbacks/37/item_on_target/item",
           "sources": [
             "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
             "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
@@ -1843,7 +1867,15 @@
         },
         {
           "path": "content/quests/world-callbacks/qc-twenty-miles.json",
-          "pointer": "/callbacks/17/item_on_target/item",
+          "pointer": "/callbacks/39/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/41/item_on_target/item",
           "sources": [
             "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
             "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
@@ -1877,8 +1909,32 @@
           ]
         },
         {
-          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
-          "pointer": "/callbacks/19/effects/item_reward/item",
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/21/give/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/21/inventory/0/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/22/give/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/22/inventory/0/item",
           "sources": [
             "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
             "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
@@ -1886,7 +1942,15 @@
         },
         {
           "path": "content/quests/world-callbacks/qc-twenty-miles.json",
-          "pointer": "/callbacks/21/item_on_target/item",
+          "pointer": "/callbacks/44/effects/item_reward/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/46/item_on_target/item",
           "sources": [
             "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
             "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608",
@@ -1913,8 +1977,40 @@
           ]
         },
         {
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/26/give/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/26/inventory/0/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/27/give/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/27/inventory/0/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
           "path": "content/quests/world-callbacks/qc-twenty-miles.json",
-          "pointer": "/callbacks/24/item_on_target/item",
+          "pointer": "/callbacks/49/item_on_target/item",
           "sources": [
             "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
             "https://tibia.fandom.com/index.php?oldid=1149608",
@@ -1923,7 +2019,7 @@
         },
         {
           "path": "content/quests/world-callbacks/qc-twenty-miles.json",
-          "pointer": "/callbacks/25/effects/item_reward/item",
+          "pointer": "/callbacks/50/effects/item_reward/item",
           "sources": [
             "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
             "https://tibia.fandom.com/index.php?oldid=1149608",
@@ -1932,7 +2028,7 @@
         },
         {
           "path": "content/quests/world-callbacks/qc-twenty-miles.json",
-          "pointer": "/callbacks/26/item_on_target/item",
+          "pointer": "/callbacks/51/item_on_target/item",
           "sources": [
             "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
             "https://tibia.fandom.com/index.php?oldid=1149608",
@@ -1941,7 +2037,7 @@
         },
         {
           "path": "content/quests/world-callbacks/qc-twenty-miles.json",
-          "pointer": "/callbacks/27/item_on_target/item",
+          "pointer": "/callbacks/52/item_on_target/item",
           "sources": [
             "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
             "https://tibia.fandom.com/index.php?oldid=1149608",
@@ -1950,7 +2046,7 @@
         },
         {
           "path": "content/quests/world-callbacks/qc-twenty-miles.json",
-          "pointer": "/callbacks/28/item_on_target/item",
+          "pointer": "/callbacks/53/item_on_target/item",
           "sources": [
             "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
             "https://tibia.fandom.com/index.php?oldid=1149608",
@@ -1959,7 +2055,7 @@
         },
         {
           "path": "content/quests/world-callbacks/qc-twenty-miles.json",
-          "pointer": "/callbacks/29/item_on_target/item",
+          "pointer": "/callbacks/54/item_on_target/item",
           "sources": [
             "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
             "https://tibia.fandom.com/index.php?oldid=1149608",
@@ -1968,7 +2064,7 @@
         },
         {
           "path": "content/quests/world-callbacks/qc-twenty-miles.json",
-          "pointer": "/callbacks/30/item_on_target/item",
+          "pointer": "/callbacks/55/item_on_target/item",
           "sources": [
             "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
             "https://tibia.fandom.com/index.php?oldid=1149608",
@@ -1986,6 +2082,14 @@
       "key": "oteryn:item.tibia.i21770",
       "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:43080",
       "uses": [
+        {
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/18/give/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
         {
           "path": "content/quests/world-callbacks/qc-twenty-miles.json",
           "pointer": "/callbacks/0/effects/item_reward/item",
@@ -2097,6 +2201,174 @@
             "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
             "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
           ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/14/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/15/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/16/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/17/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/18/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/19/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/20/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/21/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/22/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/23/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/24/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/25/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/26/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/27/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/28/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/29/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/30/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/31/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/32/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/33/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/34/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
         }
       ],
       "canonical_materializable": false,
@@ -2118,8 +2390,24 @@
           ]
         },
         {
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/28/give/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/28/inventory/0/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
           "path": "content/quests/world-callbacks/qc-twenty-miles.json",
-          "pointer": "/callbacks/24/effects/item_reward/item",
+          "pointer": "/callbacks/49/effects/item_reward/item",
           "sources": [
             "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
             "https://tibia.fandom.com/index.php?oldid=1149608",
@@ -2154,8 +2442,32 @@
           ]
         },
         {
-          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
-          "pointer": "/callbacks/20/effects/item_reward/item",
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/23/give/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/23/inventory/0/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/24/give/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/24/inventory/0/item",
           "sources": [
             "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
             "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
@@ -2163,7 +2475,15 @@
         },
         {
           "path": "content/quests/world-callbacks/qc-twenty-miles.json",
-          "pointer": "/callbacks/22/item_on_target/item",
+          "pointer": "/callbacks/45/effects/item_reward/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/47/item_on_target/item",
           "sources": [
             "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
             "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608",
@@ -2198,8 +2518,24 @@
           ]
         },
         {
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/25/give/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/25/inventory/0/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
           "path": "content/quests/world-callbacks/qc-twenty-miles.json",
-          "pointer": "/callbacks/23/item_on_target/item",
+          "pointer": "/callbacks/48/item_on_target/item",
           "sources": [
             "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
             "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608",
