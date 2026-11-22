@@ -10,8 +10,8 @@
 //! 5. Write the recipient on the parcel label, move that label into the parcel with ITEM_MOVE,
 //!    assert the accepted move and inventory delta, then post the parcel and assert `Posted`, its
 //!    removal, and an Inbox parcel delivery.
-//! 6. Logout normally. Durable Inbox readback after Platform-issued fresh admission
-//!    remains a gap in the reference World harness.
+//! 6. Logout normally and compare both exact Inbox counts after a Game verifier
+//!    reconnect. A Platform-issued admission remains a separate qualification gap.
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityKind};
 use oteryn_protocol_oteryn::{depot_search, item_view, mail, npc_service};
@@ -461,6 +461,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0xe9).await?;
     let mut recipient =
         super::full_e2ef4::keep_alive(&mut client, connect_character(clients, 0xeb, 0)).await?;
+    let recipient_session = recipient.join_snapshot().game_session_id;
     let entities = recipient
         .world_entities()
         .ok_or("recipient entities absent")?;
@@ -599,6 +600,25 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("step=recipient-logout observed=refused need=accepted-logout".into());
     }
+    drop(recipient);
+    let mut fresh = connect_character(clients, 0xea, 0).await?;
+    if fresh.join_snapshot().game_session_id == recipient_session {
+        return Err("step=durable-inbox observed=reused-recipient-session need=new-session".into());
+    }
+    let letter_after = depot_search(&mut fresh, 3506).await?;
+    let parcel_after = depot_search(&mut fresh, 3504).await?;
+    if (inbox(&letter_after), inbox(&parcel_after)) != (inbox(&delivered), inbox(&parcel_delivery))
+    {
+        return Err(format!("step=durable-inbox observed=letter-{letter_after:?}-parcel-{parcel_after:?} need=exact-persisted-inbox-counts").into());
+    }
+    if fresh.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("step=final-logout observed=refused need=accepted-logout".into());
+    }
+    evidence(
+        "E09_OBSERVATION Game verifier probe retained exact letter and parcel Inbox counts after reconnect",
+    );
     Err(super::full_e2ef4::platform_admission_gap())
 }
 

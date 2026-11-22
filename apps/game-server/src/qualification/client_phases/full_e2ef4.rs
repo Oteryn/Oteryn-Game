@@ -90,6 +90,7 @@ pub(super) async fn run(
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
     spawns: &oteryn_world_bundle::spawn::Table,
+    rat_xp: i64,
 ) {
     // Each row reports even when another row has missing content or a refused command.
     // Socket waits are bounded; a timed-out session is not evidence of server absence.
@@ -124,10 +125,7 @@ pub(super) async fn run(
             } else {
                 Err("recovery admission unavailable: prior session closed; Platform-issued grant input is absent; source:apps/game-server/src/qualification.rs:2720".into())
             };
-            if result.as_ref().err().is_some_and(|error| matches!(verdict::classify(error.as_ref()), verdict::Cause::Transport { .. })) {
-                *client = None;
-            }
-            row.finish(&result);
+            finish_row(client, row, result).await;
         }};
         (@journey $client:ident, $row:ident, $watch:ident, $active:ident, $journey:ident $(, $arg:expr)*) => {{
             let mut completed = false;
@@ -170,10 +168,7 @@ pub(super) async fn run(
             } else {
                 Err("recovery admission unavailable: prior session closed; Platform-issued grant input is absent; source:apps/game-server/src/qualification.rs:2720".into())
             };
-            if result.as_ref().err().is_some_and(|error| matches!(verdict::classify(error.as_ref()), verdict::Cause::Transport { .. })) {
-                *client = None;
-            }
-            row.finish(&result);
+            finish_row(client, row, result).await;
         }};
     }
     {
@@ -190,13 +185,13 @@ pub(super) async fn run(
         } else {
             Err("recovery admission unavailable: prior session closed; Platform-issued grant input is absent; source:apps/game-server/src/qualification.rs:2720".into())
         };
-        row.finish(&result);
+        finish_row(client, row, result).await;
     }
     row!("E03", E03, coins, world, spawns);
     row!("E04", E04, trade, clients, world, spawns);
     row!(travel locker, "E05", E05, market, clients, world, npcs, spawns);
     row!(travel locker, "E07", E07, storage, clients);
-    row!(travel town, "S01", S01, party, clients, world, spawns);
+    row!(travel town, "S01", S01, party, clients, world, spawns, rat_xp);
     row!("S03", S03, guild);
     row!("S09", S09, logout, clients, world, spawns);
     row!("S18", S18, speech, clients, world);
@@ -373,10 +368,10 @@ async fn shop_row(
             back
         })
         .await;
-    if let Err(error) = back {
+    if let Err(error) = &back {
         evidence(&format!("E2EF4_GAP E01 return {error}"));
     }
-    (result, returned)
+    (result.and(back), returned)
 }
 
 async fn approach_sam(
@@ -1406,10 +1401,10 @@ async fn storage(
     if reply.reply.outcome != ui::stash::StashOutcome::Opened || stash_after != stash_before {
         return Err("fresh-session stash differs from committed withdrawal".into());
     }
-    row.pass(
-        "relog-custody",
-        "fresh-admission-inventory-and-stash-quantities-retained",
+    evidence(
+        "E2EF4_OBSERVATION E07 Game verifier probe retained exact inventory and stash quantities after reconnect",
     );
+    evidence(&format!("E2EF4_GAP E07 {}", platform_admission_gap()));
     Err(
         "inbox: need delivered mail or market item and retrieve from real Inbox search results; source:crates/protocol-oteryn/src/depot_search.rs:51"
             .into(),
@@ -1422,6 +1417,7 @@ async fn party(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
+    rat_xp: i64,
 ) -> TestResult {
     use oteryn_dev_client::client_runtime::party as runtime;
     use runtime::party::{PartyDisposition, PartyIntent};
@@ -1496,6 +1492,11 @@ async fn party(
         row.pass("leadership", "current-query-selected-member-is-leader");
         let split: TestResult = async {
             const RAT: &str = "oteryn:creature.rat";
+            let first_vocation = keep_alive(&mut peer, party_base_vocation(client)).await?;
+            let second_vocation = keep_alive(client, party_base_vocation(&mut peer)).await?;
+            let boost = keep_alive(&mut peer, client_daily_boost::reward_selection(client)).await?;
+            let base = i64::try_from(client_daily_boost::boosted_xp(u64::try_from(rat_xp)?, RAT, &boost)?)?;
+            let expected = two_member_share(base, [first_vocation, second_vocation])?;
             keep_alive(&mut peer, travel_to_spawn(client, world, spawns, RAT)).await?;
             let target = adjacent_creature(client)
                 .ok_or("shared-xp-split: authored rat route produced no adjacent live creature")?;
@@ -1526,15 +1527,19 @@ async fn party(
             }
             let occurrence = death.reward_occurrence.ok_or("shared-xp-split: principal reward occurrence absent")?;
             let mut database = sqlx::PgConnection::connect(clients.url).await?;
-            let raw: Vec<i64> = sqlx::query_scalar(
-                "SELECT m.raw_share FROM game_party_kill_xp_members p
+            let observed: Vec<(i64, i64)> = sqlx::query_as(
+                "SELECT r.base_xp, m.raw_share FROM game_party_kill_xp_members p
                  JOIN game_party_kill_xp_members m USING (death_key)
+                 JOIN game_party_kill_xp_receipts r USING (death_key)
                  WHERE p.reward_occurrence_id=encode($1,'hex')::uuid LIMIT 3",
             ).bind(occurrence.as_slice()).fetch_all(&mut database).await?;
-            if !matches!(raw.as_slice(), [a, b] if *a > 0 && a == b) {
-                return Err(format!("shared-xp-split: unequal or missing raw shares before per-player modifiers: {raw:?}").into());
+            let raw: Vec<_> = observed.iter().map(|&(_, share)| share).collect();
+            if observed.iter().any(|&(receipt_base, _)| receipt_base != base)
+                || !exact_party_share(&raw, expected)
+            {
+                return Err(format!("shared-xp-split: expected reference kill base={base} and two raw shares of {expected}; observed={observed:?}").into());
             }
-            row.pass("shared-xp-split", "exact-rat-death-receipt-two-equal-positive-raw-shares");
+            row.pass("shared-xp-split", format!("exact-rat-death-receipt-base={base}-both-raw-shares={expected}"));
             Ok(())
         }.await;
         send(client, Some(PartyIntent::Leave)).await?;
@@ -1617,7 +1622,10 @@ async fn logout_peer(
     {
         return Err("fresh-login-position: saved PZ tile or session mismatch".into());
     }
-    row.pass("relog-position", "fresh-session-retained-saved-position");
+    evidence(
+        "E2EF4_OBSERVATION S09 Game verifier probe retained the saved PZ position after reconnect",
+    );
+    evidence(&format!("E2EF4_GAP S09 {}", platform_admission_gap()));
 
     let probes: TestResult = async {
         let from = tile(peer.world_spatial().actor_position)?;
@@ -1976,4 +1984,112 @@ fn parked_session_is_serviced_until_operation_completes() -> TestResult {
         assert!(probes > 0);
         Ok(())
     })
+}
+
+async fn party_base_vocation(client: &mut DevClientSession) -> TestResult<u8> {
+    use oteryn_protocol_oteryn::cyclopedia_character as wire;
+    let request = [wire::CharacterTab::GeneralStats as u8, 0, 0, 1];
+    let reply = client
+        .session_mut()
+        .gated_command(wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1, 388, &request)
+        .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err("shared-xp-split: GeneralStats vocation query refused".into());
+    }
+    match general_stats::validate(&reply.payload, general_stats::selected(client))? {
+        Some(1) => Ok(0),
+        Some(id @ 2..=11) => Ok((id - 2) / 2 + 1),
+        _ => Err("shared-xp-split: native vocation unavailable".into()),
+    }
+}
+
+// Independent reference oracle for two players contributing the entire rat pool,
+// without summoned attackers, event rates or Animus mastery adjustments.
+fn two_member_share(base: i64, [first, second]: [u8; 2]) -> TestResult<i64> {
+    let bonus = if first != 0 && second != 0 && first != second {
+        30
+    } else if base >= 20 {
+        20
+    } else {
+        0
+    };
+    let numerator = i128::from(base) * (100 + bonus);
+    Ok(i64::try_from((numerator + 199) / 200)?)
+}
+
+fn exact_party_share(raw: &[i64], expected: i64) -> bool {
+    expected > 0 && raw == [expected; 2]
+}
+
+async fn finish_row(client: &mut Option<DevClientSession>, row: Row, result: TestResult) {
+    verify_primary(client, &result, async |primary| {
+        if let Err(error) = primary.service_liveness(Duration::from_millis(25)).await {
+            evidence(&format!("E2EF4_GAP primary-session {error}"));
+            return Err(error.into());
+        }
+        Ok(())
+    })
+    .await;
+    row.finish(&require_platform_admission(result));
+}
+
+async fn verify_primary<T>(
+    slot: &mut Option<T>,
+    result: &TestResult,
+    probe: impl AsyncFnOnce(&mut T) -> TestResult,
+) {
+    if result.is_err()
+        && let Some(primary) = slot.as_mut()
+        && probe(primary).await.is_err()
+    {
+        *slot = None;
+    }
+}
+
+fn require_platform_admission(result: TestResult) -> TestResult {
+    result.and_then(|()| Err(platform_admission_gap()))
+}
+
+#[cfg(test)]
+mod review_regressions {
+    use super::*;
+
+    #[test]
+    fn review_equal_but_wrong_party_share_fails() -> TestResult {
+        let plain_rat_share = two_member_share(5, [1, 1])?;
+        assert_eq!(plain_rat_share, 3);
+        assert!(!exact_party_share(&[4, 4], plain_rat_share));
+        assert!(exact_party_share(&[3, 3], plain_rat_share));
+        assert_eq!(two_member_share(5, [1, 2])?, 4);
+        assert_eq!(two_member_share(20, [0, 1])?, 12);
+        Ok(())
+    }
+
+    #[test]
+    fn review_fixture_only_success_cannot_qualify_platform_admission() {
+        assert!(require_platform_admission(Ok(())).is_err());
+    }
+
+    #[test]
+    fn review_primary_probe_controls_reuse_after_transport_failure() -> TestResult {
+        let rt = tokio::runtime::Builder::new_current_thread().build()?;
+        rt.block_on(async {
+            let transport = Err(std::io::Error::from(std::io::ErrorKind::UnexpectedEof).into());
+            let mut slot = Some(());
+            verify_primary(&mut slot, &transport, async |_| Ok(())).await;
+            assert!(
+                slot.is_some(),
+                "a peer failure must leave the healthy primary available"
+            );
+            verify_primary(&mut slot, &transport, async |_| {
+                Err("primary poisoned".into())
+            })
+            .await;
+            assert!(
+                slot.is_none(),
+                "a failed primary probe must discard the session"
+            );
+            Ok(())
+        })
+    }
 }
