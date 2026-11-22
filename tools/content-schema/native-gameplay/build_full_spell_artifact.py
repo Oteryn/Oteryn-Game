@@ -735,6 +735,19 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
                         name_entries(entry.get('children', []))
                 name_entries(table['entries'])
         bindings[target['key']] = {'creature': target, 'loot': loot}
+    # Crystal 201189f8 arbaziloth.lua:87-98 gives these yields multi-unit rolls.
+    # Project stackability from their exact native profiles without changing admission.
+    arbaziloth = used.get('oteryn:loot.creature.arbaziloth')
+    if arbaziloth is not None:
+        entries = {entry['item']['key']: entry['item'] for entry in arbaziloth['entries']}
+        for item_id in (3043, 7642, 23373, 7643, 23375, 23374, 3041, 3037):
+            key = f'oteryn:item.tibia.i{item_id}'
+            ref = entries.get(key)
+            profiles = native_by_key.get(key, [])
+            native = native_loot_yield_facts(ref, profiles[0]) if ref and len(profiles) == 1 else None
+            if native is None or native['stackable'] is not True:
+                raise ValueError(f'Arbaziloth loot requires an exact stackable profile for {key}')
+            facts[key]['stackable'] = native['stackable']
     # Only canonical current CreatureProfile corpse references receive stronger native
     # Ground admission. A reference also used as an ordinary loot yield retains its
     # original static facts, so this producer cannot widen general yield admission.
