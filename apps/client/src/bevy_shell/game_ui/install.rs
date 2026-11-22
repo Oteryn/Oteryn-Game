@@ -362,7 +362,8 @@ fn tool_activate(
                 state.seen = None;
                 return;
             }
-            if confirmed && state.pending_sort.take().is_none() {
+            if confirmed && (state.pending_sort.take().is_none() || !recursive) {
+                state.seen = None;
                 return;
             }
             let request = oteryn_client_runtime::container_sort::Request {

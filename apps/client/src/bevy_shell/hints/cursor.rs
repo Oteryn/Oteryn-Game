@@ -4,8 +4,10 @@ use bevy::{
     render::render_resource::{Extent3d, TextureDimension, TextureFormat},
 };
 
+use bevy::window::SystemCursorIcon as Icon;
+
 #[derive(Resource)]
-pub(super) struct CursorImages([[Handle<Image>; 2]; 2]);
+pub(super) struct CursorImages(std::collections::HashMap<Icon, [[Handle<Image>; 2]; 2]>);
 
 #[derive(Component)]
 pub(super) struct GameCursor;
@@ -32,34 +34,63 @@ pub(super) fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
         "     #+#        ",
         "      #         ",
     ];
-    let handles = std::array::from_fn(|large| {
-        std::array::from_fn(|frame| {
-            let scale = 1 + large;
-            let size = 16 * scale;
-            let mut pixels = Vec::with_capacity(size * size * 4);
-            for y in 0..size {
-                for x in 0..size {
-                    pixels.extend(match arrow[y / scale].as_bytes()[x / scale] {
-                        b'#' => [32, 26, 19, 255],
-                        b'+' if frame == 1 => [245, 208, 120, 255],
-                        b'+' => [255, 247, 218, 255],
-                        _ => [0; 4],
-                    });
-                }
-            }
-            images.add(Image::new(
-                Extent3d {
-                    width: size as u32,
-                    height: size as u32,
-                    depth_or_array_layers: 1,
-                },
-                TextureDimension::D2,
-                pixels,
-                TextureFormat::Rgba8UnormSrgb,
-                default(),
-            ))
+    let shapes = [
+        Icon::Default,
+        Icon::Crosshair,
+        Icon::Help,
+        Icon::Text,
+        Icon::NsResize,
+        Icon::EwResize,
+        Icon::NwseResize,
+        Icon::NeswResize,
+    ];
+    let handles = shapes
+        .into_iter()
+        .map(|icon| {
+            let frames = std::array::from_fn(|large| {
+                std::array::from_fn(|frame| {
+                    let scale = 1 + large;
+                    let size = 16 * scale;
+                    let mut pixels = Vec::with_capacity(size * size * 4);
+                    for y in 0..size {
+                        for x in 0..size {
+                            let (x, y) = ((x / scale) as i32, (y / scale) as i32);
+                            let ink = if icon == Icon::Default {
+                                arrow[y as usize].as_bytes()[x as usize]
+                            } else if stroke(icon, x, y) {
+                                b'+'
+                            } else if [(1, 0), (-1, 0), (0, 1), (0, -1)]
+                                .into_iter()
+                                .any(|(dx, dy)| stroke(icon, x + dx, y + dy))
+                            {
+                                b'#'
+                            } else {
+                                b' '
+                            };
+                            pixels.extend(match ink {
+                                b'#' => [32, 26, 19, 255],
+                                b'+' if frame == 1 => [245, 208, 120, 255],
+                                b'+' => [255, 247, 218, 255],
+                                _ => [0; 4],
+                            });
+                        }
+                    }
+                    images.add(Image::new(
+                        Extent3d {
+                            width: size as u32,
+                            height: size as u32,
+                            depth_or_array_layers: 1,
+                        },
+                        TextureDimension::D2,
+                        pixels,
+                        TextureFormat::Rgba8UnormSrgb,
+                        default(),
+                    ))
+                })
+            });
+            (icon, frames)
         })
-    });
+        .collect();
     commands.spawn((
         TargetHighlight,
         Node {
@@ -84,12 +115,33 @@ pub(super) fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
     ));
     commands.insert_resource(CursorImages(handles));
 }
-impl CursorImages {
-    pub(super) fn handle(&self, large: bool, frame: bool) -> Handle<Image> {
-        self.0[usize::from(large)][usize::from(frame)].clone()
+fn stroke(icon: Icon, x: i32, y: i32) -> bool {
+    let (x, y) = (x - 7, y - 7);
+    let arrow = |along: i32, across: i32| {
+        along.abs() <= 6 && (across == 0 || (along.abs() >= 3 && across.abs() == 6 - along.abs()))
+    };
+    match icon {
+        Icon::Crosshair => (x == 0 || y == 0) && (2..=6).contains(&(x.abs() + y.abs())),
+        Icon::Text => (x == 0 && y.abs() <= 6) || (y.abs() == 6 && x.abs() <= 2),
+        Icon::Help => {
+            ((y == -5 || y == -1) && (0..=2).contains(&x))
+                || (x == -1 && y == -4)
+                || (x == 3 && (-4..=-2).contains(&y))
+                || (x == 0 && (0..=2).contains(&y))
+                || (x == 0 && y == 5)
+        }
+        Icon::NsResize => arrow(y, x),
+        Icon::EwResize => arrow(x, y),
+        Icon::NwseResize => {
+            (x == y && x.abs() <= 5)
+                || (x.signum() == y.signum()
+                    && x.abs().max(y.abs()) == 5
+                    && x.abs().min(y.abs()) >= 2)
+        }
+        Icon::NeswResize => stroke(Icon::NwseResize, 7 - x, 7 + y),
+        _ => false,
     }
 }
-
 pub(super) fn present(
     owner: NonSend<super::HostOwner>,
     state: Res<super::HintState>,
@@ -121,22 +173,28 @@ pub(super) fn present(
         }
     }
     let prefs = &owner.settings.preferences;
-    let pointer = state.pointer.filter(|_| {
-        !prefs.system_cursor && state.cursor == bevy::window::SystemCursorIcon::Default
-    });
+    let pointer = window
+        .physical_cursor_position()
+        .filter(|_| window.focused && !prefs.system_cursor);
     options.visible = pointer.is_none();
     if let Some(point) = pointer {
-        let factor = window.scale_factor() * scale.0;
         node.display = Display::Flex;
-        node.left = px(point.x / factor);
-        node.top = px(point.y / factor);
         let size = if prefs.large_cursor { 32. } else { 16. };
+        let offset = if state.cursor == Icon::Default {
+            0.
+        } else {
+            size * 7. / 16.
+        };
+        node.left = px((point.x - offset) / factor);
+        node.top = px((point.y - offset) / factor);
         node.width = px(size / factor);
         node.height = px(size / factor);
-        image.image = images.handle(
-            prefs.large_cursor,
-            prefs.animated_cursor && (time.elapsed().as_millis() / 250) % 2 == 1,
-        );
+        let frames = images
+            .0
+            .get(&state.cursor)
+            .unwrap_or(&images.0[&Icon::Default]);
+        let animated = prefs.animated_cursor && (time.elapsed().as_millis() / 250) % 2 == 1;
+        image.image = frames[usize::from(prefs.large_cursor)][usize::from(animated)].clone();
     } else {
         node.display = Display::None;
     }

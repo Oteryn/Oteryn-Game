@@ -156,6 +156,8 @@ fn miscellaneous_character_scope_uses_the_original_base_sidecar_and_retains_flag
 fn portable_import_then_apply_preserves_session_options() -> TestResult {
     let temp = Temp::new()?;
     let flags = MiscellaneousPreferences {
+        character_sort_column: 2,
+        character_sort_descending: true,
         stay_logged_in: true,
         remember_device: true,
         quick_login: true,

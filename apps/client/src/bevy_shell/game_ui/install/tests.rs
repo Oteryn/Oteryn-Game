@@ -86,6 +86,7 @@ fn parity_a_container_sort_controls_dispatch_both_directions()
         (true, false, true),
         (true, true, false),
         (false, true, true),
+        (true, true, true),
     ] {
         let mut owner = HostOwner::new(None)?;
         let (link, mut requests, outbox) = crate::play::play_channel();
@@ -150,8 +151,23 @@ fn parity_a_container_sort_controls_dispatch_both_directions()
                     (label.0 == "Confirm recursive sort").then_some(parent.parent())
                 })
                 .ok_or("recursive sort confirmation")?;
+            if descending {
+                app.world_mut()
+                    .non_send_mut::<HostOwner>()
+                    .settings
+                    .preferences
+                    .gameplay
+                    .sort_recursive = false;
+            }
             app.world_mut()
                 .trigger(bevy::ui_widgets::Activate { entity: confirm });
+            if descending {
+                assert!(
+                    requests.try_recv().is_err(),
+                    "consent belongs to the displayed sort"
+                );
+                continue;
+            }
         }
         let crate::combat_input::PlayCommand::Feature(command) = requests.try_recv()? else {
             return Err("sort request".into());

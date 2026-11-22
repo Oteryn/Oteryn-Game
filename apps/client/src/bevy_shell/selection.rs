@@ -148,13 +148,13 @@ pub(super) fn project(
         let mut order: Vec<_> = (0..request.rows.len()).collect();
         order.sort_by_cached_key(|&index| {
             let row = &request.rows[index];
-            match preferences.character_sort_column {
+            match preferences.miscellaneous.character_sort_column {
                 1 => (u8::from(!row.available), String::new()),
                 2 => (0, row.world_name.to_lowercase()),
                 _ => (0, row.character.name.to_lowercase()),
             }
         });
-        if preferences.character_sort_descending {
+        if preferences.miscellaneous.character_sort_descending {
             order.reverse();
         }
         *state = PickerState {
@@ -163,7 +163,7 @@ pub(super) fn project(
                 .rows
                 .iter()
                 .position(|row| row.available && row.character.character_id == request.preselect)
-                .or_else(|| request.rows.iter().position(|row| row.available)),
+                .or_else(|| order.iter().copied().find(|&i| request.rows[i].available)),
             order,
             outfits,
             reveal_selection: true,
@@ -425,7 +425,8 @@ pub(super) fn reveal_selection(
         && let Some(list) = state.list
         && let Some(index) = state.selected
         && let Ok((rows, node, mut scroll)) = lists.get_mut(list)
-        && let Some(&entity) = rows.get(index)
+        && let Some(position) = state.order.iter().position(|&row| row == index)
+        && let Some(&entity) = rows.get(position)
     {
         // A rebuilt list can be shorter than the requested scroll offset.
         scroll.0.y = node.scroll_position.y * node.inverse_scale_factor();

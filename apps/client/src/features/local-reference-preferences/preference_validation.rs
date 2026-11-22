@@ -111,7 +111,7 @@ impl ReferencePreferences {
                 .iter()
                 .any(|s| s.trim().is_empty() || s.len() > 120 || s.contains('\0'))
             || self.gameplay.loot_click > 3
-            || self.character_sort_column > 2
+            || self.miscellaneous.character_sort_column > 2
             || !(10..=32).contains(&self.console_font_px)
             || !crate::play::feature_0017_attack::view::validate_lists(&self.battle_lists)
             || self.arc_distance > 80

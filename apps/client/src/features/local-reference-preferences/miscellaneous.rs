@@ -4,6 +4,8 @@ use std::{io, path::Path};
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct MiscellaneousPreferences {
+    pub character_sort_column: u8,
+    pub character_sort_descending: bool,
     pub stay_logged_in: bool,
     pub remember_device: bool,
     pub quick_login: bool,
@@ -13,6 +15,8 @@ pub struct MiscellaneousPreferences {
 impl Default for MiscellaneousPreferences {
     fn default() -> Self {
         Self {
+            character_sort_column: 0,
+            character_sort_descending: false,
             stay_logged_in: false,
             remember_device: false,
             quick_login: false,
@@ -57,8 +61,15 @@ impl MiscellaneousPreferences {
                 "Invalid session options size",
             ));
         }
-        serde_json::from_slice(&bytes)
-            .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))
+        let options: Self = serde_json::from_slice(&bytes)
+            .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
+        if options.character_sort_column > 2 {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Invalid character sort column",
+            ));
+        }
+        Ok(options)
     }
     pub fn save(&self, path: &std::path::Path) -> std::io::Result<()> {
         let _lock = crate::atomic_file::lock(path)?;
@@ -74,12 +85,20 @@ impl MiscellaneousPreferences {
         Self::replay_opt_out(path)?;
         let mut active = Self::read_for_edit(path)?;
         let Self {
+            character_sort_column,
+            character_sort_descending,
             stay_logged_in,
             remember_device,
             quick_login,
             confirm_logout,
             confirm_exit,
         } = *self;
+        if before.character_sort_column != character_sort_column {
+            active.character_sort_column = character_sort_column;
+        }
+        if before.character_sort_descending != character_sort_descending {
+            active.character_sort_descending = character_sort_descending;
+        }
         if before.stay_logged_in != stay_logged_in {
             active.stay_logged_in = stay_logged_in;
         }

@@ -126,7 +126,11 @@ fn picker_is_the_global_character_list_with_columns_scroll_and_outfits()
 -> Result<(), Box<dyn std::error::Error>> {
     let (bridge, callback) = SelectionBridge::new();
     let mut owner = HostOwner::new(None)?;
-    owner.settings.preferences.character_sort_descending = true;
+    owner
+        .settings
+        .preferences
+        .miscellaneous
+        .character_sort_descending = true;
     owner.selection = bridge;
     let mut app = App::new();
     app.add_plugins((MinimalPlugins, AssetPlugin::default()))
@@ -204,7 +208,36 @@ fn picker_is_the_global_character_list_with_columns_scroll_and_outfits()
         .iter()
         .collect::<Vec<_>>();
     assert_eq!(rows.len(), 12);
-    assert!(matches!(app.world().get::<Target>(rows[0]).ok_or("first sorted row")?.choice, Choice::Row(9)));
+    assert!(matches!(
+        app.world()
+            .get::<Target>(rows[0])
+            .ok_or("first sorted row")?
+            .choice,
+        Choice::Row(9)
+    ));
+    #[derive(Resource, Default)]
+    struct Revealed(Option<Entity>);
+    app.init_resource::<Revealed>().add_observer(
+        |event: On<bevy::ui_widgets::ScrollIntoView>, mut seen: ResMut<Revealed>| {
+            seen.0 = Some(event.entity);
+        },
+    );
+    use bevy::ecs::system::RunSystemOnce;
+    app.world_mut()
+        .run_system_once(reveal_selection)
+        .map_err(|e| format!("{e:?}"))?;
+    let shown = app
+        .world()
+        .resource::<Revealed>()
+        .0
+        .ok_or("selection reveal")?;
+    assert!(matches!(
+        app.world()
+            .get::<Target>(shown)
+            .ok_or("revealed row")?
+            .choice,
+        Choice::Row(0)
+    ));
     assert!(rows.iter().all(|row| {
         app.world()
             .get::<Node>(*row)
@@ -288,8 +321,7 @@ fn picker_is_the_global_character_list_with_columns_scroll_and_outfits()
 }
 
 #[test]
-fn picker_uses_the_bundled_font_in_installed_client()
--> Result<(), Box<dyn std::error::Error>> {
+fn picker_uses_the_bundled_font_in_installed_client() -> Result<(), Box<dyn std::error::Error>> {
     let mut app = App::new();
     app.add_plugins((MinimalPlugins, AssetPlugin::default()))
         .init_asset::<Font>()

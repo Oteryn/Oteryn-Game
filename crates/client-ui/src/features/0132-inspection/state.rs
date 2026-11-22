@@ -1,6 +1,9 @@
 use super::*;
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
+    pub allow_inspection: bool,
+    pub permission_pending: Option<bool>,
+    pub permission_retry_at: Option<(bool, std::time::Instant)>,
     pub catalogue_open: bool,
     pub catalogue_loaded: bool,
     pub catalogue_next: Option<u32>,

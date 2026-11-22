@@ -10,41 +10,62 @@ struct Pending {
     text: String,
 }
 
+#[derive(Resource, Default)]
+struct QueuedCopies(Vec<(Entity, Vec<bevy::text::TextEdit>)>);
+
 pub(in crate::bevy_shell::game_ui::chat) fn install(app: &mut App) {
-    app.add_observer(request).add_systems(
-        PostUpdate,
-        keyboard_copy.before(bevy::text::EditableTextSystems),
-    );
+    app.init_resource::<QueuedCopies>()
+        .add_observer(request)
+        .add_systems(
+            PostUpdate,
+            (
+                queue_copy.before(bevy::text::EditableTextSystems),
+                finish_copy.after(bevy::text::EditableTextSystems),
+            ),
+        );
 }
 fn contains_link(text: &str) -> bool {
     let lower = text.to_ascii_lowercase();
     lower.contains("https://") || lower.contains("http://") || lower.contains("www.")
 }
 type ChatText = Or<(With<Transcript>, With<Field>)>;
-fn keyboard_copy(
+fn queue_copy(
     owner: NonSend<HostOwner>,
-    mut rows: Query<&mut EditableText, ChatText>,
-    mut commands: Commands,
+    mut rows: Query<(Entity, &mut EditableText), ChatText>,
+    mut queued: ResMut<QueuedCopies>,
 ) {
     if !owner.settings.preferences.confirm_copy_link {
         return;
     }
-    for mut field in &mut rows {
-        if field
+    for (entity, mut field) in &mut rows {
+        if let Some(index) = field
             .pending_edits
             .iter()
-            .any(|edit| matches!(edit, bevy::text::TextEdit::Copy))
-            && let Some(text) = field
-                .editor()
-                .selected_text()
-                .filter(|text| contains_link(text))
-                .map(str::to_owned)
+            .position(|edit| matches!(edit, bevy::text::TextEdit::Copy))
         {
-            field
-                .pending_edits
-                .retain(|edit| !matches!(edit, bevy::text::TextEdit::Copy));
-            commands.trigger(Request(text));
+            queued
+                .0
+                .push((entity, field.pending_edits.split_off(index)));
         }
+    }
+}
+fn finish_copy(
+    mut rows: Query<&mut EditableText, ChatText>,
+    mut queued: ResMut<QueuedCopies>,
+    mut commands: Commands,
+) {
+    for (entity, mut edits) in queued.0.drain(..) {
+        let Ok(mut field) = rows.get_mut(entity) else {
+            continue;
+        };
+        // A pending asynchronous paste can defer the selection preceding this copy.
+        if field.pending_paste.is_none() && field.pending_edits.is_empty() {
+            edits.remove(0);
+            if let Some(text) = field.editor().selected_text() {
+                commands.trigger(Request(text.to_owned()));
+            }
+        }
+        field.pending_edits.append(&mut edits);
     }
 }
 fn request(

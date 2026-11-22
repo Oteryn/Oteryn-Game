@@ -100,6 +100,14 @@ fn shifted_loot_click_names_only_the_pointed_corpse() -> Result<(), Box<dyn std:
     }]);
     play.tick(&link).map_err(|_| "tick")?;
     assert!(!play.loot_click(&link, tile, true, None));
+    crate::play::mailbox::lock(&link.mailbox).hireling_picking = true;
+    assert!(!play.loot_click(
+        &link,
+        tile,
+        true,
+        Some(oteryn_input_actions::Modifier::Shift)
+    ));
+    crate::play::mailbox::lock(&link.mailbox).hireling_picking = false;
     assert!(play.loot_click(
         &link,
         tile,
@@ -115,5 +123,13 @@ fn shifted_loot_click_names_only_the_pointed_corpse() -> Result<(), Box<dyn std:
             .corpse,
         Some(id)
     );
+    // A second click while the server handles the first still belongs to looting.
+    assert!(play.loot_click(
+        &link,
+        tile,
+        true,
+        Some(oteryn_input_actions::Modifier::Shift)
+    ));
+    assert!(commands.try_recv().is_err());
     Ok(())
 }

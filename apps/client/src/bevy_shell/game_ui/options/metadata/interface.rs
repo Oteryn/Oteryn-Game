@@ -1,5 +1,23 @@
 use super::*;
 pub(super) const MAIN: [Row; 12] = [
+    Row {
+        id: "interface.animated_cursor",
+        label: "Animate Game Cursor",
+        editor: Editor::Check {
+            read: |p| p.animated_cursor,
+            write: |p, v| {
+                p.animated_cursor = v;
+                if v {
+                    p.system_cursor = false;
+                }
+            },
+        },
+    },
+    check!(
+        "interface.confirm_copy_link",
+        "Confirm Before Copying Links",
+        confirm_copy_link
+    ),
     check!(
         "interface.expiry_containers",
         "Show Expiry in Containers",
@@ -16,28 +34,10 @@ pub(super) const MAIN: [Row; 12] = [
         expiry_unused
     ),
     check!(
-        "interface.confirm_copy_link",
-        "Confirm Before Copying Links",
-        confirm_copy_link
-    ),
-    check!(
         "interface.highlight_mouse_target",
         "Highlight Object Under Pointer",
         highlight_mouse_target
     ),
-    Row {
-        id: "interface.animated_cursor",
-        label: "Animate Game Cursor",
-        editor: Editor::Check {
-            read: |p| p.animated_cursor,
-            write: |p, v| {
-                p.animated_cursor = v;
-                if v {
-                    p.system_cursor = false;
-                }
-            },
-        },
-    },
     Row {
         id: "interface.large_cursor",
         label: "Large Game Cursor",
@@ -168,16 +168,16 @@ pub(super) const CONSOLE: [Row; 18] = [
         "Open Incoming Private Messages in New Tabs",
         console.auto_private_tabs
     ),
-    check!(
-        "console.join_leave",
-        "Show Join and Leave Messages",
-        console.join_leave
-    ),
     check!("console.events", "Show Event Messages", console.events),
     check!(
         "console.information",
         "Show Information Messages",
         console.information
+    ),
+    check!(
+        "console.join_leave",
+        "Show Join and Leave Messages",
+        console.join_leave
     ),
     check!("console.levels", "Show Speaker Levels", console.levels),
     check!("console.seconds", "Show Timestamp Seconds", console.seconds),

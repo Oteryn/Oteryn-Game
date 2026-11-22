@@ -11,14 +11,14 @@ pub(super) const MAIN: [Row; 9] = [
         label: "Character List Sort Column",
         editor: Editor::Choice {
             values: &["Character", "Status", "World"],
-            read: |p| usize::from(p.character_sort_column),
-            write: |p, v| p.character_sort_column = v as u8,
+            read: |p| usize::from(p.miscellaneous.character_sort_column),
+            write: |p, v| p.miscellaneous.character_sort_column = v as u8,
         },
     },
     check!(
         "misc.character_sort_descending",
         "Reverse Character List Sort Order",
-        character_sort_descending
+        miscellaneous.character_sort_descending
     ),
     check!(
         "misc.confirm_store_purchase",
@@ -66,7 +66,12 @@ pub(super) const MAIN: [Row; 9] = [
         optimise_connection
     ),
 ];
-pub(super) const GAMEPLAY: [Row; 6] = [
+pub(super) const GAMEPLAY: [Row; 7] = [
+    check!(
+        "gameplay.allow_inspection",
+        "Allow Everyone to Inspect My Character",
+        gameplay.allow_inspection
+    ),
     Row {
         id: "gameplay.loot_click",
         label: "Quick Loot Controls",

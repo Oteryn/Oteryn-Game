@@ -27,6 +27,8 @@ pub struct SettingsState {
     /// The play session (by its mailbox) whose chat mode was restored, and the mode last seen.
     chat_mode_seen: Option<(usize, oteryn_client_ui::chat::ComposerMode)>,
     restoring_rooms: [bool; 8],
+    unconfirmed_rooms: [bool; 8],
+    restore_guild_channel: bool,
     chat_context: Option<bool>,
     pub custom_choices: Vec<(String, super::CustomAction)>,
     pub(super) custom_choices_refreshed: Option<std::time::Instant>,

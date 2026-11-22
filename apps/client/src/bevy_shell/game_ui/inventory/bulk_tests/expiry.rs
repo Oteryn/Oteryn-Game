@@ -100,3 +100,36 @@ fn equipped_item_expiry_reads_charges_without_inspecting_bag_contents() -> Resul
     );
     Ok(())
 }
+
+#[test]
+fn inventory_expiry_includes_the_worn_backpack() -> Result {
+    use oteryn_client_runtime::timed_item as wire;
+    let (mut app, mut commands, outbox) = app()?;
+    PlayLink::bevy_items_fixture(
+        &outbox,
+        Some(oteryn_session::CharacterInventory {
+            main_backpack: Some(tests::entry(91, 1)?),
+            entries: vec![tests::entry(93, 1)?],
+            ..default()
+        }),
+        Some(views()?),
+        true,
+        true,
+    );
+    outbox.bevy_property_items_selected();
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .settings
+        .preferences
+        .expiry_inventory = true;
+    app.update();
+    let command = property_command(&mut commands)?;
+    assert_eq!(
+        wire::decode_timed_item_intent(&command.payload)
+            .map_err(|e| format!("{e:?}"))?
+            .target
+            .get(),
+        91
+    );
+    Ok(())
+}

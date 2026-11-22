@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct GameplayPreferences {
+    pub allow_inspection: bool,
     pub loot_click: u8,
     pub sort_recursive: bool,
     pub warn_recursive_sort: bool,
@@ -16,6 +17,7 @@ pub struct GameplayPreferences {
 impl Default for GameplayPreferences {
     fn default() -> Self {
         Self {
+            allow_inspection: false,
             loot_click: 0,
             sort_recursive: false,
             warn_recursive_sort: true,
@@ -59,15 +61,31 @@ impl PlayView {
         ) {
             return false;
         }
+        if self.gameplay_input_blocked(link) || self.cursor_spell.is_some() {
+            return false;
+        }
+        {
+            let mailbox = crate::play::mailbox::lock(&link.mailbox);
+            if mailbox.world_context.targeting.is_some()
+                || mailbox.use_with_pending
+                || mailbox.hireling_picking
+                || !mailbox.discovery.loot.selected
+            {
+                return false;
+            }
+        }
         let Some(entity) = self.entities.iter().rev().find(|row| {
             row.position.x == tile.x && row.position.y == tile.y && row.position.floor == self.floor
         }) else {
             return false;
         };
-        entity.kind == oteryn_session::EntityKind::Corpse
-            && link.quick_loot_action(oteryn_client_ui::quick_loot::Action::Corpse(
-                entity.entity.identity,
-            ))
+        if entity.kind != oteryn_session::EntityKind::Corpse {
+            return false;
+        }
+        link.quick_loot_action(oteryn_client_ui::quick_loot::Action::Corpse(
+            entity.entity.identity,
+        ));
+        true
     }
     /// A configured secondary click is consumed even when the server refuses looting.
     pub fn gameplay_secondary_click(&self, link: &PlayLink) -> bool {

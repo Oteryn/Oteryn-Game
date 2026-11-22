@@ -323,3 +323,130 @@ fn saved_channels_request_public_membership_and_restore_conversations()
     assert!(!channels.contains(&ChannelTab::Room(ChatRoom::Help)));
     Ok(())
 }
+
+#[cfg(bevy_shell)]
+#[test]
+fn character_channel_restore_waits_for_background_preferences()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::SettingsState;
+    use oteryn_client_ui::chat::{ChannelEntry, ChannelTab};
+    use std::time::{Duration, Instant};
+    bevy_tasks::IoTaskPool::get_or_init(|| {
+        bevy_tasks::TaskPoolBuilder::new().num_threads(1).build()
+    });
+    let dir = tempfile::tempdir()?;
+    let path = dir.path().join("prefs.json");
+    let mut saved = SettingsState::new(Some(path.clone()));
+    saved.select_character(Some([7; 16]));
+    let (old, _, _) = play_channel();
+    saved.sync_chat_context(&old);
+    old.chat_open_entry(&ChannelEntry::Local(ChannelTab::Loot));
+    saved.sync_chat_context(&old);
+    let (new, _, _) = play_channel();
+    let mut settings = SettingsState::new(Some(path));
+    settings.use_background_preferences();
+    settings.select_character(Some([7; 16]));
+    settings.sync_chat_context(&new);
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while !settings.poll_background_save().replaced {
+        if Instant::now() >= deadline {
+            return Err("character load timed out".into());
+        }
+        std::thread::yield_now();
+    }
+    settings.sync_chat_context(&new);
+    assert!(
+        new.chat_panel()
+            .console
+            .channels
+            .contains(&ChannelTab::Loot)
+    );
+    Ok(())
+}
+
+#[test]
+fn picker_sort_set_in_game_survives_restarting_at_login() -> Result<(), Box<dyn std::error::Error>>
+{
+    let dir = tempfile::tempdir()?;
+    let path = dir.path().join("settings.json");
+    let mut settings = crate::play::SettingsState::new(Some(path.clone()));
+    settings.select_character(Some([9; 16]));
+    let mut preferences = settings.preferences.clone();
+    preferences.miscellaneous.character_sort_column = 2;
+    preferences.miscellaneous.character_sort_descending = true;
+    settings.apply(preferences);
+    let login = crate::play::SettingsState::new(Some(path)).preferences;
+    assert_eq!(login.miscellaneous.character_sort_column, 2);
+    assert!(login.miscellaneous.character_sort_descending);
+    Ok(())
+}
+
+#[test]
+fn saved_public_channel_survives_a_session_without_its_capability()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::{ChatIntent, ChatRoom, ChatRoomSet};
+    let dir = tempfile::tempdir()?;
+    let path = dir.path().join("prefs.json");
+    let mut settings = crate::play::SettingsState::new(Some(path.clone()));
+    let (first, _, outbox) = play_channel();
+    outbox.chat_initialize(true);
+    let mut rooms = ChatRoomSet::default();
+    rooms.insert(ChatRoom::Tutor);
+    outbox.chat_public_initialize(true, Some((rooms, vec![])));
+    settings.sync_chat_context(&first);
+    let (second, mut commands, outbox) = play_channel();
+    outbox.chat_initialize(true);
+    settings.sync_chat_context(&second);
+    assert!(commands.try_recv().is_err());
+    let mut restarted = crate::play::SettingsState::new(Some(path));
+    let (third, mut commands, outbox) = play_channel();
+    outbox.chat_initialize(true);
+    outbox.chat_public_initialize(true, None);
+    restarted.sync_chat_context(&third);
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::ChatPublic(ChatIntent::OpenRoom(ChatRoom::Tutor))
+    ));
+    Ok(())
+}
+
+#[test]
+fn guild_channel_restore_requires_confirmed_membership() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_ui::chat::{ChannelEntry, ChannelTab};
+    let dir = tempfile::tempdir()?;
+    let path = dir.path().join("prefs.json");
+    let mut settings = crate::play::SettingsState::new(Some(path.clone()));
+    let member = |link: &crate::play::PlayLink| {
+        let mut m = crate::play::mailbox::lock(&link.mailbox);
+        m.chat.selected = true;
+        m.chat.guild_selected = true;
+        m.chat.guild = oteryn_session::GuildRoomState::Member {
+            guild_id: [1; 16],
+            rank: 1,
+            motd: String::new(),
+        };
+    };
+    let (link, _, _) = play_channel();
+    member(&link);
+    settings.sync_chat_context(&link);
+    link.chat_open_entry(&ChannelEntry::Local(ChannelTab::Guild));
+    settings.sync_chat_context(&link);
+    let (next, _, _) = play_channel();
+    settings.sync_chat_context(&next);
+    assert!(
+        !next
+            .chat_panel()
+            .console
+            .channels
+            .contains(&ChannelTab::Guild)
+    );
+    member(&next);
+    settings.sync_chat_context(&next);
+    assert!(
+        next.chat_panel()
+            .console
+            .channels
+            .contains(&ChannelTab::Guild)
+    );
+    Ok(())
+}

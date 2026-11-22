@@ -522,6 +522,19 @@ fn game_cursor_uses_the_selected_size_and_animation_frame() -> TestResult {
     let first = icon(&mut app)?;
     app.update();
     assert_ne!(icon(&mut app)?, first);
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .settings
+        .preferences
+        .cursor_crosshair = true;
+    app.update();
+    assert_ne!(icon(&mut app)?, first);
+    app.world_mut()
+        .query_filtered::<&mut Window, With<PrimaryWindow>>()
+        .single_mut(app.world_mut())?
+        .set_physical_cursor_position(Some(DVec2::new(2., 2.)));
+    app.update();
+    icon(&mut app)?;
     Ok(())
 }
 

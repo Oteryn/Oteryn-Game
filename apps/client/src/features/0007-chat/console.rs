@@ -281,11 +281,17 @@ impl PlayLink {
         }
         let mut mailbox = lock(&self.mailbox);
         mailbox.chat.console.display = display;
-        self.refresh_console_levels(&mut mailbox);
+        self.refresh_console_levels(&mut mailbox, true);
         Ok(())
     }
-    pub(in crate::play) fn refresh_console_levels(&self, mailbox: &mut Mailbox) {
-        if let Some(payload) = console_request(&mut mailbox.chat)
+    pub(in crate::play) fn refresh_console_levels(&self, mailbox: &mut Mailbox, force: bool) {
+        let chat = &mut mailbox.chat;
+        let payload = if force {
+            console_request(chat)
+        } else if chat.selected && chat.console.display.levels {
+            chat.console.metadata.query_new_speakers(&chat.lines)
+        } else { None };
+        if let Some(payload) = payload
             && self
                 .commands
                 .send(PlayCommand::Feature(
@@ -359,7 +365,11 @@ impl Mailbox {
             match event {
                 oteryn_session::SessionEvent::ChatLine(delta) => {
                     self.chat.pending_lines = self.chat.pending_lines.wrapping_add(1);
-                    self.chat.console.metadata.received(&delta.value, received);
+                    self
+                        .chat
+                        .console
+                        .metadata
+                        .received(&delta.value, received);
                 }
                 oteryn_session::SessionEvent::ServerMessage(delta) => {
                     use oteryn_client_ui::chat::NoticeClass;

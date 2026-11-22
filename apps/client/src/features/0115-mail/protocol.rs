@@ -48,8 +48,9 @@ impl Outbox {
         let mut shared = lock(&self.0);
         shared.item_forge.preview.selected = session.feature_selected(152);
         shared.imbue.details_selected = session.feature_selected(447);
-        shared.imbue.success_selected = session
-            .feature_selected(oteryn_session::imbuement::CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1);
+        shared.imbue.success_selected = session.feature_selected(
+            oteryn_session::imbuement::CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1,
+        );
         shared
             .properties
             .house

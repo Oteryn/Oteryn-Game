@@ -48,11 +48,16 @@ impl SettingsState {
     }
 
     pub fn sync_chat_context(&mut self, link: &crate::play::PlayLink) {
+        #[cfg(bevy_shell)]
+        if self.preference_transfer_pending() {
+            return;
+        }
         let mut save = None;
         let local_channels;
         let mut reopen = None;
         let mut public_rooms = None;
         let conversations;
+        let guild_channel;
         use oteryn_session::ChatRoom;
         let chat_on = {
             let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
@@ -69,15 +74,17 @@ impl SettingsState {
                 && !mailbox.chat_public.pending
                 && mailbox.chat.console.focus.is_none();
             let public = mailbox.chat_public.selected;
+            let guild = oteryn_client_ui::chat_guild_room::available(&mailbox.chat);
             let console = &mut mailbox.chat.console;
-            match self.chat_mode_seen {
-                Some((seen, _)) if seen != session => self.chat_mode_seen = None,
-                _ => {}
+            if self.chat_mode_seen.is_some_and(|(seen, _)| seen != session) {
+                self.chat_mode_seen = None;
             }
             use oteryn_client_ui::chat::ChannelTab;
             let tabs = [ChannelTab::Loot, ChannelTab::ServerLog, ChannelTab::Npc];
             if self.chat_mode_seen.is_none() {
                 self.restoring_rooms = self.preferences.console.public_rooms;
+                self.unconfirmed_rooms = self.restoring_rooms;
+                self.restore_guild_channel = self.preferences.console.guild_channel;
                 for name in &self.preferences.console.conversations {
                     let tab = ChannelTab::Conversation(name.clone());
                     if !console.channels.contains(&tab) && console.communication.allows(name) {
@@ -90,18 +97,30 @@ impl SettingsState {
                     }
                 }
             }
+            if guild
+                && std::mem::take(&mut self.restore_guild_channel)
+                && !console.channels.contains(&ChannelTab::Guild)
+            {
+                console.channels.push(ChannelTab::Guild);
+            }
+            guild_channel =
+                self.restore_guild_channel || console.channels.contains(&ChannelTab::Guild);
             if ready {
                 for (index, room) in ChatRoom::ALL.into_iter().enumerate() {
-                    if std::mem::take(&mut self.restoring_rooms[index])
-                        && !rooms.contains(room)
-                        && (public || !room.requires_public_channels())
+                    if rooms.contains(room) {
+                        self.unconfirmed_rooms[index] = false;
+                        self.restoring_rooms[index] = false;
+                    } else if (public || !room.requires_public_channels())
+                        && std::mem::take(&mut self.restoring_rooms[index])
                     {
                         reopen = Some(room);
                         break;
                     }
                 }
                 if reopen.is_none() {
-                    public_rooms = Some(ChatRoom::ALL.map(|room| rooms.contains(room)));
+                    public_rooms = Some(std::array::from_fn(|i| {
+                        self.unconfirmed_rooms[i] || rooms.contains(ChatRoom::ALL[i])
+                    }));
                 }
             }
             let names = console
@@ -142,6 +161,7 @@ impl SettingsState {
         }
         if save.is_some()
             || self.preferences.console.local_channels != local_channels
+            || self.preferences.console.guild_channel != guild_channel
             || conversations.is_some()
             || public_rooms.is_some_and(|rooms| rooms != self.preferences.console.public_rooms)
         {
@@ -153,6 +173,7 @@ impl SettingsState {
                 preferences.console.public_rooms = rooms;
             }
             preferences.console.local_channels = local_channels;
+            preferences.console.guild_channel = guild_channel;
             if let Some(saved) = save {
                 preferences.chat_mode = Some(saved);
             }

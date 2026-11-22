@@ -8,6 +8,8 @@ use std::{
 };
 
 #[derive(Component)]
+pub(super) struct EquipmentCell;
+#[derive(Component)]
 pub(super) struct Expiry;
 #[derive(Default)]
 pub(super) struct Samples {
@@ -32,7 +34,7 @@ pub(super) fn project(
     mut commands: Commands,
     owner: NonSend<HostOwner>,
     skins: Res<Skins>,
-    slots: Query<(Entity, &Slot)>,
+    slots: Query<(Entity, &Slot, Has<EquipmentCell>)>,
     mut labels: Query<(&ChildOf, Entity, &mut Text), With<Expiry>>,
     mut samples: Local<Samples>,
 ) {
@@ -60,10 +62,11 @@ pub(super) fn project(
         return;
     }
     let mut visible = BTreeMap::new();
-    for (entity, slot) in &slots {
-        let enabled = match slot.location {
-            Location::Equipment(_) => prefs.expiry_inventory,
-            Location::Inventory | Location::Container { .. } => prefs.expiry_containers,
+    for (entity, slot, equipped) in &slots {
+        let enabled = if equipped {
+            prefs.expiry_inventory
+        } else {
+            prefs.expiry_containers
         };
         if enabled
             && slot.generation == owner.generation()
