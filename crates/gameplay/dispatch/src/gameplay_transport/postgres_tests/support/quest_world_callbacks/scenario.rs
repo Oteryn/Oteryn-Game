@@ -1672,6 +1672,7 @@ fn scenario_case(
             || (name.starts_with("questpc7-eligibility-") && !name.ends_with("no-premium"))
             || name.starts_with("questpc7-outfits-")
             || name.starts_with("qengine-rewards-qb-")
+            || name == "questpc7-friends-draconian-other-services"
         {
             use crate::gameplay_transport::spell_premium_coordinator::{
                 SpellPremiumCoordinator, purchase_fixture,
@@ -2694,9 +2695,11 @@ fn scenario_case(
             super::super::questpc7_eligibility_fixtures::exercise(&mut owner, &mut admitted, &h, name)
                 .await?;
         } else if name == super::super::questpc7_friends_fixtures::LEGACY_CASE {
-            super::super::questpc7_friends_fixtures::exercise_legacy(&mut owner, &mut admitted, &h).await?;
+            super::super::questpc7_friends_fixtures::exercise_legacy(&mut owner, &mut admitted, &h)
+                .await?;
         } else if let Some(case) = name.strip_prefix("questpc7-friends-draconian-") {
-            super::super::qc_npc_programmes_fixtures::exercise(&mut owner, &mut admitted, &h, case).await?;
+            super::super::qc_npc_programmes_fixtures::exercise(&mut owner, &mut admitted, &h, case)
+                .await?;
         } else if name == "questpc7-friends" {
             super::super::questpc7_friends_fixtures::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;

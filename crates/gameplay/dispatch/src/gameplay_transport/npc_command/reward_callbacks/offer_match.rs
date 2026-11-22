@@ -4,6 +4,21 @@ use oteryn_gameplay_quests::quest::QuestStateCatalogue;
 use std::collections::BTreeMap;
 
 impl Offer {
+    pub(super) fn matches_keyword(&self, text: &str) -> bool {
+        self.keywords.iter().any(|word| {
+            if !self.crystal_keyword {
+                return word == text;
+            }
+            // Crystal MsgContains rejects the keyword if any occurrence is
+            // immediately preceded by a Lua %w character (ASCII alphanumeric).
+            let mut matches = text.match_indices(word);
+            let allowed = |(index, _): (usize, &str)| {
+                index == 0 || !text.as_bytes()[index - 1].is_ascii_alphanumeric()
+            };
+            matches.next().is_some_and(allowed) && matches.all(allowed)
+        })
+    }
+
     pub(super) fn admits(
         &self,
         npc: &str,
@@ -14,7 +29,7 @@ impl Offer {
     ) -> bool {
         self.npc == npc
             && self.matches_topic(topic)
-            && self.keywords.iter().any(|word| word == text)
+            && self.matches_keyword(text)
             && self.storage.iter().all(|s| {
                 tracks
                     .get(&s.track)

@@ -23,7 +23,7 @@ async fn receipts(h: &Harness) -> TestResult<i64> {
 }
 
 pub(super) async fn mint(
-    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     item: u32,
     amount: u16,
@@ -115,9 +115,12 @@ pub(super) async fn exercise_legacy(
     select_npc_capabilities(owner, admitted)?;
     let [quentin] =
         super::classic_quests_fixtures::install(owner, admitted, ["oteryn:npc.quentin"]).await?;
-    super::classic_quests_fixtures::talk(owner, admitted, quentin, 5000, "hi").await?;
-    super::classic_quests_fixtures::talk(owner, admitted, quentin, 5001, "complete friendships")
-        .await?;
+    super::qc_npc_programmes_fixtures::with_wire(owner, admitted, quentin, async |wire| {
+        wire.greet().await?;
+        wire.line("complete friendships", "Your Friends and Traders programme is complete.")
+            .await
+    })
+    .await?;
     let state: (i64, bool) = sqlx::query_as(
         "SELECT t.value, s.completed_character_revision IS NOT NULL
          FROM game_character_quest_tracks t

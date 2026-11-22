@@ -556,6 +556,65 @@ pub(super) async fn apply(
     }
 }
 
+impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Recover the exact disconnected talk command before its stream reopens.
+    pub(in crate::gameplay_transport) async fn prepare_quest_dialogue_resume(
+        &self,
+        session: GameSessionId,
+    ) -> bool {
+        let pending = match self.states.npc_conversations.sessions.lock() {
+            Ok(sessions) => sessions
+                .get(&session)
+                .and_then(|state| state.quest_dialogue.pending.clone()),
+            Err(_) => return false,
+        };
+        let Some(pending) = pending else {
+            return true;
+        };
+        let QuestCause::Command(original) = pending.request.cause else {
+            return false;
+        };
+        if original.game_session_id() != session
+            || !self.states.command_ingress.reconcilable(original)
+        {
+            return false;
+        }
+        let Some(_input) = self.states.input_gate.enter().await else {
+            return false;
+        };
+        let Ok(receipt) = self
+            .root
+            .reconcile_character_quest_transition(
+                self.character,
+                pending.character,
+                pending.request,
+            )
+            .await
+        else {
+            return false;
+        };
+        let disposition = if receipt.is_some() {
+            self.refresh_quest_session(session, false).await;
+            self.refresh_level_up_vitals(pending.actor, session).await;
+            NpcIntentDisposition::Ok
+        } else {
+            NpcIntentDisposition::Rejected
+        };
+        if self
+            .states
+            .command_ingress
+            .complete_npc(original, disposition)
+            .is_none()
+        {
+            return false;
+        }
+        // Clearing the NPC request and retaining its command result have no
+        // suspension point between them.
+        finish(self, session, receipt.is_some());
+        true
+    }
+}
+
 pub(in crate::gameplay_transport) async fn resume(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     command: UseCommand,
