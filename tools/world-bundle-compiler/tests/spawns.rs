@@ -129,6 +129,7 @@ fn point(creature: &str, x: u16) -> SpawnPoint {
         direction: Direction::South,
         respawn_ms: 60_000,
         boss_policy: None,
+        weight: None,
     }
 }
 
@@ -159,6 +160,7 @@ fn families() -> Families {
                 SpawnPoint {
                     respawn_ms: 0,
                     boss_policy: Some(spawn::BossPolicy::Respawn { min_s: 1, max_s: 2 }),
+                    weight: None,
                     ..point("dragonlord", 8)
                 },
                 point("guard", 9),
@@ -319,6 +321,7 @@ fn table(sources: usize, points: usize) -> spawn::Table {
                         direction: Direction::North,
                         respawn_ms: spawn::MIN_RESPAWN_MS,
                         boss_policy: None,
+                        weight: None,
                     })
                     .collect(),
             })

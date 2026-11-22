@@ -365,6 +365,7 @@ fn scenario_with_creature_observed(
                         direction: Direction::North,
                         respawn_ms: 0,
                         boss_policy: Some(policy),
+                        weight: None,
                     }],
                 }],
             };

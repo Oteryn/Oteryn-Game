@@ -1185,6 +1185,7 @@ pub mod tests {
             direction: Direction::South,
             respawn_ms,
             boss_policy: None,
+            weight: None,
         };
         let creature = |key: &str, period| Creature {
             key: key.into(),
@@ -1288,6 +1289,7 @@ pub mod tests {
             direction: Direction::South,
             respawn_ms: 60_000,
             boss_policy: None,
+            weight: None,
         };
         let creature = |key: &str| Creature {
             key: key.into(),
@@ -1838,6 +1840,7 @@ pub mod tests {
                         direction: oteryn_world_bundle::spawn::Direction::North,
                         respawn_ms: 90000,
                         boss_policy: None,
+                        weight: None,
                     })
                     .collect(),
             }],
@@ -2975,6 +2978,7 @@ mod boss_spawn_tests {
                     direction: Direction::North,
                     respawn_ms: 0,
                     boss_policy: Some(BossPolicy::Respawn { min_s: 1, max_s: 2 }),
+                    weight: None,
                 }],
             }],
         };

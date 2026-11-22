@@ -151,12 +151,16 @@ def convert(xml: bytes) -> dict[str, str]:
             x, y, z = cx + int(point.get("x")), cy + int(point.get("y")), int(point.get("z", cz))
             if z != cz or not (0 <= x <= 0xFFFF and 0 <= y <= 0xFFFF):
                 sys.exit(f"{key}: point ({x}, {y}, {z}) is off the source")
+            weight = point.get("weight")
+            if weight is not None and not 0 < int(weight) <= 0xFFFFFFFF:
+                sys.exit(f"{key}: weight must be a positive u32")
             points.append(
                 {
                     "cell": {"floor": z, "x": x, "y": y},
                     "creature": creature,
                     "direction": DIRECTIONS[point.get("direction")],
                     "respawn_ms": int(point.get("spawntime")) * 1000,
+                    **({"weight": int(weight)} if weight is not None else {}),
                 }
             )
         live_points = []
@@ -167,7 +171,7 @@ def convert(xml: bytes) -> dict[str, str]:
                 if (creature in pharaohs or point["cell"] != {"floor": z, "x": x, "y": y}
                         or point["respawn_ms"] != 90_000):
                     sys.exit(f"{key}: Ancient Tombs spawn differs from its source")
-                scheduled = {key: value for key, value in point.items() if key != "respawn_ms"}
+                scheduled = {key: value for key, value in point.items() if key not in ("respawn_ms", "weight")}
                 scheduled["boss_policy"] = {"respawn": {"min_s": 90, "max_s": 90}}
                 pharaohs[creature] = {"declaration": {
                     "centre": {"floor": cz, "x": cx, "y": cy},
@@ -184,7 +188,7 @@ def convert(xml: bytes) -> dict[str, str]:
                     if not (0 <= chance["numerator"] <= chance["denominator"] <= 0x7FFFFFFFFFFFFFFF
                             and chance["denominator"] > 0):
                         sys.exit(f"{point['creature']}: invalid boss chance")
-                    scheduled = {k: v for k, v in point.items() if k != "respawn_ms"}
+                    scheduled = {k: v for k, v in point.items() if k not in ("respawn_ms", "weight")}
                     scheduled["boss_policy"] = {"at_reset": configured["at_reset"]}
                     scheduled_bosses.append({"declaration": {
                         "centre": {"floor": cz, "x": cx, "y": cy},

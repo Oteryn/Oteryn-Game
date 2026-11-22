@@ -857,6 +857,7 @@ fn dependencies(
                     direction: Direction::West,
                     respawn_ms: 60_000,
                     boss_policy: None,
+                    weight: None,
                 })
                 .collect(),
         }],

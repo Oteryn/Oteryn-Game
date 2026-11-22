@@ -566,6 +566,7 @@ fn spawns_with(
                 direction: point.direction,
                 respawn_ms: point.respawn_ms,
                 boss_policy: point.boss_policy,
+                weight: point.weight,
             });
         }
         report.realized_points += list.len();

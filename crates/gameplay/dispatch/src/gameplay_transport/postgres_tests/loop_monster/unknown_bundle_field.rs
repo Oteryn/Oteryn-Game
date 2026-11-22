@@ -61,6 +61,7 @@ fn unknown_bundle_creature_and_player_tiles_keep_owner_ticks_running() -> TestRe
                         direction: Direction::West,
                         respawn_ms: 60_000,
                         boss_policy: None,
+                        weight: None,
                     })
                     .collect(),
             }],

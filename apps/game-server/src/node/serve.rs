@@ -4854,6 +4854,7 @@ source_authority = "OTERYN_GAME_JOURNAL"
             direction: Direction::South,
             respawn_ms,
             boss_policy: None,
+            weight: None,
         };
         let creature = |key: &str| Creature {
             key: key.into(),

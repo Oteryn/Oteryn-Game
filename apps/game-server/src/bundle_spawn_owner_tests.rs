@@ -72,6 +72,7 @@ fn a_bundle_spawned_rat_killed_by_a_lethal_hit_respawns_on_the_owner_turn() {
                 direction: Direction::South,
                 respawn_ms: 30_000,
                 boss_policy: None,
+                weight: None,
             }],
         }],
     };
