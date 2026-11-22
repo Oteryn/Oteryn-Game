@@ -74,11 +74,18 @@ fn target_fixture(
         reward_boss: Some(false),
         blocked_by_nearby_players: false,
     };
+    let raid = CompiledCreaturePolicy {
+        definition_key: "creature:test-direct-raid".into(),
+        summonable: false,
+        convinceable: false,
+        mana_cost: None,
+        ..policy.clone()
+    };
     runtime
         .install_companion_policies(
             CompiledCreaturePolicies::from_active_artifact(
                 runtime.content_pin().server_artifact_digest(),
-                vec![policy],
+                vec![raid, policy],
             )
             .expect("closed fixture policy"),
         )
@@ -124,6 +131,27 @@ fn target_fixture(
     .expect("real target preparation");
     (runtime, room, reservation, restrictions)
 }
+
+#[test]
+fn named_summon_uses_the_costed_creature_when_a_raid_shares_its_name() {
+    let (runtime, room, target, current) = target_fixture(500, false);
+    assert!(runtime.companion_policy("test direct").is_err());
+    let summon = prepare_direct_acquisition(
+        &runtime,
+        room.movement_cells(),
+        target.master_actor(),
+        target.game_session_id(),
+        target.character_id(),
+        &profile("named_creature"),
+        AcquisitionSource::Named("test direct".into()),
+        &current,
+    )
+    .expect("named summon of the sole costed type");
+    assert_eq!(summon.creature_definition_key(), "creature:test-direct");
+    assert_eq!(summon.mana_to_deduct(), 250);
+    assert!(summon.validate_current(&runtime, &current).is_ok());
+}
+
 #[test]
 fn direct_reservation_checks_independent_restrictions_and_current_target() {
     let (mut runtime, _, reservation, current) = target_fixture(500, false);

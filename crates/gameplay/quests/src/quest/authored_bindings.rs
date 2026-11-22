@@ -452,19 +452,7 @@ impl Bindings {
             // legacy migration owners only for unrelated, retained quests.
             catalogue.npc_legacy.remove(&quest.quest);
             if quest.quest == super::dreamer_fire_bug::QUEST {
-                if let Some(&hash) = base.hashes.get(&quest.quest) {
-                    let defaults = quest
-                        .tracks
-                        .iter()
-                        .filter(|track| !base.tracks.contains_key(&track.key))
-                        .map(|track| (track.key.clone(), track.initial))
-                        .collect();
-                    catalogue
-                        .predecessors
-                        .entry(quest.quest.clone())
-                        .or_default()
-                        .push(super::NpcDefinitionPredecessor { hash, defaults });
-                }
+                preserve_dreamer_predecessors(base, &mut catalogue, quest);
             } else {
                 catalogue.predecessors.remove(&quest.quest);
             }
@@ -567,6 +555,49 @@ fn digest(value: &str) -> bool {
             .bytes()
             .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
         && value.bytes().any(|b| b != b'0')
+}
+
+fn preserve_dreamer_predecessors(
+    base: &QuestStateCatalogue,
+    catalogue: &mut QuestStateCatalogue,
+    quest: &BoundQuest,
+) {
+    use super::dreamer_death_ring::ENTRANCE_TRACK;
+
+    let Some(hash) = base.definition_hash(&quest.quest) else {
+        return;
+    };
+    let defaults: std::collections::BTreeMap<_, _> = quest
+        .tracks
+        .iter()
+        .filter(|track| !base.tracks.contains_key(&track.key))
+        .map(|track| (track.key.clone(), track.initial))
+        .collect();
+    let predecessors = catalogue
+        .predecessors
+        .entry(quest.quest.clone())
+        .or_default();
+    if let Some(entrance) = base.track(ENTRANCE_TRACK) {
+        // QENGINE now declares the entrance as a read-only prerequisite before
+        // authored bindings attach. The shipped definition predates that declaration.
+        let previous_tracks = base
+            .tracks
+            .iter()
+            .filter(|(key, track)| track.quest == quest.quest && key.as_str() != ENTRANCE_TRACK)
+            .map(|(key, track)| (key.clone(), track.clone()))
+            .collect();
+        let previous = super::definition_hash(&quest.quest, &previous_tracks, &base.transitions);
+        let previous = super::published_quest_pins::published_hash(&quest.quest, previous);
+        if previous != hash {
+            let mut previous_defaults = defaults.clone();
+            previous_defaults.insert(entrance.key.clone(), entrance.initial);
+            predecessors.push(super::NpcDefinitionPredecessor {
+                hash: previous,
+                defaults: previous_defaults,
+            });
+        }
+    }
+    predecessors.push(super::NpcDefinitionPredecessor { hash, defaults });
 }
 
 #[cfg(test)]
