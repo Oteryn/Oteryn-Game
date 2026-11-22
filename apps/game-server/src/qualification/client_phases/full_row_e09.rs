@@ -198,7 +198,7 @@ async fn post(
     Ok(outcome)
 }
 
-async fn depot_search(
+pub(super) async fn depot_search(
     client: &mut DevClientSession,
     client_id: u32,
 ) -> TestResult<depot_search::Reply> {
@@ -221,8 +221,12 @@ async fn depot_search(
         .map_err(|e| format!("step=inbox-search observed=decode-{e:?} need=valid-reply").into())
 }
 
-fn inbox(reply: &depot_search::Reply) -> u32 {
+pub(super) fn inbox(reply: &depot_search::Reply) -> u32 {
     reply.results.iter().map(|result| result.inbox).sum()
+}
+
+fn one_delivery(before: u32, after: u32) -> bool {
+    before.checked_add(1) == Some(after)
 }
 
 async fn acquire(
@@ -434,17 +438,25 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let parcel = provisioning::item_reference(&definitions, 3503)?;
     let label = provisioning::item_reference(&definitions, 3507)?;
     let mut client = connect_world(clients, 0xe9).await?;
-    let session = client.join_snapshot().game_session_id;
-    let entities = client.world_entities().ok_or("own entities absent")?;
-    let own_identity = *entities.own_identity();
-    let own_name = entities
+    let mut recipient = connect_character(clients, 0xeb, 0).await?;
+    let session = recipient.join_snapshot().game_session_id;
+    let entities = recipient
+        .world_entities()
+        .ok_or("recipient entities absent")?;
+    let recipient_identity = *entities.own_identity();
+    let recipient_name = entities
         .iter()
-        .find(|e| e.entity.identity == own_identity)
+        .find(|e| e.entity.identity == recipient_identity)
         .and_then(|e| e.display_name)
-        .ok_or("own display name absent")?
+        .ok_or("recipient display name absent")?
         .as_str()
-        .map_err(|e| format!("own name: {e:?}"))?
+        .map_err(|e| format!("recipient name: {e:?}"))?
         .to_owned();
+    let path = route(world, tile(recipient.world_spatial().actor_position)?, |at| near_locker(world, at))
+        .ok_or("step=recipient-locker need=reachable-authored-locker-for-inbox-search; source:crates/gameplay/dispatch/src/gameplay_transport/depot_search.rs:93")?;
+    walk(&mut recipient, world, &path).await?;
+    let letters_before = inbox(&depot_search(&mut recipient, 3506).await?);
+    let parcels_before = inbox(&depot_search(&mut recipient, 3504).await?);
     acquire(&mut client, world, &metadata.npcs, letter, 2).await?;
     acquire(&mut client, world, &metadata.npcs, parcel, 1).await?;
     acquire(&mut client, world, &metadata.npcs, label, 1).await?;
@@ -460,7 +472,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     write(
         &mut client,
         first.handle.get(),
-        format!("{own_name}\nThais"),
+        format!("{recipient_name}\nThais"),
     )
     .await?;
     if item(&client, letter)?.handle != first.handle {
@@ -488,13 +500,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step=post-letter observed={outcome:?} need=Posted").into());
     }
     wait_units(&mut client, letter, before_letters - 1).await?;
-    let delivered = depot_search(&mut client, 3506).await?;
-    if inbox(&delivered) == 0 {
-        return Err(
-            format!("step=letter-inbox observed={delivered:?} need=inbox-count-positive").into(),
-        );
+    let delivered = depot_search(&mut recipient, 3506).await?;
+    if !one_delivery(letters_before, inbox(&delivered)) {
+        return Err(format!(
+            "step=letter-inbox observed={delivered:?} need=recipient-inbox-count-increased-by-one"
+        )
+        .into());
     }
-    row.pass("letter-posted-and-delivered", delivered);
+    row.pass("letter-posted-and-delivered", &delivered);
     let refused = item(&client, letter)?;
     write(
         &mut client,
@@ -511,7 +524,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.pass("unknown-recipient-refused", outcome);
     let parcel_item = item(&client, parcel)?;
     let label_item = item(&client, label)?;
-    write(&mut client, label_item.handle.get(), own_name.clone()).await?;
+    write(
+        &mut client,
+        label_item.handle.get(),
+        format!("{recipient_name}\nThais"),
+    )
+    .await?;
     let moved = client
         .move_item(&item_view::ItemMoveIntent {
             source: label_item.handle,
@@ -530,27 +548,33 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step=post-parcel observed={outcome:?} need=Posted").into());
     }
     wait_units(&mut client, parcel, 0).await?;
-    let parcel_delivery = depot_search(&mut client, 3504).await?;
-    if inbox(&parcel_delivery) == 0 {
+    let parcel_delivery = depot_search(&mut recipient, 3504).await?;
+    if !one_delivery(parcels_before, inbox(&parcel_delivery)) {
         return Err(format!(
-            "step=parcel-inbox observed={parcel_delivery:?} need=inbox-count-positive"
+            "step=parcel-inbox observed={parcel_delivery:?} need=recipient-inbox-count-increased-by-one"
         )
         .into());
     }
-    row.pass("parcel-label-and-delivery", parcel_delivery);
+    row.pass("parcel-label-and-delivery", &parcel_delivery);
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout observed=refused need=accepted-logout".into());
     }
-    drop(client);
-    let mut fresh = connect_world(clients, 0xea).await?;
+    if recipient.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("step=recipient-logout observed=refused need=accepted-logout".into());
+    }
+    drop(recipient);
+    let mut fresh = connect_character(clients, 0xea, 0).await?;
     if fresh.join_snapshot().game_session_id == session {
         return Err("step=fresh-admission observed=reused-session need=new-session".into());
     }
     let letter_after = depot_search(&mut fresh, 3506).await?;
     let parcel_after = depot_search(&mut fresh, 3504).await?;
-    if inbox(&letter_after) == 0 || inbox(&parcel_after) == 0 {
+    if inbox(&letter_after) != inbox(&delivered) || inbox(&parcel_after) != inbox(&parcel_delivery)
+    {
         return Err(format!("step=durable-inbox observed=letter-{letter_after:?}-parcel-{parcel_after:?} need=persisted-inbox-counts").into());
     }
     row.pass(
@@ -578,6 +602,13 @@ mod tests {
         row.pass(ACTIONS[0], "duplicate");
         assert!(row.invalid);
     }
+    #[test]
+    fn preexisting_inbox_mail_cannot_prove_delivery() {
+        assert!(!one_delivery(4, 4));
+        assert!(one_delivery(4, 5));
+        assert!(!one_delivery(4, 6));
+    }
+
     #[test]
     fn inbox_totals_only_inbox_custody() {
         let reply = depot_search::Reply {
