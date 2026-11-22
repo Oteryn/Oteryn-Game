@@ -105,6 +105,7 @@ fn binding(
             list,
             expected_revision,
             members,
+            guild_selectors,
         } => {
             hash.update([1]);
             hash.update(list.key().ok_or(HouseManagementError::Rejected)?.as_bytes());
@@ -112,6 +113,20 @@ fn binding(
             for member in members {
                 hash.update(member);
             }
+            if let Some(rules) = guild_selectors {
+                hash.update([0; 16]);
+                hash_guild_rules(&mut hash, rules)?;
+            }
+        }
+        HouseManagementAction::ReplaceGuildAcl {
+            list,
+            expected_revision,
+            rules,
+        } => {
+            hash.update([4]);
+            hash.update(list.key().ok_or(HouseManagementError::Rejected)?.as_bytes());
+            hash.update(expected_revision.to_be_bytes());
+            hash_guild_rules(&mut hash, rules)?;
         }
         HouseManagementAction::MoveOut { due_at_unix_ms } => {
             hash.update([2]);
@@ -121,6 +136,18 @@ fn binding(
     }
     Ok(hash.finalize().into())
 }
+fn hash_guild_rules(hash: &mut Sha256, rules: &[String]) -> Result<()> {
+    for rule in rules {
+        hash.update(
+            u64::try_from(rule.len())
+                .map_err(|_| HouseManagementError::Rejected)?
+                .to_be_bytes(),
+        );
+        hash.update(rule.as_bytes());
+    }
+    Ok(())
+}
+
 async fn apply(
     tx: &mut Tx<'_>,
     fence: &CurrentCharacterItemFence,
@@ -158,24 +185,52 @@ async fn apply(
     let owner: Option<Vec<u8>> = sqlx::query_scalar("SELECT uuid_send(game_house_effective_owner(world_id,house_key)) FROM game_house_ownership WHERE world_id=encode($1,'hex')::uuid AND house_key=$2 AND ownership_revision=$3::text::numeric FOR UPDATE")
         .bind(world.as_bytes().as_slice()).bind(house).bind(ownership.to_string()).fetch_one(&mut **tx).await?;
     let owner = owner.ok_or(HouseManagementError::Rejected)?;
+    let mut qualified_guild = None;
     let revision = match &request.action {
         HouseManagementAction::ReplaceAcl {
             list,
             expected_revision,
             members,
+            guild_selectors,
         } => {
+            let current = numeric_u64(&property, "acl_revision")?;
+            if let Some(rules) = guild_selectors {
+                if !matches!(
+                    list,
+                    oteryn_gameplay_housing::house_management::HouseManagementList::Door { .. }
+                ) {
+                    return Err(HouseManagementError::Rejected);
+                }
+                qualified_guild = Some(acl::qualify_guild_selectors(tx, request, rules).await?);
+            }
             acl::replace(
                 tx,
                 fence,
                 request,
-                ownership,
                 owner == fence.character_id.as_bytes(),
-                numeric_u64(&property, "acl_revision")?,
-                *list,
-                *expected_revision,
+                (*list, *expected_revision, current),
                 members,
             )
             .await?
+        }
+        HouseManagementAction::ReplaceGuildAcl {
+            list,
+            expected_revision,
+            rules,
+        } => {
+            let current = numeric_u64(&property, "acl_revision")?;
+            let next = acl::next_revision(
+                tx,
+                fence,
+                request,
+                owner == fence.character_id.as_bytes(),
+                *list,
+                *expected_revision,
+                current,
+            )
+            .await?;
+            qualified_guild = Some(acl::qualify_guild_selectors(tx, request, rules).await?);
+            next
         }
         HouseManagementAction::MoveOut { .. } | HouseManagementAction::CancelMoveOut => {
             if owner != fence.character_id.as_bytes() {
@@ -185,13 +240,18 @@ async fn apply(
         }
     };
     let (kind, list_key) = match &request.action {
-        HouseManagementAction::ReplaceAcl { list, .. } => (1_i16, list.key()),
+        HouseManagementAction::ReplaceAcl { list, .. }
+        | HouseManagementAction::ReplaceGuildAcl { list, .. } => (1_i16, list.key()),
         HouseManagementAction::MoveOut { .. } => (2, None),
         HouseManagementAction::CancelMoveOut => (3, None),
     };
     sqlx::query("INSERT INTO game_house_management_receipts(game_session_id,command_id,character_id,world_id,house_key,request_binding,result_revision,action_kind,list_key) VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,$6,$7::text::numeric,$8,$9)")
         .bind(session).bind(&command).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(house).bind(hash.as_slice()).bind(revision.to_string()).bind(kind).bind(list_key).execute(&mut **tx).await?;
-    if kind == 1 {
+    if let Some(rules) = qualified_guild {
+        sqlx::query("SELECT game_house_management_guild_acl_advance(encode($1,'hex')::uuid,$2::text::numeric,$3::text::numeric,$4)")
+            .bind(session).bind(&command).bind(fence.connection_generation.get().to_string())
+            .bind(rules).execute(&mut **tx).await?;
+    } else if kind == 1 {
         sqlx::query(
             "SELECT game_house_management_acl_advance(encode($1,'hex')::uuid,$2::text::numeric)",
         )

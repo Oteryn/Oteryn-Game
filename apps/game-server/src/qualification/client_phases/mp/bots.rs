@@ -2,6 +2,8 @@
 use super::diagnostics::{logout_failure_cause, logout_failure_detail, role_context};
 use super::observations::while_servicing_liveness;
 use super::*;
+use std::collections::BTreeSet;
+
 use oteryn_dev_client::client_runtime::party as party_client;
 use oteryn_dev_client::{DevClientSession, EntityRef, SessionEvent};
 use oteryn_protocol_oteryn::{attack, logout::LogoutResult, party, target_move};
@@ -325,24 +327,119 @@ pub(super) async fn walk_bot(
     Ok(())
 }
 
-/// Walks several bots along their own paths in lockstep: one confirmed step per bot per round, so
-/// each bot's step cooldown elapses while the others step and a round costs about one cooldown
-/// instead of one per bot.
+pub(super) fn positions(bots: &[Bot<'_, '_>]) -> TestResult<Vec<TilePos>> {
+    bots.iter()
+        .map(|bot| {
+            let session = bot.session.as_ref().ok_or("MP route peer closed")?;
+            tile(session.world_spatial().actor_position)
+        })
+        .collect()
+}
+
+pub(super) fn route_bot(
+    bots: &[Bot<'_, '_>],
+    index: usize,
+    world: &BundleWorld,
+    goal: impl Fn(TilePos) -> bool,
+) -> TestResult<Option<Vec<StepDirection>>> {
+    let positions = positions(bots)?;
+    Ok(route_avoiding(world, positions[index], goal, |next| {
+        tile_available(&positions, index, next)
+    }))
+}
+
+pub(super) fn tile_available(positions: &[TilePos], actor: usize, next: TilePos) -> bool {
+    positions
+        .iter()
+        .enumerate()
+        .all(|(index, &at)| index == actor || at != next)
+}
+
+struct GroupRoute {
+    goal: TilePos,
+    remaining: VecDeque<StepDirection>,
+}
+
+fn plan_round(
+    routes: &mut [GroupRoute],
+    positions: &[TilePos],
+    landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
+) -> Vec<(usize, StepDirection)> {
+    let mut reserved = BTreeSet::new();
+    let mut steps = Vec::new();
+    for (index, route) in routes.iter_mut().enumerate() {
+        let at = positions[index];
+        if at == route.goal {
+            continue;
+        }
+        let available_landing = |at, direction| {
+            landing(at, direction)
+                .filter(|&next| tile_available(positions, index, next) && !reserved.contains(&next))
+        };
+        if route
+            .remaining
+            .front()
+            .and_then(|&direction| available_landing(at, direction))
+            .is_none()
+        {
+            // A peer can block the original path or reserve its next tile this round.
+            // Replan around it, or wait if that peer must move before we can continue.
+            let Ok(path) = find_route(at, |at| at == route.goal, available_landing) else {
+                continue;
+            };
+            route.remaining = path.into();
+        }
+        if let Some((direction, next)) = route
+            .remaining
+            .pop_front()
+            .and_then(|direction| available_landing(at, direction).map(|next| (direction, next)))
+        {
+            reserved.insert(next);
+            steps.push((index, direction));
+        }
+    }
+    steps
+}
+
+/// One confirmed step per bot per round, with a distinct unoccupied landing for each step.
 pub(super) async fn walk_group(
     bots: &mut [Bot<'_, '_>],
     world: &BundleWorld,
-    paths: &[(usize, Vec<StepDirection>)],
+    paths: Vec<(TilePos, Vec<StepDirection>)>,
 ) -> TestResult {
-    let rounds = paths.iter().map(|(_, path)| path.len()).max().unwrap_or(0);
-    for round in 0..rounds {
-        for (index, path) in paths {
-            if let Some(&direction) = path.get(round) {
-                step_confirmed(bots, *index, world, direction).await?;
-            }
+    let mut routes: Vec<_> = paths
+        .into_iter()
+        .map(|(goal, path)| GroupRoute {
+            goal,
+            remaining: path.into(),
+        })
+        .collect();
+    let mut seen = BTreeSet::new();
+    loop {
+        let positions = positions(bots)?;
+        if routes
+            .iter()
+            .zip(&positions)
+            .all(|(route, &at)| route.goal == at)
+        {
+            return Ok(());
+        }
+        if !seen.insert(positions.clone()) {
+            return Err(format!("MP group route revisited positions={positions:?}").into());
+        }
+        let steps = plan_round(&mut routes, &positions, |at, direction| {
+            destination(world, at, direction)
+        });
+        if steps.is_empty() {
+            return Err(
+                format!("MP group route has no unoccupied step;positions={positions:?}").into(),
+            );
+        }
+        for (index, direction) in steps {
+            step_confirmed(bots, index, world, direction).await?;
         }
         pump(bots).await?;
     }
-    Ok(())
 }
 
 async fn step_confirmed(
@@ -352,20 +449,28 @@ async fn step_confirmed(
     direction: StepDirection,
 ) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
-    let before = bots[index].client()?.world_spatial().actor_position;
-    let expected =
-        destination(world, tile(before)?, direction).ok_or("MP step has no world destination")?;
+    let origin = tile(bots[index].client()?.world_spatial().actor_position)?;
+    let landing = destination(world, origin, direction);
+    let context = format!(
+        "bot={index}:{};origin={origin:?};direction={direction:?};landing={landing:?}",
+        bots[index].name,
+    );
+    let expected = landing.ok_or_else(|| format!("MP step has no world destination;{context}"))?;
     tokio::time::timeout_at(deadline, async {
         loop {
             let outcome = bots[index].client()?.step(direction).await?;
             let after = tile(bots[index].client()?.world_spatial().actor_position)?;
-            if outcome.disposition == StepDisposition::Moved && after == expected { return TestResult::Ok(()); }
-            if outcome.disposition != StepDisposition::Rejected || after != tile(before)? {
-                return Err(format!("MP movement refused:{outcome:?};source:apps/game-server/src/qualification/client_phases/world.rs:553").into());
+            if outcome.disposition == StepDisposition::Moved && after == expected {
+                return TestResult::Ok(());
+            }
+            if outcome.disposition != StepDisposition::Rejected || after != origin {
+                return Err(format!("MP movement refused;{context};reply={outcome:?}").into());
             }
             pump(bots).await?;
         }
-    }).await.map_err(|_| "MP movement deadline")??;
+    })
+    .await
+    .map_err(|_| format!("MP movement deadline;{context}"))??;
     // A server-confirmed tile change is real progress of the running row.
     verdict::Harness::global().progress("walk");
     Ok(())
@@ -379,24 +484,8 @@ pub(super) async fn approach(
     outside_pz: bool,
 ) -> TestResult {
     let other = tile(bots[peer].client()?.world_spatial().actor_position)?;
-    let from = tile(bots[actor].client()?.world_spatial().actor_position)?;
-    let occupied = bots
-        .iter()
-        .enumerate()
-        .filter(|(index, _)| *index != actor)
-        .map(|(_, bot)| {
-            tile(
-                bot.session
-                    .as_ref()
-                    .ok_or("approach peer closed")?
-                    .world_spatial()
-                    .actor_position,
-            )
-        })
-        .collect::<TestResult<Vec<_>>>()?;
-    let path = route(world, from, |at| {
+    let path = route_bot(bots, actor, world, |at| {
         at != other
-            && !occupied.contains(&at)
             && at.floor == other.floor
             && at.x.abs_diff(other.x).max(at.y.abs_diff(other.y)) <= 1
             && (!outside_pz
@@ -404,7 +493,7 @@ pub(super) async fn approach(
                     .base()
                     .tile(at.x, at.y, at.floor)
                     .is_some_and(|t| !t.protection_zone()))
-    })
+    })?
     .ok_or("MP peer approach has no reachable tile")?;
     walk_bot(bots, actor, world, &path).await
 }
@@ -419,11 +508,26 @@ pub(super) async fn party(
         }
         None => party_client::PartyCommand::query(),
     };
-    let reply = party_client::send(bot.client()?.session_mut(), &command).await?;
+    let (command_id, reply) =
+        party_client::send_with_receipt(bot.client()?.session_mut(), &command).await?;
+    if reply.status != CommandStatus::Accepted {
+        let operation = match intent {
+            Some(party::PartyIntent::Invite(_)) => "Invite",
+            Some(party::PartyIntent::Accept(_)) => "Accept",
+            Some(party::PartyIntent::Leave) => "Leave",
+            Some(party::PartyIntent::Kick(_)) => "Kick",
+            Some(party::PartyIntent::PassLeadership(_)) => "PassLeadership",
+            None => "Query",
+        };
+        return Err(format!(
+            "party operation={operation};command_type={};command_id={command_id};status={:?}",
+            command.kind, reply.status,
+        )
+        .into());
+    }
     let result = party::decode_party_result(&reply.operation)
         .map_err(|e| format!("party result:{e:?};status={:?}", reply.status))?;
-    if reply.status != CommandStatus::Accepted || result.disposition != party::PartyDisposition::Ok
-    {
+    if result.disposition != party::PartyDisposition::Ok {
         return Err(format!("party status={:?};disposition={:?};source:crates/gameplay/dispatch/src/gameplay_transport/party_command.rs:105", reply.status, result.disposition).into());
     }
     party::decode_party_result(reply.view.as_deref().ok_or("party view absent")?)
@@ -568,5 +672,78 @@ pub(super) async fn release_all(
         Ok(())
     } else {
         Err(failures.join("; ").into())
+    }
+}
+
+#[cfg(test)]
+mod movement_tests {
+    use super::*;
+
+    #[test]
+    fn group_planner_routes_both_bots_around_occupied_and_reserved_landings() -> TestResult {
+        let cell = |x, y| TilePos { x, y, floor: 7 };
+        let landing = |at: TilePos, direction| {
+            let (x, y) = match direction {
+                StepDirection::North => (at.x, at.y.checked_sub(1)?),
+                StepDirection::East => (at.x.checked_add(1)?, at.y),
+                StepDirection::South => (at.x, at.y.checked_add(1)?),
+                StepDirection::West => (at.x.checked_sub(1)?, at.y),
+                _ => return None,
+            };
+            (x <= 3 && y <= 2).then(|| cell(x, y))
+        };
+        let mut positions = [cell(0, 1), cell(1, 1)];
+        let goals = [cell(3, 1), cell(0, 2)];
+        let mut routes = [
+            GroupRoute {
+                goal: goals[0],
+                remaining: VecDeque::from([StepDirection::East; 3]),
+            },
+            GroupRoute {
+                goal: goals[1],
+                remaining: VecDeque::from([StepDirection::South, StepDirection::West]),
+            },
+        ];
+        // The old first step went east onto the second bot. The replanned steps must
+        // leave both bots on distinct tiles all the way to their goals.
+        for round in 0..8 {
+            if positions == goals {
+                break;
+            }
+            let mut next = positions;
+            let mut reserved = BTreeSet::new();
+            let steps = plan_round(&mut routes, &positions, landing);
+            assert!(!steps.is_empty(), "stuck in round {round}: {positions:?}");
+            for (actor, direction) in steps {
+                let at = landing(positions[actor], direction).ok_or("missing landing")?;
+                assert!(tile_available(&positions, actor, at), "occupied {at:?}");
+                assert!(reserved.insert(at), "already reserved {at:?}");
+                next[actor] = at;
+            }
+            positions = next;
+        }
+        assert_eq!(positions, goals);
+
+        let positions = [cell(0, 0), cell(2, 0)];
+        let mut routes = [
+            GroupRoute {
+                goal: cell(1, 0),
+                remaining: VecDeque::from([StepDirection::East]),
+            },
+            GroupRoute {
+                goal: cell(0, 1),
+                remaining: VecDeque::from([
+                    StepDirection::West,
+                    StepDirection::West,
+                    StepDirection::South,
+                ]),
+            },
+        ];
+        assert_eq!(
+            plan_round(&mut routes, &positions, landing),
+            [(0, StepDirection::East), (1, StepDirection::South)],
+            "the second bot must route around the first bot's reserved landing"
+        );
+        Ok(())
     }
 }

@@ -1,3 +1,4 @@
+use super::super::store::BackupOrder;
 use super::*;
 #[cfg(bevy_shell)]
 #[derive(Default)]
@@ -123,52 +124,41 @@ impl SettingsState {
     }
 
     pub fn import_from(&mut self, path: &Path) -> io::Result<()> {
-        #[cfg(bevy_shell)]
-        if let Some(store) = &mut self.store
-            && (self.background_preferences || store.saving())
-        {
-            let source = path.to_owned();
-            store.replace_in_background(&self.preferences, move |_| PreferenceStore::read_transfer(&source));
-            return Ok(());
-        }
-        self.replace_saved(PreferenceStore::read_transfer(path)?)
+        let source = path.to_owned();
+        self.replace_saved_from(BackupOrder::BackupFirst, move |_| {
+            PreferenceStore::read_transfer(&source)
+        })
     }
 
     pub fn reset_defaults(&mut self) -> io::Result<()> {
-        self.replace_saved(ReferencePreferences::default())
+        self.replace_saved_from(BackupOrder::BackupFirst, |_| {
+            Ok(ReferencePreferences::default())
+        })
     }
 
     pub fn restore_backup(&mut self) -> io::Result<()> {
-        #[cfg(bevy_shell)]
-        if let Some(store) = &mut self.store
-            && (self.background_preferences || store.saving())
-        {
-            return store.restore_in_background(&self.preferences);
-        }
-        let path = self
-            .store
-            .as_ref()
-            .ok_or_else(|| io::Error::other(tr!("Preference storage is unavailable")))?
-            .backup_path();
-        self.import_from(&path)
+        self.replace_saved_from(BackupOrder::ActiveFirst, |path| {
+            PreferenceStore::read_transfer(&path.with_extension("backup.json"))
+        })
     }
 
-    pub(super) fn replace_saved(
+    fn replace_saved_from(
         &mut self,
-        mut preferences: ReferencePreferences,
+        order: BackupOrder,
+        load: impl FnOnce(&Path) -> io::Result<ReferencePreferences> + Send + 'static,
     ) -> io::Result<()> {
-        preferences.miscellaneous = self.preferences.miscellaneous;
         let store = self
             .store
             .as_mut()
             .ok_or_else(|| io::Error::other(tr!("Preference storage is unavailable")))?;
         #[cfg(bevy_shell)]
         if self.background_preferences || store.saving() {
-            store.replace_in_background(&self.preferences, move |_| Ok(preferences));
-            return Ok(());
+            return store.replace_in_background(&self.preferences, order, load);
         }
-        store.replace_with_backup(preferences.clone(), &self.preferences)?;
-        self.accept_replaced(preferences);
+        store.replace_from(&self.preferences, order, load)?;
+        let mut restored = store.preferences().clone();
+        restored.miscellaneous = self.preferences.miscellaneous;
+        self.accept_replaced(restored);
         Ok(())
     }
 
@@ -203,6 +193,15 @@ impl SettingsState {
         let preferences = store
             .as_ref()
             .map_or_else(ReferencePreferences::default, |s| s.preferences().clone());
+        let session_options = base_path
+            .as_ref()
+            .and_then(|path| {
+                super::super::MiscellaneousPreferences::read(
+                    &path.with_extension("session-options.json"),
+                )
+                .ok()
+            })
+            .unwrap_or_default();
         Self {
             minimap_transfer: None,
             help_report: None,
@@ -221,6 +220,9 @@ impl SettingsState {
             help_report_pending: false,
             control_input: super::super::controls::ControlInput::default(),
             control_epoch: std::time::Instant::now(),
+            #[cfg(bevy_shell)]
+            remember_epoch: Default::default(),
+            session_baseline: std::sync::Arc::new(std::sync::Mutex::new(session_options)),
             base_path: base_path.clone(),
             character: None,
             skills_edit: 0,
@@ -239,18 +241,12 @@ impl SettingsState {
             background_preferences: false,
             #[cfg(bevy_shell)]
             session_save: None,
+            #[cfg(bevy_shell)]
+            session_queued: 0,
             preferences: {
                 let mut preferences = preferences;
                 preferences.reconcile_controls(None);
-                preferences.miscellaneous = base_path
-                    .as_ref()
-                    .and_then(|path| {
-                        super::super::MiscellaneousPreferences::read(
-                            &path.with_extension("session-options.json"),
-                        )
-                        .ok()
-                    })
-                    .unwrap_or_default();
+                preferences.miscellaneous = session_options;
                 preferences
             },
             feedback,
@@ -401,22 +397,7 @@ impl SettingsState {
             return;
         }
         preferences.reconcile_controls(Some(&self.preferences));
-        let result = match &mut self.store {
-            Some(store) => {
-                #[cfg(bevy_shell)]
-                if self.background_preferences || store.saving() {
-                    store.apply_in_background(preferences.clone());
-                    self.save_miscellaneous_in_background(preferences.miscellaneous)
-                } else {
-                    store.apply(preferences.clone()).map_err(|error| error.to_string())
-                        .and_then(|()| self.save_miscellaneous(preferences.miscellaneous))
-                }
-                #[cfg(not(bevy_shell))]
-                store.apply(preferences.clone()).map_err(|error| error.to_string())
-                    .and_then(|()| self.save_miscellaneous(preferences.miscellaneous))
-            }
-            None => Err(tr!("Preference storage is unavailable").to_owned()),
-        };
+        let result = self.persist_preferences(&preferences);
         // A disk error must not disable local controls for this process.
         if self.preferences.bar_actions != preferences.bar_actions {
             self.bar_actions_edit = crate::play::feature_0017_attack::view::next_edit();
@@ -467,8 +448,10 @@ impl SettingsState {
         self.preferences.minimap = preferences.minimap;
         self.minimap_edit = crate::play::feature_0017_attack::view::next_edit();
         self.feedback = if let Some(store) = &mut self.store {
-            store.apply_in_background(self.preferences.clone());
-            String::new()
+            store
+                .apply_in_background(self.preferences.clone())
+                .err()
+                .map_or_else(String::new, |error| error.to_string())
         } else {
             tr!("Preference storage is unavailable").into()
         };

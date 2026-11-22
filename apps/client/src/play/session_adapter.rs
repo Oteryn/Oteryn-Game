@@ -3,6 +3,10 @@ mod own_actor;
 use super::*;
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
+    fn game_session_id(&self) -> Option<[u8; 16]> {
+        Some(*self.join_snapshot().game_session_id.as_bytes())
+    }
+
     fn own_identity(&self) -> Option<[u8; 16]> {
         self.world_entities()
             .map(|entities| *entities.own_identity())

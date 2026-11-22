@@ -70,6 +70,16 @@ pub async fn send<S: SessionStream>(
     session: &mut Session<S>,
     request: &PartyCommand,
 ) -> Result<PartyResponse, SessionError> {
+    send_with_receipt(session, request)
+        .await
+        .map(|(_, reply)| reply)
+}
+
+/// Returns the operation's Foundation command id, even for a payloadless rejection.
+pub async fn send_with_receipt<S: SessionStream>(
+    session: &mut Session<S>,
+    request: &PartyCommand,
+) -> Result<(u64, PartyResponse), SessionError> {
     if !request.valid() {
         return Err(SessionError::CapabilityNotSelected {
             capability: party::CAPABILITY_PARTY_V1,
@@ -80,9 +90,13 @@ pub async fn send<S: SessionStream>(
         .await?;
     let operation = result.payload.clone();
     let status = result.status;
+    let command_id = result.command_id;
     let view = if request.kind == party::COMMAND_TYPE_PARTY_QUERY {
         accepted(result)
-    } else {
+    } else if matches!(
+        status,
+        CommandStatus::Accepted | CommandStatus::DuplicateReplay
+    ) {
         accepted(
             session
                 .gated_command(
@@ -92,12 +106,17 @@ pub async fn send<S: SessionStream>(
                 )
                 .await?,
         )
+    } else {
+        None
     };
-    Ok(PartyResponse {
-        status,
-        operation,
-        view,
-    })
+    Ok((
+        command_id,
+        PartyResponse {
+            status,
+            operation,
+            view,
+        },
+    ))
 }
 
 #[must_use]

@@ -1448,6 +1448,54 @@ mod protected_loot_tests {
     }
 
     #[test]
+    fn arbaziloth_loads_admitted_crystal_loot() -> Result<(), Box<dyn std::error::Error>> {
+        let (creatures, _) = documents()?;
+        let loot = LootTablesSection::decode(
+            include_bytes!("../../../../../tools/content-schema/native-gameplay/loot-tables.json"),
+            &creatures,
+        )?;
+        let table = CreatureRewardTable::from_pin(&creatures, Some(&loot));
+        let row = table
+            .row("oteryn:creature.arbaziloth")
+            .map_err(NoSettlementReason::as_str)?;
+        assert_eq!(
+            row.corpse_item
+                .as_ref()
+                .map(|item| item.production_key.as_str()),
+            Some("oteryn:item.tibia.i50029"),
+        );
+        let donor: Vec<(u32, u32, u32)> = serde_json::from_slice(include_bytes!(
+            "../../../../../tools/content-schema/monster-authoring/samples/arbaziloth-crystal-201189f8-loot.json"
+        ))?;
+        let expected: Vec<_> = donor
+            .into_iter()
+            .map(|(id, chance, max)| {
+                (
+                    format!("oteryn:item.tibia.i{id}"),
+                    Some(chance * 10),
+                    1,
+                    max,
+                )
+            })
+            .collect();
+        let actual: Vec<_> = row
+            .loot_table
+            .entries
+            .iter()
+            .map(|entry| {
+                (
+                    entry.item.production_key.clone(),
+                    entry.probability_ppm,
+                    entry.min_count,
+                    entry.max_count,
+                )
+            })
+            .collect();
+        assert_eq!(actual, expected);
+        Ok(())
+    }
+
+    #[test]
     fn omruc_settles_mini_mummy_at_authored_probability() -> Result<(), Box<dyn std::error::Error>>
     {
         let (creatures, loot) = documents()?;

@@ -45,9 +45,10 @@ fn cyclopedia_postgres_real_dispatch() -> TestResult {
 }
 #[test]
 fn cyclopedia_postgres_canonical_conversion_preserves_completed_legacy_progress() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
+    drop(admin);
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| scenario(true).map_err(|e| e.to_string()))?
@@ -107,10 +108,19 @@ fn scenario(canonical: bool) -> TestResult {
             tx.commit().await?;
         }
 
-        let combat_room = activation_pin.qualified_room().bundle_view(
-            cells.clone(), activation_pin.frame_binding().digest(), world.map_revision_digest(),
-            crate::content::NativeEntryStart { x: 1, y: 0, floor: 7 },
-        ).ok_or("Cyclopedia combat room")?;
+        let combat_room = activation_pin
+            .qualified_room()
+            .bundle_view(
+                cells.clone(),
+                activation_pin.frame_binding().digest(),
+                world.map_revision_digest(),
+                crate::content::NativeEntryStart {
+                    x: 1,
+                    y: 0,
+                    floor: 7,
+                },
+            )
+            .ok_or("Cyclopedia combat room")?;
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
@@ -422,6 +432,16 @@ fn scenario(canonical: bool) -> TestResult {
                 small[9], 1,
                 "seven-candidate subarea retains its completed state"
             );
+            let command = admitted.continuity.next_command_id;
+            let (_, refused) =
+                support::exchange(&owner, &mut admitted, command, 73, &request(2, 0)).await?;
+            assert_eq!(
+                refused[0], 5,
+                "the small subarea's seven visible tiles cannot seed new viewpoints"
+            );
+            let command = admitted.continuity.next_command_id;
+            let (_, retained) = support::exchange(&owner, &mut admitted, command, 72, &[]).await?;
+            assert_eq!(retained[9], 1, "refusing the shuffle preserves completion");
             speed::verify(
                 &mut owner,
                 &deps,
@@ -473,8 +493,14 @@ fn scenario(canonical: bool) -> TestResult {
         .bind(id(41).as_slice())
         .fetch_one(&h.pool)
         .await?;
-        assert!(advanced > 0, "native discovery committed a Character revision");
-        assert!(unchanged > 0, "repeated Start retained a non-advancing receipt");
+        assert!(
+            advanced > 0,
+            "native discovery committed a Character revision"
+        );
+        assert!(
+            unchanged > 0,
+            "repeated Start retained a non-advancing receipt"
+        );
         // Simulate process state replacement and a lost ACK. The Channel keeps the GameSession's
         // command stream (SESSION-INGRESS-1), which replays the retained result; the same
         // command still reaches PostgreSQL through the native receipt.

@@ -1,5 +1,7 @@
 //! T067 consumer: browser bootstrap, process sessions and opt-in OS-vault families.
 mod attempt;
+mod revocation_intent;
+mod revocation_journal;
 pub mod vault;
 use crate::play::MiscellaneousPreferences;
 pub use attempt::DeviceAttempt;
@@ -29,6 +31,7 @@ struct State {
 pub struct DeviceLogin {
     enabled: bool,
     forget_requested: AtomicBool,
+    journal: Arc<revocation_journal::Journal>,
     vault: Arc<dyn vault::Vault>,
     state: Arc<tokio::sync::Mutex<State>>,
     folder: Option<PathBuf>,
@@ -38,6 +41,7 @@ impl Default for DeviceLogin {
         Self {
             enabled: false,
             forget_requested: AtomicBool::new(false),
+            journal: Arc::new(revocation_journal::Journal::new(None)),
             vault: vault::system("Oteryn/native-disabled".into()),
             state: Default::default(),
             folder: None,
@@ -59,6 +63,7 @@ impl DeviceLogin {
         Self {
             enabled,
             forget_requested: AtomicBool::new(false),
+            journal: Arc::new(revocation_journal::Journal::new(Some(folder.clone()))),
             vault: vault::system(format!("Oteryn/NativeDevice/{key}")),
             state: Default::default(),
             folder: Some(folder),
@@ -70,7 +75,7 @@ impl DeviceLogin {
         options: MiscellaneousPreferences,
         cancel: CancellationToken,
     ) -> Result<Option<DeviceAttempt>, NativeLoginError> {
-        if !self.enabled {
+        if !self.enabled && self.folder.as_ref().is_none_or(|folder| !folder.exists()) {
             return Ok(None);
         }
         let Ok(mut state) =
@@ -81,11 +86,24 @@ impl DeviceLogin {
         let Ok(lock) = self.lock_credential().await else {
             return Ok(None);
         };
-        let forget = self.forget_requested.load(Ordering::Acquire) || state.vault_clear_failed;
-        if self.load_remembered(&mut state).is_err() {
+        let pending = self.revocation_pending()?;
+        if !pending && self.journal.replay(client).await.is_err() {
             return Ok(None);
         }
-        let remembered = options.remember_device && self.vault.available();
+        let requested = self.forget_requested.load(Ordering::Acquire);
+        if requested && !pending && self.journal.has_folder() {
+            state.session = None;
+            state.key = None;
+            state.remembered = false;
+            self.journal.finish()?;
+            self.forget_requested.store(false, Ordering::Release);
+        }
+        let forget =
+            pending || (requested && !self.journal.has_folder()) || state.vault_clear_failed;
+        if !forget && self.load_remembered(&mut state).is_err() {
+            return Ok(None);
+        }
+        let remembered = !forget && options.remember_device && self.vault.available();
         let mut attempt = DeviceAttempt {
             state,
             vault: self.vault.clone(),
@@ -93,12 +111,22 @@ impl DeviceLogin {
             remembered,
             options,
             folder: self.folder.clone(),
+            journal: self.journal.clone(),
         };
-        if forget || !options.stay_logged_in || attempt.state.remembered != remembered {
-            attempt.sign_out(client).await;
-            if !attempt.state.vault_clear_failed {
-                self.forget_requested.store(false, Ordering::Release);
+        if forget {
+            if !pending && attempt.state.vault_clear_failed {
+                if attempt.revoke_before_vault_clear(client).await.is_err() {
+                    return Ok(None);
+                }
+            } else if self
+                .finish_attempt_sign_out(&mut attempt, client)
+                .await
+                .is_err()
+            {
+                return Ok(None);
             }
+        } else if !options.stay_logged_in || attempt.state.remembered != remembered {
+            attempt.sign_out(client).await;
         } else {
             let _ = attempt.revoke_pending(client).await;
         }
@@ -106,7 +134,7 @@ impl DeviceLogin {
             attempt.sign_out(client).await;
             return Err(storage_error());
         }
-        Ok(Some(attempt))
+        Ok(self.enabled.then_some(attempt))
     }
     async fn lock_credential(&self) -> Result<Option<std::fs::File>, NativeLoginError> {
         let Some(folder) = self.folder.clone() else {
@@ -176,16 +204,29 @@ impl DeviceLogin {
         Ok(())
     }
 
-    pub(crate) fn block_remembered(&self) {
-        self.forget_requested.store(true, Ordering::Release);
+    pub async fn sign_out(&self, client: &NativeLoginClient) -> Result<(), NativeLoginError> {
+        self.block_remembered()?;
+        self.finish_sign_out(client).await
     }
 
-    pub async fn sign_out(&self, client: &NativeLoginClient) -> Result<(), NativeLoginError> {
-        self.block_remembered();
+    pub(crate) async fn finish_sign_out(
+        &self,
+        client: &NativeLoginClient,
+    ) -> Result<(), NativeLoginError> {
         let state = tokio::time::timeout(CREDENTIAL_LOCK_TIMEOUT, self.state.clone().lock_owned())
             .await
             .map_err(|_| storage_error())?;
         let lock = self.lock_credential().await?;
+        if self.folder.is_some() && !self.revocation_pending()? {
+            self.journal.replay(client).await?;
+            let mut state = state;
+            state.session = None;
+            state.remembered = false;
+            state.key = None;
+            self.journal.finish()?;
+            self.forget_requested.store(false, Ordering::Release);
+            return Ok(());
+        }
         let mut attempt = DeviceAttempt {
             state,
             vault: self.vault.clone(),
@@ -193,18 +234,30 @@ impl DeviceLogin {
             remembered: false,
             options: MiscellaneousPreferences::default(),
             folder: self.folder.clone(),
+            journal: self.journal.clone(),
         };
-        let known_session = attempt.state.session.clone();
-        let loaded = self.load_remembered(&mut attempt.state);
-        if loaded.is_err() && attempt.state.session.is_none() {
-            attempt.state.session = known_session;
-        }
-        let revoked = attempt.revoke(client).await;
-        if loaded.is_ok() && !attempt.state.vault_clear_failed {
-            self.forget_requested.store(false, Ordering::Release);
-        }
-        loaded.and(revoked)
+        self.finish_attempt_sign_out(&mut attempt, client).await
     }
+
+    pub(crate) async fn finish_attempt_sign_out(
+        &self,
+        attempt: &mut DeviceAttempt,
+        client: &NativeLoginClient,
+    ) -> Result<(), NativeLoginError> {
+        if self.journal.has_folder() && !self.revocation_pending()? {
+            self.journal.replay(client).await?;
+            attempt.state.session = None;
+            attempt.state.key = None;
+            attempt.state.remembered = false;
+        } else {
+            attempt.revoke_before_vault_clear(client).await?;
+            self.complete_local_revocation()?;
+        }
+        self.journal.finish()?;
+        self.forget_requested.store(false, Ordering::Release);
+        Ok(())
+    }
+
     pub fn vault_available(&self) -> bool {
         self.vault.available()
     }

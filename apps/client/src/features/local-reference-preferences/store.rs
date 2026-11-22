@@ -8,11 +8,18 @@ use std::{
 #[cfg(bevy_shell)]
 type SaveResult = io::Result<Option<ReferencePreferences>>;
 #[cfg(bevy_shell)]
-#[path = "store/rebase.rs"]
-mod rebase;
-#[cfg(bevy_shell)]
 #[path = "store/background.rs"]
 mod background;
+#[path = "store/publication.rs"]
+mod publication;
+#[path = "store/rebase.rs"]
+mod rebase;
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum BackupOrder {
+    BackupFirst,
+    ActiveFirst,
+}
 
 pub struct PreferenceStore {
     path: PathBuf,
@@ -21,6 +28,10 @@ pub struct PreferenceStore {
     save_task: Option<bevy_tasks::Task<Vec<SaveResult>>>,
     #[cfg(bevy_shell)]
     replacing: bool,
+    #[cfg(bevy_shell)]
+    queued: usize,
+    #[cfg(bevy_shell)]
+    io_baseline: Option<std::sync::Arc<std::sync::Mutex<ReferencePreferences>>>,
 }
 
 impl PreferenceStore {
@@ -114,37 +125,6 @@ impl PreferenceStore {
         self.path.with_extension("backup.json")
     }
 
-    pub fn replace_with_backup(
-        &mut self,
-        preferences: ReferencePreferences,
-        previous: &ReferencePreferences,
-    ) -> io::Result<()> {
-        #[cfg(bevy_shell)]
-        if self.saving() {
-            self.replace_in_background(previous, move |_| Ok(preferences));
-            return Ok(());
-        }
-        let bytes = Self::serialized(&preferences)?;
-        let previous = Self::serialized(previous)?;
-        Self::write_with_backup(&self.path, &bytes, &previous)?;
-        self.preferences = preferences;
-        Ok(())
-    }
-
-    fn write_with_backup(path: &Path, bytes: &[u8], previous: &[u8]) -> io::Result<()> {
-        let keep_backup = match Self::read_transfer(path) {
-            Ok(_) => false,
-            Err(error) if error.kind() == io::ErrorKind::NotFound => false,
-            // Explicit recovery can replace a damaged document. Retain the prior backup.
-            Err(error) if error.kind() == io::ErrorKind::InvalidData => true,
-            Err(error) => return Err(error),
-        };
-        if !keep_backup {
-            crate::atomic_file::replace(&path.with_extension("backup.json"), previous, true)?;
-        }
-        crate::atomic_file::replace(path, bytes, true)
-    }
-
     pub fn defaults(path: PathBuf) -> Self {
         Self {
             path,
@@ -153,6 +133,10 @@ impl PreferenceStore {
             save_task: None,
             #[cfg(bevy_shell)]
             replacing: false,
+            #[cfg(bevy_shell)]
+            queued: 0,
+            #[cfg(bevy_shell)]
+            io_baseline: None,
         }
     }
 
@@ -171,31 +155,15 @@ impl PreferenceStore {
             save_task: None,
             #[cfg(bevy_shell)]
             replacing: false,
+            #[cfg(bevy_shell)]
+            queued: 0,
+            #[cfg(bevy_shell)]
+            io_baseline: None,
         })
     }
 
     pub fn preferences(&self) -> &ReferencePreferences {
         &self.preferences
-    }
-
-    pub fn apply(&mut self, preferences: ReferencePreferences) -> io::Result<()> {
-        #[cfg(bevy_shell)]
-        if self.saving() {
-            preferences.validate().map_err(io::Error::other)?;
-            self.apply_in_background(preferences);
-            return Ok(());
-        }
-        Self::write_existing(&self.path, &preferences)?;
-        self.preferences = preferences;
-        Ok(())
-    }
-
-    fn write_existing(path: &Path, preferences: &ReferencePreferences) -> io::Result<()> {
-        let bytes = Self::serialized(preferences)?;
-        if path.try_exists()? {
-            Self::read_transfer(path)?;
-        }
-        crate::atomic_file::replace(path, &bytes, true)
     }
 
     pub fn path() -> Option<PathBuf> {
@@ -227,11 +195,13 @@ impl PreferenceStore {
 impl Drop for PreferenceStore {
     fn drop(&mut self) {
         if let Some(task) = self.save_task.take() {
-            bevy_tasks::IoTaskPool::get().spawn(async move {
-                for error in task.await.into_iter().filter_map(Result::err) {
-                    eprintln!("Could not save preferences: {error}");
-                }
-            }).detach();
+            bevy_tasks::IoTaskPool::get()
+                .spawn(async move {
+                    for error in task.await.into_iter().filter_map(Result::err) {
+                        eprintln!("Could not save preferences: {error}");
+                    }
+                })
+                .detach();
         }
     }
 }

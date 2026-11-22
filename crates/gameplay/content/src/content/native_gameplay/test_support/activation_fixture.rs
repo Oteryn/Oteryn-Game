@@ -278,6 +278,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     // a missing corpse is different from an authored but inadmissible corpse.
     // Change these source-qualification expectations only with admitted content.
     let newly_admitted = [
+        "oteryn:creature.arbaziloth",
         "oteryn:creature.demodras",
         "oteryn:creature.the_percht_queen",
         "oteryn:creature.goshnar_s_spite",
@@ -438,24 +439,6 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                     .ok_or("source newly materializable boss table")?;
                 let refused = source_loot_refusals::items(&table.entries, &loot.items);
                 if !refused.is_empty() {
-                    if policy.definition_key == "oteryn:creature.arbaziloth" {
-                        assert_eq!(
-                            refused,
-                            [
-                                "oteryn:item.tibia.i49522",
-                                "oteryn:item.tibia.i49523",
-                                "oteryn:item.tibia.i49527",
-                                "oteryn:item.tibia.i49520",
-                                "oteryn:item.tibia.i49525",
-                                "oteryn:item.tibia.i49524",
-                                "oteryn:item.tibia.i49529",
-                                "oteryn:item.tibia.i49530",
-                                "oteryn:item.tibia.i49528",
-                                "oteryn:item.tibia.i49526",
-                                "oteryn:item.tibia.i50250",
-                            ]
-                        );
-                    }
                     assert_eq!(
                         source.reward_table().row(&policy.definition_key).err(),
                         Some(NoSettlementReason::LootItemInadmissible),
@@ -610,7 +593,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     );
     assert_eq!(
         (missing, inadmissible, inadmissible_loot, admitted.len()),
-        (52, 261, 39, 37)
+        (52, 261, 38, 38)
     );
     assert_eq!(
         admitted,
@@ -618,6 +601,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.ahau",
             "oteryn:creature.anomaly",
             "oteryn:creature.apprentice_sheng",
+            "oteryn:creature.arbaziloth",
             "oteryn:creature.armenius_creature",
             "oteryn:creature.ascending_ferumbras",
             "oteryn:creature.bakragore",
@@ -658,7 +642,6 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     assert_eq!(
         newly_materializable_body_loot_refusals,
         [
-            "oteryn:creature.arbaziloth",
             "oteryn:creature.black_vixen",
             "oteryn:creature.bloodback",
             "oteryn:creature.count_vlarkorth",

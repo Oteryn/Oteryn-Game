@@ -556,7 +556,7 @@ fn the_dock_layout_round_trips_through_its_file_and_drops_bad_entries() -> TestR
     let path = fixture.path().join("dock-file.json");
     let _ = std::fs::remove_file(&path);
     assert_eq!(SidebarWidgets::load(&path)?, SidebarWidgets::default());
-    let state = moved_dock();
+    let mut state = moved_dock();
     state.save(&path)?;
     assert_eq!(SidebarWidgets::load(&path)?, state);
     std::fs::write(

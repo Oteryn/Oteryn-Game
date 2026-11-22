@@ -5,6 +5,7 @@ use super::super::{
 use super::Dispatch;
 use crate::gameplay_transport::{
     container_view::refresh,
+    hotkey_equip::RejectionStage,
     item_move::{self, ItemMoveStep},
 };
 use oteryn_protocol_oteryn::{
@@ -30,6 +31,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         upgrade_tier,
     }) = TieredRequest::decode_selected(tiered, command.payload)
     else {
+        RejectionStage::Payload.log(command.command_id);
         return Some(Dispatch::ItemMove(
             ItemMoveOutcome::Rejected,
             Vec::new(),
@@ -37,6 +39,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         ));
     };
     let (Some(view), Some(views)) = (item_view.as_mut(), views.as_mut()) else {
+        RejectionStage::ItemView.log(command.command_id);
         return Some(Dispatch::ItemMove(
             ItemMoveOutcome::Rejected,
             Vec::new(),

@@ -224,6 +224,14 @@ class EvidenceTests(unittest.TestCase):
             matrix.redact(source, destination)
             self.assertEqual(destination.read_text(), "keep\nkeep too\n")
 
+    def test_redact_keeps_hotkey_event_lines(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = self.write(tmp, "in", "event=hotkey_equip_rejected stage=fence command_id=348\n"
+                                           "hotkey api_key=1\nhotkey token\n")
+            destination = Path(tmp) / "out"
+            matrix.redact(source, destination)
+            self.assertEqual(destination.read_text(), "event=hotkey_equip_rejected stage=fence command_id=348\n")
+
 
 class WorkflowTests(unittest.TestCase):
     def test_workflow_plans_with_this_tool_and_uploads_every_shard(self):

@@ -40,8 +40,11 @@ impl PlayView {
                 }
                 PlayEvent::Pushed(pushed) => {
                     self.apply_pushed(&pushed).map_err(|_error| UNAVAILABLE)?;
-                    if let Some(scope) = &pushed.activity_scope {
-                        link.scope_presented(scope.session);
+                    if let Some(session) = pushed
+                        .scope_session
+                        .or_else(|| pushed.activity_scope.as_ref().map(|scope| scope.session))
+                    {
+                        link.scope_presented(session);
                     }
                     self.enqueue(pushed.sounds);
                 }

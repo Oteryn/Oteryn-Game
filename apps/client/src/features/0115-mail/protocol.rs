@@ -85,10 +85,7 @@ impl Outbox {
             selected: session.feature_selected(59),
             ..Default::default()
         };
-        shared.properties.house_transfer = oteryn_client_ui::house_transfer::Panel {
-            selected: session.feature_selected(86),
-            ..Default::default()
-        };
+        shared.properties.house_transfer.selected = session.feature_selected(86);
         shared.properties.guildhall = oteryn_client_ui::guildhall::Panel {
             selected: session.feature_selected(99),
             ..Default::default()

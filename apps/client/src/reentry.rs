@@ -8,7 +8,10 @@ use oteryn_client_ui::login_queue::QueueWait;
 use oteryn_foundation::{Cancellable, CancellationToken, cancellable};
 use oteryn_input_actions::{ButtonState, NormalizedInputEvent};
 use oteryn_platform_client::native_login::PublicClass;
-use std::sync::mpsc::{self, Receiver, TryRecvError};
+use std::sync::{
+    Arc, Mutex, PoisonError,
+    mpsc::{self, Receiver, TryRecvError},
+};
 use std::time::Instant;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -43,6 +46,7 @@ pub struct Reentry {
     client: ClientBootstrap,
     state: EntryState,
     attempt_cancellation: Option<CancellationToken>,
+    browser_delivery: Arc<Mutex<()>>,
     progress: Option<tokio::sync::watch::Receiver<Option<AdmissionWait>>>,
     waiting: Option<(AdmissionWait, QueueWait)>,
     last_wait_text: Option<String>,
@@ -66,6 +70,7 @@ impl Reentry {
             client,
             state: EntryState::Offline,
             attempt_cancellation: None,
+            browser_delivery: Arc::default(),
             progress: None,
             waiting: None,
             last_wait_text: None,
@@ -130,6 +135,17 @@ impl Reentry {
         let cancellation = self.client.runtime.cancellation();
         let attempt_cancellation = CancellationToken::new();
         self.attempt_cancellation = Some(attempt_cancellation.clone());
+        if let Some(config) = &mut config {
+            // OAuth and Account Services use the same opener for this attempt.
+            // cancel_entry takes this gate before cancelling the attempt token.
+            let gate = Arc::clone(&self.browser_delivery);
+            let cancel = attempt_cancellation.clone();
+            let browser = Arc::clone(&config.open_browser);
+            config.open_browser = Arc::new(move |url| {
+                let _delivery = gate.lock().unwrap_or_else(PoisonError::into_inner);
+                !cancel.is_cancelled() && browser(url)
+            });
+        }
         let (progress, updates) = tokio::sync::watch::channel(None);
         self.progress = Some(updates);
         self.waiting = None;

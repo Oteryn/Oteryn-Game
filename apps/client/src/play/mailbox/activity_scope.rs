@@ -1,8 +1,14 @@
 //! Invalidate source actions before presenting a committed activity destination.
-use super::{Mailbox, Outbox, Pushed, SessionEvent, lock};
+#[cfg(test)]
+use super::lock;
+use super::{Mailbox, Pushed, SessionEvent};
 
 impl Mailbox {
     pub(in crate::play) fn cancel_activity_requests(&mut self) {
+        if let Some(cancel) = self.channel_probe_cancel.take() {
+            cancel.cancel();
+            self.channel_probe_refreshed = None;
+        }
         self.reset_wire_frame();
         self.chat.scope = self.chat.scope.wrapping_add(1);
         // Every queued command belonged to the source namespace, including panel queries.
@@ -132,59 +138,57 @@ impl Mailbox {
     }
 }
 
-impl Outbox {
-    pub(super) fn activity_scope_events(&self, events: &[SessionEvent]) {
+impl Mailbox {
+    pub(super) fn activity_scope_events(&mut self, events: &[SessionEvent]) {
         use oteryn_session::activity_scope::ActivityScope;
         let receipt =
             crate::play::feature_0117_boss_encounter::protocol::activity_scope_receipt(events);
         let Some(receipt) = receipt else { return };
-        let mut mailbox = lock(&self.0);
         // Crystal 201189f data-global/scripts/quests/soulpit/soulpit_fight.lua:79-106
         // moves the whole staged group.
         // Discard origin targets and feedback before applying fresh destination snapshots.
-        mailbox.bar_actions.scope = crate::play::feature_0017_attack::view::next_edit();
-        mailbox.before = Pushed::default();
-        mailbox.pushed = Pushed {
+        self.bar_actions.scope = crate::play::feature_0017_attack::view::next_edit();
+        self.before = Pushed::default();
+        self.pushed = Pushed {
             scope_changed: true,
             ..Default::default()
         };
-        mailbox.stepped = None;
-        mailbox.combat.clear();
-        mailbox.logout_refused = None;
-        mailbox.world_context.pending = false;
-        mailbox.world_context.targeting = None;
-        mailbox.world_context.rune_targeting = false;
-        mailbox.item_movement = Default::default();
-        mailbox.inventory.apply(None);
-        mailbox.dialogue.target = None;
-        mailbox.dialogue.open = false;
-        mailbox.npc_shop.live.conversation = None;
-        mailbox.npc_shop.live.window = Default::default();
-        mailbox.npc_shop.live.inventory = None;
-        mailbox.npc_shop.live.containers = Default::default();
-        mailbox.player_trade.offer = None;
-        mailbox.player_trade.partner = None;
-        mailbox.player_trade.state = None;
-        mailbox.player_trade.items = Default::default();
-        mailbox.containers.apply(None);
-        mailbox.appearance_state.clear();
-        mailbox.target_walk.pending = false;
-        mailbox.target_walk.response = None;
-        oteryn_client_ui::target_move::cancel(&mut mailbox.target_walk);
-        mailbox.cancel_activity_requests();
+        self.stepped = None;
+        self.combat.clear();
+        self.logout_refused = None;
+        self.world_context.pending = false;
+        self.world_context.targeting = None;
+        self.world_context.rune_targeting = false;
+        self.item_movement = Default::default();
+        self.inventory.apply(None);
+        self.dialogue.target = None;
+        self.dialogue.open = false;
+        self.npc_shop.live.conversation = None;
+        self.npc_shop.live.window = Default::default();
+        self.npc_shop.live.inventory = None;
+        self.npc_shop.live.containers = Default::default();
+        self.player_trade.offer = None;
+        self.player_trade.partner = None;
+        self.player_trade.state = None;
+        self.player_trade.items = Default::default();
+        self.containers.apply(None);
+        self.appearance_state.clear();
+        self.target_walk.pending = false;
+        self.target_walk.response = None;
+        oteryn_client_ui::target_move::cancel(&mut self.target_walk);
+        self.cancel_activity_requests();
         // Destination ChatLog sequences and notices start over at the handoff.
-        mailbox.chat.console.reset_extensions();
-        mailbox.activity_reset_commands = true;
-        mailbox.map = None;
-        mailbox.action_feedback = Some(Some(match receipt.scope {
+        self.chat.console.reset_extensions();
+        self.activity_reset_commands = true;
+        self.map = None;
+        self.action_feedback = Some(Some(match receipt.scope {
             ActivityScope::Instance { .. } => {
                 tr!("Entered activity instance. Use the exit to return.")
             }
             ActivityScope::Channel { .. } => tr!("Returned to the channel."),
         }));
-        let stamina_selected = mailbox.cyclopedia_character.selected;
-        drop(mailbox);
-        self.hud_stamina_initialize(stamina_selected);
+        self.hud_resource =
+            crate::play::resource_hud::MailboxState::new(self.cyclopedia_character.selected);
     }
 }
 

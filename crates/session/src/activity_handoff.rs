@@ -135,7 +135,7 @@ impl<S: SessionStream> Session<S> {
             return Err(SessionError::ContentGenerationMismatch { domain_id: 1 });
         }
         let events = replacement_snapshot::replacement_events(&destination, 0, &old, &next)?;
-        if self.events.len().saturating_add(events.len()) > MAX_QUEUED_EVENTS {
+        if events.len() > MAX_QUEUED_EVENTS {
             return Err(SessionError::EventQueueOverflow {
                 limit: MAX_QUEUED_EVENTS,
             });
@@ -162,7 +162,7 @@ impl<S: SessionStream> Session<S> {
         self.last_refusal_detail = None;
         self.vip_presence = None;
         self.last_received = tokio::time::Instant::now();
-        self.events.extend(events);
+        self.events = events;
         Ok(Some(SessionError::ActivityScopeChanged))
     }
 

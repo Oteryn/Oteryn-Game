@@ -39,9 +39,10 @@ fn coin_shop_store_launcher_uses_services_scope_character_context_and_refresh_ca
         let launcher = Launcher::new(
             config,
             CHARACTER.into(),
-            Arc::new(move || {
+            Arc::new(move |_| {
                 let _ = done_tx.send(());
             }),
+            None,
         );
         assert!(launcher.can_start());
         assert!(launcher.start());
@@ -79,9 +80,10 @@ fn coin_shop_session_end_cancels_pending_oauth_without_presenting_or_refreshing(
         let launcher = Launcher::new(
             config,
             CHARACTER.into(),
-            Arc::new(move || {
+            Arc::new(move |_| {
                 refreshed.fetch_add(1, Ordering::SeqCst);
             }),
+            None,
         );
         assert!(launcher.start());
         opened_rx.recv_timeout(Duration::from_secs(5))?;
@@ -115,7 +117,7 @@ fn store_launcher_opens_coin_history_and_transfer_pages_until_the_session_ends()
             let _ = url_tx.send(url.to_owned());
             true
         });
-        let launcher = Launcher::new(config, CHARACTER.into(), Arc::new(|| {}));
+        let launcher = Launcher::new(config, CHARACTER.into(), Arc::new(|_| {}), None);
         assert!(launcher.open_web(WebLink::CoinHistory));
         assert!(launcher.open_web(WebLink::CoinTransfer));
         let language = oteryn_client_ui::localization::current().code();

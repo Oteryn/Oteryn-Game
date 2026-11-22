@@ -255,11 +255,7 @@ pub(super) fn message_action(
             }
         }
         MessageAction::Lists => play.link.chat_lists_open(name),
-        MessageAction::Save => {
-            let _ = play
-                .link
-                .chat_save_log(std::path::Path::new("chat.log"), true);
-        }
+        MessageAction::Save => play.link.chat_export_log(),
         MessageAction::Mirror => {
             let _ = play.link.chat_console_mirror();
         }

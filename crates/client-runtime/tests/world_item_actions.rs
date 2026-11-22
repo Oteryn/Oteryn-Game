@@ -217,3 +217,45 @@ fn queued_equipment_changes_reject_removed_and_replaced_use_with_sources() -> Re
         Ok(())
     })
 }
+
+#[test]
+fn rejected_party_invite_preserves_foundation_receipt_without_query() -> Result<(), BoxError> {
+    use oteryn_client_runtime::party::{self as client, CommandStatus, PartyCommand, party};
+
+    run(|| async {
+        let (mut session, mut peer) =
+            support::joined_with_capabilities(None, &[party::CAPABILITY_PARTY_V1]).await?;
+        let invite = PartyCommand::intent(party::PartyIntent::Invite(OWN))
+            .map_err(|error| format!("invite: {error:?}"))?;
+        let expected = envelope(
+            7,
+            1,
+            0,
+            &message(&[
+                scalar(1, 7),
+                scalar(2, u64::from(party::COMMAND_TYPE_PARTY_INTENT)),
+                field(4, &invite.payload),
+            ]),
+        );
+        let server = tokio::spawn(async move {
+            assert_eq!(read_frame(&mut peer).await?, expected);
+            let result = message(&[scalar(1, 7), scalar(2, CommandStatus::Rejected as u64)]);
+            write_frame(&mut peer, &envelope(8, 1, 41, &result)).await?;
+            let mut extra = [0];
+            assert_eq!(
+                peer.read(&mut extra).await?,
+                0,
+                "unexpected follow-up command"
+            );
+            Ok::<_, BoxError>(())
+        });
+        let reply = client::send(&mut session, &invite).await;
+        drop(session);
+        server.await??;
+        let reply = reply?;
+        assert_eq!(reply.status, CommandStatus::Rejected);
+        assert!(reply.operation.is_empty());
+        assert_eq!(reply.view, None);
+        Ok(())
+    })
+}

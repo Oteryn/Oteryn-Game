@@ -443,10 +443,9 @@ async fn out_of_range(
         return Err(format!("need active shared leader before distance transition;reply={active:?};source:crates/gameplay/dispatch/src/gameplay_transport/party_skull.rs:27").into());
     }
     let leader = tile(bots[0].client()?.world_spatial().actor_position)?;
-    let from = tile(bots[2].client()?.world_spatial().actor_position)?;
-    let path = route(world, from, |at| {
+    let path = bots::route_bot(bots, 2, world, |at| {
         at.floor == leader.floor && at.x.abs_diff(leader.x).max(at.y.abs_diff(leader.y)) > 35
-    })
+    })?
     .ok_or("no walkable tile outside Crystal 30-tile range")?;
     bots::walk_bot(bots, 2, world, &path).await?;
     let reply = icons(&mut bots[0]).await?;
@@ -480,43 +479,19 @@ async fn out_of_range(
 /// across the whole map. Err carries every tile the search reached, for the failure message.
 fn far_route(
     world: &BundleWorld,
-    from: TilePos,
+    positions: &[TilePos],
+    actor: usize,
     goal: impl Fn(TilePos) -> bool,
-) -> Result<Vec<StepDirection>, Vec<TilePos>> {
-    let mut queue = std::collections::VecDeque::from([from]);
-    let mut parents = std::collections::BTreeMap::from([(from, None)]);
-    while let Some(at) = queue.pop_front() {
-        if goal(at) {
-            let mut path = Vec::new();
-            let mut cursor = at;
-            while let Some(Some((previous, direction))) = parents.get(&cursor) {
-                path.push(*direction);
-                cursor = *previous;
-            }
-            path.reverse();
-            return Ok(path);
-        }
-        for direction in [
-            StepDirection::North,
-            StepDirection::East,
-            StepDirection::South,
-            StepDirection::West,
-        ] {
-            let Some(next) = destination(world, at, direction) else {
-                continue;
-            };
-            if parents.contains_key(&next) {
-                continue;
-            }
-            parents.insert(next, Some((at, direction)));
-            queue.push_back(next);
-        }
-    }
-    Err(parents.into_keys().collect())
+) -> Result<Vec<StepDirection>, usize> {
+    find_route(positions[actor], goal, |at, direction| {
+        destination(world, at, direction)
+            .filter(|&next| bots::tile_available(positions, actor, next))
+    })
 }
 
 async fn prepare_hunt_ground(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestResult<TilePos> {
-    let from = tile(bots[0].client()?.world_spatial().actor_position)?;
+    let positions = bots::positions(bots)?;
+    let from = positions[0];
     let open = |at: TilePos| {
         world
             .base()
@@ -538,36 +513,35 @@ async fn prepare_hunt_ground(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> T
             .count()
                 >= participants
     };
-    let path = far_route(world, from, roomy).map_err(|reached| {
-        format!(
-            "no open ground from {from:?};walkable_reached={}",
-            reached.len()
-        )
-    })?;
+    let path = far_route(world, &positions, 0, |at| {
+        roomy(at) && bots::tile_available(&positions, 0, at)
+    })
+    .map_err(|reached| format!("no open ground from {from:?};walkable_reached={reached}"))?;
     let leader = path
         .iter()
         .try_fold(from, |at, &direction| destination(world, at, direction))
         .ok_or("route to open ground leaves the walkable world")?;
-    let mut walks = vec![(0, path)];
+    let mut walks = vec![(leader, path)];
     let mut parked = vec![leader];
-    for (actor, bot) in bots.iter_mut().enumerate().skip(1) {
-        let here = tile(bot.client()?.world_spatial().actor_position)?;
+    for (actor, &here) in positions.iter().enumerate().skip(1) {
         let near = |at: TilePos| {
             !parked.contains(&at)
+                && bots::tile_available(&positions, actor, at)
                 && at.floor == leader.floor
                 && at.x.abs_diff(leader.x).max(at.y.abs_diff(leader.y)) <= 1
                 && open(at)
         };
-        let path = far_route(world, here, near)
-            .map_err(|reached| format!("MP peer approach has no reachable tile;walkable_reached={};start={here:?};leader={leader:?}", reached.len()))?;
-        parked.push(
-            path.iter()
-                .try_fold(here, |at, &direction| destination(world, at, direction))
-                .ok_or("peer route leaves the walkable world")?,
-        );
-        walks.push((actor, path));
+        let path = far_route(world, &positions, actor, near).map_err(|reached| {
+            format!("MP peer approach has no reachable tile;walkable_reached={reached};start={here:?};leader={leader:?}")
+        })?;
+        let goal = path
+            .iter()
+            .try_fold(here, |at, &direction| destination(world, at, direction))
+            .ok_or("peer route leaves the walkable world")?;
+        parked.push(goal);
+        walks.push((goal, path));
     }
-    bots::walk_group(bots, world, &walks).await?;
+    bots::walk_group(bots, world, walks).await?;
     evidence(&format!(
         "MP_CHECK MP09 hunt-arrived PASS leader={leader:?} peers within 1 tile on open ground outside the protection zone"
     ));
