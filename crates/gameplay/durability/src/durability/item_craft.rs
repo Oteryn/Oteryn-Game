@@ -568,12 +568,11 @@ async fn write<C: ItemLoopContent>(
     let full_backpack =
         occupied + output_count - i64::from(frees_output_slot) - i64::from(retires_ingredient)
             > i64::from(capacity);
-    let drop = if full_backpack
+    // The donor tries to give the present's gift before removing the present.
+    let drop = if occupied + output_count > i64::from(capacity)
         && conversion.recipe == event_containers::BLUE_PRESENT_RECIPE
         && definition.production_key == BLUE_PRESENT
         && consumed_quantity == 1
-        && quantity > 1
-        && nested_source.is_none()
         && request.ingredient.is_none()
         && output_count == 1
         && let CraftVariant::BluePresentDrop(drop) = variant

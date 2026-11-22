@@ -754,12 +754,30 @@ impl DurabilityRoot {
     }
 
     /// The `placement_key` of every entry taken in this World, Channel, base
-    /// bundle and reset epoch, ascending: the origins the overlay rebuild
-    /// re-hides, with a flag for a retired blocking cask. Read-only. More
-    /// than `max_entries` (the bundle's entry
+    /// bundle and reset epoch, ascending.
+    pub async fn read_map_item_mint_placements(
+        &self,
+        world: WorldId,
+        channel: ChannelId,
+        base_bundle_digest: [u8; 32],
+        reset_epoch: u64,
+        max_entries: usize,
+    ) -> Result<Vec<u64>> {
+        Ok(self
+            .read_map_item_mint_placement_states(
+                world, channel, base_bundle_digest, reset_epoch, max_entries,
+            )
+            .await?
+            .into_iter()
+            .map(|(key, _)| key)
+            .collect())
+    }
+
+    /// The taken origins with a flag for retired blocking casks. More than
+    /// `max_entries` (the bundle's entry
     /// count) is an invalid state, reported as `CapacityExceeded`, never
     /// truncated.
-    pub async fn read_map_item_mint_placements(
+    pub async fn read_map_item_mint_placement_states(
         &self,
         world_id: WorldId,
         channel_id: ChannelId,

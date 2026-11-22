@@ -58,7 +58,7 @@ pub(super) async fn nested_source(
 }
 
 pub const BLUE_PRESENT: &str = "oteryn:item.tibia.i6570";
-pub(super) const BLUE_PRESENT_RECIPE: &str = "oteryn:reward-bag.event_6570";
+pub(super) const BLUE_PRESENT_RECIPE: &str = "oteryn:event-container.6570";
 
 pub(super) struct DropAdmission<'a> {
     pub(super) target: &'a LoopGround,

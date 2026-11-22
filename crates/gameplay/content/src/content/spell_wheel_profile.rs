@@ -270,6 +270,10 @@ pub fn assignment_follows_source_order<'a>(
             }
             let replaced = used - u32::from(output[i]) + u32::from(next[i]);
             if replaced > available {
+                // Crystal clears the previous points before checking unused points.
+                // A retry therefore starts with this slot empty.
+                used -= u32::from(output[i]);
+                output[i] = 0;
                 return true;
             }
             used = replaced;

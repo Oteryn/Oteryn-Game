@@ -9,6 +9,62 @@ use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Position};
 use oteryn_protocol_oteryn::arena::{self as wire, ArenaAction, ArenaDisposition};
 
 #[test]
+fn arena_reset_proof_preserves_runtime_ground_removal_guard() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async move |_| {
+        let h = Harness::create(admin, "arena_removal_acl", true).await?;
+        super::item_look_fixtures::seed_main_backpack(&h, &[("oteryn:item.tibia.i3031", 1)])
+            .await?;
+        let mut tx = h.pool.begin().await?;
+        // Seed a plain Ground row, then exercise the real deferred deletion
+        // trigger as the role used by the runtime.
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(id(71).as_slice())
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query(
+            "INSERT INTO game_item_ground_locations(item_instance_id, world_id, channel_id,
+                runtime_scope_ownership_generation, spatial_position, corpse_ref, map_revision,
+                content_revision, native_room_placement_context, stack_ordinal)
+             VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,
+                1,decode('00000001000000010007','hex'),decode('01','hex'),'map','content',
+                decode('01','hex'),1)",
+        )
+        .bind(id(71).as_slice())
+        .bind(id(42).as_slice())
+        .bind(id(43).as_slice())
+        .execute(&mut *tx)
+        .await?;
+        sqlx::query("SET LOCAL session_replication_role=origin")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("DELETE FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(id(71).as_slice())
+            .execute(&mut *tx)
+            .await?;
+        let error = sqlx::query("SET CONSTRAINTS game_item_ground_removal_proven IMMEDIATE")
+            .execute(&mut *tx)
+            .await
+            .err()
+            .ok_or("the ordinary proof must reject a deletion without an owner receipt")?;
+        assert_eq!(
+            error.as_database_error().and_then(|error| error.code()).as_deref(),
+            Some("23514")
+        );
+        tx.rollback().await?;
+        h.cleanup().await
+    })
+}
+
+#[test]
 fn svargrond_pit_reset_retires_only_the_movable_top_item_under_current_lease() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -196,14 +252,36 @@ fn scenario() -> TestResult {
 
         let payload = wire::encode_match_request(ArenaAction::Enter).map_err(debug)?;
         let entry = admitted.continuity.next_command_id;
-        let (_, bytes) = super::guild_wire_fixtures::exchange(
+        let index = native.item_index().ok_or("native item index")?;
+        let barrier = std::sync::Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
+        let enter = super::guild_wire_fixtures::exchange(
             &owner,
             &mut admitted,
             entry,
             wire::COMMAND_TYPE_ARENA_MATCH,
             &payload,
-        )
-        .await?;
+        );
+        let rebuild = async {
+            tokio::time::timeout(std::time::Duration::from_secs(5), barrier.0.notified()).await?;
+            let result = async {
+                let ground = crate::gameplay_transport::loop_move::loop_ground(
+                    &owner, world.base(), Some(index),
+                ).await.ok_or("concurrent Ground rebuild")?;
+                assert_eq!(ground_roots(&h).await?, 4, "rebuild sees the pre-reset Ground");
+                Ok::<_, Box<dyn std::error::Error>>(ground)
+            }.await;
+            barrier.1.notify_one();
+            result
+        };
+        let (entered, rebuilt) = tokio::join!(
+            crate::gameplay_transport::arena_match::ARENA_ITEM_RESET_BARRIER.scope(
+                std::sync::Arc::clone(&barrier),
+                enter,
+            ),
+            rebuild,
+        );
+        let (_, bytes) = entered?;
+        let rebuilt = rebuilt?;
         let result = wire::decode_match_result(&bytes).map_err(debug)?;
         assert_eq!(result.disposition, ArenaDisposition::Applied);
         assert_eq!(result.state.pit, 1);
@@ -212,6 +290,13 @@ fn scenario() -> TestResult {
             ground_roots(&h).await?,
             3,
             "only the exposed top root retires"
+        );
+        let after = crate::gameplay_transport::loop_move::loop_ground(
+            &owner, world.base(), Some(index),
+        ).await.ok_or("post-reset Ground rebuild")?;
+        assert!(
+            !std::sync::Arc::ptr_eq(&rebuilt, &after),
+            "the committed reset invalidates the concurrent pre-reset projection",
         );
         let envelope: Vec<u8> = sqlx::query_scalar(
             "SELECT o.envelope FROM game_item_decay_retire_receipts r JOIN game_item_audit_outbox o USING(event_id)

@@ -3,7 +3,7 @@
 CREATE FUNCTION game_blue_present_ground_matches(
  r game_item_craft_records, o JSONB, g game_item_ground_locations
 ) RETURNS BOOLEAN LANGUAGE sql STABLE AS $$
- SELECT r.recipe='oteryn:reward-bag.event_6570'
+ SELECT r.recipe='oteryn:event-container.6570'
   AND r.created_xact_id=pg_current_xact_id()
   AND g.item_instance_id=(o->>'item')::uuid
   AND g.stack_ordinal=(o->>'ordinal')::bigint
@@ -22,9 +22,9 @@ BEGIN
  IF strpos(body,anchor)=0 THEN RAISE EXCEPTION 'missing craft output admission'; END IF;
  arm:=$arm$
   IF o ? 'ground' AND (
-      NEW.recipe<>'oteryn:reward-bag.event_6570' OR NOT NEW.consume_source
-      OR NEW.ingredient_item_instance_id IS NOT NULL OR NEW.event_source_location IS NOT NULL
-      OR i.definition_production_key<>'oteryn:item.tibia.i6570' OR i.quantity<=1
+      NEW.recipe<>'oteryn:event-container.6570' OR NOT NEW.consume_source
+      OR NEW.ingredient_item_instance_id IS NOT NULL
+      OR i.definition_production_key<>'oteryn:item.tibia.i6570'
       OR jsonb_array_length(NEW.outputs)<>1
       OR (o->>'ordinal')::bigint IS DISTINCT FROM currval('game_item_ground_stack_ordinal_seq')
       OR (o->'ground'->>'world_id')::uuid IS DISTINCT FROM NEW.world_id
@@ -42,7 +42,7 @@ BEGIN
            AND s.session_state=2 AND s.runtime_scope_kind=1 AND s.runtime_scope_world_id=NEW.world_id
            AND s.runtime_scope_channel_id=(o->'ground'->>'channel_id')::uuid
            AND s.scope_ownership_generation=(o->'ground'->>'runtime_scope_ownership_generation')::numeric)
-  ) THEN RAISE EXCEPTION 'Blue Present drop requires a retained carried stack and current Channel' USING ERRCODE='23514'; END IF;
+  ) THEN RAISE EXCEPTION 'Blue Present drop requires a carried present, a full backpack and current Channel' USING ERRCODE='23514'; END IF;
 $arm$;
  EXECUTE replace(body,anchor,anchor||arm);
 

@@ -212,6 +212,14 @@ async fn scenario(admin: String) -> TestResult {
         assert_eq!(landed.position().x, i32::from(mailbox_position.x) + 2);
     }
 
+    sqlx::query("ALTER TABLE game_mail_operations RENAME TO fixture_mail_operations_unavailable")
+        .execute(&harness.pool)
+        .await?;
+    let unavailable = post(500, &first, id(71), mailbox).await;
+    sqlx::query("ALTER TABLE fixture_mail_operations_unavailable RENAME TO game_mail_operations")
+        .execute(&harness.pool)
+        .await?;
+    assert_eq!(unavailable, None, "receipt read failure leaves the outcome unknown");
     assert_eq!(
         post(500, &first, id(71), mailbox).await,
         Some(MailOutcome::Posted),

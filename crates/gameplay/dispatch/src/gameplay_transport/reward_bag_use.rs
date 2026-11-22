@@ -174,7 +174,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return outcome(UseDisposition::Rejected);
             }
-            if carried.item.definition.production_key == BLUE_PRESENT && carried.item.quantity > 1 {
+            if carried.item.definition.production_key == BLUE_PRESENT {
                 self.blue_present_drop_tile(&runtime, actor, fence)
             } else {
                 None

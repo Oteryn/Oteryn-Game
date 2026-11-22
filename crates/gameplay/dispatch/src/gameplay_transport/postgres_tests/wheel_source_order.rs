@@ -151,6 +151,32 @@ fn wheel_save_mixed_refund_and_spend_respects_source_slot_retry_order() -> TestR
         .fetch_one(&h.pool)
         .await?;
         assert_eq!(receipts, 2);
+
+        let mut retry_before = initial;
+        retry_before[30] -= 51; // A partial blue tip does not open another slot.
+        retry_before[8] = 2;
+        retry_before[9] = 75;
+        retry_before[16] = 24;
+        assert_eq!(retry_before.iter().copied().map(u32::from).sum::<u32>(), 1950);
+        assert!(matches!(
+            save(request(174, 2, retry_before)?, true).await?,
+            WheelCommitOutcome::Committed(_)
+        ));
+
+        // The red centre refunds 50. The green spoke cannot afford 75, but
+        // Crystal clears its old 2 before retrying. That lets the other red
+        // spoke spend 51 and reopen the upper red spoke, whose refund then
+        // funds the green spend. The final allocation still uses 1,950.
+        let mut retry_after = retry_before;
+        retry_after[15] = 0;
+        retry_after[8] = 75;
+        retry_after[9] = 1;
+        retry_after[16] = 75;
+        let retry = request(175, 3, retry_after)?;
+        let WheelCommitOutcome::Committed(receipt) = save(retry, true).await? else {
+            return Err("the Wheel save must commit after the temporary refund".into());
+        };
+        assert_eq!(receipt.after, retry.slots);
         drop(authority);
         drop(seal);
         drop(gate);

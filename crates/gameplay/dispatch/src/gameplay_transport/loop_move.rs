@@ -660,7 +660,7 @@ pub async fn loop_ground(
     {
         projection_read(
             || {
-                admission.root.read_map_item_mint_placements(
+                admission.root.read_map_item_mint_placement_states(
                     world_id,
                     channel_id,
                     base.digest(),

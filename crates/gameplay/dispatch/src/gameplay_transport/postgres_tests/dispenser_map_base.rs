@@ -191,6 +191,18 @@ async fn scenario(admin: String) -> TestResult {
     .await?;
     assert_eq!(charges, 998);
     let cask_id: [u8; 16] = cask.as_slice().try_into()?;
+    let taken: Vec<u64> = harness
+        .root
+        .read_map_item_mint_placements(
+            deps.admitted.world_id,
+            deps.admitted.channel_id,
+            map.base().digest(),
+            0,
+            map.base().entry_count(),
+        )
+        .await
+        .map_err(debug)?;
+    assert_eq!(taken, [placement_key]);
     let ground = crate::gameplay_transport::loop_move::loop_ground(&owner, map.base(), Some(index))
         .await
         .ok_or("cask Ground projection")?;

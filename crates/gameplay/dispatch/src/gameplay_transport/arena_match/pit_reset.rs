@@ -63,6 +63,12 @@ fn reset_layout(
     Some(layout)
 }
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(in crate::gameplay_transport) static ARENA_ITEM_RESET_BARRIER:
+        std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
+}
+
 pub(super) async fn reset_items(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -151,10 +157,17 @@ pub(super) async fn reset_items(
         }
         items
     };
-    // Recovery may observe the visit committed after a lost acknowledgement.
-    // Force subsequent map reads through the durable Ground owner in either case.
+    // A concurrent LOOK can cache the old Ground while retirement is in flight.
+    // Invalidate again on completion or cancellation, including a lost acknowledgement.
+    let cache = (!items.is_empty()).then_some(&owner.states.loop_ground);
+    let _ground_change = super::super::loop_move::GroundChange(cache);
     if !items.is_empty() {
         owner.states.loop_ground.invalidate();
+    }
+    #[cfg(test)]
+    if let Ok(barrier) = ARENA_ITEM_RESET_BARRIER.try_with(std::sync::Arc::clone) {
+        barrier.0.notify_one();
+        barrier.1.notified().await;
     }
     owner
         .root
