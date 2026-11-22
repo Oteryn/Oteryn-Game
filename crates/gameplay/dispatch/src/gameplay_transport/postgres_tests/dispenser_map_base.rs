@@ -191,18 +191,19 @@ async fn scenario(admin: String) -> TestResult {
     .await?;
     assert_eq!(charges, 998);
     let cask_id: [u8; 16] = cask.as_slice().try_into()?;
-    let taken: Vec<u64> = harness
-        .root
-        .read_map_item_mint_placements(
+    let placement_states = || {
+        harness.root.read_map_item_mint_placement_states(
             deps.admitted.world_id,
             deps.admitted.channel_id,
             map.base().digest(),
             0,
             map.base().entry_count(),
         )
-        .await
-        .map_err(debug)?;
-    assert_eq!(taken, [placement_key]);
+    };
+    assert_eq!(
+        placement_states().await.map_err(debug)?,
+        [(placement_key, false)]
+    );
     let ground = crate::gameplay_transport::loop_move::loop_ground(&owner, map.base(), Some(index))
         .await
         .ok_or("cask Ground projection")?;
@@ -236,17 +237,32 @@ async fn scenario(admin: String) -> TestResult {
         use_with_map_item: Some(MapUseTarget::Item(3_u64.try_into()?)),
         ..map_intent.clone()
     };
-    let last = owner
-        .use_craft(
+    let acknowledged = std::sync::Arc::new(tokio::sync::Notify::new());
+    {
+        let fill = owner.use_craft(
             deps.actor,
             command(2),
             last_intent.clone(),
             Some(ItemKey::Instance(id(72))),
             Some(ItemKey::Instance(cask_id)),
-        )
+        );
+        let fill = crate::gameplay_transport::item_craft::DISPENSER_ACK_BARRIER
+            .scope(std::sync::Arc::clone(&acknowledged), fill);
+        tokio::pin!(fill);
+        tokio::select! {
+            result = &mut fill => return Err(format!("last charge returned before cancellation: {result:?}").into()),
+            ready = tokio::time::timeout(std::time::Duration::from_secs(5), acknowledged.notified()) => ready?,
+        }
+    }
+    let depleted = crate::gameplay_transport::loop_move::loop_ground(&owner, map.base(), Some(index))
         .await
-        .ok_or("last charge USE-WITH outcome")?;
-    assert_eq!(last.disposition, UseDisposition::Committed);
+        .ok_or("Ground projection after lost last-charge acknowledgement")?;
+    assert!(depleted.overlay().ground_entry(&cask_id).is_none());
+    assert!(map.enterable(pos));
+    assert_eq!(
+        placement_states().await.map_err(debug)?,
+        [(placement_key, true)]
+    );
     for (number, intent) in [(1, map_intent), (2, last_intent)] {
         let replay = owner
             .use_craft(deps.actor, command(number), intent, None, None)
