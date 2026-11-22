@@ -2473,6 +2473,39 @@ mod tests {
 
     /// Regenerate with tools/content-schema/quest-authoring/refresh_reward_hash_baselines.py.
     #[test]
+    fn sinatuki_first_hand_in_debits_the_source_quantity_and_grants_crystals() -> Result<(), String>
+    {
+        let callbacks = load()?;
+        for item in ["oteryn:item.tibia.i7158", "oteryn:item.tibia.i7159"] {
+            for quantity in [99, 100, 101] {
+                let carried = BTreeMap::from([(item.to_owned(), quantity)]);
+                let eligible: Vec<_> = callbacks
+                    .iter()
+                    .filter(|callback| {
+                        callback.npc == "oteryn:npc.sinatuki"
+                            && callback
+                                .storage
+                                .iter()
+                                .all(|r| (r.minimum..=r.maximum).contains(&-1))
+                            && callback.inventory.iter().all(|r| r.holds(&carried))
+                    })
+                    .collect();
+                assert_eq!(eligible.len(), 1, "{item} × {quantity}");
+                let callback = eligible[0];
+                assert!(callback.completes);
+                assert_eq!(callback.take[0].item, item);
+                assert_eq!(u64::from(callback.take[0].count), quantity.min(100));
+                let reward = callback.give.as_ref().ok_or("Sinatuki crystals")?;
+                assert_eq!(
+                    (reward.item.as_str(), reward.count),
+                    ("oteryn:item.tibia.i7290", 5)
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn published_ungated_quest_hash_baseline() -> Result<(), String> {
         let lowered = super::super::loader::load_embedded_quest_state("content-1")
             .map_err(|e| format!("{e:?}"))?;

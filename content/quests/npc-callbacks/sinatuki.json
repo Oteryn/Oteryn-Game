@@ -15,7 +15,7 @@
           "track": "oteryn:quest-progress/qc/sinatuki/fish",
           "minimum": -1,
           "maximum": -1,
-          "set": 1
+          "set": 2
         }
       ],
       "take": [
@@ -25,14 +25,19 @@
         }
       ],
       "present": [],
-      "give": null,
+      "give": {
+        "item": "oteryn:item.tibia.i7290",
+        "count": 5,
+        "contents": []
+      },
       "outfit": null,
-      "achievement": null,
+      "achievement": "oteryn:achievement/jamjam",
       "reply": [
         "Jinuma, suvituka siq chuqua!! Nguraka, nguraka! <happily takes the food from you>"
       ],
       "sources": [
         "https://tibia.fandom.com/index.php?title=Sinatuki_Quest/Spoiler&oldid=1003500",
+        "https://tibia.fandom.com/index.php?title=Jamjam&oldid=844221",
         "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/sinatuki.lua"
       ],
       "requires": [
@@ -51,17 +56,18 @@
         {
           "item": "oteryn:item.tibia.i7159",
           "minimum": 99,
-          "maximum": 1000000
+          "maximum": 99
         },
         {
           "item": "oteryn:item.tibia.i7158",
           "minimum": 0,
           "maximum": 98
         }
-      ]
+      ],
+      "completes": true
     },
     {
-      "key": "oteryn:quest-reward/qc-sinatuki-perch-last",
+      "key": "oteryn:quest-reward/qc-sinatuki-perch-100",
       "quest": "oteryn:quest.sinatuki_quest",
       "npc": "oteryn:npc.sinatuki",
       "keywords": [
@@ -72,15 +78,15 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/qc/sinatuki/fish",
-          "minimum": 1,
-          "maximum": 1,
+          "minimum": -1,
+          "maximum": -1,
           "set": 2
         }
       ],
       "take": [
         {
           "item": "oteryn:item.tibia.i7159",
-          "count": 1
+          "count": 100
         }
       ],
       "present": [],
@@ -114,13 +120,13 @@
       "inventory": [
         {
           "item": "oteryn:item.tibia.i7159",
-          "minimum": 1,
+          "minimum": 100,
           "maximum": 1000000
         },
         {
           "item": "oteryn:item.tibia.i7158",
           "minimum": 0,
-          "maximum": 0
+          "maximum": 98
         }
       ],
       "completes": true
@@ -139,7 +145,7 @@
           "track": "oteryn:quest-progress/qc/sinatuki/fish",
           "minimum": -1,
           "maximum": -1,
-          "set": 1
+          "set": 2
         }
       ],
       "take": [
@@ -149,14 +155,19 @@
         }
       ],
       "present": [],
-      "give": null,
+      "give": {
+        "item": "oteryn:item.tibia.i7290",
+        "count": 5,
+        "contents": []
+      },
       "outfit": null,
-      "achievement": null,
+      "achievement": "oteryn:achievement/jamjam",
       "reply": [
         "Jinuma, suvituka siq chuqua!! Nguraka, nguraka! <happily takes the food from you>"
       ],
       "sources": [
         "https://tibia.fandom.com/index.php?title=Sinatuki_Quest/Spoiler&oldid=1003500",
+        "https://tibia.fandom.com/index.php?title=Jamjam&oldid=844221",
         "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/sinatuki.lua"
       ],
       "requires": [
@@ -175,12 +186,13 @@
         {
           "item": "oteryn:item.tibia.i7158",
           "minimum": 99,
-          "maximum": 1000000
+          "maximum": 99
         }
-      ]
+      ],
+      "completes": true
     },
     {
-      "key": "oteryn:quest-reward/qc-sinatuki-trout-last",
+      "key": "oteryn:quest-reward/qc-sinatuki-trout-100",
       "quest": "oteryn:quest.sinatuki_quest",
       "npc": "oteryn:npc.sinatuki",
       "keywords": [
@@ -191,15 +203,15 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/qc/sinatuki/fish",
-          "minimum": 1,
-          "maximum": 1,
+          "minimum": -1,
+          "maximum": -1,
           "set": 2
         }
       ],
       "take": [
         {
           "item": "oteryn:item.tibia.i7158",
-          "count": 1
+          "count": 100
         }
       ],
       "present": [],
@@ -233,7 +245,7 @@
       "inventory": [
         {
           "item": "oteryn:item.tibia.i7158",
-          "minimum": 1,
+          "minimum": 100,
           "maximum": 1000000
         }
       ],

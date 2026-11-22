@@ -50,14 +50,14 @@ pub(super) async fn missing(
                AND l.quantity_after=0))
          ORDER BY i.item_instance_id LIMIT 6 FOR UPDATE OF i",
     ).bind(character).bind(&claims).bind(&recovery_keys[..]).fetch_all(&mut **tx).await?;
-    if item != "oteryn:item.tibia.i21770" {
-        return Ok(active.is_empty());
-    }
     let issued: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_reward_claims
          WHERE character_id=encode($1,'hex')::uuid AND claim_family='RewardClaim'
            AND claim_production_key=ANY($2::text[])",
     ).bind(character).bind(&claims).fetch_one(&mut **tx).await?;
+    if item != "oteryn:item.tibia.i21770" {
+        return Ok(issued > 0 && active.is_empty());
+    }
     let offered: i64 = sqlx::query_scalar(
         "SELECT value FROM game_character_quest_tracks
          WHERE character_id=encode($1,'hex')::uuid

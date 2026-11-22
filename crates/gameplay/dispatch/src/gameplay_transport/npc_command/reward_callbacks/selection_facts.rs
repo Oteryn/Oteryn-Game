@@ -17,7 +17,7 @@ pub(in crate::gameplay_transport::npc_command) fn needs_facts(
     ) else {
         return false;
     };
-    let text = callback_keyword(&context.2, &intent.text);
+    let text = callback_keyword(&admission.states.chat, &context.2, &intent.text);
     let Some(catalogue) = admission.quest_catalogue.as_deref() else {
         return false;
     };

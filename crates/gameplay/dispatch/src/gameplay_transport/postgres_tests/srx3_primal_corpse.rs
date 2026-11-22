@@ -44,6 +44,7 @@ fn srx3_w11_corpse_source_chain_policy_postgres() -> TestResult {
             let h =
                 Harness::create_with_admission_seed(admin, "srx3_w11_corpse", false, false).await?;
             for (root, expected, durations) in [
+                (50029, vec![50029, 50028, 50027], vec![60_000_i64; 3]),
                 (
                     5973,
                     vec![5973, 4025, 4026, 4027],

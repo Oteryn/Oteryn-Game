@@ -1,18 +1,23 @@
--- Crystal 201189f8 items.xml:20777–20802. The final remains do not decay.
+-- Crystal 201189f8 items.xml:20777–20802 and 84143–84158. Koshei’s final remains do not decay.
 DO $koshei_corpse_chain$
 DECLARE
     root CONSTANT TEXT := 'oteryn:item.tibia.i7535';
+    arbaziloth CONSTANT TEXT := 'oteryn:item.tibia.i50029';
     chain_anchor CONSTANT TEXT := 'WHEN ''oteryn:item.tibia.i54678'' THEN';
     duration_anchor CONSTANT TEXT := 'WHEN game_summer_corpse_chain(p_key) IS NOT NULL THEN';
     body TEXT;
 BEGIN
     IF game_summer_corpse_chain(root) = ARRAY[7535,7537,7538,7539,7540]
-        AND game_source_corpse_durations_v1(root) = ARRAY[10000,10000,300000,300000,0]::BIGINT[] THEN
+        AND game_source_corpse_durations_v1(root) = ARRAY[10000,10000,300000,300000,0]::BIGINT[]
+        AND game_summer_corpse_chain(arbaziloth) = ARRAY[50029,50028,50027]
+        AND game_source_corpse_durations_v1(arbaziloth) = ARRAY[60000,60000,60000]::BIGINT[] THEN
         RETURN;
     END IF;
     IF game_summer_corpse_chain(root) IS NOT NULL
-        OR game_source_corpse_durations_v1(root) IS NOT NULL THEN
-        RAISE EXCEPTION 'Koshei corpse root already has a source owner';
+        OR game_source_corpse_durations_v1(root) IS NOT NULL
+        OR game_summer_corpse_chain(arbaziloth) IS NOT NULL
+        OR game_source_corpse_durations_v1(arbaziloth) IS NOT NULL THEN
+        RAISE EXCEPTION 'Koshei or Arbaziloth corpse root already has a source owner';
     END IF;
 
     body := pg_get_functiondef('game_summer_corpse_chain(text)'::regprocedure);
@@ -20,18 +25,22 @@ BEGIN
         RAISE EXCEPTION 'Existing corpse registry anchor changed';
     END IF;
     EXECUTE replace(body, chain_anchor,
-        'WHEN ''oteryn:item.tibia.i7535'' THEN ARRAY[7535,7537,7538,7539,7540] ' || chain_anchor);
+        'WHEN ''oteryn:item.tibia.i7535'' THEN ARRAY[7535,7537,7538,7539,7540] '
+        || 'WHEN ''oteryn:item.tibia.i50029'' THEN ARRAY[50029,50028,50027] ' || chain_anchor);
 
     body := pg_get_functiondef('game_source_corpse_durations_v1(text)'::regprocedure);
     IF (length(body)-length(replace(body,duration_anchor,'')))/length(duration_anchor) <> 1 THEN
         RAISE EXCEPTION 'Existing corpse duration registry anchor changed';
     END IF;
     EXECUTE replace(body, duration_anchor,
-        'WHEN p_key=''oteryn:item.tibia.i7535'' THEN ARRAY[10000,10000,300000,300000,0]::BIGINT[] ' || duration_anchor);
+        'WHEN p_key=''oteryn:item.tibia.i7535'' THEN ARRAY[10000,10000,300000,300000,0]::BIGINT[] '
+        || 'WHEN p_key=''oteryn:item.tibia.i50029'' THEN ARRAY[60000,60000,60000]::BIGINT[] ' || duration_anchor);
 
     IF game_summer_corpse_chain(root) IS DISTINCT FROM ARRAY[7535,7537,7538,7539,7540]
-        OR game_source_corpse_durations_v1(root) IS DISTINCT FROM ARRAY[10000,10000,300000,300000,0]::BIGINT[] THEN
-        RAISE EXCEPTION 'Koshei corpse chain diverges from its source policy';
+        OR game_source_corpse_durations_v1(root) IS DISTINCT FROM ARRAY[10000,10000,300000,300000,0]::BIGINT[]
+        OR game_summer_corpse_chain(arbaziloth) IS DISTINCT FROM ARRAY[50029,50028,50027]
+        OR game_source_corpse_durations_v1(arbaziloth) IS DISTINCT FROM ARRAY[60000,60000,60000]::BIGINT[] THEN
+        RAISE EXCEPTION 'Koshei or Arbaziloth corpse chain diverges from its source policy';
     END IF;
 END $koshei_corpse_chain$;
 

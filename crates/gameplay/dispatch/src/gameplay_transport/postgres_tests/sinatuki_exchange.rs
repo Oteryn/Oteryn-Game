@@ -161,11 +161,7 @@ fn scenario(resume: bool) -> TestResult {
             &["Chuqua jamjam!! Tiyopa Sinatuki?"],
         )
         .await?;
-        let (fish, expected) = if resume {
-            (PERCH, [0, 1, 0])
-        } else {
-            (TROUT, [1, 0, 0])
-        };
+        let fish = if resume { PERCH } else { TROUT };
 
         if !resume {
             add_item(&h, 201, WRONG, 100, 1).await?;
@@ -179,10 +175,17 @@ fn scenario(resume: bool) -> TestResult {
         assert_eq!(carried(&h, fish).await?, 98, "short hand-in is kept");
         assert_eq!(quest_state(&h).await?, (None, false, 0));
 
-        add_item(&h, 203, fish, 2, 3).await?;
-        talk(&mut owner, &mut admitted, npc, "nupi", &[HAND_IN]).await?;
-        assert_inventory(&h, expected).await?;
-        assert_eq!(quest_state(&h).await?, (Some(1), false, 0));
+        add_item(&h, 203, fish, if resume { 2 } else { 1 }, 3).await?;
+        talk(
+            &mut owner,
+            &mut admitted,
+            npc,
+            if resume { "nupi please" } else { "nupi" },
+            &[if resume { REWARD } else { HAND_IN }],
+        )
+        .await?;
+        assert_inventory(&h, [0, 0, 5]).await?;
+        assert_eq!(quest_state(&h).await?, (Some(2), true, 1));
 
         if resume {
             talk(
@@ -206,9 +209,6 @@ fn scenario(resume: bool) -> TestResult {
             owner.admit_quest_session(&admitted).await;
         }
 
-        talk(&mut owner, &mut admitted, npc, "nupi", &[REWARD]).await?;
-        assert_inventory(&h, [0, 0, 5]).await?;
-        assert_eq!(quest_state(&h).await?, (Some(2), true, 1));
         add_item(&h, 204, fish, 100, 4).await?;
         talk(&mut owner, &mut admitted, npc, "nupi", &[]).await?;
         assert_eq!(

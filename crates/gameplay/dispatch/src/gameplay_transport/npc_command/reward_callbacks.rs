@@ -148,7 +148,7 @@ pub(super) fn prepare(
         intent,
         runtime,
         |context, topic, _, tracks| {
-            let text = callback_keyword(&context.2, &intent.text);
+            let text = callback_keyword(&admission.states.chat, &context.2, &intent.text);
             let meets_level = |minimum: Option<u32>| {
                 minimum.is_none_or(|minimum| inventory.is_some_and(|facts| facts.level >= minimum))
             };
@@ -395,6 +395,11 @@ pub(super) fn unhandled_confirmation(
     ) else {
         return false;
     };
+    let text = if sinatuki_keyword(&admission.states.chat, &context.2, &intent.text) {
+        "nupi".to_owned()
+    } else {
+        text
+    };
     if admission.has_pending_paid_confirmation(command, intent, &context) {
         return false;
     }
@@ -430,7 +435,15 @@ pub(super) fn unhandled_confirmation(
     })
 }
 
-fn callback_keyword(npc: &str, text: &str) -> String {
+fn sinatuki_keyword(chat: &ChatRuntime, npc: &str, text: &str) -> bool {
+    npc == crate::durability::npc_trade::sinatuki_exchange::NPC
+        && super::npc_item_exchanges::sinatuki_default_keyword(chat, text)
+}
+
+fn callback_keyword(chat: &ChatRuntime, npc: &str, text: &str) -> String {
+    if sinatuki_keyword(chat, npc, text) {
+        return "nupi".into();
+    }
     use oteryn_gameplay_quests::quest::classic_talk;
     if npc == classic_talk::ROTTIN {
         return classic_talk::rottin_keyword(text)

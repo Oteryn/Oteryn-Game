@@ -60,6 +60,16 @@ fn recipe(npc: &str) -> Option<&'static Recipe> {
     }
 }
 
+pub(super) fn sinatuki_default_keyword(chat: &ChatRuntime, text: &str) -> bool {
+    oteryn_gameplay_npc::greeting::words(text)
+        .iter()
+        .any(|word| word == "nupi")
+        && chat
+            .npc_talk()
+            .and_then(|book| book.get(sinatuki_exchange::NPC))
+            .is_none_or(|entry| !entry.matches_focus_or_dialogue(text))
+}
+
 pub(super) async fn talk(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -81,15 +91,8 @@ pub(super) async fn talk(
         intent.npc_actor,
     );
     let yes = intent.text.trim().eq_ignore_ascii_case("yes");
-    let nupi = oteryn_gameplay_npc::greeting::words(&intent.text)
-        .iter()
-        .any(|word| word == "nupi");
     let chat = &admission.states.chat;
-    let fish_default_message = nupi
-        && chat
-            .npc_talk()
-            .and_then(|book| book.get(sinatuki_exchange::NPC))
-            .is_none_or(|entry| !entry.matches_focus_or_dialogue(&intent.text));
+    let fish_default_message = sinatuki_default_keyword(chat, &intent.text);
     // Exact durable replay precedes the live NPC, inventory and conversation. A removed
     // source or ended dialogue cannot make a committed exchange run a second time.
     if (yes || fish_default_message)

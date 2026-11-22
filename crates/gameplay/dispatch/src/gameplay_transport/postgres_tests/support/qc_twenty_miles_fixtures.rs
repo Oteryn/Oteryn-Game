@@ -612,9 +612,38 @@ pub(super) async fn exercise(
             QUEST,
             LEGACY_HASH,
             STAGE,
-            19,
+            20,
         )
         .await?;
+        // Stage 20 is reachable by showing a borrowed Sea Ear. After it is
+        // returned, the old save has progress but no issue to replace.
+        let recovery_key = "oteryn:quest-reward/qc-twenty-miles-recover-sea-ear-after-report";
+        let callback = callbacks
+            .iter()
+            .find(|c| c.key == recovery_key)
+            .ok_or(recovery_key)?;
+        stand_near(owner, admitted, NPCS[1].1).await?;
+        let (disposition, _, _) = super::qengine_rewards_fixtures::wire_conversation(
+            owner,
+            admitted,
+            npcs[1],
+            callback,
+            false,
+            vec!["hi", "lost sea ear"],
+        )
+        .await?;
+        assert_eq!(disposition, NpcIntentDisposition::Rejected);
+        let replacements: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_quest_reward_sources WHERE transition_key=$1",
+        )
+        .bind(recovery_key)
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(replacements, 0);
+        super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+            h, owner, admitted, &[(STAGE.to_owned(), 19)], 121,
+        ).await?;
+        owner.refresh_quest_session(admitted.game_session_id, false).await;
         owner.states.quest_callbacks.phase_read_unavailable.store(
             true, std::sync::atomic::Ordering::Release,
         );

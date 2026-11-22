@@ -349,7 +349,7 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
                 .await?;
         assert_eq!(result, UseDisposition::KeyMismatch);
         assert_eq!(map.facts().doors().revision(placement_key), 0);
-        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+        owner.clock_origin -= crate::gameplay_transport::map_door::WORLD_USE_WITH_COOLDOWN;
         let (next, result, replay) =
             super::item_craft_fixtures::exchange(&owner, next, 2, &payload, reference(key_item)).await?;
         assert_eq!(result, UseDisposition::Committed);
@@ -389,7 +389,7 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
         assert_eq!(inventory.key_action(id(72)), Some(key_action + 1));
         station.expected_revision = 1;
         let payload = encode_item_use_intent(&intent(station.clone())).map_err(debug)?;
-        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+        owner.clock_origin -= crate::gameplay_transport::map_door::WORLD_USE_WITH_COOLDOWN;
         let (next, result, _) =
             super::item_craft_fixtures::exchange(&owner, next, 3, &payload, reference(key_item)).await?;
         assert_eq!(result, UseDisposition::Committed);
@@ -400,12 +400,12 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
         station.expected_revision = 2;
         let payload =
             oteryn_protocol_oteryn::world_object::encode_use_intent(&station).map_err(debug)?;
-        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+        owner.clock_origin -= crate::gameplay_transport::map_door::WORLD_ACTION_COOLDOWN;
         let (next, result, _) =
             super::item_craft_fixtures::exchange(&owner, next, 4, &payload, None).await?;
         assert_eq!(result, UseDisposition::Locked);
         let payload = encode_item_use_intent(&intent(station)).map_err(debug)?;
-        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+        owner.clock_origin -= crate::gameplay_transport::map_door::WORLD_USE_WITH_COOLDOWN;
         let (_, result, _) =
             super::item_craft_fixtures::exchange(&owner, next, 5, &payload, reference(key_item)).await?;
         assert_eq!(result, UseDisposition::Committed);
