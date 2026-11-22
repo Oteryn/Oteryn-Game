@@ -161,7 +161,11 @@ pub(super) async fn trade(
         Ok(Some(receipt)) if answers(&receipt, &intent, sell_all) => {
             return Ok(SoldUnits {
                 units: receipt.quantity,
-                gold: u64::from(receipt.quantity).saturating_mul(receipt.unit_price),
+                gold: if receipt.item_currency {
+                    0
+                } else {
+                    u64::from(receipt.quantity).saturating_mul(receipt.unit_price)
+                },
             });
         }
         Ok(None) => {}
@@ -277,6 +281,20 @@ pub(super) async fn trade(
         .and_then(ActiveGeneration::native_gameplay)
     else {
         return Err(Box::new(NpcTradeStep::rejected()));
+    };
+    let currency = match &offer.currency {
+        Some(currency) => {
+            let definition = TypedDefinitionRef {
+                family: ITEM_FAMILY.to_owned(),
+                production_key: currency.key.clone(),
+                revision_ref: currency.revision.clone(),
+            };
+            let Ok(facts) = generation_item_facts(native, &definition) else {
+                return Err(Box::new(NpcTradeStep::rejected()));
+            };
+            Some(facts)
+        }
+        None => None,
     };
     let target = TypedDefinitionRef {
         family: ITEM_FAMILY.to_owned(),
@@ -427,6 +445,24 @@ pub(super) async fn trade(
                 request,
                 selection,
                 sell_all,
+            )
+            .await
+    } else if let Some(currency) = currency {
+        let weights = super::item_ref_admission::NativeItemWeights(native)
+            .with_wheel(admission.premium_coordinator);
+        admission
+            .root
+            .commit_npc_item_currency_trade(
+                admission.character,
+                admission.holder,
+                fence,
+                request,
+                npc_trade::ItemCurrencyPayment {
+                    currency,
+                    sell_all,
+                    weights: &weights,
+                    yasir_position,
+                },
             )
             .await
     } else if request.cause.side == npc_trade::NpcTradeSide::Buy {

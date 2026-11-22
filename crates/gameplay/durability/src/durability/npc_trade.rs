@@ -78,15 +78,18 @@ use sqlx::Row;
 type Result<T> = std::result::Result<T, NpcTradeError>;
 const REQUEST_BINDING_VERSION: u8 = 1;
 mod hireling;
+pub(super) mod item_currency;
 mod quest_access;
 pub(super) mod sell_hireling;
 pub use hireling::{HirelingPackageSelection, HirelingTradeSelection};
+pub use item_currency::ItemCurrencyPayment;
 
 #[derive(Default)]
 struct TradeCommitOptions<'a> {
     sell_all: bool,
     hireling: Option<hireling::Extra>,
     weights: Option<&'a dyn super::item_transfer::ItemWeightLookup>,
+    currency: Option<ItemDefinitionFacts>,
     /// Source coordinates captured from the exact live NPC by the normal trade caller.
     yasir_position: Option<(u16, u16, i8)>,
     yeo_position: Option<(u16, u16, i8)>,
@@ -192,6 +195,7 @@ pub struct CommittedNpcTrade {
 /// server price it was charged at.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NpcTradeReceipt {
+    pub item_currency: bool,
     pub npc_key: String,
     pub catalogue_revision: u64,
     pub offer_index: u32,
@@ -778,7 +782,8 @@ impl DurabilityRoot {
                     lock_occurrence(&mut tx, &occurrence).await?;
                     let Some(row) = sqlx::query(
                         "SELECT occurrence_id::text, npc_key, catalogue_revision::text, \
-                                offer_index, side, quantity, unit_price::text, sell_all \
+                                offer_index, side, quantity, unit_price::text, sell_all, \
+                                currency_key IS NOT NULL AS item_currency \
                            FROM game_npc_trades \
                           WHERE game_session_id = encode($1,'hex')::uuid \
                             AND command_id = $2::text::numeric(20,0) \
@@ -803,6 +808,7 @@ impl DurabilityRoot {
                         _ => return Err(DurabilityError::InvalidStoredState),
                     };
                     let receipt = NpcTradeReceipt {
+                        item_currency: row.try_get("item_currency")?,
                         npc_key: row.try_get("npc_key")?,
                         catalogue_revision: numeric_u64(&row, "catalogue_revision")?,
                         offer_index: u32::try_from(row.try_get::<i32, _>("offer_index")?)
@@ -993,6 +999,7 @@ impl DurabilityRoot {
             sell_all,
             hireling,
             weights,
+            currency,
             yasir_position,
             yeo_position,
         } = options;
@@ -1013,6 +1020,9 @@ impl DurabilityRoot {
             yasir_position,
         );
         binding = yeo::bind(binding, yeo_position);
+        if let Some(currency) = &currency {
+            binding = item_currency::bind(binding, &currency.definition);
+        }
         if let Some(source) = &hireling {
             binding = source.bind(binding);
         }
@@ -1163,7 +1173,9 @@ impl DurabilityRoot {
                         } else { pick_exchange::fits(&mut tx, fence, *weights, &[(pick_exchange::input(), 1)], (pick_exchange::output(), 1)).await? };
                         if !fits { return Ok(Err(NpcTradeError::DoesNotFit)); }
                     }
-                    let plan = if let Some(plan) = fish_plan { Ok(plan) } else if yeo_position.is_some() {yeo::plan(&request,capacity,&entries,tx.tuple().tuple()).map(|plan|(plan,0,1))} else if hireling_sell {sell_hireling::plan(&request,priced,capacity,&entries)} else {match (priced, request.cause.side) {
+                    let plan = if let Some(currency) = &currency {
+                        item_currency::plan(&request, currency, priced, capacity, &entries)
+                    } else if let Some(plan) = fish_plan { Ok(plan) } else if yeo_position.is_some() {yeo::plan(&request,capacity,&entries,tx.tuple().tuple()).map(|plan|(plan,0,1))} else if hireling_sell {sell_hireling::plan(&request,priced,capacity,&entries)} else {match (priced, request.cause.side) {
                         (None, _) => plan_sell_all(&request, capacity, &entries),
                         (Some((total, units)), NpcTradeSide::Buy) => plan_buy(&request, total, units, capacity, &entries, tx.tuple().tuple(), super::bank::fee_payer_is_junior(fence.character_id))
                             .map(|plan| (plan, total, units)),
@@ -1201,7 +1213,12 @@ impl DurabilityRoot {
                         && let Err(error) = source.package_preflight(&mut tx, &fence, &request, *weights, &plan, (entries.len(), capacity)).await {
                         return Ok(Err(error));
                     }
-                    if hireling.is_none() && request.cause.side == NpcTradeSide::Buy
+                    if let Some(currency) = &currency {
+                        let Some(weights) = *weights else { return Ok(Err(NpcTradeError::InvalidInput)); };
+                        let weight_check = buy_weight_bounds(&mut tx, &fence, weights).await
+                            .and_then(|bounds| item_currency::fits(bounds, &request, currency, &plan));
+                        if let Err(error) = weight_check { return Ok(Err(error)); }
+                    } else if hireling.is_none() && request.cause.side == NpcTradeSide::Buy
                         && let Some(weights) = *weights {
                         let Some(unit_weight) = request.item.weight else {
                             return Ok(Err(NpcTradeError::InvalidInput));
@@ -1241,7 +1258,7 @@ impl DurabilityRoot {
                         &backpack,
                         &request,
                         (quantity, total, sell_all),
-                        (&plan, fish.as_ref()),
+                        (&plan, fish.as_ref(), currency.as_ref().map(|facts| &facts.definition)),
                     );
                     message.hireling_package=hireling.as_ref().and_then(|source|source.package_audit(world_id,plan.item_instance_id));
                     message.house_key=house_key.clone();
@@ -1267,7 +1284,7 @@ impl DurabilityRoot {
                         &request,
                         (quantity, total, units, sell_all),
                         &binding,
-                        &plan,
+                        (&plan, currency.as_ref().map(|facts| &facts.definition)),
                         &envelope,
                         tuple,
                         house_key.as_deref(),
@@ -1354,6 +1371,28 @@ async fn lock_entries(
         .collect()
 }
 
+fn trade_line_definition<'a>(
+    request: &'a NpcTradeRequest,
+    line: &NpcTradeLine,
+    currency: Option<&'a TypedDefinitionRef>,
+) -> &'a TypedDefinitionRef {
+    if let Some(currency) = currency
+        && item_currency::currency_line(request.cause.side, line)
+    {
+        currency
+    } else {
+        yeo::definition(request, line)
+    }
+}
+
+fn audit_definition(definition: &TypedDefinitionRef) -> OneItemTypedDefinitionRevisionV1 {
+    OneItemTypedDefinitionRevisionV1 {
+        family: definition.family.clone(),
+        production_key: definition.production_key.clone(),
+        revision_ref: definition.revision_ref.clone(),
+    }
+}
+
 /// The audit payload of a materialized trade.
 fn trade_message(
     fence: &CurrentCharacterItemFence,
@@ -1362,7 +1401,11 @@ fn trade_message(
     backpack: &[u8; 16],
     request: &NpcTradeRequest,
     (quantity, total, sell_all): (u32, u64, bool),
-    (plan, fish): (&Plan, Option<&TypedDefinitionRef>),
+    (plan, fish, currency): (
+        &Plan,
+        Option<&TypedDefinitionRef>,
+        Option<&TypedDefinitionRef>,
+    ),
 ) -> OneItemNpcTradeV1 {
     let definition = |line: &NpcTradeLine| match line.coin {
         Some(coin) => request.coins.of(coin),
@@ -1379,16 +1422,12 @@ fn trade_message(
                 pick_exchange::input()
             }
         }
-        None => yeo::definition(request, line),
+        None => trade_line_definition(request, line, currency),
     };
     let state = |line: &NpcTradeLine, quantity: u32| OneItemStateV1 {
         item_instance_id: line.item_instance_id.to_vec(),
         world_id: world_id.as_bytes().to_vec(),
-        definition: Some(OneItemTypedDefinitionRevisionV1 {
-            family: definition(line).family.clone(),
-            production_key: definition(line).production_key.clone(),
-            revision_ref: definition(line).revision_ref.clone(),
-        }),
+        definition: Some(audit_definition(definition(line))),
         quantity,
         lifecycle: if quantity == 0 {
             ITEM_LIFECYCLE_RETIRED
@@ -1399,6 +1438,7 @@ fn trade_message(
     };
     let cause = &request.cause;
     OneItemNpcTradeV1 {
+        item_currency: currency.map(audit_definition),
         fluid_subtype: request.fluid_subtype.map(u32::from),
         full_charges: request.full_charges.map(u32::from),
         cause: Some(OneItemNpcTradeCauseV1 {
@@ -1452,7 +1492,7 @@ async fn apply_trade(
     request: &NpcTradeRequest,
     (quantity, total, units, sell_all): (u32, u64, u32, bool),
     binding: &[u8],
-    plan: &Plan,
+    (plan, currency): (&Plan, Option<&TypedDefinitionRef>),
     envelope: &[u8],
     tuple: Type2EventTuple,
     house_key: Option<&str>,
@@ -1468,14 +1508,14 @@ async fn apply_trade(
            item_definition_production_key, item_definition_revision_ref, item_instance_id, \
            item_units, backpack_item_instance_id, burned_gold_units, minted_gold_units, \
            line_count, occurred_at, envelope_sha256, committed_at, bank_debit_gold_units, \
-           sell_all, house_key, fluid_subtype, full_charges) \
+           sell_all, house_key, fluid_subtype, full_charges, currency_key, currency_revision) \
          VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, \
            encode($4,'hex')::uuid, $5::text::numeric(20,0), encode($6,'hex')::uuid, $7, \
            encode($8,'hex')::uuid, encode($9,'hex')::uuid, $10::text::numeric(20,0), $11, \
            $12::text::numeric(20,0), $13, $14, $15, $16, $17, $18, $19, $20, \
            encode($21,'hex')::uuid, $22, encode($23,'hex')::uuid, $24, $25, $26, $27, \
            sha256($28), floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $29, \
-           $30, $31, ($32::integer[])[1]::smallint, ($32::integer[])[2])",
+           $30, $31, ($32::integer[])[1]::smallint, ($32::integer[])[2], $33, $34)",
     )
     .bind(request.transaction_id.as_slice())
     .bind(request.event_id.as_slice())
@@ -1512,11 +1552,13 @@ async fn apply_trade(
         request.fluid_subtype.map(i32::from),
         request.full_charges.map(i32::from),
     ])
+    .bind(currency.map(|definition| definition.production_key.as_str()))
+    .bind(currency.map(|definition| definition.revision_ref.as_str()))
     .execute(&mut **tx)
     .await?;
 
     for (ordinal, line) in (1_i16..).zip(&plan.lines) {
-        let definition = yeo::definition(request, line);
+        let definition = trade_line_definition(request, line, currency);
         if line_is_burn(line.kind) {
             let changed = sqlx::query(
                 "UPDATE game_item_instances \
@@ -1604,6 +1646,7 @@ async fn apply_trade(
         .execute(&mut **tx)
         .await?;
         if line.kind == NpcTradeLineKind::ItemMint
+            && (currency.is_none() || !item_currency::currency_line(request.cause.side, line))
             && let Some(subtype) = request.fluid_subtype.filter(|s| *s != 0)
         {
             sqlx::query("INSERT INTO game_item_fluid_states(item_instance_id,world_id,fluid_subtype,last_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid)")

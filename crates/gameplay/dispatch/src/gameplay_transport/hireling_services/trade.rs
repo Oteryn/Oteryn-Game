@@ -172,6 +172,7 @@ pub(in crate::gameplay_transport) fn resolve_trade(
     let item_key = format!("oteryn:item.tibia.i{}", row.item_id);
     let item_revision = items.revision(&item_key).ok_or_else(stale)?.to_owned();
     Ok(NpcTradeOffer {
+        currency: None,
         sub_type: None,
         npc_key: key.into(),
         catalogue_revision: window.revision,

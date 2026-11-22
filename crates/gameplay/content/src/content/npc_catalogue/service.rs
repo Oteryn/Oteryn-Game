@@ -287,7 +287,18 @@ fn count_of(offer: &ProjectV2ServiceOffer) -> u32 {
 
 /// The per-offer rules of NPC-0 section 3.4, in order, before the cross-offer arbitrage rule.
 fn classify(offer: &ProjectV2ServiceOffer, facts: &dyn NpcItemFacts) -> Option<NpcOfferHeldReason> {
-    if offer.currency.is_some() {
+    // The reference catalogue may know the currency's identity without its stack facts.
+    // Settlement requires the exact active native Item profile and a proven carried stack.
+    if let Some(currency) = &offer.currency
+        && (currency.family != ProjectV2Family::Item
+            || currency.key == offer.item.key
+            || !facts.known(&currency.key)
+            || offer.unit_price == 0
+            || facts.charged(&currency.key)
+            || facts.fluid(&currency.key)
+            || oteryn_gameplay_domain::domain::currency::Coin::from_production_key(&currency.key)
+                .is_some())
+    {
         return Some(NpcOfferHeldReason::NonGoldCurrency);
     }
     let key = offer.item.key.as_str();
@@ -312,7 +323,8 @@ fn classify(offer: &ProjectV2ServiceOffer, facts: &dyn NpcItemFacts) -> Option<N
     } else if count != 1 {
         return Some(NpcOfferHeldReason::CountOutOfRange);
     }
-    if offer.direction == ProjectV2ServiceOfferDirection::SellToPlayer
+    if offer.currency.is_none()
+        && offer.direction == ProjectV2ServiceOfferDirection::SellToPlayer
         && offer.unit_price > NPC_SELL_PRICE_COIN_CAPACITY
         && facts.default_charges(key).is_none()
     {
@@ -335,6 +347,16 @@ fn classify(offer: &ProjectV2ServiceOffer, facts: &dyn NpcItemFacts) -> Option<N
         return Some(NpcOfferHeldReason::ChargedOrFluidPending);
     }
     None
+}
+
+fn price_book_key(
+    offer: &ProjectV2ServiceOffer,
+) -> (
+    &ProjectV2DefinitionRef,
+    Option<u16>,
+    Option<&ProjectV2DefinitionRef>,
+) {
+    (&offer.item, offer.sub_type, offer.currency.as_ref())
 }
 
 /// `left` pays strictly more per unit than `right`, as an exact rational.
@@ -394,8 +416,7 @@ pub fn build(
     let records = records.as_slice();
     // Pass 1: per-offer rules. Pass 2: arbitrage over the offers still admitted.
     let mut services: BTreeMap<ProjectV2DefinitionRef, NpcServiceEntry> = BTreeMap::new();
-    let mut lowest_sell: BTreeMap<(&ProjectV2DefinitionRef, Option<u16>), (u64, u32)> =
-        BTreeMap::new();
+    let mut lowest_sell = BTreeMap::<_, (u64, u32)>::new();
     let mut classified: Vec<ClassifiedService<'_>> = Vec::new();
     for &(reference, declaration) in records {
         let ProjectV2Declaration::Service {
@@ -423,7 +444,7 @@ pub fn build(
             if held.is_none() && offer.direction == ProjectV2ServiceOfferDirection::SellToPlayer {
                 let unit = (offer.unit_price, count_of(offer));
                 lowest_sell
-                    .entry((&offer.item, offer.sub_type))
+                    .entry(price_book_key(offer))
                     .and_modify(|best| {
                         // unit.0 / unit.1 < best.0 / best.1
                         if u128::from(unit.0) * u128::from(best.1)
@@ -445,7 +466,7 @@ pub fn build(
             let held = held.or_else(|| {
                 (offer.direction == ProjectV2ServiceOfferDirection::BuyFromPlayer
                     && lowest_sell
-                        .get(&(&offer.item, offer.sub_type))
+                        .get(&price_book_key(offer))
                         .is_some_and(|lowest| pays_more(offer, *lowest)))
                 .then_some(NpcOfferHeldReason::ArbitragePaying)
             });

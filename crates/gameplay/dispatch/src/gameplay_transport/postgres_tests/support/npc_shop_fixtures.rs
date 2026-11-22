@@ -372,7 +372,10 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
         let book = NpcTalkBook::from_model(&model)
             .with(
                 trader,
-                NpcTalkEntry::new(if token_buy { "Cledwyn" } else { "Alice" }, Some("Welcome."))
+                NpcTalkEntry::new(
+                    if token_buy { "Cledwyn" } else { "Alice" },
+                    Some(if token_buy { "Cledwyn trades." } else { "Alice trades." }),
+                )
                     .with_offers(offers),
             )
             .with(
@@ -524,10 +527,20 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
             assert_eq!(carried(&h).await?, expected);
             let committed = footprint(&h).await?;
             assert_eq!((committed.0, committed.1), (1, 3));
-            let (paid, minted, bank): (i64, i64, i64) = sqlx::query_as(
-                "SELECT burned_gold_units, minted_gold_units, bank_debit_gold_units FROM game_npc_trades",
+            let (key, total, paid, minted, bank): (String, i64, i64, i64, i64) = sqlx::query_as(
+                "SELECT currency_key, total_gold_units, burned_gold_units, minted_gold_units, bank_debit_gold_units FROM game_npc_trades",
             ).fetch_one(&h.pool).await?;
-            assert_eq!((paid, minted, bank), (0, 0, 0));
+            assert_eq!(key, if token_buy { SILVER } else { GOLD_TOKEN });
+            assert_eq!((total, paid, minted, bank), (0, 0, 0, 0));
+            let envelope: Vec<u8> = sqlx::query_scalar(
+                "SELECT a.envelope FROM game_item_audit_outbox a JOIN game_npc_trades t USING (event_id)",
+            ).fetch_one(&h.pool).await?;
+            let (_, event) = crate::durability::npc_trade_audit::decode_npc_trade_envelope(&envelope)
+                .map_err(debug)?;
+            assert_eq!(
+                event.item_currency.map(|currency| currency.production_key),
+                Some(key),
+            );
 
             // The other token type and ordinary gold are still available in the buy case.
             // Neither lets the new command spend what is missing from its exact currency.
