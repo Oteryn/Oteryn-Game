@@ -1,5 +1,6 @@
 //! Shared contributions through the normal NPC travel, exchange and map USE owners.
 use super::TestResult;
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 
 #[test]
 fn swamp_fever_medicine_exchange_advances_phase_once_and_resets_at_save() -> TestResult {
