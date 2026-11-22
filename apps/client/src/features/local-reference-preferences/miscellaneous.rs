@@ -1,5 +1,6 @@
 //! Local confirmations and session choices; Platform retains all session authority.
 use serde::{Deserialize, Serialize};
+use std::{io, path::Path};
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct MiscellaneousPreferences {
@@ -30,6 +31,21 @@ impl MiscellaneousPreferences {
             .unwrap_or_default()
     }
     pub fn read(path: &std::path::Path) -> std::io::Result<Self> {
+        if path.with_added_extension("opt-out").try_exists()? {
+            match crate::atomic_file::try_lock(path) {
+                Ok(_lock) => Self::replay_opt_out(path)?,
+                Err(error) if error.kind() == io::ErrorKind::WouldBlock => {
+                    let mut options = Self::read_sidecar(path)?;
+                    options.remember_device = false;
+                    return Ok(options);
+                }
+                Err(error) => return Err(error),
+            }
+        }
+        Self::read_sidecar(path)
+    }
+
+    fn read_sidecar(path: &Path) -> io::Result<Self> {
         use std::io::Read;
         let mut bytes = Vec::new();
         std::fs::File::open(path)?
@@ -54,15 +70,7 @@ impl MiscellaneousPreferences {
         before: Self,
         path: &std::path::Path,
     ) -> std::io::Result<()> {
-        use std::io::ErrorKind;
-        let mut active = match Self::read(path) {
-            Err(error) if error.kind() == ErrorKind::NotFound => Self::default(),
-            Err(error) if error.kind() == ErrorKind::InvalidData => {
-                crate::atomic_file::preserve_malformed(path)?;
-                Self::default()
-            }
-            result => result?,
-        };
+        let mut active = Self::read_for_edit(path)?;
         let Self {
             stay_logged_in,
             remember_device,
@@ -88,17 +96,59 @@ impl MiscellaneousPreferences {
         active.publish(path)
     }
 
+    #[cfg(any(bevy_shell, test))]
     pub(crate) fn disable_remember_device_at(path: &std::path::Path) -> std::io::Result<()> {
-        let _lock = crate::atomic_file::lock(path)?;
-        let before = Self {
-            remember_device: true,
-            ..Self::default()
-        };
-        Self::default().publish_edits(before, path)
+        Self::record_opt_out(path)?;
+        Self::try_replay_opt_out(path)
+    }
+
+    #[cfg(any(bevy_shell, test))]
+    pub(super) fn record_opt_out(path: &Path) -> io::Result<()> {
+        crate::atomic_file::publish_durable(&path.with_added_extension("opt-out"), b"false")
+    }
+
+    #[cfg(any(bevy_shell, test))]
+    pub(super) fn try_replay_opt_out(path: &Path) -> io::Result<()> {
+        match crate::atomic_file::try_lock(path) {
+            Ok(_lock) => Self::replay_opt_out(path),
+            Err(error) if error.kind() == io::ErrorKind::WouldBlock => Ok(()),
+            Err(error) => Err(error),
+        }
+    }
+
+    // The caller holds the publication lock. Keep the intent until the merged
+    // sidecar is durable, so an interrupted replay can safely run again.
+    fn replay_opt_out(path: &Path) -> io::Result<()> {
+        if path.with_added_extension("opt-out").try_exists()? {
+            Self::read_for_edit(path)?.publish(path)?;
+        }
+        Ok(())
+    }
+
+    fn read_for_edit(path: &Path) -> io::Result<Self> {
+        match Self::read_sidecar(path) {
+            Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(Self::default()),
+            Err(error) if error.kind() == io::ErrorKind::InvalidData => {
+                crate::atomic_file::preserve_malformed(path)?;
+                Ok(Self::default())
+            }
+            result => result,
+        }
     }
 
     fn publish(&self, path: &std::path::Path) -> std::io::Result<()> {
-        crate::atomic_file::replace(path, &serde_json::to_vec(self)?, true)
+        // Under the sidecar lock a pending opt-out wins every merge and survives a failed write.
+        let marker = path.with_added_extension("opt-out");
+        let pending = marker.try_exists()?;
+        let mut merged = *self;
+        if pending {
+            merged.remember_device = false;
+        }
+        crate::atomic_file::publish_durable(path, &serde_json::to_vec(&merged)?)?;
+        if pending {
+            std::fs::remove_file(marker)?;
+        }
+        Ok(())
     }
 }
 impl super::SettingsState {

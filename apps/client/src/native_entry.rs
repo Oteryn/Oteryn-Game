@@ -27,6 +27,7 @@ mod tests;
 
 use crate::GameplayEntryError;
 pub use admitted::AdmittedSession;
+pub(crate) use config::BrowserEpoch;
 pub use config::{NativeLoginConfig, NativeLoginSettingError};
 use oteryn_client_runtime::connection::{AdmissionAttempt, AdmissionWait};
 use oteryn_foundation::CancellationToken;
@@ -84,7 +85,9 @@ pub(crate) async fn enter(
     config: &NativeLoginConfig,
     cancellation: CancellationToken,
 ) -> Result<AdmittedSession, GameplayEntryError> {
-    enter_observed(config, cancellation, None).await
+    let mut config = config.clone();
+    config.open_browser = config.scoped_browser(cancellation.clone());
+    enter_observed(&config, cancellation, None).await
 }
 
 pub(crate) async fn enter_observed(

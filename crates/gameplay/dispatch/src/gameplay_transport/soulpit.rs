@@ -16,6 +16,7 @@ use oteryn_protocol_oteryn::world_object::{
 };
 
 mod cadence;
+mod completion_notice;
 mod content;
 mod entry;
 mod handoff;

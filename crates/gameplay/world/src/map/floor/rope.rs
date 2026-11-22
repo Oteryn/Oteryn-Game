@@ -5,6 +5,15 @@ use super::*;
 const ROPE_GROUND: &[u32] = &[
     386, 421, 7762, 12202, 12936, 14238, 17238, 21965, 21966, 21967, 21968, 23363,
 ];
+/// Whether an authored ground or top-level item marks a rope spot.
+pub fn is_rope_spot_item(source_id: u32, ground: bool) -> bool {
+    if ground {
+        ROPE_GROUND.contains(&source_id)
+    } else {
+        source_id == ROPE_OVERLAY
+    }
+}
+
 const ROPE_OVERLAY: u32 = 12935;
 
 /// An appearance the rope owner accepts as the selected spot surface.
@@ -195,8 +204,11 @@ impl RopeProof<'_> {
             if !tile.ground_present()
                 || !(tile
                     .ground_source_id()
-                    .is_some_and(|id| ROPE_GROUND.contains(&id))
-                    || tile.top_source_ids().contains(&ROPE_OVERLAY))
+                    .is_some_and(|id| is_rope_spot_item(id, true))
+                    || tile
+                        .top_source_ids()
+                        .iter()
+                        .any(|&id| is_rope_spot_item(id, false)))
             {
                 return Err(MovementError::NotQualified);
             }

@@ -21,6 +21,7 @@ pub(crate) const OTHERS: [u32; 2] = [3, 5];
 #[derive(Default)]
 pub(crate) struct Node {
     pub(crate) login_channel: Mutex<String>,
+    pub(crate) disconnects: AtomicUsize,
     pub(crate) switches: AtomicUsize,
     pub(crate) refuse_destination: std::sync::atomic::AtomicBool,
     pub(crate) full: std::sync::atomic::AtomicBool,

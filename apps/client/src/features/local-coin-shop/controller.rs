@@ -94,6 +94,7 @@ async fn apply(
                 Err(NativeLoginError::Platform(HttpStatus(404)))
                     if view.post_refusal_status == Some(409) && view.pending() =>
                 {
+                    view.prior.reconcile(&id);
                     clear_refused_order(view);
                     view.feedback = tr!("The server refused the request").into();
                     return Ok(());
@@ -134,15 +135,27 @@ async fn submit(
     let Some(request) = &view.pending else {
         return Ok(());
     };
+    let Some(post) = view.prior.start() else {
+        if !retry {
+            view.confirmed = None;
+            view.pending = None;
+        }
+        view.feedback = tr!("Resolve the pending operation before starting another.").into();
+        return Ok(());
+    };
+    view.prior.retain(request.request_id.clone());
     let result = client
         .create_coin_order(token, request, cancel.clone())
         .await;
-    // A retry's 403 does not bound the earlier POST. Keep its identity even after status 404.
+    drop(post);
+    // Only a refusal of the initial POST can rule out its effect.
     view.post_refusal_status = match &result {
-        Err(NativeLoginError::Platform(HttpStatus(status @ (403 | 409)))) => Some(*status),
+        Err(NativeLoginError::Platform(HttpStatus(409))) if !retry => Some(409),
+        Err(NativeLoginError::Platform(HttpStatus(403))) => Some(403),
         _ => None,
     };
     if !retry && matches!(result, Err(NativeLoginError::Platform(HttpStatus(403)))) {
+        view.prior.reconcile(&request.request_id);
         clear_refused_order(view);
     }
     let order = result?;
@@ -165,7 +178,7 @@ async fn refresh(
 ) -> Result<(), NativeLoginError> {
     view.quote_until.clear();
     let requested_at = Instant::now();
-    let catalogue = client
+    let mut catalogue = client
         .coin_catalogue(token, view.character_id.as_deref(), cancel.clone())
         .await?;
     let mut quote_until: std::collections::BTreeMap<_, _> = catalogue
@@ -178,6 +191,15 @@ async fn refresh(
             )
         })
         .collect();
+    for listed in std::mem::take(&mut catalogue.recent_orders) {
+        let Ok(order) = client
+            .coin_order_status(token, &listed.request_id, cancel.clone())
+            .await
+        else {
+            continue;
+        };
+        catalogue.recent_orders.push(order);
+    }
     if let Some(request_id) = view
         .pending
         .as_ref()
@@ -189,6 +211,12 @@ async fn refresh(
             .find(|o| &o.request_id == request_id)
     {
         accept(view, order.clone())?;
+    }
+    for order in &catalogue.recent_orders {
+        if view.order.is_none() && view.pending.is_none() && view.prior.contains(&order.request_id)
+        {
+            accept(view, order.clone())?;
+        }
     }
     if view.order.is_none()
         && !view.pending()
@@ -254,6 +282,7 @@ fn accept(view: &mut View, order: CoinOrder) -> Result<(), NativeLoginError> {
         view.confirmed = None;
         view.post_refusal_status = None;
     }
+    view.prior.reconcile(&order.request_id);
     view.quote_until.remove(&order.quote_id);
     view.order = Some(order);
     view.checkout_unverified = false;
@@ -279,7 +308,11 @@ fn open_checkout(
     if cancel.is_cancelled() {
         return;
     }
-    view.feedback = if browser(url.as_str()) {
+    let opened = browser(url.as_str());
+    if cancel.is_cancelled() {
+        return;
+    }
+    view.feedback = if opened {
         tr!("Sandbox checkout opened. Return here and check purchase status after completing it.")
     } else {
         tr!(

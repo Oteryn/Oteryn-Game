@@ -110,8 +110,7 @@ impl PlayLink {
         }
         let selected = m.wheel.preset_fields[0].clone();
         m.wheel.preset_fields = fields;
-        drop(m);
-        super::super::view::presets::submit_named(&self.mailbox, action, selected);
+        super::super::view::presets::submit_named(&self.mailbox, m, action, selected);
         true
     }
 
@@ -220,8 +219,7 @@ mod regression_tests {
     use super::*;
     use oteryn_client_runtime::wheel_presentation as wire;
     use oteryn_client_ui::wheel_allocation::{atelier, wheel};
-    #[test]
-    fn locked_ring_allocation_can_be_removed_one_point_at_a_time() {
+    fn locked_ring_panel() -> WheelPanel {
         let mut points = [0; 36];
         points[0] = 3;
         let request = wire::Request {
@@ -232,6 +230,7 @@ mod regression_tests {
             vessels: [None; 4],
         };
         let mut panel = WheelPanel {
+            open: true,
             selected: true,
             synchronized: true,
             points,
@@ -278,6 +277,12 @@ mod regression_tests {
             draft: vec![],
         });
         panel.diagram.last = Some(request);
+        panel
+    }
+
+    #[test]
+    fn locked_ring_allocation_can_be_removed_one_point_at_a_time() {
+        let mut panel = locked_ring_panel();
         assert!(!adjust(&mut panel, 0, false));
         for remaining in [2, 1, 0] {
             assert!(adjust(&mut panel, 0, true));
@@ -285,5 +290,65 @@ mod regression_tests {
         }
         // Editing a proposal does not bypass the authoritative Save preview.
         assert!(diagram::submit(&mut panel, [0; 16]).is_none());
+    }
+
+    use super::super::super::view::presets::TEST_PATH;
+    use oteryn_client_ui::wheel_allocation::presets::PresetBook;
+
+    fn saved(path: &std::path::Path, name: &str) -> Option<String> {
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(3);
+        loop {
+            if let Some(code) = PresetBook::load(path)
+                .ok()
+                .and_then(|book| book.0.get(name).cloned())
+            {
+                return Some(code);
+            }
+            if std::time::Instant::now() >= deadline {
+                return None;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+    }
+
+    #[test]
+    fn wheel_bound_saves_validated_build() -> std::io::Result<()> {
+        let (link, _commands, outbox) = crate::play::play_channel();
+        link.use_shared_frontend();
+        let panel = locked_ring_panel();
+        outbox.bevy_wheel_state(panel.clone());
+        let root = tempfile::tempdir()?;
+        let path = root.path().join("wheel.json");
+        let target = path.clone();
+        let mailbox = link.mailbox.clone();
+        TEST_PATH.set(Some(Box::new(move || {
+            if let Ok(mut m) = mailbox.try_lock() {
+                m.wheel.points[0] += 1;
+            }
+            target
+        })));
+        assert!(link.wheel_preset_bound(&panel, 0, ["First".into(), String::new()]));
+        assert_eq!(saved(&path, "First"), Some(panel.build_code()));
+        Ok(())
+    }
+
+    #[test]
+    fn wheel_bound_saves_second_preset_during_write() -> std::io::Result<()> {
+        let (link, _commands, outbox) = crate::play::play_channel();
+        link.use_shared_frontend();
+        outbox.bevy_wheel_state(locked_ring_panel());
+        let root = tempfile::tempdir()?;
+        let path = root.path().join("wheel.json");
+        let held = crate::atomic_file::lock(&path)?;
+        for name in ["First", "Second"] {
+            let target = path.clone();
+            TEST_PATH.set(Some(Box::new(move || target)));
+            assert!(link.wheel_preset_bound(&link.wheel_panel(), 0, [name.into(), String::new()]));
+        }
+        drop(held);
+        let code = link.wheel_panel().build_code();
+        assert_eq!(saved(&path, "First"), Some(code.clone()));
+        assert_eq!(saved(&path, "Second"), Some(code));
+        Ok(())
     }
 }

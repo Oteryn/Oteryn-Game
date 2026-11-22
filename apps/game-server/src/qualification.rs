@@ -1476,6 +1476,7 @@ fn node_boot_seam_against_running_node() -> TestResult {
                 Some([
                     required("NODE_BOOT_PACKET_ACCOUNT_ID")?,
                     required("NODE_BOOT_PACKET_SECOND_ACCOUNT_ID")?,
+                    required("NODE_BOOT_LIGHT_ACCOUNT_ID")?,
                 ])
             } else {
                 None
@@ -2722,7 +2723,7 @@ struct SeamClients<'a> {
     certificate: &'a CertificateDer<'static>,
     signing: &'a SigningKey,
     key_id: &'a str,
-    accounts: &'a [String; 2],
+    accounts: &'a [String],
     characters: &'a [[u8; 16]],
     world: [u8; 16],
     channel: [u8; 16],
