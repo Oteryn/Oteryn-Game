@@ -119,6 +119,10 @@ AUTHORING_TOOLS = (
 )
 
 CHECKS = (
+    ["python3", "tools/content-schema/world-object-authoring/spawn_ground.py", "--check"],
+    ["python3", "tools/content-schema/world-authoring/scoped_spawn_ground.py", "--check"],
+    ["python3", "tools/content-schema/world-object-authoring/spawn_map_ground.py", "--check"],
+    ["python3", "tools/world-bundle-compiler/convert_spawns.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/last_creep_arena.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/qh_jimmy_stub.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/last_creep_native.py", "--check"],
@@ -836,6 +840,10 @@ def main() -> int:
     install_buddel(ROOT, WORLD)
     canonicalize_world()
     run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
+    run(["python3", "tools/content-schema/world-object-authoring/spawn_ground.py"])
+    run(["python3", "tools/content-schema/world-authoring/scoped_spawn_ground.py"])
+    run(["python3", "tools/content-schema/world-object-authoring/spawn_map_ground.py"])
+    run(["python3", "tools/world-bundle-compiler/convert_spawns.py"])
     refresh_source_cohort_extent()
     repin_rust_inventory()
     run(["python3", "tools/content-migration/import_cyclopedia_global.py"])

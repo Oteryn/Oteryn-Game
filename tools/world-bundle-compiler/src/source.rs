@@ -9,6 +9,9 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::{Path, PathBuf};
+
+mod spawn_map;
+
 fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
@@ -184,6 +187,7 @@ fn project_selected(root: &Path, selected: Option<&[(u16, u16)]>) -> Result<Proj
     for shard in shards(&root.join("content/world/spawns"), "spawns-")? {
         families.add_spawns(&shard)?;
     }
+    spawn_map::apply(root, &mut families.spawns)?;
     add_npc_families(root, &mut families)?;
     families.subareas = compile::subareas::Source::load(root)?;
     families.layers = compile::layers::Source::load(root)?;

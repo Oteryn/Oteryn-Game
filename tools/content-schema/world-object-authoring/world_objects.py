@@ -526,6 +526,23 @@ def validate_record(record):
             else ["static activity geometry differs from its qualified source"]
         )
     if "item_pointer" not in record["provenance"]:
+        if family == "Terrain":
+            import spawn_ground
+            import spawn_map_ground
+            import scoped_spawn_ground
+
+            identifier = record["provenance"]["source_item_id"]
+            for identifiers, records in (
+                (spawn_ground.ground_ids(), spawn_ground.records),
+                (scoped_spawn_ground.ground_ids(), scoped_spawn_ground.records),
+                (spawn_map_ground.GROUND_IDS, spawn_map_ground.records),
+            ):
+                if identifier in identifiers:
+                    return (
+                        []
+                        if record == records()[identifier]
+                        else ["spawn ground differs from its qualified source"]
+                    )
         import feroxa_static
 
         if (

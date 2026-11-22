@@ -4,6 +4,8 @@
 Writes content/world/spawns/ (index.json plus spawns-*.json shards): one source per XML
 `<monster centerx centery centerz radius>` element, in file order, each point bound to the
 creature definition `oteryn:creature.<slug(name)>` and placed at the centre plus its offset.
+The reconciliation packet supplies the reviewed same-floor corrections against the pinned
+Crystal map. Reconciliation keeps every source key, centre, creature and respawn policy.
 The source is OTS_HYPOTHESIS_ONLY migration evidence: only normalized facts are written. The
 groups listed in the import's `spawns/held-groups.json` stay out (they wait for their owning
 contract). Fails closed on a hash other than the pinned one, an unbound name, a point off its
@@ -31,6 +33,9 @@ HELD = IMPORT / "map-content-linking/spawns/held-groups.json"
 HELD_SHA256 = "8a666c3d409edda5ac5996d6dec64cce24b30d5f43c75aa9a1175f1d07297c57"
 BOSSES = Path(__file__).with_name("boss-spawns.json")
 BOSS_CHANCES = Path(__file__).with_name("held-boss-chances.json")
+FIRST_RECONCILIATION = Path(__file__).with_name("spawn-reconciliation-1.json")
+SCOPED_RECONCILIATION = ROOT / "imports/crystalserver/spawn-reconciliation/slice-2.json"
+MAP_RECONCILIATION = Path(__file__).with_name("spawn-map-slice-3.json")
 FRAME = "global-target-2026-09-27"
 SHARD_SIZE = 2000
 SOURCE = {
@@ -114,6 +119,34 @@ def dump(value) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
+def reconcile_cells(records, evidence):
+    """Keep each original spawn and apply only the reviewed coordinate corrections."""
+    moves = {}
+    for row in evidence["points"]:
+        if row["from"] != row["to"]:
+            source = row["source"]
+            x, y, z = row["from"]
+            nx, ny, nz = row["to"]
+            key = (source, row["creature"], x, y, z)
+            if (
+                key in moves or source > evidence["last_source_key"]
+                or z != nz or abs(x - nx) + abs(y - ny) not in (1, 2)
+                or not (0 <= nx <= 0xFFFF and 0 <= ny <= 0xFFFF)
+            ):
+                raise ValueError(f"invalid spawn reconciliation: {key}")
+            moves[key] = {"x": nx, "y": ny, "floor": nz}
+    for record in records:
+        declaration = record["declaration"]
+        source = declaration["identity"]["key"]
+        for point in declaration["points"]:
+            cell = point["cell"]
+            key = (source, point["creature"], cell["x"], cell["y"], cell["floor"])
+            if key in moves:
+                point["cell"] = moves.pop(key)
+    if moves:
+        raise ValueError(f"unmatched spawn reconciliation: {next(iter(moves))}")
+
+
 def convert(xml: bytes) -> dict[str, str]:
     if hashlib.sha256(xml).hexdigest() != SOURCE["files"][0]["sha256"]:
         sys.exit("the spawn XML is not the pinned file")
@@ -135,6 +168,15 @@ def convert(xml: bytes) -> dict[str, str]:
     chances = json.loads(chances_bytes)["bosses"]
     scheduled_bosses = []
     pharaohs = {}
+    scoped_bytes = SCOPED_RECONCILIATION.read_bytes()
+    scoped_anchors = json.loads(scoped_bytes)["points"]
+    corrections = {}
+    for row in scoped_anchors:
+        if "destination" in row:
+            key = (row["source"], row["creature"], tuple(row["cell"]))
+            if key in corrections:
+                raise ValueError(f"duplicate scoped spawn reconciliation: {key}")
+            corrections[key] = tuple(row["destination"])
     for ordinal, element in enumerate(ET.fromstring(xml)):
         cx, cy, cz = (int(element.get(k)) for k in ("centerx", "centery", "centerz"))
         base = f"oteryn:spawn.x{cx}_y{cy}_z{cz}"
@@ -151,6 +193,11 @@ def convert(xml: bytes) -> dict[str, str]:
             x, y, z = cx + int(point.get("x")), cy + int(point.get("y")), int(point.get("z", cz))
             if z != cz or not (0 <= x <= 0xFFFF and 0 <= y <= 0xFFFF):
                 sys.exit(f"{key}: point ({x}, {y}, {z}) is off the source")
+            destination = corrections.pop((key, creature, (x, y, z)), None)
+            if destination is not None:
+                x, y, z = destination
+                if z != cz or not (0 <= x <= 0xFFFF and 0 <= y <= 0xFFFF):
+                    sys.exit(f"{key}: corrected position is off the source floor or plane")
             points.append(
                 {
                     "cell": {"floor": z, "x": x, "y": y},
@@ -209,10 +256,15 @@ def convert(xml: bytes) -> dict[str, str]:
                 }
             }
         )
+    if corrections:
+        sys.exit(f"spawn reconciliation matches no donor point: {sorted(corrections)}")
     if pharaohs.keys() != PHARAOHS.keys():
         sys.exit("Ancient Tombs source spawns are incomplete")
     records.extend(scheduled_bosses)
     records.extend(pharaohs[key] for key in sorted(pharaohs))
+    reconciliation_bytes = FIRST_RECONCILIATION.read_bytes()
+    reconciliation = json.loads(reconciliation_bytes)
+    reconcile_cells(records, reconciliation)
     files, shards = {}, []
     for start in range(0, len(records), SHARD_SIZE):
         part = records[start : start + SHARD_SIZE]
@@ -239,6 +291,10 @@ def convert(xml: bytes) -> dict[str, str]:
             "coordinate_frame": FRAME,
             "family": "Spawn.Source",
             "generator": "tools/world-bundle-compiler/convert_spawns.py",
+            "map_reconciliation": {
+                "path": MAP_RECONCILIATION.relative_to(ROOT).as_posix(),
+                "sha256": hashlib.sha256(MAP_RECONCILIATION.read_bytes()).hexdigest(),
+            },
             "held_groups": {
                 "group_count": len(held_records),
                 "path": "imports/crystalserver/summer-update/map-content-linking/spawns/held-groups.json",
@@ -260,7 +316,13 @@ def convert(xml: bytes) -> dict[str, str]:
                                     "record_count": len(bosses["records"])},
                                    {"path": "tools/world-bundle-compiler/held-boss-chances.json",
                                     "sha256": hashlib.sha256(chances_bytes).hexdigest(),
-                                    "record_count": len(chances)}],
+                                    "record_count": len(chances)},
+                                   {"path": "tools/world-bundle-compiler/spawn-reconciliation-1.json",
+                                    "sha256": hashlib.sha256(reconciliation_bytes).hexdigest(),
+                                    "record_count": len(reconciliation["points"])},
+                                   {"path": SCOPED_RECONCILIATION.relative_to(ROOT).as_posix(),
+                                    "sha256": hashlib.sha256(scoped_bytes).hexdigest(),
+                                    "record_count": len(scoped_anchors)}],
         }
     )
     return {name: text + "\n" for name, text in files.items()}

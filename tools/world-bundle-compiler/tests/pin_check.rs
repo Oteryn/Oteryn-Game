@@ -54,6 +54,7 @@ impl Scratch {
                 "content/items",
                 "content/npcs/definitions",
                 "content/dialogues/definitions",
+                "content/quests/definitions",
                 "content/services",
                 "tools/world-bundle-compiler",
                 "tools/content-schema/area-authoring/samples/crystal-world-towns-00ce02a5.json",
@@ -138,27 +139,21 @@ fn word_after(text: &str, marker: &str) -> String {
         .to_owned()
 }
 
-/// The reviewed revision, read from the checked-in identity file so a content bump needs no edit here.
-fn reviewed_revision() -> String {
-    let path =
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/world/pins/oteryn.identity.json");
-    let identity: Value =
-        serde_json::from_slice(&fs::read(path).expect("identity file")).expect("identity json");
-    identity["content_revision"]
-        .as_str()
-        .expect("revision")
-        .to_owned()
+fn reviewed_pin() -> Value {
+    let path = repository_root().join(format!("content/world/pins/{SLUG}.json"));
+    serde_json::from_slice(&fs::read(path).expect("pin file")).expect("pin json")
 }
 
 fn pin(digest: &str) -> Value {
+    let reviewed = reviewed_pin();
     json!({
         "schema": "OTERYN_WORLD_PIN/v2",
         "digest": digest,
         "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
         "world_schema_version": "reference-schema-v1",
-        "content_revision": reviewed_revision(),
+        "content_revision": reviewed["content_revision"],
         "production": false,
-        "entry_start": {"x": 32369, "y": 32238, "floor": 7},
+        "entry_start": reviewed["entry_start"],
     })
 }
 
@@ -448,7 +443,8 @@ fn pin_check_accepts_the_reviewed_pin_and_refuses_every_drift() {
     let mut legacy = good.clone();
     legacy["schema"] = json!("OTERYN_WORLD_PIN/v1");
     legacy["inputs_digest"] = json!("0".repeat(64));
-    legacy["entry_start"]["floor"] = json!(-7);
+    let floor = good["entry_start"]["floor"].as_i64().unwrap();
+    legacy["entry_start"]["floor"] = json!(-floor);
     dir.write_json(&dir.pin_file(), &legacy);
     let refresh = Command::new(BIN)
         .arg("pin-refresh")
@@ -459,11 +455,12 @@ fn pin_check_accepts_the_reviewed_pin_and_refuses_every_drift() {
     assert_eq!(dir.json(&dir.pin_file()), good);
     let topology = fs::read_to_string(dir.path("deploy/synology-game/preprod-topology.toml"))
         .expect("refreshed topology");
+    let expected_floor = format!("start_floor = {floor}");
     assert_eq!(
         topology
             .lines()
             .find(|line| line.starts_with("start_floor = ")),
-        Some("start_floor = 7")
+        Some(expected_floor.as_str())
     );
     let report: Value = serde_json::from_slice(&refresh.stdout).unwrap();
     assert_eq!(report["pins"][0]["digest"], digest);
@@ -503,7 +500,11 @@ fn pin_check_accepts_the_reviewed_pin_and_refuses_every_drift() {
     // `blocks_movement` blocks.
     let mut cells = vec![
         (5, 5, 0),
-        (32369, 32238, -7),
+        (
+            u16::try_from(good["entry_start"]["x"].as_u64().unwrap()).unwrap(),
+            u16::try_from(good["entry_start"]["y"].as_u64().unwrap()).unwrap(),
+            i8::try_from(-floor).unwrap(),
+        ),
         (10228, 10032, 99),
         (34000, 33000, 0),
         (10228, 10032, 0),
@@ -585,10 +586,7 @@ fn pin_check_accepts_the_reviewed_pin_and_refuses_every_drift() {
 #[test]
 fn preprod_manifest_world_bundle_equals_the_pin() {
     let root = repository_root();
-    let pin: Value = serde_json::from_slice(
-        &fs::read(root.join("content/world/pins/oteryn.json")).expect("pin"),
-    )
-    .expect("pin json");
+    let pin = reviewed_pin();
     let manifest = fs::read_to_string(root.join("deploy/synology-game/preprod-topology.toml"))
         .expect("manifest");
     let table: Vec<&str> = manifest

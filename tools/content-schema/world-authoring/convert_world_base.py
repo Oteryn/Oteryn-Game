@@ -263,16 +263,20 @@ def catalogue_records(family: str, root: Path = ROOT):
             yield int(key[len(prefix) :]), record
 
 
-def catalogue_keys(family: str, root: Path = ROOT) -> dict[int, str]:
+def catalogue_keys(family: str, root: Path = ROOT, *, scoped: bool = False) -> dict[int, str]:
     """``{Tibia id: palette key}`` of a committed catalogue (``terrain`` or
     ``world_object``). A record whose provenance has an ``item_pointer`` is reached
     through that Item, so its palette key is the pointed Item key (Q1b, as
     `tools/world-bundle-compiler/src/resolve.rs` resolves it); otherwise it is the
-    catalogue key."""
+    catalogue key. Scoped spawn grounds are bound by the placement overlay."""
     return {
         i: (r.get("provenance") or {}).get("item_pointer", {}).get("key")
         or r["identity"]["key"]
         for i, r in catalogue_records(family, root)
+        if (
+            ((r.get("provenance") or {}).get("route") or {}).get("reason")
+            == "scoped_spawn_ground"
+        ) == scoped
     }
 
 
@@ -328,10 +332,14 @@ def build_palette(
     With one: every committed entry keeps its index (its key is refreshed from the current
     bindings), an id the map no longer uses is kept and flagged ``retired``, and new ids are
     appended in ascending id order, so region files never need renumbering.
+    Scoped spawn-ground entries keep their slots for the placement overlay.
     """
     palette = []
     seen: set[int] = set()
     for row in previous or ():
+        if row.get("scoped_spawn_ground"):
+            palette.append(row)
+            continue
         server_id = row["source_item_id"]
         if server_id in seen:
             raise ConvertError(f"committed palette lists server id {server_id} twice")
@@ -1022,11 +1030,19 @@ def build(
     palette = build_palette(
         bound, collector.occurrences, previous, terrain, world_object
     )
-    collector.remap({row["source_item_id"]: i for i, row in enumerate(palette)})
+    collector.remap(
+        {
+            row["source_item_id"]: i
+            for i, row in enumerate(palette)
+            if not row.get("scoped_spawn_ground")
+        }
+    )
     declared = items_xml_ids(blobs[ITEMS_XML])
     provisional = {"appearance_only": [0, 0], "in_items_xml": [0, 0]}
     families = {name: [0, 0] for name in ("terrain", "world_object", "item")}
     for row in palette:
+        if row.get("scoped_spawn_ground"):
+            continue
         family = key_family(row["key"], row["provisional"])
         if family in families:
             families[family][0] += 1
@@ -1213,6 +1229,10 @@ def build(
     m01c_key_doors.overlay_outputs(
         out, capture_bytes=blobs.get(m01c_key_doors.CAPTURE.as_posix())
     )
+    if quest_access_bindings.CAPTURE not in blobs:
+        import scoped_spawn_ground
+
+        scoped_spawn_ground.overlay_outputs(out, declared=declared)
     return out
 
 
