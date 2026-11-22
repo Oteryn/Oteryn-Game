@@ -369,7 +369,7 @@ async fn seed_wedding(h: &Harness) -> TestResult {
         'oteryn:npc.lynda', uuid_send($3), 1, s.character_revision, s.character_revision + 1,
         s.level, s.level, s.total_experience, s.total_experience, s.profile_revision, s.ruleset_revision,
         s.content_revision, s.simulation_revision, s.evidence_revision, s.declaration_revision, s.policy_revision,
-        s.reward_revision, (extract(epoch FROM statement_timestamp()) * 1000)::bigint - 60000, $2,
+        s.reward_revision, floor(extract(epoch FROM statement_timestamp()) * 1000)::bigint - 60000, $2,
         4, sha256(uuid_send($3)), game_marriage_after('null', $1, $2, 3, $3),
         game_marriage_after(game_marriage_after('null', $1, $2, 3, $3), $1, $2, 2, $3),
         game_marriage_after('null', $2, $1, 3, $3),
@@ -393,7 +393,7 @@ async fn set_wedding_age(h: &Harness, age_ms: i64) -> TestResult {
         .await?;
     sqlx::query(
         "UPDATE game_character_marriage_receipts
-        SET committed_at=(extract(epoch FROM statement_timestamp()) * 1000)::bigint - $1
+        SET committed_at=floor(extract(epoch FROM statement_timestamp()) * 1000)::bigint - $1
         WHERE operation=4",
     )
     .bind(age_ms)
