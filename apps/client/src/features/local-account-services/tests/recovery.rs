@@ -287,10 +287,29 @@ fn bazaar_retry_and_precreate_refusals_settle_after_missing_status() -> TestResu
                     .bazaar_post_failure = Some(refusal);
                 execute(&mut view, Action::Retry);
                 assert_eq!(view.pending.as_ref(), Some(&request));
+                assert!(!view.can_retry());
                 execute(&mut view, Action::Status);
             }
             settled.push(!view.pending());
             assert_eq!(mock.authority.lock().map_err(|_| "lock")?.effects, 0);
+            if retry == Some(403) {
+                let pending = view.pending.clone().ok_or("missing unresolved request")?;
+                assert!(view.can_retry());
+                mock.authority
+                    .lock()
+                    .map_err(|_| "lock")?
+                    .bazaar_post_failure = Some(403);
+                execute(&mut view, Action::Retry);
+                assert!(!view.can_retry());
+                execute(&mut view, Action::Refresh(AuctionView::All));
+                assert!(view.can_retry());
+                execute(&mut view, Action::Retry);
+                assert_eq!(
+                    view.receipt.as_ref().map(|r| &r.request_id),
+                    Some(&pending.request_id)
+                );
+                assert_eq!(mock.authority.lock().map_err(|_| "lock")?.effects, 1);
+            }
         }
         assert_eq!(
             settled,
