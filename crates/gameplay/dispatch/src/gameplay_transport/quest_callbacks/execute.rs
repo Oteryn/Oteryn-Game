@@ -244,10 +244,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(due) = lifecycle_now.checked_add(u64::from(delay) * 1_000) else {
                 return UseDisposition::Exhausted;
             };
-            projection = Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
-                due,
-                restore: before,
-            });
+            projection = Some(
+                if callback
+                    .item_on_target
+                    .as_ref()
+                    .is_some_and(|tool| tool.target_remove)
+                {
+                    if before.pickupable {
+                        return UseDisposition::Rejected;
+                    }
+                    crate::map::facts::QuestCallbackProjection::TimedRemoval {
+                        due,
+                        restore: before,
+                    }
+                } else {
+                    crate::map::facts::QuestCallbackProjection::TimedTransform {
+                        due,
+                        restore: before,
+                    }
+                },
+            );
         }
         if callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE {
             let Some(crate::map::facts::QuestCallbackProjection::TimedTransform { due, restore }) =
@@ -286,14 +302,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .as_ref()
             .is_some_and(|item| item.target_remove)
         {
-            if projection.is_some() {
-                return UseDisposition::Rejected;
+            match projection {
+                Some(crate::map::facts::QuestCallbackProjection::TimedRemoval { .. }) => {}
+                None => {
+                    projection = Some(crate::map::facts::QuestCallbackProjection::ItemCycle {
+                        position: pos,
+                        remove: Some(key),
+                        create: None,
+                    });
+                }
+                Some(_) => return UseDisposition::Rejected,
             }
-            projection = Some(crate::map::facts::QuestCallbackProjection::ItemCycle {
-                position: pos,
-                remove: Some(key),
-                create: None,
-            });
         }
         if callback.effects.loot_merchant {
             if projection.is_some() {
@@ -518,6 +537,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 None => Some(key),
             },
             Some(crate::map::facts::QuestCallbackProjection::ReleaseMerchant { .. }) => Some(key),
+            Some(crate::map::facts::QuestCallbackProjection::TimedRemoval { .. }) => Some(key),
             Some(crate::map::facts::QuestCallbackProjection::TimedTransform { .. })
                 if callback
                     .item_on_target
@@ -1472,6 +1492,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
                         due,
                         ..
+                    })
+                    | Some(crate::map::facts::QuestCallbackProjection::TimedRemoval {
+                        due, ..
                     })
                     | Some(crate::map::facts::QuestCallbackProjection::ReadsetTransforms {
                         reset: Some((due, _)),

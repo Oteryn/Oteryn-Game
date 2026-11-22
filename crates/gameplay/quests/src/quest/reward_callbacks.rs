@@ -2392,8 +2392,8 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Every source shard and the Kingsday journal contribute 505 callbacks.
-        assert_eq!(load()?.len(), 505);
+        // Every source shard and the Kingsday journal contribute 514 callbacks.
+        assert_eq!(load()?.len(), 514);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;

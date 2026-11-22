@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "runtime_enabled": true,
+  "quest": "oteryn:quest.the_thieves_guild_quest",
+  "tracks": [],
+  "rules": [
+    {
+      "creature": "oteryn:creature.nomad",
+      "transition": "oteryn:quest-transition/quest/u8_2/the_thieves_guild_quest/mission04/creature_event_1",
+      "define_transition": false,
+      "room": null,
+      "effects": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission04",
+          "default": 0,
+          "from": {
+            "kind": "eq",
+            "value": 3
+          },
+          "set": 4
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_thieves_guild_quest/creaturescripts_nomad_kill.lua:1-11:sha256:eb6b88a53dc362c485f8600e4c347ebff52a706480d188d32dae7cf5eb2af991"
+      ]
+    }
+  ]
+}

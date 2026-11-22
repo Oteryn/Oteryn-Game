@@ -988,7 +988,13 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || (callback.use_range > 1
                 && (callback.trigger != Trigger::Use
                     || selector.position.is_none()
-                    || callback.item_on_target.is_none()
+                    || (callback.item_on_target.is_none()
+                        && !callback.effects.encounter.as_ref().is_some_and(|encounter| {
+                            callback.requires_world_admission
+                                && encounter.timing.is_none()
+                                && matches!(encounter.players.as_slice(), [player]
+                                    if selector.position.is_some_and(|target| callback.reaches(player.from, target)))
+                        }))
                     || callback.storage.is_empty()
                     || callback.is_read_only()))
             || (selector.position.is_none()
@@ -2159,8 +2165,13 @@ mod tests {
             .find(|callback| callback.key.ends_with("triangle-tower-lever"))
             .ok_or("triangle callback")?
             .clone();
+        let unrelated = callbacks
+            .iter_mut()
+            .find(|callback| callback.key != alias.key)
+            .ok_or("unrelated callback")?;
         alias.key = "oteryn:quest-callback/triangle-selector-alias".into();
-        callbacks.push(alias);
+        // Keep the composed fixture within the production record limit.
+        *unrelated = alias;
         assert_eq!(
             validate_registry(&callbacks),
             Err("duplicate callback selector across registries".into())

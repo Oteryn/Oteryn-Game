@@ -198,7 +198,7 @@ async fn use_tool(
     use_tool_at(owner, admitted, target, 1, tool).await
 }
 
-async fn use_tool_at(
+pub(super) async fn use_tool_at(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     target: Position,

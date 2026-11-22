@@ -77,6 +77,11 @@ pub enum QuestCallbackProjection {
         due: u64,
         restore: EntryFacts,
     },
+    /// Hide the selected base object until its exact revision's reset.
+    TimedRemoval {
+        due: u64,
+        restore: EntryFacts,
+    },
     /// A source glyph and its native portal share one revision-fenced deadline.
     TimedEntrance {
         due: u64,
@@ -362,7 +367,12 @@ impl CallbackStates {
                     }
                 }
             }
-            QuestCallbackProjection::TimedTransform { due, restore } => {
+            QuestCallbackProjection::TimedTransform { due, restore }
+            | QuestCallbackProjection::TimedRemoval { due, restore } => {
+                let removal = matches!(projection, QuestCallbackProjection::TimedRemoval { .. });
+                if removal && (close || restore.pickupable || self.hidden.contains(&owner)) {
+                    return false;
+                }
                 let Some(revision) = self
                     .changed
                     .get(&owner)
@@ -376,9 +386,12 @@ impl CallbackStates {
                     MovementDecay {
                         revision,
                         restore: *restore,
-                        overlay: None,
+                        overlay: removal.then(|| (false, self.passable.get(&owner).copied())),
                     },
                 );
+                if removal {
+                    self.hidden.insert(owner);
+                }
             }
             QuestCallbackProjection::Portals { endpoints, expires } => {
                 if close {
@@ -1860,7 +1873,8 @@ impl BundleFacts {
                         }
                     })
                 }
-                QuestCallbackProjection::TimedTransform { .. } => false,
+                QuestCallbackProjection::TimedTransform { .. }
+                | QuestCallbackProjection::TimedRemoval { .. } => false,
             })
             || expected == u64::MAX
             || passages.len() + replacements.len() > 8

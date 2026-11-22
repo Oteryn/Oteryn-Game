@@ -151,7 +151,35 @@ fn eroth_report_binds_the_four_real_caches_and_both_rewards() -> Result<(), Stri
         catalogue.evaluate(completion, &progress, 0),
         Err(QuestRefusal::StageMismatch)
     );
-    progress.values_mut().for_each(|value| *value = 2);
+    let mirror = world_callbacks::load_for(catalogue)?
+        .into_iter()
+        .find(|callback| {
+            callback.quest == report.quest
+                && callback.trigger == world_callbacks::Trigger::Use
+                && callback.selector.action == Some(4001)
+                && callback.selector.appearance == Some(132)
+                && callback.item_on_target.as_ref().is_some_and(|item| {
+                    item.item == "oteryn:item.tibia.i3463"
+                        && item.selected_instance
+                        && item.target_remove
+                })
+        })
+        .ok_or("Eroth's mirror has no registered USE callback")?;
+    assert_eq!(mirror.effects.reset_after_ms, Some(60_000));
+    let changes = catalogue
+        .evaluate(
+            catalogue
+                .transition(&mirror.key)
+                .ok_or("mirror transition")?,
+            &progress,
+            0,
+        )
+        .map_err(|error| error.code())?;
+    progress.extend(
+        changes
+            .into_iter()
+            .map(|change| (change.track, change.after)),
+    );
     let changes = catalogue
         .evaluate(completion, &progress, 0)
         .map_err(|error| error.code())?;

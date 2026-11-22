@@ -44,6 +44,12 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
                 cq29_quest_contacts::VASE
             } else if name == super::newhaven_gustavo_fixtures::NAME {
                 super::newhaven_gustavo_fixtures::START
+            } else if name == "qengine-rewards-eroth-start" {
+                Position {
+                    x: 32592,
+                    y: 31645,
+                    floor: -2,
+                }
             } else if name == "qengine-rewards-l2-white-raven" {
                 Position {
                     x: 32248,
@@ -1229,7 +1235,39 @@ pub(super) async fn exercise(
             value,
         );
         if name.ends_with("eroth-start") {
+            use crate::map::view::MapFacts as _;
+
             assert_eq!(questl2_journeys::quantity(h, 3463).await?, 1);
+            admitted.continuity.selected_capabilities =
+                crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+                    owner.offered_capabilities(),
+                    &[3, 4, 6, 11, 15, 18],
+                )
+                .ok_or("mirror USE capabilities")?;
+            let crystal = Position {
+                x: 32592,
+                y: 31645,
+                floor: -2,
+            };
+            assert_eq!(
+                super::tibia_tales_fixtures::use_tool_at(owner, admitted, crystal, 2, 3463).await?,
+                oteryn_protocol_oteryn::world_object::UseDisposition::Committed,
+            );
+            assert_eq!(questl2_journeys::quantity(h, 3463).await?, 0);
+            assert_eq!(
+                super::classic_quests_fixtures::progress(owner, admitted, authority, track).await?,
+                2,
+            );
+            let map = owner.bundle_map().ok_or("Elvenbane map")?;
+            let key = oteryn_world_bundle::bundle::placement_key(
+                crystal.floor, crystal.x, crystal.y, 2,
+            )
+            .ok_or("crystal placement")?;
+            assert!(map.facts.base_hidden(key));
+            let reset = map.facts.next_movement_decay_time().ok_or("crystal reset")?;
+            assert_eq!(map.facts.expire_movement_items(reset - 1), 0);
+            assert_eq!(map.facts.expire_movement_items(reset), 1);
+            assert!(!map.facts.base_hidden(key));
         }
         return Ok(());
     }

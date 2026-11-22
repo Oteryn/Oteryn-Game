@@ -670,7 +670,18 @@ pub(super) fn valid(callback: &Callback) -> bool {
         || effects.reset_after_ms.is_some_and(|delay| {
             !(1..=3_600_000).contains(&delay)
                 || callback.actor_kind != ActorKind::Player
-                || (effects.transform.is_none() && callback.lever.is_none())
+                || (effects.transform.is_none()
+                    && callback.lever.is_none()
+                    && !callback.item_on_target.as_ref().is_some_and(|tool| {
+                        tool.selected_instance && tool.target_remove && !tool.reusable
+                    }))
+                || (callback
+                    .item_on_target
+                    .as_ref()
+                    .is_some_and(|tool| tool.target_remove)
+                    && (callback.reversible
+                        || callback.lever.is_some()
+                        || !callback.passages.is_empty()))
                 || effects.portals.is_some()
                 || effects.item_presence.is_some()
                 || effects.item_cycle.is_some()

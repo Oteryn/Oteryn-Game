@@ -429,6 +429,187 @@
         }
       ],
       "any_topic": true
+    },
+    {
+      "npc": "oteryn:npc.percybald",
+      "keywords": [
+        "disguise",
+        "test"
+      ],
+      "topic": 0,
+      "next_topic": 41,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission04",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "A little test first. Are you ready?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.percybald",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 41,
+      "next_topic": 42,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission04",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Where should you wait when you are out of sight of the audience?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.nurik",
+      "keywords": [
+        "dwarven bridge"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission04",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "You want to sell me the bridge?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.nurik",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission04",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Is the whole bridge included?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.nurik",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission04",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Do you have the deed?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.nurik",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission04",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Shall we seal the deal for the Mina Losa?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.henricus",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 9,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you destroy the brew and recover the grimoire?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 9,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Have you brought twenty doses of vampire dust?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.henricus",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 10,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Have you finished helping Storkus?"
+      ]
     }
   ]
 }

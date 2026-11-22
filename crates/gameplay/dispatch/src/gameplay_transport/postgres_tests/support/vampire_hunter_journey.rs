@@ -4,6 +4,7 @@ use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Position};
 use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
 
 const INQUISITION: &str = "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline";
+const VAMPIRE_HUNT: &str = "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission03";
 const RANK: &str = "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/rank";
 const DOOR: &str = "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/door";
 const TOKEN: &str = "oteryn:item.tibia.i8192";
@@ -42,22 +43,54 @@ pub(super) async fn exercise(
     use super::qengine_outfit_stories_fixtures::seed_quest_prerequisites;
     use super::{classic_quests_fixtures, quest_world_callbacks_fixtures};
 
-    let [npc] = classic_quests_fixtures::install(owner, admitted, ["oteryn:npc.storkus"]).await?;
+    let [npc, henricus] = classic_quests_fixtures::install(
+        owner,
+        admitted,
+        ["oteryn:npc.storkus", "oteryn:npc.henricus"],
+    )
+    .await?;
     let first = admitted.continuity.next_command_id;
     assert_eq!(
         talk(owner, admitted, npc, first, "hi").await?,
         NpcIntentDisposition::Ok
     );
-    seed_quest_prerequisites(h, owner, admitted, &[(INQUISITION.into(), 10)], 116).await?;
+    seed_quest_prerequisites(
+        h,
+        owner,
+        admitted,
+        &[(INQUISITION.into(), 10), (VAMPIRE_HUNT.into(), 5)],
+        116,
+    )
+    .await?;
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
     let gated = talk_outcome(owner, admitted, npc, first + 1, "vampire lord token").await?;
     assert!(gated.conversation.is_none(), "no offer before Inquisition");
-    seed_quest_prerequisites(h, owner, admitted, &[(INQUISITION.into(), 11)], 117).await?;
-    owner
-        .refresh_quest_session(admitted.game_session_id, false)
-        .await;
+    for (offset, (contact, word)) in [
+        (npc, "bye"),
+        (henricus, "hi"),
+        (henricus, "mission"),
+        (henricus, "yes"),
+        (henricus, "bye"),
+        (npc, "hi"),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        assert_eq!(
+            talk(owner, admitted, contact, first + 2 + u64::try_from(offset)?, word).await?,
+            NpcIntentDisposition::Ok,
+            "{word}"
+        );
+    }
+    let qualified: i64 = sqlx::query_scalar(
+        "SELECT value FROM game_character_quest_tracks WHERE track_key=$1",
+    )
+    .bind(INQUISITION)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(qualified, 11, "Henricus qualifies Storkus's exchange");
 
     let base_xp: i64 =
         sqlx::query_scalar("SELECT total_experience::bigint FROM game_character_progression_state")
@@ -76,7 +109,7 @@ pub(super) async fn exercise(
     .enumerate()
     {
         let rank = i64::try_from(index + 1)?;
-        let command = first + 2 + u64::try_from(index)? * 4;
+        let command = first + 8 + u64::try_from(index)? * 4;
         let offer = talk_outcome(owner, admitted, npc, command, "vampire lord token").await?;
         assert_eq!(offer.disposition, NpcIntentDisposition::Ok);
         assert_eq!(

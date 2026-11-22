@@ -121,6 +121,83 @@
       "attribute": "action",
       "value": 12105,
       "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:1718-1723:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+    },
+    {
+      "position": [
+        32592,
+        31645,
+        2
+      ],
+      "item": 132,
+      "attribute": "action",
+      "value": 4001,
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:396-400:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+    },
+    {
+      "position": [
+        32657,
+        31927,
+        1
+      ],
+      "item": 2008,
+      "attribute": "action",
+      "value": 2000,
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:78-86:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+    },
+    {
+      "position": [
+        32658,
+        31927,
+        1
+      ],
+      "item": 2009,
+      "attribute": "action",
+      "value": 2000,
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:78-86:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+    },
+    {
+      "position": [
+        32657,
+        31928,
+        1
+      ],
+      "item": 2010,
+      "attribute": "action",
+      "value": 2000,
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:78-86:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+    },
+    {
+      "position": [
+        32658,
+        31928,
+        1
+      ],
+      "item": 2011,
+      "attribute": "action",
+      "value": 2000,
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:78-86:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+    },
+    {
+      "position": [
+        32779,
+        31980,
+        9
+      ],
+      "item": 1989,
+      "attribute": "action",
+      "value": 2002,
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:330-336:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+    },
+    {
+      "position": [
+        32779,
+        31979,
+        9
+      ],
+      "item": 7875,
+      "attribute": "action",
+      "value": 2002,
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:330-336:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
     }
   ]
 }

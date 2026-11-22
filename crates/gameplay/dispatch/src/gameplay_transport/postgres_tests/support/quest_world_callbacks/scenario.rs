@@ -82,7 +82,12 @@ fn scenario_case(
     let pinned_qc_world = name.starts_with("m09-treasure-")
         || super::super::qc_lizard_sanctuary_fixtures::matches_world(name);
     let tibia_tales_hallowed = name == "qengine-rewards-tibia-tales-hallowed";
-    let native_crop = tibia_tales_hallowed || pinned_qc_world
+    let cursed_crystal_stairs = name.starts_with("crystal-stairs-");
+    let eroth_mirror = name == "qengine-rewards-eroth-start";
+    let native_crop = eroth_mirror
+        || cursed_crystal_stairs
+        || tibia_tales_hallowed
+        || pinned_qc_world
         || m03_use
         || qd_world
         || engenc_asura
@@ -1511,6 +1516,47 @@ fn scenario_case(
 
         let world = if name.starts_with("qengine-rewards-l2-djinn-") {
             super::super::questl2_djinn_world::world()?
+        } else if eroth_mirror {
+            super::super::source_world_crop::compiled_region(
+                crate::map::overlay::TilePos {
+                    x: 32590,
+                    y: 31643,
+                    floor: -2,
+                },
+                crate::map::overlay::TilePos {
+                    x: 32594,
+                    y: 31647,
+                    floor: -2,
+                },
+                crate::map::overlay::TilePos {
+                    x: start.x,
+                    y: start.y,
+                    floor: start.floor,
+                },
+                generation.native_gameplay().ok_or("Elvenbane policies")?,
+            )?
+        } else if cursed_crystal_stairs {
+            let landing = stateless_destination.ok_or("Cursed Crystal stair landing")?;
+            let minimum = crate::map::overlay::TilePos {
+                x: start.x.min(landing.x),
+                y: start.y.min(landing.y),
+                floor: start.floor.min(landing.floor),
+            };
+            let maximum = crate::map::overlay::TilePos {
+                x: trigger.x.max(landing.x),
+                y: trigger.y.max(landing.y),
+                floor: trigger.floor.max(landing.floor),
+            };
+            super::super::source_world_crop::compiled_region(
+                minimum,
+                maximum,
+                crate::map::overlay::TilePos {
+                    x: start.x,
+                    y: start.y,
+                    floor: start.floor,
+                },
+                generation.native_gameplay().ok_or("Cursed Crystal policies")?,
+            )?
         } else if name == "qengine-rewards-l2-white-raven" {
             super::super::questl2_white_raven_world::world(
                 generation.native_gameplay().ok_or("White Raven policies")?,

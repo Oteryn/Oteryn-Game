@@ -22,7 +22,10 @@ fn restored_quest_chests_use_committed_selectors_and_mint_the_exact_rewards() ->
         serde_json::from_slice(&std::fs::read(directory.join("index.json"))?)?;
     let mut selected = Vec::new();
     for chest in chests::cases()? {
-        if !matches!(chest.unique, 6039..=6044 | 6071 | 6160 | 6258 | 6278) {
+        if !matches!(
+            chest.unique,
+            6039..=6044 | 6071 | 6160 | 6258 | 6270..=6271 | 6273..=6274 | 6278
+        ) {
             continue;
         }
         let (x, y, floor) = chest.position;
@@ -53,6 +56,6 @@ fn restored_quest_chests_use_committed_selectors_and_mint_the_exact_rewards() ->
         );
         selected.push(chest);
     }
-    assert_eq!(selected.len(), 10);
+    assert_eq!(selected.len(), 14);
     chests::execute(selected)
 }

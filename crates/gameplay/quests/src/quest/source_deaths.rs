@@ -145,6 +145,7 @@ const DOCUMENTS: &[&[u8]] = &[
         "../../../../../content/quests/native-death-bindings/quest-batch3-c-the_primal_ordeal.json"
     ),
     include_bytes!("../../../../../content/quests/native-death-bindings/secret-service.json"),
+    include_bytes!("../../../../../content/quests/native-death-bindings/thieves-guild.json"),
 ];
 fn documents() -> Result<Vec<Document>, String> {
     let mut documents: Vec<Document> = DOCUMENTS

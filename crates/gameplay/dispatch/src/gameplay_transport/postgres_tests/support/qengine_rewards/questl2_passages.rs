@@ -89,6 +89,25 @@ pub(in super::super) async fn white_raven(
     assert_eq!(quantity(h,3214).await?,0);
     relocate(owner,admitted,door_contact).await?;
     use_at(owner,admitted,door,UseDisposition::Committed).await?;
+    // Simulate an unfinished save pinned by main before the diary callback was shipped.
+    let previous = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../quests/tests/fixtures/white_raven_catacombs_predecessor.txt"
+    ));
+    let mut restored_save = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *restored_save)
+        .await?;
+    let rewritten = sqlx::query(
+        "UPDATE game_character_quest_states SET definition_hash=decode($1, 'hex')
+         WHERE quest_key=$2 AND completed_character_revision IS NULL",
+    )
+    .bind(previous.trim())
+    .bind(&diary.quest)
+    .execute(&mut *restored_save)
+    .await?;
+    assert_eq!(rewritten.rows_affected(), 1);
+    restored_save.commit().await?;
     relocate(owner,admitted,ghostlands).await?;
     use_at_ordinal(owner,admitted,corpse,2,UseDisposition::Committed).await?;
     assert_eq!(quantity(h,3212).await?,1,"a live use of the Ghostlands corpse issues the diary");

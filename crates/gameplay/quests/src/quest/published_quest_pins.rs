@@ -102,6 +102,30 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
             hash(b"8a188b5b0b564e34830783f89b5b1a24cc00eb29a1639495bdfb8a7124b584af"),
         ],
     ),
+    // Eclipse and the Vampire Hunt extend the live quest from main at 888210d08.
+    (
+        "oteryn:quest.the_inquisition_quest",
+        hash(b"895ecb3a0d429bd18ca8be0fc1da84d5c6439cfb6922ae9ecacafb151895ebfe"),
+        &[hash(
+            b"e34698ec47856e1bf587a56de6c0ac3cdec9119108a4abad91c7a075c4ea73ca",
+        )],
+    ),
+    // The Nomad task and the Mina Losa exchange extend the live quest from main at 888210d08.
+    (
+        "oteryn:quest.the_thieves_guild_quest",
+        hash(b"33d25a33aa923a7ef18664d529e7dbfb87bef7a00a32cd696d5ffb4fefc5b616"),
+        &[hash(
+            b"11c7dc44cf1e00ccd7e4073c3cc933f8de33985b5637959e18fd93f076ab4eac",
+        )],
+    ),
+    // The Ghostlands diary receipt extends existing Catacombs access saves from main at 888210d08.
+    (
+        "oteryn:quest.the_white_raven_monastery_quest",
+        hash(b"8d80e0dd32a81d237326e103df7883482be51fe46297e42fe216861e51d4fd66"),
+        &[hash(
+            b"670719e1881e54cf19372252c332db10a3143382c420866f586bc16f6e23c53c",
+        )],
+    ),
     (
         "oteryn:quest.tibia_tales",
         hash(b"8d57876f51450399a161496c4b34d1ab16ccf7f57b3102302774cd5f05585e45"),

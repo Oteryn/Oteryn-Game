@@ -22,6 +22,11 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
                         | "oteryn:quest-callback/thieves-guild-cathedral-note"
                         | "oteryn:quest-callback/thieves-guild-fish-room-key"
                         | "oteryn:quest-callback/thieves-guild-sarina-vase"
+                        | "oteryn:quest-callback/elvenbane-mirror-crystal"
+                        | "oteryn:quest-callback/inquisition-eclipse-brew-32657-31927"
+                        | "oteryn:quest-callback/inquisition-eclipse-brew-32658-31927"
+                        | "oteryn:quest-callback/inquisition-eclipse-brew-32657-31928"
+                        | "oteryn:quest-callback/inquisition-eclipse-brew-32658-31928"
                         | "oteryn:quest-callback/tibia-tales/fill-ale-bottle"
                         | "oteryn:quest-callback/tibia-tales/poison-slime-pool-31821"
                         | "oteryn:quest-callback/tibia-tales/poison-slime-pool-31822"
@@ -78,6 +83,25 @@ mod tests {
                 .find(|callback| callback.key == key)
                 .ok_or(key)?;
             assert!(accepts(callback));
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn mirror_and_eclipse_brews_reach_the_carried_tool_owner() -> Result<(), String> {
+        let callbacks = world_callbacks::load()?;
+        let routes: Vec<_> = callbacks
+            .iter()
+            .filter(|callback| {
+                callback.key == "oteryn:quest-callback/elvenbane-mirror-crystal"
+                    || callback
+                        .key
+                        .starts_with("oteryn:quest-callback/inquisition-eclipse-brew-")
+            })
+            .collect();
+        assert_eq!(routes.len(), 5);
+        for callback in routes {
+            assert!(accepts(callback), "{}", callback.key);
         }
         Ok(())
     }
