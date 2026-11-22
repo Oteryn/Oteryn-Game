@@ -28,6 +28,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let result = result.unwrap_or_else(|_| {
         Err("step=journey observed=timeout-240s need=all-native-replies-and-deltas".into())
     });
+    let result: TestResult = result.and(Err(super::full_row_c02::PLATFORM_ADMISSION_GAP.into()));
     if let Err(error) = &result {
         evidence(&format!("C06_GAP {error}"));
     }
@@ -177,7 +178,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     client.take_events();
     let (disposition, sequence) = use_rune(&mut client, healing, None).await?;
     if disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
-        return Err(format!("step=4 observed={disposition:?} need=Committed").into());
+        return Err(format!(
+            "step=4 observed={disposition:?};need=qualified-healing-rune-3152-use-route"
+        )
+        .into());
     }
     wait_paid_effect(
         &mut client,
@@ -202,7 +206,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         || client.actor_vitals().is_none_or(|v| v.health != before)
     {
         return Err(format!(
-            "step=5 observed=reply:{illegal:?}/charges:{}/health:{} need=TargetIllegal-unchanged",
+            "step=5 observed=reply:{illegal:?}/charges:{}/health:{} need=qualified-healing-rune-3152-TargetIllegal-unchanged",
             quantity(&client, healing)?,
             client.actor_vitals().map_or(0, |v| v.health)
         )

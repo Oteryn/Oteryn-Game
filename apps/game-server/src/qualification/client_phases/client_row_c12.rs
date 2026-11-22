@@ -11,6 +11,9 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let result = verdict::indexed_timeout(Duration::from_secs(45), capture(clients))
         .await
         .unwrap_or_else(|_| Err("C12 client capture deadline=45s".into()));
+    let result = result.and(Err::<(), Box<dyn std::error::Error>>(
+        super::full_row_c02::PLATFORM_ADMISSION_GAP.into(),
+    ));
     if let Err(error) = result {
         evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=C12.client status=FAIL evidence={error}"
@@ -48,9 +51,12 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     let result_payload = actor_spell::encode_spell_cast_result(outcome.disposition);
     let vitals_payload = actor_spell::encode_actor_vitals(&vitals)
         .map_err(|error| format!("C12 actor-vitals encoding failed: {error:?}"))?;
-    write_capture("c12-cast-result.bin", &result_payload);
-    write_capture("c12-actor-vitals.bin", &vitals_payload);
-    write_capture(
+    let root = std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("C12 capture directory absent")?;
+    let root = Path::new(&root);
+    write_packet(root, "c12-cast-result.bin", &result_payload)?;
+    write_packet(root, "c12-actor-vitals.bin", &vitals_payload)?;
+    write_packet(
+        root,
         "c12-expected.txt",
         format!(
             "{} {} {} {} {} {} {}\n",
@@ -63,21 +69,15 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             u8::from(vitals.serene)
         )
         .as_bytes(),
-    );
-    evidence(&format!(
-        "SEAM_EVIDENCE e2e_all scenario=C12.client status=PASS evidence=spell-index-{}-vitals-{vitals:?}",
-        spell.cast_index
-    ));
-    Ok(())
+    )
 }
 
-fn write_capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(std::path::Path::new(&root).join(name), bytes) {
-        evidence(&format!(
-            "SEAM_EVIDENCE e2e_all scenario=C12.client status=CAPTURE-WRITE-ERROR evidence={name}:{error}"
-        ));
-    }
+#[test]
+fn c12_missing_capture_directory_is_an_error() {
+    let directory = Path::new(file!()).join("cannot-create-child-under-source");
+    assert!(write_packet(&directory, "capture.bin", b"frame").is_err());
+}
+fn write_packet(root: &Path, name: &str, bytes: &[u8]) -> TestResult {
+    std::fs::write(root.join(name), bytes)
+        .map_err(|error| format!("capture-write-error {name}: {error}").into())
 }

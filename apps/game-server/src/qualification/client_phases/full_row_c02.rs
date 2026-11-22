@@ -2,18 +2,18 @@
 //!
 //! 1. Admit the provisioned character, earn spendable gold through ordinary rat combat/loot,
 //!    walk to compiled-world sellers, say `hi` and `trade`, and buy a bow, ten arrows, a Wand of
-//!    Vortex, and a Snakebite Rod; require every accepted trade reply and exact inventory delta.
+//!    Vortex; require every accepted trade reply and exact inventory delta.
 //! 2. Equip the bow and arrows with ITEM_MOVE, send ATTACK against a live rat, and require an Ok
 //!    attack reply, an exact one-arrow inventory decrement, and a damage presentation attributed
 //!    from this character to that rat. Continue firing until all arrows are consumed, then send
 //!    ATTACK again and require the Ok intent reply but no damage presentation, mana debit, or
 //!    inventory change during a complete attack interval (the server's no-ammunition refusal).
 //! 3. Equip the Wand of Vortex, send ATTACK against a live rat, and require the Ok reply, an exact
-//!    two-mana debit, attributed energy-coloured damage without inventory consumption, and kill XP.
-//! 4. Equip the Snakebite Rod, send ATTACK against a live rat, and require the Ok reply, an exact
+//!    one-mana debit, attributed energy-coloured damage without inventory consumption, and kill XP.
+//! 4. Earn and buy a Snakebite Rod on a separate Druid, equip it, and send ATTACK. Require an exact
 //!    two-mana debit, attributed earth-coloured damage without inventory consumption, and kill XP.
-//! 5. Stop attacking, logout, freshly admit the character, and require a new game session plus
-//!    the durable zero-arrow count, owned bow/wand/rod, mana, and accumulated kill XP.
+//! 5. Check each Character on fresh admission for new session identity and durable custody,
+//!    ammunition, mana, and kill XP.
 
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent};
@@ -29,7 +29,13 @@ const BOW: u32 = 3350;
 const ARROW: u32 = 3447;
 const WAND: u32 = 3074;
 const ROD: u32 = 3066;
-const SHOT_MANA: u32 = 2;
+const WAND_MANA: u32 = 1;
+const ROD_MANA: u32 = 2;
+
+// These packet callers use the local signer in world::connect_character.
+// Gameplay checks can still run, but no packet can attest to the Platform issuer.
+pub(super) const PLATFORM_ADMISSION_GAP: &str =
+    "need=platform-issued-admission-grant;observed=qualification-local-signer";
 
 struct Row {
     started: std::time::Instant,
@@ -52,6 +58,9 @@ impl Row {
                 Err("missing-required-ranged-step".into())
             }
         });
+        let result = result.and(Err::<(), Box<dyn std::error::Error>>(
+            PLATFORM_ADMISSION_GAP.into(),
+        ));
         if let Err(error) = &result {
             evidence(&format!(
                 "C02_GAP step={} observed={error} need=accepted-native-reply-and-required-exact-deltas",
@@ -220,30 +229,48 @@ async fn buy(
         .iter()
         .filter(|n| sellers.contains(&n.key))
         .filter_map(|n| {
+            let approach = npc::TALK_RANGE_TILES - if n.key == "oteryn:npc.xodet" { 2 } else { 0 };
             route(world, here, |at| {
-                n.placements
-                    .iter()
-                    .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)
+                n.placements.iter().any(|p| {
+                    p.floor == at.floor
+                        && u32::from(at.x.abs_diff(p.x).max(at.y.abs_diff(p.y))) <= approach
+                })
             })
             .map(|p| (n, p))
         })
         .min_by_key(|(_, p)| p.len())
         .ok_or_else(|| format!("reachable-seller-absent:item={id}"))?;
     walk(client, world, &path).await?;
+    let player = client.world_spatial().actor_position;
     let actor = client
         .world_entities()
-        .and_then(|v| {
-            v.iter().find(|e| {
-                e.kind == EntityKind::Npc
+        .and_then(|view| {
+            let mut candidates = view.iter().filter(|entity| {
+                entity.kind == EntityKind::Npc
+                    && entity.position.floor == player.floor
+                    && distance(entity.position, player) <= npc::TALK_RANGE_TILES
                     && seller.placements.iter().any(|p| {
-                        e.position.x == i32::from(p.x)
-                            && e.position.y == i32::from(p.y)
-                            && e.position.floor == -i16::from(p.floor)
+                        let home = ActorPosition {
+                            x: i32::from(p.x),
+                            y: i32::from(p.y),
+                            floor: -i16::from(p.floor),
+                        };
+                        seller_position_matches(&seller.key, home, entity.position)
+                            && (seller.key != "oteryn:npc.xodet"
+                                || entity.display_name.is_none_or(|name| {
+                                    name.as_str().is_ok_and(|name| name == "Xodet")
+                                }))
                     })
-            })
+            });
+            let candidate = candidates.next()?;
+            candidates.next().is_none().then_some(candidate.entity)
         })
-        .map(|e| e.entity)
-        .ok_or("seller-entity-absent")?;
+        .ok_or_else(|| {
+            format!(
+                "need=unique-visible-seller-within-talk-range;seller={}",
+                seller.key
+            )
+        })?;
     for text in ["hi", "trade"] {
         let reply = npc_shop::talk(
             client.session_mut(),
@@ -293,6 +320,49 @@ async fn buy(
     .await
 }
 
+fn distance(a: ActorPosition, b: ActorPosition) -> u32 {
+    a.x.abs_diff(b.x).max(a.y.abs_diff(b.y))
+}
+
+fn seller_position_matches(key: &str, home: ActorPosition, position: ActorPosition) -> bool {
+    position.floor == home.floor
+        && (position == home || (key == "oteryn:npc.xodet" && distance(home, position) <= 2))
+}
+
+pub(super) fn frame_follows_result(frame: u64, result: u64) -> bool {
+    frame > result
+}
+
+async fn wait_moved_inventory(
+    client: &mut DevClientSession,
+    reply: oteryn_dev_client::ItemMoveOutcomeResult,
+    matches_destination: impl Fn(&items::CharacterInventory) -> bool,
+) -> TestResult {
+    if reply.status != CommandStatus::Accepted || reply.outcome != items::ItemMoveOutcome::Moved {
+        return Err(format!("item-move-refused:{reply:?}").into());
+    }
+    tokio::time::timeout(Duration::from_secs(6), async {
+        loop {
+            for event in client.take_events() {
+                if let SessionEvent::Inventory(delta) = event
+                    && frame_follows_result(delta.server_sequence, reply.result_server_sequence)
+                    && matches_destination(&delta.value)
+                {
+                    return TestResult::Ok(());
+                }
+            }
+            client.service_liveness(Duration::from_millis(25)).await?;
+        }
+    })
+    .await
+    .map_err(|_| {
+        format!(
+            "inventory-destination-delta-missing-after={}",
+            reply.result_server_sequence
+        )
+    })?
+}
+
 async fn clear_bow_offhand(client: &mut DevClientSession) -> TestResult {
     let inventory = client.inventory().ok_or("bow-offhand-inventory-absent")?;
     let Some(offhand) = inventory
@@ -303,42 +373,38 @@ async fn clear_bow_offhand(client: &mut DevClientSession) -> TestResult {
         return Ok(());
     };
     let handle = offhand.item.handle;
+    client.take_events();
     let moved = client
         .move_item(&items::ItemMoveIntent {
             source: handle,
             destination: items::ItemMoveDestination::MainBackpack,
         })
         .await?;
-    if moved.outcome != items::ItemMoveOutcome::Moved
-        || client.inventory().is_none_or(|view| {
-            view.equipment
-                .iter()
-                .any(|entry| entry.slot == EquipmentSlot::LeftHand)
-                || !view.entries.iter().any(|entry| entry.handle == handle)
-        })
-    {
-        return Err(format!("clear-bow-offhand:reply={moved:?}").into());
-    }
-    Ok(())
+    wait_moved_inventory(client, moved, |view| {
+        !view
+            .equipment
+            .iter()
+            .any(|entry| entry.slot == EquipmentSlot::LeftHand)
+            && view.entries.iter().any(|entry| entry.handle == handle)
+    })
+    .await
 }
 
 async fn equip(client: &mut DevClientSession, key: NonZeroU32, slot: EquipmentSlot) -> TestResult {
+    let source = carried(client, key)?;
+    client.take_events();
     let reply = client
         .move_item(&items::ItemMoveIntent {
-            source: carried(client, key)?,
+            source,
             destination: items::ItemMoveDestination::Equipment(slot),
         })
         .await?;
-    if reply.outcome != items::ItemMoveOutcome::Moved
-        || client.inventory().is_none_or(|v| {
-            !v.equipment
-                .iter()
-                .any(|e| e.slot == slot && e.item.item_definition_ref == key)
-        })
-    {
-        return Err(format!("equip:item={key}:slot={slot:?}:reply={reply:?}").into());
-    }
-    Ok(())
+    wait_moved_inventory(client, reply, |view| {
+        view.equipment
+            .iter()
+            .any(|entry| entry.slot == slot && entry.item.item_definition_ref == key)
+    })
+    .await
 }
 
 fn own(client: &DevClientSession) -> TestResult<oteryn_dev_client::EntityRef> {
@@ -494,11 +560,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0xc2).await?;
-    earn_gold(&mut client, world, &metadata.spawns, 1430)
+    earn_gold(&mut client, world, &metadata.spawns, 930)
         .await
         .map_err(|error| format!("fund-ranged-kit: {error}"))?;
     let mut purchase_sequences = Vec::new();
-    for (id, n) in [(BOW, 1), (ARROW, 10), (WAND, 1), (ROD, 1)] {
+    for (id, n) in [(BOW, 1), (ARROW, 10), (WAND, 1)] {
         purchase_sequences.push(
             buy(&mut client, world, &metadata.npcs, id, n)
                 .await
@@ -559,12 +625,38 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let wand_count = count(&client, wand)?;
     let wand_hit = attack_damage(&mut client, Some(PresentationColor::Purple)).await?;
-    if wand_hit.1.checked_sub(SHOT_MANA) != Some(wand_hit.2) || count(&client, wand)? != wand_count
+    if wand_hit.1.checked_sub(WAND_MANA) != Some(wand_hit.2) || count(&client, wand)? != wand_count
     {
         return Err(format!("wand-cost-or-custody:observed={wand_hit:?}").into());
     }
     let wand_xp = finish_kill(&mut client, bow_xp, "wand").await?;
     row.pass(3, (wand_hit, wand_xp));
+    let old = client.join_snapshot().game_session_id;
+    logout(&mut client).await?;
+    let expected_mana = client.actor_vitals().ok_or("logout-vitals-absent")?.mana;
+    drop(client);
+    let mut fresh = connect_world(clients, 0xc3).await?;
+    let admitted_xp = experience(&mut fresh).await?;
+    if fresh.join_snapshot().game_session_id == old
+        || !durable_rewards_match(wand_xp, admitted_xp)
+        || count(&fresh, arrow)? != 0
+        || [bow, wand]
+            .into_iter()
+            .any(|k| count(&fresh, k).ok() != Some(1))
+        || fresh.actor_vitals().is_none_or(|v| v.mana != expected_mana)
+    {
+        return Err(
+            format!("fresh-admission-durable-state-mismatch:xp={wand_xp}->{admitted_xp}").into(),
+        );
+    }
+    logout(&mut fresh).await?;
+    drop(fresh);
+
+    // The rod leg uses a distinct Character and its own earned purchase and XP.
+    let mut client = connect_character(clients, 0xc4, 0).await?;
+    let rod_xp_before = druid_experience(&mut client).await?;
+    earn_gold(&mut client, world, &metadata.spawns, 500).await?;
+    buy(&mut client, world, &metadata.npcs, ROD, 1).await?;
     equip(&mut client, rod, EquipmentSlot::RightHand)
         .await
         .map_err(|error| {
@@ -573,41 +665,35 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let rod_count = count(&client, rod)?;
     let rod_hit = attack_damage(&mut client, Some(PresentationColor::LightGreen)).await?;
-    if rod_hit.1.checked_sub(SHOT_MANA) != Some(rod_hit.2) || count(&client, rod)? != rod_count {
+    if rod_hit.1.checked_sub(ROD_MANA) != Some(rod_hit.2) || count(&client, rod)? != rod_count {
         return Err(format!("rod-cost-or-custody:observed={rod_hit:?}").into());
     }
-    let rod_xp = finish_kill(&mut client, wand_xp, "rod").await?;
+    let rod_xp = finish_kill(&mut client, rod_xp_before, "rod").await?;
     row.pass(4, (rod_hit, rod_xp));
     let old = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
-    let expected_mana = client.actor_vitals().ok_or("logout-vitals-absent")?.mana;
+    let expected_mana = client
+        .actor_vitals()
+        .ok_or("rod-logout-vitals-absent")?
+        .mana;
     drop(client);
-    let mut fresh = connect_world(clients, 0xc3).await?;
+    let mut fresh = connect_character(clients, 0xc5, 0).await?;
     let admitted_xp = experience(&mut fresh).await?;
     if fresh.join_snapshot().game_session_id == old
         || !durable_rewards_match(rod_xp, admitted_xp)
-        || count(&fresh, arrow)? != 0
-        || [bow, wand, rod]
-            .into_iter()
-            .any(|k| count(&fresh, k).ok() != Some(1))
+        || count(&fresh, rod)? != rod_count
         || fresh.actor_vitals().is_none_or(|v| v.mana != expected_mana)
     {
-        return Err(
-            format!("fresh-admission-durable-state-mismatch:xp={rod_xp}->{admitted_xp}").into(),
-        );
+        return Err(format!(
+            "druid-fresh-admission-durable-state-mismatch:xp={rod_xp}->{admitted_xp}"
+        )
+        .into());
     }
-    row.pass(
-        5,
-        (
-            fresh.join_snapshot().game_session_id,
-            expected_mana,
-            admitted_xp,
-        ),
-    );
+    row.pass(5, (wand_xp, rod_xp, admitted_xp));
     logout(&mut fresh).await
 }
 
-async fn experience(client: &mut DevClientSession) -> TestResult<u64> {
+async fn general_stats(client: &mut DevClientSession) -> TestResult<Vec<u8>> {
     use oteryn_protocol_oteryn::cyclopedia_character as wire;
     let tab = wire::CharacterTab::GeneralStats as u8;
     let reply = client
@@ -621,9 +707,42 @@ async fn experience(client: &mut DevClientSession) -> TestResult<u64> {
     if reply.status != CommandStatus::Accepted || reply.payload.first() != Some(&tab) {
         return Err(format!("GeneralStats refused: {reply:?}").into());
     }
+    Ok(reply.payload)
+}
+
+async fn druid_experience(client: &mut DevClientSession) -> TestResult<u64> {
+    use oteryn_protocol_oteryn::cyclopedia_character as wire;
+    if !client
+        .selected_capabilities()
+        .contains(&wire::CAPABILITY_CYCLOPEDIA_CHARACTER_VOCATION_V1)
+    {
+        return Err("need=served-vocation-for-separate-level-6-druid".into());
+    }
+    let stats = general_stats(client).await?;
+    let vocation = stats.last().copied();
+    let level = u32::from_le_bytes(
+        stats
+            .get(9..13)
+            .ok_or("GeneralStats level missing")?
+            .try_into()?,
+    );
+    if !["druid", "elder_druid"]
+        .into_iter()
+        .any(|name| wire::vocation_id(name) == vocation)
+        || level < 6
+    {
+        return Err(format!(
+            "need=separate-level-6-druid;observed-vocation={vocation:?};level={level}"
+        )
+        .into());
+    }
+    experience(client).await
+}
+
+async fn experience(client: &mut DevClientSession) -> TestResult<u64> {
+    let payload = general_stats(client).await?;
     Ok(u64::from_le_bytes(
-        reply
-            .payload
+        payload
             .get(1..9)
             .ok_or("GeneralStats XP missing")?
             .try_into()?,
@@ -676,4 +795,36 @@ mod tests {
         assert_eq!(ids.iter().collect::<BTreeSet<_>>().len(), 4);
         Ok(())
     }
+}
+
+#[test]
+fn c02_wand_and_rod_use_their_own_mana_costs() {
+    assert_eq!((WAND_MANA, ROD_MANA), (1, 2));
+}
+
+#[test]
+fn c02_xodet_may_wander_on_his_authored_floor() {
+    let home = ActorPosition {
+        x: 33196,
+        y: 32817,
+        floor: 7,
+    };
+    let moved = ActorPosition {
+        x: home.x + 2,
+        ..home
+    };
+    assert!(seller_position_matches("oteryn:npc.xodet", home, moved));
+    assert!(!seller_position_matches("oteryn:npc.other", home, moved));
+    assert!(!seller_position_matches(
+        "oteryn:npc.xodet",
+        home,
+        ActorPosition { floor: 8, ..moved }
+    ));
+}
+
+#[test]
+fn c02_destination_proof_requires_a_newer_frame() {
+    assert!(!frame_follows_result(9, 10));
+    assert!(!frame_follows_result(10, 10));
+    assert!(frame_follows_result(11, 10));
 }

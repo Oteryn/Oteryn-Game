@@ -49,6 +49,8 @@ impl Row {
         evidence(&format!("C09_CHECK {step} PASS observed={observed:?}"));
     }
     fn finish(self, result: TestResult) {
+        let result: TestResult =
+            result.and(Err(super::full_row_c02::PLATFORM_ADMISSION_GAP.into()));
         for step in STEPS {
             if !self.passed.contains(step) {
                 evidence(&format!("C09_CHECK {step} FAIL assertion-not-completed"));
@@ -432,7 +434,10 @@ async fn accepted_logout(client: &mut DevClientSession) -> TestResult {
     }
 }
 
-async fn food_remaining(client: &mut DevClientSession) -> TestResult<i32> {
+async fn food_remaining(
+    client: &mut DevClientSession,
+    after_result: Option<u64>,
+) -> TestResult<i32> {
     use oteryn_protocol_oteryn::rest_status as wire;
     let reply = client
         .session_mut()
@@ -444,6 +449,13 @@ async fn food_remaining(client: &mut DevClientSession) -> TestResult<i32> {
         .await?;
     if reply.status != CommandStatus::Accepted {
         return Err(format!("rest status refused: {reply:?}").into());
+    }
+    if after_result.is_some_and(|sequence| {
+        !super::full_row_c02::frame_follows_result(reply.server_sequence, sequence)
+    }) {
+        return Err(
+            format!("rest status did not follow food refusal {after_result:?}: {reply:?}").into(),
+        );
     }
     Ok(wire::RestStatus::decode(&reply.payload)
         .ok_or("missing rest status payload")?
@@ -468,9 +480,23 @@ async fn prove_full_stomach(client: &mut DevClientSession, meat: NonZeroU32) -> 
             return Err(format!("food command not accepted: {used:?}").into());
         }
         match used.disposition {
-            UseDisposition::Full if quantity(client, meat)? == before => return Ok(before),
+            UseDisposition::Full => {
+                food_remaining(client, Some(used.result_server_sequence)).await?;
+                let after = quantity(client, meat)?;
+                if after != before {
+                    return Err(format!("Full refusal changed meat count {before}->{after}").into());
+                }
+                return Ok(before);
+            }
             UseDisposition::Committed => wait_quantity(client, meat, before - 1).await?,
-            UseDisposition::Exhausted if quantity(client, meat)? == before => {
+            UseDisposition::Exhausted => {
+                food_remaining(client, Some(used.result_server_sequence)).await?;
+                let after = quantity(client, meat)?;
+                if after != before {
+                    return Err(
+                        format!("Exhausted refusal changed meat count {before}->{after}").into(),
+                    );
+                }
                 client.service_liveness(Duration::from_millis(250)).await?;
                 client.take_events();
             }
@@ -538,14 +564,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let refused_inventory = quantity(&client, meat)?;
     let refused_vitals = client.actor_vitals().copied();
     let refused = client.use_item(handle).await?;
-    if refused.disposition != UseDisposition::Exhausted
+    food_remaining(&mut client, Some(refused.result_server_sequence)).await?;
+    if refused.status != CommandStatus::Accepted
+        || refused.disposition != UseDisposition::Exhausted
         || quantity(&client, meat)? != refused_inventory
         || client.actor_vitals().copied() != refused_vitals
     {
         return Err(format!("food refusal reply={refused:?} inventory={refused_inventory}->{} vitals={refused_vitals:?}->{:?}", quantity(&client, meat)?, client.actor_vitals()).into());
     }
     row.pass("food-refusal", refused.disposition);
-    let fed = food_remaining(&mut client).await?;
+    let fed = food_remaining(&mut client, None).await?;
     if fed <= 0 {
         return Err(
             format!("committed meat did not start served food regeneration: {fed}ms").into(),
@@ -562,7 +590,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     accepted_logout(&mut client).await?;
     drop(client);
     let mut client = connect_world(clients, 0xd9).await?;
-    let fed_after = food_remaining(&mut client).await?;
+    let fed_after = food_remaining(&mut client, None).await?;
     if fed_after <= 0 {
         return Err(format!("fresh admission lost timed food: remaining={fed_after}ms").into());
     }

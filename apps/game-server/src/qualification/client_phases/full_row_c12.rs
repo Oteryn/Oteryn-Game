@@ -26,6 +26,7 @@ use oteryn_protocol_oteryn::presentation::{PresentationEventKind, PresentationVa
 use std::num::NonZeroU32;
 
 const ITEM_ID: u32 = 50_271;
+const SELLER: &str = "oteryn:npc.enpa_deia_pema";
 const SPELL_WORDS: &str = "exori nia";
 const SPELL_NAME: &str = "greater tiger clash";
 const SAMPLES: usize = 3;
@@ -63,6 +64,7 @@ impl Row {
     }
 
     fn finish(mut self, result: TestResult) {
+        let result: TestResult = result.and(Err(super::full_row_c02::PLATFORM_ADMISSION_GAP.into()));
         if let Err(error) = result {
             self.failure = Some((self.current(), error.to_string()));
         }
@@ -121,10 +123,10 @@ fn spell(client: &mut DevClientSession) -> TestResult<NonZeroU32> {
     let catalog = client.session_mut().spell_catalog()?.ok_or("served spell catalogue absent")?;
     let entry = catalog.entries.iter()
         .find(|entry| entry.words == SPELL_WORDS && entry.rune_item.is_none())
-        .ok_or("need=Greater-Tiger-Clash-eligibility;words=exori nia;level=18;requires=premium-monk-or-exalted-monk;observed=absent-from-served-spell-catalogue")?;
+        .ok_or("need=platform-created-premium-monk-or-exalted-monk;spell=exori-nia;cast-min-level=18;item-50271-min-level=20;observed=absent-from-served-spell-catalogue")?;
     if !entry.available {
         return Err(format!(
-            "need=Greater-Tiger-Clash-eligibility;words={SPELL_WORDS};level={};learned={};requires=premium-monk-or-exalted-monk",
+            "need=premium-monk-or-exalted-monk;spell={SPELL_WORDS};cast-min-level={};item-50271-min-level=20;learned={}",
             entry.level, entry.learned
         ).into());
     }
@@ -452,6 +454,9 @@ async fn acquire(
     definition: NonZeroU32,
 ) -> TestResult<u64> {
     use oteryn_dev_client::client_runtime::npc_shop;
+    if !metadata.npcs.npcs.iter().any(|entry| entry.key == SELLER) {
+        return Err(format!("need=50271-seller-in-served-world;seller={SELLER};placement=33603,31468,7;region=131,122").into());
+    }
     let trades = read_json("content/services/trade/trade-00000-00323.json")?;
     let key = format!("oteryn:item.tibia.i{ITEM_ID}");
     let mut offers: Vec<(String, u64)> = Vec::new();
@@ -570,6 +575,21 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     }
 }
 
+fn weapon(client: &DevClientSession) -> TestResult<Option<NonZeroU32>> {
+    Ok(client.inventory().ok_or("weapon control inventory absent")?.equipment.iter()
+        .find(|entry| entry.slot == items::EquipmentSlot::RightHand)
+        .map(|entry| entry.item.item_definition_ref))
+}
+
+fn require_fixed_weapon(before: Option<NonZeroU32>, after: Option<NonZeroU32>) -> TestResult {
+    if before != after {
+        return Err(format!(
+            "need=augment-off-control-with-identical-weapon-inputs;weapon={before:?}->{after:?};item={ITEM_ID}"
+        ).into());
+    }
+    Ok(())
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let definition = item_ref()?;
     let mut client = connect_world(clients, 0xc2).await?;
@@ -590,6 +610,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let profile = profiles.get(&creature).ok_or("selected creature profile absent")?;
     let hunt = Hunt { world, spawns: &metadata.spawns, creature, profile };
 
+    let baseline_weapon = weapon(&client)?;
+    if baseline_weapon == Some(definition) {
+        return Err("need=augment-off-baseline;item-50271-already-equipped".into());
+    }
     let baseline = verdict::indexed_timeout(BASELINE_BUDGET, samples(&hunt, &mut client, spell_index))
         .await
         .map_err(|_| format!("baseline sampling deadline=75s last-frame={}", client.last_server_sequence()))??;
@@ -599,6 +623,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.pass("acquire-50271", acquired);
 
     equip_right(&mut client, definition).await?;
+    require_fixed_weapon(baseline_weapon, weapon(&client)?)?;
     let augmented = samples(&hunt, &mut client, spell_index).await?;
     if !equipped_right(&client, definition) || mean(&augmented) <= mean(&baseline) {
         return Err(format!(
@@ -622,6 +647,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     wait_inventory(&mut client, "unequip", |c| !equipped_right(c, definition) && carried_count(c, definition) > 0).await?;
     row.pass("unequip", client.last_server_sequence());
 
+    require_fixed_weapon(baseline_weapon, weapon(&client)?)?;
     let carried = samples(&hunt, &mut client, spell_index).await?;
     if mean(&carried) >= mean(&augmented) {
         return Err(format!("carried item kept the augment: augmented={augmented:?} carried={carried:?}").into());
@@ -637,6 +663,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("fresh admission lost the right-hand item".into());
     }
     let fresh_spell_index = spell(&mut fresh)?;
+    require_fixed_weapon(baseline_weapon, weapon(&fresh)?)?;
     let replay = samples(&hunt, &mut fresh, fresh_spell_index).await?;
     let pooled: Vec<u64> = augmented.iter().chain(&replay).copied().collect();
     if mean(&replay) <= mean(&baseline) || mean(&pooled) <= mean(&baseline) {
@@ -650,6 +677,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn c12_refuses_to_compare_different_weapon_inputs() {
+        let baseline = NonZeroU32::new(1);
+        assert!(require_fixed_weapon(baseline, baseline).is_ok());
+        assert!(require_fixed_weapon(baseline, NonZeroU32::new(2)).is_err());
+        assert!(require_fixed_weapon(baseline, None).is_err());
+    }
 
     #[test]
     fn c12_gap_names_the_stalled_command_and_unrun_steps() {

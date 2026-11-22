@@ -11,9 +11,10 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients)))
             .await;
     match result {
-        Ok(Ok(())) => evidence(
-            "e2e_all scenario=C09.client status=PASS evidence=food-funded-HP-mana-payloads",
-        ),
+        Ok(Ok(())) => evidence(&format!(
+            "e2e_all scenario=C09.client status=FAIL evidence={}",
+            super::full_row_c02::PLATFORM_ADMISSION_GAP
+        )),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=C09.client status=FAIL evidence={error}"
         )),
@@ -44,40 +45,34 @@ async fn acquire_meat(
     Ok(reference)
 }
 
-fn capture(before: ActorVitals, after: ActorVitals) {
-    let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    let write = || -> TestResult {
-        let path = Path::new(&path);
-        std::fs::write(
-            path.join("c09-before.bin"),
-            oteryn_protocol_oteryn::actor_spell::encode_actor_vitals(&before)
-                .map_err(|error| format!("encode before: {error:?}"))?,
-        )?;
-        std::fs::write(
-            path.join("c09-regenerated.bin"),
-            oteryn_protocol_oteryn::actor_spell::encode_actor_vitals(&after)
-                .map_err(|error| format!("encode regenerated: {error:?}"))?,
-        )?;
-        std::fs::write(
-            path.join("c09-expected.txt"),
-            format!(
-                "{} {} {} {} {} {} {}\n",
-                after.health,
-                after.max_health,
-                after.mana,
-                after.max_mana,
-                after.soul,
-                after.harmony,
-                u8::from(after.serene)
-            ),
-        )?;
-        Ok(())
-    };
-    if let Err(error) = write() {
-        evidence(&format!("C09_CAPTURE_WRITE_ERROR {error}"));
-    }
+fn capture(path: &Path, before: ActorVitals, after: ActorVitals) -> TestResult {
+    write_packet(
+        path,
+        "c09-before.bin",
+        &oteryn_protocol_oteryn::actor_spell::encode_actor_vitals(&before)
+            .map_err(|error| format!("encode before: {error:?}"))?,
+    )?;
+    write_packet(
+        path,
+        "c09-regenerated.bin",
+        &oteryn_protocol_oteryn::actor_spell::encode_actor_vitals(&after)
+            .map_err(|error| format!("encode regenerated: {error:?}"))?,
+    )?;
+    write_packet(
+        path,
+        "c09-expected.txt",
+        format!(
+            "{} {} {} {} {} {} {}\n",
+            after.health,
+            after.max_health,
+            after.mana,
+            after.max_mana,
+            after.soul,
+            after.harmony,
+            u8::from(after.serene)
+        )
+        .as_bytes(),
+    )
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -132,7 +127,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 && delta.value.health > before.health
                 && delta.value.mana > before.mana
             {
-                capture(before, delta.value);
+                if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+                    capture(Path::new(&root), before, delta.value)?;
+                }
                 return Ok(());
             }
         }
@@ -144,4 +141,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             .into());
         }
     }
+}
+
+#[test]
+fn c09_missing_capture_directory_is_an_error() {
+    let directory = Path::new(file!()).join("cannot-create-child-under-source");
+    assert!(write_packet(&directory, "capture.bin", b"frame").is_err());
+}
+fn write_packet(root: &Path, name: &str, bytes: &[u8]) -> TestResult {
+    std::fs::write(root.join(name), bytes)
+        .map_err(|error| format!("capture-write-error {name}: {error}").into())
 }
