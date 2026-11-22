@@ -228,9 +228,10 @@ async fn write_with_skinning<C: ItemLoopContent>(
         return enchanting::write(tx, fence, request, native, content).await;
     }
     let (world, _) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
+    use oteryn_gameplay_items::fishing::{DESERT_FISHING_SPENT, DESERT_FISHING_WATER};
     if let Some(gathering) = &request.gathering
-        && gathering.mutation.before == u32::from(oteryn_gameplay_items::fishing::DESERT_FISHING_WATER)
-        && gathering.mutation.tool_key == oteryn_gameplay_items::fishing::FISHING_ROD
+        && u16::try_from(gathering.mutation.before)
+            .is_ok_and(|id| matches!(id, DESERT_FISHING_WATER | DESERT_FISHING_SPENT))
         && !super::world_event::changes::variants::desert_fishing_admitted(&mut **tx, world, gathering).await?
     {
         return Ok(UseDisposition::NothingToUse);

@@ -221,15 +221,6 @@ pub(in crate::durability) async fn desert_fishing_admitted(
         DESERT_FISHING_RECOVERY_MS, DESERT_FISHING_SPENT, DESERT_FISHING_WATER, SANDFISH,
     };
     let mutation = &gathering.mutation;
-    if mutation.tool_key != oteryn_gameplay_items::fishing::FISHING_ROD
-        || !gathering.attempt.consumes_bait
-        || !matches!(gathering.attempt.yield_item, None | Some(SANDFISH))
-        || gathering.attempt.after != Some(DESERT_FISHING_SPENT)
-        || mutation.after != u32::from(DESERT_FISHING_SPENT)
-        || mutation.decay != [(u32::from(DESERT_FISHING_WATER), i64::from(DESERT_FISHING_RECOVERY_MS))]
-    {
-        return Ok(false);
-    }
     let Ok(epoch) = u64::try_from(gathering.scope.reset_epoch) else {
         return Ok(false);
     };
@@ -245,8 +236,30 @@ pub(in crate::durability) async fn desert_fishing_admitted(
         return Ok(false);
     };
     let position = ((position >> 32) as u16, (position >> 16) as u16, floor);
-    let Some(day) = load(tx, world, epoch).await? else {
+    // Keep a World reset from retiring the water before this transaction debits bait.
+    let current: bool = sqlx::query_scalar(
+        "SELECT game_world_reset_map_epoch_current(encode($1,'hex')::uuid,$2::text::numeric)",
+    )
+    .bind(world.as_bytes().as_slice())
+    .bind(epoch.to_string())
+    .fetch_one(&mut **tx)
+    .await?;
+    if !current {
         return Ok(false);
-    };
-    Ok(day.variants.owns_tile_entry("river_runs_deep", position, DESERT_FISHING_WATER))
+    }
+    let projected = epoch != 0 && load(tx, world, epoch).await?.is_some_and(|day| {
+        day.variants.owns_tile_entry("river_runs_deep", position, DESERT_FISHING_WATER)
+    });
+    let is_live_water = mutation.before == u32::from(DESERT_FISHING_WATER);
+    let ordinary_rod = mutation.tool_key == oteryn_gameplay_items::fishing::FISHING_ROD;
+    if !projected {
+        return Ok(!(is_live_water && ordinary_rod));
+    }
+    Ok(is_live_water
+        && ordinary_rod
+        && gathering.attempt.consumes_bait
+        && matches!(gathering.attempt.yield_item, None | Some(SANDFISH))
+        && gathering.attempt.after == Some(DESERT_FISHING_SPENT)
+        && mutation.after == u32::from(DESERT_FISHING_SPENT)
+        && mutation.decay == [(u32::from(DESERT_FISHING_WATER), i64::from(DESERT_FISHING_RECOVERY_MS))])
 }

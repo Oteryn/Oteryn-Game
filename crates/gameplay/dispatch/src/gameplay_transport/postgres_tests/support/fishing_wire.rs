@@ -10,6 +10,13 @@ use oteryn_protocol_oteryn::world_object::{
 };
 use oteryn_world_bundle::bundle::Family;
 
+#[derive(Clone, Copy)]
+pub(super) enum RiverProjection {
+    Terrain,
+    Item,
+    RetiredItem,
+}
+
 pub(super) struct GatheringCase {
     pub tool: u16,
     pub target_id: u16,
@@ -17,7 +24,7 @@ pub(super) struct GatheringCase {
     pub yield_item: Option<u16>,
     pub committed: bool,
     pub in_sewers: bool,
-    pub projected_desert: Option<Family>,
+    pub projected_desert: Option<RiverProjection>,
     pub select_roll: Option<fn(u32, u32) -> bool>,
     pub consumes_bait: bool,
 }
@@ -80,9 +87,9 @@ pub(super) fn gathering_scenario(case: GatheringCase) -> TestResult {
             oteryn_gameplay_items::fishing::WORM
         };
         let desert = projected_desert.is_some();
-        let desert_terrain = projected_desert == Some(Family::Terrain);
+        let desert_terrain = matches!(projected_desert, Some(RiverProjection::Terrain));
         let epoch = if desert {
-            river_reset(&harness, deps.admitted.world_id).await?
+            river_reset(&harness, deps.admitted.world_id, 1).await?
         } else {
             0
         };
@@ -103,11 +110,18 @@ pub(super) fn gathering_scenario(case: GatheringCase) -> TestResult {
                 floor: -7,
             },
         };
-        let spent = "oteryn:item.tibia.i13988";
-        let extra = if projected_desert == Some(Family::Item) {
+        let alternate = if target_id == oteryn_gameplay_items::fishing::DESERT_FISHING_WATER {
+            "oteryn:item.tibia.i13988"
+        } else {
+            "oteryn:item.tibia.i13989"
+        };
+        let extra = if desert && !desert_terrain {
             vec![(
-                spent,
-                reference(spent).ok_or("spent desert water")?.get() - 1,
+                alternate,
+                reference(alternate)
+                    .ok_or("other desert water state")?
+                    .get()
+                    - 1,
             )]
         } else {
             Vec::new()
@@ -447,6 +461,16 @@ pub(super) fn gathering_scenario(case: GatheringCase) -> TestResult {
             })
             .ok_or("deterministic handle history exists")?;
         admitted.continuity.item_view.handle_counter = counter;
+        if matches!(projected_desert, Some(RiverProjection::RetiredItem)) {
+            river_reset(&harness, deps.admitted.world_id, epoch + 1).await?;
+            assert!(
+                harness
+                    .root
+                    .world_changes(deps.admitted.world_id, epoch)
+                    .await?
+                    .is_none()
+            );
+        }
         let command_id = 1;
         let (next, result, actual) =
             exchange(&owner, admitted, command_id, &payload, reference(rod)).await?;
@@ -828,9 +852,13 @@ async fn fish_corpse(
     Ok(())
 }
 
-async fn river_reset(h: &Harness, world: crate::foundation::WorldId) -> TestResult<u64> {
+async fn river_reset(
+    h: &Harness,
+    world: crate::foundation::WorldId,
+    first: u64,
+) -> TestResult<u64> {
     use oteryn_gameplay_world_change::variants::Selected;
-    let epoch = (1..1_000)
+    let epoch = (first..first + 1_000)
         .find(|epoch| {
             Selected::roll(world.as_bytes(), *epoch).is_ok_and(|selected| {
                 selected
