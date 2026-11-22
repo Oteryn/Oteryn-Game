@@ -142,6 +142,28 @@ async fn select(
     })
 }
 
+async fn modify(
+    client: &mut DevClientSession,
+    definition: NonZeroU32,
+    operation: wire::ModificationOperation,
+    revision: u64,
+) -> TestResult<wire::ModificationReply> {
+    let request = wire::ModificationRequest {
+        definition,
+        slot: 1,
+        operation,
+        expected_revision: revision,
+    };
+    let reply = command(client, operation.command_type(), &request.encode()).await?;
+    wire::ModificationReply::decode(&reply.payload).ok_or_else(|| {
+        format!(
+            "step-modify-{operation:?}:status={:?} payload={:?}",
+            reply.status, reply.payload
+        )
+        .into()
+    })
+}
+
 async fn acquire_weapon(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -511,12 +533,29 @@ async fn journey(clients: &SeamClients<'_>, observed: &mut Observations) -> Test
     if !protection_zone(tile(client.world_spatial().actor_position)?) {
         return Err("step=modification protection-zone arrival not observed".into());
     }
+    let stable = browse(&mut client, browse_offset).await?;
+    let refused = modify(
+        &mut client,
+        definition,
+        wire::ModificationOperation::RankUp,
+        u64::MAX,
+    )
+    .await?;
+    observed.require(
+        "stale-refusal",
+        refused.result == wire::ModificationResult::StaleRevision,
+        refused,
+    );
+    observed.require(
+        "refusal-no-delta",
+        browse(&mut client, browse_offset).await? == stable,
+        &stable,
+    );
     observed.require(
         "committed-track-revision-unavailable",
         false,
         "browse, catalogue and selection replies omit the committed track revision required by Modify; source=crates/protocol-oteryn/src/weapon_proficiency.rs:163",
     );
-    let stable = browse(&mut client, browse_offset).await?;
 
     full_row_p05::logout_after_combat(&mut client).await?;
     drop(client);
@@ -615,5 +654,15 @@ fn review_p08_guards_the_journey() {
         include_str!("full_row_p08.rs")
             .split_once("#[cfg(test)]")
             .is_some_and(|(body, _)| body.contains("committed-track-revision-unavailable"))
+    );
+}
+
+#[cfg(test)]
+#[test]
+fn review_2_p08() {
+    assert!(
+        include_str!("full_row_p08.rs")
+            .split_once("#[cfg(test)]")
+            .is_some_and(|(body, _)| body.contains("stale-refusal"))
     );
 }

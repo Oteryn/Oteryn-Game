@@ -353,6 +353,15 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             return Err(format!("step 6 revelation save observed reply={revealed:?}").into());
         }
         validate_current(&response, &revealed)?;
+        let active = full_row_p07::live_wheel_effects(&mut client, &revealed, 2).await?;
+        if !active
+            .iter()
+            .any(|line| line.ends_with(": revelation stage 1"))
+        {
+            return Err(
+                format!("step=revelation-effect stage-one projection missing: {active:?}").into(),
+            );
+        }
         row.pass("revelation-save", (&revealed, client.actor_vitals()));
         None
     };
@@ -378,6 +387,15 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
+    if revelation_gap.is_none() {
+        let active = full_row_p07::live_wheel_effects(&mut client, &reset, 3).await?;
+        if active
+            .iter()
+            .any(|line| line.contains(": revelation stage "))
+        {
+            return Err(format!("step=revelation-reset active effect remains: {active:?}").into());
+        }
+    }
     row.pass("reset", (&reset, client.actor_vitals()));
 
     logout(&mut client).await?;
@@ -399,7 +417,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if let Some(gap) = revelation_gap {
         return Err(gap.into());
     }
-    Err("step=revelation-effect need=measured-live-effect-at-250-domain-points;source=crates/protocol-oteryn/src/wheel.rs:25".into())
+    Ok(())
 }
 
 #[cfg(test)]
@@ -443,5 +461,15 @@ fn row_06_publishes_a_gap_for_an_unproven_journey() {
         include_str!("full_row_p06.rs")
             .split_once("#[cfg(test)]")
             .is_some_and(|(production, _)| production.contains("P06_GAP status="))
+    );
+}
+
+#[cfg(test)]
+#[test]
+fn review_2_p06() {
+    assert!(
+        include_str!("full_row_p06.rs")
+            .split_once("#[cfg(test)]")
+            .is_some_and(|(body, _)| body.contains("live_wheel_effects"))
     );
 }

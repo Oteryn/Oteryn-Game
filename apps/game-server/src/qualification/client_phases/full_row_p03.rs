@@ -136,6 +136,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 draw.creatures
             )
         })?;
+    let baseline =
+        full_row_p05::hunt_for_race(&mut client, world, &metadata.spawns, creature).await?;
     let active = accepted(
         &mut client,
         wire::Request::Select {
@@ -218,16 +220,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("P03 step=refusal observed=active-state-mutated".into());
     }
 
-    travel_to_spawn(&mut client, world, &metadata.spawns, &selected.selected).await?;
-    client_hunt::hunt(&mut client).await?;
+    let measured =
+        full_row_p05::hunt_for_race(&mut client, world, &metadata.spawns, &selected.selected)
+            .await?;
     // Keep answering liveness while the interval runs out; a bare sleep lets
     // the server drop the session as unresponsive.
     let until = tokio::time::Instant::now() + Duration::from_secs(61);
     while tokio::time::Instant::now() < until {
         client.service_liveness(Duration::from_millis(500)).await?;
     }
-    travel_to_spawn(&mut client, world, &metadata.spawns, &selected.selected).await?;
-    client_hunt::hunt(&mut client).await?;
+    full_row_p05::hunt_for_race(&mut client, world, &metadata.spawns, &selected.selected).await?;
     let checkpoint = query(&mut client, "effect-checkpoint").await?;
     let checkpoint = slot(&checkpoint, number)?.clone();
     if checkpoint.state != 2
@@ -255,6 +257,24 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     full_row_p05::logout_after_combat(&mut client).await?;
+    if checkpoint.bonus == 3
+        && baseline.race == measured.race
+        && baseline.raw_xp == measured.raw_xp
+        && baseline.gained_xp == baseline.raw_xp
+        && baseline.raw_xp > 0
+        && let Some(award) = baseline
+            .raw_xp
+            .checked_mul(100 + u64::from(checkpoint.percent))
+            .map(|n| n / 100)
+        && award > baseline.gained_xp
+        && measured.gained_xp == award
+    {
+        evidence(&format!(
+            "P03_CHECK step=prey-xp-effect raw={} credited={} percent={}",
+            measured.raw_xp, award, checkpoint.percent
+        ));
+        return Ok(());
+    }
     Err(format!(
         "step=combat-effect need=measured-bonus-{}-on-selected-race-{};checkpoint-proven;source=crates/gameplay/dispatch/src/gameplay_transport/attack/drain.rs:2401",
         checkpoint.bonus, checkpoint.selected
@@ -339,5 +359,15 @@ fn row_03_publishes_a_gap_for_an_unproven_journey() {
         include_str!("full_row_p03.rs")
             .split_once("#[cfg(test)]")
             .is_some_and(|(production, _)| production.contains("P03_GAP status="))
+    );
+}
+
+#[cfg(test)]
+#[test]
+fn review_2_p03() {
+    assert!(
+        include_str!("full_row_p03.rs")
+            .split_once("#[cfg(test)]")
+            .is_some_and(|(body, _)| body.contains("hunt_for_race"))
     );
 }

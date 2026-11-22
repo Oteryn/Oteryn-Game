@@ -102,6 +102,36 @@ async fn query(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<R
     send(client, 4, 0).await
 }
 
+async fn await_weekly_reset(
+    client: &mut oteryn_dev_client::DevClientSession,
+    before: &Reply,
+) -> TestResult<Reply> {
+    let until = tokio::time::Instant::now() + Duration::from_secs(25);
+    loop {
+        let current = query(client).await?;
+        if current.period > before.period {
+            if before.points.checked_add(before.weekly.pending_points) != Some(current.points)
+                || before
+                    .soulseals
+                    .checked_add(before.weekly.pending_soulseals)
+                    != Some(current.soulseals)
+                || before.weekly.pending_points == 0
+                || before.weekly.pending_soulseals == 0
+            {
+                return Err(format!(
+                    "step=weekly-reset award mismatch before={before:?} after={current:?}"
+                )
+                .into());
+            }
+            return Ok(current);
+        }
+        if tokio::time::Instant::now() >= until {
+            return Err(format!("step=weekly-reset need=completed-tasks-and-real-weekly-boundary period={} pending-points={} pending-soulseals={}", before.period, before.weekly.pending_points, before.weekly.pending_soulseals).into());
+        }
+        client.service_liveness(Duration::from_secs(2)).await?;
+    }
+}
+
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut journey = Journey::new();
     let result = verdict::indexed_timeout(
@@ -206,19 +236,6 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         (&rerolled.refusal, &rerolled.bounty),
     );
 
-    let offer = rerolled
-        .shop
-        .iter()
-        .filter(|offer| !offer.bought && offer.price > 0)
-        .min_by_key(|offer| offer.price)
-        .ok_or("step=shop need=unbought-authored-offer")?;
-    let bought = send(&mut client, 16, offer.index).await?;
-    journey.check(
-        6,
-        bought.refusal == 0
-            && rerolled.points.checked_sub(u64::from(offer.price)) == Some(bought.points),
-        (&bought.refusal, rerolled.points, bought.points, offer),
-    );
     let talisman = send(&mut client, 17, 0).await?;
     journey.check(
         6,
@@ -267,18 +284,28 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         );
     }
 
-    let reset = query(&mut client).await?;
+    let before_reset = query(&mut client).await?;
+    let reset = await_weekly_reset(&mut client, &before_reset).await?;
+    let offer = reset
+        .shop
+        .iter()
+        .filter(|offer| !offer.bought && offer.price > 0)
+        .min_by_key(|offer| offer.price)
+        .ok_or("step=shop need=unbought-authored-offer")?;
+    let bought = send(&mut client, 16, offer.index).await?;
+    journey.check(
+        6,
+        bought.refusal == 0
+            && reset.points.checked_sub(u64::from(offer.price)) == Some(bought.points),
+        (&bought.refusal, reset.points, bought.points, offer),
+    );
+    let next_week = send(&mut client, 5, 0).await?;
     journey.check(
         7,
-        reset.period > initial.period && reset.soulseals > initial.soulseals,
-        (
-            initial.period,
-            reset.period,
-            initial.soulseals,
-            reset.soulseals,
-            "need=completed-weekly-tasks-and-next-real-reset-period",
-        ),
+        next_week.refusal == 0 && next_week.period == reset.period && next_week.weekly.started,
+        ("next-week-start", &next_week),
     );
+    let reset = query(&mut client).await?;
     full_row_p05::logout_after_combat(&mut client).await?;
     drop(client);
     let mut fresh = connect_world(clients, 0x9b).await?;
@@ -333,5 +360,15 @@ fn review_p04_guards_the_journey() {
         include_str!("full_row_p04.rs")
             .split_once("#[cfg(test)]")
             .is_some_and(|(body, _)| body.contains("weekly-credit-sample"))
+    );
+}
+
+#[cfg(test)]
+#[test]
+fn review_2_p04() {
+    assert!(
+        include_str!("full_row_p04.rs")
+            .split_once("#[cfg(test)]")
+            .is_some_and(|(body, _)| body.contains("await_weekly_reset"))
     );
 }

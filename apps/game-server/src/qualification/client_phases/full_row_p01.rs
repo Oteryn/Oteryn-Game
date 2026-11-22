@@ -138,12 +138,24 @@ fn count(reply: &CharmProgressionReply, race: NonZeroU32) -> u32 {
         .map_or(0, |entry| entry.kill_count)
 }
 
-fn race_complete(reply: &CharmProgressionReply, race: NonZeroU32) -> bool {
-    reply
-        .bestiary
-        .iter()
-        .find(|entry| entry.race == race)
-        .is_some_and(|entry| entry.kill_count == entry.kill_thresholds[2])
+fn mastery_plan(
+    current: &CharmProgressionReply,
+    reachable: impl Fn(&str) -> bool,
+) -> TestResult<Vec<(NonZeroU32, &'static str, u32, u32)>> {
+    let mut plan = Vec::new();
+    for (index, (definition, points)) in full_row_p05::canonical_races()?.iter().enumerate() {
+        let race = NonZeroU32::new(u32::try_from(index)? + 1).ok_or("zero race reference")?;
+        let remaining = definition
+            .final_kill_threshold()
+            .saturating_sub(count(current, race));
+        if remaining > 0 && *points > 0 && reachable(definition.key()) {
+            plan.push((race, definition.key(), remaining, *points));
+        }
+    }
+    plan.sort_by(|left, right| {
+        (u64::from(left.2) * u64::from(right.3)).cmp(&(u64::from(right.2) * u64::from(left.3)))
+    });
+    Ok(plan)
 }
 
 async fn hunt_once(
@@ -199,12 +211,20 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         count(&current, race)
     ));
 
+    let catalogue = crate::content::charm_source::CanonicalCharmCatalogue::embedded()?;
+    let fire_charm = catalogue
+        .catalogue()
+        .definitions()
+        .position(|entry| entry.key.as_str() == "oteryn:charm.enflame")
+        .ok_or("step=charm-proc canonical Enflame missing")?;
     let (charm, stage, cost) = current
         .charms
         .charms
         .iter()
         .enumerate()
-        .filter(|(_, charm)| charm.unlocked_stage == 0 && charm.next_stage_cost > 0)
+        .filter(|(index, charm)| {
+            *index == fire_charm && charm.unlocked_stage == 0 && charm.next_stage_cost > 0
+        })
         .min_by_key(|(_, charm)| charm.next_stage_cost)
         .and_then(|(index, charm)| {
             Some((
@@ -225,25 +245,36 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     evidence("P01_CHECK locked-assignment-refusal PASS disposition=CharmLocked");
 
     row.at("earn-unlock-currency");
-    while !race_complete(&current, race) {
-        hunt_once(&mut client, world, &metadata.spawns).await?;
-        let next = query(&mut client).await?;
-        if count(&current, race).checked_add(1) != Some(count(&next, race)) {
-            return Err(format!(
-                "credited hunt failed to advance the selected race by one: {} -> {}",
-                count(&current, race),
-                count(&next, race)
-            )
-            .into());
+    let from = tile(client.world_spatial().actor_position)?;
+    let plan = mastery_plan(&current, |key| {
+        full_row_p05::has_reachable_spawn(world, from, &metadata.spawns, key)
+    })?;
+    let reachable_points = plan.iter().map(|entry| u64::from(entry.3)).sum::<u64>();
+    if u64::from(current.charms.charm_points_available) + reachable_points < u64::from(cost) {
+        return Err(format!("step=earn-unlock-currency need={cost} balance={} reachable-mastery-points={reachable_points}", current.charms.charm_points_available).into());
+    }
+    let mut mastered = None;
+    for (candidate, key, remaining, _) in plan {
+        for _ in 0..remaining {
+            let kill =
+                full_row_p05::hunt_for_race(&mut client, world, &metadata.spawns, key).await?;
+            let next = query(&mut client).await?;
+            if kill.race != candidate
+                || count(&current, candidate).checked_add(1) != Some(count(&next, candidate))
+            {
+                return Err(format!(
+                    "step=earn-unlock-currency incorrect credited delta for {key}"
+                )
+                .into());
+            }
+            current = next;
         }
-        current = next;
+        mastered = Some((candidate, key));
+        if current.charms.charm_points_available >= cost {
+            break;
+        }
     }
-    if current.charms.charm_points_available < cost {
-        return Err(format!(
-            "race={race} reached mastery with {} charm points; need={} and a reachable second Bestiary race; source=crates/gameplay/dispatch/src/gameplay_transport/charm_native.rs:158",
-            current.charms.charm_points_available, cost
-        ).into());
-    }
+    let (race, assigned_key) = mastered.ok_or("step=assign need=player-mastered-reachable-race")?;
 
     row.at("unlock-stage");
     let unlocked = command(
@@ -280,13 +311,32 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     row.at("assigned-combat-hook");
     let before_hook = count(&assigned, race);
-    let kill = hunt_once(&mut client, world, &metadata.spawns).await?;
-    if kill.race != race {
-        return Err(format!(
-            "step=assigned-combat expected-race={race} credited-race={}",
-            kill.race
-        )
-        .into());
+    if client.inventory().is_none_or(|inventory| {
+        inventory.equipment.iter().any(|item| {
+            matches!(
+                item.slot,
+                oteryn_protocol_oteryn::item_view::EquipmentSlot::LeftHand
+                    | oteryn_protocol_oteryn::item_view::EquipmentSlot::RightHand
+            )
+        })
+    }) {
+        return Err("step=charm-proc need=unarmed-physical-baseline-to-isolate-Enflame".into());
+    }
+    let mut observed_proc = false;
+    for _ in 0..12 {
+        let kill =
+            full_row_p05::hunt_for_race(&mut client, world, &metadata.spawns, assigned_key).await?;
+        if kill.race != race {
+            return Err(format!(
+                "step=assigned-combat expected-race={race} credited-race={}",
+                kill.race
+            )
+            .into());
+        }
+        if kill.fire_damage {
+            observed_proc = true;
+            break;
+        }
     }
     let after_hook = query(&mut client).await?;
     let after_state = &after_hook.charms.charms[usize::try_from(charm.get() - 1)?];
@@ -311,7 +361,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("fresh QUERY lost durable state: {durable:?}").into());
     }
     evidence("P01_CHECK logout-fresh-admission PASS exact-durable-views");
-    Err("step=charm-proc need=observed-effect-attributed-to-the-assigned-charm;source=crates/gameplay/dispatch/src/gameplay_transport/charm_native.rs:158".into())
+    if !observed_proc {
+        return Err(
+            "step=charm-proc no Enflame fire damage observed during bounded unarmed hunts".into(),
+        );
+    }
+    full_row_p05::logout_after_combat(&mut fresh).await
 }
 
 #[cfg(test)]
@@ -343,5 +398,15 @@ fn review_p01_guards_the_journey() {
         include_str!("full_row_p01.rs")
             .split_once("#[cfg(test)]")
             .is_some_and(|(body, _)| body.contains("hunt_for_race"))
+    );
+}
+
+#[cfg(test)]
+#[test]
+fn review_2_p01() {
+    assert!(
+        include_str!("full_row_p01.rs")
+            .split_once("#[cfg(test)]")
+            .is_some_and(|(body, _)| body.contains("mastery_plan"))
     );
 }

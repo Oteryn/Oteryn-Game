@@ -95,6 +95,45 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+pub(super) async fn live_wheel_effects(
+    client: &mut DevClientSession,
+    allocation: &wheel::WheelAllocationReply,
+    nonce: u64,
+) -> TestResult<Vec<String>> {
+    use oteryn_protocol_oteryn::wheel_presentation as presentation;
+    let atelier_revision = query(client).await?.0.revision;
+    let request = presentation::Request {
+        nonce,
+        wheel_revision: allocation.revision,
+        atelier_revision,
+        points: allocation.points,
+        vessels: allocation.vessels.unwrap_or([None; 4]),
+    };
+    let reply = client
+        .session_mut()
+        .gated_command(
+            presentation::CAPABILITY_WHEEL_PRESENTATION_V1,
+            presentation::COMMAND_TYPE_WHEEL_PRESENTATION,
+            &request
+                .encode()
+                .ok_or("wheel presentation encoding failed")?,
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!(
+            "step=wheel-presentation live effect query status={:?}",
+            reply.status
+        )
+        .into());
+    }
+    let view = presentation::Reply::decode(&reply.payload)
+        .ok_or("step=wheel-presentation invalid reply")?;
+    if view.request != request {
+        return Err("step=wheel-presentation reply binding mismatch".into());
+    }
+    Ok(view.current)
+}
+
 async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResult {
     let mut client = connect_world(clients, 0xa7).await?;
     let session = client.join_snapshot().game_session_id;
@@ -339,15 +378,22 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
         wheel::encode_wheel_request(&socket).map_err(|e| format!("socket encode: {e:?}"))?,
     )
     .await?;
-    if response.status == CommandStatus::Accepted
-        && wheel::decode_wheel_reply(&response.payload)
-            .is_ok_and(|reply| !reply.refused && reply.vessels.is_some_and(|v| v[0] == Some(gem)))
+    if let Ok(saved) = wheel::decode_wheel_reply(&response.payload)
+        && response.status == CommandStatus::Accepted
+        && !saved.refused
+        && saved.vessels.is_some_and(|vessels| vessels[0] == Some(gem))
     {
         seen.pass("5-socket-vessel");
-        seen.fail(
-            "5-resonance-effect",
-            "WheelAllocationReply exposes vessel identity only; need measured modifier effect after socket (crates/protocol-oteryn/src/wheel.rs:25)",
-        );
+        let active = live_wheel_effects(&mut client, &saved, 1).await?;
+        let prefix = format!("Socketed gem {:032X}:", u128::from_be_bytes(gem));
+        if active
+            .iter()
+            .any(|line| line.starts_with(&prefix) && !line.contains(": 0 active positions"))
+        {
+            seen.pass("5-resonance-effect");
+        } else {
+            seen.fail("5-resonance-effect", &active);
+        }
     } else {
         seen.fail("5-socket-vessel", &response);
     }
@@ -449,5 +495,15 @@ fn row_07_publishes_a_gap_for_an_unproven_journey() {
         include_str!("full_row_p07.rs")
             .split_once("#[cfg(test)]")
             .is_some_and(|(production, _)| production.contains("P07_GAP status="))
+    );
+}
+
+#[cfg(test)]
+#[test]
+fn review_2_p07() {
+    assert!(
+        include_str!("full_row_p07.rs")
+            .split_once("#[cfg(test)]")
+            .is_some_and(|(body, _)| body.contains("live_wheel_effects"))
     );
 }

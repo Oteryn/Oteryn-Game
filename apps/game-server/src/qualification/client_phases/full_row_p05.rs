@@ -272,6 +272,7 @@ pub(super) async fn wait_for_spawn(
     walk(client, world, &path).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(95);
     verdict::Harness::global().bounded_wait(deadline, "authored-spawn-respawn");
+    let mut searched = Vec::new();
     let mut retreat_at = Some(tokio::time::Instant::now() + Duration::from_secs(1));
     loop {
         let at = tile(client.world_spatial().actor_position)?;
@@ -291,6 +292,31 @@ pub(super) async fn wait_for_spawn(
         }
         if tokio::time::Instant::now() >= deadline {
             return Err(format!("step=spawn-respawn race={race} no creature on an adjacent authored spawn before deadline").into());
+        }
+        for (point, _) in &points {
+            if next_to(at, *point) && !searched.contains(point) {
+                searched.push(*point);
+            }
+        }
+        let visible = client
+            .world_entities()
+            .into_iter()
+            .flat_map(|entities| entities.iter())
+            .filter(|entity| entity.kind == EntityKind::Creature)
+            .filter_map(|entity| tile(entity.position).ok())
+            .filter(|at| points.iter().any(|(point, _)| point == at))
+            .find_map(|point| route(world, at, |tile| approach(tile) && next_to(tile, point)));
+        let alternate = visible.or_else(|| {
+            route(world, at, |tile| {
+                approach(tile)
+                    && points
+                        .iter()
+                        .any(|(point, _)| next_to(tile, *point) && !searched.contains(point))
+            })
+        });
+        if let Some(alternate) = alternate.filter(|path| !path.is_empty()) {
+            walk(client, world, &alternate).await?;
+            continue;
         }
         if retreat_at.is_some_and(|at| tokio::time::Instant::now() >= at) {
             retreat_at = None;
@@ -319,33 +345,37 @@ pub(super) async fn wait_for_spawn(
     }
 }
 
+pub(super) fn canonical_races()
+-> TestResult<&'static [(crate::domain::bestiary::BestiaryRace, u32)]> {
+    static RACES: std::sync::LazyLock<Option<Vec<(crate::domain::bestiary::BestiaryRace, u32)>>> =
+        std::sync::LazyLock::new(|| {
+            let mut races: Vec<_> =
+                crate::content::canonical_bestiary_rows(crate::content::ProjectEvidenceLimits {
+                    max_documents: 5,
+                    max_document_bytes: 2_500_000,
+                    max_total_bytes: 8_000_000,
+                    max_json_depth: 10,
+                    max_decoded_fields: 70_000,
+                    max_string_bytes: 10_000_000,
+                    max_locator_bytes: 128,
+                    max_locator_segments: 5,
+                    max_reference_records: 4096,
+                    max_import_records: 1,
+                    max_reimport_states: 1,
+                })
+                .ok()?;
+            races.sort_unstable_by(|a, b| a.0.key().cmp(b.0.key()));
+            Some(races)
+        });
+    RACES
+        .as_deref()
+        .ok_or_else(|| "canonical bestiary unavailable".into())
+}
+
 fn race_reference(race: &str) -> TestResult<std::num::NonZeroU32> {
-    static RACES: std::sync::LazyLock<Option<Vec<String>>> = std::sync::LazyLock::new(|| {
-        let mut races: Vec<_> =
-            crate::content::canonical_bestiary_rows(crate::content::ProjectEvidenceLimits {
-                max_documents: 5,
-                max_document_bytes: 2_500_000,
-                max_total_bytes: 8_000_000,
-                max_json_depth: 10,
-                max_decoded_fields: 70_000,
-                max_string_bytes: 10_000_000,
-                max_locator_bytes: 128,
-                max_locator_segments: 5,
-                max_reference_records: 4096,
-                max_import_records: 1,
-                max_reimport_states: 1,
-            })
-            .ok()?
-            .into_iter()
-            .map(|(race, _)| race.key().to_owned())
-            .collect();
-        races.sort_unstable();
-        Some(races)
-    });
-    let index = RACES
-        .as_ref()
-        .and_then(|races| races.binary_search_by(|key| key.as_str().cmp(race)).ok())
-        .ok_or_else(|| {
+    let index = canonical_races()?
+        .binary_search_by(|(entry, _)| entry.key().cmp(race))
+        .map_err(|_| {
             format!("step=hunt-credit race={race} has no canonical analyser race reference")
         })?;
     std::num::NonZeroU32::new(
@@ -361,6 +391,16 @@ pub(super) struct KillSample {
     pub race: std::num::NonZeroU32,
     pub raw_xp: u64,
     pub gained_xp: u64,
+    pub fire_damage: bool,
+}
+
+fn corpse_handle(detail: oteryn_dev_client::EntityDetail) -> Option<oteryn_dev_client::ItemHandle> {
+    use oteryn_dev_client::EntityDetail;
+    match detail {
+        EntityDetail::Object { item_handle, .. }
+        | EntityDetail::ObjectWithAppearance { item_handle, .. } => item_handle,
+        _ => None,
+    }
 }
 
 pub(super) async fn hunt_for_race(
@@ -369,7 +409,7 @@ pub(super) async fn hunt_for_race(
     spawns: &oteryn_world_bundle::spawn::Table,
     key: &str,
 ) -> TestResult<KillSample> {
-    use oteryn_dev_client::{EntityDetail, EntityKind, SessionEvent};
+    use oteryn_dev_client::{EntityKind, SessionEvent};
     use oteryn_protocol_oteryn::analyser::AnalyserFact;
     let race = race_reference(key)?;
     let target = wait_for_spawn(client, world, spawns, key).await?;
@@ -395,6 +435,7 @@ pub(super) async fn hunt_for_race(
     verdict::Harness::global().bounded_wait(deadline, "targeted-combat-and-credit");
     let mut last_position = target.position;
     let mut kills = Vec::new();
+    let mut fire_damage = false;
     let mut experience = Vec::new();
     let (corpse, raw_xp, gained_xp) = loop {
         client.service_liveness(Duration::from_millis(100)).await?;
@@ -420,6 +461,12 @@ pub(super) async fn hunt_for_race(
             for fact in facts {
                 match fact {
                     AnalyserFact::Kill { race } => kills.push(race),
+                    AnalyserFact::Impact(
+                        oteryn_protocol_oteryn::analyser::AnalyserImpact::Damage {
+                            element: oteryn_protocol_oteryn::damage_element::DamageElement::Fire,
+                            ..
+                        },
+                    ) => fire_damage = true,
                     AnalyserFact::Experience { raw, gained } => experience.push((raw, gained)),
                     _ => {}
                 }
@@ -453,13 +500,8 @@ pub(super) async fn hunt_for_race(
         }
     };
     client.session_mut().attack_target(None).await?;
-    let EntityDetail::Object {
-        item_handle: Some(handle),
-        ..
-    } = corpse.detail
-    else {
-        return Err("hunt corpse has no server-issued item handle".into());
-    };
+    let handle =
+        corpse_handle(corpse.detail).ok_or("hunt corpse has no server-issued item handle")?;
     let used = client.use_item(handle).await?;
     if used.status != CommandStatus::Accepted
         || used.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed
@@ -539,6 +581,7 @@ pub(super) async fn hunt_for_race(
         race,
         raw_xp,
         gained_xp,
+        fire_damage,
     })
 }
 
@@ -589,30 +632,6 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
         before.bounty_points, before.talisman[0].level
     ));
 
-    let mut claimed = before;
-    for _ in 0..2 {
-        if claimed.bounty_points >= u64::from(claimed.talisman[0].next_cost) {
-            break;
-        }
-        let opened = accepted(4, command(&mut client, 7, 0).await?)?;
-        claimed = complete_bounty(&mut client, clients, &opened)
-            .await
-            .map_err(|error| StepFailure {
-                step: 4,
-                observed: error.to_string(),
-                source: Some(error),
-            })?;
-    }
-    if claimed.bounty_points < u64::from(claimed.talisman[0].next_cost) {
-        return Err(StepFailure {
-            step: 5,
-            observed: format!(
-                "upgrade-funding bounty-points={} next-cost={};need=more-completed-bounties",
-                claimed.bounty_points, claimed.talisman[0].next_cost
-            ),
-            source: None,
-        });
-    }
     let reference = provisioning::item_index()
         .and_then(|definitions| provisioning::item_reference(&definitions, TALISMAN_ITEM))
         .map_err(|error| StepFailure {
@@ -645,11 +664,37 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
     // prerequisite explicit instead of spending another 5,000 gold.
     evidence("P05_CHECK step=purchase-replay status=UNPROVEN need=exact-original-command-replay");
 
-    let prior = bought.talisman[0];
+    let mut claimed = bought.clone();
+    for _ in 0..2 {
+        if claimed.bounty_points >= u64::from(claimed.talisman[0].next_cost) {
+            break;
+        }
+        let opened = accepted(4, command(&mut client, 7, 0).await?)?;
+        claimed = complete_bounty(&mut client, clients, &opened)
+            .await
+            .map_err(|error| StepFailure {
+                step: 4,
+                observed: error.to_string(),
+                source: Some(error),
+            })?;
+    }
+    if claimed.bounty_points < u64::from(claimed.talisman[0].next_cost) {
+        return Err(StepFailure {
+            step: 5,
+            observed: format!(
+                "upgrade-funding bounty-points={} next-cost={};need=more-completed-bounties",
+                claimed.bounty_points, claimed.talisman[0].next_cost
+            ),
+            source: None,
+        });
+    }
+    let prior = claimed.talisman[0];
     let upgraded = accepted(5, command(&mut client, 18, 0).await?)?;
     if prior.level.checked_add(1) != Some(upgraded.talisman[0].level)
         || upgraded.talisman[0].bonus <= prior.bonus
-        || bought.bounty_points.checked_sub(u64::from(prior.next_cost))
+        || claimed
+            .bounty_points
+            .checked_sub(u64::from(prior.next_cost))
             != Some(upgraded.bounty_points)
     {
         return Err(StepFailure {
@@ -658,12 +703,22 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
             source: None,
         });
     }
-    if bought.bounty_points != claimed.bounty_points {
-        return Err(StepFailure {
-            step: 5,
-            observed: "purchase changed bounty points".into(),
-            source: None,
-        });
+    let next_cost = u64::from(upgraded.talisman[0].next_cost);
+    if next_cost > upgraded.bounty_points {
+        let refused = command(&mut client, 18, 0).await?;
+        if !matches!(refused, (CommandStatus::Accepted, Some(ref reply)) if reply.refusal == 4
+            && reply.talisman == upgraded.talisman && reply.bounty_points == upgraded.bounty_points)
+        {
+            return Err(StepFailure {
+                step: 5,
+                observed: format!("unaffordable-upgrade refusal/state mismatch {refused:?}"),
+                source: None,
+            });
+        }
+    } else {
+        evidence(
+            "P05_CHECK step=unaffordable-upgrade status=UNPROVEN need=balance-below-next-cost",
+        );
     }
     let saved = accepted(7, command(&mut client, 4, 0).await?)?;
     logout(&mut client).await?;
@@ -823,4 +878,40 @@ fn p05_distinguishes_a_purchase_replay_and_funds_the_upgrade_before_submitting()
         body.contains("step=purchase-replay status=UNPROVEN")
             && body.contains("need=more-completed-bounties")
     }));
+}
+
+#[cfg(test)]
+#[test]
+fn review_2_p05() {
+    assert!(
+        include_str!("full_row_p05.rs")
+            .split_once("#[cfg(test)]")
+            .is_some_and(|(body, _)| body.contains("corpse_handle"))
+    );
+}
+
+#[cfg(test)]
+#[test]
+fn loot_uses_handles_from_both_corpse_projections() -> TestResult {
+    use oteryn_dev_client::{EntityDetail, ItemHandle};
+    let handle = ItemHandle::new(7).ok_or("test handle")?;
+    let appearance_id = std::num::NonZeroU16::new(8).ok_or("test appearance")?;
+    assert_eq!(
+        corpse_handle(EntityDetail::Object {
+            item_definition_ref: 9,
+            quantity: 1,
+            item_handle: Some(handle),
+        }),
+        Some(handle)
+    );
+    assert_eq!(
+        corpse_handle(EntityDetail::ObjectWithAppearance {
+            item_definition_ref: 9,
+            quantity: 1,
+            item_handle: Some(handle),
+            appearance_id,
+        }),
+        Some(handle)
+    );
+    Ok(())
 }

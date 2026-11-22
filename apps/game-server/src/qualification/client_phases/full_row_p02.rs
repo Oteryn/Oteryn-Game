@@ -265,7 +265,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .ok_or("step=boosted-exclusion boosted boss catalogue entry missing")?;
     let threshold = crate::domain::bosstiary::kill_thresholds(&boosted_category.category)
         .ok_or("step=boosted-exclusion boosted boss prowess threshold missing")?[0];
-    let boosted_kills = counts(&before).get(&boosted_key).copied().unwrap_or(0);
+    let mut boosted_kills = counts(&before).get(&boosted_key).copied().unwrap_or(0);
+    while boosted_kills < threshold {
+        kill(&mut c, world, &meta.spawns, &boosted_key).await?;
+        before = snapshot(&mut c).await?;
+        let next = counts(&before).get(&boosted_key).copied().unwrap_or(0);
+        if boosted_kills.checked_add(3) != Some(next) {
+            return Err(format!("step=boosted-eligibility boss={boosted_key} unexpected credit={boosted_kills}->{next} need={threshold}").into());
+        }
+        boosted_kills = next;
+    }
     let ready = slot(
         &mut c,
         BossSlotRequest::Detailed(Box::new(BossSlotRequest::Query)),
@@ -393,5 +402,15 @@ fn review_p02_guards_the_journey() {
         include_str!("full_row_p02.rs")
             .split_once("#[cfg(test)]")
             .is_some_and(|(body, _)| body.contains("boosted_exclusion_slot"))
+    );
+}
+
+#[cfg(test)]
+#[test]
+fn review_2_p02() {
+    assert!(
+        include_str!("full_row_p02.rs")
+            .split_once("#[cfg(test)]")
+            .is_some_and(|(body, _)| body.contains("boosted-eligibility"))
     );
 }

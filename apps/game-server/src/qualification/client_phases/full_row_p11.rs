@@ -63,6 +63,50 @@ async fn page(client: &mut DevClientSession, number: u32) -> TestResult<AccountA
     }
 }
 
+async fn authored_granter(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+) -> TestResult<(Vec<u8>, String)> {
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    let world = load_world(
+        bytes,
+        &pin,
+        WorldId::decode(&clients.world)?,
+        ChannelId::decode(&clients.channel)?,
+    )?;
+    let items = provisioning::item_index()?;
+    let report = crate::content::world_reward_claims::bind_embedded_reward_claims(
+        world.base().as_ref(),
+        &|item| {
+            item.key()
+                .as_str()
+                .strip_prefix("oteryn:item.tibia.i")
+                .and_then(|id| id.parse().ok())
+                .is_some_and(|id| provisioning::item_reference(&items, id).is_ok())
+        },
+    )?;
+    let from = tile(client.world_spatial().actor_position)?;
+    for placement in report.served.into_iter().flat_map(|claim| claim.placements) {
+        if let Some(achievement) = placement.placement.achievement
+            && let Some(path) = route(world, from, |at| {
+                at.floor == placement.cell.floor
+                    && at
+                        .x
+                        .abs_diff(placement.cell.x)
+                        .max(at.y.abs_diff(placement.cell.y))
+                        <= 1
+            })
+        {
+            walk(client, world, &path).await?;
+            let mut key = world.base().digest().to_vec();
+            key.extend_from_slice(&placement.bundle_placement_key.to_be_bytes());
+            return Ok((key, achievement));
+        }
+    }
+    Err("step=granter need=walkable-authored-achievement-reward-chest source=crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:332".into())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0xc1).await?;
     let before = page(&mut client, 0).await?;
@@ -110,12 +154,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("step=pagination page={beyond} observed={empty:?}").into());
     }
-    let backpack = client
-        .inventory()
-        .and_then(|inventory| inventory.main_backpack)
-        .ok_or("step=granter no legitimately granted starter item")?;
+    let (placement, achievement) = authored_granter(&mut client, clients).await?;
     client.take_events();
-    let use_reply = client.session_mut().use_item(backpack.handle).await?;
+    let use_reply = client.session_mut().use_object(&placement, 0).await?;
     client.service_liveness(Duration::from_millis(250)).await?;
     let earned = client
         .take_events()
@@ -124,6 +165,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             SessionEvent::AchievementEarned(delta) => Some(delta.value),
             _ => None,
         });
+    if use_reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
+        return Err(format!(
+            "step=granter achievement={achievement} authored chest declined: {use_reply:?}"
+        )
+        .into());
+    }
     let Some(earned) = earned else {
         // Still complete the durable lifecycle so this is runtime evidence, not a source probe.
         let unchanged = page(&mut client, 0).await?;
@@ -140,19 +187,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .into());
     };
     let granted = page(&mut client, 0).await?;
-    if granted.fact_count != before.fact_count.saturating_add(1)
+    if earned.key != achievement
+        || granted.fact_count != before.fact_count.saturating_add(1)
         || !granted.rows.iter().any(|row| row.key == earned.key)
     {
         return Err(format!("step=granter delta/query mismatch: {earned:?} {granted:?}").into());
     }
 
     client.take_events();
-    let duplicate_reply = client.session_mut().use_item(backpack.handle).await?;
+    let duplicate_reply = client.session_mut().use_object(&placement, 0).await?;
     client.service_liveness(Duration::from_millis(250)).await?;
-    if client
-        .take_events()
-        .iter()
-        .any(|event| matches!(event, SessionEvent::AchievementEarned(_)))
+    if duplicate_reply.disposition
+        == oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+        || client
+            .take_events()
+            .iter()
+            .any(|event| matches!(event, SessionEvent::AchievementEarned(_)))
         || page(&mut client, 0).await? != granted
     {
         return Err(
@@ -166,7 +216,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("step=relogin durable achievement page changed".into());
     }
     logout(&mut fresh).await?;
-    Err("step=coverage observed=bounded-grant-relogin-validated;unproven=malformed-wire-query-refusal,remaining-quest-event-granters".into())
+    Err("step=coverage observed=bounded-grant-relogin-validated;unproven=malformed-core-command-10-wire-refusal;source=crates/session/src/account_achievements.rs:18".into())
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
