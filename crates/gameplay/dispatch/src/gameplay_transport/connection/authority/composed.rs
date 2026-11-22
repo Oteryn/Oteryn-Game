@@ -604,14 +604,20 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
     ) -> Vec<crate::durability::world_party::MembershipNotice> {
         let fence = {
-            let runtime = self.runtime.lock().await;
+            let Ok(runtime) = self.runtime.try_lock() else {
+                return Vec::new();
+            };
             crate::gameplay_transport::guild_chat::qualified_chat_fence(&admitted, &runtime)
         };
         let Some(fence) = fence else {
             return Vec::new();
         };
         self.root
-            .take_party_membership_notices(self.character, self.holder, fence)
+            .with_periodic_lock_budget(self.root.take_party_membership_notices(
+                self.character,
+                self.holder,
+                fence,
+            ))
             .await
             .unwrap_or_default()
     }

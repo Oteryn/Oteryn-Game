@@ -18,8 +18,8 @@ pub(super) async fn enqueue(
         .bind(party.as_slice())
         .bind(character.as_slice())
         .bind(change as i16)
-    .execute(&mut **tx)
-    .await?;
+        .execute(&mut **tx)
+        .await?;
     Ok(())
 }
 
@@ -32,7 +32,7 @@ impl super::super::DurabilityRoot {
     ) -> std::result::Result<Vec<MembershipNotice>, super::super::DurabilityError> {
         use super::super::DurabilityError;
         use super::super::db::{
-            begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+            begin_semantic_transaction, commit_semantic_transaction, try_lock_admission_relations,
         };
         let recovery = authority.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
@@ -40,8 +40,23 @@ impl super::super::DurabilityRoot {
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    // Most ticks have no work. The indexed probe observes only whether
+                    // this exact mailbox could contain anything, and grants no custody.
+                    let pending: bool = sqlx::query_scalar(
+                        "SELECT EXISTS (SELECT 1 FROM game_party_membership_notices
+                         WHERE character_id=encode($1,'hex')::uuid AND game_session_id=encode($2,'hex')::uuid
+                           AND connection_generation=$3::text::numeric(20,0))",
+                    )
+                    .bind(fence.character_id.as_bytes().as_slice())
+                    .bind(fence.game_session_id.as_bytes().as_slice())
+                    .bind(fence.connection_generation.get().to_string())
+                    .fetch_one(&mut *tx).await?;
+                    if !pending {
+                        commit_semantic_transaction(tx, deadline).await?;
+                        return Ok(Vec::new());
+                    }
                     super::super::character_authority::assert_recovery_fence(&mut tx, &recovery).await?;
-                    lock_admission_relations(&mut tx).await?;
+                    try_lock_admission_relations(&mut tx).await?;
                     if super::super::character_progression::assert_session_fence(&mut tx, &fence, &node)
                         .await?.is_err()
                     {

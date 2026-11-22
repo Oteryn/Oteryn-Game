@@ -309,6 +309,29 @@ async fn check_notices(
         let joined = joined?;
         assert_eq!(joined.change, PartyMembershipChange::Joined);
 
+        let query = encode_client_command(
+            generation,
+            &ClientCommandValue {
+                command_id: observer.continuity.next_command_id,
+                command_type: COMMAND_TYPE_PARTY_QUERY,
+                payload: &[],
+            },
+        ).map_err(debug)?;
+        write_frame(&mut client, &query).await?;
+        loop {
+            let frame = read_live_frame(&mut client, generation).await?;
+            let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+            if envelope.message_type() == MessageType::CommandResult {
+                let result = decode_command_result(envelope.payload()).map_err(debug)?;
+                assert_eq!(result.status, CommandStatus::Accepted);
+                let roster = decode_party_result(result.payload).map_err(debug)?;
+                let member_row = roster.members.iter().find(|entry| !entry.leader)
+                    .ok_or("joined member in the roster")?;
+                assert_eq!(joined.member_handle, member_row.handle);
+                break;
+            }
+        }
+
         let (result, left) = tokio::join!(
             roundtrip(owner, member, &[Step::Leave, Step::Notice(PartyMembershipChange::Left)]),
             read_notice(&mut client, generation),

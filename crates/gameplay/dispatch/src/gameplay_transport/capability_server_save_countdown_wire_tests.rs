@@ -154,7 +154,7 @@ fn categorized_server_save_keeps_the_countdown_domain_and_emits_one_system_notic
         }
         assert_eq!(notices.len(), 1);
         assert_eq!(notices[0].category, ServerMessageCategory::System);
-        assert_eq!(notices[0].message, ServerMessage::Warning("Server save in 1 minute.".into()));
+        assert_eq!(notices[0].message, ServerMessage::Warning("Server is saving the game in 1 minute(s). Please logout.".into()));
         Ok(())
     })
 }

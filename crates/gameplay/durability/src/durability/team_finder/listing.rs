@@ -81,7 +81,9 @@ pub async fn apply_leader_listing_in_transaction(
             TeamTarget::Hunt { kind, area } => (2, kind, Some(i32::from(area))),
             TeamTarget::Quest(id) => (3, id, None),
         };
-        sqlx::query("INSERT INTO game_team_finder_leader_listings(leader_character_id,min_level,max_level,vocation_mask,team_slots,free_slots,party_members_join,client_timestamp,team_type,target_id,hunt_area) VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) ON CONFLICT(leader_character_id) DO UPDATE SET min_level=EXCLUDED.min_level,max_level=EXCLUDED.max_level,vocation_mask=EXCLUDED.vocation_mask,team_slots=EXCLUDED.team_slots,free_slots=EXCLUDED.free_slots,party_members_join=EXCLUDED.party_members_join,client_timestamp=EXCLUDED.client_timestamp,team_type=EXCLUDED.team_type,target_id=EXCLUDED.target_id,hunt_area=EXCLUDED.hunt_area")
+        let template = sqlx::query("INSERT INTO game_team_finder_leader_listings AS current(leader_character_id,min_level,max_level,vocation_mask,team_slots,free_slots,party_members_join,client_timestamp,team_type,target_id,hunt_area) VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) ON CONFLICT(leader_character_id) DO UPDATE SET min_level=EXCLUDED.min_level,max_level=EXCLUDED.max_level,vocation_mask=EXCLUDED.vocation_mask,team_slots=EXCLUDED.team_slots,free_slots=EXCLUDED.free_slots,party_members_join=EXCLUDED.party_members_join,client_timestamp=EXCLUDED.client_timestamp,team_type=EXCLUDED.team_type,target_id=EXCLUDED.target_id,hunt_area=EXCLUDED.hunt_area
+             WHERE (current.min_level, current.max_level, current.vocation_mask, current.team_slots, current.free_slots, current.party_members_join, current.client_timestamp, current.team_type, current.target_id, current.hunt_area)
+                IS DISTINCT FROM (EXCLUDED.min_level, EXCLUDED.max_level, EXCLUDED.vocation_mask, EXCLUDED.team_slots, EXCLUDED.free_slots, EXCLUDED.party_members_join, EXCLUDED.client_timestamp, EXCLUDED.team_type, EXCLUDED.target_id, EXCLUDED.hunt_area)")
             .bind(character.as_slice())
             .bind(i32::from(listing.min_level))
             .bind(i32::from(listing.max_level))
@@ -104,7 +106,7 @@ pub async fn apply_leader_listing_in_transaction(
             .bind(authority.scope_generation().to_string())
             .bind(scope.0.as_slice()).bind(scope.1.as_slice())
             .execute(&mut **tx).await?;
-        sqlx::query("INSERT INTO game_team_finder_active_listings(leader_character_id,world_id,channel_id,leader_game_session_id,connection_generation,character_lease_generation,scope_ownership_generation) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric(20,0),$6::text::numeric(20,0),$7::text::numeric(20,0)) ON CONFLICT(leader_character_id) DO NOTHING")
+        let advertisement = sqlx::query("INSERT INTO game_team_finder_active_listings(leader_character_id,world_id,channel_id,leader_game_session_id,connection_generation,character_lease_generation,scope_ownership_generation) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric(20,0),$6::text::numeric(20,0),$7::text::numeric(20,0)) ON CONFLICT(leader_character_id) DO NOTHING")
             .bind(character.as_slice())
             .bind(scope.0.as_slice()).bind(scope.1.as_slice())
             .bind(authority.game_session_id().as_bytes().as_slice())
@@ -112,6 +114,7 @@ pub async fn apply_leader_listing_in_transaction(
             .bind(authority.character_lease_generation().to_string())
             .bind(authority.scope_generation().to_string())
             .execute(&mut **tx).await?;
+        let mut changed = template.rows_affected() != 0 || advertisement.rows_affected() != 0;
         if listing.party_members_join {
             // Crystal protocolgame.cpp:3019-3029 inserts current party members
             // as accepted without overwriting an existing applicant's status.
@@ -119,11 +122,17 @@ pub async fn apply_leader_listing_in_transaction(
                 if member.character == character {
                     continue;
                 }
-                sqlx::query("INSERT INTO game_team_finder_members(leader_character_id,world_id,channel_id,member_character_id,status) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,3) ON CONFLICT(leader_character_id,member_character_id) DO NOTHING")
+                let imported = sqlx::query("INSERT INTO game_team_finder_members(leader_character_id,world_id,channel_id,member_character_id,status) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,3) ON CONFLICT(leader_character_id,member_character_id) DO NOTHING")
                     .bind(character.as_slice()).bind(scope.0.as_slice()).bind(scope.1.as_slice()).bind(member.character.as_slice()).execute(&mut **tx).await?;
+                changed |= imported.rows_affected() != 0;
             }
         }
-        (true, online_applicants(tx, scope, character).await?)
+        let applicants = if changed {
+            online_applicants(tx, scope, character).await?
+        } else {
+            Vec::new()
+        };
+        (changed, applicants)
     } else {
         let applicants = online_applicants(tx, scope, character).await?;
         // Both active membership tables cascade from the existing S14a row.
