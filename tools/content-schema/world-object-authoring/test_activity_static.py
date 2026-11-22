@@ -127,10 +127,13 @@ class ActivityStaticTests(unittest.TestCase):
             (ROOT / "content/world/source-static-definitions.json").read_bytes()
         )
         missing.add(33276)
-        self.assertEqual(
-            {row["source_item_id"] for row in registry["records"]}, missing
-        )
         self.assertEqual(len(missing), 238)
+        public_traversal = {50564, 51875, 51877, 53441, 54578, 54581}
+        self.assertTrue(missing.isdisjoint(public_traversal))
+        self.assertEqual(
+            {row["source_item_id"] for row in registry["records"]},
+            missing | public_traversal,
+        )
         for row in registry["records"]:
             self.assertIn(row["identity"]["family"], ["Terrain", "WorldObject"])
             self.assertFalse(row["policy"]["pickupable"])

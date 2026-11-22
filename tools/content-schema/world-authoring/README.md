@@ -242,10 +242,11 @@ repository test's directory-scan budget grows by exactly the one added entry
 
 There is no floor-change family. The WO-2 catalogues carry the `items.xml` `floorchange` value as the
 `floor_change` fact of each Terrain and WorldObject record (`north`, `south`, `east`, `west`,
-`southalt`, `eastalt`, `down`): 444 of the 447 item types that declare it are in the catalogues
-(158 Terrain, 286 WorldObject). The other three (166 and 167 `wooden coffin`, 53431 `stone stairs`)
-stay Items; `edron_rework.ITEM_FLOOR_CHANGES` lists them. `edron_rework.floor_change_kinds()` maps the
-catalogue values to the kinds below and adds the two rope spots (386, 21965).
+`southalt`, `eastalt`, `down`). The original capture qualified 444 catalogue types and used
+`edron_rework.ITEM_FLOOR_CHANGES` for 166, 167 and 53431. The Crystal 201189f8 overlay supplies
+facts for the fixed coffins and newer stairs. `build_floor_catalogue.py` projects the native masks
+from the catalogue and the fixed-Item facts. `edron_rework.floor_change_kinds()` also counts the two rope spots (386, 21965)
+when capturing the source map.
 
 | catalogue value | kind | Engine meaning (`Tile::queryDestination`, `src/items/tile.cpp`) |
 |---|---|---|

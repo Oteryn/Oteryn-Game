@@ -1262,6 +1262,7 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
     rework = summary.get("edron", {})
     drafted = summary.get("draft", {})
     authored = summary.get("source", {}).get("last_creep_native", {})
+    from crystal_traversal import donor_delta as crystal_traversal_delta
     from engclaim_placements import donor_delta as engclaim_delta
     from npcfix2_shared_sources import donor_delta as shared_source_delta
     from qh_jimmy_stub import donor_delta as jimmy_stub_delta
@@ -1276,6 +1277,7 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
     return {
         "items": totals["items"]
         - authored_clock_items
+        - crystal_traversal_delta(summary)
         - engclaim_delta(summary)
         - shared_source_delta(summary)
         - count(fill, "items_added")

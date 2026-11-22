@@ -51,7 +51,7 @@ fn parse_records(bytes: &[u8]) -> Option<BTreeMap<String, StaticSurfaceFacts>> {
     }
     let registry: Registry = serde_json::from_slice(bytes).ok()?;
     if registry.source_revision != "201189f871d23597b82caf88fd611454a2ddefb8"
-        || registry.records.len() != 238
+        || registry.records.len() != 244
     {
         return None;
     }
@@ -156,7 +156,7 @@ mod tests {
     fn m25_static_cohort_requires_exact_source_packet_without_item_aliases() -> Result<(), String> {
         let bytes = include_bytes!("../../../../../content/world/source-static-definitions.json");
         let facts = parse_records(bytes).ok_or("qualified complete static source packet")?;
-        assert_eq!(facts.len(), 238);
+        assert_eq!(facts.len(), 244);
         let cohort: Vec<_> = facts
             .values()
             .filter(|fact| pin::M25_SOURCE_IDS.contains(&fact.source_id))
@@ -195,7 +195,7 @@ mod tests {
                 1 => rows[index]["identity"]["family"] = "Item".into(),
                 _ => rows[index] = rows[(index + 1) % rows.len()].clone(),
             }
-            assert_eq!(rows.len(), 238);
+            assert_eq!(rows.len(), 244);
             let altered = serde_json::to_vec(&altered).map_err(|e| e.to_string())?;
             assert!(parse_records(&altered).is_none());
         }

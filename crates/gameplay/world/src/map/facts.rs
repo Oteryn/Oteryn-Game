@@ -26,6 +26,7 @@ mod journal;
 
 use super::door::{self, DoorBook, DoorStates, PaletteDoor};
 use super::floor::palette_mask;
+use super::floor_catalogue::WALKABLE_TRAVERSAL_FIXTURES;
 use super::overlay::{AddedItem, EntryId, TilePos, pickup};
 use super::view::{self, EntryFacts, MapFacts, placement_key};
 use super::{LoadError, palette_appearance};
@@ -1197,9 +1198,11 @@ fn palette_facts(
                         .is_some_and(|terrain| terrain.kind == TerrainKind::Wall),
             );
         facts.pickupable = definition.pickupable;
-        solid = definition
-            .solid
-            .unwrap_or_else(|| !walkable_floor_change(&entry.key) && !terrain_floor(entry));
+        solid = definition.solid.unwrap_or_else(|| {
+            !walkable_floor_change(&entry.key)
+                && !terrain_floor(entry)
+                && !WALKABLE_TRAVERSAL_FIXTURES.contains(&facts.appearance_id)
+        });
         door = palette_door(&entry.key, item);
     }
     Ok(PaletteFacts {
