@@ -11,12 +11,7 @@ impl DeviceLogin {
     pub(crate) fn block_remembered(&self) -> Result<(), NativeLoginError> {
         let process = self.journal.record_process_intent()?;
         if !process && let Some(path) = self.intent_path() {
-            crate::atomic_file::replace(
-                &path, b"revoke
-", true,
-            )
-            .map_err(|_| storage_error())?;
-            self.sync_intent_directory()?;
+            crate::atomic_file::publish_durable(&path, b"revoke\n").map_err(|_| storage_error())?;
         }
         self.forget_requested.store(true, Ordering::Release);
         Ok(())

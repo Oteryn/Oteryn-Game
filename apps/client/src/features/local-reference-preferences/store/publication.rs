@@ -88,13 +88,11 @@ impl PreferenceStore {
                 BackupOrder::BackupFirst => crate::atomic_file::replace(&slot, &backup, true)?,
                 BackupOrder::ActiveFirst => {
                     let pending = path.with_added_extension("pending-backup");
-                    crate::atomic_file::replace(&pending, &backup, true)?;
-                    sync_parent(path)?;
-                    crate::atomic_file::replace(path, &bytes, true)?;
-                    sync_parent(path)?;
+                    crate::atomic_file::publish_durable(&pending, &backup)?;
+                    crate::atomic_file::publish_durable(path, &bytes)?;
                     #[cfg(test)]
                     check_backup_write()?;
-                    std::fs::rename(pending, slot)?;
+                    crate::atomic_file::durable_rename(&pending, &slot)?;
                     return Ok(replacement);
                 }
             }
@@ -115,7 +113,12 @@ impl PreferenceStore {
             // Publication stopped before replacing active. Keep the original backup slot.
             Ok(active) if active == backup => std::fs::remove_file(pending)?,
             Err(error) if error.kind() != io::ErrorKind::NotFound => return Err(error),
-            _ => std::fs::rename(pending, path.with_extension("backup.json"))?,
+            _ => {
+                return crate::atomic_file::durable_rename(
+                    &pending,
+                    &path.with_extension("backup.json"),
+                );
+            }
         }
         sync_parent(path)
     }
@@ -204,5 +207,32 @@ fn restore_recovers_original_bytes_after_backup_write_failure() -> io::Result<()
     let mut restarted = SettingsState::new(Some(path));
     restarted.restore_backup()?;
     assert_eq!(restarted.preferences.ui_scale, 125);
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn restore_propagates_each_durable_rename_failure() -> io::Result<()> {
+    use super::super::SettingsState;
+    for extension in ["json.pending-backup", "json", "backup.json"] {
+        let root = tempfile::tempdir()?;
+        let path = root.path().join("preferences.json");
+        let active = ReferencePreferences {
+            ui_scale: 125,
+            ..Default::default()
+        };
+        PreferenceStore::export_to(&active, &path)?;
+        PreferenceStore::export_to(
+            &ReferencePreferences::default(),
+            &path.with_extension("backup.json"),
+        )?;
+        let mut state = SettingsState::new(Some(path.clone()));
+        crate::atomic_file::fail_durable_rename_to(&path.with_extension(extension));
+        assert_eq!(
+            state.restore_backup().err().map(|e| e.kind()),
+            Some(io::ErrorKind::PermissionDenied),
+            "{extension}"
+        );
+    }
     Ok(())
 }

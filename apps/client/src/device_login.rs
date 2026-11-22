@@ -113,6 +113,7 @@ impl DeviceLogin {
             folder: self.folder.clone(),
             journal: self.journal.clone(),
         };
+        let deadline = tokio::time::Instant::now() + attempt::RECOVERY_REVOCATION_TIMEOUT;
         if forget {
             if !pending && attempt.state.vault_clear_failed {
                 if attempt.revoke_before_vault_clear(client).await.is_err() {
@@ -125,13 +126,18 @@ impl DeviceLogin {
             {
                 return Ok(None);
             }
-        } else if !options.stay_logged_in || attempt.state.remembered != remembered {
-            attempt.sign_out(client).await;
         } else {
-            let _ = attempt.revoke_pending(client).await;
+            let drain = async {
+                if !options.stay_logged_in || attempt.state.remembered != remembered {
+                    attempt.sign_out(client).await;
+                } else {
+                    let _ = attempt.revoke_pending(client).await;
+                }
+            };
+            let _ = tokio::time::timeout_at(deadline, drain).await;
         }
         if cancel.is_cancelled() {
-            attempt.sign_out(client).await;
+            let _ = tokio::time::timeout_at(deadline, attempt.sign_out(client)).await;
             return Err(storage_error());
         }
         Ok(self.enabled.then_some(attempt))

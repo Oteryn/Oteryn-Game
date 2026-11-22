@@ -119,22 +119,57 @@ impl RollingFile {
 
 type LogWrite = (SystemTime, String);
 
-fn file_writer(file: RollingFile) -> io::Result<mpsc::SyncSender<LogWrite>> {
+type FileSender = std::sync::Arc<mpsc::SyncSender<LogWrite>>;
+
+/// The subscriber lives for the process. The App owns the sender so dropping the
+/// App closes the queue even while tracing still holds the layer.
+#[derive(bevy::prelude::Resource)]
+struct FileWorker {
+    sender: Option<FileSender>,
+    thread: Option<thread::JoinHandle<()>>,
+}
+
+impl Drop for FileWorker {
+    fn drop(&mut self) {
+        drop(self.sender.take());
+        if let Some(worker) = self.thread.take() {
+            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+            while !worker.is_finished() {
+                if std::time::Instant::now() >= deadline {
+                    return;
+                }
+                thread::sleep(std::time::Duration::from_millis(1));
+            }
+            let _ = worker.join();
+        }
+    }
+}
+
+fn file_writer(
+    app: &mut App,
+    file: RollingFile,
+) -> io::Result<std::sync::Weak<mpsc::SyncSender<LogWrite>>> {
     let (sender, receiver) = mpsc::sync_channel::<LogWrite>(256);
-    thread::Builder::new()
+    let worker = thread::Builder::new()
         .name("client-log".into())
         .spawn(move || {
             for (at, text) in receiver {
                 let _ = file.write_text(at, &text);
             }
         })?;
-    Ok(sender)
+    let sender = std::sync::Arc::new(sender);
+    let output = std::sync::Arc::downgrade(&sender);
+    app.insert_resource(FileWorker {
+        sender: Some(sender),
+        thread: Some(worker),
+    });
+    Ok(output)
 }
 
 /// One formatted event is redacted once, then written to every sink.
 #[derive(Clone)]
 pub(super) struct Sink {
-    file: Option<mpsc::SyncSender<LogWrite>>,
+    file: Option<std::sync::Weak<mpsc::SyncSender<LogWrite>>>,
     #[cfg(test)]
     synchronous_file: Option<std::sync::Arc<RollingFile>>,
     stderr: bool,
@@ -203,7 +238,7 @@ impl Drop for SinkWriter {
         if let Some(file) = &self.sink.synchronous_file {
             let _ = file.write_text(SystemTime::now(), &text);
         }
-        if let Some(file) = &self.sink.file {
+        if let Some(file) = self.sink.file.as_ref().and_then(std::sync::Weak::upgrade) {
             // On saturation the line remains available in stderr and the crash ring.
             let _ = file.try_send((SystemTime::now(), text));
         }
@@ -320,7 +355,7 @@ pub(in crate::bevy_shell) fn plugin(base: Option<PathBuf>, level: &'static str) 
     }
 }
 
-fn custom_layer(_: &mut App) -> Option<BoxedLayer> {
+fn custom_layer(app: &mut App) -> Option<BoxedLayer> {
     let setup = SETUP
         .lock()
         .unwrap_or_else(PoisonError::into_inner)
@@ -337,7 +372,7 @@ fn custom_layer(_: &mut App) -> Option<BoxedLayer> {
     let directory = file.as_ref().map(|file| file.directory().to_path_buf());
     let _ = CONTROL.set(Control { handle, directory });
     let sink = Sink {
-        file: file.and_then(|file| file_writer(file).ok()),
+        file: file.and_then(|file| file_writer(app, file).ok()),
         #[cfg(test)]
         synchronous_file: None,
         stderr: false,
