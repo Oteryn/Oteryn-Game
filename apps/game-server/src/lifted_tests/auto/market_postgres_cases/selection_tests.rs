@@ -1,4 +1,5 @@
 use super::*;
+use harness::Harness;
 
 #[test]
 fn market_native_offer_read_is_scoped_and_never_commits_a_return() -> TestResult {
@@ -110,25 +111,143 @@ fn market_native_expiry_candidates_bound_order_world_and_recheck() -> TestResult
             )
             .await?;
         }
-        let mut connection = h.pool.acquire().await?;
-        let rows = expired_candidates(&mut connection, world()).await?;
+        let mut discovery = h.pool.begin().await?;
+        let rows = lock_job_candidates(&mut discovery, crate::foundation::WorldId::decode(&id(WORLD))?).await?;
         assert_eq!(rows.len(), 100);
-        assert_eq!(rows[0].1, MarketOfferId::new(id(1))?);
-        assert_eq!(rows[99].1, MarketOfferId::new(id(100))?);
+        assert_eq!(rows[0], MarketOfferId::new(id(1))?);
+        assert_eq!(rows[99], MarketOfferId::new(id(100))?);
         assert!(
-            expired_candidates(&mut connection, WorldId::from_bytes(id(111))?)
+            lock_job_candidates(&mut discovery, crate::foundation::WorldId::decode(&id(111))?)
                 .await?
                 .is_empty()
         );
-        drop(connection);
+        discovery.rollback().await?;
         // A concurrent completed atomic writer may end a discovered row. Selection re-reads it;
         // this fixture does not claim to execute the omitted bank/Inbox operation.
         sqlx::query("UPDATE game_market_offers SET state=4,escrow_gold=0,ended_at_us=expires_at_us,end_sequence=nextval('game_market_end_sequence') WHERE offer_id=encode($1,'hex')::uuid").bind(id(1).as_slice()).execute(&h.pool).await?;
         let mut tx = h.pool.begin().await?;
-        let mut book = lock_book(&mut tx, rows[0].0.clone()).await?;
-        assert!(book.plan_end(rows[0].1, EndReason::Expire).await.is_err());
-        assert!(book.plan_end(rows[1].1, EndReason::Expire).await?.is_some());
+        let key = offer(1, Side::Buy, 40, time).book();
+        let mut book = lock_book(&mut tx, key).await?;
+        assert!(book.plan_end(rows[0], EndReason::Expire).await.is_err());
+        assert!(book.plan_end(rows[1], EndReason::Expire).await?.is_some());
         tx.rollback().await?;
         Ok(())
     })
+}
+
+#[test]
+fn market_expiry_postgres_drains_unlocked_book_behind_locked_candidate_window() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_expiry_case(admin, "market_expiry_window", async |h| {
+        let time = now(h).await? - LIFETIME_US - 10_000;
+        let first = offer(1, Side::Buy, 40, time);
+        for n in 1..=100 {
+            seed(h, &offer(n, Side::Buy, 40, time + i64::from(n))).await?;
+        }
+        let mut later = offer(101, Side::Buy, 70, time + 101);
+        later.definition = definition("oteryn:content.item.bowl", "r1")?;
+        seed(h, &later).await?;
+
+        let mut blocker = h.pool.begin().await?;
+        let _book = lock_book(&mut blocker, first.book()).await?;
+        assert!(advance_market(h, &h.root).await?, "the later book should make progress");
+        assert_eq!(expiry_state(h, &later).await?, (4, 1_000, 1));
+        assert_eq!(expiry_state(h, &first).await?, (1, 0, 0));
+        assert!(!advance_market(h, &h.root).await?);
+        blocker.rollback().await?;
+        Ok(())
+    })
+}
+
+#[test]
+fn market_expiry_postgres_rechecks_offer_and_refunds_once() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_expiry_case(admin, "market_expiry_recheck", async |h| {
+        let time = now(h).await?;
+        let mut due = offer(60, Side::Buy, 40, time - LIFETIME_US - 1);
+        due.matching_pending = true;
+        let live = offer(61, Side::Buy, 70, time - 1_000);
+        let taken = offer(62, Side::Buy, 80, time - LIFETIME_US - 2);
+        seed(h, &due).await?;
+        seed(h, &live).await?;
+        seed(h, &taken).await?;
+
+        let runtime_url = format!("{}?options=-c%20role%3Doteryn_game_runtime", h.database.url);
+        let runtime = crate::durability::DurabilityRoot::connect_test_runtime(&runtime_url)?;
+        let mut blocker = h.pool.begin().await?;
+        let _book = lock_book(&mut blocker, due.book()).await?;
+        assert!(!advance_market(h, &runtime).await?);
+        assert_eq!(expiry_state(h, &due).await?, (1, 0, 0));
+
+        // The lock holder ends the oldest candidate using the native atomic writer.
+        sqlx::query(
+            "SELECT game_market_write(encode($1,'hex')::uuid,NULL,NULL,NULL,NULL,NULL,
+                game_market_identity(encode($2,'hex')::uuid,'expire'),4::smallint,
+                encode($2,'hex')::uuid,NULL,NULL,NULL,NULL,NULL,NULL,NULL,sha256($2),NULL)",
+        )
+        .bind(taken.world.as_bytes().as_slice())
+        .bind(taken.id.as_bytes().as_slice())
+        .execute(&mut *blocker)
+        .await?;
+        blocker.commit().await?;
+        assert_eq!(expiry_state(h, &taken).await?, (4, 1_000, 1));
+
+        assert!(advance_market(h, &runtime).await?);
+        assert_eq!(expiry_state(h, &due).await?, (4, 1_000, 1));
+        assert!(!advance_market(h, &runtime).await?);
+        assert_eq!(expiry_state(h, &due).await?, (4, 1_000, 1));
+        assert_eq!(expiry_state(h, &taken).await?, (4, 1_000, 1));
+        assert_eq!(expiry_state(h, &live).await?, (1, 0, 0));
+        Ok(())
+    })
+}
+
+fn run_expiry_case<F>(admin: String, tag: &'static str, body: F) -> TestResult
+where
+    F: AsyncFnOnce(&Harness) -> TestResult + Send + 'static,
+{
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || {
+            harness::runtime()
+                .and_then(|runtime| {
+                    runtime.block_on(async {
+                        let h = Harness::create(admin, tag, false).await?;
+                        let result = body(&h).await;
+                        h.cleanup().await?;
+                        result
+                    })
+                })
+                .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "Market expiry test thread failed")?
+        .map_err(Into::into)
+}
+
+async fn advance_market(h: &Harness, root: &crate::durability::DurabilityRoot) -> TestResult<bool> {
+    root.await_ready().await?;
+    let seal = h.recovery.seal_current().map_err(harness::debug)?;
+    let authority = root.open_character_authority(&seal).await.map_err(harness::debug)?;
+    root.await_ready().await?;
+    let world = crate::foundation::WorldId::decode(&id(WORLD))?;
+    Ok(root.advance_market(&authority, &h.node, world).await?)
+}
+
+async fn expiry_state(h: &Harness, offer: &Offer) -> TestResult<(i16, i64, i64)> {
+    Ok(sqlx::query_as(
+        "SELECT o.state, COALESCE(b.balance, 0)::bigint,
+            (SELECT count(*) FROM game_account_bank_entries e
+             JOIN game_market_settlements s ON s.transaction_id=e.market_transaction_id
+             WHERE s.offer_id=o.offer_id AND e.market_kind='MARKET_ESCROW_RETURN')
+         FROM game_market_offers o LEFT JOIN game_account_bank_balances b USING(account_id,world_id)
+         WHERE o.offer_id=encode($1,'hex')::uuid",
+    )
+    .bind(offer.id.as_bytes().as_slice())
+    .fetch_one(&h.pool)
+    .await?)
 }
