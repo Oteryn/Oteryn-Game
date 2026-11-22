@@ -6,6 +6,7 @@ import argparse
 import copy
 import importlib
 import first_dragon_item_profiles
+import imbuement_item_profiles
 import m01c_key_door_equipment_pin
 import qengine_reward_equipment_pin
 import json
@@ -46,7 +47,7 @@ SRX3_SOURCES = (
 
 
 def registered_source_document(root, document):
-    """Replay the later guarded House stage, retaining only this owner's keys."""
+    """Replay the later House and Crystal imbuement facts for this owner's keys."""
     proven = keys(document)
     generated = {"profiles": json.dumps(document).encode(),
                  "manifest": b'{"item_profiles":{}}'}
@@ -60,6 +61,7 @@ def registered_source_document(root, document):
                           if row["production_definition"]["production_key"] in proven]}
     if keys(result) != proven:
         raise ValueError("source registration changed the qualified identity set")
+    imbuement_item_profiles.apply_crystal_audit(root, result, require_all=False)
     return result
 
 

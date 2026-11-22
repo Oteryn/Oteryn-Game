@@ -1097,6 +1097,20 @@ class BossYieldPriorOwnerTests(unittest.TestCase):
                          {'oteryn:quest-reward/chosen/trader/buy-sword',
                           'oteryn:quest-reward/chosen/trader/sword'})
 
+    def test_crimson_sword_cohort_checks_crystal_imbuement_allowances(self):
+        _, expected, _ = self.cohort
+        allowances = self.row(expected)['semantics']['imbuement']['value']['allowed_family_tiers']
+        self.assertEqual(allowances, {'state': 'KNOWN', 'value': [
+            {'family': family, 'tier': 'Three'} for family in
+            ('CRITICAL_HIT', 'ELEMENTAL_DAMAGE', 'LIFE_LEECH', 'MANA_LEECH', 'SKILL_SWORD')
+        ]})
+        stale = copy.deepcopy(self.actual)
+        self.row(stale)['semantics']['imbuement']['value']['allowed_family_tiers'] = {
+            'state': 'UNKNOWN',
+        }
+        with self.assertRaisesRegex(ValueError, 'SRX3 source profile differs: SRX3-BOSS-YIELDS'):
+            self.generate(stale)
+
     def test_requested_membership_and_unique_canonical_identity_are_required(self):
         requested, authored, callbacks = copy.deepcopy(self.requests)
         requested.remove(self.KEY)

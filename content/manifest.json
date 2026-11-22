@@ -1063,7 +1063,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "a5db7fd03aff178fe60ffbe4de19feb0a97b6ee535fe2537bbae854d660d4ed6"
+          "sha256": "52a28e64f3970e415a400a91b588e29f4165f136de9da2582e9e094c4b8ebe94"
         },
         {
           "creates_canonical_identities": false,
@@ -1076,7 +1076,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "4d2bf471ff0992dcc19ffd11e6ad42f691421a4521158dd9f7897473c39f566a"
+          "sha256": "ef80c9aef898558c2e81a5af72a8025a21deba6ffc5a2956a501599bebbfc4c6"
         }
       ],
       "Presentation": [

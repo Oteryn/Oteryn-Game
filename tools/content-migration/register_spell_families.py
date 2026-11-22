@@ -718,6 +718,13 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     import protected_loot_yields
     protected_loot_yields.admit(root, items, provider_order)
     item_detail_source_facts.apply(root, items, item_detail_weights)
+    # Qualify each audited Item in its owning provider, including mage hat in
+    # the starter fragment. SRX-1 updates then inherit the same base allowances.
+    starter_items = json.loads(generated[starting_loadout_profiles.FRAGMENT])
+    imbuement_item_profiles.apply_crystal_audit(root, items, starter_items)
+    native_manifest = json.loads(generated[NATIVE_MANIFEST])
+    starting_loadout_profiles.write_fragment(generated, native_manifest, starter_items["records"])
+    generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(native_manifest)
     # The complete source closure must fit native_gameplay's existing 8 MiB
     # Item-profile input bound. Only the final active serialization is compact;
     # record order/values are unchanged and donor captures stay readable.
