@@ -9,7 +9,7 @@
 //!    owns reset; no player reset command exists.
 //! 4. Service the native connection through the reset-owner polling interval; when a planned
 //!    reset is in its five-minute window, expect a domain-40 delta whose revisions advance by
-//!    one, whose epoch is nonzero and whose remaining minute is in 5..=1.
+//!    one, whose epoch is nonzero and stays constant through minutes 5 to 1.
 //! 5. Expect the planned reset to close the admitted session. A player must not be able to
 //!    suppress, move or trigger that reset; a still-live session after the observed countdown
 //!    is the refusal/lifecycle failure.
@@ -19,10 +19,10 @@
 //!    re-check the same durable state, and report the reached missing server path rather than
 //!    claiming the reset lifecycle passed.
 use super::*;
-use oteryn_dev_client::{DevClientSession, SessionEvent};
+use oteryn_dev_client::{DevClientError, DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::server_save_countdown::{
-    CAPABILITY_SERVER_SAVE_COUNTDOWN_V1, SERVER_SAVE_COUNTDOWN_SNAPSHOT,
-    STATE_DOMAIN_SERVER_SAVE_COUNTDOWN,
+    CAPABILITY_SERVER_SAVE_COUNTDOWN_V1, SERVER_SAVE_COUNTDOWN_MAX_MINUTES, SERVER_SAVE_COUNTDOWN_SNAPSHOT,
+    STATE_DOMAIN_SERVER_SAVE_COUNTDOWN, ServerSaveCountdown,
 };
 use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 
@@ -37,7 +37,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             "FAIL"
         }
         Err(_) => {
-            evidence("W05a_GAP step=journey observed=380s-timeout");
+            evidence("W05a_GAP step=journey observed=420s-timeout");
             "FAIL"
         }
     };
@@ -50,6 +50,28 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 enum Outcome {
     ResetObserved,
     ResetNotScheduled,
+}
+
+fn follows(previous: Option<ServerSaveCountdown>, notice: ServerSaveCountdown) -> bool {
+    notice.ending_epoch != 0
+        && notice.minutes_remaining != 0
+        && previous.map_or_else(
+            || notice.minutes_remaining == SERVER_SAVE_COUNTDOWN_MAX_MINUTES,
+            |before| {
+                notice.ending_epoch == before.ending_epoch
+                    && before.minutes_remaining.checked_sub(1) == Some(notice.minutes_remaining)
+            },
+        )
+}
+
+fn closed_transport(error: &DevClientError) -> bool {
+    match error {
+        DevClientError::Context { source, .. } => closed_transport(source),
+        DevClientError::Session(oteryn_dev_client::SessionError::Io(error)) => {
+            error.kind() == std::io::ErrorKind::UnexpectedEof
+        }
+        _ => false,
+    }
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
@@ -120,9 +142,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
             _ => None,
         });
     if let Some(delta) = notice {
-        if delta.new_revision != delta.base_revision + 1
-            || delta.value.ending_epoch == 0
-            || !(1..=5).contains(&delta.value.minutes_remaining)
+        if delta.base_revision.checked_add(1) != Some(delta.new_revision)
+            || !follows(None, delta.value)
         {
             return Err(format!("step=countdown observed=invalid-delta-{delta:?}").into());
         }
@@ -136,15 +157,39 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
             Duration::from_secs((minutes - 1) * 60).saturating_sub(Duration::from_secs(5));
         let latest = Duration::from_secs(minutes * 60 + 30);
         verdict::Harness::global().bounded_wait(tokio::time::Instant::now() + latest, "reset-countdown");
-        let close = client.service_liveness(latest).await;
+        let mut revision = delta.new_revision;
+        let mut prior = delta.value;
+        let deadline = noticed + latest;
+        let close = loop {
+            let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+            if remaining.is_zero() {
+                return Err(format!(
+                    "step=reset-close observed=session-still-live-{}s-after-{minutes}-minute-notice",
+                    latest.as_secs()
+                ).into());
+            }
+            let outcome = client.service_liveness(remaining.min(Duration::from_secs(1))).await;
+            for event in client.take_events() {
+                if let SessionEvent::ServerSaveCountdown(delta) = event {
+                    if delta.base_revision != revision
+                        || revision.checked_add(1) != Some(delta.new_revision)
+                        || !follows(Some(prior), delta.value)
+                    {
+                        return Err(format!("step=countdown observed=invalid-next-delta-{delta:?} previous={prior:?}").into());
+                    }
+                    revision = delta.new_revision;
+                    prior = delta.value;
+                    evidence(&format!("W05a_CHECK step=countdown delta={delta:?}"));
+                }
+            }
+            if let Err(error) = outcome {
+                if prior.minutes_remaining != 1 || !closed_transport(&error) {
+                    return Err(format!("step=reset-close observed={error} last-countdown={prior:?} need=complete-countdown-and-transport-close").into());
+                }
+                break error;
+            }
+        };
         let elapsed = noticed.elapsed();
-        if close.is_ok() {
-            return Err(format!(
-                "step=reset-close observed=session-still-live-{}s-after-{minutes}-minute-notice",
-                latest.as_secs()
-            )
-            .into());
-        }
         if elapsed < earliest {
             return Err(format!("step=reset-close observed=closed-after-{}s-before-the-{minutes}-minute-window error={close:?}", elapsed.as_secs()).into());
         }
@@ -167,7 +212,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
     }
 
     relog_and_check(&mut client, clients, saved).await?;
-    evidence("W05a_GAP step=countdown observed=no-domain-40-delta-after-owner-poll");
+    evidence("W05a_GAP step=countdown observed=no-domain-40-delta-after-owner-poll need=Control-published-planned-reset source=crates/gameplay/dispatch/src/gameplay_transport/server_save_countdown.rs:90");
     Ok(Outcome::ResetNotScheduled)
 }
 
@@ -217,4 +262,24 @@ async fn relog_and_check(
         return Err(format!("step=final-logout observed={cleanup:?}").into());
     }
     Ok(())
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn countdown_requires_every_minute_of_the_same_epoch() {
+        let notice = |ending_epoch, minutes_remaining| ServerSaveCountdown {
+            ending_epoch,
+            minutes_remaining,
+        };
+        assert!(follows(None, notice(7, 5)));
+        assert!(!follows(None, notice(7, 4)));
+        assert!(follows(Some(notice(7, 5)), notice(7, 4)));
+        assert!(!follows(Some(notice(7, 5)), notice(7, 3)));
+        assert!(!follows(Some(notice(7, 5)), notice(8, 4)));
+        assert!(!follows(Some(notice(7, 1)), notice(7, 0)));
+    }
 }
