@@ -38,3 +38,6 @@ REVOKE ALL ON FUNCTION game_guild_write_rank(UUID,SMALLINT,TEXT,BOOLEAN)
  FROM PUBLIC,oteryn_game_runtime,oteryn_game_control;
 GRANT EXECUTE ON FUNCTION game_guild_write_rank(UUID,SMALLINT,TEXT,BOOLEAN) TO oteryn_game_runtime;
 REVOKE INSERT ON game_guild_ranks FROM oteryn_game_runtime;
+-- Older nodes still use direct INSERT and UPSERT. The operation trigger
+-- fences those statements, and the column grant excludes house_acl_identity.
+GRANT INSERT(guild_id,level,name) ON game_guild_ranks TO oteryn_game_runtime;

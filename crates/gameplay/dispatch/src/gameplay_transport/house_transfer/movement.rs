@@ -626,8 +626,11 @@ impl HouseBlocker<'_> {
 
     fn door_allowed(&self, cell: LogicalCell) -> Option<bool> {
         if self.bundle.is_some() {
-            let (tile, _) = self.bundle_door(cell)?;
-            return Some(self.door_access.permits(tile.x, tile.y, tile.floor));
+            let (tile, house) = self.bundle_door(cell)?;
+            return Some(
+                self.door_access.permits(tile.x, tile.y, tile.floor)
+                    || self.bundle?.facts.house_door_is_authored_open(tile, house),
+            );
         }
         let placement = self
             .cells

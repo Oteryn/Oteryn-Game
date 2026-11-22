@@ -448,9 +448,14 @@ fn scenario_with_pouch(pouch: bool, fence_case: Option<session_fence::FenceCase>
                 CommandStatus::Rejected,
                 "an unseen Inbox UUID cannot assign the pouch"
             );
-            // Fixture writes use receipt keys outside this scenario's wire command stream.
-            let setup = durable_quick_loot(&owner, admitted, 1000, assign).await?;
-            assert_eq!(setup.0, CommandStatus::Accepted);
+            let (_, setup) = exchange(&owner, &mut admitted, corpse_identity, |_| {
+                Ok(vec![QuickLootRequest {
+                    recipient_id: None,
+                    ..assign
+                }])
+            })
+            .await?;
+            assert_eq!(setup[0].0, CommandStatus::Accepted);
             fixture_overload_pouch(&harness.pool, true).await?;
             let (_, heavy) =
                 exchange(&owner, &mut admitted, corpse_identity, |_| Ok(vec![all])).await?;
@@ -462,24 +467,20 @@ fn scenario_with_pouch(pouch: bool, fence_case: Option<session_fence::FenceCase>
             );
             fixture_overload_pouch(&harness.pool, false).await?;
         }
-        let loot_id = admitted.continuity.next_command_id + u64::from(!pouch);
+        let loot_id = admitted.continuity.next_command_id + 1;
         let replies = if pouch {
-            // The Store Inbox has no item-view projection. Provision the saved Gold
-            // Pouch selection through the durable owner, then execute Loot All on wire.
-            let assignment = durable_quick_loot(
-                &owner,
-                admitted,
-                1001,
-                QuickLootRequest {
-                    category: Some(QuickLootCategory::Gold),
-                    ..assign
-                },
-            )
-            .await?;
-            let (_, mut replies) =
-                exchange(&owner, &mut admitted, corpse_identity, |_| Ok(vec![all])).await?;
-            replies.insert(0, assignment);
-            replies
+            exchange(&owner, &mut admitted, corpse_identity, |_| {
+                Ok(vec![
+                    QuickLootRequest {
+                        category: Some(QuickLootCategory::Gold),
+                        recipient_id: None,
+                        ..assign
+                    },
+                    all,
+                ])
+            })
+            .await?
+            .1
         } else {
             exchange(&owner, &mut admitted, corpse_identity, |shown| {
                 Ok(vec![

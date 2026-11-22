@@ -146,6 +146,31 @@ fn admitted_hotkey_opens_one_source_dialog_and_loot_all_uses_real_owner_once() -
     Ok(())
 }
 #[test]
+fn gold_pouch_button_selects_the_owned_pouch_without_an_item_handle() -> TestResult {
+    for category in [None, Some(Category::Gold)] {
+        let (mut app, mut commands, _) = fixture(true)?;
+        open(&mut app)?;
+        let gold_pouch = control(
+            &mut app,
+            Kind::Request(Action::Destination {
+                category,
+                recipient: Recipient::GoldPouch,
+                id: None,
+                fallback: true,
+            }),
+        )?;
+        app.world_mut().trigger(Activate { entity: gold_pouch });
+        let wire = request(&mut commands)?;
+        assert_eq!(wire.action, QuickLootAction::Assign);
+        assert_eq!(wire.category, category);
+        assert_eq!(wire.recipient, Some(Recipient::GoldPouch));
+        assert_eq!(wire.recipient_id, None);
+        assert!(wire.fallback_to_main);
+    }
+    Ok(())
+}
+
+#[test]
 fn destination_remains_unconfirmed_until_accepted_and_refusal_preserves_it() -> TestResult {
     let (mut app, mut commands, outbox) = fixture(true)?;
     open(&mut app)?;

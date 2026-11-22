@@ -45,7 +45,7 @@ impl PlayLink {
         expected: &oteryn_client_ui::quick_loot::Panel,
         control: QuickLootControl,
     ) -> bool {
-        use oteryn_client_ui::quick_loot::{Action, QuickLootRecipient, request};
+        use oteryn_client_ui::quick_loot::{Action, QuickLootCategory, QuickLootRecipient, request};
         let mut mailbox = lock(&self.mailbox);
         if loot_panel(&mailbox) != *expected || !mailbox.discovery.loot.open {
             return false;
@@ -61,7 +61,9 @@ impl PlayLink {
         let allowed = match &action {
             Action::LootAll | Action::Select(_) | Action::Clear(_) => true,
             Action::Destination { category, recipient, id, .. } =>
-                (*recipient == QuickLootRecipient::MainContainer && id.is_none())
+                (id.is_none() && (*recipient == QuickLootRecipient::MainContainer
+                    || (*recipient == QuickLootRecipient::GoldPouch
+                        && matches!(category, None | Some(QuickLootCategory::Gold)))))
                 || panel.destinations.iter().any(|current| matches!(current,
                     Action::Destination {category: c,recipient: r,id: i,..} if c==category && r==recipient && i==id)),
             _ => false,

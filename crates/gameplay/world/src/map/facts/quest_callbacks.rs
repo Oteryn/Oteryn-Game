@@ -2092,14 +2092,27 @@ impl BundleFacts {
         pos: TilePos,
         house: u32,
     ) -> bool {
-        let Some(door) = self.house_door(pos, house) else {
-            return false;
-        };
-        let Some(first) = placement_key(pos, 0) else {
-            return false;
-        };
+        self.house_door_placement(pos, house)
+            .is_some_and(|(key, _)| !self.callback_blocked(base, pos, true, Some(key)))
+    }
+
+    /// Authored-open doors already admit invited guests without a door-list grant.
+    pub fn house_door_is_authored_open(&self, pos: TilePos, house: u32) -> bool {
+        self.house_door_placement(pos, house)
+            .is_some_and(|(_, placement)| {
+                !self.blocks(placement.palette)
+                    && super::super::door_registry::closed_of(u32::from(
+                        self.palette[placement.palette as usize].facts.appearance_id,
+                    ))
+                    .is_some()
+            })
+    }
+
+    fn house_door_placement(&self, pos: TilePos, house: u32) -> Option<(u64, &Placement)> {
+        let door = self.house_door(pos, house)?;
+        let first = placement_key(pos, 0)?;
         let index = self.placements.partition_point(|(key, _)| *key < first);
-        let key = self.placements[index..]
+        self.placements[index..]
             .iter()
             .take_while(|(key, _)| *key <= first + u64::from(MAX_BASE_ORDINAL))
             .find_map(|(key, placement)| {
@@ -2109,9 +2122,8 @@ impl BundleFacts {
                         .palette
                         .get(placement.palette as usize)
                         .is_some_and(|entry| entry.door != PaletteDoor::No))
-                .then_some(*key)
-            });
-        key.is_some_and(|key| !self.callback_blocked(base, pos, true, Some(key)))
+                .then_some((*key, placement))
+            })
     }
 
     fn callback_blocked(

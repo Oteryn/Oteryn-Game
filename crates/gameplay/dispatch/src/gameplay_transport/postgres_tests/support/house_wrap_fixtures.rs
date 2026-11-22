@@ -6,14 +6,21 @@ pub(super) fn wrap_bundle(
     world: crate::foundation::WorldId,
     channel: crate::foundation::ChannelId,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    wrap_bundle_with_static_decorations(world, channel, &[], false)
+    wrap_bundle_with_static_decorations(world, channel, &[], false, false)
 }
 
 pub(super) fn walkable_house_bundle(
     world: crate::foundation::WorldId,
     channel: crate::foundation::ChannelId,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    wrap_bundle_with_static_decorations(world, channel, &[], true)
+    wrap_bundle_with_static_decorations(world, channel, &[], true, false)
+}
+
+pub(super) fn open_house_entrance_bundle(
+    world: crate::foundation::WorldId,
+    channel: crate::foundation::ChannelId,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    wrap_bundle_with_static_decorations(world, channel, &[], true, true)
 }
 
 pub(super) fn static_decoration_bundle(
@@ -61,7 +68,7 @@ fn static_decoration_bundle_with(
             blocks_projectile:policy.attributes.blocks_projectile.ok_or("decoration projectile fact")?,
             pickupable:false,door:false }});
     }
-    wrap_bundle_with_static_decorations(world, channel, &extras, false)
+    wrap_bundle_with_static_decorations(world, channel, &extras, false, false)
 }
 
 fn wrap_bundle_with_static_decorations(
@@ -69,11 +76,15 @@ fn wrap_bundle_with_static_decorations(
     channel: crate::foundation::ChannelId,
     extras: &[StaticDecoration],
     adjacent_ground: bool,
+    open_entrance: bool,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use crate::map::boot::{self, tests as fixture};
     use oteryn_world_bundle::bundle;
-    let (bytes, mut pins) =
-        fixture::bundle_with_items("oteryn:item.tibia.i1629", "oteryn:item.tibia.i1000");
+    let (bytes, mut pins) = if open_entrance {
+        fixture::bundle_with_item_ids(("oteryn:item.tibia.i1630", 1630), ("oteryn:item.tibia.i1000", 1))
+    } else {
+        fixture::bundle_with_items("oteryn:item.tibia.i1629", "oteryn:item.tibia.i1000")
+    };
     let mut data = bundle::read(&bytes).map_err(debug)?;
     let sector = data.sectors.first_mut().ok_or("sector")?;
     let mut entrance = sector
@@ -177,7 +188,15 @@ fn wrap_bundle_with_static_decorations(
         },
         world,
         channel,
-        |key| extras.iter().find(|extra|extra.key==key).map(|extra|extra.definition).or_else(||fixture::door_items(key)),
+        |key| {
+            extras.iter().find(|extra|extra.key==key).map(|extra|extra.definition).or_else(|| {
+                let mut definition = fixture::door_items(key)?;
+                if open_entrance && key == "oteryn:item.tibia.i1630" {
+                    definition.door = true;
+                }
+                Some(definition)
+            })
+        },
     )
     .map_err(debug)
 }

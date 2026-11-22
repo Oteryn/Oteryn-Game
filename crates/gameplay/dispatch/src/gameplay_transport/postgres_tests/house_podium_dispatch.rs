@@ -47,6 +47,7 @@ enum Case {
     Unavailable,
     NoPath,
     DoorAcl,
+    OpenEntrance,
     AclSuccessor,
 }
 
@@ -120,6 +121,15 @@ fn house_door_step_respects_guild_rank_acl_postgres() -> TestResult {
 }
 
 #[test]
+fn house_guest_enters_and_crosses_an_authored_open_door_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    postgres_case("house_guest_open_door", Case::OpenEntrance)
+}
+
+#[test]
 fn house_acl_receipt_keeps_original_generation_after_reconnect_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -161,9 +171,19 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     let base = Dependencies::new()?;
     let walks = matches!(
         case,
-        Case::Walk | Case::CancelWalk | Case::DoorAcl | Case::Unavailable | Case::AclSuccessor
+        Case::Walk
+            | Case::CancelWalk
+            | Case::DoorAcl
+            | Case::OpenEntrance
+            | Case::Unavailable
+            | Case::AclSuccessor
     );
-    let world = if walks {
+    let world = if matches!(case, Case::OpenEntrance) {
+        super::house_wrap_fixtures::open_house_entrance_bundle(
+            base.admitted.world_id,
+            base.admitted.channel_id,
+        )?
+    } else if walks {
         super::house_wrap_fixtures::walkable_house_bundle(
             base.admitted.world_id,
             base.admitted.channel_id,
@@ -253,7 +273,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             )
             .map_err(debug)?;
     }
-    let house_owner = if matches!(case, Case::DoorAcl) {
+    let house_owner = if matches!(case, Case::DoorAcl | Case::OpenEntrance) {
         seed_house_door_owner(h).await?;
         id(91)
     } else {
@@ -267,7 +287,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     .bind(house_owner.as_slice())
     .execute(&h.pool)
     .await?;
-    if matches!(case, Case::DoorAcl) {
+    if matches!(case, Case::DoorAcl | Case::OpenEntrance) {
         seed_house_door_acl(h).await?;
     }
     sqlx::query("INSERT INTO game_control_house_scope_grants SELECT session_user,encode($1,'hex')::uuid,$2,1")
@@ -386,6 +406,31 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
 
     if matches!(case, Case::DoorAcl) {
         return verify_house_door_steps(h, &owner, &mut admitted).await;
+    }
+    if matches!(case, Case::OpenEntrance) {
+        let actor = admitted.runtime_actor.ok_or("House actor")?;
+        for (direction, x) in [(StepDirection::East, 32310), (StepDirection::West, 32309)] {
+            let command_id = admitted.continuity.next_command_id;
+            assert!(
+                exchange(
+                    &owner,
+                    &mut admitted,
+                    command_id,
+                    COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+                    &encode_step_intent(direction),
+                )
+                .await?
+                .is_some()
+            );
+            let state = owner
+                .runtime
+                .lock()
+                .await
+                .house_actor_state(actor, admitted.game_session_id)
+                .map_err(debug)?;
+            assert_eq!((state.position.x, state.position.y), (x, 32804));
+        }
+        return Ok(());
     }
 
     let set = wire::SetRequest {

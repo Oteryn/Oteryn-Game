@@ -9,7 +9,7 @@ use crate::durability::character_last_position::{
 };
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::durability::house_scope_handoff::HouseId;
-use crate::durability::house_transfer::HouseTransferRequest;
+use crate::durability::house_transfer::{HouseEntranceDoor, HouseTransferRequest};
 use crate::foundation::{
     CharacterLease, LocalPosition, RuntimeScopeRefV1, ScopeOwnershipGeneration,
 };
@@ -141,7 +141,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return refuse();
         }
-        let (lease, position, origin) = if intent.exit {
+        let (lease, position, origin, entrance_door) = if intent.exit {
             let Ok(state) = runtime.house_actor_state(actor, admitted.game_session_id) else {
                 return refuse();
             };
@@ -182,7 +182,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             ]
             .into_iter()
             .find(|p| clear(*p))?;
-            (state.lease, position, position)
+            (state.lease, position, position, None)
         } else {
             if fence.runtime_scope != RuntimeScopeRefV1::channel(self.world_id, self.channel_id)
                 || fence.scope_ownership_generation != runtime.binding().scope_generation()
@@ -196,7 +196,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return refuse();
             };
             let origin = current.position();
-            let Some(position) = self.house_door_destination(&intent.house, origin) else {
+            let Some((position, entrance_door)) =
+                self.house_door_destination(&intent.house, origin)
+            else {
                 return refuse();
             };
             (
@@ -207,6 +209,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     y: origin.y,
                     floor: origin.floor,
                 },
+                Some(entrance_door),
             )
         };
         if lease.character_id().as_bytes() != fence.character_id.as_bytes()
@@ -287,16 +290,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 rest: saved.1,
             },
         };
-        let entrance_door_floor = if intent.exit {
-            None
-        } else {
-            let floor = i8::try_from(position.floor).ok()?;
-            Some(if self.bundle_map().is_some() {
-                floor.checked_neg()?
-            } else {
-                floor
-            })
-        };
         let saved_position = request.last_position;
         let transition = if intent.exit {
             None
@@ -314,7 +307,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.character,
                 self.holder,
                 request,
-                entrance_door_floor,
+                entrance_door,
                 capabilities.current_check(),
             )
             .await;
@@ -453,7 +446,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         house: &str,
         origin: crate::foundation::MovementLocalPosition,
-    ) -> Option<LocalPosition> {
+    ) -> Option<(LocalPosition, HouseEntranceDoor)> {
         if self.bundle_map().is_some() {
             let entry = super::house_query::entrance(house)?;
             if (origin.x, origin.y, origin.floor) != (entry.x, entry.y, entry.floor) {
@@ -479,12 +472,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     y,
                     floor: floor.checked_neg()?,
                 };
-                if map
-                    .facts
-                    .house_door(tile, super::house_query::source_house_id(house)?)
-                    .is_some()
-                {
-                    return Some(position);
+                let house = super::house_query::source_house_id(house)?;
+                if map.facts.house_door(tile, house).is_some() {
+                    let entrance = if map.facts.house_door_is_authored_open(tile, house)
+                        && map
+                            .facts
+                            .house_door_ground_clear(map.overlay.base(), tile, house)
+                    {
+                        HouseEntranceDoor::AuthoredOpen
+                    } else {
+                        HouseEntranceDoor::RequiresAcl(tile.floor)
+                    };
+                    return Some((position, entrance));
                 }
             } else {
                 let cell = crate::content::LogicalCell {
@@ -505,7 +504,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && placement.door_at(cell).is_some()
                     && (entry.x, entry.y, entry.z) == (origin.x, origin.y, i32::from(origin.floor))
                 {
-                    return Some(position);
+                    return Some((
+                        position,
+                        HouseEntranceDoor::RequiresAcl(i8::try_from(position.floor).ok()?),
+                    ));
                 }
             }
         }

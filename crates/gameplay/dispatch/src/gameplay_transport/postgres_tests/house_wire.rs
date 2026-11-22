@@ -653,6 +653,41 @@ async fn guild_house_lists(h: &Harness, actor: [u8; 16]) -> TestResult<Vec<Strin
         .bind(id(42).as_slice()).bind(HOUSE).bind(actor.as_slice()).fetch_all(&h.pool).await?)
 }
 
+#[test]
+fn legacy_guild_rank_writes_still_reach_the_operation_fence_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async move |_| {
+        let h = Harness::create_with_admission_seed(admin, "legacy_guild_rank", true, false).await?;
+        for statement in [
+            "INSERT INTO game_guild_ranks(guild_id,level,name) VALUES(encode($1,'hex')::uuid,$2,$3)",
+            "INSERT INTO game_guild_ranks(guild_id,level,name) VALUES(encode($1,'hex')::uuid,$2,$3)
+             ON CONFLICT(guild_id,level) DO UPDATE SET name=EXCLUDED.name",
+        ] {
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+                .execute(&mut *tx)
+                .await?;
+            let error = sqlx::query(statement)
+                .bind(id(90).as_slice())
+                .bind(1_i16)
+                .bind("Leader")
+                .execute(&mut *tx)
+                .await
+                .err()
+                .ok_or("legacy rank write bypassed the Guild operation fence")?;
+            assert_eq!(
+                error.as_database_error().and_then(|error| error.code()).as_deref(),
+                Some("23514")
+            );
+            tx.rollback().await?;
+        }
+        verify_guild_rank_write_fence(&h).await?;
+        h.cleanup().await
+    })
+}
+
 async fn verify_guild_rank_write_fence(h: &Harness) -> TestResult {
     for (statement, expected) in [
         (

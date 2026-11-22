@@ -39,6 +39,12 @@ pub struct HouseTransferRequest {
     pub last_position: LastPositionRecord,
 }
 
+#[derive(Clone, Copy)]
+pub enum HouseEntranceDoor {
+    AuthoredOpen,
+    RequiresAcl(i8),
+}
+
 impl DurabilityRoot {
     /// PREPARE and COMMIT share the source freeze and one transaction. Exit has
     /// its own direction in 0215 and never relaxes 0074's direction CHECK.
@@ -47,10 +53,10 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         mut request: HouseTransferRequest,
-        entrance_door_floor: Option<i8>,
+        entrance_door: Option<HouseEntranceDoor>,
         capabilities: CurrentCapabilityCheck,
     ) -> Result<(HouseTransferAck, Vec<u8>), DurabilityError> {
-        if request.ack.house.is_some() != entrance_door_floor.is_some() {
+        if request.ack.house.is_some() != entrance_door.is_some() {
             return Err(DurabilityError::Unavailable);
         }
         let recovery = authority
@@ -67,7 +73,7 @@ impl DurabilityRoot {
                     if !prove_current_incarnation(&mut tx, &node).await? {
                         return Err(DurabilityError::Unavailable);
                     }
-                    prepare(&mut tx, &node, &mut request, entrance_door_floor).await?;
+                    prepare(&mut tx, &node, &mut request, entrance_door).await?;
                     let payload = encode_house_transfer_ack(&request.ack)
                         .map_err(|_| DurabilityError::Unavailable)?;
                     apply(
@@ -92,7 +98,7 @@ async fn prepare(
     tx: &mut Transaction<'_, Postgres>,
     node: &NodeIncarnationProof,
     request: &mut HouseTransferRequest,
-    entrance_door_floor: Option<i8>,
+    entrance_door: Option<HouseEntranceDoor>,
 ) -> Result<(), DurabilityError> {
     if request.ack.house.is_none() {
         return Ok(());
@@ -122,7 +128,7 @@ async fn prepare(
     let acl: String = access.try_get("acl_revision")?;
     // The access read keeps the named House property locked through handoff.
     // Saved admission instead validates its arbitrary placement in its native owner.
-    if let Some(floor) = entrance_door_floor {
+    if let Some(HouseEntranceDoor::RequiresAcl(floor)) = entrance_door {
         let [x, y, _] = request.ack.position;
         let x = u16::try_from(x).map_err(|_| DurabilityError::Unavailable)?;
         let y = u16::try_from(y).map_err(|_| DurabilityError::Unavailable)?;

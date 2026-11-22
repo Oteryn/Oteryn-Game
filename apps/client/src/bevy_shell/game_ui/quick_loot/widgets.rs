@@ -163,6 +163,23 @@ pub(super) fn render(
                 panel,
             );
         }
+        if matches!(category, None | Some(Category::Gold)) {
+            button(
+                commands,
+                skins,
+                row,
+                key,
+                Kind::Request(Action::Destination {
+                    category,
+                    recipient: Recipient::GoldPouch,
+                    id: None,
+                    fallback: true,
+                }),
+                "Use Gold Pouch",
+                140.,
+                panel,
+            );
+        }
         if let Some(Action::Destination {
             category,
             recipient,
