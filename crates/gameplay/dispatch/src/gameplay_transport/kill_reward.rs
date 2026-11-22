@@ -985,6 +985,11 @@ impl KillSettlementQueue {
                             .iter()
                             .any(|participant| participant.session == session)
                     })
+                    || entry.boss_outfit.as_ref().is_some_and(|(_, recipients)| {
+                        recipients
+                            .iter()
+                            .any(|recipient| recipient.session == session)
+                    })
                     || entry
                         .damage_shares
                         .iter()
@@ -1602,12 +1607,14 @@ impl KillSettlementQueue {
             entry.facts.death,
             principal_of(&entry),
             entry.target,
-            entry.echo.as_ref().map_or_else(Vec::new, |echo| {
-                echo.recipients
-                    .iter()
-                    .map(|recipient| recipient.session)
-                    .collect()
-            }),
+            entry
+                .echo
+                .iter()
+                .flat_map(|echo| echo.recipients.iter().map(|recipient| recipient.session))
+                .chain(entry.boss_outfit.iter().flat_map(|(_, recipients)| {
+                    recipients.iter().map(|recipient| recipient.session)
+                }))
+                .collect(),
         ));
         TakeOutcome::Taken(Box::new(TakenKillSettlement {
             queue: self.clone(),

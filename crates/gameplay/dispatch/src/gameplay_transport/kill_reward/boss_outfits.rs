@@ -2,7 +2,7 @@ use super::PendingKillSettlement;
 use crate::durability::boss_encounter::reward_chest::{BossOutfit, BossOutfitRecipient};
 use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
 
-pub(super) fn pale_worm_spectator(at: MovementLocalPosition) -> bool {
+fn pale_worm_spectator(at: MovementLocalPosition) -> bool {
     // Crystal 201189f8 feaster_of_souls/creaturescripts_pale_worm_death.lua:1–12.
     at.floor == 14 && at.x.abs_diff(33805) <= 11 && at.y.abs_diff(31504) <= 11
 }

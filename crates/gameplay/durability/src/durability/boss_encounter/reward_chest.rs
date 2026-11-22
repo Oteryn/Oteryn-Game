@@ -4,8 +4,9 @@ use crate::domain::CharacterId;
 use crate::foundation::{GameSessionId, RuntimeScopeRefV1};
 use oteryn_gameplay_encounter_rules::boss::RewardParticipation;
 
-#[path = "reward_chest/settlement.rs"]
+#[path = "reward_chest/outfits.rs"]
 mod outfits;
+#[path = "reward_chest/settlement.rs"]
 mod settlement;
 
 pub use outfits::{BossOutfit, BossOutfitDeath, BossOutfitRecipient};

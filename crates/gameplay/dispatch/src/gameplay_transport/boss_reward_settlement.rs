@@ -458,7 +458,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     crate::durability::boss_encounter::reward_chest::BossDeathAtomicPlan {
                         death: personal_death_id(entry.facts.death),
                         boss_key: entry.creature.clone(),
-                        minted_at_unix_ms: entry.facts.died_at_unix_ms,
+                        minted_at_unix_ms: entry
+                            .activity_death
+                            .as_ref()
+                            .and_then(|death| u64::try_from(death.died_at_unix_ms).ok())
+                            .unwrap_or(entry.facts.died_at_unix_ms),
                         rewards: None,
                         outfit,
                     },
