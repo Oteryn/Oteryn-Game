@@ -562,10 +562,16 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     qengine_reward_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import elephant_corpse_profiles
     elephant_corpse_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
-    # Arbaziloth owns corpse 50029. The retained Item source closes its
-    # Ground-only decay chain (Canary items.xml:82814-82829).
+    # Qualify the Ground-only chain and its bindings against the retained
+    # Canary items.xml:82814-82829. Crystal 201189f8 items.xml:84147-84157
+    # supplies the capacity and duration of the first two stages.
     arbaziloth_corpses = elephant_corpse_profiles.capture_chain(
         root, {50029: (300, 50028, 15), 50028: (300, 50027, 15), 50027: (60, 0, None)})
+    for record in arbaziloth_corpses:
+        if record['production_binding']['external_id'] in {'50029', '50028'}:
+            semantics = record['semantics']
+            semantics['container']['value']['capacity']['value'] = 8
+            semantics['temporal']['value']['duration']['value'] = 60_000
     qengine_reward_item_profiles.admit_records(
         root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'],
         NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes, arbaziloth_corpses)
