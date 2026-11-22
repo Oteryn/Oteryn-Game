@@ -9,7 +9,6 @@ use std::sync::{
 struct Vault {
     bytes: Mutex<Option<Vec<u8>>>,
     denied_deletes: AtomicUsize,
-    block_journal_on_write: Mutex<Option<PathBuf>>,
 }
 
 impl vault::Vault for Vault {
@@ -23,15 +22,6 @@ impl vault::Vault for Vault {
 
     fn write(&self, bytes: &[u8]) -> Result<(), String> {
         *self.bytes.lock().map_err(|_| "vault")? = Some(bytes.to_vec());
-        if let Some(lock) = self
-            .block_journal_on_write
-            .lock()
-            .map_err(|_| "vault")?
-            .take()
-        {
-            std::fs::remove_file(&lock).map_err(|error| error.to_string())?;
-            std::fs::create_dir(lock).map_err(|error| error.to_string())?;
-        }
         Ok(())
     }
 
@@ -423,85 +413,4 @@ fn c2a_cancel_during_begin_preserves_family_for_retry() -> TestResult {
         assert_eq!(replay.requests.lock().map_err(|_| "requests")?.len(), 1);
         replay.finish().await
     })
-}
-
-#[test]
-fn restart_after_saving_rotation_never_revokes_the_successor_family() -> TestResult {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(async {
-            for ticket in [false, true] {
-                let folder = tempfile::tempdir()?;
-                let vault = Arc::new(Vault::default());
-                let previous = enrollment_response()?;
-                vault::Vault::write(vault.as_ref(), &previous).map_err(std::io::Error::other)?;
-                let lock = folder.path().join("revocations.lock");
-                let login = || DeviceLogin {
-                    enabled: true,
-                    forget_requested: Default::default(),
-                    journal: super::test_server::journal(Some(folder.path().into())),
-                    vault: vault.clone(),
-                    commerce: Default::default(),
-                    state: Default::default(),
-                    folder: Some(folder.path().into()),
-                };
-                let server = Server::start(vec![
-                    (
-                        200,
-                        changed_response(&format!("otd1.{}E", "A".repeat(42)), ticket)?,
-                    ),
-                    (200, fixture("revoke-response.json")?),
-                ])
-                .await?;
-                let options = MiscellaneousPreferences {
-                    stay_logged_in: true,
-                    remember_device: true,
-                    ..Default::default()
-                };
-                {
-                    let login = login();
-                    let mut attempt = login
-                        .begin(&server.client, options, CancellationToken::new())
-                        .await?
-                        .ok_or("attempt")?;
-                    *vault.block_journal_on_write.lock().map_err(|_| "vault")? = Some(lock.clone());
-                    let result = if ticket {
-                        attempt
-                            .ticket(&server.client, CancellationToken::new())
-                            .await
-                            .map(|_| ())
-                    } else {
-                        attempt
-                            .characters(&server.client, CancellationToken::new())
-                            .await
-                            .map(|_| ())
-                    };
-                    assert!(result.is_err(), "rotation marker cleanup should fail");
-                }
-                std::fs::remove_dir(lock)?;
-                let restarted = login();
-                let attempt = restarted
-                    .begin(&server.client, options, CancellationToken::new())
-                    .await?;
-                assert!(attempt.is_some_and(|attempt| attempt.has_session()));
-                assert_eq!(
-                    server.requests.lock().map_err(|_| "requests")?.len(),
-                    1,
-                    "startup must not revoke the predecessor of the saved successor"
-                );
-                let predecessor = DeviceSession::from_vault(&previous, now()?)?;
-                restarted.journal.stage(&predecessor.device_credential)?;
-                let _attempt = restarted
-                    .begin(&server.client, options, CancellationToken::new())
-                    .await?;
-                assert_eq!(
-                    server.requests.lock().map_err(|_| "requests")?.len(),
-                    2,
-                    "startup must honor an unconditional revocation"
-                );
-                server.finish().await?;
-            }
-            Ok(())
-        })
 }

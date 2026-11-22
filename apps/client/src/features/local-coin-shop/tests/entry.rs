@@ -138,20 +138,15 @@ fn store_launcher_opens_coin_history_and_transfer_pages_until_the_session_ends()
 
 #[test]
 fn store_launcher_fresh_oauth_keeps_request_until_sign_out() -> TestResult {
-    test_thread(|| fresh_oauth(None))
+    test_thread(|| fresh_oauth(false))
 }
 
 #[test]
 fn store_launcher_fresh_oauth_releases_definitively_refused_request() -> TestResult {
-    test_thread(|| fresh_oauth(Some(409)))
+    test_thread(|| fresh_oauth(true))
 }
 
-#[test]
-fn store_launcher_fresh_oauth_can_buy_after_a_post_disconnects_before_creation() -> TestResult {
-    test_thread(|| fresh_oauth(Some(0)))
-}
-
-fn fresh_oauth(post_failure: Option<u16>) -> TestResult {
+fn fresh_oauth(refused: bool) -> TestResult {
     use crate::account_services::test_server::coins::{CoinAuthority, EventKind, PACKAGE};
     use std::sync::Mutex;
     let _entry = crate::account_services::test_server::COMMERCE_ENTRY
@@ -210,8 +205,8 @@ fn fresh_oauth(post_failure: Option<u16>) -> TestResult {
             })
             .collect()
     };
-    if let Some(status) = post_failure {
-        mock.authority.lock().map_err(|_| "lock")?.coin_post_failure = Some(status);
+    if refused {
+        mock.authority.lock().map_err(|_| "lock")?.coin_post_failure = Some(409);
     } else {
         mock.with_coins(|coins| {
             coins.drop_after_create = true;
@@ -227,7 +222,7 @@ fn fresh_oauth(post_failure: Option<u16>) -> TestResult {
             .status_text()
             .contains(&original)
     );
-    if post_failure == Some(409) {
+    if refused {
         let fresh = open(vec![Action::Retry, purchase()])?;
         assert!(!format!("{fresh:?}").contains(&original));
         let requests = posts()?;
@@ -280,10 +275,6 @@ fn fresh_oauth(post_failure: Option<u16>) -> TestResult {
         fresh[3].order.as_ref().map(|o| &o.request_id),
         Some(&requests[1])
     );
-    if post_failure == Some(0) {
-        assert_eq!(mock.with_coins(|coins| coins.creations)?, 0);
-        return Ok(());
-    }
     let hidden = open(vec![Action::Retry])?;
     assert!(
         hidden

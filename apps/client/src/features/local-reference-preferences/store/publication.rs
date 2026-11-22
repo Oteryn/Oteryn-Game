@@ -60,8 +60,7 @@ impl PreferenceStore {
         previous: &ReferencePreferences,
         source: Replacement,
     ) -> io::Result<()> {
-        self.preferences =
-            Self::publish_replacement(&self.path, previous, source, &self.restore_retry)?;
+        self.preferences = Self::publish_replacement(&self.path, previous, source)?;
         Ok(())
     }
 
@@ -69,28 +68,13 @@ impl PreferenceStore {
         path: &Path,
         previous: &ReferencePreferences,
         source: Replacement,
-        restore_retry: &std::sync::Mutex<Option<Vec<u8>>>,
     ) -> io::Result<ReferencePreferences> {
         let _lock = crate::atomic_file::lock(path)?;
         let retained = Self::finish_pending_backup(path)?;
-        let mut retry = restore_retry
-            .lock()
-            .map_err(|_| io::Error::other("Restore retry state unavailable"))?;
-        let restoring = matches!(source, Replacement::Restore);
-        if restoring
-            && let Some(committed) = retry.as_ref()
-            && Self::transfer_bytes(path).is_ok_and(|active| active == *committed)
-        {
-            // Finish an interrupted publication without selecting its rollback snapshot.
-            let active = Self::decode_transfer(committed)?;
-            sync_parent(path)?;
-            *retry = None;
-            return Ok(active);
-        }
-        *retry = None;
         let ready = path.with_added_extension("ready-backup");
         let slot = path.with_extension("backup.json");
         let snapshots = Self::ordered_snapshots(path)?;
+        let restoring = matches!(source, Replacement::Restore);
         let (replacement, bytes) = match source {
             Replacement::Restore => {
                 let mut selected = None;
@@ -156,16 +140,13 @@ impl PreferenceStore {
             } else {
                 let staging = path.with_added_extension("pending-backup");
                 crate::atomic_file::publish_durable_at(&staging, &backup, Some(generation))?;
-                let result = crate::atomic_file::publish_durable(path, &bytes);
-                *retry = Some(bytes);
-                result?;
+                crate::atomic_file::publish_durable(path, &bytes)?;
                 crate::atomic_file::durable_rename(&staging, &ready)?;
                 #[cfg(test)]
                 check_backup_write()?;
                 if !retained {
                     crate::atomic_file::durable_rename(&ready, &slot)?;
                 }
-                *retry = None;
                 return Ok(replacement);
             }
         }
@@ -297,12 +278,7 @@ fn review_3376_restore_keeps_backup_content_when_backup_write_fails() -> io::Res
         std::fs::remove_file(backup)?;
         std::fs::create_dir(backup)
     }));
-    let result = PreferenceStore::publish_replacement(
-        &path,
-        &active,
-        Replacement::Restore,
-        &Default::default(),
-    );
+    let result = PreferenceStore::publish_replacement(&path, &active, Replacement::Restore);
     assert!(result.is_err());
     assert_eq!(PreferenceStore::read_transfer(&path)?.ui_scale, 140);
     Ok(())
@@ -557,38 +533,5 @@ fn restore_skips_invalid_legacy_snapshots_and_breaks_generation_ties() -> io::Re
         .set_modified(generation + std::time::Duration::from_secs(60))?;
     state.restore_backup()?;
     assert_eq!(state.preferences.ui_scale, 140);
-    Ok(())
-}
-
-#[cfg(test)]
-#[test]
-fn review_batch_restore_retry_keeps_the_committed_active_settings() -> io::Result<()> {
-    for extension in ["json.ready-backup", "backup.json"] {
-        let root = tempfile::tempdir()?;
-        let path = root.path().join("preferences.json");
-        let active = ReferencePreferences {
-            ui_scale: 125,
-            ..Default::default()
-        };
-        let saved = ReferencePreferences {
-            ui_scale: 140,
-            ..Default::default()
-        };
-        PreferenceStore::export_to(&active, &path)?;
-        PreferenceStore::export_to(&saved, &path.with_extension("backup.json"))?;
-        let mut state = super::super::SettingsState::new(Some(path.clone()));
-        crate::atomic_file::fail_durable_rename_to(&path.with_extension(extension));
-        assert_eq!(
-            state.restore_backup().err().map(|error| error.kind()),
-            Some(io::ErrorKind::PermissionDenied),
-            "{extension}"
-        );
-        assert_eq!(PreferenceStore::read_transfer(&path)?.ui_scale, 140);
-        state.restore_backup()?;
-        assert_eq!(state.preferences.ui_scale, 140, "{extension}");
-        assert_eq!(PreferenceStore::read_transfer(&path)?.ui_scale, 140);
-        state.restore_backup()?;
-        assert_eq!(state.preferences.ui_scale, 125, "{extension}");
-    }
     Ok(())
 }
