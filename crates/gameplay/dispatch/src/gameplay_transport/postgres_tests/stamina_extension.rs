@@ -17,7 +17,7 @@ fn stamina_extension_use_burns_once_and_caps_live_and_durable_stamina() -> TestR
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    on_big_stack(admin, 2500, 2520, false)
+    on_big_stack(admin, 2500, 2520, Case::Cap)
 }
 
 #[test]
@@ -25,10 +25,36 @@ fn stamina_extension_replay_and_cooldown_leave_custody_unchanged() -> TestResult
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    on_big_stack(admin, 2300, 2360, true)
+    on_big_stack(admin, 2300, 2360, Case::Cooldown)
 }
 
-fn on_big_stack(admin: String, before: u16, after: u16, replay: bool) -> TestResult {
+#[test]
+fn stamina_extension_unknown_commit_resumes_both_carried_use_routes() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    on_big_stack(admin.clone(), 2300, 2360, Case::PendingDefinition)?;
+    on_big_stack(admin, 2300, 2360, Case::PendingHandle)
+}
+
+#[test]
+fn stamina_extension_consumed_handle_replays_through_use_intent() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    on_big_stack(admin, 2300, 2360, Case::HandleReplay)
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Case {
+    Cap,
+    Cooldown,
+    PendingDefinition,
+    PendingHandle,
+    HandleReplay,
+}
+
+fn on_big_stack(admin: String, before: u16, after: u16, case: Case) -> TestResult {
     std::thread::Builder::new()
         .name("stamina_extension".into())
         .stack_size(64 << 20)
@@ -37,7 +63,7 @@ fn on_big_stack(admin: String, before: u16, after: u16, replay: bool) -> TestRes
                 .enable_all()
                 .build()
                 .map_err(|error| error.to_string())?
-                .block_on(scenario(admin, before, after, replay))
+                .block_on(scenario(admin, before, after, case))
                 .map_err(|error| error.to_string())
         })?
         .join()
@@ -45,7 +71,7 @@ fn on_big_stack(admin: String, before: u16, after: u16, replay: bool) -> TestRes
         .map_err(Into::into)
 }
 
-async fn scenario(admin: String, before: u16, after: u16, replay: bool) -> TestResult {
+async fn scenario(admin: String, before: u16, after: u16, case: Case) -> TestResult {
     let h = Harness::create_with_admission_seed(admin, "stamina_extension", true, false).await?;
     prepare_current_session(&h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -94,7 +120,7 @@ async fn scenario(admin: String, before: u16, after: u16, replay: bool) -> TestR
             .await
             .load_stamina(&runtime, actor, session, before);
     }
-    seed_items(&h).await?;
+    seed_items(&h, matches!(case, Case::Cap | Case::Cooldown)).await?;
 
     let use_item = async |command_id, seed| {
         let command = UseCommand {
@@ -126,6 +152,31 @@ async fn scenario(admin: String, before: u16, after: u16, replay: bool) -> TestR
         );
         Ok(())
     };
+    if matches!(
+        case,
+        Case::PendingDefinition | Case::PendingHandle | Case::HandleReplay
+    ) {
+        owner
+            .runtime
+            .lock()
+            .await
+            .initialize_first_entry_position(actor)
+            .map_err(debug)?;
+        super::track(&owner, &deps)?;
+        let mut admitted = deps.admitted;
+        admitted.runtime_actor = Some(actor);
+        admitted.first_entry = crate::gameplay_transport::connection::FirstEntryOutcome::Positioned;
+        admitted.item_fence = Some(fence);
+        wire_case(&owner, admitted, case).await?;
+        assert_eq!(custody(&h, FIRST).await?, (0, false));
+        assert_stamina(after).await?;
+        let activations: i64 =
+            sqlx::query_scalar("SELECT count(*) FROM game_character_concoction_effects")
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(activations, 1);
+        return Ok(());
+    }
     assert_eq!(use_item(900, FIRST).await, UseDisposition::Committed);
     assert_eq!(custody(&h, FIRST).await?, (0, false));
     assert_stamina(after).await?;
@@ -138,7 +189,7 @@ async fn scenario(admin: String, before: u16, after: u16, replay: bool) -> TestR
     ).fetch_one(&h.pool).await?;
     assert_eq!(receipt, (i32::from(before), i32::from(after), true, true));
 
-    if replay {
+    if case == Case::Cooldown {
         assert_eq!(use_item(901, WEALTH).await, UseDisposition::Committed);
         assert_eq!(use_item(902, SECOND).await, UseDisposition::Exhausted);
         assert_eq!(use_item(900, SECOND).await, UseDisposition::Rejected);
@@ -166,7 +217,103 @@ async fn scenario(admin: String, before: u16, after: u16, replay: bool) -> TestR
     Ok(())
 }
 
-async fn seed_items(h: &Harness) -> TestResult {
+async fn wire_case(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: crate::gameplay_transport::connection::AdmittedSession,
+    case: Case,
+) -> TestResult {
+    use super::wave2_replay_wire::exchange;
+    use crate::foundation::CommandStatus;
+    use crate::gameplay_transport::capabilities::{OfferedCapability, SelectedCapabilities};
+    use oteryn_protocol_oteryn::world_object::{
+        UseIntent, UseTarget, decode_use_result, encode_item_use_intent, encode_use_item_intent,
+    };
+    use oteryn_protocol_oteryn::{item_view, world_object, world_spatial_entities};
+    let offered = [
+        OfferedCapability {
+            id: world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES,
+            requires: &[],
+        },
+        OfferedCapability {
+            id: item_view::CAPABILITY_ITEM_VIEW_MOVE_V1,
+            requires: item_view::CAPABILITY_ITEM_VIEW_MOVE_V1_REQUIRES,
+        },
+        OfferedCapability {
+            id: world_object::CAPABILITY_ITEM_USE_V1,
+            requires: world_object::CAPABILITY_ITEM_USE_V1_REQUIRES,
+        },
+    ];
+    let selected = [4, 6, 15];
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(&offered, &selected).ok_or("carried USE capabilities")?;
+    let key = Concoction::StaminaExtension.production_key();
+    let definition = {
+        let runtime = owner.runtime.lock().await;
+        let index = crate::gameplay_transport::item_ref_admission::pinned_index(
+            &runtime,
+            owner.active_generation,
+        )
+        .ok_or("item index")?;
+        index
+            .definition_ref("Item", key, index.revision(key).ok_or("stamina revision")?)
+            .ok_or("stamina wire definition")?
+    };
+    let hotkey = encode_item_use_intent(&UseIntent {
+        target: UseTarget::ItemByDefinition(definition),
+        use_with: None,
+        use_with_map_item: None,
+        use_with_position: None,
+    })
+    .map_err(debug)?;
+    let carried = (case != Case::PendingDefinition).then_some(definition);
+    let pending = case != Case::HandleReplay;
+    let first = if pending {
+        crate::gameplay_transport::item_use::LOSE_STAMINA_ACK
+            .scope(
+                std::cell::Cell::new(true),
+                exchange(owner, admitted, 1, 2, &hotkey, carried),
+            )
+            .await?
+    } else {
+        exchange(owner, admitted, 1, 2, &hotkey, carried).await?
+    };
+    let payload = first.handle.map_or(hotkey, encode_use_item_intent);
+    let mut resumed = first.retained;
+    let expected_status = if pending {
+        assert!(
+            first.command_result.is_none(),
+            "an unknown commit sent a terminal reply"
+        );
+        assert!(crate::gameplay_transport::connection::FreshAdmissionAuthority::prepare_quest_callback_resume(owner, &mut resumed).await);
+        assert!(owner.states.command_ingress.resumable(&resumed));
+        CommandStatus::DuplicateReplay
+    } else {
+        let (status, result) = first.command_result.ok_or("initial USE result")?;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert_eq!(
+            decode_use_result(&result).map_err(debug)?,
+            UseDisposition::Committed
+        );
+        // Re-enter the original wire route with its original payload and a refreshed view.
+        // With the command memo present ingress answers before decoding the original handle.
+        owner
+            .states
+            .command_ingress
+            .forget(admitted.game_session_id);
+        resumed.continuity.next_command_id = 1;
+        CommandStatus::Accepted
+    };
+    let replay = exchange(owner, resumed, 1, 2, &payload, None).await?;
+    let (status, result) = replay.command_result.ok_or("replayed USE result")?;
+    assert_eq!(status, expected_status);
+    assert_eq!(
+        decode_use_result(&result).map_err(debug)?,
+        UseDisposition::Committed
+    );
+    Ok(())
+}
+
+async fn seed_items(h: &Harness, extra: bool) -> TestResult {
     use crate::durability::item_fee_burn::test_support::item;
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
@@ -177,7 +324,10 @@ async fn seed_items(h: &Harness) -> TestResult {
         (FIRST, Concoction::StaminaExtension.production_key()),
         (SECOND, Concoction::StaminaExtension.production_key()),
         (WEALTH, Concoction::WealthDuplex.production_key()),
-    ] {
+    ]
+    .into_iter()
+    .filter(|(seed, _)| extra || [BAG, FIRST].contains(seed))
+    {
         sqlx::raw_sql(sqlx::AssertSqlSafe(item(seed, key, "definition-r1", 1)))
             .execute(&mut *tx)
             .await?;
@@ -187,7 +337,11 @@ async fn seed_items(h: &Harness) -> TestResult {
          VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)",
     ).bind(id(41).as_slice()).bind(id(BAG).as_slice()).bind(id(42).as_slice()).bind(id(181).as_slice())
         .execute(&mut *tx).await?;
-    for (ordinal, seed) in [FIRST, SECOND, WEALTH].into_iter().enumerate() {
+    for (ordinal, seed) in [FIRST, SECOND, WEALTH]
+        .into_iter()
+        .take(if extra { 3 } else { 1 })
+        .enumerate()
+    {
         sqlx::query(
             "INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) \
              VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,encode($6,'hex')::uuid)",

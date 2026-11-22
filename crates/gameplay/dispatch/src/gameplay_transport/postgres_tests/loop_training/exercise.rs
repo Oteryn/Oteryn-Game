@@ -42,6 +42,22 @@ fn fast_exercise_live_cadence_spends_twice_as_many_charges_without_changing_gain
 }
 
 #[test]
+fn fast_exercise_catchup_keeps_the_thirty_tick_limit() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            scenario(ExerciseScenario::FastExerciseCatchup).map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "fast exercise catch-up PG panic")??;
+    Ok(())
+}
+
+#[test]
 fn loop_training_postgres_exercise_terminal_readback_never_rebases_live_state() -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
@@ -293,6 +309,7 @@ enum ExerciseScenario {
     TerminalReadback,
     NodeBoot,
     FastExercise,
+    FastExerciseCatchup,
 }
 
 fn scenario(scenario: ExerciseScenario) -> TestResult {
@@ -301,7 +318,9 @@ fn scenario(scenario: ExerciseScenario) -> TestResult {
         let terminal_readback = scenario == ExerciseScenario::TerminalReadback;
         let tag = match scenario {
             ExerciseScenario::TerminalReadback => "loop_training_terminal_readback",
-            ExerciseScenario::FastExercise => "loop_training_fast_exercise",
+            ExerciseScenario::FastExercise | ExerciseScenario::FastExerciseCatchup => {
+                "loop_training_fast_exercise"
+            }
             ExerciseScenario::Replay | ExerciseScenario::NodeBoot => "loop_training_exercise",
         };
         let h = Harness::create_with_admission_seed(admin, tag, !node_boot, false).await?;
@@ -541,6 +560,47 @@ fn scenario(scenario: ExerciseScenario) -> TestResult {
             stamina, 2339,
             "first training marker preserves legacy stamina"
         );
+        if scenario == ExerciseScenario::FastExerciseCatchup {
+            use crate::durability::character_build::{
+                BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState,
+            };
+            let fence = owner
+                .current_quest_fence(admitted.game_session_id)
+                .await
+                .map_err(debug)?
+                .ok_or("trainer fence")?;
+            let before = h
+                .root
+                .read_character_build_state(&authority, fence.character_id)
+                .await
+                .map_err(debug)?;
+            let mut skills = before.skills();
+            // Keep all overdue charges below the next level so the cadence limit decides.
+            skills[2] = (50, 0);
+            let after =
+                DurableBuildState::new(before.vocation(), before.magic(), skills).map_err(debug)?;
+            owner
+                .revision_sequencer
+                .acquire(fence.character_id)
+                .await
+                .commit_build(
+                    &h.root,
+                    &authority,
+                    &h.node,
+                    fence,
+                    BuildChangeRequest {
+                        occurrence: BuildOccurrence::from_bytes(id(79)).map_err(debug)?,
+                        cause: BuildCause::Training,
+                        before,
+                        after,
+                        pruned_stance: None,
+                    },
+                    &formula,
+                    None,
+                )
+                .await
+                .map_err(debug)?;
+        }
         if terminal_readback {
             // Give this negative readback case a real native training build, so
             // an illicit rebase would observably change the live state.
@@ -697,6 +757,37 @@ fn scenario(scenario: ExerciseScenario) -> TestResult {
         };
         assert_eq!(result.disposition, 1, "{result:?}");
         assert_eq!(result.charges, 500);
+        if scenario == ExerciseScenario::FastExerciseCatchup {
+            owner.states.test_owner_time.store(
+                started_at + 65_000_000,
+                std::sync::atomic::Ordering::Relaxed,
+            );
+            let _schedule_clock =
+                test_clock::set(content_schedule().clone(), FAST_EXERCISE_END - 60);
+            let status = crate::gameplay_transport::loop_training::wire::dispatch(
+                &owner,
+                admitted,
+                UseCommand {
+                    command_id: 2,
+                    ..command
+                },
+                67,
+                &[8, 2],
+                Some(&items),
+            )
+            .await
+            .ok_or("catch-up status")?;
+            assert_eq!((status.disposition, status.charges), (1, 470));
+            let gain: (i32, i64) =
+                sqlx::query_as("SELECT sword_level,sword_tries FROM game_character_build_state")
+                    .fetch_one(&h.pool)
+                    .await?;
+            assert_eq!(gain, (50, 30 * 7));
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         if scenario == ExerciseScenario::FastExercise {
             for (seconds, intent, disposition, charges) in [
                 (1, 2, 1, 500),  // First tick still waits two seconds.
@@ -828,7 +919,10 @@ fn scenario(scenario: ExerciseScenario) -> TestResult {
         }
         let held = owner.root.try_issue_semantic_pass()?;
         barrier.1.notify_one();
-        assert!(!stopping.await, "busy readback must retain the known receipt");
+        assert!(
+            !stopping.await,
+            "busy readback must retain the known receipt"
+        );
         assert_eq!(owner.idle_training(admitted).await, Some(true));
         held.run(|_, _| Box::pin(async { Ok(()) })).await?;
         let committed: (i64, i64) = sqlx::query_as(

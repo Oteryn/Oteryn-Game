@@ -47,6 +47,7 @@ struct PendingDelivery {
     selected: SelectedCapabilities,
     proven_native: Option<ProvenNativeReply>,
     buffered_step: bool,
+    depot_search: Option<oteryn_protocol_oteryn::depot_search::Request>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -241,6 +242,58 @@ impl SessionCommands {
                     })
                 })
         })
+    }
+
+    pub(super) fn bind_depot_search(
+        &self,
+        command: crate::foundation::CommandRef,
+        request: oteryn_protocol_oteryn::depot_search::Request,
+    ) -> Option<()> {
+        let commands = self.0.lock().ok()?;
+        let mut state = commands.get(&command.game_session_id())?.lock().ok()?;
+        if !state.active {
+            return None;
+        }
+        let pending = state.pending_delivery.as_mut()?;
+        if pending.command != command.command_id().get()
+            || pending
+                .depot_search
+                .is_some_and(|original| original != request)
+        {
+            return None;
+        }
+        pending.depot_search = Some(request);
+        Some(())
+    }
+
+    pub(super) fn pending_depot_search(
+        &self,
+        session: GameSessionId,
+    ) -> Option<(
+        crate::foundation::CommandRef,
+        oteryn_protocol_oteryn::depot_search::Request,
+    )> {
+        let commands = self.0.lock().ok()?;
+        let state = commands.get(&session)?.lock().ok()?;
+        if state.active {
+            return None;
+        }
+        let pending = state.pending_delivery?;
+        let command =
+            crate::foundation::CommandRef::new(session, CommandId::new(pending.command).ok()?);
+        Some((command, pending.depot_search?))
+    }
+
+    pub(super) fn complete_depot_search(
+        &self,
+        command: crate::foundation::CommandRef,
+        reply: &oteryn_protocol_oteryn::depot_search::Reply,
+    ) -> Option<()> {
+        if !self.reconcilable(command) {
+            return None;
+        }
+        let payload = oteryn_protocol_oteryn::depot_search::encode_reply(reply).ok()?;
+        self.complete_reconciled(command, false, &payload)
     }
 
     /// Only the frozen trade's verified durable verdict can complete this reserved command.
@@ -507,6 +560,7 @@ impl SessionCommandStream {
                     selected: self.selected,
                     proven_native: None,
                     buffered_step: false,
+                    depot_search: None,
                 });
                 state.reconciled_sequence = None;
                 Ok(CommandAction::Execute)

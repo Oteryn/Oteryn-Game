@@ -95,6 +95,29 @@ impl DurabilityRoot {
         .await
     }
 
+    /// Prove the original verdict even when the resumed actor can no longer use the locker.
+    pub async fn read_depot_search_retrieval(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        fence: CurrentCharacterItemFence,
+        request: DepotSearchCommand,
+    ) -> std::result::Result<Option<RetrievalResult>, DurabilityError> {
+        if request.command.game_session_id() != fence.game_session_id {
+            return Err(DurabilityError::Unavailable);
+        }
+        let record = recovery.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = super::super::db::begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &record).await?;
+            lock_loop_command(&mut tx, request.command).await?;
+            let receipt = read_retrieval_receipt(
+                &mut tx, fence, request.command, &request.canonical_request(),
+            ).await?;
+            tx.rollback().await?;
+            Ok(receipt)
+        })).await
+    }
+
     async fn commit_depot_search_at<C: ItemLoopContent>(
         &self,
         permit: &SpellLanePermit,
@@ -125,28 +148,9 @@ impl DurabilityRoot {
             let mut tx = super::super::db::begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &record).await?;
             lock_loop_command(&mut tx, command).await?;
-            if let Some(row) = sqlx::query(
-                "SELECT r.character_id::text,r.request,r.found,r.retrieved,s.action IS NOT NULL AS stash \
-                 FROM game_depot_search_retrieve_receipts r LEFT JOIN game_character_stash_operations s \
-                 USING(game_session_id,command_id,character_id,created_xact_id) \
-                 WHERE r.game_session_id=encode($1,'hex')::uuid AND r.command_id=$2::text::numeric",
-            )
-                .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).fetch_optional(&mut *tx).await? {
-                if uuid_text(row.try_get("character_id")?)? != *fence.character_id.as_bytes() || row.try_get::<Vec<u8>,_>("request")? != canonical {
-                    tx.rollback().await?;
-                    return Ok(Err(LoopMoveRefusal::Rejected));
-                }
-                let retrieved = u32::try_from(row.try_get::<i64,_>("retrieved")?).map_err(|_| DurabilityError::InvalidStoredState)?;
-                let found: bool = row.try_get("found")?;
-                let stash: bool = row.try_get("stash")?;
+            if let Some(receipt) = read_retrieval_receipt(&mut tx, fence, command, &canonical).await? {
                 super::super::db::commit_semantic_transaction(tx, deadline).await?;
-                return Ok(if found {
-                    Ok(DepotSearchRetrieval::Retrieved(retrieved))
-                } else if stash {
-                    Err(LoopMoveRefusal::Rejected)
-                } else {
-                    Ok(DepotSearchRetrieval::NotFound)
-                });
+                return Ok(receipt);
             }
             if native.is_some() {
                 lock_stash_command(&mut tx, command).await?;
@@ -265,6 +269,41 @@ impl DurabilityRoot {
             }
         })).await
     }
+}
+
+async fn read_retrieval_receipt(
+    tx: &mut Transaction<'_, Postgres>,
+    fence: CurrentCharacterItemFence,
+    command: CommandRef,
+    canonical: &[u8],
+) -> Result<Option<RetrievalResult>, DurabilityError> {
+    let Some(row) = sqlx::query(
+        "SELECT r.character_id::text,r.request,r.found,r.retrieved,s.action IS NOT NULL AS stash \
+         FROM game_depot_search_retrieve_receipts r LEFT JOIN game_character_stash_operations s \
+         USING(game_session_id,command_id,character_id,created_xact_id) \
+         WHERE r.game_session_id=encode($1,'hex')::uuid AND r.command_id=$2::text::numeric",
+    )
+    .bind(command.game_session_id().as_bytes().as_slice())
+    .bind(command.command_id().get().to_string())
+    .fetch_optional(&mut **tx)
+    .await?
+    else {
+        return Ok(None);
+    };
+    if uuid_text(row.try_get("character_id")?)? != *fence.character_id.as_bytes()
+        || row.try_get::<Vec<u8>, _>("request")? != canonical
+    {
+        return Ok(Some(Err(LoopMoveRefusal::Rejected)));
+    }
+    let amount = u32::try_from(row.try_get::<i64, _>("retrieved")?)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    Ok(Some(if row.try_get("found")? {
+        Ok(DepotSearchRetrieval::Retrieved(amount))
+    } else if row.try_get("stash")? {
+        Err(LoopMoveRefusal::Rejected)
+    } else {
+        Ok(DepotSearchRetrieval::NotFound)
+    }))
 }
 
 /// One child move under a savepoint: a refusal (no room, overweight) rolls back only itself.

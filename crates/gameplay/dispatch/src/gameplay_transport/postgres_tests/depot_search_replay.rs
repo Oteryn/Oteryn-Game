@@ -13,7 +13,7 @@ fn depot_search_retrieve_all_replays_stash_result_after_balance_reaches_zero() -
         return Ok(());
     };
     drop(admin);
-    scenario_thread::run("depot-search-stash-replay", || scenario(false))
+    scenario_thread::run("depot-search-stash-replay", || scenario(false, false))
 }
 
 #[test]
@@ -22,10 +22,19 @@ fn depot_search_retrieve_rejects_changed_request_under_same_command() -> TestRes
         return Ok(());
     };
     drop(admin);
-    scenario_thread::run("depot-search-changed-request", || scenario(true))
+    scenario_thread::run("depot-search-changed-request", || scenario(true, false))
 }
 
-fn scenario(change_request: bool) -> TestResult {
+#[test]
+fn depot_search_unknown_withdrawal_resumes_the_original_wire_command() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    scenario_thread::run("depot-search-unknown-ack", || scenario(false, true))
+}
+
+fn scenario(change_request: bool, lose_ack: bool) -> TestResult {
     world_scenario!(
         "depot_search_stash_replay",
         |h,
@@ -97,6 +106,11 @@ fn scenario(change_request: bool) -> TestResult {
                     Request::Retrieve { client_id, all },
                 )
             };
+            if lose_ack {
+                reconcile_wire_withdrawal(&owner, admitted).await?;
+                assert_eq!(balances(&h.pool).await?, (0, 37, 20));
+                return Ok(());
+            }
             let first = retrieve(CLIENT_ID, true).await;
             assert_eq!((first.outcome, first.retrieved), (Outcome::Retrieved, 37));
             assert_eq!(balances(&h.pool).await?, (0, 37, 20));
@@ -129,6 +143,48 @@ fn scenario(change_request: bool) -> TestResult {
             Ok(())
         }
     )
+}
+
+async fn reconcile_wire_withdrawal(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: crate::gameplay_transport::connection::AdmittedSession,
+) -> TestResult {
+    use super::wave2_replay_wire::exchange;
+    use crate::foundation::CommandStatus;
+    use crate::gameplay_transport::capabilities::{OfferedCapability, SelectedCapabilities};
+    use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+    use oteryn_protocol_oteryn::depot_search as wire;
+
+    let id = wire::CAPABILITY_DEPOT_SEARCH_V1;
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(&[OfferedCapability { id, requires: &[] }], &[id])
+            .ok_or("depot search capability")?;
+    let payload = wire::encode_request(Request::Retrieve {
+        client_id: CLIENT_ID,
+        all: true,
+    })
+    .map_err(super::fixture::debug)?;
+    let command = admitted.continuity.next_command_id;
+    let kind = wire::COMMAND_TYPE_DEPOT_SEARCH;
+    let lost = crate::gameplay_transport::depot_search::LOSE_DEPOT_SEARCH_ACK
+        .scope(
+            std::cell::Cell::new(true),
+            exchange(owner, admitted, command, kind, &payload, None),
+        )
+        .await?;
+    assert!(
+        lost.command_result.is_none(),
+        "an unknown retrieval sent a terminal reply"
+    );
+    let mut resumed = lost.retained;
+    assert!(owner.prepare_quest_callback_resume(&mut resumed).await);
+    assert!(owner.states.command_ingress.resumable(&resumed));
+    let replay = exchange(owner, resumed, command, kind, &payload, None).await?;
+    let (status, reply) = replay.command_result.ok_or("replayed depot retrieval")?;
+    assert_eq!(status, CommandStatus::DuplicateReplay);
+    let reply = wire::decode_reply(&reply).map_err(super::fixture::debug)?;
+    assert_eq!((reply.outcome, reply.retrieved), (Outcome::Retrieved, 37));
+    Ok(())
 }
 
 async fn balances(pool: &sqlx::PgPool) -> TestResult<(i64, i64, i64)> {

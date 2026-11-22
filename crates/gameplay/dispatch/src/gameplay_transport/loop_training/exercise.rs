@@ -41,6 +41,7 @@ tokio::task_local! {
 }
 
 const EXERCISE_INTERVAL_US: u64 = 2_000_000;
+const EXERCISE_CATCHUP_TICKS_MAX: usize = 30;
 const EXERCISE_CHECKPOINT_US: u64 = 60_000_000;
 
 // Crystal 201189f exercise_training_weapons.lua:1,200-203,211.
@@ -213,8 +214,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 EXERCISE_INTERVAL_US
             };
-            // At most one checkpoint interval of charges is materialized in one pass.
-            for _ in 0..EXERCISE_CHECKPOINT_US / interval {
+            // LOOPTRAIN1-RL-CATCHUP-TICKS applies at either cadence.
+            for _ in 0..EXERCISE_CATCHUP_TICKS_MAX {
                 if now < run.next_tick || run.spent >= run.durable.charges {
                     break;
                 }
