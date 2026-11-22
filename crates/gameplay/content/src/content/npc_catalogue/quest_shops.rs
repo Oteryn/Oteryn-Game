@@ -14,6 +14,33 @@ mod native_fields;
 const SOURCE: &str = include_str!("../../../../../../content/quests/shared-quest-shops.json");
 const FARMINE: &str = include_str!("../../../../../../content/npcs/farmine-quest-shops.json");
 
+pub const ALBINIUS: &str = "oteryn:npc.albinius";
+pub const BLANK_IMBUEMENT_SCROLL: &str = "oteryn:item.tibia.i51442";
+pub const HEAVY_OLD_TOME: &str = "oteryn:item.tibia.i23986";
+pub const FORGOTTEN_KNOWLEDGE: &str = "oteryn:quest.forgotten_knowledge_quest";
+
+pub const ORDINARY_UNLOCK_VALUE: i64 = 1;
+
+/// Crystal 201189f8: albinius.lua:73-95 and telas.lua:633-679.
+pub const ORDINARY_REQUIREMENTS: [(&str, &str, &str); 2] = [
+    (
+        ALBINIUS,
+        FORGOTTEN_KNOWLEDGE,
+        "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+    ),
+    (
+        "oteryn:npc.telas",
+        "oteryn:quest.shadows_of_yalahar_quest",
+        "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/door_final",
+    ),
+];
+
+pub fn ordinary_requirement(npc: &str) -> Option<(&'static str, &'static str)> {
+    ORDINARY_REQUIREMENTS
+        .iter()
+        .find_map(|&(key, quest, track)| (npc == key).then_some((quest, track)))
+}
+
 fn ordinary_service(npc: &str) -> Option<&'static str> {
     match npc {
         "oteryn:npc.esrik" => Some("oteryn:service.trade.esrik"),
@@ -169,15 +196,19 @@ pub fn book_digest(previous: &str) -> String {
     if shops().is_ok_and(|shops| shops.is_empty()) {
         return previous.into();
     }
-    Sha256::new()
+    let mut hash = Sha256::new()
         .chain_update(b"oteryn:quest-shops:v1\0")
         .chain_update(previous.as_bytes())
         .chain_update(SOURCE.as_bytes())
-        .chain_update(FARMINE.as_bytes())
-        .finalize()
-        .iter()
-        .map(|b| format!("{b:02x}"))
-        .collect()
+        .chain_update(FARMINE.as_bytes());
+    for (npc, quest, track) in ORDINARY_REQUIREMENTS {
+        for value in [npc, quest, track] {
+            hash.update(value.as_bytes());
+            hash.update([0]);
+        }
+    }
+    hash.update(ORDINARY_UNLOCK_VALUE.to_be_bytes());
+    hash.finalize().iter().map(|b| format!("{b:02x}")).collect()
 }
 
 pub(super) fn declarations(

@@ -20,7 +20,7 @@ use crate::durability::item_mint::{
 use crate::durability::item_transfer::{
     CommittedItemTransfer, ContainerEntryPosition, CurrentCharacterItemFence, ItemDefinitionFacts,
     ItemStackClass, ItemTransferDestination, ItemTransferError, ItemTransferOutcome,
-    ItemTransferRefusal, ItemTransferRequest,
+    ItemTransferRefusal, ItemTransferRequest, ItemWeightLookup,
 };
 use crate::durability::runtime_scope_assignment::{
     AssignmentCommand, AssignmentOutcome, AssignmentRequest, BootstrapSecret, ControlActor,
@@ -549,9 +549,20 @@ impl Harness {
         fence: CurrentCharacterItemFence,
         request: ItemTransferRequest,
     ) -> Result<ItemTransferOutcome, ItemTransferError> {
+        self.transfer_with_weights(authority, fence, request, &TEST_WEIGHTS)
+            .await
+    }
+
+    pub(crate) async fn transfer_with_weights(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        fence: CurrentCharacterItemFence,
+        request: ItemTransferRequest,
+        weights: &dyn ItemWeightLookup,
+    ) -> Result<ItemTransferOutcome, ItemTransferError> {
         let mut candidate = self
             .root
-            .freeze_item_transfer(authority, &self.node, fence, request, &TEST_WEIGHTS)
+            .freeze_item_transfer(authority, &self.node, fence, request, weights)
             .await?;
         self.root
             .commit_item_transfer(
@@ -560,7 +571,7 @@ impl Harness {
                 &self.node,
                 fence,
                 &mut candidate,
-                &TEST_WEIGHTS,
+                weights,
             )
             .await
     }

@@ -278,7 +278,7 @@ const CONTACTS: &[(&str, u16, u16, u8)] = &[
 
 // Additional contacts for the same NPCs from the other NPC content lanes.
 const PACKAGE_CONTACTS: &[(&str, u16, u16, u8)] = &[
-    ("oteryn:npc.brodrosch", 32659, 31956, 15),
+    ("oteryn:npc.brodrosch", 32659, 31958, 15),
     ("oteryn:npc.gewen", 32589, 31942, 0),
     ("oteryn:npc.xodet", 32251, 32207, 11),
 ];

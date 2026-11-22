@@ -797,6 +797,8 @@ pub(super) async fn npc_bank_talk(
     };
     let source_appearance = catalogue::appearance(admission, actor, command, &intent).await;
     let source_inventory = catalogue::inventory(admission, actor, command, &intent).await;
+    let blank_scroll_available =
+        quest_shop::blank_scroll_available(admission, actor, command, &intent).await;
     let mut runtime = admission.runtime.lock().await;
     let points = admission
         .states
@@ -830,7 +832,7 @@ pub(super) async fn npc_bank_talk(
         .npc_conversations
         .refresh_quest_shop_context(
             session,
-            quest_shop::eligible_items(admission, session, native),
+            quest_shop::eligible_items(admission, session, native, blank_scroll_available),
         );
     let ordinary = admission.states.npc_conversations.talk_in(
         &admission.states.chat,

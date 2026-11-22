@@ -89,16 +89,16 @@ fn shared_npcs(
     .map(|(_, key, at)| (key, at))
 }
 
-/// Keep Maeryn's published downstairs contact until the first committed reset.
+/// Keep Maeryn's qualified downstairs contact on ordinary days.
 pub(super) fn retain_bundle_npc(changes: &DailyWorldChanges, npc: &mut NpcPlacements) -> bool {
-    if changes.reset_epoch != 0 {
-        return npc.key != MAERYN && !shared_npcs(changes).any(|(daily, _)| daily == npc.key);
-    }
-    if npc.key == MAERYN && !npc.placements.is_empty() {
+    if npc.key == MAERYN {
+        if changes.reset_epoch != 0 && changes.grimvale_full_moon {
+            return false;
+        }
         npc.placements.retain(|placement| placement.floor == -7);
         return !npc.placements.is_empty();
     }
-    true
+    changes.reset_epoch == 0 || !shared_npcs(changes).any(|(daily, _)| daily == npc.key)
 }
 
 /// Places the day's NPCs the loaded catalogue admits; one that cannot stand is logged.
@@ -121,16 +121,10 @@ pub(super) fn apply(
             })
         })
         .map(|town| ("oteryn:npc.yasir", town.yasir_position()));
-    // Fandom Maeryn revid 1116853 locates her downstairs normally. TibiaWiki BR
-    // Maeryn revid 396987 supplies the upstairs cell she uses during the full moon.
-    let maeryn = std::iter::once((
-        MAERYN,
-        if changes.grimvale_full_moon {
-            (33332, 31686, 6)
-        } else {
-            (33331, 31686, 7)
-        },
-    ));
+    // TibiaWiki BR Maeryn revid 396987 supplies her upstairs full-moon cell.
+    let maeryn = changes
+        .grimvale_full_moon
+        .then_some((MAERYN, (33332, 31686, 6)));
     for (key, (x, y, z)) in changes
         .npcs()
         .chain(trader)
@@ -382,8 +376,8 @@ pub(crate) mod tests {
             ),
             (
                 DailyWorldChanges::roll(41, 1, 12, |_| u64::MAX),
-                0,
-                (33331, 31686, 7),
+                1,
+                (33330, 31686, 7),
             ),
             (
                 DailyWorldChanges::roll(41, 1, 13, |_| u64::MAX),
