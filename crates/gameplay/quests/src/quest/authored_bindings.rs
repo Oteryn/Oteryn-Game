@@ -448,9 +448,11 @@ impl Bindings {
             }
             digest.update(serde_json::to_vec(quest).map_err(|e| e.to_string())?);
             *before = digest.finalize().into();
-            // Replacing the route requires its new binding witness. Keep the
-            // legacy migration owners only for unrelated, retained quests.
-            catalogue.npc_legacy.remove(&quest.quest);
+            // Paradox keeps its published source NPC program and its native
+            // absent-value adapter. Other replacements require their new witness.
+            if quest.quest != "oteryn:quest.the_paradox_tower_quest" {
+                catalogue.npc_legacy.remove(&quest.quest);
+            }
             catalogue.predecessors.remove(&quest.quest);
         }
         let mut world = super::world_callbacks::load()?;

@@ -11,6 +11,9 @@ import world_region_codec as codec
 
 ROOT = Path(__file__).resolve().parents[3]
 EXPECTED = (
+    ((32035, 31642, 8), 7042, "action", 4503),
+    ((32107, 31568, 9), 7033, "action", 4502),
+    ((32180, 31633, 8), 2772, "unique", 30008),
     ((32966, 32626, 5), 4634, "action", 50022),
     ((32968, 32630, 7), 1720, "action", 50022),
     ((32968, 32629, 7), 1949, "action", 50022),
@@ -71,8 +74,10 @@ class QuestStartupBindingsTests(unittest.TestCase):
             "data-global/startup/tables/tile.lua": "TileAction = {[50022] = {itemId=4634, itemPos={{x=32966,y=32626,z=5}}}}",
             "data-global/startup/tables/teleport.lua": "TeleportAction = {[50022] = {{itemId=1720,itemPos={{x=32968,y=32630,z=7}}},{itemId=1949,itemPos={{x=32968,y=32629,z=7},{x=32967,y=32630,z=8}}}}} TeleportUnique = {[35020] = {itemId=10840,itemPos={x=33498,y=32613,z=8}}}",
             "data-global/startup/tables/door_level.lua": "LevelDoorAction = {[1070] = {itemId=false,itemPos={{x=33190,y=31684,z=14},{x=33195,y=31684,z=14}}}}",
-            "data-global/startup/tables/lever.lua": "LeverUnique = {[30034] = {itemId=2772,itemPos={x=32573,y=32121,z=7}}}",
-            "data-global/startup/tables/item.lua": "ItemAction = {[9715] = {itemId=776,itemPos={{x=33290,y=31785,z=13}}}}",
+            "data-global/startup/tables/lever.lua": "LeverUnique = {[30008] = {itemId=2772,itemPos={x=32180,y=31633,z=8}}, [30034] = {itemId=2772,itemPos={x=32573,y=32121,z=7}}}",
+            "data-global/startup/tables/item.lua": "ItemAction = {[4503] = {{itemId=2970,itemPos={{x=32030,y=31688,z=8}}},{itemId=7042,itemPos={{x=32035,y=31642,z=8}}}}, [9715] = {itemId=776,itemPos={{x=33290,y=31785,z=13}}}}",
+            "data-global/startup/tables/door_key.lua": "KeyDoorAction = {[Storage.Quest.Key.ID4502] = {itemId=false,itemPos={{x=32107,y=31568,z=9}}}}",
+            "data-global/lib/core/storages.lua": "Storage = {Quest={Key={ID4502=4502}}}",
             "data/libs/tables/doors.lua": "LevelDoorTable = {{closedDoor=5102,openDoor=5103}}",
         }
         with tempfile.TemporaryDirectory() as temporary:

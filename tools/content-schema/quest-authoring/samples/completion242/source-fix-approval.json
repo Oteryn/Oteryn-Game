@@ -368,7 +368,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/quest_tree_authoring.py",
-      "sha256": "d4057702779b6c1a378dfbe63304bac3cc27233c46232d8b5a07af761c1670a3"
+      "sha256": "08d7df59d8425c8b0541403fcbd0416479c01fb994984a98057dc47b124e9f8e"
     },
     {
       "path": "tools/content-schema/quest-authoring/reward_aliases.py",
@@ -428,7 +428,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/test_quest_completion_authoring.py",
-      "sha256": "1b8921aa764be1ffd3c541039153c5bdd0c21cd2bcffba0446aa23bd28ec4e04"
+      "sha256": "223d49a90daad97c97b96dfebed3cdb1a3751b58c3bd9ab871ae7f6c0c2f90ff"
     },
     {
       "path": "tools/content-schema/quest-authoring/test_reward_aliases.py",
@@ -440,7 +440,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/test_source_fix_guard.py",
-      "sha256": "a40114df3b8a0893246d66b7f116d262e9b82014b6a97f4b61f4f5d0912d8439"
+      "sha256": "6125eb3e21df050a1451474ea0dcaee51310dc5d675a087523237983fb4e5c1c"
     },
     {
       "path": "tools/content-schema/quest-authoring/test_source_kilmaresh_owner_guard.py",
@@ -494,7 +494,7 @@
     },
     {
       "path": "content/quests/world-callbacks.json",
-      "sha256": "ea40c3066068927560cb291265be675895bde422f1e749a9a80a4a83f2f3247e"
+      "sha256": "2f96769bd7f6f601dc86b92c0dab55734538143d438f90b2ca11d7e5b7926837"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/comment-write-fix/evidence.json",

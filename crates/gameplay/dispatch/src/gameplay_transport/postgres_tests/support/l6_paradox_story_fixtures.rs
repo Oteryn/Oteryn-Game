@@ -156,6 +156,7 @@ pub(super) fn crops() -> TestResult<Vec<super::l6_world_pickups_fixtures::Native
 async fn install(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
+    production: bool,
 ) -> TestResult<Vec<EntityRef>> {
     let catalogue = NpcDataCatalogue::load(
         std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
@@ -208,9 +209,14 @@ async fn install(
         })
         .collect();
     npcs.sort_by(|a, b| a.key.cmp(&b.key));
+    let table = if production {
+        super::paradox_tower_journey_fixtures::placements()?
+    } else {
+        NpcPlacementTable { npcs }
+    };
     runtime
         .place_npcs(
-            &NpcPlacementTable { npcs },
+            &table,
             |key| allowed.contains(key),
             true,
         )
@@ -233,14 +239,14 @@ async fn install(
         .collect()
 }
 
-struct Reply {
+pub(super) struct Reply {
     id: u64,
     payload: Vec<u8>,
     body: Vec<u8>,
-    disposition: NpcIntentDisposition,
+    pub(super) disposition: NpcIntentDisposition,
 }
 
-async fn conversation(
+pub(super) async fn conversation(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     npc: EntityRef,
@@ -398,7 +404,8 @@ pub(super) async fn exercise(
         .fetch_one(&h.pool)
         .await?;
     eprintln!("POSTGRES_DATABASE_READY l6_paradox_story version={version}");
-    let npcs = install(owner, admitted).await?;
+    let journey = name == super::paradox_tower_journey_fixtures::NAME;
+    let npcs = install(owner, admitted, journey).await?;
     let mut selected = admitted
         .continuity
         .selected_capabilities
@@ -415,6 +422,11 @@ pub(super) async fn exercise(
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
             .ok_or("NPC capabilities")?;
     super::l6_paradox_fixtures::raise_level(owner, admitted, authority, h, 30).await?;
+    let carried = if journey {
+        Some(super::paradox_tower_journey_fixtures::carried(owner, admitted, h).await?)
+    } else {
+        None
+    };
     let initial = snapshot(h).await?;
     if name.ends_with("out-of-order") {
         relocate(owner, admitted, 1).await?;
@@ -433,6 +445,12 @@ pub(super) async fn exercise(
             .all(|r| r.disposition == NpcIntentDisposition::Ok)
     );
     assert_eq!(progress(h).await?, 1);
+    if let Some(before) = &carried {
+        assert_eq!(
+            super::paradox_tower_journey_fixtures::carried(owner, admitted, h).await?,
+            *before
+        );
+    }
     if name.ends_with("lesson-guard") {
         let before = snapshot(h).await?;
         relocate(owner, admitted, 4).await?;
@@ -467,6 +485,12 @@ pub(super) async fn exercise(
             expected,
             "only the exact ordered contact advances the story"
         );
+        if let Some(before) = &carried {
+            assert_eq!(
+                super::paradox_tower_journey_fixtures::carried(owner, admitted, h).await?,
+                *before
+            );
+        }
     }
     let before = snapshot(h).await?;
     relocate(owner, admitted, 1).await?;
@@ -502,6 +526,12 @@ pub(super) async fn exercise(
             .collect::<Vec<_>>()
     );
     assert_eq!(progress(h).await?, 5);
+    if let Some(before) = &carried {
+        assert_eq!(
+            super::paradox_tower_journey_fixtures::carried(owner, admitted, h).await?,
+            *before
+        );
+    }
     let achievements: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_account_achievements WHERE achievement_key=$1",
     )

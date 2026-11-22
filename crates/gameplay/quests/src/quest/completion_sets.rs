@@ -20,6 +20,16 @@ pub struct CompletionSet {
     /// These members can advance only from their own durable once-claim MINT.
     #[serde(default, skip_serializing_if = "is_false")]
     pub mint_only: bool,
+    /// Optional final interaction and personal progress to settle alongside the claims.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    finish: Option<Finish>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+struct Finish {
+    transition: String,
+    minimum_tracks: BTreeMap<String, i64>,
 }
 
 impl QuestStateCatalogue {
@@ -32,17 +42,24 @@ impl QuestStateCatalogue {
         self.completion_sets.get(&transition.quest).map_or(
             self.completes_after(transition, changes),
             |rule| {
-                rule.groups.iter().all(|group| {
-                    group.iter().any(|key| {
-                        changes
+                let value = |key: &str| {
+                    changes
+                        .iter()
+                        .find(|change| change.track == key)
+                        .map(|change| change.after)
+                        .or_else(|| stored.get(key).copied())
+                        .unwrap_or(0)
+                };
+                rule.finish.as_ref().is_none_or(|finish| {
+                    finish.transition == transition.key
+                        && finish
+                            .minimum_tracks
                             .iter()
-                            .find(|change| &change.track == key)
-                            .map(|change| change.after)
-                            .or_else(|| stored.get(key).copied())
-                            .unwrap_or(0)
-                            >= 1
-                    })
-                })
+                            .all(|(key, minimum)| value(key) >= *minimum)
+                }) && rule
+                    .groups
+                    .iter()
+                    .all(|group| group.iter().any(|key| value(key) >= 1))
             },
         )
     }
@@ -63,6 +80,17 @@ fn parse(text: &str) -> Result<BTreeMap<String, CompletionSet>, String> {
     for (quest, rule) in &rules {
         if !super::valid_quest_key(quest) || rule.groups.is_empty() || rule.groups.len() > 32 {
             return Err("completion set bounds".into());
+        }
+        if rule.finish.as_ref().is_some_and(|finish| {
+            !super::valid_quest_key(&finish.transition)
+                || finish.minimum_tracks.is_empty()
+                || finish.minimum_tracks.len() > 16
+                || finish
+                    .minimum_tracks
+                    .iter()
+                    .any(|(key, minimum)| !super::valid_quest_key(key) || *minimum <= 0)
+        }) {
+            return Err("completion finish bounds".into());
         }
         for group in &rule.groups {
             if group.is_empty() || group.len() > 32 {
@@ -180,6 +208,28 @@ pub fn extend(base: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> 
         if declaration.groups.is_empty() || declaration.groups.len() > 32 {
             return Err("completion set bounds".into());
         }
+        if let Some(finish) = &declaration.finish {
+            let has_binding = base.authored_bindings().is_some_and(|bindings| {
+                bindings
+                    .quests
+                    .iter()
+                    .any(|binding| binding.quest == *quest)
+            });
+            if base
+                .transition(&finish.transition)
+                .is_none_or(|transition| transition.quest != *quest)
+                || finish.minimum_tracks.iter().any(|(key, minimum)| {
+                    base.track(key).map_or_else(
+                        || has_binding,
+                        |track| track.quest != *quest || !(track.min..=track.max).contains(minimum),
+                    )
+                })
+            {
+                return Err(
+                    "completion finish requires its exact quest tracks and transition".into(),
+                );
+            }
+        }
         let mut seen = BTreeSet::new();
         let mut groups = Vec::new();
         for group in &declaration.groups {
@@ -209,6 +259,7 @@ pub fn extend(base: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> 
             CompletionSet {
                 groups,
                 mint_only: declaration.mint_only,
+                finish: declaration.finish.clone(),
             },
         );
     }
@@ -232,8 +283,135 @@ pub fn extend(base: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> 
     catalogue.predecessors = base.predecessors;
     catalogue.authored_bindings = base.authored_bindings;
     catalogue.native_recipe_evidence = base.native_recipe_evidence;
+    retain_alawar_predecessor(&mut catalogue, &rules)?;
     catalogue.completion_sets = rules;
     Ok(catalogue)
+}
+
+// The original approach and the two independent chest transitions have the same
+// track defaults. A saved partial quest may finish the new route with those claims.
+fn retain_alawar_predecessor(
+    catalogue: &mut QuestStateCatalogue,
+    rules: &BTreeMap<String, CompletionSet>,
+) -> Result<(), String> {
+    const QUEST: &str = "oteryn:quest.alawar_s_vault_quest";
+    let Some(rule) = rules.get(QUEST).filter(|rule| rule.finish.is_some()) else {
+        return Ok(());
+    };
+    let mut transitions = BTreeMap::new();
+    let mut tracks = BTreeMap::new();
+    for key in [
+        "oteryn:quest-callback/m01b/alawar-s-vault/s1/entry",
+        "oteryn:quest-transition/kv/alawars_vault1/chest",
+        "oteryn:quest-transition/kv/alawars_vault2/chest",
+    ] {
+        let transition = catalogue
+            .transition(key)
+            .filter(|t| t.quest == QUEST)
+            .ok_or("Alawar predecessor transition")?;
+        for effect in &transition.effects {
+            let track = catalogue
+                .track(&effect.track)
+                .filter(|t| t.quest == QUEST)
+                .ok_or("Alawar predecessor track")?;
+            tracks.insert(track.key.clone(), track.clone());
+        }
+        transitions.insert(key.to_owned(), transition.clone());
+    }
+    let original_rule = CompletionSet {
+        finish: None,
+        ..rule.clone()
+    };
+    let hash = Sha256::new()
+        .chain_update(super::definition_hash(QUEST, &tracks, &transitions))
+        .chain_update(serde_json::to_vec(&original_rule).map_err(|error| error.to_string())?)
+        .finalize()
+        .into();
+    catalogue
+        .predecessors
+        .entry(QUEST.into())
+        .or_default()
+        .push(super::NpcDefinitionPredecessor {
+            hash,
+            defaults: BTreeMap::new(),
+        });
+    Ok(())
+}
+
+pub(super) fn journey_predecessors(
+    catalogue: &QuestStateCatalogue,
+    bindings: &super::authored_bindings::Bindings,
+) -> Result<BTreeMap<String, super::NpcDefinitionPredecessor>, String> {
+    const KOSHEI: &str = "oteryn:quest.koshei_the_deathless_quest";
+    const PARADOX: &str = "oteryn:quest.the_paradox_tower_quest";
+    let mut predecessors = BTreeMap::new();
+    for quest in [KOSHEI, PARADOX] {
+        if !bindings.quests.iter().any(|binding| binding.quest == quest) {
+            continue;
+        }
+        let mut tracks: BTreeMap<_, _> = catalogue
+            .tracks
+            .iter()
+            .filter(|(_, track)| track.quest == quest)
+            .map(|(key, track)| (key.clone(), track.clone()))
+            .collect();
+        let mut transitions: BTreeMap<_, _> = catalogue
+            .transitions
+            .iter()
+            .filter(|(_, transition)| transition.quest == quest)
+            .map(|(key, transition)| (key.clone(), transition.clone()))
+            .collect();
+        let hash = if quest == KOSHEI {
+            // Before the tomb journey, the two independent chest tracks already
+            // belonged to the published definition.
+            let declaration = declarations()?.get(quest).ok_or("Koshei completion rule")?;
+            let mut rule = declaration.clone();
+            for marker in rule.groups.iter_mut().flatten() {
+                let transition = member_transition(quest, marker, declaration)?;
+                let key = transition.effects[0].track.clone();
+                tracks.insert(
+                    key.clone(),
+                    QuestTrack {
+                        key: key.clone(),
+                        quest: quest.into(),
+                        initial: 0,
+                        min: 0,
+                        max: 1,
+                    },
+                );
+                transitions.insert(transition.key.clone(), transition);
+                *marker = key;
+            }
+            Sha256::new()
+                .chain_update(super::definition_hash(quest, &tracks, &transitions))
+                .chain_update(serde_json::to_vec(&rule).map_err(|error| error.to_string())?)
+                .finalize()
+                .into()
+        } else {
+            // The published dialogue only wrote the story track. Reconstruct
+            // the exact prior transition, including its admission binding.
+            for mut callback in super::reward_callbacks::load()?
+                .into_iter()
+                .filter(|callback| {
+                    callback.quest == quest
+                        && callback.key.starts_with("oteryn:quest-reward/l6-paradox-")
+                })
+            {
+                callback.storage.truncate(1);
+                let transition = super::reward_callbacks::primary_transition(&callback)?;
+                transitions.insert(transition.key.clone(), transition);
+            }
+            super::definition_hash(quest, &tracks, &transitions)
+        };
+        predecessors.insert(
+            quest.into(),
+            super::NpcDefinitionPredecessor {
+                hash,
+                defaults: BTreeMap::new(),
+            },
+        );
+    }
+    Ok(predecessors)
 }
 
 impl QuestStateCatalogue {
@@ -241,7 +419,17 @@ impl QuestStateCatalogue {
         self.completion_sets
             .get(quest)
             .into_iter()
-            .flat_map(|rule| rule.groups.iter().flatten().map(String::as_str))
+            .flat_map(|rule| {
+                rule.groups
+                    .iter()
+                    .flatten()
+                    .chain(
+                        rule.finish
+                            .iter()
+                            .flat_map(|finish| finish.minimum_tracks.keys()),
+                    )
+                    .map(String::as_str)
+            })
     }
 }
 
@@ -262,6 +450,7 @@ mod tests {
             quest.into(),
             CompletionSet {
                 mint_only: false,
+                finish: None,
                 groups: vec![
                     vec![keys[0].clone(), keys[1].clone()],
                     vec![keys[2].clone()],
@@ -287,7 +476,7 @@ mod tests {
         let lowered = super::super::loader::load_embedded_quest_state("content-1")
             .map_err(|e| format!("{e:?}"))?;
         let catalogue = lowered.catalogue();
-        assert_eq!(catalogue.completion_sets.len(), 25);
+        assert_eq!(catalogue.completion_sets.len(), 26);
         for (quest, rule) in &catalogue.completion_sets {
             if quest == "oteryn:quest.fanfare_quest" {
                 // Crystal chest.lua:1680-1687: the access key is not final loot.
@@ -333,12 +522,19 @@ mod tests {
                             .map_err(|e| format!("{e:?}"))?;
                         assert_eq!(
                             catalogue.completes_after_claim_sets(transition, &stored, &changes),
-                            index + 1 == rule.groups.len(),
+                            rule.finish.is_none() && index + 1 == rule.groups.len(),
                             "{quest}: {key}"
                         );
                         for change in changes {
                             stored.insert(change.track, change.after);
                         }
+                    }
+                    if let Some(finish) = &rule.finish {
+                        let transition =
+                            catalogue.transition(&finish.transition).ok_or("finish")?;
+                        assert!(!catalogue.completes_after_claim_sets(transition, &stored, &[]));
+                        stored.extend(finish.minimum_tracks.clone());
+                        assert!(catalogue.completes_after_claim_sets(transition, &stored, &[]));
                     }
                 }
             }
@@ -376,6 +572,88 @@ mod tests {
 }
 
 #[cfg(test)]
+mod journey_predecessor_tests {
+    use crate::quest::{authored_bindings::Bindings, loader, npc_rules, reward_callbacks};
+    use std::collections::BTreeMap;
+
+    #[test]
+    fn koshei_tomb_admits_a_character_with_the_pre_journey_quest_pin() -> Result<(), String> {
+        let empty = Bindings::parse_documents(&[])?;
+        let previous = loader::load_embedded_quest_state_with_bindings("content-1", &empty)
+            .map_err(|error| format!("{error:?}"))?;
+        let active =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let quest = "oteryn:quest.koshei_the_deathless_quest";
+        let pin = previous
+            .catalogue()
+            .definition_hash(quest)
+            .ok_or("old Koshei pin")?;
+        let catalogue = active.catalogue();
+        assert_ne!(catalogue.definition_hash(quest), Some(pin));
+        assert_eq!(
+            npc_rules::legacy_defaults(catalogue, quest, &pin),
+            Some(&BTreeMap::new())
+        );
+        let transition = catalogue
+            .transition("oteryn:quest-callback/koshei/tomb-entry")
+            .ok_or("tomb entry")?;
+        let stored = BTreeMap::from([
+            (
+                "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1".into(),
+                4,
+            ),
+            ("oteryn:quest-progress/qnpcfx/koshei/amulet".into(), 2),
+        ]);
+        assert!(catalogue.evaluate(transition, &stored, 0).is_ok());
+        Ok(())
+    }
+
+    #[test]
+    fn riddler_source_program_is_admitted_with_the_authored_paradox_route() -> Result<(), String> {
+        let active =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let source = npc_rules::NpcRuleCatalog::runtime().map_err(|error| error.to_string())?;
+        assert!(
+            source
+                .admitted_for_npc("oteryn:npc.riddler", active.catalogue())
+                .map_err(|error| error.to_string())?
+                .is_some()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn paradox_story_resumes_when_the_saved_character_has_no_hugo_mirror() -> Result<(), String> {
+        let active =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let catalogue = active.catalogue();
+        let callbacks = reward_callbacks::load()?;
+        let story = "oteryn:quest-progress/l6/paradox/story";
+        let hugo = "oteryn:quest-progress/quest/u7_24/the_paradox_tower/the_feared_hugo";
+        for (npc, stage) in [("zoltan", 1), ("padreia", 2), ("lubo", 3)] {
+            let key = format!("oteryn:quest-reward/l6-paradox-{npc}");
+            let callback = callbacks
+                .iter()
+                .find(|callback| callback.key == key)
+                .ok_or("story NPC")?;
+            let transition = catalogue
+                .transition(&callback.key)
+                .ok_or("story transition")?;
+            let stored = BTreeMap::from([(story.into(), stage)]);
+            let changes = catalogue
+                .evaluate(transition, &stored, 0)
+                .map_err(|error| format!("{error:?}"))?;
+            assert!(
+                changes
+                    .iter()
+                    .any(|change| change.track == hugo && change.after == stage + 1)
+            );
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
 mod mint_authority_tests {
     use super::*;
     #[test]
@@ -397,6 +675,7 @@ mod mint_authority_tests {
         let mut rule = CompletionSet {
             groups: vec![vec!["kv/a".into()], vec!["kv/b".into()]],
             mint_only: false,
+            finish: None,
         };
         assert_eq!(
             serde_json::to_string(&rule).map_err(|e| e.to_string())?,

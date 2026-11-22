@@ -85,7 +85,7 @@ pub(super) fn world(
     native_scene_with_appearances(native, crops, &[], &[1948, 2772, 2773])
 }
 
-fn callback(z: i8) -> TestResult<Callback> {
+pub(super) fn callback(z: i8) -> TestResult<Callback> {
     let suffix = if z == 4 {
         "/paradox-food-four"
     } else {
@@ -135,7 +135,7 @@ async fn climb(
     ascend(owner, admitted, &c, z).await
 }
 
-async fn ascend(
+pub(super) async fn ascend(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     c: &Callback,

@@ -1,0 +1,242 @@
+{
+  "schema": 1,
+  "quests": [
+    {
+      "quest": "oteryn:quest.the_outlaw_camp_quest",
+      "recipe_sha256": "bc4942a72b761fb84c9074bfe2597363e7b8e0de60f3e3676d03961b2b2bb699",
+      "admission": {
+        "minimum_level": 45
+      },
+      "sources": [
+        "content/quests/definitions/quests-00200-00299.json:oteryn:quest.the_outlaw_camp_quest",
+        "tools/content-schema/world-authoring/samples/quest-chest-bindings/outlaw-camp.json",
+        "https://www.tibiawiki.com.br/wiki/Outlaw_Camp_Quest"
+      ],
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/authored/outlaw-camp/stage",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 3
+        },
+        {
+          "key": "oteryn:quest-progress/authored/outlaw-camp/entrance",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u6_4/outlaw_camp_quest",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        }
+      ],
+      "stages": [
+        {
+          "key": "s1-keys",
+          "completes": false,
+          "trigger": {
+            "kind": "collect",
+            "collection": {
+              "key": "oteryn:quest-collection/authored-outlaw-camp-keys",
+              "items": [
+                {
+                  "item": "oteryn:item.tibia.i2970",
+                  "count": 1,
+                  "key_number": 3301
+                },
+                {
+                  "item": "oteryn:item.tibia.i2969",
+                  "count": 1,
+                  "key_number": 3302
+                },
+                {
+                  "item": "oteryn:item.tibia.i2970",
+                  "count": 1,
+                  "key_number": 3303
+                }
+              ],
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/authored/outlaw-camp/stage",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "sources": [
+                "content/quests/definitions/quests-00200-00299.json:oteryn:quest.the_outlaw_camp_quest",
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L515-L537"
+              ]
+            }
+          }
+        },
+        {
+          "key": "s2-entrance",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-outlaw-camp-s2-entrance",
+              "quest": "oteryn:quest.the_outlaw_camp_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": {
+                  "x": 32619,
+                  "y": 32246,
+                  "floor": -7
+                },
+                "appearance": null,
+                "unique": null,
+                "action": null,
+                "ordinal": 0
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 32620,
+                "y": 32200,
+                "floor": -10
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/authored/outlaw-camp/stage",
+                  "minimum": 1,
+                  "maximum": 2,
+                  "set": 1,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/authored/outlaw-camp/entrance",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "requires_world_admission": true,
+              "sources": [
+                "content/quests/definitions/quests-00200-00299.json:oteryn:quest.the_outlaw_camp_quest",
+                "content/quests/world-callbacks.json:oteryn:quest-callback/outlaw-camp-entrance",
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_outlaw_camp/movements_entrance.lua#L1-L25"
+              ]
+            }
+          }
+        },
+        {
+          "key": "s2-cross-passage",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-outlaw-camp-s2-cross-passage",
+              "quest": "oteryn:quest.the_outlaw_camp_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": {
+                  "x": 32620,
+                  "y": 32199,
+                  "floor": -10
+                },
+                "appearance": null,
+                "unique": null,
+                "action": null,
+                "ordinal": 0
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/authored/outlaw-camp/stage",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "requires_world_admission": true,
+              "sources": [
+                "content/quests/definitions/quests-00200-00299.json:oteryn:quest.the_outlaw_camp_quest",
+                "tools/content-schema/world-authoring/samples/quest-chest-bindings/outlaw-camp.json"
+              ]
+            }
+          }
+        },
+        {
+          "key": "s3-treasure",
+          "completes": true,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-outlaw-camp-s3-treasure",
+              "quest": "oteryn:quest.the_outlaw_camp_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32620,
+                  "y": 32198,
+                  "floor": -10
+                },
+                "appearance": 2472,
+                "unique": 14091,
+                "action": null,
+                "ordinal": 2
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/authored/outlaw-camp/stage",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u6_4/outlaw_camp_quest",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "requires_world_admission": true,
+              "sources": [
+                "content/quests/definitions/quests-00200-00299.json:oteryn:quest.the_outlaw_camp_quest",
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_outlaw_camp/actions_the_outlaw_camp_quest.lua#L4-L32"
+              ],
+              "completes": true,
+              "effects": {
+                "item_reward": {
+                  "item": "oteryn:item.tibia.i2853",
+                  "count": 1,
+                  "contents": [
+                    {
+                      "item": "oteryn:item.tibia.i3295",
+                      "count": 1
+                    },
+                    {
+                      "item": "oteryn:item.tibia.i3039",
+                      "count": 1
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -849,6 +849,7 @@ def main() -> int:
         run(["python3", native + name])
     run(["python3", native + "build_srx3_soul_war_death_events.py", "--refresh-native-pin"])
     run(["python3", "tools/content-schema/world-object-authoring/activity_static.py"])
+    run(["python3", "tools/content-schema/world-authoring/quest_startup_bindings.py", "--apply"])
     run(["python3", "tools/content-schema/world-authoring/m01c_key_doors.py"])
     run(["python3", "tools/content-schema/world-authoring/last_creep_arena.py"])
     run(["python3", "tools/content-schema/world-authoring/qh_jimmy_stub.py"])
@@ -884,6 +885,9 @@ def main() -> int:
     # reviewed source-body guards; this refresh does not recapture donor source.
     run(["python3", native + "build_srx3_rotten_blood_witness.py"])
     run(["python3", native + "build_srx3_rotten_death_events.py", "--refresh-native-pin"])
+    refresh_world_metadata()
+    # The palette refresh can change the placement index after the scenery pass.
+    run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
     # Room provenance includes the native Item provider, including NPC inputs.
     # Refresh after all native/map producers, before freshness checks and staging.
     run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])
@@ -891,7 +895,6 @@ def main() -> int:
         run(["python3", "tools/contracts/refresh_quest_custody_" + census + ".py"])
     run(["python3", "tools/content-migration/refresh_equipment_profile_pin.py"])
     run(["python3", "tools/content-migration/refresh_season_creature_inventory.py"])
-    refresh_world_metadata()
     # Variant evidence pins the final Claim, Item and Achievement inventories.
     run(["python3", "tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py"])
     for script in (

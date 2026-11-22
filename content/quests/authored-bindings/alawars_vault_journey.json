@@ -1,0 +1,320 @@
+{
+  "schema": 1,
+  "quests": [
+    {
+      "quest": "oteryn:quest.alawar_s_vault_quest",
+      "recipe_sha256": "002be36b73457b507959b33614aab35b3095fd72f7a5d21bbdb675f7815817c5",
+      "admission": {
+        "minimum_level": 0,
+        "premium": false,
+        "prerequisites": []
+      },
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/alawars-vault/journey",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 6
+        },
+        {
+          "key": "oteryn:quest-progress/alawars-vault/lever",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        }
+      ],
+      "stages": [
+        {
+          "key": "s1-folda-approach",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/alawars-vault-folda-approach",
+              "quest": "oteryn:quest.alawar_s_vault_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": {
+                  "x": 32030,
+                  "y": 31687,
+                  "floor": -8
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 6683,
+                "native": {
+                  "position": {
+                    "x": 32030,
+                    "y": 31687,
+                    "floor": -8
+                  },
+                  "appearance": 6683,
+                  "ordinal": 0
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/alawars-vault/journey",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "https://tibia.fandom.com/wiki/Alawar%27s_Vault_Quest/Spoiler",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:615-618"
+              ],
+              "requires_world_admission": true
+            }
+          }
+        },
+        {
+          "key": "s2-folda-cache",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/alawars-vault-folda-cache",
+              "quest": "oteryn:quest.alawar_s_vault_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32030,
+                  "y": 31688,
+                  "floor": -8
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 2472,
+                "ordinal": 2
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/alawars-vault/journey",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "https://tibia.fandom.com/wiki/Alawar%27s_Vault_Quest/Spoiler",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:615-618"
+              ],
+              "requires_world_admission": true,
+              "effects": {
+                "item_reward": {
+                  "item": "oteryn:item.tibia.i2970",
+                  "count": 1,
+                  "key_number": 4503
+                }
+              }
+            }
+          }
+        },
+        {
+          "key": "s2-open-4503",
+          "completes": false,
+          "trigger": {
+            "kind": "door_use",
+            "usage": {
+              "key": "oteryn:quest-door-use/alawars-vault/4503",
+              "native_placement_key": 137591351019521,
+              "key_number": 4503,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/alawars-vault/journey",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                }
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:615-618"
+              ]
+            }
+          }
+        },
+        {
+          "key": "s2-folda-shaft",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/alawars-vault-folda-shaft",
+              "quest": "oteryn:quest.alawar_s_vault_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32040,
+                  "y": 31636,
+                  "floor": -8
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 372,
+                "ordinal": 0
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 32040,
+                "y": 31636,
+                "floor": -10
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/alawars-vault/journey",
+                  "minimum": 3,
+                  "maximum": 3,
+                  "set": 4
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "https://tibia.fandom.com/wiki/Alawar%27s_Vault_Quest/Spoiler"
+              ],
+              "requires_world_admission": true,
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i3456",
+                "count": 1,
+                "reusable": true,
+                "selected_instance": true,
+                "replacement": null,
+                "target_replacement": null
+              }
+            }
+          }
+        },
+        {
+          "key": "s2-collect-4502",
+          "completes": false,
+          "trigger": {
+            "kind": "collect",
+            "collection": {
+              "key": "oteryn:quest-collection/alawars-vault/keys",
+              "items": [
+                {
+                  "item": "oteryn:item.tibia.i2970",
+                  "count": 1,
+                  "key_number": 4502
+                },
+                {
+                  "item": "oteryn:item.tibia.i2970",
+                  "count": 1,
+                  "key_number": 4503
+                }
+              ],
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/alawars-vault/journey",
+                  "minimum": 4,
+                  "maximum": 4,
+                  "set": 5
+                }
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:435-444",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:615-618"
+              ]
+            }
+          }
+        },
+        {
+          "key": "s3-open-4502",
+          "completes": false,
+          "trigger": {
+            "kind": "door_use",
+            "usage": {
+              "key": "oteryn:quest-door-use/alawars-vault/4502",
+              "native_placement_key": 137900583815425,
+              "key_number": 4502,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/alawars-vault/journey",
+                  "minimum": 5,
+                  "maximum": 5,
+                  "set": 6
+                }
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_key.lua:163-166"
+              ]
+            }
+          }
+        },
+        {
+          "key": "s3-cross-open-magic-wall",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/alawars-vault-cross-open-magic-wall",
+              "quest": "oteryn:quest.alawar_s_vault_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": {
+                  "x": 32187,
+                  "y": 31626,
+                  "floor": -8
+                },
+                "appearance": 409,
+                "native": {
+                  "position": {
+                    "x": 32187,
+                    "y": 31626,
+                    "floor": -8
+                  },
+                  "ordinal": 0,
+                  "appearance": 409
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/alawars-vault/lever",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "requires_world_admission": true,
+              "sources": [
+                "content/quests/world-callbacks.json#alawars-vault-lever"
+              ]
+            }
+          }
+        }
+      ],
+      "sources": [
+        "https://tibia.fandom.com/wiki/Alawar%27s_Vault_Quest/Spoiler",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:615-618",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:435-444",
+        "content/quests/world-callbacks.json",
+        "content/quests/claim-sets.json"
+      ]
+    }
+  ]
+}

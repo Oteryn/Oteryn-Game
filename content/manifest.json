@@ -337,12 +337,6 @@
       "path": "content/creatures/definitions/spell-native-profiles.json"
     },
     {
-      "path": "content/creatures/prey-slot-values.json"
-    },
-    {
-      "path": "content/creatures/prey-tiers.json"
-    },
-    {
       "path": "content/dialogues/definitions/dialogues-00000-00499.json"
     },
     {
@@ -984,7 +978,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "47e9d5b54eb9cc3de65a88bc53e178ba36da10dffa4a5d1f0f4643a678908c36"
+          "sha256": "ea0211b0da9c33106f044f0778205dbb6a4fc0c4c6f53f8904c830e5a7fd6182"
         },
         {
           "creates_canonical_identities": false,
@@ -1055,7 +1049,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 6593,
+          "record_count": 6582,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1063,7 +1057,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "1e25eb7b1c8082ca4d10c2549d61e76caaf9cc69147d20f7ea1efac88643a430"
+          "sha256": "ef892ca494d55819bb6830a409584d839163c34bb97763edce491b91e6ed860f"
         },
         {
           "creates_canonical_identities": false,
