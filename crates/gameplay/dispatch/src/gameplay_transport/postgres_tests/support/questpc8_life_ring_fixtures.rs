@@ -268,6 +268,26 @@ async fn assert_rewards(
 ) -> TestResult {
     assert_eq!(quantity(h, 3052).await? - before[0], 1);
     assert_eq!(quantity(h, 3085).await? - before[1], 1);
+    let bag_contents: Vec<(String, i64)> = sqlx::query_as(
+        "SELECT child.definition_production_key, child.quantity
+         FROM game_item_nested_entries e
+         JOIN game_item_instances child USING (item_instance_id, world_id)
+         JOIN game_item_instances bag ON bag.item_instance_id=e.parent_item_instance_id AND bag.world_id=e.world_id
+         JOIN game_item_container_entries carried ON carried.item_instance_id=bag.item_instance_id AND carried.world_id=bag.world_id
+         WHERE bag.definition_production_key='oteryn:item.tibia.i2853'
+           AND carried.character_id=encode($1,'hex')::uuid
+         ORDER BY child.definition_production_key",
+    )
+    .bind(id(41).as_slice())
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(
+        bag_contents,
+        vec![
+            ("oteryn:item.tibia.i3052".into(), 1),
+            ("oteryn:item.tibia.i3085".into(), 1),
+        ]
+    );
     let native = owner
         .active_generation
         .and_then(|g| g.native_gameplay())

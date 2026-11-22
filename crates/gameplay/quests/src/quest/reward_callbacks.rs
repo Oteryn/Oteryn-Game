@@ -553,6 +553,7 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/l13-outfits.json"),
     include_str!("../../../../../content/quests/npc-callbacks/questpc7-programmes.json"),
     include_str!("../../../../../content/quests/chosen-reward-callbacks.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/newhaven-defence.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-guardcatcher.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m09-rookie.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-rotworm-sample.json"),
@@ -1628,11 +1629,10 @@ fn is_qb_outfit_extension(callback: &RewardCallback) -> bool {
         })
 }
 
-/// Preserve published definition hashes and absent-track values for changed quests.
-pub(super) fn retain_qc_reward_predecessors(active: &mut QuestStateCatalogue) {
+type DefinitionPin = (&'static str, [u8; 32], &'static [(&'static str, i64)]);
+const PUBLISHED_REWARD_PREDECESSORS: &[DefinitionPin] = &[
     // Main at 492ca0e6ba, before Package C.
-    type DefinitionPin = (&'static str, [u8; 32], &'static [(&'static str, i64)]);
-    const PREVIOUS: &[DefinitionPin] = &[(
+    (
         "oteryn:quest.treasure_hunt_quest",
         [
             0xf5, 0x96, 0x11, 0x56, 0xeb, 0xf0, 0x43, 0x9a, 0x52, 0x2a, 0x95, 0xe0, 0x77, 0x22,
@@ -1643,8 +1643,58 @@ pub(super) fn retain_qc_reward_predecessors(active: &mut QuestStateCatalogue) {
             ("oteryn:quest-progress/m09/treasure/ingots", -1),
             ("oteryn:quest-progress/m09/treasure/telescope", -1),
         ],
-    )];
-    for &(quest, hash, defaults) in PREVIOUS {
+    ),
+    // Main at 3e0991642318, before these quest content extensions.
+    (
+        "oteryn:quest.life_ring_quest",
+        [
+            0x5b, 0x03, 0x44, 0xac, 0x44, 0x85, 0x04, 0x2b, 0x62, 0x9c, 0x57, 0xef, 0x07, 0xeb,
+            0xf5, 0x81, 0xea, 0xee, 0x00, 0x12, 0xc2, 0x9c, 0xbc, 0xfb, 0x17, 0xda, 0x26, 0xc2,
+            0x25, 0xd5, 0x31, 0x92,
+        ],
+        &[],
+    ),
+    (
+        "oteryn:quest.liquid_black_quest",
+        [
+            0xe4, 0x26, 0xff, 0x3b, 0x44, 0x76, 0x13, 0xba, 0x25, 0x4d, 0xdb, 0x64, 0x3b, 0xd0,
+            0x90, 0xce, 0x6d, 0x79, 0x5f, 0x4f, 0x78, 0x20, 0x4e, 0xbd, 0x4b, 0xe8, 0xac, 0xd6,
+            0x9d, 0x59, 0xb7, 0x90,
+        ],
+        &[],
+    ),
+    (
+        "oteryn:quest.machinery_of_war_quest",
+        [
+            0x4c, 0x71, 0x7c, 0x70, 0x18, 0x8e, 0x8b, 0x7f, 0xf5, 0x01, 0x9e, 0x32, 0x17, 0x49,
+            0xd6, 0x48, 0x1f, 0x60, 0x8c, 0x90, 0x8f, 0x96, 0xf1, 0x8d, 0x14, 0xb6, 0x3b, 0x64,
+            0xec, 0xf9, 0x76, 0xc0,
+        ],
+        &[],
+    ),
+    (
+        "oteryn:quest.newhaven_quest",
+        [
+            0xc4, 0x5b, 0x8e, 0xdf, 0x60, 0x67, 0x53, 0x36, 0xed, 0x78, 0x0b, 0x44, 0xaa, 0x1b,
+            0xe2, 0x27, 0x69, 0xf2, 0x43, 0xf6, 0x42, 0x95, 0xaa, 0xb0, 0xa8, 0x15, 0x08, 0x3a,
+            0x70, 0xa7, 0x9e, 0x0c,
+        ],
+        &[],
+    ),
+    (
+        "oteryn:quest.tibia_tales",
+        [
+            0x8d, 0x75, 0x51, 0x7e, 0x41, 0x35, 0x9a, 0x25, 0xab, 0xea, 0x65, 0x3c, 0x8f, 0xd4,
+            0x4f, 0xa5, 0xb4, 0xd2, 0x76, 0x8c, 0x14, 0x70, 0xd9, 0xac, 0xaa, 0x94, 0x42, 0xb7,
+            0x3f, 0x54, 0x30, 0x65,
+        ],
+        &[],
+    ),
+];
+
+/// Preserve published definition hashes and absent-track values for changed quests.
+pub(super) fn retain_published_reward_predecessors(active: &mut QuestStateCatalogue) {
+    for &(quest, hash, defaults) in PUBLISHED_REWARD_PREDECESSORS {
         if active
             .definition_hash(quest)
             .is_some_and(|current| current != hash)
@@ -1820,6 +1870,162 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn extended_quests_accept_published_character_progress() -> Result<(), String> {
+        let lowered = crate::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = lowered.catalogue();
+        for &(quest, hash, defaults) in PUBLISHED_REWARD_PREDECESSORS {
+            assert_ne!(catalogue.definition_hash(quest), Some(hash));
+            let legacy = crate::quest::npc_rules::legacy_defaults(catalogue, quest, &hash)
+                .ok_or_else(|| format!("missing published predecessor for {quest}"))?;
+            assert_eq!(legacy.len(), defaults.len());
+            for &(track, value) in defaults {
+                assert_eq!(legacy.get(track), Some(&value));
+            }
+            assert!(crate::quest::npc_rules::legacy_defaults(catalogue, quest, &[0; 32]).is_none());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn machinery_war_plans_mounts_the_board_and_baxters_report() -> Result<(), String> {
+        let callbacks = load()?;
+        let request = callbacks
+            .iter()
+            .find(|c| c.key == "oteryn:quest-reward/chosen/machinery-war-plans-request")
+            .ok_or("Baxter's war plans offer")?;
+        let report = callbacks
+            .iter()
+            .find(|c| c.key == "oteryn:quest-reward/chosen/machinery-war-plans-report")
+            .ok_or("Baxter's war plans report")?;
+        assert_eq!(request.npc, "oteryn:npc.baxter");
+        assert_eq!(request.npc, report.npc);
+        assert_eq!(report.keywords, ["war plans"]);
+        assert_eq!(report.experience, Some(1000));
+        assert!(
+            report.take.is_empty(),
+            "the source is a briefing, so there is no item to consume"
+        );
+        let phase = &report.storage[0];
+        assert_eq!((phase.minimum, phase.maximum, phase.set), (2, 2, 3));
+        let world = crate::quest::world_callbacks::load()?;
+        for (side, x, appearance) in [("west", 32974, 8070), ("east", 32975, 8071)] {
+            let key = format!("oteryn:quest-callback/authored-machinery-war-plans-{side}");
+            let board = world
+                .iter()
+                .find(|c| c.key == key)
+                .ok_or("exact war plans board")?;
+            assert_eq!(board.trigger, crate::quest::world_callbacks::Trigger::Use);
+            let selector = board.selector.native.as_ref().ok_or("board selector")?;
+            assert_eq!(
+                selector.position,
+                crate::quest::world_callbacks::Position {
+                    x,
+                    y: 31773,
+                    floor: -8
+                }
+            );
+            assert_eq!((selector.appearance, selector.ordinal), (appearance, 2));
+            assert_eq!(board.storage[0].track, phase.track);
+            assert_eq!(
+                (
+                    board.storage[0].minimum,
+                    board.storage[0].maximum,
+                    board.storage[0].set
+                ),
+                (1, 1, 2)
+            );
+        }
+        assert_eq!(request.minimum_level, Some(50));
+        assert_eq!(
+            request.storage.len(),
+            1,
+            "Baxter can issue all tasks before the first trip"
+        );
+        let briefing = &request.storage[0];
+        assert_eq!(briefing.track, phase.track);
+        assert_eq!(
+            (briefing.minimum, briefing.maximum, briefing.set),
+            (0, 0, 1)
+        );
+        let lowered = crate::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(|e| format!("{e:?}"))?;
+        assert_eq!(
+            lowered
+                .catalogue()
+                .transition(&report.key)
+                .ok_or("live report")?
+                .experience,
+            Some(1000)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn newhaven_defence_mounts_gustavos_twenty_kill_report_and_reward() -> Result<(), String> {
+        let callbacks = load()?;
+        let start = callbacks
+            .iter()
+            .find(|c| c.key == "oteryn:quest-reward/chosen/newhaven-defence-start")
+            .ok_or("Gustavo's offer")?;
+        let report = callbacks
+            .iter()
+            .find(|c| c.key == "oteryn:quest-reward/chosen/newhaven-defence-report")
+            .ok_or("Gustavo's report")?;
+        assert_eq!(start.npc, "oteryn:npc.gustavo_the_guard");
+        assert_eq!(report.npc, start.npc);
+        assert_eq!(report.experience, Some(800));
+        let item = report.give.as_ref().ok_or("defence reward")?;
+        assert_eq!(
+            (item.item.as_str(), item.count),
+            ("oteryn:item.tibia.i52732", 1)
+        );
+        let lowered = crate::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(|e| format!("{e:?}"))?;
+        let catalogue = lowered.catalogue();
+        let phase = &start.storage[0].track;
+        let counter = &report.storage[1];
+        assert_eq!(
+            (counter.minimum, counter.maximum, counter.preserve),
+            (20, 20, true)
+        );
+        let objectives: Vec<_> = crate::quest::death_objectives::load()?
+            .iter()
+            .filter(|objective| objective.quest == start.quest)
+            .collect();
+        assert_eq!(objectives.len(), 8);
+        for objective in objectives {
+            assert_eq!((&objective.stage, objective.stage_value), (phase, 0));
+            assert_eq!(
+                (&objective.counter, objective.required),
+                (&counter.track, 20)
+            );
+            assert!(
+                objective
+                    .creature
+                    .starts_with("oteryn:creature.muglex_clan_")
+            );
+            assert!(catalogue.transition(&objective.key).is_some());
+        }
+        assert_eq!(
+            catalogue.track(&counter.track).ok_or("Muglex counter")?.max,
+            20
+        );
+        assert!(catalogue.transition(&report.key).is_some());
+        Ok(())
+    }
+
+    #[test]
+    fn makeshift_outfit_has_no_npc_custody_or_achievement_shortcut() -> Result<(), String> {
+        assert!(
+            load()?
+                .iter()
+                .all(|callback| callback.quest != "oteryn:quest.makeshift_warrior_outfits_quest")
+        );
+        Ok(())
+    }
+
     #[test]
     fn reward_storage_supports_one_atomic_sixteen_track_plan() -> Result<(), String> {
         let mut callback = super::parse(include_str!(
@@ -2387,9 +2593,9 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Shared covers 207 existing, 31 QB, and 13 Sven and Dedoras routes. The final two terms are
+        // Shared covers 203 existing, 31 QB, and 13 Sven and Dedoras routes. The final two terms are
         // Rottin Wood and the Forgemaster's access and claim routes.
-        assert_eq!(load()?.len(), 251 + 59 + 125 + 1 + 1 + 13 + 12);
+        assert_eq!(load()?.len(), 247 + 59 + 129 + 1 + 1 + 13 + 12);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -2436,12 +2642,12 @@ mod tests {
             .filter(|key| added_keys.contains(key))
             .collect();
         assert_eq!(added, BTreeSet::from(added_keys));
-        assert_eq!(legacy.len(), 220);
+        assert_eq!(legacy.len(), 216);
         let original: Vec<_> = legacy
             .iter()
             .filter(|callback| !added_keys.contains(&callback.key.as_str()))
             .collect();
-        assert_eq!(original.len(), 208);
+        assert_eq!(original.len(), 204);
         let programmes = parse(include_str!(
             "../../../../../content/quests/npc-callbacks/questpc7-programmes.json"
         ))?;

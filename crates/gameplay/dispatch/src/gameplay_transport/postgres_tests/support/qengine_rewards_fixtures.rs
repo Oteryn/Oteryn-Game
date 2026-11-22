@@ -68,6 +68,12 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
                 super::m56_cursed_crystal_wax_fixtures::trigger(name)
             } else if name.starts_with("qengine-rewards-questpc4-admission-") {
                 super::l6_world_admission_fixtures::trigger(name)
+            } else if name == "qengine-rewards-l11-newhaven-defence" {
+                Position {
+                    x: 32560,
+                    y: 32488,
+                    floor: -7,
+                }
             } else {
                 Position {
                     x: 33294,
@@ -240,7 +246,6 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l7-assassin-yellow" => &["50 yellow cloth"],
         "l7-assassin-white" => &["50 white cloth"],
         "l7-assassin-yarn" => &["10 spools of yarn"],
-        "l11-makeshift-base" => &["salvage"],
         "l11-dream-warrior-first" | "l11-dream-warrior-second" => &["addon", "yes", "yes"],
         "l10-brotherhood-join" | "l10-nightmare-join" => &["join", "yes"],
         "l10-brotherhood-officer"
