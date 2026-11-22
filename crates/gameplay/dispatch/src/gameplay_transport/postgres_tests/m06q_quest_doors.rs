@@ -1277,7 +1277,7 @@ async fn level_gate(
         assert_eq!(result, expected, "source level{level}");
         assert_eq!(
             map.facts().doors().revision(key),
-            if level == 69 { 0 } else { 1 }
+            u64::from(level >= u32::from(minimum_level))
         );
         admitted = next;
     }
