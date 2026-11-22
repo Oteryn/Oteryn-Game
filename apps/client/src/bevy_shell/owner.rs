@@ -299,14 +299,17 @@ impl HostOwner {
         if completion.replaced {
             self.rebase_transferred_preferences();
         }
-        if let Some(error) = completion.error {
-            self.status.clone_from(&error);
+        if let Some(error) = &completion.error {
+            self.status.clone_from(error);
             if self.login.visible {
-                self.login.form.feedback(error);
+                self.login.form.feedback(error.clone());
             }
         }
-        let notices = crate::atomic_file::take_malformed_notices();
+        let mut notices = crate::atomic_file::take_malformed_notices();
         if !notices.is_empty() {
+            if let Some(error) = completion.error {
+                notices.insert(0, error);
+            }
             let message = notices.join("\n");
             self.settings.feedback.clone_from(&message);
             self.status.clone_from(&message);

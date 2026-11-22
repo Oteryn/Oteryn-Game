@@ -266,9 +266,7 @@ impl SidebarWidgets {
     pub(in crate::bevy_shell) fn reset(&mut self, path: Option<&Path>) -> io::Result<()> {
         let mut reset = Self::default();
         if let Some(path) = path {
-            let _lock = crate::atomic_file::lock(path)?;
-            let _active = Self::load_for_write(path)?;
-            reset.publish(path)?;
+            reset.write_snapshot(path, true)?;
         }
         *self = reset;
         Ok(())
