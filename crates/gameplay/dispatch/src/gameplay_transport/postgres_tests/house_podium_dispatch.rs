@@ -48,6 +48,7 @@ enum Case {
     NoPath,
     DoorAcl,
     OpenEntrance,
+    BlockedEntrance,
     AclSuccessor,
 }
 
@@ -130,6 +131,15 @@ fn house_guest_enters_and_crosses_an_authored_open_door_postgres() -> TestResult
 }
 
 #[test]
+fn house_entrance_door_acl_cannot_clear_a_wall_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    postgres_case("house_blocked_entrance", Case::BlockedEntrance)
+}
+
+#[test]
 fn house_acl_receipt_keeps_original_generation_after_reconnect_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -180,6 +190,11 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     );
     let world = if matches!(case, Case::OpenEntrance) {
         super::house_wrap_fixtures::open_house_entrance_bundle(
+            base.admitted.world_id,
+            base.admitted.channel_id,
+        )?
+    } else if matches!(case, Case::BlockedEntrance) {
+        super::house_wrap_fixtures::blocked_house_entrance_bundle(
             base.admitted.world_id,
             base.admitted.channel_id,
         )?
@@ -320,6 +335,24 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             .ok_or("house podium offer")?;
     let mut body = vec![8, 1, 18, HOUSE.len() as u8];
     body.extend(HOUSE.as_bytes());
+    if matches!(case, Case::BlockedEntrance) {
+        let command = admitted.continuity.next_command_id;
+        let result = exchange(
+            &owner,
+            &mut admitted,
+            command,
+            oteryn_protocol_oteryn::house_transfer::COMMAND_TYPE_HOUSE_TRANSFER,
+            &body,
+        )
+        .await?
+        .ok_or("expected House entry refusal")?;
+        assert_eq!(result.0, CommandStatus::Rejected);
+        assert_eq!(
+            owner.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?.position(),
+            MovementLocalPosition { x: 32309, y: 32805, floor: 7 },
+        );
+        return Ok(());
+    }
     if matches!(case, Case::DoorAcl) {
         let mut outside = admitted;
         let result = exchange(

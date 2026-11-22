@@ -3,7 +3,7 @@ use super::{
     ComposedFreshAdmission, FreshAdmissionStore, GameSessionState,
     connection::AdmittedSession,
     item_fence_of,
-    item_view::{ItemKey, SessionItemView},
+    item_view::{ItemKey, SessionItemView, View},
 };
 use crate::foundation::{
     ChannelRuntimeV1, CommandId, CommandRef, CommandStatus, MovementLocalPosition,
@@ -55,22 +55,27 @@ fn resolve_targets(
     mut request: QuickLootRequest,
 ) -> Option<QuickLootRequest> {
     if let Some(handle) = request.corpse {
-        let corpse = match view?.resolve(decode_target_handle(handle)?)? {
-            ItemKey::Entity(identity) => runtime.bound_corpse(identity),
-            // Bundle map tiles publish the same corpse as its Ground item key.
-            ItemKey::Instance(instance) => runtime
-                .visible_corpses()
-                .into_iter()
-                .find(|corpse| corpse.item.item_instance_id == instance),
-            _ => None,
-        }?;
-        if corpse.position.floor != position.floor
-            || corpse.position.x.abs_diff(position.x) > 1
-            || corpse.position.y.abs_diff(position.y) > 1
-        {
-            return None;
-        }
-        request.corpse = Some(corpse.item.item_instance_id);
+        let view = view?.table();
+        let handle = decode_target_handle(handle)?;
+        request.corpse = Some(match view.resolve(handle)? {
+            ItemKey::Entity(identity) => {
+                let corpse = runtime.bound_corpse(identity)?;
+                if corpse.position.floor != position.floor
+                    || corpse.position.x.abs_diff(position.x) > 1
+                    || corpse.position.y.abs_diff(position.y) > 1
+                {
+                    return None;
+                }
+                corpse.item.item_instance_id
+            }
+            // A bundle publishes durable Ground even when the runtime no longer
+            // retains a corpse projection. The item transaction verifies the exact
+            // instance, current scope, corpse mint receipt and reach.
+            ItemKey::Instance(instance) if view.resolve_in_view(handle, View::Map).is_some() => {
+                instance
+            }
+            _ => return None,
+        });
     }
     if let Some(handle) = request.recipient_id {
         let ItemKey::Instance(instance) = view?.resolve(decode_target_handle(handle)?)? else {

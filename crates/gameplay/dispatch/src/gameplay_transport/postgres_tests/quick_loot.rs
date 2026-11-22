@@ -262,6 +262,13 @@ fn scenario_with_pouch(pouch: bool, fence_case: Option<session_fence::FenceCase>
             SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 98])
                 .ok_or("capabilities")?;
         assert!(admitted.continuity.selected_capabilities.contains(98));
+        if matches!(fence_case, Some(session_fence::FenceCase::DurableGround)) {
+            session_fence::check_durable_ground(&owner, admitted, corpse_id, &items).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         let corpse_identity = {
             let mut runtime = deps.runtime.lock().await;
             let creature = runtime

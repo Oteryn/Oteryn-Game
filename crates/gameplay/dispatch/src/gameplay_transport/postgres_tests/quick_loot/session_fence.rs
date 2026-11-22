@@ -26,10 +26,65 @@ fn quick_loot_refuses_stale_handles_without_durable_writes() -> TestResult {
     })
 }
 
+#[test]
+fn quick_loot_click_accepts_durable_ground_corpse_without_runtime_projection() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::super::kill_reward_e2e_fixtures::scenario_thread::run("quick-loot-durable-ground", || {
+        scenario_with_pouch(false, Some(FenceCase::DurableGround))
+    })
+}
+
+pub(super) async fn check_durable_ground(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    corpse: [u8; 16],
+    items: &[[u8; 16]],
+) -> TestResult {
+    use crate::gameplay_transport::item_view::{ItemKey, SessionItemView};
+
+    assert!(owner.runtime.lock().await.visible_corpses().is_empty());
+    let key = ItemKey::Instance(corpse);
+    let mut view = SessionItemView::resume(admitted.continuity.item_view).with_map_view();
+    view.tree_delta(&[key], |_| Ok(Vec::new())).map_err(debug)?;
+    let handle = view.table().handle(&key).ok_or("corpse handle")?;
+    let click = QuickLootRequest {
+        corpse: Some(encode_target_handle(handle)),
+        ..request(QuickLootAction::Click)
+    };
+    let command_id = admitted.continuity.next_command_id;
+    let wrong_view = owner
+        .quick_loot(admitted, command_id, click, Some(&view))
+        .await
+        .ok_or("quick-loot dispatch refused to reply")?;
+    assert_eq!(wrong_view.0, CommandStatus::Rejected);
+
+    let map_handle = view
+        .map_view(&[key], |table| Ok(table.handle(&key)))
+        .map_err(debug)?;
+    assert_eq!(map_handle, Some(handle));
+    let reply = owner
+        .quick_loot(admitted, command_id + 1, click, Some(&view))
+        .await
+        .ok_or("quick-loot dispatch refused to reply")?;
+    assert_eq!(reply.0, CommandStatus::Accepted);
+    assert_eq!(
+        reply.1.items,
+        items
+            .iter()
+            .map(|&item| QuickLootItemResult { item, accepted: true })
+            .collect::<Vec<_>>()
+    );
+    Ok(())
+}
+
 #[derive(Clone, Copy)]
 pub(super) enum FenceCase {
     Visible,
     Stale,
+    DurableGround,
 }
 
 impl FenceCase {
@@ -52,6 +107,7 @@ impl FenceCase {
             ..request(QuickLootAction::Click)
         };
         match self {
+            Self::DurableGround => return Err("durable Ground case uses its own item view".into()),
             Self::Visible => {
                 let (_, replies) = exchange(owner, admitted, corpse_identity, |shown| {
                     Ok(vec![

@@ -474,11 +474,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 let house = super::house_query::source_house_id(house)?;
                 if map.facts.house_door(tile, house).is_some() {
-                    let entrance = if map.facts.house_door_is_authored_open(tile, house)
-                        && map
-                            .facts
-                            .house_door_ground_clear(map.overlay.base(), tile, house)
+                    let cell = crate::content::LogicalCell {
+                        x: position.x,
+                        y: position.y,
+                        z: i32::from(position.floor),
+                    };
+                    if !map
+                        .facts
+                        .house_door_ground_clear(map.overlay.base(), tile, house)
+                        || crate::map::floor::CellBlocker::blocks(&map.facts, cell)
                     {
+                        continue;
+                    }
+                    let entrance = if map.facts.house_door_is_authored_open(tile, house) {
                         HouseEntranceDoor::AuthoredOpen
                     } else {
                         HouseEntranceDoor::RequiresAcl(tile.floor)

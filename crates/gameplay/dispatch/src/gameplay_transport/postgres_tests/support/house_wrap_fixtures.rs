@@ -6,21 +6,28 @@ pub(super) fn wrap_bundle(
     world: crate::foundation::WorldId,
     channel: crate::foundation::ChannelId,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    wrap_bundle_with_static_decorations(world, channel, &[], false, false)
+    wrap_bundle_with_static_decorations(world, channel, &[], false, false, false)
 }
 
 pub(super) fn walkable_house_bundle(
     world: crate::foundation::WorldId,
     channel: crate::foundation::ChannelId,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    wrap_bundle_with_static_decorations(world, channel, &[], true, false)
+    wrap_bundle_with_static_decorations(world, channel, &[], true, false, false)
 }
 
 pub(super) fn open_house_entrance_bundle(
     world: crate::foundation::WorldId,
     channel: crate::foundation::ChannelId,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    wrap_bundle_with_static_decorations(world, channel, &[], true, true)
+    wrap_bundle_with_static_decorations(world, channel, &[], true, true, false)
+}
+
+pub(super) fn blocked_house_entrance_bundle(
+    world: crate::foundation::WorldId,
+    channel: crate::foundation::ChannelId,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    wrap_bundle_with_static_decorations(world, channel, &[], true, false, true)
 }
 
 pub(super) fn static_decoration_bundle(
@@ -68,7 +75,7 @@ fn static_decoration_bundle_with(
             blocks_projectile:policy.attributes.blocks_projectile.ok_or("decoration projectile fact")?,
             pickupable:false,door:false }});
     }
-    wrap_bundle_with_static_decorations(world, channel, &extras, false, false)
+    wrap_bundle_with_static_decorations(world, channel, &extras, false, false, false)
 }
 
 fn wrap_bundle_with_static_decorations(
@@ -77,6 +84,7 @@ fn wrap_bundle_with_static_decorations(
     extras: &[StaticDecoration],
     adjacent_ground: bool,
     open_entrance: bool,
+    blocked_entrance: bool,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use crate::map::boot::{self, tests as fixture};
     use oteryn_world_bundle::bundle;
@@ -141,6 +149,15 @@ fn wrap_bundle_with_static_decorations(
         if tile.x == 6 {
             tile.house = 3437;
             tile.items.last_mut().ok_or("door")?.attrs.door = Some(42);
+            if blocked_entrance {
+                let wall = data.manifest.palette.iter().position(|entry| entry.key == "terrain:wall")
+                    .ok_or("fixture wall")?;
+                tile.items.push(oteryn_world_bundle::sector::Item {
+                    palette: u32::try_from(wall)?,
+                    depth: 0,
+                    attrs: Default::default(),
+                });
+            }
         }
         tile.x += 32303;
         tile.y += 32804;
