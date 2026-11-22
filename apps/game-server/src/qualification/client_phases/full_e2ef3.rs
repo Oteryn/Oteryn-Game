@@ -312,11 +312,20 @@ pub(super) async fn run(
             &cause,
         );
     }
-    let starter_observed = observations.is_ok();
+    let starter_error = observations.as_ref().err().map(ToString::to_string);
+    let starter_seconds = started.elapsed().as_secs_f64();
     let client = e2ei_a::run(client, clients).await;
     let client = full_e2ef3_e2ei_b::run(observations.map(|()| client), clients).await;
     let client = e2ei_c::run(client, clients).await;
-    full_e2ef3_e2ei_d::run(client, clients, primal, covet, starter_observed, started).await
+    full_e2ef3_e2ei_d::run(
+        client,
+        clients,
+        primal,
+        covet,
+        starter_error.as_deref(),
+        starter_seconds,
+    )
+    .await
 }
 
 const MODULE_ROWS: &[&[&str]] = &[

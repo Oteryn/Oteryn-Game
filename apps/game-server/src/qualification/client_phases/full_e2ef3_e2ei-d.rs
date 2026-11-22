@@ -56,8 +56,8 @@ pub(super) async fn run(
     clients: &SeamClients<'_>,
     primal: bool,
     covet: bool,
-    starter_observed: bool,
-    started: std::time::Instant,
+    starter_error: Option<&str>,
+    starter_seconds: f64,
 ) -> TestResult<DevClientSession> {
     for (id, used, action, route) in [
         (
@@ -73,16 +73,12 @@ pub(super) async fn run(
             "Bag You Covet 43895: no carried bag observed, Rotten Blood bosses Bakragore, Chagorz, Ichgahal, Murcion and Vemiath have no spawn in the compiled town regions and Crimson Offering requires a Bakragore kill",
         ),
     ] {
-        if used && starter_observed {
-            evidence(&format!(
-                "e2e_all scenario={id}.full status=PASS seconds={:.3} evidence=use-consume-pinned-reward-fresh-admission-quantities",
-                started.elapsed().as_secs_f64()
-            ));
-        } else if used {
-            Check::new(id, "relogin-reward")
-                .finish(Err("starter observation failed after reward use".into()));
-        } else {
-            Check::new(id, action).finish(Err(route.into()));
+        match (used, starter_error) {
+            (true, None) => evidence(&format!(
+                "e2e_all scenario={id}.full status=PASS seconds={starter_seconds:.3} evidence=use-consume-pinned-reward-fresh-admission-quantities"
+            )),
+            (true, Some(error)) => Check::new(id, "relogin-reward").finish(Err(error.into())),
+            (false, _) => Check::new(id, action).finish(Err(route.into())),
         }
     }
     let mut mining = Check::new(I12, "obtain-pick-and-shiny-stone");
