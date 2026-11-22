@@ -430,6 +430,12 @@ pub struct ServerSaveCleanup {
     pub policy: GroundSweepPolicy,
 }
 
+#[derive(Default)]
+pub struct ServerSavePoll {
+    pub needs_pass: bool,
+    pub latest_retirement: Option<[u8; 16]>,
+}
+
 /// Current runtime evidence. The epoch map revision names its content issuance,
 /// while the planner's map revision is the Item ledger's placement codec.
 pub struct ServerSaveOwner<'a> {
@@ -448,7 +454,7 @@ impl DurabilityRoot {
         channel: ChannelId,
         owner: &ServerSaveOwner<'_>,
         cleanup: ServerSaveCleanup,
-    ) -> Result<bool, DurabilityError> {
+    ) -> Result<ServerSavePoll, DurabilityError> {
         let mut context = owner;
         self.try_issue_semantic_pass()?
             .run_with_context(&mut context, move |holder, deadline, owner| {
@@ -456,21 +462,27 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     super::db::lock_admission_relations(&mut tx).await?;
                     if !super::runtime_scope_assignment::prove_current_incarnation(&mut tx, owner.node).await? {
-                        return Ok(false);
+                        return Ok(ServerSavePoll::default());
                     }
                     sqlx::query("SELECT game_server_save_publish_due(encode($1,'hex')::uuid,$2::text::numeric,$3,$4)")
                         .bind(world.as_bytes().as_slice()).bind(owner.epoch.to_string())
                         .bind(cleanup.enabled).bind(cleanup.policy.clean_protection_zones)
                         .execute(&mut *tx).await?;
-                    let work: bool = sqlx::query_scalar("SELECT EXISTS (
+                    let (needs_pass, latest): (bool, Option<String>) = sqlx::query_as("SELECT EXISTS (
                         SELECT 1 FROM game_server_save_occurrences s
                         LEFT JOIN game_server_save_channels c ON c.occurrence_id=s.occurrence_id AND c.channel_id=encode($2,'hex')::uuid
                         WHERE s.world_id=encode($1,'hex')::uuid AND s.reset_epoch=$3::text::numeric AND s.cleanup_enabled
-                          AND (c.state='frozen' OR c.state IS NULL))")
+                          AND (c.state='frozen' OR c.state IS NULL)),
+                        (SELECT transaction_id::text FROM game_spell_item_receipts
+                         WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND cause_kind=7
+                         ORDER BY transaction_id DESC LIMIT 1)")
                         .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
                         .bind(owner.epoch.to_string()).fetch_one(&mut *tx).await?;
                     commit_semantic_transaction(tx, deadline).await?;
-                    Ok(work)
+                    Ok(ServerSavePoll {
+                        needs_pass,
+                        latest_retirement: latest.as_deref().map(uuid_text).transpose()?,
+                    })
                 })
             })
             .await
@@ -548,7 +560,7 @@ impl<F: GroundSweepFacts> SweepPass<'_, F> {
             "SELECT s.occurrence_id::text,c.state,s.clean_protection_zones
              FROM game_server_save_occurrences s
              LEFT JOIN game_server_save_channels c ON c.occurrence_id=s.occurrence_id AND c.channel_id=encode($2,'hex')::uuid
-             WHERE s.world_id=encode($1,'hex')::uuid AND s.reset_epoch=$3::text::numeric AND s.cleanup_enabled
+             WHERE s.world_id=encode($1,'hex')::uuid AND s.reset_epoch=$3::text::numeric AND s.cleanup_enabled AND s.scheduled_at<=clock_timestamp()
                AND (s.map_revision,s.server_digest,s.frame_digest)=($4,$5,$6)
                AND (c.state='frozen' OR c.state IS NULL)
              ORDER BY (c.state IS NULL AND clock_timestamp()<s.freeze_until) DESC NULLS LAST,s.scheduled_at
@@ -643,11 +655,11 @@ impl<F: GroundSweepFacts> SweepPass<'_, F> {
              ORDER BY item_id LIMIT 1 FOR UPDATE")
             .bind(occurrence).bind(channel).fetch_optional(&mut **tx).await?;
         if let Some((item, evidence)) = candidate {
-            let locked: bool = sqlx::query_scalar(
-                "SELECT EXISTS(SELECT 1 FROM game_item_ground_locations g JOIN game_item_instances i USING (item_instance_id,world_id)
-                 WHERE g.item_instance_id=$1::uuid AND to_jsonb(i)=$2::jsonb->'item' AND to_jsonb(g)=$2::jsonb->'ground'
-                 FOR UPDATE OF i,g)")
-                .bind(&item).bind(&evidence).fetch_one(&mut **tx).await?;
+            let locked: bool = sqlx::query_scalar("SELECT game_server_save_lock_root($1::uuid,$2)")
+                .bind(&item)
+                .bind(&evidence)
+                .fetch_one(&mut **tx)
+                .await?;
             let reason = if locked {
                 self.recheck(tx, &item, &evidence, policy).await?
             } else {

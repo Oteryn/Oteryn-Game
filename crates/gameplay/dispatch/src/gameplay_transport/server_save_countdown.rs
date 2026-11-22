@@ -92,6 +92,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// and is retried; it never stops serving.
     pub(super) async fn run_server_save_countdown(&self, shutdown: &CancellationToken) {
         let mut pass = ServerSaveCountdownPass::default();
+        let mut latest_retirement = None;
         let enabled = |key| std::env::var(key).is_ok_and(|value| value == "true");
         let cleanup = ServerSaveCleanup {
             enabled: enabled("OTERYN_SERVER_SAVE_CLEAN_MAP"),
@@ -117,9 +118,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ));
                 }
             }
-            let Some(_save) =
-                super::world_respawns::stopping_first(self.advance_server_save(cleanup), shutdown)
-                    .await
+            let Some(_save) = super::world_respawns::stopping_first(
+                self.advance_server_save(cleanup, &mut latest_retirement),
+                shutdown,
+            )
+            .await
             else {
                 return;
             };
@@ -135,9 +138,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
-    async fn advance_server_save(
+    pub(in crate::gameplay_transport) async fn advance_server_save(
         &self,
         cleanup: ServerSaveCleanup,
+        latest_retirement: &mut Option<[u8; 16]>,
     ) -> Result<(), crate::durability::DurabilityError> {
         let Some(room) = self.rooms.gate_monster_ai() else {
             return Ok(());
@@ -173,11 +177,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             epoch_map_revision: room.movement_cells().scope().map_revision.as_str(),
             server_digest,
         };
-        if !self
+        let poll = self
             .root
             .publish_due_server_save(self.world_id, self.channel_id, &owner, cleanup)
-            .await?
-        {
+            .await?;
+        if poll.latest_retirement.is_some() && poll.latest_retirement != *latest_retirement {
+            self.states.loop_ground.invalidate();
+            *latest_retirement = poll.latest_retirement;
+        }
+        if !poll.needs_pass {
             return Ok(());
         }
         let Some(permit) = self.spell_lane_permit().await else {

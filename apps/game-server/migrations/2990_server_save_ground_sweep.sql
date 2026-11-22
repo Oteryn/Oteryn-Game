@@ -82,9 +82,17 @@ BEGIN
     ) current_pin WHERE (server_artifact_digest,frame_binding_digest)=(p_server,p_frame));
 END $$;
 
+CREATE FUNCTION game_server_save_lock_root(p_item uuid,p_evidence jsonb)
+RETURNS boolean LANGUAGE sql SECURITY DEFINER AS $$
+ SELECT EXISTS(SELECT 1 FROM game_item_ground_locations g JOIN game_item_instances i USING (item_instance_id,world_id)
+   WHERE g.item_instance_id=p_item AND to_jsonb(i)=p_evidence->'item' AND to_jsonb(g)=p_evidence->'ground'
+   FOR UPDATE OF i,g)
+$$;
+
 DO $$ DECLARE f regprocedure; BEGIN
  FOREACH f IN ARRAY ARRAY['game_server_save_publish_due(uuid,numeric,boolean,boolean)'::regprocedure,
-                           'game_server_save_pin(uuid,uuid,numeric,text,bytea,bytea)'::regprocedure] LOOP
+                           'game_server_save_pin(uuid,uuid,numeric,text,bytea,bytea)'::regprocedure,
+                           'game_server_save_lock_root(uuid,jsonb)'::regprocedure] LOOP
   EXECUTE format('ALTER FUNCTION %s SET search_path=pg_catalog,%I,pg_temp',f,current_schema());
   EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC',f);
   EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO oteryn_game_runtime',f);
@@ -163,6 +171,8 @@ ALTER TABLE game_spell_item_receipts
  ADD CONSTRAINT game_spell_item_save_cause_id CHECK ((cause_kind=7)=(server_save_occurrence_id IS NOT NULL)),
  DROP CONSTRAINT game_spell_item_receipts_cause_kind_check,
  ADD CONSTRAINT game_spell_item_receipts_cause_kind_check CHECK (cause_kind BETWEEN 0 AND 7);
+CREATE INDEX game_spell_item_save_publication ON game_spell_item_receipts(world_id,channel_id,transaction_id DESC)
+ WHERE cause_kind=7;
 CREATE INDEX game_spell_item_save_occurrence ON game_spell_item_receipts(server_save_occurrence_id)
  WHERE server_save_occurrence_id IS NOT NULL;
 
@@ -242,6 +252,7 @@ DECLARE
 BEGIN
  SELECT * INTO STRICT s FROM game_server_save_occurrences
  WHERE occurrence_id=p_occurrence AND cleanup_enabled;
+ PERFORM pg_advisory_xact_lock(hashtextextended(replace(s.world_id::text,'-','')||replace(p_channel::text,'-',''),33));
  SELECT g.evidence INTO STRICT evidence FROM game_server_save_ground g
  JOIN game_server_save_channels c USING (occurrence_id,channel_id)
  WHERE g.occurrence_id=p_occurrence AND g.channel_id=p_channel AND g.item_id=p_item
