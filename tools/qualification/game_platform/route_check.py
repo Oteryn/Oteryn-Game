@@ -6,6 +6,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from prepare import portal_binary
+
 
 def main():
     work = Path(sys.argv[1])
@@ -14,7 +16,7 @@ def main():
     args = json.loads((work / "route-input.json").read_text())
     original = args.copy()
     args["port"] = args["port"] % 65535 + 1
-    binary = Path(json.loads((work / "portal-meta.json").read_text())["target_directory"]) / "debug/oteryn-portal"
+    binary = portal_binary(work)
     result = subprocess.run([str(binary), "seed", "route", json.dumps(args)],
                             env=env, capture_output=True, timeout=15, check=False)
     if result.returncode != 2 or json.loads(result.stdout).get("error") != "conflict":

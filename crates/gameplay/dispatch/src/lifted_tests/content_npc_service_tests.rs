@@ -104,6 +104,7 @@ fn route(key: &str, price: u64) -> ProjectV2TravelRoute {
         price,
         premium: false,
         min_level: None,
+        required_quest_tracks: Vec::new(),
     }
 }
 

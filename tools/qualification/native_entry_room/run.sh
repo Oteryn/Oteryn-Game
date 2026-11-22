@@ -15,6 +15,31 @@ if [[ "$(git -C "$PLATFORM_SOURCE" rev-parse HEAD 2>/dev/null)" != "$PLATFORM_SH
   exit 1
 fi
 
+native_build_pid=""
+native_build_root=""
+cleanup_native_build() {
+  if [[ -n "$native_build_pid" ]]; then
+    kill -- "-$native_build_pid" 2>/dev/null || true
+    wait "$native_build_pid" 2>/dev/null || true
+  fi
+  if [[ -n "$native_build_root" ]]; then
+    rm -rf -- "${native_build_root:?}"
+  fi
+}
+trap cleanup_native_build EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+if [[ -z "${OTERYN_NATIVE_ENTRY_PREBUILT+x}" && "${OTERYN_NATIVE_ENTRY_PARALLEL_BUILD:-0}" == 1 ]]; then
+  # When no applicable shared producer exists, overlap the original focused Rust
+  # compilation with the independent real Platform issuance. A process group
+  # prevents an interrupted issuer from leaving Cargo/rustc descendants running.
+  native_build_root="$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/oteryn-native-entry.XXXXXX")"
+  setsid python3 "$REPO_ROOT/tools/qualification/native_entry_room/prebuilt.py" \
+    build "$native_build_root/bundle" &
+  native_build_pid=$!
+fi
+
 docker build --quiet \
   -f "$REPO_ROOT/tools/qualification/wp5_s3a/platform-fpm.Dockerfile" \
   --build-context "platform=$PLATFORM_SOURCE" \
@@ -37,6 +62,22 @@ receipt="$(docker run --rm -e APP_ENV=preproduction -e DB_CONNECTION=sqlite \
 
 echo "native topology receipt: $receipt"
 cd "$REPO_ROOT"
-OTERYN_NATIVE_ENTRY_TOPOLOGY_RECEIPT="$receipt" cargo +1.100.0 test --locked -p oteryn-game-server \
-  --test content_native_entry_room -- --include-ignored
+if [[ -n "$native_build_pid" ]]; then
+  if ! wait "$native_build_pid"; then
+    echo "NATIVE_ENTRY_ROOM_RESULT=BLOCKED reason=native_test_build_failed" >&2
+    exit 1
+  fi
+  native_build_pid=""
+  OTERYN_NATIVE_ENTRY_PREBUILT="$native_build_root/bundle"
+fi
+if [[ -n "${OTERYN_NATIVE_ENTRY_PREBUILT+x}" ]]; then
+  native_entry_test="$(python3 tools/qualification/native_entry_room/prebuilt.py executable "$OTERYN_NATIVE_ENTRY_PREBUILT")"
+  # Match Cargo's integration-test working directory. The real, per-run issuer
+  # receipt and all three assertions (including the ignored issuance case) remain.
+  cd "$REPO_ROOT/apps/game-server"
+  OTERYN_NATIVE_ENTRY_TOPOLOGY_RECEIPT="$receipt" "$native_entry_test" --include-ignored
+else
+  OTERYN_NATIVE_ENTRY_TOPOLOGY_RECEIPT="$receipt" cargo +1.100.0 test --locked -p oteryn-game-server \
+    --test content_native_entry_room -- --include-ignored
+fi
 echo "NATIVE_ENTRY_ROOM_RESULT=PASS"
