@@ -42,6 +42,12 @@ fn action(
             send,
         });
     }
+    if let Some(action) = mode
+        .checked_sub(6)
+        .and_then(|index| crate::play::SpecialAction::ALL.get(index))
+    {
+        return Some(CustomAction::Special { action: *action });
+    }
     Some(CustomAction::Object {
         definition: definition.parse().ok()?,
         sub_type: subtype.parse().ok()?,
@@ -49,6 +55,7 @@ fn action(
             1 => ObjectTarget::SelfActor,
             2 => ObjectTarget::CurrentTarget,
             3 => ObjectTarget::Cursor,
+            5 => ObjectTarget::CursorPosition,
             _ => ObjectTarget::Use,
         },
     })
@@ -103,6 +110,8 @@ enum Control {
     Auto,
     Save,
     Remove,
+    ClearObject,
+    Reset,
 }
 
 pub(super) fn install(app: &mut App) {
@@ -205,6 +214,8 @@ pub(super) fn build(commands: &mut Commands, parent: Entity, skins: &Skins) {
         ("Send automatically", Control::Auto),
         ("Add / Save", Control::Save),
         ("Remove", Control::Remove),
+        ("Clear object", Control::ClearObject),
+        ("Reset hotkeys", Control::Reset),
     ] {
         button(commands, bar, skins, text, control);
     }
@@ -216,7 +227,13 @@ fn label(commands: &mut Commands, parent: Entity, skins: &Skins, text: &str) -> 
     commands.entity(parent).add_child(id);
     id
 }
-fn button(commands: &mut Commands, parent: Entity, skins: &Skins, text: &str, control: Control) {
+fn button(
+    commands: &mut Commands,
+    parent: Entity,
+    skins: &Skins,
+    text: &str,
+    control: Control,
+) -> Entity {
     let id = commands
         .spawn((
             Button,
@@ -233,6 +250,7 @@ fn button(commands: &mut Commands, parent: Entity, skins: &Skins, text: &str, co
         .id();
     label(commands, id, skins, text);
     commands.entity(parent).add_child(id);
+    id
 }
 fn activate(
     event: On<Activate>,
@@ -291,6 +309,12 @@ fn activate(
                     editor.send = *send;
                     values[1] = text.clone();
                 }
+                CustomAction::Special { action } => {
+                    editor.mode = 6 + crate::play::SpecialAction::ALL
+                        .iter()
+                        .position(|value| value == action)
+                        .unwrap_or(0);
+                }
                 CustomAction::Object {
                     definition,
                     sub_type,
@@ -300,6 +324,7 @@ fn activate(
                         ObjectTarget::SelfActor => 1,
                         ObjectTarget::CurrentTarget => 2,
                         ObjectTarget::Cursor => 3,
+                        ObjectTarget::CursorPosition => 5,
                         _ => 4,
                     };
                     values[2] = definition.to_string();
@@ -325,9 +350,7 @@ fn activate(
         Control::Pick => {
             editor.picking = !editor.picking;
             editor.capturing = false;
-            editor.feedback =
-                "Choose a carried object (definition : subtype × count). Artwork unavailable."
-                    .into();
+            editor.feedback = "Choose a carried object.".into();
         }
         Control::Object(item) => {
             if !editor.picking {
@@ -342,7 +365,7 @@ fn activate(
                 return;
             }
             editor.picking = false;
-            if editor.mode == 0 {
+            if !(1..=5).contains(&editor.mode) {
                 editor.mode = 4;
             }
             values[2] = item.item_definition_ref.to_string();
@@ -356,8 +379,39 @@ fn activate(
             editor.selected = None;
             values = [String::new(), String::new(), String::new(), "0".into()];
         }
-        Control::Mode => editor.mode = (editor.mode + 1) % 5,
+        Control::Mode => editor.mode = (editor.mode + 1) % 10,
         Control::Auto => editor.send = !editor.send,
+        Control::ClearObject => {
+            if let Some(key) = &editor.selected {
+                owner.edit_preferences(|prefs| {
+                    if let Some(action @ CustomAction::Object { .. }) =
+                        prefs.custom_hotkeys.get_mut(key)
+                    {
+                        *action = CustomAction::Unassigned;
+                    }
+                });
+            }
+            editor.mode = 0;
+            editor.send = false;
+            editor.picking = false;
+            values[1].clear();
+            values[2].clear();
+            values[3] = "0".into();
+        }
+        Control::Reset => {
+            owner.edit_preferences(|prefs| {
+                prefs.custom_hotkeys.clear();
+                for (chord, action) in crate::play::default_custom_hotkeys() {
+                    let _ = prefs.assign_custom_hotkey(&chord, action);
+                }
+            });
+            editor.selected = None;
+            editor.mode = 0;
+            editor.picking = false;
+            editor.send = false;
+            editor.feedback = "Hotkeys reset; Apply to persist".into();
+            values = [String::new(), String::new(), String::new(), "0".into()];
+        }
         Control::Remove => {
             if let Some(key) = editor.selected.take() {
                 owner.edit_preferences(|p| {
@@ -431,7 +485,12 @@ fn project(
                 "Use on self",
                 "Use on target",
                 "Use with crosshair",
-                "Use object"
+                "Use object",
+                "Use at pointer",
+                "Toggle WASD/chat mode",
+                "Attack next battle target",
+                "Attack previous battle target",
+                "Toggle chase mode"
             ][editor.mode],
             editor.send,
             editor.feedback

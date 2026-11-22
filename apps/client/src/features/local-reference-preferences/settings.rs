@@ -60,6 +60,9 @@ mod custom_actions;
 mod custom_dispatch;
 #[path = "utility_actions.rs"]
 mod utility_actions;
+#[path = "special.rs"]
+mod special;
+pub use special::SpecialAction;
 pub use custom_actions::{CustomAction, ObjectTarget, default_custom_hotkeys};
 pub use utility_actions::UtilityAction;
 #[path = "profiles.rs"]

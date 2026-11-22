@@ -156,6 +156,8 @@ impl PlayLink {
             return false;
         }
         match action {
+            CustomAction::Unassigned => false,
+            CustomAction::Special { action } => action.execute(&mut lock(&self.mailbox), &self.commands),
             CustomAction::PassiveStatus { ability } => {
                 let mut mailbox = lock(&self.mailbox);
                 if mailbox.quest_shutdown || mailbox.custom_hotkeys_ended {
@@ -294,6 +296,15 @@ impl PlayLink {
                 };
                 let target = match &target_mode {
                     ObjectTarget::Use => Target::Item(item.handle),
+                    ObjectTarget::CursorPosition => {
+                        let Some((target, cursor)) = mailbox.bar_actions.cursor.clone() else {
+                            mailbox.custom_hotkey_feedback =
+                                Some("Cursor is outside the game window or battle list".into());
+                            return false;
+                        };
+                        selection = Some(cursor);
+                        target
+                    }
                     ObjectTarget::Cursor => {
                         let rune = mailbox
                             .spell_catalog

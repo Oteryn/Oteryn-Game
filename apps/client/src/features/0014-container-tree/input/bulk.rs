@@ -23,6 +23,14 @@ impl PlayLink {
         source: &ContainerView,
         destination: &ContainerView,
     ) -> bool {
+        self.container_move_filtered_bound(source, destination, |_| true)
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn container_move_filtered_bound(
+        &self, source: &ContainerView, destination: &ContainerView,
+        include: impl Fn(&oteryn_session::ItemEntry) -> bool,
+    ) -> bool {
         let mut mailbox = lock(&self.mailbox);
         if mailbox.world_input_blocked() || mailbox.server_modal.is_active() {
             return false;
@@ -40,6 +48,7 @@ impl PlayLink {
             &self.commands,
             source.view_id,
             destination.view_id,
+            include,
         )
     }
 }
@@ -52,13 +61,14 @@ pub(in crate::play) fn begin(
     let Some(source) = mailbox.containers.active else {
         return false;
     };
-    begin_for(mailbox, commands, source, destination_view)
+    begin_for(mailbox, commands, source, destination_view, |_| true)
 }
 fn begin_for(
     mailbox: &mut Mailbox,
     commands: &UnboundedSender<PlayCommand>,
     source_view: u8,
     destination_view: u8,
+    include: impl Fn(&oteryn_session::ItemEntry) -> bool,
 ) -> bool {
     let movement = &mailbox.item_movement;
     if mailbox.inventory_shutdown
@@ -98,15 +108,17 @@ fn begin_for(
     {
         return false;
     }
-    let requests = source
+    let requests: Vec<_> = source
         .entries
         .iter()
+        .filter(|entry| include(entry))
         .map(|entry| MoveRequest {
             source: entry.handle,
             destination: ItemMoveDestination::Container(destination.container_handle, None),
             count: None,
         })
         .collect();
+    if requests.is_empty() { return false; }
     if commands
         .send(PlayCommand::MoveContainerContents(requests))
         .is_err()

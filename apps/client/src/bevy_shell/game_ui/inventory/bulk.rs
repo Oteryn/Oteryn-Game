@@ -13,6 +13,7 @@ struct Selection {
     generation: u64,
     source: ContainerView,
     destinations: Vec<ContainerView>,
+    move_nested: bool,
 }
 #[derive(Component)]
 struct Open {
@@ -134,6 +135,10 @@ fn open(
         generation: owner.generation(),
         source: button.source.clone(),
         destinations,
+        move_nested: ui
+            .windows
+            .get(&button.source.view_id)
+            .is_none_or(|window| window.move_nested),
     });
 }
 fn choose(
@@ -162,8 +167,15 @@ fn choose(
         .and_then(|index| selection.destinations.get(index))
         && let Some(play) = &owner.play
     {
-        play.link
-            .container_move_all_bound(&selection.source, destination);
+        if selection.move_nested {
+            play.link
+                .container_move_all_bound(&selection.source, destination);
+        } else {
+            play.link
+                .container_move_filtered_bound(&selection.source, destination, |item| {
+                    play.view.scene().container_flag(item.appearance_id) == Some(false)
+                });
+        }
     }
 }
 fn escape(

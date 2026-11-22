@@ -234,3 +234,26 @@ mod bulk_session;
 mod bulk {
     include!("bulk.rs");
 }
+
+#[test]
+fn container_action_slot_opens_and_closes_the_assigned_handle() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::container_tree::{ContainerView,ContainerViews,ContainerViewIntent};
+    let (link, mut commands, outbox) = play_channel();
+    let item = oteryn_session::ItemEntry {
+        appearance_id: 2854, handle: 7.try_into()?, item_definition_ref: 42.try_into()?, count: 1.try_into()?, sub_type: 0,
+    };
+    outbox.inventory_initialize(Some(oteryn_session::CharacterInventory { main_backpack: Some(item), ..Default::default() }), false);
+    let action = serde_json::from_value(serde_json::json!({"kind":"ToggleContainer","definition":42}))?;
+    assert!(link.assign_bar_action(0,action));
+    for opened in [false,true] {
+        if opened {
+            outbox.container_result(Some(oteryn_session::container_tree::ContainerViewOutcome::Opened));
+        }
+        let views = if opened {vec![ContainerView {view_id: 3, container_handle: item.handle, parent_handle: None, capacity:20, entries:vec![], browse:None}]} else {vec![]};
+        outbox.container_initialize(Some(ContainerViews {views}));
+        link.cast_spell_slot(NonZeroU32::MIN);
+        let expected = if opened { ContainerViewIntent::Close {view_id:3} } else {ContainerViewIntent::Open {handle:item.handle, replace_view:None}};
+        assert_eq!(commands.try_recv()?, crate::combat_input::PlayCommand::ContainerView(expected));
+    }
+    Ok(())
+}

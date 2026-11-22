@@ -141,6 +141,19 @@ fn hotkey_use_with_crosshair_arms_mode()
             health_percent: 100,
         },
     };
+    let position = own.position;
+    crate::play::mailbox::lock(&link.mailbox).bar_actions.cursor = Some((
+        Target::Position(position),
+        oteryn_client_runtime::world_interaction::Selection { position, binding: None },
+    ));
+    let immediate: CustomAction = serde_json::from_str(
+        r#"{"kind":"object","definition":900,"sub_type":7,"target":"cursor_position"}"#,
+    )?;
+    assert!(link.custom_hotkey_action(&play, &immediate));
+    assert!(matches!(commands.try_recv()?, PlayCommand::WorldContext(command)
+        if command.target == Target::Position(position) && command.action == Action::UseOn(99u64.try_into()?)));
+    assert!(!link.use_with_armed());
+    crate::play::mailbox::lock(&link.mailbox).world_context.pending = false;
     outbox.hotkey_own_actor(Some(own));
     assert!(link.custom_hotkey_action(
         &play,
@@ -244,4 +257,43 @@ mod custom_interfaces;
 fn hotkey_use_with_label() {
     let action = crate::play::CustomAction::Object { definition: 900, sub_type: 7, target: crate::play::ObjectTarget::Cursor };
     assert_eq!(action.hotkey_label("F1"), "F1: (use object with crosshair)");
+}
+
+#[test]
+fn action_bar_and_hotkeys_dispatch_combat_and_chat_shortcuts()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{BarAction, CustomAction, mailbox::lock};
+    use crate::combat_input::CombatCommand;
+    use oteryn_session::{ActorCombatState, FightModes};
+    let (link, mut commands, outbox) = play_channel();
+    let view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(10,10), 7, &[])?;
+    let a = oteryn_session::WorldSpatialEntity {
+        motion: None, display_name: None, kind: oteryn_session::EntityKind::Creature,
+        entity: oteryn_session::EntityRef { identity: [1;16], generation: 1 },
+        position: oteryn_session::ActorPosition { x:10, y:11, floor:7 },
+        detail: oteryn_session::EntityDetail::Actor { direction: oteryn_session::StepDirection::South, appearance_ref: 1, health_percent: 100 },
+    };
+    let b = oteryn_session::WorldSpatialEntity { entity: oteryn_session::EntityRef {identity:[2;16],generation:1}, ..a };
+    for kind in ["attack_next", "attack_previous", "toggle_chase", "toggle_chat"] {
+        for bar in [false,true] {
+            let combat = ActorCombatState { target: Some(a.entity), modes: FightModes::DEFAULT, in_fight: true };
+            outbox.battle_publish(Some(combat),Some(7), &[a,b]);
+            lock(&link.mailbox).battle.pending = false;
+            let before = lock(&link.mailbox).chat.console.mode;
+            if bar {
+                let action: BarAction = serde_json::from_value(serde_json::json!({"kind":"Special","action":kind}))?;
+                assert!(link.assign_bar_action(0,action));
+                link.cast_spell_slot(std::num::NonZeroU32::MIN);
+            } else {
+                let action: CustomAction = serde_json::from_value(serde_json::json!({"kind":"special","action":kind}))?;
+                assert!(link.custom_hotkey_action(&view,&action));
+            }
+            match kind {
+                "toggle_chat" => assert_ne!(lock(&link.mailbox).chat.console.mode,before),
+                "toggle_chase" => assert!(matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Battle(CombatCommand::Modes(m)) if m.chase != combat.modes.chase)),
+                _ => assert!(matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Battle(CombatCommand::Attack(e)) if e == b.entity)),
+            }
+        }
+    }
+    Ok(())
 }

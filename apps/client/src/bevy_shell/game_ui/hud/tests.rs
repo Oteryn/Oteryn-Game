@@ -384,3 +384,64 @@ fn shift_battle_click_looks_without_attacking() -> TestResult {
 }
 
 include!("hud_projection_tests.rs");
+
+#[test]
+fn expert_mode_control_toggles_only_the_four_inventory_modes() -> TestResult {
+    let (mut app, mut commands, _) = app()?;
+    let find = |app: &mut App, name: &str| {
+        app.world_mut()
+            .query::<(Entity, &Name)>()
+            .iter(app.world())
+            .find_map(|(e, n)| (n.as_str() == name).then_some(e))
+            .ok_or("expert mode control")
+    };
+    let button = find(&mut app, "Show expert PvP controls")?;
+    let group = find(&mut app, "Expert PvP controls")?;
+    for expected in [Display::Grid, Display::None] {
+        app.world_mut().trigger(Activate { entity: button });
+        app.update();
+        assert_eq!(
+            app.world()
+                .get::<Node>(group)
+                .ok_or("expert controls")?
+                .display,
+            expected
+        );
+    }
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn equipping_a_left_hand_weapon_refreshes_proficiency_from_status_bar() -> TestResult {
+    let (mut app, mut commands, outbox) = app()?;
+    outbox.bevy_proficiency_initialize();
+    let item = oteryn_session::ItemEntry {
+        handle: 10.try_into()?,
+        item_definition_ref: 42.try_into()?,
+        appearance_id: 42,
+        count: 1.try_into()?,
+        sub_type: 0,
+    };
+    crate::play::PlayLink::bevy_items_fixture(
+        &outbox,
+        Some(oteryn_session::CharacterInventory {
+            equipment: vec![oteryn_session::item_movement::EquippedItem {
+                slot: oteryn_session::item_movement::EquipmentSlot::LeftHand,
+                item,
+            }],
+            ..default()
+        }),
+        None,
+        true,
+        true,
+    );
+    app.update();
+    let PlayCommand::Feature(request) = commands.try_recv()? else {
+        return Err("expected proficiency catalogue request".into());
+    };
+    assert_eq!(request.capability, 195);
+    app.update();
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}

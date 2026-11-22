@@ -102,6 +102,8 @@ fn send_by_default() -> bool {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", deny_unknown_fields)]
 pub enum BarAction {
+    ToggleContainer { definition: NonZeroU32 },
+    Special { action: crate::play::SpecialAction },
     /// Live catalog identity, resolved again on every activation.
     Spell {
         name: String,
@@ -162,7 +164,7 @@ fn valid_leaf(action: &BarAction) -> bool {
             !text.trim().is_empty() && text.len() <= 1020 && !text.contains('\0')
         }
         BarAction::Equip { upgrade_tier, .. } => *upgrade_tier <= MAX_UPGRADE_TIER,
-        BarAction::Multi { .. } | BarAction::Passive { .. } => false,
+        BarAction::ToggleContainer { .. } | BarAction::Special { .. } | BarAction::Multi { .. } | BarAction::Passive { .. } => false,
         _ => true,
     }
 }
@@ -174,7 +176,7 @@ fn valid_action(action: &BarAction) -> bool {
                     .iter()
                     .all(|action| valid_leaf(action) && !matches!(action, BarAction::Text { .. }))
         }
-        BarAction::Passive { .. } => true,
+        BarAction::ToggleContainer { .. } | BarAction::Special { .. } | BarAction::Passive { .. } => true,
         _ => valid_leaf(action),
     }
 }
@@ -393,6 +395,28 @@ fn activate_inner(
                 mailbox.spell_bar.feedback = "Spell unavailable in the live catalogue".into();
             }
         }
+        BarAction::ToggleContainer { definition } => {
+            let open_view = super::item_actions::visible_items(mailbox)
+                .filter(|item| item.item_definition_ref == definition)
+                .find_map(|item| mailbox.containers.views.as_ref()?.views.iter()
+                    .find(|view| view.container_handle == item.handle && view.browse.is_none())
+                    .map(|view| view.view_id));
+            let intent = if let Some(view) = open_view {
+                if !mailbox.containers.activate(view) { return true; }
+                mailbox.containers.close()
+            } else {
+                item_source(mailbox, definition, None).map(|item| item.handle)
+                    .and_then(|handle| mailbox.containers.open(handle, None))
+            };
+            if let Some(intent) = intent {
+                if commands.send(crate::combat_input::PlayCommand::ContainerView(intent)).is_ok() {
+                    mailbox.containers.open = true;
+                } else {
+                    mailbox.containers.end();
+                }
+            }
+        }
+        BarAction::Special { action } => { action.execute(mailbox, commands); }
         BarAction::Multi { .. } => {}
         BarAction::Use {
             definition,
@@ -438,6 +462,8 @@ fn activate_inner(
 
 pub(in crate::play) fn label(mailbox: &Mailbox, action: &BarAction) -> String {
     match action {
+        BarAction::ToggleContainer { definition } => format!("Toggle container #{definition}"),
+        BarAction::Special { action } => action.label().into(),
         BarAction::Spell { name, .. } => name.clone(),
         BarAction::Multi { actions } => format!("Multiaction ({} actions)", actions.len()),
         BarAction::Use {

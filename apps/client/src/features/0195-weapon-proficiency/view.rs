@@ -1,6 +1,18 @@
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::weapon_proficiency::WeaponProficiencyPanel;
 impl PlayLink {
+    #[cfg(bevy_shell)]
+    pub(crate) fn equipped_weapon_progress(&self) -> Option<(u32, Option<u32>)> {
+        let mailbox = lock(&self.mailbox);
+        let panel = &mailbox.weapon_proficiency;
+        if !panel.selected || mailbox.inventory_shutdown { return None; }
+        let weapon = mailbox.inventory.inventory.as_ref()?.equipment.iter()
+            .find(|entry| entry.slot == oteryn_session::item_movement::EquipmentSlot::LeftHand)?
+            .item.item_definition_ref.get();
+        let progress = panel.catalogue.as_ref().and_then(|page| page.entries.iter()
+            .find(|entry| entry.definition == weapon)).map(oteryn_client_ui::weapon_proficiency::progress_percent);
+        Some((weapon, progress))
+    }
     pub fn weapon_proficiency_is_open(&self) -> bool {
         lock(&self.mailbox).weapon_proficiency.open
     }

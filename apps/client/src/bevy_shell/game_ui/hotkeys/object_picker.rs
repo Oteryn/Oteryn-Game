@@ -69,7 +69,7 @@ pub(super) fn project(
                 label(&mut commands, root, &skins, "No carried objects available");
             }
             for item in items {
-                button(
+                let card = button(
                     &mut commands,
                     root,
                     &skins,
@@ -79,6 +79,22 @@ pub(super) fn project(
                     ),
                     Control::Object(*item),
                 );
+                let icon = commands
+                    .spawn((
+                        super::super::ItemIcon(*item),
+                        ImageNode {
+                            color: Color::NONE,
+                            ..default()
+                        },
+                        Node {
+                            width: px(32.),
+                            height: px(32.),
+                            ..default()
+                        },
+                        Pickable::IGNORE,
+                    ))
+                    .id();
+                commands.entity(card).add_child(icon);
             }
         }
     }
